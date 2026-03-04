@@ -2,3 +2,7 @@
 	path = cogni-claims
 	url = https://github.com/cogni-work/cogni-claims.git
 	branch = main
+[submodule "cogni-obsidian"]
+	path = cogni-obsidian
+	url = https://github.com/cogni-work/cogni-obsidian.git
+	branch = main

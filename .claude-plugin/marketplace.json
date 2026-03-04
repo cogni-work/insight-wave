@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "cogni-works",
-  "version": "0.1.0",
-  "description": "Cogni plugins for standalone workplaces — claim verification and management.",
+  "version": "0.2.0",
+  "description": "Open-source Claude Code plugins for knowledge work — consulting, B2B sales, and marketing.",
   "owner": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
@@ -18,6 +18,17 @@
       "license": "CC-BY-NC-SA-4.0",
       "keywords": ["claim-verification", "fact-checking", "source-validation"],
       "repository": "https://github.com/cogni-work/cogni-claims"
+    },
+    {
+      "name": "cogni-obsidian",
+      "description": "Obsidian integration for Claude Code workplaces. Scaffolds vaults with Terminal plugin, manages cross-platform terminal profiles, and enables cogni-x plugins to work collaboratively through an Obsidian-based environment.",
+      "version": "0.9.1",
+      "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
+      "source": "./cogni-obsidian",
+      "category": "productivity",
+      "license": "CC-BY-NC-SA-4.0",
+      "keywords": ["obsidian", "vault", "terminal", "integration", "workplace", "claude-code"],
+      "repository": "https://github.com/cogni-work/cogni-obsidian"
     }
   ]
 }
