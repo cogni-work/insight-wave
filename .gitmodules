@@ -1,0 +1,4 @@
+[submodule "cogni-claims"]
+	path = cogni-claims
+	url = https://github.com/cogni-work/cogni-claims.git
+	branch = main
