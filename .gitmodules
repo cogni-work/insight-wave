@@ -14,3 +14,7 @@
 	path = cogni-narrative
 	url = https://github.com/cogni-work/cogni-narrative.git
 	branch = main
+[submodule "cogni-copywriting"]
+	path = cogni-copywriting
+	url = https://github.com/cogni-work/cogni-copywriting.git
+	branch = main
