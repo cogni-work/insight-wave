@@ -11,7 +11,7 @@
     {
       "name": "cogni-claims",
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-claims",
       "category": "productivity",
@@ -22,7 +22,7 @@
     {
       "name": "cogni-obsidian",
       "description": "Obsidian integration for Claude Code workplaces. Scaffolds Obsidian vaults with Terminal plugin integration, manages vault configuration, and provides note management with frontmatter support. Enables cogni-x plugins to work on projects collaboratively through an Obsidian-based workplace environment.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-obsidian",
       "category": "productivity",
@@ -33,7 +33,7 @@
     {
       "name": "cogni-narrative",
       "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 6 story arc frameworks including TIPS-native trend panorama. Includes narrative review scoring and derivative format adaptation.",
-      "version": "1.6.5",
+      "version": "1.6.7",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-narrative",
       "category": "productivity",
@@ -44,7 +44,7 @@
     {
       "name": "cogni-copywriting",
       "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), and multi-language support.",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-copywriting",
       "category": "productivity",
@@ -66,7 +66,7 @@
     {
       "name": "cogni-tips",
       "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE).",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-tips",
       "category": "productivity",
