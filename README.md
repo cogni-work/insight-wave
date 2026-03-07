@@ -15,6 +15,7 @@ Built and battle-tested at [cogni-work](https://github.com/cogni-work), then ext
 | [cogni-tips](./cogni-tips) | Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar with the TIPS framework for industry trend analysis. Bilingual (EN/DE). |
 | [cogni-portfolio](./cogni-portfolio) | Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features, advantages, and benefits with TAM/SAM/SOM targeting, competitor and customer analysis. |
 | [cogni-visual](./cogni-visual) | Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering. |
+| [cogni-teacher](./cogni-teacher) | Interactive teaching and training plugin. Guides learners through structured modules with adaptive exercises, knowledge checks, and progress tracking. |
 | [cogni-workspace](./cogni-workspace) | Lean workspace orchestrator. Manages shared foundation (env vars, settings), theme management, plugin discovery, and workspace health. |
 
 ## Quick start
@@ -35,6 +36,7 @@ Built and battle-tested at [cogni-work](https://github.com/cogni-work), then ext
 /plugin install cogni-tips@cogni-works
 /plugin install cogni-portfolio@cogni-works
 /plugin install cogni-visual@cogni-works
+/plugin install cogni-teacher@cogni-works
 /plugin install cogni-workspace@cogni-works
 ```
 
@@ -104,6 +106,12 @@ cogni-works/
 │   ├── commands/
 │   ├── hooks/
 │   └── libraries/
+├── cogni-teacher/          # Teaching & training plugin
+│   ├── .claude-plugin/
+│   │   └── plugin.json
+│   ├── skills/
+│   ├── agents/
+│   └── commands/
 ├── cogni-workspace/        # Workspace orchestrator plugin
 │   ├── .claude-plugin/
 │   │   └── plugin.json
@@ -117,9 +125,9 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 
 ## Contributing
 
-We welcome contributions. Each plugin lives in its own repository and is included here as a Git submodule.
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, CLA requirements, and marketplace plugin guidelines. By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-To report issues or suggest improvements, open an issue on the relevant plugin repo or on [cogni-works](https://github.com/cogni-work/cogni-works/issues).
+Each plugin lives in its own repository and is included here as a Git submodule. To report issues or suggest improvements, open an issue on the relevant plugin repo or on [cogni-works](https://github.com/cogni-work/cogni-works/issues).
 
 ## License
 

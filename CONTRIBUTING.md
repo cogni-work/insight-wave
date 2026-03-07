@@ -71,7 +71,7 @@ You are encouraged to set up your own CLA or contribution terms for PRs to your 
 
 ## Code of Conduct
 
-Be respectful and constructive. We are building tools together.
+This project follows the [Contributor Covenant v2.1](CODE_OF_CONDUCT.md). Please read it before participating.
 
 ---
 
