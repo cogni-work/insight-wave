@@ -54,7 +54,7 @@
     {
       "name": "cogni-workspace",
       "description": "Lean workspace orchestrator for cogni-works marketplace plugins. Manages shared foundation (env vars, settings), theme management, plugin discovery, and workspace health.",
-      "version": "0.1.11",
+      "version": "0.1.12",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-workspace",
       "category": "productivity",
