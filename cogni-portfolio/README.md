@@ -97,7 +97,7 @@ This plugin works standalone for core messaging workflows. Optional integrations
 ```
 cogni-portfolio/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       14 portfolio skills
+├── skills/                       15 portfolio skills
 │   ├── setup/
 │   ├── products/
 │   ├── features/
@@ -105,6 +105,7 @@ cogni-portfolio/
 │   ├── markets/
 │   ├── propositions/
 │   ├── solutions/
+│   ├── packages/
 │   ├── compete/
 │   ├── customers/
 │   ├── verify/
