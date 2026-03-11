@@ -93,6 +93,10 @@ The generated HTML includes these sections, all in a single-page app with drill-
 11. **Claims Status** — Verification summary (verified, unverified, deviated, resolved) with progress bar
 12. **Next Actions** — Recommended next skills from project-status
 
+## Shared Pattern
+
+This dashboard is the **reference implementation** of the design-variables pattern documented at `cogni-workspace/references/design-variables-pattern.md`. Other plugins building themed HTML dashboards (cogni-tips trend-report, scoring-ui, catalog) should follow the same 3-stage flow: pick-theme → LLM derives design-variables.json → generator consumes JSON.
+
 ## Important Notes
 
 - The dashboard is read-only — it shows portfolio state, it does not modify entities
