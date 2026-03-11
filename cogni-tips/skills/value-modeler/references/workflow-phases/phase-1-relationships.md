@@ -43,6 +43,10 @@ For each of the 60 candidates, extract:
 - Its trend statement and keywords
 - Its score and confidence tier
 
+**candidate_ref format:** Use the format from the trend-scout output as-is. This is
+typically `{dimension}/{horizon}/{number}` (e.g., `externe-effekte/act/1`) but may vary
+by project. Preserve whatever format the source data uses — don't normalize.
+
 Group candidates by dimension:
 - T-pool: all `externe-effekte` candidates (typically 13)
 - I-pool: all `digitale-wertetreiber` candidates (typically 13)
@@ -123,6 +127,26 @@ are prerequisites. Tag them as `foundation_requirements` on the chain:
 
 At this point you'll typically have 8-15 value chains. That's expected — don't reduce yet.
 
+### Step 3.5: Coverage Recovery
+
+Before moving to consolidation, check candidate coverage. Count how many of the 45
+T/I/P candidates (excluding Foundation) appear in at least one chain.
+
+**If coverage is below 80%**, review the orphaned candidates — especially act and plan
+horizon ones. For each orphan:
+
+1. **Act-horizon orphans**: These represent current forces or capabilities. Try harder
+   to find causal connections. If an act-horizon trend can't connect to any implication,
+   that's suspicious — reconsider whether you were too strict on a borderline connection.
+2. **Plan-horizon orphans**: These represent emerging developments. Look for chains where
+   they could serve as a second Implication or second Possibility. A plan-horizon candidate
+   that enriches an existing chain is valuable even if it wouldn't justify its own chain.
+3. **Observe-horizon orphans**: These are speculative and pre-commercial. Leaving them
+   orphaned is usually honest and correct — don't force connections just to hit a number.
+
+If after this review coverage is still below 80%, that's acceptable — document why in
+the orphan list. The goal is ≥80% with honest connections, not 80% with forced ones.
+
 ---
 
 ## PASS 2: Top-Down Strategic Theme Consolidation
@@ -179,6 +203,12 @@ Choose the target based on:
 - Breadth and diversity of the T/I/P candidates
 - Customer organizational complexity (more BUs → more themes)
 - Default to 5 unless there's a clear reason to deviate.
+
+**Quality over count.** 4 strong themes with solid causal chains beats 5 themes where
+one has forced connections. If you find yourself stretching chains to fill a theme — using
+a regulatory trend as a production driver, or a pricing trend as a workforce trigger — that's
+a signal the theme isn't warranted. Drop it and redistribute any legitimate chains to
+neighboring themes. The customer is better served by 4 sharp themes than 5 blurry ones.
 
 ### Step 6: MECE Validation
 

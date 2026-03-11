@@ -132,6 +132,10 @@ Themes must satisfy MECE:
 
 Target: **5 themes** (ideal). Range: 3 (minimum) to 7 (maximum, Miller's law).
 
+**Theme-level Business Relevance** is the average `ranking_value` of the theme's Solution
+Templates (calculated after Phase 4). This represents the theme's overall importance to
+the customer as expressed through its solutions' scores. Use this for theme ranking.
+
 ### Value Chain (TIPS Path)
 
 A value chain connects candidates across dimensions into a coherent causal narrative.
