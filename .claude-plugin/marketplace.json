@@ -12,7 +12,10 @@
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
       "version": "1.0.2",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-claims",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-claims"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["claim-verification", "fact-checking", "source-validation"],
@@ -23,7 +26,10 @@
       "description": "Obsidian integration for Claude Code workplaces. Scaffolds Obsidian vaults with Terminal plugin integration, manages vault configuration, and provides note management with frontmatter support. Enables cogni-x plugins to work on projects collaboratively through an Obsidian-based workplace environment.",
       "version": "1.0.2",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-obsidian",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-obsidian"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["obsidian", "vault", "terminal", "integration", "workplace", "claude-code"],
@@ -34,7 +40,10 @@
       "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 6 story arc frameworks including TIPS-native trend panorama. Includes narrative review scoring and derivative format adaptation.",
       "version": "1.6.9",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-narrative",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-narrative"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["narrative", "story-arc", "executive-writing", "strategic-foresight", "trend-panorama", "review", "adapt"],
@@ -45,7 +54,10 @@
       "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), and multi-language support.",
       "version": "0.2.9",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-copywriting",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-copywriting"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["copywriting", "document-polishing", "messaging-frameworks", "readability", "sales-copy", "power-positions"],
@@ -56,7 +68,10 @@
       "description": "Lean workspace orchestrator for cogni-works marketplace plugins. Manages shared foundation (env vars, settings), theme management, theme picker, plugin discovery, and workspace health.",
       "version": "0.1.14",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-workspace",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-workspace"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["workspace", "themes", "orchestrator", "cogni-works"],
@@ -67,7 +82,10 @@
       "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE).",
       "version": "0.1.11",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-tips",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-tips"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["tips", "trend-scout", "trends", "strategic-trends", "bilingual", "trend-report"],
@@ -78,7 +96,10 @@
       "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis.",
       "version": "0.7.3",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-portfolio",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-portfolio"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["portfolio", "messaging", "b2b", "fab", "sme", "propositions", "packages"],
@@ -89,7 +110,10 @@
       "description": "Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering.",
       "version": "1.2.14",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-visual",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-visual"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["presentations", "slides", "pptx", "visual", "narrative", "big-picture", "journey-map", "excalidraw", "web", "storyboard"],
@@ -100,7 +124,10 @@
       "description": "Interactive 45-minute courses teaching Claude Cowork fundamentals and cogni-works marketplace plugins to consultants. 7-course curriculum with hands-on exercises, quizzes, and progress tracking.",
       "version": "0.1.2",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-teacher",
+      "source": {
+        "type": "github",
+        "repo": "cogni-work/cogni-teacher"
+      },
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["teaching", "courses", "training", "cogni-works", "cowork", "curriculum"],
