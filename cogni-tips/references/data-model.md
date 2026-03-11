@@ -270,6 +270,7 @@ Location: `.metadata/trend-report-verification.json`
 | V-2 | value-modeler | `solutions-generated` | Generate Solution Templates |
 | V-3 | value-modeler | `scored` | Customer-specific BR scoring (1-5) |
 | V-4 | value-modeler | `complete` | Apply F1 formula, rank, Big Block diagram |
+| V-5 | value-modeler | `curated` | Optional: promote pursuit patterns to industry catalog |
 
 ## Entity Relationships
 
@@ -286,6 +287,10 @@ tips-project.json (root manifest)
         └── tips-value-model.json (value modeler ← candidates)
               ├── paths[] (T→I→P relationship networks)
               ├── solution_templates[] (enablers linked to paths)
+              ├── solution_process_improvements[] (SPIs per ST)
+              ├── metrics[] (success KPIs per path)
+              ├── collaterals[] (supporting content per ST)
+              ├── curation_recommendations[] (catalog feedback loop)
               ├── tips-solution-ranking.md (ranked solution list)
               ├── tips-big-block.md (solution architecture diagram)
               ├── value-modeler-scoring.html (interactive BR scoring UI)
@@ -339,6 +344,42 @@ tips-project.json (root manifest)
 }
 ```
 
+### Solution Process Improvement (SPI)
+
+```json
+{
+  "spi_id": "spi-001",
+  "name": "Establish data governance policy",
+  "description": "Define data ownership, quality standards, and access controls for production sensor data",
+  "st_ref": "st-001",
+  "change_type": "governance|training|workflow|organization|measurement"
+}
+```
+
+### Metric
+
+```json
+{
+  "metric_id": "met-001",
+  "name": "Defect rate reduction",
+  "unit": "percentage",
+  "direction": "increase|decrease",
+  "linked_paths": ["path-001", "path-003"]
+}
+```
+
+### Collateral
+
+```json
+{
+  "collateral_id": "col-001",
+  "name": "Predictive Maintenance ROI Case Study",
+  "type": "case-study|whitepaper|reference-architecture|demo|benchmark",
+  "st_ref": "st-001",
+  "status": "exists|recommended"
+}
+```
+
 ### Enhanced F1: Solution Ranking
 
 Per-path base: `PathScore(p) = avg(BR of scored TIPs in path p)`
@@ -358,3 +399,6 @@ Business Relevance scale: 1 (Very Low) → 5 (Very High).
 | Claim ID | `claim_{DIM_PREFIX}_{SEQ}` | `claim_EE_001` |
 | Path ID | `path-{SEQ}` | `path-001` |
 | Solution Template ID | `st-{SEQ}` | `st-001` |
+| SPI ID | `spi-{SEQ}` | `spi-001` |
+| Metric ID | `met-{SEQ}` | `met-001` |
+| Collateral ID | `col-{SEQ}` | `col-001` |

@@ -107,6 +107,7 @@ If the phase is `complete`, congratulate the user and suggest exporting or visua
 | `modeling` | Report done, value model not yet built | Run `value-modeler` |
 | `modeling-paths` | Relationship networks built, solutions pending | Continue `value-modeler` |
 | `modeling-scoring` | Solutions generated, BR scoring pending | Continue `value-modeler` |
+| `modeling-curating` | Ranked solutions complete, curation pending | Continue `value-modeler` for optional catalog curation |
 | `modeling-complete` | Value model complete with ranked solutions | Export or visualize Big Block |
 | `complete` | All stages finished | Export or visualize results |
 

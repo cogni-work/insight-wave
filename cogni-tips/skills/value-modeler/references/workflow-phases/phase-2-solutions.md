@@ -83,6 +83,31 @@ If a cogni-portfolio project was discovered in Phase 0:
 
 If no portfolio is discovered, set `portfolio_mapping` to `null` on all STs.
 
+## Step 2.5: Generate Solution Process Improvements
+
+For each Solution Template, generate 1-3 Solution Process Improvements (SPIs) — operational
+process changes that accompany the ST. While an ST is the *what* (a product, platform, or tool),
+SPIs are the *how* (organizational and process changes needed to realize value from the ST).
+
+**For each SPI, define:**
+- `spi_id`: Sequential identifier (spi-001, spi-002, ...)
+- `name`: Descriptive name (3-7 words)
+- `description`: What process change is required (1-2 sentences)
+- `st_ref`: The parent Solution Template ID
+- `change_type`: `governance` | `training` | `workflow` | `organization` | `measurement`
+
+**Example:**
+- ST: "Predictive Quality Analytics Platform"
+  - SPI: "Establish data governance policy" (governance)
+  - SPI: "Train quality engineers on ML interpretation" (training)
+  - SPI: "Integrate prediction alerts into shift handover workflow" (workflow)
+
+**Guidelines:**
+- SPIs should be concrete and actionable, not generic ("improve culture" is too vague)
+- Focus on the process changes that are essential for the ST to deliver value
+- Consider training, governance, workflow integration, and organizational alignment
+- SPIs are lightweight — they flag what needs to change, not how to change it
+
 ## Step 3: Consolidate & Deduplicate
 
 Review all generated STs and:
@@ -90,6 +115,31 @@ Review all generated STs and:
 - Ensure each ST has a unique, descriptive name
 - Verify that every path has at least 1 linked ST
 - Check that no ST is orphaned (linked to zero paths)
+
+## Step 3.5: Define Success Metrics
+
+For each TIPS path, define 2-4 success Metrics — KPIs that measure whether the solution
+path is delivering expected value. Metrics make the business case tangible and provide
+the basis for post-implementation tracking.
+
+**For each Metric, define:**
+- `metric_id`: Sequential identifier (met-001, met-002, ...)
+- `name`: KPI name (e.g., "OEE Improvement %")
+- `unit`: Measurement unit (e.g., "percentage", "hours", "EUR", "count")
+- `direction`: `increase` | `decrease` — which direction indicates improvement
+- `linked_paths`: Which TIPS paths this metric measures
+
+**Example:**
+- Path: "AI-Driven Quality Optimization"
+  - Metric: "Defect rate reduction" (percentage, decrease)
+  - Metric: "Mean time to defect detection" (hours, decrease)
+  - Metric: "First-pass yield improvement" (percentage, increase)
+
+**Guidelines:**
+- Metrics should be measurable and specific to the industry context
+- Avoid vanity metrics — focus on KPIs the customer already tracks or should track
+- A single metric may apply to multiple paths (e.g., OEE spans several solution areas)
+- Include both leading indicators (early signals) and lagging indicators (outcome measures)
 
 ## Step 4: Present to User
 
@@ -124,6 +174,25 @@ Portfolio match: none (PORTFOLIO GAP)
 ...
 ```
 
+## Step 4.5: Suggest Collaterals
+
+For each Solution Template, suggest relevant Collateral — supporting content that
+strengthens the solution proposal. Collaterals are references to existing or recommended
+assets, not generated content.
+
+**For each Collateral, define:**
+- `collateral_id`: Sequential identifier (col-001, col-002, ...)
+- `name`: Descriptive title (e.g., "Predictive Maintenance ROI Case Study")
+- `type`: `case-study` | `whitepaper` | `reference-architecture` | `demo` | `benchmark`
+- `st_ref`: The parent Solution Template ID
+- `status`: `exists` | `recommended` — whether the asset already exists or should be created
+
+**Guidelines:**
+- Suggest 1-2 collaterals per ST — keep the list actionable, not exhaustive
+- Prioritize case studies and reference architectures over generic whitepapers
+- Mark existing collaterals as `exists` only when a cogni-portfolio mapping confirms them
+- Collaterals marked `recommended` are suggestions for future content creation
+
 Report summary:
 - Total STs generated
 - Distribution by category and enabler type
@@ -137,6 +206,9 @@ any before we move to Business Relevance scoring?"
 
 Update `tips-value-model.json`:
 - Add `solution_templates` array with all STs
+- Add `solution_process_improvements` array with all SPIs
+- Add `metrics` array with all success Metrics
+- Add `collaterals` array with all Collateral items
 - Update each path's `solution_templates` field with linked ST IDs
 - Add `portfolio_gaps` array listing STs with no portfolio match
 

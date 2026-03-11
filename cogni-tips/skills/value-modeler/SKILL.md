@@ -24,9 +24,13 @@ dimension as a standalone item. This skill connects them:
 
 1. **Builds TIPS paths** — explicit Trend → Implication → Possibility chains across dimensions
 2. **Generates Solution Templates** — concrete enablers linked to each path
-3. **Enables Business Relevance scoring** — customer-specific 1-5 ratings per TIP
-4. **Ranks solutions automatically** — using the F1 averaging formula from the patent
-5. **Generates a Big Block diagram** — the customer-specific solution architecture
+3. **Generates SPIs** — operational process changes that accompany each Solution Template
+4. **Defines success Metrics** — KPIs that measure value delivery per path
+5. **Suggests Collaterals** — supporting content (case studies, reference architectures) per ST
+6. **Enables Business Relevance scoring** — customer-specific 1-5 ratings per TIP
+7. **Ranks solutions automatically** — using the F1 averaging formula from the patent
+8. **Generates a Big Block diagram** — the customer-specific solution architecture
+9. **Curates catalog feedback** — promotes pursuit-specific insights back to industry catalogs
 
 The output is a ranked list of solutions the customer should pursue, backed by the trend evidence
 from the scout phase and scored for business relevance.
@@ -75,6 +79,13 @@ Reference: `references/workflow-phases/phase-4-rank.md`
 
 Apply the F1 formula to calculate solution rankings, generate the ranked solution list,
 and produce the Big Block solution diagram.
+
+### Phase 5: Curate (Optional)
+Reference: `references/workflow-phases/phase-5-curate.md`
+
+Review pursuit-specific data (paths, STs, SPIs, Metrics) and generate recommendations
+for promoting high-value, reusable patterns back to the industry catalog. This creates
+a learning loop where customer engagements improve the base catalog over time.
 
 ## Output Files
 
@@ -141,6 +152,49 @@ Implications depending on context. The path captures the *reasoning chain*, not 
   "ranking_value": null
 }
 ```
+
+### Solution Process Improvement (SPI)
+
+```json
+{
+  "spi_id": "spi-001",
+  "name": "Establish data governance policy",
+  "description": "Define data ownership, quality standards, and access controls for production sensor data",
+  "st_ref": "st-001",
+  "change_type": "governance"
+}
+```
+
+`change_type` values: `governance` | `training` | `workflow` | `organization` | `measurement`
+
+### Metric
+
+```json
+{
+  "metric_id": "met-001",
+  "name": "Defect rate reduction",
+  "unit": "percentage",
+  "direction": "decrease",
+  "linked_paths": ["path-001", "path-003"]
+}
+```
+
+`direction` values: `increase` | `decrease`
+
+### Collateral
+
+```json
+{
+  "collateral_id": "col-001",
+  "name": "Predictive Maintenance ROI Case Study",
+  "type": "case-study",
+  "st_ref": "st-001",
+  "status": "recommended"
+}
+```
+
+`type` values: `case-study` | `whitepaper` | `reference-architecture` | `demo` | `benchmark`
+`status` values: `exists` | `recommended`
 
 `portfolio_mapping` is only populated when a cogni-portfolio project is discovered.
 `business_relevance` is the user override (if set). `business_relevance_calculated` is

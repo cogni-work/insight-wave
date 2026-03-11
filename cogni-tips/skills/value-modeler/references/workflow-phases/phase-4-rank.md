@@ -146,6 +146,14 @@ Generate `tips-big-block.md` as a structured markdown representation:
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 
+### Process Changes Required (SPIs)
+┌──────────────────────────────────────────────────────────────┐
+│ SPI-001: Establish    │ SPI-002: Train quality │             │
+│ data governance       │ engineers on ML        │             │
+│ policy                │ interpretation         │             │
+│ → Predictive Quality  │ → Predictive Quality   │             │
+└──────────────────────────────────────────────────────────────┘
+
 ### Foundation Requirements
 ┌──────────────────────────────────────────────────────────────┐
 │ Data Infrastructure │ ML Engineering │ Cloud Platform       │
@@ -184,6 +192,8 @@ Summarize the complete value model to the user:
 
 - **{n} TIPS paths** connecting trends through implications to possibilities
 - **{n} Solution Templates** generated, ranked by business relevance
+- **{n} SPIs** — process changes to realize solution value
+- **{n} Metrics** — KPIs to measure success
 - **Top 3 priorities:** {ST-1}, {ST-2}, {ST-3}
 - **Portfolio gaps found:** {n} solutions not covered by existing products
 - **Implementation:** {n} quick wins, {n} strategic builds, {n} future bets
