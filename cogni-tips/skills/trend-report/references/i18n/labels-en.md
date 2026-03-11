@@ -86,6 +86,53 @@ SOURCE: "Source"
 CLAIMS: "claims"
 ```
 
+## Strategic Theme Labels (Theme Mode)
+
+```text
+STRATEGIC_THEMES_OVERVIEW: "Strategic Themes"
+THEME: "Theme"
+STRATEGIC_QUESTION: "Strategic Question"
+EXECUTIVE_SPONSOR: "Executive Sponsor"
+INVESTMENT_THESIS: "Investment Thesis"
+VALUE_CHAINS: "Value Chains"
+TREND: "Trend"
+IMPLICATION: "Implication"
+POSSIBILITY: "Possibility"
+FOUNDATION: "Foundation Requirements"
+SOLUTION_TEMPLATES: "Solution Templates"
+SOLUTION: "Solution"
+CATEGORY: "Category"
+ENABLER_TYPE: "Enabler Type"
+STRATEGIC_ACTIONS: "Strategic Actions"
+EMERGING_SIGNALS: "Emerging Signals"
+EMERGING_SIGNALS_INTRO: "The following candidates were not assigned to any strategic theme. They represent early signals worth monitoring — their absence from current themes may itself be informative."
+ALL_CANDIDATES_THEMED: "All 60 candidates are covered by the strategic themes above — no orphan signals."
+HEADLINE_EVIDENCE: "Headline Evidence"
+THEME_OVERVIEW: "Theme Overview"
+CHAINS: "Chains"
+CANDIDATES: "Candidates"
+HORIZON_MIX: "Horizon Mix"
+EVIDENCE: "Evidence"
+ORPHANS: "Unthemed"
+MECE_VALIDATION: "MECE Validation"
+METRIC: "Metric"
+STATUS: "Status"
+THEME_COUNT: "Theme Count"
+MUTUAL_EXCLUSIVITY: "Mutual Exclusivity"
+COLLECTIVE_EXHAUSTIVENESS: "Collective Exhaustiveness"
+BALANCE: "Balance"
+```
+
+## Phase Messages (Theme Mode)
+
+```text
+PHASE_0_THEMES_FOUND: "Value model detected: {COUNT} strategic themes available — using theme-organized report"
+PHASE_0_NO_THEMES: "No value model found — using dimensional catalog report"
+PHASE_2_THEME_START: "Assembling strategic theme report..."
+PHASE_2_THEME_WRITTEN: "Theme {N}/{TOTAL}: {NAME}"
+PHASE_2_THEME_COMPLETE: "Strategic report written: {PATH}"
+```
+
 ## No-Data Marker
 
 ```text

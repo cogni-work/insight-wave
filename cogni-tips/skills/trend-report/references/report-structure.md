@@ -2,9 +2,24 @@
 
 Reference for assembling the final TIPS trend report in Phase 2.
 
+This reference covers the **catalog mode** (dimensional report). For **theme mode** (strategic themes report), see [phase-2-strategic-themes.md](phase-2-strategic-themes.md) — that reference has its own frontmatter, section order, and assembly strategy.
+
 ---
 
-## Frontmatter
+## Report Modes
+
+| Mode | Condition | Organizing Principle | Reference |
+|------|-----------|---------------------|-----------|
+| **Theme** | `tips-value-model.json` exists with themes | Strategic themes → value chains → evidence | `phase-2-strategic-themes.md` |
+| **Catalog** | No value model available | TIPS dimensions → horizons → individual trends | This file |
+
+Phase 0 sets `THEME_MODE` based on value-model detection. Phase 2 reads the appropriate reference.
+
+---
+
+## Catalog Mode
+
+### Frontmatter
 
 ```yaml
 ---

@@ -149,6 +149,33 @@ The full dimension section. Must end with two trailing newlines (`\n\n`) so file
 }
 ```
 
+**Enriched trends file** — `{PROJECT_PATH}/.logs/enriched-trends-{DIMENSION}.json`
+
+Per-trend evidence blocks that the orchestrator uses for theme-organized report assembly. Each trend's prose is split into its four subsections so the orchestrator can recompose them into theme narratives without parsing markdown.
+
+```json
+{
+  "dimension": "{DIMENSION}",
+  "tips_role": "{TIPS_LETTER}",
+  "trends": [
+    {
+      "candidate_ref": "externe-effekte/act/1",
+      "name": "Trend Name",
+      "horizon": "act",
+      "sequence": 1,
+      "evidence_md": "Description with quantitative evidence and inline citations...",
+      "implications_md": "Impact analysis specific to the industry/subsector...",
+      "opportunities_md": "Possibilities and strategic opportunities...",
+      "actions_md": "1. First action\n2. Second action\n3. Third action",
+      "claims_refs": ["claim_ee_001", "claim_ee_002"],
+      "has_quantitative_evidence": true
+    }
+  ]
+}
+```
+
+The `*_md` fields contain the prose AFTER the bold label — i.e., the content of "**Trend Overview** — {this part}", not the label itself. This lets the orchestrator re-label or restructure without string surgery. `claims_refs` lists the claim IDs from the claims file that originated from this trend.
+
 ### Step 5: Return Compact JSON
 
 Return ONLY this JSON — nothing else:
@@ -170,7 +197,8 @@ Return ONLY this JSON — nothing else:
   "trends_with_evidence": 10,
   "trends_qualitative_only": 3,
   "section_file": ".logs/report-section-externe-effekte.md",
-  "claims_file": ".logs/claims-externe-effekte.json"
+  "claims_file": ".logs/claims-externe-effekte.json",
+  "enriched_file": ".logs/enriched-trends-externe-effekte.json"
 }
 ```
 

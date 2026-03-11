@@ -86,6 +86,53 @@ SOURCE: "Quelle"
 CLAIMS: "Aussagen"
 ```
 
+## Strategische Themen (Themenmodus)
+
+```text
+STRATEGIC_THEMES_OVERVIEW: "Strategische Themen"
+THEME: "Thema"
+STRATEGIC_QUESTION: "Strategische Fragestellung"
+EXECUTIVE_SPONSOR: "Verantwortlicher Sponsor"
+INVESTMENT_THESIS: "Investitionsthese"
+VALUE_CHAINS: "Wertschöpfungsketten"
+TREND: "Trend"
+IMPLICATION: "Implikation"
+POSSIBILITY: "Potenzial"
+FOUNDATION: "Fundamentanforderungen"
+SOLUTION_TEMPLATES: "Lösungsbausteine"
+SOLUTION: "Lösung"
+CATEGORY: "Kategorie"
+ENABLER_TYPE: "Enabler-Typ"
+STRATEGIC_ACTIONS: "Strategische Maßnahmen"
+EMERGING_SIGNALS: "Aufkommende Signale"
+EMERGING_SIGNALS_INTRO: "Die folgenden Kandidaten wurden keinem strategischen Thema zugeordnet. Sie repräsentieren frühe Signale, die beobachtet werden sollten — ihre Abwesenheit von den aktuellen Themen ist selbst eine informative Beobachtung."
+ALL_CANDIDATES_THEMED: "Alle 60 Kandidaten sind durch die strategischen Themen oben abgedeckt — keine unzugeordneten Signale."
+HEADLINE_EVIDENCE: "Kernevidenz"
+THEME_OVERVIEW: "Themenübersicht"
+CHAINS: "Ketten"
+CANDIDATES: "Kandidaten"
+HORIZON_MIX: "Horizontmix"
+EVIDENCE: "Evidenz"
+ORPHANS: "Unzugeordnet"
+MECE_VALIDATION: "MECE-Validierung"
+METRIC: "Kennzahl"
+STATUS: "Status"
+THEME_COUNT: "Themenanzahl"
+MUTUAL_EXCLUSIVITY: "Gegenseitige Ausschließlichkeit"
+COLLECTIVE_EXHAUSTIVENESS: "Kollektive Vollständigkeit"
+BALANCE: "Balance"
+```
+
+## Phasenmeldungen (Themenmodus)
+
+```text
+PHASE_0_THEMES_FOUND: "Wertmodell erkannt: {COUNT} strategische Themen verfügbar — verwende themenorganisierten Bericht"
+PHASE_0_NO_THEMES: "Kein Wertmodell gefunden — verwende dimensionalen Katalogbericht"
+PHASE_2_THEME_START: "Stelle strategischen Themenbericht zusammen..."
+PHASE_2_THEME_WRITTEN: "Thema {N}/{TOTAL}: {NAME}"
+PHASE_2_THEME_COMPLETE: "Strategischer Bericht geschrieben: {PATH}"
+```
+
 ## Kein-Daten-Markierung
 
 ```text
