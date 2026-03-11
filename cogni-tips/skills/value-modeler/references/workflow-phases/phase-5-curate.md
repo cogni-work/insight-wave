@@ -97,7 +97,24 @@ Update `.metadata/value-modeler-output.json`:
 - Add `"phase-5"` to `phases_completed`
 - Record `curation_candidates_reviewed`, `curation_recommendations_count`
 
+## Step 5: Offer Catalog Import
+
+After presenting curation recommendations, check if a matching industry catalog exists
+(from `catalog_path` in `.metadata/value-modeler-output.json`):
+
+**If catalog exists:**
+- "These recommendations can be imported into your {industry}/{subsector} catalog.
+  Run `/catalog import` to review and approve the additions."
+
+**If no catalog exists:**
+- "There's no industry catalog for {industry}/{subsector} yet. You can create one
+  with `/catalog init` and then import these recommendations to build a reusable
+  knowledge base for future {subsector} pursuits."
+
+This bridges the advisory curation output to actual catalog persistence.
+
 ## Output
 
-The curation output is informational. It serves as input for a future catalog management
-workflow or manual review process. No industry catalogs are modified by this phase.
+The curation output is stored in `tips-value-model.json` and serves as input for the
+`/catalog import` operation. The catalog skill handles the actual write-back with user
+approval — this phase generates the recommendations only.

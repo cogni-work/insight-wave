@@ -25,7 +25,18 @@ Read `.metadata/trend-scout-output.json` from the selected project.
 
 If validation fails, tell the user what's missing and suggest running `trend-scout` first.
 
-### Step 3: Discover Portfolio (Optional)
+### Step 3: Discover Industry Catalog (Optional)
+
+Search for a matching industry catalog:
+
+1. Read `industry.primary` and `industry.subsector` from the project config
+2. Check for `cogni-tips/catalogs/{primary}/{subsector}/catalog.json`
+3. If found, read it and report:
+   - "Found {industry}/{subsector} catalog with {stats summary}. Catalog data will inform relationship building and solution generation."
+   - Store catalog path for use in Phases 1 and 2
+4. If not found: "No industry catalog found. You can create one later with `/catalog init` to accumulate knowledge across pursuits."
+
+### Step 4: Discover Portfolio (Optional)
 
 Search the workspace for a cogni-portfolio project:
 
@@ -36,7 +47,7 @@ Search the workspace for a cogni-portfolio project:
 3. Report to the user: "Found portfolio with X products and Y features. I'll map Solution Templates to these where relevant."
 4. If not found: "No portfolio found. Solution Templates will be standalone — you can connect them to a portfolio later."
 
-### Step 4: Load Existing Value Model (Resume Support)
+### Step 5: Load Existing Value Model (Resume Support)
 
 Check for `tips-value-model.json` in the project directory:
 
@@ -44,7 +55,7 @@ Check for `tips-value-model.json` in the project directory:
 2. Report progress and ask if the user wants to continue or restart
 3. If not found, initialize a fresh value model
 
-### Step 5: Confirm Configuration
+### Step 6: Confirm Configuration
 
 Present to the user:
 
@@ -53,6 +64,7 @@ Project: {project name}
 Industry: {industry/subsector}
 Language: {language}
 Candidates: {total} across {dimensions} dimensions
+Catalog: {found with N entities / not found}
 Portfolio: {found/not found}
 ```
 
@@ -67,6 +79,8 @@ Create `.metadata/value-modeler-output.json`:
   "version": "1.0.0",
   "project_id": "{project-slug}",
   "project_language": "{language}",
+  "catalog_discovered": true|false,
+  "catalog_path": "cogni-tips/catalogs/manufacturing/automotive" | null,
   "portfolio_discovered": true|false,
   "portfolio_path": "path/to/portfolio.json" | null,
   "candidate_count": 52,

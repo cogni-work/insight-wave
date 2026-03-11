@@ -389,6 +389,33 @@ Foundation adjustment: `FinalScore = BR(ST) × FoundationFactor`
 FoundationFactor: 1.00 (0-1 deps), 0.95 (2-3 deps), 0.90 (4+ deps)
 Business Relevance scale: 1 (Very Low) → 5 (Very High).
 
+## Industry Catalog Structure
+
+Catalogs persist across pursuits at `cogni-tips/catalogs/{industry}/{subsector}/`.
+
+```
+cogni-tips/catalogs/
+└── {industry}/
+    └── {subsector}/
+        ├── catalog.json              # Root manifest (industry, version, stats)
+        ├── tips-entities.json        # Curated TIP entities
+        ├── solution-templates.json   # Proven Solution Templates
+        ├── spis.json                 # Validated SPIs
+        ├── metrics.json              # Effective KPIs
+        ├── collaterals.json          # Available content assets
+        └── .history/                 # Version snapshots
+```
+
+Catalog entity IDs use `cat-` prefix to distinguish from pursuit-specific IDs:
+`cat-tip-001`, `cat-st-001`, `cat-spi-001`, `cat-met-001`, `cat-col-001`.
+
+Each entity carries a `provenance` object tracking source pursuit, import date,
+original reference, and generalization notes. The `pursuit_appearances` counter
+increments when the same pattern appears in subsequent pursuits, serving as a
+signal of industry-wide relevance.
+
+See the `catalog` skill SKILL.md for full entity schemas.
+
 ## Naming Conventions
 
 | Convention | Rule | Example |
@@ -402,3 +429,9 @@ Business Relevance scale: 1 (Very Low) → 5 (Very High).
 | SPI ID | `spi-{SEQ}` | `spi-001` |
 | Metric ID | `met-{SEQ}` | `met-001` |
 | Collateral ID | `col-{SEQ}` | `col-001` |
+| Catalog directory | `cogni-tips/catalogs/{industry}/{subsector}/` | `cogni-tips/catalogs/manufacturing/automotive/` |
+| Catalog TIP ID | `cat-tip-{SEQ}` | `cat-tip-001` |
+| Catalog ST ID | `cat-st-{SEQ}` | `cat-st-001` |
+| Catalog SPI ID | `cat-spi-{SEQ}` | `cat-spi-001` |
+| Catalog Metric ID | `cat-met-{SEQ}` | `cat-met-001` |
+| Catalog Collateral ID | `cat-col-{SEQ}` | `cat-col-001` |

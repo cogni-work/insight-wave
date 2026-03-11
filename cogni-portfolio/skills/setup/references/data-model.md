@@ -20,9 +20,28 @@
 ```
 
 Required fields: `slug`, `company.name`, `company.description`, `company.industry`
-Optional fields: `language`, `delivery_defaults`, `created`, `updated`
+Optional fields: `language`, `delivery_defaults`, `taxonomy`, `created`, `updated`
 
 The `language` field is a lowercase ISO 639-1 code (e.g., `"de"`, `"en"`, `"fr"`). If absent, defaults to `"en"`. It controls the language of all generated user-facing text content (descriptions, statements, messaging, proposals, briefs, profile text). JSON field names and slugs always remain in English.
+
+The `taxonomy` object (optional) adopts an industry-standard classification system for the portfolio. When set, features can be mapped to taxonomy categories, enabling coverage analysis and gap identification.
+
+```json
+{
+  "taxonomy": {
+    "type": "b2b-ict-portfolio",
+    "version": "3.7",
+    "dimensions": 8,
+    "categories": 57,
+    "source": "cogni-research/references/research-types/b2b-ict-portfolio.md"
+  }
+}
+```
+
+Currently supported taxonomy types:
+- `b2b-ict-portfolio` — 57 categories across 8 dimensions (0: Provider Profile, 1: Connectivity, 2: Security, 3: Digital Workplace, 4: Cloud, 5: Managed Infrastructure, 6: Application, 7: Consulting). Designed for B2B ICT service providers.
+
+When a taxonomy is set, the `/dashboard` skill shows a coverage heatmap (categories with/without mapped features) and the `/features` skill suggests taxonomy mappings for new features.
 
 The `delivery_defaults` object provides company-wide defaults for solution cost modeling:
 
@@ -92,11 +111,31 @@ A feature is market-independent. It describes what the product/service IS. Each 
 ```
 
 Required fields: `slug`, `product_slug`, `name`, `description`
-Optional fields: `category`, `readiness`, `source_file`, `created`, `updated`
+Optional fields: `category`, `readiness`, `taxonomy_mapping`, `source_file`, `created`, `updated`
 
 Valid `readiness` values: `ga` (generally available), `beta` (limited availability / pilot), `planned` (roadmap only, not yet built)
 
 The `category` field is a free-form label for grouping features (e.g., `"observability"`, `"integration"`, `"security"`). Categories are not constrained to a fixed vocabulary — validation will warn on categories used by only one feature to catch typos.
+
+The `taxonomy_mapping` object (optional) maps this feature to a category in the portfolio's taxonomy. Only relevant when `portfolio.json` has a `taxonomy` set.
+
+```json
+{
+  "taxonomy_mapping": {
+    "dimension": 4,
+    "dimension_name": "Cloud Services",
+    "category_id": "4.6",
+    "category_name": "Cloud-Native Platform",
+    "horizon": "current"
+  }
+}
+```
+
+- `dimension` (integer): Taxonomy dimension number (0-7 for b2b-ict-portfolio)
+- `dimension_name` (string): Human-readable dimension name
+- `category_id` (string): Taxonomy category ID (e.g., "4.6")
+- `category_name` (string): Human-readable category name
+- `horizon` (string, optional): `current` (GA, proven), `emerging` (pilot/beta), `future` (roadmap). Maps to the taxonomy's Service Horizons.
 
 ### markets/{slug}.json
 
