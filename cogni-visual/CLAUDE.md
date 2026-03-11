@@ -12,6 +12,7 @@ skills/              Intelligent transformation & rendering skills
   story-to-storyboard/ Multi-poster print storyboard brief from any narrative
   story-to-big-block/  Big Block solution architecture brief from TIPS value-modeler output
   render-big-picture/  Orchestrator skill — station-first pipeline (v4.2, 1100-1500 elements, dark/light mode)
+  render-big-block/    Orchestrator skill — sequential pipeline (v1.0, 150-250 elements, dark/light mode)
     references/
       color-palette.md             Single source of truth for all color/dark mode decisions
       element-templates.md         Banner, footer, prompt templates + pipeline data tables
@@ -22,6 +23,7 @@ skills/              Intelligent transformation & rendering skills
 
 commands/            User-facing slash commands
   render-big-picture.md  /render-big-picture — invoke the rendering pipeline
+  render-big-block.md    /render-big-block — invoke the Big Block rendering pipeline
 
 agents/              Autonomous rendering agents (brief -> output)
   story-to-slides.md   Orchestrates the story-to-slides skill
@@ -35,6 +37,7 @@ agents/              Autonomous rendering agents (brief -> output)
   story-to-web.md      Orchestrates the story-to-web skill
   web.md               Renders web briefs into .pen + HTML via Pencil MCP
   story-to-big-block.md   Orchestrates the story-to-big-block skill
+  big-block.md         Wrapper agent — delegates to render-big-block skill
   story-to-storyboard.md  Orchestrates the story-to-storyboard skill
   storyboard.md        Renders storyboard briefs into multi-poster .pen via Pencil MCP
 
@@ -57,9 +60,9 @@ libraries/           Shared reference material loaded at Step 1
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 6 | story-to-slides, story-to-big-picture, story-to-big-block, story-to-web, story-to-storyboard, render-big-picture |
-| Agents | 12 | story-to-slides, pptx, story-to-big-picture, big-picture (wrapper), story-to-big-block, station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard |
-| Commands | 1 | render-big-picture |
+| Skills | 7 | story-to-slides, story-to-big-picture, story-to-big-block, story-to-web, story-to-storyboard, render-big-picture, render-big-block |
+| Agents | 13 | story-to-slides, pptx, story-to-big-picture, big-picture (wrapper), story-to-big-block, big-block (wrapper), station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard |
+| Commands | 2 | render-big-picture, render-big-block |
 | Libraries | 12 | arc-taxonomy, cta-taxonomy, pptx-layouts, EXAMPLE_BRIEF, big-picture-layouts, EXAMPLE_BIG_PICTURE_BRIEF, big-block-layouts, EXAMPLE_BIG_BLOCK_BRIEF, web-layouts, EXAMPLE_WEB_BRIEF, storyboard-layouts, EXAMPLE_STORYBOARD_BRIEF |
 
 ## Big Picture Rendering Pipeline (v4.2 — Contrast, Inline Numbers, Bigger Title)
@@ -97,7 +100,7 @@ Key features:
 - **8 snapshot checkpoints**: full recovery at every iteration boundary
 - **Backward compatible**: renders v2.0 briefs by ignoring landscape_composition and shape_composition fields
 
-## Big Block Brief Pipeline (v1.0 — Solution Architecture Diagrams)
+## Big Block Pipeline (v1.0 — Solution Architecture Diagrams)
 
 The Big Block transforms TIPS value-modeler Phase 4 output into a structured solution architecture diagram:
 
@@ -116,7 +119,21 @@ tips-value-model.json + tips-big-block.md (Phase 4 output)
 │  Step 7: Validate and write brief                    │
 └──────────────────────────────────────────────────────┘
          ↓
-big-block-brief.md (v1.0) → future: Excalidraw rendering
+big-block-brief.md (v1.0)
+         ↓
+┌──────────────────────────────────────────────────────┐
+│ render-big-block SKILL (orchestrator v1.0)           │
+│  Phase 1: Parse brief, setup canvas (color mode)     │
+│  Phase 2: Title banner (dark bar + accent border)    │
+│  Phase 3: Tier bands (horizontal, Tier 1→4)          │
+│  Phase 4: Solution blocks (grid, BR-scored)          │
+│  Phase 5: Path connections (dashed bezier lines)     │
+│  Phase 6: SPI + Foundation cards                     │
+│  Phase 7: Roadmap timeline (Wave 1→3)                │
+│  Phase 8: Footer + export .excalidraw + URL          │
+└──────────────────────────────────────────────────────┘
+         ↓
+big-block.excalidraw (structured diagram, 150-250 elements)
 ```
 
 Key differences from Big Picture:
@@ -125,6 +142,7 @@ Key differences from Big Picture:
 - **Content:** Solution names, BR scores, portfolio mappings — not assertion headlines and body copy
 - **Connections:** TIPS path links between blocks, not spatial reading flow
 - **Sections:** SPIs, Foundations, Implementation Roadmap below the tier grid
+- **Rendering:** Sequential phases, no parallel worker agents (~150-250 elements vs 1100-1500)
 
 ## Pipeline Position
 
@@ -154,11 +172,11 @@ cogni-narrative -> cogni-copywriting -> cogni-visual
 
 ## Skill Differences
 
-| Aspect | story-to-slides | story-to-big-picture | story-to-big-block | render-big-picture | story-to-web | story-to-storyboard |
-|--------|----------------|---------------------|-------------------|-------------------|-------------|---------------------|
-| Input | Narrative (prose) | Narrative (prose) | Value-modeler (JSON) | Brief (v3.0) | Narrative (prose) | Narrative (prose) |
-| Output | Multi-slide YAML brief | Single-canvas scene brief (v3.0) | Solution architecture brief (v1.0) | .excalidraw illustrated scene | Scrollable section brief | Multi-poster print brief |
-| Renderer | PPTX skill | N/A (produces brief) | Future: Excalidraw MCP | Excalidraw MCP (station-first pipeline, N+N+4 agents) | Pencil MCP (web agent) | Pencil MCP (storyboard agent) |
-| Layout unit | Slide with layout type | Station as landscape object | Solution block in tier band | Station as 250+ element two-pass illustration | Section with auto-layout | Poster with 1-3 stacked sections |
-| Element count | N/A | N/A | N/A | 1100-1500 total (stations only) | N/A | N/A |
-| Quality review | N/A | 4-layer validation | 8-point schema validation | 9-gate zone-based review (4 parallel reviewers, up to 2 passes) | N/A | N/A |
+| Aspect | story-to-slides | story-to-big-picture | story-to-big-block | render-big-picture | render-big-block | story-to-web | story-to-storyboard |
+|--------|----------------|---------------------|-------------------|-------------------|-----------------|-------------|---------------------|
+| Input | Narrative (prose) | Narrative (prose) | Value-modeler (JSON) | Brief (v3.0) | Brief (v1.0) | Narrative (prose) | Narrative (prose) |
+| Output | Multi-slide YAML brief | Single-canvas scene brief (v3.0) | Solution architecture brief (v1.0) | .excalidraw illustrated scene | .excalidraw structured diagram | Scrollable section brief | Multi-poster print brief |
+| Renderer | PPTX skill | N/A (produces brief) | render-big-block | Excalidraw MCP (station-first, N+N+4 agents) | Excalidraw MCP (sequential, 8 phases) | Pencil MCP (web agent) | Pencil MCP (storyboard agent) |
+| Layout unit | Slide with layout type | Station as landscape object | Solution block in tier band | Station as 250+ element two-pass illustration | Solution block in tier grid | Section with auto-layout | Poster with 1-3 stacked sections |
+| Element count | N/A | N/A | N/A | 1100-1500 total (stations only) | 150-250 total | N/A | N/A |
+| Quality review | N/A | 4-layer validation | 8-point schema validation | 9-gate zone-based (4 parallel reviewers, 2 passes) | Snapshot checkpoints | N/A | N/A |
