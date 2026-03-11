@@ -1,42 +1,127 @@
 #!/bin/bash
-# Discover cogni-tips projects in the workspace.
-# Usage: discover-projects.sh [--json]
+# Discover cogni-tips projects in the workspace and project registry.
+# Usage: discover-projects.sh [--json] [--register <path>] [--unregister <path>]
 # Scans for tips-project.json and trend-scout-output.json under cogni-tips/ directories.
+# Also checks the project registry (~/.claude/cogni-tips-projects.json) for projects
+# created in other workspaces (e.g., OneDrive, external directories).
 # Returns one line per project (default) or a JSON array (--json).
 # Exit codes: 0 = success (even if 0 projects found)
 set -euo pipefail
 
 JSON_OUTPUT=false
-if [ "${1:-}" = "--json" ]; then
-  JSON_OUTPUT=true
+REGISTER_PATH=""
+UNREGISTER_PATH=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --json) JSON_OUTPUT=true; shift ;;
+    --register) REGISTER_PATH="$2"; shift 2 ;;
+    --unregister) UNREGISTER_PATH="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+
+# --- Project Registry ---
+REGISTRY_FILE="${HOME}/.claude/cogni-tips-projects.json"
+
+# Ensure registry directory exists
+mkdir -p "$(dirname "$REGISTRY_FILE")"
+
+# Initialize registry if missing
+if [ ! -f "$REGISTRY_FILE" ]; then
+  echo '{"projects":[]}' > "$REGISTRY_FILE"
 fi
 
+# Handle --register: add a project path to the registry
+if [ -n "$REGISTER_PATH" ]; then
+  # Resolve to absolute path
+  REGISTER_PATH="$(cd "$REGISTER_PATH" 2>/dev/null && pwd || echo "$REGISTER_PATH")"
+  python3 -c "
+import json, sys, os
+registry_file = sys.argv[1]
+new_path = sys.argv[2]
+try:
+    reg = json.load(open(registry_file))
+except Exception:
+    reg = {'projects': []}
+paths = [p['path'] for p in reg.get('projects', [])]
+if new_path not in paths:
+    reg['projects'].append({'path': new_path, 'registered': '$(date -u +"%Y-%m-%dT%H:%M:%SZ")'})
+    with open(registry_file, 'w') as f:
+        json.dump(reg, f, indent=2)
+    print(f'Registered: {new_path}')
+else:
+    print(f'Already registered: {new_path}')
+" "$REGISTRY_FILE" "$REGISTER_PATH"
+  exit 0
+fi
+
+# Handle --unregister: remove a project path from the registry
+if [ -n "$UNREGISTER_PATH" ]; then
+  UNREGISTER_PATH="$(cd "$UNREGISTER_PATH" 2>/dev/null && pwd || echo "$UNREGISTER_PATH")"
+  python3 -c "
+import json, sys
+registry_file = sys.argv[1]
+rm_path = sys.argv[2]
+try:
+    reg = json.load(open(registry_file))
+except Exception:
+    reg = {'projects': []}
+before = len(reg.get('projects', []))
+reg['projects'] = [p for p in reg.get('projects', []) if p['path'] != rm_path]
+after = len(reg['projects'])
+with open(registry_file, 'w') as f:
+    json.dump(reg, f, indent=2)
+print(f'Unregistered: {rm_path}' if before > after else f'Not found: {rm_path}')
+" "$REGISTRY_FILE" "$UNREGISTER_PATH"
+  exit 0
+fi
+
+# --- Discovery ---
 SEARCH_ROOT="${COGNI_WORKSPACE_ROOT:-$(pwd)}"
 
-# Find projects by tips-project.json (preferred) or trend-scout-output.json (fallback)
-declare -a PROJECT_DIRS=()
-
-# Method 1: tips-project.json in cogni-tips/*/
-while IFS= read -r f; do
-  dir="$(dirname "$f")"
-  PROJECT_DIRS+=("$dir")
-done < <(find "$SEARCH_ROOT" -maxdepth 4 -name "tips-project.json" -path "*/cogni-tips/*" 2>/dev/null || true)
-
-# Method 2: trend-scout-output.json (for projects without tips-project.json)
-while IFS= read -r f; do
-  dir="$(dirname "$(dirname "$f")")"  # go up from .metadata/
-  # Skip if already found via tips-project.json
-  already_found=false
+# Helper: add a directory to PROJECT_DIRS if not already present
+add_project_dir() {
+  local dir="$1"
   for existing in "${PROJECT_DIRS[@]+"${PROJECT_DIRS[@]}"}"; do
     if [ "$existing" = "$dir" ]; then
-      already_found=true
-      break
+      return 0
     fi
   done
-  if [ "$already_found" = false ]; then
-    PROJECT_DIRS+=("$dir")
-  fi
+  PROJECT_DIRS+=("$dir")
+}
+
+declare -a PROJECT_DIRS=()
+
+# Method 1: tips-project.json in cogni-tips/*/ (local workspace)
+while IFS= read -r f; do
+  dir="$(dirname "$f")"
+  add_project_dir "$dir"
+done < <(find "$SEARCH_ROOT" -maxdepth 4 -name "tips-project.json" -path "*/cogni-tips/*" 2>/dev/null || true)
+
+# Method 2: trend-scout-output.json fallback (local workspace)
+while IFS= read -r f; do
+  dir="$(dirname "$(dirname "$f")")"  # go up from .metadata/
+  add_project_dir "$dir"
 done < <(find "$SEARCH_ROOT" -maxdepth 5 -name "trend-scout-output.json" -path "*/cogni-tips/*/.metadata/*" 2>/dev/null || true)
+
+# Method 3: Project registry — include projects from other workspaces
+if [ -f "$REGISTRY_FILE" ]; then
+  while IFS= read -r reg_path; do
+    # Only include if the directory still exists and contains a valid project
+    if [ -d "$reg_path" ] && { [ -f "$reg_path/tips-project.json" ] || [ -f "$reg_path/.metadata/trend-scout-output.json" ]; }; then
+      add_project_dir "$reg_path"
+    fi
+  done < <(python3 -c "
+import json, sys
+try:
+    reg = json.load(open(sys.argv[1]))
+    for p in reg.get('projects', []):
+        print(p['path'])
+except Exception:
+    pass
+" "$REGISTRY_FILE" 2>/dev/null || true)
+fi
 
 if [ "$JSON_OUTPUT" = true ]; then
   python3 -c "

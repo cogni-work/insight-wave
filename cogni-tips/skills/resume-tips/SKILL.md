@@ -29,7 +29,17 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
 
 Returns JSON with `count` and `projects` array. Each project includes `path`, `slug`, `industry`, `subsector`, `research_topic`, `workflow_state`, `candidates_total`, and `has_report`.
 
-If `count` is 0, say so and suggest the `trend-scout` skill.
+The script searches:
+1. The current workspace (`$COGNI_WORKSPACE_ROOT` or `$PWD`) for `cogni-tips/*/tips-project.json`
+2. The global project registry (`~/.claude/cogni-tips-projects.json`) for projects created in other workspaces
+
+If `count` is 0:
+- First, ask the user if they have a project in a different directory (e.g., OneDrive, external workspace). If they provide a path, register it:
+  ```bash
+  bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --register "<path>"
+  ```
+  Then re-run discovery.
+- If no path is provided, suggest the `trend-scout` skill to start a new project.
 
 ### 2. Select Project
 

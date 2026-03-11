@@ -283,6 +283,26 @@ tips_source: $PROJECT_PATH/.metadata/trend-scout-output.json
 \`\`\`
 EOF
 
+# Register project in global registry for cross-workspace discovery
+REGISTRY_FILE="${HOME}/.claude/cogni-tips-projects.json"
+mkdir -p "$(dirname "$REGISTRY_FILE")"
+if [ ! -f "$REGISTRY_FILE" ]; then
+  echo '{"projects":[]}' > "$REGISTRY_FILE"
+fi
+python3 -c "
+import json, sys, os
+registry_file, new_path, ts = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    reg = json.load(open(registry_file))
+except Exception:
+    reg = {'projects': []}
+paths = [p['path'] for p in reg.get('projects', [])]
+if new_path not in paths:
+    reg['projects'].append({'path': new_path, 'registered': ts})
+    with open(registry_file, 'w') as f:
+        json.dump(reg, f, indent=2)
+" "$REGISTRY_FILE" "$PROJECT_PATH" "$CREATED_TIMESTAMP" 2>/dev/null || true
+
 # Return success
 if [[ "$JSON_OUTPUT" == true ]]; then
     jq -n \
