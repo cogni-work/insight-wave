@@ -1568,26 +1568,26 @@
           <div class="matrix-dim"><span class="dot dot-t"></span><span id="dT">External Effects</span></div>
           <div class="matrix-cell" data-dim="t" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
           <div class="matrix-cell" data-dim="t" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
-          <div class="matrix-cell" data-dim="t" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
-          <div class="matrix-total" data-dim="t">0/13</div>
+          <div class="matrix-cell" data-dim="t" data-h="obs"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-total" data-dim="t">0/15</div>
 
           <div class="matrix-dim"><span class="dot dot-p"></span><span id="dP">New Horizons</span></div>
           <div class="matrix-cell" data-dim="p" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
           <div class="matrix-cell" data-dim="p" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
-          <div class="matrix-cell" data-dim="p" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
-          <div class="matrix-total" data-dim="p">0/13</div>
+          <div class="matrix-cell" data-dim="p" data-h="obs"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-total" data-dim="p">0/15</div>
 
           <div class="matrix-dim"><span class="dot dot-i"></span><span id="dI">Digital Value Drivers</span></div>
           <div class="matrix-cell" data-dim="i" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
           <div class="matrix-cell" data-dim="i" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
-          <div class="matrix-cell" data-dim="i" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
-          <div class="matrix-total" data-dim="i">0/13</div>
+          <div class="matrix-cell" data-dim="i" data-h="obs"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-total" data-dim="i">0/15</div>
 
           <div class="matrix-dim"><span class="dot dot-s"></span><span id="dS">Digital Foundation</span></div>
           <div class="matrix-cell" data-dim="s" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
           <div class="matrix-cell" data-dim="s" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
-          <div class="matrix-cell" data-dim="s" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
-          <div class="matrix-total" data-dim="s">0/13</div>
+          <div class="matrix-cell" data-dim="s" data-h="obs"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-total" data-dim="s">0/15</div>
         </div>
       </div>
 
@@ -1599,11 +1599,11 @@
           </svg>
           <div class="ring-center">
             <span class="ring-number" id="totalCount">0</span>
-            <span class="ring-label">/ 52</span>
+            <span class="ring-label">/ 60</span>
           </div>
         </div>
         <div class="ring-info">
-          <div class="status-badge" id="statusBadge">Select 52 candidates</div>
+          <div class="status-badge" id="statusBadge">Select 60 candidates</div>
         </div>
       </div>
     </section>
@@ -1904,7 +1904,7 @@
       loadExternalData(function() {
         // Load selections from localStorage (restores previous session)
         var hasStoredSelections = loadSelectionsFromStorage();
-        // If no stored selections and not demo mode, pre-select top candidates per cell (5 ACT, 5 PLAN, 3 OBS)
+        // If no stored selections and not demo mode, pre-select top candidates per cell (5 ACT, 5 PLAN, 5 OBS)
         if (!hasStoredSelections && !isDemoMode) {
           preselectTopThree();
         }
@@ -1916,7 +1916,7 @@
       });
     });
 
-    // Pre-select top candidates per cell (5 ACT, 5 PLAN, 3 OBS) for smarter-service workflow
+    // Pre-select top candidates per cell (5 ACT, 5 PLAN, 5 OBS) for smarter-service workflow
     function preselectTopThree() {
       ['t', 'p', 'i', 's'].forEach(function(dim) {
         ['act', 'plan', 'obs'].forEach(function(h) {
@@ -2080,7 +2080,7 @@
       ];
 
       var html = '';
-      var maxCounts = {act: 5, plan: 5, obs: 3};
+      var maxCounts = {act: 5, plan: 5, obs: 5};
       horizons.forEach(function(h) {
         var items = DATA[currentDim][h.key];
         var selected = sel[currentDim][h.key];
@@ -2216,7 +2216,7 @@
     }
 
     function toggleSel(id, h) {
-      var maxCounts = {act: 5, plan: 5, obs: 3};
+      var maxCounts = {act: 5, plan: 5, obs: 5};
       var arr = sel[currentDim][h];
       var idx = arr.indexOf(id);
       if (idx > -1) {
@@ -2236,7 +2236,7 @@
 
       ['t','p','i','s'].forEach(function(d) {
         var dimTotal = 0;
-        var expectedCounts = {act: 5, plan: 5, obs: 3};
+        var expectedCounts = {act: 5, plan: 5, obs: 5};
         ['act','plan','obs'].forEach(function(h) {
           var cnt = sel[d][h].length;
           var expected = expectedCounts[h];
@@ -2259,7 +2259,7 @@
           }
         });
         var totalCell = document.querySelector('.matrix-total[data-dim="'+d+'"]');
-        if (totalCell) totalCell.textContent = dimTotal + '/13';
+        if (totalCell) totalCell.textContent = dimTotal + '/15';
         total += dimTotal;
       });
 
@@ -2267,16 +2267,16 @@
 
       var circle = document.querySelector('.ring-progress');
       var circumference = 2 * Math.PI * 34; // radius = 34px
-      var offset = circumference - (total / 52) * circumference;
+      var offset = circumference - (total / 60) * circumference;
       circle.style.strokeDashoffset = offset;
 
       var badge = document.getElementById('statusBadge');
-      if (total >= 52 && allValid) {
+      if (total >= 60 && allValid) {
         badge.className = 'status-badge ready';
         badge.textContent = L.ready;
       } else {
         badge.className = 'status-badge';
-        badge.textContent = L.selectMore.replace('{n}', 52 - total);
+        badge.textContent = L.selectMore.replace('{n}', 60 - total);
       }
     }
 
@@ -2287,7 +2287,7 @@
       var total = 0;
       var allValid = true;
 
-      var expectedCounts = {act: 5, plan: 5, obs: 3};
+      var expectedCounts = {act: 5, plan: 5, obs: 5};
       ['t','p','i','s'].forEach(function(d) {
         ['act','plan','obs'].forEach(function(h) {
           var cnt = sel[d][h].length;
@@ -2296,8 +2296,8 @@
         });
       });
 
-      btn.disabled = !(total >= 52 && allValid);
-      btn.classList.toggle('ready', total >= 52 && allValid);
+      btn.disabled = !(total >= 60 && allValid);
+      btn.classList.toggle('ready', total >= 60 && allValid);
     }
 
     function addProposal() {
@@ -2447,7 +2447,7 @@
         selection_summary: {
           total_selected: selectedItems.length,
           total_proposals: userProposals.length,
-          complete: selectedItems.length >= 52,
+          complete: selectedItems.length >= 60,
           by_dimension: {
             t: sel.t.act.length + sel.t.plan.length + sel.t.obs.length,
             p: sel.p.act.length + sel.p.plan.length + sel.p.obs.length,
