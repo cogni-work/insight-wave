@@ -33,7 +33,7 @@ The `taxonomy` object (optional) adopts an industry-standard classification syst
     "version": "3.7",
     "dimensions": 8,
     "categories": 57,
-    "source": "cogni-research/references/research-types/b2b-ict-portfolio.md"
+    "source": "cogni-tips/references/taxonomies/b2b-ict-portfolio.md"
   }
 }
 ```

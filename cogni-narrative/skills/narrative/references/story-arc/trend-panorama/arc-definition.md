@@ -20,7 +20,7 @@
 
 ## TIPS Dimension Mapping
 
-This arc is purpose-built for cogni-research trend-scout output. Each element maps to one TIPS dimension:
+This arc is purpose-built for cogni-tips trend-scout output. Each element maps to one TIPS dimension:
 
 | Element | TIPS Letter | Dimension Slug | Dimension Name (EN) | Dimension Name (DE) |
 |---------|-------------|----------------|---------------------|---------------------|

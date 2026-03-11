@@ -14,7 +14,7 @@ The ClaimEntity schema defines the data model for the cogni-claims cross-plugin 
   "statement": "The global AI market is expected to reach $1.8 trillion by 2030.",
   "source_url": "https://example.com/ai-report",
   "source_title": "AI Market Forecast 2024-2030",
-  "submitted_by": "cogni-research",
+  "submitted_by": "cogni-tips",
   "submitted_at": "2026-02-23T14:30:00Z",
   "status": "unverified",
   "verified_at": null,
@@ -33,7 +33,7 @@ The ClaimEntity schema defines the data model for the cogni-claims cross-plugin 
 | `statement` | string | yes | The claim text to verify |
 | `source_url` | string | yes | URL of the cited source |
 | `source_title` | string | yes | Human-readable title of the source |
-| `submitted_by` | string | yes | Plugin name that submitted the claim (e.g., `cogni-research`, `cogni-portfolio`, `user`) |
+| `submitted_by` | string | yes | Plugin name that submitted the claim (e.g., `cogni-tips`, `cogni-portfolio`, `user`) |
 | `submitted_at` | string | auto | ISO 8601 timestamp of submission |
 | `status` | enum | auto | One of: `unverified`, `verified`, `deviated`, `source_unavailable`, `resolved` |
 | `verified_at` | string\|null | auto | ISO 8601 timestamp of last verification attempt |
@@ -157,7 +157,7 @@ For submitting multiple claims at once:
       "source_title": "Source Title 1"
     }
   ],
-  "submitted_by": "cogni-research"
+  "submitted_by": "cogni-tips"
 }
 ```
 

@@ -1,7 +1,7 @@
 # cogni-works Ecosystem Roadmap
 
 > Based on patent WO2018046399A1 vision, cogni-tips value-modeler implementation,
-> b2b-ict-portfolio taxonomy from cogni-research, and cross-plugin integration analysis.
+> b2b-ict-portfolio taxonomy from cogni-tips, and cross-plugin integration analysis.
 >
 > Created: 2026-03-11 | Last updated: 2026-03-11
 

@@ -19,7 +19,7 @@ The key insight behind this system is that LLM-generated content often cites sou
 
 ## What this skill does NOT do
 
-- **Generate claims** — that's the submitting plugin's job (e.g., cogni-research, cogni-portfolio)
+- **Generate claims** — that's the submitting plugin's job (e.g., cogni-tips, cogni-portfolio)
 - **Make editorial decisions** — the user always has final say on how to handle deviations
 - **Present findings as verdicts** — deviation detection is LLM-based, so findings are assessments for the user to review, not definitive judgments
 

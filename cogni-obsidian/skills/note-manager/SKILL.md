@@ -29,7 +29,7 @@ source: plugin-name
 
 **Optional:**
 - `tags` (list) — for Obsidian search and graph view
-- `source` (string) — which plugin created the note (e.g., "cogni-research", "cogni-narrative")
+- `source` (string) — which plugin created the note (e.g., "cogni-tips", "cogni-narrative")
 - `status` (string) — workflow state: draft, review, or final
 - `related` (list) — paths to related notes
 
@@ -60,7 +60,7 @@ date: 2026-03-01
 tags:
   - research
   - market-analysis
-source: cogni-research
+source: cogni-tips
 status: final
 ---
 
@@ -74,7 +74,7 @@ Research findings...
 Use **kebab-case** filenames: `meeting-notes-q1-review.md`, `market-analysis-dach.md`. For daily notes, prefix with the date: `2026-03-01-daily-standup.md`.
 
 Place files according to vault structure:
-- Plugin output goes in the plugin's directory (e.g., `cogni-research/findings/`)
+- Plugin output goes in the plugin's directory (e.g., `cogni-tips/findings/`)
 - General notes go in the vault root or a user-specified folder
 - Check for existing files before writing to avoid accidental overwrites
 

@@ -199,45 +199,40 @@ Ask the user to:
 
 ---
 
-## Module 4: TIPS Selection — Curating Candidates
+## Module 4: Reviewing Scored Candidates
 
 ### Theory (3 min)
 
-After scouting generates ~60 candidates, the **tips-selection** skill helps
-curate them down to the final set for reporting.
+The trend-scout skill generates 60 scored candidates that are automatically
+finalized for downstream reporting. While all 60 candidates proceed, reviewing
+them builds your understanding of the trend landscape.
 
-**Selection process**:
-1. Review candidates organized by Trendradar dimension
-2. Each candidate shows: name, TIPS expansion, scores, horizon
-3. Select "agree" or "disagree" for each candidate
-4. Aim for ~52 curated candidates across all dimensions
-
-**What to look for when selecting**:
+**What to look for when reviewing**:
 - **Relevance**: Does this trend matter for the specific client/industry?
 - **Evidence strength**: Are the Ansoff/Rogers/CRAAP scores solid?
 - **Balance**: Are all 4 dimensions and 3 horizons represented?
-- **Differentiation**: Does this add unique insight, or is it redundant?
+- **Source mix**: Is there a healthy balance of web-sourced vs. training-sourced candidates?
 
-**The consultant's judgment matters**: The AI generates candidates, but the
-consultant's industry knowledge and client context determine what makes the cut.
-This is where your expertise adds the most value.
+**The consultant's judgment matters**: While all 60 candidates proceed to
+reporting, understanding them helps you contextualize the final report for
+your client. This is where your expertise adds the most value.
 
 ### Demo
 
-Walk through the selection process:
+Walk through the candidate review:
 1. Show a batch of trend candidates for one dimension
 2. Walk through evaluating 3-4 candidates:
    - Check scores, read TIPS expansion
-   - Decide agree/disagree with reasoning
-3. Show how selections distribute across horizons
-4. Explain the target: balanced coverage across the Trendradar
+   - Assess source quality and signal intensity
+3. Show how candidates distribute across horizons
+4. Explain the scoring frameworks (Ansoff, Rogers, CRAAP)
 
 ### Exercise
 
 If the trend scout from Module 3 has produced candidates:
 1. Review the first batch of candidates together
-2. Select 3 candidates: agree on 2, disagree on 1
-3. Discuss reasoning for each decision
+2. Identify the 3 strongest and 3 weakest candidates by score
+3. Discuss what makes a candidate strong or weak
 
 If the scout is still running:
 1. Use sample candidate data to practice evaluation
@@ -245,21 +240,21 @@ If the scout is still running:
 
 ### Quiz
 
-1. **Multiple choice**: How many curated candidates does a typical selection target?
+1. **Multiple choice**: How many trend candidates does trend-scout generate?
    - a) 10
    - b) 25
-   - c) 52
+   - c) 60
    - d) 100
    **Answer**: c
 
-2. **Open-ended**: Why is consultant judgment essential during TIPS selection, even though AI generates the candidates?
+2. **Open-ended**: Why is reviewing candidates important even though all 60 proceed to reporting?
 
 ### Recap
 
-- Selection curates ~60 candidates down to ~52 agreed trends
-- Evaluate by relevance, evidence, balance, differentiation
-- Your expertise + AI research = better results than either alone
-- Agreed candidates feed into the reporting phase (Course 5)
+- Trend-scout generates 60 scored candidates across the Trendradar
+- All 60 candidates are finalized for downstream reporting
+- Reviewing builds understanding for client contextualization
+- Scored candidates feed into the reporting phase (Course 5)
 
 ---
 
@@ -272,7 +267,7 @@ The complete cogni-tips pipeline spans two courses:
 **Course 4 (this course)**:
 ```
 Industry → Web Research (32 searches) → Signal Aggregation →
-60 Candidates → TIPS Selection → ~52 Agreed Trends
+60 Scored Candidates → Auto-Finalized for Reporting
 ```
 
 **Course 5 (next course)**:
@@ -290,7 +285,7 @@ Claims Extraction → Verification → Final Report
 **Time investment**: A full trend scouting cycle takes significant Cowork time
 (research phase can run 30+ minutes). Plan accordingly:
 - Start the scout early, let it run while doing other work
-- Selection requires focused attention (~30 min for 60 candidates)
+- Review candidates to build understanding of the trend landscape
 - Reporting is covered in Course 5
 
 ### Demo
@@ -316,16 +311,16 @@ Ask the user to:
 
 2. **Multiple choice**: What feeds into the trend-report phase (Course 5)?
    - a) Raw web search results
-   - b) All 60 generated candidates
-   - c) The ~52 agreed (selected) trend candidates
+   - b) All 60 scored trend candidates
+   - c) Only high-confidence candidates
    - d) Only "Act" horizon trends
-   **Answer**: c
+   **Answer**: b
 
 ### Recap
 
-- Full pipeline: Scout → Select → Report → Verify
+- Full pipeline: Scout → Report → Verify
 - Integration with narrative, claims, copywriting, visual
-- Research runs autonomously; selection needs your expertise
+- Research runs autonomously; review builds understanding
 - Course 5 covers the reporting and verification phases
 
 ---
@@ -336,7 +331,7 @@ Congratulations! You now understand:
 - The TIPS framework (Trends → Implications → Possibilities → Solutions)
 - The Smarter Service Trendradar (4 dimensions, 3 horizons)
 - How to launch and monitor a trend scout
-- How to curate candidates during TIPS selection
+- How to review scored candidates for client context
 - The full pipeline and where your expertise fits
 
 **Next recommended course**: Course 5 — Trend Reporting

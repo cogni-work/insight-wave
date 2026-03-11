@@ -283,7 +283,7 @@ Currently supported template:
 
 | Template | Source | Categories |
 |----------|--------|-----------|
-| `b2b-ict-portfolio` | cogni-research | 57 categories across 8 dimensions (0-7) |
+| `b2b-ict-portfolio` | cogni-tips | 57 categories across 8 dimensions (0-7) |
 
 When a taxonomy is loaded, the catalog gains:
 - A `taxonomy_template` field in `catalog.json` pointing to the template

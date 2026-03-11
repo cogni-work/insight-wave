@@ -264,7 +264,7 @@ Each element has a word target range in the technique map. Polishing should not 
 
 ## Integration Pattern
 
-When cogni-narrative or cogni-research invokes the copywriter with arc preservation, the task prompt will contain a constraints block like this:
+When cogni-narrative invokes the copywriter with arc preservation, the task prompt will contain a constraints block like this:
 
 ```text
 CRITICAL PRESERVATION REQUIREMENTS:
@@ -287,4 +287,4 @@ When you see this pattern, activate arc-aware mode immediately. Do not re-run th
 
 - Arc technique map: `references/09-preservation-modes/arc-technique-map.md`
 - cogni-narrative: Creates the story arc narratives that this mode polishes
-- cogni-research create-insight: May invoke copywriter with arc preservation constraints
+- cogni-tips: May invoke copywriter with arc preservation constraints via trend-report

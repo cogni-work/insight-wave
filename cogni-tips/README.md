@@ -43,11 +43,10 @@ This plugin automates the research-heavy parts while keeping strategic judgment 
 
 ## What it does
 
-A three-stage pipeline for DACH-focused trend intelligence: scout trends across an industry using the Trendradar dimensions, select the most relevant candidates, and generate a TIPS-structured narrative report with web-sourced quantitative evidence and inline citations. Bilingual research (EN/DE) with curated German institutional sources.
+A two-stage pipeline for DACH-focused trend intelligence: scout trends across an industry using the Trendradar dimensions with multi-framework scoring, and generate a TIPS-structured narrative report with web-sourced quantitative evidence and inline citations. Bilingual research (EN/DE) with curated German institutional sources.
 
-1. **Scout** trends across 4 Trendradar dimensions with bilingual web research (32 searches + academic, patent, and regulatory API queries)
-2. **Select** from scored candidates using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality)
-3. **Report** with 4 parallel agents enriching each dimension with quantitative evidence, producing a narrative report with inline citations and a verifiable claims registry
+1. **Scout** trends across 4 Trendradar dimensions with bilingual web research (32 searches + academic, patent, and regulatory API queries), scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality)
+2. **Report** with 4 parallel agents enriching each dimension with quantitative evidence, producing a narrative report with inline citations and a verifiable claims registry
 
 ## What it means for you
 
@@ -79,13 +78,12 @@ Or invoke skills directly:
 
 ```
 trend-scout    → interactive industry selection + trend scouting
-tips-selection → candidate generation across Trendradar dimensions
 trend-report   → narrative report from agreed candidates
 ```
 
 ## How it works
 
-**trend-scout** initializes a research project, dispatches a **trend-web-researcher** agent for bilingual web research (32 queries + API sources), then a **trend-generator** agent to produce scored candidates using extended thinking. You review and select candidates through an interactive workflow or visual selector app.
+**trend-scout** initializes a research project, dispatches a **trend-web-researcher** agent for bilingual web research (32 queries + API sources), then a **trend-generator** agent to produce 60 scored candidates using extended thinking. All candidates are finalized automatically for downstream reporting.
 
 **trend-report** reads agreed candidates and dispatches 4 parallel **trend-report-writer** agents (one per Trendradar dimension). Each agent enriches trends with web-sourced quantitative evidence, writes a TIPS-structured narrative section, and extracts verifiable claims. The skill assembles the final report with executive summary, portfolio analysis, and claims registry.
 
@@ -94,7 +92,6 @@ trend-report   → narrative report from agreed candidates
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `trend-scout` | skill | End-to-end trend scouting with industry selection and bilingual research |
-| `tips-selection` | skill | Candidate generation (60 trends across 4 dimensions and 3 horizons) |
 | `trend-report` | skill | Narrative report generation with evidence enrichment and claims extraction |
 | `trend-web-researcher` | agent | Executes 32 bilingual web searches + API queries, returns aggregated signals |
 | `trend-generator` | agent | Generates scored trend candidates using multi-framework analysis (Opus) |
@@ -111,9 +108,8 @@ trend-report   → narrative report from agreed candidates
 ```
 cogni-tips/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       3 trend intelligence skills
+├── skills/                       Trend intelligence skills
 │   ├── trend-scout/
-│   ├── tips-selection/
 │   └── trend-report/
 ├── agents/                       3 research agents
 │   ├── trend-web-researcher.md

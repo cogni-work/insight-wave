@@ -84,7 +84,7 @@ Complete lifecycle history for a single claim, recording every state transition.
     {
       "event": "submitted",
       "timestamp": "2026-02-23T14:30:00Z",
-      "data": { "statement": "...", "source_url": "...", "submitted_by": "cogni-research" }
+      "data": { "statement": "...", "source_url": "...", "submitted_by": "cogni-tips" }
     },
     {
       "event": "verified",

@@ -58,7 +58,7 @@ Research on the Amstad (1978) formula shows German business writing typically sc
   - Arc detection logic: YAML frontmatter `arc_id`, pattern matching against known arc heading patterns
   - Structure preservation rules: FORBIDDEN vs ALLOWED modifications with arc-aware nuance
   - Technique-aware validation: verifies element techniques survived polishing
-  - Integration patterns for cogni-narrative and cogni-research
+  - Integration patterns for cogni-narrative and cogni-tips
   - Localization support (EN/DE heading variants)
 
 #### Enhanced SKILL.md Workflow

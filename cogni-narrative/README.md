@@ -81,7 +81,7 @@ For enhanced workflows, connect complementary plugins:
 
 ### Research Input
 
-Connect a research plugin (e.g., cogni-research) to generate structured syntheses that serve as narrative input.
+Connect a research plugin (e.g., cogni-tips) to generate structured syntheses that serve as narrative input.
 
 ### Visual Output
 
