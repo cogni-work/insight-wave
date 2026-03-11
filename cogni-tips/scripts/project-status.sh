@@ -155,6 +155,8 @@ HAS_REPORT="false"
 HAS_CLAIMS="false"
 HAS_INSIGHT="false"
 HAS_VERIFICATION="false"
+HAS_COPYWRITER="false"
+COPYWRITER_SCOPE=""
 CLAIMS_TOTAL=0
 
 [ -f "$PROJECT_DIR/.logs/web-research-raw.json" ] && HAS_WEB_RESEARCH="true"
@@ -191,6 +193,21 @@ try:
     print(f'VERIFICATION_PASSED={d.get(\"passed\", 0)}')
     print(f'VERIFICATION_FAILED={d.get(\"failed\", 0)}')
     print(f'VERIFICATION_REVIEW={d.get(\"review\", 0)}')
+except Exception:
+    pass
+" 2>/dev/null)"
+fi
+
+# Check for copywriter metadata in trend-scout-output.json
+if [ -f "$SCOUT_OUTPUT" ]; then
+  eval "$(python3 -c "
+import json
+try:
+    d = json.load(open('$SCOUT_OUTPUT'))
+    meta = d.get('metadata', {})
+    if meta.get('copywriter_applied'):
+        print('HAS_COPYWRITER=true')
+        print(f'COPYWRITER_SCOPE={chr(39)}{meta.get(\"copywriter_scope\", \"\")}{chr(39)}')
 except Exception:
     pass
 " 2>/dev/null)"
@@ -388,7 +405,9 @@ cat << EOF
     "report": $HAS_REPORT,
     "claims": $HAS_CLAIMS,
     "insight_summary": $HAS_INSIGHT,
-    "verification": $HAS_VERIFICATION
+    "verification": $HAS_VERIFICATION,
+    "copywriter_applied": $HAS_COPYWRITER,
+    "copywriter_scope": "$COPYWRITER_SCOPE"
   },
   "web_research_status": "$WEB_RESEARCH_STATUS",
   "workflow_state": "$WORKFLOW_STATE",

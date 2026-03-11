@@ -76,6 +76,7 @@ Language: {language}
 | Claims Registry | Done / Pending | {claims_total} claims extracted |
 | Insight Summary | Done / Skipped | |
 | Claim Verification | Done / Pending / Skipped | {verdict}: {passed} passed, {failed} failed |
+| Executive Polish | Done / Skipped | tone (cogni-copywriting) |
 
 **Scoring Summary** (if candidates exist):
 - Average score: {avg_score}
