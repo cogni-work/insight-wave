@@ -116,11 +116,11 @@ This is the patent's "specific diagram of industry solutions" — the key custom
 
 **Plugin:** cogni-visual | **Effort:** Low | **Depends on:** value-modeler (complete)
 
-- [ ] Design big-block-brief.md format (structured brief from Phase 4 output)
-- [ ] Create `story-to-big-block` skill or extend existing big-picture skill
-- [ ] Solution categories as visual blocks, color-coded by BR tier
-- [ ] TIPS path connections shown as links between blocks
-- [ ] Excalidraw and/or PPTX output
+- [x] Design big-block-brief.md format (structured brief from Phase 4 output)
+- [x] Create `story-to-big-block` skill with dedicated SKILL.md (data-to-visual, not narrative-to-visual)
+- [x] Solution categories as visual blocks, color-coded by BR tier (big-block-layouts.md)
+- [x] TIPS path connections shown as links between blocks (connection routing spec)
+- [~] Excalidraw and/or PPTX output (brief format ready, render-big-block agent future work)
 
 ---
 
@@ -157,7 +157,7 @@ The bridge skill resolves references at runtime. Loose coupling, independent evo
 | Industry catalog inheritance | Fig.4 | catalog skill + b2b-ict/general | Complete |
 | Product portfolio mapping | Fig.1 | portfolio_mapping field | Partial |
 | Bidirectional portfolio flow | Fig.1 | — | P1.2 |
-| Big Block diagram (visual) | Fig.3 | markdown only | P2.4 |
+| Big Block diagram (visual) | Fig.3 | story-to-big-block skill + brief format v1.0 | Complete (brief); Rendering: Future |
 | Solution Process Improvements | Fig.3 | value-modeler Phase 2 SPIs | Complete |
 | Metrics | Fig.3 | value-modeler Phase 2 | Complete |
 | Collaterals | Fig.3 | value-modeler Phase 2 | Complete |
@@ -175,3 +175,4 @@ The bridge skill resolves references at runtime. Loose coupling, independent evo
 | 2026-03-11 | P2.3: Added taxonomy support to data-model.md (portfolio.json taxonomy, feature taxonomy_mapping, horizon), imported b2b-ict-portfolio taxonomy |
 | 2026-03-11 | P1.1: Initialized first catalog (b2b-ict/general) with taxonomy_template from b2b-ict-portfolio v3.7 |
 | 2026-03-11 | P2.3: Added taxonomy coverage heatmap + gap analysis to dashboard, taxonomy validation to validate-entities.sh |
+| 2026-03-11 | P2.4: Created story-to-big-block skill + agent, big-block-brief.md format v1.0, big-block-layouts.md, EXAMPLE_BIG_BLOCK_BRIEF.md, cogni-visual v1.3.0 |

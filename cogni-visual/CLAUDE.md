@@ -1,6 +1,6 @@
 # cogni-visual
 
-Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets.
+Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, big picture journey maps, Big Block solution architecture diagrams, scrollable web narratives, poster storyboards, and visual assets.
 
 ## Plugin Architecture
 
@@ -10,6 +10,7 @@ skills/              Intelligent transformation & rendering skills
   story-to-big-picture/ Single-canvas visual journey map brief from any narrative
   story-to-web/        Scrollable landing-page-style web brief from any narrative
   story-to-storyboard/ Multi-poster print storyboard brief from any narrative
+  story-to-big-block/  Big Block solution architecture brief from TIPS value-modeler output
   render-big-picture/  Orchestrator skill — station-first pipeline (v4.2, 1100-1500 elements, dark/light mode)
     references/
       color-palette.md             Single source of truth for all color/dark mode decisions
@@ -33,6 +34,7 @@ agents/              Autonomous rendering agents (brief -> output)
   zone-reviewer.md     Worker agent — reviews and corrects one 1/4 zone of canvas
   story-to-web.md      Orchestrates the story-to-web skill
   web.md               Renders web briefs into .pen + HTML via Pencil MCP
+  story-to-big-block.md   Orchestrates the story-to-big-block skill
   story-to-storyboard.md  Orchestrates the story-to-storyboard skill
   storyboard.md        Renders storyboard briefs into multi-poster .pen via Pencil MCP
 
@@ -46,6 +48,8 @@ libraries/           Shared reference material loaded at Step 1
   EXAMPLE_WEB_BRIEF.md     Reference web narrative brief
   storyboard-layouts.md    Poster composition model, section stacking, portrait adaptations, print constraints
   EXAMPLE_STORYBOARD_BRIEF.md  Reference storyboard brief (4-poster, stacked web sections)
+  big-block-layouts.md     Block sizing, tier bands, connection routing, SPI/foundation sections
+  EXAMPLE_BIG_BLOCK_BRIEF.md   Reference Big Block brief (9 solutions, 4 tiers, manufacturing)
   cta-taxonomy.md          CTA types, urgency levels, arc-to-CTA heuristics (all skills)
 ```
 
@@ -53,10 +57,10 @@ libraries/           Shared reference material loaded at Step 1
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 5 | story-to-slides, story-to-big-picture, story-to-web, story-to-storyboard, render-big-picture |
-| Agents | 11 | story-to-slides, pptx, story-to-big-picture, big-picture (wrapper), station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard |
+| Skills | 6 | story-to-slides, story-to-big-picture, story-to-big-block, story-to-web, story-to-storyboard, render-big-picture |
+| Agents | 12 | story-to-slides, pptx, story-to-big-picture, big-picture (wrapper), story-to-big-block, station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard |
 | Commands | 1 | render-big-picture |
-| Libraries | 10 | arc-taxonomy, cta-taxonomy, pptx-layouts, EXAMPLE_BRIEF, big-picture-layouts, EXAMPLE_BIG_PICTURE_BRIEF, web-layouts, EXAMPLE_WEB_BRIEF, storyboard-layouts, EXAMPLE_STORYBOARD_BRIEF |
+| Libraries | 12 | arc-taxonomy, cta-taxonomy, pptx-layouts, EXAMPLE_BRIEF, big-picture-layouts, EXAMPLE_BIG_PICTURE_BRIEF, big-block-layouts, EXAMPLE_BIG_BLOCK_BRIEF, web-layouts, EXAMPLE_WEB_BRIEF, storyboard-layouts, EXAMPLE_STORYBOARD_BRIEF |
 
 ## Big Picture Rendering Pipeline (v4.2 — Contrast, Inline Numbers, Bigger Title)
 
@@ -93,6 +97,35 @@ Key features:
 - **8 snapshot checkpoints**: full recovery at every iteration boundary
 - **Backward compatible**: renders v2.0 briefs by ignoring landscape_composition and shape_composition fields
 
+## Big Block Brief Pipeline (v1.0 — Solution Architecture Diagrams)
+
+The Big Block transforms TIPS value-modeler Phase 4 output into a structured solution architecture diagram:
+
+```
+tips-value-model.json + tips-big-block.md (Phase 4 output)
+         ↓
+┌──────────────────────────────────────────────────────┐
+│ story-to-big-block SKILL (v1.0)                      │
+│  Step 0: Auto-discover value-modeler output          │
+│  Step 1: Parse JSON — solutions, paths, SPIs         │
+│  Step 2: Classify into BR tiers (1-4)                │
+│  Step 3: Map path connections between blocks         │
+│  Step 4: Assign implementation waves (1-3)           │
+│  Step 5: Extract SPIs and foundations                │
+│  Step 6: Preview and confirm                         │
+│  Step 7: Validate and write brief                    │
+└──────────────────────────────────────────────────────┘
+         ↓
+big-block-brief.md (v1.0) → future: Excalidraw rendering
+```
+
+Key differences from Big Picture:
+- **Input:** Structured data (JSON) not narratives (prose)
+- **Layout:** Tier-based grid with solution blocks, not landscape journey map
+- **Content:** Solution names, BR scores, portfolio mappings — not assertion headlines and body copy
+- **Connections:** TIPS path links between blocks, not spatial reading flow
+- **Sections:** SPIs, Foundations, Implementation Roadmap below the tier grid
+
 ## Pipeline Position
 
 ```
@@ -100,7 +133,8 @@ cogni-narrative -> cogni-copywriting -> cogni-visual
 (compose)         (polish)            (visualize)
 ```
 
-- **Upstream:** Narratives from cogni-narrative, polished by cogni-copywriting
+- **Upstream (narrative skills):** Narratives from cogni-narrative, polished by cogni-copywriting
+- **Upstream (big-block):** TIPS value-modeler Phase 4 output from cogni-tips
 - **External:** Themes from cogni-workspace (`/cogni-workspace/themes/{id}/theme.md`)
 - **Downstream:** `document-skills:pptx` renders slide briefs; Excalidraw MCP renders big-picture briefs; Pencil MCP renders web and storyboard briefs
 - **Web HTML export:** Web agent reads rendered .pen design tree to generate self-contained HTML + integration manifest for `export-html-report` landing page overlay
@@ -108,7 +142,8 @@ cogni-narrative -> cogni-copywriting -> cogni-visual
 ## Key Conventions
 
 - **Briefs are YAML frontmatter + Markdown.** Frontmatter holds metadata (type, version, theme, arc_type, arc_id, confidence_score). Body holds the content specification.
-- **Unified arc taxonomy.** All four skills read `arc_id` from narrative frontmatter, map to visual `arc_type` via `libraries/arc-taxonomy.md` (6 narrative arcs → 5 visual arc types), and optionally load arc element names for labeling (station labels, section labels, arc labels, methodology phases).
+- **Big Block = data-driven grid, not narrative landscape.** story-to-big-block reads structured JSON from the TIPS value-modeler (not narratives). Solution blocks are organized by BR tier in horizontal bands. TIPS path connections link blocks that share trend-implication-possibility paths. SPIs and Foundations appear below the tier grid. No arc taxonomy, no story worlds, no copywriting — the data IS the content.
+- **Unified arc taxonomy.** All four narrative skills read `arc_id` from narrative frontmatter, map to visual `arc_type` via `libraries/arc-taxonomy.md` (6 narrative arcs → 5 visual arc types), and optionally load arc element names for labeling (station labels, section labels, arc labels, methodology phases).
 - **Agent responses are JSON-only.** Agents return structured JSON; no prose.
 - **Assertion headlines.** Every slide title, station headline, section headline, and poster headline must be an assertion (contains a verb), not a topic label.
 - **Number plays.** Statistics are reframed for visual impact (ratio framing, hero number isolation, before/after contrast).
@@ -119,10 +154,11 @@ cogni-narrative -> cogni-copywriting -> cogni-visual
 
 ## Skill Differences
 
-| Aspect | story-to-slides | story-to-big-picture | render-big-picture | story-to-web | story-to-storyboard |
-|--------|----------------|---------------------|-------------------|-------------|---------------------|
-| Output | Multi-slide YAML brief | Single-canvas scene brief (v3.0) | .excalidraw illustrated scene | Scrollable section brief | Multi-poster print brief |
-| Renderer | PPTX skill | N/A (produces brief) | Excalidraw MCP (station-first pipeline, N+N+4 agents) | Pencil MCP (web agent) | Pencil MCP (storyboard agent) |
-| Layout unit | Slide with layout type | Station as landscape object | Station as 250+ element two-pass illustration | Section with auto-layout | Poster with 1-3 stacked sections |
-| Element count | N/A | N/A | 1100-1500 total (stations only) | N/A | N/A |
-| Quality review | N/A | 4-layer validation | 9-gate zone-based review (4 parallel reviewers, up to 2 passes) | N/A | N/A |
+| Aspect | story-to-slides | story-to-big-picture | story-to-big-block | render-big-picture | story-to-web | story-to-storyboard |
+|--------|----------------|---------------------|-------------------|-------------------|-------------|---------------------|
+| Input | Narrative (prose) | Narrative (prose) | Value-modeler (JSON) | Brief (v3.0) | Narrative (prose) | Narrative (prose) |
+| Output | Multi-slide YAML brief | Single-canvas scene brief (v3.0) | Solution architecture brief (v1.0) | .excalidraw illustrated scene | Scrollable section brief | Multi-poster print brief |
+| Renderer | PPTX skill | N/A (produces brief) | Future: Excalidraw MCP | Excalidraw MCP (station-first pipeline, N+N+4 agents) | Pencil MCP (web agent) | Pencil MCP (storyboard agent) |
+| Layout unit | Slide with layout type | Station as landscape object | Solution block in tier band | Station as 250+ element two-pass illustration | Section with auto-layout | Poster with 1-3 stacked sections |
+| Element count | N/A | N/A | N/A | 1100-1500 total (stations only) | N/A | N/A |
+| Quality review | N/A | 4-layer validation | 8-point schema validation | 9-gate zone-based review (4 parallel reviewers, up to 2 passes) | N/A | N/A |
