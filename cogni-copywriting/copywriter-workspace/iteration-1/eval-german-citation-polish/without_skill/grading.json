@@ -1,0 +1,27 @@
+{
+  "eval_name": "eval-german-citation-polish",
+  "variant": "without_skill",
+  "expectations": [
+    {
+      "text": "german_chars_preserved",
+      "passed": true,
+      "evidence": "German chars present: True"
+    },
+    {
+      "text": "citations_preserved",
+      "passed": true,
+      "evidence": "Found: ['P1-1', 'P1-2', 'P1-3', 'P2-1', 'P2-2', 'P2-3'], Missing: []"
+    },
+    {
+      "text": "no_citation_loss",
+      "passed": true,
+      "evidence": "Citation count: 6 (expected >= 6)"
+    },
+    {
+      "text": "paragraph_length",
+      "passed": true,
+      "evidence": "All paragraphs within limits"
+    }
+  ],
+  "pass_rate": 1.0
+}

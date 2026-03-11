@@ -1,0 +1,63 @@
+version: "3.0.0"
+script:
+  name: "setup-obsidian.sh"
+  path: "${CLAUDE_PLUGIN_ROOT}/scripts/setup-obsidian.sh"
+  purpose: "Configure portable Obsidian integration in user workspace with WSL support"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "TARGET_DIR"
+      type: "path"
+      required: true
+      description: "Path to user's workspace directory"
+      validation:
+        - Must be an existing directory
+        - Will be resolved to absolute path
+    - name: "--dry-run"
+      type: "flag"
+      required: false
+      description: "Preview changes without modifying files"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data:
+        configured: "boolean - whether Obsidian was configured"
+        template_source: "string - path to template directory"
+        target: "string - path to .obsidian in workspace"
+        dry_run: "boolean - whether this was a preview"
+        warnings: "array of strings - any warnings (e.g., existing .obsidian)"
+      error: "string (if success=false)"
+      error_code: "number - numeric exit code (if success=false)"
+      metadata:
+        timestamp: "string - ISO 8601 UTC"
+        script: "string - setup-obsidian.sh"
+        version: "string - semantic version"
+  exit_codes:
+    0: "Success"
+    1: "Validation failure"
+    2: "Invalid arguments"
+    3: "Template not found or dependency missing (jq, curl)"
+behavior:
+  deterministic: true
+  side_effects:
+    - Copies .obsidian template directory to workspace (skips if existing)
+    - Downloads Terminal plugin files (main.js, manifest.json, styles.css) from GitHub
+    - Substitutes {{WORKPLACE_ROOT}} placeholder with native path
+    - Substitutes {{WORKPLACE_ROOT_WSL}} placeholder with WSL path
+    - Sets platform-aware defaultProfile
+    - Makes orchestrator script executable (chmod +x)
+  idempotent: false
+  idempotent_explanation: |
+    Skips if .obsidian already exists. Safe to run multiple times
+    but will not update existing configurations - use update-obsidian.sh for that.
+compatibility:
+  min_bash_version: "3.2"
+  dependencies:
+    - "jq (required for JSON processing)"
+    - "curl (required for Terminal plugin download)"
+  platforms:
+    - "macOS (Darwin)"
+    - "Linux"
+    - "Windows via WSL"
+    - "Windows via Git Bash (MINGW/MSYS)"

@@ -1,0 +1,40 @@
+{
+  "eval_id": 0,
+  "eval_name": "english-memo-polish",
+  "prompt": "Polish this memo for executive readability. Apply BLUF framework. Save to outputs/polished-memo.md",
+  "assertions": [
+    {
+      "name": "bluf_applied",
+      "description": "First paragraph leads with the bottom line (decision/action needed), not a status preamble",
+      "type": "qualitative"
+    },
+    {
+      "name": "paragraph_length",
+      "description": "No paragraph exceeds 5 sentences or approximately 70 words",
+      "type": "programmatic"
+    },
+    {
+      "name": "bold_anchoring",
+      "description": "Key metrics (75%, $450K, Q2, 6 months) have bold formatting around them",
+      "type": "programmatic"
+    },
+    {
+      "name": "memo_header_format",
+      "description": "Document uses proper memo header format (TO/FROM/DATE/SUBJECT lines) rather than generic markdown H1 heading",
+      "type": "programmatic",
+      "discriminating": true
+    },
+    {
+      "name": "visual_element_rhythm",
+      "description": "Contains at least one table or callout block breaking up consecutive prose",
+      "type": "programmatic",
+      "discriminating": true
+    },
+    {
+      "name": "sentence_conciseness",
+      "description": "Average sentence length is 15-20 words (not 25+ academic-style)",
+      "type": "programmatic",
+      "discriminating": true
+    }
+  ]
+}

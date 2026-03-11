@@ -1,0 +1,91 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-02-23T15:00:00Z",
+  "claims": [
+    {
+      "id": "claim-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "statement": "The global AI market is projected between $800B and $1.5T by 2030.",
+      "source_url": "https://example.com/ai-report",
+      "source_title": "AI Market Forecast 2024-2030",
+      "submitted_by": "cogni-research",
+      "submitted_at": "2026-02-23T14:30:00Z",
+      "status": "resolved",
+      "verified_at": "2026-02-23T14:35:00Z",
+      "deviations": [
+        {
+          "id": "dev-f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
+          "claim_id": "claim-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "type": "unsupported_conclusion",
+          "severity": "high",
+          "source_excerpt": "The report states AI market growth is projected between $800B and $1.5T by 2030.",
+          "explanation": "The claim states $1.8 trillion, but the source projects a range of $800B to $1.5T. The claim appears to exceed the upper bound of the source's projection.",
+          "detected_at": "2026-02-23T14:35:00Z"
+        }
+      ],
+      "resolution": {
+        "id": "res-01234567-89ab-4cde-f012-3456789abcde",
+        "claim_id": "claim-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "action": "corrected",
+        "original_statement": "The global AI market is expected to reach $1.8 trillion by 2030.",
+        "corrected_statement": "The global AI market is projected between $800B and $1.5T by 2030.",
+        "rationale": "Updated to match the source's stated range.",
+        "resolved_by": "user",
+        "resolved_at": "2026-02-23T15:00:00Z"
+      },
+      "source_excerpt": "The report states AI market growth is projected between $800B and $1.5T by 2030.",
+      "verification_notes": "Claim was corrected after deviation detected."
+    },
+    {
+      "id": "claim-b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+      "statement": "Cloud spending grew 29% in 2025.",
+      "source_url": "https://example.com/cloud-report",
+      "source_title": "Cloud Infrastructure Spending Report Q4 2025",
+      "submitted_by": "cogni-research",
+      "submitted_at": "2026-02-23T14:30:00Z",
+      "status": "verified",
+      "verified_at": "2026-02-23T14:36:00Z",
+      "deviations": [],
+      "resolution": null,
+      "source_excerpt": "Total cloud infrastructure spending increased 29% year-over-year in 2025.",
+      "verification_notes": "Claim matches source precisely."
+    },
+    {
+      "id": "claim-c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+      "statement": "Quantum computing market exceeded $500M in 2025.",
+      "source_url": "https://example.com/quantum-report",
+      "source_title": "Quantum Computing Market Analysis 2025",
+      "submitted_by": "user",
+      "submitted_at": "2026-02-23T14:31:00Z",
+      "status": "deviated",
+      "verified_at": "2026-02-23T14:37:00Z",
+      "deviations": [
+        {
+          "id": "dev-d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
+          "claim_id": "claim-c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+          "type": "data_staleness",
+          "severity": "medium",
+          "source_excerpt": "The quantum computing market reached $450M in 2024, with projections suggesting $500M by mid-2026.",
+          "explanation": "The source projects $500M by mid-2026, not 2025. The claim appears to use a future projection as a past achievement.",
+          "detected_at": "2026-02-23T14:37:00Z"
+        }
+      ],
+      "resolution": null,
+      "source_excerpt": "The quantum computing market reached $450M in 2024, with projections suggesting $500M by mid-2026.",
+      "verification_notes": "Timing discrepancy detected between claim and source data."
+    },
+    {
+      "id": "claim-d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
+      "statement": "5G covers 80% of urban areas globally.",
+      "source_url": "https://example.com/5g-coverage",
+      "source_title": "Global 5G Coverage Report 2025",
+      "submitted_by": "cogni-research",
+      "submitted_at": "2026-02-23T14:32:00Z",
+      "status": "unverified",
+      "verified_at": null,
+      "deviations": [],
+      "resolution": null,
+      "source_excerpt": null,
+      "verification_notes": null
+    }
+  ]
+}

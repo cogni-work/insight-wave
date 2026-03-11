@@ -1,0 +1,12 @@
+{
+  "name": "cogni-visual",
+  "version": "1.2.14",
+  "description": "Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/cogni-work/cogni-visual",
+  "keywords": ["presentations", "slides", "pptx", "visual", "narrative", "storytelling", "big-picture", "journey-map", "excalidraw", "pencil", "web", "landing-page", "storyboard", "poster", "print"]
+}

@@ -1,0 +1,133 @@
+{
+  "addToCommand": true,
+  "addToContextMenu": true,
+  "createInstanceNearExistingOnes": true,
+  "errorNoticeTimeout": 0,
+  "exposeInternalModules": true,
+  "focusOnNewInstance": true,
+  "hideStatusBar": "focused",
+  "interceptLogging": true,
+  "language": "",
+  "newInstanceBehavior": "replaceTab",
+  "noticeTimeout": 5,
+  "openChangelogOnUpdate": true,
+  "pinNewInstance": true,
+  "preferredRenderer": "dom",
+  "profiles": {
+    "workplace": {
+      "args": [
+        "-c",
+        "export PATH=\"$HOME/bin:$HOME/.local/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH\"; ORCHESTRATOR_SCRIPT=\"{{WORKPLACE_ROOT}}/.obsidian/plugins/terminal/workplace-orchestrator.sh\"; if [ -f \"$ORCHESTRATOR_SCRIPT\" ]; then bash \"$ORCHESTRATOR_SCRIPT\"; else cd {{WORKPLACE_ROOT}} && source .workplace-env.sh 2>/dev/null; exec ${SHELL:-bash}; fi"
+      ],
+      "executable": "/bin/bash",
+      "name": "Workplace (Unix)",
+      "platforms": {
+        "darwin": true,
+        "linux": true,
+        "win32": false
+      },
+      "pythonExecutable": "/usr/bin/python3",
+      "restoreHistory": true,
+      "rightClickAction": "copyPaste",
+      "successExitCodes": [
+        "0",
+        "SIGINT",
+        "SIGTERM"
+      ],
+      "terminalOptions": {
+        "allowTransparency": false,
+        "cursorBlink": true,
+        "fontFamily": "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace",
+        "fontSize": 12,
+        "fontWeight": "normal",
+        "fontWeightBold": "bold",
+        "letterSpacing": 0,
+        "lineHeight": 1.2,
+        "scrollback": 10000,
+        "theme": {
+          "background": "#1a1b26",
+          "black": "#15161E",
+          "blue": "#7aa2f7",
+          "brightBlack": "#414868",
+          "brightBlue": "#7aa2f7",
+          "brightCyan": "#7dcfff",
+          "brightGreen": "#9ece6a",
+          "brightMagenta": "#bb9af7",
+          "brightRed": "#f7768e",
+          "brightWhite": "#c0caf5",
+          "brightYellow": "#e0af68",
+          "cursor": "#7aa2f7",
+          "cursorAccent": "#1a1b26",
+          "cyan": "#7dcfff",
+          "foreground": "#e0e0e0",
+          "green": "#9ece6a",
+          "magenta": "#bb9af7",
+          "red": "#f7768e",
+          "white": "#a9b1d6",
+          "yellow": "#e0af68"
+        },
+        "documentOverride": null
+      },
+      "type": "integrated"
+    },
+    "workplace-wsl": {
+      "args": [
+        "bash",
+        "-c",
+        "cd '{{WORKPLACE_ROOT_WSL}}' && export PATH=\"$HOME/bin:$HOME/.local/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH\" && ORCHESTRATOR_SCRIPT='{{WORKPLACE_ROOT_WSL}}/.obsidian/plugins/terminal/workplace-orchestrator.sh' && if [ -f \"$ORCHESTRATOR_SCRIPT\" ]; then bash \"$ORCHESTRATOR_SCRIPT\"; else source .workplace-env.sh 2>/dev/null; exec bash; fi"
+      ],
+      "executable": "wsl.exe",
+      "name": "Workplace (WSL)",
+      "platforms": {
+        "darwin": false,
+        "linux": false,
+        "win32": true
+      },
+      "pythonExecutable": "python3",
+      "restoreHistory": true,
+      "rightClickAction": "copyPaste",
+      "successExitCodes": [
+        "0",
+        "SIGINT",
+        "SIGTERM"
+      ],
+      "terminalOptions": {
+        "allowTransparency": false,
+        "cursorBlink": true,
+        "fontFamily": "'Cascadia Code', 'Consolas', 'Courier New', monospace",
+        "fontSize": 12,
+        "fontWeight": "normal",
+        "fontWeightBold": "bold",
+        "letterSpacing": 0,
+        "lineHeight": 1.2,
+        "scrollback": 10000,
+        "theme": {
+          "background": "#1a1b26",
+          "black": "#15161E",
+          "blue": "#7aa2f7",
+          "brightBlack": "#414868",
+          "brightBlue": "#7aa2f7",
+          "brightCyan": "#7dcfff",
+          "brightGreen": "#9ece6a",
+          "brightMagenta": "#bb9af7",
+          "brightRed": "#f7768e",
+          "brightWhite": "#c0caf5",
+          "brightYellow": "#e0af68",
+          "cursor": "#7aa2f7",
+          "cursorAccent": "#1a1b26",
+          "cyan": "#7dcfff",
+          "foreground": "#e0e0e0",
+          "green": "#9ece6a",
+          "magenta": "#bb9af7",
+          "red": "#f7768e",
+          "white": "#a9b1d6",
+          "yellow": "#e0af68"
+        },
+        "documentOverride": null
+      },
+      "type": "integrated",
+      "useWin32Conhost": true
+    }
+  },
+  "defaultProfile": "workplace"
+}

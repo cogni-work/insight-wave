@@ -1,0 +1,604 @@
+---
+name: trend-scout
+description: |
+  Interactive trend scouting workflow with industry selection, bilingual support (DE/EN), and deeper-research integration. Scouts trends across 4 dimensions (each trend gets full TIPS expansion). Creates research projects with industry-contextualized trend candidates that can be passed to deeper-research-0. Use when: (1) Starting smarter-service research with industry context, (2) User wants to scout trends for a specific industry and subsector, (3) User mentions "trend scouting", "industry trends", "trend selection", (4) Preparing input configuration for deeper-research-0.
+---
+
+# Trend Scout
+
+Interactive workflow for scouting trends across 4 dimensions with industry selection and bilingual support. Each trend discovered is later analyzed through the complete TIPS framework (Trend → Implications → Possibilities → Solutions). Produces configuration files for downstream `deeper-research-0` research.
+
+## Purpose
+
+This skill enables users to:
+
+1. Select an industry and subsector from a standardized taxonomy
+2. Initialize a research project with semantic slug
+3. Generate 76 trend candidates (7 ACT + 7 PLAN + 5 OBSERVE per dimension)
+4. Pre-select candidates per cell (5 ACT + 5 PLAN + 3 OBSERVE per dimension = 52 total) for downstream use (user can adjust)
+5. Produce configuration for `deeper-research-0` skill
+
+## Bilingual Support
+
+Full German and English support throughout:
+
+- Industry taxonomy presented in both languages
+- Web research queries in both languages (global + DACH regions)
+- User-facing messages in detected language
+- Output files respect `project_language` setting
+
+## Prerequisites
+
+- Projects are stored relative to the current working directory (or `COGNI_WORKSPACE_ROOT` if set)
+- Web access enabled for live trend research
+
+## Shell Execution Constraints
+
+**CRITICAL - Do NOT improvise shell commands:**
+
+1. All project initialization MUST use the provided scripts
+2. NEVER generate inline bash code for slug generation or project creation
+3. If a script is not found, report the error and ask user to verify installation
+4. Do NOT attempt workarounds with inline `$(...)` command substitution
+
+**Path Variable Distinction:**
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `CLAUDE_PLUGIN_ROOT` | Plugin installation (scripts, skills) | `~/.claude/plugins/marketplaces/cogni-tips` |
+| `COGNI_WORKSPACE_ROOT` | Optional workspace root override (default: `$PWD`) | Current working directory |
+
+**IMPORTANT - Environment Variables:**
+
+- `CLAUDE_PLUGIN_ROOT` is automatically injected by Claude Code from `settings.local.json`
+- `COGNI_WORKSPACE_ROOT` is optional — defaults to the current working directory if not set
+- DO NOT source `.workplace-env.sh` - variables are already available at runtime
+
+**Script Locations (always use CLAUDE_PLUGIN_ROOT):**
+
+- `${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/generate-project-slug.sh`
+- `${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/update-industry-metadata.sh`
+- `${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/finalize-candidates.sh`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/initialize-trend-project.sh`
+
+## References Index
+
+Read references **only when needed** for the specific task:
+
+| Reference | Read when... |
+|-----------|--------------|
+| [references/industry-taxonomy.md](references/industry-taxonomy.md) | Presenting industry selection to user |
+| [references/i18n/messages-en.md](references/i18n/messages-en.md) | English user messages |
+| [references/i18n/messages-de.md](references/i18n/messages-de.md) | German user messages |
+| [references/methodology.md](references/methodology.md) | Academic foundations (Ansoff, Rohrbeck, Rogers), full methodology explanation |
+| [references/scoring-framework.md](references/scoring-framework.md) | Scoring candidates, indicator classification, diffusion stage (Phase 2) |
+| [references/dach-sources.md](references/dach-sources.md) | DACH site-specific web searches (Phase 1) |
+| [references/funding-signals.md](references/funding-signals.md) | VC/funding signal queries (Phase 1) |
+| [references/job-market-signals.md](references/job-market-signals.md) | Job market signal queries (Phase 1) |
+| [references/academic-api-queries.md](references/academic-api-queries.md) | Academic API searches - OpenAlex, Semantic Scholar, arXiv (Phase 1) |
+| [references/patent-api-queries.md](references/patent-api-queries.md) | Patent API searches - USPTO, Lens.org, EPO (Phase 1) |
+| [references/regulatory-feeds.md](references/regulatory-feeds.md) | Regulatory API searches - EUR-Lex, SEC EDGAR, FDA (Phase 1) |
+| [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md) | Project init + industry selection |
+| [references/workflow-phases/phase-3-present.md](references/workflow-phases/phase-3-present.md) | Writing trend-candidates.md with scores |
+| [references/workflow-phases/phase-4-process.md](references/workflow-phases/phase-4-process.md) | Processing user selections |
+| [references/workflow-phases/phase-5-finalize.md](references/workflow-phases/phase-5-finalize.md) | Generating deeper-research config |
+
+## Immediate Action: Initialize TodoWrite
+
+**MANDATORY:** Initialize TodoWrite immediately with workflow phases:
+
+1. Phase 0: Initialize Project + Industry Selection [in_progress]
+2. Phase 1: Bilingual Web Research [pending]
+3. Phase 2: Generate Candidate Pool [pending]
+4. Phase 3: Present Candidates [pending]
+5. Phase 4: Process User Selection [pending]
+6. Phase 5: Finalize deeper-research Config [pending]
+
+Update todo status as you progress through each phase.
+
+---
+
+## Core Workflow
+
+```text
+Phase 0 → Phase 1 → Phase 2 → Phase 3 → [USER EDITS] → Phase 4 → Phase 5
+   │          │          │         │            │            │         │
+   │          │          │         │            │            │         └─ Write config + JSON
+   │          │          │         │            │            └─ Validate selections
+   │          │          │         │            └─ User marks [x], adds proposals
+   │          │          │         └─ Write trend-candidates.md with scores, PAUSE
+   │          │          └─ Generate + score 76 candidates (mix web + API + training)
+   │          └─ 32 web searches + academic/patent/regulatory APIs
+   └─ Language detect, industry select, project init
+```
+
+### Phase 0: Initialize Project + Industry Selection
+
+Read [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md), then execute:
+
+1. **Ask user for deliverable language:** Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD). Ask user via AskUserQuestion: "Deutsch (DE) oder English (EN)?" If workspace language is set, present it as default (e.g., "[Default: DE based on workspace]"). Do NOT skip asking — always confirm with user.
+2. Load [references/industry-taxonomy.md](references/industry-taxonomy.md)
+3. Present industries with subsectors (bilingual)
+4. Capture user selection via AskUserQuestion
+5. Capture research topic/focus
+6. Generate project slug: `{subsector}-{topic}-{hash}`
+7. Initialize project via `initialize-trend-project.sh` in the current working directory under `cogni-tips/`
+8. Update `.metadata/trend-scout-output.json` with industry context
+
+**Required outputs:**
+
+- PROJECT_PATH, PROJECT_SLUG variables set
+- PROJECT_LANGUAGE set from explicit user choice (de/en)
+- INDUSTRY, SUBSECTOR selected
+- RESEARCH_TOPIC captured
+- Project structure initialized in current working directory under `cogni-tips/`
+
+### Phase 1: Bilingual Web Research + API Queries (DELEGATED)
+
+**Context Efficiency:** This phase is delegated to the `web-researcher` agent to prevent context depletion from 20+ WebSearch results. The agent returns a compact JSON summary (~500 tokens) while logging full results to `.logs/`.
+
+**Invoke the web-researcher agent:**
+
+```yaml
+Task:
+  subagent_type: "cogni-tips:trend-web-researcher"
+  description: "Execute bilingual web research"
+  prompt: |
+    Execute Phase 1 web research for trend-scout.
+
+    PROJECT_PATH: {{PROJECT_PATH}}
+    INDUSTRY_EN: {{INDUSTRY_EN}}
+    INDUSTRY_DE: {{INDUSTRY_DE}}
+    SUBSECTOR_EN: {{SUBSECTOR_EN}}
+    SUBSECTOR_DE: {{SUBSECTOR_DE}}
+    RESEARCH_TOPIC: {{RESEARCH_TOPIC}}
+```
+
+**Agent responsibilities:**
+
+1. Build 32 web search configurations (16 standard + 8 DACH site-specific + 4 funding + 4 job market)
+2. Execute WebSearch for each config in parallel batches
+3. Execute mandatory API queries (academic, patent, regulatory) with fallback handling
+4. Extract and deduplicate trend signals
+5. Classify signals by indicator type (leading/lagging) and source type
+6. Write full results to `{{PROJECT_PATH}}/.logs/web-research-raw.json`
+7. Return compact JSON with ~85 aggregated signals
+
+**Note:** The web-researcher agent is self-contained with all search configurations and deduplication logic.
+
+**Process agent response:**
+
+The agent returns compact JSON with abbreviated fields for token efficiency:
+
+```json
+{
+  "ok": true,
+  "signals": {
+    "total": 85,
+    "by_dimension": {...},
+    "by_source": {"web": 48, "dach_site": 12, "funding": 8, "jobs": 6, "academic": 5, "patent": 4, "regulatory": 2},
+    "by_indicator": {"leading": 38, "lagging": 47}
+  },
+  "items": [{"d": "dimension", "n": "name", "k": ["keywords"], "u": "url", "f": "freshness", "a": 5, "t": "type", "i": "leading", "lt": "12-24m"}]
+}
+```
+
+**Log file format** (`.logs/web-research-raw.json`):
+
+The log file uses **full field names** for debugging readability. Key structure:
+
+```json
+{
+  "metadata": {...},
+  "searches_executed": {"total": 32, "successful": 30, "failed": 2, "by_category": {...}},
+  "raw_signals_before_dedup": [
+    {"dimension": "...", "signal": "...", "keywords": [...], "source": "url", "freshness": "...", "indicator_type": "leading|lagging", "lead_time": "...", "source_type": "..."}
+  ],
+  "api_queries_executed": {...}
+}
+```
+
+To query the log file directly:
+
+```bash
+jq '.raw_signals_before_dedup[] | {dimension, signal, keywords, source}' .logs/web-research-raw.json
+```
+
+**Convert to WEB_RESEARCH_CONTEXT:**
+
+- Expand abbreviated fields from agent response (d→dimension, n→signal_name, k→keywords, u→source_url, f→freshness, a→authority_score, t→source_type, i→indicator_type, lt→lead_time)
+- Group by dimension for Phase 2 consumption
+- Set `WEB_RESEARCH_AVAILABLE = (response.ok == true)`
+
+**Persist compact response for downstream fallback:**
+
+Write the agent's raw compact JSON response (the full response object including the `.items` array) to:
+`{PROJECT_PATH}/phase1-research-summary.json`
+
+This file serves as a fallback for `trend-report` when `.logs/web-research-raw.json` is missing or incomplete.
+
+**Required outputs:**
+
+- WEB_RESEARCH_AVAILABLE flag set
+- WEB_RESEARCH_CONTEXT with signals by dimension (including source_type and authority scores)
+
+**Fallback:** If agent returns `{"ok": false}`, proceed with training-only generation (warning logged).
+
+### Phase 2: Generate Candidate Pool (DELEGATED)
+
+**Context Efficiency:** This phase is delegated to the `trend-generator` agent to leverage Opus model's extended thinking for complex multi-framework reasoning. The agent returns a compact JSON summary (~600 tokens) while logging full candidate data to `.logs/`.
+
+**Invoke the trend-generator agent:**
+
+```yaml
+Task:
+  subagent_type: "cogni-tips:trend-generator"
+  description: "Generate 76 scored trend candidates"
+  prompt: |
+    Execute Phase 2 candidate generation for trend-scout.
+
+    PROJECT_PATH: {{PROJECT_PATH}}
+    INDUSTRY_EN: {{INDUSTRY_EN}}
+    INDUSTRY_DE: {{INDUSTRY_DE}}
+    SUBSECTOR_EN: {{SUBSECTOR_EN}}
+    SUBSECTOR_DE: {{SUBSECTOR_DE}}
+    RESEARCH_TOPIC: {{RESEARCH_TOPIC}}
+    PROJECT_LANGUAGE: {{PROJECT_LANGUAGE}}
+    WEB_RESEARCH_AVAILABLE: {{WEB_RESEARCH_AVAILABLE}}
+    WEB_RESEARCH_SIGNALS: {{WEB_RESEARCH_CONTEXT}}
+```
+
+**Agent responsibilities:**
+
+1. Load scoring-framework.md at runtime
+2. Generate 76 trend candidates using extended thinking (MANDATORY)
+3. Apply multi-framework scoring (TIPS, Ansoff, Rogers, CRAAP)
+4. Classify indicator types (leading/lagging) and diffusion stages
+5. Validate subcategory balance (MIN 1 per subcategory per cell)
+6. Validate portfolio balance (≥40% leading indicators)
+7. Write full results to `{{PROJECT_PATH}}/.logs/trend-generator-candidates.json`
+8. Return compact JSON summary
+
+**Process agent response:**
+
+The agent returns compact JSON:
+
+```json
+{
+  "ok": true,
+  "candidates": {"total": 76, "by_source": {...}, "by_dimension": {...}},
+  "scoring": {"avg_score": 0.65, "confidence": {...}, "indicator": {...}},
+  "validation": {"passed": true, "warnings": []},
+  "log": ".logs/trend-generator-candidates.json"
+}
+```
+
+**Prepare Phase 3 data files:**
+
+Execute data preparation script to generate compact candidate data and browser app JSON:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/prepare-phase3-data.sh" "${PROJECT_PATH}"
+```
+
+This generates:
+- `trend-app-data.json` in project root (full data for browser selector)
+- `trend-selector-app.html` in project root (self-contained HTML with embedded data, works with file:// protocol)
+- `.logs/candidates-compact.json` (compact format for Claude reading)
+
+**Load compact candidate data:**
+
+Read `{{PROJECT_PATH}}/.logs/candidates-compact.json` to build trend-candidates.md.
+
+Field mapping for compact format:
+- `d` → dimension, `h` → horizon, `n` → name
+- `s` → trend_statement, `r` → research_hint, `k` → keywords
+- `sc` → score, `ct` → confidence_tier, `si` → signal_intensity
+- `src` → source, `url` → source_url
+
+**Required outputs:**
+
+- CANDIDATES_BY_CELL loaded from log file
+- TOTAL_CANDIDATES = 76
+- SCORING_METADATA populated from agent response
+- Validation status confirmed
+
+**Fallback:** If agent returns `{"ok": false}`, log error and halt workflow.
+
+### Phase 3: Present Candidates
+
+Read [references/workflow-phases/phase-3-present.md](references/workflow-phases/phase-3-present.md), then execute:
+
+1. Write `trend-candidates.md` to `{PROJECT_PATH}/` (project root)
+2. Use bilingual template based on PROJECT_LANGUAGE
+3. Include selection tables with checkboxes
+4. Include "User Proposed" section
+5. Include "More?" column for regeneration requests
+6. Include selection summary table
+7. **Open Visual Selector App:**
+   ```bash
+   # HTML was generated by prepare-phase3-data.sh with embedded data
+   # Just open it in browser
+   open "${PROJECT_PATH}/trend-selector-app.html"
+   ```
+
+**Pre-selection:** Top candidates per horizon (5 ACT, 5 PLAN, 3 OBSERVE by score) are automatically pre-selected and marked with a badge. Users can adjust these selections before finalizing. The visual selector app and markdown file both show pre-selected candidates.
+
+**PAUSE:** After writing files and opening the app, provide persistent access info (in detected language):
+
+**English:**
+> **Visual Selector App** (recommended):
+> - The app is now open in your browser
+> - App location: `{PROJECT_PATH}/trend-selector-app.html`
+> - Your selections are auto-saved in browser storage
+> - Click Export when 52 candidates are selected
+>
+> **Alternative: Markdown editing:**
+> 1. Open `trend-candidates.md` in the project folder
+> 2. Mark candidates with `[x]` (5 ACT, 5 PLAN, 3 OBSERVE per dimension)
+> 3. Optionally add proposals in "User Proposed" section
+>
+> Re-invoke `trend-scout` skill when ready.
+
+**German:**
+> **Visual Selector App** (empfohlen):
+> - Die App ist jetzt in Ihrem Browser geöffnet
+> - App-Pfad: `{PROJECT_PATH}/trend-selector-app.html`
+> - Ihre Auswahl wird automatisch im Browser gespeichert
+> - Klicken Sie Export wenn 52 Kandidaten ausgewählt sind
+>
+> **Alternative: Markdown-Bearbeitung:**
+> 1. Öffnen Sie `trend-candidates.md` im Projektordner
+> 2. Markieren Sie Kandidaten mit `[x]` (5 ACT, 5 PLAN, 3 OBSERVE pro Dimension)
+> 3. Fügen Sie optional Vorschläge im Abschnitt "Eigene Vorschläge" hinzu
+>
+> Rufen Sie `trend-scout` erneut auf, wenn Sie bereit sind.
+
+**IMPORTANT:** Always show the full app path so users can reopen it later without asking.
+
+### Phase 4: Process User Selection
+
+Read [references/workflow-phases/phase-4-process.md](references/workflow-phases/phase-4-process.md), then execute:
+
+1. Read `trend-candidates.md` from project
+2. Parse selected candidates (marked with `[x]`)
+3. Parse user-proposed candidates
+4. Parse regeneration requests (`[+N]`)
+5. Validate: horizon-specific counts (5 ACT, 5 PLAN, 3 OBSERVE per dimension = 52 total)
+
+**If validation fails:**
+
+- Report which cells have wrong count
+- If regeneration requested: generate N more candidates for those cells
+- Update trend-candidates.md with new candidates
+- **PAUSE** again for user to adjust
+
+**If validation passes:** Proceed to Phase 5
+
+### Phase 5: Finalize Output
+
+Read [references/workflow-phases/phase-5-finalize.md](references/workflow-phases/phase-5-finalize.md), then execute:
+
+1. Update consolidated `trend-scout-output.json` with agreed candidates
+2. Update `trend-candidates.md` frontmatter status to `agreed`
+3. Log completion with next-step instructions
+
+**Required outputs:**
+
+- `.metadata/trend-scout-output.json` - consolidated output (config + candidates)
+- `trend-candidates.md` status updated to `agreed`
+
+---
+
+## Output Schema
+
+### trend-scout-output.json (Consolidated)
+
+Location: `{PROJECT_PATH}/.metadata/trend-scout-output.json`
+
+```json
+{
+  "version": "1.0.0",
+  "project_id": "automotive-ai-predictive-maintenance-abc12345",
+  "project_name": "automotive-ai-predictive-maintenance-abc12345",
+  "project_path": "/path/to/project",
+  "project_language": "de",
+  "created": "2025-12-16T10:30:00Z",
+
+  "config": {
+    "research_type": "smarter-service",
+    "dok_level": 4,
+    "industry": {
+      "primary": "manufacturing",
+      "primary_en": "Manufacturing",
+      "primary_de": "Fertigung",
+      "subsector": "automotive",
+      "subsector_en": "Automotive",
+      "subsector_de": "Automobil"
+    },
+    "research_topic": "AI-driven predictive maintenance",
+    "organizing_concept": "ai-driven-predictive-maintenance"
+  },
+
+  "tips_candidates": {
+    "total": 52,
+    "source_distribution": {
+      "web_signal": 18,
+      "training": 16,
+      "user_proposed": 2
+    },
+    "web_research_status": "success",
+    "search_timestamp": "2025-12-16T10:25:00Z",
+    "scoring_metadata": {
+      "avg_score": 0.68,
+      "confidence_distribution": {
+        "high": 12,
+        "medium": 18,
+        "low": 5,
+        "uncertain": 1
+      },
+      "intensity_distribution": {
+        "level_1": 4,
+        "level_2": 6,
+        "level_3": 10,
+        "level_4": 12,
+        "level_5": 4
+      },
+      "indicator_distribution": {
+        "leading": 16,
+        "lagging": 20,
+        "leading_pct": 0.44
+      },
+      "diffusion_distribution": {
+        "innovators": 3,
+        "early_adopters": 8,
+        "early_majority": 15,
+        "late_majority": 8,
+        "laggards": 2,
+        "pre_chasm": 11,
+        "post_chasm": 25
+      },
+      "scoring_framework_version": "1.0.0"
+    },
+    "items": [
+      {
+        "dimension": "externe-effekte",
+        "dimension_de": "Externe Effekte",
+        "subcategory": "regulierung",
+        "subcategory_en": "Regulation",
+        "subcategory_de": "Regulierung",
+        "horizon": "act",
+        "horizon_de": "Handeln",
+        "sequence": 1,
+        "trend_name": "EU AI Act Compliance",
+        "keywords": ["ai-act", "regulation", "2024"],
+        "rationale": "Immediate deadline pressure",
+        "source": "web-signal",
+        "source_url": "https://ec.europa.eu/...",
+        "freshness_date": "2024-12",
+        "score": 0.82,
+        "confidence_tier": "high",
+        "signal_intensity": 5,
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "regulatory"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.25,
+          "crossed_chasm": true
+        }
+      }
+    ]
+  },
+
+  "execution": {
+    "workflow_state": "agreed",
+    "current_phase": 5,
+    "phases_completed": ["phase-0", "phase-1", "phase-2", "phase-3", "phase-4", "phase-5"],
+    "agreed_at": "2025-12-16T11:45:00Z"
+  },
+
+  "deeper_analysis_integration": {
+    "source_type": "trend-scout",
+    "auto_load_candidates": true,
+    "skip_tips_selection": true,
+    "auto_configure_research_type": true,
+    "auto_configure_dok_level": true,
+    "auto_configure_language": true
+  }
+}
+```
+
+---
+
+## Selection Constraints
+
+| Constraint | Value |
+|------------|-------|
+| Total candidates generated | 76 (7 ACT + 7 PLAN + 5 OBSERVE per dimension) |
+| Candidates per horizon | ACT: 7, PLAN: 7, OBSERVE: 5 |
+| Pre-selected per horizon | ACT: 5, PLAN: 5, OBSERVE: 3 |
+| Selection mode | Pre-select top candidates, user adjustable |
+| Total pre-selected | 52 ((5+5+3) × 4 dimensions) |
+| Total agreed candidates | 52 (user can adjust pre-selection) |
+
+---
+
+## Dimension Matrix
+
+Each dimension is used to scout trends. Each trend discovered in any dimension is then analyzed through the complete TIPS framework (T→I→P→S).
+
+**Each dimension has 3 subcategories** to ensure balanced trend discovery across all aspects:
+
+| Dimension | Subcategory | German | Focus | Trend Anchors |
+|-----------|-------------|--------|-------|---------------|
+| externe-effekte | wirtschaft | Wirtschaft | Market forces, competition, economic factors | Multikrise, Digital Transform, Net Neutral |
+| externe-effekte | regulierung | Regulierung | Policy, compliance, legal frameworks | CSR-D/LKSG, EU AI Act, EU Data Act |
+| externe-effekte | gesellschaft | Gesellschaft | Demographics, societal shifts | Demografie, De-Coupling, De-Carbonisation |
+| neue-horizonte | strategie | Strategie | Business model direction, strategic goals | Nachhaltigkeit, Resilienz, OPs Excellence |
+| neue-horizonte | fuehrung | Führung | Leadership approaches, organizational change | Business Agility, Open Leadership, Purpose |
+| neue-horizonte | steuerung | Steuerung | Governance, analytics, control systems | Trends Driven, Risk Management, Predictive KI |
+| digitale-wertetreiber | customer-experience | Customer Experience | Customer touchpoints, engagement | Digital First, Omnichannel, Metaverse |
+| digitale-wertetreiber | produkte-services | Produkte & Services | Offerings, product innovation | Smartification, Digital Twin, Digital Ecosystem |
+| digitale-wertetreiber | geschaeftsprozesse | Geschäftsprozesse | Operations, process optimization | Hyperautomate, Smart Manufacturing, Digi Supply Chain |
+| digitales-fundament | kultur | Kultur | Organizational culture, mindset | New Work, Employee Wellbeing, Data Culture |
+| digitales-fundament | mitarbeitende | Mitarbeitende | Workforce, skills, talent | Digital Workplace, Up/Reskilling, Talent Management |
+| digitales-fundament | technologie | Technologie | Tech infrastructure, platforms | Cyber Security, Data Platforms, Industry X-Cloud |
+
+**Balancing Rule:** Each cell (dimension × horizon) must have at least 1 candidate from each subcategory. With 5 candidates per cell and 3 subcategories, this ensures complete coverage with flexibility.
+
+---
+
+## Error Handling
+
+| Scenario | Response |
+|----------|----------|
+| Industry not selected | Cannot proceed - prompt user |
+| Project init fails | Exit with error details |
+| All web searches fail | Continue with training-only (warning) |
+| trend-candidates.md not found (Phase 4) | Run Phase 1-3 first |
+| Selection count invalid | Report errors, PAUSE for correction |
+| User proposal off-sector | Warn but allow override |
+
+---
+
+## Integration with deeper-research-0
+
+After `trend-scout` completes:
+
+1. User invokes `deeper-research-0` skill with explicit path:
+
+   ```yaml
+   tips_source: {PROJECT_PATH}/.metadata/trend-scout-output.json
+   ```
+
+2. deeper-research-0 Phase 0 loads configuration from consolidated output
+3. Auto-configures research_type, DOK level, language from `.config`
+4. deeper-research-0 Phase 2 loads candidates from `.tips_candidates.items`
+5. Research proceeds with auto-selected 52 candidates (5 ACT + 5 PLAN + 3 OBSERVE per dimension)
+
+---
+
+## Debugging
+
+### Logging
+
+```bash
+# Log file location
+${PROJECT_PATH}/.logs/trend-scout-execution-log.txt
+
+# View phase transitions
+grep "\[PHASE\]" "${PROJECT_PATH}/.logs/trend-scout-execution-log.txt"
+
+# View validation results
+grep "\[VALIDATION\]" "${PROJECT_PATH}/.logs/trend-scout-execution-log.txt"
+```
+
+### Common Issues
+
+1. **"Industry not selected"** - User must select from taxonomy
+2. **"Selection count invalid"** - Wrong number of candidates marked per cell
+3. **"File not found"** - Ensure trend-candidates.md exists before Phase 4
+4. **"Project init failed"** - Check current working directory is writable (or `COGNI_WORKSPACE_ROOT` if set)

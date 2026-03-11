@@ -1,0 +1,22 @@
+{
+  "eval_name": "eval-english-memo-polish",
+  "variant": "with_skill",
+  "expectations": [
+    {
+      "text": "bluf_applied",
+      "passed": true,
+      "evidence": "First content paragraph: **BLUF:** The cloud migration is **75% done and ahead of schedule**. We need two decisions now. First, approve **$450K for security tools and hires**...."
+    },
+    {
+      "text": "paragraph_length",
+      "passed": true,
+      "evidence": "All paragraphs within limits"
+    },
+    {
+      "text": "bold_anchoring",
+      "passed": true,
+      "evidence": "4/4 key metrics bolded"
+    }
+  ],
+  "pass_rate": 1.0
+}

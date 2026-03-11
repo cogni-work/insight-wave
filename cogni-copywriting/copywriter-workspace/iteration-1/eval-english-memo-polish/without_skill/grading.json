@@ -1,0 +1,22 @@
+{
+  "eval_name": "eval-english-memo-polish",
+  "variant": "without_skill",
+  "expectations": [
+    {
+      "text": "bluf_applied",
+      "passed": true,
+      "evidence": "First content paragraph: The cloud migration is 75% complete and ahead of schedule, delivering measurable performance and cost improvements. To maintain momentum, we need exec..."
+    },
+    {
+      "text": "paragraph_length",
+      "passed": true,
+      "evidence": "All paragraphs within limits"
+    },
+    {
+      "text": "bold_anchoring",
+      "passed": true,
+      "evidence": "3/4 key metrics bolded"
+    }
+  ],
+  "pass_rate": 1.0
+}

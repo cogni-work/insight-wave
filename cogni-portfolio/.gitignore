@@ -1,0 +1,11 @@
+# Claude Code worktrees and local task data
+.agtx/
+excalidraw.log
+
+# Test and build artifacts
+.test-results/
+__pycache__/
+
+# Local workspace data (skill eval artifacts)
+*-workspace/
+skills/*/evals/

@@ -1,0 +1,132 @@
+{
+  "skill_name": "copywriter",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Polish this memo for executive readability. Apply BLUF framework. Save to outputs/polished-memo.md",
+      "expected_output": "A well-structured memo with bottom-line-up-front, clear paragraphs, bold anchoring on key metrics, and improved readability",
+      "files": ["test-docs/english-memo.md"],
+      "assertions": [
+        {
+          "id": "bluf_applied",
+          "text": "Document starts with BLUF or bottom-line summary in first content paragraph",
+          "type": "content_check"
+        },
+        {
+          "id": "paragraph_length",
+          "text": "All paragraphs are 5 sentences or fewer",
+          "type": "programmatic"
+        },
+        {
+          "id": "bold_anchoring",
+          "text": "Key metrics ($450K, 75%, Q2) are bold-anchored with 2-4 surrounding words",
+          "type": "programmatic"
+        },
+        {
+          "id": "memo_header_format",
+          "text": "Document uses proper memo header format (TO/FROM/DATE/SUBJECT lines) rather than generic markdown headings",
+          "type": "content_check",
+          "discriminating": true
+        },
+        {
+          "id": "visual_element_rhythm",
+          "text": "Contains at least one table or callout block breaking up consecutive prose paragraphs",
+          "type": "programmatic",
+          "discriminating": true
+        },
+        {
+          "id": "sentence_conciseness",
+          "text": "Average sentence length is 15-20 words (not 25+ academic-style sentences)",
+          "type": "programmatic",
+          "discriminating": true
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Polish this German strategy document. Preserve all citations and German characters. Save to outputs/polished-german.md",
+      "expected_output": "A polished German document with all umlauts preserved, all citations with URLs intact, Wolf Schneider style improvements, and better readability",
+      "files": ["test-docs/german-with-citations.md"],
+      "assertions": [
+        {
+          "id": "german_chars_preserved",
+          "text": "All German characters (ä, ö, ü, ß) remain in output",
+          "type": "programmatic"
+        },
+        {
+          "id": "citations_preserved",
+          "text": "All 6 original citations [P1-1] through [P2-3] with full URLs are present",
+          "type": "programmatic"
+        },
+        {
+          "id": "no_citation_loss",
+          "text": "Output citation count >= input citation count (6)",
+          "type": "programmatic"
+        },
+        {
+          "id": "paragraph_length",
+          "text": "All paragraphs are 5 sentences or fewer",
+          "type": "programmatic"
+        },
+        {
+          "id": "wolf_schneider_clause_length",
+          "text": "Average clause length is 12 words or fewer (Wolf Schneider target), significantly shorter than baseline ~22 word sentences",
+          "type": "programmatic",
+          "discriminating": true
+        },
+        {
+          "id": "visual_elements_added",
+          "text": "Contains at least one table or callout/blockquote not present in original (original has zero visual elements)",
+          "type": "programmatic",
+          "discriminating": true
+        },
+        {
+          "id": "summary_table_present",
+          "text": "A summary or overview table is present synthesizing the three phases",
+          "type": "content_check",
+          "discriminating": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Polish this arc narrative document. It's a corporate-visions arc from cogni-narrative. Preserve the arc structure and strengthen techniques per element. Save to outputs/polished-arc.md",
+      "expected_output": "An arc-aware polished document with all H2 headings unchanged, citations preserved, element-specific techniques applied, and no content moved between elements",
+      "files": ["test-docs/arc-narrative.md"],
+      "assertions": [
+        {
+          "id": "h2_headings_unchanged",
+          "text": "All original H2 headings appear exactly as-is in the output",
+          "type": "programmatic"
+        },
+        {
+          "id": "citations_preserved",
+          "text": "All original citations with URLs are present in the output",
+          "type": "programmatic"
+        },
+        {
+          "id": "no_content_migration",
+          "text": "Citations remain in their original arc element sections (no cross-element migration)",
+          "type": "programmatic"
+        },
+        {
+          "id": "frontmatter_preserved",
+          "text": "YAML frontmatter with arc_id: corporate-visions is preserved",
+          "type": "programmatic"
+        },
+        {
+          "id": "bold_anchoring_per_element",
+          "text": "Each arc element section contains bold-anchored key data points (2+ per section)",
+          "type": "content_check",
+          "discriminating": true
+        },
+        {
+          "id": "word_count_stability",
+          "text": "Output word count is within +-50 words of original per arc element (no massive expansion/reduction)",
+          "type": "programmatic",
+          "discriminating": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "cogni-obsidian",
+  "version": "1.0.2",
+  "description": "Obsidian integration for Claude Code workplaces. Scaffolds Obsidian vaults with Terminal plugin integration, manages vault configuration, and provides note management with frontmatter support. Enables cogni-x plugins to work on projects collaboratively through an Obsidian-based workplace environment.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/cogni-work/cogni-obsidian",
+  "keywords": [
+    "obsidian",
+    "vault",
+    "terminal",
+    "integration",
+    "workplace",
+    "claude-code",
+    "markdown",
+    "frontmatter",
+    "cross-platform",
+    "wsl"
+  ]
+}

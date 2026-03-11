@@ -1,0 +1,25 @@
+version: "1.0.0"
+script:
+  name: "prepare-phase3-data.sh"
+  path: "skills/trend-scout/scripts/prepare-phase3-data.sh"
+  purpose: "Generate compact candidate data and browser app JSON for Phase 3 of trend-scout"
+  category: "utilities"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-12-22"
+    changes: "Initial contract generation"
+    breaking: false

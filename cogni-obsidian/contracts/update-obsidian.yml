@@ -1,0 +1,61 @@
+version: "2.0.0"
+script:
+  name: "update-obsidian.sh"
+  path: "${CLAUDE_PLUGIN_ROOT}/scripts/update-obsidian.sh"
+  purpose: "Incrementally update Obsidian terminal configurations in existing workplaces"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "workplace_dir"
+      type: "path"
+      required: true
+      description: "Absolute path to workplace directory"
+      validation:
+        - Must be an existing directory
+        - Will be converted to absolute path if relative
+    - name: "--dry-run"
+      type: "flag"
+      required: false
+      description: "Preview changes without modifying files"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data:
+        workplace_dir: "string - absolute path"
+        profiles_added: "array - new profile names added"
+        profiles_fixed: "array - WSL profiles with corrected args"
+        scripts_copied: "array - new script filenames"
+        dry_run: "boolean"
+      error: "string (if success=false)"
+      error_code: "number - numeric exit code (if success=false)"
+      metadata:
+        timestamp: "string - ISO 8601 UTC"
+        script: "string - update-obsidian.sh"
+        version: "string - semantic version"
+  exit_codes:
+    0: "Success (including graceful skip when no .obsidian exists)"
+    1: "Validation error"
+    2: "Invalid arguments"
+    3: "Update operation failed"
+behavior:
+  deterministic: true
+  side_effects:
+    - Merges new terminal profiles into data.json
+    - Copies new .sh scripts with path substitution
+    - Removes deprecated Git Bash profiles
+    - Fixes WSL profile args
+    - Self-heals doubled /mnt/c/ paths
+    - Makes all scripts executable
+  idempotent: true
+  idempotent_explanation: |
+    Only adds profiles/scripts that don't exist. Does not overwrite existing
+    profiles or scripts. Deprecated cleanup and path fixes are safe to repeat.
+compatibility:
+  min_bash_version: "3.2"
+  dependencies:
+    - "jq (required for JSON processing)"
+  platforms:
+    - "macOS (Darwin)"
+    - "Linux"
+    - "Windows via WSL"

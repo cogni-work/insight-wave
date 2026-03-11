@@ -1,0 +1,101 @@
+{
+  "_description": "Standard trading regions for cogni-portfolio market segmentation. Use region codes as the 'region' field value in market entities.",
+  "regions": {
+    "de": {
+      "name": "Germany",
+      "scope": ["DE"],
+      "currency": "EUR",
+      "locale": "de-DE",
+      "timezone": "Europe/Berlin"
+    },
+    "dach": {
+      "name": "DACH",
+      "scope": ["DE", "AT", "CH"],
+      "currency": "EUR",
+      "locale": "de-DE",
+      "timezone": "Europe/Berlin",
+      "notes": "Switzerland uses CHF domestically; EUR common in B2B contracts"
+    },
+    "eu": {
+      "name": "European Union",
+      "scope": ["EU27"],
+      "currency": "EUR",
+      "locale": "en-GB",
+      "timezone": "Europe/Brussels"
+    },
+    "uk": {
+      "name": "United Kingdom",
+      "scope": ["GB"],
+      "currency": "GBP",
+      "locale": "en-GB",
+      "timezone": "Europe/London"
+    },
+    "nordics": {
+      "name": "Nordics",
+      "scope": ["SE", "NO", "DK", "FI", "IS"],
+      "currency": "EUR",
+      "locale": "en-GB",
+      "timezone": "Europe/Stockholm",
+      "notes": "Mixed currencies; EUR (FI), SEK, NOK, DKK, ISK"
+    },
+    "us": {
+      "name": "United States",
+      "scope": ["US"],
+      "currency": "USD",
+      "locale": "en-US",
+      "timezone": "America/New_York"
+    },
+    "na": {
+      "name": "North America",
+      "scope": ["US", "CA"],
+      "currency": "USD",
+      "locale": "en-US",
+      "timezone": "America/New_York"
+    },
+    "cn": {
+      "name": "China",
+      "scope": ["CN"],
+      "currency": "CNY",
+      "locale": "zh-CN",
+      "timezone": "Asia/Shanghai"
+    },
+    "apac": {
+      "name": "Asia-Pacific",
+      "scope": ["APAC"],
+      "currency": "USD",
+      "locale": "en-US",
+      "timezone": "Asia/Singapore",
+      "notes": "Highly diverse; consider sub-regions for specific GTM"
+    },
+    "jp": {
+      "name": "Japan",
+      "scope": ["JP"],
+      "currency": "JPY",
+      "locale": "ja-JP",
+      "timezone": "Asia/Tokyo"
+    },
+    "latam": {
+      "name": "Latin America",
+      "scope": ["LATAM"],
+      "currency": "USD",
+      "locale": "es-ES",
+      "timezone": "America/Sao_Paulo",
+      "notes": "Brazil (BRL) often treated separately from Spanish-speaking LATAM"
+    },
+    "mea": {
+      "name": "Middle East & Africa",
+      "scope": ["MEA"],
+      "currency": "USD",
+      "locale": "en-US",
+      "timezone": "Asia/Dubai"
+    },
+    "global": {
+      "name": "Global",
+      "scope": ["worldwide"],
+      "currency": "USD",
+      "locale": "en-US",
+      "timezone": "UTC",
+      "notes": "Use when market is not geographically constrained"
+    }
+  }
+}

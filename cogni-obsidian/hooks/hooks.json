@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/on-install.sh",
+            "timeout": 30,
+            "enabled": true,
+            "name": "on-install",
+            "description": "Run dependency check when cogni-obsidian plugin is installed. Verifies jq and curl are available."
+          }
+        ]
+      }
+    ]
+  }
+}

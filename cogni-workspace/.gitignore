@@ -1,0 +1,16 @@
+# Local workspace config
+.claude/*.local.md
+.workspace-env.sh
+.workspace-config.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+excalidraw.log
+
+# Skill eval workspaces
+skills/*-workspace/
+*-workspace/

@@ -1,0 +1,39 @@
+version: "1.0.0"
+script:
+  name: "validate-selection.sh"
+  path: "skills/trend-scout/scripts/validate-selection.sh"
+  purpose: "Validate TIPS candidate selection counts from trend-candidates.md (5 per cell, 60 total)"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--input"
+      type: "string"
+      required: true
+      description: "Path to trend-candidates.md file"
+    - name: "--file"
+      type: "string"
+      required: true
+      description: "Alias for --input"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Valid selection (60 candidates, 5 per cell)"
+    1: "Invalid selection or error"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-12-29"
+    changes: "Initial contract generation"
+    breaking: false

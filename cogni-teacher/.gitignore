@@ -1,0 +1,4 @@
+.DS_Store
+*.log
+.claude/*.local.md
+_teacher-exercises/

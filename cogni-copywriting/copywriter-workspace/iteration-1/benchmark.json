@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "skill_name": "copywriter",
+    "skill_path": "/Users/stephandehaas/GitHub/dev/cogni-copywriting/skills/copywriter",
+    "executor_model": "claude-opus-4-6",
+    "analyzer_model": "claude-opus-4-6",
+    "timestamp": "2026-03-04T17:08:44Z",
+    "evals_run": ["english-memo-polish", "german-citation-polish", "arc-aware-polish"],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_name": "english-memo-polish",
+      "configuration": "with_skill",
+      "pass_rate": 1.0,
+      "time_seconds": 88.0,
+      "tokens": 70914,
+      "expectations": [
+        {"text": "bluf_applied", "passed": true, "evidence": "First content paragraph leads with BLUF and two decisions needed"},
+        {"text": "paragraph_length", "passed": true, "evidence": "All paragraphs within limits"},
+        {"text": "bold_anchoring", "passed": true, "evidence": "4/4 key metrics bolded"}
+      ]
+    },
+    {
+      "eval_name": "english-memo-polish",
+      "configuration": "without_skill",
+      "pass_rate": 1.0,
+      "time_seconds": 26.1,
+      "tokens": 13163,
+      "expectations": [
+        {"text": "bluf_applied", "passed": true, "evidence": "First content paragraph mentions 75% complete and decisions needed"},
+        {"text": "paragraph_length", "passed": true, "evidence": "All paragraphs within limits"},
+        {"text": "bold_anchoring", "passed": true, "evidence": "3/4 key metrics bolded"}
+      ]
+    },
+    {
+      "eval_name": "german-citation-polish",
+      "configuration": "with_skill",
+      "pass_rate": 1.0,
+      "time_seconds": 83.1,
+      "tokens": 68116,
+      "expectations": [
+        {"text": "german_chars_preserved", "passed": true, "evidence": "All umlauts and eszett present"},
+        {"text": "citations_preserved", "passed": true, "evidence": "All 6 citations with URLs found"},
+        {"text": "no_citation_loss", "passed": true, "evidence": "8 citations (added duplicates in summary table)"},
+        {"text": "paragraph_length", "passed": true, "evidence": "All paragraphs within limits"}
+      ]
+    },
+    {
+      "eval_name": "german-citation-polish",
+      "configuration": "without_skill",
+      "pass_rate": 1.0,
+      "time_seconds": 35.7,
+      "tokens": 14431,
+      "expectations": [
+        {"text": "german_chars_preserved", "passed": true, "evidence": "All umlauts and eszett present"},
+        {"text": "citations_preserved", "passed": true, "evidence": "All 6 citations with URLs found"},
+        {"text": "no_citation_loss", "passed": true, "evidence": "6 citations found"},
+        {"text": "paragraph_length", "passed": true, "evidence": "All paragraphs within limits"}
+      ]
+    },
+    {
+      "eval_name": "arc-aware-polish",
+      "configuration": "with_skill",
+      "pass_rate": 1.0,
+      "time_seconds": 104.1,
+      "tokens": 62348,
+      "expectations": [
+        {"text": "h2_headings_unchanged", "passed": true, "evidence": "All 5 H2s match exactly"},
+        {"text": "citations_preserved", "passed": true, "evidence": "All 8 citations with URLs found"},
+        {"text": "no_content_migration", "passed": true, "evidence": "All citations in correct sections"},
+        {"text": "frontmatter_preserved", "passed": true, "evidence": "arc_id: corporate-visions found"}
+      ]
+    },
+    {
+      "eval_name": "arc-aware-polish",
+      "configuration": "without_skill",
+      "pass_rate": 1.0,
+      "time_seconds": 34.3,
+      "tokens": 14721,
+      "expectations": [
+        {"text": "h2_headings_unchanged", "passed": true, "evidence": "All 5 H2s match exactly"},
+        {"text": "citations_preserved", "passed": true, "evidence": "All 8 citations with URLs found"},
+        {"text": "no_content_migration", "passed": true, "evidence": "All citations in correct sections"},
+        {"text": "frontmatter_preserved", "passed": true, "evidence": "arc_id: corporate-visions found"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "mean_pass_rate": 1.0,
+      "mean_time_seconds": 91.7,
+      "mean_tokens": 67126
+    },
+    "without_skill": {
+      "mean_pass_rate": 1.0,
+      "mean_time_seconds": 32.0,
+      "mean_tokens": 14105
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+59.7",
+      "tokens": "+53021"
+    }
+  },
+  "notes": [
+    "All programmatic assertions pass for both configurations - these are non-discriminating at this level",
+    "With-skill uses ~4.8x more tokens and ~2.9x more time due to reference loading and structured workflow",
+    "Qualitative differences are the real differentiator: memo formatting, Wolf Schneider style, arc-aware techniques",
+    "With-skill German output has 8 citations vs baseline 6 - added citations in summary table",
+    "With-skill arc output shows deliberate per-element technique application vs baseline generic improvements"
+  ]
+}

@@ -1,0 +1,43 @@
+version: "1.0.0"
+script:
+  name: "generate-project-slug.sh"
+  path: "skills/trend-scout/scripts/generate-project-slug.sh"
+  purpose: "Generate semantic project slug combining industry subsector and research topic"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--industry"
+      type: "string"
+      required: true
+      description: "Subsector slug (e.g., "automotive", "pharmaceuticals")"
+    - name: "--topic"
+      type: "string"
+      required: true
+      description: "Research topic text"
+    - name: "--max-length"
+      type: "number"
+      required: false
+      description: "Maximum slug length (optional: 50)"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error or missing arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-12-16"
+    changes: "Initial contract generation"
+    breaking: false

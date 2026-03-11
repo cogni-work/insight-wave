@@ -1,0 +1,65 @@
+{
+  "description": "End-to-end claim lifecycle example showing a claim progressing through unverified -> deviated -> resolved states.",
+  "claim": {
+    "id": "claim-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "statement": "The global AI market is expected to reach $1.8 trillion by 2030.",
+    "source_url": "https://example.com/ai-report",
+    "source_title": "AI Market Forecast 2024-2030",
+    "submitted_by": "cogni-research",
+    "submitted_at": "2026-02-23T14:30:00Z",
+    "status": "resolved",
+    "verified_at": "2026-02-23T14:35:00Z",
+    "deviations": [
+      {
+        "id": "dev-f1e2d3c4-b5a6-4978-8069-1a2b3c4d5e6f",
+        "claim_id": "claim-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "type": "unsupported_conclusion",
+        "severity": "high",
+        "source_excerpt": "The report states AI market growth is projected between $800B and $1.5T by 2030.",
+        "explanation": "The claim states $1.8 trillion, but the source projects a range of $800B to $1.5T. The claim exceeds the upper bound of the source's projection.",
+        "detected_at": "2026-02-23T14:35:00Z"
+      }
+    ],
+    "resolution": {
+      "id": "res-01234567-89ab-4cde-f012-3456789abcde",
+      "claim_id": "claim-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "action": "corrected",
+      "original_statement": "The global AI market is expected to reach $1.8 trillion by 2030.",
+      "corrected_statement": "The global AI market is projected between $800B and $1.5T by 2030.",
+      "alternative_source_url": null,
+      "alternative_source_title": null,
+      "rationale": "Updated to match the source's stated range.",
+      "resolved_by": "user",
+      "resolved_at": "2026-02-23T15:00:00Z"
+    },
+    "source_excerpt": "The report states AI market growth is projected between $800B and $1.5T by 2030.",
+    "verification_notes": "The claim's $1.8T figure exceeds the source's upper bound of $1.5T. This appears to be an unsupported conclusion rather than a misquotation, as the source does discuss AI market growth but with a different projected range."
+  },
+  "history": [
+    {
+      "event": "submitted",
+      "timestamp": "2026-02-23T14:30:00Z",
+      "data": {
+        "statement": "The global AI market is expected to reach $1.8 trillion by 2030.",
+        "source_url": "https://example.com/ai-report",
+        "submitted_by": "cogni-research"
+      }
+    },
+    {
+      "event": "verified",
+      "timestamp": "2026-02-23T14:35:00Z",
+      "data": {
+        "status": "deviated",
+        "deviations_count": 1
+      }
+    },
+    {
+      "event": "resolved",
+      "timestamp": "2026-02-23T15:00:00Z",
+      "data": {
+        "action": "corrected",
+        "rationale": "Updated to match the source's stated range."
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "description": "Auto-start Excalidraw canvas frontend before any Excalidraw MCP tool call",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__excalidraw__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PLUGIN_ROOT/hooks/ensure-excalidraw-canvas.sh\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

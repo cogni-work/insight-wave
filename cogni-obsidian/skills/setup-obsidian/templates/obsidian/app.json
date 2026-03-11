@@ -1,0 +1,13 @@
+{
+  "vaultOpen": true,
+  "livePreview": true,
+  "defaultViewMode": "preview",
+  "foldHeading": true,
+  "foldIndent": true,
+  "showLineNumber": true,
+  "showInlineTitle": true,
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "./attachments",
+  "showUnsupportedFiles": true,
+  "userIgnoreFilters": []
+}

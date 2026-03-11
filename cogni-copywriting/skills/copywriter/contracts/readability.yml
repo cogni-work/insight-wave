@@ -1,0 +1,70 @@
+version: "1.2.0"
+script:
+  name: "readability.sh"
+  path: "${CLAUDE_PLUGIN_ROOT}/skills/copywriter/scripts/readability.sh"
+  purpose: "Calculate language-aware readability metrics for markdown documents with German Wolf-Schneider style analysis"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--file"
+      type: "path"
+      required: true
+      description: "Path to markdown file to analyze"
+    - name: "--lang"
+      type: "string"
+      required: false
+      default: "auto"
+      description: "Language for Flesch formula: de (German/Amstad), en (English/standard), or auto (detect)"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output raw JSON only, skip formatted display"
+    - name: "--help"
+      type: "string"
+      required: false
+      description: "Show this help message"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data:
+        flesch_score: "number (0-100, Flesch Reading Ease)"
+        flesch_target_min: "number (language-aware minimum: EN=50, DE=30)"
+        flesch_target_max: "number (language-aware maximum: EN=60, DE=50)"
+        detected_language: "string (en or de)"
+        avg_paragraph_length: "number (average sentences per paragraph)"
+        total_paragraphs: "number"
+        visual_elements: "number (count of tables, callouts, lists, bold sections)"
+        header_levels: "number (max header depth)"
+        german_style: "object (only when de detected)"
+        german_style.avg_clause_length: "number (words per clause, target ≤12)"
+        german_style.max_clause_length: "number (longest clause in words)"
+        german_style.clauses_over_12: "number (count of clauses exceeding 12 words)"
+        german_style.sentence_length_std_dev: "number (variation, target >3.0)"
+        german_style.floskel_count: "number (detected Floskeln, target 0)"
+        german_style.floskeln_found: "array of string (matched Floskeln)"
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Missing required argument or invalid usage"
+    2: "File not found or not readable"
+    3: "Python dependency not available"
+    4: "Analysis failed"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.2.0"
+    date: "2026-02-25"
+    changes: "Add Wolf Schneider German style analysis: clause length (12-word rule), sentence rhythm variation, Floskel detection against 40+ known phrases"
+    breaking: false
+  - version: "1.1.0"
+    date: "2026-02-24"
+    changes: "Add German Flesch (Amstad 1978) formula with auto language detection, --lang parameter, detected_language output field"
+    breaking: false
+  - version: "1.0.0"
+    date: "2025-12-21"
+    changes: "Initial contract generation"
+    breaking: false

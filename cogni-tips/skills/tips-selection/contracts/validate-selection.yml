@@ -1,0 +1,41 @@
+version: "2.0.0"
+script:
+  name: "validate-selection.sh"
+  path: "skills/tips-selection/scripts/validate-selection.sh"
+  purpose: "Validates TIPS candidate counts from trend-candidates.md (60 total, 5 per cell)"
+  category: "utilities"
+interface:
+  parameters:
+    required:
+      - name: file
+        type: string
+        description: Path to trend-candidates.md file
+    optional:
+      - name: json
+        type: flag
+        description: Output results as JSON
+        default: false
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data:
+        total_candidates: "integer"
+        valid: "boolean"
+        invalid_cells: "array"
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Valid (60 candidates, 5 per cell x 12 cells)"
+    1: "Invalid count or error"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+changelog:
+  - version: "2.0.0"
+    date: "2026-03-04"
+    changes: "Updated for auto-select-60 flow. Validates 5 per cell uniformly (was 5 ACT + 5 PLAN + 3 OBSERVE)."
+    breaking: true
+  - version: "1.0.0"
+    date: "2026-01-02"
+    changes: "Initial contract generation"
+    breaking: false

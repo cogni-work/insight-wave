@@ -1,0 +1,61 @@
+version: "1.0.0"
+script:
+  name: "finalize-candidates.sh"
+  path: "skills/trend-scout/scripts/finalize-candidates.sh"
+  purpose: "Finalize trend-scout-output.json with agreed candidates, scoring metadata, and execution state"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "string"
+      required: true
+      description: "Absolute path to project directory"
+    - name: "--candidates-file"
+      type: "string"
+      required: true
+      description: "Path to JSON file containing agreed candidates array"
+    - name: "--web-count"
+      type: "number"
+      required: true
+      description: "Count of web-sourced candidates"
+    - name: "--training-count"
+      type: "number"
+      required: true
+      description: "Count of training-sourced candidates"
+    - name: "--user-count"
+      type: "number"
+      required: true
+      description: "Count of user-proposed candidates"
+    - name: "--search-timestamp"
+      type: "string"
+      required: true
+      description: "ISO 8601 timestamp of web search"
+    - name: "--web-status"
+      type: "string"
+      required: true
+      description: "Web research status: success|partial|failed|disabled"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error or missing arguments"
+    2: "File not found"
+    3: "jq error"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: ["jq"]
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2026-02-18"
+    changes: "Initial creation - extracts inline jq from phase-5-finalize.md Step 5.2"
+    breaking: false

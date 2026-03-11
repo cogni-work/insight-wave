@@ -1,0 +1,22 @@
+{
+  "name": "cogni-tips",
+  "version": "0.1.11",
+  "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE).",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/cogni-work/cogni-tips",
+  "keywords": [
+    "tips",
+    "trend-scout",
+    "trends",
+    "strategic-trends",
+    "bilingual",
+    "dach",
+    "mittelstand",
+    "germany",
+    "trend-report"
+  ]
+}

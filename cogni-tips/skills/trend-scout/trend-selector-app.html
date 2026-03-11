@@ -1,0 +1,2887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trend Candidate Selector | Cogni Work</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =====================================================
+       COGNI WORK THEME - Inspired by kilo.ai
+       Dark-first, developer-focused, glassmorphism
+       ===================================================== */
+
+    :root {
+      /* Primary Brand Colors - Near Black */
+      --color-primary: #0A0A0A;
+      --color-primary-dark: #050505;
+      --color-primary-light: #141414;
+
+      /* Secondary Colors - Muted Blue-Gray */
+      --color-secondary: #617A91;
+      --color-secondary-dark: #4A5F71;
+      --color-secondary-light: #7A95AD;
+
+      /* Accent Colors - Bright Green */
+      --color-accent: #00D084;
+      --color-accent-light: #33DCAD;
+      --color-accent-dark: #00A86B;
+      --color-accent-glow: rgba(0, 208, 132, 0.3);
+
+      /* Background Colors */
+      --color-bg-primary: #0A0A0A;
+      --color-bg-secondary: #111111;
+      --color-bg-tertiary: #1A1A1A;
+      --color-bg-elevated: #222222;
+      --color-bg-glass: rgba(255, 255, 255, 0.05);
+
+      /* Text Colors */
+      --color-text-primary: #FFFFFF;
+      --color-text-secondary: #A0A0A0;
+      --color-text-muted: #666666;
+      --color-text-accent: #00D084;
+
+      /* Border Colors */
+      --color-border: rgba(255, 255, 255, 0.1);
+      --color-border-hover: rgba(255, 255, 255, 0.2);
+      --color-border-focus: rgba(0, 208, 132, 0.5);
+      --color-border-accent: rgba(0, 208, 132, 0.3);
+
+      /* Glassmorphism */
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-bg-hover: rgba(255, 255, 255, 0.08);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+      --glass-border-accent: 1px solid rgba(0, 208, 132, 0.3);
+      --glass-backdrop: blur(12px);
+
+      /* Glow Effects */
+      --glow-accent: 0 0 40px rgba(0, 208, 132, 0.2);
+      --glow-accent-intense: 0 0 60px rgba(0, 208, 132, 0.3);
+
+      /* Status Colors */
+      --color-success: #00D084;
+      --color-warning: #FFB020;
+      --color-error: #FF4757;
+      --color-info: #617A91;
+
+      /* Dimension Colors - Green/Gray variations */
+      --dim-t: #00D084;
+      --dim-p: #00A86B;
+      --dim-i: #617A91;
+      --dim-s: #4A5F71;
+
+      /* Typography */
+      --font-primary: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+      --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+      /* Spacing */
+      --spacing-xs: 0.25rem;
+      --spacing-sm: 0.5rem;
+      --spacing-md: 1rem;
+      --spacing-lg: 1.5rem;
+      --spacing-xl: 2rem;
+      --spacing-2xl: 3rem;
+
+      /* Shadows */
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+      --shadow-glow: 0 0 40px rgba(0, 208, 132, 0.15);
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-pill: 9999px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-primary);
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Ambient background glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 30% 20%, rgba(0, 208, 132, 0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 80%, rgba(97, 122, 145, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: var(--spacing-md);
+    }
+
+    /* =====================================================
+       HEADER - COMPACT
+       ===================================================== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: var(--glass-border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--color-accent);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--color-bg-primary);
+      box-shadow: var(--shadow-glow);
+      position: relative;
+    }
+
+    .logo-icon::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: calc(var(--radius-sm) + 2px);
+      background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+      z-index: -1;
+      opacity: 0.5;
+      filter: blur(6px);
+    }
+
+    .title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .title span {
+      color: var(--color-accent);
+    }
+
+    .controls {
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+
+    .lang-toggle {
+      display: flex;
+      background: var(--glass-bg);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      border: var(--glass-border);
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-text-muted);
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-primary);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .lang-btn:hover {
+      color: var(--color-text-secondary);
+    }
+
+    .lang-btn.active {
+      background: var(--color-accent);
+      color: var(--color-bg-primary);
+    }
+
+    .export-btn {
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      color: var(--color-text-secondary);
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-primary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+    }
+
+    .export-btn:hover {
+      background: var(--glass-bg-hover);
+      border-color: var(--color-border-hover);
+      color: var(--color-text-primary);
+    }
+
+    .method-btn {
+      background: linear-gradient(135deg, rgba(0, 208, 132, 0.15), rgba(0, 168, 107, 0.1));
+      border: 1px solid rgba(0, 208, 132, 0.3);
+      color: var(--color-accent);
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-primary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .method-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .method-btn:hover {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 20px rgba(0, 208, 132, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .method-btn:hover::before {
+      opacity: 0.15;
+    }
+
+    .method-btn:active {
+      transform: translateY(0);
+    }
+
+    /* =====================================================
+       METHODOLOGY MODAL
+       ===================================================== */
+    .method-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 5, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .method-overlay.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .method-overlay.visible {
+      opacity: 1;
+    }
+
+    .method-modal {
+      background: var(--color-bg-secondary);
+      border: var(--glass-border);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 900px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg), var(--glow-accent);
+      transform: translateY(20px) scale(0.98);
+      transition: transform 0.3s ease;
+    }
+
+    .method-overlay.visible .method-modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .method-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: var(--glass-border);
+      background: var(--glass-bg);
+    }
+
+    .method-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .method-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--color-accent);
+    }
+
+    .method-close {
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      color: var(--color-text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .method-close:hover {
+      background: var(--glass-bg-hover);
+      color: var(--color-text-primary);
+      border-color: var(--color-border-hover);
+    }
+
+    .method-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--spacing-lg);
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-border-hover) transparent;
+    }
+
+    .method-body::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .method-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .method-body::-webkit-scrollbar-thumb {
+      background: var(--color-border-hover);
+      border-radius: 3px;
+    }
+
+    /* Markdown Content Styling */
+    .method-content {
+      font-family: var(--font-display);
+      line-height: 1.7;
+      color: var(--color-text-secondary);
+    }
+
+    .method-content h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0 0 var(--spacing-md);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 2px solid var(--color-accent);
+    }
+
+    .method-content h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--color-accent);
+      margin: var(--spacing-xl) 0 var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .method-content h2::before {
+      content: '//';
+      color: var(--color-text-muted);
+      font-family: var(--font-primary);
+    }
+
+    .method-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin: var(--spacing-lg) 0 var(--spacing-sm);
+    }
+
+    .method-content h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      margin: var(--spacing-md) 0 var(--spacing-sm);
+    }
+
+    .method-content p {
+      margin: 0 0 var(--spacing-md);
+    }
+
+    .method-content strong {
+      color: var(--color-text-primary);
+      font-weight: 600;
+    }
+
+    .method-content code {
+      background: var(--color-bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--font-primary);
+      font-size: 0.85em;
+      color: var(--color-accent);
+    }
+
+    .method-content pre {
+      background: var(--color-bg-primary);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      overflow-x: auto;
+      margin: var(--spacing-md) 0;
+    }
+
+    .method-content pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    .method-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--spacing-md) 0;
+      font-size: 0.85rem;
+    }
+
+    .method-content th {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+      font-weight: 600;
+      text-align: left;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--color-border);
+    }
+
+    .method-content td {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--color-border);
+      vertical-align: top;
+    }
+
+    .method-content tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .method-content ul, .method-content ol {
+      margin: var(--spacing-sm) 0 var(--spacing-md) var(--spacing-lg);
+    }
+
+    .method-content li {
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .method-content hr {
+      border: none;
+      height: 1px;
+      background: var(--color-border);
+      margin: var(--spacing-xl) 0;
+    }
+
+    .method-content blockquote {
+      border-left: 3px solid var(--color-accent);
+      padding-left: var(--spacing-md);
+      margin: var(--spacing-md) 0;
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+
+    /* =====================================================
+       PROGRESS SECTION - COMPACT
+       ===================================================== */
+    .progress-section {
+      display: flex;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      align-items: stretch;
+    }
+
+    .matrix-panel {
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      flex: 1;
+    }
+
+    .ring-panel {
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+
+    .panel-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: 140px repeat(3, 1fr) 60px;
+      gap: 4px;
+    }
+
+    .matrix-header {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 6px;
+      text-align: center;
+    }
+
+    .matrix-header:first-child {
+      text-align: left;
+    }
+
+    .matrix-dim {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-t { background: var(--dim-t); box-shadow: 0 0 6px rgba(0, 208, 132, 0.4); }
+    .dot-p { background: var(--dim-p); box-shadow: 0 0 6px rgba(0, 168, 107, 0.4); }
+    .dot-i { background: var(--dim-i); box-shadow: 0 0 6px rgba(97, 122, 145, 0.4); }
+    .dot-s { background: var(--dim-s); box-shadow: 0 0 6px rgba(74, 95, 113, 0.4); }
+
+    .matrix-cell {
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .matrix-cell:hover {
+      background: var(--color-bg-tertiary);
+      border-color: var(--color-border-hover);
+    }
+
+    .matrix-cell.complete {
+      background: rgba(0, 208, 132, 0.1);
+      border-color: var(--color-border-accent);
+      color: var(--color-success);
+    }
+
+    .matrix-cell .count { color: var(--color-text-primary); }
+    .matrix-cell .total { color: var(--color-text-muted); }
+
+    .matrix-total {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    /* Progress Ring - Compact */
+    .ring-wrap {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      flex-shrink: 0;
+    }
+
+    .ring-wrap svg {
+      transform: rotate(-90deg);
+      width: 80px;
+      height: 80px;
+    }
+
+    .ring-wrap circle {
+      fill: none;
+      stroke-width: 6;
+    }
+
+    .ring-bg { stroke: var(--color-bg-secondary); }
+
+    .ring-progress {
+      stroke: var(--color-accent);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 0 8px var(--color-accent-glow));
+    }
+
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring-number {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .ring-label {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .ring-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-badge {
+      padding: 6px 14px;
+      background: var(--color-bg-secondary);
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      border: var(--glass-border);
+      white-space: nowrap;
+    }
+
+    .status-badge.ready {
+      background: rgba(0, 208, 132, 0.15);
+      border-color: var(--color-border-accent);
+      color: var(--color-success);
+    }
+
+    /* =====================================================
+       DIMENSION TABS - COMPACT
+       ===================================================== */
+    .dim-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: var(--spacing-md);
+      background: var(--glass-bg);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: var(--glass-border);
+    }
+
+    .dim-tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-primary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+    }
+
+    .dim-tab:hover {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-primary);
+    }
+
+    .dim-tab.active {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border-hover);
+    }
+
+    .tab-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      opacity: 0.5;
+      transition: opacity 0.15s ease;
+    }
+
+    .dim-tab.active .tab-dot {
+      opacity: 1;
+    }
+
+    .tab-info {
+      text-align: left;
+    }
+
+    .tab-name {
+      display: block;
+    }
+
+    .tab-code {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* =====================================================
+       HORIZONS GRID
+       ===================================================== */
+    .horizons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    .horizon {
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .horizon-head {
+      padding: 10px 12px;
+      background: var(--color-bg-secondary);
+      border-bottom: var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .horizon-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .horizon-time {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      margin-top: 1px;
+    }
+
+    .horizon-count {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      background: var(--color-bg-tertiary);
+      border-radius: var(--radius-pill);
+      border: var(--glass-border);
+    }
+
+    .horizon-count.complete {
+      background: rgba(0, 208, 132, 0.15);
+      border-color: var(--color-border-accent);
+      color: var(--color-success);
+    }
+
+    .candidates {
+      padding: var(--spacing-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: calc(100vh - 340px);
+      min-height: 280px;
+      overflow-y: auto;
+    }
+
+    .candidates::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .candidates::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .candidates::-webkit-scrollbar-thumb {
+      background: var(--color-text-muted);
+      border-radius: 3px;
+    }
+
+    .candidates::-webkit-scrollbar-thumb:hover {
+      background: var(--color-text-secondary);
+    }
+
+    /* =====================================================
+       CANDIDATE CARD - COMPACT DESIGN
+       ===================================================== */
+    .card {
+      background: var(--color-bg-tertiary);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--color-accent);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      border-radius: var(--radius-md) 0 0 var(--radius-md);
+    }
+
+    .card:hover {
+      background: var(--color-bg-elevated);
+      border-color: var(--color-border-hover);
+    }
+
+    .card.selected {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 20px rgba(0, 208, 132, 0.12);
+    }
+
+    .card.selected::before {
+      opacity: 1;
+    }
+
+    /* Pre-selected candidates (top 3 by score per cell) */
+    .card.pre-selected {
+      border-left: 3px solid var(--color-accent);
+    }
+
+    .preselect-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      background: var(--color-accent);
+      color: var(--color-bg-primary);
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0;
+    }
+
+    .card-rank {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      background: var(--color-bg-secondary);
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--color-text-muted);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .card.selected .checkbox {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+
+    .checkbox svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      stroke: var(--color-bg-primary);
+      stroke-width: 3;
+      transition: opacity 0.15s ease;
+    }
+
+    .card.selected .checkbox svg {
+      opacity: 1;
+    }
+
+    .card-name {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .card-desc {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+      margin-top: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Hide keywords and metrics by default - show on hover */
+    .keywords {
+      display: none;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .card:hover .keywords {
+      display: flex;
+      max-height: 60px;
+    }
+
+    .kw {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      background: var(--color-bg-secondary);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .metrics {
+      display: none;
+      gap: 12px;
+      padding-top: 8px;
+      margin-top: 8px;
+      border-top: var(--glass-border);
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .card:hover .metrics {
+      display: flex;
+      max-height: 40px;
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-val {
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .stars { color: var(--color-warning); }
+    .conf { color: var(--color-success); }
+    .src { color: var(--color-accent); }
+
+    /* Mini indicators - always visible */
+    .card-indicators {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .mini-score {
+      font-size: 10px;
+      color: var(--color-warning);
+      opacity: 0.8;
+    }
+
+    .mini-conf {
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .mini-conf.high { background: rgba(0, 208, 132, 0.15); color: var(--color-success); }
+    .mini-conf.medium { background: rgba(255, 176, 32, 0.15); color: var(--color-warning); }
+    .mini-conf.low { background: rgba(97, 122, 145, 0.15); color: var(--color-secondary); }
+
+    /* =====================================================
+       HOVER DETAIL - EXPANDABLE SECTION
+       ===================================================== */
+    .card-detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0 solid var(--color-border);
+    }
+
+    .card:hover .card-detail {
+      max-height: 500px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: var(--glass-border);
+    }
+
+    .detail-desc {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .detail-keywords {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    .detail-metrics {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      margin: 8px 0;
+    }
+
+    .detail-metrics span {
+      white-space: nowrap;
+    }
+
+    .detail-source-info {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: var(--glass-border);
+      font-size: 10px;
+      color: var(--color-text-muted);
+    }
+
+    .detail-source-info a {
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    .detail-source-info a:hover {
+      text-decoration: underline;
+    }
+
+    /* =====================================================
+       USER PROPOSALS - COMPACT
+       ===================================================== */
+    .proposals {
+      margin-top: var(--spacing-md);
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .proposals-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .proposals-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--color-text-secondary);
+    }
+
+    .add-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px dashed var(--color-border-accent);
+      color: var(--color-accent);
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-primary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+    }
+
+    .add-btn:hover {
+      background: rgba(0, 208, 132, 0.1);
+      border-color: var(--color-accent);
+    }
+
+    .proposals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: var(--spacing-sm);
+    }
+
+    .proposal {
+      background: var(--color-bg-secondary);
+      border: var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+    }
+
+    .proposal input, .proposal select {
+      width: 100%;
+      background: var(--color-bg-tertiary);
+      border: var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      color: var(--color-text-primary);
+      font-size: 11px;
+      font-family: var(--font-primary);
+      margin-bottom: 8px;
+      transition: border-color 0.15s ease;
+    }
+
+    .proposal input:focus, .proposal select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px rgba(0, 208, 132, 0.12);
+    }
+
+    .proposal input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .proposal select {
+      cursor: pointer;
+    }
+
+    .proposal-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .del-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-error);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      margin-top: 4px;
+      float: right;
+      font-size: 11px;
+      font-family: var(--font-primary);
+      transition: all 0.15s ease;
+    }
+
+    .del-btn:hover {
+      background: rgba(255, 71, 87, 0.1);
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+    @media (max-width: 1100px) {
+      .horizons {
+        grid-template-columns: 1fr;
+      }
+      .progress-section {
+        flex-direction: column;
+      }
+      .ring-panel {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dim-tabs {
+        flex-wrap: wrap;
+      }
+      .dim-tab {
+        flex: 1 1 45%;
+      }
+      .header {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        align-items: flex-start;
+      }
+      .matrix {
+        grid-template-columns: 100px repeat(3, 1fr) 50px;
+        font-size: 10px;
+      }
+      .matrix-dim {
+        font-size: 10px;
+      }
+      .container {
+        padding: var(--spacing-sm);
+      }
+      .candidates {
+        max-height: 500px;
+      }
+    }
+
+    /* Focus states for accessibility */
+    :focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-accent);
+    }
+
+    /* =====================================================
+       SUBCATEGORY BADGES - Dimension-coded glass pills
+       ===================================================== */
+
+    /* Dimension color palette - harmonizes with Cogni Work theme */
+    /* externe-effekte: Cool cyan spectrum */
+    --subcat-ext-bg: rgba(0, 188, 212, 0.12);
+    --subcat-ext-border: rgba(0, 188, 212, 0.25);
+    --subcat-ext-text: #4DD0E1;
+    --subcat-ext-glow: rgba(0, 188, 212, 0.35);
+
+    /* neue-horizonte: Warm amber spectrum */
+    --subcat-hor-bg: rgba(255, 183, 77, 0.12);
+    --subcat-hor-border: rgba(255, 183, 77, 0.25);
+    --subcat-hor-text: #FFD54F;
+    --subcat-hor-glow: rgba(255, 183, 77, 0.35);
+
+    /* digitale-wertetreiber: Primary green spectrum */
+    --subcat-val-bg: rgba(0, 208, 132, 0.12);
+    --subcat-val-border: rgba(0, 208, 132, 0.25);
+    --subcat-val-text: #00D084;
+    --subcat-val-glow: rgba(0, 208, 132, 0.35);
+
+    /* digitales-fundament: Muted blue-gray spectrum */
+    --subcat-fun-bg: rgba(144, 164, 174, 0.12);
+    --subcat-fun-border: rgba(144, 164, 174, 0.25);
+    --subcat-fun-text: #B0BEC5;
+    --subcat-fun-glow: rgba(144, 164, 174, 0.35);
+
+    .subcat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-family: var(--font-primary);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* externe-effekte: wirtschaft, regulierung, gesellschaft */
+    .subcat-badge[data-subcat="wirtschaft"],
+    .subcat-badge[data-subcat="regulierung"],
+    .subcat-badge[data-subcat="gesellschaft"] {
+      background: rgba(0, 188, 212, 0.12);
+      border: 1px solid rgba(0, 188, 212, 0.25);
+      color: #4DD0E1;
+    }
+
+    .subcat-badge[data-subcat="wirtschaft"]:hover,
+    .subcat-badge[data-subcat="regulierung"]:hover,
+    .subcat-badge[data-subcat="gesellschaft"]:hover {
+      box-shadow: 0 0 12px rgba(0, 188, 212, 0.35);
+      border-color: #4DD0E1;
+    }
+
+    /* neue-horizonte: strategie, fuehrung, steuerung */
+    .subcat-badge[data-subcat="strategie"],
+    .subcat-badge[data-subcat="fuehrung"],
+    .subcat-badge[data-subcat="steuerung"] {
+      background: rgba(255, 183, 77, 0.12);
+      border: 1px solid rgba(255, 183, 77, 0.25);
+      color: #FFD54F;
+    }
+
+    .subcat-badge[data-subcat="strategie"]:hover,
+    .subcat-badge[data-subcat="fuehrung"]:hover,
+    .subcat-badge[data-subcat="steuerung"]:hover {
+      box-shadow: 0 0 12px rgba(255, 183, 77, 0.35);
+      border-color: #FFD54F;
+    }
+
+    /* digitale-wertetreiber: customer-experience, produkte-services, geschaeftsprozesse */
+    .subcat-badge[data-subcat="customer-experience"],
+    .subcat-badge[data-subcat="produkte-services"],
+    .subcat-badge[data-subcat="geschaeftsprozesse"] {
+      background: rgba(0, 208, 132, 0.12);
+      border: 1px solid rgba(0, 208, 132, 0.25);
+      color: #00D084;
+    }
+
+    .subcat-badge[data-subcat="customer-experience"]:hover,
+    .subcat-badge[data-subcat="produkte-services"]:hover,
+    .subcat-badge[data-subcat="geschaeftsprozesse"]:hover {
+      box-shadow: 0 0 12px rgba(0, 208, 132, 0.35);
+      border-color: #00D084;
+    }
+
+    /* digitales-fundament: kultur, mitarbeitende, technologie */
+    .subcat-badge[data-subcat="kultur"],
+    .subcat-badge[data-subcat="mitarbeitende"],
+    .subcat-badge[data-subcat="technologie"] {
+      background: rgba(144, 164, 174, 0.12);
+      border: 1px solid rgba(144, 164, 174, 0.25);
+      color: #B0BEC5;
+    }
+
+    .subcat-badge[data-subcat="kultur"]:hover,
+    .subcat-badge[data-subcat="mitarbeitende"]:hover,
+    .subcat-badge[data-subcat="technologie"]:hover {
+      box-shadow: 0 0 12px rgba(144, 164, 174, 0.35);
+      border-color: #B0BEC5;
+    }
+
+    /* Unknown/fallback */
+    .subcat-badge[data-subcat="unknown"] {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--color-text-muted);
+    }
+
+    /* Card hover inheritance - subtle lift */
+    .card:hover .subcat-badge {
+      transform: translateY(-1px);
+    }
+
+    /* =====================================================
+       WARNING BANNER - Demo Mode Alert
+       ===================================================== */
+    .warning-banner {
+      background: linear-gradient(90deg, rgba(255, 176, 32, 0.15), rgba(255, 176, 32, 0.1));
+      border: 1px solid rgba(255, 176, 32, 0.4);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: 13px;
+      color: var(--color-warning);
+    }
+
+    .warning-banner-icon {
+      font-size: 16px;
+    }
+
+    .warning-banner-text {
+      flex: 1;
+    }
+
+    .warning-banner-dismiss {
+      background: transparent;
+      border: none;
+      color: var(--color-warning);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+      opacity: 0.7;
+    }
+
+    .warning-banner-dismiss:hover {
+      opacity: 1;
+    }
+
+    /* =====================================================
+       AUTOSAVE INDICATOR
+       ===================================================== */
+    .autosave-indicator {
+      position: fixed;
+      bottom: var(--spacing-md);
+      right: var(--spacing-md);
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: var(--radius-pill);
+      padding: 6px 12px;
+      font-size: 11px;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+
+    .autosave-indicator.visible {
+      opacity: 1;
+    }
+
+    .autosave-indicator.saved {
+      color: var(--color-success);
+      border-color: rgba(0, 208, 132, 0.3);
+    }
+
+    /* =====================================================
+       VALIDATION STATES - Matrix Cells
+       ===================================================== */
+    .matrix-cell.cell-valid {
+      border-color: rgba(0, 208, 132, 0.5);
+      background: rgba(0, 208, 132, 0.08);
+    }
+
+    .matrix-cell.cell-invalid {
+      border-color: rgba(255, 176, 32, 0.5);
+      background: rgba(255, 176, 32, 0.08);
+    }
+
+    .matrix-cell.cell-over {
+      border-color: rgba(255, 71, 87, 0.5);
+      background: rgba(255, 71, 87, 0.08);
+    }
+
+    /* Export button states */
+    .export-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .export-btn.ready {
+      background: var(--color-accent);
+      color: var(--color-bg-primary);
+      border-color: var(--color-accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">T</div>
+        <h1 class="title"><span>Trend</span> Selector</h1>
+      </div>
+      <div class="controls">
+        <button class="method-btn" onclick="openMethodology()">Methodology</button>
+        <div class="lang-toggle">
+          <button class="lang-btn active" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" onclick="setLang('de')">DE</button>
+        </div>
+        <button class="export-btn" onclick="exportMD()" id="exportBtn">Export</button>
+      </div>
+    </header>
+
+    <!-- Demo Mode Warning Banner (hidden by default) -->
+    <div id="demo-warning" class="warning-banner" style="display: none;">
+      <span class="warning-banner-icon">&#9888;</span>
+      <span class="warning-banner-text" id="demo-warning-text">Demo mode active - trend-app-data.json not found</span>
+      <button class="warning-banner-dismiss" onclick="dismissWarning()">&times;</button>
+    </div>
+
+    <!-- Autosave Indicator -->
+    <div id="autosave-indicator" class="autosave-indicator">
+      <span id="autosave-icon">&#128190;</span>
+      <span id="autosave-text">Saved</span>
+    </div>
+
+    <section class="progress-section">
+      <div class="matrix-panel">
+        <h3 class="panel-title" id="matrixTitle">Selection Matrix</h3>
+        <div class="matrix">
+          <div class="matrix-header"></div>
+          <div class="matrix-header" id="hAct">Act</div>
+          <div class="matrix-header" id="hPlan">Plan</div>
+          <div class="matrix-header" id="hObs">Observe</div>
+          <div class="matrix-header" id="hTotal">Total</div>
+
+          <div class="matrix-dim"><span class="dot dot-t"></span><span id="dT">External Effects</span></div>
+          <div class="matrix-cell" data-dim="t" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="t" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="t" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
+          <div class="matrix-total" data-dim="t">0/13</div>
+
+          <div class="matrix-dim"><span class="dot dot-p"></span><span id="dP">New Horizons</span></div>
+          <div class="matrix-cell" data-dim="p" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="p" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="p" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
+          <div class="matrix-total" data-dim="p">0/13</div>
+
+          <div class="matrix-dim"><span class="dot dot-i"></span><span id="dI">Digital Value Drivers</span></div>
+          <div class="matrix-cell" data-dim="i" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="i" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="i" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
+          <div class="matrix-total" data-dim="i">0/13</div>
+
+          <div class="matrix-dim"><span class="dot dot-s"></span><span id="dS">Digital Foundation</span></div>
+          <div class="matrix-cell" data-dim="s" data-h="act"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="s" data-h="plan"><span class="count">0</span>/<span class="total">5</span></div>
+          <div class="matrix-cell" data-dim="s" data-h="obs"><span class="count">0</span>/<span class="total">3</span></div>
+          <div class="matrix-total" data-dim="s">0/13</div>
+        </div>
+      </div>
+
+      <div class="ring-panel">
+        <div class="ring-wrap">
+          <svg width="80" height="80">
+            <circle class="ring-bg" cx="40" cy="40" r="34"/>
+            <circle class="ring-progress" cx="40" cy="40" r="34" stroke-dasharray="214" stroke-dashoffset="214"/>
+          </svg>
+          <div class="ring-center">
+            <span class="ring-number" id="totalCount">0</span>
+            <span class="ring-label">/ 52</span>
+          </div>
+        </div>
+        <div class="ring-info">
+          <div class="status-badge" id="statusBadge">Select 52 candidates</div>
+        </div>
+      </div>
+    </section>
+
+    <nav class="dim-tabs">
+      <button class="dim-tab active" data-dim="t">
+        <span class="tab-dot dot-t"></span>
+        <div class="tab-info">
+          <span class="tab-name" id="tabT">External Effects</span>
+          <span class="tab-code">Dimension 1</span>
+        </div>
+      </button>
+      <button class="dim-tab" data-dim="p">
+        <span class="tab-dot dot-p"></span>
+        <div class="tab-info">
+          <span class="tab-name" id="tabP">New Horizons</span>
+          <span class="tab-code">Dimension 2</span>
+        </div>
+      </button>
+      <button class="dim-tab" data-dim="i">
+        <span class="tab-dot dot-i"></span>
+        <div class="tab-info">
+          <span class="tab-name" id="tabI">Digital Value Drivers</span>
+          <span class="tab-code">Dimension 3</span>
+        </div>
+      </button>
+      <button class="dim-tab" data-dim="s">
+        <span class="tab-dot dot-s"></span>
+        <div class="tab-info">
+          <span class="tab-name" id="tabS">Digital Foundation</span>
+          <span class="tab-code">Dimension 4</span>
+        </div>
+      </button>
+    </nav>
+
+    <div class="horizons" id="horizons"></div>
+
+    <section class="proposals">
+      <div class="proposals-head">
+        <h2 class="proposals-title" id="propTitle">Your Proposals</h2>
+        <button class="add-btn" onclick="addProposal()">+ Add</button>
+      </div>
+      <div class="proposals-grid" id="proposalsGrid"></div>
+    </section>
+  </div>
+
+  <script>
+    // Project metadata (loaded from JSON)
+    var PROJECT_META = {
+      project_id: 'machinery-strategic-business-innovation-3925',
+      project_name: 'Strategische Geschäftsinnovationen im Maschinenbau',
+      industry: 'Manufacturing',
+      industry_de: 'Fertigung',
+      subsector: 'Machinery',
+      subsector_de: 'Maschinenbau',
+      language: 'de'
+    };
+
+    // Source registry for citations
+    var SOURCE_REGISTRY = {
+      "1": "https://www.enkryptai.com/blog/eu-ai-acts-august-2nd-deadline-information",
+      "2": "https://www.fortunebusinessinsights.com/blog/machinery-equipment-market-research-tariff-impact-2025-supply-chain-trends-11080",
+      "3": "https://www.produktion.de/wirtschaft/maschinenbau-2025-personalabbau-setzt-sich-fort-488.html"
+    };
+
+    // Maschinenbau Trend-Kandidaten
+    const DEMO_DATA = {
+      t: {
+        act: [
+          {id:'t-a-1', name:'EU AI Act Compliance', trend_statement:'Sofortiger Compliance-Druck für KI-gesteuerte Maschinen bis zur Frist im August 2025.', kw:['AI Act','Compliance','Regulierung'], score:0.82, conf:'high', int:5, src:'[1]', subcat:'regulierung', research_hint:'Untersuchen Sie Compliance-Pfade für Hochrisiko-KI-Klassifikationen, Implementierungskosten und Vorbereitungsstrategien führender DACH-Hersteller.'},
+          {id:'t-a-2', name:'US Tariff Impact', trend_statement:'12-19% Zollauswirkungen auf Maschinenexporte beeinträchtigen die Wettbewerbsfähigkeit.', kw:['Zölle','Export','USA'], score:0.71, conf:'medium', int:5, src:'[2]', subcat:'wirtschaft', research_hint:'Untersuchen Sie Preisstrategien, alternative Märkte und wie Wettbewerber ihre US-Exportstrategie anpassen.'},
+          {id:'t-a-3', name:'Skilled Labor Paradox', trend_statement:'Gleichzeitige Entlassungen und struktureller Fachkräftemangel im Maschinenbausektor.', kw:['Fachkräfte','Arbeitsmarkt'], score:0.68, conf:'high', int:4, src:'[3]', subcat:'gesellschaft', research_hint:'Untersuchen Sie Qualifikationsprofile mit Engpässen, erfolgreiche Retention-Programme und Automatisierungsstrategien für kritische Rollen.'},
+          {id:'t-a-4', name:'ESG Lifecycle Mandates', trend_statement:'Verpflichtende Lebenszyklusbewertung schafft Compliance-Belastung für KMU-Maschinenbauer.', kw:['ESG','Lifecycle','KMU'], score:0.66, conf:'medium', int:4, src:'[4]', subcat:'regulierung', research_hint:'Untersuchen Sie LCA-Tools für KMU, Compliance-Kosten und wie Branchenverbände Unterstützung bieten.'},
+          {id:'t-a-5', name:'German Production Decline', trend_statement:'-5,3% Produktionsrückgang belastet Umsätze im DACH-Markt.', kw:['Produktion','DACH','Rückgang'], score:0.64, conf:'high', int:5, src:'[5]', subcat:'wirtschaft', research_hint:'Untersuchen Sie Marktsegmente mit Wachstum, Exportdiversifizierungsstrategien und Kostenoptimierungsmaßnahmen.'}
+        ],
+        plan: [
+          {id:'t-p-1', name:'EU Machinery Regulation 2027', trend_statement:'Neue Sicherheitsanforderungen für KI-integrierte Maschinen ab 2027 wirksam.', kw:['Maschinenverordnung','2027','Sicherheit'], score:0.78, conf:'high', int:3, src:'[6]', subcat:'regulierung', research_hint:'Untersuchen Sie Änderungen gegenüber Maschinenrichtlinie, Zertifizierungspfade und Produktentwicklungs-Roadmaps.'},
+          {id:'t-p-2', name:'Manufacturing-X Data Federation', trend_statement:'Staatlich unterstütztes Daten-Ökosystem ermöglicht B2B-Datenaustausch in Deutschland.', kw:['Manufacturing-X','Daten','B2B'], score:0.74, conf:'high', int:3, src:'[7]', subcat:'regulierung', research_hint:'Untersuchen Sie Teilnahmevoraussetzungen, Datensouveränität und Geschäftsmodelle auf Basis geteilter Produktionsdaten.'},
+          {id:'t-p-3', name:'Circular Economy ROI', trend_statement:'70% der Führungskräfte glauben, dass zirkuläre Lösungen Umsatzwachstum treiben können.', kw:['Circular Economy','ROI','Nachhaltigkeit'], score:0.72, conf:'medium', int:3, src:'[8]', subcat:'wirtschaft', research_hint:'Untersuchen Sie ROI-Nachweise, erfolgreiche Circular-Modelle im Maschinenbau und Implementierungsbarrieren.'},
+          {id:'t-p-4', name:'Nearshoring Supply Chains', trend_statement:'Diversifizierung der Lieferkette treibt regionale Produktionsverschiebungen voran.', kw:['Nearshoring','Lieferkette','Regional'], score:0.70, conf:'medium', int:3, src:'[9]', subcat:'gesellschaft', research_hint:'Untersuchen Sie Zielregionen für Nearshoring, Kostenvergleiche und Lieferantenqualifizierungsansätze.'},
+          {id:'t-p-5', name:'Deutschlandfonds Scale-Up Support', trend_statement:'Neuer Staatsfonds unterstützt industrielle Deep-Tech-Startups in Deutschland.', kw:['Deutschlandfonds','Startup','Deep-Tech'], score:0.68, conf:'high', int:3, src:'[10]', subcat:'regulierung', research_hint:'Untersuchen Sie Förderkriterien, Kooperationsmöglichkeiten mit Startups und strategische Partnerschaftsmodelle.'}
+        ],
+        obs: [
+          {id:'t-o-1', name:'Aging Workforce Cliff 2030', trend_statement:'Rentenwelle der Babyboomer schafft plötzliche Wissenslücke ab 2030+.', kw:['Demografie','Wissenstransfer','2030'], score:0.65, conf:'medium', int:2, src:'📚', subcat:'gesellschaft', research_hint:'Beobachten Sie Frühsignale, Wissenstransfer-Programme und Automatisierungspotenziale für kritische Rollen.'},
+          {id:'t-o-2', name:'De-Globalization Reversal', trend_statement:'Langfristige Verschiebung zu regionalen Handelsblöcken beeinflusst globale Maschinenmärkte.', kw:['Deglobalisierung','Handel','Blöcke'], score:0.62, conf:'low', int:2, src:'📚', subcat:'wirtschaft', research_hint:'Beobachten Sie Handelspolitik-Signale, regionale Marktentwicklung und Szenarien für Blockneubildung.'},
+          {id:'t-o-3', name:'Carbon Border Adjustment', trend_statement:'Entstehende CO2-Grenzsteuern gestalten internationale Maschinenhandelsökonomie neu.', kw:['CBAM','CO2','Grenzsteuer'], score:0.60, conf:'medium', int:2, src:'📚', subcat:'regulierung', research_hint:'Beobachten Sie CBAM-Implementierung, Produktkategorien und Wettbewerbseffekte auf Nicht-EU-Hersteller.'},
+          {id:'t-o-4', name:'Urbanization Impact Materials', trend_statement:'Anhaltende globale Urbanisierung verschiebt langfristig Maschinennachfragemuster.', kw:['Urbanisierung','Nachfrage','Global'], score:0.58, conf:'low', int:1, src:'📚', subcat:'gesellschaft', research_hint:'Beobachten Sie Infrastrukturinvestitionen in Schwellenländern und resultierende Maschinennachfrage-Shifts.'},
+          {id:'t-o-5', name:'Resource Scarcity Pricing', trend_statement:'Langfristige Knappheit von Seltenen Erden und kritischen Materialien beeinflusst Maschinenkosten.', kw:['Ressourcen','Seltene Erden','Knappheit'], score:0.56, conf:'low', int:2, src:'📚', subcat:'wirtschaft', research_hint:'Beobachten Sie Materialpreisentwicklung, Recycling-Technologien und Designstrategien für Materialsubstitution.'}
+        ]
+      },
+      p: {
+        act: [
+          {id:'p-a-1', name:'Servitization Models', trend_statement:'Wechsel von Produktverkauf zu Serviceverträgen schafft wiederkehrende Umsätze.', kw:['Servitization','Subscription','Recurring'], score:0.75, conf:'medium', int:4, src:'[11]', subcat:'strategie', research_hint:'Untersuchen Sie erfolgreiche Servitization-Modelle, Preisgestaltung und Kundenakzeptanz im Maschinenbau.'},
+          {id:'p-a-2', name:'AI as Innovation Lever', trend_statement:'80% der Maschinenbauunternehmen sehen KI als zentralen strategischen Innovationstreiber.', kw:['KI','Innovation','Strategie'], score:0.73, conf:'high', int:4, src:'[12]', subcat:'strategie', research_hint:'Untersuchen Sie KI-Anwendungsfälle mit höchstem ROI, Implementierungsstrategien und Kompetenzaufbau.'},
+          {id:'p-a-3', name:'DACH Custom Services Leadership', trend_statement:'Deutsche Maschinenbauunternehmen führend in Customization und Service-Geschäftsmodellen.', kw:['DACH','Customization','Services'], score:0.71, conf:'medium', int:4, src:'[13]', subcat:'fuehrung', research_hint:'Untersuchen Sie Differenzierungsmerkmale, Premium-Positionierung und Service-Excellence-Praktiken.'},
+          {id:'p-a-4', name:'Digital Value Contribution', trend_statement:'82% der Industrieunternehmen nennen Digital als wichtigsten Wertbeitrag.', kw:['Digital','Wertbeitrag','Industrie'], score:0.69, conf:'medium', int:4, src:'[14]', subcat:'steuerung', research_hint:'Untersuchen Sie Wertbeitrags-Metriken, Digital-KPIs und Steuerungsmodelle für digitale Transformation.'},
+          {id:'p-a-5', name:'Industry 4.0 Sustained Investment', trend_statement:'36% der Unternehmen planen trotz Gegenwind erhöhte Investitionen in Industrie 4.0.', kw:['Industrie 4.0','Investment','Digitalisierung'], score:0.67, conf:'high', int:4, src:'[15]', subcat:'strategie', research_hint:'Untersuchen Sie Investitionsprioritäten, ROI-Erwartungen und Erfolgsfaktoren bei I4.0-Implementierungen.'}
+        ],
+        plan: [
+          {id:'p-p-1', name:'Circular Business Models', trend_statement:'Kreislaufwirtschafts-Geschäftsmodelle zeigen klaren ROI-Pfad für Maschinenbau.', kw:['Circular','Geschäftsmodell','ROI'], score:0.74, conf:'medium', int:3, src:'[16]', subcat:'strategie', research_hint:'Untersuchen Sie Geschäftsmodell-Varianten, Kundenakzeptanz und Implementierungs-Roadmaps.'},
+          {id:'p-p-2', name:'Deep-Tech M&A Wave', trend_statement:'$5.3B+ Maschinenbau-M&A-Deals signalisieren Branchenkonsolidierungstrend.', kw:['M&A','Deep-Tech','Konsolidierung'], score:0.70, conf:'medium', int:3, src:'[17]', subcat:'strategie', research_hint:'Untersuchen Sie M&A-Targets, Integrationserfolge und strategische Partnerschaften als Alternative.'},
+          {id:'p-p-3', name:'Predictive Analytics Maturity', trend_statement:'Advanced Analytics reift zu operativen Entscheidungsunterstützungssystemen.', kw:['Analytics','Predictive','Decision Support'], score:0.68, conf:'medium', int:3, src:'📚', subcat:'steuerung', research_hint:'Untersuchen Sie Analytics-Reifegrad-Modelle, Datenqualitätsanforderungen und Entscheidungsunterstützungs-Use-Cases.'},
+          {id:'p-p-4', name:'Ecosystem Orchestration', trend_statement:'Wechsel von linearen Wertschöpfungsketten zu Ökosystem-Orchestrierungsmodellen.', kw:['Ökosystem','Plattform','Orchestrierung'], score:0.66, conf:'medium', int:3, src:'📚', subcat:'fuehrung', research_hint:'Untersuchen Sie Plattform-Rollen, Partnerschaftsmodelle und Governance-Strukturen für Ökosysteme.'},
+          {id:'p-p-5', name:'Megatrends New Identity', trend_statement:'Neue Identitätsdynamik-Megatrend beeinflusst strategische Planungsrahmen.', kw:['Megatrend','Identität','Zukunftsinstitut'], score:0.62, conf:'low', int:2, src:'[18]', subcat:'fuehrung', research_hint:'Untersuchen Sie Auswirkungen auf Employer Branding, Kundenbeziehungen und Corporate Identity.'}
+        ],
+        obs: [
+          {id:'p-o-1', name:'Quantum Computing Manufacturing', trend_statement:'Quantencomputing ermöglicht beispiellose Simulationsfähigkeiten für Maschinendesign.', kw:['Quantum','Simulation','Design'], score:0.58, conf:'low', int:1, src:'📚', subcat:'strategie', research_hint:'Beobachten Sie Technologie-Reifegrad, erste industrielle Anwendungen und potenzielle Disruptionsszenarien.'},
+          {id:'p-o-2', name:'Bio-Inspired Manufacturing', trend_statement:'Biomimetische Prinzipien angewandt auf adaptive Fertigungssysteme.', kw:['Biomimetik','Adaptiv','Fertigung'], score:0.56, conf:'low', int:2, src:'📚', subcat:'strategie', research_hint:'Beobachten Sie Forschungsentwicklungen, Pilot-Anwendungen und potenzielle Produktanwendungen.'},
+          {id:'p-o-3', name:'Decentralized Autonomous Manufacturing', trend_statement:'Blockchain-basierte dezentrale Fertigungskoordination entsteht.', kw:['Blockchain','Dezentral','DAO'], score:0.52, conf:'low', int:1, src:'📚', subcat:'fuehrung', research_hint:'Beobachten Sie Blockchain-Pilotprojekte in der Fertigung und Governance-Modelle für dezentrale Produktion.'},
+          {id:'p-o-4', name:'Neuro-Adaptive Control Systems', trend_statement:'Brain-Computer-Interfaces ermöglichen direkte Maschinensteuerung.', kw:['BCI','Neuro','Steuerung'], score:0.50, conf:'uncertain', int:1, src:'📚', subcat:'steuerung', research_hint:'Beobachten Sie BCI-Technologie-Fortschritte und erste industrielle Anwendungsexperimente.'},
+          {id:'p-o-5', name:'Post-Scarcity Economics', trend_statement:'Fortgeschrittene Automatisierung schafft Post-Knappheits-Szenarien.', kw:['Post-Scarcity','Automatisierung','Zukunft'], score:0.48, conf:'uncertain', int:1, src:'📚', subcat:'fuehrung', research_hint:'Beobachten Sie Szenarien für radikale Automatisierung und deren gesellschaftliche Implikationen.'}
+        ]
+      },
+      i: {
+        act: [
+          {id:'i-a-1', name:'AI Process Optimization', trend_statement:'KI-gesteuerte Prozessoptimierung liefert zweistellige Kosteneinsparungen.', kw:['KI','Prozess','Optimierung'], score:0.76, conf:'medium', int:4, src:'[19]', subcat:'geschaeftsprozesse', research_hint:'Untersuchen Sie Implementierungskosten, messbare Einsparungen und Quick-Win-Anwendungsfälle.'},
+          {id:'i-a-2', name:'Digital Twin Maintenance', trend_statement:'Digital-Twin-Technologie reduziert Wartungskosten um 40%.', kw:['Digital Twin','Wartung','Predictive'], score:0.74, conf:'medium', int:4, src:'[20]', subcat:'produkte-services', research_hint:'Untersuchen Sie Digital-Twin-Plattformen, Datenintegration und Predictive-Maintenance-ROI.'},
+          {id:'i-a-3', name:'GenAI Industrial Adoption', trend_statement:'50% der Industrieunternehmen nutzen GenAI, 40% planen Ausbau.', kw:['GenAI','Adoption','Industrie'], score:0.72, conf:'high', int:4, src:'[21]', subcat:'produkte-services', research_hint:'Untersuchen Sie produktive GenAI-Use-Cases, Governance-Anforderungen und Qualitätssicherung.'},
+          {id:'i-a-4', name:'B2B Digital Sales Channels', trend_statement:'56% des B2B-Maschinenbauumsatzes über digitale Kanäle bis 2025.', kw:['B2B','Digital Sales','E-Commerce'], score:0.70, conf:'medium', int:5, src:'[22]', subcat:'customer-experience', research_hint:'Untersuchen Sie E-Commerce-Plattformen für Maschinenbau, Customer-Journey-Mapping und Conversion-Optimierung.'},
+          {id:'i-a-5', name:'Pre-Contact B2B Decisions', trend_statement:'60%+ der B2B-Entscheidungen getroffen vor erstem Verkaufskontakt.', kw:['B2B','Buyer Journey','Digital'], score:0.68, conf:'medium', int:5, src:'[23]', subcat:'customer-experience', research_hint:'Untersuchen Sie Content-Strategien, SEO/SEA für Maschinenbau und Digital-First-Vertriebsmodelle.'}
+        ],
+        plan: [
+          {id:'i-p-1', name:'AI Data-Based Sales Growth', trend_statement:'KI-gestützte Datenanalyse treibt 7,8% zusätzliches Umsatzwachstum.', kw:['KI','Sales','Datenanalyse'], score:0.71, conf:'medium', int:3, src:'[24]', subcat:'produkte-services', research_hint:'Untersuchen Sie Datenquellen, Analytics-Modelle und Integration in CRM/Vertriebsprozesse.'},
+          {id:'i-p-2', name:'Production Efficiency Digital Twin', trend_statement:'10-20% OEE-Verbesserungen durch Digital-Twin-Implementierung.', kw:['Digital Twin','OEE','Effizienz'], score:0.69, conf:'medium', int:3, src:'[25]', subcat:'geschaeftsprozesse', research_hint:'Untersuchen Sie OEE-Verbesserungspfade, Sensorik-Anforderungen und Implementierungs-Best-Practices.'},
+          {id:'i-p-3', name:'Robotics Market Scaling', trend_statement:'Robotikmarkt bis 2025 auf $310B prognostiziert.', kw:['Robotik','Markt','Automatisierung'], score:0.68, conf:'medium', int:3, src:'[26]', subcat:'geschaeftsprozesse', research_hint:'Untersuchen Sie Robotik-Anwendungsfälle, ROI-Modelle und Integrations-Roadmaps für bestehende Produktion.'},
+          {id:'i-p-4', name:'Customer Portals Self-Service', trend_statement:'Self-Service-Kundenportale werden erwarteter Standard im Maschinenbau.', kw:['Portal','Self-Service','Kunden'], score:0.66, conf:'medium', int:3, src:'📚', subcat:'customer-experience', research_hint:'Untersuchen Sie Portal-Funktionalitäten, Kundenerwartungen und Implementierungsaufwand.'},
+          {id:'i-p-5', name:'Additive Manufacturing Large-Format', trend_statement:'68,6% Marktwachstum in großformatigem additiven Fertigungsbau 2025.', kw:['Additive','3D-Druck','Large-Format'], score:0.64, conf:'medium', int:3, src:'[27]', subcat:'produkte-services', research_hint:'Untersuchen Sie Materialoptionen, Produktionskostenvergleich und Hybrid-Fertigungsstrategien.'}
+        ],
+        obs: [
+          {id:'i-o-1', name:'Spatial Computing Interfaces', trend_statement:'Spatial Computing ersetzt traditionelle HMIs für Maschinenbedienung.', kw:['Spatial','HMI','AR/VR'], score:0.60, conf:'low', int:2, src:'📚', subcat:'customer-experience', research_hint:'Beobachten Sie AR/VR-Pilotprojekte in Maschinenbedienung und Wartungsunterstützung.'},
+          {id:'i-o-2', name:'Autonomous Manufacturing Systems', trend_statement:'Vollautonome Lights-Out-Fertigung mit minimaler menschlicher Intervention.', kw:['Autonom','Lights-Out','Fertigung'], score:0.58, conf:'low', int:2, src:'📚', subcat:'geschaeftsprozesse', research_hint:'Beobachten Sie Lights-Out-Pilotanlagen, Automatisierungsgrade und Skalierungsbarrieren.'},
+          {id:'i-o-3', name:'Self-Healing Materials', trend_statement:'Selbstheilende Materialien verlängern Maschinenlebensdauer dramatisch.', kw:['Materialien','Self-Healing','Lebensdauer'], score:0.56, conf:'low', int:2, src:'📚', subcat:'produkte-services', research_hint:'Beobachten Sie Materialforschung, erste Anwendungen und Kommerzialisierungs-Zeitrahmen.'},
+          {id:'i-o-4', name:'Molecular Manufacturing', trend_statement:'Atomar präzise Fertigung ermöglicht neue Maschinenfähigkeiten.', kw:['Molekular','Nano','Präzision'], score:0.54, conf:'low', int:1, src:'📚', subcat:'produkte-services', research_hint:'Beobachten Sie Nanotechnologie-Fortschritte und potenzielle Fertigungsanwendungen.'},
+          {id:'i-o-5', name:'Metaverse B2B Showrooms', trend_statement:'Persistente Metaverse-Umgebungen für Maschinenverkauf und Schulung.', kw:['Metaverse','B2B','Showroom'], score:0.52, conf:'low', int:1, src:'📚', subcat:'customer-experience', research_hint:'Beobachten Sie B2B-Metaverse-Plattformen, frühe Adopter-Erfahrungen und ROI-Kennzahlen.'}
+        ]
+      },
+      s: {
+        act: [
+          {id:'s-a-1', name:'NIS2 Cybersecurity Compliance', trend_statement:'NIS2-Richtlinie (Oktober 2024) schreibt Cybersicherheit für Maschinenhersteller vor.', kw:['NIS2','Cybersecurity','Compliance'], score:0.80, conf:'high', int:5, src:'[28]', subcat:'technologie', research_hint:'Untersuchen Sie Compliance-Anforderungen, Risikomanagement-Frameworks und Implementierungskosten.'},
+          {id:'s-a-2', name:'Smart Manufacturing Investment', trend_statement:'80% planen 20%+ Budgeterhöhung für Smart Manufacturing Infrastruktur.', kw:['Smart Manufacturing','Investment','Budget'], score:0.73, conf:'high', int:4, src:'[29]', subcat:'technologie', research_hint:'Untersuchen Sie Investitionsprioritäten, Technologie-Stack-Entscheidungen und ROI-Erwartungen.'},
+          {id:'s-a-3', name:'42% AI Production Adoption', trend_statement:'42% nutzen KI in der Produktion, 35% planen - kultureller Wandel im Gang.', kw:['KI','Produktion','Adoption'], score:0.71, conf:'high', int:4, src:'[30]', subcat:'kultur', research_hint:'Untersuchen Sie Change-Management-Ansätze, Mitarbeiterakzeptanz und Erfolgs-KPIs.'},
+          {id:'s-a-4', name:'ML Engineer Demand Surge', trend_statement:'40% Wachstum bei ML-Engineer-Nachfrage über 5 Jahre.', kw:['ML Engineer','Talent','Nachfrage'], score:0.69, conf:'medium', int:4, src:'[31]', subcat:'mitarbeitende', research_hint:'Untersuchen Sie Recruiting-Strategien, Upskilling-Programme und alternative Sourcing-Modelle.'},
+          {id:'s-a-5', name:'German Smart Manufacturing €10B', trend_statement:'€10B jährliche Investition in Smart Manufacturing Infrastruktur in Deutschland.', kw:['Deutschland','Investment','Infrastruktur'], score:0.67, conf:'high', int:5, src:'[32]', subcat:'technologie', research_hint:'Untersuchen Sie Förderprogramme, Infrastruktur-Roadmaps und Konnektivitätsstandards.'}
+        ],
+        plan: [
+          {id:'s-p-1', name:'Cyber Resilience Act 2027', trend_statement:'CRA (Dezember 2027) erfordert Cybersicherheit für alle digitalen Maschinenprodukte.', kw:['CRA','Cybersecurity','2027'], score:0.76, conf:'high', int:3, src:'[33]', subcat:'technologie', research_hint:'Untersuchen Sie Produktanforderungen, Secure-by-Design-Praktiken und Compliance-Roadmaps.'},
+          {id:'s-p-2', name:'Data Governance & Edge Computing', trend_statement:'Edge Computing und Data Governance entstehen als grundlegender Megatrend.', kw:['Edge','Data Governance','Megatrend'], score:0.74, conf:'medium', int:3, src:'[34]', subcat:'technologie', research_hint:'Untersuchen Sie Edge-Architekturen, Datenmanagement-Strategien und Governance-Frameworks.'},
+          {id:'s-p-3', name:'Manufacturing-X OPC UA Standards', trend_statement:'Standardisierte Dateninfrastruktur über Manufacturing-X und OPC UA.', kw:['OPC UA','Manufacturing-X','Standards'], score:0.72, conf:'high', int:3, src:'[35]', subcat:'technologie', research_hint:'Untersuchen Sie Standardisierungsfortschritte, Interoperabilitätsanforderungen und Migrationspfade.'},
+          {id:'s-p-4', name:'MLOps Engineers 9.8x Growth', trend_statement:'9,8x Wachstum bei MLOps-Engineer-Nachfrage spiegelt KI-Infrastrukturbedarf wider.', kw:['MLOps','Growth','KI-Infrastruktur'], score:0.70, conf:'medium', int:3, src:'[36]', subcat:'mitarbeitende', research_hint:'Untersuchen Sie MLOps-Kompetenzprofile, Ausbildungsangebote und Build-vs-Buy-Entscheidungen.'},
+          {id:'s-p-5', name:'85% Upskilling Programs', trend_statement:'85% der Arbeitgeber planen Upskilling-Programme zur Bewältigung der Qualifikationslücke.', kw:['Upskilling','Training','Skills Gap'], score:0.68, conf:'medium', int:3, src:'[37]', subcat:'mitarbeitende', research_hint:'Untersuchen Sie Lernformate, Kompetenz-Frameworks und Erfolgsmessung von Upskilling.'}
+        ],
+        obs: [
+          {id:'s-o-1', name:'Zero-Trust Manufacturing Networks', trend_statement:'Zero-Trust-Sicherheitsarchitekturen werden Standard für Maschinennetzwerke.', kw:['Zero-Trust','Netzwerk','Security'], score:0.65, conf:'medium', int:2, src:'📚', subcat:'technologie', research_hint:'Beobachten Sie Zero-Trust-Implementierungen in OT-Umgebungen und Architektur-Best-Practices.'},
+          {id:'s-o-2', name:'Continuous Learning Infrastructure', trend_statement:'Eingebaute kontinuierliche Lernsysteme in Maschinenbetrieb eingebettet.', kw:['Learning','Infrastruktur','Kontinuierlich'], score:0.63, conf:'medium', int:2, src:'📚', subcat:'mitarbeitende', research_hint:'Beobachten Sie Lernplattform-Integrationen, Adaptive-Learning-Ansätze und Micro-Learning-Formate.'},
+          {id:'s-o-3', name:'Human-AI Collaborative Culture', trend_statement:'Organisationskultur entwickelt sich zu echter Mensch-KI-Zusammenarbeit.', kw:['Human-AI','Kultur','Collaboration'], score:0.61, conf:'medium', int:2, src:'📚', subcat:'kultur', research_hint:'Beobachten Sie Kulturwandel-Indikatoren, Akzeptanzentwicklung und Kollaborationsmodelle.'},
+          {id:'s-o-4', name:'Ethical AI Governance Frameworks', trend_statement:'Umfassende ethische KI-Governance wird organisatorische Anforderung.', kw:['Ethics','AI Governance','Frameworks'], score:0.60, conf:'medium', int:2, src:'📚', subcat:'kultur', research_hint:'Beobachten Sie Governance-Framework-Entwicklung, Audit-Ansätze und Branchenstandards.'},
+          {id:'s-o-5', name:'Neuromorphic Computing', trend_statement:'Gehirn-inspirierte Rechenarchitekturen für ultra-effiziente Maschinen-KI.', kw:['Neuromorphic','Computing','Effizienz'], score:0.59, conf:'low', int:2, src:'📚', subcat:'technologie', research_hint:'Beobachten Sie Technologie-Reifegrad, Hardware-Entwicklungen und potenzielle Edge-AI-Anwendungen.'}
+        ]
+      }
+    };
+
+    // Active data (DEMO_DATA or loaded from JSON)
+    var DATA = JSON.parse(JSON.stringify(DEMO_DATA));
+
+    // Subcategory mapping per dimension
+    const SUBCATEGORY_MAP = {
+      t: ['wirtschaft', 'regulierung', 'gesellschaft'],
+      p: ['strategie', 'fuehrung', 'steuerung'],
+      i: ['customer-experience', 'produkte-services', 'geschaeftsprozesse'],
+      s: ['kultur', 'mitarbeitende', 'technologie']
+    };
+
+    const LABELS = {
+      en: {
+        matrixTitle: 'Selection Matrix',
+        hAct: 'Act', hPlan: 'Plan', hObs: 'Observe', hTotal: 'Total',
+        dT: 'External Effects', dP: 'New Horizons', dI: 'Digital Value Drivers', dS: 'Digital Foundation',
+        propTitle: 'Your Proposals',
+        actTime: '0-2 years', planTime: '2-5 years', obsTime: '5+ years',
+        score: 'Score', conf: 'Conf', int: 'Int', src: 'Src',
+        selectMore: 'Select {n} more',
+        ready: 'Ready to export!',
+        subcat: {
+          wirtschaft: 'Economy', regulierung: 'Regulation', gesellschaft: 'Society',
+          strategie: 'Strategy', fuehrung: 'Leadership', steuerung: 'Governance',
+          'customer-experience': 'Customer Experience', 'produkte-services': 'Products & Services',
+          'geschaeftsprozesse': 'Business Processes',
+          kultur: 'Culture', mitarbeitende: 'Workforce', technologie: 'Technology'
+        }
+      },
+      de: {
+        matrixTitle: 'Auswahlmatrix',
+        hAct: 'Handeln', hPlan: 'Planen', hObs: 'Beobachten', hTotal: 'Gesamt',
+        dT: 'Externe Effekte', dP: 'Neue Horizonte', dI: 'Digitale Wertetreiber', dS: 'Digitales Fundament',
+        propTitle: 'Eigene Vorschläge',
+        actTime: '0-2 Jahre', planTime: '2-5 Jahre', obsTime: '5+ Jahre',
+        score: 'Score', conf: 'Konf', int: 'Int', src: 'Quelle',
+        selectMore: 'Noch {n} auswählen',
+        ready: 'Bereit zum Export!',
+        subcat: {
+          wirtschaft: 'Wirtschaft', regulierung: 'Regulierung', gesellschaft: 'Gesellschaft',
+          strategie: 'Strategie', fuehrung: 'Führung', steuerung: 'Steuerung',
+          'customer-experience': 'Kundenerlebnis', 'produkte-services': 'Produkte & Services',
+          'geschaeftsprozesse': 'Geschäftsprozesse',
+          kultur: 'Kultur', mitarbeitende: 'Mitarbeitende', technologie: 'Technologie'
+        }
+      }
+    };
+
+    // State
+    let lang = 'en';
+    let currentDim = 't';
+    let sel = {t:{act:[],plan:[],obs:[]}, p:{act:[],plan:[],obs:[]}, i:{act:[],plan:[],obs:[]}, s:{act:[],plan:[],obs:[]}};
+    let proposals = [];
+    let isDemoMode = false;
+
+    // =====================================================
+    // LOCAL STORAGE - Persistence
+    // =====================================================
+    function getStorageKey() {
+      var slug = PROJECT_META.project_slug || PROJECT_META.project_name || 'demo-project';
+      return 'trend-scout-' + slug;
+    }
+
+    function saveSelectionsToStorage() {
+      try {
+        var storageKey = getStorageKey();
+        var data = {
+          selections: sel,
+          proposals: proposals,
+          language: lang,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(storageKey, JSON.stringify(data));
+        showAutosaveIndicator();
+        console.log('Selections saved to localStorage:', storageKey);
+      } catch (err) {
+        console.log('Could not save to localStorage:', err.message);
+      }
+    }
+
+    function loadSelectionsFromStorage() {
+      try {
+        var storageKey = getStorageKey();
+        var saved = localStorage.getItem(storageKey);
+        if (saved) {
+          var data = JSON.parse(saved);
+          if (data.selections) {
+            sel = data.selections;
+          }
+          if (data.proposals) {
+            proposals = data.proposals;
+          }
+          if (data.language) {
+            lang = data.language;
+          }
+          console.log('Selections loaded from localStorage:', storageKey, '- Age:', Math.round((Date.now() - data.timestamp) / 60000), 'min');
+          return true;
+        }
+      } catch (err) {
+        console.log('Could not load from localStorage:', err.message);
+      }
+      return false;
+    }
+
+    function showAutosaveIndicator() {
+      var indicator = document.getElementById('autosave-indicator');
+      var textEl = document.getElementById('autosave-text');
+      if (indicator && textEl) {
+        textEl.textContent = lang === 'de' ? 'Gespeichert' : 'Saved';
+        indicator.classList.add('visible', 'saved');
+        setTimeout(function() {
+          indicator.classList.remove('visible');
+        }, 1500);
+      }
+    }
+
+    function dismissWarning() {
+      var banner = document.getElementById('demo-warning');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+
+    function showDemoWarning() {
+      var banner = document.getElementById('demo-warning');
+      var textEl = document.getElementById('demo-warning-text');
+      if (banner && textEl) {
+        textEl.textContent = lang === 'de'
+          ? 'Demo-Modus aktiv - trend-app-data.json nicht gefunden'
+          : 'Demo mode active - trend-app-data.json not found';
+        banner.style.display = 'flex';
+      }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function() {
+      loadExternalData(function() {
+        // Load selections from localStorage (restores previous session)
+        var hasStoredSelections = loadSelectionsFromStorage();
+        // If no stored selections and not demo mode, pre-select top candidates per cell (5 ACT, 5 PLAN, 3 OBS)
+        if (!hasStoredSelections && !isDemoMode) {
+          preselectTopThree();
+        }
+        setupTabs();
+        setupMatrix();
+        render();
+        updateHeader();
+        updateExportButton();
+      });
+    });
+
+    // Pre-select top candidates per cell (5 ACT, 5 PLAN, 3 OBS) for smarter-service workflow
+    function preselectTopThree() {
+      ['t', 'p', 'i', 's'].forEach(function(dim) {
+        ['act', 'plan', 'obs'].forEach(function(h) {
+          if (DATA[dim] && DATA[dim][h]) {
+            DATA[dim][h].forEach(function(candidate) {
+              // Only pre-select if preSelected flag is true (top 3 by score)
+              if (candidate.preSelected) {
+                sel[dim][h].push(candidate.id);
+              }
+            });
+          }
+        });
+      });
+      // Save the pre-selection to localStorage
+      saveSelectionsToStorage();
+      console.log('Pre-selected candidates per cell');
+    }
+
+    // Process external data from JSON object
+    function processExternalData(data) {
+      // Load project metadata
+      if (data.meta) {
+        PROJECT_META = data.meta;
+        if (PROJECT_META.language) {
+          lang = PROJECT_META.language;
+        }
+      }
+      // Load source registry
+      if (data.sources) {
+        SOURCE_REGISTRY = data.sources;
+      }
+      // Load candidates into DATA structure
+      if (data.candidates) {
+        DATA = { t: {act:[], plan:[], obs:[]}, p: {act:[], plan:[], obs:[]}, i: {act:[], plan:[], obs:[]}, s: {act:[], plan:[], obs:[]} };
+        data.candidates.forEach(function(c) {
+          var dim = c.dimension_key || c.dimension.charAt(0).toLowerCase();
+          // Map horizon values: "observe" -> "obs" for compatibility
+          var h = c.horizon === 'observe' ? 'obs' : c.horizon;
+          if (DATA[dim] && DATA[dim][h]) {
+            DATA[dim][h].push({
+              id: c.id || (dim + '-' + h.charAt(0) + '-' + (DATA[dim][h].length + 1)),
+              name: c.trend_name || c.name,
+              trend_statement: c.trend_statement || c.summary || c.desc || '',
+              research_hint: c.research_hint || '',
+              kw: c.keywords || c.kw || [],
+              score: c.score || 0.5,
+              conf: c.confidence_tier || c.conf || 'medium',
+              int: c.signal_intensity || c.int || 3,
+              src: c.source_citation || c.src || '📚',
+              subcat: c.subcategory || c.subcat || 'unknown',
+              preSelected: c.preSelected || false
+            });
+          }
+        });
+      }
+      console.log('Loaded external data:', PROJECT_META.project_name);
+    }
+
+    // Load external data from trend-app-data.json or EMBEDDED_DATA
+    function loadExternalData(callback) {
+      // Check for embedded data first (supports file:// protocol)
+      if (typeof EMBEDDED_DATA !== 'undefined' && EMBEDDED_DATA !== null) {
+        processExternalData(EMBEDDED_DATA);
+        callback();
+        return;
+      }
+      // Fallback to fetch for HTTP server usage
+      fetch('trend-app-data.json')
+        .then(function(response) {
+          if (!response.ok) throw new Error('No data file');
+          return response.json();
+        })
+        .then(function(data) {
+          processExternalData(data);
+          callback();
+        })
+        .catch(function(err) {
+          console.log('Using demo data:', err.message);
+          isDemoMode = true;
+          // Show warning after DOM is ready
+          setTimeout(function() { showDemoWarning(); }, 100);
+          callback();
+        });
+    }
+
+    // Update header with project info
+    function updateHeader() {
+      var title = document.querySelector('.title');
+      if (PROJECT_META.project_name && PROJECT_META.project_name !== 'demo-project') {
+        title.innerHTML = '<span>Trend</span> Selector <small style="font-size:12px;color:var(--color-text-muted);margin-left:8px;">' + PROJECT_META.industry + ' / ' + PROJECT_META.subsector + '</small>';
+      }
+      // Set language toggle
+      document.querySelectorAll('.lang-btn').forEach(function(b) {
+        b.classList.toggle('active', b.textContent.toLowerCase() === lang);
+      });
+      updateLabels();
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.dim-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          currentDim = this.dataset.dim;
+          document.querySelectorAll('.dim-tab').forEach(function(t) { t.classList.remove('active'); });
+          this.classList.add('active');
+          render();
+        });
+      });
+    }
+
+    function setupMatrix() {
+      document.querySelectorAll('.matrix-cell').forEach(function(cell) {
+        cell.addEventListener('click', function() {
+          currentDim = this.dataset.dim;
+          document.querySelectorAll('.dim-tab').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.dim === currentDim);
+          });
+          render();
+        });
+      });
+    }
+
+    function setLang(l) {
+      lang = l;
+      document.querySelectorAll('.lang-btn').forEach(function(b) {
+        b.classList.toggle('active', b.textContent.toLowerCase() === l);
+      });
+      updateLabels();
+      render();
+      saveSelectionsToStorage(); // Persist language choice
+    }
+
+    function updateLabels() {
+      var L = LABELS[lang];
+      document.getElementById('matrixTitle').textContent = L.matrixTitle;
+      document.getElementById('hAct').textContent = L.hAct;
+      document.getElementById('hPlan').textContent = L.hPlan;
+      document.getElementById('hObs').textContent = L.hObs;
+      document.getElementById('hTotal').textContent = L.hTotal;
+      document.getElementById('dT').textContent = L.dT;
+      document.getElementById('dP').textContent = L.dP;
+      document.getElementById('dI').textContent = L.dI;
+      document.getElementById('dS').textContent = L.dS;
+      document.getElementById('tabT').textContent = L.dT;
+      document.getElementById('tabP').textContent = L.dP;
+      document.getElementById('tabI').textContent = L.dI;
+      document.getElementById('tabS').textContent = L.dS;
+      document.getElementById('propTitle').textContent = L.propTitle;
+    }
+
+    function render() {
+      renderHorizons();
+      updateProgress();
+    }
+
+    function renderHorizons() {
+      var L = LABELS[lang];
+      var horizons = [
+        {key:'act', name:L.hAct, time:L.actTime},
+        {key:'plan', name:L.hPlan, time:L.planTime},
+        {key:'obs', name:L.hObs, time:L.obsTime}
+      ];
+
+      var html = '';
+      var maxCounts = {act: 5, plan: 5, obs: 3};
+      horizons.forEach(function(h) {
+        var items = DATA[currentDim][h.key];
+        var selected = sel[currentDim][h.key];
+        var maxCount = maxCounts[h.key];
+        var complete = selected.length >= maxCount;
+
+        html += '<div class="horizon"><div class="horizon-head"><div>';
+        html += '<div class="horizon-title">' + h.name + '</div>';
+        html += '<div class="horizon-time">' + h.time + '</div>';
+        html += '</div><div class="horizon-count' + (complete ? ' complete' : '') + '">' + selected.length + '/' + maxCount + '</div></div>';
+        html += '<div class="candidates">';
+
+        items.forEach(function(c, i) {
+          var isSel = selected.indexOf(c.id) > -1;
+          var isPreSelected = c.preSelected || false;
+          html += '<div class="card' + (isSel ? ' selected' : '') + (isPreSelected ? ' pre-selected' : '') + '" data-id="' + c.id + '" data-h="' + h.key + '">';
+
+          // Compact top row: checkbox, name, subcategory badge, rank, mini-indicators
+          var subcatLabel = L.subcat && L.subcat[c.subcat] ? L.subcat[c.subcat] : c.subcat;
+          html += '<div class="card-top">';
+          html += '<div class="checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg></div>';
+          html += '<div class="card-name">' + c.name + '</div>';
+          if (isPreSelected) {
+            html += '<span class="preselect-badge" title="' + (lang === 'de' ? 'Top 3 nach Score' : 'Top 3 by score') + '">TOP 3</span>';
+          }
+          html += '<span class="subcat-badge" data-subcat="' + c.subcat + '">' + subcatLabel + '</span>';
+          html += '<div class="card-indicators">';
+          html += '<span class="mini-score">' + getMiniStars(c.score) + '</span>';
+          html += '<span class="mini-conf ' + c.conf + '">' + c.conf.charAt(0).toUpperCase() + '</span>';
+          html += '</div>';
+          html += '<span class="card-rank">#' + (i+1) + '</span>';
+          html += '</div>';
+
+          // Trend statement (main description)
+          html += '<div class="card-desc">' + c.trend_statement + '</div>';
+
+          // Keywords - hidden by default, shown on hover
+          html += '<div class="keywords">';
+          c.kw.forEach(function(k) { html += '<span class="kw">' + k + '</span>'; });
+          html += '</div>';
+
+          // Metrics - hidden by default, shown on hover
+          html += '<div class="metrics">';
+          html += '<div class="metric"><span class="metric-label">' + L.score + '</span><span class="metric-val stars">' + getStars(c.score) + '</span></div>';
+          html += '<div class="metric"><span class="metric-label">' + L.conf + '</span><span class="metric-val conf">' + getConf(c.conf) + '</span></div>';
+          html += '<div class="metric"><span class="metric-label">' + L.int + '</span><span class="metric-val">' + c.int + '</span></div>';
+          html += '<div class="metric"><span class="metric-label">' + L.src + '</span><span class="metric-val src">' + c.src + '</span></div>';
+          html += '</div>';
+
+          // Hover detail panel - shows full trend details
+          html += '<div class="card-detail">';
+          html += '<div class="detail-desc"><strong>Trend Statement:</strong> ' + c.trend_statement + '</div>';
+          if (c.research_hint) {
+            html += '<div class="detail-desc"><strong>Research Hint:</strong> ' + c.research_hint + '</div>';
+          }
+          html += '<div class="detail-keywords"><strong>Keywords:</strong> ' + c.kw.join(', ') + '</div>';
+          html += '<div class="detail-metrics">';
+          html += '<span><strong>Score:</strong> ' + (c.score * 100).toFixed(0) + '%</span>';
+          html += '<span><strong>Confidence:</strong> ' + c.conf + '</span>';
+          html += '<span><strong>Intensity:</strong> ' + c.int + '</span>';
+          html += '</div>';
+          html += '<div class="detail-source-info">' + getSourceInfo(c.src) + '</div>';
+          html += '</div>';
+
+          html += '</div>';
+        });
+
+        html += '</div></div>';
+      });
+
+      document.getElementById('horizons').innerHTML = html;
+
+      // Attach click handlers
+      document.querySelectorAll('.card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          toggleSel(this.dataset.id, this.dataset.h);
+        });
+      });
+    }
+
+    function getStars(s) {
+      if (s >= 0.8) return '★★★★★';
+      if (s >= 0.6) return '★★★★☆';
+      if (s >= 0.4) return '★★★☆☆';
+      if (s >= 0.2) return '★★☆☆☆';
+      return '★☆☆☆☆';
+    }
+
+    function getMiniStars(s) {
+      if (s >= 0.8) return '★★★';
+      if (s >= 0.5) return '★★';
+      return '★';
+    }
+
+    function getConf(c) {
+      if (c === 'high') return '✓✓✓';
+      if (c === 'medium') return '✓✓○';
+      if (c === 'low') return '✓○○';
+      return '?○○';
+    }
+
+    function getSourceInfo(src) {
+      if (src === '📚') {
+        return '📚 Based on model training data and domain expertise';
+      }
+      var num = src.replace(/[\[\]]/g, '');
+      // Use loaded source registry if available
+      if (SOURCE_REGISTRY[num]) {
+        var s = SOURCE_REGISTRY[num];
+        return '🔗 Source: ' + s.title + (s.url ? ' - ' + s.url : '');
+      }
+      // Fallback to demo sources
+      var sources = {
+        '1': 'EU AI Act Documentation - eur-lex.europa.eu',
+        '2': 'Supply Chain Due Diligence Act - bmwk.de',
+        '3': 'GDPR & Data Protection - ec.europa.eu',
+        '4': 'Circular Economy Action Plan - ec.europa.eu',
+        '5': 'Energy Transition Report - iea.org',
+        '6': 'Quantum Computing Standards - nist.gov',
+        '7': 'AI Services Market Report - gartner.com',
+        '8': 'Digital Twin Consortium - digitaltwinconsortium.org',
+        '9': 'Predictive Maintenance Guide - mckinsey.com',
+        '10': 'Industry 4.0 Report - weforum.org',
+        '11': 'Generative AI in Enterprise - forrester.com',
+        '12': 'Customer Experience Trends - salesforce.com',
+        '13': 'Computer Vision in Manufacturing - ieee.org',
+        '14': 'Energy Optimization AI - energystar.gov',
+        '15': 'Cloud Native Computing - cncf.io',
+        '16': 'Edge Computing Standards - etsi.org',
+        '17': '5G Industrial Applications - 3gpp.org'
+      };
+      return '🔗 Source: ' + (sources[num] || 'External research');
+    }
+
+    function toggleSel(id, h) {
+      var maxCounts = {act: 5, plan: 5, obs: 3};
+      var arr = sel[currentDim][h];
+      var idx = arr.indexOf(id);
+      if (idx > -1) {
+        arr.splice(idx, 1);
+      } else if (arr.length < maxCounts[h]) {
+        arr.push(id);
+      }
+      render();
+      saveSelectionsToStorage(); // Auto-save after every selection
+      updateExportButton(); // Update export button state
+    }
+
+    function updateProgress() {
+      var L = LABELS[lang];
+      var total = 0;
+      var allValid = true;
+
+      ['t','p','i','s'].forEach(function(d) {
+        var dimTotal = 0;
+        var expectedCounts = {act: 5, plan: 5, obs: 3};
+        ['act','plan','obs'].forEach(function(h) {
+          var cnt = sel[d][h].length;
+          var expected = expectedCounts[h];
+          dimTotal += cnt;
+          var cell = document.querySelector('.matrix-cell[data-dim="'+d+'"][data-h="'+h+'"]');
+          if (cell) {
+            cell.querySelector('.count').textContent = cnt;
+            // Remove all validation classes first
+            cell.classList.remove('complete', 'cell-valid', 'cell-invalid', 'cell-over');
+            // Add appropriate validation class
+            if (cnt === expected) {
+              cell.classList.add('complete', 'cell-valid');
+            } else if (cnt > expected) {
+              cell.classList.add('cell-over');
+              allValid = false;
+            } else {
+              cell.classList.add('cell-invalid');
+              allValid = false;
+            }
+          }
+        });
+        var totalCell = document.querySelector('.matrix-total[data-dim="'+d+'"]');
+        if (totalCell) totalCell.textContent = dimTotal + '/13';
+        total += dimTotal;
+      });
+
+      document.getElementById('totalCount').textContent = total;
+
+      var circle = document.querySelector('.ring-progress');
+      var circumference = 2 * Math.PI * 34; // radius = 34px
+      var offset = circumference - (total / 52) * circumference;
+      circle.style.strokeDashoffset = offset;
+
+      var badge = document.getElementById('statusBadge');
+      if (total >= 52 && allValid) {
+        badge.className = 'status-badge ready';
+        badge.textContent = L.ready;
+      } else {
+        badge.className = 'status-badge';
+        badge.textContent = L.selectMore.replace('{n}', 52 - total);
+      }
+    }
+
+    function updateExportButton() {
+      var btn = document.getElementById('exportBtn');
+      if (!btn) return;
+
+      var total = 0;
+      var allValid = true;
+
+      var expectedCounts = {act: 5, plan: 5, obs: 3};
+      ['t','p','i','s'].forEach(function(d) {
+        ['act','plan','obs'].forEach(function(h) {
+          var cnt = sel[d][h].length;
+          total += cnt;
+          if (cnt !== expectedCounts[h]) allValid = false;
+        });
+      });
+
+      btn.disabled = !(total >= 52 && allValid);
+      btn.classList.toggle('ready', total >= 52 && allValid);
+    }
+
+    function addProposal() {
+      proposals.push({id: Date.now(), name:'', desc:'', dim:'', h:'', kw:'', rationale:''});
+      renderProposals();
+      saveSelectionsToStorage(); // Auto-save proposals
+    }
+
+    function renderProposals() {
+      var html = '';
+      proposals.forEach(function(p) {
+        html += '<div class="proposal" data-id="'+p.id+'">';
+        html += '<input type="text" placeholder="Trend name" value="'+p.name+'" onchange="updateProp('+p.id+',\'name\',this.value)">';
+        html += '<input type="text" placeholder="Description" value="'+p.desc+'" onchange="updateProp('+p.id+',\'desc\',this.value)">';
+        html += '<div class="proposal-row">';
+        html += '<select onchange="updateProp('+p.id+',\'dim\',this.value)">';
+        html += '<option value="">Dimension</option>';
+        html += '<option value="t"'+(p.dim==='t'?' selected':'')+'>External Effects</option>';
+        html += '<option value="p"'+(p.dim==='p'?' selected':'')+'>New Horizons</option>';
+        html += '<option value="i"'+(p.dim==='i'?' selected':'')+'>Digital Value Drivers</option>';
+        html += '<option value="s"'+(p.dim==='s'?' selected':'')+'>Digital Foundation</option>';
+        html += '</select>';
+        html += '<select onchange="updateProp('+p.id+',\'h\',this.value)">';
+        html += '<option value="">Horizon</option>';
+        html += '<option value="act"'+(p.h==='act'?' selected':'')+'>Act</option>';
+        html += '<option value="plan"'+(p.h==='plan'?' selected':'')+'>Plan</option>';
+        html += '<option value="obs"'+(p.h==='obs'?' selected':'')+'>Observe</option>';
+        html += '</select></div>';
+        html += '<input type="text" placeholder="Keywords (comma-separated)" value="'+p.kw+'" onchange="updateProp('+p.id+',\'kw\',this.value)">';
+        html += '<input type="text" placeholder="Rationale" value="'+p.rationale+'" onchange="updateProp('+p.id+',\'rationale\',this.value)">';
+        html += '<button class="del-btn" onclick="delProp('+p.id+')">✕ Remove</button>';
+        html += '</div>';
+      });
+      document.getElementById('proposalsGrid').innerHTML = html;
+    }
+
+    function updateProp(id, field, val) {
+      var p = proposals.find(function(x) { return x.id === id; });
+      if (p) p[field] = val;
+      saveSelectionsToStorage(); // Auto-save proposals
+    }
+
+    function delProp(id) {
+      proposals = proposals.filter(function(p) { return p.id !== id; });
+      renderProposals();
+      saveSelectionsToStorage(); // Auto-save proposals
+    }
+
+    function exportMD() {
+      // Export both MD and JSON
+      exportJSON();
+
+      var md = '# Trend Candidate Selections\n\n';
+      md += 'Generated: ' + new Date().toISOString() + '\n\n';
+      md += 'Project: ' + PROJECT_META.project_name + '\n';
+      md += 'Industry: ' + PROJECT_META.industry + ' / ' + PROJECT_META.subsector + '\n\n';
+
+      var dimNames = {t:'External Effects', p:'New Horizons', i:'Digital Value Drivers', s:'Digital Foundation'};
+      var hNames = {act:'Act', plan:'Plan', obs:'Observe'};
+
+      ['t','p','i','s'].forEach(function(d) {
+        md += '## ' + dimNames[d] + '\n\n';
+        ['act','plan','obs'].forEach(function(h) {
+          md += '### ' + hNames[h] + '\n\n';
+          DATA[d][h].forEach(function(c) {
+            var isSel = sel[d][h].indexOf(c.id) > -1;
+            var subcatLabel = LABELS.en.subcat[c.subcat] || c.subcat;
+            md += '- [' + (isSel ? 'x' : ' ') + '] **' + c.name + '** `[' + subcatLabel + ']`: ' + c.desc + '\n';
+          });
+          md += '\n';
+        });
+      });
+
+      if (proposals.length > 0) {
+        md += '## User Proposals\n\n';
+        proposals.forEach(function(p) {
+          if (p.name) {
+            md += '- [x] **' + p.name + '** (' + (p.dim || '?') + '/' + (p.h || '?') + '): ' + p.desc + '\n';
+          }
+        });
+      }
+
+      // Download markdown file (JSON export shows the move command modal)
+      downloadFile(md, 'trend-selection.md', 'text/markdown');
+    }
+
+    function exportJSON() {
+      var dimKeys = {t:'externe-effekte', p:'neue-horizonte', i:'digitale-wertetreiber', s:'digitales-fundament'};
+      var dimNames = {t:'External Effects', p:'New Horizons', i:'Digital Value Drivers', s:'Digital Foundation'};
+      var dimNamesDE = {t:'Externe Effekte', p:'Neue Horizonte', i:'Digitale Wertetreiber', s:'Digitales Fundament'};
+      var hNames = {act:'act', plan:'plan', obs:'obs'};
+      var hNamesDE = {act:'Handeln', plan:'Planen', obs:'Beobachten'};
+
+      var selectedItems = [];
+      var userProposals = [];
+
+      ['t','p','i','s'].forEach(function(d) {
+        ['act','plan','obs'].forEach(function(h) {
+          sel[d][h].forEach(function(id, idx) {
+            var c = DATA[d][h].find(function(x) { return x.id === id; });
+            if (c) {
+              selectedItems.push({
+                dimension: dimKeys[d],
+                dimension_en: dimNames[d],
+                dimension_de: dimNamesDE[d],
+                subcategory: c.subcat || 'unknown',
+                subcategory_en: LABELS.en.subcat[c.subcat] || c.subcat,
+                subcategory_de: LABELS.de.subcat[c.subcat] || c.subcat,
+                horizon: h,
+                horizon_de: hNamesDE[h],
+                sequence: idx + 1,
+                trend_name: c.name,
+                trend_statement: c.trend_statement,
+                research_hint: c.research_hint || '',
+                keywords: c.kw,
+                source: c.src === '📚' ? 'training' : 'web-signal',
+                source_citation: c.src,
+                score: c.score,
+                confidence_tier: c.conf,
+                signal_intensity: c.int
+              });
+            }
+          });
+        });
+      });
+
+      proposals.forEach(function(p) {
+        if (p.name && p.dim && p.h) {
+          userProposals.push({
+            dimension: dimKeys[p.dim] || p.dim,
+            dimension_en: dimNames[p.dim] || p.dim,
+            horizon: p.h,
+            trend_name: p.name,
+            trend_statement: p.desc || '',
+            research_hint: p.rationale || '',
+            keywords: p.kw ? p.kw.split(',').map(function(k) { return k.trim(); }) : [],
+            source: 'user-proposed'
+          });
+        }
+      });
+
+      var output = {
+        version: '1.0.0',
+        exported_at: new Date().toISOString(),
+        export_source: 'trend-selector-app',
+        project: PROJECT_META,
+        selection_summary: {
+          total_selected: selectedItems.length,
+          total_proposals: userProposals.length,
+          complete: selectedItems.length >= 52,
+          by_dimension: {
+            t: sel.t.act.length + sel.t.plan.length + sel.t.obs.length,
+            p: sel.p.act.length + sel.p.plan.length + sel.p.obs.length,
+            i: sel.i.act.length + sel.i.plan.length + sel.i.obs.length,
+            s: sel.s.act.length + sel.s.plan.length + sel.s.obs.length
+          }
+        },
+        selected_candidates: selectedItems,
+        user_proposals: userProposals
+      };
+
+      var jsonContent = JSON.stringify(output, null, 2);
+
+      // Download file and show move command if project path is known
+      downloadFile(jsonContent, 'trend-selection.json', 'application/json');
+
+      // Show success message with move command
+      if (PROJECT_META.project_path) {
+        showExportSuccess(PROJECT_META.project_path);
+      }
+    }
+
+    // Helper function for traditional download
+    function downloadFile(content, filename, mimeType) {
+      var blob = new Blob([content], {type: mimeType});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Show export success modal with move command
+    function showExportSuccess(projectPath) {
+      var moveCmd = 'mv ~/Downloads/trend-selection.json "' + projectPath + '/"';
+      var isDE = lang === 'de';
+
+      var modalHtml = '<div id="export-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10000;">' +
+        '<div style="background:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:12px;padding:24px;max-width:600px;width:90%;">' +
+        '<h3 style="color:var(--color-accent);margin:0 0 16px 0;">' + (isDE ? '✓ Export erfolgreich' : '✓ Export successful') + '</h3>' +
+        '<p style="color:var(--color-text-secondary);margin:0 0 16px 0;">' +
+        (isDE ? 'Die Datei wurde heruntergeladen. Verschieben Sie sie in das Projektverzeichnis:' : 'File downloaded. Move it to the project directory:') +
+        '</p>' +
+        '<div style="background:var(--color-bg-tertiary);border:1px solid var(--color-border);border-radius:8px;padding:12px;font-family:var(--font-primary);font-size:13px;overflow-x:auto;">' +
+        '<code style="color:var(--color-text-primary);white-space:nowrap;">' + moveCmd + '</code>' +
+        '</div>' +
+        '<button id="copy-cmd-btn" style="margin-top:16px;background:var(--color-accent);color:#000;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;">' +
+        (isDE ? 'Befehl kopieren' : 'Copy command') +
+        '</button>' +
+        '<button onclick="document.getElementById(\'export-modal\').remove()" style="margin-top:16px;margin-left:8px;background:var(--color-bg-tertiary);color:var(--color-text-primary);border:1px solid var(--color-border);padding:8px 16px;border-radius:6px;cursor:pointer;">' +
+        (isDE ? 'Schließen' : 'Close') +
+        '</button>' +
+        '</div></div>';
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+      document.getElementById('copy-cmd-btn').onclick = function() {
+        navigator.clipboard.writeText(moveCmd).then(function() {
+          document.getElementById('copy-cmd-btn').textContent = isDE ? '✓ Kopiert!' : '✓ Copied!';
+          setTimeout(function() {
+            document.getElementById('export-modal').remove();
+          }, 1000);
+        });
+      };
+    }
+
+    // =====================================================
+    // METHODOLOGY MODAL
+    // =====================================================
+    var METHODOLOGY_MD = `# Trend-Scout Methodology Reference
+
+## Overview
+
+This methodology reference documents the academic foundations and systematic approaches underlying the trend-scout skill. Our methodology synthesizes best practices from corporate foresight leaders (Shell, BMW, Siemens), academic foundations (Ansoff, Rohrbeck, Rogers), and practical implementation patterns for TIPS-based trend detection across the German Mittelstand and DACH market.
+
+**Core Achievement:** Firms with mature foresight capabilities demonstrate **33% higher profitability** and **200% higher market capitalization growth** (Rohrbeck, 2010).
+
+---
+
+## 1. Academic Foundations
+
+### 1.1 Ansoff's Weak Signal Theory (1975)
+
+**Igor Ansoff's weak signal theory remains the cornerstone framework**, defining weak signals as "advanced and imprecise symptoms of impending future problems."
+
+| Level | Name | Description | TIPS Horizon |
+|-------|------|-------------|--------------|
+| **1** | Turbulence | Sense of environmental turbulence, vague unease | OBSERVE (5+ years) |
+| **2** | Source ID | Source of threat/opportunity identified | OBSERVE (5+ years) |
+| **3** | Concrete | Concrete definition emerges, trend articulated | PLAN (2-5 years) |
+| **4** | Response | Response capability develops, pilots begin | PLAN/ACT transition |
+| **5** | Foreseeable | Outcomes become foreseeable, mainstream adoption | ACT (0-2 years) |
+
+### 1.2 Rohrbeck's Corporate Foresight Maturity Model
+
+**René Rohrbeck's research** (based on 107 interviews across 19 multinationals) identifies three core foresight processes:
+
+| Process | Description | Our Implementation |
+|---------|-------------|-------------------|
+| **Perceiving** | Environmental scanning | Phase 1: Web research + API queries |
+| **Prospecting** | Sensemaking and interpretation | Phase 2: Candidate generation + scoring |
+| **Probing** | Strategic action | Phase 4-5: Selection + deeper-research-1 |
+
+### 1.3 Day & Schoemaker's Peripheral Vision
+
+Less than **20% of firms** have developed sufficient capability to detect weak signals competitively.
+
+| Criterion | Assessment |
+|-----------|------------|
+| **Credibility** | Source reputation and authority |
+| **Novelty** | New information vs. already known |
+| **Likelihood** | Probability of occurrence |
+| **Impact** | Significance of potential change |
+| **Relevance** | Direct effect on target domain |
+| **Time to Awareness** | When it becomes widely known |
+
+---
+
+## 2. Trend Lifecycle Classification
+
+### 2.1 Rogers' Diffusion of Innovations (1962)
+
+**Everett Rogers' model** provides quantifiable adoption thresholds with the critical "chasm" at 16% adoption:
+
+| Stage | Adoption % | Cumulative | Characteristics |
+|-------|------------|------------|-----------------|
+| **Innovators** | 2.5% | 0-2.5% | Risk-tolerant, technology enthusiasts |
+| **Early Adopters** | 13.5% | 2.5-16% | Opinion leaders, visionaries |
+| **Early Majority** | 34% | 16-50% | Pragmatists, wait for proof |
+| **Late Majority** | 34% | 50-84% | Skeptics, pressure-driven |
+| **Laggards** | 16% | 84-100% | Traditionalists, last adopters |
+
+### 2.2 The Chasm (16% Threshold)
+
+Geoffrey Moore's "Crossing the Chasm" identifies the critical failure point between Early Adopters and Early Majority.
+
+| Evidence | Pre-Chasm (<16%) | Post-Chasm (>16%) |
+|----------|------------------|-------------------|
+| Adoption | Pilots, limited | Widespread production |
+| Customers | Visionaries | Mainstream enterprises |
+| Competition | Fragmented | Consolidating |
+| Standards | Emerging | Established |
+
+---
+
+## 3. Leading vs. Lagging Indicators
+
+| Indicator Type | Examples | Lead Time | Strategic Use |
+|----------------|----------|-----------|---------------|
+| **Leading** | VC investment, patent filings, academic pubs, job postings, regulatory proposals | 6-72 months | Early detection, OBSERVE/PLAN |
+| **Lagging** | Market penetration, revenue data, mainstream media, employment figures | 0-6 months | Confirmation, ACT validation |
+
+### 3.1 Source Type to Lead Time Mapping
+
+| Source Type | Indicator | Lead Time | Confidence |
+|-------------|-----------|-----------|------------|
+| Patent filings | leading | 36-72 months | high |
+| Academic papers | leading | 24-36 months | high |
+| Seed/Series A funding | leading | 18-24 months | medium |
+| Job posting surges | leading | 6-18 months | medium-high |
+| Regulatory proposals | leading | 12-24 months | high |
+| Industry reports | mixed | 3-12 months | medium |
+| Trade media | lagging | 0-6 months | medium |
+| Mainstream news | lagging | 0-3 months | low-medium |
+
+---
+
+## 4. Multi-Criteria Scoring System
+
+### 4.1 Composite Score Formula
+
+\`\`\`
+Trend Score = Σ(wi × Si) / Σwi - uncertainty_penalty
+
+Where:
+  wi = weight for criterion i
+  Si = score for criterion i (0.0-1.0)
+\`\`\`
+
+### 4.2 Scoring Weights
+
+| Criterion | Weight | Assessment |
+|-----------|--------|------------|
+| **Impact** | 25% | Strategic/business significance for subsector |
+| **Probability** | 20% | Likelihood of materialization within horizon |
+| **Strategic Fit** | 20% | Alignment with research topic and subsector |
+| **Source Quality** | 15% | CRAAP authority score (1-5 scale) |
+| **Signal Strength** | 15% | Frequency, recency, source convergence |
+| **Uncertainty Penalty** | -5% max | Reduction for contradictory signals |
+
+### 4.3 CRAAP Framework for Source Authority
+
+| Criterion | What to Assess |
+|-----------|----------------|
+| **C**urrency | Publication date, update frequency |
+| **R**elevance | Fit to research question and subsector |
+| **A**uthority | Author credentials, institutional affiliation |
+| **A**ccuracy | Evidence quality, citations, methodology |
+| **P**urpose | Objectivity, bias indicators, commercial interest |
+
+---
+
+## 5. Signal Triangulation
+
+### 5.1 Confidence Tiers
+
+| Tier | Range | Criteria | Required Sources |
+|------|-------|----------|------------------|
+| **HIGH** | 0.80-1.0 | 3+ independent sources confirm, same direction | 3+ |
+| **MEDIUM** | 0.50-0.79 | 2+ sources confirm with minor variations | 2+ |
+| **LOW** | 0.30-0.49 | Conflicting signals or single source | 1 |
+| **UNCERTAIN** | <0.30 | Contradictory signals, insufficient data | - |
+
+### 5.2 Source Weighting Factors
+
+| Source Type | Weight | Examples |
+|-------------|--------|----------|
+| Primary/Original | 1.0x | EU Commission, patent filings, peer-reviewed |
+| Industry Analyst | 0.9x | Gartner, Forrester, Roland Berger |
+| Academic Research | 0.85x | Fraunhofer, university publications |
+| Industry Association | 0.8x | VDMA, BITKOM, VDA, ZVEI |
+| News Sources | 0.6x | Reuters, Handelsblatt |
+| Trade Publications | 0.5x | Industry magazines |
+
+---
+
+## 6. DACH-Specific Intelligence
+
+### 6.1 German Industry Associations
+
+| Association | Sector | Authority | Key Outputs |
+|-------------|--------|-----------|-------------|
+| **VDMA** | Mechanical Engineering | 4 | Statistics, Regulatory Cockpit, Industry 4.0 |
+| **BITKOM** | Digital/IT | 4 | AI position papers, digital transformation |
+| **VDA** | Automotive | 4 | Standards, electromobility papers |
+| **ZVEI** | Electrical Industry | 4 | Digital Product Pass, Asset Administration Shell |
+| **BDEW** | Energy & Water | 4 | Market data, e-mobility standards |
+
+### 6.2 German Research Institutes
+
+| Institute | Authority | Value |
+|-----------|-----------|-------|
+| **Fraunhofer Society** | 5 | Applied research via Publica (100,000+ titles) |
+| **Max-Planck Society** | 5 | Basic research, #2 in EU for deep tech spin-offs |
+| **Zukunftsinstitut** | 4 | German futures think tank, Megatrend Map |
+
+---
+
+## 7. Implementation in Trend-Scout
+
+### 7.1 Phase-to-Methodology Mapping
+
+| Phase | Methodology Applied |
+|-------|---------------------|
+| Phase 0 | Industry taxonomy, project initialization |
+| Phase 1 | Multi-source data collection (Rohrbeck: Perceiving) |
+| Phase 2 | Ansoff intensity, Rogers diffusion, CRAAP scoring, triangulation |
+| Phase 3 | Confidence tiers, score display |
+| Phase 4 | Human-in-the-loop validation |
+| Phase 5 | Integration with deeper-research-1 (Rohrbeck: Probing) |
+
+### 7.2 Output Classifications
+
+Each trend candidate includes:
+
+| Field | Methodology Source |
+|-------|-------------------|
+| \`signal_intensity\` | Ansoff 5-level |
+| \`diffusion_stage\` | Rogers Diffusion |
+| \`crossed_chasm\` | Moore's Chasm Theory |
+| \`indicator_type\` | Leading/Lagging classification |
+| \`lead_time\` | Source-based lead time |
+| \`confidence_tier\` | Triangulation |
+| \`score\` | Multi-criteria weighted formula |
+| \`authority_score\` | CRAAP framework |
+
+---
+
+## References
+
+### Academic Sources
+
+1. **Ansoff, H.I.** (1975). "Managing Strategic Surprise by Response to Weak Signals." *California Management Review*, 18(2), 21-33.
+2. **Rohrbeck, R.** (2010). "Corporate Foresight: Towards a Maturity Model for the Future Orientation of a Firm." *Physica-Verlag HD*.
+3. **Day, G.S. & Schoemaker, P.J.H.** (2006). *Peripheral Vision: Detecting the Weak Signals That Will Make or Break Your Company*. Harvard Business School Press.
+4. **Rogers, E.M.** (1962). *Diffusion of Innovations*. Free Press.
+5. **Moore, G.A.** (1991). *Crossing the Chasm*. HarperBusiness.
+
+### Industry Sources
+
+- **BMW Group Technology Trend Radar** - technology-trend-radar.com
+- **Zukunftsinstitut Megatrend Map** - zukunftsinstitut.de/megatrends
+- **EC Strategic Foresight Reports** (2020-2025) - commission.europa.eu
+`;
+
+    function simpleMarkdown(md) {
+      var lines = md.split('\n');
+      var html = '';
+      var inTable = false;
+      var tableRows = [];
+      var inCodeBlock = false;
+      var codeContent = '';
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+
+        if (line.match(/^```/)) {
+          if (inCodeBlock) {
+            html += '<pre><code>' + codeContent + '</code></pre>';
+            codeContent = '';
+            inCodeBlock = false;
+          } else {
+            inCodeBlock = true;
+          }
+          continue;
+        }
+
+        if (inCodeBlock) {
+          codeContent += line + '\n';
+          continue;
+        }
+
+        if (line.match(/^\|/)) {
+          if (!inTable) {
+            inTable = true;
+            tableRows = [];
+          }
+          if (!line.match(/^\|[-\s|]+\|$/)) {
+            tableRows.push(line);
+          }
+          continue;
+        } else if (inTable) {
+          html += renderTable(tableRows);
+          tableRows = [];
+          inTable = false;
+        }
+
+        if (line.match(/^### /)) {
+          html += '<h3>' + line.slice(4) + '</h3>';
+        } else if (line.match(/^## /)) {
+          html += '<h2>' + line.slice(3) + '</h2>';
+        } else if (line.match(/^# /)) {
+          html += '<h1>' + line.slice(2) + '</h1>';
+        } else if (line.match(/^---$/)) {
+          html += '<hr>';
+        } else if (line.match(/^- /)) {
+          html += '<li>' + formatInline(line.slice(2)) + '</li>';
+        } else if (line.match(/^\d+\. /)) {
+          html += '<li>' + formatInline(line.replace(/^\d+\. /, '')) + '</li>';
+        } else if (line.trim()) {
+          html += '<p>' + formatInline(line) + '</p>';
+        }
+      }
+
+      if (inTable && tableRows.length > 0) {
+        html += renderTable(tableRows);
+      }
+
+      html = html.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
+
+      return html;
+    }
+
+    function renderTable(rows) {
+      if (rows.length === 0) return '';
+      var html = '<table>';
+
+      rows.forEach(function(row, idx) {
+        var cells = row.split('|').filter(function(c) { return c.trim(); });
+        var tag = idx === 0 ? 'th' : 'td';
+        html += '<tr>';
+        cells.forEach(function(cell) {
+          html += '<' + tag + '>' + formatInline(cell.trim()) + '</' + tag + '>';
+        });
+        html += '</tr>';
+      });
+
+      html += '</table>';
+      return html;
+    }
+
+    function formatInline(text) {
+      return text
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    }
+
+    function openMethodology() {
+      var overlay = document.getElementById('methodOverlay');
+      var content = document.getElementById('methodContent');
+
+      content.innerHTML = simpleMarkdown(METHODOLOGY_MD);
+
+      overlay.classList.add('active');
+      setTimeout(function() {
+        overlay.classList.add('visible');
+      }, 10);
+
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMethodology() {
+      var overlay = document.getElementById('methodOverlay');
+      overlay.classList.remove('visible');
+      setTimeout(function() {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }, 300);
+    }
+
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var overlay = document.getElementById('methodOverlay');
+        if (overlay.classList.contains('active')) {
+          closeMethodology();
+        }
+      }
+    });
+  </script>
+
+  <!-- Methodology Modal -->
+  <div id="methodOverlay" class="method-overlay" onclick="if(event.target === this) closeMethodology()">
+    <div class="method-modal">
+      <div class="method-header">
+        <h2 class="method-title">Trend-Scout Methodology</h2>
+        <button class="method-close" onclick="closeMethodology()">&times;</button>
+      </div>
+      <div class="method-body">
+        <div id="methodContent" class="method-content"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

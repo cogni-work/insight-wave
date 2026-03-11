@@ -1,0 +1,7 @@
+*.log
+.DS_Store
+node_modules/
+.test-results/
+.validation/
+.claude/*.local.md
+excalidraw.log

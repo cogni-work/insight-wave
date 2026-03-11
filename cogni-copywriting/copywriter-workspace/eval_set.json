@@ -1,0 +1,82 @@
+[
+  {
+    "query": "I have a research report in markdown at ~/projects/market-analysis/findings.md and I need to make it more readable for our VP of Sales before the board meeting on Friday. Can you polish it up? It's about 3 pages and has a bunch of citations I need to keep.",
+    "should_trigger": true
+  },
+  {
+    "query": "hey can you rewrite this memo for my boss? its at /tmp/cloud-update.md. she's a C-level exec and hates long paragraphs. needs to be punchy and action-oriented with the key numbers bolded",
+    "should_trigger": true
+  },
+  {
+    "query": "I need to create a proposal for our client using the FAB framework. The key features are: automated deployment pipeline, 99.9% uptime SLA, and 24/7 support. Budget is $250K annually. Save it to ~/Documents/acme-proposal.md",
+    "should_trigger": true
+  },
+  {
+    "query": "Ich habe einen deutschen Strategiebericht unter ~/berichte/digitalisierung.md. Kannst du den Text verbessern und für die Geschäftsführung aufbereiten? Bitte alle Quellenangaben und Zitate beibehalten.",
+    "should_trigger": true
+  },
+  {
+    "query": "take this executive summary at docs/exec-summary.md and restructure it using BLUF - bottom line up front. the current version buries the recommendation in the third paragraph and our CEO won't read past the first one",
+    "should_trigger": true
+  },
+  {
+    "query": "I just finished a cogni-narrative arc (corporate-visions) at output/why-change-narrative.md. Can you polish the writing while keeping the arc structure intact? It has arc_id in the frontmatter.",
+    "should_trigger": true
+  },
+  {
+    "query": "we have these power position statements for our sales deck at sales/positions.md with IS/DOES/MEANS structure. can you make the DOES layer more quantitative and strengthen the MEANS with better emotional language?",
+    "should_trigger": true
+  },
+  {
+    "query": "my blog post draft is at content/ai-trends-2026.md. it's about 1200 words and needs to be more engaging - better opening hook, clearer structure, maybe some rhetorical devices. Target audience is CTOs.",
+    "should_trigger": true
+  },
+  {
+    "query": "can you apply the McKinsey Pyramid Principle to reorganize this brief? the arguments are all over the place and I need clean MECE groupings. file is at ~/work/quarterly-brief.md",
+    "should_trigger": true
+  },
+  {
+    "query": "I need to write a one-pager summarizing our product for investors. Key stats: 40% cost reduction, 127 enterprise customers, $4.2M ARR. Should fit on exactly one page with visual elements.",
+    "should_trigger": true
+  },
+  {
+    "query": "can you create a PowerPoint presentation from my quarterly results data? I have the numbers in a spreadsheet at ~/data/q4-results.xlsx and need about 12 slides with charts",
+    "should_trigger": false
+  },
+  {
+    "query": "I need to review this pull request on GitHub - it's PR #247 on our main repo. Can you look at the code changes and give me feedback on code quality and potential bugs?",
+    "should_trigger": false
+  },
+  {
+    "query": "read the PDF at ~/contracts/vendor-agreement.pdf and extract the key terms, payment schedule, and termination clauses into a structured summary",
+    "should_trigger": false
+  },
+  {
+    "query": "can you help me set up a CI/CD pipeline for our Node.js app? We're using GitHub Actions and want to deploy to AWS ECS on every push to main",
+    "should_trigger": false
+  },
+  {
+    "query": "I need to analyze the sentiment and key themes across 500 customer support tickets exported as CSV at data/tickets.csv. Give me a breakdown by category with percentages.",
+    "should_trigger": false
+  },
+  {
+    "query": "help me write a Python script that reads a markdown file, counts word frequency, and generates a readability score. Save it to tools/analyze.py",
+    "should_trigger": false
+  },
+  {
+    "query": "can you translate this document from English to German? It's our product description at docs/product-overview.md and we need it for the DACH market launch",
+    "should_trigger": false
+  },
+  {
+    "query": "I want to create an interactive dashboard showing our sales pipeline data. I have the data in a JSON file at api/pipeline.json and want to use React with charts",
+    "should_trigger": false
+  },
+  {
+    "query": "run a competitive analysis on our three main competitors - Datadog, Splunk, and New Relic. I need pricing comparison, feature matrix, and market positioning",
+    "should_trigger": false
+  },
+  {
+    "query": "I need to refactor the authentication module in our Express.js backend. The current implementation mixes JWT validation with route handlers and it's getting hard to maintain",
+    "should_trigger": false
+  }
+]

@@ -1,0 +1,68 @@
+version: "1.0.0"
+script:
+  name: "update-industry-metadata.sh"
+  path: "skills/trend-scout/scripts/update-industry-metadata.sh"
+  purpose: "Update trend-scout-output.json with industry metadata after project initialization"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--output-file"
+      type: "string"
+      required: true
+      description: "Path to trend-scout-output.json file"
+    - name: "--industry"
+      type: "string"
+      required: true
+      description: "Industry slug (e.g., 'manufacturing')"
+    - name: "--industry-en"
+      type: "string"
+      required: true
+      description: "Industry name in English"
+    - name: "--industry-de"
+      type: "string"
+      required: true
+      description: "Industry name in German"
+    - name: "--subsector"
+      type: "string"
+      required: true
+      description: "Subsector slug (e.g., 'automotive')"
+    - name: "--subsector-en"
+      type: "string"
+      required: true
+      description: "Subsector name in English"
+    - name: "--subsector-de"
+      type: "string"
+      required: true
+      description: "Subsector name in German"
+    - name: "--topic"
+      type: "string"
+      required: true
+      description: "Research topic text"
+    - name: "--topic-normalized"
+      type: "string"
+      required: true
+      description: "Normalized topic slug"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error or missing arguments"
+    2: "File not found or jq error"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: ["jq"]
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2026-02-18"
+    changes: "Initial creation - extracts inline jq from phase-0-initialize.md Step 0.8"
+    breaking: false

@@ -1,0 +1,12 @@
+{
+  "name": "cogni-narrative",
+  "version": "1.6.9",
+  "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 6 story arc frameworks including TIPS-native trend panorama. Includes narrative review scoring and derivative format adaptation.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/cogni-work/cogni-narrative",
+  "keywords": ["narrative", "story-arc", "synthesis", "executive-writing", "corporate-visions", "strategic-foresight", "trend-panorama", "TIPS", "review", "adapt"]
+}

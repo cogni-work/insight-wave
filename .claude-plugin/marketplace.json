@@ -11,118 +11,82 @@
       "name": "cogni-claims",
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-claims"
-      },
+      "source": "./cogni-claims",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["claim-verification", "fact-checking", "source-validation"],
-      "repository": "https://github.com/cogni-work/cogni-claims"
+      "keywords": ["claim-verification", "fact-checking", "source-validation"]
     },
     {
       "name": "cogni-obsidian",
       "description": "Obsidian integration for Claude Code workplaces. Scaffolds Obsidian vaults with Terminal plugin integration, manages vault configuration, and provides note management with frontmatter support. Enables cogni-x plugins to work on projects collaboratively through an Obsidian-based workplace environment.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-obsidian"
-      },
+      "source": "./cogni-obsidian",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["obsidian", "vault", "terminal", "integration", "workplace", "claude-code"],
-      "repository": "https://github.com/cogni-work/cogni-obsidian"
+      "keywords": ["obsidian", "vault", "terminal", "integration", "workplace", "claude-code"]
     },
     {
       "name": "cogni-narrative",
       "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 6 story arc frameworks including TIPS-native trend panorama. Includes narrative review scoring and derivative format adaptation.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-narrative"
-      },
+      "source": "./cogni-narrative",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["narrative", "story-arc", "executive-writing", "strategic-foresight", "trend-panorama", "review", "adapt"],
-      "repository": "https://github.com/cogni-work/cogni-narrative"
+      "keywords": ["narrative", "story-arc", "executive-writing", "strategic-foresight", "trend-panorama", "review", "adapt"]
     },
     {
       "name": "cogni-copywriting",
       "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), and multi-language support.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-copywriting"
-      },
+      "source": "./cogni-copywriting",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["copywriting", "document-polishing", "messaging-frameworks", "readability", "sales-copy", "power-positions"],
-      "repository": "https://github.com/cogni-work/cogni-copywriting"
+      "keywords": ["copywriting", "document-polishing", "messaging-frameworks", "readability", "sales-copy", "power-positions"]
     },
     {
       "name": "cogni-workspace",
       "description": "Lean workspace orchestrator for cogni-works marketplace plugins. Manages shared foundation (env vars, settings), theme management, theme picker, plugin discovery, and workspace health.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-workspace"
-      },
+      "source": "./cogni-workspace",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["workspace", "themes", "orchestrator", "cogni-works"],
-      "repository": "https://github.com/cogni-work/cogni-workspace"
+      "keywords": ["workspace", "themes", "orchestrator", "cogni-works"]
     },
     {
       "name": "cogni-tips",
       "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE).",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-tips"
-      },
+      "source": "./cogni-tips",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["tips", "trend-scout", "trends", "strategic-trends", "bilingual", "trend-report"],
-      "repository": "https://github.com/cogni-work/cogni-tips"
+      "keywords": ["tips", "trend-scout", "trends", "strategic-trends", "bilingual", "trend-report"]
     },
     {
       "name": "cogni-portfolio",
       "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-portfolio"
-      },
+      "source": "./cogni-portfolio",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["portfolio", "messaging", "b2b", "fab", "sme", "propositions", "packages"],
-      "repository": "https://github.com/cogni-work/cogni-portfolio"
+      "keywords": ["portfolio", "messaging", "b2b", "fab", "sme", "propositions", "packages"]
     },
     {
       "name": "cogni-visual",
       "description": "Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-visual"
-      },
+      "source": "./cogni-visual",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["presentations", "slides", "pptx", "visual", "narrative", "big-picture", "journey-map", "excalidraw", "web", "storyboard"],
-      "repository": "https://github.com/cogni-work/cogni-visual"
+      "keywords": ["presentations", "slides", "pptx", "visual", "narrative", "big-picture", "journey-map", "excalidraw", "web", "storyboard"]
     },
     {
       "name": "cogni-teacher",
       "description": "Interactive 45-minute courses teaching Claude Cowork fundamentals and cogni-works marketplace plugins to consultants. 7-course curriculum with hands-on exercises, quizzes, and progress tracking.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": {
-        "source": "github",
-        "repo": "cogni-work/cogni-teacher"
-      },
+      "source": "./cogni-teacher",
       "category": "productivity",
       "license": "AGPL-3.0-only",
-      "keywords": ["teaching", "courses", "training", "cogni-works", "cowork", "curriculum"],
-      "repository": "https://github.com/cogni-work/cogni-teacher"
+      "keywords": ["teaching", "courses", "training", "cogni-works", "cowork", "curriculum"]
     }
   ]
 }

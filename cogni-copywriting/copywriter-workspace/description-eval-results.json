@@ -1,0 +1,10 @@
+{
+  "total": 20,
+  "previous_passed": 10,
+  "previous_accuracy": "50%",
+  "issue": "0% recall - skill never triggered for should-trigger queries despite 100% precision on should-not-trigger",
+  "root_cause": "Description was 250+ words in single paragraph. System truncates to ~20 words in skill list, losing all trigger phrases.",
+  "fix_applied": "Rewrote description to 2 concise paragraphs (~100 words total). Front-loaded document types and frameworks. Used YAML multiline for readability.",
+  "optimization_loop_status": "automated loop failed due to missing ANTHROPIC_API_KEY - manual optimization applied instead",
+  "needs_reeval": true
+}

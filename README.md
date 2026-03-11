@@ -57,7 +57,7 @@ You work in consulting, B2B sales, or marketing — and you use Claude Code as y
 
 ## How it works
 
-cogni-works is a [Claude Code plugin marketplace](https://code.claude.com/docs/en/discover-plugins). Each plugin is a self-contained submodule with skills, agents, and slash commands that Claude loads on demand.
+cogni-works is a [Claude Code plugin marketplace](https://code.claude.com/docs/en/discover-plugins). All plugins live inline in this monorepo. Claude loads skills, agents, and slash commands on demand.
 
 ```
 cogni-works/
@@ -127,8 +127,8 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 
 We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, CLA requirements, and marketplace plugin guidelines. By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Each plugin lives in its own repository and is included here as a Git submodule. To report issues or suggest improvements, open an issue on the relevant plugin repo or on [cogni-works](https://github.com/cogni-work/cogni-works/issues).
+All plugins are developed directly in this monorepo. To report issues or suggest improvements, open an issue on [cogni-works](https://github.com/cogni-work/cogni-works/issues).
 
 ## License
 
-All plugins are licensed under AGPL-3.0-only. See each plugin's repository for details.
+All plugins are licensed under AGPL-3.0-only. See [LICENSE](LICENSE) for details.

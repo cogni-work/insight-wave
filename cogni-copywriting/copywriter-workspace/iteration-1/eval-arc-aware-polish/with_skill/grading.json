@@ -1,0 +1,27 @@
+{
+  "eval_name": "eval-arc-aware-polish",
+  "variant": "with_skill",
+  "expectations": [
+    {
+      "text": "h2_headings_unchanged",
+      "passed": true,
+      "evidence": "Found H2s: ['Why Change', 'Why Now', 'Why You', 'Why Pay', 'Further Reading'], Expected: ['Why Change', 'Why Now', 'Why You', 'Why Pay', 'Further Reading']"
+    },
+    {
+      "text": "citations_preserved",
+      "passed": true,
+      "evidence": "Found: ['P1-1', 'P1-2', 'P2-1', 'P2-2', 'P2-3', 'P3-1', 'P3-2', 'P4-1'], Missing: []"
+    },
+    {
+      "text": "no_content_migration",
+      "passed": true,
+      "evidence": "All citations in correct sections"
+    },
+    {
+      "text": "frontmatter_preserved",
+      "passed": true,
+      "evidence": "arc_id: corporate-visions found: True"
+    }
+  ],
+  "pass_rate": 1.0
+}

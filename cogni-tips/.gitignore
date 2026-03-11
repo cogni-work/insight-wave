@@ -1,0 +1,9 @@
+# Logs
+excalidraw.log
+
+# Validation and test artifacts
+.test-results/
+.validation/
+
+# Plugin settings (user-specific)
+.claude/*.local.md
