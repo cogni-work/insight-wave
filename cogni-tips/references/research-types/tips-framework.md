@@ -64,3 +64,27 @@ trend:
     possibilities: "First-mover advantage in OEE improvement..."
     solutions: "Deploy IoT sensor infrastructure + ML pipeline..."
 ```
+
+## Value Modeler: Closing the Loop
+
+The trend-scout and trend-report skills handle T, I, and P — generating and enriching
+trend candidates. The **value-modeler** skill closes the TIPS loop by:
+
+1. Building **relationship networks** (TIPS paths) that explicitly link T→I→P across dimensions
+2. Generating **Solution Templates** — concrete enablers linked to each path
+3. Enabling **customer-specific Business Relevance** scoring (1-5 scale)
+4. Applying the patent's **F1 formula** to automatically rank solutions
+5. Producing a **Big Block** solution architecture diagram
+
+This implements the patent's core value proposition: selecting customer-relevant TIPs
+should *automatically surface and rank* the right solutions.
+
+```text
+trend-scout          trend-report         value-modeler
+────────────         ────────────         ─────────────
+52 candidates   →    Enriched report  →   TIPS paths (T→I→P)
+(T, I, P, found.)   + claims              + Solution Templates
+                                           + BR scoring
+                                           + F1 ranking
+                                           + Big Block diagram
+```

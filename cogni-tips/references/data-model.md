@@ -265,6 +265,11 @@ Location: `.metadata/trend-report-verification.json`
 | R-2.5 | trend-report | `report-insight` | Optional narrative insight summary |
 | R-3 | trend-report | `report-verifying` | Optional claim verification |
 | R-4 | trend-report | `report-complete` | Finalization + metadata update |
+| V-0 | value-modeler | `initialized` | Load scout output, discover portfolio |
+| V-1 | value-modeler | `paths-built` | Build T→I→P relationship networks |
+| V-2 | value-modeler | `solutions-generated` | Generate Solution Templates |
+| V-3 | value-modeler | `scored` | Customer-specific BR scoring (1-5) |
+| V-4 | value-modeler | `complete` | Apply F1 formula, rank, Big Block diagram |
 
 ## Entity Relationships
 
@@ -273,12 +278,75 @@ tips-project.json (root manifest)
   └── .metadata/trend-scout-output.json (config + candidates + state)
         ├── .logs/web-research-raw.json (raw signals → candidates)
         ├── .logs/trend-generator-candidates.json (76 generated → 52 selected)
-        └── tips-trend-report.md (report ← candidates)
-              ├── .logs/report-section-{dimension}.md (4 sections)
-              ├── tips-trend-report-claims.json (extracted claims)
-              ├── tips-insight-summary.md (narrative summary)
-              └── .metadata/trend-report-verification.json (verification results)
+        ├── tips-trend-report.md (report ← candidates)
+        │     ├── .logs/report-section-{dimension}.md (4 sections)
+        │     ├── tips-trend-report-claims.json (extracted claims)
+        │     ├── tips-insight-summary.md (narrative summary)
+        │     └── .metadata/trend-report-verification.json (verification results)
+        └── tips-value-model.json (value modeler ← candidates)
+              ├── paths[] (T→I→P relationship networks)
+              ├── solution_templates[] (enablers linked to paths)
+              ├── tips-solution-ranking.md (ranked solution list)
+              ├── tips-big-block.md (solution architecture diagram)
+              ├── value-modeler-scoring.html (interactive BR scoring UI)
+              └── .metadata/value-modeler-output.json (execution state)
 ```
+
+## Value Modeler Schemas
+
+### TIPS Path (Relationship Network)
+
+```json
+{
+  "path_id": "path-001",
+  "name": "AI-Driven Quality Optimization",
+  "narrative": "Regulatory pressure drives need for real-time defect detection, enabling predictive quality management",
+  "trend": { "candidate_ref": "externe-effekte/act/1", "name": "...", "business_relevance": null },
+  "implications": [
+    { "candidate_ref": "digitale-wertetreiber/act/3", "name": "...", "business_relevance": null }
+  ],
+  "possibilities": [
+    { "candidate_ref": "neue-horizonte/plan/2", "name": "...", "business_relevance": null }
+  ],
+  "foundation_requirements": [
+    { "candidate_ref": "digitales-fundament/act/2", "name": "...", "relationship": "prerequisite" }
+  ],
+  "solution_templates": ["st-001", "st-002"]
+}
+```
+
+### Solution Template
+
+```json
+{
+  "st_id": "st-001",
+  "name": "Predictive Quality Analytics Platform",
+  "description": "Deploy ML-based quality prediction integrated with production line sensors",
+  "category": "software|hardware|service|hybrid|process",
+  "enabler_type": "process_improvement|capability_building|risk_mitigation|revenue_enablement",
+  "linked_paths": ["path-001", "path-003"],
+  "foundation_dependencies": ["digitales-fundament/act/2"],
+  "portfolio_mapping": {
+    "product_slug": "cloud-platform",
+    "feature_slug": "predictive-analytics",
+    "match_confidence": "high|medium|low|none",
+    "proposition_exists": true,
+    "solution_exists": false
+  },
+  "business_relevance": null,
+  "business_relevance_calculated": null,
+  "ranking_value": null
+}
+```
+
+### Enhanced F1: Solution Ranking
+
+Per-path base: `PathScore(p) = avg(BR of scored TIPs in path p)`
+Multi-path aggregation: `BR(ST) = 0.6 × max(PathScores) + 0.4 × avg(PathScores)`
+Foundation adjustment: `FinalScore = BR(ST) × FoundationFactor`
+
+FoundationFactor: 1.00 (0-1 deps), 0.95 (2-3 deps), 0.90 (4+ deps)
+Business Relevance scale: 1 (Very Low) → 5 (Very High).
 
 ## Naming Conventions
 
@@ -288,3 +356,5 @@ tips-project.json (root manifest)
 | Project directory | `cogni-tips/{project-slug}/` | `cogni-tips/automotive-ai-predictive-maintenance-abc12345/` |
 | Candidate sequence | `{dimension}/{horizon}/{sequence}` | `externe-effekte/act/1` |
 | Claim ID | `claim_{DIM_PREFIX}_{SEQ}` | `claim_EE_001` |
+| Path ID | `path-{SEQ}` | `path-001` |
+| Solution Template ID | `st-{SEQ}` | `st-001` |

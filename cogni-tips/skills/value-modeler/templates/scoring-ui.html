@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="__LANG__">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIPS Business Relevance Scoring — __PROJECT_NAME__</title>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --border: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --accent: #3b82f6;
+    --t-color: #f59e0b; --i-color: #06b6d4; --p-color: #8b5cf6;
+    --high: #22c55e; --mid: #eab308; --low: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; }
+  .progress { background: var(--surface); border-radius: 8px; padding: 1rem;
+    margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 10; border: 1px solid var(--border); }
+  .progress-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 4px;
+    transition: width 0.3s; }
+  .progress-text { color: var(--muted); font-size: 0.875rem; white-space: nowrap; }
+
+  .path-card { background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .path-name { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .path-narrative { color: var(--muted); font-size: 0.875rem; margin-bottom: 1rem;
+    font-style: italic; }
+
+  .tip-row { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0;
+    border-top: 1px solid var(--border); }
+  .tip-role { width: 24px; height: 24px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;
+    flex-shrink: 0; }
+  .role-t { background: var(--t-color); color: #000; }
+  .role-i { background: var(--i-color); color: #000; }
+  .role-p { background: var(--p-color); color: #fff; }
+  .tip-info { flex: 1; min-width: 0; }
+  .tip-name { font-weight: 500; font-size: 0.9rem; }
+  .tip-meta { color: var(--muted); font-size: 0.75rem; }
+
+  .br-buttons { display: flex; gap: 4px; flex-shrink: 0; }
+  .br-btn { width: 36px; height: 36px; border: 2px solid var(--border);
+    border-radius: 8px; background: transparent; color: var(--text);
+    font-weight: 600; cursor: pointer; transition: all 0.15s; font-size: 0.875rem; }
+  .br-btn:hover { border-color: var(--accent); background: rgba(59,130,246,0.1); }
+  .br-btn.selected { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .br-btn.s1.selected { background: var(--low); border-color: var(--low); }
+  .br-btn.s2.selected { background: #f97316; border-color: #f97316; }
+  .br-btn.s3.selected { background: var(--mid); border-color: var(--mid); color: #000; }
+  .br-btn.s4.selected { background: #84cc16; border-color: #84cc16; color: #000; }
+  .br-btn.s5.selected { background: var(--high); border-color: var(--high); color: #000; }
+
+  .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;
+    font-size: 0.8rem; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  .submit-area { text-align: center; padding: 2rem 0; }
+  .submit-btn { background: var(--accent); color: #fff; border: none; padding: 0.75rem 2rem;
+    border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<h1>Business Relevance Scoring</h1>
+<p class="subtitle">__PROJECT_NAME__ — __INDUSTRY__</p>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--t-color)"></span> T = Trend</span>
+  <span><span class="dot" style="background:var(--i-color)"></span> I = Implikation</span>
+  <span><span class="dot" style="background:var(--p-color)"></span> P = Möglichkeit</span>
+  <span>|</span>
+  <span>1 = Sehr niedrig</span>
+  <span>2 = Niedrig</span>
+  <span>3 = Mittel</span>
+  <span>4 = Hoch</span>
+  <span>5 = Missionskritisch</span>
+</div>
+
+<div class="progress">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-text" id="progressText">0 / 0 bewertet</div>
+</div>
+
+<div id="paths"></div>
+
+<div class="submit-area">
+  <button class="submit-btn" id="submitBtn" onclick="submitScores()">Bewertung exportieren (JSON)</button>
+</div>
+
+<script>
+const MODEL_DATA = __MODEL_DATA_PLACEHOLDER__;
+
+const scores = {};
+let totalTips = 0;
+
+function init() {
+  const container = document.getElementById('paths');
+  const seen = new Set();
+
+  MODEL_DATA.paths.forEach(path => {
+    const card = document.createElement('div');
+    card.className = 'path-card';
+    card.innerHTML = `
+      <div class="path-name">${path.name}</div>
+      <div class="path-narrative">${path.narrative}</div>
+    `;
+
+    const tips = [];
+    if (path.trend) tips.push({ ...path.trend, role: 'T' });
+    (path.implications || []).forEach(i => tips.push({ ...i, role: 'I' }));
+    (path.possibilities || []).forEach(p => tips.push({ ...p, role: 'P' }));
+
+    tips.forEach(tip => {
+      const ref = tip.candidate_ref;
+      if (!seen.has(ref)) {
+        seen.add(ref);
+        totalTips++;
+      }
+      const row = document.createElement('div');
+      row.className = 'tip-row';
+      const roleClass = tip.role === 'T' ? 'role-t' : tip.role === 'I' ? 'role-i' : 'role-p';
+      row.innerHTML = `
+        <div class="tip-role ${roleClass}">${tip.role}</div>
+        <div class="tip-info">
+          <div class="tip-name">${tip.name}</div>
+          <div class="tip-meta">${ref}</div>
+        </div>
+        <div class="br-buttons">
+          ${[1,2,3,4,5].map(n =>
+            `<button class="br-btn s${n}" data-ref="${ref}" data-score="${n}"
+              onclick="setScore('${ref}', ${n}, this)">${n}</button>`
+          ).join('')}
+        </div>
+      `;
+      card.appendChild(row);
+
+      // Sync already-scored items
+      if (scores[ref] !== undefined) {
+        setTimeout(() => {
+          const btn = row.querySelector(`[data-score="${scores[ref]}"]`);
+          if (btn) btn.classList.add('selected');
+        }, 0);
+      }
+    });
+
+    container.appendChild(card);
+  });
+
+  updateProgress();
+}
+
+function setScore(ref, value, btn) {
+  // Deselect siblings
+  document.querySelectorAll(`[data-ref="${ref}"]`).forEach(b => b.classList.remove('selected'));
+  // Select all instances of this ref (may appear in multiple paths)
+  document.querySelectorAll(`[data-ref="${ref}"][data-score="${value}"]`).forEach(b => b.classList.add('selected'));
+  scores[ref] = value;
+  updateProgress();
+}
+
+function updateProgress() {
+  const scored = Object.keys(scores).length;
+  const pct = totalTips > 0 ? (scored / totalTips * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${scored} / ${totalTips} bewertet`;
+}
+
+function submitScores() {
+  const output = {
+    project_id: MODEL_DATA.project_id || 'unknown',
+    timestamp: new Date().toISOString(),
+    scores: scores,
+    total_scored: Object.keys(scores).length,
+    total_candidates: totalTips
+  };
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'br-scores.json';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>

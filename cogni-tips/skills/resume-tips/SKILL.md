@@ -104,6 +104,10 @@ If the phase is `complete`, congratulate the user and suggest exporting or visua
 | `selecting` | Candidates ready for user selection | Edit `trend-candidates.md`, then re-invoke `trend-scout` |
 | `reporting` | Candidates agreed, report not yet generated | Run `trend-report` |
 | `verification` | Report done, claims pending verification | Run `cogni-claims:claim-work` |
+| `modeling` | Report done, value model not yet built | Run `value-modeler` |
+| `modeling-paths` | Relationship networks built, solutions pending | Continue `value-modeler` |
+| `modeling-scoring` | Solutions generated, BR scoring pending | Continue `value-modeler` |
+| `modeling-complete` | Value model complete with ranked solutions | Export or visualize Big Block |
 | `complete` | All stages finished | Export or visualize results |
 
 ## Multi-Session Design
