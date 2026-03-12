@@ -65,6 +65,14 @@ If `solutions_by_type` is present, show the type breakdown: "N project, N subscr
 
 After the table:
 - **Phase** — translate the `phase` value into plain language (see reference below)
+- **Quality audit** — if `quality_audit` is present and has flagged entities (`features_flagged` or `propositions_flagged` non-empty), show them grouped by issue type before stale entities. Present actionable summaries, not raw data:
+  - Group by dimension: "2 features have descriptions outside 20-35 word target (cloud-monitoring: 48 words, api-gateway: 12 words)"
+  - For parity language: "1 feature uses parity language ("innovative", "robust")"
+  - For proposition issues: "1 proposition DOES is too long (42 words, target 15-30)"
+  - If a flagged feature has downstream propositions, note the cascade risk: fixing the feature description may require refreshing its propositions
+  - End with actionable guidance: "Consider running features or propositions skill to review and fix these before generating downstream content."
+  - Offer deep assessment: "For thorough quality assessment including mechanism and customer-relevance checks, ask for a full quality audit."
+  - If no entities are flagged, skip this section entirely (don't show "0 flagged")
 - **Stale entities** — if `stale_entities` is non-empty, show them as priority actions before the regular next steps. Group by reason type: "N propositions need refresh because their upstream features were updated" is more useful than listing each one. If a stale entity also has quality warnings, lead with the quality issue (fix the root cause first, then refresh the proposition).
 - **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase
 - **Gaps** — if `missing_propositions` is non-empty, list the first few missing pairs; note incomplete solutions/competitors/customers
