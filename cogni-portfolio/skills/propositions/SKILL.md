@@ -231,12 +231,13 @@ Write each proposition to `propositions/{feature-slug}--{market-slug}.json`:
       "source_title": "Cloud Monitoring Case Study 2025"
     }
   ],
-  "created": "2026-01-20"
+  "created": "2026-01-20",
+  "updated": "2026-02-10"
 }
 ```
 
 Required: `slug`, `feature_slug`, `market_slug`, `is_statement`, `does_statement`, `means_statement`
-Optional: `evidence`, `created`
+Optional: `evidence`, `created`, `updated`
 
 Each evidence entry is an object with `statement` (required), `source_url` (string or null), and `source_title` (string or null). Entries from web research include the source URL for claim verification; entries without a source use null.
 
