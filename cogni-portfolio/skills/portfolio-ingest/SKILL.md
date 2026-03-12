@@ -27,7 +27,7 @@ This matters because manual entity creation is tedious when the information alre
 
 ### 1. Locate Project and Scan Uploads
 
-Find the active portfolio project by searching for `portfolio.json` under a `cogni-portfolio/` path (same approach as the `resume-portfolio` skill). If multiple projects exist, ask which one to use.
+Find the active portfolio project by searching for `portfolio.json` under a `cogni-portfolio/` path (same approach as the `portfolio-resume` skill). If multiple projects exist, ask which one to use.
 
 Scan `uploads/` for supported files, excluding the `processed/` subdirectory. If no files are found, tell the user the folder is empty and list the supported file types.
 

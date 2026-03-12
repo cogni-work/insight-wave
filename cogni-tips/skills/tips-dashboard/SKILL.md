@@ -17,7 +17,7 @@ Generate a self-contained HTML dashboard that visualizes the entire TIPS project
 
 TIPS projects produce rich structured data across multiple phases (trend-scout → value-modeler → trend-report → catalog). This data lives in separate JSON files and markdown outputs that are hard to reason about in aggregate. The dashboard turns all of it into a single interactive visual — navigating phases, drilling into entities, and exploring TIPS relationships (Trend → Implication → Possibility → Solution) through a force-directed graph.
 
-It complements `resume-tips` (quick text-based status check) the way `portfolio-dashboard` complements `resume-portfolio` in cogni-portfolio: one is for quick re-entry, the other for visual exploration and presentation.
+It complements `tips-resume` (quick text-based status check) the way `portfolio-dashboard` complements `portfolio-resume` in cogni-portfolio: one is for quick re-entry, the other for visual exploration and presentation.
 
 ## Information Architecture
 

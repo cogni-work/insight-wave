@@ -170,7 +170,7 @@ The bridge skill resolves references at runtime. Loose coupling, independent evo
 | Date | Change |
 |------|--------|
 | 2026-03-11 | Initial roadmap created from patent analysis + ecosystem review |
-| 2026-03-11 | P1.1: Created catalog skill (SKILL.md, schemas, taxonomy ref), updated Phase 0/5, resume-tips, data-model, plugin.json v0.3.0 |
+| 2026-03-11 | P1.1: Created catalog skill (SKILL.md, schemas, taxonomy ref), updated Phase 0/5, tips-resume, data-model, plugin.json v0.3.0 |
 | 2026-03-11 | P1.2: Created bridge skill in cogni-portfolio (tips-to-portfolio, portfolio-to-tips, sync), plugin.json v0.8.0 |
 | 2026-03-11 | P2.3: Added taxonomy support to data-model.md (portfolio.json taxonomy, feature taxonomy_mapping, horizon), imported b2b-ict-portfolio taxonomy |
 | 2026-03-11 | P1.1: Initialized first catalog (b2b-ict/general) with taxonomy_template from b2b-ict-portfolio v3.7 |

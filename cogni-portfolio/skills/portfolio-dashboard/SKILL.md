@@ -13,7 +13,7 @@ Generate a self-contained HTML dashboard that visualizes the entire portfolio �
 
 ## Core Concept
 
-The dashboard turns scattered JSON entity files into a single visual overview. Unlike the text-based `resume-portfolio` skill (quick status check) or `synthesize` (markdown messaging repository), the dashboard is designed for visual exploration — clicking through entities, scanning the proposition matrix, comparing pricing across markets, and spotting gaps at a glance.
+The dashboard turns scattered JSON entity files into a single visual overview. Unlike the text-based `portfolio-resume` skill (quick status check) or `synthesize` (markdown messaging repository), the dashboard is designed for visual exploration — clicking through entities, scanning the proposition matrix, comparing pricing across markets, and spotting gaps at a glance.
 
 It matters because portfolio data lives in dozens of small JSON files that are hard to reason about in aggregate. A visual dashboard makes coverage, gaps, and relationships immediately visible without reading markdown or running shell commands.
 
