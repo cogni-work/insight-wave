@@ -26,6 +26,7 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 | `synthesize` | Generate structured messaging repository with per-market summaries and integrated claim status |
 | `export` | Produce deliverables — proposition proposals, market briefs, portfolio workbooks (markdown and XLSX) |
 | `portfolio-dashboard` | Generate an interactive HTML dashboard showing the full portfolio status |
+| `portfolio-mapping` | Map a target company's B2B ICT portfolio to 8 dimensions / 57 categories via web research |
 | `resume-portfolio` | Detect current workflow phase and recommend next actions for an existing project |
 
 ## Agents
@@ -37,6 +38,7 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 | `proposition-generator` | Generates IS/DOES/MEANS messaging for a single Feature x Market pair with optional web research |
 | `solution-planner` | Plans implementation phases and pricing tiers for a single proposition |
 | `feature-quality-assessor` | Assesses feature description quality using LLM intelligence — works in any language |
+| `portfolio-web-researcher` | Parallel web research agent for B2B ICT portfolio mapping across 7 dimensions |
 
 ## Example Workflows
 
@@ -97,7 +99,7 @@ This plugin works standalone for core messaging workflows. Optional integrations
 ```
 cogni-portfolio/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       15 portfolio skills
+├── skills/                       16 portfolio skills
 │   ├── setup/
 │   ├── products/
 │   ├── features/
@@ -112,20 +114,23 @@ cogni-portfolio/
 │   ├── synthesize/
 │   ├── export/
 │   ├── portfolio-dashboard/
+│   ├── portfolio-mapping/
 │   └── resume-portfolio/
-├── agents/                       5 delegation agents
+├── agents/                       6 delegation agents
 │   ├── market-researcher.md
 │   ├── competitor-researcher.md
 │   ├── proposition-generator.md
 │   ├── solution-planner.md
-│   └── feature-quality-assessor.md
-└── scripts/                      6 utility scripts
+│   ├── feature-quality-assessor.md
+│   └── portfolio-web-researcher.md
+└── scripts/                      7 utility scripts
     ├── append-claim.sh
     ├── cascade-rename.sh
     ├── project-init.sh
     ├── project-status.sh
     ├── sync-portfolio.sh
-    └── validate-entities.sh
+    ├── validate-entities.sh
+    └── generate-portfolio-mapping.sh
 ```
 
 ## License

@@ -179,7 +179,7 @@ Smarter-service trends link to B2B ICT portfolio offerings via a **portfolio map
 
 A markdown file following the B2B ICT Portfolio structure with 8 dimensions (0-7) and 57 categories. Created by the `portfolio-mapping` skill.
 
-**File Format:** See [portfolio-template.md](../../skills/portfolio-mapping/references/portfolio-template.md)
+**File Format:** See portfolio-template.md in cogni-portfolio (`cogni-portfolio/skills/portfolio-mapping/references/portfolio-template.md`)
 
 **Example:** `deutsche-telekom-portfolio.md`
 
