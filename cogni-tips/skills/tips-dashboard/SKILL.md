@@ -215,7 +215,7 @@ This dashboard follows the design-variables pattern documented at `cogni-workspa
 - Re-running the script overwrites the previous dashboard
 - The dashboard lives at `output/tips-dashboard.html`
 - **Graceful degradation**: Tabs for phases that haven't been completed yet show a "Not yet available" state with a recommendation to run the relevant skill. The Overview tab always works (even with just a tips-project.json)
-- **Communication Language**: Read the project language from `tips-project.json`. If a language is found, communicate with the user in that language. Technical terms, skill names, and CLI commands remain in English. If no language is found, default to English.
+- **Communication Language**: This skill follows the shared language resolution pattern (see `$CLAUDE_PLUGIN_ROOT/references/language-resolution.md`). Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD) first. If not found, fall back to project language from `tips-project.json`. Communicate with the user in this language. Technical terms, skill names, and CLI commands remain in English.
 
 ## Session Management
 

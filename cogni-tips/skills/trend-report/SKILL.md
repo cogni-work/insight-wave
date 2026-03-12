@@ -21,9 +21,16 @@ Transform agreed trend-scout candidates into a strategic, evidence-backed report
 7. Optionally verify claims via cogni-claims:claim-work
 8. Polish report prose for executive readability via cogni-copywriting
 
-## Bilingual Support
+## Language Support
 
-Full German and English support. **Always ask the user** for the deliverable language (DE or EN) at the start of Phase 0 — do not silently inherit from `trend-scout-output.json`. Default priority for pre-filling: (1) trend-scout `project_language` from output JSON, (2) workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD), (3) `en`. User must always confirm or override. Report prose, section headers, and TIPS labels all adapt to the chosen language. Web searches run bilingually for maximum coverage. German text uses proper umlauts (never ASCII transliterations).
+Full German and English support. This skill follows the shared language resolution pattern — see [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md).
+
+**Two language concepts:**
+
+1. **Interaction language** — how the skill communicates with the user (prompts, status, questions). Determined by workspace `.workspace-config.json` language setting. All Phase 0 prompts, status messages, and error messages use this language.
+2. **Output language** — what language the report is written in. Default priority: (1) trend-scout `project_language`, (2) workspace language, (3) `en`. **Always ask the user** to confirm or override at the start of Phase 0.
+
+Report prose, section headers, and TIPS labels all adapt to the chosen output language. Web searches run bilingually for maximum coverage. German text uses proper umlauts (never ASCII transliterations).
 
 ## Prerequisites
 
@@ -58,6 +65,7 @@ Read references **only when needed** for the specific phase:
 
 | Reference | Read when... |
 |-----------|--------------|
+| [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md) | Language detection and resolution pattern |
 | [$CLAUDE_PLUGIN_ROOT/references/data-model.md]($CLAUDE_PLUGIN_ROOT/references/data-model.md) | Understanding entity schemas and project structure |
 | [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) | Assembling the strategic theme report (Phase 2) |
 | [references/report-structure.md](references/report-structure.md) | Dimension section templates (written by Phase 1 agents) |
@@ -86,6 +94,10 @@ Phase 0 → Phase 1 → Phase 2 → Phase 2.5 → Phase 3 → Phase 3.5 → Phas
 ---
 
 ### Phase 0: Project Discovery + Input Loading
+
+#### Step 0.0: Detect Interaction Language
+
+Read [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md). Detect workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD). Set `INTERACTION_LANGUAGE` — use this for all user-facing messages, prompts, and status updates from this point on.
 
 #### Step 0.1: Project Discovery
 
@@ -148,18 +160,29 @@ For each dimension, prepare: candidate list, matching raw web signals (filtered 
 
 #### Step 0.5: Ask User for Deliverable Language
 
-The `project_language` from trend-scout-output.json is the **default**, but always confirm with the user:
+The `project_language` from trend-scout-output.json is the **default** (falling back to workspace language if not set). Always confirm with the user. Present the question in the `INTERACTION_LANGUAGE`:
 
+**If INTERACTION_LANGUAGE == "de":**
 ```yaml
 AskUserQuestion:
-  question: "Report language? trend-scout used '{project_language}'. Keep or change?"
-  header: "Language"
+  question: "In welcher Sprache soll der Report erstellt werden? trend-scout hat '{project_language}' verwendet."
+  header: "Report-Sprache"
   options:
-    - label: "Deutsch (DE)"
+    - label: "Deutsch (DE) ← Standard"
     - label: "English (EN)"
 ```
 
-Set `LANGUAGE` to the user's choice. Update `project_language` in trend-scout-output.json if changed.
+**If INTERACTION_LANGUAGE == "en":**
+```yaml
+AskUserQuestion:
+  question: "Report language? trend-scout used '{project_language}'. Keep or change?"
+  header: "Report language"
+  options:
+    - label: "English (EN) ← Default"
+    - label: "Deutsch (DE)"
+```
+
+The option matching the current default gets the arrow marker. Set `LANGUAGE` to the user's choice. Update `project_language` in trend-scout-output.json if changed.
 
 #### Step 0.6: Load i18n Labels
 

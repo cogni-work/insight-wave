@@ -42,7 +42,13 @@ investment portfolio — not a flat list of 18 solutions, but 5 distinct areas t
 - A completed trend-scout project with `workflow_state: "agreed"` in `.metadata/trend-scout-output.json`
 - Optionally: a cogni-portfolio project (enables mapping Solution Templates to actual products/features)
 
-## Language & Encoding
+## Language Support
+
+This skill follows the shared language resolution pattern — see [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md).
+
+**Interaction language:** Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD) at startup. Use this for all user-facing messages — scoring prompts, progress updates, phase summaries, AskUserQuestion prompts, and next-step recommendations.
+
+**Output language:** Inherited from `project_language` in `trend-scout-output.json`. Value-modeler does not re-ask — it is a downstream skill that respects the project language set during trend-scout.
 
 All output files use UTF-8 encoding. When the project language is German, use proper
 umlauts (ä, ö, ü, ß) — never ASCII substitutes (ae, oe, ue, ss). This applies to all

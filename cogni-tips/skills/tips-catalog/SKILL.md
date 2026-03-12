@@ -320,11 +320,13 @@ When Phase 5 curation completes and generates recommendations:
 - If no catalog exists, suggest creating one with `/tips-catalog init`
 - The curation recommendations become the import candidate list
 
-## Language
+## Language Support
 
-Match the project or user language. Catalog entity names and descriptions can be
-bilingual (matching the pursuit language). The `industry` object always carries both
-`_en` and `_de` variants for consistency with the industry taxonomy.
+This skill follows the shared language resolution pattern — see [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md).
+
+**Interaction language:** Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD) at startup. Use this for all user-facing messages — catalog operation prompts, status displays, import approval questions, and analytics summaries.
+
+**Output language:** Catalog entity names and descriptions can be bilingual (matching the pursuit language). The `industry` object always carries both `_en` and `_de` variants for consistency with the industry taxonomy.
 
 ## Output
 

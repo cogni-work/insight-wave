@@ -18,41 +18,62 @@ Initialize the trend-scout workflow by detecting language, collecting industry s
 
 ---
 
-## Step 0.1: Detect User Language
+## Step 0.1: Detect Interaction Language
 
-Analyze user input for language indicators:
+Read the workspace language from `.workspace-config.json` to determine how to communicate with the user. This is the **interaction language** — separate from the output/project language (asked in Step 0.1b).
 
-### MANDATORY: Thinking Block for Language Detection
-
-<thinking>
-**Language Detection**
-
-Analyzing user input for language indicators:
-- Input text: "[USER_INPUT_EXCERPT]"
-- German indicators: [umlauts (ä,ö,ü,ß), German words, etc.]
-- English indicators: [English words, patterns]
-- Explicit language request: [YES/NO]
-- Workspace language (.workspace-config.json): [VALUE or "not found"]
-
-Detection result:
-- Primary language: [de/en]
-- Confidence: [HIGH/MEDIUM/LOW]
-
-PROJECT_LANGUAGE = explicit choice > workspace config > input analysis > en
-</thinking>
+See `$CLAUDE_PLUGIN_ROOT/references/language-resolution.md` for the full pattern.
 
 ```bash
-# Default to English if unclear
-PROJECT_LANGUAGE="${DETECTED_LANGUAGE:-en}"
+# Read workspace language setting
+WORKSPACE_DIR="${PROJECT_AGENTS_OPS_ROOT:-$(pwd)}"
+if [[ -f "${WORKSPACE_DIR}/.workspace-config.json" ]]; then
+  INTERACTION_LANGUAGE=$(jq -r '.language // "en"' "${WORKSPACE_DIR}/.workspace-config.json")
+else
+  INTERACTION_LANGUAGE="en"
+fi
 
-# Load appropriate message catalog
-if [[ "$PROJECT_LANGUAGE" == "de" ]]; then
+# Load the matching message catalog for user-facing messages
+if [[ "$INTERACTION_LANGUAGE" == "de" ]]; then
   MESSAGES_FILE="references/i18n/messages-de.md"
 else
   MESSAGES_FILE="references/i18n/messages-en.md"
 fi
 
-log_conditional INFO "Detected language: $PROJECT_LANGUAGE"
+log_conditional INFO "Interaction language: $INTERACTION_LANGUAGE (from workspace config)"
+```
+
+All user-facing messages from this point on — AskUserQuestion prompts, status messages, instructions — use `INTERACTION_LANGUAGE`.
+
+## Step 0.1b: Ask User for Output Language
+
+Present the output language question in the interaction language. The workspace language is the pre-selected default:
+
+**If INTERACTION_LANGUAGE == "de":**
+```yaml
+AskUserQuestion:
+  question: "In welcher Sprache sollen die Ergebnisse erstellt werden?"
+  header: "Ausgabesprache"
+  options:
+    - label: "Deutsch (DE) ← Workspace-Standard"
+    - label: "English (EN)"
+```
+
+**If INTERACTION_LANGUAGE == "en":**
+```yaml
+AskUserQuestion:
+  question: "What language should the deliverables be written in?"
+  header: "Output language"
+  options:
+    - label: "English (EN) ← Workspace default"
+    - label: "Deutsch (DE)"
+```
+
+```bash
+# Set from explicit user choice
+PROJECT_LANGUAGE="${USER_CHOICE}"
+
+log_conditional INFO "Output language: $PROJECT_LANGUAGE (user choice)"
 ```
 
 ---
@@ -363,7 +384,8 @@ SKIP_TO_PHASE=1  # Proceed to web research
 
 ## Success Criteria
 
-- [ ] PROJECT_LANGUAGE detected (de/en)
+- [ ] INTERACTION_LANGUAGE detected from workspace config (de/en)
+- [ ] PROJECT_LANGUAGE confirmed by user (de/en)
 - [ ] Industry and subsector selected and validated
 - [ ] RESEARCH_TOPIC captured
 - [ ] PROJECT_SLUG generated
@@ -378,7 +400,8 @@ SKIP_TO_PHASE=1  # Proceed to web research
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| PROJECT_LANGUAGE | Detected language | `de` or `en` |
+| INTERACTION_LANGUAGE | Workspace language for user communication | `de` or `en` |
+| PROJECT_LANGUAGE | User-confirmed output language | `de` or `en` |
 | INDUSTRY_EN | English industry name | `Manufacturing` |
 | INDUSTRY_DE | German industry name | `Fertigung` |
 | INDUSTRY_SLUG | Industry slug | `manufacturing` |

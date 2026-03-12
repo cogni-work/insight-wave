@@ -17,13 +17,18 @@ This skill enables users to:
 3. Generate 60 trend candidates (5 per cell × 12 cells: 4 dimensions × 3 horizons)
 4. Write the final trend list and produce configuration for `deeper-research-0` skill
 
-## Bilingual Support
+## Language Support
 
-Full German and English support throughout:
+Full German and English support throughout. This skill follows the shared language resolution pattern — see [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md).
+
+**Two language concepts:**
+
+1. **Interaction language** — how the skill communicates with the user (prompts, status, questions). Determined by workspace `.workspace-config.json` language setting. All AskUserQuestion prompts, status messages, and instructions use this language.
+2. **Output language** — what language deliverables are written in. Asked explicitly in Phase 0 with workspace language as default. Stored as `project_language`.
 
 - Industry taxonomy presented in both languages
 - Web research queries in both languages (global + DACH regions)
-- User-facing messages in detected language
+- User-facing messages in interaction language
 - Output files respect `project_language` setting
 
 ## Prerequisites
@@ -68,6 +73,7 @@ Read references **only when needed** for the specific task:
 |-----------|--------------|
 | [$CLAUDE_PLUGIN_ROOT/references/data-model.md]($CLAUDE_PLUGIN_ROOT/references/data-model.md) | Understanding entity schemas and project structure |
 | [references/industry-taxonomy.md](references/industry-taxonomy.md) | Presenting industry selection to user |
+| [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md) | Language detection and resolution pattern |
 | [references/i18n/messages-en.md](references/i18n/messages-en.md) | English user messages |
 | [references/i18n/messages-de.md](references/i18n/messages-de.md) | German user messages |
 | [references/methodology.md](references/methodology.md) | Academic foundations (Ansoff, Rohrbeck, Rogers), full methodology explanation |
@@ -110,17 +116,18 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 
 ### Phase 0: Initialize Project + Industry Selection
 
-Read [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md), then execute:
+Read [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md) and [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md), then execute:
 
-1. **Ask user for deliverable language:** Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD). Ask user via AskUserQuestion: "Deutsch (DE) oder English (EN)?" If workspace language is set, present it as default (e.g., "[Default: DE based on workspace]"). Do NOT skip asking — always confirm with user.
-2. Load [references/industry-taxonomy.md](references/industry-taxonomy.md)
-3. Present industries with subsectors (bilingual)
-4. Capture user selection via AskUserQuestion
-5. Capture research topic/focus
-6. Generate project slug: `{subsector}-{topic}-{hash}`
-7. Initialize project via `initialize-trend-project.sh` in the current working directory under `cogni-tips/`
-8. Update `tips-project.json` with full industry context (bilingual names, subsector, research_topic)
-9. Update `.metadata/trend-scout-output.json` with industry context
+1. **Detect interaction language:** Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD). Set `INTERACTION_LANGUAGE` — use this for all user-facing messages from this point on. Load the matching i18n message catalog (`messages-{INTERACTION_LANGUAGE}.md`).
+2. **Ask user for output language:** Present AskUserQuestion in the interaction language. Workspace language is the pre-selected default (e.g., "Deutsch (DE) <- Workspace-Standard" or "English (EN) <- Workspace default"). User can override. Set `PROJECT_LANGUAGE` from explicit choice. Do NOT skip asking — always confirm with user.
+3. Load [references/industry-taxonomy.md](references/industry-taxonomy.md)
+4. Present industries with subsectors (bilingual)
+5. Capture user selection via AskUserQuestion (in interaction language)
+6. Capture research topic/focus (in interaction language)
+7. Generate project slug: `{subsector}-{topic}-{hash}`
+8. Initialize project via `initialize-trend-project.sh` in the current working directory under `cogni-tips/`
+9. Update `tips-project.json` with full industry context (bilingual names, subsector, research_topic)
+10. Update `.metadata/trend-scout-output.json` with industry context
 
 **Required outputs:**
 
