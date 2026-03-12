@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dashboard Design Variables",
+  "description": "LLM-to-Python contract for dashboard theming. The LLM reads a cogni-workspace theme.md and produces this JSON; the Python generator consumes it to set CSS custom properties.",
+  "type": "object",
+  "required": ["theme_name", "colors", "status", "fonts"],
+  "properties": {
+    "theme_name": {
+      "type": "string",
+      "description": "Human-readable theme name (e.g. 'cogni-work')"
+    },
+    "colors": {
+      "type": "object",
+      "required": [
+        "primary", "secondary", "accent", "accent_muted", "accent_dark",
+        "background", "surface", "surface2", "surface_dark",
+        "border", "text", "text_light", "text_muted"
+      ],
+      "properties": {
+        "primary":      { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "secondary":    { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent":       { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent_muted": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent_dark":  { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "background":   { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surface":      { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surface2":     { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surface_dark": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "border":       { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "text":         { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "text_light":   { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "text_muted":   { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "required": ["success", "warning", "danger", "info"],
+      "properties": {
+        "success": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "warning": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "danger":  { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "info":    { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+      },
+      "additionalProperties": false
+    },
+    "fonts": {
+      "type": "object",
+      "required": ["headers", "body", "mono"],
+      "properties": {
+        "headers": { "type": "string", "description": "CSS font-family for headings" },
+        "body":    { "type": "string", "description": "CSS font-family for body text" },
+        "mono":    { "type": "string", "description": "CSS font-family for monospace" }
+      },
+      "additionalProperties": false
+    },
+    "google_fonts_import": {
+      "type": "string",
+      "description": "Full CSS @import statement for Google Fonts (e.g. \"@import url('https://fonts.googleapis.com/...');\")",
+      "default": ""
+    },
+    "radius": {
+      "type": "string",
+      "description": "Default border-radius CSS value",
+      "default": "12px"
+    },
+    "shadows": {
+      "type": "object",
+      "properties": {
+        "sm": { "type": "string" },
+        "md": { "type": "string" },
+        "lg": { "type": "string" },
+        "xl": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "description": "CSS box-shadow values by size"
+    }
+  },
+  "additionalProperties": false
+}
