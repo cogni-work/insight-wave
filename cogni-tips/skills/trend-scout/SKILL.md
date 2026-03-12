@@ -319,7 +319,7 @@ Read [references/workflow-phases/phase-4-finalize.md](references/workflow-phases
 2. Update `tips-project.json` with current timestamp (`updated` field)
 3. Update `trend-candidates.md` frontmatter status to `agreed`
 4. Log completion with next-step instructions
-5. Recommend `/resume-tips` for the next session
+5. Recommend `/tips-resume` for the next session
 
 **Required outputs:**
 

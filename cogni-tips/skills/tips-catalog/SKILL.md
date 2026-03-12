@@ -1,5 +1,5 @@
 ---
-name: catalog
+name: tips-catalog
 description: >
   Manage persistent industry catalogs that accumulate TIPS knowledge across pursuits.
   Use whenever the user mentions "industry catalog", "catalog", "initialize catalog",
@@ -54,7 +54,7 @@ any pursuit project directory. They persist across projects and sessions.
 Create an empty catalog for an industry/subsector combination.
 
 ```
-/catalog init
+/tips-catalog init
 ```
 
 **Steps:**
@@ -98,7 +98,7 @@ Import curated entities from a completed value-modeler pursuit into the catalog.
 This is the write-back loop that makes catalogs grow smarter over time.
 
 ```
-/catalog import
+/tips-catalog import
 ```
 
 **Steps:**
@@ -142,7 +142,7 @@ This is the write-back loop that makes catalogs grow smarter over time.
 ### list — Show Available Catalogs
 
 ```
-/catalog list
+/tips-catalog list
 ```
 
 List all catalogs in `cogni-tips/catalogs/` with their industry, subsector, entity counts,
@@ -151,7 +151,7 @@ and last update date. Show a compact table.
 ### show — Display Catalog Contents
 
 ```
-/catalog show [industry/subsector]
+/tips-catalog show [industry/subsector]
 ```
 
 Display the full contents of a specific catalog with entity counts per type, most recent
@@ -161,7 +161,7 @@ show coverage against the template categories.
 ### analytics — Cross-Pursuit Insights
 
 ```
-/catalog analytics [industry/subsector]
+/tips-catalog analytics [industry/subsector]
 ```
 
 Analyze patterns across all pursuits that contributed to a catalog:
@@ -290,7 +290,7 @@ When a taxonomy is loaded, the catalog gains:
 - Coverage tracking: which taxonomy categories have catalog entities mapped to them
 - Gap analysis: which categories remain empty
 
-To use: during `/catalog init`, when asked about taxonomy, reference the b2b-ict-portfolio
+To use: during `/tips-catalog init`, when asked about taxonomy, reference the b2b-ict-portfolio
 framework. Read the taxonomy definition from:
 `$CLAUDE_PLUGIN_ROOT/references/taxonomies/b2b-ict-portfolio.md`
 
@@ -316,8 +316,8 @@ The catalog does NOT replace trend-scout candidates. It supplements them:
 ### Phase 5 Enhancement: Write-Back
 
 When Phase 5 curation completes and generates recommendations:
-- If a matching catalog exists, offer to run `/catalog import` immediately
-- If no catalog exists, suggest creating one with `/catalog init`
+- If a matching catalog exists, offer to run `/tips-catalog import` immediately
+- If no catalog exists, suggest creating one with `/tips-catalog init`
 - The curation recommendations become the import candidate list
 
 ## Language

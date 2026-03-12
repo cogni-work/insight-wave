@@ -34,7 +34,7 @@ Search for a matching industry catalog:
 3. If found, read it and report:
    - "Found {industry}/{subsector} catalog with {stats summary}. Catalog data will inform relationship building and solution generation."
    - Store catalog path for use in Phases 1 and 2
-4. If not found: "No industry catalog found. You can create one later with `/catalog init` to accumulate knowledge across pursuits."
+4. If not found: "No industry catalog found. You can create one later with `/tips-catalog init` to accumulate knowledge across pursuits."
 
 ### Step 4: Discover Portfolio (Optional)
 

@@ -20,7 +20,7 @@ A target market is defined by a **region** and **segmentation criteria** (compan
 - **SAM** (Serviceable Available Market): The portion reachable given region, segment, and channel constraints
 - **SOM** (Serviceable Obtainable Market): Realistically achievable share in 1-3 years
 
-Every market belongs to exactly one **region** — a standardized trading area from the region taxonomy (see `$CLAUDE_PLUGIN_ROOT/skills/setup/references/regions.json`). The same customer segment in different regions produces separate market entities because sizing, messaging, competitors, and buyer behaviour differ by region. A "Mid-Market SaaS" segment in DACH and in the US are two distinct markets with independent TAM/SAM/SOM, propositions, and competitive landscapes.
+Every market belongs to exactly one **region** — a standardized trading area from the region taxonomy (see `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`). The same customer segment in different regions produces separate market entities because sizing, messaging, competitors, and buyer behaviour differ by region. A "Mid-Market SaaS" segment in DACH and in the US are two distinct markets with independent TAM/SAM/SOM, propositions, and competitive landscapes.
 
 Markets matter because every downstream entity depends on them. Propositions combine a feature with a market. Customer profiles are market-scoped. Competitive analysis is proposition-scoped (and therefore market-scoped). Poorly defined markets propagate fuzzy thinking through the entire portfolio; precise markets make messaging, differentiation, and sizing sharper everywhere.
 
@@ -81,7 +81,7 @@ Do not ask all of these. If the user has a clear picture and just wants to captu
 
 ### Select Target Regions
 
-Before proposing segments, establish which regions to target. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/setup/references/regions.json` and present the available regions. Ask the user which regions to focus on — a typical expansion path starts narrow (e.g., `de` or `dach`) and widens over time (`eu`, `us`, etc.).
+Before proposing segments, establish which regions to target. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json` and present the available regions. Ask the user which regions to focus on — a typical expansion path starts narrow (e.g., `de` or `dach`) and widens over time (`eu`, `us`, etc.).
 
 If markets already exist, show a region summary of current coverage:
 
@@ -173,7 +173,7 @@ Valid `priority` values: `beachhead` (primary go-to-market target), `expansion` 
 
 **Normalized segmentation fields** (optional but recommended): Always populate `employees_min`, `employees_max`, `arr_min`, `arr_max`, and `vertical_codes` alongside the free-text fields. These enable automated overlap detection between markets sharing the same region. Use lowercase identifiers for `vertical_codes` (e.g., `["saas", "fintech"]`).
 
-The `region` must be a valid code from the region taxonomy (`$CLAUDE_PLUGIN_ROOT/skills/setup/references/regions.json`). Use the region's default currency for TAM/SAM/SOM values. Slug format: `{segment}-{region}`. Do not put geography in `segmentation` — that is expressed by `region`.
+The `region` must be a valid code from the region taxonomy (`$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`). Use the region's default currency for TAM/SAM/SOM values. Slug format: `{segment}-{region}`. Do not put geography in `segmentation` — that is expressed by `region`.
 
 ### Size Selected Markets
 
@@ -280,9 +280,9 @@ When proposing markets, prioritize segments where:
 - Aim for 2-5 target markets per region; more than 7 per region usually means segments overlap
 - The same segment in different regions = different markets (different sizing, messaging, competitors)
 - TAM/SAM/SOM values are always estimates — label sources clearly and use the region's default currency
-- Valid region codes are defined in `$CLAUDE_PLUGIN_ROOT/skills/setup/references/regions.json`
+- Valid region codes are defined in `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`
 - Products and features should exist before defining markets — markets without features to sell into are academic exercises
 - When reviewing existing markets, always cross-reference with the feature set — this is the single most valuable consulting move and the baseline misses it most often
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (market descriptions, segmentation labels, rationale) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
-- Refer to `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md` for complete entity schemas
+- Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas

@@ -311,7 +311,7 @@ For German content, cut filler words rather than exceeding limits. Every sentenc
 
 ### 6. Write Solution Entity
 
-Once the solution is agreed and passes quality gates, write to `solutions/{feature-slug}--{market-slug}.json`. Always include `solution_type`. See `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md` for the complete JSON schemas per solution type.
+Once the solution is agreed and passes quality gates, write to `solutions/{feature-slug}--{market-slug}.json`. Always include `solution_type`. See `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for the complete JSON schemas per solution type.
 
 Required for all types: `slug`, `proposition_slug`, `solution_type`
 
@@ -436,7 +436,7 @@ A solution can be deleted freely -- it has no downstream dependents. Confirm wit
 - Customer profiles (if available) inform buying criteria and budget expectations -- read them during context gathering
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (phase descriptions, scope text, rationale) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
-- Refer to `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md` for complete entity schemas
+- Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas
 
 ## Session Management
 
@@ -448,6 +448,6 @@ After completing batch solution generation or when this skill runs after other h
 
 When you notice these signals, first invoke `/portfolio-dashboard` to generate the portfolio dashboard — this gives the user a visual overview of everything accomplished so far. Then recommend a fresh session:
 
-> "We got a lot done: [brief summary of accomplishments]. I've generated the dashboard so you can see the full picture. For the next steps like [recommend next skills], I'd suggest starting a fresh session — just use `/resume-portfolio` to pick up where we left off. That loads the current state cleanly without carrying the weight of this session."
+> "We got a lot done: [brief summary of accomplishments]. I've generated the dashboard so you can see the full picture. For the next steps like [recommend next skills], I'd suggest starting a fresh session — just use `/portfolio-resume` to pick up where we left off. That loads the current state cleanly without carrying the weight of this session."
 
-Use the portfolio's communication language (read `portfolio.json` for the `language` field). Frame it as helpful advice for better output quality, not as a limitation. The key message: `/resume-portfolio` exists exactly for this — seamless multi-session workflows.
+Use the portfolio's communication language (read `portfolio.json` for the `language` field). Frame it as helpful advice for better output quality, not as a limitation. The key message: `/portfolio-resume` exists exactly for this — seamless multi-session workflows.

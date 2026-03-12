@@ -212,4 +212,4 @@ When the user asks to review or improve their portfolio (or when you notice issu
 - Aim for 1-5 products per portfolio; more than 7 usually signals overlapping product boundaries
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (product descriptions, positioning statements) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
-- Refer to `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md` for complete entity schemas
+- Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas

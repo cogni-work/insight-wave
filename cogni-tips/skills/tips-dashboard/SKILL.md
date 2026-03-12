@@ -221,6 +221,6 @@ This dashboard follows the design-variables pattern documented at `cogni-workspa
 
 Dashboard generation is a capstone operation — it gives the user a complete visual overview and typically signals a natural pause point. After generating the dashboard, always recommend starting a fresh session for next steps:
 
-> "Dashboard ready at `output/tips-dashboard.html`. For next steps like [recommend from next_actions], I'd recommend starting a fresh session with `/resume-tips`. That picks up the current state cleanly and gives you full context for the next phase."
+> "Dashboard ready at `output/tips-dashboard.html`. For next steps like [recommend from next_actions], I'd recommend starting a fresh session with `/tips-resume`. That picks up the current state cleanly and gives you full context for the next phase."
 
 Use the project's communication language. Frame it as helpful advice, not a limitation.

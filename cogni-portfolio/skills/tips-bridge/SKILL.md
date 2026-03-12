@@ -1,5 +1,5 @@
 ---
-name: bridge
+name: tips-bridge
 description: >
   Bidirectional integration between cogni-tips TIPS analysis and cogni-portfolio product portfolio.
   Use whenever the user mentions "bridge", "connect tips to portfolio", "import from tips",
@@ -126,7 +126,7 @@ For each TIPS Metric linked to matched paths, suggest portfolio evidence entries
 ```
 
 These become candidate evidence entries on the relevant proposition. Mark them as
-unverified — the user can later run `/verify` to check sourced claims.
+unverified — the user can later run `/portfolio-verify` to check sourced claims.
 
 **Step 6: Summary**
 

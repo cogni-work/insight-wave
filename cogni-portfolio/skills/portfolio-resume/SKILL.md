@@ -1,5 +1,5 @@
 ---
-name: resume-portfolio
+name: portfolio-resume
 description: |
   Resume, continue, or check status of a portfolio project.
   Use whenever the user mentions "continue portfolio", "resume portfolio",
@@ -93,7 +93,7 @@ If the phase is `complete`, congratulate the user and suggest reviewing outputs 
 
 ## Multi-Session Design
 
-This skill is the recommended re-entry point after heavy sessions. Portfolio work naturally spans multiple sessions — batch proposition generation, competitive analysis, solution design, and dashboard generation each consume significant context. Other portfolio skills proactively recommend `/resume-portfolio` when they detect a heavy session (multiple batch operations, 3+ skills invoked, or capstone operations like portfolio-dashboard/synthesize/export completed).
+This skill is the recommended re-entry point after heavy sessions. Portfolio work naturally spans multiple sessions — batch proposition generation, competitive analysis, solution design, and dashboard generation each consume significant context. Other portfolio skills proactively recommend `/portfolio-resume` when they detect a heavy session (multiple batch operations, 3+ skills invoked, or capstone operations like portfolio-dashboard/synthesize/export completed).
 
 When presenting the status summary, acknowledge what the user accomplished in previous sessions if recent entity timestamps suggest a productive recent session. This continuity helps users feel their work persists and builds confidence in the multi-session workflow.
 

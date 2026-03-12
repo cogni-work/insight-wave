@@ -1,5 +1,5 @@
 ---
-name: setup-obsidian
+name: obsidian-setup
 description: >-
   Scaffold a complete Obsidian vault with Claude Code terminal integration for a workplace
   directory. Use this skill whenever the user wants to set up Obsidian, create or configure an

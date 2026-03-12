@@ -1,5 +1,5 @@
 ---
-name: setup
+name: portfolio-setup
 description: |
   Initialize a new cogni-portfolio project with company context and directory structure.
   Use whenever the user mentions creating a portfolio, new portfolio project, setting up
@@ -83,7 +83,7 @@ cogni-portfolio/<project-slug>/
 
 ### 4. Write portfolio.json
 
-After the script creates directories, write `portfolio.json` in the project root with the confirmed company context, including the `language` field. Follow the schema in `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md`.
+After the script creates directories, write `portfolio.json` in the project root with the confirmed company context, including the `language` field. Follow the schema in `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md`.
 
 ### 5. Taxonomy Template Selection (Optional)
 
@@ -136,7 +136,7 @@ The portfolio data model has six entity types:
 | Customer | `customers/{mkt}.json` | Per-market ideal buyer profile |
 | Claims | `cogni-claims/claims.json` | Web-sourced claim verification registry |
 
-For complete entity schemas and naming conventions, consult `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md`.
+For complete entity schemas and naming conventions, consult `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md`.
 
 ## Important Notes
 

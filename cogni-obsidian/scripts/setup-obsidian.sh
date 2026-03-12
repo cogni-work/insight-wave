@@ -138,7 +138,7 @@ validate_inputs() {
 
     # Locate template relative to this script (cogni-obsidian plugin)
     PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
-    TEMPLATE_SOURCE="${PLUGIN_ROOT}/skills/setup-obsidian/templates/obsidian"
+    TEMPLATE_SOURCE="${PLUGIN_ROOT}/skills/obsidian-setup/templates/obsidian"
 
     if [[ ! -d "$TEMPLATE_SOURCE" ]]; then
         error_json "Obsidian template not found at: $TEMPLATE_SOURCE" 3

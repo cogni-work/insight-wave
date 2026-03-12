@@ -1,5 +1,5 @@
 ---
-name: export
+name: portfolio-export
 description: |
   Generate portfolio deliverables — proposals, marketing briefs, XLSX workbooks.
   Use whenever the user mentions export, proposal, brief, collateral, spreadsheet,
@@ -221,7 +221,7 @@ List generated files with paths. Suggest how to use each deliverable:
 
 Export is a capstone operation — it produces the final deliverables and typically marks the end of a work phase. After completing exports, first invoke `/portfolio-dashboard` to generate the portfolio dashboard — this gives the user a visual overview of everything accomplished so far. Then recommend starting a fresh session if the user wants to continue with other portfolio work:
 
-> "Exports complete — [list files generated]. I've generated the dashboard so you can see the full picture. If you want to continue with other portfolio work (refining propositions, adding competitors, etc.), I'd recommend starting a fresh session with `/resume-portfolio`. That picks up the current state cleanly and gives you full context for the next phase."
+> "Exports complete — [list files generated]. I've generated the dashboard so you can see the full picture. If you want to continue with other portfolio work (refining propositions, adding competitors, etc.), I'd recommend starting a fresh session with `/portfolio-resume`. That picks up the current state cleanly and gives you full context for the next phase."
 
 If export runs after other heavy skills in the same session, be especially proactive about this recommendation — output quality benefits from fresh context.
 

@@ -1,5 +1,5 @@
 ---
-name: scan
+name: portfolio-scan
 description: |
   Discover what services a company offers by scanning their websites, classify findings
   against a portfolio taxonomy template, and import them as features and products into

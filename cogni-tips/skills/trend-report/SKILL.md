@@ -390,7 +390,7 @@ Recommended next steps:
   2. export-pdf-report — Generate formal PDF report
   3. cogni-claims:claim-work — Verify claims (if skipped)
 
-Use /resume-tips in your next session to pick up where you left off.
+Use /tips-resume in your next session to pick up where you left off.
 ```
 
 ---

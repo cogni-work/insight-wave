@@ -55,10 +55,10 @@ cogni-tips/catalogs/{industry}/{subsector}/
 ```
 
 - [x] Design catalog schema (entities, versioning, cross-pursuit refs)
-- [x] Create `catalog` skill SKILL.md with init/import/export/analytics
+- [x] Create `tips-catalog` skill SKILL.md with init/import/export/analytics
 - [x] Modify Phase 0 to discover and load relevant industry catalog
 - [x] Modify Phase 5 to write-back with user approval (not just advisory)
-- [x] Add catalog discovery to `resume-tips` status dashboard
+- [x] Add catalog discovery to `tips-resume` status dashboard
 - [x] Initialize first catalog from b2b-ict-portfolio taxonomy template
 
 ### 2. TIPS <> Portfolio Bridge (cogni-portfolio or cogni-workspace)

@@ -1,5 +1,5 @@
 ---
-name: resume-tips
+name: tips-resume
 description: |
   Resume, continue, or check status of a TIPS trend scouting project.
   Use whenever the user mentions "continue tips", "resume tips", "resume trends",
@@ -119,12 +119,12 @@ If the phase is `complete`, congratulate the user and suggest exporting or visua
 | `modeling-paths` | Relationship networks built, solutions pending | Continue `value-modeler` |
 | `modeling-scoring` | Solutions generated, BR scoring pending | Continue `value-modeler` |
 | `modeling-curating` | Ranked solutions complete, curation pending | Continue `value-modeler` for optional catalog curation |
-| `modeling-complete` | Value model complete with ranked solutions | Run `/catalog import` or export/visualize Big Block |
+| `modeling-complete` | Value model complete with ranked solutions | Run `/tips-catalog import` or export/visualize Big Block |
 | `complete` | All stages finished | Export or visualize results |
 
 ## Multi-Session Design
 
-This skill is the recommended re-entry point after heavy sessions. TIPS work naturally spans multiple sessions — web research, candidate generation, candidate review, and report writing each consume significant context. Other TIPS skills proactively recommend `/resume-tips` when they detect a heavy session (Phase 1 web research, Phase 2 generation, or report assembly completed).
+This skill is the recommended re-entry point after heavy sessions. TIPS work naturally spans multiple sessions — web research, candidate generation, candidate review, and report writing each consume significant context. Other TIPS skills proactively recommend `/tips-resume` when they detect a heavy session (Phase 1 web research, Phase 2 generation, or report assembly completed).
 
 When presenting the status summary, acknowledge what the user accomplished in previous sessions if recent timestamps suggest productive recent work. This continuity helps users feel their work persists and builds confidence in the multi-session workflow.
 

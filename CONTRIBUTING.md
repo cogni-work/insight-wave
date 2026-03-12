@@ -35,6 +35,23 @@ All contributions to core plugins require signing the [Contributor License Agree
 - Keep PRs focused -- one feature or fix per PR
 - Include relevant documentation updates
 - Ensure existing functionality is not broken
+- Follow the skill naming convention (see below)
+
+### Skill Naming Convention
+
+**Test:** "If a user types `/skill-name`, would they know which plugin it belongs to?"
+
+| Tier | When | Pattern | Examples |
+|------|------|---------|----------|
+| A — Domain-unique | Only one plugin would ever own this word | Bare name | `propositions`, `synthesize`, `compete` |
+| B — Generic verb/noun | Multiple plugins could have this skill | `{domain}-{verb}` | `portfolio-scan`, `tips-catalog`, `copy-reader` |
+| C — Cross-plugin | Skill spans two domains | Descriptive compound | `tips-bridge` |
+
+**Order:** always `domain-verb` (not `verb-domain`). This groups skills alphabetically by plugin domain.
+
+**Generic words that always require a prefix:** `setup`, `scan`, `ingest`, `export`, `dashboard`, `verify`, `bridge`, `catalog`, `reader`, `config`, `status`, `analyze`, `resume`
+
+Run `cogni-workspace/scripts/check-skill-names.sh` to validate naming before submitting a PR.
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: verify
+name: portfolio-verify
 description: |
   Verify web-sourced claims in portfolio entities against their cited sources.
   Use whenever the user mentions verify, fact-check, check claims, claim status,

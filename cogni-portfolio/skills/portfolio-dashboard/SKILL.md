@@ -109,7 +109,7 @@ This dashboard is the **reference implementation** of the design-variables patte
 
 Dashboard generation is a capstone operation — it gives the user a complete visual overview and typically signals a natural pause point. After generating the dashboard, always recommend starting a fresh session for next steps:
 
-> "Dashboard ready at `output/dashboard.html`. For next steps like [recommend from next_actions], I'd recommend starting a fresh session with `/resume-portfolio`. That picks up the current state cleanly and gives you full context for the next phase."
+> "Dashboard ready at `output/dashboard.html`. For next steps like [recommend from next_actions], I'd recommend starting a fresh session with `/portfolio-resume`. That picks up the current state cleanly and gives you full context for the next phase."
 
 If the dashboard was generated after other heavy skills in the same session (batch propositions, feature reviews, etc.), be especially proactive — summarize what was accomplished in this session and frame the fresh start as the best way to maintain quality.
 

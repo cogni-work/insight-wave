@@ -243,4 +243,4 @@ Present your assessment as a consulting memo — lead with "here's what I'd chan
 - When reviewing existing features, always check the product description for uncovered capabilities — this is the single most valuable consulting move and the baseline misses it most often
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (feature names, descriptions) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
-- Refer to `$CLAUDE_PLUGIN_ROOT/skills/setup/references/data-model.md` for complete entity schemas
+- Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas
