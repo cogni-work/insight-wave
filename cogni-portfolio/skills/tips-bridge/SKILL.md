@@ -7,7 +7,8 @@ description: >
   "map trends to products", "enrich propositions from trends", "what did tips find for my portfolio",
   or wants to flow data between a TIPS value model and a portfolio project. Also trigger when the
   user has completed value-modeler ranking and asks "how does this connect to my portfolio" or
-  "what features should I add based on the trends".
+  "what features should I add based on the trends". Trigger on "bridge status", "is my portfolio
+  ready for tips", "check bridge readiness", or "can I bridge yet" for the pre-flight check.
 ---
 
 # TIPS-Portfolio Bridge
@@ -25,14 +26,169 @@ Without the bridge, TIPS and Portfolio are two separate worlds:
 The bridge connects them: trends inform which features to prioritize, ranked solutions become
 new features or enrich existing ones, and portfolio constraints guide solution generation.
 
-## Prerequisites
+## Prerequisites & Validation
 
-- A cogni-tips project with a completed value model (`tips-value-model.json`)
-- A cogni-portfolio project with at least `portfolio.json` and some products/features
+Every bridge operation runs a pre-flight check before doing any work. This catches
+data gaps and industry mismatches early — before wasting time on exports or imports
+that will produce poor results.
 
-Both must be discoverable in the workspace.
+### Shared Pre-flight (all operations)
+
+1. **Discover projects** — Find the TIPS project (`*/tips-project.json`) and the
+   portfolio project (`*/portfolio.json`). If either is missing, stop and report
+   which one with a fix suggestion.
+2. **Industry alignment** — Compare TIPS and portfolio industries (see below).
+   The result is stored for use during market-relevance matching and reported
+   in the summary.
+
+### Industry Alignment
+
+The TIPS project targets a specific industry (e.g., manufacturing/automotive) while
+the portfolio describes what you sell. Bridging across unrelated industries is unusual
+and likely a mistake — but sometimes intentional (e.g., cross-selling into a new vertical).
+
+**How it works:**
+
+1. Read TIPS `industry.primary` and `industry.subsector` from `tips-project.json`
+2. Read portfolio `company.industry` from `portfolio.json` (free text)
+3. Collect all `segmentation.vertical_codes` from `portfolio/markets/*.json`
+4. Slugify `company.industry` (lowercase, replace non-alphanumeric with hyphens)
+
+Match using a 4-tier heuristic:
+
+- **exact** — Slugified `company.industry` matches `industry.primary` or
+  `industry.subsector`. Example: company.industry "Automotive OEM" → slug
+  "automotive-oem" contains "automotive" matching subsector. Proceed silently.
+- **vertical** — Any market `vertical_code` matches `industry.subsector`.
+  Example: market has `vertical_codes: ["automotive"]`, TIPS subsector is
+  "automotive". Proceed silently.
+- **broad** — Any market `vertical_code` is a known subsector of `industry.primary`
+  (use the same parent-child logic as market-relevance matching). Example: market
+  has `vertical_codes: ["autonomous-vehicles"]`, TIPS primary is "manufacturing".
+  Proceed with note: "Portfolio markets have related verticals ({codes}) but no
+  direct match to TIPS subsector '{subsector}'. Bridge results may need manual review."
+- **none** — No match found. Warn and require explicit user confirmation:
+  "Industry mismatch: TIPS analyzes {primary_en}/{subsector_en} but portfolio
+  company.industry is '{company.industry}' with market verticals [{codes}].
+  Cross-industry bridging is unusual — continue anyway?"
+
+### portfolio-to-tips Validation Gates
+
+Run these after shared pre-flight when executing `portfolio-to-tips` or `sync`.
+
+**Hard gates (block execution):**
+- `portfolio.json` must exist and be valid JSON
+- At least 1 product in `portfolio/products/`
+- At least 1 feature in `portfolio/features/` with a valid `product_slug` reference
+
+If any hard gate fails, stop and report the fix:
+- "No products found. Create at least one product first: `/portfolio-setup`"
+- "No features found. Add features to your products: `/features create`"
+
+**Soft warnings (report and continue):**
+- No propositions: "No propositions found. The exported context will lack
+  IS/DOES/MEANS messaging — value-modeler Phase 2 will generate STs without
+  portfolio grounding. Consider running `/propositions create` first."
+- No markets: "No markets defined. The context file will have no market-relevance
+  tagging. Define markets with `/portfolio-setup`."
+- Features with descriptions under 15 words: "{N} features have thin descriptions
+  (under 15 words). Richer descriptions improve ST-to-feature matching accuracy.
+  Consider running `/features enrich` first."
+- No solutions: "No solutions found. The exported context will lack pricing and
+  delivery data."
+
+### tips-to-portfolio Validation Gates
+
+Run these after shared pre-flight when executing `tips-to-portfolio` or `sync`.
+
+**Hard gates (block execution):**
+- `tips-value-model.json` must exist in the TIPS project directory
+- `solution_templates` array must be non-empty
+- At least 1 ST must have `ranking_value` populated (not null) — confirms that
+  value-modeler Phase 4 (ranking) has completed
+
+If any hard gate fails, stop and report the fix:
+- "Value model not found. Run the value modeler first: `/value-model`"
+- "No solution templates in value model. Complete value-modeler Phase 2:
+  `/value-model solutions`"
+- "Solution templates have no ranking values. Complete Phase 4 to calculate
+  rankings: `/value-model rank`"
+
+**Soft warnings (report and continue):**
+- No features in portfolio: "Portfolio has no features. All Solution Templates
+  will produce 'Create' actions (no enrichment possible). Consider adding features
+  first with `/features create`."
+- No propositions: "Portfolio has features but no propositions. Enrichment will
+  create new propositions rather than refining existing ones."
+- All STs have `business_relevance` = null: "No user-scored business relevance
+  found. Rankings use formula-only scores. Consider running `/value-model score`
+  for customer-specific prioritization."
 
 ## Operations
+
+### status — Check Bridge Readiness
+
+```
+/bridge status
+```
+
+Quick readiness check without running any operations. Use this to see whether
+your data is ready before committing to a full bridge run.
+
+**Step 1: Discover & Validate**
+
+Run the shared pre-flight (project discovery + industry alignment). Report
+results but do not block on warnings — status is purely informational.
+
+**Step 2: Portfolio Readiness**
+
+Count portfolio entities and report:
+
+```
+Portfolio: {slug}
+  Products:     {N}  ✓ (or ✗ if 0)
+  Features:     {N}  ✓ (or ✗ if 0)
+  Propositions: {N}  ✓ (or — if 0)
+  Markets:      {N}  ✓ (or — if 0)
+  Solutions:    {N}  (info only)
+```
+
+Where ✓ = meets hard gate, ✗ = fails hard gate, — = soft warning.
+
+**Step 3: TIPS Readiness**
+
+```
+TIPS: {pursuit-slug}
+  Industry:           {primary_en} / {subsector_en}
+  Value Model:        {exists/missing}  ✓/✗
+  Solution Templates: {N}               ✓/✗
+  Ranked STs:         {N} / {total}     ✓/✗
+  Portfolio Context:  {v2.0 from DATE / v1.0 / missing}
+```
+
+**Step 4: Industry Alignment**
+
+```
+Industry Alignment: {EXACT / VERTICAL / BROAD / NONE}
+  TIPS:      {primary_en} / {subsector_en}
+  Portfolio: {company.industry}
+  Verticals: [{vertical_codes joined}]
+```
+
+**Step 5: Readiness Verdict**
+
+```
+Bridge Readiness:
+  portfolio-to-tips: {READY / NOT READY: reason}
+  tips-to-portfolio: {READY / NOT READY: reason}
+  sync:              {READY / NOT READY: reason}
+```
+
+If NOT READY, list fix actions:
+- "Add at least 1 feature to a product: `/features create`"
+- "Complete value-modeler ranking: `/value-model rank`"
+- "Resolve industry mismatch: update portfolio.json company.industry or confirm
+  cross-industry intent"
 
 ### tips-to-portfolio — Flow TIPS Insights into Portfolio
 
@@ -48,6 +204,13 @@ Takes ranked Solution Templates from the value model and creates or enriches por
 2. Find the portfolio project (look for `portfolio/portfolio.json` or `*/portfolio.json`)
 3. Load `tips-value-model.json` — needs `solution_templates` with ranking values
 4. Load portfolio products, features, and existing propositions
+
+**Step 1b: Validate Readiness**
+
+Run the shared pre-flight (industry alignment) and tips-to-portfolio validation
+gates. If any hard gate fails — missing value model, empty solution templates,
+or no ranked STs — stop and report the fix suggestion. If soft warnings exist
+(no features, no propositions, no BR scores), report them and continue.
 
 **Step 2: Match Solution Templates to Features**
 
@@ -211,6 +374,13 @@ Solution Templates are grounded in real portfolio capabilities.
 
 Same discovery as `tips-to-portfolio`.
 
+**Step 1b: Validate Readiness**
+
+Run the shared pre-flight (industry alignment) and portfolio-to-tips validation
+gates. If any hard gate fails — no products or no features — stop and report
+the fix suggestion. If soft warnings exist (no propositions, no markets, thin
+descriptions, no solutions), report them and continue.
+
 **Step 2: Extract Products & Features**
 
 Read all products from `portfolio/products/*.json` and features from
@@ -312,6 +482,15 @@ Report a summary to the user:
 - Any features without propositions (messaging gaps)
 - Any markets with no TIPS relevance (may not contribute to ST generation)
 
+**Industry alignment summary** — aggregate the per-market relevance tags:
+- If any market is `direct`: "Industry alignment: strong ({N} markets with direct
+  TIPS match)"
+- If any market is `industry` but none `direct`: "Industry alignment: moderate
+  ({N} markets with industry-level TIPS match). ST matching may be less precise."
+- If all markets are `none`: "Industry alignment: none. No portfolio markets match
+  the TIPS industry context. The exported context will have limited utility for
+  Phase 2 grounding."
+
 Tell the user: "Portfolio context (v2.0) saved. When you run value-modeler Phase 2, it
 will use proposition language and solution data to ground Solution Templates in your
 portfolio's actual capabilities and pricing."
@@ -325,6 +504,13 @@ portfolio's actual capabilities and pricing."
 Runs `portfolio-to-tips` first (so enriched context is available), then `tips-to-portfolio`.
 This ordering ensures that ST generation and backflow both benefit from the latest
 portfolio propositions and solution data.
+
+**Step 0: Pre-flight Validation**
+
+Run the shared pre-flight (industry alignment) and then BOTH operation-specific
+gate sets (portfolio-to-tips gates AND tips-to-portfolio gates). Report all results
+together. If any hard gate from either direction fails, stop and report — this
+prevents running portfolio-to-tips successfully only to fail on tips-to-portfolio.
 
 **Step 1: Run portfolio-to-tips**
 
