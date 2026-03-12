@@ -177,9 +177,9 @@ Smarter-service trends link to B2B ICT portfolio offerings via a **portfolio map
 
 ### Portfolio File
 
-A markdown file following the B2B ICT Portfolio structure with 8 dimensions (0-7) and 57 categories. Created by the `portfolio-mapping` skill.
+A markdown file following the B2B ICT Portfolio structure with 8 dimensions (0-7) and 57 categories. Created by the `ict-scan` skill.
 
-**File Format:** See portfolio-template.md in cogni-portfolio (`cogni-portfolio/skills/portfolio-mapping/references/portfolio-template.md`)
+**File Format:** See report-template.md in cogni-portfolio (`cogni-portfolio/skills/ict-scan/references/report-template.md`)
 
 **Example:** `deutsche-telekom-portfolio.md`
 
@@ -195,10 +195,10 @@ During project initialization (Phase 0), the user provides the path to an existi
 ### Integration Flow
 
 ```text
-portfolio-mapping skill → <company>-portfolio.md → human review → smarter-service research
+ict-scan skill → <company>-portfolio.md → human review → smarter-service research
 ```
 
-1. **Pre-requisite:** Run `portfolio-mapping` skill to create `<company>-portfolio.md`
+1. **Pre-requisite:** Run `ict-scan` skill to create `<company>-portfolio.md`
 2. **Human Review:** Verify and refine the portfolio mapping
 3. **Research Init:** Provide portfolio file path during smarter-service initialization
 4. **Trend Synthesis:** trends-creator links TIPS to portfolio offerings

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# generate-portfolio-mapping.sh
+# generate-ict-scan-mapping.sh
 # Version: 2.0.0
-# Purpose: Generate category-to-entity mapping from portfolio-mapping research logs
+# Purpose: Generate category-to-entity mapping from ict-scan research logs
 # Category: utilities
 #
-# Usage: generate-portfolio-mapping.sh --project-path <path> [--output <path>]
+# Usage: generate-ict-scan-mapping.sh --project-path <path> [--output <path>]
 #
 # Arguments:
 #   --project-path <path>  Portfolio project directory (required)

@@ -1,21 +1,8 @@
-# B2B ICT Portfolio Taxonomy
+# ICT Taxonomy
 
-57 standard service categories across 8 dimensions (0-7).
+57 standard service categories across 8 dimensions (0-7). This is the single source of truth for the B2B ICT Portfolio taxonomy used by the `ict-scan` skill, `portfolio-dashboard`, and the `bridge` skill.
 
-## Category Overlap Rules
-
-Some categories commonly overlap. When an offering fits both categories in an overlap pair, assign to BOTH.
-
-| Primary | Secondary | Overlap Condition |
-|---------|-----------|-------------------|
-| 4.8 | 6.3 | SAP/Oracle on cloud with application management |
-| 6.3 | 4.8 | Enterprise platform services delivered on hyperscaler |
-| 4.7 | 2.10 | Sovereign cloud with data protection/privacy features |
-| 2.1 | 5.5 | SOC/SIEM bundled with full IT operations outsourcing |
-| 4.6 | 6.7 | Cloud-native platform with DevOps/CI/CD capabilities |
-| 4.1 | 4.2 | Managed hyperscaler with multi-cloud governance |
-
----
+For cross-category overlap rules, see [cross-category-rules.md](cross-category-rules.md).
 
 ## 0. Provider Profile Metrics (6 categories)
 

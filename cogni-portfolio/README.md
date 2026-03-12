@@ -26,7 +26,7 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 | `synthesize` | Generate structured messaging repository with per-market summaries and integrated claim status |
 | `export` | Produce deliverables — proposition proposals, market briefs, portfolio workbooks (markdown and XLSX) |
 | `portfolio-dashboard` | Generate an interactive HTML dashboard showing the full portfolio status |
-| `portfolio-mapping` | Map a target company's B2B ICT portfolio to 8 dimensions / 57 categories via web research |
+| `ict-scan` | Discover a company's ICT service offerings via web research, classify against B2B ICT taxonomy (8 dimensions / 57 categories), and import as portfolio entities |
 | `resume-portfolio` | Detect current workflow phase and recommend next actions for an existing project |
 
 ## Agents
@@ -114,7 +114,7 @@ cogni-portfolio/
 │   ├── synthesize/
 │   ├── export/
 │   ├── portfolio-dashboard/
-│   ├── portfolio-mapping/
+│   ├── ict-scan/
 │   └── resume-portfolio/
 ├── agents/                       6 delegation agents
 │   ├── market-researcher.md
@@ -130,7 +130,7 @@ cogni-portfolio/
     ├── project-status.sh
     ├── sync-portfolio.sh
     ├── validate-entities.sh
-    └── generate-portfolio-mapping.sh
+    └── generate-ict-scan-mapping.sh
 ```
 
 ## License
