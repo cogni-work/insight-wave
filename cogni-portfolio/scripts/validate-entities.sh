@@ -138,7 +138,7 @@ for cat, slugs in cats.items():
 " 2>/dev/null)
 fi
 
-# Feature description structural warning: very short descriptions
+# Feature description structural warning: descriptions outside 15-35 word target
 # Deep quality assessment (mechanism clarity, customer relevance, language quality)
 # is handled by the feature-quality-assessor agent, which works in any language.
 if [ -d "$PROJECT_DIR/features" ]; then
@@ -153,7 +153,11 @@ for f in glob.glob('$PROJECT_DIR/features/*.json'):
         desc = d.get('description', '')
         words = desc.split()
         if len(words) < 15:
-            print(f'{slug}|Description has only {len(words)} words (minimum 15 recommended)')
+            print(f'{slug}|Description has only {len(words)} words (target is 20-35 words)')
+        elif len(words) < 20:
+            print(f'{slug}|Description has {len(words)} words (target is 20-35 words)')
+        elif len(words) > 35:
+            print(f'{slug}|Description has {len(words)} words (target is 20-35 words)')
     except Exception:
         pass
 " 2>/dev/null)

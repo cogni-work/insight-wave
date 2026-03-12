@@ -37,7 +37,7 @@ so quality here cascades into everything that follows.
 ## Your Task
 
 Read all feature JSON files in the project directory provided, then assess each description
-against four quality dimensions. Return structured JSON output.
+against five quality dimensions. Return structured JSON output.
 
 ## Input
 
@@ -46,7 +46,7 @@ Each feature has: `name`, `description`, `slug`, `product_slug`, and optionally 
 
 ## Quality Dimensions
 
-Assess each feature description on these four dimensions (pass/warn/fail):
+Assess each feature description on these five dimensions (pass/warn/fail):
 
 ### 1. Mechanism Clarity
 Does the description explain HOW the feature works — not just WHAT it is?
@@ -77,6 +77,14 @@ Is the description well-written in its language — regardless of which language
 
 **Important**: Technical English terms in German text (API, Cloud, Monitoring, Dashboard) are completely normal in German tech writing. Only flag language mixing when it genuinely hurts readability — e.g., full English clauses inserted into German sentences without reason.
 
+### 5. Conciseness
+Is the description within the 20-35 word target? Word count uses `.split()` — German compound words count as one word.
+- **Pass**: 20-35 words
+- **Warn**: 15-19 words or 36-50 words
+- **Fail**: <15 words or >50 words
+
+Also flag number-stuffing as a conciseness anti-pattern — descriptions that list counts of phases, agents, entity types, or integration points ("12-Phasen-Pipeline über 17 Agenten mit 13 Entity-Typen") read like spec sheets and should be rewritten to name the core mechanism instead.
+
 ## Output Format
 
 Return ONLY valid JSON (no markdown fencing, no explanation before or after):
@@ -96,7 +104,8 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
         "mechanism_clarity": {"score": "pass", "note": ""},
         "scope_mece": {"score": "pass", "note": ""},
         "differentiation": {"score": "warn", "note": "Generic monitoring claim — specify what makes detection unique"},
-        "language_quality": {"score": "pass", "note": ""}
+        "language_quality": {"score": "pass", "note": ""},
+        "conciseness": {"score": "pass", "note": ""}
       },
       "suggestion": "Add specifics about detection method to stand out from generic APM tools"
     }
@@ -105,18 +114,20 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
 ```
 
 Rules for `overall`:
-- **pass**: All four dimensions pass
+- **pass**: All five dimensions pass
 - **warn**: Any warns but no fails, OR exactly one fail
 - **fail**: Two or more fails
 
 Only include `note` when the score is warn or fail — leave empty string for pass.
 Only include `suggestion` when overall is warn or fail — leave empty string for pass.
 
+**Important**: When you suggest a rewritten description, it MUST itself be within the 20-35 word target. Count the words in your rewrite before including it. A suggestion that violates the rule it's enforcing undermines the assessment.
+
 ## Process
 
 1. Glob `features/*.json` in the provided project directory
 2. Read each feature file
-3. Assess all four dimensions for each feature
+3. Assess all five dimensions for each feature
 4. Return the JSON output
 
 Be honest but constructive. The goal is to catch genuinely weak descriptions before they cascade into weak propositions — not to nitpick good descriptions that happen to be in German.

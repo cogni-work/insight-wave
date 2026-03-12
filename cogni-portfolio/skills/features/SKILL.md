@@ -75,7 +75,19 @@ Based on discovery (or the user's capability dump), propose a feature set. This 
 
 **Name for clarity, not for marketing.** Feature names should be immediately understandable to someone who's never seen the product. "Real-time Container Orchestration Monitoring" beats "SmartWatch Pro" every time.
 
-**Write descriptions that pass the demo test.** Each description should answer: "If I asked you to show me this working, what would I see?" One to three sentences, factual, no superlatives.
+**Write descriptions that pass the demo test and the conciseness test.** Target **20-35 words** — one to two sentences. The IS layer is the base of the Power Position pyramid: a factual anchor, not a feature catalog.
+
+**Checklist for a concise feature description:**
+- Names the core mechanism — what it does technically, not what it delivers
+- Stays under two sentences and 35 words
+- Uses concrete, specific descriptors — no marketing adjectives
+- Includes only what's necessary to set up the DOES layer — selective, not exhaustive
+
+**Anti-patterns to reject:**
+- Number-stuffing: "12-Phasen-Pipeline über 17 Agenten mit 13 Entity-Typen" — reads like a spec sheet
+- Kitchen-sink enumeration: listing every component, phase, or integration point
+- Outcome language: "reduces", "enables", "ensures", "damit Geschäftsführung..." — belongs in propositions
+- Parity language: "robust", "innovative", "cutting-edge", "best-in-class"
 
 **Keep buyer outcomes out of feature descriptions.** Feature descriptions describe the mechanism — what it IS and HOW it works. Language about who benefits or what changes for the buyer ("reduces downtime", "enables teams to...", "damit Geschäftsführung...") belongs exclusively in propositions, where it gets tailored per market. If you catch yourself writing "helps", "reduces", "enables", "ensures", or "damit" followed by a beneficiary — stop. Move that sentence to your proposition notes and keep the feature description purely mechanical. This separation is what makes the IS/DOES/MEANS framework work: features stay factual and reusable; propositions add the buyer lens per market.
 
@@ -107,7 +119,7 @@ Once you and the user agree on the feature set, structure each feature:
   "slug": "cloud-monitoring",
   "product_slug": "cloud-platform",
   "name": "Cloud Infrastructure Monitoring",
-  "description": "Real-time monitoring of cloud infrastructure including servers, containers, and network components with automated alerting.",
+  "description": "Monitors cloud infrastructure — servers, containers, networks — in real time, correlates metrics across layers, and triggers automated alerts on threshold violations.",
   "category": "observability",
   "created": "2026-01-15"
 }
@@ -151,11 +163,12 @@ After structural validation passes, spawn the `feature-quality-assessor` agent t
 Assess feature quality for the project at <project-dir>
 ```
 
-The agent evaluates four dimensions per feature:
+The agent evaluates five dimensions per feature:
 1. **Mechanism clarity**: Does the description explain HOW the feature works, not just what it is?
 2. **Scope & MECE**: Is the feature cleanly scoped — no overlap with siblings, no gaps in the product's capability space? Does it describe what the capability IS without drifting into buyer outcomes (which belong in propositions)?
 3. **Differentiation potential**: Is the description specific enough to stand out from competitors through mechanism detail, not through benefit claims?
 4. **Language quality**: Is the prose clean and professional in its language? (Technical English terms in German text like API, Cloud, Monitoring are normal — only genuine readability issues are flagged.)
+5. **Conciseness**: Is the description 20-35 words? (warn: 36-50 or 15-19; fail: 51+ or <15)
 
 The agent returns structured JSON with pass/warn/fail per dimension and improvement suggestions. Features with overall "fail" are not ready for proposition generation.
 
