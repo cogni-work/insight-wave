@@ -27,6 +27,16 @@ For each **Strategic Theme**, generate 2-4 Solution Templates using extended thi
 Working at the theme level (rather than per-chain) naturally deduplicates — chains within
 a theme share strategic direction, so a single ST often serves multiple chains.
 
+**Portfolio-grounded generation (when `portfolio-context.json` v2.0 exists):**
+When an enriched portfolio context is available (check for `schema_version` = `"2.0"`),
+ST descriptions should reference capability language from matched propositions. Specifically:
+- Use DOES statements to frame the ST's advantage (what measurable improvement it delivers)
+- Use MEANS statements to anchor the ST's business outcome (why the customer should care)
+- The ST remains TIPS-native (solution-oriented), but is **grounded** in what the portfolio
+  already articulates — this avoids generating STs in a vacuum
+
+If no v2.0 context exists, generate STs using industry context alone (unchanged behavior).
+
 **For each ST, define:**
 - `st_id`: Sequential identifier (st-001, st-002, ...)
 - `name`: Descriptive name (3-7 words)
@@ -75,7 +85,38 @@ If a cogni-portfolio project was discovered in Phase 0:
    - Read `portfolio/solutions/{feature}--{market}.json` if exists
    - Enrich the ST with IS/DOES/MEANS messaging and pricing data
 
-5. **Report portfolio gaps**: STs with `none` or `low` match confidence are worth
+5. **Enrich from Portfolio Propositions (v2.0 context):**
+
+   When `portfolio-context.json` has `schema_version` = `"2.0"`, the propositions are
+   already embedded in the context file under each feature. For high/medium matches:
+
+   a. Read the `propositions` array from the matched feature in `portfolio-context.json`
+   b. Filter to propositions from markets where `market_relevance` is `direct` or `industry`
+   c. Use proposition language to ground the ST description:
+      - The **DOES** statement provides advantage framing → incorporate into ST description
+      - The **MEANS** statement provides business outcome language → inform ST justification
+   d. Add a `portfolio_grounding` array to each ST:
+
+   ```json
+   {
+     "portfolio_grounding": [
+       {
+         "feature_slug": "predictive-analytics",
+         "market_slug": "mid-market-saas-dach",
+         "does_echo": "Reduces MTTR by 60% through AI-correlated alerting",
+         "evidence_available": true
+       }
+     ]
+   }
+   ```
+
+   The `does_echo` captures the specific advantage claim from the portfolio that grounds
+   this ST. `evidence_available` is `true` when `evidence_count` > 0 in the proposition.
+
+   When v2.0 context is not available, fall back to reading proposition files directly
+   from the portfolio directory (Step 4 above).
+
+6. **Report portfolio gaps**: STs with `none` or `low` match confidence are worth
    flagging — they represent market opportunities not yet captured in the portfolio.
 
 ```json
@@ -168,6 +209,7 @@ Strategic Question: How do we reformulate for the GLP-1-era consumer?
 Chains: GLP-1 Portfolio Reformulation, Functional Ingredients Innovation
 Category: software | Enabler: revenue_enablement | Urgency: near-term
 Portfolio match: predictive-analytics (high confidence)
+Propositions: 2 relevant (mid-market-dach: "Reduces MTTR by 60%...", enterprise-eu: "...")
 > AI-driven product recommendations based on health profiles, GLP-1 medication,
 > and dietary preferences.
 
@@ -175,6 +217,7 @@ Portfolio match: predictive-analytics (high confidence)
 Chains: GLP-1 Portfolio Reformulation
 Category: process | Enabler: process_improvement | Urgency: immediate
 Portfolio match: none (PORTFOLIO GAP)
+Propositions: —
 > Systematic reformulation framework for protein- and fiber-rich product lines.
 
 ### Theme 2: Regulatory Compliance & Sustainable Packaging (3 STs)

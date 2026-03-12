@@ -121,19 +121,75 @@ For each TIPS Metric linked to matched paths, suggest portfolio evidence entries
 {
   "statement": "{metric name}: {typical target from catalog or pursuit}",
   "source_url": null,
-  "source_title": "TIPS Value Model — {pursuit name}"
+  "source_title": "TIPS Value Model — {pursuit name}",
+  "tips_context": "Driven by {trend name}; validated through {metric} across {industry} pursuits"
 }
 ```
 
+The `tips_context` field provides provenance — it captures which trend drove the metric
+and what industry validation supports it. This helps portfolio users understand the
+evidence's origin without needing to open the TIPS project.
+
 These become candidate evidence entries on the relevant proposition. Mark them as
 unverified — the user can later run `/portfolio-verify` to check sourced claims.
+
+**Step 5.5: Propose Solution Stubs**
+
+When an ST maps to a feature that has a proposition but **no solution** for the target
+market, propose creating a solution stub:
+
+1. Derive `solution_type` from the product's `revenue_model`:
+   - `subscription` → `managed_service`
+   - `license` → `project`
+   - `service` → `project`
+   - `hybrid` → ask the user
+2. Suggest implementation phases based on the ST description and its SPIs:
+   - Phase 1: Proof of Value (from ST scope)
+   - Phase 2-N: Derived from SPI change types (governance, training, workflow)
+3. Present as a table for user approval — **never auto-create**:
+
+```
+| Feature | Market | Proposed Type | Phases | Source ST | Action |
+|---------|--------|---------------|--------|----------|--------|
+| predictive-analytics | mid-market-dach | managed_service | 3 | st-001 | Create? |
+| compliance-engine | enterprise-eu | project | 2 | st-004 | Create? |
+```
+
+Only create solution stubs after explicit user approval for each row.
+
+**Step 5.7: Add Provenance Tracking**
+
+For all propositions enriched in Step 4 and evidence added in Step 5, attach
+`tips_enrichment` metadata:
+
+```json
+{
+  "tips_enrichment": {
+    "pursuit_slug": "{tips-pursuit-slug}",
+    "enriched_at": "{ISO-8601 timestamp}",
+    "st_refs": ["st-001"],
+    "enrichment_type": ["does_refined", "evidence_added"]
+  }
+}
+```
+
+Valid `enrichment_type` values:
+- `does_refined` — DOES statement was enriched with trend-driven advantage framing
+- `means_refined` — MEANS statement was enriched with business outcome context
+- `evidence_added` — New evidence entries were suggested from TIPS metrics
+- `solution_proposed` — A solution stub was proposed (from Step 5.5)
+
+This metadata is appended to the proposition JSON. Portfolio skills that don't understand
+it will ignore it. It enables future auditing of which TIPS pursuit influenced which
+portfolio positioning.
 
 **Step 6: Summary**
 
 Report what was created/enriched:
 - N new features created
-- N propositions enriched
-- N evidence entries suggested
+- N propositions enriched (with enrichment type breakdown)
+- N evidence entries suggested (with tips_context provenance)
+- N solution stubs proposed
 - List any high-ranked STs that were skipped (portfolio gaps worth revisiting)
 
 ### portfolio-to-tips — Load Portfolio as TIPS Constraints
@@ -142,37 +198,86 @@ Report what was created/enriched:
 /bridge portfolio-to-tips
 ```
 
-Loads the portfolio's products and features into the TIPS value model context so that
-Phase 2 (Solution Template generation) is constrained by what you actually sell.
+Loads the portfolio's products, features, propositions, and solutions into the TIPS value
+model context so that Phase 2 (Solution Template generation) is grounded in what you
+actually sell and how you position it per market.
 
-**This operation is informational** — it writes a `portfolio-context.json` file into the
-TIPS project directory that value-modeler Phase 2 can read.
+**This operation is informational** — it writes a `portfolio-context.json` (v2.0) file into
+the TIPS project directory that value-modeler Phase 2 can read. The enriched context gives
+Phase 2 access to proposition language (IS/DOES/MEANS) and solution summaries so that
+Solution Templates are grounded in real portfolio capabilities.
 
 **Step 1: Discover Projects**
 
 Same discovery as `tips-to-portfolio`.
 
-**Step 2: Extract Portfolio Context**
+**Step 2: Extract Products & Features**
 
-Read all products and features and create a compact context file:
+Read all products from `portfolio/products/*.json` and features from
+`portfolio/features/*.json`. Build the product → feature hierarchy.
+
+**Step 2.5: Enrich Features with Propositions & Solutions**
+
+For each feature, check for matching proposition and solution files:
+
+1. Read all `portfolio/propositions/{feature-slug}--{market-slug}.json` files
+2. Read all `portfolio/solutions/{feature-slug}--{market-slug}.json` files
+3. Compact each proposition into: `is_statement`, `does_statement`, `means_statement`,
+   and `evidence_count` (number of evidence entries — avoids bloating the context file)
+4. Compact each solution into: `solution_type`, `pricing_tiers` (tier names only),
+   and `price_range` (min, max, currency)
+5. Nest the compacted propositions under their parent feature
+
+**Market-Relevance Matching:**
+
+If TIPS project context is available (from `tips-project.json`), match each portfolio
+market against the TIPS industry context using a 3-tier heuristic:
+
+- **direct**: Portfolio market's `vertical_codes` contains a value matching the TIPS
+  `industry.subsector` (e.g., both say "automotive")
+- **industry**: Portfolio market's `vertical_codes` are a subsector of the TIPS
+  `industry.primary` (e.g., market says "autonomous-vehicles", TIPS says "automotive")
+- **none**: No meaningful relationship between market and TIPS industry
+
+Assign `market_relevance` and `match_reason` to each market entry in the context file.
+
+**Step 3: Build Context File**
+
+Assemble `portfolio-context.json` v2.0:
 
 ```json
 {
+  "schema_version": "2.0",
   "source": "cogni-portfolio",
   "portfolio_slug": "{portfolio-slug}",
-  "extracted_at": "{timestamp}",
+  "extracted_at": "{ISO-8601 timestamp}",
   "products": [
     {
       "slug": "cloud-platform",
       "name": "Cloud Platform",
       "revenue_model": "subscription",
+      "maturity": "growth",
       "features": [
         {
           "slug": "cloud-monitoring",
           "name": "Cloud Infrastructure Monitoring",
           "description": "Real-time monitoring...",
           "category": "observability",
-          "readiness": "ga"
+          "readiness": "ga",
+          "propositions": [
+            {
+              "market_slug": "mid-market-saas-dach",
+              "is_statement": "Cloud monitoring for SaaS operations teams",
+              "does_statement": "Reduces MTTR by 60% through AI-correlated alerting",
+              "means_statement": "Protects SaaS uptime SLAs in a market where churn from downtime costs 5-8% ARR",
+              "evidence_count": 3,
+              "solution_summary": {
+                "solution_type": "project",
+                "pricing_tiers": ["proof_of_value", "small", "medium", "large"],
+                "price_range": { "min": 15000, "max": 250000, "currency": "EUR" }
+              }
+            }
+          ]
         }
       ]
     }
@@ -182,7 +287,13 @@ Read all products and features and create a compact context file:
       "slug": "mid-market-saas-dach",
       "name": "Mid-Market SaaS (DACH)",
       "region": "dach",
-      "priority": "beachhead"
+      "priority": "beachhead",
+      "segmentation_summary": "SaaS companies, 50-500 employees",
+      "vertical_codes": ["saas"],
+      "tam_value": 5000000000,
+      "currency": "EUR",
+      "market_relevance": "direct",
+      "match_reason": "vertical_codes includes 'saas' matching TIPS subsector"
     }
   ]
 }
@@ -190,11 +301,20 @@ Read all products and features and create a compact context file:
 
 Write to `{tips-project-dir}/portfolio-context.json`.
 
-**Step 3: Advise Value Modeler**
+**Backward compatibility:** The `schema_version` field distinguishes v2.0 from earlier
+exports. Phase 2 checks this field and falls back to basic feature matching when v1.0
+(no `schema_version` field) is encountered.
 
-Tell the user: "Portfolio context saved. When you run value-modeler Phase 2, it will use
-this to map Solution Templates to your existing products and features, and flag solutions
-that don't match your current portfolio as potential expansion opportunities."
+**Step 4: Advise Value Modeler**
+
+Report a summary to the user:
+- N products, M features, P propositions across K markets (R with direct/industry relevance)
+- Any features without propositions (messaging gaps)
+- Any markets with no TIPS relevance (may not contribute to ST generation)
+
+Tell the user: "Portfolio context (v2.0) saved. When you run value-modeler Phase 2, it
+will use proposition language and solution data to ground Solution Templates in your
+portfolio's actual capabilities and pricing."
 
 ### sync — Reconcile Both Directions
 
@@ -202,15 +322,46 @@ that don't match your current portfolio as potential expansion opportunities."
 /bridge sync
 ```
 
-Runs both `portfolio-to-tips` and `tips-to-portfolio` in sequence, presenting a unified
-reconciliation view:
+Runs `portfolio-to-tips` first (so enriched context is available), then `tips-to-portfolio`.
+This ordering ensures that ST generation and backflow both benefit from the latest
+portfolio propositions and solution data.
 
-1. Load portfolio context into TIPS project
-2. Match all STs against features
-3. Present the full mapping with gaps in both directions:
-   - TIPS solutions with no portfolio match (innovation opportunities)
-   - Portfolio features with no TIPS relevance signal (validate market need)
-4. Generate an action plan
+**Step 1: Run portfolio-to-tips**
+
+Execute the full `portfolio-to-tips` operation (enriched v2.0 context export).
+
+**Step 2: Run tips-to-portfolio**
+
+Execute the full `tips-to-portfolio` operation (ST matching, enrichment, evidence, stubs).
+
+**Step 3: Enriched Reconciliation**
+
+Present a unified reconciliation table that shows the full picture across both directions:
+
+```
+| Feature | Market | Proposition | Solution | TIPS STs | Status |
+|---------|--------|-------------|----------|----------|--------|
+| predictive-analytics | mid-market-dach | Yes | Yes | st-001 | Aligned |
+| compliance-engine | enterprise-eu | Yes | No | st-004 | Needs solution |
+| predictive-analytics | enterprise-eu | No | No | st-001 | Needs enrichment |
+| — | — | — | — | st-007 | Portfolio gap |
+| simulation-engine | mid-market-dach | Yes | Yes | — | TIPS gap |
+```
+
+**Status values:**
+- **Aligned** — Feature has proposition, solution, and matching ST(s). Full bidirectional coverage.
+- **Needs solution** — Proposition exists but no solution for this market. Step 5.5 should have proposed a stub.
+- **Needs enrichment** — Feature matches an ST but lacks a proposition for this market.
+- **Portfolio gap** — ST has no matching feature at all. Innovation opportunity.
+- **TIPS gap** — Feature with proposition/solution has no TIPS relevance signal. Validate market need independently.
+
+**Step 4: Generate Action Plan**
+
+Based on the reconciliation table, generate a prioritized action list:
+1. **Immediate**: Create solution stubs for "Needs solution" rows (if not already proposed)
+2. **Short-term**: Enrich propositions for "Needs enrichment" rows
+3. **Strategic**: Evaluate "Portfolio gap" STs for new feature creation
+4. **Validate**: Review "TIPS gap" features for market relevance
 
 ## Cross-Reference Convention
 

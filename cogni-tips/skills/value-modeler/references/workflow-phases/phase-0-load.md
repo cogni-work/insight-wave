@@ -47,6 +47,35 @@ Search the workspace for a cogni-portfolio project:
 3. Report to the user: "Found portfolio with X products and Y features. I'll map Solution Templates to these where relevant."
 4. If not found: "No portfolio found. Solution Templates will be standalone — you can connect them to a portfolio later."
 
+**Check for enriched portfolio context:**
+
+After discovering the portfolio project, also check for `portfolio-context.json` in the
+TIPS project directory (written by `/bridge portfolio-to-tips`):
+
+1. If found with `schema_version` = `"2.0"`:
+   - Count products, features, propositions, and markets
+   - Count markets where `market_relevance` is `direct` or `industry`
+   - Report: "Found portfolio context (v2.0) with N products, M features, P propositions
+     across K markets (R relevant to this TIPS industry)."
+   - Check `extracted_at` against portfolio file modification dates; if portfolio files are
+     newer, warn: "Portfolio context may be stale — consider re-running `/bridge portfolio-to-tips`."
+2. If found without `schema_version` (v1.0) or absent:
+   - Suggest: "Run `/bridge portfolio-to-tips` for portfolio-grounded solution generation.
+     This exports propositions and solution data so Phase 2 can reference your actual
+     positioning when generating Solution Templates."
+
+Add to the output metadata:
+
+```json
+{
+  "portfolio_context_version": "2.0",
+  "portfolio_context_propositions": 12,
+  "portfolio_context_markets_relevant": 2
+}
+```
+
+These fields are `null` when no enriched context is available.
+
 ### Step 5: Load Existing Value Model (Resume Support)
 
 Check for `tips-value-model.json` in the project directory:
@@ -83,6 +112,9 @@ Create `.metadata/value-modeler-output.json`:
   "catalog_path": "cogni-tips/catalogs/manufacturing/automotive" | null,
   "portfolio_discovered": true|false,
   "portfolio_path": "path/to/portfolio.json" | null,
+  "portfolio_context_version": "2.0" | null,
+  "portfolio_context_propositions": 12 | null,
+  "portfolio_context_markets_relevant": 2 | null,
   "candidate_count": 60,
   "execution": {
     "workflow_state": "initialized",
