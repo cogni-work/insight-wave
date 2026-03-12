@@ -1,44 +1,58 @@
 ---
 name: copywrite
-description: Polish markdown documents for executive readability using McKinsey Pyramid Principle through copywriter agent orchestration
-usage: /copywrite <file> [--scope=full|structure|tone|formatting] [--flesch-target=50-60]
+description: Polish markdown documents for executive readability using McKinsey Pyramid Principle, or polish text fields inside JSON files via the copy-json adapter
+usage: /copywrite <file> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--fields="selector"] [--mode=standard|sales] [--dry-run]
 aliases: [polish, executive-polish]
 category: content-editing
-allowed-tools: [Read, Task, Bash]
+allowed-tools: [Read, Task, Bash, Skill]
 ---
 
 # Copywrite Command
 
-Polish markdown documents into executive-ready content through the copywriter agent, applying McKinsey Pyramid Principle, tone transformation, and quality validation.
+Polish markdown documents into executive-ready content through the copywriter agent, or polish text fields inside JSON files via the copy-json adapter skill.
 
 ## Usage
 
 ```
-/copywrite <file> [--scope=full|structure|tone|formatting] [--flesch-target=50-60]
+/copywrite <file.md> [--scope=full|structure|tone|formatting] [--flesch-target=50-60]
+/copywrite <file.json> --fields="<selector>" [--scope=tone] [--mode=standard|sales] [--dry-run]
 ```
 
 ## Parameters
 
 ### File (Required)
 
-- **<file>** - Path to markdown file to polish
+- **<file>** - Path to file to polish
   - Accepts relative or absolute paths
-  - Must be .md format
+  - Supports `.md` (markdown) and `.json` (JSON) formats
+  - `.json` files require `--fields` flag
   - If path contains spaces, use quotes: "/path/to/my document.md"
 
 ### Optional Flags
 
-- **--scope** - Polishing scope (default: full)
-  - `full` - Complete polishing (structure, tone, formatting)
-  - `structure` - McKinsey Pyramid restructuring only
+- **--scope** - Polishing scope (default: `full` for MD, `tone` for JSON)
+  - `full` - Complete polishing (structure, tone, formatting) — MD only
+  - `structure` - McKinsey Pyramid restructuring only — MD only
   - `tone` - Academic to executive tone transformation only
-  - `formatting` - Visual hierarchy and formatting only
+  - `formatting` - Visual hierarchy and formatting only — MD only
 
-- **--flesch-target** - Target Flesch Reading Ease score (default: language-aware)
+- **--flesch-target** - Target Flesch Reading Ease score (default: language-aware) — MD only
   - English default: 50-60 (standard business difficulty)
   - German default: 30-50 (Amstad formula; compound words produce lower scores)
   - Easier reading: +10 above default range
   - More technical: -10 below default range
+
+- **--fields** - Dot-path field selector for JSON files (required for `.json`)
+  - `description` — single root field
+  - `plugins[*].description` — description of every plugin in array
+  - `[*].dimension_name` — field in root-level array
+  - `*.IS,*.DOES,*.MEANS` — comma-separated multi-field
+
+- **--mode** - Copywriting mode for JSON files (default: `standard`)
+  - `standard` — general-purpose polishing
+  - `sales` — apply IS/DOES/MEANS sales messaging and Power Positions
+
+- **--dry-run** - Show before/after diff without modifying the file (JSON only)
 
 ## Examples
 
@@ -178,6 +192,46 @@ Polishes document targeting easier readability for broader audiences.
 **Next step:** Run `/review-doc executive-summary.md` to get stakeholder feedback
 ```
 
+### Example 6: Polish JSON Plugin Descriptions
+
+```bash
+/copywrite marketplace.json --fields="plugins[*].description"
+```
+
+Polishes all plugin description fields in the marketplace JSON file.
+
+**Output:**
+```
+**JSON Copywriting Complete**: marketplace.json
+
+**Fields polished**: 7 of 7
+
+| Field | Before (truncated) | After (truncated) |
+|-------|--------------------|-------------------|
+| plugins[0].description | Claim verification and manag... | Verifies sourced claims agai... |
+| plugins[1].description | Obsidian integration for Cla... | Synchronizes Obsidian vault... |
+
+**Backup**: .marketplace.pre-copy-json.json
+
+**Next step**: Review the changes with `git diff marketplace.json`
+```
+
+### Example 7: Polish IS/DOES/MEANS Propositions (Sales Mode)
+
+```bash
+/copywrite portfolio.json --fields="*.IS,*.DOES,*.MEANS" --mode=sales
+```
+
+Applies sales messaging techniques (Power Positions, FAB) to proposition layer fields.
+
+### Example 8: Dry-Run JSON Preview
+
+```bash
+/copywrite plugin.json --fields="description" --dry-run
+```
+
+Shows before/after diff for each field without modifying the JSON file.
+
 ## Features
 
 ✅ **Complete Copywriting Workflow**
@@ -217,19 +271,46 @@ EXTRACT file_path from $1
 
 VALIDATE file_path:
   - File must exist
-  - File must be .md extension
+  - File must be .md or .json extension
   - File must be readable
 
 PARSE flags from $ARGUMENTS:
-  - --scope: Extract value (full|structure|tone|formatting), default: full
+  - --scope: Extract value (full|structure|tone|formatting), default: full (MD) or tone (JSON)
   - --flesch-target: Extract range (e.g., "50-60"), default: "50-60"
+  - --fields: Extract dot-path selector (required for .json files)
+  - --mode: Extract value (standard|sales), default: standard
+  - --dry-run: Boolean flag, default: false
 
 VALIDATE parsed values:
   - Scope must be valid option
   - Flesch target must be numeric range
+  - IF .json: --fields must be provided
+  - IF .md: --fields, --mode, --dry-run are ignored
 ```
 
-### 2. Prepare Task Parameters
+### 1b. Route by File Extension
+
+```
+IF file_extension == ".json":
+  INVOKE copy-json skill with parameters:
+    FILE_PATH = absolute_file_path
+    FIELDS = parsed_fields
+    SCOPE = parsed_scope (default: "tone")
+    MODE = parsed_mode (default: "standard")
+    DRY_RUN = parsed_dry_run (default: false)
+
+  The copy-json skill handles the full JSON workflow:
+  extract → temp MD → copywriter → parse back → write JSON
+  RETURN (skip steps 2-5 below)
+
+IF file_extension == ".md":
+  CONTINUE to step 2 (existing markdown workflow)
+
+ELSE:
+  ERROR: "Unsupported file format: {extension}. Expected .md or .json"
+```
+
+### 2. Prepare Task Parameters (MD only)
 
 ```
 CREATE task_parameters:
@@ -320,12 +401,14 @@ IF file_path empty OR not exists:
 
 **Invalid File Format:**
 ```
-IF file_extension != ".md":
+IF file_extension NOT IN [".md", ".json"]:
   ERROR: "Invalid file format: {extension}"
 
-  Expected: Markdown file (.md)
+  Expected: Markdown (.md) or JSON (.json) file
 
-  The copywriter command only supports markdown documents.
+  Examples:
+    /copywrite document.md
+    /copywrite marketplace.json --fields="plugins[*].description"
 ```
 
 **Invalid Scope:**
@@ -362,8 +445,9 @@ IF copywriter agent fails:
 **Agents Used:**
 - **copywriter** - Orchestrates document polishing by delegating to copywriter skill
 
-**Skills Used (via copywriter agent):**
-- **copywriter** - Executes complete copywriting workflow with McKinsey Pyramid, tone transformation, quality frameworks, and validation
+**Skills Used:**
+- **copywriter** (via copywriter agent) - Executes complete copywriting workflow with McKinsey Pyramid, tone transformation, quality frameworks, and validation
+- **copy-json** - Adapter skill for JSON files: extracts text fields, delegates to copywriter, writes polished text back
 
 **Scripts Utilized (via copywriter skill):**
 - `calculate_readability.py` - Compute Flesch Reading Ease scores, paragraph metrics, visual element counts
@@ -372,12 +456,20 @@ IF copywriter agent fails:
 - `quality-frameworks.md` - McKinsey Pyramid, SCR, MECE principles with detailed examples
 - `tone-transformation.md` - 50+ academic-to-executive transformation patterns
 
-**Execution Pattern:**
+**Execution Pattern (Markdown):**
 1. Command parses arguments and validates file
 2. Command invokes copywriter agent with task parameters
 3. Copywriter agent invokes copywriter skill
 4. Copywriter skill executes 7-step polishing workflow
 5. Results flow back: skill → agent → command → user
+
+**Execution Pattern (JSON):**
+1. Command parses arguments, detects `.json` extension
+2. Command routes to copy-json skill with FILE_PATH, FIELDS, SCOPE, MODE, DRY_RUN
+3. copy-json extracts text fields → builds temp MD → invokes copywriter skill
+4. Copywriter polishes temp MD using its full pipeline
+5. copy-json parses polished text back → validates → updates JSON
+6. Results flow back: copy-json → command → user
 
 ## Quality Standards
 
@@ -406,7 +498,10 @@ IF copywriter agent fails:
 ## Notes
 
 - Documents are overwritten in place (original content replaced)
-- Frontmatter and wikilinks always preserved
+- Frontmatter and wikilinks always preserved (MD files)
 - Technical accuracy maintained throughout
 - Multiple invocations safe (idempotent within quality targets)
 - Works with any markdown file (not limited to synthesis documents)
+- JSON files get an automatic backup (`.pre-copy-json.json`) before modification
+- JSON polishing preserves original file indentation
+- Use `--dry-run` with JSON to preview changes before committing them
