@@ -33,7 +33,7 @@ Full German and English support throughout. This skill follows the shared langua
 
 ## Prerequisites
 
-- Projects are stored relative to the current working directory (`$PWD`)
+- Projects are stored relative to the workspace root (`$PROJECT_AGENTS_OPS_ROOT`, falling back to `$PWD`)
 - Web access enabled for live trend research
 
 ## Shell Execution Constraints
@@ -533,4 +533,4 @@ grep "\[VALIDATION\]" "${PROJECT_PATH}/.logs/trend-scout-execution-log.txt"
 ### Common Issues
 
 1. **"Industry not selected"** - User must select from taxonomy
-2. **"Project init failed"** - Check current working directory is writable
+2. **"Project init failed"** - Check workspace root (`$PROJECT_AGENTS_OPS_ROOT` or current directory) is writable

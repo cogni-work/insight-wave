@@ -57,7 +57,7 @@ if ! command -v python3 &>/dev/null; then
 fi
 
 # Parse arguments
-WORKSPACE="$(pwd)"
+WORKSPACE="${PROJECT_AGENTS_OPS_ROOT:-$(pwd)}"
 JSON_OUTPUT=true
 
 while [[ $# -gt 0 ]]; do

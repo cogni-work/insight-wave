@@ -47,7 +47,7 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 |----------|---------|---------|
 | `CLAUDE_PLUGIN_ROOT` | Plugin installation (skills, references) | `~/.claude/plugins/marketplaces/cogni-tips` |
 
-`CLAUDE_PLUGIN_ROOT` is injected automatically from `settings.local.json`. Projects are always resolved from the current working directory (`$PWD`).
+`CLAUDE_PLUGIN_ROOT` is injected automatically from `settings.local.json`. Projects are resolved from `$PROJECT_AGENTS_OPS_ROOT` (falling back to `$PWD`).
 
 ## Shell Usage
 
