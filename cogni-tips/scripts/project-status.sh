@@ -250,6 +250,43 @@ except Exception:
 " 2>/dev/null)"
 fi
 
+# Detect portfolio context and portfolio projects in workspace
+HAS_PORTFOLIO_CONTEXT="false"
+PORTFOLIO_CONTEXT_VERSION=""
+HAS_PORTFOLIO_PROJECT="false"
+PORTFOLIO_FEATURES_COUNT=0
+
+# Check for portfolio-context.json in the TIPS project directory
+if [ -f "$PROJECT_DIR/portfolio-context.json" ]; then
+  HAS_PORTFOLIO_CONTEXT="true"
+  eval "$(python3 -c "
+import json
+try:
+    d = json.load(open('$PROJECT_DIR/portfolio-context.json'))
+    ver = d.get('schema_version', '1.0')
+    print(f'PORTFOLIO_CONTEXT_VERSION={chr(39)}{ver}{chr(39)}')
+    products = d.get('products', [])
+    feat_count = sum(len(p.get('features', [])) for p in products)
+    print(f'PORTFOLIO_FEATURES_COUNT={feat_count}')
+except Exception:
+    pass
+" 2>/dev/null)"
+fi
+
+# Check for portfolio projects in workspace (sibling directories with portfolio.json)
+WORKSPACE_ROOT="$(dirname "$PROJECT_DIR")"
+WORKSPACE_PARENT="$(dirname "$WORKSPACE_ROOT")"
+for search_dir in "$WORKSPACE_ROOT" "$WORKSPACE_PARENT"; do
+  if [ -d "$search_dir" ]; then
+    for pf in "$search_dir"/*/portfolio.json "$search_dir"/cogni-portfolio/*/portfolio.json; do
+      if [ -f "$pf" ] 2>/dev/null; then
+        HAS_PORTFOLIO_PROJECT="true"
+        break 2
+      fi
+    done
+  fi
+done
+
 # Count report section files
 REPORT_SECTIONS=0
 if [ -d "$PROJECT_DIR/.logs" ]; then
@@ -339,9 +376,15 @@ case "$PHASE" in
     add_action "trend-scout" "Candidates ready for selection — edit trend-candidates.md then re-invoke"
     ;;
   modeling)
+    if [ "$HAS_PORTFOLIO_PROJECT" = "true" ] && [ "$HAS_PORTFOLIO_CONTEXT" = "false" ]; then
+      add_action "tips-bridge" "Run /bridge portfolio-to-tips first to ground solutions in actual products"
+    fi
     add_action "value-modeler" "Candidates agreed — build value model next"
     ;;
   modeling-paths)
+    if [ "$HAS_PORTFOLIO_PROJECT" = "true" ] && [ "$HAS_PORTFOLIO_CONTEXT" = "false" ]; then
+      add_action "tips-bridge" "Run /bridge portfolio-to-tips before Phase 2 to ground solutions in actual products"
+    fi
     add_action "value-modeler" "Relationship networks built — continue to generate solution templates"
     ;;
   modeling-scoring)
@@ -500,6 +543,12 @@ cat << EOF
     "passed": $VERIFICATION_PASSED,
     "failed": $VERIFICATION_FAILED,
     "review": $VERIFICATION_REVIEW
+  },
+  "portfolio_bridge": {
+    "portfolio_project_found": $HAS_PORTFOLIO_PROJECT,
+    "context_file": $HAS_PORTFOLIO_CONTEXT,
+    "context_version": $(if [ -n "$PORTFOLIO_CONTEXT_VERSION" ]; then echo "\"$PORTFOLIO_CONTEXT_VERSION\""; else echo "null"; fi),
+    "features_count": $PORTFOLIO_FEATURES_COUNT
   },
   "phase": "$PHASE",
   "next_actions": $next_actions,

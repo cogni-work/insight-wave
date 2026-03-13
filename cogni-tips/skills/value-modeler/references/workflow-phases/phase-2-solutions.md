@@ -21,6 +21,32 @@ customer, then *this* is what we should propose."
 - "Digital transformation" — not specific enough
 - "Better analytics" — no clear scope
 
+## Step 0: Portfolio Context Check
+
+Before generating any Solution Templates, check the Phase 0 output metadata for portfolio discovery:
+
+1. **Portfolio discovered, no context file**: If `portfolio_discovered` is `true` in the Phase 0
+   metadata but no `portfolio-context.json` exists in the project directory, warn the user:
+
+   > "A portfolio project was found in your workspace, but no portfolio context has been exported
+   > yet. Without it, Phase 2 will generate abstract Solution Templates instead of grounding them
+   > in your actual products. This means solutions may not map to real offerings."
+
+   Offer two options:
+   - **Run `/bridge portfolio-to-tips` now** (recommended) — pauses Phase 2, runs the bridge,
+     then resumes with portfolio-anchored generation
+   - **Continue with abstract generation** — proceeds without portfolio context
+
+2. **Context exists but v1.0** (no `schema_version` field): Same recommendation as above —
+   v1.0 context lacks proposition data needed for grounding.
+
+3. **Context exists at v2.0**: Note that v3.0 adds quality-aware generation. Proceed to Step 0.5
+   without blocking.
+
+4. **Context exists at v3.0**: Proceed silently to Step 0.5.
+
+5. **No portfolio discovered**: Proceed silently to Step 1 (abstract generation).
+
 ## Step 0.5: Portfolio-Anchored Generation (when v2.0+ context exists)
 
 This step runs **only** when `portfolio-context.json` has `schema_version` >= `"2.0"`. When the

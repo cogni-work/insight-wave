@@ -65,7 +65,7 @@ If `count` is 0:
 bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>" --health-check
 ```
 
-The script returns JSON with `project`, `counts`, `scoring`, `artifacts`, `phase`, `next_actions`, and `stale_warnings`.
+The script returns JSON with `project`, `counts`, `scoring`, `artifacts`, `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
 
 ### 4. Present Status Summary
 
@@ -85,6 +85,7 @@ Language: {language}
 | Web Research | Done / Pending | {web_research_status}, {candidates_web} signals found |
 | Candidate Generation | Done / Pending | 60 generated |
 | Candidate Selection | Done / Pending | {candidates_total}/60 agreed |
+| Portfolio Bridge | Done / Ready / N/A | v{context_version} context, {features_count} features |
 | Value Chains & Themes | Done / Pending | {themes_count} strategic themes |
 | Solution Templates | Done / Pending | {solutions_count} solutions generated |
 | BR Scoring & Ranking | Done / Pending | {ranked_count} solutions ranked |
@@ -94,6 +95,13 @@ Language: {language}
 | Claim Verification | Done / Pending / Skipped | {verdict}: {passed} passed, {failed} failed |
 | Executive Polish | Done / Skipped | tone (cogni-copywriting) |
 | Dashboard | Done / Skipped | interactive HTML visualization |
+
+**Portfolio Bridge row** — derived from `portfolio_bridge` in status JSON:
+- **Done**: `context_file` is true — show version and features count
+- **Ready**: `portfolio_project_found` is true but `context_file` is false — recommend running `/bridge portfolio-to-tips` before value-modeler
+- **N/A**: `portfolio_project_found` is false — no portfolio project in workspace
+
+When the phase is `modeling` or `modeling-paths` and the Portfolio Bridge status is **Ready**, lead the next action recommendation with: "Before starting the value modeler, run `/bridge portfolio-to-tips` to ground your solutions in real products."
 
 **Scoring Summary** (if candidates exist):
 - Average score: {avg_score}
@@ -130,7 +138,7 @@ If the phase is `complete`, congratulate the user and suggest exporting or visua
 | `researching` | Web research in progress | Re-invoke `trend-scout` to continue |
 | `generating` | Candidate generation in progress | Re-invoke `trend-scout` to continue |
 | `selecting` | Candidates presented, finalizing | Re-invoke `trend-scout` to finalize |
-| `modeling` | Candidates agreed, value model not yet built | Run `value-modeler` |
+| `modeling` | Candidates agreed, value model not yet built | Run `/bridge portfolio-to-tips` if portfolio exists, then `value-modeler` |
 | `modeling-paths` | Relationship networks built, solutions pending | Continue `value-modeler` |
 | `modeling-scoring` | Solutions generated, BR scoring pending | Continue `value-modeler` |
 | `modeling-curating` | Ranked solutions complete, curation pending | Continue `value-modeler` for optional catalog curation |

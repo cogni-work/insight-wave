@@ -737,9 +737,9 @@ Report a summary to the user:
   the TIPS industry context. The exported context will have limited utility for
   Phase 2 grounding."
 
-Tell the user: "Portfolio context (v2.0) saved. When you run value-modeler Phase 2, it
-will use proposition language and solution data to ground Solution Templates in your
-portfolio's actual capabilities and pricing."
+Tell the user: "Portfolio context (v3.0) saved. When you run value-modeler Phase 2, it
+will use proposition language, quality assessments, and solution data to ground Solution
+Templates in your portfolio's actual capabilities and pricing."
 
 ### sync — Reconcile Both Directions
 
