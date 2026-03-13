@@ -43,17 +43,37 @@ Do NOT create intermediate files, research notes, persona files, or any other fi
 
 **Research Process:**
 1. Read the market definition file and portfolio.json from the paths provided in the task. Check `portfolio.json` for a `language` field — if present, generate all user-facing text content (market descriptions, TAM/SAM/SOM descriptions) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
-2. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`
+2. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`. Look up the market's `region` to get the `locale` (e.g., `dach` → `de-DE`, `jp` → `ja-JP`).
 3. Extract key parameters: region (and its scope countries), company size, vertical, feature categories
-4. Conduct 4-6 web searches, using region-specific terms:
-   - TAM: Search for global market size of the capability category (e.g., "cloud monitoring market size 2025")
-   - TAM: Search for analyst reports and forecasts (e.g., "Gartner cloud observability market forecast")
-   - SAM: Search for region-specific data using scope countries (e.g., for region "dach" search "Germany Austria Switzerland SaaS market size mid-market")
-   - SAM: Search for regional constraints (e.g., "DACH IT spending mid-market companies" or "US cloud monitoring market")
-   - SOM: Search for competitive density and market share data in the target region
-   - SOM: Search for pricing benchmarks in the region's currency to enable bottom-up estimation
-4. Synthesize findings into TAM/SAM/SOM estimates
-5. Update the market JSON file at the exact path provided in the task with sizing data. Do not create any other files.
+4. Conduct 6-10 web searches using a **two-pass approach** when the region locale is not English:
+
+   **Primary pass — region language:**
+   Translate search keywords into the region's locale language. This surfaces local market reports, industry associations, and government statistics that English queries miss.
+
+   Keyword translation examples for `de-DE`:
+   - "market size" → "Marktgröße", "market report" → "Marktbericht", "market forecast" → "Marktprognose"
+   - "IT spending" → "IT-Ausgaben", "mid-market" → "Mittelstand", "cloud monitoring" → "Cloud-Monitoring"
+   - "competitive landscape" → "Wettbewerbslandschaft", "pricing" → "Preisgestaltung"
+   - "digital transformation" → "Digitale Transformation", "industry association" → "Branchenverband"
+
+   - TAM: `"{Branche} Marktgröße {year}" OR "Marktbericht"` (global market in region language often yields local analyst reports)
+   - SAM: `"{Vertical} {Region} Marktgröße Mittelstand"`, `"IT-Ausgaben {Region} {Branche} {year}"`
+   - SAM: `"{Branchenverband} {Vertical} {Region} Marktstudie"` (industry association studies)
+   - SOM: `"{Vertical} Wettbewerbslandschaft {Region}"`, `"{Vertical} Preisgestaltung {Region}"`
+
+   **English backup pass — for international analyst coverage:**
+   Always run English queries for TAM (global analyst firms publish in English) and supplement SAM/SOM where the primary pass returned thin results.
+
+   - TAM: `"{capability category} market size {year}"`, `"Gartner {capability} market forecast"`
+   - SAM: `"{scope countries} {vertical} market size {segment}"`, `"{region} IT spending {segment}"`
+   - SOM: `"{vertical} competitive density {region}"`, `"{vertical} pricing benchmarks {region currency}"`
+
+   **Merge logic:** Prefer English results for TAM (global analyst data is authoritative in English). Prefer localized results for SAM (local market reports, government statistics, and industry associations provide more granular regional data). For SOM, use whichever source gives more credible bottom-up inputs (local pricing data, regional competitive density).
+
+   When the region locale is `en-*` or absent, skip the two-pass logic — single-pass English search using the backup templates above.
+
+5. Synthesize findings into TAM/SAM/SOM estimates
+6. Update the market JSON file at the exact path provided in the task with sizing data. Do not create any other files.
 
 **TAM/SAM/SOM Guidelines:**
 - **TAM**: Use top-down industry analyst data. Cite the source report and year.

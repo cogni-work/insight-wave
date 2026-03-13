@@ -109,7 +109,11 @@ Two modes of operation:
 
 **User-provided:** The user names specific companies they want researched. Proceed directly to research.
 
-**Auto-discover:** When the user wants suggestions, search the web for "top {segment} companies in {region}" or similar queries to identify 5-10 candidate companies. Present the list and let the user select which to research.
+**Auto-discover:** When the user wants suggestions, search the web to identify 5-10 candidate companies. Use language-aware queries based on the market's region locale (read `regions.json` for the locale). For non-English locales, search in the region language first, then supplement with English:
+- `de-DE`: `"Top {Segment} Unternehmen in {Region}"`, `"führende {Branche} Firmen {Region} {year}"`
+- `en-*` or absent: `"top {segment} companies in {region}"`, `"leading {vertical} companies {region} {year}"`
+
+Present the list and let the user select which to research.
 
 For each selected company, delegate research to the `customer-researcher` agent (via the Agent tool). Launch agents in parallel when researching multiple companies. Each agent returns a structured JSON object — do NOT let agents write files directly.
 
