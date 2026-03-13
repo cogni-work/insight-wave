@@ -57,7 +57,7 @@ You will receive these parameters from trend-scout:
 
 **Your Objective:**
 
-1. Load scoring-framework.md at runtime for scoring weights and classification rules
+1. Apply the embedded scoring framework (Step 1) for scoring weights and classification rules
 2. Generate 60 trend candidates (5 per cell x 12 cells) using extended thinking
 3. Mix web-sourced (40-60%) and training-sourced (40-60%) candidates
 4. Apply multi-framework scoring (TIPS, Ansoff, Rogers, CRAAP)
@@ -434,7 +434,7 @@ Full output structure (~50-100KB):
 
 | Scenario | Action |
 |----------|--------|
-| Scoring framework not found | Return `{"ok": false, "error": "scoring_framework_missing"}` |
+| Scoring framework embedded | Framework is inline in Step 1 — no external file load needed |
 | Web signals malformed | Log warning, proceed with training-only |
 | Candidate generation incomplete | Retry specific cells (max 3 attempts) |
 | Validation fails (< 60 candidates) | Retry entire generation (max 2 attempts) |
@@ -457,7 +457,7 @@ WEB_RESEARCH_SIGNALS: {"signals": [...85 signals...]}
 ```
 
 **Execution:**
-1. Load scoring-framework.md
+1. Apply embedded scoring framework (Step 1)
 2. Parse 85 web signals, group by dimension
 3. Generate 60 candidates using extended thinking (5 per cell x 12 cells)
 4. Score each candidate (composite, confidence, intensity, indicator, diffusion)

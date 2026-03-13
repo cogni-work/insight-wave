@@ -256,7 +256,7 @@ Task:
 
 **Agent responsibilities:**
 
-1. Load scoring-framework.md at runtime
+1. Apply embedded scoring framework
 2. Generate 60 trend candidates (5 per cell × 12 cells) using extended thinking (MANDATORY)
 3. Apply multi-framework scoring (TIPS, Ansoff, Rogers, CRAAP)
 4. Classify indicator types (leading/lagging) and diffusion stages
