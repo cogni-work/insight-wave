@@ -1,6 +1,6 @@
 #!/bin/bash
 # Discover cogni-tips projects in the workspace and project registry.
-# Usage: discover-projects.sh [--json] [--register <path>] [--unregister <path>]
+# Usage: discover-projects.sh [--json] [--root <dir>] [--register <path>] [--unregister <path>]
 # Scans for tips-project.json and trend-scout-output.json under cogni-tips/ directories.
 # Also checks the project registry (~/.claude/cogni-tips-projects.json) for projects
 # created in other workspaces (e.g., OneDrive, external directories).
@@ -11,12 +11,14 @@ set -euo pipefail
 JSON_OUTPUT=false
 REGISTER_PATH=""
 UNREGISTER_PATH=""
+ROOT_OVERRIDE=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --json) JSON_OUTPUT=true; shift ;;
     --register) REGISTER_PATH="$2"; shift 2 ;;
     --unregister) UNREGISTER_PATH="$2"; shift 2 ;;
+    --root) ROOT_OVERRIDE="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
@@ -78,7 +80,14 @@ print(f'Unregistered: {rm_path}' if before > after else f'Not found: {rm_path}')
 fi
 
 # --- Discovery ---
-SEARCH_ROOT="${PROJECT_AGENTS_OPS_ROOT:-$(pwd)}"
+# Priority: --root flag > PROJECT_AGENTS_OPS_ROOT env var > current directory
+if [ -n "$ROOT_OVERRIDE" ]; then
+  SEARCH_ROOT="$ROOT_OVERRIDE"
+elif [ -n "${PROJECT_AGENTS_OPS_ROOT:-}" ]; then
+  SEARCH_ROOT="$PROJECT_AGENTS_OPS_ROOT"
+else
+  SEARCH_ROOT="$(pwd)"
+fi
 
 # Helper: add a directory to PROJECT_DIRS if not already present
 add_project_dir() {

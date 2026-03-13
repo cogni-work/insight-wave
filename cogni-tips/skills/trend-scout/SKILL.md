@@ -50,10 +50,12 @@ Full German and English support throughout. This skill follows the shared langua
 | Variable | Purpose | Example |
 |----------|---------|---------|
 | `CLAUDE_PLUGIN_ROOT` | Plugin installation (scripts, skills) | `~/.claude/plugins/marketplaces/cogni-tips` |
+| `PROJECT_AGENTS_OPS_ROOT` | Workspace root where projects live (optional, set by cogni-workspace) | User's workspace directory |
 
 **IMPORTANT - Environment Variables:**
 
 - `CLAUDE_PLUGIN_ROOT` is automatically injected by Claude Code from `settings.local.json`
+- `PROJECT_AGENTS_OPS_ROOT` is set by cogni-workspace's `generate-settings.sh` — if not present, scripts fall back to `$PWD`
 - DO NOT source `.workplace-env.sh` - variables are already available at runtime
 
 **Script Locations (always use CLAUDE_PLUGIN_ROOT):**

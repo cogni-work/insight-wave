@@ -40,7 +40,9 @@ readonly SCRIPT_VERSION="1.0.0"
 readonly SCRIPT_NAME="$(basename "$0")"
 
 # Default configuration
-readonly DEFAULT_PROJECTS_ROOT="${PROJECT_AGENTS_OPS_ROOT:-$(pwd)}"
+# Priority: PROJECT_AGENTS_OPS_ROOT env var > current directory
+DEFAULT_PROJECTS_ROOT="${PROJECT_AGENTS_OPS_ROOT:-$(pwd)}"
+readonly DEFAULT_PROJECTS_ROOT
 
 # Parse arguments
 PROJECT_NAME=""

@@ -57,6 +57,7 @@ if ! command -v python3 &>/dev/null; then
 fi
 
 # Parse arguments
+# Priority: --workspace flag (parsed below) > PROJECT_AGENTS_OPS_ROOT > current directory
 WORKSPACE="${PROJECT_AGENTS_OPS_ROOT:-$(pwd)}"
 JSON_OUTPUT=true
 

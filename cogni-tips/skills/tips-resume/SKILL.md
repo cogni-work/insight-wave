@@ -21,7 +21,20 @@ TIPS projects span multiple sessions and skills (trend-scout → trend-report �
 
 ### 1. Find TIPS Projects
 
-Discover TIPS projects in the workspace using the discovery script:
+Discover TIPS projects in the workspace using the discovery script.
+
+**Determine the workspace root** before calling the script. The workspace root is the directory that contains the `cogni-tips/` project folder. Check in this order:
+1. `$PROJECT_AGENTS_OPS_ROOT` — if set (via `settings.local.json` env block), use it
+2. Otherwise, look for a `cogni-tips/` directory under the current working directory
+3. If not found under `$PWD`, check if there's a `.workspace-config.json` nearby that indicates the workspace location
+
+Pass the root explicitly with `--root`:
+
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json --root "<workspace-root>"
+```
+
+If you cannot determine a specific root, omit `--root` and the script falls back to `$PROJECT_AGENTS_OPS_ROOT` or `$PWD`:
 
 ```bash
 bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
@@ -30,7 +43,7 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
 Returns JSON with `count` and `projects` array. Each project includes `path`, `slug`, `industry`, `subsector`, `research_topic`, `workflow_state`, `candidates_total`, and `has_report`.
 
 The script searches:
-1. The workspace root (`$PROJECT_AGENTS_OPS_ROOT`, falling back to `$PWD`) for `cogni-tips/*/tips-project.json`
+1. The workspace root (from `--root`, `$PROJECT_AGENTS_OPS_ROOT`, or `$PWD`) for `cogni-tips/*/tips-project.json`
 2. The global project registry (`~/.claude/cogni-tips-projects.json`) for projects created in other workspaces
 
 If `count` is 0:

@@ -46,8 +46,9 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 | Variable | Purpose | Example |
 |----------|---------|---------|
 | `CLAUDE_PLUGIN_ROOT` | Plugin installation (skills, references) | `~/.claude/plugins/marketplaces/cogni-tips` |
+| `PROJECT_AGENTS_OPS_ROOT` | Workspace root where projects live (optional, set by cogni-workspace) | User's workspace directory |
 
-`CLAUDE_PLUGIN_ROOT` is injected automatically from `settings.local.json`. Projects are resolved from `$PROJECT_AGENTS_OPS_ROOT` (falling back to `$PWD`).
+`CLAUDE_PLUGIN_ROOT` is injected automatically from `settings.local.json`. `PROJECT_AGENTS_OPS_ROOT` is set by cogni-workspace — if not present, scripts fall back to `$PWD`.
 
 ## Shell Usage
 
