@@ -19,6 +19,8 @@ set -euo pipefail
 #   --subsector-de <string>    Subsector name in German (required)
 #   --topic <string>           Research topic text (required)
 #   --topic-normalized <string> Normalized topic slug (required)
+#   --portfolio-slug <string>  Portfolio project slug (optional, for portfolio-sourced init)
+#   --portfolio-market <string> Portfolio market slug (optional, for portfolio-sourced init)
 #   --json                     Output JSON format (optional flag)
 #
 # Output (JSON mode):
@@ -47,6 +49,8 @@ SUBSECTOR_EN=""
 SUBSECTOR_DE=""
 TOPIC=""
 TOPIC_NORMALIZED=""
+PORTFOLIO_SLUG=""
+PORTFOLIO_MARKET=""
 JSON_OUTPUT=false
 
 # Parse arguments
@@ -86,6 +90,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --topic-normalized)
       TOPIC_NORMALIZED="$2"
+      shift 2
+      ;;
+    --portfolio-slug)
+      PORTFOLIO_SLUG="$2"
+      shift 2
+      ;;
+    --portfolio-market)
+      PORTFOLIO_MARKET="$2"
       shift 2
       ;;
     --json)
@@ -140,24 +152,44 @@ if ! command -v jq &>/dev/null; then
   exit 2
 fi
 
-# Update industry metadata in trend-scout-output.json
-jq \
-  --arg industry "$INDUSTRY" \
-  --arg industry_en "$INDUSTRY_EN" \
-  --arg industry_de "$INDUSTRY_DE" \
-  --arg subsector "$SUBSECTOR" \
-  --arg subsector_en "$SUBSECTOR_EN" \
-  --arg subsector_de "$SUBSECTOR_DE" \
-  --arg topic "$TOPIC" \
-  --arg topic_normalized "$TOPIC_NORMALIZED" \
-  '.config.industry.primary = $industry |
+# Build jq filter — base fields always updated
+JQ_FILTER='.config.industry.primary = $industry |
    .config.industry.primary_en = $industry_en |
    .config.industry.primary_de = $industry_de |
    .config.industry.subsector = $subsector |
    .config.industry.subsector_en = $subsector_en |
    .config.industry.subsector_de = $subsector_de |
    .config.research_topic = $topic |
-   .config.organizing_concept = $topic_normalized' \
+   .config.organizing_concept = $topic_normalized'
+
+FIELDS_UPDATED=8
+
+# Conditionally add portfolio_source if provided
+JQ_ARGS=(
+  --arg industry "$INDUSTRY"
+  --arg industry_en "$INDUSTRY_EN"
+  --arg industry_de "$INDUSTRY_DE"
+  --arg subsector "$SUBSECTOR"
+  --arg subsector_en "$SUBSECTOR_EN"
+  --arg subsector_de "$SUBSECTOR_DE"
+  --arg topic "$TOPIC"
+  --arg topic_normalized "$TOPIC_NORMALIZED"
+)
+
+if [[ -n "$PORTFOLIO_SLUG" && -n "$PORTFOLIO_MARKET" ]]; then
+  DISCOVERED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  JQ_ARGS+=(
+    --arg portfolio_slug "$PORTFOLIO_SLUG"
+    --arg portfolio_market "$PORTFOLIO_MARKET"
+    --arg discovered_at "$DISCOVERED_AT"
+  )
+  JQ_FILTER="$JQ_FILTER |
+   .config.portfolio_source = {portfolio_slug: \$portfolio_slug, market_slug: \$portfolio_market, discovered_at: \$discovered_at}"
+  FIELDS_UPDATED=11
+fi
+
+# Update industry metadata in trend-scout-output.json
+jq "${JQ_ARGS[@]}" "$JQ_FILTER" \
   "$OUTPUT_FILE" > "${OUTPUT_FILE}.tmp" && mv "${OUTPUT_FILE}.tmp" "$OUTPUT_FILE"
 
 # Output
@@ -167,7 +199,7 @@ if [[ "$JSON_OUTPUT" == true ]]; then
   "success": true,
   "data": {
     "output_file": "$OUTPUT_FILE",
-    "fields_updated": 8
+    "fields_updated": $FIELDS_UPDATED
   }
 }
 EOF

@@ -22,6 +22,20 @@ TOPIC_PROMPT_EXAMPLE: "Example: 'AI-driven predictive maintenance', 'Sustainable
 TOPIC_PROMPT_ENTER: "Enter your research topic:"
 ```
 
+### Portfolio Discovery
+
+```text
+PORTFOLIO_DISCOVERY_HEADER: "Portfolio Project Discovery"
+PORTFOLIO_DISCOVERY_INTRO: "I found existing portfolio projects in your workspace. You can start trend-scouting directly for one of these markets — industry, subsector, and research focus will be pre-populated from your portfolio."
+PORTFOLIO_DISCOVERY_PROJECT: "Portfolio: {COMPANY_NAME} ({INDUSTRY})"
+PORTFOLIO_DISCOVERY_MARKET: "{MARKET_NAME} ({REGION}) — verticals: {VERTICALS} [alignment: {ALIGNMENT}]"
+PORTFOLIO_DISCOVERY_SELECT: "Select a market to pre-populate, or choose 'Manual selection' to pick from the full industry taxonomy:"
+PORTFOLIO_DISCOVERY_MANUAL: "Manual selection — use full industry taxonomy"
+PORTFOLIO_DISCOVERY_NONE: "No portfolio projects found in workspace. Proceeding with manual industry selection."
+PORTFOLIO_DISCOVERY_SELECTED: "Pre-populating from portfolio market: {MARKET_NAME}"
+PORTFOLIO_DISCOVERY_TOPIC_SUGGEST: "Based on the selected market, a suggested research topic could be: '{TOPIC}'. Would you like to use this or enter your own?"
+```
+
 ### Project Initialization
 
 ```text

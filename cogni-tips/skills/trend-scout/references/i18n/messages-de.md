@@ -22,6 +22,20 @@ TOPIC_PROMPT_EXAMPLE: "Beispiel: 'KI-gesteuerte prädiktive Wartung', 'Nachhalti
 TOPIC_PROMPT_ENTER: "Geben Sie Ihr Forschungsthema ein:"
 ```
 
+### Portfolio-Erkennung
+
+```text
+PORTFOLIO_DISCOVERY_HEADER: "Portfolio-Projekt-Erkennung"
+PORTFOLIO_DISCOVERY_INTRO: "Ich habe bestehende Portfolio-Projekte in Ihrem Workspace gefunden. Sie können direkt für einen dieser Märkte Trend-Scouting starten — Branche, Teilsektor und Forschungsschwerpunkt werden aus Ihrem Portfolio vorausgefüllt."
+PORTFOLIO_DISCOVERY_PROJECT: "Portfolio: {COMPANY_NAME} ({INDUSTRY})"
+PORTFOLIO_DISCOVERY_MARKET: "{MARKET_NAME} ({REGION}) — Vertikalen: {VERTICALS} [Übereinstimmung: {ALIGNMENT}]"
+PORTFOLIO_DISCOVERY_SELECT: "Wählen Sie einen Markt zum Vorausfüllen, oder wählen Sie 'Manuelle Auswahl' für die vollständige Branchentaxonomie:"
+PORTFOLIO_DISCOVERY_MANUAL: "Manuelle Auswahl — vollständige Branchentaxonomie verwenden"
+PORTFOLIO_DISCOVERY_NONE: "Keine Portfolio-Projekte im Workspace gefunden. Weiter mit manueller Branchenauswahl."
+PORTFOLIO_DISCOVERY_SELECTED: "Vorausfüllung aus Portfolio-Markt: {MARKET_NAME}"
+PORTFOLIO_DISCOVERY_TOPIC_SUGGEST: "Basierend auf dem gewählten Markt wäre ein mögliches Forschungsthema: '{TOPIC}'. Möchten Sie dieses verwenden oder ein eigenes eingeben?"
+```
+
 ### Projektinitialisierung
 
 ```text

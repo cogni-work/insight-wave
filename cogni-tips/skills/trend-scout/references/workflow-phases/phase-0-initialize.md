@@ -78,7 +78,111 @@ log_conditional INFO "Output language: $PROJECT_LANGUAGE (user choice)"
 
 ---
 
+## Step 0.1c: Portfolio Project Discovery (Optional)
+
+Scan the workspace for existing cogni-portfolio projects. If found, offer the user
+the option to start trend-scouting for one of their portfolio markets, pre-populating
+industry, subsector, and optionally research topic.
+
+This connects TIPS scouting to the user's existing product portfolio from the start,
+establishing an early link that the tips-bridge can leverage later.
+
+### Discovery
+
+```bash
+WORKSPACE_DIR="${COGNI_WORKSPACE_ROOT:-$(pwd)}"
+DISCOVERY_SCRIPT="${CLAUDE_PLUGIN_ROOT}/scripts/discover-portfolio-markets.sh"
+
+PORTFOLIO_FOUND=false
+PORTFOLIO_SOURCE_SLUG=""
+PORTFOLIO_MARKET_SLUG=""
+
+if [[ -f "$DISCOVERY_SCRIPT" ]]; then
+  DISCOVERY_OUTPUT=$(bash "$DISCOVERY_SCRIPT" --workspace "$WORKSPACE_DIR" --json)
+  PORTFOLIO_FOUND=$(echo "$DISCOVERY_OUTPUT" | jq -r '.found')
+else
+  log_conditional INFO "Portfolio discovery script not found — skipping"
+fi
+```
+
+### If no portfolio projects found
+
+```bash
+if [[ "$PORTFOLIO_FOUND" != "true" ]]; then
+  log_conditional INFO "{PORTFOLIO_DISCOVERY_NONE}"
+  # Fall through to Step 0.2
+fi
+```
+
+### If portfolio projects found
+
+Build the selection list from discovered markets. Only include markets with
+`tips_alignment.level` of `exact` or `vertical`. Markets with `broad` alignment
+are shown with a note. Markets with `none` alignment are hidden.
+
+```yaml
+AskUserQuestion:
+  question: |
+    {PORTFOLIO_DISCOVERY_HEADER}
+
+    {PORTFOLIO_DISCOVERY_INTRO}
+
+    {FOR_EACH_PROJECT}
+    **{PORTFOLIO_DISCOVERY_PROJECT}**
+    {FOR_EACH_MARKET where tips_alignment.level != "none"}
+      {N}) {PORTFOLIO_DISCOVERY_MARKET}
+    {END_FOR}
+    {END_FOR}
+
+    {PORTFOLIO_DISCOVERY_SELECT}
+  options:
+    - label: "1) {market_1_name} ({region}) [{alignment}]"
+    - label: "2) {market_2_name} ({region}) [{alignment}]"
+    - label: "..."
+    - label: "{PORTFOLIO_DISCOVERY_MANUAL}"
+```
+
+### Parse Selection
+
+**Outcome A — User selects a portfolio market:**
+
+```bash
+# Extract selected market from discovery output
+SELECTED_PROJECT=$(echo "$DISCOVERY_OUTPUT" | jq -r ".projects[$PROJECT_INDEX]")
+SELECTED_MARKET=$(echo "$SELECTED_PROJECT" | jq -r ".markets[$MARKET_INDEX]")
+
+# Pre-populate industry variables from tips_alignment
+INDUSTRY_EN=$(echo "$SELECTED_MARKET" | jq -r '.tips_alignment.matched_industry_en')
+INDUSTRY_DE=$(echo "$SELECTED_MARKET" | jq -r '.tips_alignment.matched_industry_de')
+INDUSTRY_SLUG=$(echo "$SELECTED_MARKET" | jq -r '.tips_alignment.matched_industry')
+SUBSECTOR_EN=$(echo "$SELECTED_MARKET" | jq -r '.tips_alignment.matched_subsector_en')
+SUBSECTOR_DE=$(echo "$SELECTED_MARKET" | jq -r '.tips_alignment.matched_subsector_de')
+SUBSECTOR_SLUG=$(echo "$SELECTED_MARKET" | jq -r '.tips_alignment.matched_subsector')
+
+PORTFOLIO_SOURCE_SLUG=$(echo "$SELECTED_PROJECT" | jq -r '.slug')
+PORTFOLIO_MARKET_SLUG=$(echo "$SELECTED_MARKET" | jq -r '.slug')
+
+log_conditional INFO "{PORTFOLIO_DISCOVERY_SELECTED}"
+log_conditional INFO "Industry pre-populated: $INDUSTRY_EN / $INDUSTRY_DE"
+log_conditional INFO "Subsector pre-populated: $SUBSECTOR_EN / $SUBSECTOR_DE"
+
+# SKIP Step 0.2 and Step 0.3 — industry is already resolved
+```
+
+**Outcome B — User selects "Manual selection":**
+
+```bash
+PORTFOLIO_SOURCE_SLUG=""
+PORTFOLIO_MARKET_SLUG=""
+# Fall through to Step 0.2
+```
+
+---
+
 ## Step 0.2: Present Industry Taxonomy
+
+**Skip condition:** If `PORTFOLIO_SOURCE_SLUG` is set (user selected a portfolio market
+in Step 0.1c), skip this step entirely. Industry and subsector are already populated.
 
 Load and present the industry taxonomy to the user:
 
@@ -108,6 +212,9 @@ AskUserQuestion:
 ---
 
 ## Step 0.3: Parse Industry Selection
+
+**Skip condition:** If `PORTFOLIO_SOURCE_SLUG` is set (user selected a portfolio market
+in Step 0.1c), skip this step entirely. Industry and subsector are already populated.
 
 Parse the user's industry selection:
 
@@ -161,9 +268,33 @@ log_conditional INFO "Selected subsector: $SUBSECTOR_EN / $SUBSECTOR_DE"
 
 ## Step 0.4: Capture Research Topic
 
-Prompt user for their specific research focus:
+Prompt user for their specific research focus.
 
-### AskUserQuestion Parameters
+### Topic Suggestion from Portfolio (when applicable)
+
+If `PORTFOLIO_MARKET_SLUG` is set, read the market's `name` and `description` to
+suggest a research topic. The market context provides a natural starting point —
+e.g., a market named "Mid-Market SaaS (DACH)" with vertical "saas" might suggest
+"Digital transformation trends for SaaS companies in DACH". Present the suggestion
+but always allow the user to override:
+
+```yaml
+# When portfolio market was selected:
+AskUserQuestion:
+  question: |
+    {TOPIC_PROMPT_TITLE}
+
+    {PORTFOLIO_DISCOVERY_TOPIC_SUGGEST}
+
+    {TOPIC_PROMPT_INTRO}
+
+    {TOPIC_PROMPT_EXAMPLE}
+  options:
+    - label: "Use suggested topic: '{SUGGESTED_TOPIC}'"
+    - label: "Enter my own topic"
+```
+
+### Standard Topic Prompt (no portfolio or user chose "Enter my own")
 
 ```yaml
 AskUserQuestion:
@@ -315,17 +446,27 @@ if [[ ! -f "$METADATA_SCRIPT" ]]; then
   exit 1
 fi
 
-METADATA_OUTPUT=$(bash "$METADATA_SCRIPT" \
-  --output-file "${PROJECT_PATH}/.metadata/trend-scout-output.json" \
-  --industry "$INDUSTRY_SLUG" \
-  --industry-en "$INDUSTRY_EN" \
-  --industry-de "$INDUSTRY_DE" \
-  --subsector "$SUBSECTOR_SLUG" \
-  --subsector-en "$SUBSECTOR_EN" \
-  --subsector-de "$SUBSECTOR_DE" \
-  --topic "$RESEARCH_TOPIC" \
-  --topic-normalized "$RESEARCH_TOPIC_NORMALIZED" \
-  --json)
+# Build metadata update command — portfolio args are optional
+METADATA_ARGS=(
+  --output-file "${PROJECT_PATH}/.metadata/trend-scout-output.json"
+  --industry "$INDUSTRY_SLUG"
+  --industry-en "$INDUSTRY_EN"
+  --industry-de "$INDUSTRY_DE"
+  --subsector "$SUBSECTOR_SLUG"
+  --subsector-en "$SUBSECTOR_EN"
+  --subsector-de "$SUBSECTOR_DE"
+  --topic "$RESEARCH_TOPIC"
+  --topic-normalized "$RESEARCH_TOPIC_NORMALIZED"
+)
+
+# Append portfolio source if this init was portfolio-sourced
+if [[ -n "$PORTFOLIO_SOURCE_SLUG" && -n "$PORTFOLIO_MARKET_SLUG" ]]; then
+  METADATA_ARGS+=(--portfolio-slug "$PORTFOLIO_SOURCE_SLUG" --portfolio-market "$PORTFOLIO_MARKET_SLUG")
+fi
+
+METADATA_ARGS+=(--json)
+
+METADATA_OUTPUT=$(bash "$METADATA_SCRIPT" "${METADATA_ARGS[@]}")
 
 if [[ ! $(echo "$METADATA_OUTPUT" | jq -r '.success') == "true" ]]; then
   log_conditional ERROR "Failed to update industry metadata"
@@ -386,11 +527,13 @@ SKIP_TO_PHASE=1  # Proceed to web research
 
 - [ ] INTERACTION_LANGUAGE detected from workspace config (de/en)
 - [ ] PROJECT_LANGUAGE confirmed by user (de/en)
-- [ ] Industry and subsector selected and validated
+- [ ] Portfolio discovery attempted (scan result logged)
+- [ ] If portfolio selected: PORTFOLIO_SOURCE_SLUG and PORTFOLIO_MARKET_SLUG set
+- [ ] Industry and subsector selected and validated (from portfolio or manual taxonomy)
 - [ ] RESEARCH_TOPIC captured
 - [ ] PROJECT_SLUG generated
 - [ ] Project structure initialized in current working directory (or `COGNI_WORKSPACE_ROOT` if set)
-- [ ] trend-scout-output.json updated with industry metadata
+- [ ] trend-scout-output.json updated with industry metadata (and portfolio_source if applicable)
 - [ ] Logging initialized
 - [ ] WEB_RESEARCH_ENABLED set
 
@@ -413,6 +556,8 @@ SKIP_TO_PHASE=1  # Proceed to web research
 | PROJECT_PATH | Absolute project path | `/path/to/project` |
 | LOG_FILE | Path to execution log | `/path/to/.logs/trend-scout-execution-log.txt` |
 | WEB_RESEARCH_ENABLED | Whether to run web research | `true` |
+| PORTFOLIO_SOURCE_SLUG | Portfolio project slug (empty if manual) | `acme-corp` |
+| PORTFOLIO_MARKET_SLUG | Selected market slug (empty if manual) | `mid-market-saas-dach` |
 | SKIP_TO_PHASE | Next phase to execute | `1` |
 
 ---

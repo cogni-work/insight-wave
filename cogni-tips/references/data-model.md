@@ -50,7 +50,18 @@ Lightweight root manifest for project discovery and resume. Created during Phase
 ```
 
 Required fields: `slug`, `name`, `language`, `industry`, `research_topic`, `created`
-Optional fields: `updated`
+Optional fields: `updated`, `portfolio_source`
+
+The `portfolio_source` field is set when the project was initialized from a cogni-portfolio market (via Step 0.1c portfolio discovery). It links the TIPS project to a specific portfolio market for later bridge operations:
+
+```json
+{
+  "portfolio_source": {
+    "portfolio_slug": "acme-corp",
+    "market_slug": "mid-market-saas-dach"
+  }
+}
+```
 
 The `language` field is a lowercase ISO 639-1 code (`"de"` or `"en"`). Controls the language of all generated user-facing content. JSON field names and slugs remain in English.
 
@@ -80,7 +91,12 @@ Consolidated output from the trend-scout skill containing project config, candid
       "subsector_de": "Automobil"
     },
     "research_topic": "AI-driven predictive maintenance",
-    "organizing_concept": "ai-driven-predictive-maintenance"
+    "organizing_concept": "ai-driven-predictive-maintenance",
+    "portfolio_source": {
+      "portfolio_slug": "acme-corp",
+      "market_slug": "mid-market-saas-dach",
+      "discovered_at": "2026-01-15T10:20:00Z"
+    }
   },
 
   "tips_candidates": {

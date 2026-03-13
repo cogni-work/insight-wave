@@ -63,6 +63,7 @@ Full German and English support throughout. This skill follows the shared langua
 - `${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/generate-project-slug.sh`
 - `${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/update-industry-metadata.sh`
 - `${CLAUDE_PLUGIN_ROOT}/skills/trend-scout/scripts/finalize-candidates.sh`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/discover-portfolio-markets.sh`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/initialize-trend-project.sh`
 
 ## References Index
@@ -120,14 +121,15 @@ Read [references/workflow-phases/phase-0-initialize.md](references/workflow-phas
 
 1. **Detect interaction language:** Read workspace language from `.workspace-config.json` (via `${PROJECT_AGENTS_OPS_ROOT}/.workspace-config.json` or CWD). Set `INTERACTION_LANGUAGE` — use this for all user-facing messages from this point on. Load the matching i18n message catalog (`messages-{INTERACTION_LANGUAGE}.md`).
 2. **Ask user for output language:** Present AskUserQuestion in the interaction language. Workspace language is the pre-selected default (e.g., "Deutsch (DE) <- Workspace-Standard" or "English (EN) <- Workspace default"). User can override. Set `PROJECT_LANGUAGE` from explicit choice. Do NOT skip asking — always confirm with user.
-3. Load [references/industry-taxonomy.md](references/industry-taxonomy.md)
-4. Present industries with subsectors (bilingual)
-5. Capture user selection via AskUserQuestion (in interaction language)
-6. Capture research topic/focus (in interaction language)
-7. Generate project slug: `{subsector}-{topic}-{hash}`
-8. Initialize project via `initialize-trend-project.sh` in the current working directory under `cogni-tips/`
-9. Update `tips-project.json` with full industry context (bilingual names, subsector, research_topic)
-10. Update `.metadata/trend-scout-output.json` with industry context
+3. **Portfolio discovery (optional):** Scan workspace for cogni-portfolio projects with markets. If found, offer user to pre-populate industry/subsector from a portfolio market. If selected, skip steps 4-6 and suggest a research topic from the market context. See Step 0.1c in [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md).
+4. Load [references/industry-taxonomy.md](references/industry-taxonomy.md) *(skip if portfolio market selected)*
+5. Present industries with subsectors (bilingual) *(skip if portfolio market selected)*
+6. Capture user selection via AskUserQuestion (in interaction language) *(skip if portfolio market selected)*
+7. Capture research topic/focus (in interaction language) — with optional suggestion from portfolio market
+8. Generate project slug: `{subsector}-{topic}-{hash}`
+9. Initialize project via `initialize-trend-project.sh` in the current working directory under `cogni-tips/`
+10. Update `tips-project.json` with full industry context (bilingual names, subsector, research_topic)
+11. Update `.metadata/trend-scout-output.json` with industry context (and portfolio_source if applicable)
 
 **Required outputs:**
 
