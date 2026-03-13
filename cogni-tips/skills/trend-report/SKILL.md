@@ -46,9 +46,8 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 | Variable | Purpose | Example |
 |----------|---------|---------|
 | `CLAUDE_PLUGIN_ROOT` | Plugin installation (skills, references) | `~/.claude/plugins/marketplaces/cogni-tips` |
-| `COGNI_WORKSPACE_ROOT` | Optional workspace root override (default: `$PWD`) | Current working directory |
 
-`CLAUDE_PLUGIN_ROOT` is injected automatically from `settings.local.json`. `COGNI_WORKSPACE_ROOT` is optional — defaults to the current working directory if not set.
+`CLAUDE_PLUGIN_ROOT` is injected automatically from `settings.local.json`. Projects are always resolved from the current working directory (`$PWD`).
 
 ## Shell Usage
 

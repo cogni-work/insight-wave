@@ -33,7 +33,7 @@ Full German and English support throughout. This skill follows the shared langua
 
 ## Prerequisites
 
-- Projects are stored relative to the current working directory (or `COGNI_WORKSPACE_ROOT` if set)
+- Projects are stored relative to the current working directory (`$PWD`)
 - Web access enabled for live trend research
 
 ## Shell Execution Constraints
@@ -50,12 +50,10 @@ Full German and English support throughout. This skill follows the shared langua
 | Variable | Purpose | Example |
 |----------|---------|---------|
 | `CLAUDE_PLUGIN_ROOT` | Plugin installation (scripts, skills) | `~/.claude/plugins/marketplaces/cogni-tips` |
-| `COGNI_WORKSPACE_ROOT` | Optional workspace root override (default: `$PWD`) | Current working directory |
 
 **IMPORTANT - Environment Variables:**
 
 - `CLAUDE_PLUGIN_ROOT` is automatically injected by Claude Code from `settings.local.json`
-- `COGNI_WORKSPACE_ROOT` is optional — defaults to the current working directory if not set
 - DO NOT source `.workplace-env.sh` - variables are already available at runtime
 
 **Script Locations (always use CLAUDE_PLUGIN_ROOT):**
@@ -535,4 +533,4 @@ grep "\[VALIDATION\]" "${PROJECT_PATH}/.logs/trend-scout-execution-log.txt"
 ### Common Issues
 
 1. **"Industry not selected"** - User must select from taxonomy
-2. **"Project init failed"** - Check current working directory is writable (or `COGNI_WORKSPACE_ROOT` if set)
+2. **"Project init failed"** - Check current working directory is writable

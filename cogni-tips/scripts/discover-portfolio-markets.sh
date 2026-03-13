@@ -57,7 +57,7 @@ if ! command -v python3 &>/dev/null; then
 fi
 
 # Parse arguments
-WORKSPACE="${COGNI_WORKSPACE_ROOT:-$(pwd)}"
+WORKSPACE="$(pwd)"
 JSON_OUTPUT=true
 
 while [[ $# -gt 0 ]]; do

@@ -90,7 +90,7 @@ establishing an early link that the tips-bridge can leverage later.
 ### Discovery
 
 ```bash
-WORKSPACE_DIR="${COGNI_WORKSPACE_ROOT:-$(pwd)}"
+WORKSPACE_DIR="$(pwd)"
 DISCOVERY_SCRIPT="${CLAUDE_PLUGIN_ROOT}/scripts/discover-portfolio-markets.sh"
 
 PORTFOLIO_FOUND=false
@@ -362,7 +362,7 @@ Examples:
 
 ```bash
 # Get projects root (defaults to current working directory)
-PROJECTS_ROOT="${COGNI_WORKSPACE_ROOT:-$(pwd)}"
+PROJECTS_ROOT="$(pwd)"
 PROJECT_PATH="${PROJECTS_ROOT}/cogni-tips/${PROJECT_SLUG}"
 
 if [[ -d "$PROJECT_PATH" ]]; then
@@ -532,7 +532,7 @@ SKIP_TO_PHASE=1  # Proceed to web research
 - [ ] Industry and subsector selected and validated (from portfolio or manual taxonomy)
 - [ ] RESEARCH_TOPIC captured
 - [ ] PROJECT_SLUG generated
-- [ ] Project structure initialized in current working directory (or `COGNI_WORKSPACE_ROOT` if set)
+- [ ] Project structure initialized in current working directory
 - [ ] trend-scout-output.json updated with industry metadata (and portfolio_source if applicable)
 - [ ] Logging initialized
 - [ ] WEB_RESEARCH_ENABLED set

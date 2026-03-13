@@ -78,7 +78,7 @@ print(f'Unregistered: {rm_path}' if before > after else f'Not found: {rm_path}')
 fi
 
 # --- Discovery ---
-SEARCH_ROOT="${COGNI_WORKSPACE_ROOT:-$(pwd)}"
+SEARCH_ROOT="$(pwd)"
 
 # Helper: add a directory to PROJECT_DIRS if not already present
 add_project_dir() {
