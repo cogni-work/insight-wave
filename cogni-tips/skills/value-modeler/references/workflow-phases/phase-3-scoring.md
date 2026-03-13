@@ -51,6 +51,15 @@ The user may show this to stakeholders — it's designed to be professional and 
 The theme-level grouping makes it practical even for non-technical stakeholders to work
 through systematically — one investment area at a time.
 
+### Quality Flag Awareness
+
+When presenting STs for scoring, surface any `quality_flag: "quality_investment_needed"` markers
+set by Phase 2. These indicate the matched portfolio proposition scored "fail" on quality
+dimensions (market_specificity or differentiation). Show a warning icon next to affected STs
+in both the HTML template and inline views so the user knows the underlying proposition needs
+improvement — their BR score still applies, but customer-facing materials should wait until
+the proposition is refined.
+
 ## Step 2: Present to User
 
 Open the scoring HTML in the browser and tell the user:

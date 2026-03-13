@@ -360,7 +360,7 @@ tips-project.json (root manifest)
 New fields (all optional, backward compatible — existing STs without these fields continue working):
 
 - **`generation_mode`** (string): How this ST was created.
-  - `"portfolio-anchored"` — Generated starting from an existing portfolio feature as the delivery anchor. Phase 2.0 creates these when portfolio-context v2.0+ is available.
+  - `"portfolio-anchored"` — Generated starting from an existing portfolio feature as the delivery anchor. Phase 2.0 creates these when portfolio-context v2.0+ is available (v3.0 adds quality-aware generation with `quality_flag` propagation).
   - `"abstract"` — Generated from TIPS theme analysis without portfolio anchoring (the original behavior). **Default when absent.**
 - **`portfolio_anchor`** (object, only when `generation_mode` = `"portfolio-anchored"`): Captures what the anchor feature can and cannot deliver for the theme.
   - `feature_slug` (string): The portfolio feature that anchors this ST

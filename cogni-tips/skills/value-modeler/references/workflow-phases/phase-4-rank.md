@@ -68,6 +68,14 @@ On each ST, store:
 - User override set → use override as `ranking_value`, still calculate and show F1 for comparison
 - Calculated values are floats (1.0-5.0), not rounded
 
+### Step 1e: Surface quality flags
+
+If any ST has `quality_flag: "quality_investment_needed"` (set by Phase 2 when the matched
+portfolio proposition has quality failures), preserve the flag through ranking. The flag does
+not affect the ranking score — it is informational. In the ranked output (Step 2), annotate
+flagged STs with a warning marker so the user knows which solutions depend on propositions
+that need quality improvement before customer-facing use.
+
 ## Step 2: Generate Ranked Solution List
 
 Produce `tips-solution-ranking.md` organized by Strategic Theme, with STs ranked within

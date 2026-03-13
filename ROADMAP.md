@@ -155,8 +155,8 @@ The bridge skill resolves references at runtime. Loose coupling, independent evo
 | Curation / repository update | 3 | value-modeler Phase 5 (advisory) | Partial |
 | Machine learning update | 4 | — | Future |
 | Industry catalog inheritance | Fig.4 | catalog skill + b2b-ict/general | Complete |
-| Product portfolio mapping | Fig.1 | portfolio_mapping field | Partial |
-| Bidirectional portfolio flow | Fig.1 | — | P1.2 |
+| Product portfolio mapping | Fig.1 | full proposition enrichment (variants, quality, opportunities) | Complete |
+| Bidirectional portfolio flow | Fig.1 | tips-bridge (tips-to-portfolio, portfolio-to-tips, sync) + v3.0 quality feedback | Complete |
 | Big Block diagram (visual) | Fig.3 | story-to-big-block + render-big-block (Excalidraw) | Complete |
 | Solution Process Improvements | Fig.3 | value-modeler Phase 2 SPIs | Complete |
 | Metrics | Fig.3 | value-modeler Phase 2 | Complete |
@@ -177,3 +177,4 @@ The bridge skill resolves references at runtime. Loose coupling, independent evo
 | 2026-03-11 | P2.3: Added taxonomy coverage heatmap + gap analysis to portfolio-dashboard, taxonomy validation to validate-entities.sh |
 | 2026-03-11 | P2.4: Created story-to-big-block skill + agent, big-block-brief.md format v1.0, big-block-layouts.md, EXAMPLE_BIG_BLOCK_BRIEF.md, cogni-visual v1.3.0 |
 | 2026-03-11 | P2.4: Created render-big-block skill + big-block agent + /render-big-block command, completes Excalidraw rendering pipeline, cogni-visual v1.4.0 |
+| 2026-03-13 | P1.2: Full TIPS↔Portfolio bridge overhaul — multi-variant DOES/MEANS propositions, portfolio-first ST generation (Phase 2.0), structured opportunity pipeline (portfolio-opportunities.json), path narrative evidence with T→I→P traceability, cross-bridge quality feedback (portfolio-context v3.0). cogni-tips v0.3.5, cogni-portfolio v0.8.11 |

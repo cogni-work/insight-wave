@@ -286,6 +286,63 @@ with open('$s') as fh:
     fi
   done
 
+  # Validate proposition variants and tips_enrichment
+  while IFS='|' read -r etype slug msg; do
+    if [ "$etype" = "E" ]; then
+      add_error "proposition" "$slug" "$msg"
+    elif [ "$etype" = "W" ]; then
+      add_warning "proposition" "$slug" "$msg"
+    fi
+  done < <(python3 -c "
+import json, os, glob
+valid_enrichment_types = {'does_refined', 'means_refined', 'evidence_added', 'variant_created', 'solution_proposed'}
+valid_quality_values = {'pass', 'warn', 'fail'}
+for f in glob.glob('$PROJECT_DIR/propositions/*.json'):
+    try:
+        d = json.load(open(f))
+        slug = os.path.basename(f)[:-5]
+
+        # Validate variants
+        variants = d.get('variants', [])
+        if variants:
+            seen_ids = set()
+            for i, v in enumerate(variants):
+                vid = v.get('variant_id')
+                if not vid:
+                    print(f'E|{slug}|Variant at index {i} missing variant_id')
+                elif vid in seen_ids:
+                    print(f'E|{slug}|Duplicate variant_id: {vid}')
+                else:
+                    seen_ids.add(vid)
+                for req in ['angle', 'tips_ref', 'value_chain_narrative', 'does_statement', 'means_statement']:
+                    if req not in v:
+                        print(f'E|{slug}|Variant {vid or i} missing required field: {req}')
+                qs = v.get('quality_score')
+                if qs is not None and qs not in valid_quality_values:
+                    print(f'W|{slug}|Variant {vid} has unexpected quality_score: {qs}')
+
+        # Validate tips_enrichment
+        te = d.get('tips_enrichment')
+        if te:
+            if 'pursuit_slug' not in te:
+                print(f'E|{slug}|tips_enrichment missing pursuit_slug')
+            if 'enriched_at' not in te:
+                print(f'W|{slug}|tips_enrichment missing enriched_at timestamp')
+            for et in te.get('enrichment_type', []):
+                if et not in valid_enrichment_types:
+                    print(f'W|{slug}|tips_enrichment has unknown enrichment_type: {et}')
+
+        # Validate quality_assessment
+        qa = d.get('quality_assessment')
+        if qa:
+            if qa.get('overall') not in valid_quality_values:
+                print(f'E|{slug}|quality_assessment.overall must be pass/warn/fail')
+            if 'assessed_at' not in qa:
+                print(f'W|{slug}|quality_assessment missing assessed_at date')
+    except Exception:
+        pass
+" 2>/dev/null)
+
   # Proposition DOES/MEANS structural warning: word counts outside 15-30 target
   # Deep quality assessment (buyer-centricity, market-specificity, differentiation,
   # escalation, quantification) is handled by the proposition-quality-assessor agent.

@@ -32,6 +32,14 @@ Scan the completed value model (themes, value chains, STs) for patterns worth pr
 **Effective Metrics** — KPIs that proved useful for measuring solution success:
 - Are these metrics applicable across the industry subsector?
 
+### Quality-Flagged STs
+
+When identifying promotion candidates, exclude STs with `quality_flag: "quality_investment_needed"`
+from promotion recommendations. These STs depend on portfolio propositions that haven't passed
+quality checks — promoting them to the catalog would propagate weak messaging. Instead, add a
+separate "Quality Investment Needed" section in the curation summary listing these STs with
+a recommendation to improve the underlying proposition first via `/propositions` quality tools.
+
 ## Step 2: Generate Curation Recommendations
 
 For each promotion candidate, generate a recommendation:

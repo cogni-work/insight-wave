@@ -1,6 +1,6 @@
 {
   "name": "cogni-tips",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE).",
   "author": {
     "name": "Stephan de Haas",
@@ -27,6 +27,9 @@
     "knowledge-base",
     "reuse",
     "dashboard",
-    "tips-dashboard"
+    "tips-dashboard",
+    "opportunity",
+    "portfolio-anchor",
+    "quality-feedback"
   ]
 }

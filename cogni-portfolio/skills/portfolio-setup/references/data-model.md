@@ -232,7 +232,7 @@ A proposition maps one feature to one target market with market-specific messagi
 ```
 
 Required fields: `slug`, `feature_slug`, `market_slug`, `is_statement`, `does_statement`, `means_statement`
-Optional fields: `evidence`, `variants`, `tips_enrichment`, `created`, `updated`
+Optional fields: `evidence`, `variants`, `tips_enrichment`, `quality_assessment`, `created`, `updated`
 
 Each evidence entry can be a structured object with `statement` (string, required), `source_url` (string or null), and `source_title` (string or null). When web research produces evidence, include the source URL for claim verification. Entries without a source use null for URL/title fields.
 
@@ -324,6 +324,41 @@ Valid `enrichment_type` values:
 - `evidence_added` — New evidence entries were suggested from TIPS metrics
 - `variant_created` — One or more proposition variants were created from TIPS value chains
 - `solution_proposed` — A solution stub was proposed based on a matched ST
+
+#### Quality Assessment
+
+The `quality_assessment` object (optional) holds the result of evaluating the proposition's DOES and MEANS statements against the quality rubric. Written by the `proposition-quality-assessor` agent and consumed by the bridge when generating portfolio-context v3.0 (which propagates quality data to TIPS Phase 2 for quality-aware ST generation).
+
+```json
+{
+  "quality_assessment": {
+    "overall": "pass",
+    "does_score": {
+      "buyer_centricity": "pass",
+      "market_specificity": "warn",
+      "differentiation": "pass",
+      "status_quo_contrast": "pass",
+      "conciseness": "pass"
+    },
+    "means_score": {
+      "outcome_specificity": "pass",
+      "escalation": "pass",
+      "quantification": "warn",
+      "emotional_resonance": "pass",
+      "conciseness": "pass"
+    },
+    "assessed_at": "2026-03-13"
+  }
+}
+```
+
+Fields:
+- `overall` (string, required): Aggregate result — `"pass"`, `"warn"`, or `"fail"`. Fails if any dimension is `"fail"`; warns if any is `"warn"` with none failing.
+- `does_score` (object, required): Per-dimension assessment of the DOES statement (buyer_centricity, market_specificity, differentiation, status_quo_contrast, conciseness).
+- `means_score` (object, required): Per-dimension assessment of the MEANS statement (outcome_specificity, escalation, quantification, emotional_resonance, conciseness).
+- `assessed_at` (string, required): ISO 8601 date of the last assessment. Re-assessment triggers when proposition `updated` date is newer than `assessed_at`.
+
+Quality assessments are cached on the proposition — the bridge reads them when exporting portfolio-context v3.0 and TIPS Phase 2 uses them to set `quality_flag` on Solution Templates whose matched propositions need improvement.
 
 **Naming convention**: Proposition file names use double-dash (`--`) to join feature and market slugs: `{feature-slug}--{market-slug}.json`
 
