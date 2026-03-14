@@ -74,7 +74,7 @@ def validate_entity_type(entity_type: str) -> Tuple[bool, str, str]:
     directory names like "04-findings".
 
     Args:
-        entity_type: Entity type string (e.g., "07-sources", "sources", "source")
+        entity_type: Entity type string (e.g., "05-sources", "sources", "source")
 
     Returns:
         Tuple of (valid: bool, error_message: str, resolved_type: str)
@@ -269,7 +269,7 @@ def get_type_prefix(entity_type: str) -> str:
     """Get singular prefix for entity type.
 
     Args:
-        entity_type: Entity type string (e.g., "07-sources")
+        entity_type: Entity type string (e.g., "05-sources")
 
     Returns:
         Singular prefix (e.g., "source")
@@ -469,7 +469,7 @@ def prepare_frontmatter(
     result["id"] = entity_id
 
     # Add created_at for non-source entities
-    if entity_type != "07-sources":
+    if entity_type != "05-sources":
         result["created_at"] = timestamp or _now_iso()
 
     return result

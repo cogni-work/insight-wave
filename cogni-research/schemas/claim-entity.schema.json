@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://anthropic.com/schemas/claim-entity.schema.json",
+  "$id": "https://cogni-work.ai/schemas/claim-entity.schema.json",
   "title": "Claim Entity",
-  "description": "Schema for validating claim.md YAML frontmatter. Claims are factual assertions supported by citations that have been fact-checked.",
+  "description": "Schema for validating claim.md YAML frontmatter. Claims are factual assertions extracted from findings with three-layer confidence scoring: evidence confidence, claim quality, and source verification.",
   "type": "object",
   "required": [
     "tags",
@@ -28,7 +28,7 @@
     },
     "dc:creator": {
       "type": "string",
-      "description": "Dublin Core creator field - typically 'fact-checker' skill"
+      "description": "Dublin Core creator field - typically 'claim-extractor' agent"
     },
     "dc:title": {
       "type": "string",
@@ -46,12 +46,10 @@
     },
     "dc:type": {
       "type": "string",
-      "description": "Dublin Core type field - always 'claim'",
       "const": "claim"
     },
     "entity_type": {
       "type": "string",
-      "description": "Entity type identifier",
       "const": "claim"
     },
     "claim_text": {
@@ -60,23 +58,68 @@
     },
     "finding_refs": {
       "type": "array",
-      "description": "Array of wikilinks to findings supporting this claim",
+      "description": "Wikilinks to findings supporting this claim",
       "items": {
         "type": "string",
         "pattern": "^\\[\\[04-findings/data/finding-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
       },
       "minItems": 1
     },
-    "verification_status": {
-      "type": "string",
-      "description": "Fact-check verification status",
-      "enum": ["verified", "partially-verified", "unverified", "contradicted"]
+    "source_refs": {
+      "type": "array",
+      "description": "Wikilinks to source entities backing this claim",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[\\[05-sources/data/source-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+      }
+    },
+    "evidence_confidence": {
+      "type": "number",
+      "description": "Layer 1: Evidence confidence score (source quality, cross-validation, recency, expertise)",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "claim_quality": {
+      "type": "number",
+      "description": "Layer 2: Claim quality score (atomicity, fluency, decontextualization, faithfulness)",
+      "minimum": 0,
+      "maximum": 1
     },
     "confidence_score": {
       "type": "number",
-      "description": "Confidence score for claim verification (0.0 to 1.0)",
+      "description": "Composite score: evidence_confidence * 0.6 + claim_quality * 0.4",
       "minimum": 0,
       "maximum": 1
+    },
+    "source_verification": {
+      "type": "string",
+      "description": "Layer 3: Source URL verification status via cogni-claims",
+      "enum": ["verified", "deviated", "source_unavailable", "pending", "skipped"]
+    },
+    "deviation_count": {
+      "type": "integer",
+      "description": "Number of deviations detected during source verification",
+      "minimum": 0
+    },
+    "deviation_max_severity": {
+      "type": ["string", "null"],
+      "description": "Maximum severity of detected deviations",
+      "enum": ["low", "medium", "high", "critical", null]
+    },
+    "verification_ref": {
+      "type": "string",
+      "description": "Reference to cogni-claims verification record"
+    },
+    "final_confidence": {
+      "type": "number",
+      "description": "Three-layer composite: confidence_score * verification_modifier",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "verification_status": {
+      "type": "string",
+      "description": "Overall verification status",
+      "enum": ["verified", "partially-verified", "unverified", "contradicted"]
     }
   }
 }

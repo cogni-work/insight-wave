@@ -89,7 +89,7 @@ def load_entity_schema(plugin_root: Optional[str] = None) -> dict:
         "refined-questions": {"directory": "02-refined-questions", "data_subdir": "data", "prefix": "question"},
         "query-batches": {"directory": "03-query-batches", "data_subdir": "data", "prefix": "batch"},
         "findings": {"directory": "04-findings", "data_subdir": "data", "prefix": "finding"},
-        "claims": {"directory": "10-claims", "data_subdir": "data", "prefix": "claim"},
+        "claims": {"directory": "06-claims", "data_subdir": "data", "prefix": "claim"},
     }
 
 

@@ -1,7 +1,7 @@
 {
   "$schema": "./entity-schema.schema.json",
-  "version": "2.3.0",
-  "created": "2025-12-21T00:00:00Z",
+  "version": "3.0.0",
+  "created": "2026-03-14T00:00:00Z",
   "entity_types": [
     {
       "index": 0,
@@ -65,31 +65,7 @@
     },
     {
       "index": 5,
-      "directory": "05-domain-concepts",
-      "key": "domain-concepts",
-      "prefix": "concept",
-      "singular": "concept",
-      "plural": "concepts",
-      "data_subdir": "data",
-      "dedupe": false,
-      "required_fields": [],
-      "schema_file": "concept-entity.schema.json"
-    },
-    {
-      "index": 6,
-      "directory": "06-megatrends",
-      "key": "megatrends",
-      "prefix": "megatrend",
-      "singular": "megatrend",
-      "plural": "megatrends",
-      "data_subdir": "data",
-      "dedupe": false,
-      "required_fields": [],
-      "schema_file": "megatrend-entity.schema.json"
-    },
-    {
-      "index": 7,
-      "directory": "07-sources",
+      "directory": "05-sources",
       "key": "sources",
       "prefix": "source",
       "singular": "source",
@@ -100,32 +76,8 @@
       "schema_file": "source-entity.schema.json"
     },
     {
-      "index": 8,
-      "directory": "08-publishers",
-      "key": "publishers",
-      "prefix": "publisher",
-      "singular": "publisher",
-      "plural": "publishers",
-      "data_subdir": "data",
-      "dedupe": true,
-      "required_fields": ["name", "type"],
-      "schema_file": "publisher-entity.schema.json"
-    },
-    {
-      "index": 9,
-      "directory": "09-citations",
-      "key": "citations",
-      "prefix": "citation",
-      "singular": "citation",
-      "plural": "citations",
-      "data_subdir": "data",
-      "dedupe": false,
-      "required_fields": [],
-      "schema_file": "citation-entity.schema.json"
-    },
-    {
-      "index": 10,
-      "directory": "10-claims",
+      "index": 6,
+      "directory": "06-claims",
       "key": "claims",
       "prefix": "claim",
       "singular": "claim",
@@ -134,30 +86,6 @@
       "dedupe": false,
       "required_fields": [],
       "schema_file": "claim-entity.schema.json"
-    },
-    {
-      "index": 11,
-      "directory": "11-trends",
-      "key": "trends",
-      "prefix": "trend",
-      "singular": "trend",
-      "plural": "trends",
-      "data_subdir": "data",
-      "dedupe": false,
-      "required_fields": [],
-      "schema_file": "trend-entity.schema.json"
-    },
-    {
-      "index": 12,
-      "directory": "12-synthesis",
-      "key": "synthesis",
-      "prefix": "synthesis",
-      "singular": "synthesis",
-      "plural": "syntheses",
-      "data_subdir": null,
-      "dedupe": false,
-      "required_fields": [],
-      "schema_file": "synthesis-entity.schema.json"
     }
   ],
   "special_directories": [".metadata", ".logs", ".locks"],

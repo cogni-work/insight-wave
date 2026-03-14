@@ -9,7 +9,7 @@ set -euo pipefail
 #
 # Arguments:
 #   --wikilink <string>      Wikilink string to validate (required)
-#   --entity-type <string>   Expected entity type prefix like "04-findings" or "07-sources" (optional)
+#   --entity-type <string>   Expected entity type prefix like "04-findings" or "05-sources" (optional)
 #
 # Output (JSON):
 #   {

@@ -1,20 +1,9 @@
-# Two-Phase Commit: Staging directory for batch validation
-# Batches are created here, validated, then promoted to production
-# Stale files (>1 hour old) are automatically cleaned up
-03-query-batches/.staging/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# Environment
-.env
-
-# OS
-.DS_Store
-Thumbs.db
-
 # Logs
-*.log
 excalidraw.log
+
+# Validation and test artifacts
+.test-results/
+.validation/
+
+# Plugin settings (user-specific)
+.claude/*.local.md

@@ -12,11 +12,11 @@ Index Structure:
         "last_updated": "2025-12-19T10:35:00Z",
         "entities": {
             "00-initial-question": [],
-            "07-sources": [
+            "05-sources": [
                 {
                     "id": "source-example-abc12345",
-                    "entity_type": "07-sources",
-                    "entity_path": "07-sources/source-example-abc12345.md",
+                    "entity_type": "05-sources",
+                    "entity_path": "05-sources/source-example-abc12345.md",
                     "name": "Example Source",
                     "url": "https://example.com/article",
                     "created_at": "2025-12-19T10:30:00Z"
@@ -185,7 +185,7 @@ def lookup_entity_by_url(
 
     Args:
         project_path: Absolute path to project root
-        entity_type: Entity type (e.g., "07-sources")
+        entity_type: Entity type (e.g., "05-sources")
         url: URL to search for (exact match after normalization)
 
     Returns:
@@ -235,7 +235,7 @@ def lookup_entity_by_name(
 
     Args:
         project_path: Absolute path to project root
-        entity_type: Entity type (e.g., "07-sources")
+        entity_type: Entity type (e.g., "05-sources")
         name: Name to search for (normalized before comparison)
 
     Returns:
@@ -268,7 +268,7 @@ def lookup_entity_by_name(
     for entity in type_entities:
         # Get name from entity (try name, then title for sources)
         entity_name = entity.get("name")
-        if not entity_name and entity_type == "07-sources":
+        if not entity_name and entity_type == "05-sources":
             entity_name = entity.get("title", "")
         if not entity_name:
             # Fallback: extract from ID
@@ -300,10 +300,10 @@ def add_entity_to_index(
     Args:
         project_path: Absolute path to project root
         entity_id: Unique entity identifier
-        entity_type: Entity type (e.g., "07-sources")
-        entity_path: Relative path to entity file (e.g., "07-sources/id.md")
+        entity_type: Entity type (e.g., "05-sources")
+        entity_path: Relative path to entity file (e.g., "05-sources/id.md")
         entity_name: Entity name for deduplication
-        entity_url: Entity URL (for 07-sources)
+        entity_url: Entity URL (for 05-sources)
         timestamp: Creation timestamp (defaults to now)
 
     Returns:
@@ -351,7 +351,7 @@ def add_entity_to_index(
         }
 
         # Add URL for source entities
-        if entity_type == "07-sources" and entity_url:
+        if entity_type == "05-sources" and entity_url:
             entity_record["url"] = entity_url
 
         # Add entity to index
@@ -471,12 +471,12 @@ def verify_entity_in_index(
         project_path: Absolute path to project root
         entity_id: Expected entity ID
         entity_type: Entity type
-        entity_url: Entity URL for URL-based verification (07-sources)
+        entity_url: Entity URL for URL-based verification (05-sources)
 
     Returns:
         True if entity found in index with correct ID
     """
-    if entity_type == "07-sources" and entity_url:
+    if entity_type == "05-sources" and entity_url:
         result = lookup_entity_by_url(project_path, entity_type, entity_url)
         return result.get("exists", False) and result.get("entity_id") == entity_id
     else:
@@ -500,7 +500,7 @@ def batch_add_entities_to_index(
 ) -> Tuple[bool, str]:
     """Add multiple entities to index in a single atomic operation.
 
-    This function is critical for batch operations like publisher-generator
+    This function is critical for batch operations like source-creator
     where adding entities one-by-one causes lock contention. By batching
     all additions into a single read-modify-write cycle, we eliminate
     the race conditions that caused parallel execution to fail.
@@ -509,7 +509,7 @@ def batch_add_entities_to_index(
         project_path: Absolute path to project root
         entities: List of entity dicts, each containing:
             - id: Entity identifier
-            - entity_type: Entity type (e.g., "08-publishers")
+            - entity_type: Entity type (e.g., "05-sources")
             - entity_path: Relative path to entity file
             - name: Entity name
             - url: (optional) Entity URL for sources
@@ -520,10 +520,10 @@ def batch_add_entities_to_index(
 
     Example:
         entities = [
-            {"id": "publisher-xyz", "entity_type": "08-publishers",
-             "entity_path": "08-publishers/data/publisher-xyz.md", "name": "XYZ Corp"},
-            {"id": "publisher-abc", "entity_type": "08-publishers",
-             "entity_path": "08-publishers/data/publisher-abc.md", "name": "ABC Inc"},
+            {"id": "source-xyz", "entity_type": "05-sources",
+             "entity_path": "05-sources/data/source-xyz.md", "name": "XYZ Article"},
+            {"id": "source-abc", "entity_type": "05-sources",
+             "entity_path": "05-sources/data/source-abc.md", "name": "ABC Report"},
         ]
         success, error = batch_add_entities_to_index(project_path, entities)
     """

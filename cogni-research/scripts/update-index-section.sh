@@ -17,7 +17,7 @@ set -euo pipefail
 #
 # Arguments:
 #   --index-file <path>       Path to .metadata/entity-index.json (required)
-#   --entity-type <string>    Entity type to update (e.g., "07-sources") (required)
+#   --entity-type <string>    Entity type to update (e.g., "05-sources") (required)
 #   --entities <json>         JSON array of entities to write (required)
 #
 # Output (JSON):
@@ -38,7 +38,7 @@ set -euo pipefail
 #   3 - File not found
 #
 # Example:
-#   update-index-section.sh --index-file .metadata/entity-index.json --entity-type 07-sources --entities '[...]'
+#   update-index-section.sh --index-file .metadata/entity-index.json --entity-type 05-sources --entities '[...]'
 
 
 # ===== LOGGING INITIALIZATION =====

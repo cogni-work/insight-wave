@@ -90,7 +90,7 @@
     },
     {
       "name": "cogni-research",
-      "description": "Transform research questions into traceable, source-backed syntheses through a 12-phase pipeline. Plan dimensions, gather findings from web and LLM sources, enrich with citations and claims, and synthesize into trends and reports with full provenance tracking.",
+      "description": "General-purpose deep research engine with three-layer claim assurance. Four-stage pipeline: research-plan, findings-sources, claims, synthesis. Delegates narrative storytelling to cogni-narrative. 7 entity types with full provenance tracking.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
       "source": "./cogni-research",
       "category": "productivity",

@@ -10,7 +10,7 @@ Usage:
 
 Required Arguments:
     --project-path <path>  Project directory path
-    --entity-type <type>   Entity type (00-initial-question, ..., 11-trends)
+    --entity-type <type>   Entity type (00-initial-question, ..., 06-claims)
     --data <data>          Entity data (JSON/YAML string, @file, or - for stdin)
 
 Optional Arguments:
@@ -23,9 +23,9 @@ JSON Data Structure:
     {
         "frontmatter": {
             "name": "...",
-            "url": "...",        // Required for 07-sources
-            "domain": "...",     // Required for 07-sources
-            "title": "...",      // Required for 07-sources
+            "url": "...",        // Required for 05-sources
+            "domain": "...",     // Required for 05-sources
+            "title": "...",      // Required for 05-sources
             "batch_ref": "[[03-query-batches/...]]",  // Required for 04-findings
             ...
         },
@@ -45,7 +45,7 @@ JSON Output (success):
         "success": true,
         "entity_path": "/path/to/entity.md",
         "entity_id": "source-abc12345",
-        "entity_type": "07-sources",
+        "entity_type": "05-sources",
         "created_at": "2025-12-19T10:30:00Z",
         "reused": false,
         "dedupe_method": "none"
@@ -56,7 +56,7 @@ JSON Output (reused via deduplication):
         "success": true,
         "entity_path": "/path/to/existing.md",
         "entity_id": "source-existing",
-        "entity_type": "07-sources",
+        "entity_type": "05-sources",
         "reused": true,
         "dedupe_method": "url"
     }
@@ -216,8 +216,8 @@ def check_deduplication(
     if entity_type not in DEDUPE_TYPES:
         return None
 
-    # For 07-sources: try URL-based dedup first
-    if entity_type == "07-sources":
+    # For 05-sources: try URL-based dedup first
+    if entity_type == "05-sources":
         url = frontmatter.get("url", "")
         if url:
             # Normalize URL for dedup
@@ -395,17 +395,6 @@ def main() -> None:
         # Generate entity ID
         custom_id = args.entity_id or custom_id_from_data
 
-        # For publishers: ALWAYS use deterministic ID from domain (override any provided ID)
-        # This ensures consistency with source-creator's publisher_id wikilinks
-        if args.entity_type == "08-publishers":
-            domain = frontmatter.get("domain", "")
-            if domain:
-                deterministic_id = generate_publisher_id_from_domain(domain)
-                if custom_id and custom_id != deterministic_id:
-                    log_conditional("WARN", f"Overriding provided ID {custom_id} with deterministic ID {deterministic_id}")
-                custom_id = deterministic_id
-                log_conditional("INFO", f"Using deterministic publisher ID from domain: {custom_id}")
-
         entity_id = generate_entity_id(
             args.entity_type,
             custom_id=custom_id,
@@ -417,7 +406,7 @@ def main() -> None:
         entity_dir = get_entity_data_path(args.project_path, args.entity_type)
         if not entity_dir.is_dir():
             # Auto-create data subdirectory if parent entity directory exists
-            parent_dir = entity_dir.parent  # e.g., 08-publishers
+            parent_dir = entity_dir.parent
             if parent_dir.is_dir():
                 log_conditional("INFO", f"Creating data subdirectory: {entity_dir}")
                 ensure_dir(str(entity_dir))
@@ -501,7 +490,7 @@ def main() -> None:
 
         with Lock(index_lock_path, raise_on_fail=True):
             # Get URL for source entities
-            entity_url = frontmatter.get("url") if args.entity_type == "07-sources" else None
+            entity_url = frontmatter.get("url") if args.entity_type == "05-sources" else None
 
             # Build entity path including data subdir
             data_subdir = get_data_subdir()
@@ -537,7 +526,7 @@ def main() -> None:
         log_phase("Phase 6: Verification", "start")
 
         # Verify entity was added to index
-        if args.entity_type == "07-sources" and entity_url:
+        if args.entity_type == "05-sources" and entity_url:
             verified = verify_entity_in_index(
                 args.project_path,
                 entity_id,

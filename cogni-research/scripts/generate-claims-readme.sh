@@ -178,7 +178,7 @@ get_translation() {
 # PATH CONFIGURATION
 # ============================================================================
 
-claims_base_dir="$project_path/10-claims"
+claims_base_dir="$project_path/06-claims"
 claims_dir="$claims_base_dir/$DATA_SUBDIR"
 dimensions_dir="$project_path/01-research-dimensions/$DATA_SUBDIR"
 
@@ -420,7 +420,7 @@ while IFS='|' read -r c_filename c_text c_confidence c_finding c_dimension; do
     mindmap_content+="      $c_text_short"$'\n'
 
     # Generate wikilink for entity index
-    claim_wikilink="$(generate_wikilink "10-claims" "$c_filename")"
+    claim_wikilink="$(generate_wikilink "06-claims" "$c_filename")"
 
     # Format confidence for display
     c_confidence_display="${c_confidence:-N/A}"

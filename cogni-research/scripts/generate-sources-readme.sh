@@ -151,7 +151,7 @@ get_translation() {
 # PATH CONFIGURATION
 # ============================================================================
 
-sources_base_dir="$project_path/07-sources"
+sources_base_dir="$project_path/05-sources"
 sources_dir="$sources_base_dir/$DATA_SUBDIR"
 findings_dir="$project_path/04-findings/$DATA_SUBDIR"
 
@@ -351,7 +351,7 @@ while IFS='|' read -r s_filename s_title s_domain s_findings; do
     mindmap_content+="      $s_title_short"$'\n'
 
     # Generate wikilink for entity index
-    source_wikilink="$(generate_wikilink "07-sources" "$s_filename" "$s_title")"
+    source_wikilink="$(generate_wikilink "05-sources" "$s_filename" "$s_title")"
     entity_index+="| $source_wikilink | $s_domain | $s_findings |"$'\n'
   fi
 done < <(sort -t'|' -k3 "$TEMP_DIR/sources_all" 2>/dev/null || true)

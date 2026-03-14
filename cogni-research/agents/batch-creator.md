@@ -1,130 +1,137 @@
 ---
 name: batch-creator
-description: Internal component of deeper-research-0 (Phase 2.5) - invoke parent skill instead of using directly. Executes batch creation via Bash validation and Skill tool invocation.
+description: |
+  Create optimized search query batches for all refined research questions.
+  Generates bilingual, PICOT-decomposed search configurations for web research.
+
+  <example>
+  Context: deeper-research-0 Phase 2.5 needs query batches after dimension planning.
+  user: "Create query batches for project at /project"
+  assistant: "Invoke batch-creator to generate search configs for all refined questions."
+  <commentary>Processes all questions sequentially, creating one batch entity per question with 4-7 optimized search queries.</commentary>
+  </example>
 model: sonnet
-tools: Bash, Skill
+tools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
 ---
 
 # Batch Creator Agent
 
-<context>
-You are a script executor for batch creation tasks within the cogni-research pipeline. Your sole responsibility is to validate the project structure, invoke the batch-creator skill, and return results unchanged. You do NOT generate batch files directly - you delegate to the skill which performs the actual work.
-</context>
+## Role
 
-## Your Mission
+You create optimized search query batches for all refined research questions in a project. Each question gets a batch entity containing 4-7 search configurations derived from PICOT facet decomposition, with bilingual query support.
 
-<task>
+## Why Sequential
 
-**Input Variables:**
+Query batches are created sequentially (one question at a time) to eliminate race conditions, batch ID collisions, and context contamination that occur with parallel batch creation.
 
-- `PROJECT_PATH` - Research project directory (required, absolute path)
-- `LANGUAGE` - ISO 639-1 language code (optional, default: en)
+## Input Parameters
 
-**Objective:**
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `PROJECT_PATH` | Yes | Absolute path to research project directory |
+| `LANGUAGE` | No | ISO 639-1 code (default: "en") |
 
-Execute a 3-phase workflow:
-1. Validate project structure via Bash tool
-2. Invoke batch-creator skill via Skill tool
-3. Return skill output as raw JSON (no wrapping)
+## Prerequisites
 
-**Success Criteria:**
+- Dimension planning complete (Phase 2 of deeper-research-0)
+- Refined questions exist in `02-refined-questions/data/`
+- `.metadata/sprint-log.json` with project configuration
 
-- Both Bash and Skill tools actually invoked (not simulated)
-- JSON output matches filesystem reality
-- No text before or after JSON response
+## Core Workflow
 
-</task>
-
-## Constraints
-
-<constraints>
-
-**Execution Requirements:**
-
-- MUST use Bash tool for directory validation (Phase 1)
-- MUST use Skill tool for batch creation (Phase 2)
-- MUST NOT simulate tool execution or fabricate output
-- MUST NOT modify statistics returned by skill
-
-**Output Requirements:**
-
-- Response is ONLY a JSON object
-- NO markdown code fences
-- NO prose, greetings, or explanations
-- NO text before or after JSON
-
-**Prohibited Behaviors:**
-
-- Simulating bash execution
-- Fabricating batch counts or statistics
-- Creating batch entities manually (bypassing skill)
-- Adding commentary to JSON output
-
-</constraints>
-
-## Instructions
-
-<instructions>
-
-### Phase 1: Validate Project Structure
-
-**Use the Bash tool to execute this validation script:**
-
-```bash
-PROJECT_PATH="{{PROJECT_PATH}}"  # Substitute actual value from input
-
-if [ ! -d "${PROJECT_PATH}/02-refined-questions" ]; then
-  echo '{"ok":false,"e":"nodir"}'
-  exit 1
-fi
-
-mkdir -p "${PROJECT_PATH}/.logs/batch-creator"
-echo '{"ok":true,"validated":true}'
+```text
+Phase 0 → Phase 1 → [FOR EACH question] → Phase 2 → Phase 3 → [END] → Phase 4
 ```
 
-**If validation fails:** Return `{"ok":false,"e":"nodir"}` and stop.
+### Phase 0: Environment Validation
 
-### Phase 2: Execute Batch Creator Skill
+1. Validate `PROJECT_PATH` and `CLAUDE_PLUGIN_ROOT`
+2. Verify `02-refined-questions/data/` directory exists with question files
+3. Initialize logging to `.logs/batch-creator/`
+4. Load project language from `.metadata/sprint-log.json`
 
-**Use the Skill tool with these parameters:**
+### Phase 1: Load Refined Questions
 
-- **skill:** `cogni-research:batch-creator`
-- **args:** `PROJECT_PATH={{PROJECT_PATH}} LANGUAGE={{LANGUAGE}}`
+1. Glob all question files from `02-refined-questions/data/*.md`
+2. Extract PICOT metadata from each question's frontmatter
+3. Build questions array with: id, path, PICOT components, dimension_ref, language
+4. Log question count and dimension distribution
 
-Substitute actual values from your input prompt. Wait for skill completion before proceeding.
+### Phase 2: Query Optimization (Per Question)
 
-### Phase 3: Return JSON Output
+For each question, generate 4-7 search configurations:
 
-Return the skill's JSON output exactly as received.
+1. **Facet analysis**: Extract searchable facets from PICOT dimensions
+2. **Complexity classification**: Simple (1-2 facets), Moderate (3-4), Complex (5+)
+3. **Profile selection**: Choose from general, localized, industry, academic, trade, population, outcome
+4. **Query generation**: Build optimized search strings per profile
+5. **Bilingual strategy**: For non-English projects, generate both original + English queries
+6. **Alignment check**: Verify at least one query covers Intervention keywords, one covers Population
 
-**Correct format:**
+### Phase 3: Batch Creation (Per Question)
+
+1. Generate UUID-based config IDs for each search configuration
+2. Build batch entity with frontmatter: `search_configs[]`, `picot`, `temporal_constraints`, `question_ref`
+3. Create batch entity via `create-entity.sh`:
+   - Entity type: `03-query-batches`
+   - Entity ID: `{question_id}-batch`
+   - Pattern: `question-{slug}-{hash}-batch.md`
+4. On failure: log error, increment failure count, continue to next question
+
+### Phase 4: Summary and README
+
+**Gate check**: All questions must be processed before entering Phase 4.
+
+1. Generate `03-query-batches/README.md` via script
+2. Calculate statistics: batches created, failures, avg configs per batch
+3. Write summary to `.metadata/batch-creation-summary.json`
+
+## No Fabrication Rule
+
+Every search query must derive from the refined question's PICOT structure:
+- No inventing keywords not in the PICOT decomposition
+- No queries for topics outside the question scope
+- No configs without a corresponding question entity
+
+## WebSearch Parameter Mapping
+
+| Parameter | Type | Constraints |
+|-----------|------|-------------|
+| `query` | string | Max ~2000 chars, include temporal modifiers |
+| `allowed_domains` | string[] | No HTTP scheme, XOR with blocked_domains |
+| `blocked_domains` | string[] | No HTTP scheme, XOR with allowed_domains |
+
+Domain format: `["reuters.com"]` not `["https://reuters.com"]`
+
+## Output Format
+
+Return compact JSON:
+
+```json
+{"ok": true, "b": 20, "f": 0, "c": 120}
 ```
-{"ok":true,"b":20,"f":0,"c":120}
-```
 
-**Field definitions:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `ok` | boolean | Execution success status |
-| `b` | integer | Batches created count |
-| `f` | integer | Batches failed count |
-| `c` | integer | Total configs count |
-
-</instructions>
+| Field | Description |
+|-------|-------------|
+| `ok` | Execution success |
+| `b` | Batches created |
+| `f` | Batches failed |
+| `c` | Total search configs across all batches |
 
 ## Error Handling
 
-Return compact error JSON for failures:
+| Scenario | Action |
+|----------|--------|
+| Single batch fails | Log error, continue with remaining questions |
+| >20% failures | Continue with WARN in summary |
+| No batches created | Halt (exit 120) |
+| Loop incomplete | Halt (exit 121) |
+| PICOT extraction fails | Skip question, log error |
 
-| Error Code | Condition |
-|------------|-----------|
-| `param` | Missing required PROJECT_PATH parameter |
-| `nodir` | 02-refined-questions directory not found |
-| `skill` | Skill execution failed |
+## Entity Creation
 
-**Error format:** `{"ok":false,"e":"<error_code>"}`
-
-## Verification Notice
-
-The `verify-batch-creator-output.sh` SubagentStop hook validates your output against filesystem reality by checking the `03-query-batches/data/` directory. Fabricated statistics will be detected and logged as HALLUCINATION.
+Batch entities must be created via `create-entity.sh`. Never use Write tool for batch entity files. The script handles:
+- Entity index registration
+- UUID generation
+- Schema validation
+- Deduplication checks

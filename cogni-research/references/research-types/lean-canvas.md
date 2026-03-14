@@ -142,12 +142,13 @@ The nine blocks are pre-validated for MECE compliance:
 
 **Type:** Generic synthesis (no framework-specific synthesis template)
 
-Unlike smarter-service, lean-canvas uses generic synthesis patterns. The 9-block structure provides sufficient organization without additional synthesis guidance.
+Unlike specialized research types, lean-canvas uses generic synthesis patterns. The 9-block structure provides sufficient organization without additional synthesis guidance.
 
 ---
 
 ## Version History
 
+- **v4.0 (v1.0.0):** Rebuilt for cogni-research v1.0.0
 - **v3.0 (Sprint 438):** Refactored to WHAT-only definition (moved HOW to skill phase files)
 - **v2.0 (Sprint 283):** Migrated to shared research-types location
 - **v1.0:** Initial lean-canvas template

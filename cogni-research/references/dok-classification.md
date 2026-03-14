@@ -87,6 +87,14 @@ Distribute total questions across dimensions with uneven allocation based on pri
 - Dimension C (medium): 6 questions
 - Dimension D (lower): 4 questions (meets min of 4)
 
+## Auto-Determination by Research Type
+
+| Research Type | DOK Level | Rationale |
+|---------------|-----------|-----------|
+| `b2b-ict-portfolio` | **3** (auto) | 8-dimension portfolio analysis |
+| `lean-canvas` | **2** (auto) | 9 canvas blocks |
+| `generic` | **ASK USER** | Only type where DOK is variable |
+
 ## Common Misclassifications
 
 | Misclassification | Question | Correct DOK | Reason |

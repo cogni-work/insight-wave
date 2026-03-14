@@ -10,7 +10,7 @@ set -euo pipefail
 # Trigger: SubagentStop when source-creator agent completes
 #
 # Detection Patterns (hallucination indicators):
-# 1. Statistics claim sources_created > 0 but 07-sources/ is empty
+# 1. Statistics claim sources_created > 0 but 05-sources/ is empty
 # 2. Performance > 100 findings/minute (impossibly fast for real script)
 # 3. findings_updated > 0 but findings still have empty source_id
 # 4. Execution log format doesn't match real script format
@@ -108,12 +108,12 @@ HALLUCINATION_REASONS=""
 
 # CHECK 1: Verify sources actually exist
 if [[ "$CLAIMED_SOURCES" -gt 0 ]]; then
-  if [[ -d "$PROJECT_PATH/07-sources/${DATA_SUBDIR}" ]]; then
-    ACTUAL_SOURCES="$(find "$PROJECT_PATH/07-sources/${DATA_SUBDIR}" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ -d "$PROJECT_PATH/05-sources/${DATA_SUBDIR}" ]]; then
+    ACTUAL_SOURCES="$(find "$PROJECT_PATH/05-sources/${DATA_SUBDIR}" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')"
 
     if [[ "$ACTUAL_SOURCES" -eq 0 ]]; then
       HALLUCINATION_DETECTED=true
-      HALLUCINATION_REASONS="${HALLUCINATION_REASONS}\n- Claimed $CLAIMED_SOURCES sources created but 07-sources/${DATA_SUBDIR}/ is EMPTY"
+      HALLUCINATION_REASONS="${HALLUCINATION_REASONS}\n- Claimed $CLAIMED_SOURCES sources created but 05-sources/${DATA_SUBDIR}/ is EMPTY"
     elif [[ "$ACTUAL_SOURCES" -lt $(($CLAIMED_SOURCES / 2)) ]]; then
       # Allow some tolerance but flag if way off
       HALLUCINATION_DETECTED=true
@@ -121,7 +121,7 @@ if [[ "$CLAIMED_SOURCES" -gt 0 ]]; then
     fi
   else
     HALLUCINATION_DETECTED=true
-    HALLUCINATION_REASONS="${HALLUCINATION_REASONS}\n- Claimed $CLAIMED_SOURCES sources but 07-sources/${DATA_SUBDIR}/ directory doesn't exist"
+    HALLUCINATION_REASONS="${HALLUCINATION_REASONS}\n- Claimed $CLAIMED_SOURCES sources but 05-sources/${DATA_SUBDIR}/ directory doesn't exist"
   fi
 fi
 
@@ -264,8 +264,8 @@ if [[ "$HALLUCINATION_DETECTED" == true ]]; then
   echo ""
 
   # Verify recovery succeeded
-  RECOVERED_SOURCES="$(find "$PROJECT_PATH/07-sources/${DATA_SUBDIR}" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')"
-  echo "Verification: $RECOVERED_SOURCES source files now exist in 07-sources/${DATA_SUBDIR}/"
+  RECOVERED_SOURCES="$(find "$PROJECT_PATH/05-sources/${DATA_SUBDIR}" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')"
+  echo "Verification: $RECOVERED_SOURCES source files now exist in 05-sources/${DATA_SUBDIR}/"
 
   if [[ "$RECOVERED_SOURCES" -gt 0 ]]; then
     echo "Recovery successful - workflow can continue"

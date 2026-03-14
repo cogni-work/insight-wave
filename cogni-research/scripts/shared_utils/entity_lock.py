@@ -26,18 +26,18 @@ Example:
     # Method 1: Context manager (recommended)
     from entity_lock import EntityLock
 
-    with EntityLock("07-sources", "/path/to/project"):
+    with EntityLock("05-sources", "/path/to/project"):
         # Critical section - lock automatically released
         create_entity(...)
 
     # Method 2: Manual acquire/release
     from entity_lock import acquire_entity_lock, release_entity_lock
 
-    if acquire_entity_lock("07-sources", "/path/to/project"):
+    if acquire_entity_lock("05-sources", "/path/to/project"):
         try:
             create_entity(...)
         finally:
-            release_entity_lock("07-sources", "/path/to/project")
+            release_entity_lock("05-sources", "/path/to/project")
 """
 
 import os
@@ -82,7 +82,7 @@ def acquire_entity_lock(
     """Acquire advisory lock for entity type with timeout.
 
     Args:
-        entity_type: String identifier for entity (e.g., "07-sources")
+        entity_type: String identifier for entity (e.g., "05-sources")
         project_path: Absolute path to project root
         timeout: Maximum seconds to wait (default: 30)
 
@@ -372,7 +372,7 @@ class EntityLock:
     """Context manager for entity-type locks.
 
     Usage:
-        with EntityLock("07-sources", "/path/to/project") as lock:
+        with EntityLock("05-sources", "/path/to/project") as lock:
             if lock.acquired:
                 # Critical section
                 create_entity(...)
@@ -381,7 +381,7 @@ class EntityLock:
                 handle_failure()
 
     Or simpler (raises exception on failure):
-        with EntityLock("07-sources", "/path/to/project", raise_on_fail=True):
+        with EntityLock("05-sources", "/path/to/project", raise_on_fail=True):
             create_entity(...)
     """
 

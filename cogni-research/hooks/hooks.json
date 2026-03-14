@@ -11,7 +11,7 @@
             "timeout": 5,
             "enabled": true,
             "name": "block-entity-writes",
-            "description": "Blocks Write/Edit to entity directories (03-query-batches, 04-findings, 07-sources, 08-publishers) - forces create-entity.sh usage for validation, locking, and index updates"
+            "description": "Blocks Write/Edit to entity directories (03-query-batches, 04-findings, 05-sources, 06-claims) - forces create-entity.sh usage"
           }
         ]
       },
@@ -24,7 +24,7 @@
             "timeout": 10,
             "enabled": true,
             "name": "validate-workspace-wikilinks",
-            "description": "Validates wikilinks before entity creation: detects and rejects bare filename wikilinks in multi-project Obsidian workspaces, requires workspace-relative paths"
+            "description": "Validates wikilinks before entity creation: rejects bare filename wikilinks, requires workspace-relative paths"
           }
         ]
       }
@@ -47,7 +47,7 @@
             "timeout": 30,
             "enabled": true,
             "name": "post-write-validate-wikilinks",
-            "description": "Validates wikilinks in newly created entity files: detects broken links, trailing backslashes, .md extensions, and hallucinated entity references"
+            "description": "Validates wikilinks in newly created entity files: detects broken links, trailing backslashes, .md extensions, and hallucinated references"
           }
         ]
       },
@@ -60,7 +60,7 @@
             "timeout": 60,
             "enabled": true,
             "name": "pre-synthesis-validation",
-            "description": "Validates research prerequisites before synthesis-hub generates final synthesis: claims availability (min 5), confidence scores (0.0-1.0), wikilink integrity, citation availability, megatrend structure"
+            "description": "Validates research prerequisites before synthesis: claims availability (min 5), confidence scores, wikilink integrity"
           }
         ]
       }
@@ -75,7 +75,7 @@
             "timeout": 300,
             "enabled": true,
             "name": "verify-source-creator-output",
-            "description": "Anti-hallucination verification with AUTO-RECOVERY: validates source-creator output against filesystem reality. When hallucination detected, automatically executes script.sh to recover."
+            "description": "Anti-hallucination verification with AUTO-RECOVERY: validates source-creator output against filesystem reality"
           }
         ]
       },
@@ -88,7 +88,7 @@
             "timeout": 60,
             "enabled": true,
             "name": "repair-missing-batches",
-            "description": "Detect and repair missing batch files after findings-creator. Creates minimal batch entities from findings metadata to unblock downstream source/publisher creation."
+            "description": "Detect and repair missing batch files after findings-creator. Creates minimal batch entities from findings metadata."
           }
         ]
       },
@@ -101,7 +101,7 @@
             "timeout": 60,
             "enabled": true,
             "name": "verify-batch-creator-output",
-            "description": "Anti-hallucination verification: validates batch-creator output against filesystem reality. Detects when agent fabricates results without tool execution."
+            "description": "Anti-hallucination verification: validates batch-creator output against filesystem reality"
           }
         ]
       }

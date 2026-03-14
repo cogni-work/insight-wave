@@ -421,26 +421,21 @@ Reports follow a **hybrid portfolio catalog + strategic analysis** structure:
 1. **Executive Summary** — Key findings and portfolio overview
 2. **Provider Profile** — Dimension 0 metrics (financial scale, workforce, geographic presence, market position)
 3. **Portfolio Overview** — Radar diagram showing solutions across service dimensions (1-7) and horizons
-4. **Per-Dimension Sections** (×7, Dimensions 1-7):
+4. **Per-Dimension Sections** (x7, Dimensions 1-7):
    - Strategic Overview narrative
    - Portfolio Entity Catalog table (grouped by horizon)
    - Cross-cutting analysis (verticals, partners)
 5. **Strategic Implications** — Cross-dimensional trends
 6. **Recommendations** — Priority actions
 
-**Note:** B2B ICT Portfolio Solutions can later connect to TIPS Solutions via a separate integration skill.
-
 ---
 
 ## Version History
 
+- **v4.0 (v1.0.0):** Rebuilt for cogni-research v1.0.0
 - **v3.7 (Sprint 443):** Added Dimension 0 (Provider Profile Metrics) with 6 categories for business KPIs (57 total categories)
 - **v3.6 (Sprint 442):** Renumbered dimensions: Connectivity(1), Security(2), Workplace(3), Cloud(4), Managed Infra(5), Application(6), Consulting(7)
-- **v3.5 (Sprint 441):** MECE consolidation from 61 to 51 categories: removed duplicates (Backup/DR, DaaS/VDI), moved Network Security to Security dimension, merged AI/ML with Data & Analytics, merged QA into DevOps
-- **v3.4 (Sprint 440):** Broadened 2.3 to Business & Industry Consulting (ESG, industry-specific, business process)
-- **v3.3 (Sprint 440):** Added AI & Machine Learning Services to Application Services (61 total categories)
-- **v3.2 (Sprint 440):** Simplified Consulting to 5 categories (removed overlap with technical dimensions)
-- **v3.1 (Sprint 440):** Consolidated taxonomy from 85 to 63 categories (provider-agnostic groupings)
+- **v3.5 (Sprint 441):** MECE consolidation from 61 to 51 categories
 - **v3.0 (Sprint 440):** Added Standard Portfolio Taxonomy with predefined service categories and Discovery Status Model
 - **v2.0 (Sprint 439):** Added Service Horizons, synthesis structure, cross-references
 - **v1.0 (Initial):** B2B ICT Portfolio Analysis framework with 7 service domain dimensions

@@ -1,22 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # pre-synthesis-validation.sh
-# Version: 2.0.0
+# Version: 3.0.0
 # Event: PostToolUse (Task tool)
-# Purpose: Validate prerequisites before synthesis-hub agent generates final research synthesis
+# Purpose: Validate prerequisites before synthesis skill delegates to cogni-narrative
 #
-# This hook triggers when Task tool invokes synthesis-hub agent
-#
-# Validates 5 Critical Gates:
-#   1. Claims Availability: Minimum 5 claims exist in 09-claims
+# Validates 4 Critical Gates:
+#   1. Claims Availability: Minimum 5 claims exist in 06-claims
 #   2. Confidence Score Coverage: All claims have valid confidence scores (0.0-1.0)
 #   3. Wikilink Integrity: All wikilinks resolve, claims link to findings
-#   4. Citation Availability: At least one citation exists in 08-citations
-#   5. Megatrend Structure: Megatrends exist and link to findings
-#
-# Environment Variables:
-#   DEBUG_MODE    Enable debug logging (true/false, default: false)
-#   DEBUG_LEVEL   Logging level: INFO, DEBUG, TRACE (default: INFO)
+#   4. Source Availability: Sources exist in 05-sources with finding refs
 #
 # Exit codes:
 #   0 - All validations passed (proceed with synthesis)
@@ -37,9 +30,8 @@ source "$PLUGIN_ROOT/scripts/lib/entity-config.sh" || {
 }
 DATA_SUBDIR="$(get_data_subdir)"
 DIR_CLAIMS="$(get_directory_by_key "claims")"
-DIR_CITATIONS="$(get_directory_by_key "citations")"
+DIR_SOURCES="$(get_directory_by_key "sources")"
 DIR_FINDINGS="$(get_directory_by_key "findings")"
-DIR_MEGATRENDS="$(get_directory_by_key "megatrends")"
 
 # Source enhanced-logging.sh if available
 if [[ -f "$PLUGIN_ROOT/scripts/utils/enhanced-logging.sh" ]]; then
@@ -55,19 +47,18 @@ fi
 # Environment Variable Extraction
 # ============================================================================
 
-# Extract Task tool input to detect synthesis-hub invocation
 TOOL_NAME="${CLAUDE_TOOL_NAME:-}"
 TOOL_INPUT="${CLAUDE_TOOL_INPUT:-}"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-# Only validate when Task tool invokes synthesis-hub
+# Only validate when Task tool invokes synthesis-related agents
 if ! [[ "$TOOL_NAME" == "Task" ]]; then
-    exit 0  # Not a Task invocation, skip
+    exit 0
 fi
 
-# Check if synthesis-hub is being invoked
-if ! echo "$TOOL_INPUT" | jq -e '.subagent_type' | grep -qi "synthesis-hub" 2>/dev/null; then
-    exit 0  # Not synthesis-hub, skip validation
+# Check if a synthesis agent is being invoked (narrative-writer or similar)
+if ! echo "$TOOL_INPUT" | jq -e '.subagent_type' 2>/dev/null | grep -qiE "synthesis|narrative" 2>/dev/null; then
+    exit 0
 fi
 
 # ============================================================================
@@ -77,13 +68,11 @@ fi
 MIN_CLAIMS_THRESHOLD=5
 MIN_CONFIDENCE_THRESHOLD=0.65
 
-# Research entity directories (with data subdirectory)
 CLAIMS_DIR="$PROJECT_DIR/${DIR_CLAIMS}/${DATA_SUBDIR}"
-CITATIONS_DIR="$PROJECT_DIR/${DIR_CITATIONS}/${DATA_SUBDIR}"
+SOURCES_DIR="$PROJECT_DIR/${DIR_SOURCES}/${DATA_SUBDIR}"
 FINDINGS_DIR="$PROJECT_DIR/${DIR_FINDINGS}/${DATA_SUBDIR}"
-MEGATRENDS_DIR="$PROJECT_DIR/${DIR_MEGATRENDS}/${DATA_SUBDIR}"
 
-# Global validation state (shared across validation functions)
+# Global validation state
 CRITICAL_ERRORS=()
 WARNINGS=()
 VALIDATION_PASSED=true
@@ -101,7 +90,6 @@ validate_claims_availability() {
         return 1
     fi
 
-    # Count claim entity files (exclude README.md)
     CLAIM_COUNT="$(find "$CLAIMS_DIR" -name "*.md" -not -name "README.md" 2>/dev/null | wc -l | tr -d ' ')"
 
     if [[ "$CLAIM_COUNT" -eq 0 ]]; then
@@ -122,7 +110,6 @@ validate_claims_availability() {
 # Validation Gate 2: Confidence Score Coverage
 # ============================================================================
 
-# BUG-008 FIX: Use temp file for error accumulation instead of array concatenation
 validate_confidence_scores() {
     echo "Gate 2: Validating confidence scores..."
 
@@ -130,17 +117,14 @@ validate_confidence_scores() {
     local sum_scores=0
     local invalid_scores=0
 
-    # Create temp file for errors (bash 3.2 compatible alternative to array growth)
     local temp_errors="$(mktemp)"
     trap "rm -f '$temp_errors'" RETURN
 
-    # Iterate through all claim files
     while IFS= read -r claim_file; do
         if [[ ! -f "$claim_file" ]]; then
             continue
         fi
 
-        # Extract frontmatter and find confidence_score
         FRONTMATTER="$(awk '/^---$/{flag=!flag;next}flag' "$claim_file" 2>/dev/null || echo "")"
 
         if [[ -z "$FRONTMATTER" ]]; then
@@ -149,7 +133,6 @@ validate_confidence_scores() {
             continue
         fi
 
-        # Extract confidence_score value
         CONFIDENCE="$(echo "$FRONTMATTER" | grep "^confidence_score:" | sed 's/confidence_score:[[:space:]]*//' | tr -d '"\r\t\n' || echo "")"
 
         if [[ -z "$CONFIDENCE" ]]; then
@@ -158,7 +141,6 @@ validate_confidence_scores() {
             continue
         fi
 
-        # Validate score is numeric and in range 0.0-1.0
         if ! echo "$CONFIDENCE" | grep -qE '^[0-9]*\.?[0-9]+$'; then
             echo "Invalid confidence_score format in $(basename "$claim_file"): $CONFIDENCE" >> "$temp_errors"
             VALIDATION_PASSED=false
@@ -166,7 +148,6 @@ validate_confidence_scores() {
             continue
         fi
 
-        # Check range (using bc for floating point comparison with LC_NUMERIC=C for locale independence)
         if (( $(LC_NUMERIC=C bc -l <<< "$CONFIDENCE < 0.0" 2>/dev/null || echo 0) )) || (( $(LC_NUMERIC=C bc -l <<< "$CONFIDENCE > 1.0" 2>/dev/null || echo 0) )); then
             echo "Confidence score out of range in $(basename "$claim_file"): $CONFIDENCE (must be 0.0-1.0)" >> "$temp_errors"
             VALIDATION_PASSED=false
@@ -174,13 +155,11 @@ validate_confidence_scores() {
             continue
         fi
 
-        # Accumulate for average calculation
         total_scores=$((total_scores + 1))
         sum_scores="$(LC_NUMERIC=C bc -l <<< "$sum_scores + $CONFIDENCE")"
 
     done < <(find "$CLAIMS_DIR" -name "*.md" -not -name "README.md" 2>/dev/null)
 
-    # Load errors from temp file into array (single operation)
     if [[ -s "$temp_errors" ]]; then
         while IFS= read -r error; do
             CRITICAL_ERRORS+=("$error")
@@ -191,7 +170,6 @@ validate_confidence_scores() {
         AVG_CONFIDENCE="$(LC_NUMERIC=C bc -l <<< "scale=2; $sum_scores / $total_scores")"
         echo "  Average confidence score: $AVG_CONFIDENCE (from $total_scores claims)"
 
-        # Warn if average confidence is low
         if (( $(LC_NUMERIC=C bc -l <<< "$AVG_CONFIDENCE < $MIN_CONFIDENCE_THRESHOLD") )); then
             WARNINGS+=("Low average confidence score: $AVG_CONFIDENCE (threshold: $MIN_CONFIDENCE_THRESHOLD)")
         fi
@@ -210,13 +188,11 @@ validate_wikilink_integrity() {
     local broken_links=0
     local missing_finding_links=0
 
-    # Check all claims for wikilink integrity
     while IFS= read -r claim_file; do
         if [[ ! -f "$claim_file" ]]; then
             continue
         fi
 
-        # Extract all wikilinks
         WIKILINKS="$(grep -o '\[\[[^]]*\]\]' "$claim_file" 2>/dev/null || true)"
 
         if [[ -z "$WIKILINKS" ]]; then
@@ -231,12 +207,10 @@ validate_wikilink_integrity() {
                 continue
             fi
 
-            # Extract link path (remove [[ ]] and display text after |)
             link_content="${link#\[\[}"
             link_content="${link_content%\]\]}"
             link_path="${link_content%%|*}"
 
-            # Resolve target file
             target_file="$PROJECT_DIR/$link_path.md"
 
             if [[ ! -f "$target_file" ]]; then
@@ -245,14 +219,12 @@ validate_wikilink_integrity() {
                 VALIDATION_PASSED=false
             fi
 
-            # Check if claim links to findings (04-findings/data/)
             if [[ "$link_path" =~ ^04-findings/${DATA_SUBDIR}/ ]]; then
                 has_finding_link=true
             fi
 
         done <<< "$WIKILINKS"
 
-        # Warn if claim doesn't link to findings
         if [[ "$has_finding_link" == "false" ]]; then
             WARNINGS+=("Claim $(basename "$claim_file") has no links to findings (04-findings/${DATA_SUBDIR})")
             missing_finding_links=$((missing_finding_links + 1))
@@ -266,128 +238,29 @@ validate_wikilink_integrity() {
         echo "  All wikilinks valid"
     fi
 
-    if [[ "$missing_finding_links" -gt 0 ]]; then
-        echo "  Warning: $missing_finding_links claims missing links to findings"
-    fi
-
     return 0
 }
 
 # ============================================================================
-# Validation Gate 4: Citation Availability
+# Validation Gate 4: Source Availability
 # ============================================================================
 
-validate_citation_availability() {
-    echo "Gate 4: Validating citation availability..."
+validate_source_availability() {
+    echo "Gate 4: Validating source availability..."
 
-    if [[ ! -d "$CITATIONS_DIR" ]]; then
-        WARNINGS+=("Citations directory missing: $CITATIONS_DIR (optional but recommended)")
+    if [[ ! -d "$SOURCES_DIR" ]]; then
+        WARNINGS+=("Sources directory missing: $SOURCES_DIR (optional but recommended for provenance)")
         return 0
     fi
 
-    # Count citation entity files
-    CITATION_COUNT="$(find "$CITATIONS_DIR" -name "*.md" -not -name "README.md" 2>/dev/null | wc -l | tr -d ' ')"
+    SOURCE_COUNT="$(find "$SOURCES_DIR" -name "*.md" -not -name "README.md" 2>/dev/null | wc -l | tr -d ' ')"
 
-    if [[ "$CITATION_COUNT" -eq 0 ]]; then
-        WARNINGS+=("No citation entities found in $CITATIONS_DIR (optional but recommended)")
+    if [[ "$SOURCE_COUNT" -eq 0 ]]; then
+        WARNINGS+=("No source entities found in $SOURCES_DIR (provenance chain incomplete)")
         return 0
     fi
 
-    echo "  Found $CITATION_COUNT citation entities"
-
-    # Validate citations have source_id references
-    local missing_source_id=0
-
-    while IFS= read -r citation_file; do
-        if [[ ! -f "$citation_file" ]]; then
-            continue
-        fi
-
-        FRONTMATTER="$(awk '/^---$/{flag=!flag;next}flag' "$citation_file" 2>/dev/null || echo "")"
-
-        if ! echo "$FRONTMATTER" | grep -q "^source_id:"; then
-            WARNINGS+=("Citation $(basename "$citation_file") missing source_id reference")
-            missing_source_id=$((missing_source_id + 1))
-        fi
-
-    done < <(find "$CITATIONS_DIR" -name "*.md" -not -name "README.md" 2>/dev/null)
-
-    if [[ "$missing_source_id" -gt 0 ]]; then
-        echo "  Warning: $missing_source_id citations missing source_id"
-    fi
-
-    return 0
-}
-
-# ============================================================================
-# Validation Gate 5: Megatrend Structure
-# ============================================================================
-
-validate_megatrend_structure() {
-    echo "Gate 5: Validating megatrend structure..."
-
-    if [[ ! -d "$MEGATRENDS_DIR" ]]; then
-        WARNINGS+=("Megatrends directory missing: $MEGATRENDS_DIR (synthesis may lack structure)")
-        return 0
-    fi
-
-    # Count megatrend entity files
-    MEGATREND_COUNT="$(find "$MEGATRENDS_DIR" -name "*.md" -not -name "README.md" 2>/dev/null | wc -l | tr -d ' ')"
-
-    if [[ "$MEGATREND_COUNT" -eq 0 ]]; then
-        WARNINGS+=("No megatrend entities found in $MEGATRENDS_DIR (synthesis may lack structure)")
-        return 0
-    fi
-
-    echo "  Found $MEGATREND_COUNT megatrend entities"
-
-    # Validate megatrends have required megatrend_structure field and wikilinks to findings
-    local megatrends_without_findings=0
-    local megatrends_missing_structure=0
-    local megatrends_invalid_structure=0
-
-    while IFS= read -r megatrend_file; do
-        if [[ ! -f "$megatrend_file" ]]; then
-            continue
-        fi
-
-        # Extract megatrend_structure from YAML frontmatter
-        local megatrend_structure=""
-        if grep -q "^megatrend_structure:" "$megatrend_file" 2>/dev/null; then
-            megatrend_structure=$(grep "^megatrend_structure:" "$megatrend_file" | head -1 | sed 's/^megatrend_structure:[[:space:]]*//' | tr -d '"' | tr -d "'")
-        fi
-
-        # Check if megatrend_structure field exists (now required)
-        if [[ -z "$megatrend_structure" ]]; then
-            CRITICAL_ERRORS+=("Megatrend $(basename "$megatrend_file") missing required megatrend_structure field")
-            megatrends_missing_structure=$((megatrends_missing_structure + 1))
-            VALIDATION_PASSED=false
-        elif ! [[ "$megatrend_structure" == "tips" ]] && ! [[ "$megatrend_structure" == "generic" ]]; then
-            CRITICAL_ERRORS+=("Megatrend $(basename "$megatrend_file") has invalid megatrend_structure: '$megatrend_structure' (must be 'tips' or 'generic')")
-            megatrends_invalid_structure=$((megatrends_invalid_structure + 1))
-            VALIDATION_PASSED=false
-        fi
-
-        # Check if megatrend has wikilinks to findings (with data subdir)
-        if ! grep -q "\[\[04-findings/${DATA_SUBDIR}/" "$megatrend_file" 2>/dev/null; then
-            WARNINGS+=("Megatrend $(basename "$megatrend_file") has no links to findings")
-            megatrends_without_findings=$((megatrends_without_findings + 1))
-        fi
-
-    done < <(find "$MEGATRENDS_DIR" -name "*.md" -not -name "README.md" 2>/dev/null)
-
-    if [[ "$megatrends_missing_structure" -gt 0 ]]; then
-        echo "  ERROR: $megatrends_missing_structure megatrends missing megatrend_structure field"
-    fi
-
-    if [[ "$megatrends_invalid_structure" -gt 0 ]]; then
-        echo "  ERROR: $megatrends_invalid_structure megatrends have invalid megatrend_structure value"
-    fi
-
-    if [[ "$megatrends_without_findings" -gt 0 ]]; then
-        echo "  Warning: $megatrends_without_findings megatrends missing links to findings"
-    fi
-
+    echo "  Found $SOURCE_COUNT source entities"
     return 0
 }
 
@@ -403,12 +276,10 @@ echo "Pre-Synthesis Validation"
 echo "=========================================="
 echo ""
 
-# Run all validation gates
 validate_claims_availability
 validate_confidence_scores
 validate_wikilink_integrity
-validate_citation_availability
-validate_megatrend_structure
+validate_source_availability
 
 # ============================================================================
 # Report Results
@@ -421,17 +292,17 @@ echo "=========================================="
 echo ""
 
 if [[ ${#CRITICAL_ERRORS[@]} -gt 0 ]]; then
-    echo "❌ CRITICAL ERRORS (${#CRITICAL_ERRORS[@]}):"
+    echo "CRITICAL ERRORS (${#CRITICAL_ERRORS[@]}):"
     for error in "${CRITICAL_ERRORS[@]}"; do
-        echo "  • $error"
+        echo "  - $error"
     done
     echo ""
 fi
 
 if [[ ${#WARNINGS[@]} -gt 0 ]]; then
-    echo "⚠️  WARNINGS (${#WARNINGS[@]}):"
+    echo "WARNINGS (${#WARNINGS[@]}):"
     for warning in "${WARNINGS[@]}"; do
-        echo "  • $warning"
+        echo "  - $warning"
     done
     echo ""
 fi
@@ -441,9 +312,9 @@ log_metric "warnings" "${#WARNINGS[@]}" "count"
 
 if [[ "$VALIDATION_PASSED" == "false" ]]; then
     log_conditional ERROR "Pre-synthesis validation FAILED"
-    echo "❌ Pre-synthesis validation FAILED"
+    echo "Pre-synthesis validation FAILED"
     echo ""
-    echo "Fix critical errors before proceeding with synthesis generation."
+    echo "Fix critical errors before proceeding with synthesis."
     echo ""
     log_phase "pre-synthesis-validation" "complete"
     exit 1
@@ -451,15 +322,13 @@ fi
 
 if [[ ${#WARNINGS[@]} -gt 0 ]]; then
     log_conditional WARN "Pre-synthesis validation PASSED with ${#WARNINGS[@]} warnings"
-    echo "⚠️  Pre-synthesis validation PASSED with warnings"
-    echo ""
-    echo "Consider addressing warnings for higher quality synthesis."
+    echo "Pre-synthesis validation PASSED with warnings"
     echo ""
 else
     log_conditional INFO "Pre-synthesis validation PASSED"
-    echo "✅ Pre-synthesis validation PASSED"
+    echo "Pre-synthesis validation PASSED"
     echo ""
-    echo "Ready for synthesis generation."
+    echo "Ready for synthesis."
     echo ""
 fi
 

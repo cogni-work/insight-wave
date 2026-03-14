@@ -82,7 +82,7 @@
     "research_type": {
       "type": "string",
       "description": "Research methodology type determining synthesis mode and DOK level",
-      "enum": ["smarter-service", "b2b-ict-portfolio", "customer-value-mapping", "lean-canvas", "generic"]
+      "enum": ["generic", "b2b-ict-portfolio", "lean-canvas"]
     },
     "dok_level": {
       "type": "integer",
@@ -95,14 +95,9 @@
       "description": "DEPRECATED: Use portfolio_file instead. Optional wikilink to b2b-ict-portfolio project",
       "pattern": "^\\[\\[[a-z0-9-]+\\]\\]$"
     },
-    "linked_b2b_research": {
-      "type": "string",
-      "description": "Optional wikilink to existing B2B research project for context-aware trends (smarter-service only)",
-      "pattern": "^\\[\\[[a-z0-9-]+\\]\\]$"
-    },
     "portfolio_file": {
       "type": "string",
-      "description": "Absolute path to portfolio mapping markdown file (e.g., /path/to/company-portfolio.md). Used by smarter-service and customer-value-mapping research types."
+      "description": "Absolute path to portfolio mapping markdown file (e.g., /path/to/company-portfolio.md). Used by b2b-ict-portfolio research type."
     }
   }
 }

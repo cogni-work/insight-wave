@@ -107,7 +107,7 @@ def get_type_prefixes() -> Dict[str, str]:
     """Return mapping of directory name to ID prefix.
 
     Returns:
-        Dict like {"04-findings": "finding", "07-sources": "source", ...}
+        Dict like {"04-findings": "finding", "05-sources": "source", ...}
     """
     config = load_entity_config()
     return {et["directory"]: et["prefix"] for et in config["entity_types"]}
@@ -117,7 +117,7 @@ def get_dedupe_types() -> Set[str]:
     """Return set of entity types requiring deduplication.
 
     Returns:
-        Set like {"07-sources", "08-publishers"}
+        Set like {"05-sources"}
     """
     config = load_entity_config()
     return {et["directory"] for et in config["entity_types"] if et.get("dedupe", False)}
@@ -129,7 +129,7 @@ def get_required_fields() -> Dict[str, List[str]]:
     Only includes types that have required fields defined.
 
     Returns:
-        Dict like {"07-sources": ["name", "url", "domain", "title"], ...}
+        Dict like {"05-sources": ["name", "url", "domain", "title"], ...}
     """
     config = load_entity_config()
     return {
@@ -270,7 +270,7 @@ def get_all_keys() -> Dict[str, str]:
     """Return mapping of all keys to directories.
 
     Returns:
-        Dict like {"findings": "04-findings", "sources": "07-sources", ...}
+        Dict like {"findings": "04-findings", "sources": "05-sources", ...}
     """
     config = load_entity_config()
     return {et["key"]: et["directory"] for et in config["entity_types"] if "key" in et}

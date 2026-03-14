@@ -50,38 +50,10 @@ Generic is the **default research type** when:
 - Academic Domain
 - Product Domain
 
-**Reference:** [phase-2-analysis-generic.md](../../skills/dimension-planner/references/workflow-phases/phase-2-analysis-generic.md)
-
----
-
-## Megatrend Entity Structure
-
-Generic research uses a domain-based 3-part megatrend structure instead of TIPS megatrend narrative:
-
-| Section | Purpose | Word Target |
-|---------|---------|-------------|
-| **What it is** | Primer on the subject - definition, concepts, scope | 150-200 words |
-| **What it does** | Use cases relevant to research stakeholders | 100-150 words |
-| **What it means** | Implications (qualitative narrative + quantitative metrics table) | 150-200 words |
-| **Total** | | **400-600 words** |
-
-**Key Differences from TIPS (smarter-service):**
-
-| Aspect | Generic | TIPS (smarter-service) |
-|--------|---------|------------------------|
-| Structure | What it is / does / means | Trend / Implication / Possibility / Solution |
-| Seed megatrends | Not used | Yes (user-validated seeds) |
-| Planning horizon | Not applicable | act / plan / observe |
-| Word count | 400-600 | 600-900 |
-| `megatrend_structure` | `"generic"` | `"tips"` |
-
-**Template Reference:** [entity-templates.md](../../skills/knowledge-extractor/references/domain/entity-templates.md#generic-megatrend-entity-template)
-
-**Workflow Reference:** [phase-5-megatrend-clustering.md](../../skills/knowledge-extractor/references/workflows/phase-5-megatrend-clustering.md#step-32a-generate-generic-megatrend-content-if-megatrend_structuregeneric)
-
 ---
 
 ## Version History
 
+- **v2.0 (v1.0.0):** Rebuilt for cogni-research v1.0.0 — removed megatrend entity structure (no longer part of entity pipeline), simplified to core DOK-based planning
 - **v1.1 (Sprint 443):** Added Megatrend Entity Structure section with 3-part domain-based template (What it is/does/means)
 - **v1.0 (Sprint 441):** Initial WHAT file creation to align with workflow constraints

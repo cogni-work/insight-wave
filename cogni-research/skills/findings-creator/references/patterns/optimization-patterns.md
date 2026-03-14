@@ -1,1 +1,0 @@
-../../../research-query-optimizer/references/optimization-patterns.md

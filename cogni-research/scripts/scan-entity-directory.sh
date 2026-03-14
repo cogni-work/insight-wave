@@ -9,7 +9,7 @@ set -euo pipefail
 #
 # Arguments:
 #   --project-path <path>     Research project directory (required)
-#   --entity-type <string>    Entity type directory to scan (e.g., "07-sources") (required)
+#   --entity-type <string>    Entity type directory to scan (e.g., "05-sources") (required)
 #
 # Output (JSON):
 #   {
@@ -36,7 +36,7 @@ set -euo pipefail
 #   3 - Directory not found
 #
 # Example:
-#   scan-entity-directory.sh --project-path ~/research/sprint-280 --entity-type 07-sources
+#   scan-entity-directory.sh --project-path ~/research/sprint-280 --entity-type 05-sources
 
 
 # Source centralized entity config

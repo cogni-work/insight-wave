@@ -60,7 +60,7 @@ def get_entity_dirs() -> Dict[str, str]:
 
     Returns:
         Dict mapping keys to directories, e.g.:
-        {"findings": "04-findings", "sources": "07-sources", ...}
+        {"findings": "04-findings", "sources": "05-sources", ...}
     """
     config = _load_config()
     return {et["key"]: et["directory"] for et in config["entity_types"]}
@@ -71,10 +71,10 @@ def get_directory_by_key(key: str) -> str:
     Resolve entity key to directory name.
 
     Args:
-        key: Entity key like "findings", "sources", "research-synthesis"
+        key: Entity key like "findings", "sources", "claims"
 
     Returns:
-        Directory name like "04-findings", "07-sources", "11-trends"
+        Directory name like "04-findings", "05-sources", "06-claims"
 
     Raises:
         KeyError: If key not found in config
@@ -133,7 +133,7 @@ def needs_deduplication(directory: str) -> bool:
     Check if entity type requires deduplication.
 
     Args:
-        directory: Directory name like "07-sources"
+        directory: Directory name like "05-sources"
 
     Returns:
         True if deduplication is enabled for this type
@@ -178,5 +178,5 @@ if __name__ == "__main__":
     print(f"Schema version: {get_schema_version()}")
     print(f"Entity dirs: {get_entity_dirs()}")
     print(f"findings -> {get_directory_by_key('findings')}")
-    print(f"research-synthesis -> {get_directory_by_key('research-synthesis')}")
+    print(f"claims -> {get_directory_by_key('claims')}")
     print(f"Data subdir: {get_data_subdir()}")

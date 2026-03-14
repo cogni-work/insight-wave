@@ -28,7 +28,7 @@ source "$PLUGIN_ROOT/scripts/lib/entity-config.sh" || {
     exit 1
 }
 DIR_SOURCES="$(get_directory_by_key "sources")"
-DIR_PUBLISHERS="$(get_directory_by_key "publishers")"
+DIR_CLAIMS="$(get_directory_by_key "claims")"
 
 # Source enhanced-logging.sh if available
 if [[ -f "$PLUGIN_ROOT/scripts/utils/enhanced-logging.sh" ]]; then
@@ -86,7 +86,7 @@ fi
 
 # Skip validation for non-entity directories
 # Only validate files in entity directories: findings, claims, megatrends, sources, authors, institutions, citations, synthesis
-if [[ ! "$FILE_PATH" =~ (findings|claims|megatrends|sources|authors|institutions|citations|synthesis|dimensions|questions|batches)/ ]]; then
+if [[ ! "$FILE_PATH" =~ (findings|claims|sources|dimensions|questions|batches)/ ]]; then
     exit 0
 fi
 
@@ -170,7 +170,7 @@ if [[ "$success" == "false" ]] && [[ "$broken_count" -gt 0 ]]; then
     echo "Common fixes:" >&2
     echo "  1. Use actual entity IDs from .metadata/entity-index.json" >&2
     echo "  2. Add directory prefix for sources: [[${DIR_SOURCES}/data/source-xyz]]" >&2
-    echo "  3. Add directory prefix for publishers: [[${DIR_PUBLISHERS}/data/publisher-xyz]]" >&2
+    echo "  3. Add directory prefix for claims: [[${DIR_CLAIMS}/data/claim-xyz]]" >&2
     echo "  4. Remove trailing backslashes, spaces, or .md extensions" >&2
     echo "" >&2
     echo "Agent should read entity-index.json and use actual entity IDs." >&2

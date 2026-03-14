@@ -63,7 +63,7 @@ set -euo pipefail
 # - v1.4.0: Fix: Always use project-relative wikilinks for internal project links
 #           - Multi-project mode now uses same format as single-project mode
 #           - Fixes broken source_id wikilinks that included unnecessary workspace prefix
-#           - Example: [[07-sources/data/source-xxx]] instead of [[prefix/07-sources/data/source-xxx]]
+#           - Example: [[05-sources/data/source-xxx]] instead of [[prefix/05-sources/data/source-xxx]]
 
 
 # Source centralized entity config for DATA_SUBDIR

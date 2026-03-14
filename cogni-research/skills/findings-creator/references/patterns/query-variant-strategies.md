@@ -1,1 +1,0 @@
-../../../research-query-optimizer/references/query-variant-strategies.md

@@ -31,7 +31,7 @@ set -euo pipefail
 #           - Example: www.pnas.org -> publisher-pnas-d25bff0d (not publisher-www-pnas-org)
 # - v3.5.0: Fix source wikilinks in finding backlinks (Issue #83)
 #           - Use generate-wikilink.sh for source_id field in findings
-#           - Source backlinks now use proper wikilink format: [[07-sources/data/source-xxx]]
+#           - Source backlinks now use proper wikilink format: [[05-sources/data/source-xxx]]
 #           - Enables Obsidian graph navigation from findings to sources
 # - v3.4.0: Harden URL/title extraction to handle all quote styles (Issue #82)
 #           - Handle double quotes, single quotes, and no quotes in source_url/dc:title
@@ -201,7 +201,7 @@ DATA_SUBDIR="$(get_data_subdir)"
 
 # Create metadata directory
 mkdir -p "${PROJECT_PATH}/.metadata"
-mkdir -p "${PROJECT_PATH}/07-sources/${DATA_SUBDIR}"
+mkdir -p "${PROJECT_PATH}/05-sources/${DATA_SUBDIR}"
 
 # Initialize log file for DEBUG_MODE
 if [[ "${DEBUG_MODE:-false}" == "true" ]]; then
@@ -503,7 +503,7 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
     SOURCE_WIKILINK=""
     if WIKILINK_RESULT="$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/generate-wikilink.sh" \
       --project-path "$PROJECT_PATH" \
-      --entity-dir "07-sources" \
+      --entity-dir "05-sources" \
       --filename "$SOURCE_ID" 2>/dev/null)"; then
       SOURCE_WIKILINK="$(echo "$WIKILINK_RESULT" | jq -r '.data.wikilink // ""')"
     fi
@@ -517,9 +517,9 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
         fi
       fi
       if [[ -n "$WORKSPACE_PREFIX" ]]; then
-        SOURCE_WIKILINK="[[$WORKSPACE_PREFIX/07-sources/$DATA_SUBDIR/$SOURCE_ID]]"
+        SOURCE_WIKILINK="[[$WORKSPACE_PREFIX/05-sources/$DATA_SUBDIR/$SOURCE_ID]]"
       else
-        SOURCE_WIKILINK="[[07-sources/$DATA_SUBDIR/$SOURCE_ID]]"
+        SOURCE_WIKILINK="[[05-sources/$DATA_SUBDIR/$SOURCE_ID]]"
       fi
     fi
 
@@ -583,7 +583,7 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
   SOURCE_WIKILINK=""
   if WIKILINK_RESULT="$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/generate-wikilink.sh" \
     --project-path "$PROJECT_PATH" \
-    --entity-dir "07-sources" \
+    --entity-dir "05-sources" \
     --filename "$SOURCE_ID" 2>/dev/null)"; then
     SOURCE_WIKILINK="$(echo "$WIKILINK_RESULT" | jq -r '.data.wikilink // ""')"
   fi
@@ -599,9 +599,9 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
       fi
     fi
     if [[ -n "$WORKSPACE_PREFIX" ]]; then
-      SOURCE_WIKILINK="[[$WORKSPACE_PREFIX/07-sources/$DATA_SUBDIR/$SOURCE_ID]]"
+      SOURCE_WIKILINK="[[$WORKSPACE_PREFIX/05-sources/$DATA_SUBDIR/$SOURCE_ID]]"
     else
-      SOURCE_WIKILINK="[[07-sources/$DATA_SUBDIR/$SOURCE_ID]]"
+      SOURCE_WIKILINK="[[05-sources/$DATA_SUBDIR/$SOURCE_ID]]"
     fi
   fi
 
@@ -639,25 +639,10 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
     PUBLISHER_ID=""
   fi
 
-  # Generate workspace-relative wikilink (non-fatal if fails)
-  # Fix v3.7.0: Fallback now includes workspace prefix for multi-project setups
-  PUBLISHER_WIKILINK=""
-  if WIKILINK_RESULT="$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/generate-wikilink.sh" \
-    --project-path "$PROJECT_PATH" \
-    --entity-dir "08-publishers" \
-    --filename "$PUBLISHER_ID" 2>/dev/null)"; then
-    PUBLISHER_WIKILINK="$(echo "$WIKILINK_RESULT" | jq -r '.data.wikilink // ""')"
-  fi
-  # Fallback: Build workspace-aware wikilink if generation failed or returned empty
-  if [[ -z "$PUBLISHER_WIKILINK" ]]; then
-    log_message "WARNING: Publisher wikilink generation failed for $PUBLISHER_ID - using workspace-aware fallback"
-    # Reuse WORKSPACE_PREFIX from source wikilink generation (already computed above)
-    if [[ -n "$WORKSPACE_PREFIX" ]]; then
-      PUBLISHER_WIKILINK="[[$WORKSPACE_PREFIX/08-publishers/$DATA_SUBDIR/$PUBLISHER_ID]]"
-    else
-      PUBLISHER_WIKILINK="[[08-publishers/$DATA_SUBDIR/$PUBLISHER_ID]]"
-    fi
-  fi
+  # NOTE: 08-publishers entity type has been removed (folded into 05-sources).
+  # Publisher metadata is now stored inline in the source entity.
+  # PUBLISHER_WIKILINK is kept as a plain ID for backward compatibility.
+  PUBLISHER_WIKILINK="$PUBLISHER_ID"
 
   # Sub-Phase 3.5: Source Entity Creation
 
@@ -700,7 +685,7 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
   export QUIET_MODE=true
   CREATE_RESULT="$(bash "${SCRIPT_DIR}/create-entity.sh" \
     --project-path "$PROJECT_PATH" \
-    --entity-type "07-sources" \
+    --entity-type "05-sources" \
     --entity-id "$SOURCE_ID" \
     --data "$ENTITY_DATA" \
     --json)"
@@ -714,7 +699,7 @@ for i in "${!FINDINGS_TO_PROCESS[@]}"; do
 
     if [ -z "$SOURCE_FILE" ] || [ "$SOURCE_FILE" = "null" ]; then
       # Fallback to expected path
-      SOURCE_FILE="${PROJECT_PATH}/07-sources/${DATA_SUBDIR}/${SOURCE_ID}.md"
+      SOURCE_FILE="${PROJECT_PATH}/05-sources/${DATA_SUBDIR}/${SOURCE_ID}.md"
     fi
 
     # Update counters based on reuse status
@@ -822,8 +807,8 @@ fi
 # ============================================================================
 
 # Cross-validate counters against reality
-ACTUAL_SOURCES="$(find "${PROJECT_PATH}/07-sources/${DATA_SUBDIR}" -name "*.md" -type f 2>/dev/null | wc -l | xargs)"
-INDEXED_SOURCES="$(jq '.entities["07-sources"] | length // 0' "$PROJECT_PATH/.metadata/entity-index.json" 2>/dev/null || echo 0)"
+ACTUAL_SOURCES="$(find "${PROJECT_PATH}/05-sources/${DATA_SUBDIR}" -name "*.md" -type f 2>/dev/null | wc -l | xargs)"
+INDEXED_SOURCES="$(jq '.entities["05-sources"] | length // 0' "$PROJECT_PATH/.metadata/entity-index.json" 2>/dev/null || echo 0)"
 
 # Check for discrepancies
 VALIDATION_PASSED=true

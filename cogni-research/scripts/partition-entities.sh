@@ -34,7 +34,7 @@ set -euo pipefail
 #   3 - Directory not found
 #
 # Example:
-#   partition-entities.sh --entity-dir "/path/to/project/07-sources" \
+#   partition-entities.sh --entity-dir "/path/to/project/05-sources" \
 #     --pattern "*.md" --partition-index 0 --total-partitions 4 --json
 
 # Note: Uses LC_ALL=C for deterministic ASCII-based sorting to ensure

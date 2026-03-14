@@ -34,10 +34,10 @@ Exit codes:
 
 Example:
     # Name-based lookup
-    lookup-entity.py --project-path "/path/to/project" --entity-type "07-sources" --name "World Bank" --json
+    lookup-entity.py --project-path "/path/to/project" --entity-type "05-sources" --name "World Bank" --json
 
     # URL-based lookup
-    lookup-entity.py --project-path "/path/to/project" --entity-type "07-sources" --url "https://example.com/article" --json
+    lookup-entity.py --project-path "/path/to/project" --entity-type "05-sources" --url "https://example.com/article" --json
 """
 
 import argparse

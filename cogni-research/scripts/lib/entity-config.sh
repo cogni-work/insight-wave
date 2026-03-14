@@ -125,7 +125,7 @@ get_data_subdir() {
 }
 
 # Check if entity type requires deduplication
-# Usage: if needs_deduplication "07-sources"; then ...
+# Usage: if needs_deduplication "05-sources"; then ...
 needs_deduplication() {
     local entity_type="$1"
     _require_jq || return 1
@@ -199,7 +199,7 @@ get_key_by_directory() {
 
 # Get all key-to-directory mappings as JSON
 # Usage: mappings=$(get_all_key_mappings)
-# Returns: {"findings":"04-findings","sources":"07-sources",...}
+# Returns: {"findings":"04-findings","sources":"05-sources",...}
 get_all_key_mappings() {
     _require_jq || return 1
     local config_path

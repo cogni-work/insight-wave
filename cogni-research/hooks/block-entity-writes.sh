@@ -22,7 +22,7 @@ set -euo pipefail
 # This pattern matches paths like:
 #   - /project/03-query-batches/data/file.md → matches "query-batches"
 #   - /project/04-findings/data/file.md → matches "findings"
-ENTITY_KEYS="query-batches|findings|sources|publishers"
+ENTITY_KEYS="query-batches|findings|sources|claims"
 
 # Extract file path from tool input
 FILE_PATH="$(echo "${CLAUDE_TOOL_INPUT:-}" | jq -r '.file_path // ""' 2>/dev/null || echo "")"

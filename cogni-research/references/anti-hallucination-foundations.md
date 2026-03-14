@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Foundation patterns for preventing fabrication across the deeper-research pipeline. LLMs naturally generate plausible content not in source data. These patterns enforce complete data loading, verification checkpoints, and evidence-based processing to ensure all outputs traceable to actual loaded content.
+Foundation patterns for preventing fabrication across the research pipeline. LLMs naturally generate plausible content not in source data. These patterns enforce complete data loading, verification checkpoints, and evidence-based processing to ensure all outputs traceable to actual loaded content.
 
 ---
 
@@ -24,14 +24,14 @@ Foundation patterns for preventing fabrication across the deeper-research pipeli
 
 **Step 1: Count entities first**
 ```bash
-SOURCE_COUNT=$(find "${PROJECT_PATH}/07-sources" -name "source-*.md" | wc -l | tr -d ' ')
+SOURCE_COUNT=$(find "${PROJECT_PATH}/05-sources" -name "source-*.md" | wc -l | tr -d ' ')
 log_conditional INFO "Loading $SOURCE_COUNT sources completely..."
 ```
 
 **Step 2: Load entities completely**
 ```bash
 SOURCES_TO_PROCESS=()
-for source_file in "${PROJECT_PATH}"/07-sources/data/source-*.md; do
+for source_file in "${PROJECT_PATH}"/05-sources/data/source-*.md; do
   [ -f "$source_file" ] || continue
   SOURCES_TO_PROCESS+=("$(basename "$source_file" .md)")
 done
@@ -66,18 +66,12 @@ if [ ${#SOURCES_TO_PROCESS[@]} -eq 0 ]; then
   echo '{"success": true, "message": "No sources to process"}'
   exit 0
 fi
-
-if [ ${#PUBLISHERS_LOADED[@]} -eq 0 ]; then
-  echo '{"success": false, "error": "No publishers loaded"}' >&2
-  exit 1
-fi
 ```
 
 **Step 3: Log verification status**
 ```bash
 log_conditional INFO "CHECKPOINT: Complete entity loading verified"
 log_conditional INFO "  Sources: ${#SOURCES_TO_PROCESS[@]}"
-log_conditional INFO "  Publishers: ${#PUBLISHERS_LOADED[@]}"
 ```
 
 **Step 4: Halt if verification fails** - Exit with error JSON, DO NOT proceed to next phase
@@ -92,26 +86,26 @@ log_conditional INFO "  Publishers: ${#PUBLISHERS_LOADED[@]}"
 
 **Rule 1: Validate entity existence before linking**
 ```bash
-if [ -f "${PROJECT_PATH}/08-publishers/data/${PUBLISHER_ID}.md" ]; then
-  PUBLISHER_WIKILINK="[[08-publishers/data/${PUBLISHER_ID}]]"
+if [ -f "${PROJECT_PATH}/05-sources/data/${SOURCE_ID}.md" ]; then
+  SOURCE_WIKILINK="[[05-sources/data/${SOURCE_ID}]]"
 else
-  PUBLISHER_WIKILINK=""  # Entity doesn't exist - use fallback
+  SOURCE_WIKILINK=""  # Entity doesn't exist - use fallback
 fi
 ```
 
 **Rule 2: Use explicit fallback (no fabrication)**
 ```bash
-if [ -z "$PUBLISHER_ID" ]; then
+if [ -z "$SOURCE_ID" ]; then
   MATCH_STRATEGY="domain_fallback"
-  log_conditional WARN "No publisher found - using domain fallback"
-  # DO NOT fabricate publisher entity
+  log_conditional WARN "No source found - using domain fallback"
+  # DO NOT fabricate source entity
 fi
 ```
 
 **Rule 3: Preserve source content exactly**
 ```bash
-# ❌ WRONG: Source "may improve" → Claim "improves" (strengthened)
-# ✅ CORRECT: Source "may improve" → Claim "may improve" (preserved)
+# WRONG: Source "may improve" -> Claim "improves" (strengthened)
+# CORRECT: Source "may improve" -> Claim "may improve" (preserved)
 
 # Preserve hedge words: may, might, could, suggests, likely, appears, tends
 ```
@@ -133,18 +127,18 @@ DOI=$(grep "^doi:" "$SOURCE_FILE" | sed 's/^doi:[[:space:]]*//')
 
 | Anti-Pattern | Wrong Approach | Correct Approach |
 |--------------|----------------|------------------|
-| **Fabricated Links** | Assume entity exists: `PUBLISHER_WIKILINK="[[08-publishers/data/nature]]"` | Validate first: `if [ -f "$file" ]; then ... else PUBLISHER_WIKILINK=""; fi` |
+| **Fabricated Links** | Assume entity exists: `WIKILINK="[[05-sources/data/source-name]]"` | Validate first: `if [ -f "$file" ]; then ... else WIKILINK=""; fi` |
 | **Fabricated Metadata** | Invent plausible DOI: `DOI="10.1000/placeholder.2024"` | Leave empty: `DOI=""` or use standard: `YEAR="n.d."` |
-| **Strengthened Language** | Remove hedge: "may improve" → "improves" | Preserve hedge: "may improve" → "may improve" |
-| **Assumed Existence** | Use without check: `PUBLISHER_NAME="${ARRAY[$key]}"` | Verify: `if [ -n "${ARRAY[$key]}" ]; then ... else PUBLISHER_NAME=""; fi` |
+| **Strengthened Language** | Remove hedge: "may improve" -> "improves" | Preserve hedge: "may improve" -> "may improve" |
+| **Assumed Existence** | Use without check: `NAME="${ARRAY[$key]}"` | Verify: `if [ -n "${ARRAY[$key]}" ]; then ... else NAME=""; fi` |
 
 ### Correct Alternatives
 
 **Domain Fallback:**
 ```bash
-if [ -z "$PUBLISHER_ID" ]; then
+if [ -z "$SOURCE_ID" ]; then
   MATCH_STRATEGY="domain_fallback"
-  # Citation references domain, not fabricated publisher
+  # References domain, not fabricated entity
 fi
 ```
 
@@ -168,8 +162,8 @@ fi
 
 **Standard 1: Validated wikilinks**
 ```bash
-if [ -f "${PROJECT_PATH}/07-sources/data/${source_id}.md" ]; then
-  SOURCE_WIKILINK="[[07-sources/data/${source_id}]]"
+if [ -f "${PROJECT_PATH}/05-sources/data/${source_id}.md" ]; then
+  SOURCE_WIKILINK="[[05-sources/data/${source_id}]]"
 else
   echo "ERROR: Source not found: $source_id" >&2
   continue  # Skip, don't create broken link
@@ -179,8 +173,8 @@ fi
 **Standard 2: Directory prefix consistency**
 
 ```text
-✅ CORRECT: [[07-sources/data/source-climate-001]]
-❌ WRONG:   [[source-climate-001]]
+CORRECT: [[05-sources/data/source-climate-001]]
+WRONG:   [[source-climate-001]]
 ```
 
 **Standard 3: Complete audit trail**
@@ -211,13 +205,13 @@ done
 | **Truncated Loading** | `head -20 file.md`, no count verification | Load ALL: `for file in *.md; do ...; done` + verify count match |
 | **Assumed Existence** | No file check: `WIKILINK="[[.../${ID}]]"` | Validate: `[ -f "$file" ] && WIKILINK="..." \|\| WIKILINK=""` |
 | **Fabricated Links** | Pattern-based ID: `ID=$(echo "$domain" \| sed ...)` | Lookup: `[ -n "${HASH[$key]}" ] && ID="${HASH[$key]}"` + fallback |
-| **Incomplete Verification** | Load → process immediately | Count → load → verify match → checkpoint → process |
+| **Incomplete Verification** | Load -> process immediately | Count -> load -> verify match -> checkpoint -> process |
 
 ---
 
 ## Integration
 
-### fact-checker Usage
+### claim-extractor Usage
 
 - **Pattern 1:** Loads all findings completely, verifies count
 - **Pattern 2:** 4-step verification before creating each claim
@@ -225,11 +219,11 @@ done
 - **Pattern 4:** Never strengthens qualifiers, flags verification failures
 - **Pattern 5:** Validated wikilinks, complete audit trail, faithfulness dimension
 
-### citation-generator Usage
+### source-creator Usage
 
-- **Pattern 1:** Loads ALL sources and publishers completely, verifies counts
+- **Pattern 1:** Loads ALL sources completely, verifies counts
 - **Pattern 2:** Mandatory verification after loading, halts on mismatch
-- **Pattern 3:** Publisher matching from loaded entities only, validates existence
+- **Pattern 3:** Source matching from loaded entities only, validates existence
 - **Pattern 4:** Domain fallback is explicit strategy (not fabrication)
 - **Pattern 5:** Validated wikilinks with directory prefixes, Dublin Core metadata
 
@@ -285,25 +279,13 @@ jq -r '.entities[] | select(.type == "source") | .id' \
 - If entity doesn't exist yet: create entity first, THEN wikilink
 - NEVER guess or approximate entity IDs
 
-```bash
-# ❌ WRONG: Fabricate ID from domain
-PUBLISHER_ID="publisher-$(echo "$domain" | sed 's/\./-/g')"
-
-# ✅ CORRECT: Lookup ID from loaded index
-if [ -n "${PUBLISHER_HASH[$domain]}" ]; then
-  PUBLISHER_ID="${PUBLISHER_HASH[$domain]}"
-else
-  PUBLISHER_ID=""  # Use explicit fallback
-fi
-```
-
 **Step 3: Format Validation Checklist**
 
 Validate EVERY wikilink matches this pattern:
 
 ```bash
 # Pattern: [[NN-type/data/slug-hash]]
-# Example: [[07-sources/data/source-pnas-d25bff0d]]
+# Example: [[05-sources/data/source-pnas-d25bff0d]]
 
 # Validation regex
 WIKILINK_PATTERN='^\[\[[0-9]{2}-[a-z-]+/data/[a-z0-9-]+\]\]$'
@@ -316,12 +298,12 @@ fi
 
 **Format Requirements:**
 
-✓ Pattern: `[[NN-type/data/slug-hash]]`
-✓ NO trailing backslash: `[[...\]]` ← FORBIDDEN
-✓ NO trailing space: `[[... ]]` ← FORBIDDEN
-✓ NO file extension: `[[....md]]` ← FORBIDDEN
-✓ NO escaped characters
-✓ Directory prefix REQUIRED (`07-sources/data/`)
+- Pattern: `[[NN-type/data/slug-hash]]`
+- NO trailing backslash: `[[...\]]` -- FORBIDDEN
+- NO trailing space: `[[... ]]` -- FORBIDDEN
+- NO file extension: `[[....md]]` -- FORBIDDEN
+- NO escaped characters
+- Directory prefix REQUIRED (`05-sources/data/`)
 
 **Step 4: Pre-Generation Test**
 
@@ -342,12 +324,6 @@ while IFS= read -r link; do
     exit 1
   fi
 
-  # Check for trailing space
-  if echo "$link" | grep -q ' ]]'; then
-    echo "ERROR: Trailing space in wikilink: $link" >&2
-    exit 1
-  fi
-
   # Check entity exists
   if [ ! -f "${PROJECT_PATH}/${path}.md" ]; then
     echo "ERROR: Entity not found: ${path}.md" >&2
@@ -356,35 +332,17 @@ while IFS= read -r link; do
 done <<< "$WIKILINKS"
 ```
 
-### Common LLM Generation Artifacts to Prevent
+### Entity Directory Mapping (v1.0.0)
 
-| Artifact | Cause | Detection | Prevention |
-|----------|-------|-----------|------------|
-| **Trailing backslash** | JSON escaping | `grep '\\]]'` | Validate format before write |
-| **Trailing space** | Formatting | `grep ' ]]'` | Trim before entity creation |
-| **Double escaping** | Nested escaping | `grep '\\[\\['` | Use raw strings |
-| **Extension artifacts** | Path completion | `grep '\.md]]'` | Strip extensions |
-| **Missing directory** | Bare ID usage | `! grep '^[0-9]\{2\}-'` | Require directory prefix |
-| **Fabricated hash** | ID invention | Compare to index | Load index first |
-
-### Validation Examples
-
-**Valid Wikilinks:**
-```markdown
-[[07-sources/data/source-pnas-d25bff0d]]
-[[08-publishers/data/publisher-nature-a1b2c3d4]]
-[[10-claims/data/claim-climate-action-f1e2d3c4]]
-[[04-findings/data/finding-renewable-12345678]]
-```
-
-**Invalid Wikilinks (FORBIDDEN):**
-```markdown
-[[07-sources/data/source-pnas-d25bff0d\]]     # Trailing backslash
-[[07-sources/data/source-pnas-d25bff0d ]]     # Trailing space
-[[07-sources/data/source-pnas-d25bff0d.md]]   # .md extension
-[[source-pnas-d25bff0d]]                       # Missing directory
-[[07-sources/data/source-pnas-FAKEHASH]]      # Fabricated hash
-```
+| Entity Type | Directory Prefix | Example Wikilink |
+|-------------|-----------------|------------------|
+| Initial Question | `00-initial-question/data/` | `[[00-initial-question/data/question-initial-f7ef12b8]]` |
+| Dimension | `01-research-dimensions/data/` | `[[01-research-dimensions/data/dimension-economic-a7f3b2c1]]` |
+| Refined Question | `02-refined-questions/data/` | `[[02-refined-questions/data/question-market-size-b2c3d4e5]]` |
+| Query Batch | `03-query-batches/data/` | `[[03-query-batches/data/batch-dim1-q3-c4d5e6f7]]` |
+| Finding | `04-findings/data/` | `[[04-findings/data/finding-renewable-12345678]]` |
+| Source | `05-sources/data/` | `[[05-sources/data/source-pnas-d25bff0d]]` |
+| Claim | `06-claims/data/` | `[[06-claims/data/claim-climate-action-f1e2d3c4]]` |
 
 ### Integration with Existing Patterns
 

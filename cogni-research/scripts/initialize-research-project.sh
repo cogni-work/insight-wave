@@ -8,7 +8,7 @@ set -euo pipefail
 # v2.3.0 (2026-01-21, Research-Type-Specific Methodology):
 #   - Template copying now selects research-type-specific methodology files
 #   - Priority: research-methodology-{type}.md > research-methodology.md
-#   - Supports: smarter-service, b2b-ict-portfolio, lean-canvas, customer-value-mapping
+#   - Supports: generic, b2b-ict-portfolio, lean-canvas
 #   - Falls back to generic methodology if type-specific not found
 #
 # v2.2.0 (2026-01-16, BUG: Template Copying Fix):
@@ -376,7 +376,7 @@ readonly DOCS_DIR="${CLAUDE_PLUGIN_ROOT:-}/docs/user"
 readonly METHODOLOGY_DEST="$PROJECT_PATH/research-methodology.md"
 
 # Build methodology file path based on research type
-# For types like "smarter-service", "b2b-ict-portfolio", "lean-canvas", "customer-value-mapping"
+# For types like "generic", "b2b-ict-portfolio", "lean-canvas"
 METHODOLOGY_TYPE_EN="${DOCS_DIR}/research-methodology-${RESEARCH_TYPE}.md"
 METHODOLOGY_TYPE_DE="${DOCS_DIR}/research-methodology-${RESEARCH_TYPE}-de.md"
 METHODOLOGY_GENERIC_EN="${DOCS_DIR}/research-methodology.md"
@@ -436,17 +436,12 @@ cat > "$README" <<EOF
 This project follows the cogni-research entity pipeline architecture:
 
 - \`00-initial-question/\` - Original research question and scope
-- \`01-research-dimensions/\` - Dimensional analysis framework
-- \`02-refined-questions/\` - Specific sub-questions
+- \`01-research-dimensions/\` - Dimensional analysis framework (MECE)
+- \`02-refined-questions/\` - Atomic sub-questions per dimension
 - \`03-query-batches/\` - Parallel search strategies
-- \`04-findings/\` - Web search results with metadata
-- \`05-domain-concepts/\` - Domain terminology and definitions
-- \`06-megatrends/\` - Extracted themes and patterns
-- \`07-sources/\` - Source metadata (URLs, DOIs)
-- \`08-publishers/\` - Publisher entities (individuals and organizations)
-- \`09-citations/\` - Formal citation strings
-- \`10-claims/\` - Verified factual assertions
-- \`11-trends/\` - Portfolio trends and analysis artifacts
+- \`04-findings/\` - Web + LLM research results
+- \`05-sources/\` - Enriched sources (URL, publisher profile, APA citation)
+- \`06-claims/\` - Verified assertions with three-layer confidence
 
 See [[research-methodology]] for how to verify and trust the research findings.
 
