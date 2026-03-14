@@ -37,29 +37,43 @@ Why peak-weighting: a cross-cutting solution that addresses one mission-critical
 and two moderate chains should rank higher than a single-chain moderate solution. Simple
 averaging would pull it down; peak-weighting anchors on the strongest justification.
 
-### Step 1c: Foundation readiness adjustment
+### Step 1c: Foundation and blueprint readiness adjustment
 
-Count the ST's `foundation_dependencies`:
+Count the ST's `foundation_dependencies` and read its `solution_blueprint.readiness.readiness_score`:
 
 ```
 FoundationFactor:
   0-1 dependencies → 1.00
   2-3 dependencies → 0.95
   4+  dependencies → 0.90
+
+BlueprintFactor (from solution_blueprint.readiness.readiness_score):
+  readiness_score >= 0.8  → 1.00  (well-covered portfolio)
+  readiness_score >= 0.5  → 0.95  (partial coverage, some gaps)
+  readiness_score >= 0.3  → 0.90  (significant gaps)
+  readiness_score <  0.3  → 0.85  (mostly gaps — high implementation risk)
+  no blueprint or null    → 1.00  (no penalty for absence)
 ```
 
 ```
-FinalScore(ST_i) = BR(ST_i) × FoundationFactor
+FinalScore(ST_i) = BR(ST_i) × FoundationFactor × BlueprintFactor
 ```
 
-This surfaces implementation risk as a mild penalty without dominating the ranking.
+This surfaces two distinct risk dimensions as mild penalties without dominating the ranking:
+- **FoundationFactor** captures prerequisite complexity (how much must be in place first)
+- **BlueprintFactor** captures portfolio readiness (can you actually deliver this solution with
+  your current product portfolio, or are there major building block gaps?)
+
+A solution with BR 4.0, moderate foundation dependencies, and partial portfolio coverage scores
+4.0 × 0.95 × 0.95 = 3.61 — still high-priority, but both risks are visible.
 
 ### Step 1d: Store results
 
 On each ST, store:
 - `chain_scores`: array of per-chain F1 scores (for transparency)
-- `business_relevance_calculated`: result of Step 1b (before foundation adjustment)
-- `foundation_factor`: the readiness multiplier
+- `business_relevance_calculated`: result of Step 1b (before readiness adjustments)
+- `foundation_factor`: the foundation readiness multiplier
+- `blueprint_factor`: the portfolio readiness multiplier (from solution blueprint)
 - `ranking_value`: FinalScore (or user override if `business_relevance` is set)
 - `business_relevance`: User override (integer or null, bypasses calculation)
 
@@ -67,14 +81,26 @@ On each ST, store:
 - ST with zero scored TIPs across all chains → `ranking_value` = null, "insufficient data"
 - User override set → use override as `ranking_value`, still calculate and show F1 for comparison
 - Calculated values are floats (1.0-5.0), not rounded
+- No solution blueprint → `blueprint_factor` = 1.00 (no penalty for legacy STs)
 
-### Step 1e: Surface quality flags
+### Step 1e: Surface quality and readiness flags
 
 If any ST has `quality_flag: "quality_investment_needed"` (set by Phase 2 when the matched
 portfolio proposition has quality failures), preserve the flag through ranking. The flag does
 not affect the ranking score — it is informational. In the ranked output (Step 2), annotate
 flagged STs with a warning marker so the user knows which solutions depend on propositions
 that need quality improvement before customer-facing use.
+
+**Blueprint readiness flags**: For STs with `solution_blueprint.readiness.readiness_score < 0.5`,
+add a readiness annotation in the ranked output:
+
+```
+Readiness: LOW (0.35) — gaps in Connectivity (1.x), Consulting (7.x)
+```
+
+List the specific taxonomy dimensions where building blocks have `coverage: "gap"`. This helps
+the user understand *why* the readiness is low and which portfolio investments would improve it.
+For STs without blueprints, omit the readiness annotation.
 
 ## Step 2: Generate Ranked Solution List
 
@@ -102,10 +128,10 @@ Strategic Question: {question}
 Executive Sponsor: {sponsor type}
 Theme Average BR: {avg}
 
-| Rank | Solution Template | BR Score | Category | Chains | Foundation |
-|------|------------------|----------|----------|--------|------------|
-| 1 | ... | 4.67 | software | VC-5, VC-6 | 0.95 |
-| 2 | ... | 4.33 | hardware | VC-5 | 0.95 |
+| Rank | Solution Template | BR Score | Category | Chains | Foundation | Readiness |
+|------|------------------|----------|----------|--------|------------|-----------|
+| 1 | ... | 4.67 | software | VC-5, VC-6 | 0.95 | 0.82 |
+| 2 | ... | 4.33 | hardware | VC-5 | 0.95 | 0.60 ◐ |
 
 ### ST Details
 [detailed ST descriptions with SPIs, metrics, foundation deps]
@@ -143,7 +169,8 @@ For cross-theme budget allocation, all STs ranked globally:
 ## Methodology
 
 Rankings calculated using TIPS Value Modeler formula F1 (Enhanced):
-BR(ST) = 0.6 × max(ChainScore) + 0.4 × avg(ChainScore) × FoundationFactor
+BR(ST) = 0.6 × max(ChainScore) + 0.4 × avg(ChainScore) × FoundationFactor × BlueprintFactor
+BlueprintFactor adjusts for portfolio readiness (how much of the required solution portfolio exists).
 Based on Siemens TIPS methodology (WO2018046399A1).
 ```
 

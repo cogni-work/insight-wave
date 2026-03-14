@@ -305,7 +305,10 @@ erDiagram
     SolutionTemplate ||--o| Collateral : "supported by"
     Candidate }|--|| Dimension : "belongs to"
     Path }o--|| Candidate : "references T-I-P"
-    SolutionTemplate }o--o| PortfolioAnchor : "grounded by"
+    SolutionTemplate ||--o| SolutionBlueprint : "composed of"
+    SolutionBlueprint ||--|{ BuildingBlock : "requires"
+    BuildingBlock }o--o| TaxonomyCategory : "maps to"
+    SolutionTemplate }o--o| PortfolioAnchor : "grounded by (derived from lead block)"
     Project }o--o| PortfolioSource : "initialized from"
 
     Project {
@@ -400,6 +403,31 @@ erDiagram
         array theme_needs_delivered
         array theme_needs_undelivered
     }
+    SolutionBlueprint {
+        array building_blocks "BuildingBlock[]"
+        object readiness
+        float readiness_score "0.0-1.0"
+        array taxonomy_span "dimension IDs"
+        int taxonomy_depth
+    }
+    BuildingBlock {
+        string role "lead|supporting|enabling"
+        string capability
+        string taxonomy_ref "e.g. 6.6"
+        string taxonomy_name
+        int taxonomy_dimension "0-7"
+        string coverage "covered|partial|gap|unknown"
+        string feature_slug FK "nullable"
+        string product_slug FK "nullable"
+        array delivers
+        array gaps
+    }
+    TaxonomyCategory {
+        string id PK "e.g. 6.6"
+        string name
+        int dimension
+        string dimension_name
+    }
     SPI {
         string spi_id PK "spi-001"
         string name
@@ -488,6 +516,55 @@ tips-project.json (root manifest)
   "linked_chains": ["vc-001", "vc-003"],
   "foundation_dependencies": ["digitales-fundament/act/2"],
   "generation_mode": "portfolio-anchored|abstract",
+  "solution_blueprint": {
+    "building_blocks": [
+      {
+        "role": "lead",
+        "capability": "Predictive analytics engine",
+        "taxonomy_ref": "6.6",
+        "taxonomy_name": "AI, Data & Analytics",
+        "taxonomy_dimension": 6,
+        "coverage": "covered",
+        "feature_slug": "predictive-analytics",
+        "product_slug": "cloud-platform",
+        "delivers": ["ML model training", "anomaly detection"],
+        "gaps": ["edge inference"]
+      },
+      {
+        "role": "supporting",
+        "capability": "IoT sensor connectivity",
+        "taxonomy_ref": "1.4",
+        "taxonomy_name": "5G & IoT Connectivity",
+        "taxonomy_dimension": 1,
+        "coverage": "partial",
+        "feature_slug": "iot-gateway",
+        "product_slug": "connectivity-suite",
+        "delivers": ["sensor data collection"],
+        "gaps": ["private 5G", "edge processing"]
+      },
+      {
+        "role": "enabling",
+        "capability": "Implementation consulting",
+        "taxonomy_ref": "7.2",
+        "taxonomy_name": "Digital Transformation",
+        "taxonomy_dimension": 7,
+        "coverage": "gap",
+        "feature_slug": null,
+        "product_slug": null,
+        "delivers": [],
+        "gaps": ["manufacturing domain consulting", "change management"]
+      }
+    ],
+    "readiness": {
+      "covered_count": 1,
+      "partial_count": 1,
+      "gap_count": 1,
+      "unknown_count": 0,
+      "readiness_score": 0.64,
+      "taxonomy_span": [1, 6, 7],
+      "taxonomy_depth": 3
+    }
+  },
   "portfolio_anchor": {
     "feature_slug": "predictive-analytics",
     "product_slug": "cloud-platform",
@@ -517,6 +594,51 @@ tips-project.json (root manifest)
 ```
 
 New fields (all optional, backward compatible — existing STs without these fields continue working):
+
+- **`solution_blueprint`** (object, optional): Multi-dimensional composition of portfolio building
+  blocks needed to deliver this solution. Captures the full solutioning expertise — not just which
+  single feature matches, but what combination of portfolio capabilities across taxonomy dimensions
+  is required to build and deliver the solution.
+  - `building_blocks` (array, required): Ordered list of portfolio building blocks. Minimum 1 (the lead), typical 2-5.
+    - `role` (string, required): `"lead"` = primary delivery mechanism (exactly 1 per blueprint),
+      `"supporting"` = necessary technical layer, `"enabling"` = organizational/advisory prerequisite
+    - `capability` (string, required): What this block provides to the solution (3-15 words)
+    - `taxonomy_ref` (string, required): B2B ICT taxonomy category ID (e.g., "6.6", "1.4")
+    - `taxonomy_name` (string, required): Human-readable taxonomy category name
+    - `taxonomy_dimension` (integer, required): Dimension number 0-7 for fast filtering
+    - `coverage` (string, required): Portfolio coverage status:
+      - `"covered"` = portfolio feature fully addresses this capability
+      - `"partial"` = portfolio feature exists but gaps remain
+      - `"gap"` = no portfolio feature matches this capability
+      - `"unknown"` = no portfolio context available to assess
+    - `feature_slug` (string, nullable): Portfolio feature that maps to this block (null when gap/unknown)
+    - `product_slug` (string, nullable): Parent product of the mapped feature (null when gap/unknown)
+    - `delivers` (array of strings): Specific capabilities this block provides
+    - `gaps` (array of strings): Specific capabilities this block cannot provide (empty when fully covered)
+  - `readiness` (object, required): Aggregate portfolio readiness assessment
+    - `covered_count` (integer): Blocks with coverage="covered"
+    - `partial_count` (integer): Blocks with coverage="partial"
+    - `gap_count` (integer): Blocks with coverage="gap"
+    - `unknown_count` (integer): Blocks with coverage="unknown"
+    - `readiness_score` (float, 0.0-1.0): Weighted coverage score using role-based weights
+    - `taxonomy_span` (array of integers): Unique taxonomy dimensions referenced (e.g., [1, 4, 6, 7])
+    - `taxonomy_depth` (integer): Number of taxonomy dimensions this solution spans
+  - **Readiness Score Formula:**
+    ```
+    role_weight:    lead=1.0, supporting=0.7, enabling=0.4
+    coverage_value: covered=1.0, partial=0.5, gap=0.0, unknown=0.5
+    readiness_score = sum(coverage_value × role_weight) / sum(role_weight)
+    ```
+  - **Backward compatibility with `portfolio_anchor`:** When `solution_blueprint` is present,
+    `portfolio_anchor` is derived from the lead building block:
+    ```
+    lead = building_blocks.find(b => b.role === "lead")
+    portfolio_anchor.feature_slug = lead.feature_slug
+    portfolio_anchor.product_slug = lead.product_slug
+    portfolio_anchor.theme_needs_delivered = lead.delivers
+    portfolio_anchor.theme_needs_undelivered = lead.gaps
+    ```
+    When `solution_blueprint` is absent (older projects), `portfolio_anchor` works standalone as before.
 
 - **`generation_mode`** (string): How this ST was created.
   - `"portfolio-anchored"` — Generated starting from an existing portfolio feature as the delivery anchor. Phase 2.0 creates these when portfolio-context v2.0+ is available (v3.0 adds quality-aware generation with `quality_flag` propagation).

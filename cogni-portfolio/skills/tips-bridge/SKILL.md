@@ -455,15 +455,21 @@ This metadata is appended to the proposition JSON. Portfolio skills that don't u
 it will ignore it. It enables future auditing of which TIPS pursuit influenced which
 portfolio positioning.
 
-**Step 5.8: Generate Opportunity Pipeline**
+**Step 5.8: Generate Blueprint-Aware Opportunity Pipeline**
 
-For each Solution Template with `match_confidence: "none"` or `"low"`, generate a
-structured opportunity assessment. This transforms vague "portfolio gaps" into a
-prioritized innovation pipeline with scoring, classification, and roadmap-ready specs.
+With solution blueprints, the opportunity pipeline becomes more granular and actionable.
+Instead of generating one opportunity per unmatched ST, analyze individual building blocks
+across all STs to surface taxonomy-level gaps. This answers the strategic question: "Which
+portfolio dimensions do we need to invest in to deliver our solution portfolio?"
 
 See `references/opportunity-schema.md` for the full schema definition.
 
-**For each unmatched ST:**
+**Two levels of opportunity generation:**
+
+#### Level 1: Per-ST Opportunities (existing behavior, enhanced)
+
+For each Solution Template with `match_confidence: "none"` or `"low"`, generate a
+structured opportunity assessment:
 
 1. **Calculate opportunity score** (0-10):
    ```
@@ -490,8 +496,10 @@ See `references/opportunity-schema.md` for the full schema definition.
    - **partner**: Requires specialized domain expertise the company lacks. Best addressed
      through co-development, white-label, or referral partnership.
 
-   Use the ST's `category` and the portfolio's existing feature landscape to guide
-   classification. Provide a rationale and list alternatives.
+   Use the ST's `category`, its **blueprint building blocks** (taxonomy dimensions),
+   and the portfolio's existing feature landscape to guide classification. A gap in
+   a consulting dimension (7.x) naturally suggests "partner"; a gap in a core technical
+   dimension (4.x, 6.x) may suggest "build" or "buy".
 
 3. **Estimate revenue** from market TAM data:
    - Read portfolio markets and filter to those with `market_relevance` = `"direct"`
@@ -504,26 +512,66 @@ See `references/opportunity-schema.md` for the full schema definition.
    - `name` and `description`: Adapted from ST for feature language
    - `category`: Derived from ST category
    - `readiness`: Always `"planned"`
-   - `unmet_needs`: From `portfolio_anchor.theme_needs_undelivered` (portfolio-anchored
-     STs) or extracted from ST description (abstract STs)
+   - `unmet_needs`: From blueprint building blocks with `coverage: "gap"` — each gap
+     block's `gaps` array provides specific unmet capabilities. Falls back to
+     `portfolio_anchor.theme_needs_undelivered` or ST description extraction.
+   - `taxonomy_refs`: Array of taxonomy categories from the ST's blueprint gap blocks
+     (e.g., `["1.4", "7.2"]`) — shows which portfolio dimensions this opportunity spans
    - `source_themes` and `source_sts`: Traceability to TIPS value model
 
 5. **Assign priority**: `"high"` (score ≥ 7.0 AND ranking_value ≥ 4.0), `"medium"`
    (score ≥ 4.0 OR ranking_value ≥ 3.0), `"low"` (everything else)
 
-**Write** `portfolio-opportunities.json` to the TIPS project directory (alongside
-`tips-value-model.json`).
+#### Level 2: Taxonomy Gap Analysis (new)
 
-**Present** the opportunities table sorted by score:
+After generating per-ST opportunities, aggregate all blueprint building blocks across
+ALL Solution Templates (not just unmatched ones) to produce a taxonomy-level gap report:
+
+1. **Collect all building blocks** from all STs' `solution_blueprint.building_blocks`
+2. **Group by taxonomy dimension** (0-7) and then by category (e.g., "6.6")
+3. **Count coverage status** per category:
+   - How many STs need this category?
+   - How many have it covered vs. partial vs. gap?
+
+4. **Generate Taxonomy Gap Report**:
+
+```
+Taxonomy Gap Analysis — Portfolio Investment Priorities
+
+| Dim | Taxonomy Category | STs Needing | Covered | Partial | Gap | Priority |
+|-----|-------------------|-------------|---------|---------|-----|----------|
+| 7   | Digital Transformation (7.2) | 5 | 0 | 1 | 4 | HIGH |
+| 1   | 5G & IoT Connectivity (1.4) | 4 | 1 | 2 | 1 | MEDIUM |
+| 2   | Cloud Security (2.4) | 3 | 0 | 0 | 3 | HIGH |
+| 7   | Program Management (7.4) | 2 | 0 | 0 | 2 | MEDIUM |
+
+Strategic Insight:
+- Consulting (Dim 7) is the #1 portfolio gap: 7 building blocks across 5 STs need
+  consulting capabilities that don't exist in the portfolio. Consider a consulting
+  partnership or practice build.
+- Security (Dim 2) gaps affect 3 high-ranked STs. Investing here would improve
+  readiness scores across the solution portfolio.
+```
+
+Priority for taxonomy gaps: `HIGH` = ≥3 STs affected AND majority are gap (not partial),
+`MEDIUM` = 2+ STs affected, `LOW` = 1 ST affected.
+
+This taxonomy gap report is the most strategically valuable output of the bridge — it
+transforms individual solution gaps into portfolio-level investment priorities.
+
+**Write** `portfolio-opportunities.json` to the TIPS project directory (alongside
+`tips-value-model.json`). Include both per-ST opportunities and the taxonomy gap summary.
+
+**Present** the opportunities table sorted by score, followed by the taxonomy gap report:
 
 ```
 Innovation Pipeline ({N} opportunities)
 
-| # | Opportunity | Score | Class | Revenue Est. | Priority |
-|---|-------------|-------|-------|-------------|----------|
-| 1 | Compliance Automation Suite | 8.2 | build | €500K/yr | high |
-| 2 | Edge Analytics Gateway | 6.1 | partner | €200K/yr | medium |
-| 3 | Digital Twin Connector | 3.4 | buy | €80K/yr | low |
+| # | Opportunity | Score | Class | Revenue Est. | Readiness | Priority |
+|---|-------------|-------|-------|-------------|-----------|----------|
+| 1 | Compliance Automation Suite | 8.2 | build | €500K/yr | 0.35 | high |
+| 2 | Edge Analytics Gateway | 6.1 | partner | €200K/yr | 0.50 | medium |
+| 3 | Digital Twin Connector | 3.4 | buy | €80K/yr | 0.72 | low |
 
 Actions: [Accept] creates a feature stub from the spec. [Defer] keeps it in the
 pipeline for future review. [Reject] removes it.
@@ -544,6 +592,9 @@ Report what was created/enriched:
 - N opportunities identified (with classification breakdown: build/buy/partner)
 - Total estimated annual revenue from opportunities: €{total}
 - List high-ranked STs with quality flags needing investment
+- **Taxonomy gap summary**: Which B2B ICT dimensions have the most building block gaps
+  across the solution portfolio, and how many STs are affected per dimension. This is
+  the most actionable output for portfolio investment planning.
 
 ### portfolio-to-tips — Load Portfolio as TIPS Constraints
 
@@ -771,14 +822,14 @@ Execute the full `tips-to-portfolio` operation (ST matching, enrichment, evidenc
 Present a unified reconciliation table that shows the full picture across both directions:
 
 ```
-| Feature | Market | Proposition | Variants | Solution | TIPS STs | Status |
-|---------|--------|-------------|----------|----------|----------|--------|
-| predictive-analytics | mid-market-dach | Yes | 2 | Yes | st-001 | Aligned |
-| compliance-engine | enterprise-eu | Yes | 0 | No | st-004 | Needs solution |
-| predictive-analytics | enterprise-eu | No | — | No | st-001 | Needs enrichment |
-| — | — | — | — | — | st-007 | Portfolio gap |
-| simulation-engine | mid-market-dach | Yes | 1 | Yes | — | TIPS gap |
-| predictive-analytics | mid-market-dach | Yes (fail) | 2 | Yes | st-001 | Aligned (quality review) |
+| Feature | Market | Proposition | Variants | Solution | TIPS STs | Blueprint | Status |
+|---------|--------|-------------|----------|----------|----------|-----------|--------|
+| predictive-analytics | mid-market-dach | Yes | 2 | Yes | st-001 | Lead (0.68) | Aligned |
+| compliance-engine | enterprise-eu | Yes | 0 | No | st-004 | Lead (0.42) | Needs solution |
+| predictive-analytics | enterprise-eu | No | — | No | st-001 | Lead (0.68) | Needs enrichment |
+| — | — | — | — | — | st-007 | — (0.35) | Portfolio gap |
+| simulation-engine | mid-market-dach | Yes | 1 | Yes | — | — | TIPS gap |
+| predictive-analytics | mid-market-dach | Yes (fail) | 2 | Yes | st-001 | Lead (0.68) | Aligned (quality review) |
 ```
 
 **Status values:**

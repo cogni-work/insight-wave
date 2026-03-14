@@ -52,6 +52,7 @@ Written by `/bridge tips-to-portfolio` (Step 5.8) or `/bridge sync` into the TIP
         "category": "compliance",
         "readiness": "planned",
         "unmet_needs": ["Explainable AI audit trails", "Cross-border regulatory mapping", "Real-time compliance dashboards"],
+        "taxonomy_refs": ["2.9", "6.6"],
         "source_themes": ["theme-002"],
         "source_sts": ["st-003"]
       },
@@ -125,7 +126,8 @@ Component derivation:
 
 The `feature_spec` object contains a roadmap-ready feature definition. When the user approves an opportunity, the bridge can create a feature file directly from this spec.
 
-- `unmet_needs` (array): Derived from the ST's `portfolio_anchor.theme_needs_undelivered` (portfolio-anchored STs) or from the ST description (abstract STs)
+- `unmet_needs` (array): Derived from the ST's blueprint building blocks with `coverage: "gap"` — each gap block's `gaps` array provides specific unmet capabilities. Falls back to `portfolio_anchor.theme_needs_undelivered` (portfolio-anchored STs) or ST description extraction (abstract STs)
+- `taxonomy_refs` (array, optional): B2B ICT taxonomy category IDs from the ST's blueprint gap blocks (e.g., `["1.4", "7.2"]`). Shows which portfolio dimensions this opportunity spans. Absent for STs without blueprints.
 - `source_themes` / `source_sts` (arrays): Traceability back to the TIPS value model
 - `readiness`: Always `"planned"` for new opportunities
 
@@ -134,6 +136,42 @@ The `feature_spec` object contains a roadmap-ready feature definition. When the 
 - **high**: `opportunity_score >= 7.0` AND `ranking_value >= 4.0`
 - **medium**: `opportunity_score >= 4.0` OR `ranking_value >= 3.0`
 - **low**: Everything else
+
+## Taxonomy Gap Summary (v1.1)
+
+When Solution Templates have `solution_blueprint` data, the opportunities file includes a
+`taxonomy_gaps` section that aggregates building block gaps across ALL STs (not just
+unmatched ones). This provides portfolio-level investment priorities:
+
+```json
+{
+  "taxonomy_gaps": [
+    {
+      "taxonomy_dimension": 7,
+      "dimension_name": "Consulting Services",
+      "categories": [
+        {
+          "taxonomy_ref": "7.2",
+          "taxonomy_name": "Digital Transformation",
+          "sts_needing": 5,
+          "covered": 0,
+          "partial": 1,
+          "gap": 4,
+          "priority": "high"
+        }
+      ],
+      "total_blocks": 7,
+      "total_gap_blocks": 5,
+      "priority": "high"
+    }
+  ]
+}
+```
+
+Priority for taxonomy gaps: `"high"` = ≥3 STs affected AND majority are gap (not partial),
+`"medium"` = 2+ STs affected, `"low"` = 1 ST affected.
+
+This section is absent when no STs have blueprints (backward compatible).
 
 ## Backward Compatibility
 

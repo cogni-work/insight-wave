@@ -24,7 +24,7 @@ dimension as a standalone item. This skill connects them:
 
 1. **Builds TIPS value chains** — explicit Trend → Implication → Possibility causal chains across dimensions
 2. **Consolidates into Strategic Themes** — clusters value chains into 3-7 MECE investment domains
-3. **Generates Solution Templates** — concrete enablers per theme (natural deduplication)
+3. **Generates Solution Templates with Blueprints** — concrete enablers per theme with multi-dimensional portfolio composition (natural deduplication)
 4. **Generates SPIs** — operational process changes that accompany each Solution Template
 5. **Defines success Metrics** — KPIs that measure value delivery per theme
 6. **Suggests Collaterals** — supporting content (case studies, reference architectures) per ST
@@ -85,8 +85,12 @@ appear redundantly across overlapping chains. Target 2-4 STs per theme.
 If a cogni-portfolio project exists, map templates to existing products/features.
 When portfolio context v2.0+ is available, Phase 2 starts with **portfolio-anchored
 generation** (Step 0.5): features from the portfolio are matched to themes and used as
-delivery anchors for STs with automatic high-confidence mapping. This reduces the need
-for abstract ST generation and produces STs grounded in real product capabilities.
+delivery anchors for STs with automatic high-confidence mapping. Each ST gets a **solution
+blueprint** — a multi-dimensional composition of building blocks mapped to B2B ICT taxonomy
+categories (connectivity, security, cloud, applications, consulting, etc.) that captures
+the full solutioning expertise: what portfolio is needed to BUILD and DELIVER the solution,
+not just which single feature matches. Blueprint readiness scores (0.0-1.0) surface portfolio
+gaps and feed into the ranking formula.
 Quality-aware generation (v3.0) flags STs where underlying propositions need improvement.
 
 ### Phase 3: Business Relevance Scoring
@@ -207,6 +211,14 @@ Implications depending on context. The chain captures the *reasoning*, not just 
   "generation_mode": "portfolio-anchored",
   "theme_ref": "theme-003",
   "linked_chains": ["vc-005", "vc-006"],
+  "solution_blueprint": {
+    "building_blocks": [
+      { "role": "lead", "capability": "Predictive analytics engine", "taxonomy_ref": "6.6", "taxonomy_name": "AI, Data & Analytics", "taxonomy_dimension": 6, "coverage": "covered", "feature_slug": "predictive-analytics", "product_slug": "cloud-platform", "delivers": ["ML model training", "anomaly detection"], "gaps": ["edge inference"] },
+      { "role": "supporting", "capability": "IoT sensor connectivity", "taxonomy_ref": "1.4", "taxonomy_name": "5G & IoT Connectivity", "taxonomy_dimension": 1, "coverage": "partial", "feature_slug": "iot-gateway", "product_slug": "connectivity-suite", "delivers": ["sensor data collection"], "gaps": ["private 5G"] },
+      { "role": "enabling", "capability": "Implementation consulting", "taxonomy_ref": "7.2", "taxonomy_name": "Digital Transformation", "taxonomy_dimension": 7, "coverage": "gap", "feature_slug": null, "product_slug": null, "delivers": [], "gaps": ["domain consulting"] }
+    ],
+    "readiness": { "covered_count": 1, "partial_count": 1, "gap_count": 1, "unknown_count": 0, "readiness_score": 0.64, "taxonomy_span": [1, 6, 7], "taxonomy_depth": 3 }
+  },
   "portfolio_mapping": {
     "product_slug": "cloud-platform",
     "feature_slug": "predictive-analytics",
@@ -215,8 +227,8 @@ Implications depending on context. The chain captures the *reasoning*, not just 
   "portfolio_anchor": {
     "feature_slug": "predictive-analytics",
     "product_slug": "cloud-platform",
-    "theme_needs_delivered": ["AI-driven quality prediction", "real-time sensor integration"],
-    "theme_needs_undelivered": ["legacy MES integration", "operator training program"]
+    "theme_needs_delivered": ["ML model training", "anomaly detection"],
+    "theme_needs_undelivered": ["edge inference"]
   },
   "quality_flag": null,
   "business_relevance": null,
@@ -272,8 +284,12 @@ Implications depending on context. The chain captures the *reasoning*, not just 
 `portfolio_mapping` is only populated when a cogni-portfolio project is discovered.
 `generation_mode`: `"portfolio-anchored"` when generated from Step 0.5 (feature-first),
 `"abstract"` when generated from Step 1 (theme-first). Defaults to `"abstract"`.
-`portfolio_anchor` is only populated for portfolio-anchored STs — it records the source
-feature and what the theme needs that the feature can/cannot deliver.
+`solution_blueprint` captures the multi-dimensional portfolio composition needed to deliver
+this ST — building blocks mapped to B2B ICT taxonomy categories with coverage assessment.
+Every ST gets a blueprint (both anchored and abstract). See `references/data-model.md` for
+the full SolutionBlueprint and BuildingBlock schemas.
+`portfolio_anchor` is derived from the blueprint's lead building block for backward
+compatibility. It records the primary feature and what it can/cannot deliver.
 `quality_flag`: `"quality_investment_needed"` when v3.0 quality assessment shows a fail
 on `market_specificity` or `differentiation` for a matched proposition. `null` otherwise.
 `business_relevance` is the user override (if set). `business_relevance_calculated` is
@@ -313,9 +329,9 @@ For multi-chain STs, it rewards breadth while still anchoring on the strongest c
 The peak-weighting prevents cross-cutting solutions from being penalized by averaging
 in weaker chains — the best chain dominates, with breadth as a bonus.
 
-**Step 3: Foundation readiness adjustment**
+**Step 3: Foundation and blueprint readiness adjustment**
 ```
-FinalScore(ST_i) = BR(ST_i) × FoundationFactor
+FinalScore(ST_i) = BR(ST_i) × FoundationFactor × BlueprintFactor
 ```
 
 Where `FoundationFactor`:
@@ -323,14 +339,25 @@ Where `FoundationFactor`:
 - 0.95 if 2-3 foundation dependencies
 - 0.90 if 4+ foundation dependencies
 
-This mild penalty surfaces implementation risk without dominating the ranking.
-A solution with BR 4.0 and heavy prerequisites scores 3.60 — still high-priority,
-but the risk is visible.
+Where `BlueprintFactor` (from `solution_blueprint.readiness.readiness_score`):
+- 1.00 if readiness >= 0.8 (well-covered portfolio)
+- 0.95 if readiness >= 0.5 (partial coverage)
+- 0.90 if readiness >= 0.3 (significant gaps)
+- 0.85 if readiness < 0.3 (mostly gaps)
+- 1.00 if no blueprint (no penalty for legacy STs)
+
+These mild penalties surface two distinct risk dimensions without dominating the ranking:
+- **FoundationFactor**: prerequisite complexity (how much must be in place first)
+- **BlueprintFactor**: portfolio readiness (can you deliver this with your current portfolio?)
+
+A solution with BR 4.0, moderate dependencies, and partial portfolio coverage scores
+4.0 × 0.95 × 0.95 = 3.61 — still high-priority, but both risks are visible.
 
 **Fields on each ST:**
 - `chain_scores`: array of per-chain F1 scores
 - `business_relevance_calculated`: result of Step 2
-- `foundation_factor`: the readiness multiplier
+- `foundation_factor`: the foundation readiness multiplier
+- `blueprint_factor`: the portfolio readiness multiplier
 - `ranking_value`: final score after Step 3 (or user override if set)
 - `business_relevance`: user override (bypasses all calculation)
 
