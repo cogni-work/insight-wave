@@ -63,6 +63,10 @@ Portfolio context v1.0 or absent:
   → Step 1 (abstract STs for all themes)
   → Step 1.5 (blueprint composition with coverage: "unknown" on all blocks)
   → Skip Step 2 (no portfolio data to enrich from)
+
+Re-anchor mode (independent invocation or explicit request):
+  Step 2.7 (re-analyze and re-match existing STs against current portfolio using LLM solutioning)
+  → Optionally re-run Phase 4 if ranking was already done
 ```
 
 ## Step 0.5: Portfolio-Anchored Generation (when v2.0+ context exists)
@@ -503,6 +507,230 @@ SPIs are the *how* (organizational and process changes needed to realize value f
 - Focus on the process changes that are essential for the ST to deliver value
 - Consider training, governance, workflow integration, and organizational alignment
 - SPIs are lightweight — they flag what needs to change, not how to change it
+
+## Step 2.7: Re-Anchor Existing Solution Templates
+
+Re-anchoring rebuilds solution blueprints on existing STs using **LLM solutioning intelligence**.
+This is not a mechanical keyword-matching operation — it applies the same solutioning competence
+as Steps 0.5.3 and 1.5, but to STs that already exist rather than generating new ones. The LLM
+must reason about what each solution genuinely needs across B2B ICT taxonomy dimensions, drawing
+on theme narratives, value chain context, and portfolio capabilities.
+
+The reason this cannot be scripted: a "Smart Grid Digital Twin" solution doesn't just need "the
+feature with 'digital twin' in the name." It needs IoT connectivity for sensor data, cloud
+infrastructure for simulation workloads, AI/analytics for predictive models, and consulting for
+organizational adoption. Only an LLM with solutioning expertise can compose this multi-dimensional
+blueprint correctly.
+
+### 2.7.0: Invocation Modes
+
+Re-anchoring can be triggered in two ways:
+
+1. **As part of a full Phase 2 run** — sequential, after Step 2.5, only when the user explicitly
+   requests re-anchoring during an active Phase 2 workflow
+2. **As an independent operation** — invoked via trigger phrases like "re-anchor solutions",
+   "remap blueprints", "rebuild portfolio mapping", "re-anchor STs". When invoked independently,
+   load Phase 0 data (portfolio context, value model) and jump directly to Step 2.7.1
+
+**Scope parameter:**
+- `all` (default) — re-anchor every ST in the value model
+- Specific `st_id` list — re-anchor only the named STs (e.g., "re-anchor st-003, st-007, st-012")
+
+### 2.7.1: Load Current State
+
+1. Read `tips-value-model.json` to get the current `solution_templates` array and `themes` array
+2. Read `portfolio-context.json` from the TIPS project directory
+   - **Requires v2.0+** — if absent or v1.0, abort with:
+     > "Re-anchoring requires portfolio context v2.0 or later. Run `/bridge portfolio-to-tips`
+     > first to export your current portfolio."
+3. Read the B2B ICT taxonomy from `$CLAUDE_PLUGIN_ROOT/references/taxonomies/b2b-ict-portfolio.md`
+4. If scope is specific ST IDs, filter to only those STs; otherwise process all
+5. **Snapshot** each ST's current `solution_blueprint`, `portfolio_anchor`, and `portfolio_mapping`
+   — these will be used for the change log in Step 2.7.5
+
+### 2.7.2: Re-Analyze Building Blocks (LLM Solutioning)
+
+This is the core step. For each ST in scope, the LLM performs a fresh solutioning analysis
+to determine what building blocks the solution genuinely needs. **This must never be delegated
+to a script, keyword matcher, or mechanical algorithm** — the value of this step is the LLM's
+ability to reason about solution architecture in context.
+
+For each ST:
+
+1. Read the ST's `name`, `description`, `category`, `enabler_type`
+2. Read the parent theme's `strategic_question` and `narrative` (via `theme_ref`)
+3. Read the linked value chains' narratives (via `linked_chains`) — the T→I→P stories that
+   give context to why this solution exists
+4. With this full context, determine from scratch:
+
+   **a) Lead building block (exactly 1):**
+   What is the primary capability this solution delivers? Which B2B ICT taxonomy category
+   best describes it? This is the core delivery mechanism — the thing the customer is
+   actually buying.
+
+   **b) Supporting building blocks (1-2):**
+   What technical layers does this solution require? Consider:
+   - Software STs often need cloud infrastructure (Dim 4), connectivity (Dim 1)
+   - Data-intensive STs need AI/analytics (Dim 6), data platforms (Dim 4)
+   - Security-critical STs need security services (Dim 2)
+   - Integration-heavy STs need application services (Dim 6)
+
+   **c) Enabling building blocks (0-2):**
+   What organizational or advisory prerequisites exist? Consider:
+   - Process change → consulting (Dim 7)
+   - Skills gap → training (Dim 7)
+   - Governance need → compliance (Dim 2)
+   - Infrastructure readiness → managed services (Dim 5)
+
+5. Map each building block to the most specific taxonomy category (e.g., "6.6 AI, Data &
+   Analytics", not just "Dimension 6"). Use `taxonomy_ref`, `taxonomy_name`, and
+   `taxonomy_dimension` fields.
+
+6. Target 2-5 building blocks total (same as initial generation). If you find yourself
+   composing more than 5, the ST may be too broad.
+
+### 2.7.3: Re-Match Against Current Portfolio
+
+For each building block identified in 2.7.2, scan the portfolio context for matches:
+
+1. For each building block:
+   - Search `portfolio-context.json` features for semantic matches against the block's capability
+   - Consider taxonomy dimension alignment (same dimension = higher priority)
+   - Consider proposition DOES/MEANS language (does it echo the block's capability?)
+
+2. Assess coverage:
+   - Feature fully covers the block's capability → `coverage: "covered"`, populate `delivers`
+   - Feature partially covers (some capabilities present, gaps remain) → `coverage: "partial"`,
+     populate both `delivers` and `gaps`
+   - No matching feature in the portfolio → `coverage: "gap"`, set `feature_slug` and
+     `product_slug` to null
+
+3. For matched blocks, populate:
+   - `feature_slug` and `product_slug` from the matched feature
+   - `delivers`: specific capabilities this feature provides for the block
+   - `gaps`: specific capabilities the feature cannot provide (empty when fully covered)
+
+### 2.7.4: Reassemble Blueprint and Derived Fields
+
+1. Assemble the new `solution_blueprint` with building blocks from 2.7.3
+
+2. Calculate `readiness` using the role-weighted formula:
+   ```
+   role_weight:    lead=1.0, supporting=0.7, enabling=0.4
+   coverage_value: covered=1.0, partial=0.5, gap=0.0, unknown=0.5
+   readiness_score = sum(coverage_value × role_weight) / sum(role_weight)
+   ```
+
+3. Populate `readiness` sub-fields: `covered_count`, `partial_count`, `gap_count`,
+   `unknown_count`, `taxonomy_span`, `taxonomy_depth`
+
+4. Derive `portfolio_anchor` from the lead building block:
+   ```
+   portfolio_anchor.feature_slug = lead.feature_slug
+   portfolio_anchor.product_slug = lead.product_slug
+   portfolio_anchor.theme_needs_delivered = lead.delivers
+   portfolio_anchor.theme_needs_undelivered = lead.gaps
+   ```
+
+5. Update `portfolio_mapping`:
+   - `feature_slug` and `product_slug` from lead block
+   - `match_confidence`: `"high"` if lead is covered, `"medium"` if partial, `"low"` if weak,
+     `"none"` if gap
+   - `proposition_exists`: check if the matched feature has propositions in the context
+
+6. Update `generation_mode` to `"re-anchored"` — this distinguishes from the original
+   `"portfolio-anchored"` or `"abstract"` generation and tracks that a re-analysis occurred
+
+7. If v3.0 context is available, re-check quality flags: when a matched proposition has
+   `quality_assessment` with `market_specificity` or `differentiation` = `"fail"`, set
+   `quality_flag: "quality_investment_needed"`
+
+### 2.7.5: Generate Change Log
+
+For each re-anchored ST, produce a change record comparing the snapshot from 2.7.1 with
+the new values:
+
+```json
+{
+  "st_id": "st-005",
+  "st_name": "Smart Grid Digital Twin & Predictive Maintenance",
+  "timestamp": "2026-03-14T15:30:00Z",
+  "changes": {
+    "lead_block_changed": true,
+    "old_lead": {"taxonomy_ref": "5.4", "feature_slug": "monitoring-suite"},
+    "new_lead": {"taxonomy_ref": "6.6", "feature_slug": "ai-analytics-engine"},
+    "old_anchor": {"feature_slug": "monitoring-suite", "product_slug": "infrastructure-services"},
+    "new_anchor": {"feature_slug": "ai-analytics-engine", "product_slug": "application-services"},
+    "old_readiness": 0.45,
+    "new_readiness": 0.72,
+    "blocks_added": 1,
+    "blocks_removed": 0,
+    "blocks_remapped": 2,
+    "coverage_upgrades": ["supporting:1.4 gap→covered", "enabling:7.2 unknown→partial"],
+    "coverage_downgrades": []
+  }
+}
+```
+
+Append all change records to a `reanchor_log` array in `tips-value-model.json`. Each entry
+includes a timestamp so multiple re-anchor runs are traceable. Do not overwrite prior log entries.
+
+### 2.7.6: Report
+
+Present the re-anchoring results in the same format as Step 0.5.6, showing old→new comparisons:
+
+```markdown
+## Re-Anchored Solution Templates
+
+### {N} STs re-anchored | Avg readiness: {old_avg} → {new_avg}
+
+**ST-005: Smart Grid Digital Twin & Predictive Maintenance** [RE-ANCHORED]
+  Old anchor: monitoring-suite (infrastructure-services) → readiness 0.45
+  New anchor: ai-analytics-engine (application-services) → readiness 0.72
+  Blueprint: 4 building blocks across 4 taxonomy dimensions
+    ● Lead:       AI, Data & Analytics (6.6) — ai-analytics-engine ✓ COVERED [was: monitoring-suite in 5.4]
+    ◐ Supporting: 5G & IoT Connectivity (1.4) — iot-gateway ◐ PARTIAL [was: GAP]
+    ● Supporting: Cloud-Native Platform (4.6) — k8s-platform ✓ COVERED [unchanged]
+    ◐ Enabling:   Digital Transformation (7.2) — consulting-team ◐ PARTIAL [was: UNKNOWN]
+
+**ST-009: Cross-Sektor Energie-Trading-Hub** [RE-ANCHORED]
+  Old anchor: (none — was abstract) → readiness 0.00
+  New anchor: system-integration-api (application-services) → readiness 0.55
+  ...
+```
+
+Summary:
+- STs re-anchored: {N} (of {total})
+- Lead blocks changed: {N}
+- Readiness improved: {N} | Degraded: {N} | Unchanged: {N}
+- Coverage upgrades: {N} blocks (gap/unknown → covered/partial)
+- New portfolio gaps: {N} blocks confirmed as gap
+- Quality flags: {N} STs flagged with quality_investment_needed
+
+### 2.7.7: Update tips-value-model.json
+
+Write back the changes:
+- Replace each re-anchored ST's `solution_blueprint`, `portfolio_anchor`, `portfolio_mapping`,
+  `generation_mode`, and `quality_flag`
+- Append to `reanchor_log` array (create if it doesn't exist)
+- **Preserve unchanged fields**: `st_id`, `name`, `description`, `category`, `enabler_type`,
+  `theme_ref`, `linked_chains`, `foundation_dependencies`, `business_relevance`,
+  `business_relevance_calculated`, `ranking_value`, `chain_scores`, `foundation_factor`,
+  `portfolio_grounding`
+
+### 2.7.8: Downstream Impact
+
+After re-anchoring, check whether ranking has already been performed:
+
+- If `ranking_value` is populated on any re-anchored ST:
+  > "Blueprints have been re-anchored, which changes readiness scores. The BlueprintFactor
+  > in the ranking formula may now produce different final scores. Consider re-running
+  > Phase 4 (Rank & Visualize) to update rankings."
+
+- If BR scoring has been done but ranking has not, note that `blueprint_factor` will be
+  calculated correctly during the next ranking run — no immediate action needed.
+
+- If neither scoring nor ranking has been done, no warning is needed.
 
 ## Step 3: Consolidate & Deduplicate
 

@@ -5,6 +5,7 @@ description: >
   Use whenever the user mentions "value modeler", "solution mapping", "TIPS paths", "relationship networks",
   "solution templates", "big block", "solution diagram", "rank solutions", "business relevance scoring",
   "map trends to solutions", "what should we build", "which solutions matter", "prioritize solutions",
+  "re-anchor solutions", "remap blueprints", "rebuild portfolio mapping", "re-anchor STs",
   or wants to go from trend insights to actionable, ranked solution recommendations.
   Also trigger when the user has completed a trend-scout project and asks "what's next" or "now what".
 ---
@@ -92,6 +93,12 @@ the full solutioning expertise: what portfolio is needed to BUILD and DELIVER th
 not just which single feature matches. Blueprint readiness scores (0.0-1.0) surface portfolio
 gaps and feed into the ranking formula.
 Quality-aware generation (v3.0) flags STs where underlying propositions need improvement.
+**Re-anchoring** (Step 2.7): When portfolio context changes or initial mappings need revision,
+re-anchor rebuilds each ST's solution blueprint from scratch using LLM solutioning intelligence —
+re-analyzing which taxonomy categories are needed and re-matching against the current portfolio.
+This is intellectual solutioning work, not mechanical keyword matching. Can be invoked
+independently (outside a full Phase 2 run) via "re-anchor solutions". See
+`references/workflow-phases/phase-2-solutions.md` Step 2.7.
 
 ### Phase 3: Business Relevance Scoring
 Reference: `references/workflow-phases/phase-3-scoring.md`

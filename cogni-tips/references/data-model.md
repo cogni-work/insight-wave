@@ -643,7 +643,8 @@ New fields (all optional, backward compatible — existing STs without these fie
 - **`generation_mode`** (string): How this ST was created.
   - `"portfolio-anchored"` — Generated starting from an existing portfolio feature as the delivery anchor. Phase 2.0 creates these when portfolio-context v2.0+ is available (v3.0 adds quality-aware generation with `quality_flag` propagation).
   - `"abstract"` — Generated from TIPS theme analysis without portfolio anchoring (the original behavior). **Default when absent.**
-- **`portfolio_anchor`** (object, only when `generation_mode` = `"portfolio-anchored"`): Captures what the anchor feature can and cannot deliver for the theme.
+  - `"re-anchored"` — Blueprint was rebuilt by Step 2.7 re-anchor using LLM solutioning intelligence against the current portfolio. Indicates a re-analysis has occurred (original generation_mode is recorded in the reanchor_log).
+- **`portfolio_anchor`** (object, when `generation_mode` is `"portfolio-anchored"` or `"re-anchored"`): Captures what the anchor feature can and cannot deliver for the theme.
   - `feature_slug` (string): The portfolio feature that anchors this ST
   - `product_slug` (string): The parent product
   - `theme_needs_delivered` (string array): Theme requirements this feature addresses
@@ -656,6 +657,38 @@ New fields (all optional, backward compatible — existing STs without these fie
 - **`quality_flag`** (string or null, optional): Set when the anchor feature's proposition has quality assessment failures.
   - `null` — No quality issues (or no quality data available)
   - `"quality_investment_needed"` — The matched proposition scored "fail" on one or more quality dimensions; the proposition should be improved before using this ST in customer-facing materials
+
+### Re-Anchor Log
+
+When Step 2.7 (Re-Anchor) is executed, a `reanchor_log` array is appended to `tips-value-model.json`
+(top-level, alongside `solution_templates`). Each entry records what changed:
+
+```json
+{
+  "reanchor_log": [
+    {
+      "st_id": "st-005",
+      "st_name": "Smart Grid Digital Twin & Predictive Maintenance",
+      "timestamp": "2026-03-14T15:30:00Z",
+      "changes": {
+        "lead_block_changed": true,
+        "old_lead": {"taxonomy_ref": "5.4", "feature_slug": "monitoring-suite"},
+        "new_lead": {"taxonomy_ref": "6.6", "feature_slug": "ai-analytics-engine"},
+        "old_readiness": 0.45,
+        "new_readiness": 0.72,
+        "blocks_added": 1,
+        "blocks_removed": 0,
+        "blocks_remapped": 2,
+        "coverage_upgrades": ["supporting:1.4 gap→covered"],
+        "coverage_downgrades": []
+      }
+    }
+  ]
+}
+```
+
+Multiple re-anchor runs append to this array (never overwrite), making the full re-anchoring
+history traceable. The `generation_mode` on re-anchored STs changes to `"re-anchored"`.
 ```
 
 ### Solution Process Improvement (SPI)

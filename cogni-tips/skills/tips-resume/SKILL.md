@@ -65,7 +65,7 @@ If `count` is 0:
 bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>" --health-check
 ```
 
-The script returns JSON with `project`, `counts` (including `blueprints`, `anchored_solutions`, `avg_readiness`), `scoring`, `artifacts`, `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
+The script returns JSON with `project`, `counts` (including `blueprints`, `anchored_solutions`, `avg_readiness`), `portfolio_anchors` (per-product breakdown with needs coverage and quality flags), `scoring`, `artifacts`, `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
 
 ### 4. Present Status Summary
 
@@ -90,6 +90,7 @@ Language: {language}
 | Solution Templates | Done / Pending | {solutions_count} solutions generated |
 | BR Scoring & Ranking | Done / Pending | {ranked_count} solutions ranked |
 | Solution Blueprints | Done / Pending / N/A | {blueprints}/{solutions_count} blueprinted, avg readiness {avg_readiness}, {anchored_solutions} portfolio-anchored |
+| Portfolio Anchors | Done / N/A | {products_count} products, {features_count} features, {delivered}/{unmet} needs, {quality_issues} quality flags |
 | Trend Report | Done / Pending | {report_sections}/4 sections |
 | Claims Registry | Done / Pending | {claims_total} claims extracted |
 | Insight Summary | Done / Skipped | |
@@ -101,6 +102,20 @@ Language: {language}
 - **Done**: `blueprints` > 0 — show blueprint count, average readiness score, and anchored count
 - **Pending**: `solutions_count` > 0 but `blueprints` = 0 — solutions exist but no blueprints generated yet
 - **N/A**: `solutions_count` = 0 — no solutions generated yet
+
+**Portfolio Anchors row** — derived from `portfolio_anchors` in status JSON:
+- **Done**: `portfolio_anchors.total` > 0 — show product count, feature count, delivered/unmet needs, and quality flag count
+- **N/A**: `portfolio_anchors.total` = 0 — no portfolio-anchored solutions exist
+
+**Portfolio Anchor Health** (show when `portfolio_anchors.total` > 0, after the Progress Table):
+
+Render a per-product summary table from `portfolio_anchors.products`:
+
+| Product | Features | Solutions | Delivered | Unmet | Quality |
+|---------|----------|-----------|-----------|-------|---------|
+| {product_slug} | {features} | {solutions} | {needs_delivered} | {needs_undelivered} | OK or {quality_issues} flags |
+
+Coverage above 70% (delivered / total needs) indicates healthy anchoring. Products with quality flags need attention before customer-facing use — point users to `/tips-dashboard` for per-solution detail.
 
 **Portfolio Bridge row** — derived from `portfolio_bridge` in status JSON:
 - **Done**: `context_file` is true — show version and features count
@@ -152,6 +167,15 @@ If the phase is `complete`, congratulate the user and suggest exporting or visua
 | `reporting` | Value model complete, report not yet generated | Run `trend-report` |
 | `verification` | Report done, claims pending verification | Run `cogni-claims:claim-work` |
 | `complete` | All stages finished | Export, visualize with `/tips-dashboard`, or run `/tips-catalog import` |
+
+**Stale Blueprints:** When `stale_warnings` contains a `stale_blueprints` entry (portfolio context
+was updated after blueprints were generated), prepend a re-anchor recommendation to the next actions
+for phases `modeling-scoring`, `modeling-curating`, `modeling-complete`, `reporting`, and `complete`:
+> "Portfolio context has changed since blueprints were generated. Run 're-anchor solutions' via
+> the value-modeler to update solution mappings with current portfolio data."
+
+This is automatically handled by `project-status.sh --health-check`, which prepends the re-anchor
+action to `next_actions` when the condition is detected.
 
 ## Multi-Session Design
 

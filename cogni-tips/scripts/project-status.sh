@@ -165,6 +165,10 @@ RANKED_COUNT=0
 BLUEPRINT_COUNT=0
 ANCHORED_COUNT=0
 AVG_READINESS=0
+ANCHOR_QUALITY_COUNT=0
+ANCHOR_NEEDS_DELIVERED=0
+ANCHOR_NEEDS_UNDELIVERED=0
+ANCHOR_PRODUCTS_JSON='[]'
 CLAIMS_TOTAL=0
 
 [ -f "$PROJECT_DIR/.logs/web-research-raw.json" ] && HAS_WEB_RESEARCH="true"
@@ -244,6 +248,33 @@ try:
                   for s in blueprints if isinstance(s.get('solution_blueprint', {}).get('readiness'), dict)]
         avg = round(sum(scores) / len(scores), 2) if scores else 0
         print(f'AVG_READINESS={avg}')
+    # Portfolio anchor per-product aggregation
+    anchor_agg = {}
+    anchor_quality = 0
+    anchor_delivered = 0
+    anchor_undelivered = 0
+    for s in anchored:
+        pa = s.get('portfolio_anchor') or {}
+        prod = pa.get('product_slug', 'unknown')
+        feat = pa.get('feature_slug', 'unknown')
+        nd = len(pa.get('theme_needs_delivered', []))
+        nu = len(pa.get('theme_needs_undelivered', []))
+        qi = 1 if s.get('quality_flag') == 'quality_investment_needed' else 0
+        anchor_quality += qi
+        anchor_delivered += nd
+        anchor_undelivered += nu
+        if prod not in anchor_agg:
+            anchor_agg[prod] = {'product_slug': prod, 'features': set(), 'solutions': 0, 'needs_delivered': 0, 'needs_undelivered': 0, 'quality_issues': 0}
+        anchor_agg[prod]['features'].add(feat)
+        anchor_agg[prod]['solutions'] += 1
+        anchor_agg[prod]['needs_delivered'] += nd
+        anchor_agg[prod]['needs_undelivered'] += nu
+        anchor_agg[prod]['quality_issues'] += qi
+    products_list = [{'product_slug': p['product_slug'], 'features': len(p['features']), 'solutions': p['solutions'], 'needs_delivered': p['needs_delivered'], 'needs_undelivered': p['needs_undelivered'], 'quality_issues': p['quality_issues']} for p in sorted(anchor_agg.values(), key=lambda x: x['solutions'], reverse=True)]
+    print(f'ANCHOR_QUALITY_COUNT={anchor_quality}')
+    print(f'ANCHOR_NEEDS_DELIVERED={anchor_delivered}')
+    print(f'ANCHOR_NEEDS_UNDELIVERED={anchor_undelivered}')
+    print('ANCHOR_PRODUCTS_JSON=' + chr(39) + json.dumps(products_list) + chr(39))
 except Exception:
     pass
 " 2>/dev/null)"
@@ -417,6 +448,35 @@ case "$PHASE" in
 esac
 next_actions="$next_actions]"
 
+# Inject re-anchor action when stale blueprints detected (prepend before existing actions)
+if $HEALTH_CHECK; then
+  HAS_STALE_BLUEPRINTS=$(echo "$stale_warnings" | python3 -c "
+import json, sys
+try:
+    w = json.load(sys.stdin)
+    print('true' if any(x.get('type') == 'stale_blueprints' for x in w) else 'false')
+except:
+    print('false')
+" 2>/dev/null || echo "false")
+
+  if [ "$HAS_STALE_BLUEPRINTS" = "true" ]; then
+    case "$PHASE" in
+      modeling-scoring|modeling-curating|reporting|complete)
+        next_actions=$(echo "$next_actions" | python3 -c "
+import json, sys
+try:
+    actions = json.load(sys.stdin)
+    reanchor = {'skill': 'value-modeler', 'reason': 'Portfolio has changed since blueprints were generated — run re-anchor to update solution mappings'}
+    actions.insert(0, reanchor)
+    print(json.dumps(actions))
+except:
+    sys.stdout.write(sys.stdin.read())
+" 2>/dev/null || echo "$next_actions")
+        ;;
+    esac
+  fi
+fi
+
 # Health check: detect staleness
 stale_warnings="[]"
 if $HEALTH_CHECK; then
@@ -449,6 +509,18 @@ if os.path.exists(value_model_file) and os.path.exists(report_file):
         warnings.append({
             'type': 'stale_report',
             'message': 'Value model was modified after the report was generated — report may need refresh'
+        })
+
+# Check if portfolio context is newer than value model (re-anchor needed)
+portfolio_ctx = os.path.join(proj, 'portfolio-context.json')
+value_model = os.path.join(proj, 'tips-value-model.json')
+if os.path.exists(portfolio_ctx) and os.path.exists(value_model):
+    ctx_mtime = os.path.getmtime(portfolio_ctx)
+    vm_mtime = os.path.getmtime(value_model)
+    if ctx_mtime > vm_mtime:
+        warnings.append({
+            'type': 'stale_blueprints',
+            'message': 'Portfolio context was updated after blueprints were generated — consider re-anchoring solution templates'
         })
 
 # Check if web research signals are old (> 30 days)
@@ -565,6 +637,13 @@ cat << EOF
     "context_file": $HAS_PORTFOLIO_CONTEXT,
     "context_version": $(if [ -n "$PORTFOLIO_CONTEXT_VERSION" ]; then echo "\"$PORTFOLIO_CONTEXT_VERSION\""; else echo "null"; fi),
     "features_count": $PORTFOLIO_FEATURES_COUNT
+  },
+  "portfolio_anchors": {
+    "total": $ANCHORED_COUNT,
+    "needs_delivered": $ANCHOR_NEEDS_DELIVERED,
+    "needs_undelivered": $ANCHOR_NEEDS_UNDELIVERED,
+    "quality_issues": $ANCHOR_QUALITY_COUNT,
+    "products": $ANCHOR_PRODUCTS_JSON
   },
   "phase": "$PHASE",
   "next_actions": $next_actions,
