@@ -229,7 +229,7 @@ try:
     print(f'THEMES_COUNT={len(themes)}')
     sts = d.get('solution_templates', [])
     print(f'SOLUTIONS_COUNT={len(sts)}')
-    ranked = [s for s in sts if s.get('f1_score') is not None or s.get('rank') is not None]
+    ranked = [s for s in sts if s.get('ranking_value') is not None or s.get('business_relevance_calculated') is not None]
     print(f'RANKED_COUNT={len(ranked)}')
 except Exception:
     pass
