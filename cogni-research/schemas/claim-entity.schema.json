@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/claim-entity.schema.json",
+  "title": "Claim Entity",
+  "description": "Schema for validating claim.md YAML frontmatter. Claims are factual assertions supported by citations that have been fact-checked.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "claim_text",
+    "finding_refs"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - typically 'fact-checker' skill"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - claim summary"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique claim ID with 8-char hash",
+      "pattern": "^claim-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:type": {
+      "type": "string",
+      "description": "Dublin Core type field - always 'claim'",
+      "const": "claim"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "claim"
+    },
+    "claim_text": {
+      "type": "string",
+      "description": "The factual claim being made"
+    },
+    "finding_refs": {
+      "type": "array",
+      "description": "Array of wikilinks to findings supporting this claim",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[\\[04-findings/data/finding-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+      },
+      "minItems": 1
+    },
+    "verification_status": {
+      "type": "string",
+      "description": "Fact-check verification status",
+      "enum": ["verified", "partially-verified", "unverified", "contradicted"]
+    },
+    "confidence_score": {
+      "type": "number",
+      "description": "Confidence score for claim verification (0.0 to 1.0)",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}

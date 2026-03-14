@@ -1,0 +1,36 @@
+version: "1.1.0"
+script:
+  name: "validate-wikilink-format.sh"
+  path: "scripts/validate-wikilink-format.sh"
+  purpose: "Validate wikilink follows standard format [[entity-type/data/entity-slug]]"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--wikilink"
+      type: "string"
+      required: true
+      description: "Wikilink string to validate"
+    - name: "--entity-type"
+      type: "string"
+      required: false
+      description: "Expected entity type prefix like "04-findings" or "07-sources""
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Validation completed (check data.valid for result)"
+    1: "Validation logic failed (not a validation failure, but script error)"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.1.0"
+    date: "2025-12-31"
+    changes: "Initial contract generation"
+    breaking: false

@@ -89,6 +89,15 @@
       "keywords": ["teaching", "courses", "training", "cogni-works", "cowork", "curriculum"]
     },
     {
+      "name": "cogni-research",
+      "description": "Transform research questions into traceable, source-backed syntheses through a 12-phase pipeline. Plan dimensions, gather findings from web and LLM sources, enrich with citations and claims, and synthesize into trends and reports with full provenance tracking.",
+      "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
+      "source": "./cogni-research",
+      "category": "productivity",
+      "license": "AGPL-3.0-only",
+      "keywords": ["research", "anti-hallucination", "knowledge-base", "synthesis", "provenance", "fact-checking", "evidence"]
+    },
+    {
       "name": "cogni-marketing",
       "description": "B2B marketing content engine bridging cogni-tips strategic themes (GTM paths) and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },

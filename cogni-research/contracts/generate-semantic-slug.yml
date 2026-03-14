@@ -1,0 +1,44 @@
+version: "1.1.0"
+script:
+  name: "generate-semantic-slug.sh"
+  path: "scripts/generate-semantic-slug.sh"
+  purpose: "Generate semantic UUIDs (slug + hash) for entity creation across deeper-research agents"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--title"
+      type: "string"
+      required: true
+      description: "Entity title for slug generation"
+    - name: "--content-key"
+      type: "string"
+      required: true
+      description: "String for hash generation (e.g., 'url|title')"
+    - name: "--max-length"
+      type: "number"
+      required: false
+      description: "Max slug length (optional: 50)"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.1.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

@@ -1,0 +1,36 @@
+version: "1.4.0"
+script:
+  name: "reconcile-question-batches.sh"
+  path: "scripts/reconcile-question-batches.sh"
+  purpose: "Identify refined questions missing query batches with content validation"
+  category: "validation"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Path to research project directory"
+    - name: "--batch-questions"
+      type: "paths"
+      required: false
+      description: "Comma-separated question paths to check"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "All questions have valid batches"
+    1: "Missing or malformed batches detected"
+    2: "Invalid parameters"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.4.0"
+    date: "2026-01-02"
+    changes: "Initial contract generation"
+    breaking: false

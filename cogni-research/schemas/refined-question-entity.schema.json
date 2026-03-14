@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/refined-question-entity.schema.json",
+  "title": "Refined Question Entity",
+  "description": "Schema for validating refined-question.md YAML frontmatter. Refined questions are dimension-specific research questions with structured PICOT elements.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "question",
+    "dimension_ref"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type and language",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - typically 'dimension-planner' skill"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - question summary"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique question ID with 8-char hash",
+      "pattern": "^question-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:type": {
+      "type": "string",
+      "description": "Dublin Core type field - always 'refined-question'",
+      "const": "refined-question"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "refined-question"
+    },
+    "question": {
+      "type": "object",
+      "description": "Question-specific properties",
+      "required": ["number", "text"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "Question number within dimension",
+          "minimum": 1
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-friendly slug derived from question title",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable question title"
+        },
+        "text": {
+          "type": "string",
+          "description": "Full question text"
+        }
+      }
+    },
+    "dimension_ref": {
+      "type": "string",
+      "description": "Wikilink to parent dimension entity",
+      "pattern": "^\\[\\[01-research-dimensions/data/dimension-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "query_batch_refs": {
+      "type": "array",
+      "description": "Array of wikilinks to query batches generated for this question",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[\\[03-query-batches/data/query-batch-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+      }
+    },
+    "picot_structure": {
+      "type": "object",
+      "description": "PICOT framework elements",
+      "properties": {
+        "population": {"type": "string"},
+        "intervention": {"type": "string"},
+        "comparison": {"type": "string"},
+        "outcome": {"type": "string"},
+        "timeframe": {"type": "string"}
+      }
+    },
+    "finer_scores": {
+      "type": "object",
+      "description": "FINER criteria scores",
+      "properties": {
+        "feasible": {"type": "number", "minimum": 0, "maximum": 5},
+        "interesting": {"type": "number", "minimum": 0, "maximum": 5},
+        "novel": {"type": "number", "minimum": 0, "maximum": 5},
+        "ethical": {"type": "number", "minimum": 0, "maximum": 5},
+        "relevant": {"type": "number", "minimum": 0, "maximum": 5}
+      }
+    },
+    "language": {
+      "type": "string",
+      "description": "Language code (ISO 639)",
+      "pattern": "^[a-z]{2}$"
+    },
+    "original_context_ref": {
+      "type": "string",
+      "description": "Wikilink to specific section of initial question that this refined question addresses (e.g., '[[00-initial-question/data/question-initial-xyz#trends-section]]')"
+    },
+    "framing_type": {
+      "type": "string",
+      "description": "Question orientation: 'actionable' (how to, what should), 'descriptive' (what is, what are), 'analytical' (why, what explains)",
+      "enum": ["actionable", "descriptive", "analytical"]
+    },
+    "requires_case_studies": {
+      "type": "boolean",
+      "description": "Flag indicating this question explicitly requires concrete examples, case studies, or named implementations",
+      "default": false
+    }
+  }
+}

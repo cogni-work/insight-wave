@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "entity-schema.schema.json",
+  "title": "Entity Schema Configuration",
+  "description": "Central configuration for deeper-research entity directory structure",
+  "type": "object",
+  "required": ["version", "entity_types"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the schema"
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation timestamp"
+    },
+    "entity_types": {
+      "type": "array",
+      "description": "Ordered list of entity type definitions",
+      "items": {
+        "type": "object",
+        "required": ["index", "directory", "key", "prefix", "singular", "dedupe", "data_subdir"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Order index for the entity type"
+          },
+          "directory": {
+            "type": "string",
+            "pattern": "^[0-9]{2}-[a-z-]+$",
+            "description": "Directory name (e.g., '04-findings')"
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z-]*[a-z]$",
+            "description": "Logical alias for the directory (without numeric prefix)"
+          },
+          "prefix": {
+            "type": "string",
+            "pattern": "^[a-z]+$",
+            "description": "ID prefix for entity files (e.g., 'finding')"
+          },
+          "singular": {
+            "type": "string",
+            "description": "Singular form of entity name"
+          },
+          "plural": {
+            "type": "string",
+            "description": "Plural form of entity name"
+          },
+          "data_subdir": {
+            "type": "string",
+            "description": "Subdirectory for entity files (e.g., 'data')"
+          },
+          "dedupe": {
+            "type": "boolean",
+            "description": "Whether this entity type requires deduplication"
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Required frontmatter fields for deduplication"
+          },
+          "schema_file": {
+            "type": ["string", "null"],
+            "description": "Associated JSON Schema file name"
+          }
+        }
+      }
+    },
+    "special_directories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Non-entity directories created in projects"
+    },
+    "wikilink_pattern_template": {
+      "type": "string",
+      "description": "Template for wikilink regex patterns"
+    }
+  }
+}

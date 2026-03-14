@@ -1,0 +1,44 @@
+version: "3.1.0"
+script:
+  name: "validate-wikilinks.sh"
+  path: "scripts/validate-wikilinks.sh"
+  purpose: "Verify all wikilinks resolve to existing entity files with categorized error reporting,"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Project directory path"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output results in JSON format"
+    - name: "--check-symmetry"
+      type: "string"
+      required: false
+      description: "Enable backlink symmetry validation (checks bidirectional consistency)"
+    - name: "--check-chains"
+      type: "string"
+      required: false
+      description: "Enable citation chain integrity validation (verifies Citation → Source → Publisher)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "All validations pass"
+    1: "Issues found (broken links, asymmetric links, or chain issues)"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "3.1.0"
+    date: "2025-12-21"
+    changes: "Initial contract generation"
+    breaking: false

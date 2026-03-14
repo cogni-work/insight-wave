@@ -1,0 +1,44 @@
+version: "1.0.1"
+script:
+  name: "verify-phase5-completion.sh"
+  path: "skills/dimension-planner/scripts/verify-phase5-completion.sh"
+  purpose: "Validate Phase 5 entity creation by counting actual files and comparing to expected counts"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Absolute path to research project directory"
+    - name: "--dimensions-count"
+      type: "number"
+      required: true
+      description: "Expected number of dimension files"
+    - name: "--questions-count"
+      type: "number"
+      required: true
+      description: "Expected number of question files"
+    - name: "--json"
+      type: "boolean"
+      required: true
+      description: "Output JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Verification passed (actual counts match expected)"
+    1: "Verification failed (actual counts DO NOT match expected)"
+    2: "Invalid parameters or missing directories"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.1"
+    date: "2025-11-25"
+    changes: "Initial contract generation"
+    breaking: false

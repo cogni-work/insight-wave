@@ -1,0 +1,41 @@
+version: "1.0.0"
+script:
+  name: "detect-index-drift.sh"
+  path: "scripts/detect-index-drift.sh"
+  purpose: "Compare filesystem entities with entity-index.json to detect drift"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--index-file"
+      type: "path"
+      required: true
+      description: "Path to entity-index.json"
+    - name: "--entity-type"
+      type: "string"
+      required: true
+      description: "Entity type to check (e.g., '07-sources')"
+    - name: "--filesystem-entities"
+      type: "json"
+      required: true
+      description: "JSON array of entities from filesystem"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Invalid arguments"
+    3: "File not found"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

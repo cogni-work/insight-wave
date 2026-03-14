@@ -1,0 +1,49 @@
+version: "1.0.0"
+script:
+  name: "generate-sources-readme.sh"
+  path: "scripts/generate-sources-readme.sh"
+  purpose: "Create provenance chain README with statistics and entity index for research sources"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "string"
+      required: true
+      description: "Absolute path to the research project directory"
+    - name: "--json"
+      type: "flag"
+      required: false
+      description: "Output results as JSON"
+    - name: "--language"
+      type: "string"
+      required: false
+      default: "en"
+      description: "Project language for translations (en, de, nl, fr)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data:
+        readme_path: "string"
+        readme_created: "boolean"
+      stats:
+        source_count: "integer"
+        domain_count: "integer"
+        finding_refs_total: "integer"
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    2: "Invalid arguments or missing required paths"
+    3: "No source files found"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies:
+    - "jq"
+    - "bc"
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-14"
+    changes: "Initial implementation following generate-query-batches-readme.sh pattern"
+    breaking: false

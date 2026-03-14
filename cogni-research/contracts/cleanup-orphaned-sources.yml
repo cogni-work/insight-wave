@@ -1,0 +1,37 @@
+version: "1.0.0"
+script:
+  name: "cleanup-orphaned-sources.sh"
+  path: "scripts/cleanup-orphaned-sources.sh"
+  purpose: "Detect and archive sources not referenced by any findings"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Project root directory"
+    - name: "--dry-run"
+      type: "string"
+      required: false
+      description: "Preview only, no archive operations"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Invalid arguments"
+    3: "Directory not found"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-13"
+    changes: "Initial contract generation"
+    breaking: false

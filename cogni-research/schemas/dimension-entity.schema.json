@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/dimension-entity.schema.json",
+  "title": "Dimension Entity",
+  "description": "Schema for validating dimension.md YAML frontmatter. Dimensions are high-level decompositions of the initial research question using MECE framework.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "dimension",
+    "initial_question_ref",
+    "question_count",
+    "mece_validated"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type, dimension number, and language",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - typically 'dimension-planner' skill"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - dimension title with number prefix"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique dimension ID with 8-char hash",
+      "pattern": "^dimension-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:type": {
+      "type": "string",
+      "description": "Dublin Core type field - always 'dimension'",
+      "const": "dimension"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "dimension"
+    },
+    "dimension": {
+      "type": "object",
+      "description": "Dimension-specific properties",
+      "required": ["number", "slug", "title"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "Dimension number (1-N)",
+          "minimum": 1
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-friendly dimension identifier",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable dimension title"
+        }
+      }
+    },
+    "initial_question_ref": {
+      "type": "string",
+      "description": "Wikilink to initial question entity",
+      "pattern": "^\\[\\[00-initial-question/data/question-initial-[a-f0-9]{8}\\]\\]$"
+    },
+    "question_count": {
+      "type": "integer",
+      "description": "Number of refined questions in this dimension",
+      "minimum": 0
+    },
+    "mece_validated": {
+      "type": "boolean",
+      "description": "Whether dimension set is MECE (Mutually Exclusive, Collectively Exhaustive)"
+    },
+    "language": {
+      "type": "string",
+      "description": "Language code (ISO 639)",
+      "pattern": "^[a-z]{2}$"
+    },
+    "original_organizing_concept": {
+      "type": "string",
+      "description": "Original question's organizing concept (e.g., 'Trends', 'Use Cases', 'Challenges') extracted from initial question. Preserves how the user framed their inquiry.",
+      "minLength": 10,
+      "maxLength": 200
+    },
+    "question_keywords": {
+      "type": "array",
+      "description": "Key phrases extracted from original question that indicate required focus areas (e.g., 'concrete use cases', 'significantly influence', 'business leaders')",
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 100
+      },
+      "uniqueItems": true
+    },
+    "impact_prioritization": {
+      "type": "string",
+      "description": "Impact language from original question indicating prioritization level (e.g., 'significantly influence', 'critically affect', 'primarily determine')",
+      "minLength": 10,
+      "maxLength": 200
+    },
+    "target_audience": {
+      "type": "string",
+      "description": "Target audience from original question (e.g., 'business leaders (C-level, Geschäftsführer)', 'technical teams', 'operations managers')",
+      "minLength": 10,
+      "maxLength": 200
+    },
+    "scope_type": {
+      "type": "string",
+      "description": "Scope indicated by original question: 'strategic' (business model innovation), 'operational' (process improvements), or 'mixed'",
+      "enum": ["strategic", "operational", "mixed"]
+    }
+  }
+}

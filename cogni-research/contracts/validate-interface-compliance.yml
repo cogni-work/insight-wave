@@ -1,0 +1,44 @@
+version: "1.0.0"
+script:
+  name: "validate-interface-compliance.sh"
+  path: "scripts/validate-interface-compliance.sh"
+  purpose: "Validate all scripts against interface specification standards"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--plugin-path"
+      type: "path"
+      required: true
+      description: "Plugin directory path"
+    - name: "--min-score"
+      type: "number"
+      required: false
+      description: "Minimum compliance score (optional: 95)"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+    - name: "--verbose"
+      type: "string"
+      required: false
+      description: "Show detailed validation output (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Compliance meets or exceeds minimum score"
+    1: "Compliance below minimum score"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-12-19"
+    changes: "Initial contract generation"
+    breaking: false

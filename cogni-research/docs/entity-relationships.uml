@@ -1,0 +1,318 @@
+@startuml Entity Relationships - Deeper Research Pipeline
+
+' === Styling ===
+skinparam class {
+  BackgroundColor<<00>> LightYellow
+  BackgroundColor<<01>> LightBlue
+  BackgroundColor<<02>> LightCyan
+  BackgroundColor<<03>> LightGreen
+  BackgroundColor<<04>> LightCoral
+  BackgroundColor<<05>> LightPink
+  BackgroundColor<<07>> Wheat
+  BackgroundColor<<08>> LightGray
+  BackgroundColor<<09>> Lavender
+}
+
+' === Entity Classes (10 Types) ===
+
+class InitialQuestion <<00>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: question-initial-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:type: "initial-question"
+  --
+  **Entity-Specific Fields**
+  entity_type: "initial-question"
+  question_text: string
+  research_topic: string
+  dimension_refs: wikilink[]
+  language: ISO639 code
+  scope: string
+  tags: string[]
+}
+
+class Dimension <<01>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: dimension-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:type: "dimension"
+  --
+  **Entity-Specific Fields**
+  entity_type: "dimension"
+  dimension.number: int [≥1]
+  dimension.slug: string [kebab-case]
+  dimension.title: string
+  initial_question_ref: wikilink
+  question_count: int [≥0]
+  mece_validated: boolean
+  language: ISO639 code
+  tags: string[]
+}
+
+class RefinedQuestion <<02>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: question-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:type: "refined-question"
+  --
+  **Entity-Specific Fields**
+  entity_type: "refined-question"
+  question.number: int [≥1]
+  question.text: string
+  dimension_ref: wikilink
+  query_batch_refs: wikilink[]
+  picot_structure: object
+  finer_scores: object
+  language: ISO639 code
+  tags: string[]
+}
+
+class QueryBatch <<03>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: query-batch-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:type: "query-batch"
+  --
+  **Entity-Specific Fields**
+  entity_type: "query-batch"
+  queries: string[] [minItems: 1]
+  question_ref: wikilink
+  source_count: int [≥0]
+  search_engine: string
+  execution_date: YYYY-MM-DD
+  tags: string[]
+}
+
+class Finding <<04>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: finding-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:type: "finding"
+  --
+  **Entity-Specific Fields**
+  entity_type: "finding"
+  finding_text: string
+  source_refs: wikilink[] [minItems: 1]
+  claim_refs: wikilink[]
+  megatrend_refs: wikilink[]
+  confidence_level: enum [high|medium|low]
+  finding_type: enum [quantitative|qualitative|mixed]
+  tags: string[]
+}
+
+class Megatrend <<05-06>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: megatrend-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:subject: string
+  dc:type: "megatrend"
+  --
+  **Entity-Specific Fields**
+  entity_type: "megatrend"
+  megatrend_name: string
+  finding_refs: wikilink[]
+  parent_megatrend_ref: wikilink [optional]
+  sub_megatrend_refs: wikilink[]
+  description: string
+  tags: string[]
+}
+
+class Source <<07>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: source-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:source: string [URL]
+  dc:type: "source"
+  --
+  **Entity-Specific Fields**
+  entity_type: "source"
+  url: string [HTTP/HTTPS]
+  domain: string
+  title: string
+  access_date: YYYY-MM-DD
+  publisher_id: wikilink
+  batch_id: wikilink
+  reliability_tier: enum [tier-1|tier-2|tier-3|tier-4|null]
+  doi: string [optional]
+  pmid: string [optional]
+  isbn: string [optional]
+  tags: string[]
+}
+
+class Publisher <<08>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: publisher-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:publisher: string
+  dc:type: "publisher"
+  --
+  **Entity-Specific Fields**
+  entity_type: "publisher"
+  domain: string
+  publisher_name: string
+  reliability_score: float [0.0-1.0]
+  publisher_type: enum [academic|news|government|...]
+  tags: string[]
+}
+
+class Citation <<09>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: citation-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:source: string [URL]
+  dc:type: "citation"
+  --
+  **Entity-Specific Fields**
+  entity_type: "citation"
+  source_ref: wikilink
+  quote_text: string
+  page_number: int|string
+  context: string
+  tags: string[]
+}
+
+class Claim <<09>> {
+  **Dublin Core Fields**
+  dc:identifier: string [pattern: claim-*-XXXXXXXX]
+  dc:creator: string
+  dc:title: string
+  dc:created: ISO8601
+  dc:type: "claim"
+  --
+  **Entity-Specific Fields**
+  entity_type: "claim"
+  claim_text: string
+  citation_refs: wikilink[] [minItems: 1]
+  verification_status: enum [verified|partially-verified|unverified|contradicted]
+  confidence_score: float [0.0-1.0]
+  tags: string[]
+}
+
+' === Wikilink Relationships ===
+
+' Pipeline Flow
+InitialQuestion "1" --> "n" Dimension : dimension_refs
+Dimension "1" --> "1" InitialQuestion : initial_question_ref
+Dimension "1" *-- "n" RefinedQuestion : contains
+RefinedQuestion "n" --> "1" Dimension : dimension_ref
+RefinedQuestion "1" --> "n" QueryBatch : query_batch_refs
+QueryBatch "n" --> "1" RefinedQuestion : question_ref
+
+' Source Discovery
+QueryBatch "1" --> "n" Source : generates
+Source "n" --> "1" QueryBatch : batch_id
+Source "n" --> "1" Publisher : publisher_id
+
+' Evidence Chain
+Source "1" --> "n" Citation : cited_in
+Citation "n" --> "1" Source : source_ref
+Claim "n" --> "n" Citation : citation_refs
+
+' Synthesis
+Finding "n" --> "n" Source : source_refs
+Finding "n" --> "n" Claim : claim_refs
+Finding "n" --> "n" Megatrend : megatrend_refs
+Megatrend "n" --> "n" Finding : finding_refs
+
+' Hierarchical Megatrends
+Megatrend "1" --> "n" Megatrend : sub_megatrend_refs\n(parent-child)
+Megatrend "n" --> "1" Megatrend : parent_megatrend_ref
+
+' === Pipeline Flow Annotation ===
+
+note right of InitialQuestion
+  **Research Pipeline Entry Point**
+
+  00 Initial Question
+  ↓ (decompose via MECE)
+  01 Dimensions (n dimensions)
+  ↓ (refine per dimension)
+  02 Refined Questions (n per dimension)
+  ↓ (generate search queries)
+  03 Query Batches
+  ↓ (execute searches)
+  07 Sources + 08 Publishers
+  ↓ (extract quotes)
+  09 Citations
+  ↓ (fact-check)
+  09 Claims
+  ↓ (synthesize)
+  04 Findings + 05-06 Megatrends
+  ↓ (aggregate)
+  **Synthesis Documents** (not schematized)
+end note
+
+note left of Finding
+  **Finding Synthesis**
+
+  Findings aggregate:
+  - Multiple sources
+  - Multiple claims
+  - Multiple megatrends
+
+  Cardinality: Many-to-Many
+  Evidence: source_refs[] + claim_refs[]
+  Classification: megatrend_refs[]
+end note
+
+note bottom of Publisher
+  **Provenance Chain**
+
+  Publisher ← Source ← Citation ← Claim
+
+  Reliability flows from Publisher
+  through Source to Citations/Claims.
+
+  Publisher reliability_score
+  influences Source reliability_tier
+end note
+
+' === Legend ===
+
+legend right
+  **Entity Type Numbering**
+  00 = Initial Question (yellow)
+  01 = Dimension (blue)
+  02 = Refined Question (cyan)
+  03 = Query Batch (green)
+  04 = Finding (coral)
+  05-06 = Megatrend (pink)
+  07 = Source (wheat)
+  08 = Publisher (gray)
+  09 = Citation & Claim (lavender)
+
+  **Relationship Types**
+  ──→ = Association (wikilink)
+  *──→ = Composition (owns)
+
+  **Cardinality**
+  "1" = exactly one
+  "n" = one or more
+  "0..n" = zero or more
+
+  **Field Patterns**
+  [pattern: ...] = regex validation
+  [≥N] = minimum value
+  [0.0-1.0] = float range
+  enum [...] = enumerated values
+endlegend
+
+@enduml

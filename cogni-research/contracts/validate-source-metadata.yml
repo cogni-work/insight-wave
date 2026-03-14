@@ -1,0 +1,42 @@
+version: "1.2.0"
+script:
+  name: "validate-source-metadata.sh"
+  path: "scripts/validate-source-metadata.sh"
+  purpose: "Validate source metadata (URL, domain, title) from findings"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--url"
+      type: "string"
+      required: true
+      description: "Source URL to validate"
+    - name: "--domain"
+      type: "string"
+      required: true
+      description: "Extracted domain to validate"
+    - name: "--title"
+      type: "string"
+      required: true
+      description: "Source title to validate"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.2.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/initial-question-entity.schema.json",
+  "title": "Initial Question Entity",
+  "description": "Schema for validating initial-question.md YAML frontmatter. The initial question is the starting point for research, decomposed into dimensions.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "question_text",
+    "research_topic"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type and language",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - skill that created the initial question"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - question summary"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique question ID with 8-char hash",
+      "pattern": "^question-initial-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:type": {
+      "type": "string",
+      "description": "Dublin Core type field - always 'initial-question'",
+      "const": "initial-question"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "initial-question"
+    },
+    "question_text": {
+      "type": "string",
+      "description": "Full initial research question text"
+    },
+    "research_topic": {
+      "type": "string",
+      "description": "Research topic or domain"
+    },
+    "dimension_refs": {
+      "type": "array",
+      "description": "Array of wikilinks to dimension entities derived from this question",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[\\[01-research-dimensions/data/dimension-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+      }
+    },
+    "language": {
+      "type": "string",
+      "description": "Language code (ISO 639)",
+      "pattern": "^[a-z]{2}$"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Research scope description"
+    },
+    "research_type": {
+      "type": "string",
+      "description": "Research methodology type determining synthesis mode and DOK level",
+      "enum": ["smarter-service", "b2b-ict-portfolio", "customer-value-mapping", "lean-canvas", "generic"]
+    },
+    "dok_level": {
+      "type": "integer",
+      "description": "Depth of Knowledge level (1-4) - auto-determined by research_type or asked for generic",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "linked_portfolio": {
+      "type": "string",
+      "description": "DEPRECATED: Use portfolio_file instead. Optional wikilink to b2b-ict-portfolio project",
+      "pattern": "^\\[\\[[a-z0-9-]+\\]\\]$"
+    },
+    "linked_b2b_research": {
+      "type": "string",
+      "description": "Optional wikilink to existing B2B research project for context-aware trends (smarter-service only)",
+      "pattern": "^\\[\\[[a-z0-9-]+\\]\\]$"
+    },
+    "portfolio_file": {
+      "type": "string",
+      "description": "Absolute path to portfolio mapping markdown file (e.g., /path/to/company-portfolio.md). Used by smarter-service and customer-value-mapping research types."
+    }
+  }
+}

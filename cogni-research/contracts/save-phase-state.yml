@@ -1,0 +1,42 @@
+version: "1.0.0"
+script:
+  name: "save-phase-state.sh"
+  path: "scripts/save-phase-state.sh"
+  purpose: "Persists phase completion state to disk for resume-from-checkpoint support"
+  category: "state-management"
+interface:
+  parameters:
+    - name: "--phase"
+      type: "0|1|2|3|4"
+      required: true
+      description: "Phase number"
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Path to project directory"
+    - name: "--execution-id"
+      type: "id"
+      required: true
+      description: "Unique execution identifier"
+    - name: "--status"
+      type: "status"
+      required: false
+      description: "Phase status: completed or failed (optional: completed)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-22"
+    changes: "Initial contract generation"
+    breaking: false

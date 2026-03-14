@@ -1,0 +1,26 @@
+version: "1.1.0"
+script:
+  name: "enhanced-logging.sh"
+  path: "scripts/utils/enhanced-logging.sh"
+  purpose: "Enhanced logging utility with DEBUG_MODE and QUIET_MODE-aware conditional output"
+  category: "utilities"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success (always, logging functions don't fail)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.1.0"
+    date: "2025-11-22"
+    changes: "Initial contract generation"
+    breaking: false

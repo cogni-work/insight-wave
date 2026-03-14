@@ -1,0 +1,30 @@
+version: "1.1.0"
+script:
+  name: "citation-registry.sh"
+  path: "scripts/utilities/citation-registry.sh"
+  purpose: "Centralized citation management for synthesis documents"
+  category: "utilities"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "General error"
+    2: "Missing required argument"
+    3: "Dependency not found (jq)"
+    4: "File/registry error"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.1.0"
+    date: "2025-12-21"
+    changes: "Initial contract generation"
+    breaking: false

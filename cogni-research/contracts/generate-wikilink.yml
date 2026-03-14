@@ -1,0 +1,48 @@
+version: "1.3.0"
+script:
+  name: "generate-wikilink.sh"
+  path: "scripts/generate-wikilink.sh"
+  purpose: "Generate workspace-relative wikilinks for Obsidian multi-project support"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Absolute path to project directory"
+    - name: "--entity-dir"
+      type: "name"
+      required: true
+      description: "Entity directory name (e.g., "02-refined-questions")"
+    - name: "--filename"
+      type: "name"
+      required: true
+      description: "Entity filename without .md extension"
+    - name: "--display-name"
+      type: "text"
+      required: false
+      description: "Display text for wikilink (optional, uses pipe syntax: [[path|display]])"
+    - name: "--workspace-root"
+      type: "path"
+      required: false
+      description: "Vault root path (optional, auto-detected if omitted)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success (both single-project and multi-project modes)"
+    1: "Validation error (invalid paths, missing directories)"
+    2: "Invalid arguments (missing required parameters)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.3.0"
+    date: "2025-12-31"
+    changes: "Initial contract generation"
+    breaking: false

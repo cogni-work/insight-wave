@@ -1,0 +1,221 @@
+# monitor-parallel-execution.sh Contract
+# Version: 1.0.0
+# Type: interactive-utility
+# Purpose: Interactive monitoring dashboard for parallel partition execution
+
+metadata:
+  version: "1.0.0"
+  script_type: "interactive-utility"
+  category: "interactive-utilities"
+  complexity_note: "Complexity score 5 acceptable for interactive dashboard tool"
+  architectural_note: "Interactive CLI tool for human use, not a computational service script"
+
+parameters:
+  required:
+    - name: log-dir
+      type: path
+      description: Directory containing partition log files
+      validation:
+        - must_exist: true
+        - must_be_directory: true
+      example: ".logs/"
+
+  optional:
+    - name: interval
+      type: number
+      description: Poll interval in seconds
+      default: 1
+      validation:
+        - must_be_positive: true
+        - must_be_integer: true
+      example: 2
+
+    - name: no-color
+      type: flag
+      description: Disable color output
+      default: false
+
+    - name: json
+      type: flag
+      description: Output final summary as JSON instead of dashboard
+      default: false
+
+    - name: help
+      type: flag
+      description: Show help message and exit
+
+output:
+  interactive_mode:
+    description: Real-time dashboard display (default mode)
+    format: "terminal_display"
+    components:
+      - header: "═══ Parallel Execution Monitor ═══"
+      - summary: "Progress: {completed}/{total} completed, {failed} failed, {running} running"
+      - progress_bar: "[███████░░░] 70%"
+      - partition_table:
+          columns:
+            - Partition
+            - Status (with icons)
+            - Phase
+            - Errors
+      - footer: "Press Ctrl+C to exit"
+
+    refresh_rate: "{interval} seconds"
+    auto_exit: "When all partitions complete"
+
+  json_mode:
+    description: JSON summary output (with --json flag)
+    format: "json"
+    structure:
+      success:
+        type: boolean
+        description: "True if all partitions completed successfully (no failures)"
+      data:
+        type: object
+        fields:
+          total_partitions:
+            type: number
+            description: "Total number of partitions monitored"
+          completed:
+            type: number
+            description: "Number of partitions completed successfully"
+          failed:
+            type: number
+            description: "Number of partitions that failed"
+          duration_seconds:
+            type: number
+            description: "Total monitoring duration in seconds"
+          partitions:
+            type: array
+            description: "Per-partition status information"
+            items:
+              partition_id:
+                type: string
+                description: "Partition identifier"
+              status:
+                type: string
+                enum: ["completed", "failed", "running", "waiting"]
+                description: "Current partition status"
+              current_phase:
+                type: string
+                description: "Current phase (e.g., 'Phase 3' or 'Not started')"
+              error_count:
+                type: number
+                description: "Number of errors logged for this partition"
+
+exit_codes:
+  0:
+    description: "All partitions completed successfully"
+    condition: "No failed partitions"
+  1:
+    description: "One or more partitions failed"
+    condition: "At least one partition status is 'failed'"
+  2:
+    description: "Invalid arguments or log directory not found"
+    condition: "Missing required arguments, invalid interval, or directory not found"
+
+behavior:
+  polling:
+    description: "Continuously polls partition log files at specified interval"
+    interval: "{interval} seconds"
+    discovery: "Finds all partition-*-execution-log.txt files in log directory"
+    parsing: "Extracts status, phase, and error count from each log"
+    auto_exit: "Exits when all partitions reach 'completed' or 'failed' status"
+
+  status_detection:
+    waiting: "Log file does not exist or is empty"
+    running: "Log contains phase markers but no completion/failure marker"
+    completed: "Log contains 'Partition.*completed successfully' pattern"
+    failed: "Log contains 'Partition.*failed' pattern"
+
+  phase_extraction:
+    pattern: "Phase [0-9]+:"
+    tracking: "Records latest phase number seen in log"
+    display: "Shows as 'Phase N' or 'Not started' or 'Initializing'"
+
+  error_counting:
+    pattern: "[ERROR]"
+    method: "Counts occurrences in entire log file"
+    display: "Shows total error count in partition table"
+
+  color_support:
+    detection: "Checks if terminal supports ANSI colors"
+    fallback: "Automatically disables colors for dumb terminals or when piped"
+    override: "--no-color flag forces color disable"
+    codes:
+      completed: "GREEN"
+      failed: "RED"
+      running: "CYAN"
+      waiting: "GRAY"
+      header: "BOLD"
+      progress_bar: "GREEN or RED (if failures)"
+
+  icons:
+    completed: "✅"
+    failed: "❌"
+    running: "⏳"
+    waiting: "⏸️"
+
+examples:
+  - description: "Monitor with default 1-second polling"
+    command: "monitor-parallel-execution.sh --log-dir .logs/"
+    expected_behavior: "Dashboard updates every 1 second until all partitions complete"
+
+  - description: "Monitor with 2-second polling interval"
+    command: "monitor-parallel-execution.sh --log-dir .logs/ --interval 2"
+    expected_behavior: "Dashboard updates every 2 seconds"
+
+  - description: "Monitor and output JSON summary on completion"
+    command: "monitor-parallel-execution.sh --log-dir .logs/ --json"
+    expected_behavior: "No dashboard, only final JSON summary printed when complete"
+
+  - description: "Monitor without colors (for logging to file)"
+    command: "monitor-parallel-execution.sh --log-dir .logs/ --no-color > monitor.log"
+    expected_behavior: "Plain text output without ANSI color codes"
+
+integration:
+  typical_workflow:
+    - step: "Start parallel execution in background"
+      command: "./run-parallel-publisher-generation.sh &"
+    - step: "Monitor progress in real-time"
+      command: "./monitor-parallel-execution.sh --log-dir .logs/"
+    - step: "Dashboard auto-exits when all partitions complete"
+    - step: "Exit code indicates success (0) or failures (1)"
+
+  log_file_naming:
+    pattern: "partition-{id}-execution-log.txt"
+    location: "{log-dir}/"
+    discovery: "Uses find command to locate all matching files"
+    sorting: "Alphabetical by partition ID"
+
+dependencies:
+  required_commands:
+    - bash (3.2+)
+    - find
+    - sort
+    - sed
+    - grep
+    - date
+    - jq (for --json mode only)
+
+  optional_commands:
+    - clear (for dashboard rendering)
+    - tput (for terminal capability detection)
+
+compatibility:
+  bash_version: "3.2+"
+  platforms:
+    - macOS
+    - Linux
+    - WSL
+  terminals:
+    - Any ANSI-compatible terminal for colors
+    - Dumb terminals supported with auto-fallback
+
+notes:
+  - "This is an interactive utility, not a computational service script"
+  - "Higher complexity (score 5) is acceptable for UX-focused interactive tools"
+  - "Dashboard mode is default; JSON mode is for automation/integration"
+  - "Polling continues until ALL partitions reach terminal state (completed/failed)"
+  - "Gracefully handles partitions appearing dynamically during execution"
+  - "Safe to Ctrl+C at any time without corrupting data"

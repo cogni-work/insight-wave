@@ -1,0 +1,407 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/dimension-plan-batch.schema.json",
+  "title": "Dimension Plan Batch Input",
+  "description": "Schema for batched LLM-generated dimension plan JSON containing multiple dimensions",
+  "type": "object",
+  "required": ["metadata", "dimensions"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "description": "Batch-level metadata for tracking and routing",
+      "required": ["project_language", "initial_question_entity_id", "total_dimensions", "total_questions"],
+      "additionalProperties": false,
+      "properties": {
+        "project_language": {
+          "type": "string",
+          "description": "ISO 639-1 language code for all content",
+          "pattern": "^[a-z]{2}$",
+          "minLength": 2,
+          "maxLength": 2
+        },
+        "initial_question_entity_id": {
+          "type": "string",
+          "description": "Entity ID of the initial question these dimensions belong to",
+          "pattern": "^question-[a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{8}$"
+        },
+        "total_dimensions": {
+          "type": "integer",
+          "description": "Total number of dimensions in this batch",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "total_questions": {
+          "type": "integer",
+          "description": "Total questions. DOK-based: generic 8-50, lean-canvas 27, customer-value-mapping 16-40. Fixed: smarter-service 52, b2b-ict-portfolio 57.",
+          "minimum": 1,
+          "maximum": 71
+        },
+        "research_type": {
+          "type": "string",
+          "description": "Research framework type (determines question distribution)",
+          "enum": ["generic", "smarter-service", "lean-canvas", "b2b-ict-portfolio", "customer-value-mapping"]
+        },
+        "trend_velocity": {
+          "type": "string",
+          "description": "Global trend velocity detected from initial question",
+          "enum": ["accelerating", "emerging", "static", "speculative"]
+        },
+        "case_study_requirement": {
+          "type": "string",
+          "description": "Global case study requirement level",
+          "enum": ["required", "recommended", "none"]
+        }
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "description": "Array of dimension plans (each with dimension entity + questions)",
+      "minItems": 1,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "required": ["dimension_number", "dimension_slug", "dimension", "questions"],
+        "additionalProperties": false,
+        "properties": {
+          "dimension_number": {
+            "type": "integer",
+            "description": "Sequential dimension number (0-based for b2b-ict-portfolio with dimension 0, 1-based for other research types)",
+            "minimum": 0,
+            "maximum": 9
+          },
+          "dimension_slug": {
+            "type": "string",
+            "description": "URL-safe dimension identifier (kebab-case)",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "dimension": {
+            "type": "object",
+            "description": "Dimension entity specification",
+            "required": ["title", "entity_id", "description", "scope", "rationale", "question_count"],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Short dimension title (1-3 words, core concept only)",
+                "minLength": 10,
+                "maxLength": 200
+              },
+              "entity_id": {
+                "type": "string",
+                "description": "Unique entity identifier (dimension-{slug}-{hash})",
+                "pattern": "^dimension-[a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{8}$"
+              },
+              "description": {
+                "type": "string",
+                "description": "Comprehensive dimension description (100-500 words)",
+                "minLength": 100,
+                "maxLength": 3000
+              },
+              "scope": {
+                "type": "string",
+                "description": "Clear scope boundaries and focus area",
+                "minLength": 50,
+                "maxLength": 1000
+              },
+              "rationale": {
+                "type": "string",
+                "description": "Justification for dimension importance",
+                "minLength": 50,
+                "maxLength": 1000
+              },
+              "question_count": {
+                "type": "integer",
+                "description": "Number of questions planned for this dimension",
+                "minimum": 1,
+                "maximum": 20
+              }
+            }
+          },
+          "questions": {
+            "type": "array",
+            "description": "Array of question entities for this dimension",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "required": ["title", "entity_id", "question_text", "rationale", "picot_structure", "finer_scores"],
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Short question title (1-3 words, core topic only)",
+                  "minLength": 10,
+                  "maxLength": 150
+                },
+                "entity_id": {
+                  "type": "string",
+                  "description": "Unique entity identifier (question-{slug}-{hash})",
+                  "pattern": "^question-[a-z0-9]+(?:-[a-z0-9]+)*-[a-f0-9]{8}$"
+                },
+                "question_text": {
+                  "type": "string",
+                  "description": "Full research question text",
+                  "minLength": 20,
+                  "maxLength": 500
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "Justification for question inclusion",
+                  "minLength": 50,
+                  "maxLength": 1000
+                },
+                "picot_structure": {
+                  "type": "object",
+                  "description": "PICOT framework components",
+                  "required": ["population", "intervention", "comparison", "outcome", "timeframe"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "population": {
+                      "type": "string",
+                      "description": "Target population or context",
+                      "minLength": 10,
+                      "maxLength": 500
+                    },
+                    "intervention": {
+                      "type": "string",
+                      "description": "Intervention, exposure, or factor",
+                      "minLength": 10,
+                      "maxLength": 500
+                    },
+                    "comparison": {
+                      "type": "string",
+                      "description": "Comparison group or baseline",
+                      "minLength": 10,
+                      "maxLength": 500
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "description": "Expected outcome or measure",
+                      "minLength": 10,
+                      "maxLength": 500
+                    },
+                    "timeframe": {
+                      "type": "string",
+                      "description": "Time period or temporal scope",
+                      "minLength": 5,
+                      "maxLength": 200
+                    }
+                  }
+                },
+                "finer_scores": {
+                  "type": "object",
+                  "description": "FINER framework quality scores (1-3 per criterion, 10-15 total)",
+                  "required": ["feasible", "interesting", "novel", "ethical", "relevant", "total"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "feasible": {
+                      "type": "integer",
+                      "description": "Feasibility score",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "interesting": {
+                      "type": "integer",
+                      "description": "Interest/importance score",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "novel": {
+                      "type": "integer",
+                      "description": "Novelty/originality score",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "ethical": {
+                      "type": "integer",
+                      "description": "Ethical considerations score",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "relevant": {
+                      "type": "integer",
+                      "description": "Relevance to research goals score",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total FINER score (sum of all criteria)",
+                      "minimum": 10,
+                      "maximum": 15
+                    }
+                  }
+                },
+                "action_horizon": {
+                  "type": "object",
+                  "description": "Action horizon classification for smarter-service research type (optional for other types)",
+                  "required": ["horizon", "justification"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "horizon": {
+                      "type": "string",
+                      "description": "Action urgency classification",
+                      "enum": ["act", "plan", "observe"]
+                    },
+                    "justification": {
+                      "type": "string",
+                      "description": "Evidence-based justification for horizon assignment",
+                      "minLength": 20,
+                      "maxLength": 500
+                    },
+                    "timeframe": {
+                      "type": "string",
+                      "description": "Specific timeframe for this horizon",
+                      "pattern": "^[0-9]+-[0-9]+\\s*(years?|Jahre?)$"
+                    }
+                  }
+                },
+                "trend_velocity": {
+                  "type": "object",
+                  "description": "Trend velocity indicators for TIPS-based research (optional for other types)",
+                  "additionalProperties": false,
+                  "properties": {
+                    "velocity": {
+                      "type": "string",
+                      "description": "Trend adoption speed classification",
+                      "enum": ["accelerating", "emerging", "static", "speculative"]
+                    },
+                    "momentum_indicator": {
+                      "type": "string",
+                      "description": "Specific momentum metric or indicator",
+                      "minLength": 10,
+                      "maxLength": 300
+                    },
+                    "evidence_type": {
+                      "type": "string",
+                      "description": "Type of evidence required for this velocity",
+                      "enum": ["quantitative", "qualitative", "hybrid"]
+                    }
+                  }
+                },
+                "cross_dimensional_links": {
+                  "type": "array",
+                  "description": "Links to other dimensions in the TIPS flow (optional)",
+                  "items": {
+                    "type": "object",
+                    "required": ["target_dimension", "link_type"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "target_dimension": {
+                        "type": "string",
+                        "description": "Slug of the linked dimension",
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                      },
+                      "link_type": {
+                        "type": "string",
+                        "description": "Type of cross-dimensional relationship",
+                        "enum": ["causal", "dependency", "enablement", "feedback"]
+                      },
+                      "tips_flow": {
+                        "type": "string",
+                        "description": "TIPS component flow (e.g., T→P, P→I)",
+                        "pattern": "^[TIPS]→[TIPS]$"
+                      },
+                      "evidence": {
+                        "type": "string",
+                        "description": "Evidence for this linkage",
+                        "minLength": 10,
+                        "maxLength": 300
+                      }
+                    }
+                  }
+                },
+                "case_study_requirement": {
+                  "type": "object",
+                  "description": "Case study integration requirements (optional)",
+                  "additionalProperties": false,
+                  "properties": {
+                    "requirement_level": {
+                      "type": "string",
+                      "description": "How strongly case studies are needed",
+                      "enum": ["required", "recommended", "none"]
+                    },
+                    "count": {
+                      "type": "string",
+                      "description": "Expected number of case studies",
+                      "pattern": "^[0-9]+-[0-9]+$"
+                    },
+                    "tips_role": {
+                      "type": "string",
+                      "description": "Which TIPS component the case studies support",
+                      "enum": ["T", "I", "P", "S", "mixed"]
+                    }
+                  }
+                },
+                "portfolio_category": {
+                  "type": "object",
+                  "description": "Standard Portfolio Taxonomy category assignment. REQUIRED for b2b-ict-portfolio research type - each question must map to exactly one of the 57 taxonomy categories (dimensions 0-7).",
+                  "additionalProperties": false,
+                  "properties": {
+                    "category_id": {
+                      "type": "string",
+                      "description": "Category ID from Standard Portfolio Taxonomy (e.g., '0.1', '4.3')",
+                      "pattern": "^[0-7]\\.[0-9]{1,2}$"
+                    },
+                    "category_name": {
+                      "type": "string",
+                      "description": "Category name from taxonomy (e.g., 'Zero Trust Architecture')",
+                      "minLength": 3,
+                      "maxLength": 100
+                    },
+                    "dimension_slug": {
+                      "type": "string",
+                      "description": "Parent dimension slug for validation",
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                    }
+                  },
+                  "required": ["category_id", "category_name"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "research_type": { "const": "b2b-ict-portfolio" }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "total_questions": {
+                "minimum": 57,
+                "maximum": 71,
+                "description": "For b2b-ict-portfolio: 57 base categories (8 dimensions: 0-7) + up to 14 cross-cutting questions"
+              }
+            }
+          },
+          "dimensions": {
+            "items": {
+              "properties": {
+                "questions": {
+                  "items": {
+                    "required": ["title", "entity_id", "question_text", "rationale", "picot_structure", "finer_scores", "portfolio_category"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

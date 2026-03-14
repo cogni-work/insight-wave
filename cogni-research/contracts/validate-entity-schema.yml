@@ -1,0 +1,47 @@
+version: "1.0.0"
+script:
+  name: "validate-entity-schema.sh"
+  path: "scripts/validate-entity-schema.sh"
+  purpose: "Validate entity YAML frontmatter against JSON Schema Draft 07 definitions"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--entity-type"
+      type: "string"
+      required: true
+      description: "Entity type (source, finding, publisher, etc.)"
+    - name: "--entity-file"
+      type: "path"
+      required: true
+      description: "Absolute path to entity markdown file"
+    - name: "--schema-path"
+      type: "path"
+      required: true
+      description: "Absolute path to JSON schema file"
+    - name: "--json"
+      type: "boolean"
+      required: true
+      description: "Output results in JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Validation passed"
+    1: "Validation failed (schema violations found)"
+    2: "Invalid parameters"
+    3: "Schema file not found"
+    4: "Entity file not found"
+    5: "Missing required tools (yq, jq)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-26"
+    changes: "Initial contract generation"
+    breaking: false

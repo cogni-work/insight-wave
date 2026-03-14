@@ -1,0 +1,28 @@
+version: "1.0.1"
+script:
+  name: "generate-query-batches-readme.sh"
+  path: "skills/batch-creator/scripts/generate-query-batches-readme.sh"
+  purpose: "Create provenance chain README with statistics and entity index for query batches"
+  category: "utilities"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    2: "Invalid arguments or missing required paths"
+    3: "No batch files found"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.1"
+    date: "2025-12-31"
+    changes: "Initial contract generation"
+    breaking: false

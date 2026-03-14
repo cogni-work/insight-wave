@@ -1,0 +1,24 @@
+{
+  "name": "cogni-research",
+  "version": "0.9.80",
+  "description": "Transform research questions into traceable, source-backed syntheses through a 12-phase pipeline. Plan dimensions, gather findings from web and LLM sources, enrich with citations and claims, and synthesize into trends and reports with full provenance tracking.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "research",
+    "anti-hallucination",
+    "knowledge-base",
+    "synthesis",
+    "tips",
+    "trends",
+    "strategic-trends",
+    "bilingual",
+    "pipeline",
+    "provenance",
+    "fact-checking",
+    "evidence"
+  ]
+}

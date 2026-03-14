@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/finding-entity.schema.json",
+  "title": "Finding Entity",
+  "description": "Schema for validating finding.md YAML frontmatter. Findings are synthesized trends extracted from multiple sources with supporting evidence.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "finding_text"
+  ],
+  "oneOf": [
+    {
+      "required": ["batch_ref"]
+    },
+    {
+      "required": ["question_ref"],
+      "not": {"required": ["batch_ref"]}
+    }
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type and finding category",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - skill that created the finding"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - finding summary"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique finding ID with 8-char hash",
+      "pattern": "^finding-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:type": {
+      "type": "string",
+      "description": "Dublin Core type field - always 'finding'",
+      "const": "finding"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "finding"
+    },
+    "finding_text": {
+      "type": "string",
+      "description": "Main finding content - synthesized trend"
+    },
+    "batch_ref": {
+      "type": "string",
+      "description": "Wikilink to query batch that generated this finding (findings-creator path)",
+      "pattern": "^\\[\\[03-query-batches/data/query-batch-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "question_ref": {
+      "type": "string",
+      "description": "Wikilink to refined question. Used by findings-creator-llm (Path B - no batch) OR by findings-creator (Path A - redundant safety link alongside batch_ref)",
+      "pattern": "^\\[\\[02-refined-questions/data/question-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "confidence_level": {
+      "type": "string",
+      "description": "Confidence assessment for this finding",
+      "enum": ["high", "medium", "low"]
+    },
+    "finding_type": {
+      "type": "string",
+      "description": "Classification of finding type",
+      "enum": ["quantitative", "qualitative", "mixed"]
+    }
+  }
+}

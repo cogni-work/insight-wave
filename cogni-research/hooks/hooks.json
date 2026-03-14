@@ -1,0 +1,110 @@
+{
+  "version": "1.0",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-entity-writes.sh",
+            "timeout": 5,
+            "enabled": true,
+            "name": "block-entity-writes",
+            "description": "Blocks Write/Edit to entity directories (03-query-batches, 04-findings, 07-sources, 08-publishers) - forces create-entity.sh usage for validation, locking, and index updates"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/validate-workspace-wikilinks.sh",
+            "timeout": 10,
+            "enabled": true,
+            "name": "validate-workspace-wikilinks",
+            "description": "Validates wikilinks before entity creation: detects and rejects bare filename wikilinks in multi-project Obsidian workspaces, requires workspace-relative paths"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-entity-creation.sh",
+            "timeout": 30,
+            "enabled": true,
+            "name": "post-entity-creation",
+            "description": "Validates entity structure after creation: YAML frontmatter, wikilink format, UUID uniqueness, entity type directory match"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-write-validate-wikilinks.sh",
+            "timeout": 30,
+            "enabled": true,
+            "name": "post-write-validate-wikilinks",
+            "description": "Validates wikilinks in newly created entity files: detects broken links, trailing backslashes, .md extensions, and hallucinated entity references"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-synthesis-validation.sh",
+            "timeout": 60,
+            "enabled": true,
+            "name": "pre-synthesis-validation",
+            "description": "Validates research prerequisites before synthesis-hub generates final synthesis: claims availability (min 5), confidence scores (0.0-1.0), wikilink integrity, citation availability, megatrend structure"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "source-creator",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/verify-source-creator-output.sh",
+            "timeout": 300,
+            "enabled": true,
+            "name": "verify-source-creator-output",
+            "description": "Anti-hallucination verification with AUTO-RECOVERY: validates source-creator output against filesystem reality. When hallucination detected, automatically executes script.sh to recover."
+          }
+        ]
+      },
+      {
+        "matcher": "findings-creator",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/repair-missing-batches.sh",
+            "timeout": 60,
+            "enabled": true,
+            "name": "repair-missing-batches",
+            "description": "Detect and repair missing batch files after findings-creator. Creates minimal batch entities from findings metadata to unblock downstream source/publisher creation."
+          }
+        ]
+      },
+      {
+        "matcher": "batch-creator",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/verify-batch-creator-output.sh",
+            "timeout": 60,
+            "enabled": true,
+            "name": "verify-batch-creator-output",
+            "description": "Anti-hallucination verification: validates batch-creator output against filesystem reality. Detects when agent fabricates results without tool execution."
+          }
+        ]
+      }
+    ]
+  }
+}

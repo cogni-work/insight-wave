@@ -1,0 +1,32 @@
+version: "2.0.1"
+script:
+  name: "validate-phase3-completion.sh"
+  path: "scripts/validate-phase3-completion.sh"
+  purpose: "Single-call validation for Phase 3 (Parallel Findings Creation) completion"
+  category: "validation"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Path to research project directory"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Validation passed (all checks green)"
+    1: "Validation failed (critical errors)"
+    2: "Invalid parameters"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "2.0.1"
+    date: "2026-01-01"
+    changes: "Initial contract generation"
+    breaking: false

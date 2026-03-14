@@ -1,0 +1,46 @@
+version: "1.0.0"
+script:
+  name: "update-batch-with-findings.sh"
+  path: "scripts/update-batch-with-findings.sh"
+  purpose: "Update query batch entity with finding_ids array for bidirectional navigation"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "string"
+      required: true
+      description: "Path to research project root directory"
+    - name: "--batch-file"
+      type: "string"
+      required: true
+      description: "Path to batch entity markdown file"
+    - name: "--finding-ids"
+      type: "json-array"
+      required: true
+      description: "JSON array of finding wikilinks [[04-findings/data/slug]]"
+    - name: "--validate-format"
+      type: "bool"
+      required: false
+      description: "Enforce wiki-link format validation (optional: true)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Update completed successfully"
+    1: "Validation error (invalid format or missing backlinks)"
+    2: "Invalid arguments (missing required parameters)"
+    3: "File operation error (batch file not found)"
+    4: "Atomic update failed (frontmatter validation failed)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-12-21"
+    changes: "Initial contract generation"
+    breaking: false

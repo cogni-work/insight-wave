@@ -1,0 +1,60 @@
+version: "3.0.0"
+script:
+  name: "lookup-entity.sh"
+  path: "scripts/lookup-entity.sh"
+  purpose: "Check if entity exists by normalized name OR URL in entity-index.json"
+  category: "utilities"
+implementation:
+  architecture: "python-backend-with-bash-wrapper"
+  backend: "python"
+  backend_script: "scripts/lookup-entity.py"
+  wrapper: "bash"
+  cross_platform: true
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Project directory path"
+    - name: "--entity-type"
+      type: "string"
+      required: true
+      description: "Entity type directory name"
+    - name: "--name"
+      type: "string"
+      required: false
+      description: "Entity name to lookup (optional, either --name OR --url required)"
+    - name: "--url"
+      type: "string"
+      required: false
+      description: "Entity URL to lookup (optional, either --name OR --url required)"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Usage error"
+compatibility:
+  min_bash_version: "3.2"
+  min_python_version: "3.8"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+  notes: "Python 3.8+ required."
+changelog:
+  - version: "3.0.0"
+    date: "2025-12-19"
+    changes: "Migrate to Python backend with bash wrapper for cross-platform support"
+    breaking: false
+  - version: "2.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

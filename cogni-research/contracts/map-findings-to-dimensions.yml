@@ -1,0 +1,45 @@
+version: "1.0.0"
+script:
+  name: "map-findings-to-dimensions.sh"
+  path: "scripts/map-findings-to-dimensions.sh"
+  purpose: "Map findings to dimensions via query batch provenance"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Project directory path"
+    - name: "--dimension"
+      type: "string"
+      required: true
+      description: "Dimension name to filter findings"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+    - name: "--export"
+      type: "string"
+      required: false
+      description: "Export wikilink format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Usage error"
+    3: "Path not found"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-12-21"
+    changes: "Initial contract generation"
+    breaking: false

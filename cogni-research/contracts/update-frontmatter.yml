@@ -1,0 +1,44 @@
+version: "1.0.0"
+script:
+  name: "update-frontmatter.sh"
+  path: "scripts/update-frontmatter.sh"
+  purpose: "Add or update a key-value pair in YAML frontmatter of a markdown file"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--file"
+      type: "path"
+      required: true
+      description: "Absolute path to markdown file"
+    - name: "--key"
+      type: "name"
+      required: true
+      description: "Frontmatter key to update"
+    - name: "--value"
+      type: "value"
+      required: true
+      description: "Value to set"
+    - name: "--json"
+      type: "boolean"
+      required: true
+      description: "Output JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error (file not found, invalid YAML, etc.)"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-19"
+    changes: "Initial contract generation"
+    breaking: false

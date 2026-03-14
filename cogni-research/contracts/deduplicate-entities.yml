@@ -1,0 +1,46 @@
+version: "1.0.0"
+script:
+  name: "deduplicate-entities.sh"
+  path: "scripts/deduplicate-entities.sh"
+  purpose: "Detect and merge duplicate entities after parallel phases complete"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Project directory"
+    - name: "--entity-type"
+      type: "type"
+      required: true
+      description: "Entity type: 08-authors or 12-institutions"
+    - name: "--auto-merge"
+      type: "string"
+      required: false
+      description: "Auto-merge without prompting"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON report (: true)"
+    - name: "--dry-run"
+      type: "string"
+      required: false
+      description: "Preview changes without making them"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

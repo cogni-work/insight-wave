@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/query-batch-entity.schema.json",
+  "title": "Query Batch Entity",
+  "description": "Schema for validating query-batch.md YAML frontmatter (v3.0.0). Query batches contain search configurations generated for refined questions.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "batch_id",
+    "question_id",
+    "query_text",
+    "language",
+    "config_count",
+    "queries_count",
+    "question_ref",
+    "search_configs",
+    "schema_version"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type, must include 'query-batch' and 'research-batch'",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 2,
+      "contains": {
+        "const": "query-batch"
+      },
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - skill that created the batch"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - batch description"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique batch ID matching batch_id",
+      "pattern": "^question-[a-z0-9-]+-[a-f0-9]{8}-batch$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "query-batch"
+    },
+    "batch_id": {
+      "type": "string",
+      "description": "Batch identifier in format {question_id}-batch",
+      "pattern": "^question-[a-z0-9-]+-[a-f0-9]{8}-batch$"
+    },
+    "question_id": {
+      "type": "string",
+      "description": "Base question ID without -batch suffix, used for README linkage",
+      "pattern": "^question-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "query_text": {
+      "type": "string",
+      "description": "Verbatim question text",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "description": "ISO 639-1 language code",
+      "pattern": "^[a-z]{2}$"
+    },
+    "config_count": {
+      "type": "integer",
+      "description": "Number of search configurations (minimum 4)",
+      "minimum": 4
+    },
+    "queries_count": {
+      "type": "integer",
+      "description": "Alias for config_count, required by generate-query-batches-readme.sh",
+      "minimum": 4
+    },
+    "question_ref": {
+      "type": "string",
+      "description": "Wikilink to refined question this batch addresses",
+      "pattern": "^\\[\\[02-refined-questions/data/question-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "search_configs": {
+      "type": "array",
+      "description": "Array of search configuration objects",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["config_id", "profile", "tier", "websearch_params"],
+        "properties": {
+          "config_id": {
+            "type": "string",
+            "description": "UUID-format configuration identifier",
+            "pattern": "^config-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+          },
+          "profile": {
+            "type": "string",
+            "description": "Search profile type",
+            "enum": ["general", "localized", "industry", "academic", "technical"]
+          },
+          "tier": {
+            "type": "integer",
+            "description": "Execution tier",
+            "minimum": 1
+          },
+          "websearch_params": {
+            "type": "object",
+            "required": ["query"],
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "Optimized search query string"
+              },
+              "allowed_domains": {
+                "type": "array",
+                "description": "Whitelist of domains (mutually exclusive with blocked_domains)",
+                "items": {"type": "string"}
+              },
+              "blocked_domains": {
+                "type": "array",
+                "description": "Blacklist of domains (mutually exclusive with allowed_domains)",
+                "items": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version",
+      "const": "3.0.0"
+    },
+    "executed_at": {
+      "type": "string",
+      "description": "Execution timestamp - ISO 8601 format (added after execution)",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "finding_ids": {
+      "type": "array",
+      "description": "Wikilinks to findings created from this batch (added after execution)",
+      "items": {"type": "string"}
+    },
+    "megatrend_ids": {
+      "type": "array",
+      "description": "Wikilinks to megatrends created from this batch (added after execution)",
+      "items": {"type": "string"}
+    }
+  }
+}

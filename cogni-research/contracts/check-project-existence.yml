@@ -1,0 +1,40 @@
+version: "1.0.0"
+script:
+  name: "check-project-existence.sh"
+  path: "scripts/check-project-existence.sh"
+  purpose: "Check for existing research projects and preview slug normalization"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-name"
+      type: "string"
+      required: true
+      description: "Project name to check"
+    - name: "--projects-root"
+      type: "path"
+      required: true
+      description: "Projects root directory"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output JSON format (optional flag)"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

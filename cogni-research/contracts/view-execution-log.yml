@@ -1,0 +1,52 @@
+version: "1.0.0"
+script:
+  name: "view-execution-log.sh"
+  path: "scripts/view-execution-log.sh"
+  purpose: "Interactive CLI tool for navigating execution logs"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--log-file"
+      type: "string"
+      required: true
+      description: "PATH    Path to execution log file"
+    - name: "--phase"
+      type: "string"
+      required: false
+      description: "NUMBER     Jump to specific phase"
+    - name: "--level"
+      type: "string"
+      required: false
+      description: "LEVEL      Filter by level: ERROR|WARN|INFO|DEBUG|TRACE"
+    - name: "--search"
+      type: "string"
+      required: false
+      description: "PATTERN   Search for pattern with context"
+    - name: "--no-color"
+      type: "string"
+      required: false
+      description: "Disable color output"
+    - name: "--help"
+      type: "string"
+      required: false
+      description: "Show this help message"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Log file not found"
+    2: "Invalid phase number or arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-09"
+    changes: "Initial contract generation"
+    breaking: false

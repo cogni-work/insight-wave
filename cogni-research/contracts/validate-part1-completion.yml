@@ -1,0 +1,36 @@
+version: "1.0.0"
+script:
+  name: "validate-part1-completion.sh"
+  path: "scripts/validate-part1-completion.sh"
+  purpose: "Validate that Part 1 (deeper-analysis) completed successfully"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Path to research project"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output results in JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Part 1 complete and valid"
+    1: "Part 1 incomplete or invalid"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

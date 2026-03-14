@@ -1,0 +1,27 @@
+version: "1.0.0"
+script:
+  name: "sync-shared-utils.sh"
+  path: "scripts/sync-shared-utils.sh"
+  purpose: "Copy shared Python utilities into plugin for bundled distribution"
+  category: "utilities"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success (all files copied)"
+    1: "Error (source not found or copy failed)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2026-01-02"
+    changes: "Initial contract generation"
+    breaking: false

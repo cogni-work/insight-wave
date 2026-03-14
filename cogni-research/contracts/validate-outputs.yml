@@ -1,0 +1,43 @@
+version: "1.0.0"
+script:
+  name: "validate-outputs.sh"
+  path: "skills/dimension-planner/scripts/validate-outputs.sh"
+  purpose: "Validate final dimension/question counts and FINER score against thresholds"
+  category: "validators"
+interface:
+  parameters:
+    - name: "--dimensions"
+      type: "number"
+      required: false
+      description: "Dimension count (required, must be 2-10)"
+    - name: "--questions"
+      type: "number"
+      required: false
+      description: "Question count (required, must be 8-50)"
+    - name: "--avg-finer"
+      type: "float"
+      required: false
+      description: "Average FINER score (required, must be >= 11.0)"
+    - name: "--json"
+      type: "boolean"
+      required: true
+      description: "Output in JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Validation passed"
+    1: "Validation failed (constraint violated)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-13"
+    changes: "Initial contract generation"
+    breaking: false

@@ -1,0 +1,28 @@
+version: "3.6.0 - Fix publisher ID mismatch with publisher-generator (Issue #84)"
+script:
+  name: "source-creator/script.sh"
+  path: "scripts/source-creator.sh"
+  purpose: "Extract source metadata from findings and create deduplicated source entities"
+  category: "deeper-research Phase 6.1"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Environment/validation error (CLAUDE_PLUGIN_ROOT not set, scripts not found)"
+    2: "Parameter validation error (missing/invalid arguments)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "3.6.0 - Fix publisher ID mismatch with publisher-generator (Issue #84)"
+    date: "2026-01-04"
+    changes: "Initial contract generation"
+    breaking: false

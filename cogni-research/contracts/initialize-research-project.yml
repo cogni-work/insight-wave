@@ -1,0 +1,55 @@
+version: "2.1.0"
+script:
+  name: "initialize-research-project.sh"
+  path: "scripts/initialize-research-project.sh"
+  purpose: "Initialize new research project with complete entity directory structure"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-name"
+      type: "name"
+      required: false
+      description: "Project name (required, kebab-case recommended)"
+    - name: "--projects-root"
+      type: "path"
+      required: false
+      description: "Projects root directory (: ${COGNI_RESEARCH_ROOT} or ~/research-projects)"
+    - name: "--research-type"
+      type: "type"
+      required: false
+      description: "Research type (e.g., lean-canvas, action-oriented-radar, trend-radar, generic)"
+    - name: "--language"
+      type: "code"
+      required: false
+      description: "Project language (ISO 639-1 code, e.g., en, de, fr; default: en)"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output results in JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      project_path: "string"
+      project_name: "string"
+      project_language: "string"
+      research_type: "string"
+      created: "string (ISO 8601 timestamp)"
+      entity_dirs: "array of strings"
+      metadata_files: "array of strings"
+      readme: "string"
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "2.1.0"
+    date: "2026-01-04"
+    changes: "Initial contract generation"
+    breaking: false

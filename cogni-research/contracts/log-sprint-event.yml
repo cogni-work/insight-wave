@@ -1,0 +1,52 @@
+version: "1.0.0"
+script:
+  name: "log-sprint-event.sh"
+  path: "scripts/log-sprint-event.sh"
+  purpose: "Log events to project sprint-log.json for audit trail"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-name"
+      type: "name"
+      required: true
+      description: "Project name"
+    - name: "--phase"
+      type: "phase"
+      required: true
+      description: "Phase number (0-10)"
+    - name: "--event"
+      type: "event"
+      required: false
+      description: "Event type (required, e.g., research_type_selected, phase_completed)"
+    - name: "--details"
+      type: "details"
+      required: false
+      description: "Event details string"
+    - name: "--projects-root"
+      type: "path"
+      required: false
+      description: "Projects root directory (: ${COGNI_RESEARCH_ROOT})"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Output results in JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Validation error"
+    2: "Invalid arguments"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false

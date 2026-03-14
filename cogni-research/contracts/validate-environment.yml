@@ -1,0 +1,34 @@
+version: "0.0.0"
+script:
+  name: "validate-environment.sh"
+  path: "skills/dimension-planner/scripts/validate-environment.sh"
+  purpose: "Validate CLAUDE_PLUGIN_ROOT, working directory, and required"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Absolute path to project directory"
+    - name: "--json"
+      type: "boolean"
+      required: true
+      description: "Output JSON format"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "0.0.0"
+    date: "2025-11-13"
+    changes: "Initial contract generation"
+    breaking: false

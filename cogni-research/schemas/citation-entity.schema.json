@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/schemas/citation-entity.schema.json",
+  "title": "Citation Entity",
+  "description": "Schema for validating citation.md YAML frontmatter. Citations are quoted excerpts from sources with precise attribution.",
+  "type": "object",
+  "required": [
+    "tags",
+    "dc:creator",
+    "dc:title",
+    "dc:identifier",
+    "dc:created",
+    "entity_type",
+    "source_ref",
+    "publisher_ref",
+    "quote_text"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "tags": {
+      "type": "array",
+      "description": "Classification tags including entity type",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-/]+$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Dublin Core creator field - skill that created the citation"
+    },
+    "dc:title": {
+      "type": "string",
+      "description": "Dublin Core title field - citation summary"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Dublin Core identifier - unique citation ID with 8-char hash",
+      "pattern": "^citation-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "Dublin Core creation timestamp - ISO 8601 format",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:source": {
+      "type": "string",
+      "description": "Dublin Core source field - source URL"
+    },
+    "dc:type": {
+      "type": "string",
+      "description": "Dublin Core type field - always 'citation'",
+      "const": "citation"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Entity type identifier",
+      "const": "citation"
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "Wikilink to source entity being cited",
+      "pattern": "^\\[\\[07-sources/data/source-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "publisher_ref": {
+      "type": "string",
+      "description": "Wikilink to publisher entity (both sources AND publishers are immediate upstreams)",
+      "pattern": "^\\[\\[08-publishers/data/publisher-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "quote_text": {
+      "type": "string",
+      "description": "Exact quoted text from source"
+    },
+    "page_number": {
+      "type": ["integer", "string"],
+      "description": "Page number or location in source"
+    },
+    "context": {
+      "type": "string",
+      "description": "Contextual information about the citation"
+    }
+  }
+}

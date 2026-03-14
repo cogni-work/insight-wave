@@ -1,0 +1,28 @@
+version: "1.0.0"
+script:
+  name: "validate-query-batch-schema.sh"
+  path: "scripts/validate-query-batch-schema.sh"
+  purpose: "Validate query batch files against schema contract"
+  category: "utilities"
+interface:
+  parameters:
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "All validations passed"
+    1: "Validation errors found"
+    2: "Parameter error"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "1.0.0"
+    date: "2025-11-19"
+    changes: "Initial contract generation"
+    breaking: false

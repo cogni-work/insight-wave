@@ -1,0 +1,44 @@
+version: "2.0.0"
+script:
+  name: "repair-entity-index.sh"
+  path: "scripts/repair-entity-index.sh"
+  purpose: "Orchestrate entity-index.json repair by delegating to focused service scripts"
+  category: "utilities"
+interface:
+  parameters:
+    - name: "--project-path"
+      type: "path"
+      required: true
+      description: "Research project directory"
+    - name: "--entity-type"
+      type: "string"
+      required: false
+      description: "Specific entity type to repair (e.g., '07-sources'; default: all)"
+    - name: "--dry-run"
+      type: "string"
+      required: false
+      description: "Report drift without modifying index"
+    - name: "--json"
+      type: "boolean"
+      required: false
+      description: "Return JSON response instead of human-readable output"
+  output:
+    format: "json"
+    schema:
+      success: "boolean"
+      data: {}
+      error: "string (if success=false)"
+  exit_codes:
+    0: "Success"
+    1: "Repair failures (some entries couldn't be added)"
+    2: "Validation failures (invalid parameters)"
+compatibility:
+  min_bash_version: "3.2"
+  dependencies: []
+  environment:
+    - "CLAUDE_PLUGIN_ROOT (optional for relative paths)"
+changelog:
+  - version: "2.0.0"
+    date: "2025-11-18"
+    changes: "Initial contract generation"
+    breaking: false
