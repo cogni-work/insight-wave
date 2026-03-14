@@ -1,0 +1,48 @@
+{
+  "skill_name": "trend-report",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Erstelle einen Trendbericht aus meinem TIPS-Projekt.",
+      "expected_output": "A complete German-language strategic trend report (tips-trend-report.md) with 5 theme sections, evidence-enriched narratives, claims registry, and portfolio analysis. All metadata updated.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists in the project directory",
+        "tips-trend-report-claims.json exists in the project directory",
+        "Report has valid YAML frontmatter with report_mode: strategic-themes",
+        "Report contains 5 H2 theme sections matching the value model themes",
+        "Report contains an emerging signals section (Aufkommende Signale)",
+        "Report contains a portfolio analysis section with theme overview table",
+        "Report contains a claims registry table",
+        "Claims JSON has at least 20 claims",
+        "All 4 enriched-trends JSON files exist in .logs/",
+        "All 4 claims JSON files exist in .logs/",
+        "trend-scout-output.json has trend_report_complete: true",
+        "Report language is German -- headings use German labels",
+        "Frontmatter contains language: de"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Generate a trend report for the project at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-tips/utilities-digitale-transformation-ffd52104. I want the report in English. Skip claim verification and copywriting.",
+      "expected_output": "A complete English-language strategic trend report with 5 theme sections, evidence-enriched narratives, claims registry. No verification JSON. No copywriting polish.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists in the project directory",
+        "tips-trend-report-claims.json exists in the project directory",
+        "Report has valid YAML frontmatter with report_mode: strategic-themes",
+        "Report contains 5 H2 theme sections matching the value model themes",
+        "Report contains an emerging signals section",
+        "Report contains a portfolio analysis section with theme overview table",
+        "Report contains a claims registry table",
+        "Claims JSON has at least 20 claims",
+        "All 4 enriched-trends JSON files exist in .logs/",
+        "All 4 claims JSON files exist in .logs/",
+        "trend-scout-output.json has trend_report_complete: true",
+        "Report language is English -- headings use English labels",
+        "Frontmatter contains language: en",
+        "No trend-report-verification.json exists (Phase 3 was skipped)"
+      ]
+    }
+  ]
+}

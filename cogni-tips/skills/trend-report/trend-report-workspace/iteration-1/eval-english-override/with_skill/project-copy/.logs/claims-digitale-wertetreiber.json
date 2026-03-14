@@ -1,0 +1,107 @@
+{
+  "dimension": "digitale-wertetreiber",
+  "tips_role": "I",
+  "claims_count": 10,
+  "claims": [
+    {
+      "id": "claim_dw_1",
+      "text": "AI-powered incident management platforms save an average of 4.87 hours per incident.",
+      "value": "4.87",
+      "unit": "hours",
+      "type": "timeframe",
+      "context": "Average time saved per incident with AI-powered management platforms",
+      "qualifiers": ["average", "per incident"],
+      "citations": [{"url": "https://incident.io/blog/5-best-ai-powered-incident-management-platforms-2026", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_2",
+      "text": "Organizations with security AI automation experience $1.8 million lower average breach costs.",
+      "value": "1800000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Cost reduction from security AI vs organizations without",
+      "qualifiers": ["average", "per breach"],
+      "citations": [{"url": "https://incident.io/blog/5-best-ai-powered-incident-management-platforms-2026", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_3",
+      "text": "Overall utility digital customer satisfaction stands at 616 on a 1,000-point scale in 2026.",
+      "value": "616",
+      "unit": "points",
+      "type": "count",
+      "context": "J.D. Power 2026 U.S. Utility Digital Experience satisfaction score",
+      "qualifiers": ["US", "2026", "1000-point scale"],
+      "citations": [{"url": "https://www.jdpower.com/business/press-releases/2026-us-utility-digital-experience-study", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_4",
+      "text": "28% of utilities profiled still do not offer mobile apps despite mobile apps scoring 63 points higher than mobile websites.",
+      "value": "28",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Percentage of utilities without mobile apps",
+      "qualifiers": ["US", "2026"],
+      "citations": [{"url": "https://www.jdpower.com/business/press-releases/2026-us-utility-digital-experience-study", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_5",
+      "text": "83% of customers demand real-time outage notifications via SMS or push.",
+      "value": "83",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Customer demand for real-time outage communication",
+      "qualifiers": ["US", "2026"],
+      "citations": [{"url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_6",
+      "text": "AI agents can automate 30-40% of utility workflows spanning customer service, billing, and grid planning by 2027-2028.",
+      "value": "40",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Maximum workflow automation potential via AI agents in utilities",
+      "qualifiers": ["utilities", "2027-2028", "forecast"],
+      "citations": [{"url": "https://www.ad-hoc-news.de/boerse/news/ueberblick/ki-agenten-uebernehmen-die-digitale-wertschoepfung/68546122/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_7",
+      "text": "Smart metering and automated billing reduce throughput costs by 35-40%.",
+      "value": "40",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Cost reduction from smart metering and billing automation",
+      "qualifiers": ["utilities"],
+      "citations": [{"url": "https://www.mckinsey.com/industries/electric-power-and-natural-gas/our-insights/the-digital-utility", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_8",
+      "text": "The predictive maintenance market is projected to grow from USD 17.11 billion in 2026 to USD 97.37 billion by 2034 at 24.30% CAGR.",
+      "value": "17110000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Global predictive maintenance market size in 2026",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.fortunebusinessinsights.com/predictive-maintenance-market-102104", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_9",
+      "text": "Facilities implementing predictive maintenance achieve 25-30% reduction in maintenance costs.",
+      "value": "30",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Maintenance cost reduction from predictive maintenance",
+      "qualifiers": ["global", "U.S. DOE"],
+      "citations": [{"url": "https://f7i.ai/blog/predictive-maintenance-cost-savings-the-definitive-guide-to-roi-tco-and-asset-strategy-in-2026", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_10",
+      "text": "Predictive maintenance delivers ROI of up to 143% within the first year.",
+      "value": "143",
+      "unit": "%",
+      "type": "percentage",
+      "context": "First-year return on investment for predictive maintenance",
+      "qualifiers": ["first year"],
+      "citations": [{"url": "https://f7i.ai/blog/predictive-maintenance-cost-savings-the-definitive-guide-to-roi-tco-and-asset-strategy-in-2026", "proximity_confidence": 0.9}]
+    }
+  ]
+}

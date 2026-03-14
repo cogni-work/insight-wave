@@ -1,0 +1,2552 @@
+{
+  "version": "1.0.0",
+  "project_id": "utilities-digitale-transformation-ffd52104",
+  "project_name": "utilities-digitale-transformation-ffd52104",
+  "project_path": "/sessions/confident-amazing-bell/mnt/TSC/cogni-tips/utilities-digitale-transformation-ffd52104",
+  "project_language": "de",
+  "created": "2026-03-13T10:29:56Z",
+  "config": {
+    "research_type": "smarter-service",
+    "dok_level": 4,
+    "industry": {
+      "primary": "energy-utilities",
+      "primary_en": "Energy & Utilities",
+      "primary_de": "Energie & Versorgung",
+      "subsector": "utilities",
+      "subsector_en": "Utilities",
+      "subsector_de": "Versorgungsunternehmen"
+    },
+    "research_topic": "Digitale Transformation großer Energieversorger und Konzern-Stadtwerke in Deutschland",
+    "organizing_concept": "digitale-transformation-grosser-energieversorger-und-konzern-stadtwerke-in-deutschland",
+    "portfolio_source": {
+      "portfolio_slug": "t-systems",
+      "market_slug": "grosse-energieversorger-de",
+      "discovered_at": "2026-03-13T10:30:03Z"
+    }
+  },
+  "tips_candidates": {
+    "total": 60,
+    "source_distribution": {
+      "web_signal": 35,
+      "training": 25,
+      "user_proposed": 0
+    },
+    "web_research_status": "success",
+    "search_timestamp": "2026-03-13T10:30:00Z",
+    "items": [
+      {
+        "sequence": 1,
+        "name": "Rechenzentrum-Stromnachfrage",
+        "trend_statement": "Rechenzentrumsexpansion und KI-Workloads treiben Stromnachfragenwachstum um 12-18%/Jahr, erfordern sofortige Netzkapazitätsplanung und Speicherinvestitionen.",
+        "keywords": [
+          "data-centers",
+          "ai-demand",
+          "grid-capacity"
+        ],
+        "research_hint": "Analysieren Sie Netzausbaubeschleunigung, Speicher-Ausschreibungen, und Demand-Side-Management-Strategien.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.utilitydive.com/news/utility-power-sector-trends-2026/808782/",
+        "freshness_date": "2026-03",
+        "web_corroboration": false,
+        "score": 0.87,
+        "confidence_tier": "high",
+        "signal_intensity": 5,
+        "component_scores": {
+          "impact": 0.95,
+          "probability": 0.92,
+          "strategic_fit": 0.85,
+          "source_quality": 0.80,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "market",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.22,
+          "crossed_chasm": true,
+          "evidence": "Major clouds expanding datacenter footprint, grid capacity planning underway at 8+ German utilities"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 2,
+        "name": "EU-KI-Gesetz Compliance",
+        "trend_statement": "EU AI Act ab April 2026 verpflichtet Energieversorger zur KI-Governance, Risikobewertung und Compliance-Audits für alle KI-Systeme.",
+        "keywords": [
+          "ai-act",
+          "governance",
+          "regulation"
+        ],
+        "research_hint": "Entwickeln Sie KI-Governance-Framework, identifizieren Sie High-Risk-KI-Anwendungen, etablieren Sie Audit-Prozesse.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://kpmg-law.de/gesetzliche-aenderungen-2026-neue-pflichten-und-geplante-entlastungen-fuer-unternehmen/",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.91,
+        "confidence_tier": "high",
+        "signal_intensity": 5,
+        "component_scores": {
+          "impact": 0.93,
+          "probability": 0.98,
+          "strategic_fit": 0.88,
+          "source_quality": 0.90,
+          "signal_strength": 0.92,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "3-6 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.35,
+          "crossed_chasm": true,
+          "evidence": "EU Commission enforcement framework published, utilities developing compliance roadmaps"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 3,
+        "name": "Smart-Grid-Cybersecurity",
+        "trend_statement": "Nationale Cybersecurity-Standards für kritische Energieinfrastruktur verpflichten Zero-Trust-Architektur, Segmentierung und kontinuierliches Monitoring.",
+        "keywords": [
+          "cybersecurity",
+          "zero-trust",
+          "infrastructure"
+        ],
+        "research_hint": "Bewerten Sie Netzwerk-Segmentierung, Multi-Faktor-Authentifizierung, und Sicherheits-Operationszentren.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "EU Cyber Resilience Act",
+        "score": 0.68,
+        "confidence_tier": "medium",
+        "signal_intensity": 5,
+        "component_scores": {
+          "impact": 0.90,
+          "probability": 0.88,
+          "strategic_fit": 0.85,
+          "source_quality": 0.35,
+          "signal_strength": 0.25,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-12 months",
+          "source_type": "regulatory",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.12,
+          "crossed_chasm": false,
+          "evidence": "Regulatory proposals emerging, early adopters implementing zero-trust pilots"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 4,
+        "name": "Energy-Sharing-Regulierung",
+        "trend_statement": "Energiebinnenwohnungsmarktrichtlinie ermöglicht Privatpersonen und Kleinfirmen dezentralen Stromhandel ab Juli 2026, schafft regulatorische Infrastruktur.",
+        "keywords": [
+          "energy-sharing",
+          "regulation",
+          "local-generation"
+        ],
+        "research_hint": "Entwickeln Sie P2P-Plattformen, Abwicklungs- und Bilanzierungsprozesse für dezentrale Direktverträge.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://think.ing.com/articles/energy-european-utilities-2026-steady-currents/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.84,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.95,
+          "strategic_fit": 0.82,
+          "source_quality": 0.88,
+          "signal_strength": 0.88,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-12 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.28,
+          "crossed_chasm": true,
+          "evidence": "Directive transposition underway in member states, platform pilots launching Q2-Q3 2026"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 5,
+        "name": "Erneuerbaren-Abregelungsmanagement",
+        "trend_statement": "Sturm- und Überproduktionsregelungen erfordern automatisierte Lastmanagementsysteme für Windenergie-Überkapazitäten und reduzierte Einspeisevergütungen.",
+        "keywords": [
+          "curtailment",
+          "demand-response",
+          "renewable-integration"
+        ],
+        "research_hint": "Implementieren Sie automatisierte Demand-Response, Speicher-Koordination und intelligente Einspeisemanagement.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.62,
+        "confidence_tier": "low",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.82,
+          "strategic_fit": 0.78,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "market",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.32,
+          "crossed_chasm": true,
+          "evidence": "Curtailment events increasing annually, demand response growing but fragmented"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 1,
+        "name": "CCfD-Expansion 2026-2027",
+        "trend_statement": "Ausweitung der Carbon Contracts for Difference-Auktionen mit erhöhten Budgets schafft Anreize für grüne Wasserstoff- und Dekarbonisierungsinvestitionen.",
+        "keywords": [
+          "cce-auctions",
+          "industrial-decarbonization",
+          "policy"
+        ],
+        "research_hint": "Bewerten Sie H2-Produktion, Verfügbarkeit und Integrationsoptionen in Energieversorgungs-Geschäftsmodellen.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.cleanenergywire.org/news/preview-2026-merz-government-must-deliver-key-energy-projects-patience-wears-thin",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.79,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.87,
+          "probability": 0.88,
+          "strategic_fit": 0.80,
+          "source_quality": 0.88,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "First CCfD auctions completed, second round 2026 announced with higher budgets"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 2,
+        "name": "Strommarkt-Reform 2026",
+        "trend_statement": "Reformiertes Strommarktdesign reduziert Volatilität durch Dezentralisierung und fördert direkte Verträge zwischen Erzeugern und Verbrauchern.",
+        "keywords": [
+          "market-reform",
+          "tariffs",
+          "industrial-pricing"
+        ],
+        "research_hint": "Entwickeln Sie Direktvertragsmechanismen, Power Purchase Agreement-Strategien und dezentralisierte Bilanzierung.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://think.ing.com/articles/energy-european-utilities-2026-steady-currents/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.81,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.89,
+          "probability": 0.90,
+          "strategic_fit": 0.83,
+          "source_quality": 0.88,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.15,
+          "crossed_chasm": false,
+          "evidence": "Reform proposals advanced by EU, national governments drafting implementation roadmaps"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 3,
+        "name": "GDPR-Erweiterung Energiedaten",
+        "trend_statement": "Erweiterte GDPR-Regelungen für Echtzeit-Energieverbrauchsdaten erfordern ausgefeiltes Consent-Management und Datenminimierung.",
+        "keywords": [
+          "gdpr",
+          "data-privacy",
+          "energy-data"
+        ],
+        "research_hint": "Implementieren Sie Privacy-by-Design, Consent-Management-Plattformen und Daten-Minimierungsmechanismen.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.59,
+        "confidence_tier": "low",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.78,
+          "probability": 0.72,
+          "strategic_fit": 0.75,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "regulatory",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.30,
+          "crossed_chasm": true,
+          "evidence": "Regulatory guidance ongoing, utilities implementing privacy controls incrementally"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 4,
+        "name": "Energieeffizienz-Direktive ISO 50001",
+        "trend_statement": "Energieeffizienzrichtlinie verpflichtet große Versorger bis Oktober 2027 zu ISO 50001-Zertifizierung und regelmäßigen Energieaudits.",
+        "keywords": [
+          "eee-directive",
+          "energy-management",
+          "compliance"
+        ],
+        "research_hint": "Führen Sie Energiemanagementsystem-Zertifizierung durch, etablieren Sie interne Audit-Routinen und Verbesserungsprozesse.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.wirtek.com/blog/energy-efficiency-directive-eu-company-obligations-from-2026-to-2030/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.82,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.93,
+          "strategic_fit": 0.81,
+          "source_quality": 0.88,
+          "signal_strength": 0.88,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "Directive text final, utilities beginning ISO 50001 implementation projects"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 5,
+        "name": "Carbon-Pricing-Expansion",
+        "trend_statement": "ETS-Expansion auf Wärme und Verkehr bis 2028 transformiert Energiekosten, Tarifgestaltung und industrielle Wertschöpfung.",
+        "keywords": [
+          "carbon-pricing",
+          "ets-expansion",
+          "industry"
+        ],
+        "research_hint": "Modellieren Sie Kosten-Szenarien, entwickeln Sie Tarifierungsstrategien und industrielle Übergangsprogramme.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.65,
+        "confidence_tier": "low",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.80,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "regulatory",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.28,
+          "crossed_chasm": true,
+          "evidence": "EU Commission proposals advanced, member states negotiating implementation timelines"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 1,
+        "name": "€500-Milliarden Infrastruktur-Fonds",
+        "trend_statement": "Großer deutscher Fonds mit ~€50B für Energiewende schafft 2027-2035 Investitionschancen für Netzmodernisierung, Dekarbonisierung und Speicher.",
+        "keywords": [
+          "energy-infrastructure",
+          "investment-fund",
+          "policy"
+        ],
+        "research_hint": "Qualifizieren Sie Projekte für Fördermittel, entwickeln Sie Financing-Strukturen mit KfW und privaten Investoren.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.cleanenergywire.org/factsheets/qa-germanys-eu500-bln-infrastructure-fund-whats-it-climate-and-energy",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.85,
+        "confidence_tier": "high",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.92,
+          "probability": 0.90,
+          "strategic_fit": 0.88,
+          "source_quality": 0.95,
+          "signal_strength": 0.90,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "24-36 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.10,
+          "crossed_chasm": false,
+          "evidence": "Fund established, first project applications Q2 2026, deployment ramping 2027-2035"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 2,
+        "name": "Wasserknappheit & Netzoper.",
+        "trend_statement": "Klimawandelbedingte Wasserknappheit gefährdet Kühlwasserbeschaffung für Thermalkraftwerke und Datencentern bis 2032.",
+        "keywords": [
+          "water-scarcity",
+          "climate-risk",
+          "operations"
+        ],
+        "research_hint": "Entwickeln Sie alternative Kühlstrategien, trockene Kühlung, und Standort-Risikoanalysen für Kraftwerke.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.58,
+        "confidence_tier": "low",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.68,
+          "strategic_fit": 0.75,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "market",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.04,
+          "crossed_chasm": false,
+          "evidence": "Early research reports on climate impacts on cooling, first pilot projects exploring alternatives"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 3,
+        "name": "Vergabeschwellen-Anpassung",
+        "trend_statement": "Erhöhte öffentliche Vergabegrenzen 2026-2027 erfordern neue Compliance-Prozesse und erweitern potenzielle Ausschreibungen für Stadtwerke.",
+        "keywords": [
+          "procurement",
+          "threshold-updates",
+          "compliance"
+        ],
+        "research_hint": "Aktualisieren Sie Beschaffungs- und Compliance-Prozesse, bewerten Sie neue Ausschreibungschancen.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://public-buyers-community.ec.europa.eu/news/updated-public-procurement-thresholds-2026-2027-adopted-european-commission",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.76,
+        "confidence_tier": "medium",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.72,
+          "probability": 0.85,
+          "strategic_fit": 0.68,
+          "source_quality": 0.90,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "3-6 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.11,
+          "crossed_chasm": false,
+          "evidence": "EU Commission published updated thresholds, procurement offices updating templates and processes"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 4,
+        "name": "Netz-Resilienz Post-Extremwetter",
+        "trend_statement": "Häufigere Extremwetterereignisse erzwingen Resilienz-Investitionen in Netzinfrastruktur-Redundanz und Wiederherstellungsgeschwindigkeit.",
+        "keywords": [
+          "resilience",
+          "climate-adaptation",
+          "infrastructure"
+        ],
+        "research_hint": "Implementieren Sie Mikronetz-Architektur, redundante Leitungen, and schnelle Wiederherstellungsprotokolle.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.61,
+        "confidence_tier": "low",
+        "signal_intensity": 1,
+        "component_scores": {
+          "impact": 0.84,
+          "probability": 0.75,
+          "strategic_fit": 0.78,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "market",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.05,
+          "crossed_chasm": false,
+          "evidence": "Post-event reviews underway, pilot microgrids launching, investment cases being developed"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 5,
+        "name": "Kohle-/Gasausstieg 104 GW",
+        "trend_statement": "Massive Abschaltung von 104 GW Kohle- und Gaskraftwerken bis 2030 transformiert Kraftwerksportfolios und erfordert Standort-Neubewertung.",
+        "keywords": [
+          "coal-retirement",
+          "capacity-planning",
+          "regulation"
+        ],
+        "research_hint": "Planen Sie Rückbau, Flächen-Repurposing (Solar, Wind, Data Center), und Transition für Beschäftigte.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.utilitydive.com/news/utility-power-sector-trends-2026/808782/",
+        "freshness_date": "2026-03",
+        "web_corroboration": false,
+        "score": 0.88,
+        "confidence_tier": "high",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.95,
+          "probability": 0.90,
+          "strategic_fit": 0.88,
+          "source_quality": 0.80,
+          "signal_strength": 0.88,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "24-36 months",
+          "source_type": "regulatory",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.32,
+          "crossed_chasm": true,
+          "evidence": "Regulatory closure timelines established, utilities announcing retirement plans, alternative uses being explored"
+        },
+        "dimension": "externe-effekte"
+      },
+      {
+        "sequence": 1,
+        "name": "Engie UK Power Networks M&A",
+        "trend_statement": "Engie-Übernahme von UK Power Networks (£10.5B, 2026) zeigt Konsolidierungstrend europäischer Netzoperatoren, treibt digitale Integration.",
+        "keywords": [
+          "m&a",
+          "network-consolidation",
+          "transformation"
+        ],
+        "research_hint": "Evaluieren Sie Konsolidierungschancen, digitale Integrations-Synergien und Governance-Modelle.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://youarecurrent.com/2026/03/03/aes-announced-acquisition-agreement/",
+        "freshness_date": "2026-03",
+        "web_corroboration": false,
+        "score": 0.75,
+        "confidence_tier": "medium",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.90,
+          "strategic_fit": 0.72,
+          "source_quality": 0.75,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "funding",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Engie deal announced and advancing, other utilities exploring M&A partnerships"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 2,
+        "name": "Utility-Fintech Partnerschaften",
+        "trend_statement": "Energieversorger etablieren Fintech-Partnerschaften für digitale Zahlungen, Abos und Mikrotransaktionen in der Kundeninteraktion.",
+        "keywords": [
+          "fintech",
+          "payments",
+          "partnerships"
+        ],
+        "research_hint": "Identifizieren Sie Fintech-Partner, etablieren Sie Payment-APIs und mobile-first Zahlungserfahrung.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.63,
+        "confidence_tier": "low",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.78,
+          "probability": 0.72,
+          "strategic_fit": 0.75,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "funding",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.06,
+          "crossed_chasm": false,
+          "evidence": "Early pilots with payment startups, fintech interest in utility payments increasing"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 3,
+        "name": "Grid-Enhancing Technologies",
+        "trend_statement": "GETs wie dynamische Leitungsrating und virtuelle Kraftwerke ermöglichen 10-15% Kapazitätssteigerung ohne physischen Netzausbau.",
+        "keywords": [
+          "gets",
+          "grid-optimization",
+          "capex-reduction"
+        ],
+        "research_hint": "Evaluieren Sie DLR-Sensoren, Spannungsregler und Echtzeit-Netzoptimierungssysteme.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.strategyand.pwc.com/gx/en/industries/power-utilities/utilities-innovation.html",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.83,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.90,
+          "probability": 0.88,
+          "strategic_fit": 0.85,
+          "source_quality": 0.88,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "academic",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "Pilots operational in 5+ utilities, vendors scaling deployments, ROI cases validated"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 4,
+        "name": "Europäischer €173B Investitionsplan",
+        "trend_statement": "Europäische Energieversorger planen 2026 €173B Capex für Netzdigitalisierung, Dekarbonisierung und Redundanz.",
+        "keywords": [
+          "capex",
+          "infrastructure-investment",
+          "capex-growth"
+        ],
+        "research_hint": "Identifizieren Sie Investitionsprioritäten, Financial-Modeling und ROI-Szenarien.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://think.ing.com/articles/energy-european-utilities-2026-steady-currents/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.80,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.92,
+          "strategic_fit": 0.82,
+          "source_quality": 0.80,
+          "signal_strength": 0.80,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "news",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.55,
+          "crossed_chasm": true,
+          "evidence": "Utilities announcing annual capex budgets aligned with €173B plan, implementation ongoing"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 5,
+        "name": "Zirkulärwirtschaft Energie",
+        "trend_statement": "Neue Geschäftsmodelle rund um Batterie-Rückgewinnung, Aufarbeitung und Zweitnutzung schaffen Revenue-Streams und Rohstoff-Sicherheit.",
+        "keywords": [
+          "circular-economy",
+          "battery-reuse",
+          "revenue"
+        ],
+        "research_hint": "Entwickeln Sie Second-Life-Battery-Programme, Rückgewinnungs-Netzwerke und Reverse-Logistics.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.66,
+        "confidence_tier": "low",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.75,
+          "strategic_fit": 0.78,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "funding",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.05,
+          "crossed_chasm": false,
+          "evidence": "Pilot battery reuse programs emerging, startups raising funding, regulatory framework developing"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 1,
+        "name": "Datencenter-Grid-Partner",
+        "trend_statement": "Hyperscaler-Rechenzentren werden zu Demand-Response-Partnern mit flexiblen Lasten, schaffen neue Revenue-Modelle und Netzstabilität.",
+        "keywords": [
+          "hyperscalers",
+          "demand-response",
+          "partnerships"
+        ],
+        "research_hint": "Entwickeln Sie Flexible-Load-Verträge, Demand-Response-APIs und Revenue-Sharing-Modelle mit Datacentern.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.mckinsey.com/industries/electric-power-and-natural-gas/our-insights/the-digital-utility",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.82,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.85,
+          "strategic_fit": 0.80,
+          "source_quality": 0.88,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.12,
+          "crossed_chasm": false,
+          "evidence": "Microsoft, Google, AWS exploring flexible load contracts with utilities, pilots launching 2026"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 2,
+        "name": "Deutschlandfonds €30B Startup",
+        "trend_statement": "Deutschlandfonds mit €30B für Startups und Infrastruktur fördert 2026-2030 digitale Energieversorger-Innovationen und Spin-offs.",
+        "keywords": [
+          "startup-funding",
+          "venture-capital",
+          "infrastructure"
+        ],
+        "research_hint": "Qualifizieren Sie Spin-offs, identifizieren Sie Förderkriterien und entwickeln Sie Innovations-Pipelines.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.bundesfinanzministerium.de/Content/DE/Pressemitteilungen/Finanzpolitik/2025/12/2025-12-18-deutschlandfonds-startet.html",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.84,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.92,
+          "strategic_fit": 0.85,
+          "source_quality": 0.95,
+          "signal_strength": 0.90,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "funding",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.11,
+          "crossed_chasm": false,
+          "evidence": "Deutschlandfonds operationalized Q1 2026, application process open, first fundings expected Q2-Q3 2026"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 3,
+        "name": "Cross-Sektor Energie-Trading",
+        "trend_statement": "B2B-Plattformen für Stromhandel zwischen Erzeugern, Verbrauchern und Aggregatoren entstehen durch Smart-Contract-Technologie.",
+        "keywords": [
+          "energy-trading",
+          "blockchain",
+          "p2p"
+        ],
+        "research_hint": "Bewerten Sie Blockchain-Plattformen, Smart-Contract-Frameworks und dezentralisierte Settlement.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "P2P Trading Innovations",
+        "score": 0.71,
+        "confidence_tier": "medium",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.78,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "academic",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.08,
+          "crossed_chasm": false,
+          "evidence": "Blockchain energy trading startups raised €50M+ in 2025, regulation progressing"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 4,
+        "name": "Performance-Based Regulation",
+        "trend_statement": "Performance-based Regulation (PBR) breitet sich von USA nach Europa aus, belohnt Effizienz statt Kostenplus-Tariffe.",
+        "keywords": [
+          "pbrr",
+          "outcomes-focus",
+          "regulatory-innovation"
+        ],
+        "research_hint": "Entwickeln Sie PBR-Compliance-Roadmaps, Performance-Metriken und Effizienz-Anreize.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.strategyand.pwc.com/gx/en/industries/power-utilities/utilities-innovation.html",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.78,
+        "confidence_tier": "medium",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.82,
+          "strategic_fit": 0.78,
+          "source_quality": 0.88,
+          "signal_strength": 0.80,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "28+ US states adopted PBR, EU regulators studying adoption, Germany exploring pilot framework"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 5,
+        "name": "Mitarbeiter-Upskilling 2026-2028",
+        "trend_statement": "Energieversorger investieren 2026-2028 in Upskilling für 40.000+ Mitarbeiter zur digitalen und technischen Kompetenz.",
+        "keywords": [
+          "training",
+          "upskilling",
+          "digital-literacy"
+        ],
+        "research_hint": "Entwickeln Sie Lern-Curriculum, Zertifizierungsprogramme und Competency-Frameworks.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "87% Culture Evolution Need",
+        "score": 0.72,
+        "confidence_tier": "medium",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.80,
+          "strategic_fit": 0.85,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "jobs",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Large utilities announcing training programs, external training providers reporting surging demand"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 1,
+        "name": "P2P-Energiehandel Blockchain",
+        "trend_statement": "P2P-Energiehandel zwischen Prosumern normalisiert sich 2028-2032 durch Blockchain und dezentrale Smart Contracts.",
+        "keywords": [
+          "p2p-trading",
+          "blockchain",
+          "prosumers"
+        ],
+        "research_hint": "Entwickeln Sie Peer-to-Peer-Handelsplattformen, Abrechnungsmechanismen und Finanzierungsmodelle.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.sciencedirect.com/science/article/abs/pii/S030142151300373X",
+        "freshness_date": "2025-12",
+        "web_corroboration": false,
+        "score": 0.72,
+        "confidence_tier": "medium",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.72,
+          "strategic_fit": 0.78,
+          "source_quality": 0.88,
+          "signal_strength": 0.75,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "academic",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.07,
+          "crossed_chasm": false,
+          "evidence": "Academic research established, startup ecosystem growing, regulatory frameworks emerging"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 2,
+        "name": "Klir Series B Data Hub",
+        "trend_statement": "Klir (€17.5M Series B 2026) und ähnliche Startups schaffen Daten-Hubs für Wasser- und Energieversorger-Operationen.",
+        "keywords": [
+          "water-utilities",
+          "data-hub",
+          "series-b"
+        ],
+        "research_hint": "Evaluieren Sie Daten-Integration-Plattformen, operationale Insights und Benchmarking-Services.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.finsmes.com/2026/01/klir-raises-17-5m-in-funding.html",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.71,
+        "confidence_tier": "medium",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.78,
+          "probability": 0.78,
+          "strategic_fit": 0.72,
+          "source_quality": 0.75,
+          "signal_strength": 0.80,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "funding",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.04,
+          "crossed_chasm": false,
+          "evidence": "Klir funded, enterprise pilots starting, sector showing interest in data-hub solutions"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 3,
+        "name": "Digital Twin NOCs",
+        "trend_statement": "Full-Digital-Twin-gesteuerte Network Operations Centers entstehen 2028-2032 mit Echtzeit-Simulation und prädiktiven Optimierungen.",
+        "keywords": [
+          "digital-twins",
+          "noc-evolution",
+          "optimization"
+        ],
+        "research_hint": "Entwickeln Sie Digitale-Twin-Architektur, Echtzeit-Datenströme und Scenario-Planning-Systeme.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "AI Digital Twins",
+        "score": 0.68,
+        "confidence_tier": "medium",
+        "signal_intensity": 1,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.72,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "24-36 months",
+          "source_type": "academic",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.03,
+          "crossed_chasm": false,
+          "evidence": "Research papers published, early vendor prototypes emerging, utilities exploring concepts"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 4,
+        "name": "Grüne Wasserstoff-Finanzierung",
+        "trend_statement": "Grüne Wasserstoff-Projekte mit europäischer Finanzierung 2026-2032 integrieren Elektrolyse in Energieverwaltung und Dekarbonisierung.",
+        "keywords": [
+          "hydrogen",
+          "green-energy",
+          "financing"
+        ],
+        "research_hint": "Entwickeln Sie H2-Produktions-Szenarien, Integrationsoptionen und Economics-Modelle.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://think.ing.com/articles/energy-european-utilities-2026-steady-currents/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.74,
+        "confidence_tier": "medium",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.80,
+          "strategic_fit": 0.82,
+          "source_quality": 0.80,
+          "signal_strength": 0.78,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "24-36 months",
+          "source_type": "funding",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.12,
+          "crossed_chasm": false,
+          "evidence": "H2 funding announcements increasing, utility H2 projects announced, integration studies underway"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 5,
+        "name": "Agile Betriebsmodelle",
+        "trend_statement": "Traditionelle zentralisierte Betriebsmodelle wandeln sich bis 2032 zu dezentralen, agilen Teams mit autonomer Entscheidungsfindung.",
+        "keywords": [
+          "agile-organization",
+          "decentralization",
+          "autonomous-teams"
+        ],
+        "research_hint": "Transformieren Sie Organisationsstruktur, etablieren Sie agile Governance und autonome Entscheidungsteams.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.59,
+        "confidence_tier": "low",
+        "signal_intensity": 1,
+        "component_scores": {
+          "impact": 0.80,
+          "probability": 0.68,
+          "strategic_fit": 0.75,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "market",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.05,
+          "crossed_chasm": false,
+          "evidence": "Digital-native utilities pioneering agile models, traditional utilities exploring gradual transitions"
+        },
+        "dimension": "neue-horizonte"
+      },
+      {
+        "sequence": 1,
+        "name": "KI-Beschleunigte Incident-Behebung",
+        "trend_statement": "AI-gestützte Incident-Response-Teams beschleunigen Behebung um 25% und reduzieren Ausfallzeiten durch prädiktive Alerts.",
+        "keywords": [
+          "ai-teams",
+          "incident-management",
+          "productivity"
+        ],
+        "research_hint": "Implementieren Sie KI-basierte Incident-Detection, automatische Diagnose und prädiktive Alerting.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.ad-hoc-news.de/boerse/news/ueberblick/ki-agenten-uebernehmen-die-digitale-wertschoepfung/68546122/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.81,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.88,
+          "strategic_fit": 0.82,
+          "source_quality": 0.75,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "news",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.25,
+          "crossed_chasm": true,
+          "evidence": "Vendors deploying AI incident tools, utilities reporting productivity gains, ROI cases documented"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 2,
+        "name": "Digitale Kundenerfahrung 616/1000",
+        "trend_statement": "Durchschnittliche digitale Kundenerfahrung bei Versorgern nur 616/1000, zeigt massives Optimierungspotenzial für Apps und Web.",
+        "keywords": [
+          "cx-satisfaction",
+          "digital-experience",
+          "mobile-apps"
+        ],
+        "research_hint": "Bewerten Sie Mobile-App-UX, Web-Portal-Usability und Omnichannel-Integration.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.jdpower.com/business/press-releases/2026-us-utility-digital-experience-study",
+        "freshness_date": "2026-03",
+        "web_corroboration": false,
+        "score": 0.77,
+        "confidence_tier": "medium",
+        "signal_intensity": 5,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.92,
+          "strategic_fit": 0.80,
+          "source_quality": 0.75,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "news",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.55,
+          "crossed_chasm": true,
+          "evidence": "Industry benchmarking established, utilities investing in CX improvements, platforms modernizing"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 3,
+        "name": "Personalisierte Energiesparp-Tipps",
+        "trend_statement": "AI-basierte personalisierte Energiesparberatung reduziert Verbrauch um 8-12% und stärkt Kundenloyalität.",
+        "keywords": [
+          "ai-recommendations",
+          "energy-savings",
+          "engagement"
+        ],
+        "research_hint": "Entwickeln Sie Konsumptionsprofil-Modelle, vergleichende Analytics und Verhaltens-Änderungs-Programme.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "Customer Data Strategy",
+        "score": 0.72,
+        "confidence_tier": "medium",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.80,
+          "strategic_fit": 0.85,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "academic",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "Startups developing recommendation engines, utilities piloting with customers, engagement metrics improving"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 4,
+        "name": "Echtzeit-Ausfallmitteilungen",
+        "trend_statement": "83% der Kunden verlangen Echtzeit-Ausfallmeldungen per SMS/Push, zwingt Versorger zu SMS/Push-Infrastruktur.",
+        "keywords": [
+          "real-time-communications",
+          "customer-expectations",
+          "digital"
+        ],
+        "research_hint": "Implementieren Sie SMS/Push-Gateways, Incident-Broadcast-Systeme und Status-Dashboards.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.79,
+        "confidence_tier": "high",
+        "signal_intensity": 5,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.90,
+          "strategic_fit": 0.78,
+          "source_quality": 0.60,
+          "signal_strength": 0.78,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "news",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.60,
+          "crossed_chasm": true,
+          "evidence": "SMS/Push systems widely deployed, customer demand normative, vendors offering platforms"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 5,
+        "name": "Mobile-First Zahlungsplattformen",
+        "trend_statement": "Vollständig mobile Zahlungsplattformen mit Apple Pay/Google Pay reduzieren Ausfallquoten und Supportkosten um 20%.",
+        "keywords": [
+          "mobile-payments",
+          "digital-wallets",
+          "cost-reduction"
+        ],
+        "research_hint": "Integrieren Sie Apple/Google/Samsung Pay, reduzieren Sie Zahlungsfehlerquoten und Support-Belastung.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.68,
+        "confidence_tier": "low",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.80,
+          "probability": 0.78,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "funding",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Early adopter utilities deploying mobile payments, customer adoption increasing, fintech partnerships expanding"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 1,
+        "name": "KI-Agenten Workflow-Automatisierung",
+        "trend_statement": "KI-Agenten automatisieren 30-40% der Energieversorger-Workflows (Kundendienst, Abrechnung, Netzplanung) bis 2027-2028.",
+        "keywords": [
+          "ai-agents",
+          "automation",
+          "workflow"
+        ],
+        "research_hint": "Identifizieren Sie automatisierbare Prozesse, implementieren Sie KI-Agenten-Plattformen.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.ad-hoc-news.de/boerse/news/ueberblick/ki-agenten-uebernehmen-die-digitale-wertschoepfung/68546122/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.84,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.90,
+          "probability": 0.85,
+          "strategic_fit": 0.85,
+          "source_quality": 0.75,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "news",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Vendors offering AI agent platforms, early pilots at utilities showing productivity gains"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 2,
+        "name": "Kundendaten-Strategie 360°",
+        "trend_statement": "Umfassende Customer-Data-Strategie nutzt 360-Grad-Verbrauchsprofil für Tarife, Energiesparen und Upsell.",
+        "keywords": [
+          "customer-data",
+          "energy-optimization",
+          "personalization"
+        ],
+        "research_hint": "Entwickeln Sie Customer-Data-Plattform, Single-Customer-View und Segmentierungsmodelle.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.snpgroup.com/de/ressourcen/blog/wie-die-versorgungswirtschaft-in-zeiten-der-digitalisierung-wettbewerbsfaehig-bleiben-kann/",
+        "freshness_date": "2026-01",
+        "web_corroboration": false,
+        "score": 0.80,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.82,
+          "strategic_fit": 0.85,
+          "source_quality": 0.75,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "Utilities investing in CDPs, data integration projects underway, privacy frameworks evolving"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 3,
+        "name": "Omnichannel-Kundensupport",
+        "trend_statement": "Nahtlose Omnichannel-Support (Chat/Phone/App/Web) konsolidiert Kundendienst auf einheitliche Plattform bis 2028.",
+        "keywords": [
+          "omnichannel-support",
+          "customer-service",
+          "integration"
+        ],
+        "research_hint": "Integrieren Sie Chat, Phone, App, Web auf einheitlicher Support-Plattform mit Context-Continuity.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.70,
+        "confidence_tier": "low",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.78,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "analyst",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.12,
+          "crossed_chasm": false,
+          "evidence": "Omnichannel platforms mature, utilities adopting incrementally, customer demand growing"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 4,
+        "name": "Smart Metering & Automatisierung",
+        "trend_statement": "Intelligente Messung und automatisierte Abrechnung senken Durchsatzkosten um 35-40% und Fehlerquoten.",
+        "keywords": [
+          "smart-metering",
+          "automation",
+          "cost-reduction"
+        ],
+        "research_hint": "Deployen Sie Smart Meter, automatisieren Sie Meter-Daten-Erfassung und Abrechnungsprozesse.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.mckinsey.com/industries/electric-power-and-natural-gas/our-insights/the-digital-utility",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.82,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.90,
+          "strategic_fit": 0.82,
+          "source_quality": 0.88,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.65,
+          "crossed_chasm": true,
+          "evidence": "Smart meters widely deployed, automation standards established, ROI cases proven"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 5,
+        "name": "Prädiktive Churn-Modelle",
+        "trend_statement": "Prädiktive Churn-Modelle identifizieren 90-Tage-Abwanderungsrisiken, aktivieren proaktive Retention-Kampagnen.",
+        "keywords": [
+          "churn-prediction",
+          "customer-retention",
+          "analytics"
+        ],
+        "research_hint": "Entwickeln Sie ML-Churn-Modelle, implementieren Sie Retention-Scoring und proaktive Angebote.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.67,
+        "confidence_tier": "low",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.78,
+          "probability": 0.75,
+          "strategic_fit": 0.80,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "academic",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.08,
+          "crossed_chasm": false,
+          "evidence": "Data-driven utilities experimenting with churn models, vendors offering solutions, adoption accelerating"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 1,
+        "name": "KI-Prädiktive Wartung ROI",
+        "trend_statement": "KI-Strategien für prädiktive Wartung transformieren bis 2030-2032 Netzwartung von Reaktiv zu Proaktiv.",
+        "keywords": [
+          "ai-maintenance",
+          "asset-optimization",
+          "cost-reduction"
+        ],
+        "research_hint": "Implementieren Sie Sensor-Netzwerke, Predictive-Analytics und Wartungs-Optimierungsalgorithmen.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.78,
+        "confidence_tier": "medium",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.82,
+          "strategic_fit": 0.82,
+          "source_quality": 0.60,
+          "signal_strength": 0.80,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.32,
+          "crossed_chasm": true,
+          "evidence": "Predictive maintenance ROI proven, vendors scaling, utilities deploying widely"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 2,
+        "name": "Energiebeschaffungs-Optimierung",
+        "trend_statement": "Algorithmen optimieren Energiebeschaffung in Echtzeit und reduzieren Kosten um 5-8% durch Marktarbitrage.",
+        "keywords": [
+          "procurement-optimization",
+          "market-arbitrage",
+          "cost"
+        ],
+        "research_hint": "Implementieren Sie RTP-Optimierungsalgorithmen, Markt-Monitoring und automated Bidding.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.61,
+        "confidence_tier": "low",
+        "signal_intensity": 1,
+        "component_scores": {
+          "impact": 0.78,
+          "probability": 0.68,
+          "strategic_fit": 0.75,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "market",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.06,
+          "crossed_chasm": false,
+          "evidence": "Early optimization tools emerging, utilities with analytics capability exploring"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 3,
+        "name": "Service-Loyalitäts-Treiber",
+        "trend_statement": "Kundenservice wird top-Loyalitätstreiber, treibt bis 2030-2032 Service-Transformation bei Versorgern.",
+        "keywords": [
+          "customer-loyalty",
+          "service-quality",
+          "behavior"
+        ],
+        "research_hint": "Investieren Sie in Service-Excellence, NPS-Programme und Kundenerwartungs-Management.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.73,
+        "confidence_tier": "medium",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.78,
+          "strategic_fit": 0.80,
+          "source_quality": 0.60,
+          "signal_strength": 0.75,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "news",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.58,
+          "crossed_chasm": true,
+          "evidence": "Service excellence initiatives widespread, NPS programs mature, vendor solutions established"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 4,
+        "name": "Netzverluste Reduktion",
+        "trend_statement": "Advanced Metering + Network Analytics reduzieren technische Netzverluste von 6-8% auf 3-4% bis 2030-2032.",
+        "keywords": [
+          "network-loss-reduction",
+          "metering",
+          "analytics"
+        ],
+        "research_hint": "Deployen Sie Advanced Metering, implementieren Sie Loss-Analytics und Anomalie-Detection.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.64,
+        "confidence_tier": "low",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.72,
+          "strategic_fit": 0.78,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "market",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.30,
+          "crossed_chasm": true,
+          "evidence": "AMI deployments reducing losses, utilities benchmarking against peers, optimization projects ongoing"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 5,
+        "name": "Feldservice-Optimierung",
+        "trend_statement": "Mobile Dispatch, AR-Technologie und prädiktive Terminplanung optimieren Feldservice-Produktivität um 30%.",
+        "keywords": [
+          "field-service",
+          "ar-technology",
+          "optimization"
+        ],
+        "research_hint": "Implementieren Sie Mobile Dispatch, AR-Fehlersuche und vorausschauende Termin-Planung.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.65,
+        "confidence_tier": "low",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.80,
+          "probability": 0.72,
+          "strategic_fit": 0.78,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "analyst",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Mobile dispatch and AR tools maturing, utilities piloting, ROI cases emerging"
+        },
+        "dimension": "digitale-wertetreiber"
+      },
+      {
+        "sequence": 1,
+        "name": "Legacy-Barrieren & Migration",
+        "trend_statement": "Legacy-Systeme sind kritisches Digitalisierungshindernis für 75%+ Führungskräfte, erfordern Migration 2026-2027.",
+        "keywords": [
+          "legacy-systems",
+          "modernization",
+          "technical-debt"
+        ],
+        "research_hint": "Entwickeln Sie Legacy-Modernisierungs-Strategie mit API-Brokering und schrittweiser Migration.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.microsoft.com/en-us/industry/blog/energy-and-resources/power-and-utilities/2026/02/17/dtech-2026-how-microsoft-and-our-partners-are-accelerating-ai-innovation-for-utilities/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.84,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.90,
+          "probability": 0.92,
+          "strategic_fit": 0.85,
+          "source_quality": 0.88,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.60,
+          "crossed_chasm": true,
+          "evidence": "Legacy modernization initiatives widespread, consultants booked, projects under execution"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 2,
+        "name": "AI/ML-Ingenieur Einstellung 88%",
+        "trend_statement": "Nachfrage nach AI/ML-Ingenieuren wächst 88% YoY, Energieversorger kämpfen um Tech-Talente.",
+        "keywords": [
+          "ai-hiring",
+          "talent-demand",
+          "skills-gap"
+        ],
+        "research_hint": "Entwickeln Sie Recruiting-Strategie, Skills-Entwicklungs-Programme und Retention-Modelle.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.secondtalent.com/resources/most-in-demand-ai-engineering-skills-and-salary-ranges/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.81,
+        "confidence_tier": "high",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.90,
+          "strategic_fit": 0.82,
+          "source_quality": 0.75,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "jobs",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.58,
+          "crossed_chasm": true,
+          "evidence": "AI/ML hiring surging at utilities, compensation rising, talent scarcity evident"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 3,
+        "name": "API-basierte Legacy-Modernisierung",
+        "trend_statement": "API-basierte Modernisierung ermöglicht Systemintegration ohne vollständige Neuentwicklung komplexer Legacy-Systeme.",
+        "keywords": [
+          "api-modernization",
+          "integration",
+          "legacy"
+        ],
+        "research_hint": "Implementieren Sie API-Gateways, Service-Meshes und Integrations-Plattformen.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "Legacy Infrastructure Barriers",
+        "score": 0.71,
+        "confidence_tier": "medium",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.80,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "6-18 months",
+          "source_type": "analyst",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "API-first architectures gaining traction, vendors offering platforms, early success stories"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 4,
+        "name": "Talentlücke 310.000 bis 2030",
+        "trend_statement": "310.000 Energieversorger-Fachleute fehlen bis 2030, treibt Automatisierung und Remote-Work-Transformation.",
+        "keywords": [
+          "talent-shortage",
+          "demographic-shift",
+          "retirement"
+        ],
+        "research_hint": "Entwickeln Sie Automation-Strategie, Remote-Work-Modelle und Upskilling-Programme.",
+        "horizon": "act",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://consult.energy/article/hiring-trends-and-challenges-in-utilities-recruitment-in-2026",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.85,
+        "confidence_tier": "high",
+        "signal_intensity": 5,
+        "component_scores": {
+          "impact": 0.92,
+          "probability": 0.90,
+          "strategic_fit": 0.85,
+          "source_quality": 0.75,
+          "signal_strength": 0.88,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "18-36 months",
+          "source_type": "jobs",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.62,
+          "crossed_chasm": true,
+          "evidence": "Workforce shortage reports widespread, automation initiatives accelerating, salary inflation evident"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 5,
+        "name": "Cloud Migration & Data Lakehouse",
+        "trend_statement": "Multi-Cloud-Strategien mit Data Lakehouse ermöglichen flexible Skalierung, Kostenoptimierung und Advanced Analytics.",
+        "keywords": [
+          "cloud-migration",
+          "data-lakehouse",
+          "scalability"
+        ],
+        "research_hint": "Migrieren Sie Workloads zu Cloud, etablieren Sie Data Lakehouse und Cloud-native Architectures.",
+        "horizon": "act",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.69,
+        "confidence_tier": "low",
+        "signal_intensity": 4,
+        "component_scores": {
+          "impact": 0.85,
+          "probability": 0.78,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Cloud migration projects underway, data lakehouse interest growing, early adopters reporting benefits"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 1,
+        "name": "Einheitliche Datenplattformen",
+        "trend_statement": "Einheitliche Datenplattformen (CDP, Data Lakehouse) integrieren IT/OT-Daten für Echtzeit-Netzintelligenz bis 2027-2028.",
+        "keywords": [
+          "data-integration",
+          "it-ot-convergence",
+          "intelligence"
+        ],
+        "research_hint": "Implementieren Sie Data Lakehouse, IT/OT-Integration und Real-Time-Analytics-Plattform.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/utilities-operations-transformed",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.83,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.90,
+          "probability": 0.88,
+          "strategic_fit": 0.85,
+          "source_quality": 0.88,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.15,
+          "crossed_chasm": false,
+          "evidence": "Utilities beginning data integration projects, vendors scaling platforms, success stories emerging"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 2,
+        "name": "Kulturwandel-Anforderung 87%",
+        "trend_statement": "87% der Profis sehen Kulturwandel als Hürde, erfordert Change-Management und Neueinstellungen 2026-2028.",
+        "keywords": [
+          "organizational-change",
+          "culture-shift",
+          "digital-mindset"
+        ],
+        "research_hint": "Führen Sie Kultur-Assessments durch, entwickeln Sie Change-Management und Digital-Mindset-Programme.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.strategyand.pwc.com/gx/en/industries/power-utilities/utilities-innovation.html",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.81,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.85,
+          "strategic_fit": 0.85,
+          "source_quality": 0.88,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.32,
+          "crossed_chasm": true,
+          "evidence": "Cultural transformation initiatives widespread, executive coaching programs expanding"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 3,
+        "name": "Offene Standards IEC 61850+",
+        "trend_statement": "Offene Standards wie IEC 61850 ermöglichen Multi-Vendor-Interoperabilität und reduzieren Lock-in-Risiken.",
+        "keywords": [
+          "open-standards",
+          "interoperability",
+          "iec-61850"
+        ],
+        "research_hint": "Adoptieren Sie IEC 61850 und verwandte Standards, vermeiden Sie Vendor Lock-in.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.68,
+        "confidence_tier": "low",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.75,
+          "strategic_fit": 0.80,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "academic",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.30,
+          "crossed_chasm": true,
+          "evidence": "Standards adoption maturing, utilities moving to open standards, vendor ecosystem supporting"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 4,
+        "name": "Digital Utility Markt €239B 2028",
+        "trend_statement": "Digital-Utility-Markt wächst 23,4% CAGR zu €239B bis 2028, signalisiert massive Digitalisierungsinvestitionen.",
+        "keywords": [
+          "market-growth",
+          "cagr-23.4%",
+          "digitalization"
+        ],
+        "research_hint": "Benchmarken Sie Digitalisierungs-Investitionen, identifizieren Sie Tech-Prioritäten.",
+        "horizon": "plan",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://quixy.com/blog/digital-transformation-in-utilities",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.80,
+        "confidence_tier": "high",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.88,
+          "strategic_fit": 0.82,
+          "source_quality": 0.75,
+          "signal_strength": 0.82,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.58,
+          "crossed_chasm": true,
+          "evidence": "Market growth confirmed by multiple analysts, investments accelerating, vendor revenue growing"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 5,
+        "name": "Master Data Management & Governance",
+        "trend_statement": "Master Data Management und Governance-Framework gewährleisten Datenqualität, Compliance und Single Source of Truth.",
+        "keywords": [
+          "data-governance",
+          "mdm",
+          "quality"
+        ],
+        "research_hint": "Implementieren Sie MDM-Plattform, Daten-Stewardship und Governance-Prozesse.",
+        "horizon": "plan",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.70,
+        "confidence_tier": "low",
+        "signal_intensity": 3,
+        "component_scores": {
+          "impact": 0.80,
+          "probability": 0.75,
+          "strategic_fit": 0.82,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.12,
+          "crossed_chasm": false,
+          "evidence": "MDM initiatives expanding, governance frameworks maturing, enterprise adoption increasing"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 1,
+        "name": "$713B Grid-Digitalisierung",
+        "trend_statement": "Global $713B Investition in Grid-Digitalisierung über 6 Jahre signalisiert langfristige Transformation bis 2032.",
+        "keywords": [
+          "capex-digital",
+          "grid-modernization",
+          "investment"
+        ],
+        "research_hint": "Bewerten Sie Tech-Investitionsprioritäten, Rendite-Modelle und Finanzierungsstrukturen.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.datacenters.com/news/the-future-of-technology-infrastructure-trends-to-watch-through-2026",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.86,
+        "confidence_tier": "high",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.92,
+          "probability": 0.88,
+          "strategic_fit": 0.85,
+          "source_quality": 0.75,
+          "signal_strength": 0.88,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "24-36 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_majority",
+          "estimated_adoption": 0.30,
+          "crossed_chasm": true,
+          "evidence": "Global investment announcements, regional programs launched, deployment accelerating"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 2,
+        "name": "Mitarbeiter-Pensionierungswelle",
+        "trend_statement": "17% der Energieversorger-Mitarbeiter scheiden 2026-2031 aus, erzeugt massive Wissenslücken und Automatisierungsdruck.",
+        "keywords": [
+          "retirement-wave",
+          "knowledge-loss",
+          "succession-planning"
+        ],
+        "research_hint": "Entwickeln Sie Knowledge-Capture-Strategien, Succession-Planning und Automation-Roadmaps.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://consult.energy/article/hiring-trends-and-challenges-in-utilities-recruitment-in-2026",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.82,
+        "confidence_tier": "high",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.90,
+          "strategic_fit": 0.82,
+          "source_quality": 0.75,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "lagging",
+          "lead_time": "0-6 months",
+          "source_type": "jobs",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "late_majority",
+          "estimated_adoption": 0.65,
+          "crossed_chasm": true,
+          "evidence": "Retirement announcements increasing, succession plans under discussion, knowledge initiatives starting"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 3,
+        "name": "Edge Computing Netzoperationen",
+        "trend_statement": "Edge-Computing-Infrastruktur am Netz ermöglicht latenzfreie Kontrolle und Resilienz bis 2032-2034.",
+        "keywords": [
+          "edge-computing",
+          "latency",
+          "resilience"
+        ],
+        "research_hint": "Deployen Sie Edge-Computing-Knoten, Edge-AI und lokale Analytics-Kapazitäten.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": false,
+        "score": 0.66,
+        "confidence_tier": "low",
+        "signal_intensity": 1,
+        "component_scores": {
+          "impact": 0.82,
+          "probability": 0.70,
+          "strategic_fit": 0.80,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "24-36 months",
+          "source_type": "academic",
+          "confidence": "low"
+        },
+        "diffusion_stage": {
+          "stage": "innovators",
+          "estimated_adoption": 0.06,
+          "crossed_chasm": false,
+          "evidence": "Edge computing research active, vendor prototypes emerging, early utility pilots"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 4,
+        "name": "KI & Digital Twins Echtzeit",
+        "trend_statement": "AI + Digital Twins ermöglichen Echtzeit-Netzoptimierung bis 2030-2032 mit prädiktiven Szenarien.",
+        "keywords": [
+          "digital-twins",
+          "ai-optimization",
+          "real-time"
+        ],
+        "research_hint": "Entwickeln Sie Digital-Twin-Modelle, AI-Optimierungsalgorithmen und Szenario-Planning-Systeme.",
+        "horizon": "observe",
+        "source": "web-signal",
+        "source_label": "web-sourced",
+        "source_url": "https://www.microsoft.com/en-us/industry/blog/energy-and-resources/power-and-utilities/2026/02/17/dtech-2026-how-microsoft-and-our-partners-are-accelerating-ai-innovation-for-utilities/",
+        "freshness_date": "2026-02",
+        "web_corroboration": false,
+        "score": 0.81,
+        "confidence_tier": "high",
+        "signal_intensity": 2,
+        "component_scores": {
+          "impact": 0.90,
+          "probability": 0.85,
+          "strategic_fit": 0.85,
+          "source_quality": 0.88,
+          "signal_strength": 0.85,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "analyst",
+          "confidence": "high"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.13,
+          "crossed_chasm": false,
+          "evidence": "Digital twin research advancing, early vendor solutions available, utility pilots expanding"
+        },
+        "dimension": "digitales-fundament"
+      },
+      {
+        "sequence": 5,
+        "name": "Zero-Trust Sicherheitsarchitektur",
+        "trend_statement": "Zero-Trust-Sicherheitsarchitektur ersetzt perimeter-basierte Systeme durch continuous monitoring und micro-segmentation.",
+        "keywords": [
+          "cybersecurity",
+          "zero-trust",
+          "architecture"
+        ],
+        "research_hint": "Redesignieren Sie Sicherheitsarchitektur mit Zero-Trust-Prinzipien, continuous monitoring und Micro-Segmentation.",
+        "horizon": "observe",
+        "source": "training",
+        "source_label": "hypothesis",
+        "source_url": null,
+        "freshness_date": null,
+        "web_corroboration": true,
+        "corroborated_by": "EU Cyber Resilience Act",
+        "score": 0.72,
+        "confidence_tier": "medium",
+        "signal_intensity": 1,
+        "component_scores": {
+          "impact": 0.88,
+          "probability": 0.78,
+          "strategic_fit": 0.85,
+          "source_quality": 0.38,
+          "signal_strength": 0.28,
+          "uncertainty_penalty": 0.00
+        },
+        "indicator_classification": {
+          "type": "leading",
+          "lead_time": "12-24 months",
+          "source_type": "regulatory",
+          "confidence": "medium"
+        },
+        "diffusion_stage": {
+          "stage": "early_adopters",
+          "estimated_adoption": 0.14,
+          "crossed_chasm": false,
+          "evidence": "Zero-trust guidance emerging, utilities evaluating approaches, pilot implementations starting"
+        },
+        "dimension": "digitales-fundament"
+      }
+    ],
+    "scoring_metadata": {
+      "avg_score": 0.7473333333333334,
+      "confidence_distribution": {
+        "high": 26,
+        "medium": 16,
+        "low": 18,
+        "uncertain": 0
+      },
+      "intensity_distribution": {
+        "level_1": 6,
+        "level_2": 14,
+        "level_3": 17,
+        "level_4": 17,
+        "level_5": 6
+      }
+    }
+  },
+  "execution": {
+    "workflow_state": "agreed",
+    "current_phase": 4,
+    "phases_completed": [
+      "phase-0",
+      "phase-1",
+      "phase-2",
+      "phase-3",
+      "phase-4"
+    ],
+    "agreed_at": "2026-03-13T10:43:19Z"
+  },
+  "trend_report_complete": true,
+  "trend_report_path": "tips-trend-report.md",
+  "trend_report_claims_path": "tips-trend-report-claims.json",
+  "trend_report_mode": "strategic-themes",
+  "trend_report_theme_count": 5,
+  "trend_report_generated_at": "2026-03-14T12:00:00Z",
+  "insight_summary_path": null,
+  "insight_summary_arc": null,
+  "copywriter_applied": false,
+  "copywriter_scope": null,
+  "deeper_analysis_integration": {
+    "source_type": "trend-scout",
+    "auto_load_candidates": true,
+    "skip_tips_selection": true,
+    "auto_configure_research_type": true,
+    "auto_configure_dok_level": true,
+    "auto_configure_language": true
+  }
+}

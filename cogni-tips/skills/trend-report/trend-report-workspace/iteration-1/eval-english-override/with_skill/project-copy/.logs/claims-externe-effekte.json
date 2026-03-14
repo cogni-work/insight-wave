@@ -1,0 +1,137 @@
+{
+  "dimension": "externe-effekte",
+  "tips_role": "T",
+  "claims_count": 13,
+  "claims": [
+    {
+      "id": "claim_ee_1",
+      "text": "U.S. data center demand is projected to reach 75.8 GW in 2026.",
+      "value": "75800",
+      "unit": "MW",
+      "type": "count",
+      "context": "Projected U.S. data center electricity demand in 2026",
+      "qualifiers": ["US", "2026", "forecast"],
+      "citations": [{"url": "https://www.spglobal.com/energy/en/news-research/latest-news/electric-power/101425-data-center-grid-power-demand-to-rise-22-in-2025-nearly-triple-by-2030", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_2",
+      "text": "Data center grid-power demand rose 22% in 2025 and is expected to nearly triple by 2030.",
+      "value": "22",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Year-on-year growth rate of data center grid power demand",
+      "qualifiers": ["US", "2025", "YoY"],
+      "citations": [{"url": "https://www.spglobal.com/energy/en/news-research/latest-news/electric-power/101425-data-center-grid-power-demand-to-rise-22-in-2025-nearly-triple-by-2030", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_3",
+      "text": "Annual compliance costs for electricity market agents under the EU AI Act are estimated between less than one million to nearly 200 million euros per country.",
+      "value": "200000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Maximum estimated annual EU AI Act compliance cost per country for electricity market agents",
+      "qualifiers": ["EU", "per country", "annual"],
+      "citations": [{"url": "https://www.sciencedirect.com/science/article/pii/S2352484723015494", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_4",
+      "text": "A profit growth of 10% through AI utilization is needed to offset the highest compliance costs of the EU AI Act.",
+      "value": "10",
+      "unit": "%",
+      "type": "percentage",
+      "context": "AI profit growth required to offset EU AI Act compliance costs",
+      "qualifiers": ["EU", "electricity sector"],
+      "citations": [{"url": "https://www.sciencedirect.com/science/article/pii/S2352484723015494", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_5",
+      "text": "The global smart grid cybersecurity market was valued at USD 7.2 billion in 2025 and is projected to reach USD 25.65 billion by 2033.",
+      "value": "7200000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Smart grid cybersecurity market size in 2025",
+      "qualifiers": ["global", "2025"],
+      "citations": [{"url": "https://www.transpireinsight.com/press-details/smart-grid-cybersecurity-market", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_6",
+      "text": "Only 10% of large enterprises will have a fully mature Zero Trust program by 2026, up from less than 1% in 2023.",
+      "value": "10",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Zero Trust maturity adoption rate among large enterprises",
+      "qualifiers": ["global", "2026", "forecast"],
+      "citations": [{"url": "https://trevonix.com/blogs/7-pillars-of-zero-trust/", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_ee_7",
+      "text": "Germany, France, and the Netherlands curtailed a record 3.9 TWh of renewable energy in 2025.",
+      "value": "3900",
+      "unit": "GWh",
+      "type": "count",
+      "context": "Record renewable energy curtailment in three European countries",
+      "qualifiers": ["DE/FR/NL", "2025"],
+      "citations": [{"url": "https://www.pv-magazine.com/2026/02/03/germany-france-netherlands-curtail-3-9-twh-of-renewables-in-2025/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_8",
+      "text": "Solar curtailment in Germany surged 97% year-on-year to 1,389 GWh in 2024.",
+      "value": "97",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Year-on-year increase in solar curtailment in Germany",
+      "qualifiers": ["Germany", "2024", "YoY"],
+      "citations": [{"url": "https://www.pv-magazine.com/2026/02/03/germany-france-netherlands-curtail-3-9-twh-of-renewables-in-2025/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_9",
+      "text": "Germany is preparing a second round of Carbon Contracts for Difference with EUR 6 billion available for 2026.",
+      "value": "6000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Budget for Germany's 2026 CCfD auction round",
+      "qualifiers": ["Germany", "2026"],
+      "citations": [{"url": "https://www.cleanenergywire.org/news/germany-starts-preparations-2026-round-industry-climate-contracts", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_10",
+      "text": "Germany has set aside roughly EUR 50 billion for the overall CCfD scheme.",
+      "value": "50000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Total budget for Germany's Carbon Contracts for Difference program",
+      "qualifiers": ["Germany", "total program"],
+      "citations": [{"url": "https://www.hydrogeninsight.com/policy/hydrogen-in-industry-germany-to-set-aside-roughly-50bn-for-carbon-contracts-for-difference-subsidy-scheme/2-1-1462051", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_11",
+      "text": "Germany's EUR 500 billion infrastructure fund allocates EUR 100 billion to the Climate and Transformation Fund for energy transition.",
+      "value": "100000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Climate and energy transition allocation within Germany's infrastructure fund",
+      "qualifiers": ["Germany", "2026-2035"],
+      "citations": [{"url": "https://www.cleanenergywire.org/factsheets/qa-germanys-eu500-bln-infrastructure-fund-whats-it-climate-and-energy", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_12",
+      "text": "Between 2026 and 2029, the German government intends to allocate nearly EUR 60 billion per year via the special fund.",
+      "value": "60000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Annual spending from Germany's infrastructure fund",
+      "qualifiers": ["Germany", "annual", "2026-2029"],
+      "citations": [{"url": "https://www.lw.com/en/insights/germanys-500-billion-infrastructure-fund-practical-insights-and-opportunities", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_13",
+      "text": "104 GW of coal and natural gas capacity is scheduled for retirement by 2030.",
+      "value": "104000",
+      "unit": "MW",
+      "type": "count",
+      "context": "Planned fossil fuel capacity retirements",
+      "qualifiers": ["global", "by 2030"],
+      "citations": [{"url": "https://www.utilitydive.com/news/utility-power-sector-trends-2026/808782/", "proximity_confidence": 0.9}]
+    }
+  ]
+}

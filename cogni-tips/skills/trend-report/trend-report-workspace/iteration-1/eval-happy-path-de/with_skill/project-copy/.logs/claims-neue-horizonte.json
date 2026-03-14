@@ -1,0 +1,107 @@
+{
+  "dimension": "neue-horizonte",
+  "tips_role": "P",
+  "claims_count": 10,
+  "claims": [
+    {
+      "id": "claim_nh_001",
+      "text": "Engie-Übernahme von UK Power Networks für £10,5 Mrd. in 2026.",
+      "value": "10500000000",
+      "unit": "GBP",
+      "type": "currency",
+      "context": "M&A-Deal Engie / UK Power Networks",
+      "qualifiers": ["UK", "2026"],
+      "citations": [{"url": "https://youarecurrent.com/2026/03/03/aes-announced-acquisition-agreement/", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_nh_002",
+      "text": "Der GETs-Markt wird bis 2030 auf $5,28 Mrd. bei 14,6% CAGR wachsen.",
+      "value": "5280000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Grid-Enhancing Technologies Marktgröße 2030",
+      "qualifiers": ["global", "2030", "Prognose"],
+      "citations": [{"url": "https://www.thebusinessresearchcompany.com/report/grid-enhancing-technologies-market-report", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_003",
+      "text": "GETs könnten weltweit 450-700 GW an fortgeschrittenen Projekten anschließen.",
+      "value": "450-700",
+      "unit": "GW",
+      "type": "count",
+      "context": "Potenzial von GETs zur Kapazitätsfreisetzung",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.iea.org/reports/electricity-2026/grids", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_004",
+      "text": "Die Top 40 europäischen Energieversorger investieren 2026 voraussichtlich rund €173 Mrd.",
+      "value": "173000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Capex europäischer Top-40-Versorger 2026",
+      "qualifiers": ["Europa", "2026"],
+      "citations": [{"url": "https://think.ing.com/articles/energy-european-utilities-2026-steady-currents/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_005",
+      "text": "Capex für Übertragungs- und Verteilungsinfrastruktur könnte sich auf €1,2-1,4 Billionen im Zeitraum 2026-2035 verdoppeln.",
+      "value": "1200000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Langfristiger T&D-Investitionsbedarf Europa",
+      "qualifiers": ["Europa", "2026-2035", "Prognose"],
+      "citations": [{"url": "https://www.scoperatings.com/ratings-and-research/research/EN/178366", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_006",
+      "text": "Der Deutschlandfonds stellt €30 Mrd. für Startups und Infrastruktur bereit.",
+      "value": "30000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Deutschlandfonds Gesamtvolumen",
+      "qualifiers": ["Deutschland", "2026-2030"],
+      "citations": [{"url": "https://www.bundesfinanzministerium.de/Content/DE/Pressemitteilungen/Finanzpolitik/2025/12/2025-12-18-deutschlandfonds-startet.html", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_007",
+      "text": "28+ US-Bundesstaaten haben Performance-Based Regulation adoptiert.",
+      "value": "28",
+      "unit": "Bundesstaaten",
+      "type": "count",
+      "context": "PBR-Adoption in den USA",
+      "qualifiers": ["USA", "2026"],
+      "citations": [{"url": "https://www.strategyand.pwc.com/gx/en/industries/power-utilities/utilities-innovation.html", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_nh_008",
+      "text": "87% der Fachleute sehen Kulturwandel als Hürde für die digitale Transformation.",
+      "value": "87",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Kulturwandel als Transformationsbarriere",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.strategyand.pwc.com/gx/en/industries/power-utilities/utilities-innovation.html", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_009",
+      "text": "Klir hat €17,5 Mio. in einer Series B-Finanzierung erhalten.",
+      "value": "17500000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Klir Series B Finanzierung für Utility Data Hub",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.finsmes.com/2026/01/klir-raises-17-5m-in-funding.html", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_nh_010",
+      "text": "Deutschland skizziert einen $7-Milliarden-Wasserstoffplan für 2026.",
+      "value": "7000000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Deutschlands Wasserstoffplan 2026",
+      "qualifiers": ["Deutschland", "2026"],
+      "citations": [{"url": "https://www.industrialinfo.com/iirenergy/industry-news/article/germany-outlines-7-billion-hydrogen-plan-for-2026--348044", "proximity_confidence": 0.9}]
+    }
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "dimension": "digitale-wertetreiber",
+  "tips_role": "I",
+  "claims_count": 15,
+  "claims": [
+    {
+      "id": "claim_dw_001",
+      "text": "AI-gestützte Incident-Response-Teams beschleunigen Behebung um 25%.",
+      "value": "25",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Beschleunigung der Incident-Behebung durch KI",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.ad-hoc-news.de/boerse/news/ueberblick/ki-agenten-uebernehmen-die-digitale-wertschoepfung/68546122/", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_dw_002",
+      "text": "Der Agentic-AI-Markt im Energiesektor wächst von $897 Mio. (2026) auf $14,9 Mrd. bis 2035 mit einer CAGR von 36,65%.",
+      "value": "14900000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Agentic AI Marktgröße im Energiesektor 2035",
+      "qualifiers": ["global", "2035", "Prognose"],
+      "citations": [{"url": "https://www.precedenceresearch.com/agentic-ai-in-energy-market", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_003",
+      "text": "Die durchschnittliche digitale Kundenerfahrung bei Versorgern liegt bei nur 616 von 1.000 Punkten.",
+      "value": "616",
+      "unit": "Punkte",
+      "type": "count",
+      "context": "JD Power Digital Experience Score für Versorger 2026",
+      "qualifiers": ["USA", "2026"],
+      "citations": [{"url": "https://www.jdpower.com/business/press-releases/2026-us-utility-digital-experience-study", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_004",
+      "text": "28% der Versorger bieten noch keine Mobile App an.",
+      "value": "28",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Anteil der Versorger ohne Mobile App",
+      "qualifiers": ["USA", "2026"],
+      "citations": [{"url": "https://www.jdpower.com/business/press-releases/2026-us-utility-digital-experience-study", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_005",
+      "text": "AI-basierte personalisierte Energiesparberatung reduziert Verbrauch um 8-12%.",
+      "value": "8-12",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Verbrauchsreduktion durch personalisierte KI-Beratung",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_dw_006",
+      "text": "83% der Kunden verlangen Echtzeit-Ausfallmeldungen per SMS/Push.",
+      "value": "83",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Kundenerwartung an Echtzeit-Kommunikation",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_dw_007",
+      "text": "Mobile Zahlungsplattformen reduzieren Ausfallquoten und Supportkosten um 20%.",
+      "value": "20",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Kostenreduktion durch mobile Zahlungssysteme",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities", "proximity_confidence": 0.7}]
+    },
+    {
+      "id": "claim_dw_008",
+      "text": "KI-Agenten automatisieren 30-40% der Energieversorger-Workflows bis 2027-2028.",
+      "value": "30-40",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Workflow-Automatisierung durch KI-Agenten bei Versorgern",
+      "qualifiers": ["global", "2027-2028", "Prognose"],
+      "citations": [{"url": "https://www.ad-hoc-news.de/boerse/news/ueberblick/ki-agenten-uebernehmen-die-digitale-wertschoepfung/68546122/", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_dw_009",
+      "text": "Der Agentic-AI-Markt im Energiesektor wächst mit 36,65% CAGR von $897 Mio. auf $14,9 Mrd.",
+      "value": "36.65",
+      "unit": "% CAGR",
+      "type": "percentage",
+      "context": "CAGR Agentic AI Energiesektor 2026-2035",
+      "qualifiers": ["global", "2026-2035"],
+      "citations": [{"url": "https://www.precedenceresearch.com/agentic-ai-in-energy-market", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_010",
+      "text": "Intelligente Messung und automatisierte Abrechnung senken Durchsatzkosten um 35-40%.",
+      "value": "35-40",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Kostenreduktion durch Smart Metering",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.mckinsey.com/industries/electric-power-and-natural-gas/our-insights/the-digital-utility", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_dw_011",
+      "text": "Investitionen in Intelligentisierung des Energiesektors verdreifachen sich von $40 Mrd. (2023) auf über $140 Mrd. bis Jahrzehntende.",
+      "value": "140000000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Intelligentisierungs-Investitionen Energiesektor bis 2030",
+      "qualifiers": ["global", "2030", "Prognose"],
+      "citations": [{"url": "https://www.precedenceresearch.com/agentic-ai-in-energy-market", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_dw_012",
+      "text": "Algorithmen optimieren Energiebeschaffung in Echtzeit und reduzieren Kosten um 5-8%.",
+      "value": "5-8",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Kostenreduktion durch algorithmische Beschaffungsoptimierung",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.mckinsey.com/industries/electric-power-and-natural-gas/our-insights/the-digital-utility", "proximity_confidence": 0.7}]
+    },
+    {
+      "id": "claim_dw_013",
+      "text": "Eine 100-Punkte-Lücke trennt die beste (660) von der schlechtesten (560) digitalen Kundenerfahrung bei Versorgern.",
+      "value": "100",
+      "unit": "Punkte",
+      "type": "count",
+      "context": "Streuung der digitalen CX-Scores bei Versorgern",
+      "qualifiers": ["USA", "2026"],
+      "citations": [{"url": "https://www.jdpower.com/business/press-releases/2026-us-utility-digital-experience-study", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_dw_014",
+      "text": "Advanced Metering und Network Analytics reduzieren technische Netzverluste von 6-8% auf 3-4%.",
+      "value": "3-4",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Ziel-Netzverlustrate durch Advanced Metering",
+      "qualifiers": ["global", "2030"],
+      "citations": [{"url": "https://www.mckinsey.com/industries/electric-power-and-natural-gas/our-insights/the-digital-utility", "proximity_confidence": 0.7}]
+    },
+    {
+      "id": "claim_dw_015",
+      "text": "Mobile Dispatch, AR-Technologie und prädiktive Terminplanung optimieren Feldservice-Produktivität um 30%.",
+      "value": "30",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Produktivitätssteigerung im Feldservice",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.methodia.com/blog/customer-experience-trends-in-utilities", "proximity_confidence": 0.7}]
+    }
+  ]
+}

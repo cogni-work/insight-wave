@@ -1,0 +1,107 @@
+{
+  "dimension": "digitales-fundament",
+  "tips_role": "S",
+  "claims_count": 10,
+  "claims": [
+    {
+      "id": "claim_df_1",
+      "text": "Legacy maintenance consumes 60-80% of IT budgets, reducing funds for innovation.",
+      "value": "80",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Maximum share of IT budget consumed by legacy maintenance",
+      "qualifiers": ["utilities", "2026"],
+      "citations": [{"url": "https://riseuplabs.com/legacy-system-modernization-trends/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_2",
+      "text": "Only 30% of digital transformation programs are successful.",
+      "value": "30",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Success rate of digital transformation programs",
+      "qualifiers": ["global"],
+      "citations": [{"url": "https://www.integrate.io/blog/data-transformation-challenge-statistics/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_3",
+      "text": "AI/ML hiring grew 88% year-on-year in 2025.",
+      "value": "88",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Year-on-year growth in AI/ML hiring",
+      "qualifiers": ["global", "2025", "YoY"],
+      "citations": [{"url": "https://www.secondtalent.com/resources/global-ai-talent-shortage-statistics/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_4",
+      "text": "AI engineer salaries jumped to an average of $206,000 in 2025, a $50,000 increase from the prior year.",
+      "value": "206000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Average AI engineer salary",
+      "qualifiers": ["US", "2025"],
+      "citations": [{"url": "https://www.secondtalent.com/resources/most-in-demand-ai-engineering-skills-and-salary-ranges/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_5",
+      "text": "Energy-related hiring at tech companies jumped 34% year-on-year as Big Tech poaches energy talent.",
+      "value": "34",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Year-on-year growth in energy hiring at tech companies",
+      "qualifiers": ["US", "2024", "YoY"],
+      "citations": [{"url": "https://www.cnbc.com/2026/01/14/big-tech-google-microsoft-energy-hiring-ai.html", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_6",
+      "text": "310,000 energy utility professionals will be needed by 2030.",
+      "value": "310000",
+      "unit": "count",
+      "type": "count",
+      "context": "Projected utility workforce shortage by 2030",
+      "qualifiers": ["global", "by 2030"],
+      "citations": [{"url": "https://consult.energy/article/hiring-trends-and-challenges-in-utilities-recruitment-in-2026", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_7",
+      "text": "The digital power utility market is projected to grow to USD 239.38 billion by 2028 at 23.4% CAGR.",
+      "value": "239380000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Global digital utility market forecast",
+      "qualifiers": ["global", "2028", "forecast"],
+      "citations": [{"url": "https://www.globenewswire.com/news-release/2022/09/27/2523057/0/en/Digital-Power-Utility-Market-Size-to-Worth-Around-USD-239-38-Billion-by-2028-Fortune-Business-Insights.html", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_8",
+      "text": "Global investment of $713 billion in grid digitalization is planned over six years.",
+      "value": "713000000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Global grid digitalization investment over 6 years",
+      "qualifiers": ["global", "6-year period"],
+      "citations": [{"url": "https://www.datacenters.com/news/the-future-of-technology-infrastructure-trends-to-watch-through-2026", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_9",
+      "text": "17% of utility workforce will retire between 2026 and 2031.",
+      "value": "17",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Utility workforce retirement rate",
+      "qualifiers": ["2026-2031"],
+      "citations": [{"url": "https://consult.energy/article/hiring-trends-and-challenges-in-utilities-recruitment-in-2026", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_df_10",
+      "text": "Xage Security protects about 60% of U.S. midstream pipeline infrastructure with zero-trust approaches.",
+      "value": "60",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Zero-trust adoption in U.S. pipeline infrastructure",
+      "qualifiers": ["US", "midstream pipeline"],
+      "citations": [{"url": "https://blogs.nvidia.com/blog/ai-cybersecurity-operational-technology-industrial-control-systems/", "proximity_confidence": 0.9}]
+    }
+  ]
+}

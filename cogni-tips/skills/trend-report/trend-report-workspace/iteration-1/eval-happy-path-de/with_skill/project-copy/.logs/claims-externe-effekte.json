@@ -1,0 +1,117 @@
+{
+  "dimension": "externe-effekte",
+  "tips_role": "T",
+  "claims_count": 11,
+  "claims": [
+    {
+      "id": "claim_ee_001",
+      "text": "Der Strombedarf deutscher Rechenzentren erreichte 2025 bereits 21 Milliarden Kilowattstunden.",
+      "value": "21000000000",
+      "unit": "kWh",
+      "type": "count",
+      "context": "Stromverbrauch deutscher Rechenzentren 2025",
+      "qualifiers": ["Deutschland", "2025"],
+      "citations": [{"url": "https://www.techzeitgeist.de/rechenzentren-stromnetze-warum-2026-zum-stresstest-wird/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_002",
+      "text": "Die Rechenzentrumsleistung in Deutschland könnte bis 2030 auf rund 37 TWh steigen, was 6-7% des gesamten deutschen Stromverbrauchs entspricht.",
+      "value": "37000000000",
+      "unit": "kWh",
+      "type": "count",
+      "context": "Prognostizierter Rechenzentrum-Stromverbrauch Deutschland 2030",
+      "qualifiers": ["Deutschland", "2030", "Prognose"],
+      "citations": [{"url": "https://prior1.com/blog/rechenzentrum-trends-2026-zwischen-ki-industrialisierung-energieknappheit-und-regulatorischer-realitaet/", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_003",
+      "text": "Strompreise steigen kurzfristig von 88,6 auf 93,4 €/MWh.",
+      "value": "93.4",
+      "unit": "EUR/MWh",
+      "type": "currency",
+      "context": "Kurzfristige Strompreisentwicklung Q1 2026",
+      "qualifiers": ["Deutschland", "2026", "Prognose"],
+      "citations": [{"url": "https://www.mckinsey.com/de/news/presse/2026-02-24-strommarktreport", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_004",
+      "text": "Gartner prognostiziert, dass bis 2026 40% der Enterprise-Anwendungen aufgabenspezifische KI-Agenten enthalten werden.",
+      "value": "40",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Enterprise-KI-Agenten-Adoption 2026",
+      "qualifiers": ["global", "2026", "Prognose"],
+      "citations": [{"url": "https://www.salesmate.io/blog/future-of-ai-agents/", "proximity_confidence": 0.8}]
+    },
+    {
+      "id": "claim_ee_005",
+      "text": "Das KRITIS-Dachgesetz gilt für Einrichtungen, die mindestens 500.000 Menschen versorgen.",
+      "value": "500000",
+      "unit": "Personen",
+      "type": "count",
+      "context": "Anwendungsschwelle KRITIS-Dachgesetz",
+      "qualifiers": ["Deutschland", "2026"],
+      "citations": [{"url": "https://www.osw.waw.pl/en/publikacje/analyses/2026-02-04/germany-new-law-protection-critical-infrastructure", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_006",
+      "text": "Grid-Enhancing Technologies können 10-15% Kapazitätssteigerung ohne physischen Netzausbau ermöglichen.",
+      "value": "10-15",
+      "unit": "%",
+      "type": "percentage",
+      "context": "Kapazitätssteigerung durch GETs",
+      "qualifiers": ["global", "2026"],
+      "citations": [{"url": "https://www.strategyand.pwc.com/gx/en/industries/power-utilities/utilities-innovation.html", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_007",
+      "text": "Deutschland startet die Vorbietphase für die nächste €6-Milliarden Carbon Contracts for Difference-Auktion.",
+      "value": "6000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Budget der 2. CCfD-Auktionsrunde Deutschland",
+      "qualifiers": ["Deutschland", "2026"],
+      "citations": [{"url": "https://fuelcellsworks.com/2025/10/06/green-investment/germany-opens-pre-bid-phase-for-6bn-2026-climate-contracts-tender-adds-ccs-and-hydrogen-scope", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_008",
+      "text": "Die erste CCfD-Auktionsrunde 2024 vergab €2,8 Milliarden an 15 Projekte.",
+      "value": "2800000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Ergebnis der 1. CCfD-Auktionsrunde",
+      "qualifiers": ["Deutschland", "2024"],
+      "citations": [{"url": "https://www.cleanenergywire.org/news/germany-starts-preparations-2026-round-industry-climate-contracts", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_009",
+      "text": "Der €500-Milliarden-Infrastruktur-Fonds enthält ~€50 Milliarden für die Energiewende.",
+      "value": "500000000000",
+      "unit": "EUR",
+      "type": "currency",
+      "context": "Deutschlands Infrastruktur-Fonds Gesamtvolumen",
+      "qualifiers": ["Deutschland", "2027-2035"],
+      "citations": [{"url": "https://www.cleanenergywire.org/factsheets/qa-germanys-eu500-bln-infrastructure-fund-whats-it-climate-and-energy", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_010",
+      "text": "Europa benötigt insgesamt $3,5 Billionen an Strominvestitionen bis 2035.",
+      "value": "3500000000000",
+      "unit": "USD",
+      "type": "currency",
+      "context": "Europas gesamter Strominvestitionsbedarf bis 2035",
+      "qualifiers": ["Europa", "2035"],
+      "citations": [{"url": "https://www.goldmansachs.com/insights/articles/europe-needs-3-point-5-trillion-dollars-of-power-investment-through-2035", "proximity_confidence": 0.9}]
+    },
+    {
+      "id": "claim_ee_011",
+      "text": "104 GW Kohle- und Gaskraftwerke werden bis 2030 stillgelegt.",
+      "value": "104",
+      "unit": "GW",
+      "type": "count",
+      "context": "Geplante Stilllegung fossiler Kraftwerke bis 2030",
+      "qualifiers": ["global", "2030"],
+      "citations": [{"url": "https://www.utilitydive.com/news/utility-power-sector-trends-2026/808782/", "proximity_confidence": 0.9}]
+    }
+  ]
+}
