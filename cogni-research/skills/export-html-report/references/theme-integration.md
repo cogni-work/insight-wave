@@ -254,13 +254,10 @@ For entity type badges, use these semantic mappings:
 
 | Entity Type | CSS Class | Suggested Color |
 |-------------|-----------|-----------------|
-| trend | `.entity-trend` | `--color-accent` |
+| dimension | `.entity-dimension` | `--color-accent` |
 | finding | `.entity-finding` | `--color-primary-light` |
 | claim | `.entity-claim` | `--color-primary` |
 | source | `.entity-source` | `--color-text-muted` |
-| concept | `.entity-concept` | `--color-accent-dark` |
-| megatrend | `.entity-megatrend` | `--color-primary` |
-| citation | `.entity-citation` | `--color-text-secondary` |
 
 ## Verification Status Colors
 

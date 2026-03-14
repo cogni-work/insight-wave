@@ -88,7 +88,7 @@ content_word_count: {integer}
 # ========================================
 
 # REQUIRED: Link to source entity (initially empty, populated after source creation)
-# Format: [[07-sources/data/source-{uuid}]] or empty string ""
+# Format: [[05-sources/data/source-{uuid}]] or empty string ""
 # Populated by: source-creator during Phase 3.6 source entity creation
 source_id: ""
 
@@ -209,8 +209,8 @@ created_at: "{ISO 8601 timestamp}"
 ## Source
 
 **URL**: {source_url}
-**Source Entity**: {Will be created in 07-sources/data/ by source-creator OR [[07-sources/data/source-{uuid}]] if already created}
-**Backlink**: {source_id will be populated after source creation OR [[07-sources/data/source-{uuid}]]}
+**Source Entity**: {Will be created in 05-sources/data/ by source-creator OR [[05-sources/data/source-{uuid}]] if already created}
+**Backlink**: {source_id will be populated after source creation OR [[05-sources/data/source-{uuid}]]}
 **Publisher**: {publisher_hint} ({publisher_type_hint})
 
 ---

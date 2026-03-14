@@ -154,11 +154,6 @@
       "type": "array",
       "description": "Wikilinks to findings created from this batch (added after execution)",
       "items": {"type": "string"}
-    },
-    "megatrend_ids": {
-      "type": "array",
-      "description": "Wikilinks to megatrends created from this batch (added after execution)",
-      "items": {"type": "string"}
     }
   }
 }

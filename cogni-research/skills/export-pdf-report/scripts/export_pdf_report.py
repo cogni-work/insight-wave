@@ -27,22 +27,16 @@ from datetime import datetime
 # ---------------------------------------------------------------------------
 ENTITY_DIRS = {
     'dimensions':  '01-research-dimensions',
-    'synthesis':   '12-synthesis',
-    'megatrends':  '06-megatrends',
-    'trends':      '11-trends',
-    'concepts':    '05-domain-concepts',
-    'sources':     '07-sources',
-    'publishers':  '08-publishers',
-    'citations':   '09-citations',
+    'sources':     '05-sources',
+    'claims':      '06-claims',
 }
 
-# Entities excluded from PDF report
+# Entities excluded from PDF report (loaded via ENTITY_DIRS only when needed)
 EXCLUDED_DIRS = {
     'initial_question': '00-initial-question',
     'questions':        '02-refined-questions',
     'query_batches':    '03-query-batches',
     'findings':         '04-findings',
-    'claims':           '10-claims',
 }
 
 # Dimension color palette (cycled for N dimensions)
@@ -54,12 +48,12 @@ DIMENSION_PALETTE = [
 # Labels for cover page number play boxes (matching HTML report translations)
 NUMBER_PLAY_LABELS = {
     'en': {
-        'syntheses': 'Dimensions', 'megatrends': 'Megatrends', 'trends': 'Trends',
-        'concepts': 'Concepts', 'findings': 'Findings', 'claims': 'Claims',
+        'dimensions': 'Dimensions', 'findings': 'Findings',
+        'sources': 'Sources', 'claims': 'Claims',
     },
     'de': {
-        'syntheses': 'Dimensionen', 'megatrends': 'Megatrends', 'trends': 'Trends',
-        'concepts': 'Konzepte', 'findings': 'Erkenntnisse', 'claims': 'Aussagen',
+        'dimensions': 'Dimensionen', 'findings': 'Erkenntnisse',
+        'sources': 'Quellen', 'claims': 'Aussagen',
     },
 }
 
@@ -152,28 +146,16 @@ def load_entities(project, entity_type):
         return []
 
     base_dir = project / dir_name
-
-    # Synthesis entities live directly in 12-synthesis/ (not data/ subdir)
-    # per entity-schema.json: data_subdir=null for synthesis
-    if entity_type == 'synthesis':
-        if not base_dir.is_dir():
-            return []
-        glob_pattern = 'synthesis-*.md'
+    data_dir = base_dir / 'data'
+    if not data_dir.is_dir():
         data_dir = base_dir
-    else:
-        data_dir = base_dir / 'data'
         if not data_dir.is_dir():
-            data_dir = base_dir
-            if not data_dir.is_dir():
-                return []
-        glob_pattern = '*.md'
+            return []
 
+    glob_pattern = '*.md'
     entities = []
     for md_file in sorted(data_dir.glob(glob_pattern)):
         if md_file.name.startswith('README'):
-            continue
-        # Skip cross-dimensional synthesis (duplicates dimension chapters)
-        if md_file.stem == 'synthesis-cross-dimensional':
             continue
         try:
             content = md_file.read_text(encoding='utf-8')
@@ -283,11 +265,10 @@ def load_theme_colors(theme_id, theme_root=None):
 # ---------------------------------------------------------------------------
 # Source index builder
 # ---------------------------------------------------------------------------
-def build_source_index(sources, publishers, citations):
+def build_source_index(sources):
     """Build a numbered source index from source entities.
 
     Returns list of source index entries with sequential numbers.
-    Citations are used to compute citation_count per source.
     """
     # Sort sources: tier-1 first, then by title
     tier_order = {'tier-1': 0, 'tier-2': 1, 'tier-3': 2, 'tier-4': 3}
@@ -299,23 +280,6 @@ def build_source_index(sources, publishers, citations):
         return (tier_order.get(tier, 9), title.lower())
 
     sorted_sources = sorted(sources, key=sort_key)
-
-    # Build publisher lookup
-    pub_lookup = {}
-    for p in publishers:
-        pid = p['metadata'].get('dc:identifier', '')
-        pub_lookup[pid] = p['metadata']
-
-    # Build citation count per source
-    citation_counts = {}
-    for c in citations:
-        cmeta = c['metadata']
-        src_id = cmeta.get('source_entity', '') or cmeta.get('source_id', '')
-        # Normalize: extract entity ID from path if needed
-        if '/' in src_id:
-            src_id = src_id.split('/')[-1]
-        if src_id:
-            citation_counts[src_id] = citation_counts.get(src_id, 0) + 1
 
     entries = []
     for idx, src in enumerate(sorted_sources, 1):
@@ -332,7 +296,6 @@ def build_source_index(sources, publishers, citations):
             'tier': meta.get('reliability_tier', ''),
             'credibility_score': meta.get('credibility_score', ''),
             'doi': meta.get('doi', ''),
-            'citation_count': citation_counts.get(entity_id, 0),
         }
 
         # Authors
@@ -343,7 +306,7 @@ def build_source_index(sources, publishers, citations):
             entry['authors'] = str(authors) if authors else ''
 
         # Publication info
-        entry['publication'] = meta.get('journal', '') or meta.get('publisher', '')
+        entry['publication'] = meta.get('journal', '') or meta.get('publication', '')
         entry['date'] = meta.get('publication_date', '')
 
         entries.append(entry)
@@ -357,8 +320,7 @@ def build_source_index(sources, publishers, citations):
 def resolve_wikilinks_to_source_refs(text, source_index):
     """Replace wikilinks to sources with [N] numbered references.
 
-    Other wikilinks (concepts, megatrends, trends) are replaced with
-    plain text references.
+    Non-source wikilinks are replaced with plain text references.
     """
     if not text:
         return text
@@ -369,7 +331,7 @@ def resolve_wikilinks_to_source_refs(text, source_index):
         eid = entry['entity_id']
         source_lookup[eid] = entry['number']
         # Also map the full path form
-        source_lookup[f"07-sources/data/{eid}"] = entry['number']
+        source_lookup[f"05-sources/data/{eid}"] = entry['number']
 
     def replace_wikilink(match):
         full = match.group(1)
@@ -439,194 +401,6 @@ def build_research_scope(project, dimensions):
     }
 
 
-def build_dimension_chapters(synthesis_entities, dimensions):
-    """Build one chapter section per dimension synthesis."""
-    # Build dimension order lookup
-    dim_order = {}
-    for idx, d in enumerate(dimensions):
-        slug = d['metadata'].get('slug', '')
-        dim_order[slug] = idx
-
-    chapters = []
-    for s in synthesis_entities:
-        meta = s['metadata']
-        dim_slug = meta.get('dimension', '')
-        chapters.append({
-            'type': 'dimension_chapter',
-            'title': meta.get('title', f'Dimension: {dim_slug}'),
-            'dimension_slug': dim_slug,
-            'dimension_index': dim_order.get(dim_slug, 99),
-            'body_md': strip_appendix_section(s['body']),
-            'trend_count': meta.get('trend_count', 0),
-            'avg_confidence': meta.get('avg_confidence', 0),
-            'citation_count': meta.get('citation_count', 0),
-            'word_count': meta.get('word_count', 0),
-        })
-
-    # Sort by dimension order
-    chapters.sort(key=lambda c: c['dimension_index'])
-    return chapters
-
-
-def strip_evidence_section(body_md):
-    """Remove ## Evidenzbasis section and everything after it from body text."""
-    pattern = r'\n## Evidenzbasis\b.*'
-    return re.sub(pattern, '', body_md, flags=re.DOTALL).rstrip()
-
-
-def strip_appendix_section(body_md):
-    """Remove ## Appendix / ## Anhang section and everything after it from body text."""
-    pattern = r'\n## (?:Appendix|Anhang)\b.*'
-    return re.sub(pattern, '', body_md, flags=re.DOTALL).rstrip()
-
-
-def build_megatrends_section(megatrend_entities):
-    """Build megatrends section."""
-    if not megatrend_entities:
-        return None
-
-    entries = []
-    for mt in megatrend_entities:
-        meta = mt['metadata']
-        entries.append({
-            'name': meta.get('dc:title', '') or meta.get('megatrend_name', ''),
-            'horizon': meta.get('planning_horizon', ''),
-            'evidence_strength': meta.get('evidence_strength', ''),
-            'confidence_score': meta.get('confidence_score', 0),
-            'dimension': meta.get('dimension_affinity', ''),
-            'structure': meta.get('megatrend_structure', 'generic'),
-            'finding_count': meta.get('finding_count', 0),
-            'body_md': strip_evidence_section(mt['body']),
-        })
-
-    # Sort by confidence descending
-    horizon_order = {'act': 0, 'plan': 1, 'observe': 2}
-    entries.sort(key=lambda e: (
-        -float(e.get('confidence_score', 0)),
-        horizon_order.get(e.get('horizon', ''), 9),
-    ))
-
-    return {
-        'type': 'megatrends',
-        'title': 'Megatrends',
-        'entries': entries,
-    }
-
-
-def build_trend_landscape(trend_entities, dimensions):
-    """Build trend landscape section with overview table only."""
-    if not trend_entities:
-        return None
-
-    # Build dimension lookup for ordering
-    dim_order = {}
-    for idx, d in enumerate(dimensions):
-        slug = d['metadata'].get('slug', '')
-        dim_order[slug] = idx
-
-    horizon_order = {'act': 0, 'plan': 1, 'observe': 2}
-
-    # Build overview table
-    overview = []
-    for t in trend_entities:
-        meta = t['metadata']
-        dim = meta.get('dimension', '')
-        title = meta.get('dc:title', '')
-        if not title:
-            # Fallback: extract from body H1
-            h1_match = re.match(r'^#\s+(.+)', t['body'])
-            if h1_match:
-                title = h1_match.group(1).strip()
-        overview.append({
-            'title': title,
-            'dimension': dim,
-            'horizon': meta.get('planning_horizon', ''),
-            'confidence': meta.get('trend_confidence', meta.get('confidence', '')),
-        })
-
-    # Sort: by dimension order, then horizon (act first)
-    overview.sort(key=lambda e: (
-        dim_order.get(e.get('dimension', ''), 99),
-        horizon_order.get(e.get('horizon', ''), 9),
-    ))
-
-    return {
-        'type': 'trend_landscape',
-        'title': 'Trend Landscape',
-        'overview_table': overview,
-    }
-
-
-def extract_concept_definition(body):
-    """Extract the full 'Was es ist' / 'What it is' section from concept body.
-
-    Returns the complete section text (without heading).
-    Falls back to first paragraph of body if section not found.
-    """
-    pattern = r'##\s+(?:Was es ist|What it is)\s*\n+(.*?)(?=\n##|\Z)'
-    match = re.search(pattern, body, re.DOTALL)
-    if match:
-        text = match.group(1).strip()
-    else:
-        # Fallback: skip H1 header and get first paragraph
-        lines = body.strip().split('\n')
-        text_lines = []
-        past_header = False
-        for line in lines:
-            if line.startswith('#'):
-                if past_header:
-                    break
-                past_header = True
-                continue
-            if past_header and line.strip():
-                text_lines.append(line.strip())
-            elif past_header and text_lines:
-                break
-        text = ' '.join(text_lines)
-
-    if not text:
-        return body[:300].replace('\n', ' ').strip()
-
-    # Strip wikilinks → plain text
-    text = re.sub(r'\[\[.*?\|?(.*?)\]\]', r'\1', text)
-
-    return text
-
-
-def build_domain_concepts(concept_entities):
-    """Build domain concepts glossary section."""
-    if not concept_entities:
-        return None
-
-    entries = []
-    for c in concept_entities:
-        meta = c['metadata']
-        related = meta.get('related_concepts', [])
-        if isinstance(related, str):
-            related = [related]
-        name = meta.get('dc:title', '')
-        if not name:
-            # Fallback: extract from body H1
-            h1_match = re.match(r'^#\s+(.+)', c['body'])
-            if h1_match:
-                name = h1_match.group(1).strip()
-        entries.append({
-            'name': name,
-            'definition': meta.get('definition', '') or extract_concept_definition(c['body']),
-            'related': related,
-            'domain': meta.get('domain', ''),
-        })
-
-    # Sort alphabetically
-    entries.sort(key=lambda e: e['name'].lower())
-
-    return {
-        'type': 'domain_concepts',
-        'title': 'Domain Concepts',
-        'entries': entries,
-    }
-
-
 # ---------------------------------------------------------------------------
 # Main assembly
 # ---------------------------------------------------------------------------
@@ -654,21 +428,12 @@ def assemble_content(project, theme_id, theme_root=None, language_override=None)
         colors.setdefault(key, DIMENSION_PALETTE[i])
 
     # Load entities
-    # Note: cross-dimensional synthesis (synthesis-cross-dimensional.md) and
-    # pipeline metrics (00-pipeline-metrics.md) are intentionally excluded.
-    # Cross-dimensional content duplicates dimension chapters; pipeline metrics
-    # are operational metadata not suited for the formal report reader.
     dimensions = load_entities(project, 'dimensions')
-    synthesis = load_entities(project, 'synthesis')
-    megatrends = load_entities(project, 'megatrends')
-    trends = load_entities(project, 'trends')
-    concepts = load_entities(project, 'concepts')
     sources = load_entities(project, 'sources')
-    publishers = load_entities(project, 'publishers')
-    citations = load_entities(project, 'citations')
+    claims = load_entities(project, 'claims')
 
     # Build source index
-    source_index = build_source_index(sources, publishers, citations)
+    source_index = build_source_index(sources)
 
     # Detect language (CLI override takes precedence)
     language = language_override or sprint_log.get('language', hub_meta.get('language', 'en'))
@@ -680,36 +445,19 @@ def assemble_content(project, theme_id, theme_root=None, language_override=None)
         'date': sprint_log.get('created_at', datetime.now().strftime('%Y-%m-%d')),
         'language': language,
         'dimension_count': len(dimensions),
-        'trend_count': len(trends),
-        'megatrend_count': len(megatrends),
-        'concept_count': len(concepts),
         'source_count': len(sources),
-        'synthesis_count': len(synthesis),
+        'claim_count': len(claims),
     }
 
     # Build number play boxes (sorted ascending by value, localized labels)
-    # Prefer insight-summary stats; fallback to entity counts
-    insight_meta, _ = load_supporting_file(project, 'insight-summary.md')
-    if insight_meta and insight_meta.get('stats_syntheses') is not None:
-        np_counts = [
-            ('syntheses', int(insight_meta.get('stats_syntheses', 0))),
-            ('megatrends', int(insight_meta.get('stats_megatrends', 0))),
-            ('trends', int(insight_meta.get('stats_trends', 0))),
-            ('concepts', int(insight_meta.get('stats_concepts', 0))),
-            ('findings', int(insight_meta.get('stats_findings', 0))),
-            ('claims', int(insight_meta.get('stats_claims', 0))),
-        ]
-    else:
-        finding_count = count_entity_files(project, '04-findings')
-        claim_count = count_entity_files(project, '10-claims')
-        np_counts = [
-            ('syntheses', len(synthesis)),
-            ('megatrends', len(megatrends)),
-            ('trends', len(trends)),
-            ('concepts', len(concepts)),
-            ('findings', finding_count),
-            ('claims', claim_count),
-        ]
+    finding_count = count_entity_files(project, '04-findings')
+    claim_count = count_entity_files(project, '06-claims')
+    np_counts = [
+        ('dimensions', len(dimensions)),
+        ('findings', finding_count),
+        ('sources', len(sources)),
+        ('claims', claim_count),
+    ]
 
     labels = NUMBER_PLAY_LABELS.get(language, NUMBER_PLAY_LABELS['en'])
     number_play = [{'label': labels[key], 'value': val} for key, val in np_counts if val > 0]
@@ -725,31 +473,6 @@ def assemble_content(project, theme_id, theme_root=None, language_override=None)
         exec_summary['body_md'] = resolve_wikilinks_to_source_refs(
             exec_summary['body_md'], source_index)
         sections.append(exec_summary)
-
-    # Dimension chapters
-    chapters = build_dimension_chapters(synthesis, dimensions)
-    for ch in chapters:
-        ch['body_md'] = resolve_wikilinks_to_source_refs(
-            ch['body_md'], source_index)
-        sections.append(ch)
-
-    # Megatrends
-    mega_section = build_megatrends_section(megatrends)
-    if mega_section:
-        for entry in mega_section['entries']:
-            entry['body_md'] = resolve_wikilinks_to_source_refs(
-                entry['body_md'], source_index)
-        sections.append(mega_section)
-
-    # Trend landscape (overview table only)
-    trend_section = build_trend_landscape(trends, dimensions)
-    if trend_section:
-        sections.append(trend_section)
-
-    # Domain concepts
-    concept_section = build_domain_concepts(concepts)
-    if concept_section:
-        sections.append(concept_section)
 
     # Appendix: Research scope
     scope = build_research_scope(project, dimensions)
@@ -850,11 +573,8 @@ def main():
         'sections': len(content['sections']),
         'entities': {
             'dimensions': content['metadata']['dimension_count'],
-            'trends': content['metadata']['trend_count'],
-            'megatrends': content['metadata']['megatrend_count'],
-            'concepts': content['metadata']['concept_count'],
             'sources': content['metadata']['source_count'],
-            'synthesis': content['metadata']['synthesis_count'],
+            'claims': content['metadata']['claim_count'],
         },
         'theme': args.theme,
     }

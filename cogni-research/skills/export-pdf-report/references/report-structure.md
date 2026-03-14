@@ -1,53 +1,49 @@
 # Report Structure Reference
 
-Formal A4 PDF report layout specification for deeper-research output.
+Formal A4 PDF report layout specification for cogni-research output.
 
 ## Page Setup
 
 - **Format**: A4 (210mm x 297mm / 595.28 x 841.89 points)
 - **Margins**: Top 25mm, Bottom 20mm, Left 25mm, Right 20mm
-- **Header**: 10mm zone — project title (left), page number (right)
-- **Footer**: 5mm zone — theme branding line or copyright
+- **Header**: 10mm zone -- project title (left), page number (right)
+- **Footer**: 5mm zone -- theme branding line or copyright
 
 ## Section Sequence
 
 ### 1. Cover Page (1 page, no header/footer)
 
 ```
-┌──────────────────────────────────────┐
-│                                      │
-│     [Theme accent bar]               │
-│                                      │
-│                                      │
-│     RESEARCH TITLE                   │
-│     (from research-hub.md            │
-│      frontmatter title)              │
-│                                      │
-│     Research Type Badge              │
-│     (e.g., "Strategic Trend Radar")  │
-│                                      │
-│     Date: YYYY-MM-DD                 │
-│                                      │
-│   ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐  │
-│   │  5  │ │  8  │ │ 52  │ │ 67  │  │
-│   │Dim. │ │Mega.│ │Trend│ │Conc.│  │
-│   └─────┘ └─────┘ └─────┘ └─────┘  │
-│   ┌─────┐ ┌─────┐                   │
-│   │ 670 │ │ 988 │                   │
-│   │Find.│ │Claim│                   │
-│   └─────┘ └─────┘                   │
-│                                      │
-│     [Theme primary bar]              │
-└──────────────────────────────────────┘
++-----------------------------------------+
+|                                         |
+|     [Theme accent bar]                  |
+|                                         |
+|                                         |
+|     RESEARCH TITLE                      |
+|     (from research-hub.md              |
+|      frontmatter title)                 |
+|                                         |
+|     Research Type Badge                 |
+|     (e.g., "Strategic Research")        |
+|                                         |
+|     Date: YYYY-MM-DD                    |
+|                                         |
+|   +-----+ +-----+ +-----+ +-----+      |
+|   |  5  | | 670 | | 120 | | 988 |      |
+|   |Dim. | |Find.| |Src. | |Claim|      |
+|   +-----+ +-----+ +-----+ +-----+      |
+|                                         |
+|     [Theme primary bar]                 |
++-----------------------------------------+
 ```
 
-Number play boxes show 6 research statistics (Dimensions, Megatrends, Trends, Concepts, Findings, Claims). Pre-sorted ascending by value. Labels localized (en/de).
+Number play boxes show 4 research statistics (Dimensions, Findings, Sources, Claims). Pre-sorted ascending by value. Labels localized (en/de).
 
 **Data sources:**
 - Title: `research-hub.md` frontmatter `title`
-- Research type: `sprint-log.json` → `research_type`
-- Date: `sprint-log.json` → `created_at` or current date
-- Number play: `insight-summary.md` frontmatter `stats_*` fields (preferred), or entity file counts as fallback
+- Research type: `sprint-log.json` -> `research_type`
+- Date: `sprint-log.json` -> `created_at` or current date
+- Number play: entity file counts
 
 ### 2. Table of Contents (1-2 pages)
 
@@ -57,14 +53,8 @@ Auto-generated from section headings with dot-leader page numbers.
 Table of Contents
 
 Executive Summary .......................... 3
-1  Dimension: Technology Trends ........... 5
-2  Dimension: Market Dynamics ............. 12
-3  Dimension: External Effects ............ 19
-Megatrends ................................ 26
-Trend Landscape ........................... 31
-Domain Concepts ........................... 33
-Appendix: Research Scope .................. 36
-Source Index ............................... 38
+Appendix: Research Scope .................. 5
+Source Index ............................... 7
 ```
 
 ### 3. Executive Summary (1-2 pages)
@@ -75,59 +65,7 @@ Source Index ............................... 38
 - Story arc badge rendered as subtitle if `arc_id` is in frontmatter
 - If neither file exists: skip section entirely
 
-### 4. Dimension Chapters (variable length)
-
-**Source:** `12-synthesis/synthesis-*.md` — one chapter per dimension
-
-Each chapter:
-- Chapter number + dimension title as heading (colored with dimension palette)
-- Full synthesis body text
-- Wikilinks resolved to source references
-- Inline badges for trend count, confidence, evidence freshness
-- Page break before each new chapter
-
-**Ordering:** By dimension order in `01-research-dimensions/data/`
-
-### 5. Megatrends (variable length)
-
-**Source:** `06-megatrends/data/megatrend-*.md`
-
-Each megatrend entry:
-- Megatrend name as H2
-- Planning horizon badge (ACT/PLAN/OBSERVE)
-- Evidence strength badge
-- Dimension affinity
-- Body text (TIPS or generic structure)
-- Finding count as metadata line
-
-**Ordering:** By `confidence_score` descending, then `planning_horizon` (act > plan > observe)
-
-### 6. Trend Landscape (1-2 pages)
-
-**Source:** `11-trends/data/trend-*.md` and `portfolio-*.md`
-
-Overview table of all trends:
-
-| # | Trend | Dimension | Horizon | Confidence |
-|---|-------|-----------|---------|------------|
-| 1 | AI Regulation | External Effects | ACT | High |
-| 2 | Edge Computing | Technology | PLAN | Medium |
-
-**Ordering:** Grouped by dimension, then by `planning_horizon` (act first)
-
-### 7. Domain Concepts (compact)
-
-**Source:** `05-domain-concepts/data/concept-*.md`
-
-Glossary-style layout:
-- Concept name in bold
-- Definition as inline text
-- Related concepts as comma-separated list
-- 2-column layout if space permits
-
-**Ordering:** Alphabetical by `dc:title`
-
-### 8. Appendix: Research Scope (1 page)
+### 4. Appendix: Research Scope (1 page)
 
 **Source:** `00-research-scope.md` (if present)
 
@@ -136,11 +74,11 @@ Glossary-style layout:
 - Evidence scale explanation
 - If file missing: skip section
 
-### 9. Source Index (variable length)
+### 5. Source Index (variable length)
 
-**Source:** `07-sources/data/source-*.md` + `08-publishers/` + `09-citations/data/citation-*.md`
+**Source:** `05-sources/data/source-*.md`
 
-Formal numbered bibliography:
+Sources now include publisher and citation data inline. Formal numbered bibliography:
 
 ```
 Sources
@@ -155,7 +93,7 @@ Sources
 
 Each entry includes:
 - Sequential number (referenced from body text)
-- Authors (from source entity or publisher)
+- Authors (from source entity)
 - Title
 - Publication / journal / domain
 - DOI if available
@@ -164,12 +102,23 @@ Each entry includes:
 
 **Ordering:** By reliability tier (tier-1 first), then alphabetical by title
 
+## Entity Types (7 total)
+
+| # | Directory | Entity | Description |
+|---|-----------|--------|-------------|
+| 00 | `00-initial-question` | Initial Question | Original research question |
+| 01 | `01-research-dimensions` | Dimension | Research dimension definitions |
+| 02 | `02-refined-questions` | Question | Refined research questions |
+| 03 | `03-query-batches` | Query Batch | Search query batches |
+| 04 | `04-findings` | Finding | Web research findings |
+| 05 | `05-sources` | Source | Source metadata with publisher + citation |
+| 06 | `06-claims` | Claim | Verified claims |
+
 ## Typography Hierarchy
 
 | Element | Size | Weight | Color |
 |---------|------|--------|-------|
 | Cover title | 28pt | Bold | `--color-primary` |
-| Chapter heading (H1) | 22pt | Bold | Dimension color |
 | Section heading (H2) | 16pt | Bold | `--color-primary` |
 | Subsection (H3) | 13pt | SemiBold | `--color-primary` |
 | Body text | 10pt | Regular | `--color-text-primary` |
@@ -179,28 +128,7 @@ Each entry includes:
 | Page header | 8pt | Regular | `--color-text-muted` |
 | Page number | 8pt | Regular | `--color-text-muted` |
 
-## Badge Rendering
-
-Badges in the PDF are rendered as inline colored rectangles with text:
-
-```
-┌──────────┐  ┌─────┐  ┌──────────────┐
-│ ACT      │  │ 85% │  │ Strong       │
-│ (green)  │  │     │  │ (green tint) │
-└──────────┘  └─────┘  └──────────────┘
-```
-
-Badge color mapping:
-- **Horizon ACT**: green background, dark text
-- **Horizon PLAN**: amber background, dark text
-- **Horizon OBSERVE**: gray background, dark text
-- **Evidence Strong**: green tint
-- **Evidence Moderate**: amber tint
-- **Evidence Weak**: red tint
-- **Confidence %**: accent tint
-- **Dimension**: dimension palette color
-
 ## Page Break Rules
 
-- Always before: Cover, TOC, each Dimension Chapter, Megatrends section, Trend Landscape section, Source Index
+- Always before: Cover, TOC, Source Index
 - Never: within a paragraph, within a table row

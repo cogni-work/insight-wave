@@ -20,5 +20,32 @@
     "bilingual",
     "fact-checking",
     "source-verification"
+  ],
+  "skills": [
+    { "name": "research-plan", "path": "skills/research-plan" },
+    { "name": "findings-sources", "path": "skills/findings-sources" },
+    { "name": "claims", "path": "skills/claims" },
+    { "name": "synthesis", "path": "skills/synthesis" },
+    { "name": "export-html-report", "path": "skills/export-html-report" },
+    { "name": "export-pdf-report", "path": "skills/export-pdf-report" },
+    { "name": "export-rag", "path": "skills/export-rag" }
+  ],
+  "agents": [
+    { "name": "dimension-planner", "path": "agents/dimension-planner.md" },
+    { "name": "batch-creator", "path": "agents/batch-creator.md" },
+    { "name": "findings-creator", "path": "agents/findings-creator.md" },
+    { "name": "findings-creator-file", "path": "agents/findings-creator-file.md" },
+    { "name": "findings-creator-llm", "path": "agents/findings-creator-llm.md" },
+    { "name": "source-creator", "path": "agents/source-creator.md" },
+    { "name": "claim-extractor", "path": "agents/claim-extractor.md" }
+  ],
+  "entity_types": [
+    { "name": "initial-question", "directory": "00-initial-question", "schema": "schemas/initial-question-entity.schema.json" },
+    { "name": "dimension", "directory": "01-research-dimensions", "schema": "schemas/dimension-entity.schema.json" },
+    { "name": "refined-question", "directory": "02-refined-questions", "schema": "schemas/refined-question-entity.schema.json" },
+    { "name": "query-batch", "directory": "03-query-batches", "schema": "schemas/query-batch-entity.schema.json" },
+    { "name": "finding", "directory": "04-findings", "schema": "schemas/finding-entity.schema.json" },
+    { "name": "source", "directory": "05-sources", "schema": "schemas/source-entity.schema.json" },
+    { "name": "claim", "directory": "06-claims", "schema": "schemas/claim-entity.schema.json" }
   ]
 }

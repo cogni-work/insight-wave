@@ -142,12 +142,12 @@ dc:title: "Claim: {bold title}"
 claim_text: "{atomic claim text}"
 evidence_confidence: 0.74
 claim_quality: 0.85
-composite_score: 0.78
+confidence_score: 0.78
 is_critical: false
 flagged_for_review: false
 flag_reasons: []
-finding_ref: "[[04-findings/data/finding-xyz]]"
-source_ref: "[[05-sources/data/source-abc]]"
+finding_refs: ["[[04-findings/data/finding-xyz]]"]
+source_refs: ["[[05-sources/data/source-abc]]"]
 tags: [claim, dimension/{slug}]
 schema_version: "3.0"
 ---

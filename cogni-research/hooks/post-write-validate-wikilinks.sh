@@ -85,7 +85,7 @@ if [[ ! "$FILE_PATH" =~ \.(md|markdown)$ ]]; then
 fi
 
 # Skip validation for non-entity directories
-# Only validate files in entity directories: findings, claims, megatrends, sources, authors, institutions, citations, synthesis
+# Only validate files in entity directories: findings, claims, sources, dimensions, questions, batches
 if [[ ! "$FILE_PATH" =~ (findings|claims|sources|dimensions|questions|batches)/ ]]; then
     exit 0
 fi

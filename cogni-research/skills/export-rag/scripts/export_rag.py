@@ -53,7 +53,7 @@ def _load_null_data_subdir_types() -> set:
             config = json.load(f)
         return {et["key"] for et in config["entity_types"] if et.get("data_subdir") is None}
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
-        return {"synthesis"}  # Safe fallback
+        return set()  # Safe fallback
 
 
 # Entity types with null data_subdir (files live directly in entity dir)
@@ -65,7 +65,7 @@ def get_entity_source_dir(project_path: Path, entity_key: str) -> Optional[Path]
     entity_dir = ENTITY_DIRS.get(entity_key)
     if not entity_dir:
         return None
-    # Synthesis has null data_subdir — files live directly in entity dir
+    # Some entity types have null data_subdir — files live directly in entity dir
     if entity_key in _NULL_DATA_SUBDIR_TYPES:
         return project_path / entity_dir
     return project_path / entity_dir / DATA_SUBDIR
@@ -74,7 +74,6 @@ def get_entity_source_dir(project_path: Path, entity_key: str) -> Optional[Path]
 TYPE_ALIASES = {
     "dimensions": "research-dimensions",
     "questions": "refined-questions",
-    "concepts": "domain-concepts",
     "batches": "query-batches",
 }
 
@@ -87,19 +86,13 @@ def resolve_type_key(name: str) -> str:
 # Priority order for RAG relevance (higher = more relevant)
 # Keys here use short aliases for backward compat; resolved at lookup time
 ENTITY_PRIORITY = {
-    "trends": 100,
     "findings": 80,
     "claims": 60,
     "sources": 40,
-    "megatrends": 30,
-    "domain-concepts": 30,
-    "publishers": 20,
-    "citations": 20,
     "research-dimensions": 50,
     "refined-questions": 40,
     "initial-question": 30,
     "query-batches": 20,
-    "synthesis": 90,
 }
 
 # Frontmatter fields that contain entity references (values = canonical schema keys)
@@ -111,25 +104,14 @@ RELATIONSHIP_FIELDS = {
     "finding_refs": "findings",
     "supporting_findings": "findings",
     "claim_refs": "claims",
-    "citation_refs": "citations",
-    "megatrend_refs": "megatrends",
-    "related_megatrends": "megatrends",
-    "concept_refs": "domain-concepts",
-    "related_concepts": "domain-concepts",
     "dimension_ref": "research-dimensions",
     "dimension_id": "research-dimensions",
     "question_ref": "refined-questions",
     "initial_question_ref": "initial-question",
     "addresses_questions": "refined-questions",
-    "publisher_id": "publishers",
-    "publisher_ref": "publishers",
     "batch_id": "query-batches",
     "batch_ref": "query-batches",
     "query_batch_refs": "query-batches",
-    "related_trends": "trends",
-    "parent_megatrend_ref": "parent",
-    "submegatrend_refs": "children",
-    "megatrend_ids": "megatrends",
     "question_id": "refined-questions",
     "source_references": "sources",
 }
@@ -139,15 +121,10 @@ INVERSE_RELATIONSHIPS = {
     "sources": "cited_by",
     "findings": "supports",
     "claims": "cited_by",
-    "citations": "cited_by",
-    "megatrends": "categorizes",
-    "domain-concepts": "describes",
     "research-dimensions": "contains",
     "refined-questions": "answers",
     "initial-question": "answers",
-    "publishers": "publishes",
     "query-batches": "generated",
-    "trends": "manifests",
     "parent": "children",
     "children": "parent",
     "mentions": "mentioned_by",
@@ -421,7 +398,7 @@ def extract_title(frontmatter: Dict, body: str, filename: str) -> str:
             if isinstance(title, list):
                 title = title[0]
             # Clean up title
-            title = re.sub(r"^(Finding|Claim|Source|Trend|Megatrend|Concept):\s*", "", title)
+            title = re.sub(r"^(Finding|Claim|Source):\s*", "", title)
             return title
 
     # Try first heading
@@ -494,17 +471,11 @@ def infer_entity_type_from_id(entity_id: str) -> str:
     # Longer prefixes first to avoid "synthesis-" matching "source-" etc.
     prefix_map = {
         "query-batch-": "query-batches",
-        "synthesis-": "synthesis",
         "source-": "sources",
         "finding-": "findings",
         "claim-": "claims",
-        "megatrend-": "megatrends",
-        "concept-": "domain-concepts",
         "dimension-": "research-dimensions",
         "question-": "refined-questions",
-        "publisher-": "publishers",
-        "citation-": "citations",
-        "trend-": "trends",
         "batch-": "query-batches",
     }
     for prefix, etype in prefix_map.items():
@@ -807,7 +778,7 @@ def create_rag_document(
         lines.append(f"**Created**: {frontmatter['dc:created']}")
 
     # Confidence: check type-specific field names
-    for conf_field in ["confidence_score", "trend_confidence", "evidence_confidence"]:
+    for conf_field in ["confidence_score", "evidence_confidence"]:
         if conf_field in frontmatter:
             lines.append(f"**Confidence**: {frontmatter[conf_field]}")
             break
@@ -815,21 +786,14 @@ def create_rag_document(
         if "quality_score" in frontmatter:
             lines.append(f"**Quality Score**: {frontmatter['quality_score']}")
 
-    # Dimension: check both "dimension" (most entities) and "dimension_affinity" (megatrends/trends)
-    dim = frontmatter.get("dimension") or frontmatter.get("dimension_affinity")
+    # Dimension reference
+    dim = frontmatter.get("dimension")
     if dim:
         if isinstance(dim, list):
             dim = ", ".join(str(d) for d in dim)
         lines.append(f"**Dimension**: {dim}")
 
     # Entity-type-specific metadata
-    if entity_type == "trends":
-        planning_horizon = frontmatter.get("planning_horizon", "")
-        if not planning_horizon:
-            print(f"WARNING: {filename} missing planning_horizon, defaulting to 'plan'", file=sys.stderr)
-            planning_horizon = "plan"
-        lines.append(f"**Planning Horizon**: {planning_horizon}")
-
     if entity_type == "sources":
         if "url" in frontmatter:
             lines.append(f"**URL**: {frontmatter['url']}")
@@ -841,12 +805,6 @@ def create_rag_document(
     if entity_type == "claims":
         if "verification_status" in frontmatter:
             lines.append(f"**Verification**: {frontmatter['verification_status']}")
-
-    if entity_type == "megatrends":
-        if "planning_horizon" in frontmatter:
-            lines.append(f"**Planning Horizon**: {frontmatter['planning_horizon']}")
-        if "evidence_strength" in frontmatter:
-            lines.append(f"**Evidence Strength**: {frontmatter['evidence_strength']}")
 
     if entity_type == "findings":
         if "confidence_level" in frontmatter:
@@ -891,10 +849,9 @@ def generate_output_filename(entity_type: str, original_name: str, idx: int) -> 
     # Clean up the name
     name = original_name.replace(".md", "")
 
-    # Remove entity type prefix if present (all 13 entity prefixes from schema)
+    # Remove entity type prefix if present
     for prefix in [
-        "query-batch-", "synthesis-", "megatrend-", "dimension-", "publisher-",
-        "citation-", "question-", "finding-", "concept-", "source-", "trend-",
+        "query-batch-", "dimension-", "question-", "finding-", "source-",
         "claim-", "batch-",
     ]:
         if name.startswith(prefix):
@@ -907,19 +864,13 @@ def generate_output_filename(entity_type: str, original_name: str, idx: int) -> 
 
     # Create descriptive filename (uses schema keys)
     prefix_map = {
-        "trends": "trend",
         "findings": "finding",
         "claims": "claim",
         "sources": "source",
-        "megatrends": "megatrend",
-        "domain-concepts": "concept",
-        "publishers": "publisher",
-        "citations": "citation",
         "research-dimensions": "dimension",
         "refined-questions": "question",
         "initial-question": "question",
         "query-batches": "batch",
-        "synthesis": "synthesis",
     }
 
     prefix = prefix_map.get(entity_type, entity_type)

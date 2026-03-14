@@ -35,7 +35,7 @@ ENTITY_DIRS = {
     'claims': '06-claims',
 }
 
-# Proper singular forms (rstrip('s') breaks 'query-batches' and 'synthesis')
+# Proper singular forms (rstrip('s') breaks 'query-batches')
 TYPE_SINGULAR = {
     'initial-questions': 'initial-question',
     'dimensions': 'dimension',
@@ -574,36 +574,6 @@ def parse_markdown_table(text: str) -> str:
     return '\n'.join(html)
 
 
-def strip_trend_landscape_table(text: str) -> str:
-    """Remove trend landscape markdown table, keeping only the kanban-board placeholder.
-
-    The interactive kanban board replaces the static table, so the table is redundant.
-    This function strips the pattern:
-      - Introduction paragraph (e.g., "Die folgende Tabelle zeigt...")
-      - Markdown table with dimension/horizon columns
-      - Legend line (e.g., "Legende: **M** = Megatrend...")
-      - Preserves the <!-- kanban-board --> placeholder
-
-    Args:
-        text: Markdown content with potential trend landscape table
-
-    Returns:
-        Markdown with the table removed, kanban-board placeholder preserved
-    """
-    # Pattern matches:
-    # 1. Introduction line ending with ":"
-    # 2. Empty line
-    # 3. Markdown table rows (| ... |)
-    # 4. Optional empty line
-    # 5. Legend line with "Legend:" or "Legende:"
-    # 6. Empty line(s)
-    # 7. <!-- kanban-board --> placeholder
-    pattern = r'[^\n]*(?:Tabelle|table)[^\n]*:\s*\n\n(?:\|[^\n]+\|\n)+\n?[^\n]*(?:Legend|Legende)[^\n]*\n\n?(<!-- kanban-board -->)'
-
-    # Keep only the kanban-board placeholder
-    return re.sub(pattern, r'\1', text, flags=re.IGNORECASE)
-
-
 def strip_stats_grid_from_body(text: str) -> str:
     """Remove the inline HTML stats grid from insight-summary body.
 
@@ -644,134 +614,6 @@ def normalize_double_bracket_wikilinks(text: str) -> str:
     return text
 
 
-def strip_megatrends_from_table(text: str) -> str:
-    """Remove megatrend entries from the dimension x horizon table, keeping only trends.
-
-    Processes the markdown table in the trends README body:
-    - Removes **M:** [[path|Title]] entries (with surrounding <br> separators)
-    - Strips the **T:** prefix from remaining trend entries (no longer needed)
-    - Cleans up leftover <br> artifacts at cell boundaries
-    - Updates intro text: "Trends und Megatrends" / "Trends and Megatrends" → "Trends"
-    - Simplifies legend line (megatrend legend no longer relevant)
-
-    Args:
-        text: Markdown content containing the dimension x horizon table
-
-    Returns:
-        Markdown with megatrend entries removed from table cells
-    """
-    # 1. Remove **M:** entries with their wikilinks and surrounding <br> separators
-    #    Pattern: optional leading <br>, **M:** [[...]], optional trailing <br>
-    text = re.sub(
-        r'(?:<br>\s*)?'              # optional leading <br>
-        r'\*\*M:\*\*\s*'            # **M:** prefix
-        r'\[\[[^\]]+\]\]'           # wikilink [[...]]
-        r'(?:\s*<br>)?',            # optional trailing <br>
-        '',
-        text
-    )
-
-    # 2. Strip **T:** prefix from remaining trend entries (no longer needed for disambiguation)
-    text = re.sub(r'\*\*T:\*\*\s*', '', text)
-
-    # 3. Clean up <br> artifacts at cell boundaries (leading/trailing <br> in cells)
-    #    Remove <br> immediately after pipe-space or before space-pipe
-    text = re.sub(r'(\|\s*)<br>\s*', r'\1', text)
-    text = re.sub(r'\s*<br>\s*(\|)', r' \1', text)
-    # Collapse multiple <br> into single
-    text = re.sub(r'(<br>\s*){2,}', '<br>', text)
-
-    # 4. Update intro text: remove "und Megatrends" / "and Megatrends"
-    text = re.sub(r'Trends\s+und\s+Megatrends', 'Trends', text)
-    text = re.sub(r'Trends\s+and\s+Megatrends', 'Trends', text)
-
-    # 5. Remove megatrend legend entries
-    #    Remove lines like "Legende: **M** = Megatrend, **T** = Trend" or simplify
-    text = re.sub(
-        r'[^\n]*(?:Legende|Legend)[^\n]*\*\*M\*\*\s*=\s*Megatrend[^\n]*\n?',
-        '',
-        text,
-        flags=re.IGNORECASE
-    )
-
-    return text
-
-
-def strip_megatrend_readme_extras(text: str) -> str:
-    """Remove entity index table and provenance chain from megatrend README body.
-
-    Keeps the narrative intro and the mermaid diagram section. Removes all
-    subsequent ## sections (Entity Index, Provenance Chain, etc.).
-
-    Args:
-        text: Markdown content of a megatrend README body
-
-    Returns:
-        Markdown with only narrative intro and mermaid diagram section
-    """
-    # Split into sections by ## headings
-    sections = re.split(r'(?=^## )', text, flags=re.MULTILINE)
-
-    kept = []
-    found_mermaid = False
-    for section in sections:
-        if not section.strip():
-            continue
-        # Always keep the intro (no ## heading)
-        if not section.startswith('## '):
-            kept.append(section)
-            continue
-        # Keep the section that contains the mermaid code block
-        if '```mermaid' in section or '``` mermaid' in section:
-            kept.append(section)
-            found_mermaid = True
-            continue
-        # Once we've passed the mermaid section, drop everything else
-        if found_mermaid:
-            break
-        # Keep sections before the mermaid section (narrative sections)
-        kept.append(section)
-
-    return '\n'.join(s.rstrip() for s in kept).strip() + '\n'
-
-
-def strip_concept_readme_extras(text: str) -> str:
-    """Remove entity index table and provenance chain from concept README body.
-
-    Keeps the narrative intro and the mermaid diagram section. Removes all
-    subsequent ## sections (Entity Index, Provenance Chain, etc.).
-
-    Mirrors strip_megatrend_readme_extras() logic.
-
-    Args:
-        text: Markdown content of a concept README body
-
-    Returns:
-        Markdown with only narrative intro and mermaid diagram section
-    """
-    sections = re.split(r'(?=^## )', text, flags=re.MULTILINE)
-
-    kept = []
-    found_mermaid = False
-    for section in sections:
-        if not section.strip():
-            continue
-        # Always keep the intro (no ## heading)
-        if not section.startswith('## '):
-            kept.append(section)
-            continue
-        # Keep the section that contains the mermaid code block
-        if '```mermaid' in section or '``` mermaid' in section:
-            kept.append(section)
-            found_mermaid = True
-            continue
-        # Once we've passed the mermaid section, drop everything else
-        if found_mermaid:
-            break
-        # Keep sections before the mermaid section (narrative sections)
-        kept.append(section)
-
-    return '\n'.join(s.rstrip() for s in kept).strip() + '\n'
 
 
 def split_table_cells(row: str) -> List[str]:
@@ -958,402 +800,13 @@ def extract_entity_id_from_wikilink(wikilink: str) -> Optional[str]:
     """Extract entity ID from wikilink like [[project/path/entity-id]] or [[entity-id]].
 
     Args:
-        wikilink: Wikilink string, e.g. "[[project/11-trends/data/portfolio-xyz]]"
+        wikilink: Wikilink string, e.g. "[[project/04-findings/data/finding-xyz]]"
 
     Returns:
         Entity ID (last path component) or None if not parseable
     """
     match = re.search(r'\[\[(?:[^/\]]+/)*([^\]]+)\]\]', wikilink)
     return match.group(1) if match else None
-
-
-def resolve_portfolio_refs(trend_entity: Dict, all_entities: Dict[str, Dict]) -> List[Dict]:
-    """Resolve portfolio_refs wikilinks to portfolio metadata.
-
-    Args:
-        trend_entity: Trend entity with metadata containing portfolio_refs
-        all_entities: All loaded entities for lookup
-
-    Returns:
-        List of portfolio info dicts with id, name, type, maturity, resolvable flag
-    """
-    portfolio_refs = trend_entity.get('metadata', {}).get('portfolio_refs', [])
-    resolved = []
-
-    for ref in portfolio_refs:
-        # Extract portfolio ID from wikilink
-        portfolio_id = extract_entity_id_from_wikilink(ref)
-
-        if portfolio_id and portfolio_id in all_entities:
-            portfolio = all_entities[portfolio_id]
-            meta = portfolio.get('metadata', {})
-            resolved.append({
-                'id': portfolio_id,
-                'name': meta.get('portfolio_name', meta.get('dc:title', portfolio_id)),
-                'type': meta.get('portfolio_type', ''),
-                'maturity': meta.get('maturity', ''),
-                'resolvable': True
-            })
-        else:
-            # Unresolvable cross-project reference - include placeholder
-            resolved.append({
-                'id': portfolio_id or ref,
-                'name': portfolio_id or ref,
-                'type': '',
-                'maturity': '',
-                'resolvable': False
-            })
-
-    return resolved
-
-
-def generate_portfolio_section(portfolios: List[Dict], all_entities: Dict) -> str:
-    """Generate HTML for portfolio references section.
-
-    Args:
-        portfolios: List of resolved portfolio dicts
-        all_entities: All entities for generating links
-
-    Returns:
-        HTML string for portfolio section
-    """
-    if not portfolios:
-        return ''
-
-    html_parts = ['<div class="portfolio-refs">', '<h4>Related Portfolios</h4>', '<ul>']
-
-    for p in portfolios:
-        name = html_lib.escape(p['name'])
-        ptype = p.get('type', '')
-        maturity = p.get('maturity', '')
-
-        if p.get('resolvable') and p['id'] in all_entities:
-            html_parts.append(f'<li><a href="#{p["id"]}" class="wikilink">{name}</a>')
-        else:
-            html_parts.append(f'<li><span class="external-ref">{name}</span>')
-
-        if ptype or maturity:
-            meta_parts = []
-            if ptype:
-                meta_parts.append(ptype)
-            if maturity:
-                meta_parts.append(maturity)
-            html_parts.append(f' <span class="portfolio-meta">({", ".join(meta_parts)})</span>')
-
-        html_parts.append('</li>')
-
-    html_parts.extend(['</ul>', '</div>'])
-    return '\n'.join(html_parts)
-
-
-def parse_horizon_mapping_from_table(report_body: str) -> Dict[str, str]:
-    """Parse Trend Landscape table to extract entity-to-horizon mappings.
-
-    The table in research-hub.md contains the authoritative mapping of
-    trends and megatrends to planning horizons (Act/Plan/Observe).
-
-    Table format:
-    | Dimension | Act (0-6 months) | Plan (6-18 months) | Observe (18+ months) |
-    |-----------|------------------|-------------------|----------------------|
-    | **Name** | **M:** [[path/megatrend-x\\|Title]]<br>**T:** [[path/trend-y\\|Title]] | ... |
-
-    Args:
-        report_body: The markdown content of research-hub.md (after frontmatter)
-
-    Returns:
-        Dict mapping entity_id to horizon ('act', 'plan', 'observe')
-        e.g., {'megatrend-x': 'act', 'trend-y': 'act', 'trend-z': 'plan'}
-    """
-    horizon_mapping = {}
-
-    # Find table with Act/Plan/Observe headers
-    table_pattern = r'(\|[^\n]*(?:Act|Plan|Observe)[^\n]*\|\n\|[\-:|\s]+\|\n(?:\|[^\n]+\|\n?)+)'
-    table_match = re.search(table_pattern, report_body, re.IGNORECASE)
-    if not table_match:
-        return horizon_mapping
-
-    lines = [line.strip() for line in table_match.group(1).split('\n') if line.strip()]
-    if len(lines) < 3:
-        return horizon_mapping
-
-    # Use module-level split_table_cells() helper
-    # Parse header to find horizon column indices
-    header_cells = split_table_cells(lines[0])
-    horizon_columns = {}
-    for idx, cell in enumerate(header_cells):
-        cell_lower = cell.lower()
-        if 'act' in cell_lower:
-            horizon_columns['act'] = idx
-        elif 'plan' in cell_lower:
-            horizon_columns['plan'] = idx
-        elif 'observe' in cell_lower:
-            horizon_columns['observe'] = idx
-
-    # Parse data rows, extract wikilinks
-    # Pattern handles escaped pipe in wikilinks: [[path/entity\|Title]]
-    wikilink_pattern = r'\[\[([^\]\|\\]+)(?:\\?\|[^\]]+)?\]\]'
-    for line in lines[2:]:
-        if not line.startswith('|'):
-            continue
-        cells = split_table_cells(line)
-
-        for horizon, col_idx in horizon_columns.items():
-            if col_idx >= len(cells):
-                continue
-            for match in re.finditer(wikilink_pattern, cells[col_idx]):
-                entity_id = match.group(1).split('/')[-1]
-                horizon_mapping[entity_id] = horizon
-
-    # Log distribution for debugging
-    if horizon_mapping:
-        act_count = sum(1 for h in horizon_mapping.values() if h == 'act')
-        plan_count = sum(1 for h in horizon_mapping.values() if h == 'plan')
-        observe_count = sum(1 for h in horizon_mapping.values() if h == 'observe')
-        print(f"    Horizon distribution: act={act_count}, plan={plan_count}, observe={observe_count}")
-
-    return horizon_mapping
-
-
-def normalize_dimension_name(name: str) -> str:
-    """Convert dimension display name to slug.
-
-    Examples:
-        'Competitive Positioning' -> 'competitive-positioning'
-        'Digitale Wertetreiber' -> 'digitale-wertetreiber'
-        'General' / 'Allgemein' -> '_general'
-
-    Args:
-        name: Dimension name from table cell (may include ** bold markers)
-
-    Returns:
-        Normalized dimension slug
-    """
-    # Clean up: remove bold markers, strip whitespace
-    name = name.strip().replace('**', '').strip()
-
-    # Handle empty name
-    if not name:
-        return '_general'
-
-    # Handle special "General" row variants
-    name_lower = name.lower()
-    if name_lower in ('general', 'allgemein', 'sonstiges'):
-        return '_general'
-
-    # Convert to slug: lowercase, spaces/underscores to hyphens
-    slug = re.sub(r'[\s_]+', '-', name_lower)
-    # Remove any non-alphanumeric characters except hyphens
-    slug = re.sub(r'[^a-z0-9\-]', '', slug)
-    # Collapse multiple hyphens
-    slug = re.sub(r'-+', '-', slug).strip('-')
-
-    return slug or '_general'
-
-
-def parse_cell_entries(cell_content: str) -> List[Dict]:
-    """Parse megatrend/trend entries from a table cell.
-
-    Handles formats:
-    - **M:** [[path/megatrend-x\\|Title]] for megatrends
-    - **T:** [[path/trend-y\\|Title]] for trends
-    - Multiple entries separated by <br>
-
-    Args:
-        cell_content: Raw cell content from markdown table
-
-    Returns:
-        List of dicts with 'id', 'type', 'title', 'path' for each entry
-    """
-    entries = []
-
-    # Pattern: **M:** or **T:** prefix followed by wikilink with escaped pipe
-    # The wikilink format is [[path/entity-id\|Display Title]]
-    entry_pattern = r'\*\*([MT]):\*\*\s*\[\[([^\]\|\\]+)(?:\\?\|([^\]]+))?\]\]'
-
-    for match in re.finditer(entry_pattern, cell_content):
-        type_marker = match.group(1)  # 'M' or 'T'
-        path = match.group(2)  # e.g., '11-trends/data/trend-robot-native-analytics-d4e5f6'
-        title = match.group(3)  # e.g., 'Robot-Native Analytics' (or None if no alias)
-
-        # Extract entity_id from path (last segment)
-        entity_id = path.split('/')[-1]
-
-        # If no alias provided, create title from entity_id
-        if not title:
-            # Convert 'trend-robot-native-analytics-d4e5f6' to 'Robot Native Analytics'
-            # Remove prefix and hash, then title case
-            title_parts = entity_id.split('-')
-            if title_parts[0] in ('trend', 'megatrend'):
-                title_parts = title_parts[1:]
-            # Remove trailing hash (typically 6-8 alphanumeric chars)
-            if title_parts and len(title_parts[-1]) >= 6 and title_parts[-1].isalnum():
-                title_parts = title_parts[:-1]
-            title = ' '.join(word.capitalize() for word in title_parts)
-
-        entity_type = 'megatrend' if type_marker == 'M' else 'trend'
-
-        entries.append({
-            'id': entity_id,
-            'type': entity_type,
-            'title': title,
-            'path': path,
-        })
-
-    return entries
-
-
-def get_lazy_preview(entity_id: str, entity_type: str, title: str,
-                     entities: Optional[Dict[str, Dict]] = None) -> Dict[str, Any]:
-    """Get preview data for entity, with graceful fallback.
-
-    If entity is loaded, use full preview. Otherwise, return minimal
-    structure that still works in the UI.
-
-    Args:
-        entity_id: Entity identifier
-        entity_type: 'megatrend' or 'trend'
-        title: Display title from wikilink
-        entities: Optional loaded entities dict for enhanced preview
-
-    Returns:
-        Preview data dict for the entity
-    """
-    # If entity is loaded, use the full preview generator
-    if entities and entity_id in entities:
-        return generate_preview_data(entities[entity_id])
-
-    # Minimal fallback preview that works in the UI
-    return {
-        'title': title,
-        'type': entity_type,
-    }
-
-
-def parse_kanban_from_table(report_body: str, entities: Dict[str, Dict] = None) -> Dict[str, Any]:
-    """Build kanban data directly from the Trend Landscape table structure.
-
-    This function parses the markdown table cell by cell to build the kanban
-    data, treating the table as the authoritative source. The interactive
-    kanban will exactly mirror the source table.
-
-    Table format expected:
-    | Dimension | Act (0-6 months) | Plan (6-18 months) | Observe (18+ months) |
-    |-----------|------------------|-------------------|----------------------|
-    | **Dim Name** | **M:** [[path\\|Title]]<br>**T:** [[path\\|Title]] | ... | ... |
-
-    Args:
-        report_body: The markdown content of research-hub.md (after frontmatter)
-        entities: Optional loaded entities dict for enhanced preview data
-
-    Returns:
-        Dict with 'dimensions', 'horizons', 'dataPoints' ready for RADAR_DATA
-    """
-    # Standard horizons with radii (matches generate_radar_data)
-    horizons = [
-        {'id': 'act', 'name': 'Act', 'radius': 80, 'description': '0-6 months'},
-        {'id': 'plan', 'name': 'Plan', 'radius': 160, 'description': '6-18 months'},
-        {'id': 'observe', 'name': 'Observe', 'radius': 240, 'description': '18+ months'},
-    ]
-
-    data_points = []
-    dimension_order = []  # Track dimension order from table rows
-
-    # Find table with Act/Plan/Observe headers (reuse existing pattern)
-    table_pattern = r'(\|[^\n]*(?:Act|Plan|Observe)[^\n]*\|\n\|[\-:|\s]+\|\n(?:\|[^\n]+\|\n?)+)'
-    table_match = re.search(table_pattern, report_body, re.IGNORECASE)
-
-    if not table_match:
-        # No table found - return empty structure (caller will fallback)
-        return {'dimensions': [], 'horizons': horizons, 'dataPoints': []}
-
-    lines = [line.strip() for line in table_match.group(1).split('\n') if line.strip()]
-    if len(lines) < 3:
-        return {'dimensions': [], 'horizons': horizons, 'dataPoints': []}
-
-    # Use module-level split_table_cells() helper
-    # Parse header to find horizon column indices
-    header_cells = split_table_cells(lines[0])
-    horizon_columns = {}  # horizon_name -> column_index
-    for idx, cell in enumerate(header_cells):
-        cell_lower = cell.lower()
-        if 'act' in cell_lower:
-            horizon_columns['act'] = idx
-        elif 'plan' in cell_lower:
-            horizon_columns['plan'] = idx
-        elif 'observe' in cell_lower:
-            horizon_columns['observe'] = idx
-
-    # Skip if we didn't find all three horizon columns
-    if len(horizon_columns) < 3:
-        print(f"    Warning: Found only {len(horizon_columns)} horizon columns in table")
-
-    # Parse data rows (skip header and separator)
-    for line in lines[2:]:
-        if not line.startswith('|'):
-            continue
-
-        cells = split_table_cells(line)
-        if len(cells) < 2:
-            continue
-
-        # First cell is dimension name
-        dim_raw = cells[0]
-        dim_slug = normalize_dimension_name(dim_raw)
-        dim_title = dim_raw.strip().replace('**', '').strip()
-
-        # Track dimension order (first occurrence)
-        if dim_slug not in dimension_order:
-            dimension_order.append((dim_slug, dim_title))
-
-        # Process each horizon column
-        for horizon, col_idx in horizon_columns.items():
-            if col_idx >= len(cells):
-                continue
-
-            cell_content = cells[col_idx]
-            entries = parse_cell_entries(cell_content)
-
-            for entry in entries:
-                data_points.append({
-                    'id': entry['id'],
-                    'type': entry['type'],
-                    'title': entry['title'],
-                    'dimension': dim_slug,
-                    'horizon': horizon,
-                    'preview': get_lazy_preview(
-                        entry['id'], entry['type'], entry['title'], entities
-                    ),
-                })
-
-    # Build dimensions list from table row order
-    dimensions = []
-    sector_angle = 360 / max(len(dimension_order), 1)
-
-    for i, (slug, title) in enumerate(dimension_order):
-        # Use table-based title directly (already clean, no "Dimension:" prefix)
-        color = get_dimension_color(slug, i)
-
-        dimensions.append({
-            'id': slug,
-            'slug': slug,
-            'title': title,
-            'color': color,
-            'startAngle': i * sector_angle,
-            'endAngle': (i + 1) * sector_angle,
-        })
-
-    # Log distribution for debugging
-    if data_points:
-        act_count = sum(1 for p in data_points if p['horizon'] == 'act')
-        plan_count = sum(1 for p in data_points if p['horizon'] == 'plan')
-        observe_count = sum(1 for p in data_points if p['horizon'] == 'observe')
-        print(f"    Table-based horizon distribution: act={act_count}, plan={plan_count}, observe={observe_count}")
-
-    return {
-        'dimensions': dimensions,
-        'horizons': horizons,
-        'dataPoints': data_points,
-    }
 
 
 def generate_preview_data(entity: Dict) -> Dict[str, Any]:
@@ -1374,16 +827,7 @@ def generate_preview_data(entity: Dict) -> Dict[str, Any]:
         'type': entity_type,
     }
 
-    if entity_type == 'trend':
-        preview['dimension'] = metadata.get('dimension', '')
-        preview['horizon'] = metadata.get('planning_horizon', '')
-        preview['excerpt'] = extract_first_paragraph(body, max_chars=200)
-        # Add portfolio refs for preview
-        portfolio_refs = metadata.get('portfolio_refs', [])
-        preview['portfolio_count'] = len(portfolio_refs)
-        preview['portfolio_refs'] = portfolio_refs[:5]  # Limit for preview
-
-    elif entity_type == 'finding':
+    if entity_type == 'finding':
         preview['key_findings'] = extract_key_findings(body, max_items=3)
         # Fallback to first paragraph if no key findings found
         if not preview['key_findings']:
@@ -1411,110 +855,17 @@ def generate_preview_data(entity: Dict) -> Dict[str, Any]:
             except Exception:
                 pass
 
-    elif entity_type == 'concept':
-        definition = metadata.get('definition', '')
-        preview['excerpt'] = definition if definition else extract_first_paragraph(body, max_chars=150)
-
-    elif entity_type == 'megatrend':
-        preview['megatrend_name'] = metadata.get('megatrend_name', '')
-        preview['planning_horizon'] = metadata.get('planning_horizon', '')
-        preview['evidence_strength'] = metadata.get('evidence_strength', '')
-        preview['confidence'] = metadata.get('confidence_score', 0)
-        preview['source_type'] = metadata.get('source_type', '')
-        preview['finding_count'] = metadata.get('finding_count', 0)
-
-        # Extract from strategic_narrative if TIPS structure
-        strategic = metadata.get('strategic_narrative', {})
-        if strategic and isinstance(strategic, dict):
-            trend = strategic.get('trend', '')
-            preview['trend'] = trend[:150] + '...' if len(trend) > 150 else trend
-        else:
-            preview['excerpt'] = extract_first_paragraph(body, max_chars=150)
-
-    elif entity_type == 'citation':
-        preview['quote'] = metadata.get('quote', '')[:150] if metadata.get('quote') else ''
-        preview['source_ref'] = metadata.get('source_ref', '')
-
     elif entity_type == 'dimension':
         preview['excerpt'] = extract_first_paragraph(body, max_chars=150)
 
     elif entity_type == 'question':
         preview['excerpt'] = extract_first_paragraph(body, max_chars=150)
 
-    elif entity_type == 'synthesis':
-        preview['dimension'] = metadata.get('dimension', '')
-        preview['trend_count'] = metadata.get('trend_count', '')
-        preview['avg_confidence'] = metadata.get('avg_confidence', '')
-        preview['word_count'] = metadata.get('word_count', '')
-        preview['excerpt'] = extract_first_paragraph(body, max_chars=200)
-
     else:
         # Generic fallback
         preview['excerpt'] = extract_first_paragraph(body, max_chars=150)
 
     return preview
-
-
-def normalize_horizon(horizon: str) -> str:
-    """Normalize horizon value to act/plan/observe.
-
-    Args:
-        horizon: Raw horizon string from entity metadata
-
-    Returns:
-        Normalized horizon string: 'act', 'plan', or 'observe'
-    """
-    if not horizon:
-        return 'plan'
-    horizon_lower = horizon.lower().strip()
-    if 'act' in horizon_lower:
-        return 'act'
-    elif 'observe' in horizon_lower:
-        return 'observe'
-    return 'plan'
-
-
-def infer_megatrend_dimension(metadata: Dict, entities: Dict[str, Dict]) -> str:
-    """Infer dimension for a megatrend using best-effort methods.
-
-    Tries the following in order:
-    1. dimension_affinity from metadata
-    2. dimension/ tag prefix
-    3. Majority vote from finding_refs
-
-    Args:
-        metadata: Megatrend entity metadata
-        entities: All entities dict for finding lookup
-
-    Returns:
-        Dimension slug or empty string if not found
-    """
-    # Try 1: Direct dimension_affinity
-    dimension = metadata.get('dimension_affinity', '')
-    if dimension:
-        return dimension
-
-    # Try 2: Infer from tags (e.g., "dimension/technology-trends")
-    tags = metadata.get('tags', [])
-    for tag in tags:
-        if isinstance(tag, str) and tag.startswith('dimension/'):
-            return tag.replace('dimension/', '')
-
-    # Try 3: Infer from finding_refs (majority vote)
-    finding_refs = metadata.get('finding_refs', [])
-    if finding_refs:
-        dim_counts = {}
-        for ref in finding_refs:
-            # Extract finding ID from wikilink
-            finding_id = ref.strip('[]').split('/')[-1].replace(']]', '')
-            finding_entity = entities.get(finding_id, {})
-            finding_dim = finding_entity.get('metadata', {}).get('dimension', '')
-            if finding_dim:
-                dim_counts[finding_dim] = dim_counts.get(finding_dim, 0) + 1
-        if dim_counts:
-            return max(dim_counts, key=dim_counts.get)
-
-    return ''
 
 
 def _resolve_wikilink_id(wikilink_str: str, all_entities: Dict[str, Dict]) -> Optional[Dict]:
@@ -1718,129 +1069,6 @@ def build_dimension_question_grouping(
     return (sorted_grouped, dim_info, question_info, ungrouped)
 
 
-def generate_radar_data(entities: Dict[str, Dict], horizon_mapping: Dict[str, str] = None) -> Dict[str, Any]:
-    """Generate radar visualization data from Megatrends and Trends.
-
-    Extracts Megatrends and Trends to plot on an interactive radar chart where:
-    - Sectors = Research Dimensions (wedge-shaped sections)
-    - Rings = Planning Horizons (act=inner, plan=middle, observe=outer)
-    - Dots = Megatrends and Trends as uniform-size points
-
-    Args:
-        entities: Dict mapping entity_id to entity data
-        horizon_mapping: Optional dict mapping entity_id to horizon from table
-
-    Returns:
-        Dict with 'dimensions', 'horizons', 'dataPoints' for radar rendering
-    """
-    # Extract unique dimensions from entities
-    dimension_slugs = set()
-    for entity_id, entity in entities.items():
-        entity_type = entity.get('type', '')
-        if entity_type == 'megatrend':
-            metadata = entity.get('metadata', {})
-            dim = infer_megatrend_dimension(metadata, entities)
-            if dim:
-                dimension_slugs.add(dim)
-        elif entity_type == 'trend':
-            metadata = entity.get('metadata', {})
-            dim = metadata.get('dimension', '')
-            if dim:
-                dimension_slugs.add(dim)
-        elif entity_type == 'dimension':
-            metadata = entity.get('metadata', {})
-            slug = metadata.get('slug', entity_id.replace('dim-', ''))
-            if slug:
-                dimension_slugs.add(slug)
-
-    # Build dimension list with colors and angles
-    dimensions = []
-    sorted_dims = sorted(dimension_slugs)
-    sector_angle = 360 / max(len(sorted_dims), 1)
-
-    for i, dim_slug in enumerate(sorted_dims):
-        # Find title from dimension entity if available
-        dim_title = dim_slug.replace('-', ' ').title()
-        for entity_id, entity in entities.items():
-            if entity.get('type') == 'dimension':
-                entity_slug = entity.get('metadata', {}).get('slug', entity_id.replace('dim-', ''))
-                if entity_slug == dim_slug:
-                    raw_title = entity.get('title', dim_title)
-                    # Strip "Dimension:" prefix if present
-                    if raw_title.lower().startswith('dimension:'):
-                        dim_title = raw_title[10:].strip()
-                    else:
-                        dim_title = raw_title
-                    break
-
-        color = get_dimension_color(dim_slug, i)
-
-        dimensions.append({
-            'id': dim_slug,
-            'slug': dim_slug,
-            'title': dim_title,
-            'color': color,
-            'startAngle': i * sector_angle,
-            'endAngle': (i + 1) * sector_angle,
-        })
-
-    # Standard horizons with radii
-    horizons = [
-        {'id': 'act', 'name': 'Act', 'radius': 80, 'description': '0-6 months'},
-        {'id': 'plan', 'name': 'Plan', 'radius': 160, 'description': '6-18 months'},
-        {'id': 'observe', 'name': 'Observe', 'radius': 240, 'description': '18+ months'},
-    ]
-
-    # Extract data points from Megatrends and Trends
-    data_points = []
-    for entity_id, entity in entities.items():
-        entity_type = entity.get('type', '')
-
-        if entity_type == 'megatrend':
-            metadata = entity.get('metadata', {})
-            dimension = infer_megatrend_dimension(metadata, entities)
-            # Priority: 1) Table mapping, 2) Metadata, 3) Default 'plan'
-            if horizon_mapping and entity_id in horizon_mapping:
-                horizon = horizon_mapping[entity_id]
-            else:
-                horizon = normalize_horizon(metadata.get('planning_horizon', 'plan'))
-
-            data_points.append({
-                'id': entity_id,
-                'type': 'megatrend',
-                'title': entity.get('title', entity_id),
-                'dimension': dimension,
-                'horizon': horizon,
-                'preview': generate_preview_data(entity),
-            })
-
-        elif entity_type == 'trend':
-            metadata = entity.get('metadata', {})
-            dimension = metadata.get('dimension', '')
-            # Priority: 1) Table mapping, 2) Metadata, 3) Default 'plan'
-            if horizon_mapping and entity_id in horizon_mapping:
-                horizon = horizon_mapping[entity_id]
-            else:
-                horizon = normalize_horizon(
-                    metadata.get('planning_horizon', metadata.get('horizon', 'plan'))
-                )
-
-            data_points.append({
-                'id': entity_id,
-                'type': 'trend',
-                'title': entity.get('title', entity_id),
-                'dimension': dimension,
-                'horizon': horizon,
-                'preview': generate_preview_data(entity),
-            })
-
-    return {
-        'dimensions': dimensions,
-        'horizons': horizons,
-        'dataPoints': data_points,
-    }
-
-
 def generate_graph_data(entities: Dict[str, Dict]) -> Dict[str, Any]:
     """Generate entity relationship graph data for D3 force-directed visualization.
 
@@ -1932,14 +1160,8 @@ def resolve_entity_file(project: Path, entity_id: str) -> Optional[Path]:
         'question-': 'questions',
         'batch-': 'query-batches',
         'finding-': 'findings',
-        'concept-': 'concepts',
-        'megatrend-': 'megatrends',
         'source-': 'sources',
-        'publisher-': 'publishers',
-        'citation-': 'citations',
         'claim-': 'claims',
-        'trend-': 'trends',
-        'portfolio-': 'trends',
     }
 
     entity_type = None
@@ -1951,10 +1173,7 @@ def resolve_entity_file(project: Path, entity_id: str) -> Optional[Path]:
     if not entity_type:
         return None
 
-    # Try both concepts directories
     dirs_to_try = [ENTITY_DIRS.get(entity_type)]
-    if entity_type == 'concepts':
-        dirs_to_try.append(ENTITY_DIRS.get('domain-concepts'))
 
     for entity_dir in dirs_to_try:
         if not entity_dir:
@@ -1969,7 +1188,7 @@ def resolve_entity_file(project: Path, entity_id: str) -> Optional[Path]:
 def convert_wikilinks_to_anchors(content: str, entities: Dict[str, Dict]) -> str:
     """Transform [[entity]] to <a href="#entity-id" data-preview="...">Title</a>.
 
-    Also converts file-path links like <a href="11-trends/data/entity-id.md">
+    Also converts file-path links like <a href="04-findings/data/entity-id.md">
     to proper wikilinks with preview data.
 
     Args:
@@ -2028,16 +1247,15 @@ def convert_wikilinks_to_anchors(content: str, entities: Dict[str, Dict]) -> str
 
         content = content.replace(wl['raw'], anchor)
 
-    # Second pass: Convert file-path links like <a href="11-trends/data/entity-id.md">text</a>
+    # Second pass: Convert file-path links like <a href="04-findings/data/entity-id.md">text</a>
     # Pattern matches: <a href="NN-dirname/data/entity-id.md">link_text</a>
-    # Also matches: <a href="NN-dirname/entity-id.md">link_text</a> (e.g., 12-synthesis/)
     file_link_pattern = re.compile(
         r'<a href="(\d{2}-[^/]+(?:/data)?/([^"]+)\.md)"[^>]*>([^<]+)</a>'
     )
 
     def replace_file_link(match: re.Match) -> str:
-        full_path = match.group(1)  # e.g., "11-trends/data/trend-foo.md"
-        entity_id = match.group(2)  # e.g., "trend-foo"
+        full_path = match.group(1)  # e.g., "04-findings/data/finding-foo.md"
+        entity_id = match.group(2)  # e.g., "finding-foo"
         link_text = match.group(3)  # e.g., "4" or display text
 
         # Look up entity
@@ -2106,45 +1324,6 @@ def load_entities(project: Path) -> Dict[str, Dict]:
                 }
             except Exception as e:
                 print(f"Warning: Failed to load {file_path}: {e}")
-
-    # Load dimension synthesis files from 12-synthesis/ (new location)
-    # These are rich narrative documents created by synthesis-dimension
-    # With backward compatibility: also check 11-trends/synthesis-*.md for older projects
-    synthesis_dirs = [
-        project / '12-synthesis',       # New location (v2.3.0+)
-        project / '11-trends',        # Legacy location (backward compatibility)
-    ]
-
-    for syntheses_dir in synthesis_dirs:
-        if not syntheses_dir.exists():
-            continue
-        for file_path in syntheses_dir.glob('synthesis-*.md'):
-            entity_id = file_path.stem
-
-            # Skip synthesis-cross-dimensional.md (removed in v3.0)
-            if entity_id == 'synthesis-cross-dimensional':
-                continue
-
-            try:
-                content = file_path.read_text(encoding='utf-8')
-                metadata, body = parse_frontmatter(content)
-
-                # Skip if already loaded (prefer 12-synthesis/ over 11-trends/)
-                if entity_id in entities:
-                    continue
-
-                title = metadata.get('title', metadata.get('dc:title', entity_id))
-
-                entities[entity_id] = {
-                    'id': entity_id,
-                    'type': 'synthesis',
-                    'title': title,
-                    'metadata': metadata,
-                    'body': body,
-                    'file_path': str(file_path),
-                }
-            except Exception as e:
-                print(f"Warning: Failed to load synthesis {file_path}: {e}")
 
     return entities
 
@@ -2387,7 +1566,7 @@ def _render_entity_card(entity: Dict, entity_type: str,
 
     Args:
         entity: Entity data dict
-        entity_type: Type of entity (e.g., 'trend', 'finding')
+        entity_type: Type of entity (e.g., 'finding', 'claim')
         all_entities: All entities for portfolio resolution
         t: UI translations dict
 
@@ -2439,18 +1618,6 @@ def _render_entity_card(entity: Dict, entity_type: str,
         if dimension:
             badges_html += f'<span class="badge dimension">{dimension}</span>'
 
-    elif entity_type == 'trend':
-        dimension = metadata.get('dimension', '')
-        horizon = metadata.get('planning_horizon', '')
-        if dimension:
-            badges_html += f'<span class="badge dimension">{dimension}</span>'
-        if horizon:
-            badges_html += f'<span class="badge horizon">{horizon}</span>'
-        portfolio_refs = metadata.get('portfolio_refs', [])
-        if portfolio_refs:
-            count = len(portfolio_refs)
-            badges_html += f'<span class="badge portfolio">{count} portfolio{"s" if count != 1 else ""}</span>'
-
     elif entity_type == 'source':
         tier = metadata.get('reliability_tier', '')
         source_type = metadata.get('source_type', '')
@@ -2458,61 +1625,6 @@ def _render_entity_card(entity: Dict, entity_type: str,
             badges_html += f'<span class="badge tier">{tier}</span>'
         if source_type:
             badges_html += f'<span class="badge source-type">{source_type}</span>'
-
-    elif entity_type == 'synthesis':
-        tags = metadata.get('tags', [])
-        synthesis_level = None
-        for tag in tags:
-            if isinstance(tag, str) and tag.startswith('synthesis-level/'):
-                synthesis_level = tag.split('/')[-1]
-                break
-        if synthesis_level:
-            badges_html += f'<span class="badge synthesis-level">{synthesis_level}</span>'
-
-        dimension = metadata.get('dimension', '')
-        trend_count = metadata.get('trend_count', '')
-        avg_confidence = metadata.get('avg_confidence', '')
-        word_count = metadata.get('word_count', '')
-        if dimension:
-            badges_html += f'<span class="badge dimension">{dimension}</span>'
-        if trend_count:
-            badges_html += f'<span class="badge trend-count">{trend_count} trends</span>'
-        if avg_confidence:
-            try:
-                conf_pct = int(float(avg_confidence) * 100)
-                badges_html += f'<span class="badge confidence">Avg: {conf_pct}%</span>'
-            except (ValueError, TypeError):
-                pass
-        if word_count:
-            badges_html += f'<span class="badge word-count">{word_count} {t["words"]}</span>'
-
-    elif entity_type == 'megatrend':
-        horizon = metadata.get('planning_horizon', '')
-        evidence = metadata.get('evidence_strength', '')
-        confidence = metadata.get('confidence_score', '')
-        source_type = metadata.get('source_type', '')
-        finding_count = metadata.get('finding_count', 0)
-
-        if horizon:
-            badges_html += f'<span class="badge horizon-{horizon}">{horizon}</span>'
-        if evidence:
-            badges_html += f'<span class="badge evidence-{evidence}">{evidence}</span>'
-        if confidence:
-            try:
-                conf_pct = int(float(confidence) * 100)
-                badges_html += f'<span class="badge confidence">{conf_pct}%</span>'
-            except (ValueError, TypeError):
-                pass
-        if source_type:
-            badges_html += f'<span class="badge source-type">{source_type}</span>'
-        if finding_count:
-            badges_html += f'<span class="badge finding-count">{finding_count} findings</span>'
-
-    portfolio_section = ''
-    if entity_type == 'trend':
-        resolved_portfolios = entity.get('resolved_portfolios', [])
-        if resolved_portfolios:
-            portfolio_section = generate_portfolio_section(resolved_portfolios, all_entities)
 
     return f'''
         <article id="{entity_id}" class="entity-section {entity_type}">
@@ -2522,7 +1634,6 @@ def _render_entity_card(entity: Dict, entity_type: str,
             </header>
             <div class="entity-content">
                 {body_html}
-                {portfolio_section}
             </div>
         </article>
         '''
@@ -2555,7 +1666,7 @@ def generate_entity_section(entity_type: str, entities: List[Dict],
     """Create HTML section for entity group.
 
     Args:
-        entity_type: Type of entity (e.g., 'trend', 'finding')
+        entity_type: Type of entity (e.g., 'finding', 'claim')
         entities: List of entity data dicts
         readmes: Optional list of README dicts for this entity type
         all_entities: All entities for wikilink resolution in READMEs
@@ -2571,14 +1682,9 @@ def generate_entity_section(entity_type: str, entities: List[Dict],
         t = get_ui_translations('en')
 
     type_labels = {
-        'trend': t['type_trend'],
-        'synthesis': t['type_synthesis'],
         'finding': t['type_finding'],
         'claim': t['type_claim'],
         'source': t['type_source'],
-        'concept': t['type_concept'],
-        'megatrend': t['type_megatrend'],
-        'citation': t['type_citation'],
         'dimension': t['type_dimension'],
         'question': t['type_question'],
         'initial-question': t['type_initial_question'],
@@ -2826,7 +1932,7 @@ def generate_insight_hero_section(insight_data: Dict, all_entities: Dict,
     # Build bridge navigation (v3.0: removed Research Report link, points to entity catalog)
     bridge_html = '''
     <div class="insight-bridge">
-        <p class="bridge-text">Explore the full research catalog with detailed findings, concepts, and analysis below.</p>
+        <p class="bridge-text">Explore the full research catalog with detailed findings, sources, and claims below.</p>
     </div>'''
 
     # Insert cards after opening paragraph(s), before first H2 section
@@ -3312,7 +2418,7 @@ def generate_toc(report_headings: List[Dict], entity_types: List[str],
         t = get_ui_translations('en')
 
     # Entity types that have dimension grouping
-    dimension_grouped_types = {'trend', 'synthesis', 'claim'}
+    dimension_grouped_types = {'claim'}
 
     html_parts = [
         '<nav class="report-toc">',
@@ -3352,14 +2458,9 @@ def generate_toc(report_headings: List[Dict], entity_types: List[str],
 
     # Entity sections
     type_labels = {
-        'trend': t['type_trend'],
-        'synthesis': t['type_synthesis'],
         'finding': t['type_finding'],
         'claim': t['type_claim'],
         'source': t['type_source'],
-        'concept': t['type_concept'],
-        'megatrend': t['type_megatrend'],
-        'citation': t['type_citation'],
         'dimension': t['type_dimension'],
         'question': t['type_question'],
         'initial-question': t['type_initial_question'],
@@ -3388,9 +2489,8 @@ def generate_toc(report_headings: List[Dict], entity_types: List[str],
                 key=lambda r: (r.get('is_dimension_scoped', False), r.get('dimension', ''))
             )
 
-            # Group entities by dimension for dimension-grouped types (trend, claim)
-            # Note: synthesis entities are dimension-level documents themselves, list them directly
-            if entity_type in dimension_grouped_types and entity_type != 'synthesis':
+            # Group entities by dimension for dimension-grouped types (claim)
+            if entity_type in dimension_grouped_types:
                 entities_by_dimension = {}
                 ungrouped_entities = []
                 for entity in type_entities:
@@ -3534,51 +2634,6 @@ def generate_section_nav(entities_by_type: Dict[str, List[Dict]],
             continue
         overview_items.append(make_link(file_id, file_data.get('title', file_id)))
 
-    # --- Synthesis (Dimensions) nav items ---
-    synthesis_items = []
-    for entity in entities_by_type.get('synthesis', []):
-        entity_id = entity['id']
-        title = entity.get('title', entity_id)
-        short_title = title
-        for prefix in ('Dimension Synthesis: ', 'Dimensionssynthese: ', 'Synthesis: '):
-            if short_title.startswith(prefix):
-                short_title = short_title[len(prefix):]
-                break
-        synthesis_items.append(make_link(entity_id, short_title))
-
-    # --- Megatrends nav items ---
-    megatrend_items = []
-    for entity in entities_by_type.get('megatrend', []):
-        megatrend_items.append(make_link(entity['id'], entity.get('title', entity['id'])))
-
-    # --- Trends nav items (grouped by dimension, sorted by horizon) ---
-    horizon_order = {'act': 0, 'plan': 1, 'observe': 2}
-    dim_trends: Dict[str, list] = {}
-    for entity in entities_by_type.get('trend', []):
-        meta = entity.get('metadata', {})
-        dim_slug = meta.get('dimension', '') or ''
-        # Strip hash suffix for display (e.g. "digitales-fundament-d19d6cf8" -> "digitales-fundament")
-        dim_label = re.sub(r'-[0-9a-f]{6,}$', '', dim_slug) if dim_slug else ''
-        horizon = normalize_horizon(meta.get('planning_horizon', ''))
-        dim_trends.setdefault(dim_label, []).append((horizon, entity))
-    # Sort dimensions alphabetically, trends within each by horizon
-    trend_items = []
-    for dim_label in sorted(dim_trends.keys()):
-        if dim_label:
-            display_label = dim_label.replace('-', ' ').title()
-            trend_items.append(
-                f'<div class="section-nav-dimension">{html_lib.escape(display_label)}</div>'
-            )
-        entries = sorted(dim_trends[dim_label], key=lambda x: horizon_order.get(x[0], 1))
-        for horizon, entity in entries:
-            title = truncate_title(entity.get('title', entity['id']), 30)
-            tag = f'<span class="nav-horizon-tag">{horizon}</span> '
-            trend_items.append(
-                f'<a class="section-nav-link" href="#{entity["id"]}" '
-                f'title="{html_lib.escape(entity.get("title", entity["id"]))}">'
-                f'{tag}{html_lib.escape(title)}</a>'
-            )
-
     # --- Findings nav items (grouped by dimension → question, collapsible) ---
     finding_items = []
     if all_entities and entities_by_type.get('finding'):
@@ -3711,31 +2766,11 @@ def generate_section_nav(entities_by_type: Dict[str, List[Dict]],
         for entity in entities_by_type.get('claim', []):
             claim_items.append(make_link(entity['id'], entity.get('title', entity['id'])))
 
-    # --- Concepts nav items (grouped by category, sorted alphabetically) ---
-    cat_concepts: Dict[str, list] = {}
-    for entity in entities_by_type.get('concept', []):
-        cat = entity.get('metadata', {}).get('category', '') or ''
-        cat_concepts.setdefault(cat, []).append(entity)
-    concept_items = []
-    for cat_label in sorted(cat_concepts.keys(), key=str.lower):
-        if cat_label:
-            concept_items.append(
-                f'<div class="section-nav-dimension">{html_lib.escape(cat_label)}</div>'
-            )
-        for entity in sorted(cat_concepts[cat_label],
-                              key=lambda e: e.get('title', e['id']).lower()):
-            concept_items.append(make_link(entity['id'], entity.get('title', entity['id'])))
-
     # --- Questions nav items ---
     question_items = []
     for et in ['question', 'dimension', 'initial-question']:
         for entity in entities_by_type.get(et, []):
             question_items.append(make_link(entity['id'], entity.get('title', entity['id'])))
-
-    # --- Citations nav items ---
-    citation_items = []
-    for entity in entities_by_type.get('citation', []):
-        citation_items.append(make_link(entity['id'], entity.get('title', entity['id'])))
 
     # --- Sources nav items ---
     source_items = []
@@ -3750,15 +2785,10 @@ def generate_section_nav(entities_by_type: Dict[str, List[Dict]],
 
     groups_html = (
         nav_group('overview', t['nav_title_overview'], overview_items) +
-        nav_group('synthesis', t['nav_title_synthesis'], synthesis_items) +
-        nav_group('megatrends', t['nav_title_megatrends'], megatrend_items) +
-        nav_group('trends', t['nav_title_trends'], trend_items) +
-        nav_group('concepts', t['detail_concepts'], concept_items) +
         nav_group('findings', t['detail_findings'], finding_items) +
         nav_group('claims', t['detail_claims'], claim_items) +
         nav_group('questions', t['detail_questions'], question_items) +
         nav_group('methodology', t['detail_methodology'], []) +
-        nav_group('citations', t['detail_citations'], citation_items) +
         nav_group('sources', t['detail_sources'], source_items)
     )
 
@@ -3790,28 +2820,20 @@ def generate_navbar(project_title: str, entities_by_type: Dict[str, List[Dict]],
     def count_html(count):
         return f'<span class="tab-count">{count}</span>' if count else ''
 
-    synthesis_count = len(entities_by_type.get('synthesis', []))
-    megatrend_count = len(entities_by_type.get('megatrend', []))
-    trend_count = len(entities_by_type.get('trend', []))
     finding_count = len(entities_by_type.get('finding', []))
     claim_count = len(entities_by_type.get('claim', []))
-    concept_count = len(entities_by_type.get('concept', []))
     question_count = sum(len(entities_by_type.get(et, []))
                          for et in ['question', 'dimension', 'initial-question'])
     methodology_count = len([f for f in (supporting_files or {}).values()
                              if f.get('order') == 99])
-    citation_count = len(entities_by_type.get('citation', []))
     source_count = len(entities_by_type.get('source', []))
 
     # Main tabs (always visible in navbar)
     tabs = [
-        ('overview',   t['tab_overview'],   ''),
-        ('synthesis',  t['tab_dimensions'], count_html(synthesis_count)),
-        ('megatrends', t['tab_megatrends'], count_html(megatrend_count)),
-        ('trends',     t['tab_trends'],     count_html(trend_count)),
-        ('concepts',   t['tab_concepts'],   count_html(concept_count)),
-        ('findings',   t['tab_findings'],   count_html(finding_count)),
-        ('claims',     t['tab_claims'],     count_html(claim_count)),
+        ('overview',   t['tab_overview'],    ''),
+        ('dimensions', t['tab_dimensions'],  ''),
+        ('findings',   t['tab_findings'],    count_html(finding_count)),
+        ('claims',     t['tab_claims'],      count_html(claim_count)),
     ]
 
     tab_buttons = []
@@ -3826,7 +2848,6 @@ def generate_navbar(project_title: str, entities_by_type: Dict[str, List[Dict]],
     appendix_items = [
         ('questions',    t['tab_questions'],    count_html(question_count)),
         ('methodology',  t['tab_methodology'],  count_html(methodology_count)),
-        ('citations',    t['tab_citations'],    count_html(citation_count)),
         ('sources',      t['tab_sources'],      count_html(source_count)),
     ]
 
@@ -3876,39 +2897,22 @@ def generate_overview_cards(entities_by_type: Dict[str, List[Dict]],
         t = get_ui_translations('en')
 
     # Prefer stats from insight-summary frontmatter (single source of truth)
-    if insight_metadata and insight_metadata.get('stats_syntheses') is not None:
-        synthesis_count = int(insight_metadata.get('stats_syntheses', 0))
-        megatrend_count = int(insight_metadata.get('stats_megatrends', 0))
-        trend_count = int(insight_metadata.get('stats_trends', 0))
-        concept_count = int(insight_metadata.get('stats_concepts', 0))
+    if insight_metadata and insight_metadata.get('stats_findings') is not None:
         finding_count = int(insight_metadata.get('stats_findings', 0))
         claim_count = int(insight_metadata.get('stats_claims', 0))
     else:
         # Fallback: count from entity lists (backward compatibility)
-        synthesis_count = len(entities_by_type.get('synthesis', []))
-        megatrend_count = len(entities_by_type.get('megatrend', []))
-        trend_count = len(entities_by_type.get('trend', []))
-        concept_count = len(entities_by_type.get('concept', []))
         finding_count = len(entities_by_type.get('finding', []))
         claim_count = len(entities_by_type.get('claim', []))
 
+    dimension_count = len(entities_by_type.get('dimension', []))
+    source_count = len(entities_by_type.get('source', []))
+
     return f'''
         <div class="overview-grid">
-            <div class="overview-card" data-navigate="synthesis">
-                <div class="card-stat">{synthesis_count}</div>
-                <h3>{t['card_syntheses']}</h3>
-            </div>
-            <div class="overview-card" data-navigate="megatrends">
-                <div class="card-stat">{megatrend_count}</div>
-                <h3>{t['card_megatrends']}</h3>
-            </div>
-            <div class="overview-card" data-navigate="trends">
-                <div class="card-stat">{trend_count}</div>
-                <h3>{t['card_trends']}</h3>
-            </div>
-            <div class="overview-card" data-navigate="concepts">
-                <div class="card-stat">{concept_count}</div>
-                <h3>{t['card_concepts']}</h3>
+            <div class="overview-card" data-navigate="dimensions">
+                <div class="card-stat">{dimension_count}</div>
+                <h3>{t['tab_dimensions']}</h3>
             </div>
             <div class="overview-card" data-navigate="findings">
                 <div class="card-stat">{finding_count}</div>
@@ -3917,6 +2921,10 @@ def generate_overview_cards(entities_by_type: Dict[str, List[Dict]],
             <div class="overview-card" data-navigate="claims">
                 <div class="card-stat">{claim_count}</div>
                 <h3>{t['card_claims']}</h3>
+            </div>
+            <div class="overview-card" data-navigate="sources">
+                <div class="card-stat">{source_count}</div>
+                <h3>{t['tab_sources']}</h3>
             </div>
         </div>'''
 
@@ -3994,10 +3002,10 @@ def generate_entity_tab_panels(entities_by_type: Dict[str, List[Dict]],
                                 all_entities: Dict,
                                 supporting_files: Dict[str, Dict] = None,
                                 t: dict = None) -> str:
-    """Generate main content tab panels for entity types (findings, claims, concepts, etc.).
+    """Generate main content tab panels for entity types (findings, claims, etc.).
 
     These panels are rendered as top-level tab panels in the main content area,
-    alongside the existing overview/synthesis/megatrends/trends panels.
+    alongside the existing overview/dimensions panels.
 
     Args:
         entities_by_type: Entity groups by type
@@ -4014,11 +3022,9 @@ def generate_entity_tab_panels(entities_by_type: Dict[str, List[Dict]],
 
     # Entity tab definitions: (tab_id, entity_types_list)
     entity_tabs = [
-        ('concepts',    ['concept']),
         ('findings',    ['finding']),
         ('claims',      ['claim']),
         ('questions',   ['question', 'dimension', 'initial-question']),
-        ('citations',   ['citation']),
         ('sources',     ['source']),
     ]
 
@@ -4028,15 +3034,6 @@ def generate_entity_tab_panels(entities_by_type: Dict[str, List[Dict]],
         entities_html = ''
         for entity_type in entity_types_list:
             type_entities = entities_by_type.get(entity_type, [])
-            # Sort concepts by category then title to match sidebar nav order
-            if entity_type == 'concept':
-                type_entities = sorted(
-                    type_entities,
-                    key=lambda e: (
-                        (e.get('metadata', {}).get('category', '') or '').lower(),
-                        e.get('title', e['id']).lower()
-                    )
-                )
             type_readmes = readmes_by_type.get(entity_type, [])
             if type_entities or type_readmes:
                 # Use grouped panel for findings and claims
@@ -4090,63 +3087,6 @@ def extract_headings(content: str) -> List[Dict]:
             'id': heading_id,
         })
     return headings
-
-
-def generate_kanban_html(project_language: str = 'en', t: dict = None) -> str:
-    """Generate the kanban board HTML structure.
-
-    Args:
-        project_language: Language code ('en' or 'de')
-        t: UI translations dict (for corner label)
-
-    Returns:
-        HTML string for the kanban board
-    """
-    if t is None:
-        t = get_ui_translations(project_language)
-
-    # Localized headers and legend
-    kanban_strings = {
-        'en': {
-            'act': 'Act',
-            'act_desc': '0-6 months',
-            'plan': 'Plan',
-            'plan_desc': '6-18 months',
-            'observe': 'Observe',
-            'observe_desc': '18+ months',
-            'megatrend': 'Megatrend',
-            'trend': 'Trend',
-            'general': 'General',
-        },
-        'de': {
-            'act': 'Act',
-            'act_desc': '0-6 Mon.',
-            'plan': 'Plan',
-            'plan_desc': '6-18 Mon.',
-            'observe': 'Observe',
-            'observe_desc': '18+ Mon.',
-            'megatrend': 'Megatrend',
-            'trend': 'Trend',
-            'general': 'Allgemein',
-        }
-    }
-    k = kanban_strings.get(project_language, kanban_strings['en'])
-
-    return f'''<div class="kanban-board">
-    <div class="kanban-header">
-        <div class="kanban-corner">{t['kanban_corner']}</div>
-        <div class="kanban-col-header act">{k['act']}<span class="horizon-desc">{k['act_desc']}</span></div>
-        <div class="kanban-col-header plan">{k['plan']}<span class="horizon-desc">{k['plan_desc']}</span></div>
-        <div class="kanban-col-header observe">{k['observe']}<span class="horizon-desc">{k['observe_desc']}</span></div>
-    </div>
-    <div class="kanban-body" id="kanban-body">
-        <!-- Rows generated by JavaScript -->
-    </div>
-</div>
-<div class="kanban-legend">
-    <span class="legend-item"><span class="legend-dot megatrend"></span>{k['megatrend']}</span>
-    <span class="legend-item"><span class="legend-dot trend"></span>{k['trend']}</span>
-</div>'''
 
 
 def load_landing_page(project_path: Path) -> str:
@@ -4267,8 +3207,8 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
     for readme_id, readme_data in readmes.items():
         subtype = readme_data['subtype']
         # Map subtype to singular entity type used in entities_by_type
-        # e.g., 'sources' -> 'source', 'trends' -> 'trend'
-        type_key = subtype.rstrip('s') if subtype not in ('synthesis',) else subtype
+        # e.g., 'sources' -> 'source', 'findings' -> 'finding'
+        type_key = subtype.rstrip('s')
         if type_key not in readmes_by_type:
             readmes_by_type[type_key] = []
         readmes_by_type[type_key].append(readme_data)
@@ -4277,52 +3217,16 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
         print(f"    {subtype}: {len(readme_list)} READMEs")
         result['entities_count'][f'readme-{subtype}'] = len(readme_list)
 
-    # 3c. Generate radar visualization data (table-first approach)
-    print("\nGenerating radar data...")
-    print("  Parsing kanban data directly from trend landscape table...")
-
-    # For v3.0 hubs, look in trends README; for v2.x, look in research-report
+    # 3c. Normalize wikilinks in report body
     report_body = normalize_double_bracket_wikilinks(report_body)
-    kanban_source_body = report_body
-    if hub_version == 'v3.0':
-        # Try to get trend landscape from 11-trends/README.md
-        trends_readme = readmes.get('readme-trends')
-        if trends_readme:
-            print("  v3.0 hub detected: using trend landscape from 11-trends/README.md")
-            kanban_source_body = normalize_double_bracket_wikilinks(trends_readme['body'])
-        else:
-            print("  Warning: v3.0 hub detected but 11-trends/README.md not found, using hub")
 
-    radar_data = parse_kanban_from_table(kanban_source_body, entities)
-
-    if not radar_data['dataPoints']:
-        # Fallback to entity-based approach if table not found or empty
-        print("  No table found or empty, falling back to entity-based generation...")
-        horizon_mapping = parse_horizon_mapping_from_table(kanban_source_body)
-        print(f"  Found {len(horizon_mapping)} entity-to-horizon mappings")
-        radar_data = generate_radar_data(entities, horizon_mapping)
-
-    print(f"  Dimensions: {len(radar_data['dimensions'])}")
-    print(f"  Data points: {len(radar_data['dataPoints'])}")
-
-    # Add translations for kanban board labels
-    kanban_translations = {
-        'en': {'megatrend': 'Megatrend', 'trend': 'Trend', 'general': 'General'},
-        'de': {'megatrend': 'Megatrend', 'trend': 'Trend', 'general': 'Allgemein'}
-    }
-    radar_data['translations'] = kanban_translations.get(project_language, kanban_translations['en'])
-
+    # Radar/kanban data removed in v1.0.0 rebuild (no trends/megatrends)
+    radar_data = {'dimensions': [], 'horizons': [], 'dataPoints': [], 'translations': {}}
     radar_data_json = json.dumps(radar_data, ensure_ascii=False)
 
-    # 4. Process README bodies and filter megatrends from trends table
+    # 4. Process README bodies
     for readme_id, readme_data in readmes.items():
         readme_data['body'] = normalize_double_bracket_wikilinks(readme_data['body'])
-        if readme_data.get('subtype') == 'trends' and not readme_data.get('is_dimension_scoped'):
-            readme_data['body'] = strip_megatrends_from_table(readme_data['body'])
-        if readme_data.get('subtype') == 'megatrends':
-            readme_data['body'] = strip_megatrend_readme_extras(readme_data['body'])
-        if readme_data.get('subtype') == 'concepts':
-            readme_data['body'] = strip_concept_readme_extras(readme_data['body'])
 
     # 4b. Merge entities with readmes for cross-referencing
     all_linkable = {**entities, **readmes}
@@ -4334,13 +3238,7 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
         body_html = convert_wikilinks_to_anchors(body_html, all_linkable)
         entity_data['body_html'] = body_html
 
-    # 5b. Resolve portfolio references for trends
-    print("Resolving portfolio references for trends...")
-    for entity_id, entity_data in entities.items():
-        if entity_data.get('type') == 'trend':
-            entity_data['resolved_portfolios'] = resolve_portfolio_refs(entity_data, entities)
-
-    # 5c. Convert markdown and wikilinks in supporting files
+    # 5b. Convert markdown and wikilinks in supporting files
     if supporting_files:
         print("Processing supporting files...")
         # Need to merge supporting files into linkable entities for cross-referencing
@@ -4380,12 +3278,10 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
     landing_page_html = load_landing_page(project_path)
     has_landing = bool(landing_page_html)
 
-    # 8. Generate main tab entity sections (synthesis, megatrend, trend)
+    # 8. Generate main tab entity sections (dimensions)
     print("\nGenerating entity sections...")
     main_tab_types = {
-        'synthesis': ['synthesis'],
-        'megatrends': ['megatrend'],
-        'trends': ['trend'],
+        'dimensions': ['dimension'],
     }
 
     main_tab_sections = {}
@@ -4394,9 +3290,6 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
         for entity_type in entity_types_list:
             type_entities = entities_by_type.get(entity_type, [])
             type_readmes = readmes_by_type.get(entity_type, [])
-            if tab_id == 'trends':
-                # Keep the main trend table README, remove dimension exhibit READMEs
-                type_readmes = [r for r in type_readmes if not r.get('is_dimension_scoped')]
             if type_entities or type_readmes:
                 tab_html += generate_entity_section(
                     entity_type, type_entities,
@@ -4410,17 +3303,11 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
     graph_data = generate_graph_data(all_linkable)
     graph_data_json = json.dumps(graph_data, ensure_ascii=False)
     graph_type_labels = {
-        'synthesis': t.get('graph_synthesis', 'Synthesis'),
-        'megatrend': t.get('graph_megatrend', 'Megatrend'),
-        'trend': t.get('graph_trend', 'Trend'),
-        'concept': t.get('graph_concept', 'Concept'),
         'claim': t.get('graph_claim', 'Claim'),
         'finding': t.get('graph_finding', 'Finding'),
         'source': t.get('graph_source', 'Source'),
-        'citation': t.get('graph_citation', 'Citation'),
         'dimension': t.get('graph_dimension', 'Dimension'),
         'question': t.get('graph_question', 'Question'),
-        'publisher': t.get('graph_publisher', 'Publisher'),
         'query-batch': t.get('graph_query_batch', 'Query Batch'),
         'initial-question': t.get('graph_initial_question', 'Initial Question'),
     }
@@ -4502,7 +3389,7 @@ def generate_html_report(project_path: Path, theme_id: str, output_path: Path,
         </div>
     </div>'''
 
-    # Generate entity tab panels (findings, claims, concepts, questions, methodology, citations, sources)
+    # Generate entity tab panels (findings, claims, questions, methodology, sources)
     entity_panels_html = generate_entity_tab_panels(
         entities_by_type, readmes_by_type, all_linkable, supporting_files, t=t
     )
