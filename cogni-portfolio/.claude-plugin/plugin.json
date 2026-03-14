@@ -6,6 +6,6 @@
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
   },
-  "license": "LicenseRef-CogniWorks-Pro",
+  "license": "AGPL-3.0-only",
   "keywords": ["portfolio", "messaging", "b2b", "fab", "sme", "propositions", "packages", "bridge", "tips-integration", "cross-plugin", "scan", "portfolio-template", "b2b-ict", "competitor-research", "variants", "opportunity-pipeline", "quality-assessment"]
 }

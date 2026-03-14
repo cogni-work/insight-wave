@@ -1,15 +1,30 @@
-CogniWorks Pro License
+                    cogni-portfolio
+ Copyright (C) 2025-2026 Stephan de Haas / cogni-work.ai
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
 
-SPDX-License-Identifier: LicenseRef-CogniWorks-Pro
+SPDX-License-Identifier: AGPL-3.0-only
 
-Copyright (c) 2025-2026 Stephan de Haas / cogni-work.ai
-All rights reserved.
+This plugin is part of the cogni-works open-source marketplace.
 
-This plugin is part of the CogniWorks Pro marketplace and is licensed under
-the CogniWorks Pro License. Use of this software requires an active paid
-subscription.
+    cogni-portfolio — Portfolio messaging and proposition planning for SMEs.
+    Copyright (C) 2025-2026  Stephan de Haas / cogni-work.ai
 
-The full license text is available at:
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+The full AGPL-3.0 license text is available at:
   ../LICENSE (repository root)
 
-For licensing inquiries: stephan@cogni-work.ai
+For questions: stephan@cogni-work.ai
