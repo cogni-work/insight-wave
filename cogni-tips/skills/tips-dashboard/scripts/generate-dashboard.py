@@ -773,7 +773,7 @@ def generate_html(data, status, project_dir, theme):
         all_sts.sort(key=lambda x: x.get("ranking_value", x.get("business_relevance", 0)), reverse=True)
 
     # Portfolio anchor stats
-    anchored_sts = [st for st in all_sts if st.get("generation_mode") == "portfolio-anchored"]
+    anchored_sts = [st for st in all_sts if st.get("generation_mode") in ("portfolio-anchored", "re-anchored")]
     anchored_count = len(anchored_sts)
     total_sts_count = len(all_sts)
     anchored_by_theme = {}
@@ -1789,7 +1789,7 @@ body::after {{
                         continue
                     s_name = st_obj.get("name", "S")
                     s_graph_id = f"st-{st_obj.get('st_id', st_obj.get('id', ''))}"
-                    anchor_mark = ' <span title="portfolio-anchored" style="font-size:10px">&#9875;</span>' if st_obj.get("generation_mode") == "portfolio-anchored" else ""
+                    anchor_mark = ' <span title="portfolio-anchored" style="font-size:10px">&#9875;</span>' if st_obj.get("generation_mode") in ("portfolio-anchored", "re-anchored") else ""
                     html += '              <div class="chain-arrow">&rarr;</div>\n'
                     html += f'              <div class="chain-node solution" onclick="focusGraphNode(\'{esc_js(s_graph_id)}\')">{esc(s_name[:25])}{anchor_mark}</div>\n'
                     shown_solutions += 1
@@ -1816,7 +1816,7 @@ body::after {{
                 st_id = st.get("st_id", st.get("id", ""))
                 st_graph_id = f"st-{st_id}"
                 anchor_badge = ""
-                if st.get("generation_mode") == "portfolio-anchored":
+                if st.get("generation_mode") in ("portfolio-anchored", "re-anchored"):
                     pa = st.get("portfolio_anchor", {}) or {}
                     feat = pa.get("feature_slug", "")
                     qf_icon = ' <span class="quality-flag">!</span>' if st.get("quality_flag") else ""
@@ -2089,7 +2089,7 @@ function updateLeftPanel(tabId) {
     if (ALL_STS.length > 0) {
       html += '<button class="section-item" onclick="scrollToSection(\\'sec-model-ranking\\')">Ranking</button>';
     }
-    if (ALL_STS.some(function(st){{ return st.generation_mode === 'portfolio-anchored'; }})) {{
+    if (ALL_STS.some(function(st){{ return st.generation_mode === 'portfolio-anchored' || st.generation_mode === 're-anchored'; }})) {{
       html += '<button class="section-item" onclick="scrollToSection(\\'sec-model-anchor\\')">{L["anchor_coverage"]}</button>';
     }}
     html += '</div>';
@@ -2153,7 +2153,7 @@ function showEntityDetail(node) {
   html += '</div>';
 
   // Portfolio anchor detail for anchored solution nodes
-  if (node.type === 'solution' && node.generation_mode === 'portfolio-anchored' && node.portfolio_anchor) {{
+  if (node.type === 'solution' && (node.generation_mode === 'portfolio-anchored' || node.generation_mode === 're-anchored') && node.portfolio_anchor) {{
     var pa = node.portfolio_anchor;
     html += '<div style="margin-top:12px;padding:12px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px">';
     html += '<div style="font-size:11px;font-weight:600;color:var(--tips-solution);margin-bottom:8px">&#9875; {L["portfolio_anchored"]}</div>';
@@ -2500,7 +2500,7 @@ function initGraph() {
     .attr('stroke-width', 1.5);
 
   // Anchor overlay for portfolio-anchored solution nodes
-  nodeGroup.filter(function(d) {{ return d.type === 'solution' && d.generation_mode === 'portfolio-anchored'; }})
+  nodeGroup.filter(function(d) {{ return d.type === 'solution' && (d.generation_mode === 'portfolio-anchored' || d.generation_mode === 're-anchored'); }})
     .append('text')
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'central')
