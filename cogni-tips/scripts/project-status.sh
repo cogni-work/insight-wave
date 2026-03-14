@@ -162,6 +162,9 @@ VALUE_MODEL_PHASE=""
 THEMES_COUNT=0
 SOLUTIONS_COUNT=0
 RANKED_COUNT=0
+BLUEPRINT_COUNT=0
+ANCHORED_COUNT=0
+AVG_READINESS=0
 CLAIMS_TOTAL=0
 
 [ -f "$PROJECT_DIR/.logs/web-research-raw.json" ] && HAS_WEB_RESEARCH="true"
@@ -231,6 +234,16 @@ try:
     print(f'SOLUTIONS_COUNT={len(sts)}')
     ranked = [s for s in sts if s.get('ranking_value') is not None or s.get('business_relevance_calculated') is not None]
     print(f'RANKED_COUNT={len(ranked)}')
+    # Blueprint and portfolio anchor metrics
+    blueprints = [s for s in sts if s.get('solution_blueprint')]
+    print(f'BLUEPRINT_COUNT={len(blueprints)}')
+    anchored = [s for s in sts if s.get('generation_mode') == 'portfolio-anchored']
+    print(f'ANCHORED_COUNT={len(anchored)}')
+    if blueprints:
+        scores = [s['solution_blueprint']['readiness'].get('readiness_score', 0)
+                  for s in blueprints if isinstance(s.get('solution_blueprint', {}).get('readiness'), dict)]
+        avg = round(sum(scores) / len(scores), 2) if scores else 0
+        print(f'AVG_READINESS={avg}')
 except Exception:
     pass
 " 2>/dev/null)"
@@ -514,7 +527,10 @@ cat << EOF
     "report_sections": $REPORT_SECTIONS,
     "themes": $THEMES_COUNT,
     "solutions": $SOLUTIONS_COUNT,
-    "ranked_solutions": $RANKED_COUNT
+    "ranked_solutions": $RANKED_COUNT,
+    "blueprints": $BLUEPRINT_COUNT,
+    "anchored_solutions": $ANCHORED_COUNT,
+    "avg_readiness": $AVG_READINESS
   },
   "scoring": {
     "avg_score": $AVG_SCORE,

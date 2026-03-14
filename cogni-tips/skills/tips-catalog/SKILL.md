@@ -212,6 +212,13 @@ They retain the TIPS role (T/I/P) and dimension mapping but are stripped of purs
   "category": "software",
   "enabler_type": "process_improvement",
   "typical_linked_tips": ["cat-tip-001", "cat-tip-005", "cat-tip-012"],
+  "generation_mode": "portfolio-anchored",
+  "blueprint_summary": {
+    "block_count": 3,
+    "taxonomy_span": [1, 6, 7],
+    "taxonomy_depth": 3,
+    "source_readiness_score": 0.64
+  },
   "portfolio_mapping_hint": {
     "suggested_dimension": 6,
     "suggested_category": "6.6",
@@ -230,6 +237,21 @@ They retain the TIPS role (T/I/P) and dimension mapping but are stripped of purs
 
 The `portfolio_mapping_hint` uses b2b-ict-portfolio taxonomy category IDs when a taxonomy
 template is loaded. This enables downstream mapping to cogni-portfolio features.
+
+### Blueprint Field Preservation
+
+When importing Solution Templates that have `solution_blueprint` and `generation_mode` fields
+(introduced in the multi-dimensional solutioning model), preserve this data in the catalog entry.
+The blueprint captures the full portfolio composition needed to deliver the solution — building
+blocks mapped to taxonomy categories with role-weighted readiness scoring.
+
+- **`generation_mode`**: Carry forward as-is (`"portfolio-anchored"` or `"abstract"`)
+- **`solution_blueprint`**: Generalize building block references (strip pursuit-specific feature slugs)
+  but preserve the dimensional structure (roles, taxonomy categories, coverage levels)
+- **`readiness_score`**: Store as a reference point but note it reflects the source pursuit's portfolio
+  state — readiness will differ for a new pursuit with a different portfolio
+
+Solution Templates without blueprints (older projects) continue to work — blueprint fields are optional.
 
 ### Catalog SPI
 

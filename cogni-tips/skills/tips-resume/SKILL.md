@@ -65,7 +65,7 @@ If `count` is 0:
 bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>" --health-check
 ```
 
-The script returns JSON with `project`, `counts`, `scoring`, `artifacts`, `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
+The script returns JSON with `project`, `counts` (including `blueprints`, `anchored_solutions`, `avg_readiness`), `scoring`, `artifacts`, `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
 
 ### 4. Present Status Summary
 
@@ -89,12 +89,18 @@ Language: {language}
 | Value Chains & Themes | Done / Pending | {themes_count} strategic themes |
 | Solution Templates | Done / Pending | {solutions_count} solutions generated |
 | BR Scoring & Ranking | Done / Pending | {ranked_count} solutions ranked |
+| Solution Blueprints | Done / Pending / N/A | {blueprints}/{solutions_count} blueprinted, avg readiness {avg_readiness}, {anchored_solutions} portfolio-anchored |
 | Trend Report | Done / Pending | {report_sections}/4 sections |
 | Claims Registry | Done / Pending | {claims_total} claims extracted |
 | Insight Summary | Done / Skipped | |
 | Claim Verification | Done / Pending / Skipped | {verdict}: {passed} passed, {failed} failed |
 | Executive Polish | Done / Skipped | tone (cogni-copywriting) |
 | Dashboard | Done / Skipped | interactive HTML visualization |
+
+**Solution Blueprints row** — derived from `counts.blueprints`, `counts.anchored_solutions`, `counts.avg_readiness`:
+- **Done**: `blueprints` > 0 — show blueprint count, average readiness score, and anchored count
+- **Pending**: `solutions_count` > 0 but `blueprints` = 0 — solutions exist but no blueprints generated yet
+- **N/A**: `solutions_count` = 0 — no solutions generated yet
 
 **Portfolio Bridge row** — derived from `portfolio_bridge` in status JSON:
 - **Done**: `context_file` is true — show version and features count

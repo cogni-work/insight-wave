@@ -614,6 +614,55 @@ if valid_categories:
 " 2>/dev/null)
 fi
 
+# Cross-validate TIPS blueprint building block references against portfolio features
+# Looks for linked TIPS projects via portfolio-context.json back-references
+if [ -d "$PROJECT_DIR/features" ]; then
+  # Search for TIPS value models that reference this portfolio
+  WORKSPACE_ROOT="$(dirname "$PROJECT_DIR")"
+  WORKSPACE_PARENT="$(dirname "$WORKSPACE_ROOT")"
+  for search_dir in "$WORKSPACE_ROOT" "$WORKSPACE_PARENT"; do
+    if [ -d "$search_dir" ]; then
+      for vm in "$search_dir"/cogni-tips/*/tips-value-model.json "$search_dir"/*/tips-value-model.json; do
+        [ -f "$vm" ] 2>/dev/null || continue
+        while IFS='|' read -r etype slug msg; do
+          if [ "$etype" = "E" ]; then
+            add_error "blueprint" "$slug" "$msg"
+          elif [ "$etype" = "W" ]; then
+            add_warning "blueprint" "$slug" "$msg"
+          fi
+        done < <(python3 -c "
+import json, os, glob
+
+vm = json.load(open('$vm'))
+sts = vm.get('solution_templates', [])
+
+# Collect all existing feature slugs
+feature_slugs = set()
+for f in glob.glob('$PROJECT_DIR/features/*.json'):
+    feature_slugs.add(os.path.basename(f)[:-5])
+
+if not feature_slugs:
+    exit(0)
+
+for st in sts:
+    bp = st.get('solution_blueprint')
+    if not bp:
+        continue
+    st_name = st.get('name', st.get('st_id', 'unknown'))
+    for block in bp.get('building_blocks', []):
+        fs = block.get('feature_slug')
+        if fs and fs not in feature_slugs:
+            print(f'W|{st_name}|Blueprint building block references feature \"{fs}\" which does not exist in portfolio')
+        ps = block.get('product_slug')
+        if ps and not os.path.exists(os.path.join('$PROJECT_DIR', 'products', ps + '.json')):
+            print(f'W|{st_name}|Blueprint building block references product \"{ps}\" which does not exist in portfolio')
+" 2>/dev/null)
+        break 2  # Only check the first value model found
+      done
+    fi
+  done
+fi
+
 errors="$errors]"
 warnings="$warnings]"
 
