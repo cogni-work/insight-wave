@@ -76,7 +76,7 @@ For each quality search result, create a finding entity:
 1. **Quality assessment** (4-dimension scoring, threshold >= 0.50):
    - Topical Relevance (35%): Question-result alignment
    - Content Completeness (25%): Depth and specificity
-   - Source Reliability (15%): Domain authority
+   - Source Reliability (15%): Domain authority. When CONTENT_LANGUAGE=de, apply DACH authority boosts from `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md` — recognized domains (fraunhofer.de +0.10, industry associations +0.08, quality media +0.05) receive a composite score boost capped at 1.00
    - Source Freshness (15%): Recency of content
    - Evidentiary Value (10%): Actionable data points
 2. **WebFetch enhancement**: Retrieve full content when possible, fall back to snippets

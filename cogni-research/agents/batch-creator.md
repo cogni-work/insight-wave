@@ -90,9 +90,10 @@ For each question, generate 4-7 search configurations:
 
    Each query in a batch should target a different angle or source type — avoid near-duplicate queries that would return the same results. Vary the keywords, not just the domain filter.
 
-5. **Bilingual strategy**: For non-English projects, generate both original + English queries
-6. **Alignment check**: Verify at least one query covers Intervention keywords, one covers Population
-7. **Deduplication check**: No word should appear twice in the same query string. If PICOT concatenation produces `"semiconductor inspection market market revenue"`, remove the duplicate.
+5. **Bilingual strategy**: For non-English projects, generate both original + English queries. When language=de, this is especially important — German-language queries capture Mittelstand, regulatory, and association insights that English misses. Read `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md` for DACH-specific domain lists and query construction guidance.
+6. **DACH localized profile** (language=de only): When selecting the `localized` profile, use DACH-specific allowed_domains from `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md`. Match the sector to the topic — e.g., manufacturing topics → `["vdma.org", "zvei.org", "fraunhofer.de", "staufen.ag"]`, IT/digital → `["bitkom.org", "t3n.de", "deutsche-startups.de"]`. Include at least 1 site-specific search targeting a relevant German industry association when the `localized` profile is used.
+7. **Alignment check**: Verify at least one query covers Intervention keywords, one covers Population
+8. **Deduplication check**: No word should appear twice in the same query string. If PICOT concatenation produces `"semiconductor inspection market market revenue"`, remove the duplicate.
 
 ### Phase 3: Batch Creation (Per Question)
 

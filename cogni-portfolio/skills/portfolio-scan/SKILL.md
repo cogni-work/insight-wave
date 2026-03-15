@@ -72,6 +72,7 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
 | OUTPUT_FILE | `{PROJECT_PATH}/research/{COMPANY_SLUG}-portfolio.md` | |
 | TEMPLATE_PATH | `$CLAUDE_PLUGIN_ROOT/templates/{type}` | `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict` |
 | TEMPLATE_TYPE | `portfolio.json` → `taxonomy.type` | `b2b-ict` |
+| LANGUAGE | `portfolio.json` → `language` (default: "en") | `de` |
 
 7. Read the template files needed for this scan:
    - `${TEMPLATE_PATH}/template.md` — taxonomy definition (dimensions, categories)
@@ -202,6 +203,7 @@ COMPANY_NAME={COMPANY_NAME}
 DOMAIN={domain}
 PROVIDER_UNIT={provider_unit}
 TEMPLATE_PATH={TEMPLATE_PATH}
+LANGUAGE={LANGUAGE}
 
 Execute all service category searches and return compact JSON. NO PROSE."
 )
@@ -412,3 +414,4 @@ If not already set, update `portfolio.json` to include the taxonomy reference:
 | OUTPUT_FILE | Path to portfolio markdown | `${PROJECT_PATH}/research/${COMPANY_SLUG}-portfolio.md` |
 | TEMPLATE_PATH | Path to taxonomy template dir | `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict` |
 | TEMPLATE_TYPE | Taxonomy type identifier | `b2b-ict` |
+| LANGUAGE | ISO 639-1 from portfolio.json | `de` |

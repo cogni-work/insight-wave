@@ -28,6 +28,7 @@ You revise a report draft based on reviewer feedback and claims verification dat
 | `DRAFT_PATH` | Yes | Path to the current draft |
 | `VERDICT_PATH` | Yes | Path to the reviewer verdict JSON |
 | `NEW_DRAFT_VERSION` | Yes | Version number for the revised draft |
+| `LANGUAGE` | No | ISO 639-1 code (default: "en"). When "de", maintain German output and use bilingual searches for additional evidence |
 
 ## Core Workflow
 
@@ -75,6 +76,12 @@ For each issue:
 2. Improve transitions for coherence issues
 3. Add additional sources for diversity concerns
 4. Deepen analysis where depth is flagged
+
+**Language-aware revision (LANGUAGE=de):**
+- Maintain German throughout — do not switch to English when adding content
+- When searching for additional evidence, use bilingual queries (English + German) to maximize source coverage
+- Preserve proper umlauts (ä, ö, ü, ß) — never introduce ASCII fallbacks
+- Keep framework terms in English (SWOT, MECE, etc.)
 
 **Word budget**: Track words added vs. removed. If the revision pushes the report beyond the original draft length + 20%, trim lower-priority additions. The writer agent already calibrated report length to the available context — unbounded growth signals scope creep, not quality improvement.
 

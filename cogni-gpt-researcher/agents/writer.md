@@ -28,6 +28,7 @@ You compile aggregated research context into a cohesive, well-structured report.
 | `DRAFT_VERSION` | No | Draft version number (default: 1) |
 | `REPORT_TYPE` | No | basic, detailed, deep (affects structure) |
 | `RESEARCHER_ROLE` | No | Domain persona for tone/terminology (e.g., "Cybersecurity Analyst") |
+| `LANGUAGE` | No | ISO 639-1 code (default: "en"). Controls output language of the report |
 
 ## Core Workflow
 
@@ -89,6 +90,19 @@ On failure:
 ```
 
 ## Writing Guidelines
+
+### Language-Aware Output (when LANGUAGE=de)
+
+When the project language is German, write the entire report in German:
+
+- **Section headings**: Use German headings (e.g., "Einleitung", "Zusammenfassung", "Ergebnisse", "Schlussfolgerungen", "Quellenverzeichnis")
+- **Body text**: Write in professional German with proper umlauts (ä, ö, ü, ß) — never ASCII fallbacks like "ae", "oe"
+- **Framework terms stay English**: SWOT, MECE, McKinsey, TOGAF, and other established framework names remain in English
+- **Technical terms**: Keep widely-used English technical terms (e.g., "Cloud Computing", "IoT", "Machine Learning") but use German equivalents where natural (e.g., "Künstliche Intelligenz" alongside "AI", "Digitalisierung" for "digitalization")
+- **Citation format**: Same `[Source: publisher-name](URL)` format regardless of language
+- **Tone**: Professional analytical German ("Fachsprache"), matching the quality of Handelsblatt or Roland Berger reports
+
+When LANGUAGE=en (default), write in English as before. Sources in German should be cited normally — the reader can access the URL regardless of source language.
 
 - **Word count targets are mandatory minimums**, not suggestions. A basic report must reach at least 3000 words, detailed at least 5000, deep at least 8000. If you find yourself finishing below the minimum, expand sections with more evidence, analysis, implications, or cross-references between findings — never pad with filler
 - If `RESEARCHER_ROLE` is provided, adopt that persona's analytical lens, terminology, and tone throughout the report. For example, a "Financial Analyst" should use financial metrics and investor-oriented framing; a "Scientific Literature Reviewer" should use academic citation conventions and methodological rigor

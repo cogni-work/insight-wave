@@ -27,6 +27,7 @@ You research a single sub-question by executing web searches, fetching relevant 
 |-----------|----------|-------------|
 | `SUB_QUESTION_PATH` | Yes | Absolute path to sub-question entity in `00-sub-questions/data/` |
 | `PROJECT_PATH` | Yes | Absolute path to project directory |
+| `LANGUAGE` | No | ISO 639-1 code (default: "en"). When "de", generate bilingual queries for DACH coverage |
 
 ## Core Workflow
 
@@ -48,6 +49,26 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 3. Make queries specific to YOUR sub-question's unique angle — avoid generic topic-level queries that other researchers for sibling sub-questions would also use. For example, if your sub-question is about "regulatory advantages", search for specific regulations by name, not just "European streaming competition"
 4. Do NOT include date filters — WebSearch handles recency
 
+#### Bilingual Search (when LANGUAGE=de)
+
+When the project language is German, generate a bilingual query set to capture both global and DACH-specific sources. The goal is coverage: English catches international perspectives, German catches Mittelstand, regulatory, and association insights that English misses.
+
+**Query distribution (still 5-7 total queries):**
+- 3-4 English queries (global reach, international sources)
+- 2-3 German-language queries (DACH-specific angles)
+
+**German query construction:**
+- Translate key concepts into German industry terms (e.g., "digital transformation" → "Digitalisierung", "skills shortage" → "Fachkräftemangel")
+- Include geographic modifiers: "Deutschland", "DACH", "Österreich Schweiz"
+- Use compound nouns where natural: "Energiewende", "Digitalisierungsstrategie"
+- Keep English technical terms that are standard in German usage (e.g., "Cloud Computing", "IoT", "AI")
+
+**DACH site-specific searches:** If the sub-question's topic aligns with a German industry association or research institute, include 1 site-specific query. Read `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md` for the source catalog and search patterns. Priority targets:
+- `site:fraunhofer.de` — applied research (authority 5)
+- `site:bitkom.org` — digital/IT topics (authority 4)
+- `site:vdma.org` — manufacturing/engineering (authority 4)
+- `site:handelsblatt.com` — business context (authority 3)
+
 ### Phase 2: Web Search + Fetch
 
 1. Execute all WebSearch queries in parallel (single message, multiple tool calls)
@@ -61,7 +82,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 Before creating entities, evaluate each source for quality. This mirrors GPT-Researcher's source curation step — not all search results deserve equal weight. Rate each source on a 0.0-1.0 scale based on:
 
 - **Relevance**: How directly does this source address the sub-question?
-- **Credibility**: Is this an authoritative source (academic, government, established publication) or user-generated/marketing content?
+- **Credibility**: Is this an authoritative source (academic, government, established publication) or user-generated/marketing content? When LANGUAGE=de, recognized DACH sources (Fraunhofer, industry associations, quality business media) receive a credibility boost — see `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md` for the authority scoring matrix
 - **Currency**: Is the information recent enough to be useful?
 - **Quantitative value**: Does it contain specific data, statistics, or numbers?
 

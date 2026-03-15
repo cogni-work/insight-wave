@@ -28,6 +28,7 @@ You perform deep, recursive research on a single branch of the research tree. Un
 | `SUB_QUESTION_PATH` | Yes | Path to the sub-question entity (tree branch root) |
 | `PROJECT_PATH` | Yes | Absolute path to project directory |
 | `DEPTH` | No | Research depth (default: 2). Max: 3 |
+| `LANGUAGE` | No | ISO 639-1 code (default: "en"). When "de", generate bilingual queries for DACH coverage |
 
 ## Core Workflow
 
@@ -47,6 +48,15 @@ Phase 0 → Phase 1 → Phase 2 → Phase 2b (recursive) → Phase 3 → Phase 4
 1. Decompose the sub-question into 2-3 focused sub-aspects
 2. For each sub-aspect, formulate 2-3 specific search queries
 3. Total: 4-9 search queries across sub-aspects
+
+#### Bilingual Search (when LANGUAGE=de)
+
+When the project language is German, apply the same bilingual strategy as section-researcher at every recursion level:
+
+- **Per sub-aspect**: Generate both English and German query variants. English for global reach, German for DACH-specific depth.
+- **German query tips**: Use industry-specific German terms, compound nouns ("Digitalisierungsstrategie", "Fachkräftemangel"), and geographic modifiers ("Deutschland", "DACH").
+- **DACH site-specific**: At each recursion level, include 1 site-specific query targeting a relevant DACH source from `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md` (Fraunhofer, BITKOM, VDMA, etc.) when the sub-aspect aligns with their sector.
+- **Cross-language dedup**: When extracting learnings, deduplicate across languages — the same insight found in both an English and German source should be recorded once with both source URLs.
 
 ### Phase 2: Multi-Pass Search
 

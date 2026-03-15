@@ -67,6 +67,22 @@ A well-structured project directory is the foundation for resumability and cross
    ```
 4. Store returned `project_path` for all subsequent phases
 
+### Phase 0.1: Language Resolution
+
+Read `language` from `project-config.json` (stored by `initialize-project.sh --language`). This controls both search behavior and output language across all agents.
+
+```bash
+LANGUAGE=$(jq -r '.language // "en"' "${PROJECT_PATH}/project-config.json" 2>/dev/null || echo "en")
+```
+
+When `LANGUAGE=de`:
+- Researcher agents generate bilingual queries (English + German) with DACH site-specific searches
+- Writer agent produces the report in German
+- Reviewer evaluates German prose quality
+- All agents reference `${CLAUDE_PLUGIN_ROOT}/references/dach-sources.md` for DACH source intelligence
+
+When `LANGUAGE=en` (default): no change to existing behavior.
+
 ### Phase 0.5: Preliminary Search
 
 Before generating sub-questions, gather context about what information is actually available online. Sub-questions generated in a vacuum often target angles that have no searchable content, wasting researcher agents on dead ends.
@@ -125,6 +141,7 @@ For each sub-question entity in 00-sub-questions/data/:
   Task(section-researcher,
     SUB_QUESTION_PATH=<path>,
     PROJECT_PATH=<project_path>,
+    LANGUAGE=<language>,
     run_in_background=true)
 ```
 
@@ -134,6 +151,7 @@ For each leaf sub-question in 00-sub-questions/data/:
   Task(deep-researcher,
     SUB_QUESTION_PATH=<path>,
     PROJECT_PATH=<project_path>,
+    LANGUAGE=<language>,
     DEPTH=2,
     run_in_background=true)
 ```
@@ -164,7 +182,8 @@ Task(writer,
   PROJECT_PATH=<project_path>,
   DRAFT_VERSION=1,
   REPORT_TYPE=<type>,
-  RESEARCHER_ROLE=<role from project-config.json>)
+  RESEARCHER_ROLE=<role from project-config.json>,
+  LANGUAGE=<language>)
 ```
 
 Verify: draft written to `output/draft-v1.md`, reasonable word count.
@@ -206,7 +225,8 @@ Task(reviewer,
   PROJECT_PATH=<project_path>,
   DRAFT_PATH="output/draft-v{N}.md",
   CLAIMS_DASHBOARD=<project_path>/cogni-claims/claims.json,
-  REVIEW_ITERATION=N)
+  REVIEW_ITERATION=N,
+  LANGUAGE=<language>)
 ```
 
 #### 5e: Revise (if verdict="revise" and iteration < 3)
@@ -215,7 +235,8 @@ Task(revisor,
   PROJECT_PATH=<project_path>,
   DRAFT_PATH="output/draft-v{N}.md",
   VERDICT_PATH=".metadata/review-verdicts/v{N}.json",
-  NEW_DRAFT_VERSION=N+1)
+  NEW_DRAFT_VERSION=N+1,
+  LANGUAGE=<language>)
 ```
 Then goto 5a with new draft version.
 

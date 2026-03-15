@@ -38,6 +38,9 @@ You will receive these parameters from the scan skill:
 <template_path>{{TEMPLATE_PATH}}</template_path>
 <!-- Path to taxonomy template directory (e.g., "$CLAUDE_PLUGIN_ROOT/templates/b2b-ict") -->
 
+<language>{{LANGUAGE}}</language>
+<!-- ISO 639-1 code (default: "en"). When "de", generate bilingual search queries -->
+
 **Your Objective:**
 
 1. Read `{{TEMPLATE_PATH}}/search-patterns.md` to get all category-level search queries
@@ -97,12 +100,22 @@ This file contains:
 - Marketing queries and product synonyms per category
 - Technical documentation search enhancement guidance
 
-Build your search query list from the Phase 3 tables. For each category, execute TWO searches:
+Build your search query list from the Phase 3 tables. For each category, execute TWO searches (THREE when LANGUAGE=de):
 
 1. **Marketing search:** Standard category terms on primary domain
 2. **Technical docs search:** Product names/synonyms on docs subdomain (if applicable)
+3. **German marketing search** (LANGUAGE=de only): German category terms on primary domain — uses the DE query column from search-patterns.md
 
 **Note:** Skip Search 2 if domain has no known docs subdomain. For domains like `t-systems.com`, also search `docs.otc.t-systems.com`.
+
+#### Bilingual Search (when LANGUAGE=de)
+
+When the project language is German, add a German-language marketing search per category alongside the English one. German searches capture:
+- German-language product pages that English queries miss (many DACH providers maintain separate DE content)
+- German industry terminology (e.g., "Rechenzentrum" for "data center", "Arbeitsplatz" for "workplace")
+- Regional service offerings marketed only in German
+
+The German query uses the DE Marketing Query column from `search-patterns.md`. If no DE column exists, translate the key terms from the English marketing query into German industry equivalents.
 
 ### Step 2: Execute WebSearch Queries
 
