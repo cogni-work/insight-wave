@@ -1,7 +1,7 @@
 # Phase 4b: Arc-Specific Insight Summary (technology-futures)
 
 **Arc Framework:** What's Emerging -> Converging -> Possible -> Required
-**Arc:** `technology-futures` (Tier 4) | **Output:** `insight-summary.md` at project root (1,450-1,900 words)
+**Arc:** `technology-futures` (Tier 4) | **Output:** `insight-summary.md` at project root (target range from `--target-length`, default ~1,675 words)
 
 **Shared steps:** Read [shared-steps.md](shared-steps.md) for entity counting, output template, validation gates, and write instructions.
 
@@ -85,7 +85,7 @@ Good titles often use a colon pattern: `{Specific Subject}: {Arc-Informed Angle}
 
 ### Sub-step D: Write the Hook Paragraph
 
-The hook (150-200 words) accomplishes three things:
+The hook (~11% of target length) accomplishes three things:
 1. **Create narrative tension** -- open with a concrete, surprising observation. Not a generic statement about technology change.
 2. **Establish the research question** -- echo the subtitle naturally.
 3. **Signal the arc trajectory** -- hint at the Emerging -> Converging -> Possible -> Required progression without naming it.
@@ -94,7 +94,7 @@ Lead with the single most compelling data point, trend, or contrast.
 
 ---
 
-### Sub-step E: Expand Each Arc Element (350-450 words each)
+### Sub-step E: Expand Each Arc Element (~24% each for Emerging/Converging/Possible, ~17% for Required)
 
 For each element, follow this micro-sequence:
 
@@ -120,9 +120,9 @@ Before finalizing:
 1. **Narrative flow:** Does What's Emerging flow naturally into What's Converging? Does What's Possible set up What's Required?
 2. **Evidence balance:** If any element has fewer than 8 wikilinks, add more. Total should be 40-50.
 3. **Entity type diversity:** All 4 types (findings, sources, trends, concepts) should appear across the narrative. A technology-futures narrative citing only findings and sources operates at Tier 1 quality.
-4. **Word count:** 1,450-1,900 total, 350-450 per element.
+4. **Word count:** Within target length range. Hook ~11%, Emerging/Converging/Possible ~24% each, Required ~17%.
 5. **Title check:** Specific and compelling? Works as a headline?
 
-**Common failure mode:** Technology-futures narratives often run LONG because of the rich Tier 4 context. If over 1,900 words, tighten the weakest element first.
+**Common failure mode:** Technology-futures narratives often run LONG because of the rich Tier 4 context. If over the target length ceiling, tighten the weakest element first.
 
 Now proceed to validation and write steps in [shared-steps.md](shared-steps.md).

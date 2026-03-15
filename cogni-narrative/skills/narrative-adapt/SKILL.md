@@ -7,7 +7,7 @@ description: "Transform existing narratives into derivative formats: executive b
 
 ## Purpose
 
-Transform a full cogni-narrative output (1,450-1,900 word insight summary) into one of three derivative formats. The goal is to condense while preserving the arc's rhetorical power -- each format serves a different communication channel and audience attention span, so the condensation strategy differs accordingly.
+Transform a full cogni-narrative output (insight summary at any target length) into one of three derivative formats. The goal is to condense while preserving the arc's rhetorical power -- each format serves a different communication channel and audience attention span, so the condensation strategy differs accordingly.
 
 **Use this for:**
 - Condensing a full narrative into an executive brief for email or messaging

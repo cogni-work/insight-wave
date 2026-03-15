@@ -5,7 +5,7 @@
 Synthesize I-dimension (Digitale Wertetreiber) trends into a narrative of value chain disruption. Show how Forces (Element 1) translate into measurable changes across customer experience, products/services, and business processes--cascaded through Act/Plan/Observe horizons.
 
 **TIPS Dimension:** I -- Implications (Digitale Wertetreiber)
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -207,7 +207,7 @@ Combined effect: [Synthesized impact statement]<sup>[citation]</sup>.
 
 ### Structure Requirements
 
-- [ ] Word count: 350-450 words (+/-50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Forces
 - [ ] Smooth transition to Horizons
 - [ ] Horizon cascade maintained

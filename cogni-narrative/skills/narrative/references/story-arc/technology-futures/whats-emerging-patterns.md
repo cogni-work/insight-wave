@@ -4,7 +4,7 @@
 
 Identify and describe emerging technological capabilities that are reaching practical maturity—moving from lab to market, from prototype to product, from theoretical to deployable.
 
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -299,7 +299,7 @@ Adoption acceleration: €18B warehouse automation market now economically addre
 
 ### Structure Requirements
 
-- [ ] Word count: 350-450 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Hook
 - [ ] Smooth transition to What's Converging
 - [ ] Each technology gets balanced coverage

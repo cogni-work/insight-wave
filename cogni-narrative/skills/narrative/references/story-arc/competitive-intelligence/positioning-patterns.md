@@ -4,7 +4,7 @@
 
 Identify strategic gaps, white spaces, and positioning opportunities emerging from the landscape and shifts—where to compete to gain advantage.
 
-**Word Target:** 400-500 words
+**Word Target:** 27% of target length
 
 ## Source Content Mapping
 
@@ -343,7 +343,7 @@ Example:
 
 - [ ] Gap identification section (300-400 words)
 - [ ] Positioning approach section (100 words)
-- [ ] Word count: 400-500 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Shifts
 - [ ] Smooth transition to Implications
 

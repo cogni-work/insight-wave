@@ -1,7 +1,7 @@
 # Phase 4b: Arc-Specific Insight Summary (corporate-visions)
 
 **Arc Framework:** Why Change -> Why Now -> Why You -> Why Pay
-**Arc:** `corporate-visions` (Tier 2) | **Output:** `insight-summary.md` at project root (1,450-1,900 words)
+**Arc:** `corporate-visions` (Tier 2) | **Output:** `insight-summary.md` at project root (target range from `--target-length`, default ~1,675 words)
 
 **Shared steps:** Read [shared-steps.md](shared-steps.md) for entity counting, output template, validation gates, and write instructions.
 
@@ -45,7 +45,7 @@ Before loading, understand what each entity type contributes to this arc:
 
 ## Step 4.1.4: Extended Thinking Sub-steps
 
-This is the most cognitively demanding step. You are transforming a 400-600 word analytical synthesis into a 1,450-1,900 word executive narrative. This is not simply adding words -- it is a rhetorical transformation that reframes evidence through the Corporate Visions persuasion framework.
+This is the most cognitively demanding step. You are transforming a 400-600 word analytical synthesis into an executive narrative at the target length. This is not simply adding words -- it is a rhetorical transformation that reframes evidence through the Corporate Visions persuasion framework.
 
 ---
 
@@ -64,19 +64,19 @@ Read `synthesis-cross-dimensional.md` carefully. Before writing anything:
 
 Before writing any element, decide which evidence goes where. Each piece of evidence should be used exactly once (do not repeat the same finding across multiple elements).
 
-**Why Change** (400-500 words) -- needs evidence of an unconsidered need:
+**Why Change** (27% of target) -- needs evidence of an unconsidered need:
 - Which 2-3 findings reveal something executives likely overlook or underestimate?
 - What is the "status quo assumption" you can challenge? Frame it as: "Most organizations think X. But research shows Y."
 
-**Why Now** (300-400 words) -- needs forcing functions with timelines:
+**Why Now** (21% of target) -- needs forcing functions with timelines:
 - Which 2-3 findings or trends contain specific deadlines, regulatory dates, or market tipping points?
 - If no explicit timelines exist, which findings imply accelerating change or narrowing windows?
 
-**Why You** (400-500 words) -- needs strategic capabilities:
+**Why You** (27% of target) -- needs strategic capabilities:
 - Which 2-3 findings suggest actionable strategic positions or capabilities?
 - Can you frame these as Power Positions using IS-DOES-MEANS?
 
-**Why Pay** (200-300 words) -- needs cost quantification:
+**Why Pay** (15% of target) -- needs cost quantification:
 - Which findings contain financial data, risk metrics, or cost implications?
 - Can you stack 3-4 cost dimensions into a compound impact calculation?
 
@@ -88,7 +88,7 @@ Before writing any element, decide which evidence goes where. Each piece of evid
 
 The title must be arc-specific and compelling -- never "Insight Summary" or anything generic. It should capture the unconsidered need in provocative language (6-12 words).
 
-The hook paragraph (150-200 words) opens with the most surprising quantified finding:
+The hook paragraph (10% of target length) opens with the most surprising quantified finding:
 - Sentence 1: Surprising data point with citation
 - Sentence 2-3: Challenge the conventional wisdom this finding overturns
 - Remaining sentences: Preview the arc's rhetorical progression without revealing all details
@@ -98,7 +98,7 @@ The hook paragraph (150-200 words) opens with the most surprising quantified fin
 
 ### Sub-step D: Write Each Arc Element
 
-**Element 1 -- Why Change: Unconsidered Needs (400-500 words)**
+**Element 1 -- Why Change: Unconsidered Needs (27% of target)**
 
 Write using PSB (Problem-Solution-Benefit) structure:
 - **Problem (~150 words):** State the current assumption and why it is incomplete. Use contrast structure: "Most organizations think X. But research shows Y." Ground with 2-3 citations.
@@ -107,7 +107,7 @@ Write using PSB (Problem-Solution-Benefit) structure:
 
 Does this section make the reader uncomfortable about their current assumptions? If it merely confirms what they already believe, the unconsidered need is not strong enough.
 
-**Element 2 -- Why Now: Forcing Functions (300-400 words)**
+**Element 2 -- Why Now: Forcing Functions (21% of target)**
 
 Stack 2-3 forcing functions:
 - **Forcing function 1 (~100 words):** External pressure + specific deadline from evidence. Use exact dates/quarters, not "soon" or "rapidly."
@@ -116,7 +116,7 @@ Stack 2-3 forcing functions:
 
 Does every forcing function have a specific date AND a quantified consequence? Vague urgency ("the market is changing") fails this quality test.
 
-**Element 3 -- Why You: Unique Positioning (400-500 words)**
+**Element 3 -- Why You: Unique Positioning (27% of target)**
 
 Write 2-3 Power Positions using IS-DOES-MEANS for each:
 - **IS (1-2 sentences):** What this capability is -- concrete, specific, not a buzzword. Give it a name.
@@ -125,10 +125,10 @@ Write 2-3 Power Positions using IS-DOES-MEANS for each:
 
 If any Power Position reads like generic advice ("invest in training"), it is not a true Power Position.
 
-**Element 4 -- Why Pay: ROI Justification (200-300 words)**
+**Element 4 -- Why Pay: ROI Justification (15% of target)**
 
 Write a compound impact calculation:
-- **Cost dimension stacking (~150-200 words):** Present 3-4 cost dimensions, each with a specific number and a citation. Use a 3-year horizon.
+- **Cost dimension stacking (~two-thirds of this element's allocation):** Present 3-4 cost dimensions, each with a specific number and a citation. Use a 3-year horizon.
 - **Simple ratio conclusion (~50-100 words):** Reduce the entire business case to one undeniable comparison: "Action costs less than inaction by N-Mx."
 
 Would an executive nod at the final sentence and say "that is clear"? If the comparison requires explanation, simplify further.
@@ -157,9 +157,9 @@ If any transition feels forced, the rhetorical chain is broken -- revise.
 ### Sub-step F: Verify Quantitative Requirements
 
 Before moving to validation, quick count:
-- **Word count:** 1,450-1,900 total? If under, add evidence grounding. If over, trim least essential sentences.
+- **Word count:** Within target range (`total_lower` to `total_upper`)? If under, add evidence grounding. If over, trim least essential sentences.
 - **Wikilinks:** 40-50 total? If under, add entity references. If over, consolidate.
 - **Citations:** >= 8 finding citations? If under, identify unsupported claims.
-- **Element word counts:** Why Change 400-500, Why Now 300-400, Why You 400-500, Why Pay 200-300.
+- **Element word counts:** Within proportional ranges (Why Change 27%, Why Now 21%, Why You 27%, Why Pay 15% of target, +/-10% tolerance).
 
 Now proceed to validation and write steps in [shared-steps.md](shared-steps.md).

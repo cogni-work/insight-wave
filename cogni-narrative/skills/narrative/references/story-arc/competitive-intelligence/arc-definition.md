@@ -18,17 +18,19 @@
 3. Positionierung: Strategische Lücken und Chancen
 4. Implikationen: Zeitgebundene Handlungen
 
-## Word Targets
+## Word Proportions
 
-| Element | English Header | German Header | Word Target |
-|---------|----------------|---------------|-------------|
-| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 150-200 |
-| Landscape | Landscape: Current State | Landschaft: Aktueller Stand | 350-450 |
-| Shifts | Shifts: Momentum Changes | Verschiebungen: Momentum-Änderungen | 300-400 |
-| Positioning | Positioning: Strategic Gaps | Positionierung: Strategische Lücken | 400-500 |
-| Implications | Implications: Required Actions | Implikationen: Erforderliche Handlungen | 250-350 |
+Section lengths are expressed as proportions of the total target length. This keeps the arc's rhetorical balance intact regardless of narrative length. To compute word ranges for a given `--target-length T`: apply +/-15% band to get `[T*0.85, T*1.15]`, then multiply each proportion.
 
-**Total Target:** 1,450-1,900 words
+| Element | English Header | German Header | Proportion | Default Range (T=1675) |
+|---------|----------------|---------------|-----------|------------------------|
+| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 10% | 143-193 |
+| Landscape | Landscape: Current State | Landschaft: Aktueller Stand | 24% | 342-462 |
+| Shifts | Shifts: Momentum Changes | Verschiebungen: Momentum-Änderungen | 21% | 299-404 |
+| Positioning | Positioning: Strategic Gaps | Positionierung: Strategische Lücken | 27% | 384-519 |
+| Implications | Implications: Required Actions | Implikationen: Erforderliche Handlungen | 18% | 256-347 |
+
+**Proportions sum to 100%.** Default total: 1,675 words (customizable via `--target-length`). Tolerance: +/-10% of computed section midpoint.
 
 ## Detection Configuration
 
@@ -185,8 +187,8 @@ Clear timeline for competitive window closing.
 ### Arc Completeness
 
 - [ ] All 4 elements present (Landscape, Shifts, Positioning, Implications)
-- [ ] Hook present (150-200 words)
-- [ ] Word counts in target ranges
+- [ ] Hook present (within hook proportion of target)
+- [ ] Word counts within computed proportional ranges (+/-10% tolerance)
 - [ ] Smooth transitions between elements
 - [ ] Each element serves distinct purpose
 

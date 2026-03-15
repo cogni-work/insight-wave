@@ -5,7 +5,7 @@
 Synthesize T-dimension (Externe Effekte) trends into a narrative of converging external forces. Transform individual trend entities into force clusters organized by subcategory (economy, regulation, society) and cascaded across Act/Plan/Observe horizons.
 
 **TIPS Dimension:** T -- Trends (Externe Effekte)
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -233,7 +233,7 @@ EU AI Act compliance dominates the regulatory force landscape (score: 0.84, conf
 
 ### Structure Requirements
 
-- [ ] Word count: 350-450 words (+/-50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Hook
 - [ ] Smooth transition to Impact
 - [ ] Horizon cascade: Act leads -> Plan bridges -> Observe closes

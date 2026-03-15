@@ -4,7 +4,7 @@
 
 Specify time-bound actions to exploit strategic gaps before they close or competitors fill them—turning analysis into execution roadmap.
 
-**Word Target:** 250-350 words
+**Word Target:** 18% of target length
 
 ## Source Content Mapping
 
@@ -342,7 +342,7 @@ Example:
 ### Structure Requirements
 
 - [ ] Time-phased action structure (immediate, near-term, long-term)
-- [ ] Word count: 250-350 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Positioning
 - [ ] Closing emphasizes urgency and window closure
 

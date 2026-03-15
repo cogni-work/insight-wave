@@ -41,17 +41,19 @@ Each element synthesizes trends across three planning horizons, creating an urge
 
 **Distribution per element:** ~13 trends (5 Act + 5 Plan + 3 Observe), but the narrative SYNTHESIZES clusters, not lists individual trends.
 
-## Word Targets
+## Word Proportions
 
-| Element | English Header | German Header | Word Target |
-|---------|----------------|---------------|-------------|
-| Hook | *(Dynamic based on cross-dimensional insight)* | *(Dynamic)* | 150-200 |
-| Forces | Forces: External Pressures & Market Signals | Kräfte: Externe Einflüsse & Marktsignale | 350-450 |
-| Impact | Impact: Value Chain Disruption | Wirkung: Wertschöpfungsdynamik | 350-450 |
-| Horizons | Horizons: Strategic Possibilities | Horizonte: Strategische Möglichkeiten | 350-450 |
-| Foundations | Foundations: Capability Requirements | Fundamente: Kompetenzanforderungen | 250-350 |
+Section lengths are expressed as proportions of the total target length. This keeps the arc's rhetorical balance intact regardless of narrative length. To compute word ranges for a given `--target-length T`: apply +/-15% band to get `[T*0.85, T*1.15]`, then multiply each proportion.
 
-**Total Target:** 1,450-1,900 words
+| Element | English Header | German Header | Proportion | Default Range (T=1675) |
+|---------|----------------|---------------|-----------|------------------------|
+| Hook | *(Dynamic based on cross-dimensional insight)* | *(Dynamic)* | 10% | 143-193 |
+| Forces | Forces: External Pressures & Market Signals | Kräfte: Externe Einflüsse & Marktsignale | 24% | 342-462 |
+| Impact | Impact: Value Chain Disruption | Wirkung: Wertschöpfungsdynamik | 24% | 342-462 |
+| Horizons | Horizons: Strategic Possibilities | Horizonte: Strategische Möglichkeiten | 24% | 342-462 |
+| Foundations | Foundations: Capability Requirements | Fundamente: Kompetenzanforderungen | 18% | 256-347 |
+
+**Proportions sum to 100%.** Default total: 1,675 words (customizable via `--target-length`). Tolerance: +/-10% of computed section midpoint.
 
 ## Detection Configuration
 
@@ -289,7 +291,7 @@ Urgency-to-action close that references the Act/Plan/Observe framework.
 
 ### Citation Density
 
-**Target:** 15-25 total citations across 1,450-1,900 words
+**Target:** 15-25 total citations across the narrative (scale proportionally for longer targets)
 **Ratio:** Approximately 1 citation per 60-100 words
 
 ### Citation Distribution
@@ -327,8 +329,8 @@ Claim text<sup>[N](tips-trend-report.md)</sup>
 ### Arc Completeness
 
 - [ ] All 4 elements present (Forces, Impact, Horizons, Foundations)
-- [ ] Hook present (150-200 words)
-- [ ] Word counts in target ranges (+/-50 words tolerance)
+- [ ] Hook present (within hook proportion of target)
+- [ ] Word counts within computed proportional ranges (+/-10% tolerance)
 - [ ] Smooth transitions between elements
 - [ ] Each element maps to exactly one TIPS dimension
 

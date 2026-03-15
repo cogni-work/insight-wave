@@ -4,7 +4,7 @@
 
 Identify momentum changes, strategic moves, and competitive repositioning currently underway—what's changing in the landscape you just mapped.
 
-**Word Target:** 300-400 words
+**Word Target:** 21% of target length
 
 ## Source Content Mapping
 
@@ -290,7 +290,7 @@ Example:
 
 - [ ] Shift identification section (250-300 words)
 - [ ] Threat assessment section (50-100 words)
-- [ ] Word count: 300-400 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Landscape
 - [ ] Smooth transition to Positioning
 

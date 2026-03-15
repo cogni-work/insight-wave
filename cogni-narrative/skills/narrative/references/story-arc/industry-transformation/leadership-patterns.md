@@ -4,7 +4,7 @@
 
 Specify how to position for leadership in the transformed industry—not just surviving change, but thriving in the new structure.
 
-**Word Target:** 250-350 words
+**Word Target:** 18% of target length
 
 ## Source Content Mapping
 
@@ -452,7 +452,7 @@ Extract from:
 ### Structure Requirements
 
 - [ ] Leadership positioning section (250-350 words)
-- [ ] Word count: 250-350 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Evolution
 - [ ] Closing emphasizes action and urgency
 

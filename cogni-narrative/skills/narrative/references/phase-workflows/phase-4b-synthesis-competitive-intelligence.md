@@ -1,7 +1,7 @@
 # Phase 4b: Arc-Specific Insight Summary (competitive-intelligence)
 
 **Arc Framework:** Landscape -> Shifts -> Positioning -> Implications
-**Arc:** `competitive-intelligence` (Tier 1) | **Output:** `insight-summary.md` at project root (1,450-1,900 words)
+**Arc:** `competitive-intelligence` (Tier 1) | **Output:** `insight-summary.md` at project root (target range from `--target-length`, default ~1,675 words)
 
 **Shared steps:** Read [shared-steps.md](shared-steps.md) for entity counting, output template, validation gates, and write instructions.
 
@@ -80,7 +80,7 @@ You have findings and sources as your only entity types (Tier 1). Plan the distr
 
 **Title:** Frame it as a tension or paradox (e.g., "The Fragmentation Paradox: How Market Leaders Are Losing by Winning"). It must signal the Landscape -> Implications progression and be specific to this research domain.
 
-**Hook (150-200 words):**
+**Hook (~10% of target length):**
 - Open with a surprising competitive shift or market structure change
 - Challenge conventional wisdom about the competitive landscape
 - Pattern: "[Established player/assumption] [surprising data point] signals [structural shift]."
@@ -91,7 +91,7 @@ You have findings and sources as your only entity types (Tier 1). Plan the distr
 
 ### Sub-step D: Draft Each Arc Element
 
-**D1. Landscape: Competitive Overview (350-450 words)**
+**D1. Landscape: Competitive Overview (~24% of target length)**
 
 Think: What market structure? Who leads? What competitive bases operate? What moats exist?
 
@@ -104,7 +104,7 @@ Write:
 
 *Transition:* "Three [momentum shifts / strategic moves] are reshaping this landscape."
 
-**D2. Shifts: Market Dynamics (350-450 words)**
+**D2. Shifts: Market Dynamics (~21% of target length)**
 
 Think: What momentum indicators? Strategic moves underway? Which threats emerging/declining? Rate of change?
 
@@ -117,7 +117,7 @@ Write:
 
 *Transition:* "These shifts create strategic gaps in [specific areas]."
 
-**D3. Positioning: Strategic Options (350-450 words)**
+**D3. Positioning: Strategic Options (~27% of target length)**
 
 Think: Uncontested spaces? Capability gaps? Timing advantages? Differentiation axes?
 
@@ -132,7 +132,7 @@ Write:
 
 *Transition:* "Capturing these [gaps / positions] requires time-bound action."
 
-**D4. Implications: Action Priorities (350-450 words)**
+**D4. Implications: Action Priorities (~18% of target length)**
 
 Think: Immediate actions (0-6 months)? Near-term moves (6-18 months)? Capability building (18-36 months)? Competitive response scenarios?
 
@@ -147,7 +147,7 @@ Write:
 
 ### Sub-step E: Self-Review
 
-1. **Word count:** 1,450-1,900 total? Each element 350-450?
+1. **Word count:** Within target length range? Hook ~10%, Landscape ~24%, Shifts ~21%, Positioning ~27%, Implications ~18%?
 2. **Arc coherence:** Landscape -> Shifts -> Positioning -> Implications builds logically? "What is" -> "what's changing" -> "where to play" -> "what to do"?
 3. **Evidence:** >= 8 finding citations distributed across elements?
 4. **Wikilinks:** 40-50 total? Every slug references a loaded entity?

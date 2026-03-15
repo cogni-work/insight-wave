@@ -18,17 +18,19 @@
 3. Evolution: Strukturelle Veränderungen und neues Gleichgewicht
 4. Führung: Positionierung für transformierte Branche
 
-## Word Targets
+## Word Proportions
 
-| Element | English Header | German Header | Word Target |
-|---------|----------------|---------------|-------------|
-| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 150-200 |
-| Forces | Forces: Macro Drivers | Kräfte: Makro-Treiber | 350-450 |
-| Friction | Friction: Resistance Points | Reibung: Widerstandspunkte | 300-400 |
-| Evolution | Evolution: Structural Changes | Evolution: Strukturelle Veränderungen | 400-500 |
-| Leadership | Leadership: Positioning Strategies | Führung: Positionierungsstrategien | 250-350 |
+Section lengths are expressed as proportions of the total target length. This keeps the arc's rhetorical balance intact regardless of narrative length. To compute word ranges for a given `--target-length T`: apply +/-15% band to get `[T*0.85, T*1.15]`, then multiply each proportion.
 
-**Total Target:** 1,450-1,900 words
+| Element | English Header | German Header | Proportion | Default Range (T=1675) |
+|---------|----------------|---------------|-----------|------------------------|
+| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 10% | 143-193 |
+| Forces | Forces: Macro Drivers | Kräfte: Makro-Treiber | 24% | 342-462 |
+| Friction | Friction: Resistance Points | Reibung: Widerstandspunkte | 21% | 299-404 |
+| Evolution | Evolution: Structural Changes | Evolution: Strukturelle Veränderungen | 27% | 384-519 |
+| Leadership | Leadership: Positioning Strategies | Führung: Positionierungsstrategien | 18% | 256-347 |
+
+**Proportions sum to 100%.** Default total: 1,675 words (customizable via `--target-length`). Tolerance: +/-10% of computed section midpoint.
 
 ## Detection Configuration
 
@@ -211,8 +213,8 @@ Emphasis on positioning for new structure, not defending old structure.
 ### Arc Completeness
 
 - [ ] All 4 elements present (Forces, Friction, Evolution, Leadership)
-- [ ] Hook present (150-200 words)
-- [ ] Word counts in target ranges
+- [ ] Hook present (within hook proportion of target)
+- [ ] Word counts within computed proportional ranges (+/-10% tolerance)
 - [ ] Smooth transitions between elements
 - [ ] Each element serves distinct purpose
 

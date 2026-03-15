@@ -4,7 +4,7 @@
 
 Map the current competitive landscape—market structure, established positions, competitive bases, and power dynamics.
 
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -288,7 +288,7 @@ Example:
 - [ ] Market structure section (100 words)
 - [ ] Current positions section (150 words)
 - [ ] Competitive bases section (100 words)
-- [ ] Word count: 350-450 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Hook
 - [ ] Smooth transition to Shifts
 

@@ -55,10 +55,12 @@ Only evaluated if at least 3 headers match expected names.
 
 ### Total word count (10 points)
 
-- **10 points:** 1,450-1,900 words
-- **7 points:** 1,350-1,449 or 1,901-2,000 (close range)
-- **3 points:** 1,200-1,349 or 2,001-2,200 (extended range)
-- **0 points:** Below 1,200 or above 2,200
+Compute the expected range from the narrative's `target_length` frontmatter field (default 1675 if absent): `total_lower = target_length * 0.85`, `total_upper = target_length * 1.15`.
+
+- **10 points:** Within target range (`total_lower` to `total_upper`)
+- **7 points:** Within 10% beyond target bounds (i.e., `total_lower * 0.90` to `total_upper * 1.10`)
+- **3 points:** Within 25% beyond target bounds (i.e., `total_lower * 0.75` to `total_upper * 1.25`)
+- **0 points:** Beyond 25% of target bounds
 
 **Word count method:** Count all words in the markdown body below frontmatter. Exclude YAML frontmatter, citation markup (`<sup>`, `</sup>`), and markdown formatting characters.
 
@@ -72,9 +74,11 @@ Only evaluated if at least 3 headers match expected names.
 
 ### Hook present (5 points)
 
-- **5 points:** Hook paragraph exists (150-200 words) between `#` title and first `##`
-- **3 points:** Hook exists but outside word range (100-149 or 201-250)
-- **0 points:** No hook paragraph or fewer than 100 words before first `##`
+Compute expected hook range from the arc's hook proportion x target range.
+
+- **5 points:** Hook paragraph exists within the computed hook range between `#` title and first `##`
+- **3 points:** Hook exists but outside computed range by up to 25%
+- **0 points:** No hook paragraph or word count below 50% of expected hook range
 
 ### Frontmatter complete (5 points)
 
@@ -127,12 +131,12 @@ Required fields: `title`, `arc_id`, `word_count`, `language`, `date_created`
 
 ### Element word counts within targets (5 points)
 
-Compare each `##` section's word count against the arc definition's per-element targets.
+Compute each element's expected range: `[proportion * total_lower, proportion * total_upper]` using proportions from the arc definition.
 
-- **5 points:** All 4 elements within target +/-50 words
-- **3 points:** 3 of 4 elements within target
-- **1 point:** 2 of 4 elements within target
-- **0 points:** Fewer than 2 elements within target
+- **5 points:** All 4 elements within computed proportional range (+/-10% tolerance)
+- **3 points:** 3 of 4 elements within range
+- **1 point:** 2 of 4 elements within range
+- **0 points:** Fewer than 2 elements within range
 
 ### Transitions between elements (5 points)
 

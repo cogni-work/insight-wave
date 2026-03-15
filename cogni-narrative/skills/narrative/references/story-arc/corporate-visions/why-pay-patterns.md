@@ -4,7 +4,7 @@
 
 Quantify the **cost of inaction** through compound impact calculation—stacking multiple cost dimensions to create undeniable financial case.
 
-**Word Target:** 200-300 words
+**Word Target:** 15% of target length
 
 ## Source Content Mapping
 
@@ -287,7 +287,7 @@ Total: [Sum with compound effects]
 
 ### Structure Requirements
 
-- [ ] Word count: 200-300 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Opening: "The cost of delay compounds across [N] dimensions" or similar
 - [ ] Middle: 3-4 cost components with quantification
 - [ ] Closing: "Compound calculation: [total]. Action costs [ratio] less than inaction."

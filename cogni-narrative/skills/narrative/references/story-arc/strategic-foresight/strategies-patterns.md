@@ -4,7 +4,7 @@
 
 Identify robust strategies that create value across multiple scenarios—actions that work regardless of which future unfolds, plus scenario-specific hedges.
 
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -361,7 +361,7 @@ Example:
 
 - [ ] Robust strategy identification (250-350 words)
 - [ ] Flexibility building section (100 words)
-- [ ] Word count: 350-450 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Scenarios
 - [ ] Smooth transition to Decisions
 

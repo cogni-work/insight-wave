@@ -41,13 +41,13 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 - `content_type: "generic"` or `"market"`
 - Default fallback when no other arc matches
 
-**Word Targets:**
-- Hook: 150-200 words
-- Why Change: 400-500 words
-- Why Now: 300-400 words
-- Why You: 400-500 words
-- Why Pay: 200-300 words
-- **Total:** 1,450-1,900 words
+**Section Proportions:**
+- Hook: 10%
+- Why Change: 27%
+- Why Now: 21%
+- Why You: 27%
+- Why Pay: 15%
+- **Default total:** 1,675 words (customizable via `--target-length`)
 
 **Definition File:** `story-arc/corporate-visions/arc-definition.md`
 
@@ -69,13 +69,13 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 - `content_type: "technology"`
 - Keywords (>=15% density): "emerging", "innovation", "capability", "technology", "R&D", "breakthrough"
 
-**Word Targets:**
-- Hook: 150-200 words
-- What's Emerging: 350-450 words
-- What's Converging: 350-450 words
-- What's Possible: 350-450 words
-- What's Required: 200-350 words
-- **Total:** 1,450-1,900 words
+**Section Proportions:**
+- Hook: 11%
+- What's Emerging: 24%
+- What's Converging: 24%
+- What's Possible: 24%
+- What's Required: 17%
+- **Default total:** 1,675 words (customizable via `--target-length`)
 
 **Definition File:** `story-arc/technology-futures/arc-definition.md`
 
@@ -97,13 +97,13 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 - `content_type: "competitive"`
 - Keywords (>=12% density): "competitor", "market share", "positioning", "differentiation", "threat", "rivalry"
 
-**Word Targets:**
-- Hook: 150-200 words
-- Landscape: 350-450 words
-- Shifts: 300-400 words
-- Positioning: 400-500 words
-- Implications: 250-350 words
-- **Total:** 1,450-1,900 words
+**Section Proportions:**
+- Hook: 10%
+- Landscape: 24%
+- Shifts: 21%
+- Positioning: 27%
+- Implications: 18%
+- **Default total:** 1,675 words (customizable via `--target-length`)
 
 **Definition File:** `story-arc/competitive-intelligence/arc-definition.md`
 
@@ -125,13 +125,13 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 - `content_type: "foresight"` or `"scenarios"`
 - Keywords (>=10% density): "scenario", "future", "signal", "uncertainty", "planning", "foresight"
 
-**Word Targets:**
-- Hook: 150-200 words
-- Signals: 300-400 words
-- Scenarios: 400-500 words
-- Strategies: 350-450 words
-- Decisions: 250-350 words
-- **Total:** 1,450-1,900 words
+**Section Proportions:**
+- Hook: 10%
+- Signals: 21%
+- Scenarios: 27%
+- Strategies: 24%
+- Decisions: 18%
+- **Default total:** 1,675 words (customizable via `--target-length`)
 
 **Definition File:** `story-arc/strategic-foresight/arc-definition.md`
 
@@ -153,13 +153,13 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 - `content_type: "industry"`
 - Keywords (>=12% density): "regulatory", "sector", "structural", "industry", "transformation", "policy"
 
-**Word Targets:**
-- Hook: 150-200 words
-- Forces: 350-450 words
-- Friction: 300-400 words
-- Evolution: 400-500 words
-- Leadership: 250-350 words
-- **Total:** 1,450-1,900 words
+**Section Proportions:**
+- Hook: 10%
+- Forces: 24%
+- Friction: 21%
+- Evolution: 27%
+- Leadership: 18%
+- **Default total:** 1,675 words (customizable via `--target-length`)
 
 **Definition File:** `story-arc/industry-transformation/arc-definition.md`
 
@@ -192,13 +192,13 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 
 **Horizon Cascade:** Each element applies Act → Plan → Observe progression internally.
 
-**Word Targets:**
-- Hook: 150-200 words
-- Forces: 350-450 words
-- Impact: 350-450 words
-- Horizons: 350-450 words
-- Foundations: 250-350 words
-- **Total:** 1,450-1,900 words
+**Section Proportions:**
+- Hook: 10%
+- Forces: 24%
+- Impact: 24%
+- Horizons: 24%
+- Foundations: 18%
+- **Default total:** 1,675 words (customizable via `--target-length`)
 
 **Definition File:** `story-arc/trend-panorama/arc-definition.md`
 
@@ -347,7 +347,7 @@ Option 2: {Alternative Arc 1}
 ### Quality Standards for New Arcs
 
 **Structural:**
-- Total word target: 1,450-1,900 words
+- Section proportions must sum to 100%. Default total: 1,675 words (customizable via `--target-length`)
 - EXACTLY 4 elements (consistent with all arcs)
 - Each element has distinct purpose (no overlap)
 - Clear detection signals (content_type + keywords + optional structural)

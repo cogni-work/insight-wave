@@ -4,7 +4,7 @@
 
 Identify friction points—barriers, resistance, and forces slowing or distorting transformation despite macro force pressures.
 
-**Word Target:** 300-400 words
+**Word Target:** 21% of target length
 
 ## Source Content Mapping
 
@@ -307,7 +307,7 @@ Organizations treating change management friction as merely "annoying delay" mis
 
 - [ ] Friction identification section (250-350 words)
 - [ ] Friction vs. force balance (50 words)
-- [ ] Word count: 300-400 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Forces
 - [ ] Smooth transition to Evolution
 

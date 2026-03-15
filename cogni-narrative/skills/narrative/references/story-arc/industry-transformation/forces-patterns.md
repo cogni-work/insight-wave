@@ -4,7 +4,7 @@
 
 Identify macro forces (regulatory, technological, social, economic) driving industry transformation—the fundamental pressures reshaping sector structure.
 
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -318,7 +318,7 @@ Budget realism demands fast ROI<sup>[3]</sup>. Compliance extends timelines 40-6
 
 - [ ] Force identification section (300-400 words)
 - [ ] Force interaction summary (50 words)
-- [ ] Word count: 350-450 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Hook
 - [ ] Smooth transition to Friction
 

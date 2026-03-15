@@ -4,7 +4,7 @@
 
 Construct 2-3 plausible alternative future scenarios based on how identified signals and uncertainties could play out—creating distinct, credible future states.
 
-**Word Target:** 400-500 words
+**Word Target:** 27% of target length
 
 ## Source Content Mapping
 
@@ -364,7 +364,7 @@ Example:
 
 - [ ] Scenario construction section (300-400 words)
 - [ ] Scenario differentiation section (100 words)
-- [ ] Word count: 400-500 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Signals
 - [ ] Smooth transition to Strategies
 

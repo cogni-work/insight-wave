@@ -4,7 +4,7 @@
 
 Reframe research findings as an **unconsidered need**—a problem executives didn't know they had, or didn't realize was solvable.
 
-**Word Target:** 400-500 words
+**Word Target:** 27% of target length
 
 ## Source Content Mapping
 
@@ -267,7 +267,7 @@ Example:
 ### Structure Requirements
 
 - [ ] PSB structure followed (Problem 150w, Solution 150w, Benefit 100-200w)
-- [ ] Word count: 400-500 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] At least 3 citations to dimension syntheses
 - [ ] Smooth transition from Hook to Why Change
 - [ ] Smooth transition from Why Change to Why Now

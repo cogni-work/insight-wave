@@ -18,17 +18,19 @@
 3. Warum Sie: Strategische Positionierung
 4. Geschäftliche Auswirkungen: Der Business Case
 
-## Word Targets
+## Word Proportions
 
-| Element | English Header | German Header | Word Target |
-|---------|----------------|---------------|-------------|
-| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 150-200 |
-| Why Change | Why Change: The Unconsidered Need | Warum Veränderung: Der unberücksichtigte Bedarf | 400-500 |
-| Why Now | Why Now: The Closing Window | Warum jetzt: Das sich schließende Zeitfenster | 300-400 |
-| Why You | Why You: Strategic Positioning | Warum Sie: Strategische Positionierung | 400-500 |
-| Why Pay | Why Pay: The Business Case | Geschäftliche Auswirkungen: Der Business Case | 200-300 |
+Section lengths are expressed as proportions of the total target length. This keeps the arc's rhetorical balance intact regardless of narrative length. To compute word ranges for a given `--target-length T`: apply +/-15% band to get `[T*0.85, T*1.15]`, then multiply each proportion.
 
-**Total Target:** 1,450-1,900 words
+| Element | English Header | German Header | Proportion | Default Range (T=1675) |
+|---------|----------------|---------------|-----------|------------------------|
+| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 10% | 143-193 |
+| Why Change | Why Change: The Unconsidered Need | Warum Veränderung: Der unberücksichtigte Bedarf | 27% | 384-519 |
+| Why Now | Why Now: The Closing Window | Warum jetzt: Das sich schließende Zeitfenster | 21% | 299-404 |
+| Why You | Why You: Strategic Positioning | Warum Sie: Strategische Positionierung | 27% | 384-519 |
+| Why Pay | Why Pay: The Business Case | Geschäftliche Auswirkungen: Der Business Case | 15% | 213-290 |
+
+**Proportions sum to 100%.** Default total: 1,675 words (customizable via `--target-length`). Tolerance: +/-10% of computed section midpoint.
 
 ## Detection Configuration
 
@@ -210,7 +212,7 @@ Example:
 
 **Source:** Most surprising finding in Executive Summary
 
-**Word Target:** 150-200 words
+**Word Target:** 10% of target length
 
 ---
 
@@ -252,7 +254,7 @@ Simple, undeniable business case comparison.
 
 ### Citation Density
 
-**Target:** 15-25 total citations across 1,450-1,900 words
+**Target:** 15-25 total citations across the narrative (scale proportionally for longer targets)
 **Ratio:** Approximately 1 citation per 60-100 words
 
 ### Citation Distribution
@@ -280,8 +282,8 @@ Claim text<sup>[N](12-synthesis/synthesis-{dimension}.md)</sup>
 ### Arc Completeness
 
 - [ ] All 4 elements present (Why Change, Why Now, Why You, Why Pay)
-- [ ] Hook present (150-200 words)
-- [ ] Word counts in target ranges (±50 words tolerance)
+- [ ] Hook present (within hook proportion of target)
+- [ ] Word counts within computed proportional ranges (+/-10% tolerance)
 - [ ] Smooth transitions between elements
 - [ ] Each element serves distinct purpose (no overlap)
 

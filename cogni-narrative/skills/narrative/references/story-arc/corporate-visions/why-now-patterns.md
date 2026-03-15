@@ -4,7 +4,7 @@
 
 Establish urgency through **forcing functions**—external pressures, deadlines, tipping points that make action time-sensitive.
 
-**Word Target:** 300-400 words
+**Word Target:** 21% of target length
 
 ## Source Content Mapping
 
@@ -327,7 +327,7 @@ The window for strategic positioning closes Q2 2027. After that, you're playing 
 
 ### Structure Requirements
 
-- [ ] Word count: 300-400 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Opening: "Three converging forces..." or similar stacking statement
 - [ ] Middle: 2-3 forcing functions with quantification
 - [ ] Closing: "The window closes [date]. After that, catch-up."

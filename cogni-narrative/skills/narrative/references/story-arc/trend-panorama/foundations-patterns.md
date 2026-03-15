@@ -5,7 +5,7 @@
 Synthesize S-dimension (Digitales Fundament) trends into a narrative of required capabilities. Specify what organizations must build across culture, workforce, and technology to capture the opportunities identified in Element 3--with dependency-aware sequencing across Act/Plan/Observe horizons.
 
 **TIPS Dimension:** S -- Solutions (Digitales Fundament)
-**Word Target:** 250-350 words
+**Word Target:** 18% of target length
 
 ## Source Content Mapping
 
@@ -217,7 +217,7 @@ Enables: AI-augmented operations (2.4x efficiency, 24-month first-mover advantag
 
 ### Structure Requirements
 
-- [ ] Word count: 250-350 words (+/-50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Horizons
 - [ ] Strong closing with Act/Plan/Observe framework reference
 - [ ] Horizon cascade maintained (shorter due to word constraint)

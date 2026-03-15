@@ -4,7 +4,7 @@
 
 Identify weak signals and early indicators of potential futures—developments that are emerging but not yet mainstream, pointing toward genuine uncertainty.
 
-**Word Target:** 300-400 words
+**Word Target:** 21% of target length
 
 ## Source Content Mapping
 
@@ -327,7 +327,7 @@ Example:
 
 - [ ] Signal identification section (250-300 words)
 - [ ] Uncertainty dimensions section (50-100 words)
-- [ ] Word count: 300-400 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Hook
 - [ ] Smooth transition to Scenarios
 

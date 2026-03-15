@@ -1,7 +1,7 @@
 # Phase 4b: Arc-Specific Insight Summary (strategic-foresight)
 
 **Arc Framework:** Signals -> Scenarios -> Strategies -> Decisions
-**Arc:** `strategic-foresight` (Tier 3) | **Output:** `insight-summary.md` at project root (1,450-1,900 words)
+**Arc:** `strategic-foresight` (Tier 3) | **Output:** `insight-summary.md` at project root (target range from `--target-length`, default ~1,675 words)
 
 **Shared steps:** Read [shared-steps.md](shared-steps.md) for entity counting, output template, validation gates, and write instructions.
 
@@ -90,7 +90,7 @@ Read `synthesis-cross-dimensional.md`. Before writing:
 
 ### Sub-step C: Construct the Narrative Hook
 
-The hook (150-200 words) establishes *genuine uncertainty*:
+The hook (~10% of target length) establishes *genuine uncertainty*:
 
 - Pattern: "[Signal 1] suggests [future A]. [Signal 2] suggests [future B]. [Signal 3] makes both plausible."
 - The reader should feel that *not thinking about multiple futures* is a strategic risk.
@@ -100,7 +100,7 @@ The hook (150-200 words) establishes *genuine uncertainty*:
 
 ### Sub-step D: Draft Each Arc Element
 
-**Signals: Early Indicators (350-450 words)**
+**Signals: Early Indicators (~21% of target length)**
 - Present each signal as an observed data point, not an opinion
 - Quantify directional change where possible
 - Frame signals as "stress fractures" or "early indicators," not established trends
@@ -109,7 +109,7 @@ The hook (150-200 words) establishes *genuine uncertainty*:
 
 *Transition:* "These signals combine into [N] plausible scenarios."
 
-**Scenarios: Future States (350-450 words)**
+**Scenarios: Future States (~27% of target length)**
 - Name each scenario distinctively (e.g., "Platform Capitalism," not "Scenario 1")
 - Build each from signal combinations established in Signals
 - Use megatrends as structural axes -- state explicitly (e.g., "Axis: Data Sovereignty Stringency -- Low vs. High")
@@ -119,7 +119,7 @@ The hook (150-200 words) establishes *genuine uncertainty*:
 
 *Transition:* "Robust strategies create value regardless of which scenario unfolds."
 
-**Strategies: Adaptive Approaches (350-450 words)**
+**Strategies: Adaptive Approaches (~24% of target length)**
 - Categorize: no-regret moves, option-creating moves, scenario-specific hedges
 - For each strategy, state which scenarios it serves
 - Ground in findings that demonstrate feasibility or precedent
@@ -127,7 +127,7 @@ The hook (150-200 words) establishes *genuine uncertainty*:
 
 *Transition:* "Executing robust strategies requires near-term decisions about [areas]."
 
-**Decisions: Action Framework (350-450 words)**
+**Decisions: Action Framework (~18% of target length)**
 - Frame as time-bound choices with decision triggers
 - For each: what to decide, when, what trigger, is it reversible?
 - Connect each decision to the strategies it enables
@@ -150,7 +150,7 @@ The title should reference the *domain* of uncertainty, not just the topic:
 2. **Foresight integrity:** Are scenarios genuinely divergent? Can you merge two without contradiction? If so, they're not divergent enough.
 3. **Evidence density:** Can you point to a specific entity for every major claim?
 4. **Wikilinks:** 40-50 total, distributed across elements?
-5. **Word count:** 1,450-1,900 total, 350-450 per element?
+5. **Word count:** Within target length range? Hook ~10%, Signals ~21%, Scenarios ~27%, Strategies ~24%, Decisions ~18%?
 
 **Common failure mode:** Scenarios not divergent is the most frequent issue. Revisit megatrend axis selection if scenarios feel like variations on the same theme.
 

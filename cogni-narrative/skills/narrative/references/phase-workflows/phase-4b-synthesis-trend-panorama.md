@@ -1,7 +1,7 @@
 # Phase 4b: Arc-Specific Insight Summary (trend-panorama)
 
 **Arc Framework:** Forces -> Impact -> Horizons -> Foundations (TIPS: T -> I -> P -> S)
-**Arc:** `trend-panorama` (Tier 4) | **Output:** `insight-summary.md` at project root (1,450-1,900 words)
+**Arc:** `trend-panorama` (Tier 4) | **Output:** `insight-summary.md` at project root (target range from `--target-length`, default ~1,675 words)
 
 **Shared steps:** Read [shared-steps.md](shared-steps.md) for entity counting, output template, validation gates, and write instructions.
 
@@ -35,7 +35,7 @@ This arc loads the RICHEST source context because it synthesizes an entire trend
 - **Dimension syntheses** (12-synthesis/data/) reveal emergent insights beyond individual trends.
 - **Executive Summary** (research-hub.md or synthesis-cross-dimensional.md) provides cross-dimensional context for hook and transitions.
 
-**Key challenge:** This arc processes ~52 trends across 4 dimensions. At 1,450-1,900 words (~30 words per trend), you cannot give each individual attention. The key skill is SYNTHESIS -- clustering trends into force narratives, impact stories, opportunity portfolios, and capability roadmaps.
+**Key challenge:** This arc processes ~52 trends across 4 dimensions. At the target length (~30 words per trend), you cannot give each individual attention. The key skill is SYNTHESIS -- clustering trends into force narratives, impact stories, opportunity portfolios, and capability roadmaps.
 
 **Loading priority:**
 1. `trend-scout-output.json` from `.metadata/` or source directory (REQUIRED)
@@ -97,7 +97,7 @@ Good patterns:
 
 ### Sub-step D: Write the Hook Paragraph
 
-The hook (150-200 words) accomplishes:
+The hook (~10% of target length) accomplishes:
 1. **Establish panoramic scale** -- reference total trend count and dimension breadth
 2. **Create urgency** -- highlight Act-horizon trend concentration
 3. **Reveal cross-dimensional insight** -- the narrative spine from Sub-step A
@@ -133,11 +133,11 @@ For each element, follow this micro-sequence:
    - Horizons: You-Phrasing, IS-DOES-MEANS, Opportunity Windows
    - Foundations: IS-DOES-MEANS, Compound Impact, Dependency Sequencing
 
-**Word count targets:**
-- Forces: 350-450 words
-- Impact: 350-450 words
-- Horizons: 350-450 words
-- Foundations: 250-350 words
+**Proportion targets:**
+- Forces: ~24% of target length
+- Impact: ~24% of target length
+- Horizons: ~24% of target length
+- Foundations: ~18% of target length
 
 ---
 
@@ -148,7 +148,7 @@ For each element, follow this micro-sequence:
 3. **Synthesis quality:** Count individually named trends. Target: 12-18 out of 52. If >25, you're listing. If <8, you're abstracting too much.
 4. **Score/confidence usage:** Trend data used as narrative evidence, not a data dump?
 5. **Evidence balance:** Forces 5-8 citations, Impact 4-7, Horizons 4-6, Foundations 3-5. Total: 15-25.
-6. **Word count:** 1,450-1,900 total. Per-element within targets.
+6. **Word count:** Within target length range. Per-element within proportion targets (Hook ~10%, Forces ~24%, Impact ~24%, Horizons ~24%, Foundations ~18%).
 
 **Common failure modes:**
 - Over-listing: 52 trends tempt enumeration. If it reads like a catalog, replace individual mentions with cluster synthesis.

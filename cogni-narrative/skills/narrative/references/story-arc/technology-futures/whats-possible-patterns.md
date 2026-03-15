@@ -4,7 +4,7 @@
 
 Articulate specific opportunities, applications, and value creation scenarios that become feasible through emerged and converged technologies—making abstract technology concrete through real-world applications.
 
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -348,7 +348,7 @@ Digital twin simulation + real-time IoT logistics data + AI optimization algorit
 
 ### Structure Requirements
 
-- [ ] Word count: 350-450 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from What's Converging
 - [ ] Smooth transition to What's Required
 - [ ] Each opportunity distinct (different value types)

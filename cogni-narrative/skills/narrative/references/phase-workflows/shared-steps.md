@@ -31,7 +31,8 @@ title: "{Arc-Specific Compelling Title}"
 subtitle: "{Research Question}"
 arc_id: "{arc-id}"
 arc_display_name: "{Arc Display Name}"
-word_count: {1450-1900}
+target_length: {target-length or 1675}
+word_count: {actual word count}
 date_created: "{ISO 8601}"
 stats_syntheses: {count}
 stats_megatrends: {count}
@@ -45,7 +46,7 @@ stats_claims: {count}
 
 *{Research Question subtitle}*
 
-{Opening paragraph with narrative hook -- 150-200 words}
+{Opening paragraph with narrative hook -- hook proportion of target}
 
 <div class="stats-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:20px 0;">
   <div style="background:#f5f5f5; padding:14px 10px; border-radius:8px; text-align:center;">
@@ -78,19 +79,19 @@ stats_claims: {count}
 
 ## {Element 1 Header}
 
-{350-450 words with evidence grounding}
+{element 1 proportion of target words with evidence grounding}
 
 ## {Element 2 Header}
 
-{300-450 words with evidence grounding}
+{element 2 proportion of target words with evidence grounding}
 
 ## {Element 3 Header}
 
-{350-450 words with evidence grounding}
+{element 3 proportion of target words with evidence grounding}
 
 ## {Element 4 Header}
 
-{200-350 words with evidence grounding}
+{element 4 proportion of target words with evidence grounding}
 ```
 
 **Trend-panorama note:** Add `total_trends` and `horizon_distribution` (act/plan/observe counts) to the frontmatter.
@@ -112,13 +113,13 @@ If this fails, rewrite using the template rather than renaming sections. Content
 
 **Content gates:**
 
-- Total word count: 1,450-1,900
+- Total word count within target range (`total_lower` to `total_upper`, computed from `--target-length`)
 - Title is arc-specific (not generic)
-- Hook present (150-200 words)
-- Element word counts within targets (+/-50 words)
+- Hook present (within hook proportion of target)
+- Element word counts within computed proportional ranges (+/-10% of section midpoint). Compute: `[proportion * total_lower, proportion * total_upper]` using proportions from the arc definition
 - Arc-specific techniques applied (check arc quality gates in arc-definition)
 - Smooth transitions between elements
-- Frontmatter contains all required fields
+- Frontmatter contains all required fields (including `target_length`)
 
 **Evidence gates:**
 
@@ -140,8 +141,8 @@ If this fails, rewrite using the template rather than renaming sections. Content
 - Zero ASCII fallbacks -- scan for: fuer, ueber, Aenderung, groesste, Fuehrung
 
 **If any gate fails:** Fix the specific issue and re-validate all gates (fixes can break other things). Common failure patterns:
-- Word count too low: add evidence-grounded depth to the thinnest element
-- Word count too high: trim redundant transitions, not evidence
+- Word count below target range: add evidence-grounded depth to the thinnest element
+- Word count above target range: trim redundant transitions, not evidence
 - Wikilinks below 40: check which loaded entities have no wikilinks yet
 - Stats grid mismatch: copy exact integers from frontmatter into HTML grid
 

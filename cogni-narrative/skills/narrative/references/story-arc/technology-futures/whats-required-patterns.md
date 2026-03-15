@@ -4,7 +4,7 @@
 
 Specify concrete prerequisites—capabilities, infrastructure, partnerships, investments—needed to capture identified opportunities. Transform abstract "build capabilities" into actionable implementation roadmaps.
 
-**Word Target:** 200-350 words
+**Word Target:** 17% of target length
 
 ## Source Content Mapping
 
@@ -393,7 +393,7 @@ Extract from:
 
 ### Structure Requirements
 
-- [ ] Word count: 200-350 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from What's Possible
 - [ ] Closing statement creates action urgency
 - [ ] Prerequisites organized logically (foundation → enabling → advanced)

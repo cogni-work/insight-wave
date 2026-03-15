@@ -4,7 +4,7 @@
 
 Specify near-term decisions that position organization to respond effectively as uncertainty resolves—what to decide now vs. later, and what triggers change timing.
 
-**Word Target:** 250-350 words
+**Word Target:** 18% of target length
 
 ## Source Content Mapping
 
@@ -360,7 +360,7 @@ Example:
 ### Structure Requirements
 
 - [ ] Decision specification section (250-350 words)
-- [ ] Word count: 250-350 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Strategies
 - [ ] Closing emphasizes learning and adaptation
 

@@ -81,7 +81,7 @@ Two outputs:
 ### Step 1: Load Narrative
 
 1. Read the narrative file from `--source-path`
-2. Extract YAML frontmatter fields: `title`, `subtitle`, `arc_id`, `arc_display_name`, `word_count`, `language`, `date_created`, `source_file_count`
+2. Extract YAML frontmatter fields: `title`, `subtitle`, `arc_id`, `arc_display_name`, `target_length`, `word_count`, `language`, `date_created`, `source_file_count`
 3. If frontmatter is missing or incomplete, flag as critical issue
 4. Determine `arc_id` from: explicit parameter > frontmatter > detection failure
 5. Determine `language` from: explicit parameter > frontmatter > default `en`
@@ -94,7 +94,7 @@ Read the arc definition to know expected element names, word targets, and qualit
 2. **Read:** `../narrative/references/story-arc/{arc_id}/arc-definition.md` -- for element definitions and word targets
 3. **Read:** `../narrative/references/language-templates.md` -- for localized header names
 
-Store the expected element names, word targets, and citation requirements.
+Store the expected element names, proportions, and citation requirements. Read `target_length` from the narrative's frontmatter to compute expected word ranges. If `target_length` is absent (legacy narratives), default to 1675. Compute `total_lower = target_length * 0.85`, `total_upper = target_length * 1.15`, then per-element ranges: `[proportion * total_lower, proportion * total_upper]`.
 
 ### Step 3: Run Quality Gates
 
@@ -195,7 +195,7 @@ For detailed scoring criteria per gate -- including partial credit rules, counti
 
 - DO NOT modify the narrative file -- this is a read-only review
 - DO NOT fabricate or assume quality issues -- only report what is measurably found
-- ALWAYS use the arc definition's exact word targets for scoring
+- ALWAYS compute expected word ranges from arc proportions x target length for scoring
 - ALWAYS check against the language-specific header names
 
 ---

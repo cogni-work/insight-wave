@@ -1,7 +1,7 @@
 # Phase 4b: Arc-Specific Insight Summary (industry-transformation)
 
 **Arc Framework:** Forces -> Friction -> Evolution -> Leadership
-**Arc:** `industry-transformation` (Tier 3) | **Output:** `insight-summary.md` at project root (1,450-1,900 words)
+**Arc:** `industry-transformation` (Tier 3) | **Output:** `insight-summary.md` at project root (target range from `--target-length`, default ~1,675 words)
 
 **Shared steps:** Read [shared-steps.md](shared-steps.md) for entity counting, output template, validation gates, and write instructions.
 
@@ -114,28 +114,28 @@ Read `synthesis-cross-dimensional.md`. Before writing:
 
 ### Sub-step E: Write Each Element
 
-**Forces: Transformation Drivers (350-450 words)**
+**Forces: Transformation Drivers (~24% of target length)**
 - Open with the dominant macro force -- frame as structural and irreversible
 - Quantify magnitude using megatrend scope and trend data
 - Show force interactions (how 2-3 converge or conflict)
 - Ground every major claim in a citation
 - 8-12 wikilinks to megatrends, trends, and findings
 
-**Friction: Barriers to Change (350-450 words)**
+**Friction: Barriers to Change (~21% of target length)**
 - Open with the most critical friction point -- the one most directly opposing the dominant force
 - Distinguish temporary from structural friction
 - Show timing mismatches between forces and industry readiness
 - Describe workarounds or navigation strategies
 - 8-12 wikilinks
 
-**Evolution: Pathway Forward (350-450 words)**
+**Evolution: Pathway Forward (~27% of target length)**
 - Open with the new equilibrium -- what the industry looks like after transformation
 - Describe power shifts (who gains, who loses)
 - Explain new business models or value creation patterns
 - Provide a timeline to new equilibrium
 - 8-12 wikilinks
 
-**Leadership: Strategic Imperatives (350-450 words)**
+**Leadership: Strategic Imperatives (~18% of target length)**
 - Open with the core positioning question
 - Specify differentiation sources in the new equilibrium
 - Define timing strategy (when to commit, what to sequence)
@@ -146,14 +146,14 @@ Read `synthesis-cross-dimensional.md`. Before writing:
 
 ### Sub-step F: Self-Review
 
-1. **Word count:** 1,450-1,900 total? Each element 350-450?
+1. **Word count:** Within target length range? Hook ~10%, Forces ~24%, Friction ~21%, Evolution ~27%, Leadership ~18%?
 2. **Transformation narrative:** Forces -> Friction -> Evolution -> Leadership tells a connected story?
 3. **Evidence grounding:** >= 8 finding citations? Every major claim grounded?
 4. **Wikilinks:** 40-50 total, distributed across elements?
 5. **Journalistic style?** Not academic report style?
 
 **Common failure modes:**
-- Word count under 1,450: usually thin Evolution or Leadership -- expand with evidence
+- Word count under target length floor: usually thin Evolution or Leadership -- expand with evidence
 - Wikilinks under 40: usually concentrated in Forces -- redistribute
 - Forces and Friction blur: maintain distinction -- Forces = external pressures, Friction = internal/structural resistance
 

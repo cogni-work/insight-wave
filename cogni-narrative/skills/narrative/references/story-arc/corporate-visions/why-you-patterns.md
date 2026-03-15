@@ -4,7 +4,7 @@
 
 Convert strategic recommendations into **Power Positions**—capabilities that create competitive advantage and are difficult to replicate.
 
-**Word Target:** 400-500 words
+**Word Target:** 27% of target length
 
 ## Source Content Mapping
 
@@ -363,7 +363,7 @@ Organizations that thrive don't just react to forcing functions—they build cap
 
 - [ ] 2-3 Power Positions total
 - [ ] Positions address different strategic dimensions
-- [ ] Word count: 400-500 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Why Now
 - [ ] Smooth transition to Why Pay
 

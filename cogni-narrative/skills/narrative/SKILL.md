@@ -5,7 +5,7 @@ description: "Transform structured content into compelling executive narratives 
 
 # Narrative Transformation
 
-Transform input markdown files into a structured executive narrative (1,450-1,900 words) using one of 6 story arc frameworks. Each arc provides a distinct rhetorical progression -- mapping source evidence to arc elements, applying narrative techniques, and producing a citation-grounded insight summary.
+Transform input markdown files into a structured executive narrative using one of 6 story arc frameworks. The narrative length is controlled by `--target-length` (default ~1,675 words), with section lengths expressed as proportions of the total to preserve the arc's rhetorical balance at any scale. Each arc provides a distinct rhetorical progression -- mapping source evidence to arc elements, applying narrative techniques, and producing a citation-grounded insight summary.
 
 **Use this for:**
 - Transforming research syntheses, analyses, or structured findings into executive narratives
@@ -29,6 +29,7 @@ Transform input markdown files into a structured executive narrative (1,450-1,90
 | `--output-path` | No | Output file path; defaults to `insight-summary.md` in source directory |
 | `--project-path` | No | Research project directory; enables loading entity data beyond source path |
 | `--research-question` | No | Original research question for narrative hook framing |
+| `--target-length` | No | Target total word count as a single number (e.g., `2500`). System applies +/-15% band to derive the acceptable range. Default: `1675` (yields ~1,424-1,926 words). Recommended: 800-4,000 — outside this range, arc rhetorical structure may not scale well |
 | `--content-map` | No | YAML map of content category keys to file/directory paths for additional context |
 
 **Content map keys:** `executive_summary`, `dimension_syntheses`, `trends_summary`, `trend_entities`, `megatrends_summary`, `megatrend_entities`, `domain_concepts`, `research_hub`, `initial_question`
@@ -45,7 +46,8 @@ title: "{Arc-Specific Compelling Title}"
 subtitle: "{Research Question or Topic}"
 arc_id: "{selected-arc}"
 arc_display_name: "{Arc Display Name}"
-word_count: {1450-1900}
+target_length: {target-length or 1675}
+word_count: {actual word count}
 language: "{en|de}"
 date_created: "{ISO 8601}"
 source_file_count: {N}
@@ -55,28 +57,28 @@ source_file_count: {N}
 
 *{Subtitle}*
 
-{Opening paragraph with narrative hook -- 150-200 words}
+{Opening paragraph with narrative hook -- proportion of target}
 
 ---
 
 ## {Element 1 Header}
 
-{350-500 words with evidence grounding}
+{proportion of target words with evidence grounding}
 
 ## {Element 2 Header}
 
-{300-450 words with evidence grounding}
+{proportion of target words with evidence grounding}
 
 ## {Element 3 Header}
 
-{350-500 words with evidence grounding}
+{proportion of target words with evidence grounding}
 
 ## {Element 4 Header}
 
-{200-350 words with evidence grounding}
+{proportion of target words with evidence grounding}
 ```
 
-**Word count target:** 1,450-1,900 words total.
+**Word count target:** determined by `--target-length` (default 1,675). Each section's word range = its arc proportion x the target's +/-15% band. See the arc definition loaded in Phase 3 for per-element proportions.
 
 **JSON summary returned on completion:**
 
@@ -86,6 +88,7 @@ source_file_count: {N}
   "output_path": "insight-summary.md",
   "arc_id": "corporate-visions",
   "arc_display_name": "Corporate Visions",
+  "target_length": 1675,
   "word_count": 1650,
   "citation_count": 22,
   "elements": 4,
@@ -119,7 +122,8 @@ The quality of each phase depends on the previous one. In particular, Phases 3 a
    - Tag each file with its content-map key
    - Skip non-existent paths with warning (non-blocking)
 5. If `--research-question` provided, store it for hook construction.
-6. Build a mental CONTENT_REGISTRY: list of loaded files with titles, word counts, key sections, category tags.
+6. Parse `--target-length` if provided (single integer). Compute the acceptable range: `total_lower = target * 0.85`, `total_upper = target * 1.15`. If omitted, default to `target = 1675` (range 1424-1926). Store `target_length`, `total_lower`, `total_upper`.
+7. Build a mental CONTENT_REGISTRY: list of loaded files with titles, word counts, key sections, category tags.
 
 **Before moving on,** make sure you can answer: How many files loaded? What are the 2-3 dominant themes? What is the approximate total word count? If you can't answer these, you haven't internalized the source material yet.
 
@@ -179,13 +183,13 @@ For each of the 4 arc elements:
    - Arc-specific header (localized if `de`)
    - Evidence-grounded body text
    - Inline citations: `<sup>[N](source-file.md)</sup>` format
-   - Word count within element target (+/-50 words)
+   - Word count within computed proportional range (+/-10% tolerance)
 5. **Build transitions** between elements using arc-definition transition patterns
 
 Assemble the full narrative:
 
 1. Generate an arc-specific compelling title -- not "Insight Summary" or anything generic
-2. Write hook paragraph (150-200 words) using arc's hook construction pattern
+2. Write hook paragraph (arc's hook proportion of target) using arc's hook construction pattern
 3. Assemble 4 elements with transitions
 4. Write closing using arc's closing pattern
 
@@ -206,13 +210,13 @@ If this fails, rewrite using the template rather than renaming sections. Content
 
 **Content gates:**
 
-- Total word count: 1,450-1,900
+- Total word count within target range (`total_lower` to `total_upper`, computed from `--target-length`)
 - Title is arc-specific (not generic)
-- Hook present (150-200 words)
-- Element word counts within targets (+/-50 words)
+- Hook present (within hook proportion of target)
+- Element word counts within computed proportional ranges (+/-10% of section midpoint). Compute each section's range: `[proportion * total_lower, proportion * total_upper]` using proportions from the arc definition loaded in Phase 3
 - Arc-specific techniques applied (check arc quality gates in arc-definition)
 - Smooth transitions between elements
-- Frontmatter contains all required fields
+- Frontmatter contains all required fields (including `target_length`)
 
 **Evidence gates:**
 

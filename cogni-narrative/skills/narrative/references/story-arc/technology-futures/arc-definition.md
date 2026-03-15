@@ -18,17 +18,19 @@
 3. Was möglich wird: Chancen durch Konvergenz
 4. Was erforderlich ist: Voraussetzungen zur Nutzung der Chancen
 
-## Word Targets
+## Word Proportions
 
-| Element | English Header | German Header | Word Target |
-|---------|----------------|---------------|-------------|
-| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 150-200 |
-| What's Emerging | What's Emerging: New Capabilities | Was entsteht: Neue Capabilities | 350-450 |
-| What's Converging | What's Converging: Technology Combinations | Was konvergiert: Technologie-Kombinationen | 350-450 |
-| What's Possible | What's Possible: Unlocked Opportunities | Was möglich wird: Freigese tzte Chancen | 350-450 |
-| What's Required | What's Required: Prerequisites | Was erforderlich ist: Voraussetzungen | 200-350 |
+Section lengths are expressed as proportions of the total target length. This keeps the arc's rhetorical balance intact regardless of narrative length. To compute word ranges for a given `--target-length T`: apply +/-15% band to get `[T*0.85, T*1.15]`, then multiply each proportion.
 
-**Total Target:** 1,450-1,900 words
+| Element | English Header | German Header | Proportion | Default Range (T=1675) |
+|---------|----------------|---------------|-----------|------------------------|
+| Hook | *(Dynamic based on finding)* | *(Dynamic)* | 11% | 157-212 |
+| What's Emerging | What's Emerging: New Capabilities | Was entsteht: Neue Capabilities | 24% | 342-462 |
+| What's Converging | What's Converging: Technology Combinations | Was konvergiert: Technologie-Kombinationen | 24% | 342-462 |
+| What's Possible | What's Possible: Unlocked Opportunities | Was möglich wird: Freigesetzte Chancen | 24% | 342-462 |
+| What's Required | What's Required: Prerequisites | Was erforderlich ist: Voraussetzungen | 17% | 242-327 |
+
+**Proportions sum to 100%.** Default total: 1,675 words (customizable via `--target-length`). Tolerance: +/-10% of computed section midpoint.
 
 ## Detection Configuration
 
@@ -261,7 +263,7 @@ Clear call to action around capability building or opportunity window.
 
 ### Citation Density
 
-**Target:** 15-25 total citations across 1,450-1,900 words
+**Target:** 15-25 total citations across the narrative (scale proportionally for longer targets)
 **Ratio:** Approximately 1 citation per 60-100 words
 
 ### Citation Distribution
@@ -289,8 +291,8 @@ Claim text<sup>[N](12-synthesis/synthesis-{dimension}.md)</sup>
 ### Arc Completeness
 
 - [ ] All 4 elements present (What's Emerging, Converging, Possible, Required)
-- [ ] Hook present (150-200 words)
-- [ ] Word counts in target ranges (±50 words tolerance)
+- [ ] Hook present (within hook proportion of target)
+- [ ] Word counts within computed proportional ranges (+/-10% tolerance)
 - [ ] Smooth transitions between elements
 - [ ] Each element serves distinct purpose (no overlap)
 
@@ -432,9 +434,9 @@ This explains why early adopters investing in all three capabilities discover no
 
 ### Word Count Targets
 
-- What's Emerging example: 387 words (within 350-450 target)
-- What's Converging example: 324 words (within 350-450 target)
-- Combined: 711 words (contributes to 1,450-1,900 total)
+- What's Emerging example: 387 words (within 24% proportional range at default target)
+- What's Converging example: 324 words (within 24% proportional range at default target)
+- Combined: 711 words (contributes to overall target total)
 
 ### Technique Application Summary
 

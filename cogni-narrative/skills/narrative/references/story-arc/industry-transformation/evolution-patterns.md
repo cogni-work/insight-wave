@@ -4,7 +4,7 @@
 
 Describe the industry's future structure—new equilibrium, new business models, new competitive dynamics after transformation forces overcome friction.
 
-**Word Target:** 400-500 words
+**Word Target:** 27% of target length
 
 ## Source Content Mapping
 
@@ -373,7 +373,7 @@ AI industry resembles cloud computing structure: Commoditized infrastructure (AW
 
 - [ ] New industry structure section (300-400 words)
 - [ ] Power shifts section (100 words)
-- [ ] Word count: 400-500 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Friction
 - [ ] Smooth transition to Leadership
 

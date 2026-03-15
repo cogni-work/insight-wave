@@ -5,7 +5,7 @@
 Synthesize P-dimension (Neue Horizonte) trends into a narrative of strategic opportunities. Reframe value chain disruption (Element 2) as actionable possibilities across strategy, leadership, and governance--cascaded through Act/Plan/Observe horizons with explicit opportunity windows.
 
 **TIPS Dimension:** P -- Possibilities (Neue Horizonte)
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -209,7 +209,7 @@ Confidence-weighted opportunity portfolio:
 
 ### Structure Requirements
 
-- [ ] Word count: 350-450 words (+/-50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from Impact
 - [ ] Smooth transition to Foundations
 - [ ] Horizon cascade: Act (seize) -> Plan (build toward) -> Observe (position for)

@@ -4,7 +4,7 @@
 
 Identify where multiple emerging technologies combine to create capabilities greater than the sum of parts—convergence points that unlock new possibilities through synergy.
 
-**Word Target:** 350-450 words
+**Word Target:** 24% of target length
 
 ## Source Content Mapping
 
@@ -342,7 +342,7 @@ Neither capability existed before convergence. Edge AI alone lacks audit trust. 
 
 ### Structure Requirements
 
-- [ ] Word count: 350-450 words (±50 tolerance)
+- [ ] Word count: within proportional range for this element (+/-10% tolerance)
 - [ ] Smooth transition from What's Emerging
 - [ ] Smooth transition to What's Possible
 - [ ] Each convergence pattern distinct (no overlap)
