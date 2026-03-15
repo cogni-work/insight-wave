@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cogni-work.ai/schemas/sub-question.schema.json",
+  "title": "Sub-Question Entity",
+  "description": "Schema for sub-question entity YAML frontmatter. Sub-questions are decomposed research queries derived from the user's topic.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "entity_type",
+    "dc:identifier",
+    "dc:created",
+    "query",
+    "parent_topic",
+    "section_index",
+    "report_type",
+    "status"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "entity_type": {
+      "type": "string",
+      "const": "sub-question"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Unique entity ID",
+      "pattern": "^sq-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "ISO 8601 creation timestamp",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Agent or skill that created this entity"
+    },
+    "query": {
+      "type": "string",
+      "description": "The decomposed sub-question text",
+      "minLength": 10
+    },
+    "parent_topic": {
+      "type": "string",
+      "description": "The original user research topic"
+    },
+    "section_index": {
+      "type": "integer",
+      "description": "Position in report outline (0-based)",
+      "minimum": 0
+    },
+    "report_type": {
+      "type": "string",
+      "description": "Report type that generated this sub-question",
+      "enum": ["basic", "detailed", "deep"]
+    },
+    "search_guidance": {
+      "type": "string",
+      "description": "Optional guidance for the section-researcher on what to focus on"
+    },
+    "status": {
+      "type": "string",
+      "description": "Processing status",
+      "enum": ["pending", "researched", "failed"]
+    },
+    "tree_path": {
+      "type": "string",
+      "description": "Deep mode only: path in the research tree (e.g., '1.2.1')"
+    },
+    "parent_ref": {
+      "type": "string",
+      "description": "Deep mode only: wikilink to parent sub-question",
+      "pattern": "^\\[\\[00-sub-questions/data/sq-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "cogni-gpt-researcher",
+  "version": "0.1.0",
+  "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and three report types (basic, detailed, deep). Integrates with cogni-claims for source verification. Native Claude Code implementation using WebSearch + WebFetch.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "research",
+    "report",
+    "multi-agent",
+    "storm",
+    "parallel-search",
+    "review-loop",
+    "deep-research",
+    "claims-verification"
+  ],
+  "skills": [
+    { "name": "research-report", "path": "skills/research-report" },
+    { "name": "export-report", "path": "skills/export-report" }
+  ],
+  "agents": [
+    { "name": "section-researcher", "path": "agents/section-researcher.md" },
+    { "name": "deep-researcher", "path": "agents/deep-researcher.md" },
+    { "name": "claim-extractor", "path": "agents/claim-extractor.md" },
+    { "name": "reviewer", "path": "agents/reviewer.md" },
+    { "name": "revisor", "path": "agents/revisor.md" },
+    { "name": "writer", "path": "agents/writer.md" }
+  ],
+  "entity_types": [
+    { "name": "sub-question", "directory": "00-sub-questions", "schema": "schemas/sub-question.schema.json" },
+    { "name": "context", "directory": "01-contexts", "schema": "schemas/context.schema.json" },
+    { "name": "source", "directory": "02-sources", "schema": "schemas/source.schema.json" },
+    { "name": "report-claim", "directory": "03-report-claims", "schema": "schemas/report-claim.schema.json" }
+  ]
+}

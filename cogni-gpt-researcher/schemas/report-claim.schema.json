@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cogni-work.ai/schemas/report-claim.schema.json",
+  "title": "Report Claim Entity",
+  "description": "Schema for report-claim entity YAML frontmatter. Report claims are verifiable assertions extracted from the draft report, bridging to cogni-claims for source verification.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "entity_type",
+    "dc:identifier",
+    "dc:created",
+    "statement",
+    "source_ref",
+    "source_url",
+    "source_title",
+    "draft_version",
+    "section"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "entity_type": {
+      "type": "string",
+      "const": "report-claim"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Unique entity ID",
+      "pattern": "^rc-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "ISO 8601 creation timestamp",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Agent that extracted this claim"
+    },
+    "statement": {
+      "type": "string",
+      "description": "The verifiable claim text",
+      "minLength": 10
+    },
+    "source_ref": {
+      "type": "string",
+      "description": "Wikilink to the source entity backing this claim",
+      "pattern": "^\\[\\[02-sources/data/src-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "source_url": {
+      "type": "string",
+      "description": "Direct URL to the source (for cogni-claims submission)",
+      "format": "uri"
+    },
+    "source_title": {
+      "type": "string",
+      "description": "Source title (for cogni-claims submission)"
+    },
+    "draft_version": {
+      "type": "integer",
+      "description": "Which draft version this claim was extracted from",
+      "minimum": 1
+    },
+    "section": {
+      "type": "string",
+      "description": "Report section containing this claim"
+    },
+    "claims_submission_id": {
+      "type": "string",
+      "description": "ID in cogni-claims after submission (claim-{uuid})",
+      "pattern": "^claim-[a-f0-9-]+$"
+    },
+    "verification_status": {
+      "type": "string",
+      "description": "Status from cogni-claims verification",
+      "enum": ["pending", "verified", "deviated", "source_unavailable"]
+    },
+    "deviation_type": {
+      "type": "string",
+      "description": "Type of deviation if deviated",
+      "enum": ["misquotation", "unsupported_conclusion", "selective_omission", "data_staleness", "source_contradiction"]
+    },
+    "deviation_severity": {
+      "type": "string",
+      "description": "Severity of deviation if deviated",
+      "enum": ["low", "medium", "high", "critical"]
+    }
+  }
+}

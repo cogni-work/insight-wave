@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cogni-work.ai/schemas/context.schema.json",
+  "title": "Context Entity",
+  "description": "Schema for context entity YAML frontmatter. Contexts capture per-sub-question research results with source references and key findings.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "entity_type",
+    "dc:identifier",
+    "dc:created",
+    "sub_question_ref",
+    "source_refs",
+    "search_queries_used"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "entity_type": {
+      "type": "string",
+      "const": "context"
+    },
+    "dc:identifier": {
+      "type": "string",
+      "description": "Unique entity ID",
+      "pattern": "^ctx-[a-z0-9-]+-[a-f0-9]{8}$"
+    },
+    "dc:created": {
+      "type": "string",
+      "description": "ISO 8601 creation timestamp",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z$"
+    },
+    "dc:creator": {
+      "type": "string",
+      "description": "Agent that created this context"
+    },
+    "sub_question_ref": {
+      "type": "string",
+      "description": "Wikilink to the sub-question this context answers",
+      "pattern": "^\\[\\[00-sub-questions/data/sq-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+    },
+    "source_refs": {
+      "type": "array",
+      "description": "Wikilinks to source entities cited in this context",
+      "items": {
+        "type": "string",
+        "pattern": "^\\[\\[02-sources/data/src-[a-z0-9-]+-[a-f0-9]{8}\\]\\]$"
+      },
+      "minItems": 1
+    },
+    "key_findings": {
+      "type": "array",
+      "description": "Structured key findings with source attribution",
+      "items": {
+        "type": "object",
+        "required": ["finding", "source_ref"],
+        "properties": {
+          "finding": {
+            "type": "string",
+            "description": "The finding text"
+          },
+          "source_ref": {
+            "type": "string",
+            "description": "Wikilink to the source entity"
+          },
+          "confidence": {
+            "type": "number",
+            "description": "Confidence score 0.0-1.0",
+            "minimum": 0.0,
+            "maximum": 1.0
+          }
+        }
+      }
+    },
+    "search_queries_used": {
+      "type": "array",
+      "description": "WebSearch queries executed to produce this context",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "word_count": {
+      "type": "integer",
+      "description": "Word count of the context body",
+      "minimum": 0
+    }
+  }
+}

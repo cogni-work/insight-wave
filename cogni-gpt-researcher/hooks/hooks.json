@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-entity-writes.sh",
+            "timeout": 5,
+            "enabled": true,
+            "name": "block-entity-writes",
+            "description": "Blocks Write/Edit to entity directories (00-sub-questions, 01-contexts, 02-sources, 03-report-claims) - forces create-entity.sh usage"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/review-loop-guard.sh",
+            "timeout": 10,
+            "enabled": true,
+            "name": "review-loop-guard",
+            "description": "Enforces max 3 review iterations. Counts review verdict files and signals forced acceptance when limit reached."
+          }
+        ]
+      }
+    ]
+  }
+}
