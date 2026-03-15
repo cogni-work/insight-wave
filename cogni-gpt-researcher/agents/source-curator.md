@@ -1,9 +1,9 @@
 ---
 name: source-curator
 description: |
-  Source curation agent. Runs between Phase 2 (research) and Phase 3 (aggregation)
-  to rank, filter, and annotate sources by quality, relevance, and diversity.
-  Produces a curated source ranking that informs the writer's citation priorities.
+  Use this agent when ranking, filtering, and annotating research sources by quality,
+  relevance, and diversity. Runs between Phase 2 (research) and Phase 3 (aggregation)
+  to produce a curated source ranking that informs the writer's citation priorities.
 
   <example>
   Context: research-report skill Phase 2.5 after all researchers complete.
@@ -11,7 +11,15 @@ description: |
   assistant: "Invoke source-curator to rank and annotate research sources."
   <commentary>Source curator reads all source entities and produces a ranked list with quality annotations.</commentary>
   </example>
+
+  <example>
+  Context: German-language deep report with 20+ sources from mixed DACH and international publishers.
+  user: "Curate sources for DACH project at /project/ with LANGUAGE=de"
+  assistant: "Invoke source-curator with DACH authority scoring to rank sources."
+  <commentary>DACH authority boosts apply — Fraunhofer, BITKOM, VDMA sources receive higher authority scores.</commentary>
+  </example>
 model: sonnet
+color: yellow
 tools: ["Read", "Write", "Glob", "Grep", "Bash"]
 ---
 

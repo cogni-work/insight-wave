@@ -1,9 +1,9 @@
 ---
 name: claim-extractor
 description: |
-  Extracts verifiable claims from a report draft. Identifies factual assertions
-  backed by cited sources and creates report-claim entities for downstream
-  verification via cogni-claims.
+  Use this agent when extracting verifiable claims from a report draft for downstream
+  verification via cogni-claims. Identifies factual assertions backed by cited sources
+  and creates report-claim entities.
 
   <example>
   Context: research-report skill Phase 5a before claims submission.
@@ -11,7 +11,15 @@ description: |
   assistant: "Invoke claim-extractor to identify verifiable assertions and create report-claim entities."
   <commentary>Produces 10-30 report-claim entities, each linking statement to source URL for cogni-claims verification.</commentary>
   </example>
+
+  <example>
+  Context: Deep report with 15+ sources and dense statistical content.
+  user: "Extract claims from deep research draft at /project/output/draft-v2.md (version 2)"
+  assistant: "Invoke claim-extractor on the revised draft to capture claims from newly added content."
+  <commentary>On revised drafts, claim-extractor re-scans the full text — new sections from revision may contain additional verifiable assertions.</commentary>
+  </example>
 model: sonnet
+color: magenta
 tools: ["Read", "Write", "Bash", "Glob", "Grep"]
 ---
 

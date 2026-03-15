@@ -1,8 +1,8 @@
 ---
 name: revisor
 description: |
-  Incorporates reviewer feedback and claims deviation data into a revised draft.
-  Has WebSearch access to find additional evidence when needed.
+  Use this agent when incorporating reviewer feedback and claims deviation data into
+  a revised draft. Has WebSearch access to find additional evidence when needed.
 
   <example>
   Context: research-report skill Phase 5e after reviewer returns "revise" verdict.
@@ -10,7 +10,15 @@ description: |
   assistant: "Invoke revisor to address review issues and claims deviations."
   <commentary>Revisor reads all previous review verdicts to avoid oscillation. Produces draft-v{N+1}.md.</commentary>
   </example>
+
+  <example>
+  Context: Second revision round where prior fix reintroduced an earlier issue.
+  user: "Revise draft-v2 using review verdict v2.json — oscillation detected on source diversity"
+  assistant: "Invoke revisor with full verdict history to find a third formulation that satisfies both rounds."
+  <commentary>Revisor detects oscillation by comparing v1 and v2 verdicts, then applies a different fix strategy instead of reverting.</commentary>
+  </example>
 model: sonnet
+color: green
 tools: ["Read", "Write", "WebSearch", "WebFetch", "Bash", "Glob"]
 ---
 

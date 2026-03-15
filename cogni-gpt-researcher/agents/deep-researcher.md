@@ -1,9 +1,9 @@
 ---
 name: deep-researcher
 description: |
-  Recursive tree explorer for deep research mode. Researches a single branch
-  of the research tree to specified depth, performing its own internal
-  multi-query search loop. Does NOT spawn sub-agents.
+  Use this agent when performing recursive tree exploration in deep research mode.
+  Researches a single branch of the research tree to specified depth, performing
+  its own internal multi-query search loop. Does NOT spawn sub-agents.
 
   <example>
   Context: research-report skill Phase 2 (deep mode) dispatches tree branches.
@@ -11,7 +11,15 @@ description: |
   assistant: "Invoke deep-researcher to explore this branch with multi-query internal search."
   <commentary>Each tree branch gets its own deep-researcher. Internal recursion, no sub-agent spawning.</commentary>
   </example>
+
+  <example>
+  Context: Deep research with user-provided source URLs and domain restrictions.
+  user: "Deep-research branch 'quantum key distribution' with SOURCE_URLS=https://arxiv.org/... and QUERY_DOMAINS=arxiv.org,nature.com"
+  assistant: "Invoke deep-researcher with pre-fetched sources and domain-restricted search queries."
+  <commentary>SOURCE_URLS are fetched first to inform sub-aspect decomposition; QUERY_DOMAINS restrict follow-up searches to academic sources.</commentary>
+  </example>
 model: sonnet
+color: blue
 tools: ["WebSearch", "WebFetch", "Read", "Write", "Bash", "Glob"]
 ---
 

@@ -1,9 +1,9 @@
 ---
 name: local-researcher
 description: |
-  Local document research agent for a single sub-question. Reads and analyzes
-  local files (PDF, DOCX, TXT, MD, CSV) instead of web search. Creates context
-  and source entities from document content.
+  Use this agent when researching a single sub-question from local files (PDF, DOCX,
+  TXT, MD, CSV) instead of web search. Creates context and source entities from
+  document content.
 
   <example>
   Context: research-report skill Phase 2 with report_source=local or hybrid.
@@ -11,7 +11,15 @@ description: |
   assistant: "Invoke local-researcher to analyze local documents and create context/source entities."
   <commentary>Each sub-question gets its own local-researcher instance. Parallel execution like section-researcher.</commentary>
   </example>
+
+  <example>
+  Context: Hybrid mode where local documents supplement web research.
+  user: "Research sub-question from PDFs at /data/reports/*.pdf and /data/whitepapers/cloud-2025.docx"
+  assistant: "Invoke local-researcher with glob pattern and explicit path for document analysis."
+  <commentary>Local-researcher resolves glob patterns via Glob tool and uses document-skills for .docx extraction.</commentary>
+  </example>
 model: sonnet
+color: cyan
 tools: ["Read", "Write", "Bash", "Glob", "Grep"]
 ---
 

@@ -1,9 +1,9 @@
 ---
 name: section-researcher
 description: |
-  Parallel web research agent for a single sub-question or report section.
-  Executes WebSearch queries, fetches relevant pages, extracts findings,
-  and creates context + source entities.
+  Use this agent when performing parallel web research for a single sub-question or
+  report section. Executes WebSearch queries, fetches relevant pages, extracts
+  findings, and creates context + source entities.
 
   <example>
   Context: research-report skill Phase 2 spawns parallel researchers.
@@ -11,7 +11,15 @@ description: |
   assistant: "Invoke section-researcher to execute web searches and create context/source entities."
   <commentary>Each sub-question gets its own section-researcher instance. Results are compact JSON to preserve orchestrator context.</commentary>
   </example>
+
+  <example>
+  Context: Research with user-provided URLs and domain restrictions for academic focus.
+  user: "Research sub-question with SOURCE_URLS=https://arxiv.org/abs/... and QUERY_DOMAINS=arxiv.org,ieee.org"
+  assistant: "Invoke section-researcher with pre-fetch URLs and domain-restricted search."
+  <commentary>SOURCE_URLS are fetched first; if coverage is sufficient, web search is reduced to 2-3 gap-filling queries within allowed domains.</commentary>
+  </example>
 model: sonnet
+color: cyan
 tools: ["WebSearch", "WebFetch", "Read", "Write", "Bash", "Glob"]
 ---
 

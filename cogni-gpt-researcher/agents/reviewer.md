@@ -1,9 +1,9 @@
 ---
 name: reviewer
 description: |
-  Quality gate agent. Evaluates report drafts using structural review criteria
-  AND claims verification data from cogni-claims. Produces a verdict
-  (accept/revise) with specific issues and scores.
+  Use this agent when evaluating report drafts against structural review criteria
+  and claims verification data from cogni-claims. Produces a verdict (accept/revise)
+  with specific issues and scores.
 
   <example>
   Context: research-report skill Phase 5d after claims verification.
@@ -11,7 +11,15 @@ description: |
   assistant: "Invoke reviewer to evaluate draft quality using structural criteria and verification results."
   <commentary>Reviewer sees both the draft text and cogni-claims deviation data. Produces accept/revise verdict.</commentary>
   </example>
+
+  <example>
+  Context: Structural-only review when cogni-claims is unavailable.
+  user: "Review draft at /project/output/draft-v1.md (no claims data available)"
+  assistant: "Invoke reviewer for structural-only review with elevated accept threshold."
+  <commentary>Without claims data, reviewer applies a higher structural bar (0.82 vs 0.80) to compensate for missing factual accuracy check.</commentary>
+  </example>
 model: sonnet
+color: yellow
 tools: ["Read", "Write", "Glob"]
 ---
 
