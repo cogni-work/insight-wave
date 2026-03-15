@@ -297,12 +297,16 @@ Verify: draft written to `output/draft-v1.md`, reasonable word count.
 
 When `generate_images` is `true` in project-config.json AND the report type is `basic`, `detailed`, or `deep`:
 
-1. Read `references/image-generation.md` for provider options
-2. Scan the draft for image placeholder markers (`<!-- IMAGE: ... -->`)
-3. If cogni-visual plugin is available: delegate image generation
-4. If external API key available: generate via API
-5. Otherwise: leave placeholder markers for user to fill
-6. Insert generated images into the draft using markdown image syntax
+1. Read `references/image-generation.md` for provider options and style-to-provider mapping
+2. Create `output/images/` directory if it doesn't exist
+3. Scan the draft for image placeholder markers (`<!-- IMAGE: ... -->`)
+4. For each placeholder, determine the image style from the marker (diagram, infographic, illustration)
+5. **Route to the correct provider based on style**:
+   - **diagram** style → Use Excalidraw MCP (`mcp__excalidraw__batch_create_elements` + `mcp__excalidraw__export_to_image`). Build the diagram elements programmatically from the description, then export as PNG
+   - **illustration/infographic** style → Invoke `Skill(cogni-visual:generate-image)` if available
+   - **Fallback** → Try external API if API key available, otherwise leave placeholder
+6. Replace each resolved `<!-- IMAGE: ... -->` marker with `![Description](output/images/<filename>.png)` in the draft
+7. Log generated vs. unresolved images to `.logs/phase-4.5-images.jsonl`
 
 Skip for outline and resource report types.
 

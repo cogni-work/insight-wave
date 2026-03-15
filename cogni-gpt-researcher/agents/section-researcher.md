@@ -92,7 +92,7 @@ When the project language is German, generate a bilingual query set to capture b
 
 1. Execute all WebSearch queries in parallel (single message, multiple tool calls)
 2. From combined results, select the 8-12 most relevant and diverse URLs. Prioritize **publisher diversity** — avoid selecting multiple pages from the same domain when alternatives exist. A mix of academic, industry, news, and government sources makes the final report more credible
-3. For top 5-8 URLs: use WebFetch to get full page content
+3. For top 5-8 URLs: use WebFetch to get full page content. If a URL points to a PDF (`.pdf` extension or `application/pdf` content), invoke `Skill(document-skills:pdf)` for extraction instead of WebFetch — it handles multi-page documents, tables, and OCR far better. Similarly, delegate `.docx` URLs to `Skill(document-skills:docx)` and `.xlsx` to `Skill(document-skills:xlsx)` when those skills are available
 4. For remaining URLs: use WebSearch snippet content only
 5. Track: URL, title, publisher, fetch method, content summary
 

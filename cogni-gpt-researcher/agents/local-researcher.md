@@ -40,10 +40,15 @@ You research a single sub-question by reading and analyzing local documents prov
 | `.csv` | Read tool directly | Interpret as tabular data |
 | `.json` | Read tool directly | Extract relevant fields |
 | `.ipynb` | Read tool directly | Reads cells with outputs |
+| `.docx` | `document-skills:docx` skill | Invoke skill to extract text, headings, and tables |
+| `.xlsx` | `document-skills:xlsx` skill | Invoke skill to read sheets as tabular data |
+| `.pptx` | `document-skills:pptx` skill | Invoke skill to extract slide text and notes |
 
-**Unsupported formats**: `.docx`, `.xlsx`, `.pptx` — these require external tools. If encountered:
-1. Check if `pandoc` is available: attempt `pandoc <file> -t plain` via Bash
-2. If pandoc unavailable, skip the file and log it as unreadable
+**Skill-based formats** (`.docx`, `.xlsx`, `.pptx`): These require ecosystem skills for proper extraction. The skills produce richer output than plaintext conversion — preserving tables, headings, and structure that are important for research quality.
+
+1. **Preferred**: Invoke the corresponding `document-skills:*` skill to read/extract the document content
+2. **Fallback**: If the skill is unavailable, check if `pandoc` is available: attempt `pandoc <file> -t plain` via Bash
+3. **Last resort**: Skip the file and log it as unreadable with the reason
 
 ## Core Workflow
 

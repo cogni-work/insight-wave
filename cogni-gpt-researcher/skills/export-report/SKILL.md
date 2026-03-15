@@ -51,14 +51,15 @@ Each format builds on the previous — HTML is generated from markdown, PDF from
 
 **PDF**:
 1. First generate HTML (as above)
-2. If `weasyprint` is available: `python3 -c "import weasyprint; weasyprint.HTML('output/report.html').write_pdf('output/report.pdf')"`
-3. If not: inform user HTML is available, suggest browser print-to-PDF
-4. Write to `output/report.pdf`
+2. **Preferred**: Invoke `Skill(document-skills:pdf)` to create the PDF from HTML with full formatting control (reportlab-based, no external dependency)
+3. **Fallback**: If the pdf skill is unavailable and `weasyprint` is installed: `python3 -c "import weasyprint; weasyprint.HTML('output/report.html').write_pdf('output/report.pdf')"`
+4. **Last resort**: Inform user HTML is available, suggest browser print-to-PDF
+5. Write to `output/report.pdf`
 
 **DOCX** (Word):
-1. Check if `pandoc` is available: `which pandoc`
-2. If available: `pandoc output/report.md -o output/report.docx --from markdown --to docx`
-3. If not: inform user and suggest `brew install pandoc` (macOS) or `apt install pandoc` (Linux)
+1. **Preferred**: Invoke `Skill(document-skills:docx)` to create the DOCX from the markdown report with professional formatting (headings, ToC, hyperlinked citations). The docx skill produces production-grade Word documents with no external dependency
+2. **Fallback**: If the docx skill is unavailable, check if `pandoc` is available: `which pandoc`. If so: `pandoc output/report.md -o output/report.docx --from markdown --to docx`
+3. **Last resort**: Inform user and suggest `brew install pandoc` or `apt install pandoc`
 4. Write to `output/report.docx`
 
 **Presentation** (optional):
@@ -77,8 +78,8 @@ Each format builds on the previous — HTML is generated from markdown, PDF from
 |--------|-------------|-------------|---------|
 | Markdown | `output/report.md` | None (always available) | Source format |
 | HTML | `output/report.html` | None (generated inline) | Best for sharing |
-| PDF | `output/report.pdf` | weasyprint (optional) | Best for printing |
-| DOCX | `output/report.docx` | pandoc (optional) | Best for editing/collaboration |
+| PDF | `output/report.pdf` | `document-skills:pdf` (preferred) or weasyprint | Best for printing |
+| DOCX | `output/report.docx` | `document-skills:docx` (preferred) or pandoc | Best for editing/collaboration |
 
 ## Error Recovery
 
@@ -86,7 +87,7 @@ Each format builds on the previous — HTML is generated from markdown, PDF from
 |----------|----------|
 | `output/report.md` not found | Check if drafts exist — suggest completing review loop first |
 | `output/report.md` is empty | Report error, suggest re-running Phase 4 (writer) |
-| weasyprint not installed | Generate HTML, suggest `pip install weasyprint` or browser print-to-PDF |
-| pandoc not installed | Inform user, suggest `brew install pandoc` or `apt install pandoc` |
+| pdf skill unavailable + weasyprint not installed | Generate HTML, suggest `pip install weasyprint` or browser print-to-PDF |
+| docx skill unavailable + pandoc not installed | Inform user, suggest `brew install pandoc` or `apt install pandoc` |
 | HTML generation fails | Fall back to markdown copy with formatting note |
 | cogni-visual not available | Skip presentation option, note in output |
