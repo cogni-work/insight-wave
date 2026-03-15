@@ -28,6 +28,8 @@ You compile aggregated research context into a cohesive, well-structured report.
 | `DRAFT_VERSION` | No | Draft version number (default: 1) |
 | `REPORT_TYPE` | No | basic, detailed, deep (affects structure) |
 | `RESEARCHER_ROLE` | No | Domain persona for tone/terminology (e.g., "Cybersecurity Analyst") |
+| `TONE` | No | Writing tone (default: "objective"). See `references/writing-tones.md` for available tones |
+| `CITATION_FORMAT` | No | Citation style (default: "apa"). Options: apa, mla, chicago, harvard, ieee. See `references/citation-formats.md` |
 | `LANGUAGE` | No | ISO 639-1 code (default: "en"). Controls output language of the report |
 
 ## Core Workflow
@@ -38,10 +40,15 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3
 
 ### Phase 0: Load Context
 
-1. Read `.metadata/project-config.json` for topic and report type
+1. Read `.metadata/project-config.json` for topic, report type, and configuration flags
 2. Read `.metadata/aggregated-context.json` for merged findings and source list
 3. Read context entities from `01-contexts/data/` for full research body
 4. Read source entities from `02-sources/data/` for citation details
+5. Check for `.metadata/curated-sources.json` — if present, load source tier rankings:
+   - **primary** sources: cite prominently for key claims and section openings
+   - **secondary** sources: use for supporting evidence
+   - **supporting** sources: cite only when no higher-tier source covers the same point
+   - Address any diversity warnings noted in the curation
 
 ### Phase 1: Outline Generation
 
@@ -61,6 +68,23 @@ Based on report type:
 - Conclusion and Recommendations
 - References
 
+**Outline** (target: 1000-2000 words): Structured framework, not prose
+- H2 main sections (one per sub-question)
+- H3 sub-sections for key aspects
+- Bullet-point key findings with inline citations
+- No narrative transitions, no introductions, no conclusions
+- Pure information structure — useful for planning or presentation prep
+
+**Resource** (target: 1500-3000 words): Annotated bibliography
+- Introduction (1-2 paragraphs: topic scope and source landscape)
+- Sections by sub-topic (one per sub-question)
+- Each section: 3-5 curated sources with annotations:
+  - **Title** with linked URL
+  - **Publisher** and date
+  - **Relevance** (2-3 sentences: what this source covers and why it matters)
+  - **Key takeaway** (1 sentence: the most important finding)
+- Summary: coverage landscape, gaps, recommended starting points
+
 **Deep** (target: 8000-15000 words): Comprehensive with hierarchy
 - Same as detailed, but with deeper sub-section nesting reflecting tree structure
 
@@ -73,6 +97,23 @@ Based on report type:
 5. Ensure smooth narrative flow between sections
 6. Use professional, analytical tone
 7. When you have multiple sources for the same topic, use them to build a richer narrative — compare findings, note agreements and disagreements, and synthesize across sources rather than relying on a single source per section
+
+### Phase 2.5: Image Placeholders (when generate_images is true)
+
+When `generate_images` is `true` in project-config.json AND report type is basic/detailed/deep:
+
+1. After writing all sections, identify 2-5 positions where images would enhance understanding
+2. Insert placeholder markers at those positions:
+   ```markdown
+   <!-- IMAGE: [Detailed description of desired image]. Style: diagram|infographic|illustration. Context: [which section this supports] -->
+   ```
+3. Good candidates for images:
+   - After section introductions (overview diagrams)
+   - In data-heavy sections (charts, comparative tables)
+   - For process/workflow descriptions (flow diagrams)
+   - For architecture descriptions (system diagrams)
+
+Do NOT generate images yourself — the orchestrator handles image generation in Phase 4.5 after the draft is written.
 
 ### Phase 3: Output
 
@@ -104,9 +145,24 @@ When the project language is German, write the entire report in German:
 
 When LANGUAGE=en (default), write in English as before. Sources in German should be cited normally — the reader can access the URL regardless of source language.
 
+- **Citation format**: Apply the `CITATION_FORMAT` parameter to control inline citation style and reference list format. Read `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md` for format specifications. Key formats:
+  - **apa** (default): `([Author, Year](url))` inline, author-date reference list
+  - **mla**: `([Author](url))` inline, Works Cited list
+  - **chicago**: Footnote-style `<sup>[N](url)</sup>`, Bibliography list
+  - **harvard**: `([Author Year](url))` inline, Available at reference list
+  - **ieee**: Numbered `[[N](url)]` inline, numbered reference list
+  - Always include URLs as clickable markdown hyperlinks in all formats
 - **Word count targets are mandatory minimums**, not suggestions. A basic report must reach at least 3000 words, detailed at least 5000, deep at least 8000. If you find yourself finishing below the minimum, expand sections with more evidence, analysis, implications, or cross-references between findings — never pad with filler
-- If `RESEARCHER_ROLE` is provided, adopt that persona's analytical lens, terminology, and tone throughout the report. For example, a "Financial Analyst" should use financial metrics and investor-oriented framing; a "Scientific Literature Reviewer" should use academic citation conventions and methodological rigor
-- If no role is provided, default to professional, analytical tone
+- If `RESEARCHER_ROLE` is provided, adopt that persona's analytical lens, terminology, and domain expertise throughout the report. For example, a "Financial Analyst" should use financial metrics and investor-oriented framing; a "Scientific Literature Reviewer" should use academic citation conventions and methodological rigor
+- If no role is provided, default to professional, analytical approach
+- **Tone**: Apply the `TONE` parameter to shape rhetorical style. For reference, read `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`. Key tones:
+  - **objective** (default): Balanced, evidence-based, neutral
+  - **analytical**: Data-driven, structured argument, quantitative emphasis
+  - **persuasive**: Builds a case, strong conclusions, recommendation-driven
+  - **critical**: Evaluative, weighs pros/cons, identifies limitations
+  - **narrative**: Story-driven, chronological, human-centered
+  - **simple**: Plain language, short sentences, minimal jargon
+  - The tone and role work together: role controls *what* expertise to apply, tone controls *how* to present it
 - Lead with the most important findings, not methodology
 - Use evidence-based assertions, not speculation
 - Vary sentence structure and paragraph length

@@ -1,7 +1,7 @@
 {
   "name": "cogni-gpt-researcher",
-  "version": "0.2.3",
-  "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and three report types (basic, detailed, deep). Integrates with cogni-claims for source verification. Native Claude Code implementation using WebSearch + WebFetch.",
+  "version": "0.3.0",
+  "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, and hybrid research sources. Configurable tones, citation formats (APA/MLA/Chicago/Harvard/IEEE), auto agent-role selection, source curation, domain filtering, and optional image generation. Integrates with cogni-claims for source verification. Native Claude Code implementation.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
@@ -31,6 +31,11 @@
     "claims-verification",
     "narrative-pipeline",
     "story-arc",
-    "executive-narrative"
+    "executive-narrative",
+    "local-documents",
+    "hybrid-research",
+    "source-curation",
+    "citation-formats",
+    "writing-tones"
   ]
 }

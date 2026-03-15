@@ -26,6 +26,9 @@ All agents use sonnet. Earlier versions used haiku for parallel researchers to s
 | Basic | ~7 | 3-5 (sonnet) | 2-3 (writer, reviewer, revisor) | ~$0.15-0.40 |
 | Detailed | ~15 | 5-10 (sonnet) | 4-6 (writer, extractor, reviewer, revisor) | ~$0.40-0.80 |
 | Deep | ~25 | 10-20 (sonnet) | 4-6 (writer, extractor, reviewer, revisor) | ~$0.80-1.50 |
+| Outline | ~6 | 3-5 (sonnet) | 1-2 (writer, reviewer) | ~$0.10-0.30 |
+| Resource | ~6 | 3-5 (sonnet) | 1-2 (writer, reviewer) | ~$0.10-0.30 |
+| Basic (hybrid) | ~12 | 5-10 (sonnet, web+local) | 2-3 (writer, reviewer, revisor) | ~$0.30-0.70 |
 
 ## Design Divergences from GPT-Researcher
 

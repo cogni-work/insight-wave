@@ -106,6 +106,32 @@ Add this `@media print` block to the `<style>` section for clean PDF output:
 }
 ```
 
+## DOCX Generation
+
+If `pandoc` is available, convert markdown to Word format:
+
+```bash
+pandoc output/report.md -o output/report.docx \
+  --from markdown \
+  --to docx \
+  --highlight-style=tango
+```
+
+Optional: use a reference docx for custom styling:
+```bash
+pandoc output/report.md -o output/report.docx \
+  --from markdown \
+  --to docx \
+  --reference-doc=template.docx
+```
+
+Check availability:
+```bash
+which pandoc && echo "pandoc available" || echo "pandoc not found"
+```
+
+Fallback: inform user to install pandoc (`brew install pandoc` on macOS, `apt install pandoc` on Linux).
+
 ## Conversion Fallback Chain
 
 Use this decision logic to select the best available converter:
@@ -115,26 +141,39 @@ Use this decision logic to select the best available converter:
    → Yes: HTML → PDF via weasyprint (best quality, supports print CSS)
    → No: continue
 
-2. markdown package available?
+2. pandoc available?
+   → Yes: MD → DOCX via pandoc (for Word format)
+   → Also: MD → HTML via pandoc (alternative to markdown package)
+   → No: continue
+
+3. markdown package available?
    → Yes: MD → HTML via markdown(extensions=['toc', 'tables']) → serve as HTML
    → No: continue
 
-3. Fallback: MD → HTML via simple regex converter (built-in)
+4. Fallback: MD → HTML via simple regex converter (built-in)
    → Serve as HTML file
    → Inform user: "Open in browser and use Print to PDF for PDF output"
 ```
 
 Check availability at runtime:
 ```python
-def get_converter():
+import shutil
+
+def get_converters():
+    available = []
     try:
         import weasyprint
-        return "weasyprint"
+        available.append("weasyprint")
     except ImportError:
         pass
+    if shutil.which("pandoc"):
+        available.append("pandoc")
     try:
         import markdown
-        return "markdown"
+        available.append("markdown")
     except ImportError:
-        return "simple"
+        pass
+    if not available:
+        available.append("simple")
+    return available
 ```

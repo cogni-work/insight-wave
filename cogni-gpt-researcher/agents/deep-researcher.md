@@ -29,6 +29,8 @@ You perform deep, recursive research on a single branch of the research tree. Un
 | `PROJECT_PATH` | Yes | Absolute path to project directory |
 | `DEPTH` | No | Research depth (default: 2). Max: 3 |
 | `LANGUAGE` | No | ISO 639-1 code (default: "en"). When "de", generate bilingual queries for DACH coverage |
+| `SOURCE_URLS` | No | Comma-separated URLs to research first. Fetch these before web search; supplement with web search for gaps |
+| `QUERY_DOMAINS` | No | Comma-separated domains to restrict search to. Add `site:domain` operators to queries. See section-researcher for syntax details |
 
 ## Core Workflow
 
@@ -43,10 +45,14 @@ Phase 0 → Phase 1 → Phase 2 → Phase 2b (recursive) → Phase 3 → Phase 4
 3. Determine effective depth (default 2, max 3)
 4. Initialize: `all_learnings = []`, `all_sources = []`, `remaining_depth = DEPTH`
 
+### Phase 0.5: Source URL Processing (when SOURCE_URLS is set)
+
+When `SOURCE_URLS` is provided, WebFetch each URL relevant to this branch before decomposition. Use their content to inform sub-aspect decomposition and reduce search queries where coverage is already strong.
+
 ### Phase 1: Branch Decomposition
 
 1. Decompose the sub-question into 2-3 focused sub-aspects
-2. For each sub-aspect, formulate 2-3 specific search queries
+2. For each sub-aspect, formulate 2-3 specific search queries (apply `site:domain` filtering if `QUERY_DOMAINS` is set — see section-researcher for syntax)
 3. Total: 4-9 search queries across sub-aspects
 
 #### Bilingual Search (when LANGUAGE=de)

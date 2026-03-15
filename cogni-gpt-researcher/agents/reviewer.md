@@ -68,6 +68,8 @@ Before scoring dimensions, count the draft's words and check against report-type
 - **Basic**: 3000 words minimum
 - **Detailed**: 5000 words minimum
 - **Deep**: 8000 words minimum
+- **Outline**: 1000 words minimum
+- **Resource**: 1500 words minimum
 
 If the draft is below the minimum, **cap the completeness score at 0.60** regardless of topic coverage. A report that addresses all sub-questions but treats them superficially due to insufficient length is incomplete by definition. Note the word deficit in the issues list with severity "high".
 

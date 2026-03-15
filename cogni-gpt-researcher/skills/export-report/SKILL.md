@@ -1,10 +1,10 @@
 ---
 name: export-report
 description: |
-  Export a completed research report to different formats: Markdown (default), HTML, or PDF.
-  Use when the user asks to "export report", "save as HTML", "export to PDF", "publish report",
-  "convert report", "download report", "share the report", "make it pretty", or wants the
-  research output in a specific format for sharing or presentation.
+  Export a completed research report to different formats: Markdown (default), HTML, PDF, or DOCX.
+  Use when the user asks to "export report", "save as HTML", "export to PDF", "export to Word",
+  "export to DOCX", "publish report", "convert report", "download report", "share the report",
+  "make it pretty", or wants the research output in a specific format for sharing or presentation.
 ---
 
 # Export Report Skill
@@ -55,6 +55,12 @@ Each format builds on the previous — HTML is generated from markdown, PDF from
 3. If not: inform user HTML is available, suggest browser print-to-PDF
 4. Write to `output/report.pdf`
 
+**DOCX** (Word):
+1. Check if `pandoc` is available: `which pandoc`
+2. If available: `pandoc output/report.md -o output/report.docx --from markdown --to docx`
+3. If not: inform user and suggest `brew install pandoc` (macOS) or `apt install pandoc` (Linux)
+4. Write to `output/report.docx`
+
 **Presentation** (optional):
 - If cogni-visual is available, delegate: `Skill(cogni-visual:presentation-brief)`
 - Generates a presentation brief from the report
@@ -72,6 +78,7 @@ Each format builds on the previous — HTML is generated from markdown, PDF from
 | Markdown | `output/report.md` | None (always available) | Source format |
 | HTML | `output/report.html` | None (generated inline) | Best for sharing |
 | PDF | `output/report.pdf` | weasyprint (optional) | Best for printing |
+| DOCX | `output/report.docx` | pandoc (optional) | Best for editing/collaboration |
 
 ## Error Recovery
 
@@ -80,5 +87,6 @@ Each format builds on the previous — HTML is generated from markdown, PDF from
 | `output/report.md` not found | Check if drafts exist — suggest completing review loop first |
 | `output/report.md` is empty | Report error, suggest re-running Phase 4 (writer) |
 | weasyprint not installed | Generate HTML, suggest `pip install weasyprint` or browser print-to-PDF |
+| pandoc not installed | Inform user, suggest `brew install pandoc` or `apt install pandoc` |
 | HTML generation fails | Fall back to markdown copy with formatting note |
 | cogni-visual not available | Skip presentation option, note in output |

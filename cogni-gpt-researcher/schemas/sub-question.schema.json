@@ -56,7 +56,7 @@
     "report_type": {
       "type": "string",
       "description": "Report type that generated this sub-question",
-      "enum": ["basic", "detailed", "deep"]
+      "enum": ["basic", "detailed", "deep", "outline", "resource"]
     },
     "search_guidance": {
       "type": "string",

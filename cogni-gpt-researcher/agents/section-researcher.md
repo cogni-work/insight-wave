@@ -28,6 +28,8 @@ You research a single sub-question by executing web searches, fetching relevant 
 | `SUB_QUESTION_PATH` | Yes | Absolute path to sub-question entity in `00-sub-questions/data/` |
 | `PROJECT_PATH` | Yes | Absolute path to project directory |
 | `LANGUAGE` | No | ISO 639-1 code (default: "en"). When "de", generate bilingual queries for DACH coverage |
+| `SOURCE_URLS` | No | Comma-separated list of URLs to research first. When provided, fetch these before web search. If the list provides sufficient coverage, web search supplements gaps only |
+| `QUERY_DOMAINS` | No | Comma-separated list of domains to restrict search to (e.g., "arxiv.org,nature.com"). When set, add `site:domain` operators to search queries |
 
 ## Core Workflow
 
@@ -42,12 +44,29 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 3. Validate `PROJECT_PATH` exists with entity directories
 4. Resolve `CLAUDE_PLUGIN_ROOT` for entity creation scripts
 
+### Phase 0.5: Source URL Processing (when SOURCE_URLS is set)
+
+When `SOURCE_URLS` is provided, process the user-specified URLs before generating search queries:
+
+1. WebFetch each URL in `SOURCE_URLS` that is relevant to this sub-question
+2. Extract findings from each fetched page
+3. Create source entities for each URL
+4. Assess coverage: if user-provided sources sufficiently answer the sub-question, reduce Phase 1 search queries to 2-3 supplementary queries to fill gaps. If coverage is thin, proceed with the full 5-7 queries
+
 ### Phase 1: Search Query Generation
 
-1. From the sub-question `query` and optional `search_guidance`, generate 5-7 diverse WebSearch queries
+1. From the sub-question `query` and optional `search_guidance`, generate 5-7 diverse WebSearch queries (or fewer if SOURCE_URLS provided sufficient coverage)
 2. Vary query formulations: factual, analytical, recent developments, expert perspectives, comparative, quantitative/data-focused
 3. Make queries specific to YOUR sub-question's unique angle — avoid generic topic-level queries that other researchers for sibling sub-questions would also use. For example, if your sub-question is about "regulatory advantages", search for specific regulations by name, not just "European streaming competition"
 4. Do NOT include date filters — WebSearch handles recency
+
+#### Domain Filtering (when QUERY_DOMAINS is set)
+
+When `QUERY_DOMAINS` is provided, restrict web searches to the specified domains:
+
+1. For each search query, append `site:` operators for the allowed domains. When multiple domains are specified, use OR syntax: `(site:arxiv.org OR site:nature.com) query terms`
+2. Generate 1-2 additional unfiltered queries as fallback — if domain-restricted searches return very few results, these ensure minimum source coverage
+3. Domain filtering applies to WebSearch queries only — WebFetch can still access any URL found in search results
 
 #### Bilingual Search (when LANGUAGE=de)
 

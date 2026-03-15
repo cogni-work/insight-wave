@@ -9,14 +9,20 @@ cogni-gpt-researcher is a multi-agent research report generator inspired by GPT-
 ```
 research-report skill (orchestrator)
   → section-researcher agents (parallel web research, sonnet)
+  → local-researcher agents (parallel local document analysis, sonnet)
+  → deep-researcher agents (recursive tree exploration, sonnet)
+  → source-curator agent (optional quality ranking, sonnet)
   → writer agent (report compilation, sonnet)
+  → [optional image generation via cogni-visual or API]
   → claim-extractor agent (draft → claims, sonnet)
   → cogni-claims integration (submit + verify)
   → reviewer agent (quality gate with verification data, sonnet)
   → revisor agent (feedback incorporation, sonnet)
 ```
 
-Three report types: basic (3-5 sub-questions), detailed (5-10 sections), deep (recursive tree).
+Five report types: basic, detailed, deep, outline, resource.
+Three source modes: web (default), local (documents only), hybrid (web + documents).
+Configurable: tone, citation format, researcher role (auto or manual), source URLs, domain filtering, sub-question count.
 
 ## Entity Model (4 types)
 
@@ -49,9 +55,26 @@ The `arc_id` field in narrative output frontmatter auto-activates cogni-copywrit
 
 | Tier | Model | Used By |
 |------|-------|---------|
-| RESEARCH | sonnet | section-researcher, deep-researcher (parallel web search) |
+| RESEARCH | sonnet | section-researcher, deep-researcher (web), local-researcher (documents) |
 | SYNTHESIS | sonnet | writer, reviewer, revisor, claim-extractor |
 | ORCHESTRATION | sonnet (skill context) | Sub-question generation, orchestration |
+
+## Research Configuration
+
+Project config (`project-config.json`) supports these optional fields:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `tone` | string | "objective" | Writing tone — see `references/writing-tones.md` |
+| `citation_format` | string | "apa" | Citation style (apa/mla/chicago/harvard/ieee) — see `references/citation-formats.md` |
+| `researcher_role` | string | auto-selected | Domain persona — see `references/agent-roles.md` |
+| `report_source` | string | "web" | Research source: web, local, or hybrid |
+| `document_paths` | string[] | [] | Local files/globs for local/hybrid mode |
+| `source_urls` | string[] | [] | User-provided URLs to research first |
+| `query_domains` | string[] | [] | Restrict web search to these domains |
+| `max_subtopics` | int | per-type default | Override sub-question count |
+| `curate_sources` | bool | false | Enable LLM-based source ranking (detailed/deep, 10+ sources) |
+| `generate_images` | bool | false | Enable AI image generation (placeholder markers if no provider) |
 
 ## Key Conventions
 
@@ -59,4 +82,6 @@ The `arc_id` field in narrative output frontmatter auto-activates cogni-copywrit
 - All scripts are stdlib-only (bash + python3, no pip dependencies)
 - Wikilinks use workspace-relative paths: `[[dir/data/entity-slug]]`
 - Phase state tracked via `.metadata/execution-log.json`
-- Web research uses WebSearch + WebFetch exclusively (no MCP search providers)
+- Web research uses WebSearch + WebFetch (no MCP search providers), with optional source URL pre-fetch and domain filtering
+- Local research uses Read + Glob + Grep tools for document analysis (PDF, MD, TXT, CSV, JSON)
+- Hybrid mode runs both web and local researchers in parallel, merging results in context aggregation
