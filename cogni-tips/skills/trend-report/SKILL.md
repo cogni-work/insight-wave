@@ -248,19 +248,32 @@ Each agent returns compact JSON with `ok`, `dimension`, `trends_covered`, `claim
 
 If an agent returns `ok: false`: retry once. If retry also fails: HALT with the dimension name. All 4 must succeed before Phase 2.
 
+#### Step 1.3: Validate Agent Output Files
+
+After all 4 agents complete, verify that all 12 expected files exist:
+
+```
+For each dimension in [externe-effekte, digitale-wertetreiber, neue-horizonte, digitales-fundament]:
+  ✓ {PROJECT_PATH}/.logs/report-section-{dimension}.md    — narrative section (required for Phase 2.5)
+  ✓ {PROJECT_PATH}/.logs/claims-{dimension}.json           — extracted claims
+  ✓ {PROJECT_PATH}/.logs/enriched-trends-{dimension}.json  — per-trend evidence blocks (required for Phase 2)
+```
+
+If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 can proceed (it uses enriched-trends), but Phase 2.5 will be degraded without the section files.
+
 ---
 
-### Phase 2: Report Assembly
+### Phase 2: Report Assembly — THEME-FIRST (NOT BY DIMENSION)
 
-Read [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) for the full workflow.
+**CRITICAL:** You MUST read [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) before starting Phase 2. The report is organized by **strategic themes** from `tips-value-model.json`, NOT by TIPS dimension. Do NOT simply concatenate the dimension section files from Phase 1 — those are intermediate artifacts for Phase 2.5, not the final report structure.
 
-Assembles the report around strategic themes from the value model. Individual trends become evidence woven into each theme's strategic narrative. The report reads as a strategy document with 3-7 investment themes, not a catalog of 60 trends.
+The report reads as a strategy document with 3-7 investment themes (each containing an investment thesis, value chain walkthroughs, and strategic actions), not a catalog of 60 trends sorted by dimension. Each theme section is written to a separate file `report-theme-{theme_id}.md`.
 
 **Summary of steps** (details in the reference):
 
 1. **Build lookups** — Read 4 `enriched-trends-{dimension}.json` + 4 `claims-{dimension}.json` → candidate_ref and claim_id lookups
 2. **Strategic executive summary** — Theme overview table, headline evidence, strategic posture → `report-header.md`
-3. **Theme sections** — One per theme with investment thesis, value chain walkthroughs, solution templates, strategic actions → `report-theme-{theme_id}.md`
+3. **Theme sections** — One per theme with investment thesis, value chain walkthroughs, solution templates, strategic actions → `report-theme-{theme_id}.md`. **Quality gate per theme:** After writing each theme's investment thesis, check that it has ≥250 words and ≥3 inline citations. If it falls short, pull more evidence from the enriched-trends lookup for that theme's candidates and expand the narrative. The thesis is the CxO-facing argument — it must be substantive, not a summary paragraph.
 4. **Emerging signals** — Orphan candidates not in any theme → `report-emerging-signals.md`
 5. **Strategic portfolio view** — Theme-level metrics, horizon distribution, MECE validation → `report-portfolio.md`
 6. **Claims registry** — All claims with theme column → `report-claims-registry.md`
@@ -269,11 +282,13 @@ Assembles the report around strategic themes from the value model. Individual tr
 
 ---
 
-### Phase 2.5: Insight Summary (trend-panorama)
+### Phase 2.5: Insight Summary (trend-panorama) — DEFAULT ON
+
+**This phase runs by default.** Only skip if the user explicitly requests it (e.g., "skip insight summary", "skip narrative"). If the user said "skip verification and copywriting", that does NOT mean skip Phase 2.5 — those are separate phases (3 and 3.5).
 
 Read [references/phase-2.5-insight-summary.md](references/phase-2.5-insight-summary.md) for the full workflow.
 
-Verify `tips-trend-report.md` exists, then invoke `cogni-narrative:narrative-writer` with arc_id `trend-panorama`. This arc maps TIPS dimensions to narrative elements (Forces → Impact → Horizons → Foundations).
+Verify `tips-trend-report.md` exists and that the 4 dimension section files (`report-section-{dimension}.md`) exist in `.logs/`, then invoke `cogni-narrative:narrative-writer` with arc_id `trend-panorama`. This arc maps TIPS dimensions to narrative elements (Forces → Impact → Horizons → Foundations).
 
 All failures in this phase are non-blocking — the insight summary enhances the report but isn't required for downstream consumers.
 

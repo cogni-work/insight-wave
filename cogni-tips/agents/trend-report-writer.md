@@ -53,10 +53,10 @@ If raw signals are available (not "none"), scan for matches per trend candidate:
 
 1. Match by comparing trend `name`, `keywords`, `research_hint` against signal `signal`, `keywords`, `source` fields (case-insensitive)
 2. For matched signals, extract: source URL, signal text, authority score, freshness, source type
-3. Classify each trend:
-   - `signal_sufficient`: 1+ matched signal with quantitative data (numbers, percentages, currency)
-   - `signal_partial`: Matched signals but no quantitative specifics
-   - `signal_none`: No matching signals
+3. Classify each trend — be strict about what counts as "sufficient":
+   - `signal_sufficient`: 1+ matched signal that contains an **actual number** (dollar amount, percentage, count, year-over-year figure) AND a **source URL**. A signal that merely mentions the topic without concrete data is NOT sufficient.
+   - `signal_partial`: Matched signals exist but contain no specific numbers, or contain numbers without a source URL. Always run at least 1 WebSearch to find quantitative backing.
+   - `signal_none`: No matching signals found for this trend. Run 2-3 WebSearches.
 
 #### Step 1b: Targeted WebSearches for Gaps Only
 
@@ -73,6 +73,8 @@ If raw signals are available (not "none"), scan for matches per trend candidate:
 Always block: `pinterest.com`, `facebook.com`, `instagram.com`, `tiktok.com`, `reddit.com`.
 
 Call multiple WebSearch tools in a single response for efficiency — process gap-trends in batches of 3-4.
+
+**Minimum search budget:** You MUST execute at least 8 WebSearches per dimension, even when raw signals are available. Signals from trend-scout are often qualitative (topic mentions without hard numbers). If you classify more than 3 trends as `signal_sufficient`, you are being too lenient — re-examine and downgrade borderline cases to `signal_partial`. Most trends benefit from at least one fresh search to find current-year quantitative data. A dimension with 13 trends should typically have 10-15 searches.
 
 #### Step 1c: Merge Evidence
 
@@ -136,8 +138,10 @@ Rules: one claim per distinct number, include the full sentence as `text`, `valu
 
 ### Step 4: Write Output Files
 
+You MUST write all three files listed below. The section file is critical — Phase 2.5 (insight summary) reads these files as input. Skipping it will break the downstream pipeline.
+
 **Section file** — `{PROJECT_PATH}/.logs/report-section-{DIMENSION}.md`
-The full dimension section. Must end with two trailing newlines (`\n\n`) so files concatenate cleanly during report assembly.
+The full dimension section from Step 2. Write the complete markdown narrative here. Must end with two trailing newlines (`\n\n`) so files concatenate cleanly during report assembly. This file is NOT optional — it is a required output alongside the enriched-trends JSON.
 
 **Claims file** — `{PROJECT_PATH}/.logs/claims-{DIMENSION}.json`
 ```json

@@ -5,8 +5,13 @@ Language: `en`
 ## Report Title
 
 ```text
-REPORT_TITLE: "TIPS Trend Report: {TOPIC} in {SUBSECTOR}"
+REPORT_TITLE: "TIPS Trend Report: {TOPIC}"
 ```
+
+> **Title logic:** Use `{TOPIC}` only. Do NOT append `in {SUBSECTOR}` — the topic
+> (e.g., "Digital Transformation of Large Energy Utilities in Germany") already
+> contains the industry and geographic context. Appending the subsector creates
+> redundant titles like "...in Utilities".
 
 ## Section Headers
 

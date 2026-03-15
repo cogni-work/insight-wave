@@ -185,6 +185,11 @@ Must end with two trailing newlines.
 
 ### Writing Guidelines
 
+**Investment thesis quality gate:** After writing each theme's investment thesis, verify:
+- Word count is at least 250 words (target 300-500). If under 250, expand by pulling additional evidence from the enriched-trends lookup for candidates in that theme's value chains.
+- At least 3 inline citations with URLs. If under 3, check the enriched-trends data for quantitative claims that weren't yet incorporated.
+- The narrative follows the T→I→P flow: external force → business implication → strategic response. If it reads as a list of facts, rewrite it as a strategic argument.
+
 **Narrative voice:** Authoritative but not academic. Write for a CxO who has 10 minutes to understand why this theme matters and what to do about it. Avoid hedge words ("might," "could potentially") when the evidence is strong — let the data speak.
 
 **Evidence weaving:** Don't dump all claims in a list. Integrate them into the narrative flow. "The predictive maintenance market reached $6.9B in 2024 [Gartner], and manufacturers deploying these capabilities report 30% fewer unplanned outages [McKinsey]" reads better than bullet points.

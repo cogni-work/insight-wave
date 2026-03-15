@@ -27,8 +27,8 @@ For each trend candidate, match against raw signals by:
 
 | Status | Criteria | Action |
 |--------|----------|--------|
-| `signal_sufficient` | 1+ matched signal with quantitative data and source URL | Skip WebSearch |
-| `signal_partial` | Matched signals but no quantitative specifics | 1 targeted WebSearch |
+| `signal_sufficient` | 1+ matched signal with a **concrete number** (dollar amount, percentage, count) AND a valid source URL. A signal that merely mentions the topic without specific data does NOT qualify. | Skip WebSearch |
+| `signal_partial` | Matched signals but no specific numbers, or numbers without source URL. This is the most common classification — err toward `signal_partial` over `signal_sufficient` when in doubt. | 1 targeted WebSearch |
 | `signal_none` | No matching signals | 2-3 full WebSearches |
 
 ---

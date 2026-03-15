@@ -5,8 +5,13 @@ Language: `de`
 ## Berichtstitel
 
 ```text
-REPORT_TITLE: "TIPS Trendbericht: {TOPIC} in {SUBSECTOR}"
+REPORT_TITLE: "TIPS Trendbericht: {TOPIC}"
 ```
+
+> **Titel-Logik:** Nur `{TOPIC}` verwenden. NICHT `in {SUBSECTOR}` anhängen — das
+> Forschungsthema (z.B. "Digitale Transformation großer Energieversorger") enthält
+> bereits den Branchen- und Geografiekontext. Anhängen erzeugt redundante Titel
+> wie "...in Versorgungsunternehmen".
 
 ## Abschnittsüberschriften
 
