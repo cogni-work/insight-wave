@@ -16,6 +16,13 @@ description: |
 
 # Research Report Skill
 
+**Start immediately.** When this skill loads:
+1. If the user provided a topic → begin Phase 0 (Project Initialization)
+2. If no topic was provided → ask the user: "What topic should I research? You can also specify: report type (basic/detailed/deep), tone, citation format, or provide local documents."
+3. Never greet or wait — this skill means the user wants a research report generated
+
+Do not re-explain the skill's capabilities. Go straight to execution.
+
 ## Quick Example
 
 **User**: "Write a research report on quantum computing's impact on cryptography"
