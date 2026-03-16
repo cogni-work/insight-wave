@@ -41,6 +41,14 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 - Optional: `cogni-claims` plugin for claim verification
 - Optional: `cogni-copywriting` plugin for executive polish (graceful fallback if absent)
 
+## Context Independence
+
+This skill reads ALL required state from project files — it does not depend on prior conversation context. The tips-resume dashboard, earlier questions, and any preceding chat are not inputs to the report pipeline. This means **context compaction is safe and recommended** before starting.
+
+**Before executing Phase 0**, run `/compact` to free working memory. This skill's phases (especially Phase 2 report assembly at ~69% of the context window) need maximum available context for reading enriched-trends JSON and writing strategic narratives. Compacting early prevents context pressure from accumulating across phases.
+
+If `/compact` is unavailable (e.g., non-interactive mode), proceed without it — the skill will still work, but Phase 2 may hit context limits on projects with many themes.
+
 ## Path Variables
 
 | Variable | Purpose | Example |

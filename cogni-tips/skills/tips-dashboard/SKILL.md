@@ -13,6 +13,14 @@ description: |
 
 Generate a self-contained HTML dashboard that visualizes the entire TIPS project lifecycle — from trend scouting candidates through value modeling themes to report and catalog status. The dashboard opens in the user's browser with an interactive three-panel layout inspired by knowledge-graph explorers.
 
+## Context Independence
+
+This skill reads ALL required state from project files (trend-scout output, value model, report, catalog) — it does not depend on prior conversation context. If invoked after tips-resume or at the end of a heavy session, **context compaction is safe and recommended** before starting.
+
+**Before executing Step 1**, run `/compact` to free working memory. Dashboard generation reads multiple large JSON files and produces a self-contained HTML document with embedded D3 visualizations — maximum available context ensures the full project data can be processed in one pass.
+
+If `/compact` is unavailable or this is the first skill in the session, skip compaction and proceed directly.
+
 ## Core Concept
 
 TIPS projects produce rich structured data across multiple phases (trend-scout → value-modeler → trend-report → catalog). This data lives in separate JSON files and markdown outputs that are hard to reason about in aggregate. The dashboard turns all of it into a single interactive visual — navigating phases, drilling into entities, and exploring TIPS relationships (Trend → Implication → Possibility → Solution) through a force-directed graph.

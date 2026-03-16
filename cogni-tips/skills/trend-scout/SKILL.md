@@ -31,6 +31,14 @@ Full German and English support throughout. This skill follows the shared langua
 - User-facing messages in interaction language
 - Output files respect `project_language` setting
 
+## Context Independence
+
+This skill reads configuration from project files and generates all outputs to disk — it does not depend on prior conversation context. If invoked after tips-resume or other conversational setup, **context compaction is safe and recommended** before starting.
+
+**Before executing Phase 0**, run `/compact` to free working memory. This skill dispatches a web research agent with 32+ searches (Phase 1) and generates 60 scored candidates with extended thinking (Phase 2) — both require substantial context for processing research signals and candidate scoring. Compacting early maximizes the context available for these heavy phases.
+
+If `/compact` is unavailable or this is the first skill in the session (no prior context to reclaim), skip compaction and proceed directly.
+
 ## Prerequisites
 
 - Projects are stored relative to the workspace root (`$PROJECT_AGENTS_OPS_ROOT`, falling back to `$PWD`)

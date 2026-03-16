@@ -13,6 +13,14 @@ description: >
 
 # Industry Catalog
 
+## Context Independence
+
+This skill reads ALL required state from pursuit project files and catalog directories — it does not depend on prior conversation context. If invoked after tips-resume or value-modeler, **context compaction is safe and recommended** before starting.
+
+**Before executing any operation**, run `/compact` to free working memory. Catalog import operations read the full `tips-value-model.json` and merge it with existing catalog entities, which benefits from maximum available context.
+
+If `/compact` is unavailable or this is the first skill in the session, skip compaction and proceed directly.
+
 Manage persistent industry catalogs — the reusable knowledge base that makes each
 successive customer pursuit faster, more consistent, and more valuable.
 

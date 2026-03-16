@@ -47,6 +47,14 @@ investment portfolio — not a flat list of 18 solutions, but 5 distinct areas t
   and require manual portfolio mapping later. If trend-scout was linked to a portfolio market, this skill
   automatically picks up that connection — no need to re-discover.
 
+## Context Independence
+
+This skill reads ALL required state from project files (`trend-scout-output.json`, portfolio context, catalog data) — it does not depend on prior conversation context. The tips-resume dashboard and any preceding chat are not inputs to the value-modeling pipeline. This means **context compaction is safe and recommended** before starting.
+
+**Before executing Phase 0**, run `/compact` to free working memory. This skill's phases — especially Phase 1 (relationship networks with extended thinking) and Phase 2 (solution blueprint generation) — need substantial context for reading candidate data and building structured output. Compacting early prevents context pressure from accumulating across the 5-phase workflow.
+
+If `/compact` is unavailable (e.g., non-interactive mode), proceed without it — the skill will still work, but later phases may hit context limits on projects with many themes.
+
 ## Language Support
 
 This skill follows the shared language resolution pattern — see [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md).
