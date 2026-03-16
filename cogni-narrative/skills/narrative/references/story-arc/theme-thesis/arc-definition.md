@@ -43,13 +43,13 @@ A single candidate can appear in multiple elements when it serves different rhet
 
 Section lengths are expressed as proportions of the total theme section target. The theme section target is determined by the orchestrator based on theme complexity (typically 600-1200 words: smaller themes with 2 chains target ~600, larger themes with 5+ chains target ~1000-1200).
 
-| Element | English Header | German Header | Proportion |
-|---------|----------------|---------------|-----------|
-| Hook | *(Dynamic: strategic question + quantified surprise)* | *(Dynamic)* | 8% |
-| Why Change | Why Change: The Unconsidered Need | Warum Veränderung: Der unberücksichtigte Bedarf | 25% |
-| Why Now | Why Now: The Closing Window | Warum jetzt: Das sich schließende Zeitfenster | 20% |
-| Why You | Why You: The Portfolio Response | Warum Sie: Die Portfolio-Antwort | 30% |
-| Why Pay | Why Pay: The Business Case | Geschäftliche Auswirkungen: Der Business Case | 17% |
+| Element | Heading | Proportion |
+|---------|---------|-----------|
+| Hook | *(Dynamic: strategic question + quantified surprise)* | 8% |
+| Why Change | *(Dynamic: message-driven — the core reframe as assertion)* | 25% |
+| Why Now | *(Dynamic: message-driven — convergence point with date/number)* | 20% |
+| Why You | *(Dynamic: message-driven — strongest Power Position as capability claim)* | 30% |
+| Why Pay | *(Dynamic: message-driven — cost-of-inaction ratio as punch line)* | 17% |
 
 **Proportions sum to 100%.** Tolerance: +/-10% of computed section midpoint.
 
@@ -58,6 +58,55 @@ Section lengths are expressed as proportions of the total theme section target. 
 - **Why Now gets 20%** (vs. 21% in corporate-visions) because theme-level urgency is narrower than whole-report urgency — typically 2 forcing functions rather than 3.
 - **Why Pay gets 17%** (vs. 15% in corporate-visions) because the business case closure is the single most important differentiator that current theme sections lack.
 - **Hook gets 8%** (vs. 10% in corporate-visions) because the hook serves a more focused role within a multi-theme report — readers already have report-level context.
+
+## Heading Generation Rules
+
+The arc elements are invisible scaffolding. They guide what content goes where, but they never appear as headings in the output. Every heading — H2 theme headings and H3 element headings — must carry the actual message for this specific theme.
+
+The rationale: a CxO scanning the table of contents should get the story from headings alone. "Warum Veränderung: Der unberücksichtigte Bedarf" repeated 5 times tells nothing. "Netzmodernisierung ist keine Hardware-Frage — es ist eine Datenplattform-Transition" tells the story.
+
+### H2 Theme Thesis Headings
+
+The theme heading (`## {N}. {heading}`) must be a **thesis statement** — a provocative assertion that summarizes the theme's unconsidered need combined with its evidence surprise.
+
+**Source:** Derive from the theme's strongest T-candidate evidence + strategic question reframe. The thesis heading should make a CxO stop scrolling.
+
+**Constraints:**
+- Max ~80 characters (German) / ~70 characters (English)
+- Must be a complete assertion, not a question and not a topic label
+- Must contain a verb or a contrast (dash, "nicht...sondern", "vs.")
+
+| Type | Example |
+|------|---------|
+| Topic label (wrong) | Intelligente Netz- & Asset-Optimierung |
+| Thesis statement (right) | Bewiesene 10:1-Investitionsthese — und 78% der Branche ignoriert sie |
+| Topic label (wrong) | Cybersecurity & Regulatorische Daten-Souveränität |
+| Thesis statement (right) | 70% mehr Cyberangriffe bei nur 33% NIS2-Readiness |
+
+### H3 Element Headings
+
+Each element sub-heading (`### {heading}`) must carry the **specific message** of that section for this theme. The arc element name ("Warum Veränderung", "Warum jetzt" etc.) never appears in the heading.
+
+**Pattern per element:**
+
+| Element | Heading derives from | Example |
+|---------|---------------------|---------|
+| Why Change | Core reframe — the "Y" from "Most think X, evidence shows Y" | Netzmodernisierung ist keine Hardware-Frage — es ist eine Datenplattform-Transition |
+| Why Now | Convergence point with specific date or number | Drei Regulierungsfristen konvergieren bis August 2026 |
+| Why You | Strongest Power Position's capability + unfair advantage | Digital-Twin-Netzbetrieb schafft 23% Kostenvorsprung, den Wettbewerber nicht kopieren können |
+| Why Pay | Cost-of-inaction ratio as declarative sentence | Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M über drei Jahre |
+
+**Constraints:**
+- Each H3 heading must be unique across ALL themes in the report
+- Must contain at least one specific number, date, or named entity
+- Max ~90 characters
+- Must be a statement, not a question
+
+**Fallback:** If the writer cannot derive a message-driven heading from the evidence (e.g., too few claims), use the i18n label as fallback. This should trigger a quality gate warning (`heading_fallback: true`).
+
+### Heading Workflow
+
+Write the section content first, then extract the heading from what you wrote. This ensures the heading accurately reflects the section's strongest argument rather than being a pre-conceived label. The heading is the message, not the method.
 
 ## Detection Configuration
 
@@ -315,6 +364,15 @@ Match the citation style used in the enriched-trends data. If enriched-trends us
 - [ ] Smooth transitions between elements
 - [ ] Each element serves distinct purpose (no content overlap)
 
+### Message-Driven Headings
+
+- [ ] H2 theme heading is a thesis statement (contains verb or contrast, not a topic noun phrase)
+- [ ] All 4 H3 element headings carry the section's specific message (no arc element name appears)
+- [ ] Each H3 heading contains at least one number, date, or named entity
+- [ ] No H3 heading exceeds ~90 characters
+- [ ] No two themes in the report share identical H3 headings
+- [ ] Reading just the H2 + 4 H3 headings tells the theme's story as a standalone executive sequence
+
 ### Corporate Visions Techniques Applied
 
 - [ ] **Why Change:** PSB structure used (Problem-Solution-Benefit)
@@ -390,6 +448,32 @@ Match the citation style used in the enriched-trends data. If enriched-trends us
 ❌ **No closing ratio:** "Organizations should invest proactively."
 ✓ **Simple ratio:** "Action costs less than inaction by a factor of 3x. The choice: €2.3M now, or €6.96M over the next three years."
 
+### Heading Pitfalls
+
+The most common failure mode is using arc element names as headings. The arc is the scaffolding; the heading is the message.
+
+**H2 Theme Headings:**
+
+❌ **Topic label:** "Intelligente Netz- & Asset-Optimierung"
+✓ **Thesis statement:** "Bewiesene 10:1-Investitionsthese — und 78% der Branche ignoriert sie"
+
+❌ **Topic label:** "Cybersecurity & Regulatorische Daten-Souveränität"
+✓ **Thesis statement:** "70% mehr Cyberangriffe bei nur 33% NIS2-Readiness"
+
+**H3 Element Headings:**
+
+❌ **Arc method name:** "Warum Veränderung: Der unberücksichtigte Bedarf"
+✓ **Message heading:** "Netzmodernisierung ist keine Hardware-Frage — es ist eine Datenplattform-Transition"
+
+❌ **Arc method name:** "Warum jetzt: Das sich schließende Zeitfenster"
+✓ **Message heading:** "Drei Regulierungsfristen konvergieren bis August 2026"
+
+❌ **Arc method name:** "Warum Sie: Die Portfolio-Antwort"
+✓ **Message heading:** "Digital-Twin-Netzbetrieb schafft 23% Kostenvorsprung, den Wettbewerber nicht kopieren können"
+
+❌ **Arc method name:** "Geschäftliche Auswirkungen: Der Business Case"
+✓ **Message heading:** "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M über drei Jahre"
+
 ## Language Variations
 
 ### German Adjustments
@@ -399,9 +483,9 @@ Match the citation style used in the enriched-trends data. If enriched-trends us
 - Translate dimension names: "Externe Effekte", "Digitale Wertetreiber", "Neue Horizonte", "Digitales Fundament"
 - Keep horizon labels in English: "Act", "Plan", "Observe"
 
-**Why Change (German):**
+**Why Change (German) — with message-driven heading:**
 ```markdown
-### Warum Veränderung: Der unberücksichtigte Bedarf
+### Netzmodernisierung ist keine Hardware-Frage — es ist eine Datenplattform-Transition
 
 **Die Annahme:** Die meisten Versorger betrachten Netzmodernisierung als Infrastrukturprojekt — neue Leitungen, intelligentere Zähler, größere Umspannwerke<sup>[1]</sup>.
 
@@ -410,11 +494,14 @@ Match the citation style used in the enriched-trends data. If enriched-trends us
 **Der Vorteil:** Wer Netzmodernisierung als Datenplattform-Transition begreift, erreicht 2,3x höhere Kapitalrendite<sup>[3]</sup>. Der Wettbewerbsvorteil verschiebt sich von "wer die beste Hardware kauft" zu "wer die besten Datenmodelle betreibt."
 ```
 
+Note: The heading "Netzmodernisierung ist keine Hardware-Frage..." is the core reframe extracted from the section content — it IS the "Why Change" message. The arc element name ("Warum Veränderung") does not appear.
+
 **German decimal formatting:** "3,2x", "€2.400", "23%" (period for thousands, comma for decimals)
 **Proper umlauts throughout:** ä, ö, ü, ß (no ASCII fallbacks in body text)
 
 ## Version History
 
+- **v1.1.0:** Message-driven headings — H2 thesis statements + H3 element messages replace static arc labels; heading generation rules + quality gates + pitfalls added
 - **v1.0.0:** Initial Theme Thesis arc definition — Corporate Visions adapted for TIPS theme-level narratives
 
 ## See Also

@@ -120,13 +120,24 @@ Note `report_mode: strategic-themes` and `source_skills` includes `value-modeler
 
 #### Executive Summary Content
 
+The executive summary applies the Corporate Visions arc at the report level: unconsidered need → urgency → evidence → cost of inaction. A CxO reading only this section should feel "I must act" — not just "here are some themes."
+
 ```markdown
 # {REPORT_TITLE}
 
 ## {EXEC_SUMMARY_LABEL}
 
-{Opening paragraph: 2-3 sentences framing the strategic landscape for this industry/subsector.
-What macro forces are reshaping the competitive environment? Set the stage for the themes.}
+{UNCONSIDERED NEED OPENER: 2-3 sentences reframing the industry's conventional
+strategic assumption. NOT neutral landscape framing ("Die Branche steht vor...").
+Instead, challenge the reader's mental model:
+
+Pattern: "The prevailing assumption in [industry] is [X]. But [N] converging
+forces reveal an unconsidered need: [provocative reframe]."
+
+Source: Synthesize from the theme strategic questions — what do they collectively
+reveal that a typical CxO briefing would miss? The opener should make the reader
+feel their current mental model is incomplete. Use a surprising data point from
+the value model or enriched evidence to anchor the reframe.}
 
 ### {STRATEGIC_THEMES_OVERVIEW_LABEL}
 
@@ -135,8 +146,15 @@ What macro forces are reshaping the competitive environment? Set the stage for t
 | 1 | {theme.name} | {theme.strategic_question} | {theme.executive_sponsor_type} |
 | 2 | ... | ... | ... |
 
-{Bridging paragraph: How these themes relate to each other. Are there dependencies?
-Which themes are act-now vs. watch-and-prepare? What's the overall strategic posture?}
+{URGENCY BRIDGE: How these themes create COMPOUND urgency — not neutral "dependencies"
+language, but forcing-function convergence across themes.
+
+Pattern: "Any one of these themes justifies action. Together, they create a [N]-month
+window where [specific convergence point]."
+
+Reference the strongest forcing functions from the Why Now elements across themes.
+Include at least one specific date or regulatory deadline. Name which themes require
+immediate action (ACT-horizon) vs. strategic preparation (PLAN-horizon).}
 
 ### {HEADLINE_EVIDENCE_LABEL}
 
@@ -148,18 +166,32 @@ SOURCE: Use `top_claims` from theme agent return payloads. Each agent returns it
 of different themes. If agents haven't completed yet, write this section after
 Step 2.4 (collect results).}
 
-### {STRATEGIC_POSTURE_LABEL}
+### {COST_OF_INACTION_LABEL}
 
-{Assessment based on horizon distribution of theme-linked trends:
-- Heavy ACT concentration → "immediate action required across multiple fronts"
-- Mixed ACT/PLAN → "selective near-term action with medium-term strategic bets"
-- Heavy PLAN/OBSERVE → "monitoring posture with time to prepare"
-Tie this back to the specific themes and their urgency.}
+{COST-OF-INACTION PUNCH LINE: Replace the neutral horizon assessment with a
+compelling business case synthesis across all themes.
+
+Source: Use `why_pay_ratio` and `why_pay_closing_statement` from theme agent returns.
+Synthesize the compound cost of inaction across themes.
+
+Pattern: "Organizations that act across [N] themes by [date] position for [advantage].
+Organizations that delay face [aggregate compound cost across themes]."
+
+If 3 themes each show 3x cost-of-inaction ratios, the report-level message is
+multiplicative — "Across five themes, delay compounds from [X] to [Y]."
+
+Close with a single undeniable sentence: the report-level defining choice.
+Example: "Proaktive Investition über fünf Themen: €X Millionen. Kosten der
+Untätigkeit: €Y Millionen über drei Jahre. Die Entscheidung liegt vor Ihnen."}
 ```
 
 Must end with two trailing newlines.
 
-**Note on headline evidence timing:** The themes table, opening paragraph, bridging paragraph, and strategic posture can all be written from the value model alone — they don't need agent results. The headline evidence section needs `top_claims` from agent returns. If you write the header before agents complete, leave a placeholder for headline evidence and fill it in after Step 2.4. Alternatively, wait for agents to complete before writing the header.
+**Timing notes:**
+- The unconsidered-need opener, themes table, and urgency bridge can be written from the value model alone (before agents complete).
+- The headline evidence section needs `top_claims` from agent returns.
+- The cost-of-inaction section needs `why_pay_ratio` and `why_pay_closing_statement` from agent returns.
+- If writing the header before agents complete, leave placeholders for headline evidence AND cost-of-inaction, then fill both after Step 2.4 (collect results).
 
 ### Emerging Signals
 
@@ -206,6 +238,16 @@ Wait for all theme agents to complete. Each agent returns compact JSON:
   "ok": true,
   "theme_id": "theme-001",
   "theme_name": "Theme Name",
+  "theme_thesis_heading": "Bewiesene 10:1-Investitionsthese — und 78% der Branche ignoriert sie",
+  "element_headings": {
+    "why_change": "Netzmodernisierung ist keine Hardware-Frage — es ist eine Datenplattform-Transition",
+    "why_now": "Drei Regulierungsfristen konvergieren bis August 2026",
+    "why_you": "Digital-Twin-Netzbetrieb schafft 23% Kostenvorsprung",
+    "why_pay": "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M"
+  },
+  "heading_fallback": false,
+  "why_pay_ratio": "3x",
+  "why_pay_closing_statement": "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M über drei Jahre",
   "word_count": 420,
   "citations_count": 5,
   "quality_gate_pass": true,
@@ -228,9 +270,13 @@ For each agent result:
 
 All dispatched agents must succeed before proceeding. Agents that were skipped via resume check don't need validation.
 
-### Backfill Headline Evidence
+### Backfill Headline Evidence + Cost of Inaction
 
-If the executive summary header was written before agents completed (with a placeholder for headline evidence), now read `report-header.md` and fill in the `{HEADLINE_EVIDENCE_LABEL}` section using `top_claims` from across all agent returns. Pick 3-5 claims that each support a different theme.
+If the executive summary header was written before agents completed (with placeholders), now read `report-header.md` and fill in:
+
+1. **`{HEADLINE_EVIDENCE_LABEL}` section:** Use `top_claims` from across all agent returns. Pick 3-5 claims that each support a different theme.
+
+2. **`{COST_OF_INACTION_LABEL}` section:** Use `why_pay_ratio` and `why_pay_closing_statement` from each agent's return JSON. Synthesize the compound cost of inaction across all themes into a punchy closing section. If multiple themes show 2-3x cost-of-inaction ratios, the aggregate message is multiplicative.
 
 ---
 

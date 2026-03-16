@@ -128,13 +128,20 @@ COLLECTIVE_EXHAUSTIVENESS: "Collective Exhaustiveness"
 BALANCE: "Balance"
 ```
 
-## Story Arc Element Labels (Theme Thesis — Corporate Visions)
+## Story Arc Element Labels (Fallback / Structural Markers)
+
+> These labels are structural identifiers, NOT output headings. The theme-writer
+> agent generates message-driven headings from evidence (see arc-definition.md
+> Heading Generation Rules). These labels serve as: (a) fallback when evidence
+> is insufficient, (b) structural markers in agent prompts for element
+> identification, (c) quality gate reference labels in validation output.
 
 ```text
 WHY_CHANGE: "Why Change: The Unconsidered Need"
 WHY_NOW: "Why Now: The Closing Window"
 WHY_YOU: "Why You: The Portfolio Response"
 WHY_PAY: "Why Pay: The Business Case"
+COST_OF_INACTION: "Cost of Action vs. Cost of Inaction"
 ```
 
 ## Phase Messages (Theme Mode)

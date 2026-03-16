@@ -101,8 +101,10 @@ Write in the target language (`{LANGUAGE}`). The section tells a complete invest
 
 #### Section Template (Arc-Guided — Corporate Visions)
 
+**Heading rule:** All headings — H2 theme heading and all H3 element headings — must be **message-driven**, not arc method labels. The arc element names ("Warum Veränderung", "Warum jetzt" etc.) are invisible scaffolding that guides content placement. The headings carry the actual message. See Step 3.5 for the heading extraction workflow.
+
 ```markdown
-## {THEME_INDEX}. {THEME_NAME}
+## {THEME_INDEX}. {THEME_THESIS_HEADING}
 
 > {STRATEGIC_QUESTION}
 
@@ -111,25 +113,29 @@ Write in the target language (`{LANGUAGE}`). The section tells a complete invest
 {Hook: ~8% of section — the theme's most surprising quantified finding from enriched evidence,
 reframed as a challenge to conventional thinking. End with the strategic question.}
 
-### {WHY_CHANGE_LABEL}
+### {WHY_CHANGE_MESSAGE_HEADING}
 
 {~25% of section — Reframe T-candidates as an unconsidered need using PSB structure:
 
-**Problem:** What most organizations in this industry assume about this domain. The status
-quo mindset — draw from the conventional framing of T-candidate trends.
+**Problem (~33%):** What most organizations in this industry assume about this domain.
+The status quo mindset — draw from the conventional framing of T-candidate trends.
 
-**Solution:** What the enriched evidence actually reveals. Use quantitative claims from
-T-candidates and I-candidates to challenge the assumption. Apply Contrast Structure:
+**Solution (~33%):** What the enriched evidence actually reveals. Use quantitative claims
+from T-candidates and I-candidates to challenge the assumption. Apply Contrast Structure:
 "Most [industry] organizations view [theme domain] as [conventional framing]. Evidence
 shows [surprising reality]."
 
-**Benefit:** Competitive advantage for organizations that recognize this need early. What
-changes when you see the problem correctly? Bridge to urgency.
+**Benefit (~33%):** Competitive advantage for organizations that recognize this need early.
+What changes when you see the problem correctly? Bridge to urgency.
 
 Weave in evidence_md from T-candidates and implications_md from I-candidates. At least 3
-inline citations. End with competitive implication.}
+inline citations. End with competitive implication.
 
-### {WHY_NOW_LABEL}
+HEADING: After writing this section, extract the core reframe — the "Y" from "Most think X,
+evidence shows Y" — and compress it into a message heading (<90 chars). This heading replaces
+{WHY_CHANGE_MESSAGE_HEADING} above.}
+
+### {WHY_NOW_MESSAGE_HEADING}
 
 {~20% of section — Stack 2-3 forcing functions from Act-horizon candidates:
 
@@ -138,16 +144,27 @@ For each forcing function:
 - Quantified consequence from claims (€ amounts, percentages, timelines)
 - Timeline math: deadline minus implementation time = start date
 
+**Priority rule:** Regulatory deadlines with specific compliance dates and quantified
+penalties ALWAYS take priority over market trend projections. A hard deadline
+("EU AI Act: August 2, 2026, €35M penalty") is a stronger forcing function than
+a market trend ("datacenter demand growing 165%") because it has a specific date
+where non-action triggers consequences. Use regulatory forcing functions as FF1
+whenever the evidence contains them. Market/technology forces are FF2 or FF3.
+
 Categories (pick 2-3 from different categories for diversity):
-1. Regulatory/compliance deadline (from T-candidates)
+1. Regulatory/compliance deadline (PREFERRED — from T-candidates with specific dates)
 2. Market expectation shift (from I-candidates)
 3. Technology tipping point (from enriched evidence)
 4. Competitive momentum (adoption rates from claims)
 
 Close with explicit window statement: "Organizations acting by [date] gain [advantage].
-After [date]: catch-up mode."}
+After [date]: catch-up mode."
 
-### {WHY_YOU_LABEL}
+HEADING: After writing, extract the strongest convergence point with a specific date or
+number. Example: "Drei Regulierungsfristen konvergieren bis August 2026". Must include
+at least one date or number.}
+
+### {WHY_YOU_MESSAGE_HEADING}
 
 {~30% of section — Convert solution templates to Power Positions using IS-DOES-MEANS:
 
@@ -172,27 +189,41 @@ If SOLUTION_TEMPLATES is non-empty, include the solution templates table:
 | 1 | {st.name} | {st.category} | {st.enabler_type} |
 
 Brief description of each ST (1-2 sentences). If SOLUTION_TEMPLATES is empty, construct
-Power Positions from P-candidates directly.}
+Power Positions from P-candidates directly.
 
-### {WHY_PAY_LABEL}
+HEADING: After writing, extract the strongest Power Position's capability + unfair advantage
+compressed into <90 chars. Example: "Digital-Twin-Netzbetrieb schafft 23% Kostenvorsprung,
+den Wettbewerber nicht kopieren können".}
+
+### {WHY_PAY_MESSAGE_HEADING}
 
 {~17% of section — Compound impact calculation stacking 3 cost dimensions:
 
 **Cost Dimension 1:** Regulatory/market loss (whichever is strongest in evidence).
-Specific amount from I-candidate or T-candidate evidence over 3-year horizon.
+Specific € range over 3-year horizon for a mid-size organization in this industry.
 
 **Cost Dimension 2:** Talent/capability premium — cost of building capabilities later
-vs. now. Draw from S-candidate evidence.
+vs. now. Specific € range. Draw from S-candidate evidence.
 
 **Cost Dimension 3:** Operational opportunity cost — foregone efficiency/quality
-improvements from delay. Draw from P-candidate evidence.
+improvements from delay. Specific € range. Draw from P-candidate evidence.
 
 **Synthesis:** "Delay costs [total] over 3 years. Proactive investment: [amount].
 Action costs less than inaction by a factor of [N]x."
 
-If evidence doesn't support specific cost figures for all dimensions, use qualitative
-impact framing for weaker dimensions but always quantify at least 2 dimensions.
-Close with a simple, undeniable ratio.}
+**Localization rule:** Every cost dimension needs a specific € range localized to
+the target reader's organization size (e.g., "€3-4M for a mid-size Netzbetreiber
+over 3 years"), not global averages from analyst reports. If enriched evidence
+contains a global figure (e.g., "$370M average legacy cost"), translate it to the
+target context: "For a German mid-size utility with €500M revenue, this translates
+to €X-YM." Vague framing like "dreistelliger Millionen-Bereich" is too imprecise —
+the CxO needs numbers they can put in a board presentation.
+
+Quantify at least 2 of 3 dimensions with specific € ranges. The third may be
+qualitative if evidence is thin. Close with a simple, undeniable ratio.
+
+HEADING: After writing, extract the closing ratio as a declarative sentence.
+Example: "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M über drei Jahre".}
 ```
 
 The file must end with two trailing newlines (`\n\n`) so files concatenate cleanly during report assembly.
@@ -231,15 +262,36 @@ requirements — evidence from enriched-trends.}
 tasks. Prioritized ACT → PLAN → OBSERVE.}
 ```
 
+#### Step 3.5: Craft Message-Driven Headings
+
+After writing all four element sections, extract the message-driven headings. Write the content first, then derive each heading from the strongest argument in that section:
+
+1. **H2 Theme Thesis Heading:** Read the Hook + Why Change sections. Identify the single most provocative claim or reframe. Compress to <80 chars (de) / <70 chars (en). This replaces `{THEME_THESIS_HEADING}`. Must be an assertion with a verb or contrast, not a topic noun phrase.
+
+2. **H3 Why Change Heading:** Extract the core contrast from the PSB structure — the "Y" from "Most think X, evidence shows Y". The heading IS the surprising reality, not the arc label.
+
+3. **H3 Why Now Heading:** Extract the strongest forcing function convergence. Must include a specific date or number. Example: "Drei Regulierungsfristen konvergieren bis August 2026".
+
+4. **H3 Why You Heading:** Extract the strongest Power Position's IS+DOES in compressed form. Name the capability and its quantified advantage.
+
+5. **H3 Why Pay Heading:** Extract the closing ratio as a declarative sentence. Example: "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M über drei Jahre".
+
+**Constraints:** Each heading must be <90 chars, contain at least one number/date/named entity, and be unique (no two themes should share identical headings).
+
+**Fallback:** If evidence is too thin to derive a message heading for an element, use the corresponding i18n label (WHY_CHANGE, WHY_NOW, etc.) and set `heading_fallback: true` in the return JSON.
+
+Now replace the placeholder heading markers in the written file with the actual message headings.
+
 #### Writing Guidelines
 
 **Arc quality gate (when arc is loaded):** After writing, verify:
 - Each element meets its proportional word target (+/-10%)
 - **Why Change:** PSB structure applied, Contrast Structure used, ends with competitive implication
-- **Why Now:** ≥2 forcing functions with specific timelines, before/after contrast, window closing statement
-- **Why You:** IS-DOES-MEANS applied to ≥1 solution template or P-candidate, You-Phrasing in DOES
-- **Why Pay:** ≥2 cost dimensions quantified, 3-year horizon, closing ratio comparison
+- **Why Now:** ≥2 forcing functions with specific timelines, before/after contrast, window closing statement. FF1 should be a regulatory deadline if evidence contains one.
+- **Why You:** IS-DOES-MEANS applied to ≥1 solution template or P-candidate, You-Phrasing in DOES. No ST-IDs in output.
+- **Why Pay:** ≥2 cost dimensions with specific localized € ranges (not global averages), 3-year horizon, closing ratio comparison
 - Hook opens with quantified surprise from theme evidence
+- **Headings:** H2 is thesis statement (not topic label), all H3s are message-driven (not arc element names), each contains a number/date/entity
 
 **Fallback quality gate (no arc):** After writing, verify:
 - Word count ≥250 words (target 300-500). If under 250, expand with additional evidence.
@@ -252,7 +304,11 @@ If any quality gate fails, self-correct immediately — pull more evidence and r
 
 **Evidence weaving:** Don't dump claims in a list. Integrate them into the narrative. "Goldman Sachs estimates global grid expansion requirements at $720 billion through 2030 [source], while early-mover utilities report 23% lower capital costs through predictive asset management [source]" reads better than bullet points.
 
+**Citation diversity:** Avoid citing the same source URL more than twice in a theme section. If the same Deloitte or McKinsey report provides multiple data points, use it for the strongest claim and find alternative sources for supporting claims. A CxO who sees the same footnote five times questions whether you have a broad evidence base. Spread citations across diverse sources — industry bodies, regulators, analyst firms, trade press.
+
 **Cross-referencing:** When a candidate appears in multiple value chains within your theme, reference it from each element's angle. The same data point can support Why Change (the need), Why Now (the urgency), and Why Pay (the cost).
+
+**Power Position naming:** In the customer-facing output, do NOT include internal solution template IDs (ST-001, ST-002 etc.) in Power Position headings. Write "**Power Position 1 — Smart Grid Digital Twin & Predictive Maintenance**" not "**Power Position 1 — Smart Grid Digital Twin & Predictive Maintenance (ST-001)**". The ST-ID is internal catalog metadata, not reader-facing.
 
 ### Step 4: Identify Top Claims
 
@@ -267,6 +323,16 @@ Return ONLY this JSON — nothing else:
   "ok": true,
   "theme_id": "theme-001",
   "theme_name": "Theme Name",
+  "theme_thesis_heading": "Bewiesene 10:1-Investitionsthese — und 78% der Branche ignoriert sie",
+  "element_headings": {
+    "why_change": "Netzmodernisierung ist keine Hardware-Frage — es ist eine Datenplattform-Transition",
+    "why_now": "Drei Regulierungsfristen konvergieren bis August 2026",
+    "why_you": "Digital-Twin-Netzbetrieb schafft 23% Kostenvorsprung",
+    "why_pay": "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M"
+  },
+  "heading_fallback": false,
+  "why_pay_ratio": "3x",
+  "why_pay_closing_statement": "Verzögern kostet 3x mehr als Handeln — €6,9M vs. €2,3M über drei Jahre",
   "word_count": 720,
   "citations_count": 12,
   "quality_gate_pass": true,
