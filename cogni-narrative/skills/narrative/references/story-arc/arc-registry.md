@@ -14,6 +14,7 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 | 4 | `strategic-foresight` | Signals → Scenarios → Strategies → Decisions | - | Long-range planning, scenarios | `content_type: "foresight"` |
 | 5 | `industry-transformation` | Forces → Friction → Evolution → Leadership | - | Industry analysis, regulation | `content_type: "industry"` |
 | 6 | `trend-panorama` | Forces → Impact → Horizons → Foundations | T→I→P→S | Trend-scout output, TIPS reports | Structural + `"smarter-service"` |
+| 7 | `theme-thesis` | Change → Now → You → Pay | T→I→P→S | Theme-level investment narratives | `content_type: "theme"` |
 
 ## Arc Selection Logic
 
@@ -204,6 +205,41 @@ This registry indexes all available story arcs for the cogni-narrative plugin. E
 
 ---
 
+### 7. Theme Thesis
+
+**Arc ID:** `theme-thesis`
+**Display Name:** Theme Thesis
+**Elements:** Why Change → Why Now → Why You → Why Pay (Corporate Visions adapted for themes)
+
+**Best For:**
+- Individual theme sections within TIPS trend reports
+- Investment thesis narratives with portfolio-backed solutions
+- Theme-level persuasion with IS-DOES-MEANS Power Positions
+- CxO-level theme justification
+
+**Detection Signals:**
+- `content_type: "theme"` or `"investment-theme"`
+- Structural: presence of `value_chains[]` with `candidate_ref` and `solution_templates[]`
+- Keywords (>=15% density): "theme", "investment thesis", "value chain", "solution template", "strategic question"
+
+**TIPS Candidate Mapping (cross-dimensional, not 1:1):**
+- Why Change = T-candidates (unconsidered need) + I-candidates (impact)
+- Why Now = Act-horizon candidates from any dimension (forcing functions)
+- Why You = Solution Templates (IS) + P-candidates (DOES) + S-candidates (MEANS)
+- Why Pay = I-candidates (disruption cost) + S-candidates (capability gap cost)
+
+**Section Proportions:**
+- Hook: 8%
+- Why Change: 25%
+- Why Now: 20%
+- Why You: 30%
+- Why Pay: 17%
+- **Target:** Variable (600-1200 words based on theme complexity)
+
+**Definition File:** `story-arc/theme-thesis/arc-definition.md`
+
+---
+
 ## Arc Detection Algorithm
 
 ### Step 1: Explicit Selection
@@ -234,6 +270,8 @@ const arcMap = {
   "trends": "trend-panorama",
   "tips": "trend-panorama",
   "smarter-service": "trend-panorama",
+  "theme": "theme-thesis",
+  "investment-theme": "theme-thesis",
   "technology": "technology-futures",
   "competitive": "competitive-intelligence",
   "foresight": "strategic-foresight",
@@ -262,6 +300,7 @@ Analyze the input content for keyword density:
 ```javascript
 keyword_sets = {
   "trend-panorama": ["trend", "horizon", "act", "plan", "observe", "TIPS", "signal intensity", "dimension"],
+  "theme-thesis": ["theme", "investment thesis", "value chain", "solution template", "strategic question", "candidate_ref", "chain_score"],
   "technology-futures": ["emerging", "innovation", "capability", "technology", "R&D", "breakthrough"],
   "competitive-intelligence": ["competitor", "market share", "positioning", "differentiation", "threat", "rivalry"],
   "strategic-foresight": ["scenario", "future", "signal", "uncertainty", "planning", "foresight"],
@@ -270,6 +309,7 @@ keyword_sets = {
 
 thresholds = {
   "trend-panorama": 0.12,
+  "theme-thesis": 0.15,
   "technology-futures": 0.15,
   "competitive-intelligence": 0.12,
   "strategic-foresight": 0.10,

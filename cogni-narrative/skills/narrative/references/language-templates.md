@@ -408,6 +408,15 @@ Exact `##` section headers for insight-summary.md output, per arc and language. 
 | 3 | Horizons: Strategic Possibilities | Horizonte: Strategische Möglichkeiten | P (Neue Horizonte) |
 | 4 | Foundations: Capability Requirements | Fundamente: Kompetenzanforderungen | S (Digitales Fundament) |
 
+**theme-thesis:**
+
+| Element | English (en) | German (de) | Primary TIPS Source |
+|---------|--------------|-------------|---------------------|
+| 1 | Why Change: The Unconsidered Need | Warum Veränderung: Der unberücksichtigte Bedarf | T + I |
+| 2 | Why Now: The Closing Window | Warum jetzt: Das sich schließende Zeitfenster | Act-horizon (all) |
+| 3 | Why You: The Portfolio Response | Warum Sie: Die Portfolio-Antwort | P + S + STs |
+| 4 | Why Pay: The Business Case | Geschäftliche Auswirkungen: Der Business Case | I + S |
+
 ## German Text Formatting
 
 When generating content in German (`language: "de"`):

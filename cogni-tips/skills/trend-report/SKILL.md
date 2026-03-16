@@ -1,7 +1,7 @@
 ---
 name: trend-report
 description: |
-  Generate a strategic TIPS trend report organized around investment themes with inline citations and verifiable claims. Produces a theme-first report where 3-7 strategic themes drive the narrative — each theme tells a CxO-level investment story backed by T→I→P value chain evidence. Reads agreed trend candidates, enriches each with web-sourced quantitative evidence via parallel agents, assembles the report with strategic executive summary and portfolio analysis, generates a trend-panorama insight summary via cogni-narrative, invokes cogni-claims:claim-work for automated verification, and polishes the final prose for executive readability via cogni-copywriting. Required pipeline: trend-scout → value-modeler → trend-report. Use when: (1) trend-scout and value-modeler have completed, (2) user wants a written trend report, (3) user mentions "trend report", "TIPS report", "write up trends", "summarize trends", "trend analysis document", "strategic stories", (4) preparing a deliverable from scouted trends, (5) user asks to "generate report from trends" or "create trend deliverable". Always use this skill when trend-scout output exists and the user wants any kind of written trend analysis — even if they don't use the exact phrase "trend report".
+  Generate a strategic TIPS trend report organized around investment themes with inline citations and verifiable claims. Produces a theme-first report where 3-7 strategic themes drive the narrative — each theme tells a CxO-level investment story using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) backed by T→I→P→S value chain evidence. Reads agreed trend candidates, enriches each with web-sourced quantitative evidence via parallel agents, assembles the report with strategic executive summary and portfolio analysis, invokes cogni-claims:claim-work for automated verification, and polishes the final prose for executive readability via cogni-copywriting. Required pipeline: trend-scout → value-modeler → trend-report. Use when: (1) trend-scout and value-modeler have completed, (2) user wants a written trend report, (3) user mentions "trend report", "TIPS report", "write up trends", "summarize trends", "trend analysis document", "strategic stories", (4) preparing a deliverable from scouted trends, (5) user asks to "generate report from trends" or "create trend deliverable". Always use this skill when trend-scout output exists and the user wants any kind of written trend analysis — even if they don't use the exact phrase "trend report".
 ---
 
 # Trend Report
@@ -14,12 +14,11 @@ Transform agreed trend-scout candidates into a strategic, evidence-backed report
 
 1. Load value-modeler strategic themes and validate prerequisites
 2. Enrich each trend with quantitative evidence from web research
-3. Assemble theme narratives with embedded evidence
+3. Assemble theme narratives using Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) with embedded evidence
 4. Generate inline citations for every quantitative claim
 5. Produce a claims registry compatible with `cogni-claims:claim-work`
-6. Generate a trend-panorama narrative insight summary via cogni-narrative
-7. Optionally verify claims via cogni-claims:claim-work
-8. Polish report prose for executive readability via cogni-copywriting
+6. Optionally verify claims via cogni-claims:claim-work
+7. Polish report prose for executive readability via cogni-copywriting
 
 ## Language Support
 
@@ -37,7 +36,7 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 - `trend-scout` completed with `execution.workflow_state == "agreed"` and 60 candidates
 - `value-modeler` completed with `tips-value-model.json` containing strategic themes
 - Web access enabled for evidence enrichment
-- Optional: `cogni-narrative` plugin for insight summary (graceful fallback if absent)
+- Optional: `cogni-narrative` plugin for theme-thesis arc guidance (graceful fallback if absent — themes use flat structure)
 - Optional: `cogni-claims` plugin for claim verification
 - Optional: `cogni-copywriting` plugin for executive polish (graceful fallback if absent)
 
@@ -81,7 +80,6 @@ Read references **only when needed** for the specific phase:
 | [references/claims-format.md](references/claims-format.md) | Extracting/merging claims (Phase 1-2) |
 | [references/i18n/labels-en.md](references/i18n/labels-en.md) | English report headings and labels |
 | [references/i18n/labels-de.md](references/i18n/labels-de.md) | German report headings and labels |
-| [references/phase-2.5-insight-summary.md](references/phase-2.5-insight-summary.md) | Generating arc-aware insight summary (Phase 2.5) |
 | [references/phase-3-claim-verification.md](references/phase-3-claim-verification.md) | Running claim verification (Phase 3) |
 | [references/phase-3.5-executive-polish.md](references/phase-3.5-executive-polish.md) | Polishing report prose (Phase 3.5) |
 
@@ -90,13 +88,12 @@ Read references **only when needed** for the specific phase:
 Track progress through these phases as you go:
 
 ```text
-Phase 0 → Phase 1 → Phase 2 → Phase 2.5 → Phase 3 → Phase 3.5 → Phase 4
-   │          │          │         │            │          │           │
-   │          │          │         │            │          │           └─ Update metadata, display summary
-   │          │          │         │            │          └─ Executive polish via cogni-copywriting
-   │          │          │         │            └─ Optional claim-work verification
-   │          │          │         └─ trend-panorama narrative via cogni-narrative
-   │          │          └─ Strategic theme narratives + evidence weaving
+Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 3.5 → Phase 4
+   │          │          │         │          │           │
+   │          │          │         │          │           └─ Update metadata, display summary
+   │          │          │         │          └─ Executive polish via cogni-copywriting
+   │          │          │         └─ Optional claim-work verification
+   │          │          └─ Theme narratives (Corporate Visions arc) + evidence weaving
    │          └─ 4 parallel agents: enrich trends, write sections + enriched JSONs, extract claims
    └─ Project discovery, load trend-scout + value-modeler output, validate gate
 ```
@@ -223,7 +220,8 @@ rm -f "{PROJECT_PATH}/.logs/report-header.md" \
       "{PROJECT_PATH}/.logs/report-claims-registry.md" \
       "{PROJECT_PATH}/tips-trend-report.md" \
       "{PROJECT_PATH}/.logs/phase2-value-model.json" \
-      "{PROJECT_PATH}/tips-trend-report-claims.json"
+      "{PROJECT_PATH}/tips-trend-report-claims.json" \
+      "{PROJECT_PATH}/tips-insight-summary.md"
 ```
 
 ---
@@ -273,18 +271,18 @@ After all 4 agents complete, verify that all 12 expected files exist:
 
 ```
 For each dimension in [externe-effekte, digitale-wertetreiber, neue-horizonte, digitales-fundament]:
-  ✓ {PROJECT_PATH}/.logs/report-section-{dimension}.md    — narrative section (required for Phase 2.5)
+  ✓ {PROJECT_PATH}/.logs/report-section-{dimension}.md    — narrative section (intermediate artifact)
   ✓ {PROJECT_PATH}/.logs/claims-{dimension}.json           — extracted claims
   ✓ {PROJECT_PATH}/.logs/enriched-trends-{dimension}.json  — per-trend evidence blocks (required for Phase 2)
 ```
 
-If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 can proceed (it uses enriched-trends), but Phase 2.5 will be degraded without the section files.
+If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 can proceed (it uses enriched-trends).
 
 ---
 
 ### Phase 2: Report Assembly — THEME-FIRST (NOT BY DIMENSION)
 
-**CRITICAL:** You MUST read [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) before starting Phase 2. The report is organized by **strategic themes** from `tips-value-model.json`, NOT by TIPS dimension. Do NOT simply concatenate the dimension section files from Phase 1 — those are intermediate artifacts for Phase 2.5, not the final report structure.
+**CRITICAL:** You MUST read [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) before starting Phase 2. The report is organized by **strategic themes** from `tips-value-model.json`, NOT by TIPS dimension. Do NOT simply concatenate the dimension section files from Phase 1 — those are intermediate artifacts, not the final report structure.
 
 **EXECUTION — Agent-assisted theme writing + orchestrator assembly.** Phase 2 delegates the context-heavy theme section writing to parallel `trend-report-theme-writer` agents (one per theme), then the orchestrator writes the remaining lightweight sections (executive summary, emerging signals, portfolio, claims registry) and concatenates the final report.
 
@@ -305,18 +303,6 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 9. **Merge claims** → `tips-trend-report-claims.json`
 
 **Resume logic:** Before dispatching an agent for a theme, check if `report-theme-{theme_id}.md` already exists and is >1000 bytes. If so, skip that agent — display `"{PHASE_2_THEME_AGENT_SKIP_RESUME}"` and continue. This means re-runs only dispatch for missing themes.
-
----
-
-### Phase 2.5: Insight Summary (trend-panorama) — DEFAULT ON
-
-**This phase runs by default.** Only skip if the user explicitly requests it (e.g., "skip insight summary", "skip narrative"). If the user said "skip verification and copywriting", that does NOT mean skip Phase 2.5 — those are separate phases (3 and 3.5).
-
-Read [references/phase-2.5-insight-summary.md](references/phase-2.5-insight-summary.md) for the full workflow.
-
-Verify `tips-trend-report.md` exists and that the 4 dimension section files (`report-section-{dimension}.md`) exist in `.logs/`, then invoke `cogni-narrative:narrative` skill with arc_id `trend-panorama`. This arc maps TIPS dimensions to narrative elements (Forces → Impact → Horizons → Foundations).
-
-All failures in this phase are non-blocking — the insight summary enhances the report but isn't required for downstream consumers.
 
 ---
 
@@ -351,8 +337,6 @@ Add to `{PROJECT_PATH}/.metadata/trend-scout-output.json`:
   "trend_report_mode": "strategic-themes",
   "trend_report_theme_count": N,
   "trend_report_generated_at": "ISO-8601",
-  "insight_summary_path": "tips-insight-summary.md or null",
-  "insight_summary_arc": "trend-panorama or null",
   "copywriter_applied": true,
   "copywriter_scope": "tone or null"
 }
@@ -364,9 +348,8 @@ Add to `{PROJECT_PATH}/.metadata/trend-scout-output.json`:
 Trend Report Complete (Strategic Themes)
 ────────────────────────────────────────
 Report:       {PROJECT_PATH}/tips-trend-report.md
-Themes:       {N} strategic themes from value model
+Themes:       {N} strategic themes (Corporate Visions arc)
 Claims:       {PROJECT_PATH}/tips-trend-report-claims.json
-Insight:      {PROJECT_PATH}/tips-insight-summary.md (or "skipped")
 Trends:       60 across {N} themes ({orphan_count} emerging signals)
 Claims:       {total_claims} quantitative claims extracted
 Verification: {verdict or "skipped"}
@@ -398,7 +381,7 @@ Use /tips-resume in your next session to pick up where you left off.
 | Theme agent returns `ok: false` | Retry once, then HALT with theme name |
 | Theme agent quality gate fails | WARNING: continue (section written but may be thin) |
 | Theme references unknown candidate_ref | WARNING: agent skips that candidate in theme narrative |
-| `cogni-narrative` not installed | WARNING: skip insight summary |
+| `cogni-narrative` not installed | WARNING: theme-writer uses flat structure (no arc guidance) |
 | `cogni-claims` not installed | WARNING: skip verification |
 | claim-work returns FAIL | Present failed claims. Do not auto-correct. |
 | `cogni-copywriting` not installed | WARNING: skip executive polish |
@@ -413,7 +396,7 @@ Use /tips-resume in your next session to pick up where you left off.
 
 **Pipeline:** `trend-scout → value-modeler → trend-report`
 
-**Optional cross-plugin:** `cogni-narrative:narrative` skill (Phase 2.5), `cogni-claims:claim-work` (Phase 3), `cogni-copywriting:copywriter` (Phase 3.5)
+**Optional cross-plugin:** `cogni-narrative` theme-thesis arc (Phase 2 theme writer guidance), `cogni-claims:claim-work` (Phase 3), `cogni-copywriting:copywriter` (Phase 3.5)
 
 **Downstream:** `export-html-report`, `export-pdf-report`
 
@@ -433,7 +416,7 @@ Log files in `{PROJECT_PATH}/.logs/`:
 Output files in `{PROJECT_PATH}/`:
 - `tips-trend-report.md` — assembled final report
 - `tips-trend-report-claims.json` — merged claims registry
-- `tips-insight-summary.md` — arc-aware insight summary (Phase 2.5, if successful)
+- `tips-insight-summary.md` — legacy artifact (no longer generated; cleaned up on re-runs)
 
 | Issue | Check |
 |-------|-------|

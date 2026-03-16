@@ -128,6 +128,15 @@ COLLECTIVE_EXHAUSTIVENESS: "Collective Exhaustiveness"
 BALANCE: "Balance"
 ```
 
+## Story Arc Element Labels (Theme Thesis — Corporate Visions)
+
+```text
+WHY_CHANGE: "Why Change: The Unconsidered Need"
+WHY_NOW: "Why Now: The Closing Window"
+WHY_YOU: "Why You: The Portfolio Response"
+WHY_PAY: "Why Pay: The Business Case"
+```
+
 ## Phase Messages (Theme Mode)
 
 ```text

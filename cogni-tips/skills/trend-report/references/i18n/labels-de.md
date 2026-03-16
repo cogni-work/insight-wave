@@ -128,6 +128,15 @@ COLLECTIVE_EXHAUSTIVENESS: "Kollektive Vollständigkeit"
 BALANCE: "Balance"
 ```
 
+## Story-Arc-Elementbezeichnungen (Themen-These — Corporate Visions)
+
+```text
+WHY_CHANGE: "Warum Veränderung: Der unberücksichtigte Bedarf"
+WHY_NOW: "Warum jetzt: Das sich schließende Zeitfenster"
+WHY_YOU: "Warum Sie: Die Portfolio-Antwort"
+WHY_PAY: "Geschäftliche Auswirkungen: Der Business Case"
+```
+
 ## Phasenmeldungen (Themenmodus)
 
 ```text

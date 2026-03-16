@@ -68,8 +68,19 @@ Per agent:
     LABELS: {JSON object with relevant i18n labels:
       EXECUTIVE_SPONSOR, INVESTMENT_THESIS, VALUE_CHAINS, TREND,
       IMPLICATION, POSSIBILITY, FOUNDATION, SOLUTION_TEMPLATES,
-      SOLUTION, CATEGORY, ENABLER_TYPE, STRATEGIC_ACTIONS}
+      SOLUTION, CATEGORY, ENABLER_TYPE, STRATEGIC_ACTIONS,
+      WHY_CHANGE, WHY_NOW, WHY_YOU, WHY_PAY}
+    NARRATIVE_ARC_PATH: {path to cogni-narrative theme-thesis arc-definition.md, or omit if not available}
+    NARRATIVE_TECHNIQUES_PATH: {path to cogni-narrative techniques-overview.md, or omit if not available}
 ```
+
+### Resolving cogni-narrative Plugin Root
+
+The theme-writer agent optionally loads the `theme-thesis` arc from cogni-narrative for Corporate Visions-guided storytelling. To resolve the arc path:
+
+1. Check if `cogni-narrative` plugin is installed by looking for its arc-definition file at the expected plugin cache path (e.g., `~/.claude/plugins/cache/cogni-works/cogni-narrative/*/skills/narrative/references/story-arc/theme-thesis/arc-definition.md`) or the monorepo path (`{MONOREPO_ROOT}/cogni-narrative/skills/narrative/references/story-arc/theme-thesis/arc-definition.md`)
+2. If the file exists, pass its absolute path as `NARRATIVE_ARC_PATH` and the techniques file as `NARRATIVE_TECHNIQUES_PATH`
+3. If cogni-narrative is not installed, **omit both parameters** — the agent falls back to the flat template structure (backward-compatible)
 
 Display `"{PHASE_2_THEME_AGENT_DISPATCH}"` after dispatching.
 

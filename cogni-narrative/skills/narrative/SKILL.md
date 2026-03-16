@@ -5,7 +5,7 @@ description: "Transform structured content into compelling executive narratives 
 
 # Narrative Transformation
 
-Transform input markdown files into a structured executive narrative using one of 6 story arc frameworks. The narrative length is controlled by `--target-length` (default ~1,675 words), with section lengths expressed as proportions of the total to preserve the arc's rhetorical balance at any scale. Each arc provides a distinct rhetorical progression -- mapping source evidence to arc elements, applying narrative techniques, and producing a citation-grounded insight summary.
+Transform input markdown files into a structured executive narrative using one of 7 story arc frameworks. The narrative length is controlled by `--target-length` (default ~1,675 words), with section lengths expressed as proportions of the total to preserve the arc's rhetorical balance at any scale. Each arc provides a distinct rhetorical progression -- mapping source evidence to arc elements, applying narrative techniques, and producing a citation-grounded insight summary.
 
 **Use this for:**
 - Transforming research syntheses, analyses, or structured findings into executive narratives
