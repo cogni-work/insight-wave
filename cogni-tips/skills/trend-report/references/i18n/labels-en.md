@@ -132,6 +132,10 @@ BALANCE: "Balance"
 
 ```text
 PHASE_0_THEMES_FOUND: "Value model detected: {COUNT} strategic themes available — using theme-organized report"
+PHASE_2_THEME_AGENT_DISPATCH: "Dispatching {COUNT} theme agents..."
+PHASE_2_THEME_AGENT_COMPLETE: "Theme agent {N}/{TOTAL}: {NAME} ({WORDS} words, {CITATIONS} citations)"
+PHASE_2_THEME_AGENT_RETRY: "Retrying theme agent: {NAME}"
+PHASE_2_THEME_AGENT_SKIP_RESUME: "Theme {NAME} already written — skipping agent dispatch"
 PHASE_2_THEME_START: "Assembling strategic theme report..."
 PHASE_2_THEME_WRITTEN: "Theme {N}/{TOTAL}: {NAME}"
 PHASE_2_THEME_COMPLETE: "Strategic report written: {PATH}"

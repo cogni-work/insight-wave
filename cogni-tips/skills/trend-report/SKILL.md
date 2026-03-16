@@ -45,9 +45,9 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 
 This skill reads ALL required state from project files — it does not depend on prior conversation context. The tips-resume dashboard, earlier questions, and any preceding chat are not inputs to the report pipeline. This means **context compaction is safe and recommended** before starting.
 
-**Before executing Phase 0**, run `/compact` to free working memory. This skill's phases (especially Phase 2 report assembly at ~69% of the context window) need maximum available context for reading enriched-trends JSON and writing strategic narratives. Compacting early prevents context pressure from accumulating across phases.
+**Before executing Phase 0**, run `/compact` to free working memory. Phase 2 delegates theme section writing to parallel agents (reducing orchestrator context from ~69% to ~25-35%), but the orchestrator still reads the value model and claims files for assembly sections. Compacting early ensures headroom.
 
-If `/compact` is unavailable (e.g., non-interactive mode), proceed without it — the skill will still work, but Phase 2 may hit context limits on projects with many themes.
+If `/compact` is unavailable (e.g., non-interactive mode), proceed without it — Phase 2's agent-based architecture is designed to stay within context limits.
 
 ## Path Variables
 
@@ -286,32 +286,25 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 
 **CRITICAL:** You MUST read [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) before starting Phase 2. The report is organized by **strategic themes** from `tips-value-model.json`, NOT by TIPS dimension. Do NOT simply concatenate the dimension section files from Phase 1 — those are intermediate artifacts for Phase 2.5, not the final report structure.
 
-**EXECUTION — YOU are the report writer.** Phase 2 is your core job as an LLM. Do it yourself, directly, step by step:
+**EXECUTION — Agent-assisted theme writing + orchestrator assembly.** Phase 2 delegates the context-heavy theme section writing to parallel `trend-report-theme-writer` agents (one per theme), then the orchestrator writes the remaining lightweight sections (executive summary, emerging signals, portfolio, claims registry) and concatenates the final report.
 
-- **No subagents.** Do not delegate any part of Phase 2 to an Agent. The JSON files are too large to pass in agent prompts and will cause parsing errors.
-- **No Python scripts.** Do not write Python/Node/shell scripts to generate report sections. You are a language model — writing strategic prose with woven evidence is exactly what you excel at. A script cannot produce the narrative quality this report requires.
-- **No intermediate analysis steps.** Do not generate "lookup documentation", "enriched statistics", or other intermediate artifacts. Go straight from reading the data to writing report sections.
+- **Theme sections → agents.** Each theme-writer agent self-loads enriched-trends and claims from disk, filtered to its own candidate_refs. The orchestrator passes only small scalars (theme definition, value chains, labels). This keeps the orchestrator's context lean.
+- **No Python scripts.** Do not write scripts to generate report sections. The agents and orchestrator write strategic prose directly.
+- **No intermediate analysis steps.** Do not generate lookup documentation or enriched statistics. Agents go straight from reading data to writing prose.
 
-**How to execute Phase 2:**
+**Summary of steps** (details in the reference):
 
-1. Read each `enriched-trends-{dimension}.json` one at a time using the Read tool. Extract the candidate_ref → evidence mappings you need and hold them in context.
-2. Read each `claims-{dimension}.json` one at a time. Extract claim_id → claim data.
-3. Read `.logs/phase2-value-model.json` (pruned subset from Step 0.2b) for themes, value_chains, solution_templates.
-4. With all data in context, write each report section directly using the Write tool — `report-header.md`, then each `report-theme-{theme_id}.md`, then `report-emerging-signals.md`, `report-portfolio.md`, `report-claims-registry.md`.
-5. Concatenate the files into `tips-trend-report.md` using cat.
+1. **Read value model** — Read `.logs/phase2-value-model.json` for themes, value chains, solution templates, orphan candidates, coverage data
+2. **Dispatch theme agents** — For each theme, dispatch a `cogni-tips:trend-report-theme-writer` agent. All agents in a single message (parallel). Each agent self-loads evidence from disk, writes `report-theme-{theme_id}.md`, and returns compact JSON with word count, citation count, quality gate status, and top claims.
+3. **Write executive summary** — Using value model themes + agent-returned `top_claims` for headline evidence, write `report-header.md`
+4. **Write emerging signals** — Using orphan candidates from value model + filtered enriched-trends evidence, write `report-emerging-signals.md`
+5. **Collect agent results** — Validate all agents returned `ok: true` and quality gates passed. Retry once on failure.
+6. **Write portfolio view** — Using value model + agent-reported counts, write `report-portfolio.md`
+7. **Write claims registry** — Read 4 `claims-{dimension}.json` files once, map claims to themes via value model, write `report-claims-registry.md`
+8. **Assemble** — Concatenate with cat: header + themes (ordered) + emerging signals + portfolio + claims → `tips-trend-report.md`
+9. **Merge claims** → `tips-trend-report-claims.json`
 
-The report reads as a strategy document with 3-7 investment themes (each containing an investment thesis, value chain walkthroughs, and strategic actions), not a catalog of 60 trends sorted by dimension. Each theme section is written to a separate file `report-theme-{theme_id}.md`.
-
-**Summary of steps** (details in the reference) — execute each step yourself using Read/Write tools, no agents or scripts:
-
-1. **Build lookups** — Read 4 `enriched-trends-{dimension}.json` + 4 `claims-{dimension}.json` one file at a time via Read tool → hold candidate_ref and claim_id mappings in context
-2. **Write executive summary** — Write theme overview table, headline evidence, strategic posture directly to `report-header.md`
-3. **Write theme sections** — For each theme, write investment thesis, value chain walkthroughs, solution templates, strategic actions directly to `report-theme-{theme_id}.md`. **Quality gate per theme:** After writing each theme's investment thesis, check that it has ≥250 words and ≥3 inline citations. If it falls short, pull more evidence from the enriched-trends lookup for that theme's candidates and expand the narrative. The thesis is the CxO-facing argument — it must be substantive, not a summary paragraph.
-4. **Write emerging signals** — Orphan candidates not in any theme → write directly to `report-emerging-signals.md`
-5. **Write portfolio view** — Theme-level metrics, horizon distribution, MECE validation → write directly to `report-portfolio.md`
-6. **Write claims registry** — All claims with theme column → write directly to `report-claims-registry.md`
-7. **Assemble** — Concatenate with cat: header + themes (ordered) + emerging signals + portfolio + claims → `tips-trend-report.md`
-8. **Merge claims** → `tips-trend-report-claims.json`
+**Resume logic:** Before dispatching an agent for a theme, check if `report-theme-{theme_id}.md` already exists and is >1000 bytes. If so, skip that agent — display `"{PHASE_2_THEME_AGENT_SKIP_RESUME}"` and continue. This means re-runs only dispatch for missing themes.
 
 ---
 
@@ -399,10 +392,12 @@ Use /tips-resume in your next session to pick up where you left off.
 | `tips-value-model.json` missing or no themes | HALT: Run value-modeler first |
 | `tips-value-model.json` has themes but no value chains | HALT: value-modeler Phase 1 incomplete |
 | No raw signals file (both sources) | WARNING: proceed without signals (~120 searches) |
-| Agent returns `ok: false` | Retry once, then HALT with dimension name |
-| All 4 agents fail | HALT: Check web access is enabled |
+| Phase 1 agent returns `ok: false` | Retry once, then HALT with dimension name |
+| All 4 Phase 1 agents fail | HALT: Check web access is enabled |
 | enriched-trends JSON missing | HALT: Phase 1 agent failed to produce enriched output |
-| Theme references unknown candidate_ref | WARNING: skip that candidate in theme narrative |
+| Theme agent returns `ok: false` | Retry once, then HALT with theme name |
+| Theme agent quality gate fails | WARNING: continue (section written but may be thin) |
+| Theme references unknown candidate_ref | WARNING: agent skips that candidate in theme narrative |
 | `cogni-narrative` not installed | WARNING: skip insight summary |
 | `cogni-claims` not installed | WARNING: skip verification |
 | claim-work returns FAIL | Present failed claims. Do not auto-correct. |
@@ -429,7 +424,7 @@ Log files in `{PROJECT_PATH}/.logs/`:
 - `report-section-{dimension}.md` — dimension sections (4 files, written by agents)
 - `phase2-value-model.json` — pruned value-model subset for Phase 2
 - `enriched-trends-{dimension}.json` — per-trend evidence blocks (4 files, used in theme assembly)
-- `report-theme-{theme_id}.md` — theme sections (3-7 files)
+- `report-theme-{theme_id}.md` — theme sections (3-7 files, written by theme agents)
 - `report-emerging-signals.md` — orphan candidates
 - `claims-{dimension}.json` — dimension claims (4 files)
 - `report-portfolio.md` — portfolio analysis
@@ -442,7 +437,8 @@ Output files in `{PROJECT_PATH}/`:
 
 | Issue | Check |
 |-------|-------|
-| Agent hangs | Verify web access is enabled |
+| Phase 1 agent hangs | Verify web access is enabled |
+| Theme agent hangs | Check enriched-trends files exist in .logs/ |
 | Empty claims | Check if trends have quantitative data in trend-scout output |
 | Wrong language | Verify `project_language` in trend-scout-output.json |
 | Missing sections | Check `.logs/` for partial agent output |

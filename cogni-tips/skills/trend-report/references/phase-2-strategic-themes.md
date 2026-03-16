@@ -4,36 +4,24 @@ Phase 2 assembles the report around strategic themes from `tips-value-model.json
 
 The core idea: themes are the skeleton, individual trends are the evidence woven into each theme's story. A CxO reads themes and investment decisions, not a catalog of 60 trends sorted by dimension.
 
+**Architecture:** Theme section writing is delegated to parallel `trend-report-theme-writer` agents (one per theme). Each agent self-loads enriched evidence from disk, writes its theme section, and returns compact JSON. The orchestrator handles the remaining lightweight sections (executive summary, emerging signals, portfolio, claims registry) and final assembly.
+
 ---
 
 ## Inputs
 
-| Source | Content | Read from |
-|--------|---------|-----------|
-| Strategic Themes | Theme definitions with value chains | `{PROJECT_PATH}/.logs/phase2-value-model.json` → `themes[]` |
-| Value Chains | T→I→P causal paths | `{PROJECT_PATH}/.logs/phase2-value-model.json` → `value_chains[]` |
-| Solution Templates | What to build per theme | `{PROJECT_PATH}/.logs/phase2-value-model.json` → `solution_templates[]` (may be empty if value-modeler Phase 2 hasn't run) |
-| Per-trend evidence | Evidence blocks keyed by candidate_ref | `{PROJECT_PATH}/.logs/enriched-trends-{dimension}.json` (4 files) |
-| Claims | Quantitative claims keyed by ID | `{PROJECT_PATH}/.logs/claims-{dimension}.json` (4 files) |
-| i18n labels | Section headings in target language | Loaded in Phase 0 |
+| Source | Content | Read by |
+|--------|---------|---------|
+| Strategic Themes | Theme definitions with value chains | Orchestrator (Step 2.1) |
+| Value Chains | T→I→P causal paths | Orchestrator (Step 2.1) + theme agents |
+| Solution Templates | What to build per theme | Orchestrator (Step 2.1) + theme agents |
+| Per-trend evidence | Evidence blocks keyed by candidate_ref | Theme agents (self-load from disk) |
+| Claims | Quantitative claims keyed by ID | Theme agents (self-load) + orchestrator (Step 2.6) |
+| i18n labels | Section headings in target language | Loaded in Phase 0, passed to agents |
 
 ---
 
-## Step 2.1: Build Lookups
-
-Read all 4 `enriched-trends-{dimension}.json` files and build a single lookup map:
-
-```
-candidate_ref → { name, horizon, evidence_md, implications_md, opportunities_md, actions_md, claims_refs, has_quantitative_evidence }
-```
-
-The `actions_md` field contains semicolon-separated action keywords (3-5 words each), e.g. `"pilot predictive maintenance; integrate OT/IT data layer; establish vendor shortlist"`. These are compressed intent markers, not full prose — Phase 2 synthesizes complete strategic actions at theme level using these as input.
-
-Read all 4 `claims-{dimension}.json` files and build a claims lookup:
-
-```
-claim_id → { text, value, unit, type, context, citations }
-```
+## Step 2.1: Read Value Model
 
 Read `.logs/phase2-value-model.json` (pruned subset created in Phase 0 Step 0.2b) and extract:
 - `themes[]` — ordered list of strategic themes
@@ -43,15 +31,61 @@ Read `.logs/phase2-value-model.json` (pruned subset created in Phase 0 Step 0.2b
 - `mece_validation` — theme count, ME/CE status
 - `orphan_candidates[]` — candidates not in any theme
 
+The `actions_md` field in enriched-trends contains semicolon-separated action keywords (3-5 words each), e.g. `"pilot predictive maintenance; integrate OT/IT data layer; establish vendor shortlist"`. These are compressed intent markers, not full prose — theme agents synthesize complete strategic actions at theme level using these as input.
+
+Do NOT read the enriched-trends or claims JSON files at this step. Theme agents self-load those files, filtered to their own candidate_refs. The orchestrator only reads claims files later in Step 2.6 for the claims registry.
+
 ---
 
-## Step 2.2: Generate Strategic Executive Summary
+## Step 2.2: Dispatch Theme Agents
+
+For each theme (ordered by `theme_id`), dispatch a `trend-report-theme-writer` agent. Dispatch all agents in a single message (parallel tool calls) so they run concurrently.
+
+### Resume Check
+
+Before dispatching an agent for a theme, check if `{PROJECT_PATH}/.logs/report-theme-{theme_id}.md` already exists and is >1000 bytes. If so, skip that agent — display `"{PHASE_2_THEME_AGENT_SKIP_RESUME}"` and continue to the next theme. This means re-runs only dispatch for missing or incomplete themes.
+
+### Agent Prompt Template
+
+```yaml
+Per agent:
+  subagent_type: "cogni-tips:trend-report-theme-writer"
+  model: sonnet
+  prompt: |
+    PROJECT_PATH: {PROJECT_PATH}
+    THEME_ID: {theme.theme_id}
+    THEME_NAME: {theme.name}
+    STRATEGIC_QUESTION: {theme.strategic_question}
+    EXECUTIVE_SPONSOR_TYPE: {theme.executive_sponsor_type}
+    LANGUAGE: {LANGUAGE}
+    THEME_INDEX: {1-based index in themes array}
+    VALUE_CHAINS: {JSON array of this theme's value chains from value_chains[],
+      filtered by theme_ref == theme_id. Include full chain objects:
+      chain_id, name, narrative, chain_score, trend, implications,
+      possibilities, foundation_requirements — each with candidate_ref and name}
+    SOLUTION_TEMPLATES: {JSON array of STs where theme_ref == theme_id.
+      Include: st_id, name, category, enabler_type. May be empty []}
+    LABELS: {JSON object with relevant i18n labels:
+      EXECUTIVE_SPONSOR, INVESTMENT_THESIS, VALUE_CHAINS, TREND,
+      IMPLICATION, POSSIBILITY, FOUNDATION, SOLUTION_TEMPLATES,
+      SOLUTION, CATEGORY, ENABLER_TYPE, STRATEGIC_ACTIONS}
+```
+
+Display `"{PHASE_2_THEME_AGENT_DISPATCH}"` after dispatching.
+
+---
+
+## Step 2.3: Write Executive Summary + Emerging Signals
+
+While theme agents run, the orchestrator writes the sections that don't depend on agent output.
+
+### Executive Summary
 
 The executive summary leads with the strategic themes table — this is the first thing the reader sees after the title. It answers "what are our strategic bets?" before anything else.
 
 Write `{PROJECT_PATH}/.logs/report-header.md` containing:
 
-### Frontmatter
+#### Frontmatter
 
 ```yaml
 ---
@@ -73,7 +107,7 @@ generated_at: "{ISO-8601}"
 
 Note `report_mode: strategic-themes` and `source_skills` includes `value-modeler`.
 
-### Executive Summary Content
+#### Executive Summary Content
 
 ```markdown
 # {REPORT_TITLE}
@@ -96,7 +130,12 @@ Which themes are act-now vs. watch-and-prepare? What's the overall strategic pos
 ### {HEADLINE_EVIDENCE_LABEL}
 
 {Pick 3-5 of the most impactful quantitative claims across all themes. Each should
-support a different theme. Format as a tight bulleted list with inline citations.}
+support a different theme. Format as a tight bulleted list with inline citations.
+
+SOURCE: Use `top_claims` from theme agent return payloads. Each agent returns its
+2-3 most impactful claims. Select the best across all agents, ensuring coverage
+of different themes. If agents haven't completed yet, write this section after
+Step 2.4 (collect results).}
 
 ### {STRATEGIC_POSTURE_LABEL}
 
@@ -109,105 +148,13 @@ Tie this back to the specific themes and their urgency.}
 
 Must end with two trailing newlines.
 
----
+**Note on headline evidence timing:** The themes table, opening paragraph, bridging paragraph, and strategic posture can all be written from the value model alone — they don't need agent results. The headline evidence section needs `top_claims` from agent returns. If you write the header before agents complete, leave a placeholder for headline evidence and fill it in after Step 2.4. Alternatively, wait for agents to complete before writing the header.
 
-## Step 2.3: Generate Theme Sections
-
-For each theme (ordered by `theme_id`), write a section to `{PROJECT_PATH}/.logs/report-theme-{theme_id}.md`.
-
-Each theme section tells a complete strategic story: why this investment domain matters, what evidence supports it, what to build, and what to do first.
-
-### Theme Section Template
-
-```markdown
-## {N}. {theme.name}
-
-> {theme.strategic_question}
-
-**{EXECUTIVE_SPONSOR_LABEL}:** {theme.executive_sponsor_type}
-
-### {INVESTMENT_THESIS_LABEL}
-
-{Extended narrative: expand the theme's 2-3 sentence narrative into a rich paragraph
-(300-500 words) by weaving in quantitative evidence from the theme's trends. This is
-NOT a summary of trends — it's a strategic argument for why this investment domain
-demands attention. Reference specific numbers and cite sources inline.
-
-The narrative should flow naturally: external force → business implication → strategic
-response. Mirror the T→I→P causal logic of the value chains but in prose form, not
-as a list.}
-
-### {VALUE_CHAINS_LABEL}
-
-{For each value chain in this theme:}
-
-#### {chain.name}
-
-**{TREND_LABEL}:** {chain.trend.name}
-{Pull evidence_md from enriched-trends lookup for this candidate_ref. Include the
-full evidence paragraph with citations. If the trend has no quantitative evidence,
-use its qualitative analysis.}
-
-**{IMPLICATION_LABEL}:** {For each implication in chain.implications:}
-- **{implication.name}** — {Pull evidence_md + implications_md from lookup. Condense
-  to 2-3 sentences focusing on what this means for the specific industry.}
-
-**{POSSIBILITY_LABEL}:** {For each possibility in chain.possibilities:}
-- **{possibility.name}** — {Pull evidence_md + opportunities_md from lookup. Focus on
-  the strategic opportunity, not generic description.}
-
-{If chain has foundation_requirements:}
-**{FOUNDATION_LABEL}:** {List foundation requirements with brief context from their
-enriched evidence. These are prerequisites, not opportunities.}
-
----
-
-{End of value chain. Separator between chains within a theme.}
-
-{If solution_templates exist for this theme:}
-### {SOLUTION_TEMPLATES_LABEL}
-
-| # | {SOLUTION_LABEL} | {CATEGORY_LABEL} | {ENABLER_TYPE_LABEL} |
-|---|-------------------|-------------------|----------------------|
-| 1 | {st.name} | {st.category} | {st.enabler_type} |
-
-{Brief description of each solution template and how it addresses the theme's
-strategic question. 1-2 sentences per ST.}
-
-### {STRATEGIC_ACTIONS_LABEL}
-
-{Synthesize 3-5 concrete actions from the individual trend actions across all value
-chains in this theme. These should be theme-level decisions, not trend-level tasks.
-Prioritize by horizon: ACT items first, then PLAN, then OBSERVE.}
-
-1. **{Action}** — {1-sentence rationale linking to specific evidence}
-2. ...
-```
-
-Must end with two trailing newlines.
-
-### Writing Guidelines
-
-**Investment thesis quality gate:** After writing each theme's investment thesis, verify:
-- Word count is at least 250 words (target 300-500). If under 250, expand by pulling additional evidence from the enriched-trends lookup for candidates in that theme's value chains.
-- At least 3 inline citations with URLs. If under 3, check the enriched-trends data for quantitative claims that weren't yet incorporated.
-- The narrative follows the T→I→P flow: external force → business implication → strategic response. If it reads as a list of facts, rewrite it as a strategic argument.
-
-**Narrative voice:** Authoritative but not academic. Write for a CxO who has 10 minutes to understand why this theme matters and what to do about it. Avoid hedge words ("might," "could potentially") when the evidence is strong — let the data speak.
-
-**Evidence weaving:** Don't dump all claims in a list. Integrate them into the narrative flow. "The predictive maintenance market reached $6.9B in 2024 [Gartner], and manufacturers deploying these capabilities report 30% fewer unplanned outages [McKinsey]" reads better than bullet points.
-
-**Cross-referencing:** When a trend appears in multiple themes (shared candidates), write about it from THIS theme's angle. The same AI trend means different things for "Smart Manufacturing" vs. "Customer Intelligence."
-
-**Foundation requirements:** Keep these brief. They're context ("you need this infrastructure"), not the main argument. 1-2 sentences per requirement.
-
-**Solution templates:** Only present if value-modeler Phase 2 has run (check if `solution_templates[]` is non-empty for this theme). If empty, omit the section entirely — don't mention solutions that don't exist yet.
-
----
-
-## Step 2.4: Generate Emerging Signals Section
+### Emerging Signals
 
 Orphan candidates (trends not in any theme's value chains) still have enriched evidence. Present them as emerging signals worth monitoring — they didn't fit a current theme, which itself is interesting context.
+
+For orphan candidates, the orchestrator reads the enriched-trends files selectively — only the dimensions that contain orphan candidate_refs. This is a lightweight read compared to the old Phase 2 approach where ALL enriched-trends were loaded for theme assembly.
 
 Write `{PROJECT_PATH}/.logs/report-emerging-signals.md`:
 
@@ -236,6 +183,43 @@ If there are no orphans (100% coverage), write:
 ```
 
 Must end with two trailing newlines.
+
+---
+
+## Step 2.4: Collect Agent Results
+
+Wait for all theme agents to complete. Each agent returns compact JSON:
+
+```json
+{
+  "ok": true,
+  "theme_id": "theme-001",
+  "theme_name": "Theme Name",
+  "word_count": 420,
+  "citations_count": 5,
+  "quality_gate_pass": true,
+  "candidates_covered": ["externe-effekte/act/1", ...],
+  "top_claims": [
+    {"claim_id": "claim_ee_001", "short_text": "...", "value": "...", "unit": "USD", "source_url": "..."}
+  ],
+  "actions_count": 4,
+  "chains_written": 3,
+  "theme_file": ".logs/report-theme-theme-001.md"
+}
+```
+
+### Validation
+
+For each agent result:
+1. Check `ok == true`. If `false`: retry once. If retry also fails, HALT with theme name.
+2. Check `quality_gate_pass == true`. If `false`: log WARNING but continue — the theme section is written but may be thin.
+3. Display `"{PHASE_2_THEME_AGENT_COMPLETE}"` for each successful agent.
+
+All dispatched agents must succeed before proceeding. Agents that were skipped via resume check don't need validation.
+
+### Backfill Headline Evidence
+
+If the executive summary header was written before agents completed (with a placeholder for headline evidence), now read `report-header.md` and fill in the `{HEADLINE_EVIDENCE_LABEL}` section using `top_claims` from across all agent returns. Pick 3-5 claims that each support a different theme.
 
 ---
 
@@ -285,16 +269,25 @@ Must end with two trailing newlines.
 
 ### Counting Logic
 
-- **Candidates per theme:** Count unique `candidate_ref` values across all value chains in the theme (trend + implications + possibilities). Don't double-count shared candidates.
-- **Horizon mix:** Count candidates by their `horizon` field from the enriched-trends data.
-- **Claims per theme:** Sum `claims_refs` lengths for all candidates in the theme.
-- **Evidence coverage per theme:** Count candidates where `has_quantitative_evidence == true` vs total candidates in theme.
+Use a combination of value model data and agent return payloads:
+
+- **Chain count per theme:** Count value chains with matching `theme_ref` in value model
+- **Candidates per theme:** Use `candidates_covered` from agent returns (already deduplicated). For resumed themes (no agent return), count unique candidate_refs from the value model's value chains.
+- **Horizon mix:** Extract horizon from each candidate_ref format (`{dimension}/{horizon}/{seq}`). For more precise counts, read the enriched-trends files — but the candidate_ref format provides the horizon directly.
+- **Claims per theme:** For agents that ran, count from `top_claims`. For precise counts, read claims files in Step 2.6 and count by theme mapping.
+- **Evidence coverage per theme:** Requires reading enriched-trends to check `has_quantitative_evidence`. If this creates too much context pressure, use agent word_count and citations_count as proxies.
 
 ---
 
 ## Step 2.6: Generate Claims Registry
 
-Claims registry includes a `theme` column:
+Claims registry includes a `theme` column. This is the one step where the orchestrator reads the claims JSON files directly.
+
+Read all 4 `claims-{dimension}.json` files. Build a `claim_id → claim` lookup.
+
+To determine which theme a claim belongs to: use the value model's value chains to build a `candidate_ref → theme_name` mapping. Then for each claim, find which candidate's `claims_refs` contains it (from the enriched-trends data — or use the agent-returned `candidates_covered` lists as a shortcut). Claims from orphan candidates get "—" in the theme column.
+
+Write `{PROJECT_PATH}/.logs/report-claims-registry.md`:
 
 ```markdown
 ## {CLAIMS_REGISTRY_LABEL}
@@ -305,8 +298,6 @@ Claims registry includes a `theme` column:
 |---|---------------|---------------|-----------------|---------------|
 | 1 | {claim text} | {value + unit} | [{title}](url) | {theme name or "—"} |
 ```
-
-To determine which theme a claim belongs to: look up the claim's parent trend via `claims_refs` in the enriched-trends data, then find which theme's value chains reference that candidate_ref. Claims from orphan candidates get "—" in the theme column.
 
 Must end with two trailing newlines.
 
@@ -353,7 +344,10 @@ Merge all 4 dimension claims into `tips-trend-report-claims.json`. The claims th
 | Scenario | Action |
 |----------|--------|
 | `tips-value-model.json` has themes but no value chains | HALT: value-modeler Phase 1 incomplete |
-| enriched-trends JSON missing for a dimension | HALT: Phase 1 agent failed to produce enriched output |
-| Theme references candidate_ref not found in enriched data | Log warning, skip that candidate in the theme narrative |
-| Solution templates empty | Omit "Solution Templates" subsection (value-modeler Phase 2 hasn't run yet) |
+| Theme agent returns `ok: false` | Retry once, then HALT with theme name |
+| Theme agent quality gate fails | WARNING: continue (section written but may be thin) |
+| enriched-trends JSON missing (agent reports) | HALT: Phase 1 agent failed to produce enriched output |
+| Theme references candidate_ref not found in enriched data | Agent logs warning, skips that candidate |
+| Solution templates empty | Agents omit "Solution Templates" subsection |
 | MECE validation failed in value model | Include as-is with warning in portfolio view |
+| Resume file exists but is corrupt (<1000 bytes) | Re-dispatch agent for that theme |

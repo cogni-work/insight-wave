@@ -132,6 +132,10 @@ BALANCE: "Balance"
 
 ```text
 PHASE_0_THEMES_FOUND: "Wertmodell erkannt: {COUNT} strategische Themen verfügbar — verwende themenorganisierten Bericht"
+PHASE_2_THEME_AGENT_DISPATCH: "Starte {COUNT} Themen-Agenten..."
+PHASE_2_THEME_AGENT_COMPLETE: "Themen-Agent {N}/{TOTAL}: {NAME} ({WORDS} Wörter, {CITATIONS} Zitate)"
+PHASE_2_THEME_AGENT_RETRY: "Wiederhole Themen-Agent: {NAME}"
+PHASE_2_THEME_AGENT_SKIP_RESUME: "Thema {NAME} bereits geschrieben — überspringe Agent"
 PHASE_2_THEME_START: "Stelle strategischen Themenbericht zusammen..."
 PHASE_2_THEME_WRITTEN: "Thema {N}/{TOTAL}: {NAME}"
 PHASE_2_THEME_COMPLETE: "Strategischer Bericht geschrieben: {PATH}"
