@@ -27,6 +27,8 @@ Read all 4 `enriched-trends-{dimension}.json` files and build a single lookup ma
 candidate_ref → { name, horizon, evidence_md, implications_md, opportunities_md, actions_md, claims_refs, has_quantitative_evidence }
 ```
 
+The `actions_md` field contains semicolon-separated action keywords (3-5 words each), e.g. `"pilot predictive maintenance; integrate OT/IT data layer; establish vendor shortlist"`. These are compressed intent markers, not full prose — Phase 2 synthesizes complete strategic actions at theme level using these as input.
+
 Read all 4 `claims-{dimension}.json` files and build a claims lookup:
 
 ```

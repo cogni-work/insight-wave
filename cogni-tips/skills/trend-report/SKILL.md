@@ -266,7 +266,7 @@ Dimensions: `externe-effekte` (T), `digitale-wertetreiber` (I), `neue-horizonte`
 Each agent writes:
 - `{PROJECT_PATH}/.logs/report-section-{dimension}.md` — narrative section (dimension-level prose)
 - `{PROJECT_PATH}/.logs/claims-{dimension}.json` — extracted claims
-- `{PROJECT_PATH}/.logs/enriched-trends-{dimension}.json` — per-trend evidence blocks keyed by candidate_ref (used in theme assembly)
+- `{PROJECT_PATH}/.logs/enriched-trends-{dimension}.json` — per-trend evidence blocks keyed by candidate_ref; `actions_md` uses semicolon-separated keywords (used in theme assembly)
 
 #### Step 1.2: Collect Agent Results
 
@@ -303,7 +303,7 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 
 1. Read each `enriched-trends-{dimension}.json` one at a time using the Read tool. Extract the candidate_ref → evidence mappings you need and hold them in context.
 2. Read each `claims-{dimension}.json` one at a time. Extract claim_id → claim data.
-3. Read `tips-value-model.json` for themes, value_chains, solution_templates.
+3. Read `.logs/phase2-value-model.json` (pruned subset from Step 0.2b) for themes, value_chains, solution_templates.
 4. With all data in context, write each report section directly using the Write tool — `report-header.md`, then each `report-theme-{theme_id}.md`, then `report-emerging-signals.md`, `report-portfolio.md`, `report-claims-registry.md`.
 5. Concatenate the files into `tips-trend-report.md` using cat.
 
