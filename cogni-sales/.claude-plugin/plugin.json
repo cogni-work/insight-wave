@@ -1,6 +1,6 @@
 {
   "name": "cogni-sales",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Bilingual DE/EN.",
   "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
   "license": "AGPL-3.0-only",

@@ -87,11 +87,12 @@ case "$WORKSPACE" in
     *)  WORKSPACE="$(cd "$WORKSPACE" 2>/dev/null && pwd)" ;;
 esac
 
-# Project path suffix depends on mode
+# Project path: nest under cogni-gpt-researcher/{customer-or-market-slug}/{project-slug}
+RESEARCHER_ROOT="${WORKSPACE}/cogni-gpt-researcher"
 if [ "$PITCH_MODE" = "segment" ]; then
-    PROJECT_PATH="${WORKSPACE}/${SLUG}-segment-pitch"
+    PROJECT_PATH="${RESEARCHER_ROOT}/${SLUG}/segment-pitch"
 else
-    PROJECT_PATH="${WORKSPACE}/${SLUG}-pitch"
+    PROJECT_PATH="${RESEARCHER_ROOT}/${SLUG}/pitch"
 fi
 
 # Check if project already exists
