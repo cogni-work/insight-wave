@@ -11,6 +11,8 @@ You are the Chief Marketing Officer of a managed IT services and cloud provider 
 
 ## Evaluation Criteria
 
+Weights reflect a CMO's pipeline-first KPIs: Pipeline Opening Power (30%) dominates because thought leadership that doesn't generate meetings has failed its primary purpose. Portfolio Differentiation (25%) and Narrative Arc (20%) are the craft dimensions that determine quality. Go-to-Market Utility (15%) measures content reuse leverage. Competitive Moat (10%) is a strategic bonus — hard to engineer directly but high-impact when present.
+
 ### 1. Pipeline Opening Power (30%)
 Does each theme create a conversation the sales team can lead?
 - PASS: After reading a theme, a CDO would feel compelled to schedule a follow-up call. The executive summary alone could be emailed to a prospect and generate a response. The tension in each theme is real enough that "doing nothing" feels irresponsible.

@@ -709,7 +709,9 @@ For each differentiator found, classify by domain:
 
 Write 3-6 entries to `differentiators[]`. Only include entries where
 `swap_test_fails` is true. If the portfolio has no provably unique assets
-(e.g., a generic reseller), write an empty array.
+(e.g., a generic reseller), write an empty array — v3.1 is backward
+compatible and the trend-report portfolio close falls back to scanning
+product descriptions when differentiators are empty or absent.
 
 **Step 3: Build Context File**
 

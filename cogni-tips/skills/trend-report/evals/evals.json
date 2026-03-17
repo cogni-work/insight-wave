@@ -65,6 +65,49 @@
         "All monetary figures use EUR — no standalone USD amounts in German report",
         "Zusammenfassung uses numbered list for theme summaries (not bullet list)"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Generate a trend report for my TIPS project. There is no portfolio context file — no cogni-portfolio plugin is installed.",
+      "expected_output": "A complete English trend report that gracefully handles missing portfolio context: no portfolio close in Why You sections, no provider differentiators, no portfolio analysis table. Report completes without errors.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists in the project directory",
+        "Report has valid YAML frontmatter with report_mode: strategic-themes",
+        "Report contains 5 H2 theme sections",
+        "No portfolio close sentence in any theme (PORTFOLIO_PROVIDER is empty)",
+        "No portfolio analysis section or table",
+        "Report completes without HALT errors related to missing portfolio",
+        "Why You sections still present — contain capability narrative without provider branding"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Ich möchte den Trendbericht auf Englisch haben, aber wir kommunizieren auf Deutsch.",
+      "expected_output": "A mixed-language workflow: German interaction (questions, status updates) but English report output. Web searches use both languages.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists in the project directory",
+        "Frontmatter contains language: en",
+        "Report language is English — headings and prose in English",
+        "AskUserQuestion prompts are in German (interaction language)",
+        "Status messages during execution are in German",
+        "Web searches include both German and English queries"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Erstelle einen Trendbericht. Mein Portfolio-Kontext ist eine ältere Version ohne Differenzierer.",
+      "expected_output": "A German trend report that detects stale portfolio context (v3.0, no differentiators) and recommends upgrade. Report completes with fallback to description scanning for portfolio close.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists in the project directory",
+        "Phase 0 detects portfolio context version < v3.1",
+        "tips-resume shows 'Done (upgrade available)' for Portfolio Bridge row",
+        "Report still includes portfolio close in Why You sections — falls back to description scanning",
+        "Report recommendations mention re-running tips-bridge for v3.1 differentiators",
+        "No HALT error — stale portfolio is a WARNING, not a blocker"
+      ]
     }
   ]
 }

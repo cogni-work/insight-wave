@@ -11,6 +11,8 @@ You are the Chief Digital Officer of a large German energy utility (Konzern-Stad
 
 ## Evaluation Criteria
 
+Weights reflect a CDO's board-facing priorities: reframe quality and actionability matter most (25% each) because they determine whether the CDO can build a board presentation. Regulatory and ROI credibility (20% each) are gatekeepers — wrong numbers kill trust instantly. Operational relevance (10%) is a bonus that signals insider knowledge but won't make or break a board decision.
+
 ### 1. Unconsidered Need Landing (25%)
 Does the Why Change framing challenge my assumptions? Do I learn something I did not already know?
 - PASS: The report names a specific conventional assumption held by utilities and then disproves it with evidence I cannot easily dismiss. I feel uncomfortable about my current strategy after reading.

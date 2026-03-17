@@ -16,9 +16,9 @@ Return ONLY compact JSON — all verbose output goes to the theme section file, 
 
 Every number and URL in the theme section must trace back to an actual source in the enriched-trends data or claims files. This matters because the claims registry enables automated verification — fabricated data would break the entire verification pipeline.
 
-- Only use numbers and URLs from enriched-trends evidence or claims data
-- If no quantitative evidence exists for a candidate, use its qualitative analysis
-- Never round or adjust numbers to seem more impressive
+- Use numbers and URLs from enriched-trends evidence or claims data — the verification pipeline cross-checks these references, so invented citations cause downstream failures
+- If no quantitative evidence exists for a candidate, use its qualitative analysis instead
+- Preserve original numbers without rounding or adjusting — CDO and CFO readers will fact-check striking figures, and altered numbers erode trust in the entire report
 
 ## Input Parameters
 
@@ -131,8 +131,9 @@ shows [surprising reality]."
 **Benefit (~33%):** Competitive advantage for organizations that recognize this need early.
 What changes when you see the problem correctly? Bridge to urgency.
 
-Weave in evidence_md from T-candidates and implications_md from I-candidates. At least 3
-inline citations. End with competitive implication.
+Weave in evidence_md from T-candidates and implications_md from I-candidates. Aim for at least 3
+inline citations — this density signals rigor to CFO readers and feeds the claims registry.
+End with competitive implication.
 
 HEADING: After writing this section, extract the core reframe — the "Y" from "Most think X,
 evidence shows Y" — and compress it into a message heading (<90 chars). This heading replaces
@@ -399,9 +400,9 @@ Now replace the placeholder heading markers in the written file with the actual 
 **Arc quality gate (when arc is loaded):** After writing, verify:
 - Each element meets its proportional word target (+/-10%)
 - **Why Change:** PSB structure applied, Contrast Structure used, ends with competitive implication
-- **Why Now:** ≥2 forcing functions with specific timelines, before/after contrast, window closing statement. FF1 should be a regulatory deadline if evidence contains one. Each forcing function should be SPECIFIC to this theme — avoid reusing the same deadline (e.g., EU AI Act August 2026) that is the primary forcing function in another theme. If the same deadline applies across themes, reference it briefly ("alongside the EU AI Act deadline") but lead with a theme-specific forcing function.
+- **Why Now:** ≥2 forcing functions with specific timelines, before/after contrast, window closing statement. FF1 should be a regulatory deadline if evidence contains one. Each forcing function should be specific to this theme — reusing the same deadline (e.g., EU AI Act August 2026) as the primary forcing function in multiple themes makes the report feel repetitive and weakens urgency. If the same deadline applies across themes, reference it briefly ("alongside the EU AI Act deadline") but lead with a theme-specific forcing function.
 - **Why You:** IS-DOES-MEANS logic applied (invisibly) to ≥1 solution template or P-candidate. You-Phrasing for outcomes. No ST-IDs, no "Power Position", no visible IS/DOES/MEANS labels — flowing prose only. No solution table. Portfolio close present (if PORTFOLIO_PRODUCTS non-empty). Heading uses "Lösungen"/"solutions" and ties back to urgency.
-- **Why Pay:** ≥2 cost dimensions with specific localized € ranges (not global averages), 3-year horizon, closing ratio comparison. Every cost dimension MUST contain EUR amounts (never USD without EUR equivalent) and reference a specific organization size (e.g., "für einen Versorger mit €500M Umsatz"). The proactive investment figure must be realistic for the scope of capabilities described — do not understate to inflate the ratio.
+- **Why Pay:** ≥2 cost dimensions with specific localized EUR ranges (not global averages), 3-year horizon, closing ratio comparison. Every cost dimension should contain EUR amounts and reference a specific organization size (e.g., "für einen Versorger mit €500M Umsatz") — CDO and CFO readers immediately distrust global averages or unsized figures because they can't present them to their board. The proactive investment figure should be realistic for the scope of capabilities described — understating to inflate the ratio destroys credibility when readers do their own math.
 - Hook opens with quantified surprise from theme evidence
 - **Headings:** H2 is thesis statement (not topic label), all H3s are message-driven (not arc element names), each contains a number/date/entity
 - **Structural integrity:** The output file must contain exactly ONE `## ` line (the H2 theme thesis heading). All other headings within the theme section must be `### ` (H3) or `#### ` (H4). If you find multiple `## ` lines in your output, demote the extras to `### `.
