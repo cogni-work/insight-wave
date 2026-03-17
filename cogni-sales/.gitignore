@@ -1,0 +1,5 @@
+# Plugin settings (user-specific)
+.claude/*.local.md
+
+# Runtime pitch projects (created per-use, not part of plugin)
+*-workspace/
