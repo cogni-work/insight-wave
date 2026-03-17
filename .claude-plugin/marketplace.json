@@ -105,6 +105,15 @@
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["research", "report", "multi-agent", "storm", "parallel-search", "review-loop", "deep-research", "claims-verification"]
+    },
+    {
+      "name": "cogni-sales",
+      "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates customer-specific sales presentations and proposals from cogni-portfolio data with optional TIPS strategic enrichment. Bilingual DE/EN.",
+      "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
+      "source": "./cogni-sales",
+      "category": "productivity",
+      "license": "AGPL-3.0-only",
+      "keywords": ["sales", "pitch", "why-change", "proposal", "presentation", "b2b", "corporate-visions", "acquisition"]
     }
   ]
 }
