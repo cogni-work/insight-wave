@@ -32,6 +32,7 @@ PORTFOLIO_DISCOVERY_MARKET: "{MARKET_NAME} ({REGION}) — verticals: {VERTICALS}
 PORTFOLIO_DISCOVERY_SELECT: "Select a market to pre-populate, or choose 'Manual selection' to pick from the full industry taxonomy:"
 PORTFOLIO_DISCOVERY_MANUAL: "Manual selection — use full industry taxonomy"
 PORTFOLIO_DISCOVERY_NONE: "No portfolio projects found in workspace. Proceeding with manual industry selection."
+PORTFOLIO_DISCOVERY_ASK_PATH: "I couldn't find any portfolio projects. Do you have a workspace directory with cogni-portfolio projects in a different location?"
 PORTFOLIO_DISCOVERY_SELECTED: "Pre-populating from portfolio market: {MARKET_NAME}"
 PORTFOLIO_DISCOVERY_TOPIC_SUGGEST: "Based on the selected market, a suggested research topic could be: '{TOPIC}'. Would you like to use this or enter your own?"
 ```

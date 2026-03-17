@@ -105,12 +105,66 @@ else
 fi
 ```
 
+### Broader scan fallback
+
+If the primary workspace scan found nothing (`PORTFOLIO_FOUND != "true"`), attempt a
+broader search before giving up. This handles the common case where the user's portfolio
+lives in a different directory than `$PWD` (e.g., OneDrive workspace vs. Git repo).
+
+```bash
+if [[ "$PORTFOLIO_FOUND" != "true" && -f "$DISCOVERY_SCRIPT" ]]; then
+  # Strategy 1: Scan parent directory of $PWD (catches sibling workspaces)
+  PARENT_DIR="$(dirname "$WORKSPACE_DIR")"
+  if [[ "$PARENT_DIR" != "$WORKSPACE_DIR" ]]; then
+    DISCOVERY_OUTPUT=$(bash "$DISCOVERY_SCRIPT" --workspace "$PARENT_DIR" --json 2>/dev/null || echo '{"found":false}')
+    PORTFOLIO_FOUND=$(echo "$DISCOVERY_OUTPUT" | jq -r '.found')
+  fi
+
+  # Strategy 2: Use find to locate cogni-portfolio dirs in common workspace locations
+  if [[ "$PORTFOLIO_FOUND" != "true" ]]; then
+    SEARCH_ROOTS=()
+    # Check user's home-level cloud storage and common project dirs
+    for candidate in \
+      "$HOME/Library/CloudStorage" \
+      "$HOME/OneDrive" \
+      "$HOME/Documents" \
+      "$HOME/Projects"; do
+      [[ -d "$candidate" ]] && SEARCH_ROOTS+=("$candidate")
+    done
+
+    for root in "${SEARCH_ROOTS[@]}"; do
+      PORTFOLIO_DIR=$(find "$root" -maxdepth 5 -type d -name "cogni-portfolio" 2>/dev/null | head -1)
+      if [[ -n "$PORTFOLIO_DIR" ]]; then
+        BROADER_WORKSPACE="$(dirname "$PORTFOLIO_DIR")"
+        DISCOVERY_OUTPUT=$(bash "$DISCOVERY_SCRIPT" --workspace "$BROADER_WORKSPACE" --json 2>/dev/null || echo '{"found":false}')
+        PORTFOLIO_FOUND=$(echo "$DISCOVERY_OUTPUT" | jq -r '.found')
+        if [[ "$PORTFOLIO_FOUND" == "true" ]]; then
+          log_conditional INFO "Portfolio found via broader scan: $BROADER_WORKSPACE"
+          break
+        fi
+      fi
+    done
+  fi
+fi
+```
+
 ### If no portfolio projects found
+
+If the broader scan still finds nothing, ask the user whether they have a workspace
+with portfolio projects elsewhere. This prevents silent failures when the user expects
+portfolio detection to work.
 
 ```bash
 if [[ "$PORTFOLIO_FOUND" != "true" ]]; then
   log_conditional INFO "{PORTFOLIO_DISCOVERY_NONE}"
-  # Fall through to Step 0.2
+  # Ask user if they have a workspace directory with portfolio projects
+  # AskUserQuestion:
+  #   question: "{PORTFOLIO_DISCOVERY_ASK_PATH}"
+  #   options:
+  #     - label: "No, continue with manual industry selection"
+  #     - label: "Yes, scan this directory: [enter path]"
+  # If user provides a path, run discovery again with that path.
+  # Otherwise fall through to Step 0.2.
 fi
 ```
 

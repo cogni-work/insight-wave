@@ -32,6 +32,7 @@ PORTFOLIO_DISCOVERY_MARKET: "{MARKET_NAME} ({REGION}) — Vertikalen: {VERTICALS
 PORTFOLIO_DISCOVERY_SELECT: "Wählen Sie einen Markt zum Vorausfüllen, oder wählen Sie 'Manuelle Auswahl' für die vollständige Branchentaxonomie:"
 PORTFOLIO_DISCOVERY_MANUAL: "Manuelle Auswahl — vollständige Branchentaxonomie verwenden"
 PORTFOLIO_DISCOVERY_NONE: "Keine Portfolio-Projekte im Workspace gefunden. Weiter mit manueller Branchenauswahl."
+PORTFOLIO_DISCOVERY_ASK_PATH: "Ich konnte keine Portfolio-Projekte finden. Haben Sie ein Arbeitsverzeichnis mit cogni-portfolio Projekten an einem anderen Ort?"
 PORTFOLIO_DISCOVERY_SELECTED: "Vorausfüllung aus Portfolio-Markt: {MARKET_NAME}"
 PORTFOLIO_DISCOVERY_TOPIC_SUGGEST: "Basierend auf dem gewählten Markt wäre ein mögliches Forschungsthema: '{TOPIC}'. Möchten Sie dieses verwenden oder ein eigenes eingeben?"
 ```
