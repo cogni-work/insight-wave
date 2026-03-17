@@ -22,8 +22,8 @@ This plugin automates the research-heavy parts — parallel web search, source a
 2. **Research** in parallel — one agent per sub-question, searching the web and extracting findings
 3. **Aggregate** sources across all sub-questions, deduplicate, and enforce quality thresholds
 4. **Write** a structured report with inline citations linking every claim to its source
-5. **Verify** by extracting claims from the draft and checking them against source URLs via cogni-claims
-6. **Review and revise** through an automated quality gate (up to 3 iterations) until the report meets structural and factual standards
+5. **Review** structurally — automated quality gate checks completeness, coherence, depth, and clarity
+6. **Verify** (separate step) — extract claims and check each against its source URL via cogni-claims in a dedicated context window
 
 ## What it means for you
 
@@ -58,9 +58,9 @@ Describe what you want in natural language:
 
 After installing, type one prompt:
 
-> Research the state of AI regulation in the EU and verify the claims
+> Research the state of AI regulation in the EU
 
-Claude decomposes the topic, dispatches parallel web researchers, compiles a sourced report, then automatically extracts and verifies every factual claim against its cited source. You'll see which claims check out and which don't — and the review loop will revise until quality standards are met.
+Claude decomposes the topic, dispatches parallel web researchers, compiles a sourced report, and runs a structural review. Then run `/verify-report` to extract and verify every factual claim against its cited source — you'll see which claims check out and which don't, and the review loop will revise until quality standards are met.
 
 Results land in your project directory:
 
@@ -89,17 +89,18 @@ cogni-gpt-researcher-<slug>/
 
 ## How it works
 
-The **research-report** skill orchestrates six phases. In Phase 0, it initializes the project workspace and runs preliminary web searches to ground the research. In Phase 1, it decomposes the topic into orthogonal sub-questions with search guidance for each. Phase 2 dispatches **section-researcher** agents (sonnet) in batches of 4–5 — each agent runs 5–7 web searches, fetches top results, curates sources with quality scores, and creates context + source entities. For deep reports, **deep-researcher** agents (sonnet) perform recursive tree exploration instead, pursuing follow-up questions at decreasing breadth per depth level.
+The pipeline uses two skills that split the work across separate context windows:
 
-Phase 3 aggregates all contexts, deduplicates sources, and enforces a 25,000-word context limit. Phase 4 hands the aggregated context to the **writer** agent (sonnet), which produces a structured draft with inline citations. Phase 5 runs the claims-verified review loop: the **claim-extractor** identifies 10–30 verifiable claims, submits them to cogni-claims for source URL verification, then the **reviewer** scores the draft on five structural dimensions and flags factual deviations. If the score is below threshold or critical deviations exist, the **revisor** incorporates feedback and the loop repeats (max 3 iterations). Phase 6 copies the accepted draft to `output/report.md`.
+**research-report** orchestrates six phases. Phase 0 initializes the project workspace and runs preliminary web searches to ground the research. Phase 1 decomposes the topic into orthogonal sub-questions with search guidance for each. Phase 2 dispatches **section-researcher** agents (sonnet) in batches of 4–5 — each agent runs 5–7 web searches, fetches top results, curates sources with quality scores, and creates context + source entities. For deep reports, **deep-researcher** agents (sonnet) perform recursive tree exploration instead. Phase 3 aggregates all contexts, deduplicates sources, and enforces a 25,000-word context limit. Phase 4 hands the aggregated context to the **writer** agent (sonnet), which produces a structured draft with inline citations. Phase 5 runs a structural-only review (completeness, coherence, source diversity, depth, clarity). Phase 6 copies the accepted draft to `output/report.md`.
 
-If cogni-claims is unavailable, the review loop degrades gracefully to structural-only review (2 iterations max).
+**verify-report** then runs in a fresh context window — loading only the draft and source entities, not the research data. It extracts 10–30 verifiable claims from the draft, submits them to cogni-claims for source URL verification, presents results to the user, and runs up to 3 review-revision iterations to fix any factual deviations found. This architectural split ensures claims verification gets full context attention.
 
 ## Components
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `research-report` | skill | Main orchestrator — six-phase pipeline from topic to verified report |
+| `research-report` | skill | Main orchestrator — six-phase pipeline from topic to structurally reviewed report |
+| `verify-report` | skill | Claims verification — extracts claims, verifies against sources via cogni-claims, revises deviations |
 | `export-report` | skill | Export finalized report to HTML, PDF, or Markdown |
 | `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question |
 | `deep-researcher` | agent (sonnet) | Recursive tree explorer for deep research mode |
@@ -115,10 +116,13 @@ If cogni-claims is unavailable, the review loop degrades gracefully to structura
 ```
 cogni-gpt-researcher/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       2 orchestration skills
+├── skills/                       3 orchestration skills
 │   ├── research-report/
 │   │   ├── SKILL.md
-│   │   └── references/           5 reference guides
+│   │   └── references/           4 reference guides
+│   ├── verify-report/
+│   │   ├── SKILL.md
+│   │   └── references/           3 reference guides (incl. claims-integration)
 │   └── export-report/
 │       ├── SKILL.md
 │       └── references/

@@ -1,9 +1,9 @@
 ---
 name: research-report
 description: |
-  Generate a multi-agent research report using parallel web research with claims-verified
-  review loops. Three modes: basic (fast single-pass), detailed (multi-section with outline),
-  deep (recursive tree exploration). Integrates with cogni-claims for evidence-based quality gates.
+  Generate a multi-agent research report using parallel web research with structural
+  review. Three modes: basic (fast single-pass), detailed (multi-section with outline),
+  deep (recursive tree exploration). Claims verification runs separately via verify-report.
   Supports configurable writing tones, auto/manual researcher roles, source URL pre-fetch,
   domain-restricted search, custom sub-question counts, and local document research.
   Three source modes: web (default), local (analyze user's documents), hybrid (web + documents).
@@ -54,8 +54,10 @@ When this skill loads:
 2. Parallel web research (sonnet agents, one per sub-question)
 3. Context aggregation and source deduplication
 4. Report compilation (sonnet writer agent)
-5. Claims extraction → cogni-claims verification → evidence-based review
-6. Final polished report at `output/report.md`
+5. Structural review and polish
+6. Final report at `output/report.md`
+
+Then run `/verify-report` to verify claims against cited sources in a fresh context window.
 
 ## Prerequisites
 
@@ -88,7 +90,6 @@ Read these reference files when the corresponding phase needs them:
 | `references/citation-formats.md` | Phase 0 — resolving citation format |
 | `references/image-generation.md` | Phase 4.5 — image generation (when enabled) |
 | `references/review-criteria.md` | Phase 5 — understanding review scoring |
-| `references/claims-integration.md` | Phase 5 — cogni-claims submission + verification |
 
 ## Workflow
 
@@ -409,116 +410,38 @@ When `generate_images` is `true` in project-config.json AND the report type is `
 
 Skip for outline and resource report types.
 
-### Phase 5: Claims-Verified Review Loop
+### Phase 5: Structural Review
 
-**Outline and Resource modes**: Skip the full review loop. Run a single structural review pass (reviewer only, no claims extraction/verification). Accept the draft if score >= 0.65 or iterate once. Then proceed to Phase 6.
+This phase runs a lightweight structural-only review to catch organizational and stylistic issues before finalization. Claims verification — the factual accuracy check — runs separately via the **verify-report** skill in a dedicated context window. This architectural split ensures claims verification gets full context attention rather than competing with research data from Phases 0-4.
 
-**Basic, Detailed, and Deep modes**: Full review loop as described below.
-
-Structural review alone catches organizational and stylistic issues but misses factual errors — the most damaging kind. Any LLM can generate fluent prose; the differentiating value of this pipeline is that every factual claim is checked against its original source before publication. Claims verification is where research quality is actually created — it turns a plausible-sounding draft into an evidence-backed report. Without it, the output is no more trustworthy than a single-shot generation. This is the cogni-works original design replacing GPT-Researcher's human-in-the-loop review, and it is the reason users choose this skill over simpler alternatives.
-
-**All steps 5a through 5c.5 are mandatory for basic/detailed/deep reports.** Execute them sequentially regardless of claim count or source count. Do not skip or abbreviate verification to save time — a report with 25 unverified claims is worse than a slower report with 25 verified ones.
-
-**Read**: `references/claims-integration.md` for cogni-claims protocol.
 **Read**: `references/review-criteria.md` for scoring rubric.
 
-Maximum 3 iterations. Each iteration:
+**Outline and Resource modes**: Accept the draft if structural score >= 0.65 or iterate once. Then proceed to Phase 6.
 
-#### 5a: Claim Extraction
-```
-Task(claim-extractor,
-  PROJECT_PATH=<project_path>,
-  DRAFT_PATH="output/draft-v{N}.md",
-  DRAFT_VERSION=N)
-```
+**Basic, Detailed, and Deep modes**: Run one structural review iteration as described below.
 
-#### 5b: Claims Submission to cogni-claims
-```
-Skill(cogni-claims:claims, mode=submit,
-  working_dir=<project_path>,
-  claims=[...extracted claims...],
-  submitted_by="cogni-gpt-researcher")
-```
-
-#### 5c: Claims Verification
-```
-Skill(cogni-claims:claims, mode=verify,
-  working_dir=<project_path>)
-```
-
-#### 5c.5: User Claims Review (interactive)
-
-After claims verification completes, present the results to the user before proceeding to the automated reviewer. This step ensures the user has visibility into what was verified and can steer corrections.
-
-1. Read `{PROJECT_PATH}/cogni-claims/claims.json` for verification results
-2. Summarize results into a compact overview:
-   - Total claims verified: N
-   - Claims confirmed: N
-   - Claims with deviations: N (list ALL with deviation type and severity)
-   - Sources unavailable: N (list URLs that could not be fetched)
-3. For each deviated claim, include: the claim statement, what the source actually says, deviation type, and severity
-4. Present to the user via `AskUserQuestion`:
-
-> **Claims Verification Results**
->
-> Verified: N | Confirmed: N | Deviations: N | Sources unavailable: N
->
-> **Deviations found:**
-> 1. [claim statement] — *[deviation_type]* ([severity]): [explanation]
-> 2. ...
->
-> Options:
-> - **proceed** — pass deviations to reviewer + revisor for automated correction
-> - **fix: 1, 3** — flag specific claims for mandatory correction
-> - **drop: 2** — remove specific claims from the report entirely
-> - **accept all** — skip reviewer, accept draft as-is → go to Phase 6
->
-> How would you like to proceed?
-
-5. Process user response:
-   - `proceed` → continue to Phase 5d with all deviations as reviewer input
-   - `fix: N, M` → add flagged claims to a mandatory-fix list passed to the reviewer
-   - `drop: N` → add to a drop list; revisor will remove these claims from the report
-   - `accept all` → skip Phases 5d-5e, proceed directly to Phase 6
-6. Store user decisions in `.metadata/user-claims-review.json`:
-```json
-{
-  "reviewed_at": "<ISO timestamp>",
-  "total_claims": N,
-  "confirmed": N,
-  "deviated": N,
-  "user_action": "proceed|fix|drop|accept_all",
-  "fix_claims": ["claim-id-1", "claim-id-3"],
-  "drop_claims": ["claim-id-2"]
-}
-```
-
-#### 5d: Review
+#### 5a: Review (structural only)
 ```
 Task(reviewer,
   PROJECT_PATH=<project_path>,
   DRAFT_PATH="output/draft-v{N}.md",
-  CLAIMS_DASHBOARD=<project_path>/cogni-claims/claims.json,
-  USER_CLAIMS_REVIEW=<project_path>/.metadata/user-claims-review.json,
-  REVIEW_ITERATION=N,
+  REVIEW_ITERATION=1,
   LANGUAGE=<language>)
 ```
 
-#### 5e: Revise (if verdict="revise" and iteration < 3)
+Note: no `CLAIMS_DASHBOARD` parameter — the reviewer runs structural criteria only (completeness, coherence, source diversity, depth, clarity). The higher accept threshold (0.82) for structural-only review applies automatically.
+
+#### 5b: Revise (if verdict="revise")
 ```
 Task(revisor,
   PROJECT_PATH=<project_path>,
   DRAFT_PATH="output/draft-v{N}.md",
-  VERDICT_PATH=".metadata/review-verdicts/v{N}.json",
+  VERDICT_PATH=".metadata/review-verdicts/v1.json",
   NEW_DRAFT_VERSION=N+1,
   LANGUAGE=<language>)
 ```
-Then goto 5a with new draft version.
 
-#### 5f: Accept
-When verdict="accept" or iteration reaches 3: proceed to Phase 6.
-
-**Graceful degradation**: If cogni-claims is not installed as a plugin or the Skill call returns a technical error (tool not found, plugin missing), skip 5b-5c and run reviewer with structural criteria only. Never skip claims verification to save time — the whole point of this phase is catching factual errors that structural review cannot detect. A slow verified report is worth far more than a fast unverified one.
+Maximum 1 structural review iteration. After revision (or if the first review accepts), proceed to Phase 6.
 
 ### Phase 6: Finalization
 
@@ -526,15 +449,17 @@ When verdict="accept" or iteration reaches 3: proceed to Phase 6.
 2. Update `.metadata/execution-log.json` with:
    - Phase completion timestamps
    - Agent counts and durations
-   - Final review score and iteration count
-   - Claims verification stats
+   - Final structural review score and iteration count
+   - `phase_5_review.claims_verification: "deferred to verify-report"`
 3. Report summary to user:
    - Topic and report type
    - Word count and section count
    - Sources cited
-   - Claims verified / deviated / unavailable
-   - Review iterations and final score
+   - Structural review score
    - Path to `output/report.md`
+4. **Recommend claims verification**:
+
+> **Next step**: Run `/verify-report` to verify claims against cited sources. This runs in a clean context window for thorough fact-checking — extracting claims, verifying each against its source URL, and revising any deviations found.
 
 ## Resumption
 
@@ -551,7 +476,7 @@ If a project directory already exists at init:
 | All researchers fail | Ask user to rephrase topic or try different sub-questions |
 | Most researchers fail | Proceed with available contexts, note gaps in report |
 | Writer produces empty draft | Re-run with more explicit instructions |
-| cogni-claims not installed (Skill tool error) | Fall back to structural-only review. Never skip verification voluntarily for speed — only on technical failure |
+| Claims verification needed | Handled by verify-report skill in a separate context window — not run here |
 | Review loop reaches max (3) | Accept current draft with quality warning |
 | Local documents unreadable | Log skipped files, proceed with readable ones. If none readable, ask user for alternative paths |
 | No relevant content in local docs | Suggest switching to web mode or providing different documents |

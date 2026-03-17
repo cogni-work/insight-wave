@@ -7,18 +7,23 @@ cogni-gpt-researcher is a multi-agent research report generator inspired by GPT-
 ## Architecture
 
 ```
-research-report skill (orchestrator)
+research-report skill (orchestrator, phases 0-6)
   → section-researcher agents (parallel web research, sonnet)
   → local-researcher agents (parallel local document analysis, sonnet)
   → deep-researcher agents (recursive tree exploration, sonnet)
   → source-curator agent (optional quality ranking, sonnet)
   → writer agent (report compilation, sonnet)
   → [optional image generation via cogni-visual or API]
-  → claim-extractor agent (draft → claims, sonnet)
-  → cogni-claims integration (submit + verify)
-  → reviewer agent (quality gate with verification data, sonnet)
+  → reviewer agent (structural-only quality gate, sonnet)
+
+verify-report skill (claims verification, separate context window)
+  → claim-extractor agent (draft → verifiable claims, sonnet)
+  → cogni-claims integration (submit + verify against source URLs)
+  → reviewer agent (structural + claims-based quality gate, sonnet)
   → revisor agent (feedback incorporation, sonnet)
 ```
+
+The two-skill split ensures claims verification runs in a fresh context window. The research pipeline (phases 0-4) saturates context with sub-questions, contexts, sources, and the draft — leaving insufficient capacity for thorough claims verification. verify-report loads only the draft and source entities, giving the claims pipeline full attention.
 
 Five report types: basic, detailed, deep, outline, resource.
 Three source modes: web (default), local (documents only), hybrid (web + documents).
@@ -39,7 +44,7 @@ Entities are ONLY created via `scripts/create-entity.sh` (bash wrapper that dele
 
 ## Cross-Plugin Integration
 
-- **cogni-claims** — review loop submits claims for source URL verification (primary integration)
+- **cogni-claims** — verify-report skill submits claims for source URL verification (primary integration)
 - **cogni-narrative** — story arc transformation of research output. User invokes `/narrative --source-path <report-output-dir>` after research completes. cogni-narrative auto-bridges `[Source: Publisher](URL)` citations into per-source files via its built-in citation bridge (Phase 0.5).
 - **cogni-copywriting** — arc-aware executive polish. User invokes copywriter on narrative output. Auto-activated by `arc_id` frontmatter in narrative output.
 - **cogni-visual** — optional presentation generation
