@@ -1,0 +1,21 @@
+{
+  "slug": "cloud-migration--grosse-energieversorger-de",
+  "feature_slug": "cloud-migration",
+  "market_slug": "grosse-energieversorger-de",
+  "is_statement": "Strukturiertes Cloud-Migrationsprogramm mit Assessment-Framework, modularer CMF-Methodik, 6R-Migrationsstrategien und sprint-basierter Implementierung.",
+  "does_statement": "Ihre IS-U-, SCADA- und ERP-Workloads werden in strukturierten Sprints auf Cloud-Infrastruktur migriert — mit KRITIS-konformer Staging-Umgebung, die den Regelbetrieb nicht gefährdet.",
+  "means_statement": "Die Energiewende-bedingten Kapazitätsanforderungen an IT-Infrastruktur werden elastisch skalierbar, statt durch mehrjährige Hardware-Beschaffungszyklen gebremst zu werden.",
+  "evidence": [
+    {
+      "statement": "T-Systems hat über 500 Cloud-Migrationsprojekte in regulierten Branchen durchgeführt, davon 30+ im Energiesektor.",
+      "source_url": "https://www.t-systems.com/de/cloud/migration",
+      "source_title": "T-Systems Cloud Migration"
+    },
+    {
+      "statement": "Laut McKinsey verzögern langwierige Beschaffungsprozesse die Digitalisierung bei Energieversorgern um durchschnittlich 18-24 Monate.",
+      "source_url": null,
+      "source_title": null
+    }
+  ],
+  "created": "2026-03-18"
+}

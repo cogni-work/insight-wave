@@ -1,0 +1,121 @@
+{
+  "slug": "cloud-migration--grosse-energieversorger-de",
+  "proposition_slug": "cloud-migration--grosse-energieversorger-de",
+  "solution_type": "project",
+  "implementation": [
+    {
+      "phase": "Discovery & Assessment",
+      "duration_weeks": 4,
+      "description": "Bestandsaufnahme aller Workloads (IS-U, SCADA-Schnittstellen, ERP), Cloud-Readiness-Bewertung nach 6R-Modell, KRITIS-Compliance-Gap-Analyse (BSI-C5, NIS2), TCO-Baseline-Erhebung."
+    },
+    {
+      "phase": "Mobilize & Landing Zone",
+      "duration_weeks": 6,
+      "description": "Aufbau der KRITIS-konformen Cloud-Landing-Zone, Cloud Migration Factory (CMF) mit standardisierten Pipelines, OT/IT-Netzwerksegmentierung, IaC-Templates (Terraform/OpenTofu) für Portabilität."
+    },
+    {
+      "phase": "Sprint-basierte Migration (Welle 1 — Non-Critical)",
+      "duration_weeks": 8,
+      "description": "Migration von 60-80 nicht-kritischen Workloads (CRM, HR, Reporting) in 2-Wochen-Sprints mit CMF-Runbooks, validiertem Rollback-Prozess und Go/No-Go-Entscheidung für Welle 2."
+    },
+    {
+      "phase": "Sprint-basierte Migration (Welle 2 — Business-Critical)",
+      "duration_weeks": 12,
+      "description": "Migration kritischer Systeme (SAP-Basis-Infrastruktur, Billing, Messdaten) mit KRITIS-Migrationsverfahren, Parallel-Betrieb, BSI-Audit-Trail und Daten-Repatriierungsplan."
+    },
+    {
+      "phase": "Optimize, Handover & Exit-Readiness",
+      "duration_weeks": 6,
+      "description": "FinOps-Governance, Container-Plattform für modernisierte Services, Wissenstransfer an Kundenbetrieb, Exit-Strategie-Verifizierung mit Portabilitätstest auf alternativer Infrastruktur."
+    }
+  ],
+  "pricing": {
+    "proof_of_value": {
+      "price": 180000,
+      "currency": "EUR",
+      "scope": "Assessment von 30 Workloads mit Cloud-Readiness-Matrix, KRITIS-Gap-Analyse und TCO-Vergleich — klares Go/No-Go nach 6 Wochen."
+    },
+    "small": {
+      "price": 850000,
+      "currency": "EUR",
+      "scope": "Migration von bis zu 80 nicht-kritischen Workloads inkl. Landing-Zone-Aufbau und CMF-Setup, 18 Wochen."
+    },
+    "medium": {
+      "price": 1800000,
+      "currency": "EUR",
+      "scope": "Vollständiges Migrationsprogramm (150+ Workloads, Welle 1+2) inkl. KRITIS-Compliance und SAP-Basis-Migration, 36 Wochen."
+    },
+    "large": {
+      "price": 2800000,
+      "currency": "EUR",
+      "scope": "Enterprise-weites Migrationsprogramm (300+ Workloads) mit Container-Modernisierung, FinOps-Governance und dediziertem Programm-Management, 50 Wochen."
+    }
+  },
+  "cost_model": {
+    "assumptions": [
+      "Tagessätze: Solution Architect 1.800 EUR, Implementation Engineer 1.200 EUR, Project Manager 1.400 EUR — Remote-Delivery, On-Site für KRITIS-Phasen.",
+      "Kunde stellt 1,0 FTE Enterprise Architect und 0,5 FTE Testmanager für Integrations- und Abnahmephasen; 2 bevollmächtigte Ansprechpartner für Sprint-Abnahmen (48h-Frist).",
+      "OT/IT-Grenze: SCADA- und Netzleitsysteme bleiben on-premises — nur IT-seitige Schnittstellen werden migriert. Custom-OT-Integrationen separat beauftragt.",
+      "Datenresidenz: Alle Daten verbleiben in BSI-C5-zertifizierten Rechenzentren in Deutschland unter deutscher Jurisdiktion (DSGVO + KRITIS-DachG).",
+      "Exit-Klausel: 12 Monate Kündigungsfrist, 90 Tage Transitionsunterstützung, Daten-Repatriierung innerhalb 90 Tagen, gedeckelter Exit-Aufwand (max. 5% Gesamtvolumen).",
+      "Phasendauern beschreiben Small-Tier-Baseline. Medium skaliert 1,5-2x, Large 2-3x mit parallelen Workstreams — siehe effort_by_tier."
+    ],
+    "bill_of_materials": {
+      "roles": [
+        { "role": "Solution Architect", "rate_day": 1800, "currency": "EUR" },
+        { "role": "Implementation Engineer", "rate_day": 1200, "currency": "EUR" },
+        { "role": "Project Manager", "rate_day": 1400, "currency": "EUR" }
+      ],
+      "tooling": [
+        { "item": "Cloud Migration Factory Toolchain", "note": "Im Projektpreis enthalten" },
+        { "item": "Terraform/OpenTofu Lizenzen", "note": "Open Source, keine Zusatzkosten" }
+      ],
+      "infrastructure": [
+        { "item": "KRITIS-konforme Staging-Umgebung", "note": "Separat nach Verbrauch abgerechnet" }
+      ]
+    },
+    "effort_by_tier": {
+      "proof_of_value": {
+        "total_days": 80,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 40 },
+          { "role": "Implementation Engineer", "days": 20 },
+          { "role": "Project Manager", "days": 20 }
+        ],
+        "internal_cost": 124000,
+        "margin_pct": 31.1
+      },
+      "small": {
+        "total_days": 380,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 100 },
+          { "role": "Implementation Engineer", "days": 200 },
+          { "role": "Project Manager", "days": 80 }
+        ],
+        "internal_cost": 532000,
+        "margin_pct": 37.4
+      },
+      "medium": {
+        "total_days": 800,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 200 },
+          { "role": "Implementation Engineer", "days": 440 },
+          { "role": "Project Manager", "days": 160 }
+        ],
+        "internal_cost": 1112000,
+        "margin_pct": 38.2
+      },
+      "large": {
+        "total_days": 1300,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 320 },
+          { "role": "Implementation Engineer", "days": 720 },
+          { "role": "Project Manager", "days": 260 }
+        ],
+        "internal_cost": 1804000,
+        "margin_pct": 35.6
+      }
+    }
+  },
+  "created": "2026-03-18"
+}

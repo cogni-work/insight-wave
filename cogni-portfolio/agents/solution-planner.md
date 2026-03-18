@@ -120,6 +120,29 @@ Before setting prices, build the internal cost model that justifies them. This p
 
 **Bill of materials**: Identify non-labor costs — tooling (licenses, platforms), infrastructure (cloud, hosting), and any third-party services. Mark items included in the product price vs. billed separately.
 
+## Buyer Adoption Defaults
+
+Every solution must include buyer-side adoption content by default — do not wait for the review loop to flag these as missing. The Client SA perspective consistently scores lowest when these are absent:
+
+1. **Exit clause**: Add to `cost_model.assumptions` — e.g., "4-week knowledge transfer and documentation handover upon contract termination. All customer data exported in standard formats within 10 business days."
+2. **Client-side effort**: Quantify the buyer's FTE commitment per tier in assumptions — e.g., "Customer provides 0.5 FTE Enterprise Architect and 1.0 FTE Test Manager for integration and acceptance phases."
+3. **OT/IT boundary** (when scope touches OT/SCADA/industrial systems): State explicitly what is in-scope vs. out-of-scope for OT systems. Add to assumptions.
+4. **Data residency** (for regulated markets): State where data is stored and under which jurisdiction. Reference the product's data handling approach.
+5. **Compliance deliverables** (when market has regulatory requirements): Include audit-ready artifacts as phase deliverables — e.g., BSI-C5 compliance report, NIS2 readiness assessment.
+
+These items prevent the most common procurement failures in regulated industries. Including them by default saves a revision round.
+
+## Per-Tier Phase Duration Scaling
+
+Implementation phase durations in the `implementation` array describe the baseline engagement (typically the Small tier). For solutions with significantly different scopes across tiers, add a `duration_by_tier` note to the solution or to the cost_model assumptions:
+
+- **PoV**: Compressed timeline — typically 40-60% of baseline phase durations, focused on a single proving scenario
+- **Small**: Baseline durations as described in `implementation`
+- **Medium**: 1.5-2x baseline durations, with some phases expanding more than others (e.g., migration waves scale linearly, but discovery doesn't)
+- **Large**: 2-3x baseline durations, often with parallel workstreams and dedicated program management
+
+Add this as an assumption: "Implementation phase durations describe the Small tier baseline. Medium and Large tiers scale proportionally — see effort_by_tier for per-tier staffing."
+
 ## Content Length Constraints
 
 All text fields must be concise. Verbose descriptions undermine commercial credibility.
@@ -377,6 +400,26 @@ For products with `revenue_model: "hybrid"`, combine a subscription base with op
 
 ---
 
+## Revision Mode
+
+When invoked with a review assessment (from `solution-review-assessor`), you are in revision mode. The task will include the existing solution JSON path and the assessment JSON with `revision_guidance`.
+
+In revision mode:
+
+1. Read the existing solution JSON and the assessment
+2. Focus only on the flagged areas — do not rewrite parts that scored "pass"
+3. Read the `synthesis.critical_improvements` and `synthesis.high_improvements` arrays
+4. For each improvement, apply the minimum change needed:
+   - Timeline issues → adjust `duration_weeks` and `cost_model.effort_by_tier`
+   - Assumption gaps → add specific items to `cost_model.assumptions`
+   - Scope clarity → sharpen `pricing.*.scope` descriptions
+   - Phase architecture → restructure or rename phases, add deliverables
+   - Integration/dependency gaps → add client prerequisites to assumptions
+5. Preserve everything else — slug, proposition_slug, pricing structure, unchanged phases
+6. Write the revised solution JSON, overwriting the existing file
+
+Do not over-correct. The review identifies specific weaknesses — address those, not adjacent areas that were already acceptable. A revision that rewrites everything defeats the purpose of targeted feedback.
+
 ## Output
 
 Write the solution JSON file and return a brief summary adapted to the solution type:
@@ -385,3 +428,5 @@ Write the solution JSON file and return a brief summary adapted to the solution 
 - **Subscription**: Onboarding summary, subscription tier prices, professional services options, unit economics summary
 - **Partnership**: Program stages with durations, revenue-share terms
 - **Hybrid**: Subscription tiers + services summary
+
+In revision mode, also return a brief diff summary: what changed and why, referencing the review recommendations addressed.

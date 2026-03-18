@@ -1,0 +1,117 @@
+{
+  "slug": "sovereign-cloud--grosse-energieversorger-de",
+  "proposition_slug": "sovereign-cloud--grosse-energieversorger-de",
+  "solution_type": "project",
+  "implementation": [
+    {
+      "phase": "Compliance-Assessment & Plattform-Design",
+      "duration_weeks": 3,
+      "description": "Analyse der KRITIS-relevanten Anwendungen, Mapping gegen BSI-C5- und NIS2-Anforderungen, Design der Sovereign-Cloud-Zielarchitektur mit Datenhoheits-Konzept."
+    },
+    {
+      "phase": "Sovereign-Plattform-Deployment",
+      "duration_weeks": 5,
+      "description": "Provisionierung der BSI-C5-attestierten Sovereign-Cloud-Umgebung, Netzwerk-Segmentierung, IAM mit Zero-Trust-Baseline, Compliance-Monitoring-Setup."
+    },
+    {
+      "phase": "Workload-Migration & Compliance-Validierung",
+      "duration_weeks": 6,
+      "description": "Migration der KRITIS-relevanten Anwendungen auf die Sovereign-Plattform, BSI-C5-Audit-Trail-Validierung, NIS2-Readiness-Nachweis, Compliance-Dashboard-Aufbau, Performance-Vergleich."
+    },
+    {
+      "phase": "Betriebsübergabe & Audit-Readiness",
+      "duration_weeks": 2,
+      "description": "Übergabe an den Kundenbetrieb, Schulung für BSI-Audit-Vorbereitung und Compliance-Dashboard-Nutzung, Dokumentation aller Attestierungsnachweise."
+    }
+  ],
+  "pricing": {
+    "proof_of_value": {
+      "price": 75000,
+      "currency": "EUR",
+      "scope": "Compliance-Assessment für 5 KRITIS-Anwendungen mit BSI-C5-Gap-Analyse, NIS2-Readiness-Score und Sovereign-Cloud-Machbarkeitsnachweis — Go/No-Go nach 4 Wochen."
+    },
+    "small": {
+      "price": 320000,
+      "currency": "EUR",
+      "scope": "Sovereign-Cloud-Deployment für eine Anwendungsgruppe (bis 10 Workloads) mit BSI-C5-Compliance-Nachweis, 16 Wochen."
+    },
+    "medium": {
+      "price": 680000,
+      "currency": "EUR",
+      "scope": "Sovereign-Plattform für alle KRITIS-relevanten Anwendungen (bis 40 Workloads) mit vollständiger BSI-C5-Attestierung, NIS2-Dokumentation und kontinuierlichem Compliance-Monitoring, 24 Wochen."
+    },
+    "large": {
+      "price": 1100000,
+      "currency": "EUR",
+      "scope": "Enterprise-weite Sovereign-Cloud-Transformation (60+ Workloads) mit dediziertem Compliance-Manager, kontinuierlichem Audit-Monitoring und Multi-Cloud-Sovereign-Strategie, 36 Wochen."
+    }
+  },
+  "cost_model": {
+    "assumptions": [
+      "Tagessätze: Solution Architect 1.800 EUR, Implementation Engineer 1.200 EUR, Project Manager 1.400 EUR — Remote-Delivery, On-Site für BSI-Audit-relevante Phasen.",
+      "Kunde stellt 0,5 FTE IT-Sicherheitsbeauftragten (CISO-Team) und 0,5 FTE Anwendungsverantwortlichen für Migrations-Validierung und Abnahme.",
+      "OT/IT-Grenze: SCADA- und Netzleitsysteme sind nicht in-scope; nur IT-seitige KRITIS-Anwendungen (Billing, Messdaten, ERP-Schnittstellen) werden auf Sovereign Cloud migriert.",
+      "Datenresidenz: Ausschließlich deutsche Rechenzentren, BSI-C5 Typ-2-attestiert, keine außereuropäische Jurisdiktion. Vertragliche DSGVO- und KRITIS-DachG-Konformität.",
+      "Compliance-Deliverables: BSI-C5-Attestierungsdokumentation, NIS2-Readiness-Assessment, vierteljährlicher Compliance-Report, Audit-Trail für BSI-Prüfungen.",
+      "Wettbewerbspositionierung: T-Systems Sovereign Cloud (BSI-C5 Typ-2, deutsche RZ, Open-Source-Basis) vs. AWS European Sovereign Cloud (breiteres Ökosystem, US-Jurisdiktion) vs. Azure Confidential Computing (Verschlüsselung, keine volle Datenhoheit).",
+      "Exit-Klausel: 12 Monate Kündigungsfrist, 90 Tage Transitionsunterstützung, Datenexport in Standardformaten, IaC-Portabilität sichert Provider-Wechsel. Gedeckelter Exit-Aufwand (max. 5% Gesamtvolumen)."
+    ],
+    "bill_of_materials": {
+      "roles": [
+        { "role": "Solution Architect", "rate_day": 1800, "currency": "EUR" },
+        { "role": "Implementation Engineer", "rate_day": 1200, "currency": "EUR" },
+        { "role": "Project Manager", "rate_day": 1400, "currency": "EUR" }
+      ],
+      "tooling": [
+        { "item": "Compliance-Monitoring-Suite", "note": "Im Plattform-Preis enthalten" },
+        { "item": "BSI-C5 Audit-Trail-Tooling", "note": "Im Projektpreis enthalten" }
+      ],
+      "infrastructure": [
+        { "item": "Sovereign Cloud Infrastruktur (BSI-C5 Typ-2)", "note": "Separat als Plattform-Vertrag" }
+      ]
+    },
+    "effort_by_tier": {
+      "proof_of_value": {
+        "total_days": 35,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 18 },
+          { "role": "Implementation Engineer", "days": 10 },
+          { "role": "Project Manager", "days": 7 }
+        ],
+        "internal_cost": 54200,
+        "margin_pct": 27.7
+      },
+      "small": {
+        "total_days": 155,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 45 },
+          { "role": "Implementation Engineer", "days": 80 },
+          { "role": "Project Manager", "days": 30 }
+        ],
+        "internal_cost": 219000,
+        "margin_pct": 31.6
+      },
+      "medium": {
+        "total_days": 330,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 90 },
+          { "role": "Implementation Engineer", "days": 170 },
+          { "role": "Project Manager", "days": 70 }
+        ],
+        "internal_cost": 464000,
+        "margin_pct": 31.8
+      },
+      "large": {
+        "total_days": 540,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 150 },
+          { "role": "Implementation Engineer", "days": 280 },
+          { "role": "Project Manager", "days": 110 }
+        ],
+        "internal_cost": 760000,
+        "margin_pct": 30.9
+      }
+    }
+  },
+  "created": "2026-03-18"
+}

@@ -1,0 +1,117 @@
+{
+  "slug": "sap-on-cloud--grosse-energieversorger-de",
+  "proposition_slug": "sap-on-cloud--grosse-energieversorger-de",
+  "solution_type": "project",
+  "implementation": [
+    {
+      "phase": "SAP-Betriebsanalyse & Transition-Design",
+      "duration_weeks": 3,
+      "description": "Analyse der bestehenden SAP-Landschaft (IS-U, S/4HANA, BW), TCO-Baseline-Erhebung (Ist-Betriebskosten), Hochlast-Profiling (Jahresabrechnung, Preisanpassungswellen), Definition des Managed-Plattform-Zielbilds mit SLA-Anforderungen."
+    },
+    {
+      "phase": "Plattform-Aufbau & Datenmigration",
+      "duration_weeks": 6,
+      "description": "Provisionierung der SAP-Managed-Plattform, Basis-Migration der SAP-Systeme, Einrichtung von Monitoring, Patch-Management und automatisiertem Lifecycle-Management."
+    },
+    {
+      "phase": "IS-U-Validierung & Hochlast-Testing",
+      "duration_weeks": 4,
+      "description": "Validierung der IS-U-spezifischen Abrechnungszyklen auf der neuen Plattform, Lasttests für Jahresabrechnung und Preisanpassungswellen, Performance-Baseline-Vergleich."
+    },
+    {
+      "phase": "Cutover, Betriebsübergabe & Enablement",
+      "duration_weeks": 3,
+      "description": "Produktiv-Cutover mit Parallel-Betrieb, TCO-Nachher-Vergleich (Ist vs. Managed, 5-Jahres-Projektion), Übergabe an Managed-Services-Team, Schulung des Kunden-Betriebsteams."
+    }
+  ],
+  "pricing": {
+    "proof_of_value": {
+      "price": 95000,
+      "currency": "EUR",
+      "scope": "SAP-Betriebsanalyse für ein IS-U-System mit SLA-Gap-Analyse, Hochlast-Profiling und TCO-Projektion — Go/No-Go nach 4 Wochen."
+    },
+    "small": {
+      "price": 420000,
+      "currency": "EUR",
+      "scope": "Transition eines SAP-Produktivsystems (IS-U oder S/4HANA) auf Managed-Plattform inkl. Basis-Migration und Monitoring-Setup, 16 Wochen."
+    },
+    "medium": {
+      "price": 850000,
+      "currency": "EUR",
+      "scope": "Transition der gesamten SAP-Kernlandschaft (IS-U + S/4HANA + BW) mit Hochlast-Validierung und vollständigem Lifecycle-Management, 24 Wochen."
+    },
+    "large": {
+      "price": 1400000,
+      "currency": "EUR",
+      "scope": "Enterprise-weite SAP-Betriebstransition (5+ Systeme) mit dediziertem CSM, 99.95%-SLA-Garantie und FinOps-Optimierung, 36 Wochen."
+    }
+  },
+  "cost_model": {
+    "assumptions": [
+      "Tagessätze: Solution Architect 1.800 EUR, Implementation Engineer 1.200 EUR, Project Manager 1.400 EUR — Remote-Delivery mit On-Site für Cutover-Phasen.",
+      "Kunde stellt 0,5 FTE SAP-Basis-Administrator und 1,0 FTE Fachbereichs-Ansprechpartner für IS-U-Abrechnungsvalidierung und Abnahmetests.",
+      "Datenresidenz: SAP-Systeme auf BSI-C5-attestierter Infrastruktur in deutschen Rechenzentren; kein Zugriff durch außereuropäische Jurisdiktionen.",
+      "Compliance-Deliverables: BSI-C5-Compliance-Nachweis für SAP-Betriebsplattform, NIS2-Readiness-Assessment, vierteljährlicher Audit-Report.",
+      "Exit-Klausel: 6 Monate Kündigungsfrist, 120 Tage Transitions-Support, SAP-Datenexport in Standardformaten (SAP-Backup, SQL), gedeckelter Exit-Aufwand (max. 8% Jahresvolumen).",
+      "Wettbewerbspositionierung: T-Systems Managed SAP (KRITIS-erfahren, BSI-C5, Sovereign) vs. Hyperscaler Managed SAP (breiteres Ökosystem, keine Sovereign-Garantie) vs. Inhouse-Basis (volle Kontrolle, Fachkräftemangel-Risiko).",
+      "Phasendauern beschreiben Small-Tier-Baseline. Medium skaliert 1,5x, Large 2x mit parallelen System-Transitions — siehe effort_by_tier."
+    ],
+    "bill_of_materials": {
+      "roles": [
+        { "role": "Solution Architect", "rate_day": 1800, "currency": "EUR" },
+        { "role": "Implementation Engineer", "rate_day": 1200, "currency": "EUR" },
+        { "role": "Project Manager", "rate_day": 1400, "currency": "EUR" }
+      ],
+      "tooling": [
+        { "item": "SAP Lifecycle Management Suite", "note": "Im Managed-Service-Preis enthalten" },
+        { "item": "Monitoring & Alerting (Prometheus/Grafana)", "note": "Open Source, keine Zusatzkosten" }
+      ],
+      "infrastructure": [
+        { "item": "SAP-zertifizierte Cloud-Infrastruktur", "note": "Separat als Managed-Service-Vertrag" }
+      ]
+    },
+    "effort_by_tier": {
+      "proof_of_value": {
+        "total_days": 45,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 20 },
+          { "role": "Implementation Engineer", "days": 15 },
+          { "role": "Project Manager", "days": 10 }
+        ],
+        "internal_cost": 68000,
+        "margin_pct": 28.4
+      },
+      "small": {
+        "total_days": 200,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 50 },
+          { "role": "Implementation Engineer", "days": 110 },
+          { "role": "Project Manager", "days": 40 }
+        ],
+        "internal_cost": 278000,
+        "margin_pct": 33.8
+      },
+      "medium": {
+        "total_days": 420,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 100 },
+          { "role": "Implementation Engineer", "days": 230 },
+          { "role": "Project Manager", "days": 90 }
+        ],
+        "internal_cost": 582000,
+        "margin_pct": 31.5
+      },
+      "large": {
+        "total_days": 680,
+        "breakdown": [
+          { "role": "Solution Architect", "days": 160 },
+          { "role": "Implementation Engineer", "days": 380 },
+          { "role": "Project Manager", "days": 140 }
+        ],
+        "internal_cost": 940000,
+        "margin_pct": 32.9
+      }
+    }
+  },
+  "created": "2026-03-18"
+}

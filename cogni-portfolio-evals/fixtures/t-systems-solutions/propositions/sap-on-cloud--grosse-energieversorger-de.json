@@ -1,0 +1,16 @@
+{
+  "slug": "sap-on-cloud--grosse-energieversorger-de",
+  "feature_slug": "sap-on-cloud",
+  "market_slug": "grosse-energieversorger-de",
+  "is_statement": "SAP-Betriebsplattform mit automatisiertem Lifecycle-Management, Basis-Administration, Monitoring und Patch-Management für S/4HANA und IS-U auf Cloud-Infrastruktur.",
+  "does_statement": "Der SAP-Betrieb wird von interner Mannschaft auf eine managed Plattform verlagert, die IS-U-spezifische Abrechnungszyklen und branchenübliche Hochlastphasen (Jahresabrechnung, Preisanpassungen) abfedert.",
+  "means_statement": "Die SAP-Betriebskosten sinken um 25-35% bei gleichzeitig höherer Verfügbarkeit (99.95% SLA), was den CIO-Spielraum für Innovationsprojekte wie Smart Metering oder Sektorenkopplung vergrößert.",
+  "evidence": [
+    {
+      "statement": "T-Systems betreibt SAP-Systeme für über 400 Kunden, darunter mehrere große Energieversorger mit IS-U-Installationen.",
+      "source_url": "https://www.t-systems.com/de/sap",
+      "source_title": "T-Systems SAP Services"
+    }
+  ],
+  "created": "2026-03-18"
+}

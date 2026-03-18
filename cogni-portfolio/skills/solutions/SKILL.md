@@ -325,6 +325,26 @@ Required for all types: `slug`, `proposition_slug`, `solution_type`
 
 Optional for all types: `cost_model`, `created`
 
+### 6b. Stakeholder Review (Closed Loop)
+
+After writing the solution, delegate to the `solution-review-assessor` agent for qualitative evaluation. This agent assesses the solution from three stakeholder perspectives:
+
+1. **Reviewer (Procurement)** — Commercial viability: ROI clarity, budget fit, risk transparency, competitive positioning, decision pathway
+2. **Solution Architect (Provider)** — Delivery feasibility: timeline realism, scope-effort coherence, phase architecture, DOES traceability, tier scalability
+3. **Solution Architect (Client)** — Adoption safety: integration feasibility, dependency risk, operational readiness, vendor lock-in, security/compliance
+
+The agent returns a structured assessment with a verdict:
+
+- **accept** (all perspectives score 85+): Solution is ready. Proceed to portfolio validation.
+- **revise** (all perspectives score 70+): Targeted improvements needed. Pass the `revision_guidance` from the assessment back to the `solution-planner` agent with the existing solution JSON. The planner rewrites only the flagged areas. Re-assess. Maximum 2 revision rounds.
+- **reject** (any perspective scores below 50): Fundamental rework needed. Surface the assessment to the user with the diagnosis — do not auto-retry.
+
+**For interactive (single-solution) mode**: Present the assessment summary to the user before revising. Show the per-perspective scores and the top recommendations. Let the user decide which improvements to prioritize.
+
+**For automatic mode (batch generation)**: Run the loop automatically. Solutions that pass after Round 1 skip Round 2. Solutions that fail after Round 2 are flagged in the batch summary for manual attention.
+
+The stakeholder review complements the structural quality gates (Step 5) — gates catch mechanical issues (missing fields, negative margins), while stakeholder review catches qualitative issues (unrealistic timelines, disconnected value stories, integration blind spots). Run gates first; only run stakeholder review after gates pass.
+
 ### 7. Validate Against Portfolio
 
 Cross-reference with existing entities:
@@ -350,6 +370,13 @@ When the user asks to review or improve existing solutions (or when you notice i
 8. **Assumption audit** (solutions with cost_model): Are assumptions consistent across solutions of the same type? If one project solution assumes 1,800 EUR/day for a Solution Architect and another assumes 1,500 EUR/day, one of them is wrong. Cross-check role rates against `delivery_defaults` and flag drift. For subscription solutions, check that unit economics assumptions are consistent (e.g., same CAC methodology across markets).
 9. **Solution type audit**: Do all solutions for a given product use the correct solution type based on its `revenue_model`? Flag subscription products that have project-type solutions (the core structural problem this routing solves).
 10. **Upstream diagnosis**: Trace weak solutions back to their source. If an implementation plan is vague, is it because the proposition's DOES statement is too generic to plan against? If pricing feels arbitrary, is it because the market definition lacks segmentation data? If margins are thin, is it because effort was underestimated or pricing undercut the market? Flag upstream fixes.
+11. **Stakeholder review**: For each solution (or a subset if the portfolio is large), delegate to the `solution-review-assessor` agent. Present the aggregate pass/warn/fail status alongside the audit findings from steps 1-10. The stakeholder review adds three qualitative lenses — procurement viability, provider delivery realism, and client adoption safety — that the mechanical audits above don't cover.
+12. **Portfolio consistency check**: After individual reviews, compare solutions targeting the same market for cross-solution consistency. Flag:
+    - **Exit clause inconsistency**: If one solution has an exit clause but others targeting the same market don't, the same procurement team will notice. Standardize.
+    - **Compliance framing inconsistency**: If one solution addresses NIS2/BSI-C5 but siblings don't, the regulatory story is fragmented. For regulated markets, compliance should be consistent across all solutions.
+    - **Assumption drift**: If role rates, delivery model, or client prerequisites differ across solutions for the same market without explicit justification, one of them is wrong.
+    - **OT/IT boundary inconsistency**: If multiple solutions touch OT systems but define the boundary differently (or some don't define it at all), the buyer will see a confused vendor.
+    - **Perspective score aggregation**: Average each stakeholder perspective's scores across all solutions. If one perspective is systematically the lowest (e.g., Client SA averages 75 while Reviewer averages 85), diagnose the root cause. Common patterns: Client SA lowest = solutions designed from provider perspective, missing buyer adoption content. Provider SA lowest = delivery plans are aspirational, not realistic. Reviewer lowest = pricing or competitive positioning gaps.
 
 Present your assessment as a consulting memo -- lead with "here's what I'd change and why" backed by specific analysis. Offer concrete rewrites, not just observations.
 
@@ -388,7 +415,14 @@ Batch mode skips the interactive co-development steps -- use it when the user wa
 2. Read the product for each pending proposition to determine `revenue_model` — group the batch by solution type
 3. Assess which propositions are strong enough to build on -- flag any with generic DOES statements that will produce weak implementation plans
 4. Present the batch plan grouped by type (e.g., "18 subscription solutions for cogni-works, 2 project solutions for cogni-services") and get confirmation
-5. After batch generation, offer to run the review flow across all new solutions
+5. Launch `solution-planner` agents in parallel for each proposition
+6. After each solution is written, launch `solution-review-assessor` agents in parallel to evaluate them
+7. For solutions with verdict "revise": re-launch `solution-planner` with the review feedback (revision mode), then re-assess. Maximum 2 revision rounds per solution
+8. Present a batch summary:
+   - **Accepted** (Round 1): solutions that passed stakeholder review on first attempt
+   - **Accepted** (Round 2): solutions that needed one revision round
+   - **Needs attention**: solutions that still have issues after 2 rounds — flag for manual review
+9. Offer to run the portfolio-wide review flow (steps 1-11) across all new solutions
 
 The user can then pick individual solutions to refine interactively.
 

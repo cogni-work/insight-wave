@@ -1,0 +1,47 @@
+{
+  "slug": "grosse-energieversorger-de",
+  "name": "Große Energieversorger Deutschland",
+  "region": "de",
+  "description": "German energy utilities with 5000+ employees operating grid, generation, and retail energy businesses",
+  "priority": "beachhead",
+  "segmentation": {
+    "employees_min": 5000,
+    "employees_max": 100000,
+    "revenue_min_eur": 5000000000,
+    "vertical_codes": ["D35.1", "D35.2", "D35.3"],
+    "vertical_labels": ["Elektrizitätserzeugung", "Gasversorgung", "Wärme- und Kälteversorgung"]
+  },
+  "pain_points": [
+    "SAP IS-U → S/4HANA Utilities Migration mit Deadline 2027 — größtes IT-Projekt der Unternehmensgeschichte",
+    "KRITIS-Compliance: BSI-Audits, NIS2-Registrierung (April 2026), KRITIS-DachG-Enforcement",
+    "Smart-Meter-Rollout: Gateway-Administration, Messdatenmanagement, Billing-Integration bei 95%-Pflicht bis 2030",
+    "OT/IT-Konvergenz: SCADA-Systeme und Netzleitstellen müssen mit moderner Cloud-Infrastruktur koexistieren",
+    "Fachkräftemangel: Jeder Anbieter-Pitch der unbegrenztes internes IT-Personal voraussetzt wird sofort disqualifiziert"
+  ],
+  "buying_committee": [
+    {"role": "CIO", "focus": "Architektur, Plattformstrategie, Vendor-Konsolidierung"},
+    {"role": "CISO", "focus": "BSI-C5, ISO 27001, NIS2, unabhängiges Veto-Recht"},
+    {"role": "OT-Leiter/Netzleiter", "focus": "Netzstabilität, SCADA-Sicherheit, Zero-Downtime"},
+    {"role": "CFO", "focus": "TCO, Budgetfreigabe >3M EUR, Investitionsplanung"},
+    {"role": "Einkauf", "focus": "SektVO-Beschaffungsregeln, Rahmenverträge, EU-Vergaberecht"}
+  ],
+  "tam": {
+    "value": 4200000000,
+    "currency": "EUR",
+    "source": "Bitkom/BDEW IT-Ausgaben Energiewirtschaft 2025",
+    "year": 2025
+  },
+  "sam": {
+    "value": 1800000000,
+    "currency": "EUR",
+    "rationale": "Cloud, IT-Modernisierung, SAP-Migration bei Top-20 Versorgern"
+  },
+  "som": {
+    "value": 280000000,
+    "currency": "EUR",
+    "rationale": "T-Systems Marktanteil bei bestehenden Energiekunden + Neuakquise"
+  },
+  "example_companies": ["E.ON", "RWE", "EnBW", "Vattenfall Deutschland", "Uniper"],
+  "created": "2026-03-18",
+  "updated": "2026-03-18"
+}

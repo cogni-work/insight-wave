@@ -1,0 +1,16 @@
+{
+  "slug": "sovereign-cloud--grosse-energieversorger-de",
+  "feature_slug": "sovereign-cloud",
+  "market_slug": "grosse-energieversorger-de",
+  "is_statement": "Souveräne Cloud-Infrastruktur auf Basis von Open-Source-Technologien mit BSI-C5-Attestierung, Betrieb in deutschen Rechenzentren und vollständiger Datenhoheit.",
+  "does_statement": "Energieversorger betreiben KRITIS-relevante Anwendungen auf einer Cloud-Plattform, die BSI-C5-attestiert ist und keiner außereuropäischen Jurisdiktion unterliegt.",
+  "means_statement": "Der regulatorische Aufwand für IT-Sicherheitsnachweise sinkt um 40-60%, weil die Infrastruktur-Compliance bereits durch die Plattform-Attestierung abgedeckt ist.",
+  "evidence": [
+    {
+      "statement": "T-Systems betreibt die Sovereign Cloud powered by Google Cloud mit BSI-C5 Typ-2-Attestierung in deutschen Rechenzentren.",
+      "source_url": "https://www.t-systems.com/de/cloud/sovereign-cloud",
+      "source_title": "T-Systems Sovereign Cloud"
+    }
+  ],
+  "created": "2026-03-18"
+}
