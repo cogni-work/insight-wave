@@ -1,0 +1,206 @@
+{
+  "total_checks": 33,
+  "passed": 33,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "expectations": [
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "Valid region code (actual: de)",
+      "passed": true,
+      "evidence": "region=\"de\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"large-energy-de\", region=\"de\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 10 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large energy and utility companies with 5,000+ employees in Germany.\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: expansion)",
+      "passed": true,
+      "evidence": "priority=\"expansion\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 6.2%)",
+      "passed": true,
+      "evidence": "SAM=2,800,000,000 / TAM=45,000,000,000 = 6.2%",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 0.4%)",
+      "passed": true,
+      "evidence": "SOM=12,000,000 / SAM=2,800,000,000 = 0.4%",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "large-energy-de"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"midmarket-manufacturing-dach\", region=\"dach\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 9 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Manufacturing companies with 500-5,000 employees in the DACH region.\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: beachhead)",
+      "passed": true,
+      "evidence": "priority=\"beachhead\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 6.9%)",
+      "passed": true,
+      "evidence": "SAM=4,500,000,000 / TAM=65,000,000,000 = 6.9%",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 0.6%)",
+      "passed": true,
+      "evidence": "SOM=28,000,000 / SAM=4,500,000,000 = 0.6%",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "midmarket-manufacturing-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Valid region code (actual: de)",
+      "passed": true,
+      "evidence": "region=\"de\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"public-sector-de\", region=\"de\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 11 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Federal, state, and municipal government agencies and public institutions in Germany.\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: expansion)",
+      "passed": true,
+      "evidence": "priority=\"expansion\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 7.5%)",
+      "passed": true,
+      "evidence": "SAM=6,000,000,000 / TAM=80,000,000,000 = 7.5%",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 0.6%)",
+      "passed": true,
+      "evidence": "SOM=37,500,000 / SAM=6,000,000,000 = 0.6%",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "public-sector-de"
+    }
+  ]
+}

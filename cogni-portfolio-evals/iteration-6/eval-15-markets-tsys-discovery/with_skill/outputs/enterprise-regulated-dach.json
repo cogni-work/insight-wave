@@ -1,0 +1,36 @@
+{
+  "slug": "enterprise-regulated-dach",
+  "name": "Large Enterprise Regulated Industries (DACH)",
+  "region": "dach",
+  "description": "Large enterprises in regulated industries (financial services, healthcare, energy, public sector) with 1,000-50,000 employees and EUR 500M-50B revenue in DACH.",
+  "segmentation": {
+    "company_size": "1,000-50,000 employees",
+    "revenue_range": "EUR 500M-50B",
+    "vertical": "Regulated Industries (Financial Services, Healthcare, Energy, Public Sector)",
+    "employees_min": 1000,
+    "employees_max": 50000,
+    "arr_min": 500000000,
+    "arr_max": 50000000000,
+    "vertical_codes": ["financial-services", "healthcare", "energy", "public-sector"]
+  },
+  "priority": "beachhead",
+  "tam": {
+    "value": 42000000000,
+    "currency": "EUR",
+    "description": "European cloud services in regulated industries",
+    "source": "IDC European Cloud Services Tracker 2025 — regulated industry verticals (BFSI, healthcare, energy, gov) account for approx. EUR 42B of total European enterprise cloud spend"
+  },
+  "sam": {
+    "value": 8500000000,
+    "currency": "EUR",
+    "description": "DACH regulated enterprise cloud services",
+    "source": "DACH represents ~20% of European enterprise IT spend; regulated verticals in DACH estimated at EUR 8.5B for managed cloud, migration, and sovereign infrastructure services"
+  },
+  "som": {
+    "value": 180000000,
+    "currency": "EUR",
+    "description": "60 customers x EUR 3M ACV in 3 years",
+    "source": "Bottom-up: ~300 qualifying enterprises in DACH regulated industries; 20% reachable via existing Deutsche Telekom relationships = 60 target accounts; blended ACV EUR 3M (mix of migration projects EUR 1-2M + managed services EUR 1-3M/yr) = EUR 180M"
+  },
+  "created": "2026-03-18"
+}

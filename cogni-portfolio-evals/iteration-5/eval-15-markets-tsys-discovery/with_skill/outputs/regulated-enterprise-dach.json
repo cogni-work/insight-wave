@@ -1,0 +1,36 @@
+{
+  "slug": "regulated-enterprise-dach",
+  "name": "Regulated Enterprise (DACH)",
+  "region": "dach",
+  "description": "Large enterprises in financial services, insurance, and critical infrastructure with 1,000+ employees in DACH requiring sovereign cloud and compliance-driven IT modernization.",
+  "segmentation": {
+    "company_size": "1,000+ employees",
+    "revenue_range": "EUR 500M+",
+    "vertical": "Financial Services, Insurance, Critical Infrastructure",
+    "employees_min": 1000,
+    "employees_max": 500000,
+    "arr_min": 500000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["financial-services", "insurance", "critical-infrastructure"]
+  },
+  "priority": "beachhead",
+  "tam": {
+    "value": 28000000000,
+    "currency": "EUR",
+    "description": "European managed cloud services in regulated industries",
+    "source": "LLM estimate based on ISG, Gartner 2025 European cloud services sizing for regulated verticals"
+  },
+  "sam": {
+    "value": 4200000000,
+    "currency": "EUR",
+    "description": "DACH regulated enterprise managed cloud and sovereign infrastructure",
+    "source": "LLM estimate: ~15% of EU TAM attributable to DACH regulated segments (financial services, insurance, KRITIS)"
+  },
+  "som": {
+    "value": 320000000,
+    "currency": "EUR",
+    "description": "80 enterprise accounts x EUR 4M average ACV over 3 years",
+    "source": "Bottom-up estimate: T-Systems has ~200 large regulated accounts, targeting 40% active cloud engagement at EUR 4M blended ACV"
+  },
+  "created": "2026-03-18"
+}

@@ -1,0 +1,49 @@
+## Prerequisite Gate: No Features or Products Defined
+
+I cannot create market JSON files for Bechtle AG yet. The `features/` and `products/` directories are empty — there are no products or features defined in this portfolio. Markets without features to sell into are academic exercises. Every market I'd define would lack the substance needed to generate propositions, competitive analysis, or customer profiles downstream.
+
+**Next step:** Define products and features first using the `portfolio-scan` or `features` skill. Bechtle's public service catalog (managed services, cloud, workplace, security, networking) would be the natural starting point for product and feature extraction.
+
+---
+
+## Strategic Hypothesis: Likely Market Architecture for Bechtle AG
+
+That said, here is where I'd expect the market portfolio to land once features are in place. This is a hypothesis, not a recommendation — the actual market set must be grounded in defined features.
+
+Bechtle is a EUR 6B+ German IT services and system house with ~15,000 employees. They operate as a reseller, managed services provider, and IT consulting firm primarily in DACH and broader Europe. Their business model is channel-heavy: direct sales to mid-market and enterprise, plus e-commerce for IT procurement.
+
+### Likely Region Focus
+
+| Region | Rationale |
+|--------|-----------|
+| `dach` | Home market, dominant position, deepest relationships |
+| `eu` | Active expansion into France, Spain, Benelux, Nordics via acquisitions |
+
+### Likely Market Segments (once features exist)
+
+| Hypothetical Market | Region | Segment | Why |
+|---------------------|--------|---------|-----|
+| Mittelstand IT Modernization (DACH) | `dach` | 250-2,500 employees, EUR 50M-500M revenue, manufacturing and industrial verticals | Bechtle's core: German Mittelstand companies modernizing IT infrastructure. High density of system house relationships. |
+| Enterprise Managed Services (DACH) | `dach` | 2,500-50,000 employees, EUR 500M-10B revenue, cross-vertical | Large enterprises outsourcing IT operations. Bechtle's managed services and multi-vendor management play here. |
+| Public Sector IT (DACH) | `dach` | Government agencies, education, healthcare institutions | Bechtle has dedicated public sector units with framework contracts. Highly defensible, procurement-driven. |
+| Mid-Market Cloud Migration (EU) | `eu` | 250-2,500 employees, EUR 50M-500M revenue, cross-vertical | Expansion play: replicating the DACH Mittelstand model in acquired European markets. |
+
+### Key Observations
+
+1. **Beachhead is obvious**: Mittelstand DACH. This is where Bechtle has the deepest moat — 70+ locations in Germany, established procurement relationships, and a system house model that mid-market buyers trust.
+
+2. **Public sector is a distinct market, not a vertical filter**: Public sector procurement in DACH operates on framework agreements with entirely different buying processes. It needs its own market entity, not a vertical tag on a generic segment.
+
+3. **The EU expansion markets are secondary until DACH features are proven**: Bechtle's European acquisitions (Inmac Wstore in France, ARP in Switzerland) operate somewhat independently. Market definition here should follow, not lead, DACH market validation.
+
+4. **Biggest risk**: Defining markets too broadly as "IT services for mid-market" — Bechtle does everything from hardware procurement to cloud consulting. Without features to anchor market definitions, every segment looks addressable, which means none are actionable.
+
+### What I Need to Build Real Markets
+
+Once products and features are defined, I can:
+- Map features to segments (which capabilities serve which buyers?)
+- Size markets with bottom-up SOM calculations (number of target companies x realistic ACV)
+- Identify beachhead vs. expansion priorities based on feature-market fit density
+- Generate the market JSON files with proper segmentation and TAM/SAM/SOM
+
+**Action required:** Run the `portfolio-scan` or `features` skill to populate products and features, then return to define markets.

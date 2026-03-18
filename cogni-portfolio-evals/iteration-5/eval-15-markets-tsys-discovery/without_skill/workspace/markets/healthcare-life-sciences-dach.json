@@ -1,0 +1,35 @@
+{
+  "slug": "healthcare-life-sciences-dach",
+  "name": "Healthcare & Life Sciences (DACH)",
+  "region": "DACH",
+  "description": "Hospitals, health insurance providers (Krankenkassen), pharmaceutical companies, and medical device manufacturers requiring KRITIS-compliant, GDPR-strict cloud infrastructure for patient data, clinical workloads, and digital health platforms.",
+  "segmentation": {
+    "verticals": ["hospitals-clinics", "health-insurance", "pharmaceuticals", "medical-devices", "digital-health"],
+    "buyer_profile": "CIO, IT Director, Chief Medical Information Officer, Head of Digital Health",
+    "deal_size_range": "EUR 200K – 15M",
+    "drivers": [
+      "Hospital Future Act (KHZG) digitalization funding",
+      "KRITIS regulation for healthcare operators",
+      "Telematikinfrastruktur (TI) and ePA rollout",
+      "Clinical data platform consolidation",
+      "Health Hybrid Cloud demand for mixed-sensitivity workloads"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on healthcare IT spend in DACH and KHZG-driven acceleration",
+    "tam": {
+      "value_eur_bn": 8.0,
+      "description": "Total healthcare IT spend in DACH region (~EUR 8B)"
+    },
+    "sam": {
+      "value_eur_bn": 2.0,
+      "description": "Cloud infrastructure, hosting, and managed services for healthcare workloads"
+    },
+    "som": {
+      "value_eur_bn": 0.3,
+      "description": "Capturable share through Health Hybrid Cloud offering and Telekom healthcare ecosystem"
+    }
+  },
+  "relevant_features": ["hybrid-cloud", "sovereign-cloud", "private-cloud", "cloud-migration"],
+  "competitive_landscape": "SAP Health, IBM/Kyndryl, Oracle Health, Cerner, CGM (CompuGroup Medical), regional IT providers"
+}

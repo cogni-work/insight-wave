@@ -1,0 +1,38 @@
+## Prerequisite Gap: No Features or Products Defined
+
+Before we can define target markets with any rigour, we need to know what Bechtle is actually selling through this portfolio. Right now the `products/` and `features/` directories are empty -- there are no products, no features, and no capability taxonomy mappings. That matters because market definition should start from "who has the problem our features solve?", not from "what industry verticals exist?" Without features, we'd be drawing segments on a whiteboard with nothing to put inside the propositions.
+
+**This is a blocking prerequisite.** I will not generate market JSON files because every market I'd create today would be an academic exercise -- it would have zero features to map into propositions, zero basis for sizing a SAM (serviceable to whom, for what?), and zero differentiation story. The moment you add features, the market definitions would need to be reworked anyway.
+
+## What I'd Recommend Instead
+
+Define products and features first. Bechtle AG is a EUR 6B+ German IT services provider with ~15,000 employees, operating across managed infrastructure, cloud, digital workplace, security, and IT e-commerce. That's a broad portfolio. The right sequence is:
+
+1. **Run the `portfolio-scan` or `features` skill** to populate products and features -- either from existing collateral (upload Bechtle capability decks, service descriptions, or website content to `research/`) or by manually defining them.
+2. **Then come back to markets.** Once I can see what Bechtle's portfolio actually contains, I can ground market recommendations in real feature-market fit rather than generic industry segmentation.
+
+## Strategic Hypothesis (Subject to Feature Validation)
+
+That said, here's where I'd expect Bechtle's markets to cluster based on what I know about the company. Treat this as a starting hypothesis, not a recommendation:
+
+**Likely regions:**
+- `dach` (beachhead -- Bechtle's home market, ~70% of revenue)
+- `eu` (expansion -- Bechtle has operations in 14 European countries)
+
+**Likely segments by feature-market fit (once features exist):**
+
+| Hypothetical Segment | Why It Fits Bechtle | Needs Features In |
+|---|---|---|
+| Mittelstand manufacturing (DACH) | Core customer base, 500-5000 emp industrial companies digitising operations | Managed infrastructure, cloud migration, digital workplace |
+| Public sector (DACH) | Bechtle is one of Germany's largest public-sector IT suppliers | Compliance-grade cloud, managed services, workplace modernisation |
+| Enterprise IT consolidation (DACH) | Large enterprises outsourcing IT operations | Full-stack managed services, multi-cloud, security |
+| Mid-market professional services (DACH) | Law firms, consultancies, accounting -- high workplace/security needs | Digital workplace, security, managed endpoints |
+
+**What I'd challenge once features are in:**
+- Whether "public sector" is one market or two (federal vs. municipal have very different buying processes)
+- Whether Bechtle's e-commerce/reseller business warrants its own market segmentation or is a channel, not a market
+- Whether the EU expansion markets need separate treatment or can ride DACH propositions with region-adjusted sizing
+
+## Next Step
+
+Populate `products/` and `features/` for this portfolio. The fastest path: upload Bechtle service descriptions or capability documents to `research/` and run the `portfolio-scan` skill. Once features exist, I'll map them to markets with proper segmentation, TAM/SAM/SOM sizing, and a beachhead strategy.

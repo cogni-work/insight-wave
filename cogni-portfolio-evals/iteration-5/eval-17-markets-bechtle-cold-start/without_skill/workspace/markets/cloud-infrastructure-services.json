@@ -1,0 +1,31 @@
+{
+  "slug": "cloud-infrastructure-services",
+  "name": "Cloud & Infrastructure Services",
+  "region": "DACH",
+  "description": "Design, migration, and managed operation of hybrid and multi-cloud environments including private cloud, hyperscaler landing zones (Azure, AWS), colocation, and infrastructure modernisation. A high-growth area as DACH enterprises shift from on-premises to cloud-first architectures.",
+  "segmentation": {
+    "verticals": ["Manufacturing", "Retail", "Financial Services", "Public Sector"],
+    "buyer_personas": ["CTO", "VP Infrastructure", "Cloud Architect", "CIO"],
+    "company_size": "Mid-market to Large Enterprise (250–100,000 employees)"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 45.0,
+      "scope": "European Cloud Infrastructure Services market",
+      "year": 2025,
+      "source": "LLM estimate based on Gartner/ISG proxies"
+    },
+    "sam": {
+      "value_eur_bn": 9.8,
+      "scope": "DACH Cloud & Managed Infrastructure Services",
+      "year": 2025
+    },
+    "growth_rate_pct": 14.0,
+    "growth_drivers": [
+      "Hyperscaler adoption in German Mittelstand",
+      "Data sovereignty requirements (EU/Gaia-X)",
+      "Legacy data centre consolidation",
+      "Edge computing rollout in manufacturing"
+    ]
+  }
+}

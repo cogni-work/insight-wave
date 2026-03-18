@@ -1,0 +1,36 @@
+{
+  "slug": "enterprise-manufacturing-dach",
+  "name": "Enterprise Manufacturing (DACH)",
+  "region": "dach",
+  "description": "Large manufacturing and industrial enterprises with 1,000+ employees in DACH modernizing IT landscapes with hybrid cloud, OT/IT convergence, and multi-cloud governance.",
+  "segmentation": {
+    "company_size": "1,000+ employees",
+    "revenue_range": "EUR 500M+",
+    "vertical": "Manufacturing, Automotive, Industrial",
+    "employees_min": 1000,
+    "employees_max": 500000,
+    "arr_min": 500000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["manufacturing", "automotive", "industrial"]
+  },
+  "priority": "expansion",
+  "tam": {
+    "value": 22000000000,
+    "currency": "EUR",
+    "description": "European manufacturing enterprise cloud and IT modernization",
+    "source": "LLM estimate based on IDC, Gartner 2025 manufacturing IT spending in Europe"
+  },
+  "sam": {
+    "value": 3200000000,
+    "currency": "EUR",
+    "description": "DACH manufacturing enterprise managed cloud and hybrid infrastructure",
+    "source": "LLM estimate: Germany is Europe's largest manufacturing economy; ~EUR 3.2B addressable in managed cloud for industrial enterprises"
+  },
+  "som": {
+    "value": 200000000,
+    "currency": "EUR",
+    "description": "50 manufacturing accounts x EUR 4M average ACV over 3 years",
+    "source": "Bottom-up estimate: targeting top 50 DACH manufacturing enterprises with hybrid cloud and migration deals"
+  },
+  "created": "2026-03-18"
+}

@@ -1,0 +1,32 @@
+{
+  "slug": "cybersecurity-services",
+  "name": "Cybersecurity Services",
+  "region": "DACH",
+  "description": "Security consulting, managed detection and response (MDR), identity and access management, vulnerability management, and compliance services. Regulatory pressure (NIS2, DORA, BSI IT-Grundschutz) and the surge in ransomware attacks make this one of the fastest-growing segments for DACH IT service providers.",
+  "segmentation": {
+    "verticals": ["Financial Services", "Public Sector", "Critical Infrastructure", "Healthcare", "Manufacturing"],
+    "buyer_personas": ["CISO", "IT Security Manager", "CIO", "Compliance Officer"],
+    "company_size": "Mid-market to Enterprise (250–100,000 employees)"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 38.0,
+      "scope": "European Cybersecurity Services market",
+      "year": 2025,
+      "source": "LLM estimate based on ISG/Statista proxies"
+    },
+    "sam": {
+      "value_eur_bn": 7.5,
+      "scope": "DACH Cybersecurity Services (consulting + managed)",
+      "year": 2025
+    },
+    "growth_rate_pct": 12.5,
+    "growth_drivers": [
+      "NIS2 directive compliance deadline",
+      "DORA regulation for financial sector",
+      "Ransomware and supply-chain attack frequency",
+      "Zero Trust architecture adoption",
+      "Cyber insurance requirements"
+    ]
+  }
+}

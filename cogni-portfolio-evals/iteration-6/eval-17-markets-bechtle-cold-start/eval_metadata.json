@@ -1,0 +1,9 @@
+{
+  "eval_id": 17,
+  "eval_name": "markets-bechtle-cold-start",
+  "prompt": "I'm setting up a portfolio for Bechtle AG, a German IT services provider. The portfolio is at the project path provided. No features or products are defined yet. What target markets should we consider?",
+  "assertions": [
+    {"id": "M-01", "text": "All required fields present (slug, name, region, description)", "type": "structural"},
+    {"id": "M-12", "text": "Skill flags missing features/products prerequisite", "type": "agent"}
+  ]
+}

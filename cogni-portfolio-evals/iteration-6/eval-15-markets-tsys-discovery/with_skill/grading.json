@@ -1,0 +1,272 @@
+{
+  "total_checks": 44,
+  "passed": 44,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "expectations": [
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"enterprise-manufacturing-dach\", region=\"dach\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 13 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Manufacturing and industrial enterprises with 1,000-80,000 employees and EUR 500M-100B revenue in DA\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: beachhead)",
+      "passed": true,
+      "evidence": "priority=\"beachhead\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 22.1%)",
+      "passed": true,
+      "evidence": "SAM=6,200,000,000 / TAM=28,000,000,000 = 22.1%",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 1.9%)",
+      "passed": true,
+      "evidence": "SOM=120,000,000 / SAM=6,200,000,000 = 1.9%",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"enterprise-regulated-dach\", region=\"dach\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 20 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large enterprises in regulated industries (financial services, healthcare, energy, public sector) wi\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: beachhead)",
+      "passed": true,
+      "evidence": "priority=\"beachhead\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 20.2%)",
+      "passed": true,
+      "evidence": "SAM=8,500,000,000 / TAM=42,000,000,000 = 20.2%",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 2.1%)",
+      "passed": true,
+      "evidence": "SOM=180,000,000 / SAM=8,500,000,000 = 2.1%",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "enterprise-regulated-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "Valid region code (actual: eu)",
+      "passed": true,
+      "evidence": "region=\"eu\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"enterprise-regulated-eu\", region=\"eu\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 21 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large enterprises in regulated industries (financial services, healthcare, energy, public sector) wi\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: expansion)",
+      "passed": true,
+      "evidence": "priority=\"expansion\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 28.6%)",
+      "passed": true,
+      "evidence": "SAM=12,000,000,000 / TAM=42,000,000,000 = 28.6%",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 0.5%)",
+      "passed": true,
+      "evidence": "SOM=60,000,000 / SAM=12,000,000,000 = 0.5%",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "enterprise-regulated-eu"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"enterprise-tech-dach\", region=\"dach\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 15 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Technology, IT services, and telecommunications enterprises with 500-30,000 employees and EUR 200M-2\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: expansion)",
+      "passed": true,
+      "evidence": "priority=\"expansion\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 17.8%)",
+      "passed": true,
+      "evidence": "SAM=3,200,000,000 / TAM=18,000,000,000 = 17.8%",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 1.4%)",
+      "passed": true,
+      "evidence": "SOM=45,000,000 / SAM=3,200,000,000 = 1.4%",
+      "entity": "enterprise-tech-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "enterprise-tech-dach"
+    }
+  ]
+}

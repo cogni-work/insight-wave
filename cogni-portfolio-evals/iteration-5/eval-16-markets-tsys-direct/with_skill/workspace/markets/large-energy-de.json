@@ -1,0 +1,36 @@
+{
+  "slug": "large-energy-de",
+  "name": "Large Energy Companies (Germany)",
+  "region": "de",
+  "description": "Large energy utilities and producers in Germany with 5,000+ employees, including E.ON, RWE, and EnBW-scale enterprises.",
+  "segmentation": {
+    "company_size": "5,000+ employees",
+    "revenue_range": "EUR 5B+ annual revenue",
+    "vertical": "Energy & Utilities",
+    "employees_min": 5000,
+    "employees_max": 500000,
+    "arr_min": 5000000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["energy", "utilities"]
+  },
+  "priority": "beachhead",
+  "tam": {
+    "value": 12000000000,
+    "currency": "EUR",
+    "description": "Total IT services spend by European energy sector",
+    "source": "LLM estimate based on Gartner IT spending benchmarks for energy/utilities sector in Europe (~3-4% of revenue on IT, ~EUR 300B sector revenue in EU)"
+  },
+  "sam": {
+    "value": 1800000000,
+    "currency": "EUR",
+    "description": "Cloud infrastructure services for large German energy companies",
+    "source": "LLM estimate: ~15 large energy companies in DE, avg EUR 120M cloud/IT infrastructure spend each, filtered to cloud-relevant services"
+  },
+  "som": {
+    "value": 45000000,
+    "currency": "EUR",
+    "description": "5 enterprise customers x EUR 9M avg ACV in 3 years",
+    "source": "Bottom-up estimate: T-Systems can realistically win 5 of ~15 large energy accounts at EUR 7-11M ACV for managed cloud + sovereign cloud + SAP workloads"
+  },
+  "created": "2026-03-18"
+}

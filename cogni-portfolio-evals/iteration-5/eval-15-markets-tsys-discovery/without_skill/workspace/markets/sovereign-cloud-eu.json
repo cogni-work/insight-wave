@@ -1,0 +1,35 @@
+{
+  "slug": "sovereign-cloud-eu",
+  "name": "Sovereign & Regulated Cloud (EU-wide)",
+  "region": "EU",
+  "description": "Pan-European market for data-sovereign cloud infrastructure driven by GDPR, Gaia-X, EUCS certification, and national regulations. Targets any regulated enterprise or public-sector body requiring EU-only data residency, European-operated hyperscaler wrappers, and compliance-certified cloud services.",
+  "segmentation": {
+    "verticals": ["public-sector", "financial-services", "healthcare", "defense", "critical-infrastructure"],
+    "buyer_profile": "CISO, Data Protection Officer, CIO, Head of Cloud Strategy, Procurement (sovereignty-mandated)",
+    "deal_size_range": "EUR 500K – 30M+",
+    "drivers": [
+      "EU Cloud Services Scheme (EUCS) certification",
+      "Gaia-X and IPCEI-CIS funding for EU cloud",
+      "Post-Schrems-II data transfer concerns",
+      "National sovereignty mandates (France SecNumCloud, Germany BSI C5)",
+      "Strategic autonomy goals for critical sectors"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on EU sovereign cloud market forecasts",
+    "tam": {
+      "value_eur_bn": 15.0,
+      "description": "Total EU sovereign/regulated cloud market by 2027 (~EUR 15B)"
+    },
+    "sam": {
+      "value_eur_bn": 4.0,
+      "description": "Portion addressable by T-Systems through Open Sovereign Cloud, Google/AWS sovereign wrappers, and T Cloud Public"
+    },
+    "som": {
+      "value_eur_bn": 0.5,
+      "description": "Realistically capturable given T-Systems' first-mover position in sovereign cloud partnerships"
+    }
+  },
+  "relevant_features": ["sovereign-cloud", "private-cloud", "managed-hyperscaler", "multi-cloud-finops"],
+  "competitive_landscape": "OVHcloud, Ionos, Scaleway, Orange/Capgemini (Bleu), Thales/Google (S3NS), Microsoft EU Data Boundary, AWS European Sovereign Cloud"
+}

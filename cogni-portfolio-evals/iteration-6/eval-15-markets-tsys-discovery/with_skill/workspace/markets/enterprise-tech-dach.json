@@ -1,0 +1,36 @@
+{
+  "slug": "enterprise-tech-dach",
+  "name": "Enterprise IT & Telecommunications (DACH)",
+  "region": "dach",
+  "description": "Technology, IT services, and telecommunications enterprises with 500-30,000 employees and EUR 200M-20B revenue in DACH.",
+  "segmentation": {
+    "company_size": "500-30,000 employees",
+    "revenue_range": "EUR 200M-20B",
+    "vertical": "Technology, IT Services & Telecommunications",
+    "employees_min": 500,
+    "employees_max": 30000,
+    "arr_min": 200000000,
+    "arr_max": 20000000000,
+    "vertical_codes": ["technology", "it-services", "telecommunications"]
+  },
+  "priority": "expansion",
+  "tam": {
+    "value": 18000000000,
+    "currency": "EUR",
+    "description": "European cloud services in tech and telecom",
+    "source": "ISG 2025 — technology and telecom companies are aggressive cloud adopters, with approx. EUR 18B European spend on multi-cloud management, container platforms, and FinOps tooling"
+  },
+  "sam": {
+    "value": 3200000000,
+    "currency": "EUR",
+    "description": "DACH tech and telecom enterprise cloud services",
+    "source": "DACH has ~200 qualifying tech/telecom enterprises; estimated EUR 3.2B addressable for managed multi-cloud, FinOps, and container platform services based on ~18% DACH share of European tech sector IT spend"
+  },
+  "som": {
+    "value": 45000000,
+    "currency": "EUR",
+    "description": "25 customers x EUR 1.8M ACV in 3 years",
+    "source": "Bottom-up: ~200 qualifying enterprises; Deutsche Telekom ecosystem gives warm access to ~50; target 50% conversion = 25 customers; blended ACV EUR 1.8M (multi-cloud governance EUR 800K/yr + FinOps + container platform EUR 1M) = EUR 45M"
+  },
+  "created": "2026-03-18"
+}

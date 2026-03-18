@@ -1,0 +1,36 @@
+{
+  "slug": "midmarket-manufacturing-dach",
+  "name": "Mid-Market Manufacturing Companies (DACH)",
+  "region": "dach",
+  "description": "Manufacturing companies with 500-5,000 employees across Germany, Austria, and Switzerland undergoing digital transformation.",
+  "segmentation": {
+    "company_size": "500-5,000 employees",
+    "revenue_range": "EUR 100M-2B annual revenue",
+    "vertical": "Manufacturing & Industrial",
+    "employees_min": 500,
+    "employees_max": 5000,
+    "arr_min": 100000000,
+    "arr_max": 2000000000,
+    "vertical_codes": ["manufacturing", "industrial"]
+  },
+  "priority": "expansion",
+  "tam": {
+    "value": 8500000000,
+    "currency": "EUR",
+    "description": "Total cloud services spend by DACH manufacturing sector",
+    "source": "LLM estimate: ~4,000 mid-market manufacturers in DACH, growing cloud adoption at 25-30% of IT budget, avg IT spend ~3% of revenue"
+  },
+  "sam": {
+    "value": 1200000000,
+    "currency": "EUR",
+    "description": "Managed cloud and hybrid infrastructure for mid-market DACH manufacturers",
+    "source": "LLM estimate: ~2,000 companies in addressable size range, avg EUR 600K cloud infrastructure spend, filtered to managed/hybrid cloud services"
+  },
+  "som": {
+    "value": 24000000,
+    "currency": "EUR",
+    "description": "40 customers x EUR 600K avg ACV in 3 years",
+    "source": "Bottom-up estimate: T-Systems can win ~40 mid-market accounts via Telekom channel and existing relationships at EUR 400K-800K ACV for hybrid cloud + migration + container services"
+  },
+  "created": "2026-03-18"
+}

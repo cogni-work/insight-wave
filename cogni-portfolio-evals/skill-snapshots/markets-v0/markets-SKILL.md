@@ -103,7 +103,7 @@ Based on discovery (or the user's segment list), propose a market set. Start fro
 - **Distinct**: Propositions for this market would be meaningfully different from propositions for sibling markets
 - **Winnable**: The company has some advantage in this market — domain expertise, existing customers, product fit
 
-**Consolidate overlapping segments.** Apply the proposition test: "Would propositions for these two markets say different things?" If not, they're one market. Watch especially for "regulated industries" catch-all markets that bundle public sector with financial services or healthcare — these have fundamentally different procurement processes and buyer personas, and should usually be separate markets even if the compliance story overlaps.
+**Consolidate overlapping segments.** Apply the proposition test: "Would propositions for these two markets say different things?" If not, they're one market.
 
 ### Building Your Recommendation
 
@@ -124,13 +124,7 @@ Once you and the user agree on the market set, structure each market.
 | `sam.description` | 1 short phrase |
 | `som.description` | 1 short phrase |
 
-Market descriptions should state segment + size + region in one line. Do not list company names in descriptions — those belong in customer profiles, not market definitions. The description answers "who is this market?" not "who are the customers?"
-
-Good: `"SaaS companies, 50-500 employees, EUR 5M-100M ARR in DACH."`
-Bad: `"Large energy utilities including E.ON, RWE, and EnBW in Germany."` (company names trigger false sentence-boundary detection and conflate markets with customers)
-Bad: `"Manufacturing enterprises in DACH modernizing IT landscapes with hybrid cloud, OT/IT convergence, and multi-cloud governance."` (packs solution categories into what should be a pure segment definition — solutions belong in propositions)
-
-TAM/SAM/SOM descriptions are labels, not explanations — the `source` field carries the detail.
+Market descriptions should state segment + size + region in one line. TAM/SAM/SOM descriptions are labels, not explanations — the `source` field carries the detail.
 
 ### Market JSON Schema
 
@@ -175,11 +169,9 @@ TAM/SAM/SOM descriptions are labels, not explanations — the `source` field car
 
 Required: `slug`, `name`, `region`, `description`. Optional: `segmentation`, `tam`, `sam`, `som`, `priority`, `created`, `updated`.
 
-Always set `created` to today's date (ISO format `YYYY-MM-DD`) when generating a new market. This enables downstream staleness tracking.
-
 Valid `priority` values: `beachhead` (primary go-to-market target), `expansion` (secondary growth), `aspirational` (long-term opportunity).
 
-**Normalized segmentation fields** (required for overlap detection): Always populate `employees_min`, `employees_max`, `arr_min`, `arr_max`, and `vertical_codes` alongside the free-text fields. These enable automated overlap detection between markets sharing the same region. Use lowercase identifiers for `vertical_codes` (e.g., `["saas", "fintech"]`). If there is no practical upper bound for `employees_max`, use the realistic ceiling for the segment (e.g., 5000 for mid-market, 50000 for large enterprise) — do not use an arbitrary large number like 500000, as inflated ceilings create false overlap signals in the validator.
+**Normalized segmentation fields** (optional but recommended): Always populate `employees_min`, `employees_max`, `arr_min`, `arr_max`, and `vertical_codes` alongside the free-text fields. These enable automated overlap detection between markets sharing the same region. Use lowercase identifiers for `vertical_codes` (e.g., `["saas", "fintech"]`).
 
 The `region` must be a valid code from the region taxonomy (`$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`). Use the region's default currency for TAM/SAM/SOM values. Slug format: `{segment}-{region}`. Do not put geography in `segmentation` — that is expressed by `region`.
 
@@ -189,7 +181,7 @@ For each market, determine TAM/SAM/SOM. Two modes:
 
 **Web research (default)**: Delegate to a subagent (Agent tool, subagent_type: `cogni-portfolio:market-researcher`) to search for market reports, analyst estimates, and industry data. Provide the subagent with: the **exact file path** of the market JSON to update (e.g., `<project-dir>/markets/mid-market-saas-dach.json`), the path to `portfolio.json`, market name, segmentation criteria, feature categories, and region scope. Multiple agents can be launched in parallel for different markets. Use the region's default currency from the taxonomy.
 
-**LLM estimation (fallback)**: When web search is unavailable, generate reasonable estimates from training knowledge. Clearly label these as estimates and note confidence level. Always prefer bottom-up SOM: number of target companies x realistic ACV x achievable penetration rate. The bottom-up calculation must be visible in `som.source` — e.g., `"40 customers x EUR 800K ACV in 3 years"`. A SOM without a visible unit calculation is not credible and will be challenged in review.
+**LLM estimation (fallback)**: When web search is unavailable, generate reasonable estimates from training knowledge. Clearly label these as estimates and note confidence level. Always prefer bottom-up SOM: number of target companies x realistic ACV x achievable penetration rate.
 
 ### Review Presentation
 
@@ -289,7 +281,7 @@ When proposing markets, prioritize segments where:
 - The same segment in different regions = different markets (different sizing, messaging, competitors)
 - TAM/SAM/SOM values are always estimates — label sources clearly and use the region's default currency
 - Valid region codes are defined in `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`
-- **Prerequisite gate**: If `features/` is empty or contains no JSON files, do not create markets. State the prerequisite clearly ("Define products and features first — markets without features to sell into are academic exercises") and recommend using the `portfolio-scan` or `features` skill. You may offer a strategic hypothesis of likely markets, but do not write market JSON files until features exist
+- Products and features should exist before defining markets — markets without features to sell into are academic exercises
 - When reviewing existing markets, always cross-reference with the feature set — this is the single most valuable consulting move and the baseline misses it most often
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (market descriptions, segmentation labels, rationale) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.

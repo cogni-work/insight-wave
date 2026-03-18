@@ -1,0 +1,20 @@
+{
+  "total_checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "expectations": [
+    {
+      "text": "No market JSON files produced (correctly refused due to missing prerequisites)",
+      "passed": true,
+      "evidence": "Zero market files in outputs/ — skill blocked creation because features/ and products/ are empty",
+      "entity": "cold-start-guard"
+    },
+    {
+      "text": "Skill flags missing features/products prerequisite",
+      "passed": true,
+      "evidence": "Response states: 'Products and features should exist before defining markets -- markets without features to sell into are academic exercises.' Recommended defining features first.",
+      "entity": "cold-start-guard"
+    }
+  ]
+}

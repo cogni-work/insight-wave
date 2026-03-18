@@ -1,0 +1,34 @@
+{
+  "slug": "public-sector-dach",
+  "name": "Public Sector (DACH)",
+  "region": "dach",
+  "description": "Federal, state, and municipal government agencies and public institutions in DACH with mandatory data sovereignty and BSI compliance requirements.",
+  "segmentation": {
+    "company_size": "500+ employees",
+    "revenue_range": "N/A (public budgets)",
+    "vertical": "Public Sector, Government, Public Institutions",
+    "employees_min": 500,
+    "employees_max": 500000,
+    "vertical_codes": ["public-sector", "government"]
+  },
+  "priority": "beachhead",
+  "tam": {
+    "value": 12000000000,
+    "currency": "EUR",
+    "description": "European public sector cloud and IT modernization spending",
+    "source": "LLM estimate based on Bitkom, ISG public sector cloud reports 2025"
+  },
+  "sam": {
+    "value": 3500000000,
+    "currency": "EUR",
+    "description": "DACH public sector cloud infrastructure and managed services",
+    "source": "LLM estimate: Germany alone budgets ~EUR 2.5B for federal/state IT modernization; Austria and Switzerland add ~EUR 1B combined"
+  },
+  "som": {
+    "value": 250000000,
+    "currency": "EUR",
+    "description": "50 public sector accounts x EUR 5M average ACV over 3 years",
+    "source": "Bottom-up estimate: T-Systems holds existing framework contracts with federal and state agencies; targeting 50 active cloud engagements"
+  },
+  "created": "2026-03-18"
+}

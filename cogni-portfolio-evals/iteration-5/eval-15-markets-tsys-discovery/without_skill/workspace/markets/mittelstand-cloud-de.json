@@ -1,0 +1,35 @@
+{
+  "slug": "mittelstand-cloud-de",
+  "name": "Mittelstand Cloud Adoption (Germany)",
+  "region": "DE",
+  "description": "Germany's upper Mittelstand (500-5,000 employees) undergoing first major cloud transformation. These companies often run on-premises SAP and legacy infrastructure, need trusted German-speaking partners, and prioritize data sovereignty and operational continuity over cutting-edge innovation.",
+  "segmentation": {
+    "verticals": ["machinery", "chemicals", "food-beverage", "construction", "textiles", "mid-market-manufacturing"],
+    "buyer_profile": "Geschaeftsfuehrer (Managing Director), IT-Leiter, Head of Digitalization",
+    "deal_size_range": "EUR 200K – 5M",
+    "drivers": [
+      "First cloud migration from purely on-premises landscapes",
+      "SAP S/4HANA deadline pressure with limited internal SAP expertise",
+      "Cybersecurity and NIS2 compliance requirements",
+      "Skilled IT staff shortage driving managed-service demand",
+      "Cost efficiency through cloud consumption models"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on German Mittelstand IT spend and cloud adoption rates",
+    "tam": {
+      "value_eur_bn": 12.0,
+      "description": "Total IT spend by upper Mittelstand companies in Germany (~EUR 12B)"
+    },
+    "sam": {
+      "value_eur_bn": 3.0,
+      "description": "Cloud migration, managed services, and SAP hosting for Mittelstand segment"
+    },
+    "som": {
+      "value_eur_bn": 0.4,
+      "description": "Capturable share leveraging Deutsche Telekom brand trust and German-language service delivery"
+    }
+  },
+  "relevant_features": ["cloud-migration", "sap-on-cloud", "managed-hyperscaler", "private-cloud", "multi-cloud-finops"],
+  "competitive_landscape": "All for One Group, Bechtle, Computacenter, CANCOM, Arvato Systems, Claranet, local system houses"
+}

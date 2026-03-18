@@ -1,0 +1,35 @@
+{
+  "slug": "manufacturing-automotive-dach",
+  "name": "Manufacturing & Automotive (DACH)",
+  "region": "DACH",
+  "description": "Large manufacturing enterprises and automotive OEMs/suppliers in Germany, Austria, and Switzerland modernizing their IT landscapes with cloud-based SAP S/4HANA, IoT platforms, and hybrid cloud architectures for production-critical workloads.",
+  "segmentation": {
+    "verticals": ["automotive-oem", "automotive-tier1", "discrete-manufacturing", "process-manufacturing", "industrial-equipment"],
+    "buyer_profile": "CIO, VP IT Infrastructure, Head of Digital Manufacturing, SAP Program Director",
+    "deal_size_range": "EUR 2M – 50M+",
+    "drivers": [
+      "SAP S/4HANA mandatory migration (ECC end-of-life 2027)",
+      "Smart factory / Industry 4.0 cloud backends",
+      "Supply chain resilience and digital twin platforms",
+      "IP protection requiring sovereign/private cloud",
+      "Multi-site hybrid cloud standardization"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on German manufacturing IT spend and SAP migration wave",
+    "tam": {
+      "value_eur_bn": 15.0,
+      "description": "Total IT spend by manufacturing and automotive enterprises in DACH (~EUR 15B)"
+    },
+    "sam": {
+      "value_eur_bn": 4.0,
+      "description": "Cloud services, SAP hosting/migration, and managed infrastructure addressable by T-Systems"
+    },
+    "som": {
+      "value_eur_bn": 0.7,
+      "description": "Achievable share leveraging SAP Platinum Partner status and existing Mittelstand/enterprise relationships"
+    }
+  },
+  "relevant_features": ["sap-on-cloud", "hybrid-cloud", "cloud-migration", "managed-hyperscaler", "private-cloud"],
+  "competitive_landscape": "Accenture, IBM/Kyndryl, Capgemini, Atos/Eviden, AWS, Microsoft Azure, All for One Group (SAP)"
+}

@@ -1,0 +1,36 @@
+{
+  "slug": "regulated-enterprise-eu",
+  "name": "Regulated Enterprise (EU)",
+  "region": "eu",
+  "description": "Large enterprises in financial services, healthcare, and critical infrastructure with 1,000+ employees across the EU requiring sovereign cloud and GDPR-compliant IT modernization.",
+  "segmentation": {
+    "company_size": "1,000+ employees",
+    "revenue_range": "EUR 500M+",
+    "vertical": "Financial Services, Healthcare, Critical Infrastructure",
+    "employees_min": 1000,
+    "employees_max": 500000,
+    "arr_min": 500000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["financial-services", "healthcare", "critical-infrastructure"]
+  },
+  "priority": "aspirational",
+  "tam": {
+    "value": 65000000000,
+    "currency": "EUR",
+    "description": "EU-wide managed cloud services in regulated industries",
+    "source": "LLM estimate based on Gartner, IDC 2025 European cloud infrastructure and platform services market"
+  },
+  "sam": {
+    "value": 8500000000,
+    "currency": "EUR",
+    "description": "EU regulated enterprise sovereign cloud and managed infrastructure (ex-DACH)",
+    "source": "LLM estimate: EU27 regulated cloud spending excluding DACH; sovereign cloud premium commands ~EUR 8.5B in addressable spend"
+  },
+  "som": {
+    "value": 120000000,
+    "currency": "EUR",
+    "description": "30 enterprise accounts x EUR 4M average ACV over 3 years",
+    "source": "Bottom-up estimate: T-Systems expanding EU presence via Gaia-X and sovereign cloud partnerships; targeting 30 new accounts in Benelux, Nordics, Southern Europe"
+  },
+  "created": "2026-03-18"
+}

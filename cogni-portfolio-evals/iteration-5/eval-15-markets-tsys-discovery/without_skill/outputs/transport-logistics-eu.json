@@ -1,0 +1,35 @@
+{
+  "slug": "transport-logistics-eu",
+  "name": "Transport & Logistics (EU)",
+  "region": "EU",
+  "description": "Rail operators, logistics providers, airports, and mobility platforms across Europe requiring cloud-based fleet management, SAP TM migration, and sovereign data handling for cross-border operations.",
+  "segmentation": {
+    "verticals": ["rail-operators", "logistics-providers", "airports-aviation", "shipping-ports", "mobility-platforms"],
+    "buyer_profile": "CIO, VP Digital Transformation, Head of IT Operations, SAP Program Lead",
+    "deal_size_range": "EUR 1M – 25M",
+    "drivers": [
+      "EU Green Deal and digital mobility mandates",
+      "Cross-border data sovereignty for logistics chains",
+      "SAP TM / S/4HANA migration for logistics processes",
+      "Real-time fleet and asset management platforms",
+      "Legacy modernization of operational systems"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on European transport/logistics IT spend",
+    "tam": {
+      "value_eur_bn": 12.0,
+      "description": "Total IT spend by transport and logistics enterprises in the EU (~EUR 12B)"
+    },
+    "sam": {
+      "value_eur_bn": 2.5,
+      "description": "Cloud, SAP, and managed infrastructure services for transport and logistics"
+    },
+    "som": {
+      "value_eur_bn": 0.3,
+      "description": "Capturable share leveraging Deutsche Bahn reference and EU expansion"
+    }
+  },
+  "relevant_features": ["sap-on-cloud", "cloud-migration", "managed-hyperscaler", "hybrid-cloud", "multi-cloud-finops"],
+  "competitive_landscape": "Accenture, Capgemini, Infosys, TCS, AWS, Microsoft Azure"
+}

@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "skill_name": "markets",
+    "skill_path": "cogni-portfolio/skills/markets/SKILL.md",
+    "executor_model": "claude-opus-4-6",
+    "timestamp": "2026-03-18T22:10:00Z",
+    "evals_run": ["eval-15-markets-tsys-discovery", "eval-16-markets-tsys-direct", "eval-17-markets-bechtle-cold-start"],
+    "runs_per_configuration": 1,
+    "iteration": 6,
+    "previous_iteration": 5
+  },
+  "runs": [
+    {
+      "eval_id": "eval-15-markets-tsys-discovery",
+      "eval_name": "markets-tsys-discovery",
+      "configurations": [
+        {
+          "name": "with_skill",
+          "pass_rate": 1.0,
+          "passed": 44,
+          "total": 44,
+          "time_seconds": 110.6,
+          "tokens": 41134
+        },
+        {
+          "name": "without_skill",
+          "pass_rate": 0.32,
+          "passed": 16,
+          "total": 50,
+          "time_seconds": 131.8,
+          "tokens": 20712
+        }
+      ]
+    },
+    {
+      "eval_id": "eval-16-markets-tsys-direct",
+      "eval_name": "markets-tsys-direct",
+      "configurations": [
+        {
+          "name": "with_skill",
+          "pass_rate": 1.0,
+          "passed": 33,
+          "total": 33,
+          "time_seconds": 87.8,
+          "tokens": 39730
+        },
+        {
+          "name": "without_skill",
+          "pass_rate": 0.167,
+          "passed": 3,
+          "total": 18,
+          "time_seconds": 87.2,
+          "tokens": 17170
+        }
+      ]
+    },
+    {
+      "eval_id": "eval-17-markets-bechtle-cold-start",
+      "eval_name": "markets-bechtle-cold-start",
+      "configurations": [
+        {
+          "name": "with_skill",
+          "pass_rate": 1.0,
+          "passed": 2,
+          "total": 2,
+          "time_seconds": 58.7,
+          "tokens": 36706
+        },
+        {
+          "name": "without_skill",
+          "pass_rate": 0.2,
+          "passed": 7,
+          "total": 35,
+          "time_seconds": 107.1,
+          "tokens": 18131
+        }
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "mean_pass_rate": 1.0,
+      "total_passed": 79,
+      "total_checks": 79,
+      "mean_time_seconds": 85.7,
+      "mean_tokens": 39190
+    },
+    "without_skill": {
+      "mean_pass_rate": 0.25,
+      "total_passed": 26,
+      "total_checks": 103,
+      "mean_time_seconds": 108.7,
+      "mean_tokens": 18671
+    },
+    "delta": {
+      "pass_rate": "+0.75",
+      "time_seconds": "-23.0",
+      "tokens": "+20519"
+    }
+  },
+  "notes": [
+    "Iteration 6 achieves 100% structural pass rate across all 3 evals (up from 99% in iteration 5)",
+    "Fixed: description no longer contains company names (was causing false sentence-boundary detection in eval 16)",
+    "Fixed: employees_max uses realistic ceilings (50000, 80000, 5000) instead of 500000",
+    "Fixed: som.source now shows detailed bottom-up unit calculations (customers x ACV = SOM)",
+    "Fixed: created date present on all market files",
+    "Prerequisite gate continues to hold: eval 17 correctly refuses to create markets when features are empty",
+    "Baseline results unchanged (reused from iteration 5) — still 25% average pass rate"
+  ]
+}

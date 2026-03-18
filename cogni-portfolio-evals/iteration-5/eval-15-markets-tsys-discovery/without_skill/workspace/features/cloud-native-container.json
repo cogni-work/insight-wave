@@ -1,0 +1,5 @@
+{
+  "slug": "cloud-native-container",
+  "name": "Cloud-Native & Container Platform",
+  "description": "Verwaltete Kubernetes-Plattform (EKS, OpenShift, CCE) mit integriertem Container-Lifecycle-Management, Monitoring, Logging, Registries mit Vulnerability-Scanning, GitOps und Knative Serverless auf AWS und Open Telekom Cloud."
+}

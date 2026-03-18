@@ -1,0 +1,57 @@
+{
+  "slug": "manufacturing-midmarket-dach",
+  "name": "Mid-Market Manufacturing in DACH",
+  "region": "DACH",
+  "description": "Mid-sized manufacturing and industrial companies across Germany, Austria, and Switzerland with 500 to 5,000 employees. This segment includes the German Mittelstand — highly specialised machinery, automotive-supplier, chemical, and discrete-manufacturing firms — many of which are beginning their first major cloud migration. They require managed cloud services with European data sovereignty guarantees, SAP S/4HANA migration paths, and hybrid-cloud architectures that bridge factory-floor OT with corporate IT.",
+  "priority": "high",
+  "segmentation": {
+    "vertical": "Manufacturing & Industrial",
+    "size_class": "Mid-Market",
+    "employee_range": "500-5000",
+    "headcount_band": "500 – 5,000 employees",
+    "decision_drivers": [
+      "SAP S/4HANA migration (2027 ECC end-of-life deadline)",
+      "European data sovereignty and GDPR compliance",
+      "Hybrid cloud for shop-floor/OT integration",
+      "Cost-predictable managed services (limited internal IT staff)",
+      "Industry 4.0 / IoT data platforms"
+    ],
+    "example_accounts": [
+      "Trumpf GmbH",
+      "Kuka AG",
+      "Wacker Chemie AG",
+      "Dürr AG",
+      "Andritz AG (AT)",
+      "Bühler Group (CH)"
+    ],
+    "estimated_account_count": 2800
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on Eurostat enterprise statistics, Lünendonk IT-Sourcing studies, and Bitkom cloud-adoption surveys for DACH mid-market manufacturing as of early 2026",
+    "currency": "EUR",
+    "tam": {
+      "value_meur": 8500,
+      "label": "Total Addressable Market",
+      "description": "Total cloud and managed-IT spend across ~2,800 mid-market manufacturing companies (500-5,000 employees) in DACH. Average annual cloud-relevant IT spend estimated at EUR 3M per company, yielding ~EUR 8.5B TAM."
+    },
+    "sam": {
+      "value_meur": 2500,
+      "label": "Serviceable Addressable Market",
+      "description": "Portion of TAM reachable by T-Systems' portfolio — managed hyperscaler, SAP on cloud, hybrid cloud, migration factory, and sovereign cloud. Approximately 29% of TAM, excluding pure-play SaaS, application dev, and endpoints."
+    },
+    "som": {
+      "value_meur": 200,
+      "label": "Serviceable Obtainable Market",
+      "description": "Realistic 3-year capture assuming 8% win rate in SAM. T-Systems competes against strong Mittelstand IT providers (Bechtle, Cancom, All for One Group) but differentiates on sovereign cloud, SAP expertise, and Telekom brand trust. Lower win rate reflects fragmented market and established regional competition."
+    }
+  },
+  "relevant_features": [
+    "sap-on-cloud",
+    "cloud-migration",
+    "hybrid-cloud",
+    "managed-hyperscaler",
+    "private-cloud",
+    "sovereign-cloud"
+  ],
+  "created": "2026-03-18"
+}

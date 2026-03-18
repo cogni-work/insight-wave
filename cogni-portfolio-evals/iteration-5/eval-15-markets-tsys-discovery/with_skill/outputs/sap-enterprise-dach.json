@@ -1,0 +1,36 @@
+{
+  "slug": "sap-enterprise-dach",
+  "name": "SAP Enterprise (DACH)",
+  "region": "dach",
+  "description": "Large enterprises running SAP with 500+ employees in DACH facing S/4HANA migration deadlines and cloud-first ERP transformation.",
+  "segmentation": {
+    "company_size": "500+ employees",
+    "revenue_range": "EUR 200M+",
+    "vertical": "Cross-industry (SAP installed base)",
+    "employees_min": 500,
+    "employees_max": 500000,
+    "arr_min": 200000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["cross-industry-sap"]
+  },
+  "priority": "expansion",
+  "tam": {
+    "value": 18000000000,
+    "currency": "EUR",
+    "description": "Global SAP cloud migration and managed SAP services",
+    "source": "LLM estimate based on SAP ecosystem sizing; SAP has 400K+ customers globally, S/4HANA migration wave drives EUR 18B+ in services"
+  },
+  "sam": {
+    "value": 3800000000,
+    "currency": "EUR",
+    "description": "DACH SAP-on-cloud migration, hosting, and managed operations",
+    "source": "LLM estimate: DACH is SAP's home market with ~30K SAP customers in DE alone; managed SAP services ~EUR 3.8B addressable"
+  },
+  "som": {
+    "value": 280000000,
+    "currency": "EUR",
+    "description": "70 SAP enterprise accounts x EUR 4M average ACV over 3 years",
+    "source": "Bottom-up estimate: T-Systems manages 850K SAP users; targeting 70 new cloud migration/hosting wins at EUR 4M blended ACV"
+  },
+  "created": "2026-03-18"
+}

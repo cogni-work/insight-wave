@@ -1,0 +1,116 @@
+{
+  "total_checks": 18,
+  "passed": 3,
+  "failed": 15,
+  "pass_rate": 0.167,
+  "expectations": [
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "energy-large-de"
+    },
+    {
+      "text": "Valid region code (actual: DE)",
+      "passed": false,
+      "evidence": "region=\"DE\"",
+      "entity": "energy-large-de"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"energy-large-de\", region=\"DE\"",
+      "entity": "energy-large-de"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 60 words, 3 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Large-scale energy utilities and integrated energy companies headquartered in Germany with 5,000+ em\"",
+      "entity": "energy-large-de"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: high)",
+      "passed": false,
+      "evidence": "priority=\"high\"",
+      "entity": "energy-large-de"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "energy-large-de"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "manufacturing-midmarket-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "manufacturing-midmarket-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"manufacturing-midmarket-dach\", region=\"DACH\"",
+      "entity": "manufacturing-midmarket-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 65 words, 3 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Mid-sized manufacturing and industrial companies across Germany, Austria, and Switzerland with 500 t\"",
+      "entity": "manufacturing-midmarket-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: high)",
+      "passed": false,
+      "evidence": "priority=\"high\"",
+      "entity": "manufacturing-midmarket-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "manufacturing-midmarket-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Valid region code (actual: DE)",
+      "passed": false,
+      "evidence": "region=\"DE\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"public-sector-de\", region=\"DE\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 58 words, 5 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Federal, state (Länder), and municipal government agencies and public-sector institutions in Germany\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: high)",
+      "passed": false,
+      "evidence": "priority=\"high\"",
+      "entity": "public-sector-de"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "public-sector-de"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "slug": "energy-large-de",
+  "name": "Large Energy Companies in Germany",
+  "region": "DE",
+  "description": "Large-scale energy utilities and integrated energy companies headquartered in Germany with 5,000+ employees, including the Big Four (E.ON, RWE, EnBW, Vattenfall DE) and major municipal utility groups. These organisations operate critical infrastructure (KRITIS) and face stringent regulatory requirements (BaFin, BSI C5, GDPR) while undergoing massive digital transformation driven by the Energiewende, decentralised generation, smart-grid rollouts, and EU sustainability reporting mandates.",
+  "priority": "high",
+  "segmentation": {
+    "vertical": "Energy & Utilities",
+    "size_class": "Large Enterprise",
+    "employee_range": "5000+",
+    "headcount_band": "5,000 – 75,000 employees",
+    "decision_drivers": [
+      "Sovereign data residency (KRITIS / BSI C5 compliance)",
+      "Legacy SAP ECC-to-S/4HANA migration",
+      "OT/IT convergence for smart grids and IoT",
+      "Multi-cloud cost governance (FinOps)",
+      "Sustainability reporting and ESG data platforms"
+    ],
+    "example_accounts": [
+      "E.ON SE",
+      "RWE AG",
+      "EnBW Energie Baden-Württemberg",
+      "Vattenfall Europe (German operations)",
+      "Uniper SE",
+      "LEAG (Lausitz Energie)"
+    ],
+    "estimated_account_count": 15
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on public market data and analyst reports (Gartner, ISG, Lünendonk) as of early 2026",
+    "currency": "EUR",
+    "tam": {
+      "value_meur": 4200,
+      "label": "Total Addressable Market",
+      "description": "Total IT and cloud spend by large energy companies (5,000+ employees) in Germany, covering IaaS, PaaS, managed services, migration, and SAP hosting. Based on ~EUR 280M average annual IT spend per large utility across ~15 qualifying enterprises."
+    },
+    "sam": {
+      "value_meur": 1400,
+      "label": "Serviceable Addressable Market",
+      "description": "The share of TAM addressable by T-Systems' cloud portfolio (sovereign cloud, managed hyperscaler, SAP on cloud, hybrid cloud, migration). Excludes internal IT staff costs, non-cloud hardware, and application development that falls outside T-Systems' service lines. Approximately 33% of TAM."
+    },
+    "som": {
+      "value_meur": 280,
+      "label": "Serviceable Obtainable Market",
+      "description": "Realistic capture over 3 years given T-Systems' existing KRITIS credentials, sovereign cloud differentiation, and SAP Platinum Partner status. Assumes 20% win rate within SAM, reflecting strong incumbency at Deutsche Telekom-affiliated accounts and competitive pressure from Atos, Capgemini, and hyperscaler-direct."
+    }
+  },
+  "relevant_features": [
+    "sovereign-cloud",
+    "sap-on-cloud",
+    "managed-hyperscaler",
+    "hybrid-cloud",
+    "multi-cloud-finops",
+    "private-cloud"
+  ],
+  "created": "2026-03-18"
+}

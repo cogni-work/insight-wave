@@ -1,0 +1,20 @@
+{
+  "total_checks": 2,
+  "passed": 2,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "expectations": [
+    {
+      "text": "No market JSON files produced (correctly refused due to missing prerequisites)",
+      "passed": true,
+      "evidence": "Zero market files in outputs/ — skill blocked creation because features/ and products/ are empty",
+      "entity": "cold-start-guard"
+    },
+    {
+      "text": "Skill flags missing features/products prerequisite",
+      "passed": true,
+      "evidence": "Response states: 'I cannot create market JSON files for Bechtle AG yet. Markets without features to sell into are academic exercises.' Includes strategic hypothesis but no JSON files.",
+      "entity": "cold-start-guard"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "eval_id": 15,
+  "eval_name": "markets-tsys-discovery",
+  "prompt": "I have a T-Systems portfolio at the project path provided. They sell cloud services (migration, hybrid cloud, hyperscaler management, sovereign cloud, etc.) to enterprise customers. Help me define target markets for this portfolio. We're primarily active in Germany and the DACH region but exploring the EU.",
+  "assertions": [
+    {"id": "M-01", "text": "All required fields present (slug, name, region, description)", "type": "structural"},
+    {"id": "M-02", "text": "Region is a valid code from regions.json", "type": "structural"},
+    {"id": "M-03", "text": "Slug follows {segment}-{region} pattern", "type": "structural"},
+    {"id": "M-04", "text": "Description is 1 sentence, 5-30 words", "type": "structural"},
+    {"id": "M-05", "text": "Priority is beachhead/expansion/aspirational", "type": "structural"},
+    {"id": "M-06", "text": "TAM/SAM/SOM currency matches region default", "type": "structural"},
+    {"id": "M-07", "text": "SAM/TAM ratio < 50%", "type": "structural"},
+    {"id": "M-08", "text": "SOM/SAM ratio < 20%", "type": "structural"},
+    {"id": "M-09", "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)", "type": "structural"}
+  ]
+}

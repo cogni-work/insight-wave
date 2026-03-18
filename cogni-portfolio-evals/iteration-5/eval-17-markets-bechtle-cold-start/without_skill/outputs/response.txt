@@ -1,0 +1,44 @@
+Target Market Analysis for Bechtle AG — Cold Start Portfolio
+
+Bechtle AG is a leading German IT services provider (~15,000 employees, headquartered in Neckarsulm) operating across two main business segments: IT System House & Managed Services and IT E-Commerce. Based on Bechtle's known positioning, public financials, and the DACH IT services landscape, I recommend seven target markets for the portfolio.
+
+## Recommended Target Markets
+
+### 1. Managed Workplace Services (DACH)
+Bechtle's bread-and-butter: end-to-end management of enterprise device estates including provisioning, lifecycle management, patching, and end-user support. Driven by hybrid-work adoption and Device-as-a-Service models. SAM ~EUR 4.2B in DACH, growing ~6.5% annually. Key verticals: Public Sector, Manufacturing, Financial Services, Healthcare.
+
+### 2. Cloud & Infrastructure Services (DACH)
+Design, migration, and managed operation of hybrid/multi-cloud environments. This is Bechtle's highest-growth services area as DACH enterprises move from on-premises to cloud-first. SAM ~EUR 9.8B in DACH, growing ~14%. Drivers include hyperscaler adoption in the Mittelstand, data sovereignty (Gaia-X), and legacy data centre consolidation.
+
+### 3. IT E-Commerce & Hardware Resale (Europe)
+Bechtle operates one of Europe's largest B2B IT e-commerce platforms. This is the customer acquisition engine — many relationships start with hardware procurement and expand into managed services. SAM ~EUR 18B across Bechtle's European footprint, growing ~3%. Current tailwinds: Windows 11/AI PC refresh, public sector digitisation budgets.
+
+### 4. Cybersecurity Services (DACH)
+Security consulting, MDR, IAM, vulnerability management, and compliance services. Regulatory pressure from NIS2, DORA, and BSI IT-Grundschutz plus the ransomware surge make this one of the fastest-growing segments. SAM ~EUR 7.5B in DACH, growing ~12.5%. Key verticals: Financial Services, Public Sector, Critical Infrastructure.
+
+### 5. Public Sector IT (DACH)
+IT procurement, digitisation projects, and managed services for government at all levels. Bechtle holds numerous framework contracts and is a strategic supplier for German public administration modernisation (OZG 2.0). SAM ~EUR 14B in Germany, growing ~7%. Drivers: sovereign cloud, defence spending increase, education digitisation.
+
+### 6. Networking & Unified Communications (DACH)
+Enterprise network design, SD-WAN, campus WLAN, and UC platforms (Teams, Webex). Both project-based and managed network services. SAM ~EUR 5.5B in DACH, growing ~5%. Drivers: SD-WAN/SASE convergence, Wi-Fi 6E/7 refresh, Teams Phone adoption.
+
+### 7. Data, Analytics & AI Services (DACH)
+Consulting and implementation for data platforms, BI, advanced analytics, and AI/ML workloads including GenAI adoption. The newest high-growth area. SAM ~EUR 6B in DACH, growing ~18%. Drivers: GenAI enterprise adoption, EU AI Act readiness, data lakehouse modernisation.
+
+## Summary Table
+
+| Market                         | Region  | SAM (EUR B) | Growth % | Priority |
+|-------------------------------|---------|-------------|----------|----------|
+| IT E-Commerce & Hardware      | Europe  | 18.0        | 3.0      | Core     |
+| Public Sector IT              | DACH    | 14.0        | 7.0      | Core     |
+| Cloud & Infrastructure        | DACH    | 9.8         | 14.0     | Growth   |
+| Cybersecurity Services        | DACH    | 7.5         | 12.5     | Growth   |
+| Data, Analytics & AI          | DACH    | 6.0         | 18.0     | Growth   |
+| Networking & UC               | DACH    | 5.5         | 5.0      | Core     |
+| Managed Workplace Services    | DACH    | 4.2         | 6.5      | Core     |
+
+## Methodology
+All sizing estimates are LLM-generated approximations based on general knowledge of analyst reports (IDC, Gartner, ISG, Bitkom). They should be validated against Bechtle's own annual reports and primary analyst data before use in any external-facing materials.
+
+## Files Created
+Seven market JSON files in workspace/markets/, each containing slug, name, region, description, segmentation (verticals, buyer personas, company size), and sizing (TAM, SAM, growth rate, growth drivers).

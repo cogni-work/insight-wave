@@ -1,0 +1,35 @@
+{
+  "slug": "financial-services-dach",
+  "name": "Financial Services (DACH)",
+  "region": "DACH",
+  "description": "Banks, insurance companies, and financial institutions in Germany, Austria, and Switzerland requiring BaFin/FINMA-compliant cloud infrastructure, regulated workload hosting, and digital transformation of core banking and insurance platforms.",
+  "segmentation": {
+    "verticals": ["banking", "insurance", "asset-management", "payment-services", "stock-exchanges"],
+    "buyer_profile": "CTO/CIO, Head of Infrastructure, Cloud Center of Excellence, Risk & Compliance Officers",
+    "deal_size_range": "EUR 1M – 30M+",
+    "drivers": [
+      "BaFin BAIT/VAIT cloud outsourcing requirements",
+      "DORA (Digital Operational Resilience Act) compliance",
+      "Core banking modernization (mainframe exit)",
+      "S/4HANA migration for financial controlling",
+      "Multi-cloud risk diversification mandates"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on European financial services IT spending patterns",
+    "tam": {
+      "value_eur_bn": 22.0,
+      "description": "Total IT spend by financial services firms in DACH region (~EUR 22B)"
+    },
+    "sam": {
+      "value_eur_bn": 5.0,
+      "description": "Cloud infrastructure, managed services and migration services addressable by T-Systems in regulated finance"
+    },
+    "som": {
+      "value_eur_bn": 0.6,
+      "description": "Achievable share leveraging BaFin-compliant sovereign cloud positioning and existing Deutsche Telekom financial-sector relationships"
+    }
+  },
+  "relevant_features": ["sovereign-cloud", "managed-hyperscaler", "multi-cloud-finops", "private-cloud", "cloud-migration"],
+  "competitive_landscape": "IBM, Kyndryl, Accenture, Atos/Eviden, AWS (Frankfurt region), Microsoft Azure, Google Cloud (with T-Systems sovereign wrapper)"
+}

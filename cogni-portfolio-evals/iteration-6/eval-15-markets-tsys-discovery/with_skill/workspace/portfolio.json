@@ -1,0 +1,16 @@
+{
+  "slug": "t-systems",
+  "company": {
+    "name": "T-Systems International GmbH",
+    "domain": "t-systems.com",
+    "industry": "ICT Services",
+    "country": "DE",
+    "employees": 28000
+  },
+  "taxonomy": {
+    "type": "b2b-ict"
+  },
+  "language": "en",
+  "products": [],
+  "features": []
+}

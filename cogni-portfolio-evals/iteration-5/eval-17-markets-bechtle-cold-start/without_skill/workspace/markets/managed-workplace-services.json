@@ -1,0 +1,31 @@
+{
+  "slug": "managed-workplace-services",
+  "name": "Managed Workplace Services",
+  "region": "DACH",
+  "description": "End-to-end management of enterprise desktop, laptop, and mobile device estates including provisioning, lifecycle management, patching, and end-user support. Bechtle's largest revenue pillar, driven by hybrid-work adoption and device-as-a-service models across German Mittelstand and public sector.",
+  "segmentation": {
+    "verticals": ["Public Sector", "Manufacturing", "Financial Services", "Healthcare"],
+    "buyer_personas": ["CIO", "IT Director", "Head of Workplace IT"],
+    "company_size": "Mid-market to Enterprise (500–50,000 employees)"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 12.5,
+      "scope": "European Managed Workplace Services market",
+      "year": 2025,
+      "source": "LLM estimate based on IDC/Gartner proxies"
+    },
+    "sam": {
+      "value_eur_bn": 4.2,
+      "scope": "DACH region Managed Workplace Services",
+      "year": 2025
+    },
+    "growth_rate_pct": 6.5,
+    "growth_drivers": [
+      "Hybrid work infrastructure refresh",
+      "Device-as-a-Service adoption",
+      "Windows 11 migration cycles",
+      "Sustainability-driven lifecycle extension"
+    ]
+  }
+}

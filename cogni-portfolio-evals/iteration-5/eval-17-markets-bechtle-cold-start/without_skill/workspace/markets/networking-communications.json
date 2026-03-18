@@ -1,0 +1,31 @@
+{
+  "slug": "networking-communications",
+  "name": "Networking & Unified Communications",
+  "region": "DACH",
+  "description": "Enterprise network design, SD-WAN, WLAN, LAN switching, and unified communications / collaboration platforms (Microsoft Teams, Cisco Webex). Encompasses both project-based deployments and managed network services for campus, branch, and remote-worker connectivity.",
+  "segmentation": {
+    "verticals": ["Manufacturing", "Retail", "Logistics", "Healthcare", "Education"],
+    "buyer_personas": ["Network Architect", "IT Director", "CTO", "Facilities Manager"],
+    "company_size": "Mid-market to Enterprise (500–50,000 employees)"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 22.0,
+      "scope": "European Enterprise Networking & UC market",
+      "year": 2025,
+      "source": "LLM estimate based on IDC/Dell'Oro proxies"
+    },
+    "sam": {
+      "value_eur_bn": 5.5,
+      "scope": "DACH Enterprise Networking & UC Services",
+      "year": 2025
+    },
+    "growth_rate_pct": 5.0,
+    "growth_drivers": [
+      "SD-WAN and SASE convergence",
+      "Wi-Fi 6E/7 campus refresh",
+      "Microsoft Teams Phone adoption",
+      "Network-as-a-Service models"
+    ]
+  }
+}

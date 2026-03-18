@@ -1,0 +1,35 @@
+{
+  "slug": "sap-s4hana-migration-dach",
+  "name": "SAP S/4HANA Migration (DACH, cross-industry)",
+  "region": "DACH",
+  "description": "Cross-industry horizontal market for SAP ECC-to-S/4HANA migration services, driven by the 2027 end-of-mainstream-maintenance deadline. Targets any enterprise running SAP that needs RISE with SAP, greenfield/brownfield migration, and managed SAP operations on cloud.",
+  "segmentation": {
+    "verticals": ["cross-industry"],
+    "buyer_profile": "SAP Program Director, CIO, CFO (TCO decisions), Head of ERP",
+    "deal_size_range": "EUR 1M – 40M+",
+    "drivers": [
+      "SAP ECC end-of-mainstream-maintenance 2027",
+      "RISE with SAP adoption",
+      "Cloud-first SAP hosting mandates",
+      "Business process re-engineering during migration",
+      "Cost optimization via FinOps for SAP landscapes"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation: ~30,000 SAP customers in DACH, large portion still on ECC",
+    "tam": {
+      "value_eur_bn": 10.0,
+      "description": "Total SAP migration and hosting services market in DACH through 2028 (~EUR 10B cumulative)"
+    },
+    "sam": {
+      "value_eur_bn": 3.5,
+      "description": "Portion addressable by T-Systems as SAP Platinum Partner with RISE premium supplier status"
+    },
+    "som": {
+      "value_eur_bn": 0.8,
+      "description": "Realistic capture leveraging 4,000+ SAP experts, 850K managed SAP users, and RISE certification"
+    }
+  },
+  "relevant_features": ["sap-on-cloud", "cloud-migration", "managed-hyperscaler", "private-cloud", "multi-cloud-finops"],
+  "competitive_landscape": "All for One Group, SNP/CrystalBridge, Accenture, IBM, Deloitte, NTT DATA, AWS/Azure native SAP hosting"
+}

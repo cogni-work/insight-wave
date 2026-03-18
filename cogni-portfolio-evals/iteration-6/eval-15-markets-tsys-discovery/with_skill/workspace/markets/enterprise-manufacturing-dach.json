@@ -1,0 +1,36 @@
+{
+  "slug": "enterprise-manufacturing-dach",
+  "name": "Large Enterprise Manufacturing (DACH)",
+  "region": "dach",
+  "description": "Manufacturing and industrial enterprises with 1,000-80,000 employees and EUR 500M-100B revenue in DACH.",
+  "segmentation": {
+    "company_size": "1,000-80,000 employees",
+    "revenue_range": "EUR 500M-100B",
+    "vertical": "Manufacturing & Industrial",
+    "employees_min": 1000,
+    "employees_max": 80000,
+    "arr_min": 500000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["manufacturing", "industrial", "automotive"]
+  },
+  "priority": "beachhead",
+  "tam": {
+    "value": 28000000000,
+    "currency": "EUR",
+    "description": "European cloud services in manufacturing",
+    "source": "IDC 2025 — manufacturing is the second-largest vertical for cloud adoption in Europe, with approx. EUR 28B in cloud infrastructure and platform spend driven by Industry 4.0 and SAP S/4HANA migration"
+  },
+  "sam": {
+    "value": 6200000000,
+    "currency": "EUR",
+    "description": "DACH manufacturing enterprise cloud services",
+    "source": "Germany alone has ~1,200 manufacturing enterprises above EUR 500M revenue; DACH total market for managed cloud + SAP migration + hybrid infrastructure estimated at EUR 6.2B based on ~22% DACH share of European manufacturing IT spend"
+  },
+  "som": {
+    "value": 120000000,
+    "currency": "EUR",
+    "description": "40 customers x EUR 3M ACV in 3 years",
+    "source": "Bottom-up: ~400 qualifying DACH manufacturers with active SAP landscapes; T-Systems SAP Platinum Partner status gives access to ~25% = 100 addressable accounts; 40% conversion target = 40 customers; blended ACV EUR 3M (SAP-on-cloud hosting EUR 1.5M/yr + migration project EUR 1-2M) = EUR 120M"
+  },
+  "created": "2026-03-18"
+}

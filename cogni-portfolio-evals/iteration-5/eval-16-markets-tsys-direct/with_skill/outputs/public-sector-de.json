@@ -1,0 +1,34 @@
+{
+  "slug": "public-sector-de",
+  "name": "Public Sector & Government Agencies (Germany)",
+  "region": "de",
+  "description": "Federal, state, and municipal government agencies in Germany with sovereign cloud and data residency requirements.",
+  "segmentation": {
+    "company_size": "1,000+ employees",
+    "revenue_range": "Budget-funded (not revenue-driven)",
+    "vertical": "Public Sector & Government",
+    "employees_min": 1000,
+    "employees_max": 500000,
+    "vertical_codes": ["public-sector", "government"]
+  },
+  "priority": "beachhead",
+  "tam": {
+    "value": 15000000000,
+    "currency": "EUR",
+    "description": "Total German public sector IT spending",
+    "source": "LLM estimate based on Bitkom/BMI data: German public sector IT spend ~EUR 15B annually across federal, state, and municipal levels"
+  },
+  "sam": {
+    "value": 2500000000,
+    "currency": "EUR",
+    "description": "Cloud infrastructure and sovereign cloud services for German government",
+    "source": "LLM estimate: ~16% of public sector IT spend shifting to cloud, filtered to infrastructure/platform services requiring sovereign cloud capabilities and BSI compliance"
+  },
+  "som": {
+    "value": 60000000,
+    "currency": "EUR",
+    "description": "8 major agency contracts x EUR 7.5M avg ACV in 3 years",
+    "source": "Bottom-up estimate: T-Systems has existing public sector presence via Telekom/DTAG framework contracts; can win 6-10 sovereign cloud mandates at EUR 5-10M ACV each"
+  },
+  "created": "2026-03-18"
+}

@@ -1,0 +1,31 @@
+{
+  "slug": "public-sector-it",
+  "name": "Public Sector IT",
+  "region": "DACH",
+  "description": "IT procurement, digitisation projects, and managed services for federal, state, and municipal government bodies, as well as education and defence. Bechtle holds numerous framework contracts and is a strategic supplier for German public administration modernisation under the OZG (Onlinezugangsgesetz) and related programmes.",
+  "segmentation": {
+    "verticals": ["Federal Government", "State Government", "Municipal Government", "Education", "Defence"],
+    "buyer_personas": ["IT Director (Public)", "Chief Digital Officer", "Procurement Lead", "Ministry IT Planner"],
+    "company_size": "Government bodies of all sizes"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 55.0,
+      "scope": "European Public Sector IT spending",
+      "year": 2025,
+      "source": "LLM estimate based on Bitkom/EU Digital Decade proxies"
+    },
+    "sam": {
+      "value_eur_bn": 14.0,
+      "scope": "German Public Sector IT (where Bechtle holds framework eligibility)",
+      "year": 2025
+    },
+    "growth_rate_pct": 7.0,
+    "growth_drivers": [
+      "OZG 2.0 digitisation mandates",
+      "Sovereign cloud and digital sovereignty",
+      "Defence spending increase (NATO 2% GDP target)",
+      "Education digitisation (DigitalPakt Schule follow-up)"
+    ]
+  }
+}

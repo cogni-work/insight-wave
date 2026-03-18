@@ -1,0 +1,338 @@
+{
+  "total_checks": 55,
+  "passed": 55,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "expectations": [
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"enterprise-manufacturing-dach\", region=\"dach\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 21 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large manufacturing and industrial enterprises with 1,000+ employees in DACH modernizing IT landscap\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: expansion)",
+      "passed": true,
+      "evidence": "priority=\"expansion\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 14.5%)",
+      "passed": true,
+      "evidence": "SAM=3,200,000,000 / TAM=22,000,000,000 = 14.5%",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 6.2%)",
+      "passed": true,
+      "evidence": "SOM=200,000,000 / SAM=3,200,000,000 = 6.2%",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "enterprise-manufacturing-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"public-sector-dach\", region=\"dach\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 19 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Federal, state, and municipal government agencies and public institutions in DACH with mandatory dat\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: beachhead)",
+      "passed": true,
+      "evidence": "priority=\"beachhead\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 29.2%)",
+      "passed": true,
+      "evidence": "SAM=3,500,000,000 / TAM=12,000,000,000 = 29.2%",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 7.1%)",
+      "passed": true,
+      "evidence": "SOM=250,000,000 / SAM=3,500,000,000 = 7.1%",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"regulated-enterprise-dach\", region=\"dach\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 21 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large enterprises in financial services, insurance, and critical infrastructure with 1,000+ employee\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: beachhead)",
+      "passed": true,
+      "evidence": "priority=\"beachhead\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 15.0%)",
+      "passed": true,
+      "evidence": "SAM=4,200,000,000 / TAM=28,000,000,000 = 15.0%",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 7.6%)",
+      "passed": true,
+      "evidence": "SOM=320,000,000 / SAM=4,200,000,000 = 7.6%",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "regulated-enterprise-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "Valid region code (actual: eu)",
+      "passed": true,
+      "evidence": "region=\"eu\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"regulated-enterprise-eu\", region=\"eu\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 22 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large enterprises in financial services, healthcare, and critical infrastructure with 1,000+ employe\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: aspirational)",
+      "passed": true,
+      "evidence": "priority=\"aspirational\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 13.1%)",
+      "passed": true,
+      "evidence": "SAM=8,500,000,000 / TAM=65,000,000,000 = 13.1%",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 1.4%)",
+      "passed": true,
+      "evidence": "SOM=120,000,000 / SAM=8,500,000,000 = 1.4%",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "regulated-enterprise-eu"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "Valid region code (actual: dach)",
+      "passed": true,
+      "evidence": "region=\"dach\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": true,
+      "evidence": "slug=\"sap-enterprise-dach\", region=\"dach\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 17 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large enterprises running SAP with 500+ employees in DACH facing S/4HANA migration deadlines and clo\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "Priority is beachhead/expansion/aspirational (actual: expansion)",
+      "passed": true,
+      "evidence": "priority=\"expansion\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "TAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "TAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "SAM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SAM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "SOM currency matches region default (EUR)",
+      "passed": true,
+      "evidence": "SOM.currency=\"EUR\", expected=\"EUR\"",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "SAM/TAM ratio < 50% (actual: 21.1%)",
+      "passed": true,
+      "evidence": "SAM=3,800,000,000 / TAM=18,000,000,000 = 21.1%",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "SOM/SAM ratio < 20% (actual: 7.4%)",
+      "passed": true,
+      "evidence": "SOM=280,000,000 / SAM=3,800,000,000 = 7.4%",
+      "entity": "sap-enterprise-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": true,
+      "evidence": "All normalized fields present",
+      "entity": "sap-enterprise-dach"
+    }
+  ]
+}

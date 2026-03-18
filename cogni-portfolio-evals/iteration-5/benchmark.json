@@ -1,0 +1,105 @@
+{
+  "metadata": {
+    "skill_name": "markets",
+    "skill_path": "cogni-portfolio/skills/markets/SKILL.md",
+    "executor_model": "claude-opus-4-6",
+    "timestamp": "2026-03-18T21:37:35Z",
+    "evals_run": ["eval-15-markets-tsys-discovery", "eval-16-markets-tsys-direct", "eval-17-markets-bechtle-cold-start"],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": "eval-15-markets-tsys-discovery",
+      "eval_name": "markets-tsys-discovery",
+      "configurations": [
+        {
+          "name": "with_skill",
+          "pass_rate": 1.0,
+          "passed": 55,
+          "total": 55,
+          "time_seconds": 116.8,
+          "tokens": 41087
+        },
+        {
+          "name": "without_skill",
+          "pass_rate": 0.32,
+          "passed": 16,
+          "total": 50,
+          "time_seconds": 131.8,
+          "tokens": 20712
+        }
+      ]
+    },
+    {
+      "eval_id": "eval-16-markets-tsys-direct",
+      "eval_name": "markets-tsys-direct",
+      "configurations": [
+        {
+          "name": "with_skill",
+          "pass_rate": 0.97,
+          "passed": 32,
+          "total": 33,
+          "time_seconds": 81.3,
+          "tokens": 38482
+        },
+        {
+          "name": "without_skill",
+          "pass_rate": 0.167,
+          "passed": 3,
+          "total": 18,
+          "time_seconds": 87.2,
+          "tokens": 17170
+        }
+      ]
+    },
+    {
+      "eval_id": "eval-17-markets-bechtle-cold-start",
+      "eval_name": "markets-bechtle-cold-start",
+      "configurations": [
+        {
+          "name": "with_skill",
+          "pass_rate": 1.0,
+          "passed": 2,
+          "total": 2,
+          "time_seconds": 68.1,
+          "tokens": 36575
+        },
+        {
+          "name": "without_skill",
+          "pass_rate": 0.2,
+          "passed": 7,
+          "total": 35,
+          "time_seconds": 107.1,
+          "tokens": 18131
+        }
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "mean_pass_rate": 0.99,
+      "total_passed": 89,
+      "total_checks": 90,
+      "mean_time_seconds": 88.7,
+      "mean_tokens": 38715
+    },
+    "without_skill": {
+      "mean_pass_rate": 0.25,
+      "total_passed": 26,
+      "total_checks": 103,
+      "mean_time_seconds": 108.7,
+      "mean_tokens": 18671
+    },
+    "delta": {
+      "pass_rate": "+0.74",
+      "time_seconds": "-20.0",
+      "tokens": "+20044"
+    }
+  },
+  "notes": [
+    "Eval 15: with_skill produced 5 focused markets (100% pass), baseline produced 10 markets with all failing region casing (DACH vs dach) and missing normalized segmentation",
+    "Eval 16: with_skill 97% pass (1 description exceeded 1-sentence constraint), baseline 17% — wrong priority enum (high vs beachhead), uppercase regions, verbose descriptions, no normalized segmentation",
+    "Eval 17: with_skill correctly refused to create markets (flagged empty features/products), baseline created 7 markets blindly with 80% structural failures",
+    "Key baseline failure patterns: uppercase region codes (DACH/DE vs dach/de), missing normalized segmentation fields, multi-sentence descriptions, non-standard priority values"
+  ]
+}

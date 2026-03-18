@@ -1,0 +1,218 @@
+{
+  "total_checks": 35,
+  "passed": 7,
+  "failed": 28,
+  "pass_rate": 0.2,
+  "expectations": [
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "cloud-infrastructure-services"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "cloud-infrastructure-services"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"cloud-infrastructure-services\", region=\"DACH\"",
+      "entity": "cloud-infrastructure-services"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 34 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Design, migration, and managed operation of hybrid and multi-cloud environments including private cl\"",
+      "entity": "cloud-infrastructure-services"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "cloud-infrastructure-services"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "cybersecurity-services"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "cybersecurity-services"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"cybersecurity-services\", region=\"DACH\"",
+      "entity": "cybersecurity-services"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 40 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Security consulting, managed detection and response (MDR), identity and access management, vulnerabi\"",
+      "entity": "cybersecurity-services"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "cybersecurity-services"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "data-analytics-ai"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "data-analytics-ai"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"data-analytics-ai\", region=\"DACH\"",
+      "entity": "data-analytics-ai"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 32 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Consulting and implementation services for data platforms, business intelligence, advanced analytics\"",
+      "entity": "data-analytics-ai"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "data-analytics-ai"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "it-e-commerce-hardware"
+    },
+    {
+      "text": "Valid region code (actual: Europe)",
+      "passed": false,
+      "evidence": "region=\"Europe\"",
+      "entity": "it-e-commerce-hardware"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"it-e-commerce-hardware\", region=\"Europe\"",
+      "entity": "it-e-commerce-hardware"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 39 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Online and direct-sales distribution of IT hardware, peripherals, and software licenses to business \"",
+      "entity": "it-e-commerce-hardware"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "it-e-commerce-hardware"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "managed-workplace-services"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "managed-workplace-services"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"managed-workplace-services\", region=\"DACH\"",
+      "entity": "managed-workplace-services"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 35 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"End-to-end management of enterprise desktop, laptop, and mobile device estates including provisionin\"",
+      "entity": "managed-workplace-services"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "managed-workplace-services"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "networking-communications"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "networking-communications"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"networking-communications\", region=\"DACH\"",
+      "entity": "networking-communications"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 31 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Enterprise network design, SD-WAN, WLAN, LAN switching, and unified communications / collaboration p\"",
+      "entity": "networking-communications"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "networking-communications"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "public-sector-it"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "public-sector-it"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"public-sector-it\", region=\"DACH\"",
+      "entity": "public-sector-it"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 42 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"IT procurement, digitisation projects, and managed services for federal, state, and municipal govern\"",
+      "entity": "public-sector-it"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "public-sector-it"
+    }
+  ]
+}

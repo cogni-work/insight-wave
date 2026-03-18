@@ -1,0 +1,57 @@
+{
+  "slug": "public-sector-de",
+  "name": "Public Sector & Government Agencies in Germany",
+  "region": "DE",
+  "description": "Federal, state (Länder), and municipal government agencies and public-sector institutions in Germany, including ministries, federal agencies (Bundesbehörden), state administrations, public-law institutions, and large municipal IT service providers (e.g., Dataport, IT.NRW). This segment is driven by the Onlinezugangsgesetz (OZG) digitalisation mandate, the German government's multi-cloud strategy (Deutsche Verwaltungscloud), and strict sovereignty requirements mandating BSI C5 Type 2-certified, EU-operated infrastructure.",
+  "priority": "high",
+  "segmentation": {
+    "vertical": "Public Sector / Government",
+    "size_class": "Mixed (agencies range from 200 to 50,000+ staff)",
+    "employee_range": "All sizes (public-sector classification)",
+    "decision_drivers": [
+      "BSI C5 Type 2 certification (mandatory for federal cloud)",
+      "Digital sovereignty — no US CLOUD Act exposure",
+      "OZG compliance and citizen-service digitalisation",
+      "Deutsche Verwaltungscloud (multi-cloud gov strategy)",
+      "Long procurement cycles via EVB-IT / framework agreements",
+      "Open-source preference (openDesk, Sovereign Cloud Stack)"
+    ],
+    "example_accounts": [
+      "ITZBund (Federal IT Centre)",
+      "BWI GmbH (Bundeswehr IT)",
+      "Dataport AöR",
+      "IT.NRW",
+      "Bayerisches Landesamt für Digitalisierung",
+      "Federal Ministry of the Interior (BMI)"
+    ],
+    "estimated_account_count": 350
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on Bitkom public-sector IT studies, BMI budget publications, and ISG Provider Lens for German public cloud as of early 2026",
+    "currency": "EUR",
+    "tam": {
+      "value_meur": 6000,
+      "label": "Total Addressable Market",
+      "description": "Total cloud and managed-infrastructure spend across German public-sector entities (federal, state, municipal). Includes IaaS, PaaS, sovereign cloud, managed services, and migration. Germany's public-sector IT market is ~EUR 40B total; cloud-relevant infrastructure is estimated at ~EUR 6B and growing rapidly due to OZG and Verwaltungscloud mandates."
+    },
+    "sam": {
+      "value_meur": 2000,
+      "label": "Serviceable Addressable Market",
+      "description": "Share reachable by T-Systems given its sovereign cloud (BSI C5 certified), Open Sovereign Cloud partnership with Google, and existing framework-agreement positions. Approximately 33% of TAM, excluding segments locked into in-house IT centres or competitors with existing long-term contracts."
+    },
+    "som": {
+      "value_meur": 350,
+      "label": "Serviceable Obtainable Market",
+      "description": "Realistic 3-year capture reflecting T-Systems' strong positioning: BSI C5 Type 2 certification, Deutsche Telekom government relationships, Open Sovereign Cloud (with Google), and Telekom's existing public-sector framework agreements. Assumes ~17.5% capture of SAM, accounting for competition from Ionos, SAP Sovereign Cloud, and public-sector IT consolidators."
+    }
+  },
+  "relevant_features": [
+    "sovereign-cloud",
+    "private-cloud",
+    "multi-cloud-finops",
+    "cloud-migration",
+    "cloud-native-container",
+    "managed-hyperscaler"
+  ],
+  "created": "2026-03-18"
+}

@@ -1,0 +1,36 @@
+{
+  "slug": "public-sector-de",
+  "name": "Public Sector & Government (Germany)",
+  "region": "de",
+  "description": "Federal, state, and municipal government agencies and public institutions in Germany.",
+  "segmentation": {
+    "company_size": "1,000+ employees",
+    "revenue_range": "N/A (public budget)",
+    "vertical": "Public Sector & Government",
+    "employees_min": 1000,
+    "employees_max": 50000,
+    "arr_min": 0,
+    "arr_max": 0,
+    "vertical_codes": ["public-sector", "government"]
+  },
+  "priority": "expansion",
+  "tam": {
+    "value": 80000000000,
+    "currency": "EUR",
+    "description": "Global government cloud and IT services",
+    "source": "LLM estimate based on Gartner government IT spending forecasts (2025)"
+  },
+  "sam": {
+    "value": 6000000000,
+    "currency": "EUR",
+    "description": "Cloud and managed IT services for German public sector",
+    "source": "LLM estimate: German public sector IT spend ~EUR 15B annually, cloud and managed services share ~40% and growing = EUR 6B addressable"
+  },
+  "som": {
+    "value": 37500000,
+    "currency": "EUR",
+    "description": "25 agencies x EUR 1.5M ACV in 3 years",
+    "source": "Bottom-up: ~200 federal and large state agencies with active cloud mandates; T-Systems can win 25 accounts in 3 years at EUR 1.5M average ACV (sovereign cloud + private cloud + compliance-driven managed services) = EUR 37.5M"
+  },
+  "created": "2026-03-18"
+}

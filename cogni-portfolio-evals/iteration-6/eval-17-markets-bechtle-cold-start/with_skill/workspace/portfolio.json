@@ -1,0 +1,16 @@
+{
+  "slug": "bechtle",
+  "company": {
+    "name": "Bechtle AG",
+    "domain": "bechtle.com",
+    "industry": "ICT Services",
+    "country": "DE",
+    "employees": 15000
+  },
+  "taxonomy": {
+    "type": "b2b-ict"
+  },
+  "language": "en",
+  "products": [],
+  "features": []
+}

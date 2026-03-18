@@ -1,0 +1,31 @@
+{
+  "slug": "data-analytics-ai",
+  "name": "Data, Analytics & AI Services",
+  "region": "DACH",
+  "description": "Consulting and implementation services for data platforms, business intelligence, advanced analytics, and artificial intelligence / machine learning workloads. Includes data strategy, lakehouse architecture, AI-readiness assessments, and GenAI adoption programmes for enterprise clients.",
+  "segmentation": {
+    "verticals": ["Manufacturing", "Financial Services", "Retail", "Automotive", "Pharma"],
+    "buyer_personas": ["CDO", "Head of Data & Analytics", "CIO", "VP Digital"],
+    "company_size": "Mid-market to Large Enterprise (500–100,000 employees)"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 32.0,
+      "scope": "European Data, Analytics & AI Services market",
+      "year": 2025,
+      "source": "LLM estimate based on IDC/McKinsey proxies"
+    },
+    "sam": {
+      "value_eur_bn": 6.0,
+      "scope": "DACH Data, Analytics & AI Services",
+      "year": 2025
+    },
+    "growth_rate_pct": 18.0,
+    "growth_drivers": [
+      "Generative AI enterprise adoption",
+      "EU AI Act compliance readiness",
+      "Data mesh / data lakehouse modernisation",
+      "AI-powered process automation in manufacturing"
+    ]
+  }
+}

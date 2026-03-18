@@ -1,0 +1,36 @@
+{
+  "slug": "enterprise-regulated-eu",
+  "name": "Large Enterprise Regulated Industries (EU)",
+  "region": "eu",
+  "description": "Large enterprises in regulated industries (financial services, healthcare, energy, public sector) with 2,000-100,000 employees and EUR 1B-100B revenue in the EU.",
+  "segmentation": {
+    "company_size": "2,000-100,000 employees",
+    "revenue_range": "EUR 1B-100B",
+    "vertical": "Regulated Industries (Financial Services, Healthcare, Energy, Public Sector)",
+    "employees_min": 2000,
+    "employees_max": 100000,
+    "arr_min": 1000000000,
+    "arr_max": 100000000000,
+    "vertical_codes": ["financial-services", "healthcare", "energy", "public-sector"]
+  },
+  "priority": "expansion",
+  "tam": {
+    "value": 42000000000,
+    "currency": "EUR",
+    "description": "EU cloud services in regulated industries",
+    "source": "IDC European Cloud Services Tracker 2025 — regulated industry verticals across the full EU account for approx. EUR 42B, same TAM as DACH market but broader geographic scope"
+  },
+  "sam": {
+    "value": 12000000000,
+    "currency": "EUR",
+    "description": "EU regulated enterprise sovereign and managed cloud",
+    "source": "Sovereign cloud and GDPR-compliant managed services are the addressable slice — estimated EUR 12B across EU27 for enterprises requiring data residency, NIS2 compliance, and European-operated infrastructure"
+  },
+  "som": {
+    "value": 60000000,
+    "currency": "EUR",
+    "description": "15 customers x EUR 4M ACV in 3 years",
+    "source": "Bottom-up: EU expansion starting from Gaia-X partnerships and sovereign cloud positioning; ~500 qualifying enterprises outside DACH with sovereign cloud mandates; realistic reach is ~30 accounts via channel partners; 50% conversion = 15 customers; blended ACV EUR 4M (sovereign cloud hosting EUR 2M/yr + migration EUR 2M) = EUR 60M"
+  },
+  "created": "2026-03-18"
+}

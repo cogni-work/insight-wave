@@ -1,0 +1,308 @@
+{
+  "total_checks": 50,
+  "passed": 16,
+  "failed": 34,
+  "pass_rate": 0.32,
+  "expectations": [
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "cloud-native-modernization-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "cloud-native-modernization-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"cloud-native-modernization-dach\", region=\"DACH\"",
+      "entity": "cloud-native-modernization-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 26 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Enterprises in the DACH region modernizing legacy applications through containerization, Kubernetes \"",
+      "entity": "cloud-native-modernization-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "cloud-native-modernization-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "energy-utilities-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "energy-utilities-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"energy-utilities-dach\", region=\"DACH\"",
+      "entity": "energy-utilities-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 29 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Energy producers, grid operators, and utility companies in the DACH region requiring KRITIS-complian\"",
+      "entity": "energy-utilities-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "energy-utilities-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "financial-services-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "financial-services-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"financial-services-dach\", region=\"DACH\"",
+      "entity": "financial-services-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 27 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Banks, insurance companies, and financial institutions in Germany, Austria, and Switzerland requirin\"",
+      "entity": "financial-services-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "financial-services-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "healthcare-life-sciences-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "healthcare-life-sciences-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"healthcare-life-sciences-dach\", region=\"DACH\"",
+      "entity": "healthcare-life-sciences-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 25 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Hospitals, health insurance providers (Krankenkassen), pharmaceutical companies, and medical device \"",
+      "entity": "healthcare-life-sciences-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "healthcare-life-sciences-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "manufacturing-automotive-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "manufacturing-automotive-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"manufacturing-automotive-dach\", region=\"DACH\"",
+      "entity": "manufacturing-automotive-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 28 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Large manufacturing enterprises and automotive OEMs/suppliers in Germany, Austria, and Switzerland m\"",
+      "entity": "manufacturing-automotive-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "manufacturing-automotive-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "mittelstand-cloud-de"
+    },
+    {
+      "text": "Valid region code (actual: DE)",
+      "passed": false,
+      "evidence": "region=\"DE\"",
+      "entity": "mittelstand-cloud-de"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"mittelstand-cloud-de\", region=\"DE\"",
+      "entity": "mittelstand-cloud-de"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 33 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Germany's upper Mittelstand (500-5,000 employees) undergoing first major cloud transformation. These\"",
+      "entity": "mittelstand-cloud-de"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "mittelstand-cloud-de"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"public-sector-dach\", region=\"DACH\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 23 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Federal, state and municipal government agencies in Germany, Austria and Switzerland requiring digit\"",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "public-sector-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "sap-s4hana-migration-dach"
+    },
+    {
+      "text": "Valid region code (actual: DACH)",
+      "passed": false,
+      "evidence": "region=\"DACH\"",
+      "entity": "sap-s4hana-migration-dach"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"sap-s4hana-migration-dach\", region=\"DACH\"",
+      "entity": "sap-s4hana-migration-dach"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 32 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Cross-industry horizontal market for SAP ECC-to-S/4HANA migration services, driven by the 2027 end-o\"",
+      "entity": "sap-s4hana-migration-dach"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "sap-s4hana-migration-dach"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "sovereign-cloud-eu"
+    },
+    {
+      "text": "Valid region code (actual: EU)",
+      "passed": false,
+      "evidence": "region=\"EU\"",
+      "entity": "sovereign-cloud-eu"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"sovereign-cloud-eu\", region=\"EU\"",
+      "entity": "sovereign-cloud-eu"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 33 words, 2 sentence-enders)",
+      "passed": false,
+      "evidence": "\"Pan-European market for data-sovereign cloud infrastructure driven by GDPR, Gaia-X, EUCS certificati\"",
+      "entity": "sovereign-cloud-eu"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "sovereign-cloud-eu"
+    },
+    {
+      "text": "All required fields present (slug, name, region, description)",
+      "passed": true,
+      "evidence": "All present",
+      "entity": "transport-logistics-eu"
+    },
+    {
+      "text": "Valid region code (actual: EU)",
+      "passed": false,
+      "evidence": "region=\"EU\"",
+      "entity": "transport-logistics-eu"
+    },
+    {
+      "text": "Slug ends with -{region}",
+      "passed": false,
+      "evidence": "slug=\"transport-logistics-eu\", region=\"EU\"",
+      "entity": "transport-logistics-eu"
+    },
+    {
+      "text": "Description is 1 sentence, 5-30 words (actual: 24 words, 1 sentence-enders)",
+      "passed": true,
+      "evidence": "\"Rail operators, logistics providers, airports, and mobility platforms across Europe requiring cloud-\"",
+      "entity": "transport-logistics-eu"
+    },
+    {
+      "text": "Segmentation has normalized fields (employees_min/max, vertical_codes)",
+      "passed": false,
+      "evidence": "Missing: ['employees_min', 'employees_max', 'vertical_codes']",
+      "entity": "transport-logistics-eu"
+    }
+  ]
+}

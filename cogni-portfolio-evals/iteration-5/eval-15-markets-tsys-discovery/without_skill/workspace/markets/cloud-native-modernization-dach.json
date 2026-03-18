@@ -1,0 +1,35 @@
+{
+  "slug": "cloud-native-modernization-dach",
+  "name": "Cloud-Native & Application Modernization (DACH)",
+  "region": "DACH",
+  "description": "Enterprises in the DACH region modernizing legacy applications through containerization, Kubernetes adoption, serverless architectures, and DevOps/GitOps transformation. Spans organizations moving from traditional VMs to cloud-native platforms.",
+  "segmentation": {
+    "verticals": ["cross-industry"],
+    "buyer_profile": "CTO, VP Engineering, Head of Platform Engineering, Cloud Architect",
+    "deal_size_range": "EUR 300K – 10M",
+    "drivers": [
+      "Microservices and container adoption acceleration",
+      "Platform engineering team enablement",
+      "Legacy application decomposition (monolith to microservices)",
+      "Developer productivity and time-to-market pressure",
+      "Kubernetes/OpenShift standardization across multi-cloud"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on container platform and app-modernization market in DACH",
+    "tam": {
+      "value_eur_bn": 5.0,
+      "description": "Total application modernization and container platform market in DACH (~EUR 5B)"
+    },
+    "sam": {
+      "value_eur_bn": 1.5,
+      "description": "Managed Kubernetes, container platform, and modernization consulting addressable by T-Systems"
+    },
+    "som": {
+      "value_eur_bn": 0.2,
+      "description": "Capturable share in managed container platforms and modernization advisory"
+    }
+  },
+  "relevant_features": ["cloud-native-container", "managed-hyperscaler", "cloud-migration", "hybrid-cloud"],
+  "competitive_landscape": "Red Hat/IBM, VMware/Broadcom, AWS EKS, Azure AKS, Google GKE, Accenture, Thoughtworks, local cloud-native consultancies"
+}

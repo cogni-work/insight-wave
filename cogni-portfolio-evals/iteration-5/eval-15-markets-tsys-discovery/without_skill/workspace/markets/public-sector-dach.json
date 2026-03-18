@@ -1,0 +1,35 @@
+{
+  "slug": "public-sector-dach",
+  "name": "Public Sector & Government (DACH)",
+  "region": "DACH",
+  "description": "Federal, state and municipal government agencies in Germany, Austria and Switzerland requiring digitalization of public services, sovereign cloud infrastructure, and GDPR/BSI-compliant IT modernization.",
+  "segmentation": {
+    "verticals": ["federal-government", "state-government", "municipal-administration", "defense", "public-healthcare"],
+    "buyer_profile": "CIO offices, IT departments, central procurement agencies (e.g. ITZBund, BWI, Dataport)",
+    "deal_size_range": "EUR 500K – 50M+",
+    "drivers": [
+      "Digital sovereignty mandates (e.g. Deutsche Verwaltungscloud)",
+      "KRITIS regulation and BSI C5 compliance",
+      "Legacy mainframe modernization",
+      "OZG (Onlinezugangsgesetz) digitalization deadlines",
+      "EU data residency requirements"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on public-sector IT spend reports and market knowledge",
+    "tam": {
+      "value_eur_bn": 18.0,
+      "description": "Total public-sector IT spending in DACH (~EUR 18B annually, including hardware, software, services)"
+    },
+    "sam": {
+      "value_eur_bn": 4.5,
+      "description": "Cloud infrastructure and managed services portion of public-sector IT in DACH, addressable by T-Systems' portfolio"
+    },
+    "som": {
+      "value_eur_bn": 0.8,
+      "description": "Realistically capturable share given T-Systems' incumbent position in German federal/state IT and sovereign cloud advantage"
+    }
+  },
+  "relevant_features": ["sovereign-cloud", "private-cloud", "cloud-migration", "hybrid-cloud"],
+  "competitive_landscape": "BWI (Bundeswehr), Ionos/Delos Cloud, SAP SE (Sovereign Cloud), AWS GovCloud, local IT service providers (Bechtle, Computacenter)"
+}

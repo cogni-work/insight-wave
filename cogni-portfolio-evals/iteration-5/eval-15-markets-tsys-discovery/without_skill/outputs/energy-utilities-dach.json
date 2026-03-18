@@ -1,0 +1,35 @@
+{
+  "slug": "energy-utilities-dach",
+  "name": "Energy & Utilities (DACH)",
+  "region": "DACH",
+  "description": "Energy producers, grid operators, and utility companies in the DACH region requiring KRITIS-compliant cloud infrastructure for OT/IT convergence, smart grid platforms, and regulated workload modernization during the Energiewende transition.",
+  "segmentation": {
+    "verticals": ["energy-generation", "grid-operators", "municipal-utilities", "renewable-energy", "oil-gas"],
+    "buyer_profile": "CIO, Head of IT/OT Convergence, VP Digital, CISO",
+    "deal_size_range": "EUR 500K – 20M",
+    "drivers": [
+      "KRITIS regulation for energy sector",
+      "Energiewende driving IT modernization",
+      "Smart metering and grid digitalization",
+      "SAP IS-U/S4 Utilities migration",
+      "OT/IT convergence requiring hybrid/edge cloud"
+    ]
+  },
+  "sizing": {
+    "methodology": "LLM estimation based on energy-sector IT spend in DACH",
+    "tam": {
+      "value_eur_bn": 6.0,
+      "description": "Total IT spend by energy and utilities companies in DACH (~EUR 6B)"
+    },
+    "sam": {
+      "value_eur_bn": 1.5,
+      "description": "Cloud infrastructure, managed services and SAP hosting for energy sector"
+    },
+    "som": {
+      "value_eur_bn": 0.3,
+      "description": "Capturable share through KRITIS-compliant sovereign cloud and Deutsche Telekom energy-sector relationships"
+    }
+  },
+  "relevant_features": ["sovereign-cloud", "private-cloud", "sap-on-cloud", "hybrid-cloud", "cloud-migration"],
+  "competitive_landscape": "Atos/Eviden, Capgemini, IBM, AWS, Innogy/E.ON Digital, regional IT providers"
+}

@@ -1,0 +1,31 @@
+{
+  "slug": "it-e-commerce-hardware",
+  "name": "IT E-Commerce & Hardware Resale",
+  "region": "Europe",
+  "description": "Online and direct-sales distribution of IT hardware, peripherals, and software licenses to business customers. Bechtle operates one of Europe's largest B2B IT e-commerce platforms, serving as the entry point for many customer relationships that later expand into managed services.",
+  "segmentation": {
+    "verticals": ["SMB cross-industry", "Public Sector", "Education", "Healthcare"],
+    "buyer_personas": ["IT Procurement Manager", "Office Manager", "IT Administrator"],
+    "company_size": "SMB to Mid-market (10–5,000 employees)"
+  },
+  "sizing": {
+    "tam": {
+      "value_eur_bn": 95.0,
+      "scope": "European B2B IT hardware and software distribution",
+      "year": 2025,
+      "source": "LLM estimate based on EITO/Context proxies"
+    },
+    "sam": {
+      "value_eur_bn": 18.0,
+      "scope": "DACH + Bechtle's European e-commerce footprint",
+      "year": 2025
+    },
+    "growth_rate_pct": 3.0,
+    "growth_drivers": [
+      "PC refresh cycles (Windows 11, AI PCs)",
+      "Public sector digitisation budgets",
+      "Consolidation of IT procurement to fewer vendors",
+      "Sustainability and refurbishment demand"
+    ]
+  }
+}
