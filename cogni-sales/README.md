@@ -42,7 +42,7 @@ The skill walks you through:
 1. **Setup** — Select portfolio, choose mode (customer or segment), configure language
 2. **Why Change** — Research unconsidered needs, disrupt status quo
 3. **Why Now** — Establish urgency with forcing functions
-4. **Why You** — Build Power Positions with IS/DOES/MEANS
+4. **Why You** — Build Key Differentiators with IS/DOES/MEANS
 5. **Why Pay** — Quantify business case, ROI vs cost of inaction
 6. **Synthesize** — Assemble final deliverables
 

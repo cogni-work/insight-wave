@@ -61,9 +61,9 @@ portfolio_path: "{portfolio_path}"
 
 ## Why You: Our Unique Position
 
-### Power Positions
+### Key Differentiators
 
-[2-3 Power Positions using IS-DOES-MEANS structure from why-you-patterns.md. You-Phrasing throughout DOES layer. Mapped to buyer needs from Phase 1.]
+[2-3 Key Differentiators using IS-DOES-MEANS structure from why-you-patterns.md. You-Phrasing throughout DOES layer. Mapped to buyer needs from Phase 1.]
 
 | Position | IS (your solution/capability) | DOES (for {customer_name}) | MEANS (competitive moat) |
 |----------|-------------------------------|---------------------------|--------------------------|
@@ -156,9 +156,9 @@ portfolio_path: "{portfolio_path}"
 
 ## Why You: Our Unique Position
 
-### Power Positions
+### Key Differentiators
 
-[2-3 Power Positions using IS-DOES-MEANS structure from why-you-patterns.md. You-Phrasing throughout DOES layer. Mapped to typical buyer needs in this segment.]
+[2-3 Key Differentiators using IS-DOES-MEANS structure from why-you-patterns.md. You-Phrasing throughout DOES layer. Mapped to typical buyer needs in this segment.]
 
 | Position | IS (your solution/capability) | DOES (for {segment_name}) | MEANS (competitive moat) |
 |----------|-------------------------------|---------------------------|--------------------------|
@@ -199,10 +199,10 @@ Apply the quality gates from `cogni-narrative/skills/narrative/references/story-
 - All 4 elements present (Why Change, Why Now, Why You, Why Pay)
 - PSB structure in Why Change
 - 2-3 forcing functions in Why Now with specific timelines
-- 2-3 Power Positions with IS-DOES-MEANS in Why You
+- 2-3 Key Differentiators with IS-DOES-MEANS in Why You
 - 3-4 cost dimensions stacked in Why Pay
 - 15-25 total citations
-- Buyer role tags throughout
+- Buyer role awareness reflected in tone (no inline tags)
 
 ---
 

@@ -12,7 +12,7 @@ When `language` is `de`, use these German headers instead of the English templat
 | Timing Triggers | Zeitfenster und Fristen |
 | Cost of Inaction | Kosten der Untätigkeit |
 | Why You: Our Unique Position | Warum wir: Unsere einzigartige Position |
-| Power Positions | Differenzierungsmerkmale |
+| Key Differentiators | Differenzierungsmerkmale |
 | Competitive Differentiation | Wettbewerbsabgrenzung |
 | Why Pay: The Business Case | Warum investieren: Der Business Case |
 | Investment Overview | Investitionsübersicht |
