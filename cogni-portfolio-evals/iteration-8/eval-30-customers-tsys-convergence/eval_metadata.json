@@ -1,0 +1,17 @@
+{
+  "eval_id": 30,
+  "eval_name": "customers-tsys-convergence",
+  "prompt": "I have an existing T-Systems portfolio at the project path provided. Create customer profiles for the grosse-energieversorger-de market. After generation, run the closed review loop with two eval-layer reviewers: CSO (customers-cso-reviewer) evaluates sales actionability, and Market Expert (customers-market-expert-reviewer) evaluates market accuracy. Loop until both reviewers score avg >= 4.0 with no dimension below 3, or maximum 3 iterations. Track score progression in convergence.json.",
+  "assertions": [
+    {"id": "CC-01", "text": "customers-cso-reviewer invoked at least once", "type": "behavioral"},
+    {"id": "CC-02", "text": "customers-market-expert-reviewer invoked at least once", "type": "behavioral"},
+    {"id": "CC-03", "text": "Final CSO reviewer avg score >= 4.0", "type": "review-loop"},
+    {"id": "CC-04", "text": "Final Market Expert reviewer avg score >= 4.0", "type": "review-loop"},
+    {"id": "CC-05", "text": "No dimension below 3 in final round", "type": "review-loop"},
+    {"id": "CC-06", "text": "Maximum 3 iteration rounds", "type": "review-loop"},
+    {"id": "CC-07", "text": "Score improvement between rounds (avg increases or stays >= threshold)", "type": "review-loop"},
+    {"id": "CC-08", "text": "CSO would_use_for_account_planning is true", "type": "review-loop"},
+    {"id": "CC-09", "text": "Market Expert would_trust_as_market_research is true", "type": "review-loop"},
+    {"id": "CC-10", "text": "convergence.json tracks per-iteration scores", "type": "structural"}
+  ]
+}

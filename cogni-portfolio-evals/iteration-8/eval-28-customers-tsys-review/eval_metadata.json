@@ -1,0 +1,15 @@
+{
+  "eval_id": 28,
+  "eval_name": "customers-tsys-review",
+  "prompt": "I have an existing T-Systems portfolio at the project path provided. There are customer profiles for the grosse-energieversorger-de market in customers/grosse-energieversorger-de.json. Run the customer review assessor on the profiles and show me the results from all three perspectives (reviewer, CSO, market expert). If the verdict is revise, make the targeted improvements and re-assess. Maximum 2 revision rounds.",
+  "assertions": [
+    {"id": "CR-01", "text": "customer-review-assessor invoked", "type": "behavioral"},
+    {"id": "CR-02", "text": "Assessment JSON output present with all three perspectives (reviewer, cso, market_expert)", "type": "structural"},
+    {"id": "CR-03", "text": "Each perspective has 5 scored criteria with pass/warn/fail and weights", "type": "structural"},
+    {"id": "CR-04", "text": "Verdict is accept, revise, or reject", "type": "structural"},
+    {"id": "CR-05", "text": "If verdict is revise, revision round executed (max 2)", "type": "behavioral"},
+    {"id": "CR-06", "text": "Final profile retains all required fields after revision", "type": "structural"},
+    {"id": "CR-07", "text": "Synthesis includes priority-tiered improvements (critical/high/optional)", "type": "structural"},
+    {"id": "CR-08", "text": "revision_guidance is non-empty when verdict is revise", "type": "structural"}
+  ]
+}

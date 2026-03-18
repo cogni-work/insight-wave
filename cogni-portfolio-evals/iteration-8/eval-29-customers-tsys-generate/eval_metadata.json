@@ -1,0 +1,17 @@
+{
+  "eval_id": 29,
+  "eval_name": "customers-tsys-generate",
+  "prompt": "I have an existing T-Systems portfolio at the project path provided. Create customer profiles for the grosse-energieversorger-de market. Include named customer research for E.ON, RWE, and EnBW. After generating the profiles, run the stakeholder review loop and iterate until all perspectives score 85+ or maximum 2 revision rounds.",
+  "assertions": [
+    {"id": "C-01", "text": "2-4 buyer profiles present", "type": "structural"},
+    {"id": "C-02", "text": "Each profile has role, seniority, pain_points (max 5), buying_criteria (max 5), information_sources, decision_role", "type": "structural"},
+    {"id": "C-03", "text": "buying_committee object present with typical_size, decision_model, deal_stall_points", "type": "structural"},
+    {"id": "C-04", "text": "3 named customers present (E.ON, RWE, EnBW) with fit_score and source_urls", "type": "structural"},
+    {"id": "C-05", "text": "customer-review-assessor invoked at least once", "type": "behavioral"},
+    {"id": "C-06", "text": "All three perspective scores >= 70 in final assessment", "type": "qualitative"},
+    {"id": "C-07", "text": "Content language matches portfolio.json language field (de)", "type": "structural"},
+    {"id": "C-08", "text": "At least one veto-holder role present (CISO, Compliance, or Einkauf)", "type": "qualitative"},
+    {"id": "C-09", "text": "Pain points reference specific regulatory deadlines (NIS2, KRITIS, SAP IS-U)", "type": "qualitative"},
+    {"id": "C-10", "text": "Named customers have fit_rationale explaining score", "type": "structural"}
+  ]
+}

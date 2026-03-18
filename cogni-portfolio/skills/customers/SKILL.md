@@ -40,7 +40,7 @@ For each market, build the customer profile from available context:
 
 ### 3. Build Customer Profiles
 
-For each market, define 2-4 buyer profiles (one primary, others secondary). The primary profile should be the person who initiates or champions the purchase decision. Include all stakeholders with veto power or formal gatekeeper roles — in regulated industries (energy, healthcare, public sector), this often means a CISO or compliance officer AND the procurement/Einkauf function. Missing a veto-holder from the profile set means downstream messaging has a blind spot that can stall or kill deals.
+For each market, define 2-4 buyer profiles (one primary, others secondary). The primary profile should be the person who initiates or champions the purchase decision. Include all stakeholders with veto power or formal gatekeeper roles — in regulated industries (energy, healthcare, public sector), this often means a CISO or compliance officer AND the procurement/Einkauf function. For markets where managed services could affect headcount, include Betriebsrat/works council as a stall point with realistic timelines (1-6 months depending on whether Interessenausgleich/Sozialplan negotiations are triggered). Missing a veto-holder from the profile set means downstream messaging has a blind spot that can stall or kill deals.
 
 For each profile capture:
 
@@ -91,6 +91,26 @@ Present each market's profiles for review. The user likely knows their buyers be
 
 Iterate until the profiles feel accurate.
 
+### 5b. Stakeholder Review (Closed Loop)
+
+After writing the customer profiles, delegate to the `customer-review-assessor` agent for qualitative evaluation. This agent assesses the profiles from three stakeholder perspectives:
+
+1. **Reviewer (Procurement)** — Role completeness, pain point specificity, buying criteria realism, decision dynamics accuracy, deal cycle coherence
+2. **Chief Sales Officer** — Account targeting clarity, pain-to-proposition mapping, objection anticipation, multi-threading guidance, named customer actionability
+3. **Market Expert** — Segment calibration, vertical authenticity, temporal accuracy, information source validity, regional accuracy
+
+The agent returns a structured assessment with a verdict:
+
+- **accept** (all perspectives score 85+): Profile is ready. Proceed to proposition validation.
+- **revise** (all perspectives score 70+): Targeted improvements needed. Rewrite only the flagged areas of the profile based on `revision_guidance`. Re-assess. Maximum 2 revision rounds.
+- **reject** (any perspective below 50): Fundamental rework needed. Surface the assessment to the user with the diagnosis — do not auto-retry.
+
+**For interactive mode**: Present the assessment summary to the user before revising. Show per-perspective scores and top recommendations. Let the user decide which improvements to prioritize.
+
+**For batch mode (profiles for all markets)**: Run the loop automatically. Profiles that pass after Round 1 skip Round 2. Profiles that still fail after Round 2 are flagged for manual attention.
+
+The stakeholder review complements the proposition cross-validation in Step 6 — Step 6 catches structural gaps (orphan pain points, missing proposition coverage), while stakeholder review catches qualitative issues (unrealistic committee dynamics, non-actionable profiles, wrong vertical terminology). Run the stakeholder review first; structural validation in Step 6 provides a final consistency check.
+
 ### 6. Validate Against Propositions
 
 Cross-reference customer pain points with proposition DOES/MEANS statements. Each pain point should connect to at least one proposition's advantage. Flag gaps where:
@@ -134,7 +154,7 @@ Write the updated customer JSON with both `profiles` and `named_customers`.
 
 - Customer files share the same slug as their parent market
 - One customer file per market, containing an array of buyer profiles
-- **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (pain points, buying criteria, profile descriptions) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
+- **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present (e.g., `"de"`), write all user-facing text content in that language — pain_points, buying_criteria, decision_role, information_sources, fit_rationale, and all descriptive fields. This means full sentences in the target language, not English sentences with embedded domain terms. For `"de"`: write `"SAP IS-U Ablösung bis 2027 erzwingt Cloud-Migrationsentscheidung unter Zeitdruck bei gleichzeitigem 24/7-Netzbetrieb"`, not `"SAP IS-U end-of-life forces a cloud migration decision under time pressure while maintaining 24/7 grid operations"`. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
 - Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas
 

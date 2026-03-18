@@ -1,0 +1,102 @@
+{
+  "skill_name": "customers",
+  "iteration": 8,
+  "date": "2026-03-19",
+  "configurations": [
+    {
+      "name": "with_skill",
+      "evals": [
+        {
+          "eval_id": 28,
+          "eval_name": "customers-tsys-review",
+          "pass_rate": 1.0,
+          "passed": 8,
+          "failed": 0,
+          "total": 8,
+          "duration_seconds": 216.1,
+          "total_tokens": 38060
+        },
+        {
+          "eval_id": 29,
+          "eval_name": "customers-tsys-generate",
+          "pass_rate": 1.0,
+          "passed": 10,
+          "failed": 0,
+          "total": 10,
+          "duration_seconds": 250.1,
+          "total_tokens": 59542
+        },
+        {
+          "eval_id": 30,
+          "eval_name": "customers-tsys-convergence",
+          "pass_rate": 1.0,
+          "passed": 10,
+          "failed": 0,
+          "total": 10,
+          "duration_seconds": 210.0,
+          "total_tokens": 41965
+        }
+      ],
+      "aggregate": {
+        "pass_rate": {"mean": 1.0, "stddev": 0.0},
+        "duration_seconds": {"mean": 225.4, "stddev": 17.3},
+        "total_tokens": {"mean": 46522, "stddev": 9295}
+      }
+    },
+    {
+      "name": "without_skill",
+      "evals": [
+        {
+          "eval_id": 28,
+          "eval_name": "customers-tsys-review",
+          "pass_rate": 0.0,
+          "passed": 0,
+          "failed": 8,
+          "total": 8,
+          "duration_seconds": 287.1,
+          "total_tokens": 45812
+        },
+        {
+          "eval_id": 29,
+          "eval_name": "customers-tsys-generate",
+          "pass_rate": 0.2,
+          "passed": 2,
+          "failed": 8,
+          "total": 10,
+          "duration_seconds": 265.4,
+          "total_tokens": 39708
+        },
+        {
+          "eval_id": 30,
+          "eval_name": "customers-tsys-convergence",
+          "pass_rate": 0.6,
+          "passed": 6,
+          "failed": 4,
+          "total": 10,
+          "duration_seconds": 570.9,
+          "total_tokens": 70036
+        }
+      ],
+      "aggregate": {
+        "pass_rate": {"mean": 0.27, "stddev": 0.25},
+        "duration_seconds": {"mean": 374.5, "stddev": 138.3},
+        "total_tokens": {"mean": 51852, "stddev": 13145}
+      }
+    }
+  ],
+  "delta": {
+    "pass_rate": "+73pp (1.0 vs 0.27)",
+    "duration_seconds": "-149s (39.8% faster)",
+    "total_tokens": "-5330 (10.3% fewer)"
+  },
+  "analyst_notes": [
+    "With-skill: 100% pass rate across all 3 evals (28/28 assertions). Without-skill: 27% (8/28).",
+    "With-skill converges in 1 round every time. Without-skill needs 2 rounds on eval-30 (CSO failed round 1 at 3.3/5).",
+    "With-skill is 40% faster on average (225s vs 375s) and uses 10% fewer tokens (47K vs 52K).",
+    "The skill's primary value is threefold: (1) canonical buyer-persona schema, (2) formal multi-perspective assessment with per-criterion scoring, (3) consistent convergence with independent persona reviewers.",
+    "Language fix validated: Market Expert reviewer specifically praised natural German content ('reads like it was written by someone who works in the sector, not translated from English').",
+    "Revision loop still not exercised in with_skill runs — all 3 evals accepted round 1. The independent persona reviewers (CSO 4.67, Market Expert 4.50) are not critical enough to trigger revisions. Consider tightening convergence thresholds (4.0→4.5) if revision loop coverage is desired.",
+    "Baseline eval-30 has a qualitative strength: 5 named customers with per-account deal sizing, competitive landscape, and next-best-actions. The with_skill run correctly defers named customers to a separate workflow step.",
+    "Non-discriminating assertions: CC-07 (score improvement between rounds) is vacuously true on round-1 convergence. C-07 and C-09 pass for both configurations."
+  ]
+}
