@@ -56,7 +56,7 @@ Transform any narrative with a story arc into an optimized YAML-based presentati
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `source_path` | string | required | Path to narrative file(s) or project directory |
-| `theme` | string | `smarter-service` | Theme ID from `/cogni-workspace/themes/` (created by `/grab-theme`) |
+| `theme` | string | interactive | Absolute path to theme.md, or omit to trigger interactive `pick-theme` selection |
 | `language` | string | `en` | Language code (en/de) |
 | `title` | string | auto-detected | Presentation title (extracted from narrative if not provided) |
 | `subtitle` | string | auto-detected | Presentation subtitle |
@@ -73,11 +73,13 @@ Transform any narrative with a story arc into an optimized YAML-based presentati
 
 ### Theme Selection
 
-The `theme` parameter accepts any theme ID from `/cogni-workspace/themes/`. Themes are created by `/grab-theme` from websites or PPTX templates. The skill:
+When no explicit theme path is provided, the skill delegates to `cogni-workspace:pick-theme` — the ecosystem-standard theme picker. The picker scans standard and workspace theme directories, presents an interactive choice, and returns the absolute path to the selected `theme.md`.
 
-1. Loads the theme's compact `theme.md` (~30-50 lines: colors, fonts, design principles)
-2. Stores the `theme_path` in the brief frontmatter
+1. The picker presents available themes via AskUserQuestion (name, colors, font)
+2. The selected `theme_path` is stored in the brief frontmatter as an absolute path
 3. The PPTX skill reads the theme directly for all visual decisions (colors, contrast, fonts)
+
+If you already have a theme path, pass it explicitly to skip the picker.
 
 ### Input Flexibility
 
@@ -148,6 +150,7 @@ Layer 3: SLIDE SPECIFICATION
 7c. **Generate internal prep slides** — Methodology (always, process-flow) and Buying Center (Rich mode, four-quadrants text-card) as visible internal slides with extensive Speaker-Notes
 8. **Validate** — Five-layer validation (schema, messages, copywriting, logic, content)
 9. **Write brief** — Output presentation-brief.md with full metadata
+10. **Generate PPTX prompt** — Output a copy-paste prompt with absolute paths to brief and theme for rendering in a new Claude chat
 
 ## Story Arc Types
 

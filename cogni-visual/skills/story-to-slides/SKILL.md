@@ -38,7 +38,7 @@ The brief describes WHAT each slide says and which layout to use. All visual dec
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `source_path` | auto-discovered | Narrative file or directory. When omitted with `interactive=true`, Step 0 searches nearby. |
-| `theme` | `smarter-service` | Theme ID from `/cogni-workspace/themes/{theme}/theme.md`. Use `auto` for interactive selection. |
+| `theme` | interactive | Absolute path to theme.md, or omit to trigger `cogni-workspace:pick-theme` interactive selection. |
 | `language` | `en` | Language code (en/de) |
 | `title` / `subtitle` | auto-detected | Extracted from narrative if not provided |
 | `customer_name` / `provider_name` | from metadata | Organization names |
@@ -104,7 +104,7 @@ Internal prep slides carry `Bottom-Banner` with "INTERNAL — REMOVE FROM CLIENT
 
 ## Workflow
 
-> **CRITICAL:** When this skill loads without explicit parameter values, DO NOT ask the user for `source_path`, `theme`, `language`, or any other parameter. Execute Step 0 immediately — search the filesystem, present findings, then proceed. The only user interaction should be choosing from options YOU discovered.
+> **CRITICAL:** When this skill loads without explicit parameter values, DO NOT ask the user for `source_path`, `language`, or other text parameters. Execute Step 0 immediately — search the filesystem, present findings, then proceed. The two interactive checkpoints are: (1) narrative selection in Step 0, and (2) theme selection in Step 1 via `cogni-workspace:pick-theme`.
 
 ### Step 0: Narrative Auto-Discovery (YOUR FIRST ACTION)
 
@@ -150,7 +150,14 @@ Determine input type (directory with metadata vs single file) and load metadata.
 
 If arc_id set: read `$CLAUDE_PLUGIN_ROOT/libraries/arc-taxonomy.md`, map to arc_type. If `arc_definition_path` provided: extract element names for methodology slide.
 
-**Theme resolution:** If interactive and theme not explicitly set: scan `themes/*/theme.md`, present via AskUserQuestion. Otherwise use provided theme or default. Read theme.md, store absolute path.
+**Theme resolution:** Delegate to `cogni-workspace:pick-theme` — the ecosystem-standard theme picker. This ensures consistent theme discovery across all cogni plugins and avoids duplicating theme-scanning logic.
+
+1. If `theme` parameter was explicitly provided with an absolute path: use it directly, skip the picker.
+2. Otherwise: invoke the `cogni-workspace:pick-theme` skill via the Skill tool. The picker scans standard and workspace theme directories, presents an interactive AskUserQuestion, and returns the absolute `theme_path`.
+3. Store the returned `theme_path` (absolute path to `theme.md`), `theme_name`, and `theme_slug` for downstream use.
+4. Read the selected `theme.md` to confirm it loads correctly.
+
+If pick-theme is unavailable (e.g., cogni-workspace not installed), fall back to Glob scanning `$COGNI_WORKSPACE_ROOT/themes/*/theme.md` and present via AskUserQuestion manually.
 
 **Load libraries:** `pptx-layouts.md`, `EXAMPLE_BRIEF.md`, `cta-taxonomy.md`, `arc-taxonomy.md` (if arc_id set).
 
@@ -324,6 +331,30 @@ Write the brief following the output template. YAML frontmatter must include: ty
 - Inline citations use `<sup>[N](url)</sup>`, Speaker-Notes citations use `[N](url)`
 - Generation Metadata populated
 - Output directory created, file written
+
+---
+
+### Step 10: Generate PPTX Prompt
+
+> **WHY:** The user needs a ready-to-use prompt they can paste into a fresh Claude chat (with the PPTX skill available) to render the brief into slides. By including absolute paths, the prompt is self-contained — no path-hunting needed.
+
+After the brief is written and validated, generate a copy-paste prompt block. Use the absolute paths resolved during the workflow: `output_path` for the brief and `theme_path` from the pick-theme selection.
+
+**Output format** (print this directly so the user can copy it):
+
+```
+─── Copy this prompt into a new Claude chat ───
+
+Please create a PPTX presentation using:
+- Presentation brief: {absolute_path_to_presentation_brief}
+- Theme: {absolute_path_to_theme_md}
+
+────────────────────────────────────────────────
+```
+
+Replace `{absolute_path_to_presentation_brief}` with the resolved `output_path` (e.g., `/Users/stephan/projects/customer-slug/cogni-visual/presentation-brief.md`) and `{absolute_path_to_theme_md}` with the `theme_path` from Step 1 (e.g., `/Users/stephan/GitHub/dev/cogni-works/cogni-workspace/themes/cogni-work/theme.md`).
+
+Both paths MUST be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative paths. The receiving Claude session has no access to the variables from this session.
 
 ---
 

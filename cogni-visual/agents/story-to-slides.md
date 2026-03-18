@@ -65,7 +65,7 @@ You require these parameters:
 |-----------|----------|---------|-------------|
 | source_path | Yes | - | Path to narrative file(s) or project directory |
 | output_path | No | {source_dir}/cogni-visual/presentation-brief.md | Override brief output location |
-| theme | No | smarter-service | Theme ID — directory containing compact `theme.md` |
+| theme | No | interactive | Absolute path to theme.md — if omitted, skill triggers `pick-theme` interactive selection |
 | language | No | en | Language code (en/de) |
 | arc_type | No | auto | Story arc hint: auto, why-change, problem-solution, journey, argument, report |
 | arc_id | No | from frontmatter | Narrative arc ID from cogni-narrative (e.g., `industry-transformation`) |
@@ -78,7 +78,7 @@ You require these parameters:
 | governing_thought | No | auto-extracted | Pre-computed governing thought from caller. Skips re-derivation in Step 3. |
 | section_roles | No | auto-detected | Pre-mapped section roles from caller. Skips re-derivation in Step 3. |
 
-**Theme selection:** The skill reads the compact `theme.md` for the provided theme and stores its path. The PPTX skill (downstream) reads the theme directly for all visual decisions. If the theme does not exist, falls back to `smarter-service`. Any theme created via `/grab-theme` or theme-factory is supported.
+**Theme selection:** When no explicit theme path is provided, the skill delegates to `cogni-workspace:pick-theme` for interactive selection. The picker returns the absolute `theme_path`. The PPTX skill (downstream) reads the theme directly for all visual decisions. Any theme created via `/grab-theme`, `/manage-themes`, or theme-factory is supported.
 
 **Backward compatibility:** `project_path` parameter is accepted and mapped to `source_path`.
 
