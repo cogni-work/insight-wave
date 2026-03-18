@@ -133,3 +133,32 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/append-claim.sh" "<project-dir>" '{
 Submit claims for: pricing data, market share percentages, specific positioning quotes, and quantified strengths/weaknesses. Store the `source_url` used for each competitor in the competitor JSON entry too.
 
 Return a brief summary of the competitive landscape.
+
+## Revision Mode
+
+When invoked with previous review feedback (rewrite instructions from the CSO/Analyst review loop), operate in revision mode rather than regenerating from scratch.
+
+**How revision mode works:**
+
+1. Read the existing competitor JSON file and the rewrite instructions provided in the task
+2. For each issue in the rewrite instructions, determine whether to:
+   - **Re-research**: When the issue is about missing competitors, outdated positioning, or unverified claims — run targeted web searches for the specific gap
+   - **Rewrite in place**: When the issue is about biased framing, weak differentiation, or generic trap questions — improve the text using existing research plus the reviewer's specific feedback
+   - **Add competitors**: When `missing_competitors` lists specific vendors, research and add them to the competitors array
+
+3. Preserve what works: do not rewrite entries that received no negative feedback. The goal is surgical improvement, not wholesale replacement.
+
+4. After revisions, re-run claim submission for any new or updated entries with changed source URLs or factual claims.
+
+**Revision task prompt will include:**
+```
+Previous review feedback:
+- [CSO/Analyst dimension]: [score] — [rationale]
+- Specific issues: [list with suggested fixes]
+- Missing competitors: [list if any]
+
+Revise the competitor file at [path] to address these issues.
+Do NOT regenerate from scratch — fix the specific problems identified.
+```
+
+**Quality bar for revision**: Each rewrite should directly address the reviewer's specific complaint. If the analyst said "Accenture's positioning is outdated — they pivoted to industry cloud in 2025", update that entry's positioning with fresh research, don't just rephrase the old text.

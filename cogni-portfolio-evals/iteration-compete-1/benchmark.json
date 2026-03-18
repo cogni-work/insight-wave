@@ -1,0 +1,112 @@
+{
+  "skill_name": "compete",
+  "iteration": "compete-1",
+  "created": "2026-03-19",
+  "configurations": [
+    {
+      "name": "with_skill",
+      "description": "Compete skill with CSO + Market Industry Analyst closed review loop",
+      "evals": [
+        {
+          "eval_id": 26,
+          "eval_name": "compete-tsys-review-loop",
+          "pass_rate": 1.0,
+          "passed": 7,
+          "total": 7,
+          "duration_seconds": 468.5,
+          "total_tokens": 52587,
+          "details": {
+            "convergence": {
+              "iterations_used": 2,
+              "initial_scores": {"cso": 3.67, "analyst": 3.5, "combined": 3.58},
+              "final_scores": {"cso": 4.17, "analyst": 4.0, "combined": 4.08}
+            }
+          }
+        },
+        {
+          "eval_id": 27,
+          "eval_name": "compete-mainova-review-loop",
+          "pass_rate": 1.0,
+          "passed": 7,
+          "total": 7,
+          "duration_seconds": 457.4,
+          "total_tokens": 45707,
+          "details": {
+            "convergence": {
+              "iterations_used": 2,
+              "initial_scores": {"cso": 3.33, "analyst": 3.5, "combined": 3.42},
+              "final_scores": {"cso": 4.0, "analyst": 4.17, "combined": 4.08},
+              "segment_relevance_score": 5
+            }
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_pass_rate": 1.0,
+        "stddev_pass_rate": 0.0,
+        "mean_duration_seconds": 463.0,
+        "stddev_duration_seconds": 5.6,
+        "mean_total_tokens": 49147,
+        "stddev_total_tokens": 3440
+      }
+    },
+    {
+      "name": "without_skill",
+      "description": "Baseline — no skill guidance, no review loop",
+      "evals": [
+        {
+          "eval_id": 26,
+          "eval_name": "compete-tsys-review-loop",
+          "pass_rate": 0.6,
+          "passed": 3,
+          "total": 5,
+          "duration_seconds": 101.8,
+          "total_tokens": 17769,
+          "details": {
+            "failures": ["No source_url fields", "Wrong field name (differentiation_vs_tsystems)", "Only 3 competitors"]
+          }
+        },
+        {
+          "eval_id": 27,
+          "eval_name": "compete-mainova-review-loop",
+          "pass_rate": 0.6,
+          "passed": 3,
+          "total": 5,
+          "duration_seconds": 129.8,
+          "total_tokens": 17191,
+          "details": {
+            "failures": ["No source_url fields", "Wrong field name (differentiation_vs_tsystems)", "Trap questions use non-standard schema"]
+          }
+        }
+      ],
+      "aggregate": {
+        "mean_pass_rate": 0.6,
+        "stddev_pass_rate": 0.0,
+        "mean_duration_seconds": 115.8,
+        "stddev_duration_seconds": 14.0,
+        "mean_total_tokens": 17480,
+        "stddev_total_tokens": 289
+      }
+    }
+  ],
+  "delta": {
+    "pass_rate": "+40% (0.6 → 1.0)",
+    "duration_seconds": "+347s (116s → 463s)",
+    "total_tokens": "+31,667 (17.5K → 49.1K)",
+    "quality_notes": [
+      "Both evals converged in 2 iterations — consistent review loop behavior",
+      "Analyst segment_relevance scored 5/5 on eval-27 — competitive sets are materially different across segments",
+      "Eval-26 (enterprise): Accenture, Capgemini, IBM, TCS, Arvato — global SI focus",
+      "Eval-27 (Stadtwerke): DATAGROUP, Bechtle, Computacenter, Arvato, SWK cooperatives — regional specialist focus",
+      "Review loop caught and fixed: bias in weaknesses, repetitive differentiation, one-dimensional trap questions, missing urgency deadlines",
+      "Baseline structural failures consistent: no source URLs, wrong field names, non-standard trap question schema"
+    ]
+  },
+  "analyst_observations": [
+    "Non-discriminating assertion: K-01 (3-5 competitors) passes in both configurations — not useful for differentiation",
+    "High-signal assertions: K-06 (source URLs) and K-02 (field names) discriminate perfectly — 100% with_skill, 0% without_skill",
+    "Review loop convergence is stable: both evals start ~3.4-3.6, converge to ~4.1 in exactly 2 iterations",
+    "Cost tradeoff: ~4x more tokens and ~4x more time for +40% pass rate and qualitative quality improvement (bias removal, positioning currency, stakeholder coverage)",
+    "Segment calibration works: analyst correctly validates different competitive sets for different markets"
+  ]
+}

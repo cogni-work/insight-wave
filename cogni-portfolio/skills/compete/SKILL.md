@@ -76,7 +76,69 @@ Write to `competitors/{feature-slug}--{market-slug}.json` (same slug as the prop
 }
 ```
 
-### 5. Review with User
+### 5. Stakeholder Review (Closed Loop)
+
+After generating competitor files, run an automated review loop with two stakeholder perspectives before presenting to the user. This catches accuracy gaps, biased positioning, and weak trap questions before they reach the buyer conversation.
+
+#### 5a. Invoke Reviewers
+
+Launch two reviewer subagents **in parallel** for each competitor file:
+
+1. **CSO Reviewer** (`tsystems-cso-reviewer`): Evaluates competitive intel from a sales effectiveness perspective — can an AE use this differentiation to win deals? Are trap questions usable in real evaluations? Does the competitive positioning give the account team ammunition?
+
+2. **Market Industry Analyst** (`market-industry-analyst-reviewer`): Evaluates from an advisory accuracy perspective — are the right competitors identified? Is positioning accurate and current? Are strength/weakness claims balanced and evidence-based? Would the analysis survive peer review?
+
+Pass the competitor file(s) **and** their parent proposition file(s) as context — reviewers need to understand what capability and market the competitive analysis targets.
+
+#### 5b. Convergence Check
+
+Both reviewers return scored assessments. The competitor file passes when:
+- CSO average score >= 4.0 across all dimensions
+- Analyst average score >= 4.0 across all dimensions
+- No individual dimension scores below 3 from either reviewer
+- CSO `would_use_in_pitch_deck` is true
+- Analyst `would_use_in_advisory_report` is true
+
+If thresholds are met: proceed to Step 6 (present to user).
+
+#### 5c. Auto-Rewrite (if thresholds not met)
+
+When the review loop detects failures:
+
+1. **Synthesize feedback** from both reviewers into targeted rewrite instructions. Map failing dimensions to specific competitor file fields:
+   - Low `competitive_win_ability` or `differentiation_defensibility` → rewrite `competitors[].differentiation`
+   - Low `market_landscape_accuracy` or `segment_relevance` → re-research competitor selection, add missing players
+   - Low `strength_weakness_balance` or `positioning_validity` → rewrite `competitors[].positioning`, `.strengths`, `.weaknesses`
+   - Low `trap_question_sophistication` or `objection_handling` → rewrite `trap_questions`
+
+2. **Re-invoke `competitor-researcher`** in revision mode with the synthesized feedback. The researcher targets specific entries for improvement rather than regenerating from scratch.
+
+3. **Re-review** the updated competitor file with both reviewers.
+
+4. **Max 3 iterations**. If convergence is not reached after 3 rounds, present the best-scoring version to the user with a summary of unresolved issues and the reviewer scores.
+
+5. **Write convergence log** to `convergence.json` alongside the competitor file:
+```json
+{
+  "converged": true,
+  "reason": "passed",
+  "iterations": [
+    {"iteration": 0, "cso_avg": 3.67, "analyst_avg": 3.5, "combined_avg": 3.58, "passes": false},
+    {"iteration": 1, "cso_avg": 4.17, "analyst_avg": 4.0, "combined_avg": 4.08, "passes": true}
+  ],
+  "rewrite_actions": ["what was fixed between each iteration"]
+}
+```
+
+#### 5d. Present Results
+
+After the review loop converges (or reaches max iterations):
+
+- Show the user the final reviewer scores (CSO and Analyst averages, dimension breakdown)
+- Highlight any remaining issues flagged by reviewers
+- Note convergence path: "Initial score 3.2 → iteration 1: 3.8 → iteration 2: 4.2 (converged)"
+
+### 6. Review with User
 
 Present competitor analysis per proposition. The user may know competitors the research missed, or may disagree with positioning claims. Iterate until accurate.
 
