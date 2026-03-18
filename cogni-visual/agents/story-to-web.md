@@ -67,7 +67,7 @@ Your ENTIRE response to the orchestrator must be:
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | source_path | Yes | - | Path to narrative file(s) or project directory |
-| theme | No | smarter-service | Theme ID |
+| theme | No | interactive | Absolute path to theme.md, or omit to trigger pick-theme selection |
 | language | No | en | Language code (en/de) |
 | arc_type | No | auto | Story arc hint |
 | arc_id | No | from frontmatter | Narrative arc ID from cogni-narrative (e.g., `industry-transformation`) |
@@ -78,6 +78,7 @@ Your ENTIRE response to the orchestrator must be:
 | customer_name | No | from metadata | Customer organization name |
 | provider_name | No | from metadata | Provider organization name |
 | governing_thought | No | auto-extracted | Pre-computed governing thought |
+| audience_context | No | none | Structured audience/buyer data for section ordering and CTA calibration |
 | interactive | No | false | Agents always run non-interactively. Skill default is true for direct user invocation. |
 | output_path | No | {source_dir}/cogni-visual/web-brief.md | Override brief output location |
 | title | No | auto-detected | Web page title |
@@ -97,7 +98,7 @@ Your ENTIRE response to the orchestrator must be:
 <example>
 <invoke name="Skill">
   <parameter name="skill">cogni-visual:story-to-web</parameter>
-  <parameter name="args">source_path={{source_path}} output_path={{output_path}} theme={{theme}} language={{language}} arc_type={{arc_type}} arc_id={{arc_id}} arc_definition_path={{arc_definition_path}} max_sections={{max_sections}} conversion_goal={{conversion_goal}} style_guide={{style_guide}} customer_name={{customer_name}} provider_name={{provider_name}} interactive=false</parameter>
+  <parameter name="args">source_path={{source_path}} output_path={{output_path}} theme={{theme}} language={{language}} arc_type={{arc_type}} arc_id={{arc_id}} arc_definition_path={{arc_definition_path}} max_sections={{max_sections}} conversion_goal={{conversion_goal}} style_guide={{style_guide}} customer_name={{customer_name}} provider_name={{provider_name}} audience_context={{audience_context}} interactive=false</parameter>
 </invoke>
 </example>
 

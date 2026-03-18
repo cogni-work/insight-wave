@@ -1,0 +1,23 @@
+{
+  "skill_name": "story-to-web",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a scrollable web narrative from this German pitch narrative (sales-presentation.md, Energieversorger segment, why-change methodology). Language: de, conversion_goal: consultation, interactive: false.",
+      "expected_output": "A web-brief.md with 6-10 sections, hero first (dark), CTA last (accent), assertion headlines, German umlauts preserved, no color fields, CTA summary with primary_cta, rendering prompt with absolute paths.",
+      "files": ["/Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/grosse-energieversorger-konzern-stadtwerke-de-segment-pitch/output/sales-presentation.md"]
+    },
+    {
+      "id": 2,
+      "prompt": "Create a scrollable web narrative from this English AI Operations narrative (arc-narrative.md, corporate-visions arc). Language: en, conversion_goal: demo, interactive: false.",
+      "expected_output": "A web-brief.md with 6-10 sections, hero first (dark), CTA last (accent), assertion headlines in English, no color fields, CTA summary with primary_cta, rendering prompt with absolute paths.",
+      "files": ["/Users/stephandehaas/GitHub/dev/cogni-works/cogni-copywriting/copywriter-workspace/test-docs/arc-narrative.md"]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a scrollable web narrative from this German why-change phase narrative (01-why-change/narrative.md, no arc_id in frontmatter). Language: de, conversion_goal: consultation, interactive: false.",
+      "expected_output": "A web-brief.md with 6-10 sections, arc type auto-detected, hero first (dark), CTA last (accent), assertion headlines, German umlauts preserved, no color fields, CTA summary with primary_cta, rendering prompt with absolute paths.",
+      "files": ["/Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/grosse-energieversorger-konzern-stadtwerke-de-segment-pitch/01-why-change/narrative.md"]
+    }
+  ]
+}

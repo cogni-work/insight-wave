@@ -179,4 +179,4 @@ cogni-narrative -> cogni-copywriting -> cogni-visual
 | Renderer | PPTX skill | N/A (produces brief) | render-big-block | Excalidraw MCP (station-first, N+N+4 agents) | Excalidraw MCP (sequential, 8 phases) | Pencil MCP (web agent) | Pencil MCP (storyboard agent) |
 | Layout unit | Slide with layout type | Station as landscape object | Solution block in tier band | Station as 250+ element two-pass illustration | Solution block in tier grid | Section with auto-layout | Poster with 1-3 stacked sections |
 | Element count | N/A | N/A | N/A | 1100-1500 total (stations only) | 150-250 total | N/A | N/A |
-| Quality review | N/A | 4-layer validation | 8-point schema validation | 9-gate zone-based (4 parallel reviewers, 2 passes) | Snapshot checkpoints | N/A | N/A |
+| Quality review | N/A | 4-layer validation | 8-point schema validation | 9-gate zone-based (4 parallel reviewers, 2 passes) | Snapshot checkpoints | 4-layer validation | N/A |

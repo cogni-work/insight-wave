@@ -16,8 +16,8 @@ description: >
   (use web agent for that), does NOT create slides (use story-to-slides), does NOT create
   a single-canvas poster (use story-to-big-picture), does NOT create print storyboard
   posters (use story-to-storyboard), and does NOT polish prose (use Copywriter skill).
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, TodoWrite, AskUserQuestion
-version: 0.4.0
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion
+version: 0.5.0
 ---
 
 # Story-to-Web Skill
@@ -28,14 +28,20 @@ Read any narrative document with an existing story arc and produce an optimized 
 
 A web narrative is not a slide deck pasted into a tall page. It is a scroll-driven reading experience where each section has ONE clear message, supported by visual hierarchy that guides the reader toward a conversion action. Sections alternate between light and dark to create visual rhythm. This matters because walls of undifferentiated text lose readers within seconds — alternating visual weight creates natural pause points that let each message land before the next begins.
 
-The brief describes WHAT each section says and which section type to use. All visual decisions (colors, fonts, spacing) are delegated to the Pencil renderer via the theme and style guide. Briefs contain no color fields.
+## Architecture
+
+Two-layer intelligence:
+1. **Story Arc Analysis** — read narrative, identify argument structure, extract governing thought, build audience model, map section roles
+2. **Section Specification + Web Copywriting** — section type selection, assertion headlines, scroll-optimized copy, image prompts, CTA proposals, visual rhythm enforcement
+
+The brief describes WHAT each section says and which section type to use. The Pencil renderer owns all visual decisions (colors, fonts, spacing) by reading the theme directly — briefs contain no color fields.
 
 ## Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `source_path` | auto-discovered | Narrative file or directory. When omitted with `interactive=true`, Step 0 searches nearby. |
-| `theme` | `smarter-service` | Theme ID from `/cogni-workspace/themes/{theme}/theme.md`. Use `auto` for interactive selection. |
+| `theme` | interactive | Absolute path to theme.md, or omit to trigger `cogni-workspace:pick-theme` interactive selection. |
 | `language` | `en` | Language code (en/de) |
 | `title` | auto-detected | Web page title (extracted from narrative if not provided) |
 | `customer_name` / `provider_name` | from metadata | Organization names |
@@ -47,17 +53,30 @@ The brief describes WHAT each section says and which section type to use. All vi
 | `arc_id` | from frontmatter | Narrative arc ID from cogni-narrative. Mapped to visual `arc_type` in Step 1. |
 | `arc_definition_path` | none | Path to arc definition file — element names become `section_label` values. |
 | `interactive` | `true` | When `true`, present choices via AskUserQuestion. When `false`, auto-select. |
-| `governing_thought` | auto-extracted | Pre-computed governing thought from caller |
+| `audience_context` | none | Structured audience/buyer data for targeted section ordering and CTA calibration. |
+
+### Caller-supplied overrides
+
+These are typically set by an upstream agent (e.g., why-change-work), not by a human user:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `confidence_threshold` | `0.8` | Minimum confidence for automatic section-type mapping |
+| `governing_thought` | auto-extracted | Pre-computed governing thought — Step 2 validates rather than re-derives. |
+| `section_roles` | auto-detected | Pre-mapped section roles — Step 2 validates rather than re-derives. |
+| `buyer_appendix_path` | none | Path to buyer-appendix.md for enriched audience model (Step 3 only). |
 
 ---
 
 ## Conventions
 
-These three rules prevent the most common failure modes. They emerged from repeated test runs where the executing model broke interactive prompts, mangled German text, or injected visual fields into the brief.
+### Theme-driven visuals
 
-### User Interaction
+The Pencil renderer owns all visual decisions — colors, fonts, spacing — by reading the theme directly. Briefs specify content and section type only. Omit visual fields (`Background:`, `Text-Color:`, `Icon-Color:`) because the renderer ignores them and their presence creates ambiguity about who controls styling.
 
-Interactive checkpoints let the user steer creative decisions without micromanaging. The structured format below ensures AskUserQuestion renders properly — unstructured prose produces empty prompts.
+### Interactive checkpoints
+
+Interactive prompts let the user steer creative decisions without micromanaging. The structured format below ensures AskUserQuestion renders properly — unstructured prose produces empty prompts:
 
 ```
 questions: [{
@@ -71,27 +90,49 @@ questions: [{
 }]
 ```
 
-**On empty or blank responses, auto-select the best option and move on.** Never retry AskUserQuestion on empty responses. When `interactive` is `false`, skip all AskUserQuestion calls.
+On empty or blank responses, auto-select the best option and move on. When `interactive` is `false`, skip all AskUserQuestion calls.
 
-### Language & Formatting
+### German fidelity
 
-German web narratives are shared with executives and embedded in reports. ASCII-ified umlauts (`ae`/`oe`/`ue`) immediately signal "machine-generated" and undermine credibility. Use real Unicode throughout: ae->ä oe->ö ue->ü ss->ß. German number formatting: 2.661 (not 2,661).
+German web narratives go to executives and get embedded in reports. ASCII-ified umlauts (`ae`/`oe`/`ue`) immediately signal "machine-generated" and undermine credibility. Use real Unicode throughout: ae->ä oe->ö ue->ü ss->ß. German number formatting: 2.661 (dot as thousands separator).
 
-### No Color Fields
+---
 
-Briefs contain ZERO visual fields: no `Background:`, `Text-Color:`, `Icon-Color:`. The Pencil renderer reads the theme and style guide directly.
+## Quick Reference: Good vs Bad Output
+
+**Headlines** — assert, don't label:
+- Bad: "Our Approach" (topic label — reader must scroll through the section to get the point)
+- Good: "AI-Powered Monitoring Cuts Response Time from Hours to Seconds" (assertion — message lands instantly)
+
+**Number plays** — reframe for impact:
+- Bad: "There were 688 incidents in 2023" (buried in body text)
+- Good: Hero number `688` isolated in stat-row, sublabel `+ 2,661 related events`, supporting text explains scale
+
+**Bullets** — scan-optimized, not sentences:
+- Bad: "The security staff are unable to adequately cover all areas of the network on a 24/7 basis" (19 words)
+- Good: "Staff cannot cover all areas 24/7" (6 words, max 10 words per bullet)
+
+**CTAs** — imperative verb, not passive label:
+- Bad: "Contact Us" (generic, no urgency)
+- Good: "Schedule Your Security Assessment" (specific action tied to conversion goal)
 
 ---
 
 ## Workflow
 
-> **CRITICAL:** When this skill loads without explicit parameter values, DO NOT ask the user for `source_path`, `theme`, `language`, or any other parameter. Execute Step 0 immediately — search the filesystem, present findings, then proceed. The only user interaction should be choosing from options YOU discovered.
+When invoked without explicit parameters, search the filesystem first (Step 0) rather than prompting for paths. Users invoke this skill from project directories that already contain their narrative — asking for a path they're sitting next to creates unnecessary friction.
 
-### Step 0: Narrative Auto-Discovery (YOUR FIRST ACTION)
+### Execution protocol
 
-> **WHY:** Users typically invoke this skill from a project directory that already contains their narrative. Searching first and presenting candidates eliminates the most common friction point — the user fumbling for a file path.
+Each step: verify the previous step's output is available (entry gate), read the reference file for that step, execute, then state your output summary before moving on. Reference files contain step-specific rules that prevent downstream rework — read them at the start of each step.
 
-If `source_path` was explicitly provided: set `source_dir` to its parent directory and skip to TodoWrite initialization.
+---
+
+### Step 0: Narrative Auto-Discovery
+
+> Users invoke from project directories containing their narrative. Searching first eliminates path-fumbling.
+
+If `source_path` was explicitly provided: set `source_dir` to its parent directory and proceed to Step 1.
 
 Otherwise, search without asking:
 
@@ -108,32 +149,31 @@ Set `source_dir` = parent directory of selected `source_path`.
 
 ---
 
-### TodoWrite Initialization
-
-Before reading content, initialize TodoWrite with workflow steps: Parse parameters, Read narrative, Select style guide, Decompose into sections, Write section copy, Propose CTAs, Section preview, Generate header/footer, Validate, Write brief.
-
-### Execution Protocol
-
-Each step: mark todo `in_progress` -> verify previous output (entry gate) -> read reference file -> execute -> mark `completed`. Do NOT skip reference reads — each contains rules that prevent common errors.
-
----
-
 ### Step 1: Parse Parameters & Resolve Context
 
-> **WHY:** Arc resolution and theme loading happen before reading the narrative because they shape how you interpret the story. A pre-resolved arc_type tells you what section pattern to look for; a loaded style guide drives the visual system.
+> Arc resolution and theme loading happen before reading the narrative because they shape how you interpret the story — a pre-resolved arc_type tells you what section pattern to look for.
 
 Determine input type (directory with metadata vs single file) and load metadata.
 
 **Arc resolution** (priority order):
-1. `arc_id` parameter → use directly
-2. Source narrative frontmatter `arc_id` → extract
-3. Neither → Step 2 auto-detects
+1. `arc_id` parameter -> use directly
+2. Source narrative frontmatter `arc_id` -> extract
+3. Neither -> Step 2 auto-detects
 
 If arc_id set: read `$CLAUDE_PLUGIN_ROOT/libraries/arc-taxonomy.md`, map to arc_type. Mapped arc_type overrides `arc_type` parameter. If `arc_definition_path` provided: extract element names and translations for section labels.
 
-**Theme resolution:** If interactive and theme not explicitly set: scan `themes/*/theme.md`, present via AskUserQuestion (max 4 options with name, description, primary color). Otherwise use provided theme or default. Read theme.md, store absolute path.
+**Theme resolution:** Delegate to `cogni-workspace:pick-theme` — the ecosystem-standard theme picker.
+
+1. If `theme` parameter was explicitly provided with an absolute path: use it directly, skip the picker.
+2. Otherwise: invoke the `cogni-workspace:pick-theme` skill via the Skill tool. The picker scans standard and workspace theme directories, presents an interactive AskUserQuestion, and returns the absolute `theme_path`.
+3. Store the returned `theme_path` (absolute path to `theme.md`), `theme_name`, and `theme_slug` for downstream use.
+4. Read the selected `theme.md` to confirm it loads correctly.
+
+If pick-theme is unavailable (e.g., cogni-workspace not installed), fall back to Glob scanning `$COGNI_WORKSPACE_ROOT/themes/*/theme.md` and present via AskUserQuestion manually.
 
 > **Path convention:** The `theme_path` stored in the brief frontmatter must be the **absolute filesystem path** to the theme.md file, so the renderer agent can read it without path resolution ambiguity.
+
+**Provider/customer resolution:** Extract `provider_name` and `customer_name` from source metadata. If not found in the source file's frontmatter, search parent and sibling directories for files with `provider:` or `customer:` fields (e.g., sales-presentation.md, pitch-log.json). If still not found, leave empty — never default to the theme name.
 
 **Load libraries:** `web-layouts.md`, `EXAMPLE_WEB_BRIEF.md`, `cta-taxonomy.md`, `arc-taxonomy.md` (if arc_id set), theme.md.
 
@@ -141,7 +181,7 @@ If arc_id set: read `$CLAUDE_PLUGIN_ROOT/libraries/arc-taxonomy.md`, map to arc_
 
 ### Step 2: Read Narrative & Analyze Story Arc
 
-> **WHY:** The governing thought and arc type cascade through everything downstream — section architecture, copy direction, CTA proposals. Getting them right here prevents rework in later steps.
+> The governing thought and arc type cascade through everything downstream. Getting them right here prevents rework.
 
 **Read reference:** `references/02-section-architecture.md` (Arc-to-Section Mapping section)
 
@@ -152,15 +192,33 @@ Read all source files. Extract governing thought.
 2. **Caller-provided `arc_type`:** If set (not `auto`), use directly.
 3. **Auto-detect:** Detect from narrative content. For detailed rules, read `$CLAUDE_PLUGIN_ROOT/skills/story-to-slides/references/03-story-arc-analysis.md` if available.
 
-**Key difference from slides:** The arc type influences *section type selection and visual rhythm* rather than slide order.
+When caller provides `governing_thought`/`section_roles`: validate against narrative rather than re-deriving. Accept if valid, re-derive if narrative contradicts.
 
-**Output:** Tagged narrative with arc type, governing thought, and section roles.
+**Content checkpoint:** State arc type, governing thought, section count estimate.
 
 ---
 
-### Step 3: Select Style Guide (INTERACTIVE)
+### Step 3: Build Audience Model
 
-> **WHY:** The style guide determines the visual personality of every section — typography weight, illustration approach, color usage patterns. Selecting it before decomposition ensures consistent design language across all sections.
+> The audience model shapes how downstream steps order sections, frame headlines, and calibrate CTA urgency — Rich mode enables targeted prioritization, Lean mode infers from narrative vocabulary.
+
+**Read reference:** `$CLAUDE_PLUGIN_ROOT/skills/story-to-slides/references/02-audience-model.md`
+
+Build Audience Model: Rich mode (from `audience_context`, `buyer_appendix_path`, or pitch-log.json) or Lean mode (inferred from narrative). Identify primary decision-maker, priorities, objections.
+
+**Web-specific usage** (differs from slides):
+- **Section ordering:** Decision-maker priorities surface earlier in scroll sequence
+- **Headline framing:** Technical audience = precise language; executive = business impact language
+- **CTA urgency calibration:** Known champion -> higher urgency; known blockers -> address objections before CTA
+- **Body text depth:** Expert audience = fewer words, more data; general audience = more context
+
+**Content checkpoint:** State mode, confidence, decision-maker, top priority, top objection.
+
+---
+
+### Step 4: Select Style Guide (INTERACTIVE)
+
+> The style guide determines every section's visual personality. Selecting it before decomposition ensures consistent design language.
 
 **Read reference:** `references/01-style-guide-selection.md`
 
@@ -178,9 +236,9 @@ If interactive: present top 2-3 via AskUserQuestion (score + 1-sentence why). On
 
 ---
 
-### Step 4: Decompose Narrative into Sections
+### Step 5: Decompose Narrative into Sections
 
-> **WHY:** Section decomposition is the structural backbone of the web narrative. Each section maps to a part of the story arc and gets a section type that determines its visual container. Getting the type-to-role mapping right here means the renderer produces the intended visual impact without manual correction.
+> Section decomposition is the structural backbone. Each section maps to a part of the story arc and gets a section type that determines its visual container.
 
 **Read reference:** `references/02-section-architecture.md`
 
@@ -189,21 +247,22 @@ Break the narrative into 6-10 sections (capped by `max_sections`). Each section 
 For each section:
 1. Determine arc role (hook, problem, urgency, solution, proof, roadmap, CTA)
 2. Map arc role to section type using arc-to-section mapping
-3. Assign `section_theme` (dark/light/light-alt/accent)
-4. Identify hero message and key data points
-5. Enforce bookend rules (hero first, CTA last)
-6. Set feature-alternating positions (odd/even)
-7. Assign `section_label` (content-source-first, role-based fallback):
-   - If arc_elements available: check which narrative H2 chapter content came from → match to arc element name (content-source method). Fall back to role-based mapping for intro/synthesized content. Use localized names per `language`. See `$CLAUDE_PLUGIN_ROOT/libraries/arc-taxonomy.md` for full heuristic.
-   - If no arc_elements: use generic role-based labels (e.g., "Das Problem", "Die Lösung", "Der Weg")
+3. **Score mapping confidence** (0.0-1.0) and record it in each section's YAML as `confidence: 0.XX`. Primary section type with strong evidence = high (0.9+). Alternate type or ambiguous mapping = medium (0.7-0.8). No clear match = low (<0.7). Flag mappings below `confidence_threshold` for manual review.
+4. Assign `section_theme` (dark/light/light-alt/accent)
+5. Identify hero message and key data points
+6. Enforce bookend rules (hero first, CTA last)
+7. Set feature-alternating positions (odd/even)
+8. Assign `section_label` (content-source-first, role-based fallback):
+   - If arc_elements available: check which narrative H2 chapter content came from -> match to arc element name (content-source method). Fall back to role-based mapping for intro/synthesized content. Use localized names per `language`. See `$CLAUDE_PLUGIN_ROOT/libraries/arc-taxonomy.md` for full heuristic.
+   - If no arc_elements: use generic role-based labels (e.g., "Das Problem", "Die Losung", "Der Weg")
 
-**Output:** Ordered section list with types, themes, messages, and evidence inventory.
+**Content checkpoint:** State section count, section types used, theme alternation pattern, any low-confidence mappings.
 
 ---
 
-### Step 5: Write Section Copy & Image Prompts
+### Step 6: Write Section Copy & Image Prompts
 
-> **WHY:** Web copy must work in a scroll context where readers decide within 2 seconds whether to keep scrolling or bounce. Assertion headlines deliver the message instantly; number plays make statistics memorable; image prompts ensure the visual layer reinforces rather than decorates.
+> Web copy must work in a scroll context where readers decide within 2 seconds whether to keep scrolling or bounce.
 
 **Read references:**
 - `references/03-section-copywriting.md`
@@ -222,11 +281,11 @@ For each section, generate:
 
 ---
 
-### Step 5b: Propose CTAs (INTERACTIVE)
+### Step 6b: Propose CTAs (INTERACTIVE)
 
-> **WHY:** Without explicit CTAs, the reader scrolls to the bottom and leaves. CTAs convert attention into action — the primary CTA gives the page a concrete conversion endpoint. Per-section micro-CTAs create multiple entry points for engagement.
+> Without explicit CTAs, the reader scrolls to the bottom and leaves. CTAs convert attention into action.
 
-**Entry gate:** Verify Step 5 outputs — all sections have assertion headlines, copy, and image prompts.
+**Entry gate:** Verify Step 6 outputs — all sections have assertion headlines, copy, and image prompts.
 
 **Read reference:** `$CLAUDE_PLUGIN_ROOT/libraries/cta-taxonomy.md`
 
@@ -245,9 +304,9 @@ If interactive: present CTA plan via AskUserQuestion (Approve/Adjust, with prima
 
 ---
 
-### Step 6: Section Preview Checkpoint (INTERACTIVE)
+### Step 7: Section Preview Checkpoint (INTERACTIVE)
 
-> **WHY:** The section plan is the last structural checkpoint before final validation. Catching composition errors here (wrong section types, missing arc stations, bad theme alternation) is far cheaper than fixing them after the full brief is generated.
+> The section plan is the last structural checkpoint before final validation. Catching errors here is cheaper than fixing the full brief.
 
 If interactive:
 
@@ -269,9 +328,9 @@ If not interactive: skip this checkpoint.
 
 ---
 
-### Step 7: Generate Header & Footer Content
+### Step 8: Generate Header & Footer Content
 
-> **WHY:** Header and footer provide the page's navigation frame and brand presence. Generating them from metadata ensures consistency with the theme without requiring the user to specify boilerplate.
+> Header and footer provide the page's navigation frame and brand presence.
 
 Generate header and footer content based on metadata:
 
@@ -289,9 +348,9 @@ footer:
 
 ---
 
-### Step 8: Validate Against Schema
+### Step 9: Validate Against Schema
 
-> **WHY:** Self-assessment is unreliable without explicit measurement. In early tests, models reported "pass" while producing topic-label headlines and missing image prompts. The four-layer gate forces honest evaluation.
+> Self-assessment is unreliable without explicit measurement. The four-layer gate forces honest evaluation.
 
 **Read reference:** `references/05-validation.md`
 
@@ -304,9 +363,9 @@ Four layers — stop on first failure, fix, re-check:
 
 ---
 
-### Step 9: Write web-brief.md
+### Step 10: Write web-brief.md
 
-> **WHY:** The output path convention keeps generated briefs separate from source narratives in a `cogni-visual/` subdirectory, preventing clutter and making it easy for downstream agents to find the brief.
+> The output path convention keeps briefs in `cogni-visual/` to prevent clutter.
 
 **Output path resolution** (run via Bash before writing):
 - If `output_path` explicit: `mkdir -p "$(dirname "${output_path}")"`
@@ -315,14 +374,40 @@ Four layers — stop on first failure, fix, re-check:
 Generate the final brief with YAML frontmatter and section specifications following `EXAMPLE_WEB_BRIEF.md` format. Write using Write tool.
 
 **Final checks:**
-- YAML frontmatter complete (type, version, theme, style_guide, conversion_goal, arc_id if available)
+- YAML frontmatter complete (type, version, theme, theme_path, style_guide, conversion_goal, arc_id if available, confidence_score as average of per-section scores)
 - Header and footer sections present
-- All sections specified with type, section_theme, arc_role, headline
+- All sections specified with type, section_theme, arc_role, headline, confidence
 - First section is hero (dark), last content section is CTA (accent)
 - Image prompts present for hero and feature-alternating sections
 - CTA summary block present
 - Generation metadata populated
 - Zero color fields in entire document
+
+---
+
+### Step 11: Generate Web Rendering Prompt
+
+> The user needs a ready-to-use prompt for a fresh Claude chat with the web agent. Absolute paths make it self-contained.
+
+After the brief is written and validated, **append** a rendering prompt section to the end of web-brief.md (after Generation Metadata), then also print it to the conversation so the user can copy it directly.
+
+Use the absolute paths resolved during the workflow:
+
+```markdown
+---
+
+## Rendering Prompt
+
+Copy this prompt into a new Claude chat to render the web narrative:
+
+> Please render a web narrative using:
+> - Web brief: {absolute_path_to_web_brief}
+> - Theme: {absolute_path_to_theme_md}
+```
+
+Replace `{absolute_path_to_web_brief}` with the resolved `output_path` and `{absolute_path_to_theme_md}` with the `theme_path` from Step 1.
+
+Both paths must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative paths, because the receiving Claude session has no access to variables from this session.
 
 ---
 
@@ -332,16 +417,19 @@ Generate the final brief with YAML frontmatter and section specifications follow
 
 | Reference | Step | Purpose |
 |-----------|------|---------|
-| **01-style-guide-selection.md** | 3 | Tag scoring algorithm, theme-to-tag mapping |
-| **02-section-architecture.md** | 2, 4 | Arc-to-section mapping, decomposition rules, section_theme alternation |
-| **03-section-copywriting.md** | 5 | Web headline hierarchy, CTA copy patterns, number plays |
-| **04-image-prompts.md** | 5 | Web image formats, hero bg+overlay pattern, stock vs AI guidance |
-| **05-validation.md** | 8 | Four-layer validation framework |
-| **cta-taxonomy.md** (library) | 5b | CTA types, urgency levels, arc-to-CTA heuristics |
+| **02-audience-model.md** (from story-to-slides) | 3 | Audience Model construction (Rich/Lean mode) |
+| **01-style-guide-selection.md** | 4 | Tag scoring algorithm, theme-to-tag mapping |
+| **02-section-architecture.md** | 2, 5 | Arc-to-section mapping, decomposition rules, section_theme alternation |
+| **03-section-copywriting.md** | 6 | Web headline hierarchy, CTA copy patterns, number plays |
+| **04-image-prompts.md** | 6 | Web image formats, hero bg+overlay pattern, stock vs AI guidance |
+| **05-validation.md** | 9 | Four-layer validation framework |
+| **cta-taxonomy.md** (library) | 6b | CTA types, urgency levels, arc-to-CTA heuristics |
 
-### Libraries (loaded in Step 1)
+### Libraries (loaded as needed)
 
-| Library | Purpose |
-|---------|---------|
-| **web-layouts.md** | Section type schemas, typography scale, spacing, theme-to-variable mapping |
-| **EXAMPLE_WEB_BRIEF.md** | Complete output format reference |
+| Library | Step | Purpose |
+|---------|------|---------|
+| **arc-taxonomy.md** | 1 | Arc ID -> visual arc type mapping, element names |
+| **web-layouts.md** | 1 | Section type schemas, typography scale, spacing, theme-to-variable mapping |
+| **cta-taxonomy.md** | 6b | CTA types, urgency, arc-to-CTA heuristics |
+| **EXAMPLE_WEB_BRIEF.md** | 1 | Output format reference |
