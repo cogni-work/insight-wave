@@ -105,6 +105,7 @@ Before writing the file, verify each layer against these criteria:
 
 **IS statement:**
 - Factual and capability-focused — no superlatives or marketing language
+- Describes YOUR SOLUTION/CAPABILITY, never the buyer's problem or current state
 - 20-35 words, max 150 characters
 
 **DOES statement:**
