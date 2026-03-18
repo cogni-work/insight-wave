@@ -1,0 +1,12 @@
+# Eval iteration outputs — regenerable by re-running evals
+# Key findings are captured in RESULTS.md and skill-snapshots/
+iteration-*/*/with_skill/outputs/
+iteration-*/*/without_skill/outputs/
+iteration-*/*/old_skill/outputs/
+
+# Timing and grading — regenerable from outputs
+iteration-*/*/timing.json
+iteration-*/*/grading.json
+
+# Stakeholder reviews — regenerable from outputs
+iteration-*/*-review.json
