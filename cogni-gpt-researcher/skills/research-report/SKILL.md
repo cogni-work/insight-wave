@@ -446,6 +446,7 @@ Maximum 1 structural review iteration. After revision (or if the first review ac
 ### Phase 6: Finalization
 
 1. Copy final accepted draft to `output/report.md`
+   - Do NOT copy, symlink, or duplicate the report to the workspace root or any location outside the project folder. The canonical deliverable is `{project_path}/output/report.md` — the self-contained project directory is the unit of output (report + sources + metadata, all Obsidian-browsable). If the user wants a different format or location, point them to `/export-report`.
 2. Update `.metadata/execution-log.json` with:
    - Phase completion timestamps
    - Agent counts and durations
@@ -456,7 +457,8 @@ Maximum 1 structural review iteration. After revision (or if the first review ac
    - Word count and section count
    - Sources cited
    - Structural review score
-   - Path to `output/report.md`
+   - Full absolute path to `output/report.md`
+   - Project folder path (for browsing sources and metadata)
 4. **Recommend claims verification**:
 
 > **Next step**: Run `/verify-report` to verify claims against cited sources. This runs in a clean context window for thorough fact-checking — extracting claims, verifying each against its source URL, and revising any deviations found.
