@@ -40,12 +40,14 @@ This agent is inspired by GPT-Researcher's `CURATE_SOURCES` feature, which uses 
 
 ## When to Use
 
-Source curation is **optional** — the orchestrator activates it when:
-- `curate_sources` is set to `true` in project-config.json
-- Report type is `detailed` or `deep` (enough sources to benefit from curation)
-- More than 10 source entities exist (curation adds value when there are choices to make)
+Source curation activates **automatically** when:
+- Report type is `detailed` or `deep` AND 8 or more source entities exist
+- OR `curate_sources` is explicitly set to `true` in project-config.json (any report type, any source count)
 
-For `basic`, `outline`, or `resource` reports, curation is skipped (not enough sources to justify the extra agent cost).
+Source curation is **skipped** when:
+- `curate_sources` is explicitly set to `false` in project-config.json (opt-out override)
+- Report type is `basic`, `outline`, or `resource` AND `curate_sources` is not set (not enough sources to justify the extra agent cost)
+- Fewer than 8 source entities exist AND `curate_sources` is not explicitly `true`
 
 ## Core Workflow
 
@@ -130,8 +132,10 @@ Write curated ranking to `.metadata/curated-sources.json`:
 
 Return compact JSON:
 ```json
-{"ok": true, "total": 18, "primary": 5, "secondary": 8, "supporting": 5, "diversity_warnings": 1}
+{"ok": true, "total": 18, "primary": 5, "secondary": 8, "supporting": 5, "diversity_warnings": 1, "cost_estimate": {"input_words": 10000, "output_words": 1500, "estimated_usd": 0.039}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (source + context entities) and produced (curated ranking). See `references/model-strategy.md` for the estimation formula.
 
 ## Writer Integration
 

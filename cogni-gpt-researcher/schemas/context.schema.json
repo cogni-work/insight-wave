@@ -87,6 +87,29 @@
       "type": "integer",
       "description": "Word count of the context body",
       "minimum": 0
+    },
+    "follow_up_questions": {
+      "type": "array",
+      "description": "Follow-up questions extracted during deep research that guided recursive exploration. Persisted for workspace visibility and writer cross-section transitions.",
+      "items": {
+        "type": "object",
+        "required": ["question"],
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The follow-up question text"
+          },
+          "pursued": {
+            "type": "boolean",
+            "description": "Whether this question was pursued in a deeper recursion pass"
+          },
+          "depth_level": {
+            "type": "integer",
+            "description": "The recursion depth at which this question was generated",
+            "minimum": 0
+          }
+        }
+      }
     }
   }
 }

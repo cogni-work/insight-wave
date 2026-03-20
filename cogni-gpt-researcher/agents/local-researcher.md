@@ -125,8 +125,10 @@ For each document that yielded findings:
 
 Return compact JSON:
 ```json
-{"ok": true, "sq": "sq-cloud-security-a1b2c3d4", "sources": 4, "findings": 6, "words": 1200, "documents_analyzed": 4, "documents_skipped": 1}
+{"ok": true, "sq": "sq-cloud-security-a1b2c3d4", "sources": 4, "findings": 6, "words": 1200, "documents_analyzed": 4, "documents_skipped": 1, "cost_estimate": {"input_words": 15000, "output_words": 1800, "estimated_usd": 0.054}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (sub-question + documents) and produced (entities + synthesis). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json

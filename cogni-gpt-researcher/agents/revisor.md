@@ -108,8 +108,10 @@ Word count tracking in the output enables the orchestrator to detect unbounded g
 3. Return compact JSON:
 
 ```json
-{"ok": true, "draft": "output/draft-v2.md", "fixes_applied": 5, "new_sources": 2, "words": 3800}
+{"ok": true, "draft": "output/draft-v2.md", "fixes_applied": 5, "new_sources": 2, "words": 3800, "cost_estimate": {"input_words": 12000, "output_words": 4000, "estimated_usd": 0.072}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (draft + verdicts + source entities) and produced (revised draft). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json

@@ -30,6 +30,67 @@ All agents use sonnet. Earlier versions used haiku for parallel researchers to s
 | Resource | ~6 | 3-5 (sonnet) | 1-2 (writer, reviewer) | ~$0.10-0.30 |
 | Basic (hybrid) | ~12 | 5-10 (sonnet, web+local) | 2-3 (writer, reviewer, revisor) | ~$0.30-0.70 |
 
+## Runtime Cost Tracking
+
+Each agent reports a `cost_estimate` field in its output JSON, enabling the orchestrator to accumulate total research cost. The estimate is word-count-based — imprecise but directionally correct and zero-dependency.
+
+### Estimation Formula
+
+```
+tokens ≈ words × 0.75
+input_cost  = input_tokens × (input_price_per_mtok / 1_000_000)
+output_cost = output_tokens × (output_price_per_mtok / 1_000_000)
+cost_estimate = input_cost + output_cost
+```
+
+### Sonnet Pricing (as of 2026-03)
+
+| Direction | Price per MTok |
+|-----------|---------------|
+| Input     | $3.00          |
+| Output    | $15.00         |
+
+### How Agents Report Cost
+
+Every agent's compact JSON output includes:
+
+```json
+{
+  "ok": true,
+  "cost_estimate": {
+    "input_words": 12000,
+    "output_words": 3000,
+    "estimated_usd": 0.061
+  },
+  ...
+}
+```
+
+- `input_words`: approximate word count of all content read/received by the agent (sub-question + fetched pages + context)
+- `output_words`: approximate word count of all content produced (entities + synthesis)
+- `estimated_usd`: computed via the formula above
+
+### Orchestrator Accumulation
+
+In Phase 6, the orchestrator sums `estimated_usd` from all agent outputs and writes to `execution-log.json`:
+
+```json
+{
+  "cost_summary": {
+    "total_estimated_usd": 0.42,
+    "breakdown": {
+      "researchers": 0.28,
+      "writer": 0.08,
+      "reviewer": 0.03,
+      "revisor": 0.02,
+      "claim_extractor": 0.01
+    }
+  }
+}
+```
+
+This is reported to the user in the Phase 6 summary alongside word count and source stats.
+
 ## Design Divergences from GPT-Researcher
 
 ### Claims-Verified Review Loop (cogni-works Original)

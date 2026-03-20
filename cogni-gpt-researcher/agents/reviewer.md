@@ -156,8 +156,10 @@ Write verdict to `.metadata/review-verdicts/v{REVIEW_ITERATION}.json`:
 
 Return compact JSON:
 ```json
-{"ok": true, "verdict": "revise", "score": 0.72, "issues": 3, "critical": 1}
+{"ok": true, "verdict": "revise", "score": 0.72, "issues": 3, "critical": 1, "cost_estimate": {"input_words": 8000, "output_words": 500, "estimated_usd": 0.024}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (draft + claims data + previous verdicts) and produced (verdict JSON). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json

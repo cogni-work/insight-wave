@@ -156,8 +156,10 @@ Discard sources scoring below 0.3. For remaining sources:
 Return compact JSON only — no markdown, no prose:
 
 ```json
-{"ok": true, "sq": "sq-post-quantum-crypto-a1b2c3d4", "sources": 6, "findings": 4, "words": 850}
+{"ok": true, "sq": "sq-post-quantum-crypto-a1b2c3d4", "sources": 6, "findings": 4, "words": 850, "cost_estimate": {"input_words": 8000, "output_words": 1200, "estimated_usd": 0.032}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (sub-question + fetched pages) and produced (entities + synthesis). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json

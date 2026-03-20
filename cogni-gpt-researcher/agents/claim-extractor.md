@@ -100,8 +100,10 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-entity.sh" \
 ## Output Format
 
 ```json
-{"ok": true, "claims_extracted": 18, "claims_skipped": 3, "unsourced_assertions": 2}
+{"ok": true, "claims_extracted": 18, "claims_skipped": 3, "unsourced_assertions": 2, "cost_estimate": {"input_words": 6000, "output_words": 800, "estimated_usd": 0.023}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (draft + source entities) and produced (claim entities). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json

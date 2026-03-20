@@ -363,10 +363,17 @@ After all researchers complete:
 - Update sub-question entity status to "researched" or "failed"
 - Log results to `.logs/phase-2-research.jsonl`
 
-### Phase 2.5: Source Curation (optional)
+### Phase 2.5: Source Curation (conditional)
 
-When `curate_sources` is `true` in project-config.json AND the project has 10+ source entities AND the report type is `detailed` or `deep`:
+Source curation ranks sources by quality, relevance, authority, and recency before the writer sees them. This prevents the writer from treating all sources equally when some are clearly more authoritative.
 
+**Activation rules** (check in order):
+1. If `curate_sources` is explicitly `false` in project-config.json → **skip**
+2. If `curate_sources` is explicitly `true` → **run** (any report type, any source count)
+3. If report type is `detailed` or `deep` AND source entity count >= 8 → **run**
+4. Otherwise → **skip**
+
+When activated:
 ```
 Task(source-curator,
   PROJECT_PATH=<project_path>,
@@ -374,8 +381,6 @@ Task(source-curator,
 ```
 
 The source-curator produces `.metadata/curated-sources.json` with quality rankings (primary/secondary/supporting tiers) and diversity analysis. The writer agent reads this in Phase 4 to prioritize citations.
-
-Skip source curation for: basic, outline, resource report types, or when fewer than 10 sources exist.
 
 ### Phase 3: Context Aggregation
 
@@ -458,16 +463,19 @@ Maximum 1 structural review iteration. After revision (or if the first review ac
 
 1. Copy final accepted draft to `output/report.md`
    - Do NOT copy, symlink, or duplicate the report to the workspace root or any location outside the project folder. The canonical deliverable is `{project_path}/output/report.md` — the self-contained project directory is the unit of output (report + sources + metadata, all Obsidian-browsable). If the user wants a different format or location, point them to `/export-report`.
-2. Update `.metadata/execution-log.json` with:
+2. **Accumulate cost estimates**: Sum `cost_estimate.estimated_usd` from all agent outputs collected during Phases 2-5. Group by agent role (researchers, writer, reviewer, revisor, claim_extractor, source_curator). Write cost summary to `execution-log.json`
+3. Update `.metadata/execution-log.json` with:
    - Phase completion timestamps
    - Agent counts and durations
    - Final structural review score and iteration count
    - `phase_5_review.claims_verification: "deferred to verify-report"`
-3. Report summary to user:
+   - Cost summary: `{"total_estimated_usd": N, "breakdown": {"researchers": N, "writer": N, ...}}`
+4. Report summary to user:
    - Topic and report type
    - Word count and section count
    - Sources cited
    - Structural review score
+   - **Estimated cost** (total USD from cost_summary)
    - Full absolute path to `output/report.md`
    - Project folder path (for browsing sources and metadata)
 4. **Recommend claims verification**:

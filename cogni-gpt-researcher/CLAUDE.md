@@ -11,7 +11,7 @@ research-report skill (orchestrator, phases 0-6)
   → section-researcher agents (parallel web research, sonnet)
   → local-researcher agents (parallel local document analysis, sonnet)
   → deep-researcher agents (recursive tree exploration, sonnet)
-  → source-curator agent (optional quality ranking, sonnet)
+  → source-curator agent (auto for detailed/deep with 8+ sources, sonnet)
   → writer agent (report compilation, sonnet)
   → [optional image generation via cogni-visual or API]
   → reviewer agent (structural-only quality gate, sonnet)
@@ -71,7 +71,7 @@ Project config (`project-config.json`) supports these optional fields:
 | `source_urls` | string[] | [] | User-provided URLs to research first |
 | `query_domains` | string[] | [] | Restrict web search to these domains |
 | `max_subtopics` | int | per-type default | Override sub-question count |
-| `curate_sources` | bool | false | Enable LLM-based source ranking (detailed/deep, 10+ sources) |
+| `curate_sources` | bool | auto | Source curation: auto-activates for detailed/deep with 8+ sources. Set `true` to force, `false` to disable |
 | `generate_images` | bool | false | Enable AI image generation (placeholder markers if no provider) |
 
 ## Key Conventions
@@ -83,3 +83,5 @@ Project config (`project-config.json`) supports these optional fields:
 - Web research uses WebSearch + WebFetch (no MCP search providers), with optional source URL pre-fetch and domain filtering
 - Local research uses Read + Glob + Grep tools for document analysis (PDF, MD, TXT, CSV, JSON)
 - Hybrid mode runs both web and local researchers in parallel, merging results in context aggregation
+- All agents report `cost_estimate` in output JSON (input/output words + estimated USD). Orchestrator accumulates in Phase 6
+- Context entities support `follow_up_questions` array (deep research mode) for workspace visibility and writer transitions

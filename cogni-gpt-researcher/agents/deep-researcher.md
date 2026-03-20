@@ -117,13 +117,21 @@ This is the key algorithm transferred from GPT-Researcher's deep research. After
 2. Create a single comprehensive context entity that covers all sub-aspects and recursion depths
 3. Structure key findings hierarchically: top-level sub-aspects → follow-up findings → deeper explorations
 4. Include `depth_reached` in the context entity frontmatter
+5. **Persist follow-up questions** in the context entity's `follow_up_questions` frontmatter array. For each follow-up question generated during Phase 2b, record:
+   - `question`: the follow-up question text
+   - `pursued`: whether it was actually explored in a deeper pass (true/false)
+   - `depth_level`: the recursion depth at which it was generated (0 = initial, 1 = first follow-up, etc.)
+
+   This makes the research tree visible in the Obsidian workspace and enables the writer to use follow-up questions as cross-section transition hints (e.g., "This raises the question of..." style connectors)
 
 ### Phase 4: Return Results
 
 Return compact JSON:
 ```json
-{"ok": true, "sq": "sq-lattice-crypto-a1b2c3d4", "sub_aspects": 3, "sources": 12, "findings": 8, "words": 1500, "depth_reached": 2, "follow_ups_pursued": 4}
+{"ok": true, "sq": "sq-lattice-crypto-a1b2c3d4", "sub_aspects": 3, "sources": 12, "findings": 8, "words": 1500, "depth_reached": 2, "follow_ups_pursued": 4, "cost_estimate": {"input_words": 20000, "output_words": 2500, "estimated_usd": 0.073}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (sub-question + all fetched pages across recursion levels) and produced (entities + synthesis). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json

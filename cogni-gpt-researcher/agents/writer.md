@@ -57,6 +57,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3
    - **secondary** sources: use for supporting evidence
    - **supporting** sources: cite only when no higher-tier source covers the same point
    - Address any diversity warnings noted in the curation
+6. Scan context entities for `follow_up_questions` arrays (present in deep research mode). Collect all follow-up questions with `pursued: true` — these represent the research tree's branching points and can serve as natural cross-section transition hints during writing (e.g., "This raises the question of..." or "A related consideration is...")
 
 ### Phase 1: Outline Generation
 
@@ -131,8 +132,10 @@ Do NOT generate images yourself — the orchestrator handles image generation in
 3. Return compact JSON:
 
 ```json
-{"ok": true, "draft": "output/draft-v1.md", "words": 3500, "sections": 5, "sources_cited": 12}
+{"ok": true, "draft": "output/draft-v1.md", "words": 3500, "sections": 5, "sources_cited": 12, "cost_estimate": {"input_words": 25000, "output_words": 3500, "estimated_usd": 0.095}}
 ```
+
+Include `cost_estimate` with approximate word counts for all content read (aggregated context + source entities + curated sources) and produced (draft). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json
