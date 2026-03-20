@@ -1,11 +1,16 @@
 {
   "name": "cogni-workspace",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Lean workspace orchestrator for cogni-works marketplace plugins. Manages shared foundation (env vars, settings), theme management, theme picker, plugin discovery, and workspace health.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
   },
   "license": "AGPL-3.0-only",
-  "keywords": ["workspace", "themes", "orchestrator", "cogni-works"]
+  "keywords": [
+    "workspace",
+    "themes",
+    "orchestrator",
+    "cogni-works"
+  ]
 }

@@ -1,6 +1,6 @@
 # cogni-gpt-researcher
 
-Multi-agent research report generator for Claude Code. Native re-implementation of GPT-Researcher's STORM-inspired editorial workflow using Claude Code plugin primitives.
+Multi-agent research report generator for [Claude Cowork](https://claude.ai/cowork). Native re-implementation of GPT-Researcher's STORM-inspired editorial workflow using Claude Code plugin primitives.
 
 ## Why this exists
 
@@ -102,8 +102,11 @@ The pipeline uses two skills that split the work across separate context windows
 | `research-report` | skill | Main orchestrator — six-phase pipeline from topic to structurally reviewed report |
 | `verify-report` | skill | Claims verification — extracts claims, verifies against sources via cogni-claims, revises deviations |
 | `export-report` | skill | Export finalized report to HTML, PDF, or Markdown |
+| `research-report-workspace` | skill | Workspace-aware research orchestration for integrated project environments |
 | `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question |
+| `local-researcher` | agent (sonnet) | Parallel document analyst for local/hybrid research mode |
 | `deep-researcher` | agent (sonnet) | Recursive tree explorer for deep research mode |
+| `source-curator` | agent (sonnet) | Auto-curates sources for detailed/deep reports with 8+ sources — deduplication, quality scoring, relevance ranking |
 | `writer` | agent (sonnet) | Compiles aggregated context into a structured, cited report |
 | `claim-extractor` | agent (sonnet) | Extracts 10–30 verifiable claims from draft for verification |
 | `reviewer` | agent (sonnet) | Quality gate — scores structure and factual accuracy, issues verdict |
@@ -116,19 +119,23 @@ The pipeline uses two skills that split the work across separate context windows
 ```
 cogni-gpt-researcher/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       3 orchestration skills
+├── skills/                       4 orchestration skills
 │   ├── research-report/
 │   │   ├── SKILL.md
 │   │   └── references/           4 reference guides
 │   ├── verify-report/
 │   │   ├── SKILL.md
 │   │   └── references/           3 reference guides (incl. claims-integration)
-│   └── export-report/
-│       ├── SKILL.md
-│       └── references/
-├── agents/                       6 research agents
+│   ├── export-report/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   └── research-report-workspace/
+│       └── SKILL.md
+├── agents/                       8 research agents
 │   ├── section-researcher.md
+│   ├── local-researcher.md
 │   ├── deep-researcher.md
+│   ├── source-curator.md
 │   ├── writer.md
 │   ├── claim-extractor.md
 │   ├── reviewer.md
@@ -148,6 +155,10 @@ This plugin is an **independent reimplementation** — no source code from the o
 
 - **GPT-Researcher** by [Assaf Elovic / Tavily](https://github.com/assafelovic/gpt-researcher) (Apache-2.0) — multi-agent research architecture that inspired this plugin's parallel research and iterative review design.
 - **STORM** by [Stanford OVAL](https://arxiv.org/abs/2402.14207) — perspective-driven article generation framework. GPT-Researcher's editorial workflow builds on STORM's multi-perspective synthesis approach.
+
+## Custom development
+
+Need custom research workflows, internal knowledge base integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

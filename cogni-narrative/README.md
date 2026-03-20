@@ -1,65 +1,83 @@
-# Narrative Transformation Plugin
+# cogni-narrative
 
-A story arc-driven narrative plugin primarily designed for [Cowork](https://claude.com/product/cowork), Anthropic's agentic desktop application — though it also works in Claude Code. Transforms research syntheses, analyses, and structured content into compelling executive narratives using 6 story arc frameworks and 8 narrative techniques.
+Story arc-driven narrative transformation plugin for [Claude Cowork](https://claude.ai/cowork). Transforms research syntheses, analyses, and structured content into compelling executive narratives using 6 story arc frameworks and 8 narrative techniques. Bilingual EN/DE.
+
+## Why this exists
+
+Research output is structured but not persuasive. Executives don't read data dumps — they need a story that connects evidence to decisions:
+
+| Problem | What happens | Impact |
+|---------|-------------|--------|
+| Data without narrative | Research reports present findings but no story arc | Executives skim and move on — insights don't drive decisions |
+| No methodology discipline | Writers improvise narrative structure per document | Inconsistent quality; some sections compelling, others flat |
+| Format lock-in | One narrative output, one format — can't easily derive briefs, talking points, or one-pagers | Manual rewriting for each audience and format |
+| Quality unmeasured | No scoring or review gates for narrative quality | Weak narratives ship without feedback |
+
+This plugin applies structured story arc frameworks — each with defined sections, evidence requirements, and transition patterns — so narratives are consistently compelling and reviewable.
 
 > **Important**: This plugin generates executive narratives from structured input. All outputs should be reviewed for accuracy and tone before use in executive presentations, board materials, or external communications.
+
+## What it does
+
+1. **Transform** structured content into executive narratives using a story arc framework — auto-detected or manually selected
+2. **Review** narratives against quality gates — structural compliance, evidence density, element balance, language correctness — with scores and grades
+3. **Adapt** full narratives into derivative formats: executive briefs (300-500 words), talking points (bullet list), or one-pagers (structured reference)
+
+## What it means for you
+
+- **Arc-disciplined.** Every narrative follows a proven story arc structure — no improvised flow.
+- **Six frameworks.** Corporate Visions for sales, Technology Futures for innovation, Competitive Intelligence for threats, Strategic Foresight for planning, Industry Transformation for change, Trend Panorama for TIPS output.
+- **Quality-gated.** Automated scoring on structural compliance, critical accuracy, evidence density, and language — with A-F grades and improvement suggestions.
+- **Format-flexible.** One narrative, three derivative formats — without rewriting.
+- **Bilingual.** Full EN/DE support with localized section headers and proper Unicode handling.
 
 ## Installation
 
 This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/cogni-works) and is installed automatically with the marketplace.
 
-## Commands
+## Quick start
 
-| Command | Description |
-|---------|-------------|
-| `/narrative` | Transform research syntheses, analyses, and structured markdown into an executive narrative using a story arc framework |
-| `/narrative-review` | Score and review a narrative file against story arc quality gates — produces a scorecard with pass/warn/fail per gate and improvement suggestions |
-| `/narrative-adapt` | Transform a narrative into derivative formats: executive brief (300-500 words), talking points (bullet list), or one-pager (structured reference) |
+```
+/narrative ./research-output/                          # auto-detect arc
+/narrative ./analysis/ --arc technology-futures         # specify arc
+/narrative ./report.md --arc corporate-visions -o out.md  # specify output
+/narrative-review ./insight-summary.md                  # score quality
+/narrative-adapt ./insight-summary.md --format executive-brief  # derive brief
+```
 
-## Skills
+Or describe what you want:
 
-| Skill | Description |
-|-------|-------------|
-| `narrative` | Story arc selection, narrative transformation methodology, 8 narrative techniques (Pyramid Principle, PSB, Number Plays, etc.), quality validation, and bilingual output (EN/DE) |
-| `narrative-review` | Quality gate evaluation — scores narratives on structural compliance, word counts, citations, element balance, and language correctness (0-100 with A-F grades) |
-| `narrative-adapt` | Format adaptation — condenses full narratives into executive briefs, talking points, or one-pagers while preserving arc structure and key evidence |
+- "Transform this research into an executive narrative"
+- "Score this narrative against quality gates"
+- "Create talking points from this narrative"
+- "Write a German narrative using the trend panorama arc"
 
-## Agents
+## Try it
 
-| Agent | Description |
-|-------|-------------|
-| `narrative-writer` | Transform structured content into executive narratives — enables parallel narrative generation across multiple content sets |
-| `narrative-reviewer` | Proactive quality reviewer — triggers after narrative generation to score output against quality gates and present a scorecard |
+After installing, type one prompt:
 
-## Story Arc Frameworks
+> Transform this research into an executive narrative
 
-| Arc | Structure | Best For |
+Claude reads your research output, auto-detects the best story arc, asks you to confirm or override, then generates a 1,500-word executive narrative with inline citations back to source files.
+
+## Story arc frameworks
+
+| Arc | Structure | Best for |
 |-----|-----------|----------|
 | `corporate-visions` | Why Change → Why Now → Why You → Why Pay | Market research, B2B positioning, sales enablement |
 | `technology-futures` | Emerging → Converging → Possible → Required | Innovation scouting, R&D strategy, technology trends |
 | `competitive-intelligence` | Landscape → Shifts → Positioning → Implications | Competitive analysis, market monitoring, threat assessment |
 | `strategic-foresight` | Signals → Scenarios → Strategies → Decisions | Long-range planning, scenario analysis, strategic options |
 | `industry-transformation` | Forces → Friction → Evolution → Leadership | Industry analysis, regulatory impact, transformation roadmaps |
-| `trend-panorama` | Forces → Impact → Horizons → Foundations | Trend-scout output, TIPS trend reports, multi-horizon trend landscapes |
+| `trend-panorama` | Forces → Impact → Horizons → Foundations | Trend-scout output, TIPS trend reports, multi-horizon landscapes |
 
-## Example Workflows
+## Example workflows
 
 ### Research-to-Narrative
 
 1. Run `/narrative ./research-output/` to auto-detect the best arc and generate a narrative
 2. Review the arc selection and approve or override
-3. Receive a 1,500-word executive narrative with inline citations back to source files
-
-### Specific Arc Selection
-
-1. Run `/narrative ./analysis/ --arc technology-futures` to apply a specific story arc
-2. Run `/narrative ./report.md --arc corporate-visions -o ./insight-summary.md` to specify output path
-3. Review the structured narrative with arc-specific section headers
-
-### German-Language Output
-
-1. Run `/narrative ./research-output/ --lang de` to generate a narrative in German
-2. Output uses proper Unicode umlauts and localized section headers throughout
+3. Receive a 1,500-word executive narrative with inline citations
 
 ### Review Narrative Quality
 
@@ -69,25 +87,27 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 
 ### Adapt to Derivative Formats
 
-1. Run `/narrative-adapt ./insight-summary.md --format executive-brief` for a 300-500 word condensed version
-2. Run `/narrative-adapt ./insight-summary.md --format talking-points` for a bullet-point briefing
-3. Run `/narrative-adapt ./insight-summary.md --format one-pager` for a structured reference page
+1. `/narrative-adapt ./insight-summary.md --format executive-brief` — 300-500 word condensed version
+2. `/narrative-adapt ./insight-summary.md --format talking-points` — bullet-point briefing
+3. `/narrative-adapt ./insight-summary.md --format one-pager` — structured reference page
 
-## MCP Integration
+### German-Language Output
 
-This plugin works standalone with local markdown files. No MCP server connections are required.
+Run `/narrative ./research-output/ --lang de` to generate a narrative in German with proper Unicode umlauts and localized section headers.
 
-For enhanced workflows, connect complementary plugins:
+## Components
 
-### Research Input
-
-Connect a research plugin (e.g., cogni-tips) to generate structured syntheses that serve as narrative input.
-
-### Visual Output
-
-Connect a presentation plugin (e.g., cogni-visual) to transform narratives into slides, poster storyboards, or visual journey maps.
-
-> **Note:** Without upstream research plugins, you can provide any structured markdown files as input for narrative transformation.
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `narrative` | skill | Story arc selection, narrative transformation, 8 techniques, quality validation, bilingual output |
+| `narrative-review` | skill | Quality gate evaluation — scores on structural compliance, evidence, balance, language (0-100, A-F grades) |
+| `narrative-adapt` | skill | Format adaptation — executive briefs, talking points, one-pagers preserving arc structure |
+| `narrative-writer` | agent (sonnet) | Parallel narrative generation across multiple content sets |
+| `narrative-reviewer` | agent (sonnet) | Proactive quality reviewer — triggers after generation to score and present scorecard |
+| `narrative-adapter` | agent (sonnet) | Format adaptation agent for derivative output |
+| `/narrative` | command | Transform content into an arc-driven narrative |
+| `/narrative-review` | command | Score and review a narrative against quality gates |
+| `/narrative-adapt` | command | Adapt a narrative into derivative formats |
 
 ## Architecture
 
@@ -107,6 +127,22 @@ cogni-narrative/
     ├── narrative-review.md
     └── narrative-adapt.md
 ```
+
+## Dependencies
+
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-tips | No | Provides trend-scout output for the `trend-panorama` arc |
+| cogni-gpt-researcher | No | Provides research reports as narrative input |
+| cogni-copywriting | No | Arc-aware executive polish (downstream) |
+| cogni-visual | No | Slide decks and visual assets from narrative output (downstream) |
+| cogni-sales | No | Consumes Corporate Visions arc patterns (downstream) |
+
+cogni-narrative is standalone. It transforms structured input from any source — cogni-x plugins or plain markdown files.
+
+## Custom development
+
+Need custom story arc frameworks, house narrative style, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

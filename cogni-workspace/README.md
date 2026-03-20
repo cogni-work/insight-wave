@@ -1,49 +1,86 @@
 # cogni-workspace
 
-Lean workspace orchestrator for cogni-works marketplace plugins. Manages shared foundation (environment variables, settings), theme management, plugin discovery, and workspace health — so all cogni-x plugins operate from a consistent, well-configured base.
+Lean workspace orchestrator for cogni-works [Claude Cowork](https://claude.ai/cowork) marketplace plugins. Manages shared foundation (environment variables, settings), theme management, plugin discovery, and workspace health — so all cogni-x plugins operate from a consistent, well-configured base.
 
-> **Note**: This plugin provides the shared infrastructure layer for cogni-works plugins. It does not perform domain tasks itself — it ensures all other plugins have the environment, themes, and configuration they need.
+## Why this exists
+
+Each cogni-works plugin needs environment variables, themes, and discovery of sibling plugins. Without a shared orchestrator, every plugin reinvents configuration:
+
+| Problem | What happens | Impact |
+|---------|-------------|--------|
+| No shared config | Each plugin manages its own env vars and paths | Inconsistent setup, manual duplication |
+| Theme fragmentation | Visual plugins each scan for themes independently | Broken renders when theme paths don't match |
+| Plugin drift | No way to detect version mismatches or missing dependencies | Skills fail at runtime with cryptic errors |
+| Manual setup | Every new workspace requires manual scaffolding | 20+ minutes of boilerplate per project |
+
+This plugin provides the infrastructure layer — workspace initialization, theme management, plugin discovery, and health diagnostics — so domain plugins can focus on their actual work.
+
+## What it does
+
+1. **Initialize** a workspace — dependency checks, plugin discovery, preference gathering (language, tool integrations), settings generation
+2. **Manage themes** — extract from websites (via Chrome), PPTX files, or presets; audit for contrast and harmony; apply to downstream skills
+3. **Pick themes** — centralized theme picker used by all visual plugins
+4. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
+5. **Diagnose** workspace health — five-tier report (foundation, env vars, plugin registry, themes, dependencies)
+6. **Update** workspace — re-scan plugins, refresh env vars, regenerate settings with backup and rollback
+
+## What it means for you
+
+- **One command to set up.** `init-workspace` handles dependencies, discovery, env vars, settings, themes, and output styles.
+- **Consistent theming.** All visual plugins use the same theme picker and theme format — no per-plugin configuration.
+- **Health monitoring.** `workspace-status` catches drift, missing dependencies, and stale configurations before they cause failures.
+- **Safe updates.** `update-workspace` backs up before modifying and supports rollback.
 
 ## Installation
 
 This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/cogni-works) and is installed automatically with the marketplace.
 
-## Skills
+**Prerequisites:**
+- `jq` (required — JSON processing)
+- `python3` (required — stdlib only, no pip)
+- `bash 3.2+` (required)
+- Optional: `curl`, `git`, `bc`
 
-| Skill | Description |
-|-------|-------------|
-| `init-workspace` | Initialize a cogni-works workspace with shared foundation — environment variables, directory structure, plugin discovery, and settings generation |
-| `manage-themes` | Extract visual design themes from live websites (via Chrome), PowerPoint templates, or manual definition — stored as reusable theme files for cogni-visual |
-| `pick-theme` | Interactive theme picker — discovers available themes and lets users select one for downstream skills |
-| `cogni-issues` | File and track GitHub issues (bugs, feature requests, change requests) against cogni-works ecosystem plugins |
-| `update-workspace` | Refresh workspace configuration — sync plugin versions, update environment variables, regenerate settings, and re-run discovery |
-| `workspace-status` | Diagnose and report on workspace health — plugin versions, missing dependencies, environment variable status, and configuration issues |
+## Quick start
 
-## Hooks
+```
+/init-workspace    # initialize a new workspace
+/workspace-status  # check health
+/update-workspace  # refresh after plugin changes
+/pick-theme        # select a theme interactively
+/manage-themes     # extract, create, audit, or apply themes
+/cogni-issues      # file a GitHub issue against cogni-works
+```
 
-| Hook | Trigger | Description |
-|------|---------|-------------|
-| `on-session-start.sh` | Session start | Automatically sources workspace environment and validates plugin availability at the beginning of each Claude Code session |
+Or describe what you want:
 
-## Example Workflows
+- "Initialize a cogni-works workspace here"
+- "What's the status of my workspace?"
+- "Extract a theme from this website"
+- "Update my workspace after installing new plugins"
 
-### Initialize a New Workspace
+## Try it
 
-1. Create a project directory for your work
-2. Ask Claude: *"Initialize a cogni-works workspace here"*
-3. The plugin scaffolds environment files, discovers installed plugins, and generates settings
+After installing, type one prompt:
 
-### Extract a Brand Theme
+> Initialize a cogni-works workspace
 
-1. Open a website or PowerPoint with your brand styling
-2. Ask Claude: *"Extract a theme from this website"* or provide a `.pptx` file
-3. The theme is saved to `themes/` and available for cogni-visual rendering
+Claude checks dependencies, discovers installed plugins, asks for your language preference and tool integrations, then generates `.claude/settings.local.json`, `.workspace-env.sh`, `.workspace-config.json`, output style templates, and the default theme. Your workspace is ready for all cogni-x plugins.
 
-### Check Workspace Health
+## Components
 
-1. Ask Claude: *"What's the status of my workspace?"*
-2. Review the diagnostic report — plugin versions, missing dependencies, environment issues
-3. Run *"Update my workspace"* to fix any detected issues
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `init-workspace` | skill | Full workspace initialization — dependencies, discovery, preferences, settings, themes |
+| `manage-themes` | skill | 8 theme operations: recommend, list, grab from website, grab from PPTX, create from preset, audit, generate showcase, apply |
+| `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
+| `cogni-issues` | skill | GitHub issue lifecycle — create (with duplicate check and root cause hypothesis), list, status, browse |
+| `update-workspace` | skill | Re-scan plugins, refresh env vars, update output styles, backup and rollback support |
+| `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
+| `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
+| `check-dependencies.sh` | script | Returns JSON with availability/version of required and optional dependencies |
+| `discover-plugins.sh` | script | Scans marketplace cache for installed cogni-x plugins, returns JSON inventory |
+| `generate-settings.sh` | script | Generates settings files; supports `--update` to preserve custom env vars |
 
 ## Architecture
 
@@ -51,10 +88,10 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
 ├── skills/                       6 workspace management skills
-│   ├── cogni-issues/
 │   ├── init-workspace/
 │   ├── manage-themes/
 │   ├── pick-theme/
+│   ├── cogni-issues/
 │   ├── update-workspace/
 │   └── workspace-status/
 ├── hooks/                        Session lifecycle hooks
@@ -65,11 +102,15 @@ cogni-workspace/
 │   ├── discover-plugins.sh
 │   └── generate-settings.sh
 ├── themes/                       Brand theme storage
-│   ├── _template/
-│   └── cogni-work/
-└── assets/                       Shared assets
-    └── output-styles/
+│   ├── _template/                Canonical theme template
+│   └── cogni-work/               Bundled brand theme + showcase
+└── assets/
+    └── output-styles/            Language-specific behavioral anchors (EN/DE)
 ```
+
+## Custom development
+
+Need enterprise workspace configurations, custom theme infrastructure, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

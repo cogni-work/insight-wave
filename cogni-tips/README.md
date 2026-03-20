@@ -1,6 +1,6 @@
 # cogni-tips
 
-A Claude Code plugin for scouting, selecting, and reporting on strategic industry trends — **specialized for the German Mittelstand and DACH markets**. Combines the [Smarter Service Trendradar](https://www.smarter-service.com/2023/01/31/trendradar-fuer-die-multikrise-und-neue-geooekonomie/) (4-dimension structure by Bernhard Steimel) with the TIPS content framework (Trends, Implications, Possibilities, Solutions — a B2B consulting methodology widely used since the early 2000s; see [WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) for a detailed treatment, filed by Siemens 2017, ceased 2019).
+A [Claude Cowork](https://claude.ai/cowork) plugin for scouting, selecting, and reporting on strategic industry trends — **specialized for the German Mittelstand and DACH markets**. Combines the [Smarter Service Trendradar](https://www.smarter-service.com/2023/01/31/trendradar-fuer-die-multikrise-und-neue-geooekonomie/) (4-dimension structure by Bernhard Steimel) with the TIPS content framework (Trends, Implications, Possibilities, Solutions — a B2B consulting methodology widely used since the early 2000s; see [WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) for a detailed treatment, filed by Siemens 2017, ceased 2019).
 
 > **Market scope:** This plugin is purpose-built for DACH (Germany, Austria, Switzerland). It searches bilingually in English and German, targets curated German institutional sources (VDMA, BITKOM, Fraunhofer, Zukunftsinstitut, EUR-Lex), and uses German-language dimension names from the Smarter Service Trendradar. The underlying bilingual search architecture is generalizable to other markets — see [`references/architecture-pattern.md`](references/architecture-pattern.md) for the reusable pattern.
 
@@ -93,9 +93,14 @@ trend-report   → narrative report from agreed candidates
 |-----------|------|--------------|
 | `trend-scout` | skill | End-to-end trend scouting with industry selection and bilingual research |
 | `trend-report` | skill | Narrative report generation with evidence enrichment and claims extraction |
+| `value-modeler` | skill | Transform trend candidates into investment themes, TIPS paths, and solution templates with portfolio mapping |
+| `tips-catalog` | skill | Industry catalog management for cross-pursuit reuse of solution templates and investment themes |
+| `tips-dashboard` | skill | Interactive HTML dashboard visualizing trend landscape, dimension coverage, and scoring distributions |
+| `tips-resume` | skill | Resume a TIPS session — show project status, phase progress, and recommended next actions |
 | `trend-web-researcher` | agent | Executes 32 bilingual web searches + API queries, returns aggregated signals |
 | `trend-generator` | agent | Generates scored trend candidates using multi-framework analysis (Opus) |
 | `trend-report-writer` | agent | Writes one Trendradar dimension section with TIPS analysis and claims |
+| `trend-report-investment-theme-writer` | agent | Writes investment theme (Handlungsfeld) narrative sections for the trend report |
 
 ## Attribution
 
@@ -108,19 +113,30 @@ trend-report   → narrative report from agreed candidates
 ```
 cogni-tips/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       Trend intelligence skills
+├── skills/                       6 trend intelligence skills
 │   ├── trend-scout/
-│   └── trend-report/
-├── agents/                       3 research agents
+│   ├── trend-report/
+│   ├── value-modeler/
+│   ├── tips-catalog/
+│   ├── tips-dashboard/
+│   └── tips-resume/
+├── agents/                       4 research agents
 │   ├── trend-web-researcher.md
 │   ├── trend-generator.md
-│   └── trend-report-writer.md
+│   ├── trend-report-writer.md
+│   └── trend-report-investment-theme-writer.md
 ├── references/                   Framework documentation
 │   ├── architecture-pattern.md
+│   ├── data-model.md
 │   └── research-types/
+├── catalogs/                     Industry catalog (cross-pursuit reuse)
 └── scripts/                      Utility scripts
     └── initialize-trend-project.sh
 ```
+
+## Custom development
+
+Need a custom trend framework, non-DACH market adaptation, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

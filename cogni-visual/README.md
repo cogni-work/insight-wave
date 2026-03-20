@@ -1,6 +1,6 @@
 # cogni-visual
 
-A visual deliverables plugin for [Claude Code](https://claude.ai/code). Transforms polished narratives into presentation briefs, big-picture journey maps, scrollable web narratives, and printed poster storyboards. Works downstream of cogni-narrative and cogni-copywriting in a compose-polish-visualize pipeline.
+A visual deliverables plugin for [Claude Cowork](https://claude.ai/cowork). Transforms polished narratives into presentation briefs, big-picture journey maps, Big Block solution architecture diagrams, scrollable web narratives, and printed poster storyboards. Works downstream of cogni-narrative and cogni-copywriting in a compose-polish-visualize pipeline.
 
 > **Note**: This plugin generates intermediate briefs (YAML + Markdown) that are then rendered by downstream tools — `document-skills:pptx` for slide decks, [Excalidraw MCP](https://github.com/yctimlin/mcp_excalidraw) for big-picture journey maps, and [Pencil MCP](https://pencil.li) for web and storyboard canvases. A theme from cogni-workspace is required for branded output.
 
@@ -14,9 +14,11 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 |-------|-------------|
 | `story-to-slides` | Multi-slide presentation brief from any narrative — audience modeling, message architecture, assertion headlines, number plays, speaker notes, and 11 slide layout types |
 | `story-to-big-picture` | Single-canvas visual journey map brief — metaphor selection (6 options), station decomposition, absolute positioning, AI image prompts, and theme-driven rendering |
+| `story-to-big-block` | Big Block solution architecture brief from TIPS value-modeler output — tier classification, path connections, implementation waves, SPI and foundation mapping |
 | `story-to-web` | Scrollable landing-page-style web brief — style guide selection (200+ tags), 10 section types, design token variables, auto-layout, and responsive typography |
 | `story-to-storyboard` | Multi-poster print storyboard brief — 5-zone poster anatomy, A0-A3 print sizes at 150 DPI, font scaling tables, and CMYK-safe color constraints |
 | `render-big-picture` | Render a big-picture-brief into a richly illustrated Excalidraw scene — station-first pipeline with parallel agents, 1100-1500 elements, dark/light color modes |
+| `render-big-block` | Render a big-block-brief into a structured Excalidraw diagram — sequential pipeline, tier bands, solution blocks, path connections, 150-250 elements |
 
 ## Example Workflows
 
@@ -42,6 +44,18 @@ Claude: [Reads narrative, maps arc_id to visual arc_type]
         [Decomposes narrative into stations with x,y coordinates]
         [Generates AI image prompts for landscape and stations]
         [Outputs big-picture-brief.md — ready for Excalidraw MCP rendering]
+```
+
+### Create a Big Block Solution Architecture
+
+```
+You: Create a Big Block from my TIPS value model
+
+Claude: [Reads TIPS value-modeler Phase 4 output (JSON)]
+        [Classifies solutions into BR tiers (1-4)]
+        [Maps TIPS path connections between blocks]
+        [Assigns implementation waves (1-3)]
+        [Outputs big-block-brief.md — ready for Excalidraw MCP rendering]
 ```
 
 ### Create a Scrollable Web Narrative
@@ -84,25 +98,37 @@ cogni-narrative  →  cogni-copywriting  →  cogni-visual
 ```
 cogni-visual/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       5 skills (4 brief generators + 1 renderer)
+├── skills/                       7 skills (5 brief generators + 2 renderers)
 │   ├── story-to-slides/
 │   ├── story-to-big-picture/
+│   ├── story-to-big-block/
 │   ├── story-to-web/
 │   ├── story-to-storyboard/
-│   └── render-big-picture/
-├── agents/                       8 agents (orchestration + rendering)
+│   ├── render-big-picture/
+│   └── render-big-block/
+├── agents/                       13 agents (orchestration + rendering + workers)
 │   ├── story-to-slides.md        Orchestrates story-to-slides skill
 │   ├── pptx.md                   Renders briefs into .pptx
 │   ├── story-to-big-picture.md   Orchestrates story-to-big-picture skill
-│   ├── big-picture.md            Renders briefs into .excalidraw via Excalidraw MCP
+│   ├── big-picture.md            Delegates to render-big-picture skill
+│   ├── station-structure-artist.md  Worker — composes station structure (130-160 elements)
+│   ├── station-enrichment-artist.md Worker — adds fine detail (100-130 elements)
+│   ├── zone-reviewer.md          Worker — reviews 1/4 zone of canvas
+│   ├── story-to-big-block.md     Orchestrates story-to-big-block skill
+│   ├── big-block.md              Delegates to render-big-block skill
 │   ├── story-to-web.md           Orchestrates story-to-web skill
 │   ├── web.md                    Renders briefs into .pen via Pencil MCP
 │   ├── story-to-storyboard.md    Orchestrates story-to-storyboard skill
 │   └── storyboard.md             Renders briefs into .pen via Pencil MCP
-└── libraries/                    Shared reference material
+├── commands/                     2 slash commands
+│   ├── render-big-picture.md
+│   └── render-big-block.md
+└── libraries/                    12 shared reference files
     ├── arc-taxonomy.md           Arc ID → visual arc type mapping
+    ├── cta-taxonomy.md           CTA types and urgency levels
     ├── pptx-layouts.md           Slide layout schemas
     ├── big-picture-layouts.md    Canvas dimensions and station positioning
+    ├── big-block-layouts.md      Block sizing, tier bands, connection routing
     ├── web-layouts.md            Section types and design tokens
     └── storyboard-layouts.md     Poster dimensions and zone anatomy
 ```
@@ -133,13 +159,17 @@ Two renderers (web, storyboard) require [Pencil MCP](https://pencil.li) for canv
 
 ## Prerequisites
 
-- [Claude Code](https://claude.ai/code) CLI installed
+- [Claude Cowork](https://claude.ai/cowork) installed
 - cogni-narrative (upstream — produces narratives)
 - cogni-copywriting (upstream — polishes narratives)
 - cogni-workspace (provides brand themes)
 - document-skills plugin (provides `pptx` skill for slide rendering)
 - Excalidraw MCP (for big-picture rendering — github.com/yctimlin/mcp_excalidraw)
 - Pencil MCP (for web and storyboard rendering)
+
+## Custom development
+
+Need custom visual templates, branded rendering pipelines, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

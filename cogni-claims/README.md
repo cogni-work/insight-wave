@@ -1,6 +1,6 @@
 # cogni-claims
 
-A Claude Code plugin that verifies whether sourced claims actually match what their cited sources say.
+A [Claude Cowork](https://claude.ai/cowork) plugin that verifies whether sourced claims actually match what their cited sources say.
 
 ## Why this exists
 
@@ -17,7 +17,7 @@ Every claim above has been verified against its source using this plugin. This p
 
 ## What it is
 
-A systematic claim-verification workflow for Claude Code. Other plugins generate sourced content — this one checks whether the sources actually say what's claimed. It's designed for cross-plugin use: submit claims from anywhere, verify and resolve them here.
+A systematic claim-verification workflow for Claude Cowork. Other plugins generate sourced content — this one checks whether the sources actually say what's claimed. It's designed for cross-plugin use: submit claims from anywhere, verify and resolve them here.
 
 ## What it does
 
@@ -73,6 +73,18 @@ cogni-claims/
 └── history/                 # audit trail per claim
 ```
 
+## Data model
+
+Three core entity types with defined status transitions:
+
+| Entity | Key fields | Description |
+|--------|-----------|-------------|
+| `ClaimRecord` | claim_id, claim_text, source_url, status | A factual assertion with its cited source. Status: `unverified` → `verified` / `deviated` / `source_unavailable` |
+| `DeviationRecord` | deviation_type, severity, evidence | A discrepancy found during verification. Types: misquotation, unsupported_conclusion, selective_omission, data_staleness, source_contradiction |
+| `ResolutionRecord` | resolution_type, new_claim_text | How a deviation was resolved. Types: corrected, disputed, alternative_source, discarded, accepted_as_is |
+
+See [skills/claim-entity/references/schema.md](skills/claim-entity/references/schema.md) for the full schema.
+
 ## How it works
 
 Claims are stored in your project's `cogni-claims/` directory as JSON. When you verify, the plugin dispatches a **claim-verifier** agent per unique source URL — each agent fetches the page once and checks all claims referencing it. For deviated claims, the **source-inspector** agent can open the source in Chrome and highlight the relevant passage so you can see the discrepancy in context.
@@ -95,12 +107,29 @@ cogni-claims/
 ├── skills/                       2 verification skills
 │   ├── claims/
 │   └── claim-entity/
+│       └── references/
+│           └── schema.md         Entity schema definitions
 ├── agents/                       2 verification agents
 │   ├── claim-verifier.md
 │   └── source-inspector.md
 └── commands/                     1 slash command
     └── claims.md
 ```
+
+## Dependencies
+
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-gpt-researcher | No | Research reports submit claims for verification via claim-entity contract |
+| cogni-tips | No | Trend reports submit claims for verification |
+| cogni-portfolio | No | Portfolio propositions submit claims for verification |
+| cogni-sales | No | Sales pitches submit claims for verification |
+
+cogni-claims is standalone — it provides a verification service that other plugins consume. No upstream dependencies are required.
+
+## Custom development
+
+Need a custom verification workflow, integration with your internal systems, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

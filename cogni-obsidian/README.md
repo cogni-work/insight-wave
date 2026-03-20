@@ -1,76 +1,83 @@
-# Obsidian Integration Plugin
+# cogni-obsidian
 
-An Obsidian integration plugin for Claude Code that bridges Obsidian vaults with Claude Code workplaces. Scaffolds vault configurations with Terminal plugin integration, manages terminal profiles across platforms, and provides standardized note creation with YAML frontmatter — enabling cogni-x plugins to work on projects collaboratively through an Obsidian-based environment.
+Obsidian integration for [Claude Cowork](https://claude.ai/cowork) workplaces. Scaffolds vault configurations with Terminal plugin integration, manages terminal profiles across platforms, and provides standardized note creation with YAML frontmatter.
 
-> **Note**: This plugin configures Obsidian as a workplace frontend for Claude Code. It downloads the [Obsidian Terminal](https://github.com/polyipseity/obsidian-terminal) community plugin from GitHub during setup. Review the Terminal plugin's license and permissions before use.
+## Why this exists
+
+Claude Cowork sessions are ephemeral — when the session ends, context disappears. Teams need persistent, browsable workspaces where research, narratives, and portfolio data can be explored, linked, and visualized:
+
+| Problem | What happens | Impact |
+|---------|-------------|--------|
+| Ephemeral sessions | Claude Code work products exist as files but lack a browsing interface | Users can't explore relationships between outputs |
+| No graph navigation | Markdown files with wikilinks exist but no tool renders the connections | Cross-reference value is invisible |
+| Platform fragmentation | macOS, Linux, and Windows/WSL each need different terminal configurations | Manual setup per platform, broken profiles on team shares |
+| Manual vault setup | Obsidian requires 6+ config files and a community plugin download | 15+ minutes of boilerplate per workplace |
+
+This plugin scaffolds a complete Obsidian vault — including the Terminal plugin for launching Claude Code directly from Obsidian — so cogni-x plugin outputs become a browsable, linked knowledge workspace.
+
+## What it does
+
+1. **Scaffold** a complete `.obsidian/` configuration: vault settings, Moonstone theme, 15 core plugins, Terminal community plugin (auto-downloaded), Tokyonight-themed terminal profiles, and a workplace launcher script
+2. **Update** existing vaults incrementally — merge new terminal profiles, fix WSL issues, remove deprecated profiles, copy new scripts — without overwriting user customizations
+3. **Create notes** with consistent YAML frontmatter (title, date, tags, source, status) in kebab-case filenames
+
+## What it means for you
+
+- **One command to set up.** `setup-obsidian` handles config files, plugin download, terminal profiles, and launcher script.
+- **Cross-platform.** macOS, Linux, Windows WSL, and Git Bash — all from a single template with automatic path substitution.
+- **Safe updates.** `update-obsidian` merges new configurations without destroying your customizations.
+- **Browse everything.** All cogni-x plugin outputs become Obsidian notes with frontmatter — searchable, linkable, and graph-navigable.
 
 ## Installation
 
 This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/cogni-works) and is installed automatically with the marketplace.
 
-### Prerequisites
-
+**Prerequisites:**
 - [Obsidian](https://obsidian.md/) installed
 - `jq` — JSON processing (`brew install jq` / `apt install jq`)
 - `curl` — Terminal plugin download (`brew install curl` / `apt install curl`)
 
-## Skills
+## Quick start
 
-| Skill | Description |
-|-------|-------------|
-| `setup-obsidian` | Scaffold a complete `.obsidian/` vault with Terminal plugin profiles, workspace layout, Tokyonight theme, and Claude Code launcher script |
-| `update-obsidian` | Incrementally update terminal profiles, fix WSL issues, merge new configurations, and sync scripts — without overwriting user customizations |
-| `note-manager` | Create markdown notes with consistent YAML frontmatter (title, date, tags, source) for standardized cogni-x plugin output |
+- "Set up Obsidian for my workplace at /path/to/my-project"
+- "Update the Obsidian configuration for my workplace"
+- "Create a note for the Q1 market analysis findings"
 
-## Example Workflows
+## Try it
 
-### Set Up a New Workplace
+After installing, type one prompt:
 
-1. Create a project directory and ask Claude: *"Set up Obsidian for my workplace at /path/to/my-project"*
-2. Open the directory as an Obsidian vault (File > Open Vault)
-3. Click the Terminal ribbon icon — the **Workplace** profile launches Claude Code with language selection and permission mode options
-4. All cogni-x plugin environment variables are sourced automatically via `.workplace-env.sh`
+> Set up Obsidian for my workplace
 
-### Update an Existing Workplace
+Claude scaffolds the `.obsidian/` directory with all config files, downloads the Terminal community plugin, configures platform-appropriate terminal profiles with Tokyonight colors, and creates a workplace launcher script. Open the directory as an Obsidian vault and click the Terminal ribbon icon to launch Claude Code.
 
-1. Ask Claude: *"Update the Obsidian configuration for my workplace"*
-2. New terminal profiles are merged, deprecated profiles are removed, and WSL path issues are auto-healed
-3. Existing customizations (fonts, colors, scripts) are preserved
-
-### Create Structured Notes
-
-1. Ask Claude: *"Create a note for the Q1 market analysis findings"*
-2. A markdown file is created with YAML frontmatter (title, date, tags, source plugin)
-3. Obsidian handles indexing, linking, search, and graph visualization
-
-## What Gets Created
-
-The `setup-obsidian` skill scaffolds this structure in your workplace:
+## What gets created
 
 ```
 .obsidian/
-├── app.json                 # Vault settings (live preview, line numbers, link updates)
-├── appearance.json          # Theme (moonstone), base font size
-├── core-plugins.json        # 15 enabled core plugins (explorer, search, graph, backlinks...)
-├── community-plugins.json   # Terminal plugin enabled
-├── workspace.json           # Multi-pane layout (editor, file explorer, search, bookmarks)
+├── app.json                 Vault settings (live preview, line numbers, link updates)
+├── appearance.json          Theme (moonstone), base font size
+├── core-plugins.json        15 enabled core plugins (explorer, search, graph, backlinks...)
+├── community-plugins.json   Terminal plugin enabled
+├── workspace.json           Multi-pane layout (editor, file explorer, search, bookmarks)
 └── plugins/
     └── terminal/
-        ├── main.js          # Terminal plugin (downloaded from GitHub)
-        ├── manifest.json    # Plugin manifest
-        ├── styles.css       # Plugin styles
-        ├── data.json        # Terminal profiles with Tokyonight color scheme
-        └── workplace-orchestrator.sh  # Claude Code launcher with language + permission selection
+        ├── main.js          Terminal plugin (downloaded from GitHub)
+        ├── manifest.json    Plugin manifest
+        ├── styles.css       Plugin styles
+        ├── data.json        Terminal profiles with Tokyonight color scheme
+        └── workplace-orchestrator.sh  Claude Code launcher with language + permission selection
 ```
 
-### Terminal Profiles
+## Components
 
-| Profile | Platform | Description |
-|---------|----------|-------------|
-| Workplace (Unix) | macOS, Linux | Launches Claude Code via `/bin/bash` with SF Mono font |
-| Workplace (WSL) | Windows | Launches Claude Code via `wsl.exe` with Cascadia Code font |
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `obsidian-setup` | skill | Scaffold complete `.obsidian/` vault with Terminal plugin, profiles, and launcher. Supports `--dry-run`. Refuses to overwrite existing vaults |
+| `update-obsidian` | skill | Incremental update — merge profiles, fix WSL issues, remove deprecated configs. Idempotent, supports `--dry-run` |
+| `note-manager` | skill | Create markdown notes with YAML frontmatter (title, date required; tags, source, status optional). Kebab-case filenames |
 
-## Platform Support
+## Platform support
 
 | Platform | Terminal Profile | Path Format |
 |----------|-----------------|-------------|
@@ -79,16 +86,30 @@ The `setup-obsidian` skill scaffolds this structure in your workplace:
 | Windows (WSL) | `workplace-wsl` | WSL (`/mnt/c/...`) |
 | Windows (Git Bash) | `workplace-wsl` | Converted (`/mnt/c/...`) |
 
-Path placeholders (`{{WORKPLACE_ROOT}}` and `{{WORKPLACE_ROOT_WSL}}`) are substituted at setup time to support all platforms from a single template.
+Path placeholders (`{{WORKPLACE_ROOT}}` and `{{WORKPLACE_ROOT_WSL}}`) are substituted at setup time.
 
 ## Architecture
 
-This plugin follows the cogni-x **convention-based zero-coupling** architecture:
+```
+cogni-obsidian/
+├── .claude-plugin/plugin.json    Plugin manifest
+├── skills/                       3 integration skills
+│   ├── obsidian-setup/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── update-obsidian/
+│   │   └── SKILL.md
+│   └── note-manager/
+│       └── SKILL.md
+└── hooks/
+    └── hooks.json
+```
 
-- Each cogni-x plugin owns its output scaffolding from a workspace root provided via environment variables (e.g., `COGNI_RESEARCH_ROOT`, `COGNI_NARRATIVE_ROOT`)
-- cogni-obsidian provides the vault and terminal integration layer — it does not manage plugin-specific folder structures
-- The `.workplace-env.sh` file is sourced automatically by the Terminal plugin, making all plugin roots available to Claude Code sessions
-- All scripts use `bash 3.2` compatibility and cross-platform portability utilities
+This plugin follows the cogni-x **convention-based zero-coupling** architecture: each plugin owns its output scaffolding from a workspace root provided via environment variables. cogni-obsidian provides the vault and terminal integration layer — it does not manage plugin-specific folder structures.
+
+## Custom development
+
+Need custom workspace integrations, enterprise vault configurations, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

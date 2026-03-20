@@ -1,6 +1,6 @@
 # Portfolio Messaging Plugin
 
-A portfolio messaging and proposition planning plugin for Claude Code. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis to export-ready deliverables.
+A portfolio messaging and proposition planning plugin for [Claude Cowork](https://claude.ai/cowork). Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis to export-ready deliverables.
 
 > **Note**: This plugin assists with B2B messaging strategy and portfolio planning. All outputs — especially market sizing, competitive intelligence, and claim verification — should be reviewed by domain experts before use in sales materials, proposals, or strategic decisions.
 
@@ -36,9 +36,14 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 |-------|-------------|
 | `market-researcher` | Web research agent for TAM/SAM/SOM sizing data with claim submission for verification |
 | `competitor-researcher` | Web research agent for competitive intelligence per proposition with claim tracking |
+| `customer-researcher` | Web research agent for named customer profiling and industry context |
+| `customer-review-assessor` | Reviews customer profiles for completeness, accuracy, and sales actionability |
 | `proposition-generator` | Generates IS/DOES/MEANS messaging for a single Feature x Market pair with optional web research |
+| `proposition-quality-assessor` | Reviews propositions for messaging quality, evidence strength, and market fit |
 | `solution-planner` | Plans implementation phases and pricing tiers for a single proposition |
+| `solution-review-assessor` | Reviews solutions for pricing viability, implementation feasibility, and tier differentiation |
 | `feature-quality-assessor` | Assesses feature description quality using LLM intelligence — works in any language |
+| `quality-enricher` | General-purpose quality enrichment agent for iterative improvement cycles |
 | `portfolio-web-researcher` | Template-parameterized parallel web research agent for portfolio scanning across taxonomy dimensions |
 
 ## Example Workflows
@@ -102,7 +107,7 @@ cogni-portfolio/
 ├── .claude-plugin/plugin.json    Plugin manifest
 ├── templates/                    Pluggable taxonomy templates
 │   └── b2b-ict/                 B2B ICT taxonomy (8 dims, 57 cats)
-├── skills/                       16 portfolio skills
+├── skills/                       17 portfolio skills
 │   ├── portfolio-setup/
 │   ├── products/
 │   ├── features/
@@ -120,12 +125,17 @@ cogni-portfolio/
 │   ├── portfolio-scan/
 │   ├── tips-bridge/
 │   └── portfolio-resume/
-├── agents/                       6 delegation agents
+├── agents/                       11 delegation agents
 │   ├── market-researcher.md
 │   ├── competitor-researcher.md
+│   ├── customer-researcher.md
+│   ├── customer-review-assessor.md
 │   ├── proposition-generator.md
+│   ├── proposition-quality-assessor.md
 │   ├── solution-planner.md
+│   ├── solution-review-assessor.md
 │   ├── feature-quality-assessor.md
+│   ├── quality-enricher.md
 │   └── portfolio-web-researcher.md
 └── scripts/                      7 utility scripts
     ├── append-claim.sh
@@ -136,6 +146,10 @@ cogni-portfolio/
     ├── validate-entities.sh
     └── generate-scan-mapping.sh
 ```
+
+## Custom development
+
+Need a custom taxonomy template, industry-specific frameworks, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
