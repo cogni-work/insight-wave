@@ -31,14 +31,23 @@ From the engagement vision, derive a research topic:
 
 Present the derived topic and ask the consultant to refine.
 
-### Step 2: Research Configuration
+### Step 2: Multi-Jurisdiction Check
+If the engagement scope spans multiple markets or geographies (e.g., "DACH + US", "Europe-wide"), a single generic research topic will miss jurisdiction-specific factors that matter. For each jurisdiction in scope, identify whether there are regulatory frameworks, industry standards, or market structures that differ materially. If so, either:
+- **Expand the research topic** to explicitly name the per-jurisdiction factors (e.g., "including HIPAA compliance landscape for US and Telematikinfrastruktur / gematik requirements for Germany")
+- **Run a separate focused research query** per jurisdiction for the regulatory/standards layer
+
+This is especially critical for: market-entry (regulatory barriers differ by country), gtm-roadmap (channel structures and buying behavior vary), digital-transformation (compliance and data sovereignty rules are jurisdiction-specific), and cost-optimization (labor law and works council requirements vary).
+
+The goal is to ensure the discovery evidence is equally specific across all jurisdictions in scope — a synthesis that is detailed for the US but vague for DACH (or vice versa) will be caught by domain experts and undermines credibility.
+
+### Step 3: Research Configuration
 Recommend settings for cogni-gpt-researcher:
 - **Report type**: `detailed` (default), `deep` for digital-transformation/innovation
 - **Market**: Match engagement scope (dach, de, us, uk, fr, global)
 - **Tone**: `analytical` for business engagements
 - **Source mode**: `web` (default), `hybrid` if client has internal documents
 
-### Step 3: Dispatch
+### Step 4: Dispatch
 Invoke cogni-gpt-researcher:research-report with the configured topic and settings.
 
 ## Output

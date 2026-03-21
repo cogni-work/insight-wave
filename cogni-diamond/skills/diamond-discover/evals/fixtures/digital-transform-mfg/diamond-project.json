@@ -1,0 +1,57 @@
+{
+  "engagement": {
+    "name": "SmartFactory Digitalisierung",
+    "slug": "smartfactory-dt",
+    "client": "M\u00fcller Maschinenbau GmbH",
+    "vision_class": "digital-transformation",
+    "desired_outcome": "Digitalisierungsstrategie f\u00fcr die Fertigungslinien am Standort Sindelfingen \u2014 von manueller Prozesssteuerung zu datengetriebener Produktion (Industry 4.0)",
+    "scope": "Fertigungslinie 1-4 am Standort Sindelfingen, 380 Mitarbeitende, 12 CNC-Maschinen, 3 Montageb\u00e4nder",
+    "constraints": [
+      "Kein Produktionsstillstand w\u00e4hrend der Transformation erlaubt",
+      "Bestehende Siemens S7-Steuerungen m\u00fcssen integriert werden",
+      "Betriebsrat muss bei Datenerfassung eingebunden werden",
+      "Budget: max. 2.5M EUR \u00fcber 18 Monate"
+    ],
+    "industry": "manufacturing",
+    "language": "de",
+    "updated": "2026-03-21T16:12:06Z"
+  },
+  "phases": {
+    "discover": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "define": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "develop": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "deliver": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    }
+  },
+  "current_phase": "discover",
+  "plugin_refs": {
+    "research_project": null,
+    "tips_project": null,
+    "portfolio_project": null
+  },
+  "created_at": "2026-03-21T09:00:00Z",
+  "updated_at": "2026-03-21T09:00:00Z",
+  "phase_state": {
+    "discover": {
+      "status": "complete",
+      "started": "2026-03-21T16:09:16Z",
+      "completed": "2026-03-21T16:12:06Z"
+    },
+    "current": "define"
+  }
+}

@@ -63,6 +63,8 @@ Present the proposed discovery plan, typically 3-5 activities:
 | Data audit | Available data inventory, quality assessment, gaps |
 | Customer journey analysis | As-is journey map with pain points |
 
+**Method mix check**: Before presenting, verify the proposed plan includes at least one internal-facing method (stakeholder mapping, data audit) alongside any external-facing methods (desk research, competitive, trends, customer journey). Discovery that looks only outward misses internal capability constraints, stakeholder dynamics, and data readiness — all of which shape what the Define phase can actually work with. If the vision class recommendations are all external, add stakeholder mapping as a default internal complement.
+
 Ask: "Which methods do you want to use for Discovery? I recommend all plugin-powered methods plus [1-2 guided methods based on vision class]. You can add, remove, or reorder."
 
 ### 3. Execute Plugin Methods
@@ -112,14 +114,21 @@ After all methods complete, produce a discovery synthesis:
 
 1. Read all outputs in `discover/` (research summary, trend candidates, competitive data, stakeholder map, data audit)
 2. Identify 5-10 key themes that emerge across sources
-3. Note surprises — findings that challenge initial assumptions
-4. Flag tensions — contradictions or trade-offs between sources
-5. Write `discover/synthesis.md` capturing themes, surprises, and tensions
+3. For each theme, cite the specific sources that support it — not just the method name, but the file and section (e.g., `*Sources: research/summary.md §Market Size, competitive/summary.md §Market Gaps*`). This traceability matters because the Sponsor needs to verify claims for board briefings, and the Define-phase analyst needs to follow evidence trails back to their origin. Vague attribution ("desk research shows...") erodes trust.
+4. Note surprises — findings that challenge initial assumptions
+5. Flag tensions — contradictions or trade-offs between sources, stating which sources disagree and why the disagreement matters
+6. Extract assumptions — for each theme, surface the key assumptions it relies on. Frame them as testable hypotheses: *"Assumption: mid-market buyers prioritize speed over features — to be tested via stakeholder interviews in Define."* The Define phase needs an explicit assumptions register, not just a theme list. Without it, themes are treated as facts rather than hypotheses, and the engagement builds on unverified ground.
+7. Prioritize themes — rank the themes by evidence strength (how many sources support them, how robust the data is) and engagement relevance (how directly the theme connects to the desired outcome). Present the top 3 as "high-confidence, high-impact" themes the engagement should bet on. This helps the consultant and sponsor focus energy where it matters most.
+8. Write `discover/synthesis.md` with sections: Key Themes (with source citations and assumptions), Surprises, Tensions, Assumptions to Test, and Phase Transition Assessment
 
-**Example synthesis themes** (for a gtm-roadmap engagement targeting mid-market expansion):
-- *Theme*: Mid-market buyers prioritize implementation speed over feature completeness
-- *Surprise*: Two emerging competitors already offer vertical-specific bundles
-- *Tension*: Desk research shows growing demand, but stakeholder interviews reveal internal delivery capacity constraints
+**Example synthesis structure**:
+```markdown
+### Theme 1: [Specific insight, not a category]
+[Evidence-based description integrating multiple sources]
+*Sources: research/summary.md §3, competitive/summary.md §Market Gaps, stakeholder-map.md §High Influence*
+*Assumption: [testable hypothesis this theme relies on]*
+*Priority: HIGH — supported by 3 sources, directly addresses desired outcome*
+```
 
 Present the synthesis to the consultant for review and refinement.
 

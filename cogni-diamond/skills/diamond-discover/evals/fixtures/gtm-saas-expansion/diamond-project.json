@@ -1,0 +1,31 @@
+{
+  "engagement": {
+    "name": "HealthBridge GTM Expansion",
+    "slug": "healthbridge-gtm",
+    "client": "HealthBridge Inc.",
+    "vision_class": "gtm-roadmap",
+    "desired_outcome": "Go-to-market strategy for expanding HealthBridge's B2B SaaS platform from general practice management into the mid-market healthcare vertical (clinics with 50-500 staff)",
+    "scope": "Mid-market vertical expansion into healthcare, DACH + US markets",
+    "constraints": [
+      "Must leverage existing platform architecture",
+      "Sales team has no healthcare vertical experience",
+      "Regulatory compliance (HIPAA, GDPR-health) required before market entry"
+    ],
+    "industry": "health-tech",
+    "language": "en"
+  },
+  "phases": {
+    "discover": { "status": "pending", "started_at": null, "completed_at": null },
+    "define": { "status": "pending", "started_at": null, "completed_at": null },
+    "develop": { "status": "pending", "started_at": null, "completed_at": null },
+    "deliver": { "status": "pending", "started_at": null, "completed_at": null }
+  },
+  "current_phase": "discover",
+  "plugin_refs": {
+    "research_project": null,
+    "tips_project": null,
+    "portfolio_project": null
+  },
+  "created_at": "2026-03-21T09:00:00Z",
+  "updated_at": "2026-03-21T09:00:00Z"
+}

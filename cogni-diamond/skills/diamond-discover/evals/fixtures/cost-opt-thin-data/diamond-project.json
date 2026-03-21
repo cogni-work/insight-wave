@@ -1,0 +1,32 @@
+{
+  "engagement": {
+    "name": "CostSmart IT Optimization",
+    "slug": "costsmart-finserv",
+    "client": "Meridian Financial Services",
+    "vision_class": "cost-optimization",
+    "desired_outcome": "Reduce IT operations costs by 20-30% within 12 months while maintaining SLA compliance and regulatory audit readiness",
+    "scope": "IT infrastructure and operations for retail banking division (2,400 staff, 180 branches, 3 data centers)",
+    "constraints": [
+      "No disruption to customer-facing banking services",
+      "Must maintain BaFin/MaRisk IT compliance",
+      "Current vendor contracts locked until Q3 2027",
+      "Workforce reduction not an option (works council agreement)"
+    ],
+    "industry": "financial-services",
+    "language": "en"
+  },
+  "phases": {
+    "discover": { "status": "pending", "started_at": null, "completed_at": null },
+    "define": { "status": "pending", "started_at": null, "completed_at": null },
+    "develop": { "status": "pending", "started_at": null, "completed_at": null },
+    "deliver": { "status": "pending", "started_at": null, "completed_at": null }
+  },
+  "current_phase": "discover",
+  "plugin_refs": {
+    "research_project": null,
+    "tips_project": null,
+    "portfolio_project": null
+  },
+  "created_at": "2026-03-21T09:00:00Z",
+  "updated_at": "2026-03-21T09:00:00Z"
+}
