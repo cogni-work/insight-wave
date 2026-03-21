@@ -83,24 +83,28 @@ for mp_path in mp_paths:
         continue
 
     marketplace_name = data.get('name', 'unknown')
+
+    # Monorepo is the only issue channel — individual plugin repos are archived
+    MARKETPLACE_REPOS = {'cogni-works': 'cogni-work/cogni-works'}
+
     for plugin in data.get('plugins', []):
         if plugin.get('name') == plugin_name:
-            repo_url = plugin.get('repository', '')
-            owner_repo = repo_url.replace('https://github.com/', '').rstrip('/')
+            owner_repo = MARKETPLACE_REPOS.get(marketplace_name, '')
+            source = plugin.get('source', '')
             results.append({
                 'plugin': plugin_name,
-                'repository': repo_url,
                 'owner_repo': owner_repo,
+                'source': source,
                 'marketplace': marketplace_name,
                 'marketplace_path': mp_path,
                 'version': plugin.get('version', 'unknown'),
                 'license': plugin.get('license', 'unknown')
             })
 
-# Deduplicate by owner_repo
+# Deduplicate by owner_repo + plugin
 seen = {}
 for r in results:
-    key = r['owner_repo']
+    key = r['owner_repo'] + '/' + r['plugin']
     if key not in seen:
         seen[key] = r
 

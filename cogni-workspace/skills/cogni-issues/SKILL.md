@@ -10,6 +10,7 @@ description: |
   Also trigger when the user says things like "this plugin is broken", "I found a problem
   with {plugin}", "can we get X added to {plugin}", "{plugin} doesn't work", "open an issue",
   "something is wrong with {plugin}", "das Plugin funktioniert nicht", "Fehler in {plugin}",
+  "set up GitHub issues", "configure issue filing", "ich kann kein Issue erstellen",
   or any complaint/suggestion about a specific plugin — even if they don't use the word "issue".
 ---
 
@@ -40,6 +41,7 @@ find the scripts, tell the user — don't guess paths.
 
 | Mode | Triggers | Action |
 |------|----------|--------|
+| **setup** | "set up issues", "configure gh", first-time detection, "ich kann kein Issue erstellen" | Check gh status, guide install + auth |
 | **create** | reporting bugs, requesting features, filing change requests, asking plugin questions | Consult, resolve, draft, confirm, create, log |
 | **list** | "my issues", "show issues", "what have I filed" | Read local state, display grouped by plugin |
 | **status** | "check issue #N", "any updates on my issue" | Fetch from GitHub, update local record |
@@ -49,14 +51,80 @@ Default to **list** when intent is unclear.
 
 ## Prerequisites
 
-Before any `gh` operation, verify auth:
+Before any `gh` operation, check readiness:
 
 ```bash
-gh auth status 2>&1
+bash "${SKILL_DIR}/scripts/setup-gh.sh" check
 ```
 
-If this fails, guide the user to install (`brew install gh`) and authenticate (`gh auth login`).
-Do not attempt issue creation without valid auth — fail fast.
+If `all_ready` is `true`, proceed. If `false`, switch to **setup mode** and guide the user
+through what's missing. Do not attempt issue creation without valid auth — fail fast but
+fail helpfully.
+
+## Setup mode
+
+Many users — especially in Cowork — have never used GitHub or the `gh` CLI. Setup mode
+walks them through everything they need, one step at a time, in their own language.
+
+### 1. Run the check
+
+```bash
+bash "${SKILL_DIR}/scripts/setup-gh.sh" check
+```
+
+The output tells you exactly what's missing: `gh_installed`, `gh_authenticated`, `platform`,
+and `package_manager`.
+
+### 2. If `all_ready` is already true
+
+Tell the user they're all set and offer to file an issue. No further setup needed.
+
+### 3. If `gh_installed` is false
+
+The user needs the GitHub CLI. Present the right install command based on `package_manager`:
+
+| Package manager | Command |
+|----------------|---------|
+| `brew` (macOS) | `brew install gh` |
+| `apt` (Debian/Ubuntu) | First add the repo, then `sudo apt install gh` |
+| `dnf` (Fedora/RHEL) | `sudo dnf install gh` |
+| `snap` | `sudo snap install gh` |
+| `null` (none found) | Direct them to https://cli.github.com/ for manual download |
+
+**Explain in plain language** what `gh` is: "It's a small command-line tool from GitHub
+that lets you create issues, pull requests, and more — right from your terminal. You only
+need to install it once."
+
+Ask the user to run the install command in their terminal and tell you when it's done.
+Then re-run `setup-gh.sh check` to confirm.
+
+### 4. If `gh_authenticated` is false
+
+The user needs to log in to GitHub. This step is interactive — Claude cannot run it for
+them because it opens a browser for OAuth.
+
+**If the user doesn't have a GitHub account yet**, tell them:
+- Go to https://github.com/join
+- Create a free account (they only need a username, email, and password)
+- Come back when done
+
+**Once they have an account**, walk them through authentication:
+
+1. Tell them to type `gh auth login` in their terminal
+2. Explain what they'll see — a series of questions:
+   - **Where do you use GitHub?** → Choose "GitHub.com"
+   - **Preferred protocol?** → Choose "HTTPS"
+   - **Authenticate?** → Choose "Login with a web browser"
+3. A code will appear in the terminal — they paste it in the browser window that opens
+4. They authorize the GitHub CLI in the browser
+5. Done — the terminal confirms they're logged in
+
+After they confirm, re-run `setup-gh.sh check` to verify `gh_authenticated` is now `true`.
+
+### 5. Setup complete
+
+Confirm everything is ready. If the user came here because they were trying to file an
+issue, offer to continue with the **create** flow now.
 
 ## Workspace init
 
@@ -70,7 +138,10 @@ bash "${SKILL_DIR}/scripts/issue-store.sh" init "${working_dir}"
 
 ## Create mode
 
-### 1. Resolve the plugin
+### 1. Check readiness and resolve the plugin
+
+First, run `setup-gh.sh check`. If `all_ready` is `false`, tell the user you need to set
+up a few things first, enter **setup mode**, and return here once setup completes.
 
 If the user hasn't named a specific plugin, ask which plugin this is about. Then resolve it:
 
@@ -224,7 +295,8 @@ gh issue view <number> --repo "<owner_repo>" --web
 
 ## Scripts
 
-- **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning marketplace.json files
+- **`scripts/setup-gh.sh`** — Checks gh CLI installation and authentication status. Returns JSON with `all_ready` boolean. Run with `check` command.
+- **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning marketplace.json files. All cogni-works plugins resolve to the monorepo `cogni-work/cogni-works`.
 - **`scripts/issue-store.sh`** — Local JSON state management (init, gen-id, add, read, update-status). The `add` command reads JSON from stdin for safety.
 
 ## References
