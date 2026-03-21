@@ -114,6 +114,15 @@
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["sales", "pitch", "why-change", "proposal", "presentation", "b2b", "corporate-visions", "acquisition", "segment-pitch"]
+    },
+    {
+      "name": "cogni-canvas",
+      "description": "Lean Canvas authoring and refinement. Guides users through creating business model hypotheses from scratch or iteratively improving existing canvases with section-by-section critique, coherence checking, and version tracking.",
+      "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
+      "source": "./cogni-canvas",
+      "category": "productivity",
+      "license": "AGPL-3.0-only",
+      "keywords": ["lean-canvas", "business-model", "hypothesis", "startup", "refinement"]
     }
   ]
 }
