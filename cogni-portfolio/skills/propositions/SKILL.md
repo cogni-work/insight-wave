@@ -116,7 +116,7 @@ Do not just ask "does this look right?" — present a point of view. "I'd priori
 
 ## Feature Quality Pre-check
 
-Before generating propositions, run two checks:
+Before generating propositions, run three checks:
 
 1. **Structural validation** — catch missing fields and very short descriptions:
 ```bash
@@ -125,18 +125,20 @@ $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>
 
 2. **Description quality assessment** — spawn the `feature-quality-assessor` agent to evaluate mechanism clarity, customer relevance, differentiation, and language quality. This agent works in any language (German, English, mixed).
 
-If a feature has structural errors or an overall "fail" from the quality assessor, **refuse to generate its proposition**. Instead:
+3. **Stakeholder persona review** — verify the `feature-review-assessor` has been run and returned a verdict of "accept". If no stakeholder review exists for this feature set, spawn the agent before proceeding. If the verdict is "revise" or "reject", refuse to generate propositions and direct the user back to the `features` skill to address the review findings.
 
-1. Show the specific issues (structural warnings and/or quality assessment results)
-2. Explain why a proposition built on a weak feature will itself be weak — vague features produce vague IS statements, which cascade into generic DOES/MEANS messaging
-3. Direct the user to fix the feature first using the `features` skill
-4. Offer to continue with other Feature x Market pairs that pass quality checks
+If a feature has structural errors, an overall "fail" from the quality assessor, or the feature set has not passed stakeholder review (verdict != "accept"), **refuse to generate its proposition**. Instead:
 
-Features with "warn" from the assessor can proceed, but flag the warnings so the user is aware.
+1. Show the specific issues (structural warnings, quality assessment results, and/or stakeholder review findings)
+2. Explain why a proposition built on a weak or unreviewed feature set will itself be weak — vague features produce vague IS statements, which cascade into generic DOES/MEANS messaging; set-level issues like coverage gaps and overlap propagate into an incoherent proposition portfolio
+3. Direct the user to fix the features first using the `features` skill
+4. Offer to continue with other Feature x Market pairs that pass all three quality checks
+
+Features with "warn" from the description quality assessor can proceed (if stakeholder review is "accept"), but flag the warnings so the user is aware.
 
 This pre-check applies to both single-proposition and batch generation paths. In batch mode, exclude failing features from the generation set and report them separately.
 
-The `project-status.sh` script reports `feature_quality_warnings` count for structural issues — use for a quick overview. For deep assessment, always use the agent.
+The `project-status.sh` script reports `feature_quality_warnings` count for structural issues — use for a quick overview. For deep assessment, always use the agents.
 
 ## Proposition Quality Post-check
 

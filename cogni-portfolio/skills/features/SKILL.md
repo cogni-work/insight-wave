@@ -150,7 +150,7 @@ Then deliver your assessment — not as a checklist but as a coherent perspectiv
 
 ## Quality Gate
 
-Quality assessment uses two layers:
+Quality assessment uses three layers:
 
 ### 1. Structural Validation (fast, automated — fix before proceeding)
 
@@ -181,9 +181,37 @@ The agent evaluates five dimensions per feature:
 
 The agent returns structured JSON with pass/warn/fail per dimension and improvement suggestions. Features with overall "fail" are not ready for proposition generation.
 
-**When listing or reviewing features**, run both checks. Surface structural warnings and agent assessment results in your listing table. Recommend specific fixes before moving to propositions. If any features scored warn or fail, offer to research and improve them — see Research & Improve below.
+**When listing or reviewing features**, run all three layers. Surface structural warnings, description quality scores, and stakeholder review verdict in your listing output. Recommend specific fixes before moving to propositions. If any features scored warn or fail on Layer 2, offer to research and improve them — see Research & Improve below. If the stakeholder review verdict is not "accept", address the revision guidance before proceeding.
 
-**When editing features**, re-run the assessor after edits to confirm quality improved.
+**When editing features**, re-run the assessor after edits to confirm quality improved. If edits affect set-level concerns (coverage, overlap, boundaries), re-run the stakeholder review as well.
+
+### 3. Stakeholder Persona Review (mandatory, closed-loop)
+
+Only run this after Layer 2 passes clean — all features must have overall "pass" or "warn" from the feature-quality-assessor. Features with "fail" must be fixed first; stakeholder review on weak descriptions wastes assessment budget and produces misleading scores.
+
+Spawn the `feature-review-assessor` agent to evaluate the feature set from three stakeholder perspectives:
+
+1. **Product Manager** — Feature completeness, scope precision, market independence, product boundary clarity, readiness coherence
+2. **Proposition Strategist** — Mechanism specificity, differentiation potential, proposition readiness, naming clarity, description conciseness
+3. **Pre-Sales Consultant** — Demonstrability, buyer explainability, feature distinctness, value-at-a-glance, cross-feature narrative
+
+```
+Assess feature set quality for the project at <project-dir>
+```
+
+The agent evaluates features as a set — catching coverage gaps, overlap clusters, and narrative incoherence that individual description assessment misses. It returns a structured verdict:
+
+- **accept** (all perspectives score 85+): Features are ready for proposition generation.
+- **revise** (all perspectives score 70+): Targeted improvements needed. Apply the `revision_guidance` to the flagged features, then re-run the assessment. Maximum 2 revision rounds — after round 2, present remaining issues to the user for decision regardless of severity.
+- **reject** (any perspective below 50): Fundamental rework needed. Surface the assessment to the user with the full diagnosis — do not auto-retry.
+
+**Features cannot proceed to proposition generation until the stakeholder review verdict is "accept".** This is a mandatory gate, not advisory. The propositions skill checks for this verdict before allowing generation.
+
+**For interactive mode**: Present the assessment summary before revising. Show per-perspective scores, set-level issues, and top recommendations. Let the user decide which improvements to prioritize. Apply revisions, then re-run the assessment.
+
+**For batch mode (all features for a product)**: Run the closed loop automatically. If the verdict is "revise", apply the `revision_guidance`, re-assess (round 2). If still not "accept" after round 2, surface remaining issues for manual attention.
+
+**Why three layers?** Structural validation catches data model errors. Description quality catches per-feature writing issues. Stakeholder review catches set-level issues — incomplete coverage, overlap, unclear boundaries, and proposition-readiness gaps. Each layer filters different failure modes; skipping one lets that class of error propagate downstream.
 
 ## Research & Improve
 
