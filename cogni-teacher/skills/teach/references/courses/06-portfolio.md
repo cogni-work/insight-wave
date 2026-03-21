@@ -1,12 +1,85 @@
 # Course 6: Portfolio Messaging
 
-**Duration**: 45 minutes | **Modules**: 5 | **Prerequisites**: Course 3
-**Plugin**: cogni-portfolio
+**Duration**: 45 minutes | **Modules**: 6 | **Prerequisites**: Course 3
+**Plugins**: cogni-canvas (v0.1.0), cogni-portfolio
 **Audience**: Consultants building product/service portfolios for SMEs
 
 ---
 
-## Module 1: The IS/DOES/MEANS Framework
+## Module 1: Lean Canvas — Your Starting Hypothesis
+
+### Theory (3 min)
+
+Before diving into portfolio messaging, you need a business hypothesis. **cogni-canvas**
+helps you build a **Lean Canvas** — a one-page business model that captures the core
+assumptions about your product/service:
+
+| Section | Question | Example |
+|---------|----------|---------|
+| **Problem** | Top 3 problems you're solving | "Manual compliance reporting takes 40+ hours/month" |
+| **Customer Segments** | Who has these problems? | "Mid-market financial services firms in DACH" |
+| **Unique Value Proposition** | Why are you different? | "Automated compliance with real-time audit trail" |
+| **Solution** | Top 3 features that solve the problems | "Rule engine, report generator, audit dashboard" |
+| **Channels** | How do you reach customers? | "Partner network, industry events, content marketing" |
+| **Revenue Streams** | How do you make money? | "SaaS subscription, implementation services" |
+| **Cost Structure** | Key costs | "Engineering, cloud hosting, sales team" |
+| **Key Metrics** | Numbers that matter | "MRR, customer retention, time-to-compliance" |
+| **Unfair Advantage** | What can't be copied? | "15 years of regulatory domain expertise" |
+
+**Why start here**: The canvas forces you to articulate assumptions before investing
+in detailed messaging. It's cheaper to refine a hypothesis than to rework a full
+portfolio.
+
+**Two skills**:
+- `canvas-create` — guided Q&A to build a new canvas from scratch
+- `canvas-refine` — critique and improve an existing canvas section by section
+
+### Demo
+
+Walk through canvas creation:
+1. Run `canvas-create` and observe the guided Q&A flow
+2. Show how the 9 sections build on each other
+3. Show the resulting markdown file with YAML frontmatter (version tracking, section status)
+4. Demonstrate `canvas-refine` — critique one section and improve it
+5. Preview: how `portfolio-canvas` will extract entities for the rest of this course
+
+### Exercise
+
+Ask the user to:
+1. Think of a product or service they know well (their own or a client's)
+2. Run `canvas-create` or fill in a canvas manually
+3. Focus on Problem, Customer Segments, and Unique Value Proposition first
+4. Check: does the UVP actually address the problems for those segments?
+
+Create `_teacher-exercises/canvas-draft.md` with a template if the user prefers manual entry.
+
+### Quiz
+
+1. **Multiple choice**: Why should you start with a Lean Canvas before portfolio messaging?
+   - a) Because it's required by the plugin
+   - b) It forces you to articulate assumptions cheaply before investing in detailed messaging
+   - c) It replaces the need for portfolio messaging entirely
+   - d) It's only useful for startups
+   **Answer**: b
+
+2. **Multiple choice**: Which canvas section maps most directly to IS/DOES/MEANS?
+   - a) Cost Structure → IS, Revenue → DOES, Channels → MEANS
+   - b) Solution → IS, Unique Value Proposition → DOES/MEANS, Problem → context
+   - c) Key Metrics → IS, Unfair Advantage → MEANS
+   - d) They don't map at all
+   **Answer**: b
+
+### Recap
+
+- Lean Canvas captures your business hypothesis on one page
+- 9 sections force clarity about problem, solution, and differentiation
+- `canvas-create` for new canvases, `canvas-refine` for iterative improvement
+- The canvas feeds into portfolio messaging via `portfolio-canvas` entity extraction
+- Start with Problem → Customer Segments → UVP, then fill in the rest
+
+---
+
+## Module 2: The IS/DOES/MEANS Framework
 
 ### Theory (3 min)
 
@@ -90,7 +163,7 @@ Create `_teacher-exercises/portfolio-draft.md` with a template:
 
 ---
 
-## Module 2: Market Targeting — TAM/SAM/SOM
+## Module 3: Market Targeting — TAM/SAM/SOM
 
 ### Theory (3 min)
 
@@ -151,7 +224,7 @@ Ask the user to:
 
 ---
 
-## Module 3: Competitor & Customer Analysis
+## Module 4: Competitor & Customer Analysis
 
 ### Theory (3 min)
 
@@ -212,7 +285,7 @@ Ask the user to:
 
 ---
 
-## Module 4: Building Propositions
+## Module 5: Building Propositions
 
 ### Theory (3 min)
 
@@ -277,7 +350,7 @@ Ask the user to:
 
 ---
 
-## Module 5: Portfolio Strategy & Cross-Plugin Flow
+## Module 6: Portfolio Strategy & Cross-Plugin Flow
 
 ### Theory (3 min)
 
@@ -340,7 +413,8 @@ Ask the user to:
 ## Course Completion
 
 Congratulations! You now know how to:
-- Apply IS/DOES/MEANS messaging framework
+- Start with a Lean Canvas hypothesis (cogni-canvas)
+- Apply IS/DOES/MEANS messaging framework (cogni-portfolio)
 - Define markets with TAM/SAM/SOM
 - Conduct competitor and customer analysis for messaging
 - Build segment-specific propositions

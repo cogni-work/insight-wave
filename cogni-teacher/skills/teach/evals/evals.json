@@ -16,7 +16,7 @@
     {
       "id": 2,
       "prompt": "Show me my course progress",
-      "expected_output": "Reads .claude/cogni-teacher.local.md, displays all 10 courses with completion status markers: [x] completed, [>] in-progress, [ ] not-started",
+      "expected_output": "Reads .claude/cogni-teacher.local.md, displays all 11 courses with completion status markers: [x] completed, [>] in-progress, [ ] not-started",
       "files": []
     },
     {

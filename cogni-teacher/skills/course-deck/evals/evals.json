@@ -4,7 +4,7 @@
     {
       "id": 0,
       "prompt": "Create a curriculum overview deck for our training program",
-      "expected_output": "A PPTX file named cogni-works-training-program.pptx with ~8-10 slides covering all 10 courses, using cogni-work dark theme",
+      "expected_output": "A PPTX file named cogni-works-training-program.pptx with ~8-10 slides covering all 11 courses, using cogni-work dark theme",
       "files": []
     },
     {

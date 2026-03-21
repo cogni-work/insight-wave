@@ -3,7 +3,7 @@
 > Based on patent WO2018046399A1 vision, cogni-tips value-modeler implementation,
 > b2b-ict-portfolio taxonomy from cogni-tips, and cross-plugin integration analysis.
 >
-> Created: 2026-03-11 | Last updated: 2026-03-11
+> Created: 2026-03-11 | Last updated: 2026-03-21
 
 ---
 
@@ -124,6 +124,28 @@ This is the patent's "specific diagram of industry solutions" — the key custom
 
 ---
 
+## Orchestration Layer
+
+### cogni-diamond (v0.1.0) — Complete
+
+Double Diamond consulting orchestrator. Introduces an Orchestration Layer above
+Foundation → Data → Output. Manages engagement state through four phases,
+dispatching to plugins at phase-appropriate moments:
+
+| Phase | Plugins Dispatched |
+|-------|-------------------|
+| Discover | cogni-gpt-researcher, cogni-tips, cogni-portfolio |
+| Define | cogni-claims |
+| Develop | cogni-tips, cogni-portfolio |
+| Deliver | cogni-claims, cogni-portfolio |
+| Export | cogni-visual, document-skills |
+
+7 vision classes (strategic-options, business-case, gtm-roadmap, cost-optimization,
+digital-transformation, innovation-portfolio, market-entry) map engagement types
+to recommended methods and deliverable formats.
+
+---
+
 ## Architecture Principle
 
 No monolithic shared repository. Each plugin owns its data. Cross-references use slugs/paths:
@@ -178,3 +200,4 @@ The bridge skill resolves references at runtime. Loose coupling, independent evo
 | 2026-03-11 | P2.4: Created story-to-big-block skill + agent, big-block-brief.md format v1.0, big-block-layouts.md, EXAMPLE_BIG_BLOCK_BRIEF.md, cogni-visual v1.3.0 |
 | 2026-03-11 | P2.4: Created render-big-block skill + big-block agent + /render-big-block command, completes Excalidraw rendering pipeline, cogni-visual v1.4.0 |
 | 2026-03-13 | P1.2: Full TIPS↔Portfolio bridge overhaul — multi-variant DOES/MEANS propositions, portfolio-first ST generation (Phase 2.0), structured opportunity pipeline (portfolio-opportunities.json), path narrative evidence with T→I→P traceability, cross-bridge quality feedback (portfolio-context v3.0). cogni-tips v0.3.5, cogni-portfolio v0.8.11 |
+| 2026-03-21 | Orchestration Layer: cogni-diamond v0.1.0 documented — Double Diamond consulting orchestrator dispatching to 6 plugins across 4 phases, 7 vision classes, 10 methods. Added to roadmap, ER diagram, teacher curriculum (Course 11), README, CONTRIBUTING |

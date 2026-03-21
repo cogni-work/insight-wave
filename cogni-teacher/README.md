@@ -1,10 +1,10 @@
 # cogni-teacher
 
-Interactive 45-minute courses for [Claude Cowork](https://claude.ai/cowork) teaching fundamentals and cogni-works marketplace plugins to consultants. 10-course curriculum with hands-on exercises, quizzes, and progress tracking.
+Interactive 45-minute courses for [Claude Cowork](https://claude.ai/cowork) teaching fundamentals and cogni-works marketplace plugins to consultants. 11-course curriculum with hands-on exercises, quizzes, and progress tracking.
 
 ## Why this exists
 
-The cogni-works ecosystem has 12 plugins with 50+ skills, dozens of agents, and interconnected workflows. Learning by trial and error wastes hours and builds bad habits:
+The cogni-works ecosystem has 14 plugins with 60+ skills, dozens of agents, and interconnected workflows. Learning by trial and error wastes hours and builds bad habits:
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
@@ -24,7 +24,7 @@ This plugin provides a structured learning path from workspace setup through adv
 
 ## What it means for you
 
-- **Structured path.** 10 courses in logical order — each builds on the previous, with prerequisites handled automatically.
+- **Structured path.** 11 courses in logical order — each builds on the previous, with prerequisites handled automatically.
 - **Adaptive pacing.** Skip exercises if you're confident, get extra practice if you're struggling. The course adapts to you.
 - **Real artifacts.** Exercises create actual files using the plugins being taught — not toy examples.
 - **Persistent progress.** Course completion, current module, and timestamps tracked across sessions.
@@ -44,6 +44,8 @@ This plugin provides a structured learning path from workspace setup through adv
 | cogni-gpt-researcher | Yes | Course 8: multi-agent research reports |
 | cogni-marketing | Yes | Course 9: B2B marketing content engine |
 | cogni-sales | Yes | Course 10: sales pitch generation |
+| cogni-canvas | Yes | Course 6: Lean Canvas authoring as portfolio precursor |
+| cogni-diamond | Yes | Course 11: Double Diamond consulting orchestration |
 
 ## Installation
 
@@ -55,7 +57,7 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 /teach 1          # start Course 1: Cowork Fundamentals
 /teach portfolio  # start Course 6 by keyword
 /teach research   # start Course 8: Research Reports
-/courses          # see all 10 courses with completion status
+/courses          # see all 11 courses with completion status
 /course-deck      # generate a PPTX overview for group onboarding
 ```
 
@@ -83,13 +85,14 @@ Or describe what you want:
 | 3 | Basic Tools | Document polishing, stakeholder review, claim verification, narrative transformation | cogni-copywriting, cogni-narrative, cogni-claims |
 | 4 | Trend Scouting | TIPS framework, Trendradar dimensions, trend candidate selection | cogni-tips (Part 1) |
 | 5 | Trend Reporting | Trend reports, value modeling, portfolio integration | cogni-tips (Part 2) |
-| 6 | Portfolio Messaging | IS/DOES/MEANS framework, propositions, markets, competitors, solutions | cogni-portfolio |
+| 6 | Portfolio Messaging | Lean Canvas, IS/DOES/MEANS framework, propositions, markets, competitors, solutions | cogni-canvas, cogni-portfolio |
 | 7 | Visual Deliverables | Slides, big-picture maps, web narratives, storyboards | cogni-visual |
 | 8 | Research Reports | Multi-agent research, parallel web search, claims verification, export | cogni-gpt-researcher |
 | 9 | B2B Marketing Content | GTM paths, 3D content matrix, campaigns, editorial calendar, dashboard | cogni-marketing |
 | 10 | Sales Pitches | Why Change methodology, unconsidered needs, business case, proposals | cogni-sales |
+| 11 | Consulting Orchestration | Double Diamond framework, vision framing, phase-gated delivery, cross-plugin dispatch | cogni-diamond |
 
-Each course is ~45 minutes with ~5 modules following the cycle: Theory → Demo → Exercise → Quiz → Recap.
+Each course is ~45 minutes with ~5 modules following the cycle: Theory → Demo → Exercise → Quiz → Recap. Course 11 (Diamond) is the capstone — it orchestrates most other plugins.
 
 ## Try it
 
@@ -103,11 +106,11 @@ Claude starts an interactive lesson on Cowork Fundamentals — explaining concep
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `teach` | skill | Interactive course delivery engine — adaptive pacing, progress tracking, exercise creation |
+| `teach` | skill | Interactive course delivery engine — adaptive pacing, progress tracking, exercise creation (11 courses) |
 | `course-deck` | skill | PPTX slide generation — curriculum overview or single-course introduction decks |
 | `course-deck-generator` | agent (sonnet) | PPTX generation as delegated subprocess for cross-plugin use |
-| `/teach` | command | Start or resume a course by number (1-10) or keyword |
-| `/courses` | command | Show all 10 courses with completion status |
+| `/teach` | command | Start or resume a course by number (1-11) or keyword |
+| `/courses` | command | Show all 11 courses with completion status |
 | `/course-deck` | command | Generate a PPTX deck for group onboarding |
 | `course-status.sh` | script | Quick JSON progress check without loading the skill |
 | `reset-progress.sh` | script | Reset progress for a course or all courses |
@@ -133,7 +136,7 @@ Exercise artifacts are written to `_teacher-exercises/` in the working directory
 
 ```
 cogni-teacher/
-├── .claude-plugin/plugin.json    Plugin manifest (v0.1.4)
+├── .claude-plugin/plugin.json    Plugin manifest (v0.1.6)
 ├── agents/                       1 delegation agent
 │   └── course-deck-generator.md
 ├── skills/                       2 teaching skills
@@ -141,7 +144,7 @@ cogni-teacher/
 │   │   ├── SKILL.md
 │   │   ├── evals/evals.json
 │   │   └── references/
-│   │       ├── courses/          10 course content files
+│   │       ├── courses/          11 course content files
 │   │       └── exercises/        8 exercise templates
 │   └── course-deck/
 │       ├── SKILL.md

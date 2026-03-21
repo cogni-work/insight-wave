@@ -20,7 +20,7 @@ deliverables, clients, and deadlines, not code or APIs. Meet them where they are
 
 ## Curriculum
 
-Ten courses, designed to build on each other:
+Eleven courses, designed to build on each other:
 
 | # | Course ID | Title | Plugins Covered |
 |---|-----------|-------|-----------------|
@@ -29,11 +29,12 @@ Ten courses, designed to build on each other:
 | 3 | `basic-tools` | Basic Tools | cogni-copywriting + cogni-narrative + cogni-claims |
 | 4 | `tips-scouting` | Trend Scouting & Selection | cogni-tips (Part 1) |
 | 5 | `tips-reporting` | Trend Reporting | cogni-tips (Part 2) |
-| 6 | `portfolio` | Portfolio Messaging | cogni-portfolio |
+| 6 | `portfolio` | Portfolio Messaging | cogni-canvas + cogni-portfolio |
 | 7 | `visual` | Visual Deliverables | cogni-visual |
 | 8 | `research` | Research Reports | cogni-gpt-researcher |
 | 9 | `marketing` | B2B Marketing Content | cogni-marketing |
 | 10 | `sales` | Sales Pitches | cogni-sales |
+| 11 | `diamond` | Consulting Orchestration | cogni-diamond |
 
 ## How to Teach
 
@@ -43,6 +44,7 @@ Courses 8-10 cover advanced plugins that build on earlier foundations:
 - Course 8 (Research) requires Course 3 (claims verification is used throughout)
 - Course 9 (Marketing) requires Courses 4-5 (TIPS) + Course 6 (Portfolio)
 - Course 10 (Sales) requires Course 6 (Portfolio) + Course 3 (narrative arcs)
+- Course 11 (Diamond) requires all earlier courses (capstone — dispatches to most plugins)
 
 ### Your Teaching Voice
 
@@ -130,6 +132,7 @@ Load the relevant course file when delivering a specific course:
 - `references/courses/08-research.md`
 - `references/courses/09-marketing.md`
 - `references/courses/10-sales.md`
+- `references/courses/11-diamond.md`
 
 Each file contains all modules with theory, demos, exercises, quizzes, and recaps.
 Read only the course file the user is taking — no need to load them all.

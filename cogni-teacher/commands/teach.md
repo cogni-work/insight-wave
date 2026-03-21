@@ -15,7 +15,7 @@ allowed-tools:
 
 Start or resume an interactive 45-minute course from the cogni-teacher curriculum.
 
-Accept course by number (1-10) or by name/keyword (e.g., "cowork", "basic tools", "tips").
+Accept course by number (1-11) or by name/keyword (e.g., "cowork", "basic tools", "tips", "diamond").
 
 Map input to course IDs:
 - 1, cowork, fundamentals → cowork-fundamentals
@@ -23,11 +23,12 @@ Map input to course IDs:
 - 3, basic, tools, copywriting, narrative, claims → basic-tools
 - 4, scouting, tips-scouting, selection → tips-scouting
 - 5, reporting, tips-reporting → tips-reporting
-- 6, portfolio → portfolio
+- 6, portfolio, canvas → portfolio
 - 7, visual → visual
 - 8, research, researcher, gpt-researcher → research
 - 9, marketing, content, campaign → marketing
 - 10, sales, pitch, why-change → sales
+- 11, diamond, consulting, orchestrator, double-diamond → diamond
 
 Steps:
 1. Load the teach skill to get curriculum context and delivery rules

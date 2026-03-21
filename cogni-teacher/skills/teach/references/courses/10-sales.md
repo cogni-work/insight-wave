@@ -410,28 +410,13 @@ Ask the user to:
 
 ## Course Completion
 
-Congratulations — you have completed all 10 courses in the cogni-teacher curriculum!
-
-**Your complete cogni-works toolkit**:
-1. **Claude Cowork** — Your agentic AI platform (Course 1)
-2. **cogni-workspace** — Shared project foundation (Course 2)
-3. **cogni-obsidian** — Knowledge management dashboard (Course 2)
-4. **cogni-copywriting** — Document polishing & stakeholder review (Course 3)
-5. **cogni-narrative** — Executive narrative transformation (Course 3)
-6. **cogni-claims** — Citation verification (Course 3)
-7. **cogni-tips** — Strategic trend research pipeline (Courses 4-5)
-8. **cogni-portfolio** — Product/service messaging (Course 6)
-9. **cogni-visual** — Presentations & visual deliverables (Course 7)
-10. **cogni-gpt-researcher** — Multi-agent research reports (Course 8)
-11. **cogni-marketing** — B2B content engine (Course 9)
-12. **cogni-sales** — Sales pitch generation (Course 10)
-
-**The consulting workflow**:
-```
-Workspace Setup → Research → Analyze → Write → Verify → Polish → Market → Sell → Present
-```
-
-Every step has a cogni-works plugin. Your expertise drives the strategy;
-the tools execute the heavy lifting.
+Congratulations! You now know how to:
+- Set up and configure sales pitches with the Why Change methodology
+- Build compelling Why Change and Why Now arguments with unconsidered needs and forcing functions
+- Differentiate with IS/DOES/MEANS and build revenue-scaled business cases
+- Synthesize four phases into client-ready presentations and proposals
+- Integrate TIPS data and manage multi-phase pitch workflows
 
 **Something unclear or broken?** Tell Claude what happened — cogni-issues will help you file it.
+
+**Next recommended course**: Course 11 — Consulting Orchestration (Double Diamond)
