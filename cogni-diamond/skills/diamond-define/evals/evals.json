@@ -1,0 +1,72 @@
+{
+  "skill_name": "diamond-define",
+  "evals": [
+    {
+      "id": 1,
+      "name": "digital-transform-clean",
+      "prompt": "Run the Define phase for the SmartFactory engagement. Project file at evals/fixtures/digital-transform-clean/diamond-project.json. Discovery synthesis is at discover/synthesis.md — read it for the themes, surprises, and tensions.\n\nHere are my responses for each step:\n\n**Assumptions**: Accept all extracted assumptions as-is. For any that deviate during verification, correct them with the verified data.\n\n**Affinity Clustering**: Your proposed groupings look good. I'd merge the 'Data Island Problem' and 'Quality Data Gap' themes into a single 'Data Connectivity & Quality' cluster — they're both about getting reliable data flowing. Keep the rest as proposed. Priority order: (1) Data Connectivity & Quality, (2) People & Skills, (3) Platform & Vendor Strategy.\n\n**HMW Synthesis**: Draft the HMW questions based on those three clusters. I'll refine if needed — aim for 3-4 questions, one per cluster plus a cross-cutting one about sequencing.\n\n**Problem Statement**: Draft it. Include the works council co-design opportunity in the Context — that's a differentiator. The Tension should be about the gap between the Industry 4.0 vision and the current data/skills reality. Constraints: existing S7 infrastructure, €2.5M/18 months, no production downtime, Betriebsrat governance.",
+      "expected_output": "Complete Define phase with all artifacts (assumptions, clusters, HMW, problem statement). Stakeholder review runs with all 4 personas. Clean input should produce mostly PASS/WARN results with no CRITICAL issues. Review summary saved. Phase transition to complete.",
+      "files": [
+        "evals/fixtures/digital-transform-clean/diamond-project.json",
+        "evals/fixtures/digital-transform-clean/discover/synthesis.md"
+      ],
+      "expectations": [
+        "define/assumptions.json exists with 10+ assumptions extracted from the discovery synthesis",
+        "define/theme-clusters.md exists with 3-5 named clusters ordered by priority, including the merged 'Data Connectivity & Quality' cluster",
+        "define/hmw-questions.md exists with 3-4 HMW questions covering data connectivity, people/skills, and platform strategy",
+        "define/problem-statement.md exists with Context, Tension, Question, and Constraints sections",
+        "Problem statement Context references the works council co-design opportunity as instructed",
+        "Problem statement Tension addresses the gap between Industry 4.0 vision and current data/skills reality",
+        "Stakeholder review runs with all 4 personas (engagement-sponsor, delivery-lead, solution-architect, end-user-advocate)",
+        "define/review-summary.md exists with per-persona weighted scores and cross-cutting themes",
+        "No CRITICAL themes in the review (clean input should pass without iteration)",
+        "Phase state updated to define complete via update-phase.sh",
+        "Communication language is German (as specified in diamond-project.json)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "gtm-weak-framing",
+      "prompt": "Run the Define phase for the HealthBridge GTM engagement. Project file at evals/fixtures/gtm-weak-framing/diamond-project.json. Discovery synthesis is at discover/synthesis.md.\n\nHere are my responses — I'm being deliberately minimal because I'm short on time:\n\n**Assumptions**: Go ahead with what you extract. Accept defaults for deviations.\n\n**Affinity Clustering**: Your groupings are fine. Don't need to adjust.\n\n**HMW Synthesis**: First draft is fine. Let's move on.\n\n**Problem Statement**: Draft it and we'll go with it. Keep it concise.",
+      "expected_output": "Define phase completes but stakeholder review should flag issues. The thin discovery (only desk research + competitive, no stakeholder/customer input) and minimal consultant engagement should produce a generic problem statement. Review should identify CRITICAL or HIGH themes, triggering at least discussion if not iteration.",
+      "files": [
+        "evals/fixtures/gtm-weak-framing/diamond-project.json",
+        "evals/fixtures/gtm-weak-framing/discover/synthesis.md"
+      ],
+      "expectations": [
+        "define/problem-statement.md exists with Context, Tension, Question, Constraints structure",
+        "Stakeholder review runs with all 4 personas after problem statement is drafted",
+        "Review identifies at least one HIGH or CRITICAL theme related to generic/vague problem framing",
+        "Solution Architect persona flags solvability or constraint concerns (discovery was too thin for specific framing)",
+        "End-User Advocate persona flags missing user/customer perspective (no stakeholder mapping or customer journey in discovery)",
+        "define/review-summary.md documents the review findings and iteration decision",
+        "If CRITICAL themes found: at least one iteration round occurs with revised artifacts",
+        "If only HIGH themes: findings presented to consultant for decision",
+        "The thin discovery evidence base is acknowledged somewhere in the Define outputs (assumptions, problem statement, or review)",
+        "The skill does NOT fabricate specific market data, customer insights, or competitive details not present in the discovery synthesis"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "cost-opt-user-blind-spot",
+      "prompt": "Run the Define phase for the CostSmart IT Optimization engagement. Project at evals/fixtures/cost-opt-user-blind-spot/diamond-project.json. Discovery synthesis at discover/synthesis.md.\n\nMy responses:\n\n**Assumptions**: Extract and verify. For the cloud savings estimate (€1.8-2.4M), mark it as high-confidence — the AWS data is granular. For the data center consolidation feasibility, mark as requiring further analysis.\n\n**Affinity Clustering**: Group into: (1) Cost Visibility & Measurement, (2) Cloud & Infrastructure Optimization, (3) Operational Efficiency (automation, support model), (4) Compliance & Governance. Priority: Cloud first (quick win), then Visibility, then Operational, then Compliance.\n\n**HMW Synthesis**: Focus the HMW questions on the tension between quick wins (cloud) and structural change. Include one about the measurement-first vs. action-first tension.\n\n**Problem Statement**: Frame around the core tension: the organization can hit its cost target through cloud optimization alone, but this leaves structural cost problems unresolved. The real question is whether to optimize or transform. Constraints: 12-month timeline, no headcount reduction, locked vendor contracts until Q3 2027, BaFin compliance.",
+      "expected_output": "Complete Define phase with financially-focused problem statement. Stakeholder review should flag the missing user/staff perspective — the synthesis explicitly notes this gap ('Limited perspective from branch staff and end users'). End-User Advocate should WARN or FAIL on user perspective criteria. Cross-cutting theme expected if another persona also notices.",
+      "files": [
+        "evals/fixtures/cost-opt-user-blind-spot/diamond-project.json",
+        "evals/fixtures/cost-opt-user-blind-spot/discover/synthesis.md"
+      ],
+      "expectations": [
+        "define/problem-statement.md frames the optimize-vs-transform tension as instructed",
+        "define/assumptions.json marks cloud savings as high-confidence and data center consolidation as requiring analysis",
+        "define/theme-clusters.md has 4 clusters matching the consultant's grouping",
+        "define/hmw-questions.md includes a question about the measurement-first vs. action-first tension",
+        "Stakeholder review runs with all 4 personas",
+        "End-User Advocate persona flags the missing user/staff perspective (WARN or FAIL on User Perspective Fidelity or Pain Point Grounding)",
+        "Review summary identifies the user perspective gap as at least a HIGH theme",
+        "Review recommendations suggest incorporating branch staff and end-user perspectives into the problem framing",
+        "define/review-summary.md exists with complete scoring and theme analysis",
+        "Problem statement Constraints include all 4 constraints: 12-month timeline, no headcount reduction, locked contracts, BaFin compliance"
+      ]
+    }
+  ]
+}

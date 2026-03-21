@@ -96,7 +96,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/affinity-clustering.md` and guide t
 4. Name each cluster with a descriptive label
 5. Rank clusters by relevance to the engagement vision
 
-Output: 3-7 named theme clusters, ordered by priority.
+Output: 3-7 named theme clusters, ordered by priority. Save to `define/theme-clusters.md`.
 
 ### 5. HMW Synthesis (Guided)
 
@@ -128,7 +128,101 @@ Draft the problem statement and present for consultant review. The problem state
 
 Save to `define/problem-statement.md`.
 
-### 7. Log and Transition
+### 7. Stakeholder Review
+
+Before transitioning to Develop, stress-test the Define outputs against four stakeholder perspectives. Getting the problem framing wrong means solving the wrong problem in Diamond 2 — this review catches misalignment before it compounds.
+
+#### 7a. Launch Parallel Persona Review
+
+Launch one Task agent per persona. Each reads the Define artifacts and evaluates from their perspective.
+
+| Persona | Focus | Reference |
+|---|---|---|
+| Engagement Sponsor | Right problem for the business? | `references/personas/engagement-sponsor.md` |
+| Delivery Lead | Rigorous convergence process? | `references/personas/delivery-lead.md` |
+| Solution Architect | Can Develop work with this? | `references/personas/solution-architect.md` |
+| End-User Advocate | Real user pain preserved? | `references/personas/end-user-advocate.md` |
+
+**For each persona, launch a Task with this prompt:**
+
+```
+You are a {PERSONA_NAME} reviewing the Define phase outputs of a Double Diamond engagement.
+
+FILES TO READ (use Read tool):
+1. Problem statement: {project-dir}/define/problem-statement.md
+2. HMW questions: {project-dir}/define/hmw-questions.md
+3. Verified assumptions: {project-dir}/define/assumptions.json
+4. Theme clusters: {project-dir}/define/theme-clusters.md
+5. Discovery synthesis: {project-dir}/discover/synthesis.md (for traceability)
+6. Diamond project: {project-dir}/diamond-project.json (for engagement context)
+7. Your persona profile: {absolute path to references/personas/{persona}.md}
+
+INSTRUCTIONS:
+1. Read all files
+2. Adopt the tone described in your persona profile
+3. Evaluate each of your 5 criteria, assigning PASS / WARN / FAIL
+4. For each criterion, provide specific evidence from the Define artifacts
+5. Calculate your weighted score: PASS=1.0, WARN=0.5, FAIL=0.0
+6. Generate 3-5 questions your stakeholder would ask
+7. Identify the single most important issue from your perspective
+8. List 2-3 concerns that could block Develop phase success
+
+OUTPUT FORMAT (Markdown):
+
+## {PERSONA_NAME} Evaluation
+
+### Criteria Assessment
+
+| Criterion | Weight | Verdict | Evidence |
+|---|---|---|---|
+| {criterion 1} | {weight}% | {PASS/WARN/FAIL} | {specific evidence from Define artifacts} |
+| ... | ... | ... | ... |
+
+**Score**: {weighted score}/1.0 — {count PASS} pass, {count WARN} warn, {count FAIL} fail
+
+### Top Questions
+1. {Question a real stakeholder would ask}
+2. ...
+
+### Critical Issue
+{The single most important concern, with specific suggestion}
+
+### Develop Blockers
+- {Concern that could block Diamond 2 success} — {one-line rationale}
+- ...
+```
+
+**Agent configuration**: Use a fast model (haiku or sonnet), Read tool only. Launch all 4 persona agents in the same turn for parallel execution.
+
+#### 7b. Synthesize and Decide
+
+Read `references/review-protocol.md` and apply it to the persona results:
+
+1. Calculate per-persona weighted scores
+2. Identify cross-cutting themes using semantic matching
+3. Apply priority escalation rules
+4. Route themes to Define artifacts
+5. Resolve conflicts using the tiebreaker hierarchy
+
+**Decision logic**:
+- **CRITICAL themes**: Revise affected artifact(s), then re-run only the persona(s) that flagged CRITICAL (max 2 rounds)
+- **HIGH themes**: Present to consultant — they decide whether to revise or accept with noted limitations
+- **OPTIONAL only**: Log findings as observations, proceed to step 8
+
+Save the full review results to `define/review-summary.md`.
+
+#### 7c. Iterate (if needed)
+
+If CRITICAL issues triggered revision:
+
+1. Apply specific revisions to the affected artifacts (problem-statement.md, hmw-questions.md, etc.)
+2. Re-run only the persona(s) that flagged CRITICAL — don't repeat the full review
+3. After round 2, present any remaining issues to the consultant regardless of severity — they get final say
+4. Log iteration history in the review summary (what was flagged, what was revised, what was the re-evaluation result)
+
+This keeps the "warn, not block" principle intact — the review enforces a quality bar but the consultant always has the last word.
+
+### 8. Log and Transition
 
 Update method log and decision log with key choices made during Define.
 
@@ -139,6 +233,7 @@ Present the Define summary:
 > - Theme clusters: [list top 3]
 > - HMW questions: [list top 3]
 > - Problem statement: [one-sentence version]
+> - Review: [PASSED / PASSED with observations / PASSED after N revision rounds]
 >
 > Ready to move to Diamond 2? The Develop phase will generate solution options for these HMW questions.
 
@@ -160,3 +255,4 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define complete
 - Deviated assumptions are valuable signals, not failures — they refine understanding
 - Record key decisions in the decision log (why one framing was chosen over another) — these decisions are hard to reconstruct later and valuable for the Deliver phase
 - If discovery was thin in some areas, note this as a known limitation rather than blocking progress
+- The review summary (`define/review-summary.md`) is a key artifact for the Deliver phase — it documents which stakeholder concerns were addressed and which were flagged for downstream resolution

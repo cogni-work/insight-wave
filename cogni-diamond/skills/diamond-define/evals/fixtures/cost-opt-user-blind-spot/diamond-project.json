@@ -1,0 +1,64 @@
+{
+  "engagement": {
+    "name": "CostSmart IT Optimization",
+    "slug": "costsmart-finserv",
+    "client": "Meridian Financial Services",
+    "vision_class": "cost-optimization",
+    "desired_outcome": "Reduce IT operations costs by 20-30% within 12 months while maintaining SLA compliance and regulatory audit readiness",
+    "scope": "IT infrastructure and operations for retail banking division (2,400 staff, 180 branches, 3 data centers)",
+    "constraints": [
+      "No disruption to customer-facing banking services",
+      "Must maintain BaFin/MaRisk IT compliance",
+      "Current vendor contracts locked until Q3 2027",
+      "Workforce reduction not an option (works council agreement)"
+    ],
+    "industry": "financial-services",
+    "language": "en",
+    "updated": "2026-03-21T16:48:54Z"
+  },
+  "phases": {
+    "discover": {
+      "status": "complete",
+      "started_at": "2026-03-14T09:00:00Z",
+      "completed_at": "2026-03-19T16:00:00Z"
+    },
+    "define": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "develop": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "deliver": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    }
+  },
+  "current_phase": "define",
+  "plugin_refs": {
+    "research_project": "costsmart-finserv-research",
+    "tips_project": "costsmart-finserv-trends",
+    "portfolio_project": null
+  },
+  "methods_used": [
+    "desk-research",
+    "trend-scouting",
+    "stakeholder-mapping",
+    "data-audit"
+  ],
+  "decisions": [],
+  "created_at": "2026-03-14T09:00:00Z",
+  "updated_at": "2026-03-19T16:00:00Z",
+  "phase_state": {
+    "define": {
+      "status": "complete",
+      "started": "2026-03-21T16:44:45Z",
+      "completed": "2026-03-21T16:48:54Z"
+    },
+    "current": "develop"
+  }
+}
