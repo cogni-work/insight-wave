@@ -1,0 +1,8 @@
+# Runtime state (created per-engagement, not part of plugin)
+/cogni-diamond/
+
+# Eval workspace (generated outputs, grading, benchmarks)
+*-workspace/
+
+# Plugin settings (user-specific)
+.claude/*.local.md
