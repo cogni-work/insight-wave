@@ -1,12 +1,16 @@
 ---
 name: diamond-develop
 description: |
-  Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore
-  solution options. Dispatches to cogni-tips value-modeler and cogni-portfolio for proposition
-  modeling, and guides scenario planning and option development.
-  Use whenever the user mentions "generate options", "develop solutions", "explore alternatives",
-  "option generation", "scenario planning", "develop phase", "solution space",
-  or wants to create and evaluate solution options — even if they don't say "develop" explicitly.
+  Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore solution
+  options. Dispatches to cogni-tips value-modeler and cogni-portfolio for proposition modeling.
+  Use whenever the user wants to brainstorm solutions, generate options, or explore alternatives
+  within a diamond engagement. Trigger on: "generate options", "what could we do", "solution ideas",
+  "brainstorm solutions", "develop phase", "explore alternatives", "scenario planning",
+  "model the propositions", "what are our options", "create strategic choices",
+  "develop solutions", "D2 diverge", "option generation", "how could we solve this",
+  "let's get creative", "value modeling", "solution space", or any request to generate solution
+  options after a problem has been defined. Also trigger when the user proposes a specific solution —
+  this skill ensures it's evaluated alongside alternatives rather than adopted uncritically.
 ---
 
 # Diamond Develop — Diverge to Create Options
@@ -17,7 +21,7 @@ Generate and explore solution options that address the problem statement from De
 
 Develop is the creative engine of the engagement. With a clear problem statement and HMW questions from Define, this phase generates multiple possible solutions — not just the obvious one. Good consulting surfaces options the client hadn't considered, challenges "we've always done it this way" thinking, and creates genuine strategic choices.
 
-The key principle: **generate before evaluating**. Premature evaluation kills creativity. Develop creates the option space; Deliver evaluates it.
+The key principle: **generate before evaluating**. Evaluating during generation kills options prematurely — an idea that sounds weak in isolation may become the strongest when combined with another. Develop creates the option space; Deliver evaluates it.
 
 ## Prerequisites
 
@@ -108,7 +112,14 @@ After all methods complete, synthesize the options:
 
 Save to `develop/options/option-synthesis.md`.
 
-Do NOT evaluate or rank options here — that's Deliver's job. Present them as equals.
+**Example option entry** (digital-transformation engagement for field service):
+> **Option 3: "Mobile-First Field Platform"**
+> Build a unified mobile app replacing 4 legacy field tools. Technicians get real-time job scheduling, parts inventory, and customer history in one interface.
+> *Source*: TIPS value modeling (mobile workforce trend) + portfolio proposition (field service × mid-market)
+> *Alignment*: HMW #1 (reduce time-to-resolution) and HMW #3 (improve first-visit fix rate)
+> *Key assumptions*: Field technicians have reliable mobile connectivity; legacy systems expose APIs for integration.
+
+Present options as equals — ranking happens in Deliver with structured criteria and consultant judgment.
 
 ### 7. Log and Transition
 
@@ -130,20 +141,19 @@ Mark Develop complete:
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" develop complete
 ```
 
-## Method Adaptation by Vision Class
+## Method Adaptation
 
-- **strategic-options** → all methods, emphasis on option diversity
-- **business-case** → proposition modeling + scenario planning (fewer options, deeper financial modeling in Deliver)
-- **gtm-roadmap** → proposition modeling + opportunity scoring (channel/segment focus)
-- **cost-optimization** → opportunity scoring (cost reduction levers) + scenario planning (implementation risk)
-- **digital-transformation** → all methods (wide option space needed for transformation)
-- **innovation-portfolio** → value modeling emphasis (TIPS horizons map to innovation portfolio)
-- **market-entry** → scenario planning (market uncertainty) + proposition modeling (value fit)
+For vision-class-specific method recommendations, read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md`.
+
+## When Things Go Thin
+
+- **Only 1-2 options emerge**: The divergence was too narrow. Before accepting a thin option space, try these prompts with the consultant: "What would a competitor do?", "What if budget were unlimited?", "What's the opposite of our first option?", "What would we recommend if the constraint on [X] didn't exist?" These reframing questions often unlock options that were implicitly excluded.
+- **Plugin returns no usable solutions**: If value modeling or proposition modeling produces generic or irrelevant output, the input framing may need adjustment. Re-read the problem statement — is it specific enough to generate differentiated solutions? Sometimes the best response is to refine the HMW questions rather than forcing the plugin.
+- **Consultant fixates on one option early**: This is natural but undermines the divergent purpose of this phase. Acknowledge the preferred option explicitly, then say: "Let's develop 2-3 more alternatives so we can compare properly in Deliver. Even if this option wins, the comparison strengthens the recommendation."
 
 ## Important Notes
 
-- Resist the temptation to evaluate during generation — keep divergent
-- If only 1-2 options emerge, the divergence was insufficient — probe for alternatives
-- Scenario planning is particularly valuable for high-uncertainty vision classes
-- Record why certain options were generated (the reasoning, not just the option)
+- Record why certain options were generated (the reasoning, not just the option) — this traceability matters in Deliver when building the business case
 - Cross-reference: if a TIPS solution and a portfolio proposition point to the same thing, note the convergence — it's a signal of robustness
+- Scenario planning is particularly valuable for high-uncertainty vision classes where the future state is contested
+- If the consultant wants to revisit the problem statement based on what options emerge, that's healthy — the diamond process supports iteration within phases

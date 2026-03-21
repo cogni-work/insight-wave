@@ -3,11 +3,15 @@ name: diamond-deliver
 description: |
   Execute the Deliver phase of a Double Diamond engagement — converge on validated, actionable
   outcomes. Runs final claim verification via cogni-claims, guides business case modeling and
-  roadmap construction, and prepares for deliverable generation.
-  Use whenever the user mentions "deliver phase", "build business case", "create roadmap",
-  "finalize options", "evaluate options", "score options", "validate and deliver",
-  "convergence", or wants to evaluate and package solution outcomes — even if they
-  don't say "deliver" explicitly.
+  roadmap construction. Use whenever the user wants to evaluate options, build a business case,
+  validate findings, or prepare final recommendations within a diamond engagement.
+  Trigger on: "deliver phase", "build the business case", "evaluate options", "score the options",
+  "which option is best", "create the roadmap", "finalize", "make a recommendation",
+  "validate our claims", "prepare the final output", "wrap up the engagement",
+  "what should we recommend", "D2 converge", "convergence", "decision time",
+  "let's pick the winner", "finalize options", "validate and deliver",
+  or any request to move from options to decisions. Also trigger when the user says
+  "I need to present this to the board" or similar — Deliver produces the executive-ready artifacts.
 ---
 
 # Diamond Deliver — Converge on Outcomes
@@ -77,7 +81,7 @@ Collect all factual claims across the engagement:
 - From proposition modeling (`develop/propositions/`)
 - From the option synthesis (`develop/options/`)
 
-Submit to cogni-claims for verification. This is the final quality gate — any claim that appears in a deliverable must be verified or flagged.
+Submit to cogni-claims for verification. Unverified claims in client deliverables damage credibility — a single wrong number in a board presentation can undermine the entire engagement. This step exists as a quality gate, not bureaucracy.
 
 Present results:
 
@@ -115,7 +119,14 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/business-case-canvas.md` and guide 
 5. **Sensitivity analysis**: How do outcomes change if assumptions shift?
 6. **Recommendation**: Go/no-go with rationale
 
-Save to `deliver/business-case.md`.
+**Example** (cost-optimization engagement for service delivery savings):
+> **Investment**: €350K implementation over 6 months (process redesign + tooling)
+> **Expected returns**: €1.2M annual savings from 3 consolidated service tiers
+> **Key assumption**: 80% of Tier-1 tickets can be automated (verified via cogni-claims against industry benchmark)
+> **Risk**: Union pushback on role changes (medium probability, high impact) — mitigated by retraining program
+> **Recommendation**: Conditional go — proceed with Tier-1 automation pilot, gate full rollout on pilot KPIs
+
+Save to `deliver/business-case.md`. The business case should be honest — if the numbers don't work, say so. A credible "conditional go" is worth more than an optimistic "go" that falls apart in execution.
 
 ### 7. Action Roadmap
 
@@ -126,7 +137,7 @@ Build a phased implementation roadmap for the recommended option(s):
 3. Identify owners and dependencies
 4. Note decision points and go/no-go gates
 
-Save to `deliver/roadmap.md`.
+Save to `deliver/roadmap.md`. Roadmaps should be realistic — better to under-promise than create shelf-ware.
 
 ### 8. Executive Summary
 
@@ -159,20 +170,18 @@ Mark Deliver complete:
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver complete
 ```
 
-## Method Adaptation by Vision Class
+## Method Adaptation
 
-- **strategic-options** → emphasis on scoring matrix and executive summary
-- **business-case** → emphasis on financial modeling and sensitivity analysis
-- **gtm-roadmap** → emphasis on roadmap detail (channels, segments, timeline)
-- **cost-optimization** → emphasis on savings quantification and implementation risk
-- **digital-transformation** → emphasis on roadmap phasing and change management
-- **innovation-portfolio** → emphasis on portfolio balance across horizons
-- **market-entry** → emphasis on risk assessment and go/no-go decision
+For vision-class-specific method recommendations, read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md`.
+
+## When Things Go Thin
+
+- **High claim deviation rate** (>40% of claims): This signals a systemic evidence problem rather than individual errors. Recommend the consultant revisit Discovery for the affected area — patching 15 claims one by one is less efficient than a targeted research sprint.
+- **Scoring produces a tie or no clear winner**: This usually means the criteria don't capture the real differentiators. Revisit the criteria with the consultant — often one unstated factor (political feasibility, personal conviction) is doing the real work. Surface it and make it explicit.
+- **Business case numbers don't work**: This is a finding, not a failure. Present it honestly. The consultant may pivot to a different option, adjust scope, or reframe the investment thesis. Forcing optimistic numbers destroys credibility.
 
 ## Important Notes
 
-- Claims verification is non-negotiable — every factual assertion in deliverables must be verified or flagged
-- The business case should be honest — if the numbers don't work, say so
-- Roadmaps should be realistic — better to under-promise than create shelf-ware
-- Record the reasoning behind the final recommendation in the decision log
+- Record the reasoning behind the final recommendation in the decision log — "we chose Option 2 because..." is essential for the executive summary and for defending the recommendation
 - If the consultant wants to revisit options from Develop, that's healthy — the diamond process is iterative within phases
+- **Communication Language**: Use the engagement's language setting for all interactions

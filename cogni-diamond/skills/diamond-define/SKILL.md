@@ -1,13 +1,16 @@
 ---
 name: diamond-define
 description: |
-  Execute the Define phase of a Double Diamond engagement — converge from discovery insights
-  to a clear problem statement. Verifies assumptions via cogni-claims and guides the consultant
-  through synthesis methods like affinity clustering and HMW framing.
-  Use whenever the user mentions "define the problem", "converge", "problem statement",
-  "frame the challenge", "assumption check", "how might we", "define phase",
-  or wants to synthesize discovery findings into a focused problem — even if they
-  don't say "define" explicitly.
+  Execute the Define phase of a Double Diamond engagement — converge from discovery insights to a
+  clear problem statement. Verifies assumptions via cogni-claims, guides affinity clustering and
+  HMW framing. Use whenever the user wants to synthesize findings, frame the problem, or narrow
+  focus within a diamond engagement. Trigger on: "define the problem", "what's the real issue",
+  "frame the challenge", "synthesize the findings", "narrow down", "converge", "problem statement",
+  "how might we", "verify assumptions", "check our assumptions", "what did we learn",
+  "so what does this all mean", "cluster the themes", "prioritize the insights",
+  "define phase", "D1 converge", "assumption check", or any request to move from broad research
+  to focused problem framing. Also trigger when the user says something like "I think the real
+  problem is..." — they're already doing Define work and this skill should scaffold it.
 ---
 
 # Diamond Define — Converge on the Challenge
@@ -76,7 +79,12 @@ After confirmation, dispatch to cogni-claims:
 
 Save verified/deviated results to `define/assumptions.json`.
 
-Key decision point: deviated assumptions may require revisiting the discovery synthesis. Ask the consultant how to handle each deviation — correct, investigate further, or accept the risk.
+Key decision point: deviated assumptions need resolution. Common patterns:
+- **Correct the claim** with the verified data — straightforward when the source is clear
+- **Mark as open question** needing primary research — appropriate when no good source exists
+- **Accept with caveat** — the assumption stays but is flagged as unverified in the problem statement
+
+Expect 20-30% of assumptions to deviate — this is normal and valuable, not a failure. The deviations themselves refine understanding.
 
 ### 4. Affinity Clustering (Guided)
 
@@ -110,7 +118,13 @@ Synthesize the verified assumptions, clusters, and HMW questions into a problem 
 - **Question**: What needs to be resolved? (from HMW)
 - **Constraints**: What boundaries apply? (from engagement vision)
 
-Draft the problem statement and present for consultant review. Iterate until confirmed.
+**Example** (strategic-options for DACH market growth):
+> **Context**: The client's DACH cloud portfolio has plateaued at €45M ARR despite 18% market growth, with mid-market share eroding to two vertical-specialist competitors.
+> **Tension**: Current horizontal positioning serves enterprise accounts well but fails to resonate with mid-market buyers who prioritize speed-to-value over feature breadth.
+> **Question**: How might we reposition the portfolio to capture mid-market growth without cannibalizing enterprise margins?
+> **Constraints**: No M&A, 6-week timeline, existing technology stack.
+
+Draft the problem statement and present for consultant review. The problem statement is the most consultant-dependent artifact in the entire engagement — draft it, but expect 2-3 rounds of refinement. That iteration is where the real value lives.
 
 Save to `define/problem-statement.md`.
 
@@ -134,10 +148,15 @@ Mark Define complete:
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define complete
 ```
 
+## When Things Go Thin
+
+- **Many deviations** (>50% of assumptions): This signals the discovery evidence base was weaker than expected. Rather than patching assumptions one by one, consider whether a targeted research sprint (back to Discover) would be more efficient than proceeding with low-confidence framing.
+- **Consultant disengages from clustering or HMW**: These methods require active judgment. If input is minimal, capture the consultant's top 2-3 priorities directly and build from there rather than forcing the full method sequence.
+- **Discovery was thin in some areas**: Note this as a known limitation in the problem statement's constraints section rather than blocking progress. A well-framed problem with acknowledged gaps is more useful than a perfectly evidenced problem that never gets framed.
+
 ## Important Notes
 
 - Define is the most collaborative phase — expect heavy back-and-forth with the consultant
-- Never auto-generate the problem statement without consultant input
 - Deviated assumptions are valuable signals, not failures — they refine understanding
-- Record key decisions in the decision log (why one framing was chosen over another)
+- Record key decisions in the decision log (why one framing was chosen over another) — these decisions are hard to reconstruct later and valuable for the Deliver phase
 - If discovery was thin in some areas, note this as a known limitation rather than blocking progress

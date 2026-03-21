@@ -1,12 +1,17 @@
 ---
 name: diamond-discover
 description: |
-  Execute the Discover phase of a Double Diamond engagement — diverge to build a rich
-  understanding of the problem landscape. Dispatches to cogni-gpt-researcher, cogni-tips,
-  and cogni-portfolio for structured research, trend scouting, and competitive analysis.
-  Use whenever the user mentions "start discovery", "discover phase", "research the landscape",
-  "explore the problem", "diverge", "build understanding", or wants to begin the first
-  diamond phase — even if they don't say "discover" explicitly.
+  Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding
+  of the problem landscape. Dispatches to cogni-gpt-researcher, cogni-tips, and cogni-portfolio.
+  Use whenever the user wants to research, explore, or investigate a topic within a diamond engagement.
+  Trigger on: "start discovery", "research the landscape", "let's explore", "what do we know about",
+  "gather evidence", "run the research", "investigate the market", "scan for trends",
+  "competitive analysis", "who are the competitors", "what's happening in [industry]",
+  "build the evidence base", "I need data on", "diverge", "discover phase", "D1 diverge",
+  "let's understand the problem first", "explore the problem", "build understanding",
+  or any request for broad research within an active engagement. Also trigger when the user asks
+  about a specific research method (desk research, stakeholder mapping, data audit, customer journey)
+  in the context of an ongoing engagement.
 ---
 
 # Diamond Discover — Diverge to Understand
@@ -111,6 +116,11 @@ After all methods complete, produce a discovery synthesis:
 4. Flag tensions — contradictions or trade-offs between sources
 5. Write `discover/synthesis.md` capturing themes, surprises, and tensions
 
+**Example synthesis themes** (for a gtm-roadmap engagement targeting mid-market expansion):
+- *Theme*: Mid-market buyers prioritize implementation speed over feature completeness
+- *Surprise*: Two emerging competitors already offer vertical-specific bundles
+- *Tension*: Desk research shows growing demand, but stakeholder interviews reveal internal delivery capacity constraints
+
 Present the synthesis to the consultant for review and refinement.
 
 ### 6. Log Methods and Transition
@@ -133,20 +143,18 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" discover comple
 
 ## Method Adaptation
 
-The methods above are recommendations, not requirements. Based on the vision class and emerging findings:
+For vision-class-specific method recommendations, read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md`.
 
-- **strategic-options** → emphasize competitive baseline and trend scan
-- **business-case** → emphasize desk research and data audit
-- **gtm-roadmap** → emphasize competitive baseline and customer journey
-- **cost-optimization** → emphasize data audit and stakeholder mapping
-- **digital-transformation** → emphasize all sources (wide divergence needed)
-- **innovation-portfolio** → emphasize trend scan (deep mode) and stakeholder mapping
-- **market-entry** → emphasize desk research (market-specific) and competitive baseline
+## When Things Go Thin
+
+- **Plugin returns thin results** (fewer than 3 substantive findings): Note the gap explicitly in the synthesis and flag it for the consultant. Thin evidence in one area can be compensated by strength in another, but the consultant should know. Offer to retry with adjusted parameters (broader scope, different market framing) or substitute a guided method.
+- **Consultant disengages from a guided method**: Some methods (stakeholder mapping, data audit) need active input. If the consultant gives minimal responses, capture what's available and move on — a partial output is better than a blocked engagement.
+- **Prior phase was skipped**: Setup should be complete, but if the consultant jumped straight to Discovery, gather the minimum context needed (client, vision class, scope) and create diamond-project.json inline.
 
 ## Important Notes
 
-- Never auto-advance to Define without consultant confirmation
-- Keep plugin dispatch sequential by default (research → trends → competitive) to allow findings from each to inform the next
-- If a plugin method fails or produces thin results, note the gap and continue — the Define phase can work with incomplete information
+- The transition to Define is the consultant's call — they may want to explore further or revisit a finding before converging. Ask, don't assume.
+- Sequential dispatch lets findings from each source inform the next — research shapes trend framing, trends inform competitive lens. If the consultant is time-pressed, parallel dispatch works but note the trade-off.
+- If a plugin method fails or produces thin results, note the gap and continue — the Define phase can work with incomplete information, and the gap itself is a finding worth recording.
 - Update diamond-project.json after each significant step
 - **Communication Language**: Use the engagement's language setting for all interactions

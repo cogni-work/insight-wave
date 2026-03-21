@@ -2,10 +2,14 @@
 name: diamond-setup
 description: |
   Initialize a new Double Diamond consulting engagement with vision framing and project scaffolding.
-  Use whenever the user mentions starting a consulting engagement, "new diamond project",
-  "start an engagement", "double diamond", "vision framing", "set up a strategy project",
-  "new consulting project", or wants to begin a structured problem-to-solution process —
-  even if they don't say "diamond" or "setup" explicitly.
+  Use whenever the user wants to start any structured consulting or strategy project — even if they
+  don't mention "diamond" at all. Trigger on: "new engagement", "start a project for [client]",
+  "I have a new client", "kick off a strategy engagement", "set up a consulting project",
+  "let's work on [client topic]", "I need to frame a problem", "new diamond project",
+  "vision framing", "double diamond", "set up the engagement", "begin a new analysis",
+  "scope a new piece of work", "new consulting project", or any mention of starting structured
+  problem-to-solution work for a client. Also trigger when the user describes a client situation
+  that implies a new engagement is needed (e.g., "Telekom wants us to look at their cloud strategy").
 ---
 
 # Diamond Engagement Setup
@@ -28,18 +32,7 @@ Collect these fields:
 
 - **Engagement name**: Descriptive name (e.g., "Acme Cloud Portfolio Expansion")
 - **Client**: Company or organization name
-- **Vision class**: The type of outcome needed. Present the options:
-
-| Vision Class | Outcome | Example |
-|---|---|---|
-| `strategic-options` | Ranked strategic alternatives with evaluation criteria | "Identify 3-5 growth options for DACH market" |
-| `business-case` | Investment justification with financials and risk analysis | "Build the case for a new SaaS platform" |
-| `gtm-roadmap` | Go-to-market plan with channels, segments, and timeline | "Launch strategy for mid-market segment" |
-| `cost-optimization` | Prioritized cost reduction opportunities | "Find 20% savings in service delivery" |
-| `digital-transformation` | Current-to-target state mapping with transition roadmap | "Digitize field service operations" |
-| `innovation-portfolio` | Prioritized innovation investment bets across horizons | "Balance R&D across Act/Plan/Observe" |
-| `market-entry` | Market feasibility assessment and entry strategy | "Evaluate expansion into French market" |
-
+- **Vision class**: The type of outcome needed. Present the options from `$CLAUDE_PLUGIN_ROOT/references/vision-class-summary.md`.
 - **Desired outcome**: One-sentence description of what success looks like
 - **Scope**: Market, geography, product line, or segment boundaries
 - **Constraints**: Timeline, budget, exclusions, or non-negotiables
@@ -167,12 +160,26 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the selected vision 
 
 ### 7. Transition to Discover (Optional)
 
-If the user confirms readiness, transition directly to the `diamond-discover` skill. Otherwise, end with a reminder that they can start any time with `diamond-discover` or check status with `diamond-resume`.
+If the user seems eager to dive in, transition directly to the `diamond-discover` skill. If they seem uncertain, end with a clear next-step pointer — they can start any time with `diamond-discover` or check status with `diamond-resume`. Read the room rather than always asking.
+
+## Example
+
+A consultant says: "I need to build a business case for migrating our telco client's BSS stack to a cloud-native platform. Budget is around €2M, they want a decision by end of Q2."
+
+Setup would extract:
+- **Engagement**: "CloudCo BSS Cloud Migration"
+- **Client**: CloudCo (or whatever the client name is)
+- **Vision class**: `business-case`
+- **Desired outcome**: Investment justification for BSS-to-cloud migration
+- **Scope**: BSS stack, cloud-native target architecture
+- **Constraints**: ~€2M budget, Q2 deadline
+- **Industry**: Telecommunications
+
+Then confirm, scaffold, map to deliverables (Business Case XLSX+DOCX, Executive Summary PPTX, Action Roadmap, Claim Verification Log), and preview the phase plan.
 
 ## Important Notes
 
-- Each engagement lives under `cogni-diamond/<slug>/` in the workspace
-- Multiple engagements are supported (one per client/topic)
-- If an engagement already exists, the init script returns without overwriting
-- The `updated` field should be refreshed whenever the engagement state changes
+- Engagements are isolated in separate directories (`cogni-diamond/<slug>/`) so multiple client projects can coexist without file conflicts
+- If an engagement already exists, the init script returns without overwriting — no risk of data loss
+- Downstream skills use the `updated` timestamp to detect stale engagements, so keep it current when state changes
 - **Communication Language**: If `language` is set in diamond-project.json, communicate in that language. Technical terms, skill names, and CLI commands remain in English.

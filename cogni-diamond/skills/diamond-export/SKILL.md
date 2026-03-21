@@ -3,9 +3,14 @@ name: diamond-export
 description: |
   Generate the final deliverable package for a Double Diamond engagement. Produces formatted
   outputs (PPTX, DOCX, XLSX, Excalidraw) by dispatching to cogni-visual and document-skills.
-  Use whenever the user mentions "generate deliverables", "export engagement", "create the deck",
-  "produce the report", "final package", "export diamond", or wants to produce the engagement
-  outputs — even if they don't say "export" explicitly.
+  Use whenever the user wants to produce engagement outputs — even partially or for a single
+  deliverable. Trigger on: "generate deliverables", "export engagement", "create the deck",
+  "produce the report", "final package", "export diamond", "create the slides",
+  "I need to present to [audience]", "package it up", "generate the business case document",
+  "make the roadmap visual", "export to PowerPoint", "output the results",
+  or any request to render engagement content into a specific format.
+  Also trigger when the user asks for a single deliverable (e.g., "just the executive summary
+  as a PPTX") — this skill handles both full packages and individual deliverable generation.
 ---
 
 # Diamond Export — Generate Deliverables
@@ -27,6 +32,8 @@ Every diamond engagement promises specific deliverables (defined during setup). 
 
 Read diamond-project.json. Extract the deliverables list from `vision.deliverables`.
 
+If the user requests a single specific deliverable rather than the full package, extract just that deliverable from the list and proceed with it alone.
+
 ### 2. Map Deliverables to Sources
 
 For each deliverable, identify the source content and rendering plugin:
@@ -46,33 +53,38 @@ For each deliverable, identify the source content and rendering plugin:
 
 For each deliverable in the list:
 
-1. Read the source content
-2. Dispatch to the appropriate renderer
-3. Save output to `output/` directory with descriptive filename
-4. Note success/failure
+1. **Check source exists**: If the source file is missing, check whether the content exists in an alternative location or format (e.g., the business case might be in `deliver/business-case.md` or assembled from `deliver/option-scoring.md` + `deliver/roadmap.md`). If the content genuinely doesn't exist, skip the deliverable and tell the consultant which phase would produce it: "The Decision Board requires option synthesis from the Develop phase. Run `diamond-develop` to generate it."
+2. Read the source content
+3. Dispatch to the appropriate renderer
+4. Save output to `output/` directory with descriptive filename
+5. Note success/failure
 
 Between deliverables, check with the consultant if they want to review before continuing.
 
-**Theme support**: If a cogni-workspace theme is active, pass the theme to visual/document plugins for consistent branding across all deliverables.
+**Theme support**: If a cogni-workspace theme is active, pass the theme to visual/document plugins for consistent branding across all deliverables. Theme consistency matters because deliverables go to the client as a set — mismatched branding signals sloppiness.
 
 ### 4. Assemble Package Index
 
 Create `output/README.md` as an index of all generated deliverables:
 
-```markdown
-# [Engagement Name] — Deliverable Package
+**Example** (market-entry engagement for French market):
 
-**Client**: [client name]
-**Vision**: [vision class]
-**Date**: [date]
+```markdown
+# EuroTech France Entry — Deliverable Package
+
+**Client**: EuroTech GmbH
+**Vision**: market-entry
+**Date**: 2026-03-21
 
 ## Deliverables
 
 | # | Deliverable | Format | File |
 |---|---|---|---|
 | 1 | Executive Summary | PPTX | executive-summary.pptx |
-| 2 | Strategic Options Brief | DOCX | strategic-options-brief.docx |
-| ...
+| 2 | Market Feasibility Report | DOCX | market-feasibility.docx |
+| 3 | Business Case | XLSX + DOCX | business-case.xlsx, business-case.docx |
+| 4 | Action Roadmap | PPTX | entry-roadmap.pptx |
+| 5 | Claim Verification Log | XLSX | claims-verification.xlsx |
 ```
 
 ### 5. Present Summary
@@ -85,7 +97,7 @@ Create `output/README.md` as an index of all generated deliverables:
 
 ## Important Notes
 
-- If a source file is missing, skip the deliverable and note the gap
-- Prefer the theme from the workspace if available
-- Large deliverables (detailed PPTX decks) may need the consultant to provide additional guidance on structure
+- Prefer the theme from the workspace if available — consistent branding across all deliverables matters for client perception
+- Large deliverables (detailed PPTX decks) may need the consultant to provide additional guidance on structure and narrative flow
 - The package index is always generated as markdown, regardless of other format choices
+- If a renderer plugin fails, note the error and offer alternatives (e.g., "PPTX generation failed — want me to produce a DOCX instead?")

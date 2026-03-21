@@ -1,11 +1,17 @@
 ---
 name: diamond-resume
 description: |
-  Resume, continue, or check status of a Double Diamond consulting engagement.
-  Use whenever the user mentions "continue engagement", "resume diamond",
-  "pick up where I left off", "diamond status", "what's next", "show progress",
-  "where was I", "how far along", "engagement status", or opens a session that
-  involves an existing cogni-diamond project — even if they don't say "resume" explicitly.
+  Resume, continue, or check status of a Double Diamond consulting engagement. This is the
+  primary re-entry point for returning to engagement work across sessions.
+  Use whenever the user returns to an existing engagement — even if they don't say "resume".
+  Trigger on: "continue the engagement", "resume diamond", "pick up where I left off",
+  "what's the status", "where was I", "how far along", "show progress", "diamond status",
+  "what's next", "continue working on [client name]", "back to the [project name]",
+  "let's keep going on [topic]", "open the [client] engagement", "check on [engagement]",
+  "engagement status", any mention of a known engagement slug or client name in the context
+  of continuing work, or ANY session start that references an existing diamond project.
+  This skill should be the default when the user mentions an existing client/engagement name
+  without specifying a particular phase — it orients first, then routes to the right phase skill.
 ---
 
 # Diamond Resume
@@ -30,8 +36,9 @@ Each match represents an engagement (extract the slug from the directory name). 
 
 ### 2. Select Engagement
 
-- One engagement found — use it automatically.
-- Multiple engagements — present them with client name and vision class, ask which one to continue.
+- **One engagement found** — use it automatically.
+- **Multiple engagements** — present them with client name and vision class, ask which one to continue.
+- **Client-name matching**: When the user says "continue working on Telekom", match against the `client` field in diamond-project.json across all engagements. Fuzzy matching is fine — "Telekom", "Deutsche Telekom", "DT" should all match if the engagement client contains "Telekom".
 
 ### 3. Run Engagement Status
 
@@ -43,7 +50,7 @@ The script returns JSON with engagement details, phase state, plugin status, met
 
 ### 4. Present Status Dashboard
 
-Show a concise, scannable dashboard. Lead with the engagement name and client, then the phase progress:
+The consultant should feel like picking up a well-organized notebook, not reading a database report. Lead with the engagement name and client, then the phase progress:
 
 **Acme Cloud Portfolio Expansion** (acme-cloud-expansion)
 Client: Acme Cloud Services | Vision: strategic-options | Language: en
@@ -57,13 +64,11 @@ Client: Acme Cloud Services | Vision: strategic-options | Language: en
 
 After the table:
 
-- **Current phase** — translate the phase and status into plain language
+- **Current phase** — translate the phase and status into plain language (e.g., "You're in the middle of Define — 8 of 12 assumptions verified, clustering and HMW still ahead.")
 - **Methods used** — list methods applied so far from the method log
 - **Key decisions** — surface recent decisions from the decision log
 - **Plugin projects** — for each non-null plugin_ref, check if the project exists and show brief status
 - **Gaps** — note incomplete prerequisites for the next phase
-
-Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report. The consultant should feel oriented, not overwhelmed.
 
 ### 5. Recommend Next Action
 
@@ -75,22 +80,27 @@ Offer to proceed with the recommendation immediately.
 
 If all phases are complete, congratulate the consultant and suggest `diamond-export` for the final deliverable package.
 
-## Phase Reference
+## Example
 
-| Phase | State | What It Means |
-|-------|-------|---------------|
-| Discover | pending | No research started — begin with diamond-discover |
-| Discover | in-progress | Research underway but not yet synthesized |
-| Discover | complete | Problem landscape mapped, ready for convergence |
-| Define | pending | Ready to converge on the core challenge |
-| Define | in-progress | Verifying assumptions, synthesizing problem |
-| Define | complete | Problem statement framed, HMW questions ready |
-| Develop | pending | Ready to generate solution options |
-| Develop | in-progress | Options being explored and modeled |
-| Develop | complete | Solution options evaluated, ready for convergence |
-| Deliver | pending | Ready to validate and package outcomes |
-| Deliver | in-progress | Verification and business case in progress |
-| Deliver | complete | All phases done — run diamond-export |
+**Returning to an innovation-portfolio engagement after 3 days:**
+
+> **NovaTech Innovation Portfolio** (novatech-innovation)
+> Client: NovaTech Solutions | Vision: innovation-portfolio | Language: de
+>
+> | Phase | Status | Files | Plugin Projects |
+> |-------|--------|-------|-----------------|
+> | Discover | complete | 9 | research: novatech-landscape, tips: deep-tech/novatech |
+> | Define | complete | 5 | claims: verified 14/17 assumptions |
+> | Develop | in-progress | 4 | tips: value model in progress |
+> | Deliver | pending | 0 | — |
+>
+> You left off in the Develop phase — value modeling is underway with 12 TIPS paths generated. Scenario planning hasn't started yet.
+>
+> **Methods used**: desk research, trend scan (deep), stakeholder mapping, assumption verification, affinity clustering, HMW synthesis, value modeling (in progress)
+>
+> **Last decision**: Focused HMW questions on Horizon 2 opportunities after discovery showed Horizon 1 is well-covered.
+>
+> **Recommended next step**: Continue `diamond-develop` to finish value modeling and run scenario planning.
 
 ## Multi-Session Design
 
