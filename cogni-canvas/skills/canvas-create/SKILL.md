@@ -111,7 +111,7 @@ Present a summary table:
 
 Suggest next steps:
 - Use `/cogni-canvas:canvas-refine` to critique and improve specific sections
-- If cogni-portfolio is available, use `portfolio-canvas` to extract portfolio entities
+- If cogni-portfolio is available, use `portfolio-canvas` to extract portfolio entities (products, features, markets) — from there, `cogni-portfolio:markets` can size your markets with real data and `cogni-portfolio:compete` can map competitors
 
 ## Important Notes
 

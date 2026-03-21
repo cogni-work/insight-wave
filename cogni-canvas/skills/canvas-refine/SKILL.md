@@ -137,7 +137,7 @@ Write the updated canvas file. Present a change summary:
 
 Suggest next steps based on current maturity:
 - **Draft → Hypothesis**: "N sections still unfilled — fill them next"
-- **Hypothesis → Validated**: "Top assumptions to test: [list from evolution log]"
+- **Hypothesis → Validated**: "Top assumptions to test: [list from evolution log]. Use `cogni-portfolio:portfolio-canvas` to extract entities, then validate with research-backed skills like `cogni-portfolio:markets` (TAM/SAM/SOM sizing) and `cogni-portfolio:compete` (competitive landscape)"
 - **Validated → Evolved**: "Consider refining based on: [market feedback]"
 
 ## Refinement Modes
