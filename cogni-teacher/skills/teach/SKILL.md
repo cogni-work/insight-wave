@@ -34,7 +34,7 @@ Eleven courses, designed to build on each other:
 | 8 | `research` | Research Reports | cogni-gpt-researcher |
 | 9 | `marketing` | B2B Marketing Content | cogni-marketing |
 | 10 | `sales` | Sales Pitches | cogni-sales |
-| 11 | `diamond` | Consulting Orchestration | cogni-diamond |
+| 11 | `diamond` | Consulting Orchestration | cogni-consulting |
 
 ## How to Teach
 
@@ -132,7 +132,7 @@ Load the relevant course file when delivering a specific course:
 - `references/courses/08-research.md`
 - `references/courses/09-marketing.md`
 - `references/courses/10-sales.md`
-- `references/courses/11-diamond.md`
+- `references/courses/11-consulting.md`
 
 Each file contains all modules with theory, demos, exercises, quizzes, and recaps.
 Read only the course file the user is taking — no need to load them all.

@@ -12,7 +12,7 @@ Core plugins are maintained by cogni-works and licensed under AGPL-3.0:
 - cogni-canvas
 - cogni-claims
 - cogni-copywriting
-- cogni-diamond
+- cogni-consulting
 - cogni-obsidian
 - cogni-portfolio
 - cogni-visual

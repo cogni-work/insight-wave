@@ -1,0 +1,21 @@
+{
+  "name": "cogni-consulting",
+  "version": "0.1.2",
+  "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to cogni-work plugins (research, trends, portfolio, claims) at the right moment with the right scope. Vision-first, method-aware, phase-gated.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "double-diamond",
+    "consulting",
+    "orchestrator",
+    "strategy",
+    "problem-framing",
+    "solution-design",
+    "phase-gated",
+    "vision-framing",
+    "cross-plugin"
+  ]
+}

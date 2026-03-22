@@ -125,10 +125,10 @@
       "keywords": ["lean-canvas", "business-model", "hypothesis", "startup", "refinement"]
     },
     {
-      "name": "cogni-diamond",
+      "name": "cogni-consulting",
       "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to cogni-work plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated.",
       "author": { "name": "Stephan de Haas", "email": "stephan@cogni-work.ai" },
-      "source": "./cogni-diamond",
+      "source": "./cogni-consulting",
       "category": "productivity",
       "license": "AGPL-3.0-only",
       "keywords": ["double-diamond", "consulting", "orchestrator", "strategy", "problem-framing", "solution-design", "phase-gated", "cross-plugin"]

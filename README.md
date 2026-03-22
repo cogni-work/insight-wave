@@ -42,7 +42,7 @@ You want AI-native workflows for your sales and marketing teams — either self-
 | [cogni-canvas](./cogni-canvas) | Lean Canvas authoring and refinement — guided Q&A, section-by-section critique, multi-persona stress testing, and version tracking. |
 | [cogni-claims](./cogni-claims) | Verify sourced claims against cited URLs. Catches citation errors, misquotations, and unsupported conclusions before content ships. |
 | [cogni-copywriting](./cogni-copywriting) | Professional copywriting toolkit with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), multi-stakeholder review, and readability optimization. Bilingual EN/DE. |
-| [cogni-diamond](./cogni-diamond) | Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver by dispatching to cogni-works plugins at the right phase. Vision-first, method-aware, phase-gated. |
+| [cogni-consulting](./cogni-consulting) | Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver by dispatching to cogni-works plugins at the right phase. Vision-first, method-aware, phase-gated. |
 | [cogni-gpt-researcher](./cogni-gpt-researcher) | Multi-agent research report generator. STORM-inspired editorial workflow with parallel web research, claims-verified review loops, and three depth levels (basic, detailed, deep). |
 | [cogni-marketing](./cogni-marketing) | B2B marketing content engine. Bridges TIPS themes and portfolio propositions into channel-ready content across 16 formats — thought leadership, demand gen, lead gen, sales enablement, ABM. Bilingual DE/EN. |
 | [cogni-narrative](./cogni-narrative) | Story arc-driven narrative transformation. Transforms structured content into executive narratives using 6 story arc frameworks and 8 narrative techniques. Bilingual EN/DE. |
@@ -70,7 +70,7 @@ See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plug
 /plugin install cogni-canvas@cogni-works
 /plugin install cogni-claims@cogni-works
 /plugin install cogni-copywriting@cogni-works
-/plugin install cogni-diamond@cogni-works
+/plugin install cogni-consulting@cogni-works
 /plugin install cogni-gpt-researcher@cogni-works
 /plugin install cogni-marketing@cogni-works
 /plugin install cogni-narrative@cogni-works
@@ -100,7 +100,7 @@ cogni-works/
 ├── cogni-canvas/                            # Lean Canvas authoring
 ├── cogni-claims/                           # Claim verification
 ├── cogni-copywriting/                      # Copywriting toolkit
-├── cogni-diamond/                           # Double Diamond orchestrator
+├── cogni-consulting/                           # Double Diamond orchestrator
 ├── cogni-gpt-researcher/                   # Multi-agent research reports
 ├── cogni-marketing/                        # B2B marketing content engine
 ├── cogni-narrative/                        # Story arc narrative transformation

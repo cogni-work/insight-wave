@@ -72,7 +72,7 @@ Or describe what you want:
 | 8 | Research Reports | Multi-agent research, parallel web search, claims verification, export | cogni-gpt-researcher |
 | 9 | B2B Marketing Content | GTM paths, 3D content matrix, campaigns, editorial calendar, dashboard | cogni-marketing |
 | 10 | Sales Pitches | Why Change methodology, unconsidered needs, business case, proposals | cogni-sales |
-| 11 | Consulting Orchestration | Double Diamond framework, vision framing, phase-gated delivery, cross-plugin dispatch | cogni-diamond |
+| 11 | Consulting Orchestration | Double Diamond framework, vision framing, phase-gated delivery, cross-plugin dispatch | cogni-consulting |
 
 Each course is ~45 minutes with ~5 modules following the cycle: Theory → Demo → Exercise → Quiz → Recap. Course 11 (Diamond) is the capstone — it orchestrates most other plugins.
 
@@ -156,7 +156,7 @@ cogni-teacher/
 | cogni-gpt-researcher | Yes | Course 8: multi-agent research reports |
 | cogni-marketing | Yes | Course 9: B2B marketing content engine |
 | cogni-sales | Yes | Course 10: sales pitch generation |
-| cogni-diamond | Yes | Course 11: Double Diamond consulting orchestration |
+| cogni-consulting | Yes | Course 11: Double Diamond consulting orchestration |
 
 Each course teaches the corresponding plugin — all are required for the full curriculum but courses can be taken independently.
 
