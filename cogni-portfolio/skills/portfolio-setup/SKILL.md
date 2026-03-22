@@ -112,7 +112,17 @@ Match the company to a portfolio taxonomy template using all available context �
 4. If user confirms, add taxonomy to `portfolio.json` (schema unchanged)
 5. If no template matches or user declines, skip — the portfolio works fine without a taxonomy template
 
-### 5.5. Portfolio Scan (when URL and taxonomy available)
+### 5.5. Ask About Additional Data Sources
+
+Before moving to scanning or next steps, ask the user whether they have additional documents that could enrich the portfolio. This is the natural moment — the project structure exists, `uploads/` is ready, and ingesting documents before scanning gives downstream skills more context to work with.
+
+> "Do you have any **internal documents** I should work with? Strategy decks, pitch decks, product specs, pricing models, competitive analyses, or similar material can give me a much richer starting point. Drop them in `uploads/` and I'll extract products, features, and strategic context from them."
+
+If the user provides documents, recommend running the `ingest` skill before proceeding to scan — ingested context makes every downstream skill sharper.
+
+If the user has no documents or wants to skip, proceed to Step 5.6.
+
+### 5.6. Portfolio Scan (when URL and taxonomy available)
 
 If a company URL/domain was captured in Step 1 AND a taxonomy template was selected in Step 5, offer to scan:
 
@@ -128,7 +138,7 @@ If no taxonomy template was selected in Step 5, skip — scanning requires a tax
 
 Present the created project structure and suggest next steps.
 
-**If portfolio scan ran in Step 5.5:** Products and features have been discovered and imported.
+**If portfolio scan ran in Step 5.6:** Products and features have been discovered and imported.
 
 1. Refine products with the `products` skill (positioning, pricing tier)
 2. Refine features with the `features` skill (IS-layer descriptions)
