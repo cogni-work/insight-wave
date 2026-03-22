@@ -140,18 +140,18 @@ it works), and one differentiating detail. Enumerating process steps or componen
 mechanism specificity — the strategist cannot build differentiated DOES/MEANS from a list
 of sub-capabilities.
 
-- **Pass**: Description names a single mechanism with a clear approach — the strategist can immediately translate into buyer language. Opening phrase communicates the capability within 3 seconds.
-- **Warn**: Description names the domain and a generic mechanism but the strategist would need one follow-up to understand what makes it different from competitors, OR description enumerates 3-4 components instead of naming the unifying approach
+- **Pass**: Description names a single mechanism with a clear approach — the strategist can immediately translate into buyer language without needing to ask what the mechanism means for a buyer. Opening phrase communicates the capability within 3 seconds.
+- **Warn**: Description names the domain and a generic mechanism but the strategist would need one follow-up to understand what makes it different from competitors, OR description enumerates 3-4 components instead of naming the unifying approach, OR description is technically specific but internally-focused — the strategist can see it is a real capability but would need to ask "what does this mean for a buyer?" before writing a DOES statement (e.g., pipeline topology, agent count, code architecture details)
 - **Fail**: Description restates the feature name or enumerates 5+ process steps — the strategist would need a discovery session
 
 #### 2. Differentiation Potential (25%)
 Does the description include at least one detail a competitor cannot trivially claim?
 Apply the **swap test**: replace the company/product name with a competitor — does the
-description still hold? If yes, it lacks differentiation. The strategist needs a
+description still hold? If yes, it lacks differentiation. Beyond the swap test, apply the **Value Wedge** (Corporate Visions): is the differentiating detail (1) unique to this product, (2) important to the target buyer — something they actively evaluate, not an invisible architectural choice, and (3) defensible with evidence — demonstrable in a demo, backed by data, or provable through a customer story? The strategist needs a
 specific approach, architecture, or constraint to build non-generic messaging.
 
-- **Pass**: Description includes a specific approach competitors cannot easily claim (unique algorithm, data model, architecture choice)
-- **Warn**: Description is accurate but generic — passes the swap test (any competitor could claim the same). Uses only standard vocabulary (orchestriert, aggregiert, konsolidiert) without a specific approach.
+- **Pass**: Description includes a specific approach competitors cannot easily claim (unique algorithm, data model, architecture choice) that is also buyer-recognizable — buyers would evaluate this capability
+- **Warn**: Description is accurate but generic — passes the swap test (any competitor could claim the same). Uses only standard vocabulary (orchestriert, aggregiert, konsolidiert) without a specific approach. Also warn when a differentiator is unique but not buyer-important (e.g., a specific internal data structure no buyer would evaluate).
 - **Fail**: Description is so vague it could describe any product in the category
 
 #### 3. Proposition Readiness (20%)
@@ -159,8 +159,8 @@ Can the strategist immediately craft an IS/DOES/MEANS triple from this descripti
 without needing follow-up questions? This is a synthesis test: mechanism clarity +
 differentiation + clean scoping together determine readiness.
 
-- **Pass**: Strategist could write IS/DOES/MEANS immediately — the feature gives them enough to work with
-- **Warn**: Strategist would need 1 clarifying question before writing strong messaging
+- **Pass**: Strategist could write IS/DOES/MEANS immediately — the feature gives them enough to work with. The IS-to-DOES translation is self-evident: reading the IS, the DOES practically writes itself.
+- **Warn**: Strategist would need 1 clarifying question before writing strong messaging. The IS is factually clear but the buyer angle is not obvious — the strategist can see what the capability does but needs to ask who cares and why.
 - **Fail**: Strategist would need a discovery session to understand what this feature actually does
 
 #### 4. Naming Clarity (15%)
