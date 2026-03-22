@@ -21,20 +21,38 @@ If a project already exists for the company, redirect to the `portfolio-resume` 
 
 ## Workflow
 
-### 1. Gather Company Context
+### 1. Gather Company Context (Data-First)
 
-Collect four required fields:
+The goal is to fill four fields (company name, description, industry, products) with minimal questions. Read available data first, then ask only for what's missing.
 
-- **Company name**: Legal or trading name
-- **Description**: One-sentence summary of what the company does
-- **Industry**: Primary industry sector (e.g., "Cloud Infrastructure", "B2B SaaS")
-- **Products**: List of main products or services offered *(optional if a company URL was provided — the scan in Step 5.5 will discover these)*
+#### Step 1a: Silent reads (before asking anything)
 
-If the user has provided some context already, extract what is available and ask only for missing fields.
+- **Workspace config**: Check if `.workspace-config.json` exists in the workspace root. If it contains a `language` field, lowercase it and use as the portfolio language (e.g., `"DE"` → `"de"`).
+- **Conversation context**: Extract any company info the user already mentioned (name, URL, industry, what they sell).
+- **Uploads**: Scan `uploads/` for existing documents (strategy decks, lean canvases, pitch decks). Their presence means the user has data you can work with.
 
-**Language detection**: After collecting the four fields above, check if a `.workspace-config.json` file exists in the workspace root directory. If it contains a `language` field, lowercase the value and use it as the portfolio language (e.g., `"DE"` becomes `"de"`). If no workspace config exists or it has no `language` field, ask the user which language to use for generated content (default: `"en"`).
+#### Step 1b: Ask what data is available (one question, not four)
 
-**Web research (optional)**: When the user provides a company URL or website, delegate to a subagent (Agent tool) to extract the company description, industry sector, and broad service areas from the company's public pages. Store the company domain for use in Step 5.5. Do NOT attempt detailed product discovery or feature-level analysis — that is the job of the full portfolio scan in Step 5.5. Present findings to the user for confirmation — never auto-populate without review.
+Instead of asking for name, description, industry, and products separately, ask what the user can share:
+
+> "To get started, what can you share? A **company website URL** is ideal — I can extract most of what I need from it. **Documents** (strategy decks, lean canvases, pitch decks) in `uploads/` also work great. Or just tell me the **company name** and I'll work from there."
+
+If the user already provided a URL or company name in their initial message, skip this question and proceed directly to Step 1c.
+
+#### Step 1c: Extract context from the data source provided
+
+- **URL provided →** delegate to a subagent (Agent tool) immediately to extract company name, description, industry sector, and broad service areas from the company's public pages. Store the company domain for use in Step 5.5. Do NOT attempt detailed product discovery or feature-level analysis — that is the job of the full portfolio scan in Step 5.5.
+- **Documents in uploads/ →** scan them for company context (name, description, industry, products). A strategy deck or lean canvas often contains all four fields.
+- **Canvas file →** extract via canvas mapping (the `portfolio-canvas` skill handles this, but you can extract company-level context directly).
+- **Just a name (no URL, no documents) →** fall back to asking for description, industry, and products individually. This is the last resort, not the default path.
+
+#### Step 1d: State what you found
+
+Present your findings as testable assumptions: "From your website, I see Acme Cloud Services is a cloud infrastructure company offering X, Y, Z. Correct me if any of this is off."
+
+#### Step 1e: Ask only for what's missing
+
+If web research or documents filled name, description, and industry, don't re-ask — just confirm. Only ask for fields that no data source could answer. If no language was detected from workspace config, ask which language to use for generated content (default: `"en"`).
 
 ### 2. Review with User
 
@@ -51,10 +69,7 @@ Present the gathered context as a summary for confirmation before creating anyth
 
 The slug is derived from the company name in kebab-case — keep it short and recognizable (e.g., "Acme Cloud Services" -> `acme-cloud`).
 
-Ask explicitly:
-- Does this look right?
-- Anything to add or correct?
-- Happy with the project slug?
+Ask: "Correct anything that's off, or confirm to proceed."
 
 Iterate until the user confirms. They know their business best.
 

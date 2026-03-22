@@ -28,37 +28,50 @@ Every downstream entity in the portfolio — features, propositions, markets, so
 
 **Think about the customer journey.** Products don't exist in isolation — customers move between them. How does someone discover you? What do they buy first? What's the expansion path? A portfolio that doesn't have a clear land-and-expand motion is leaving revenue on the table.
 
-## Phase 1: Strategic Discovery
+## Phase 1: Strategic Discovery (Data-First)
 
-Before defining any products, understand the business. Read `portfolio.json` for company context, then have a conversation. Adapt your questions based on what you already know — skip what's obvious, dig into what's ambiguous.
+Before defining any products, understand the business by reading available data first — then ask only what the data doesn't answer.
 
-### Discovery Questions (pick what's relevant)
+### Read available data (silent, before any questions)
 
-**Business model clarity:**
-- What problems does your company solve? For whom?
-- How do customers buy from you — single product, mix-and-match, platform + modules?
-- What's the revenue model for each product — subscription (SaaS), project-based (consulting), partnership (revenue-share), or hybrid? This determines how solutions are structured downstream, so getting it right here avoids rework later.
+Read all of the following that exist, without presenting raw data to the user:
 
-**Product landscape:**
-- Walk me through what you sell today. What do customers actually pay for?
-- Are there offerings in development or planned for the near future?
-- Which offering generates the most revenue? Which has the most growth potential?
-- Is there anything you sell that you wish you didn't? Anything you don't sell yet but should?
+- **`portfolio.json`** — company name, description, industry, products list, `canvas_context` (problems, UVP, channels, cost_structure, unfair_advantage if populated by canvas or setup)
+- **`products/*.json`** — existing product definitions (descriptions, positioning, revenue_model, maturity)
+- **`features/*.json`** — existing features reveal what capabilities are already mapped to products
+- **`context/context-index.json`** — check `by_relevance["products"]` or `by_category["strategic"]` for ingested institutional knowledge (board decks, strategy docs, positioning papers)
+- **`competitors/*.json`** — existing competitive analysis reveals market positioning
+- **`uploads/`** — unprocessed documents that may contain product information
 
-**Differentiation and competitive landscape:**
-- What makes your offerings different from alternatives? Why do customers choose you?
-- Where do you lose deals? What do competitors offer that you don't?
-- Who are your top 2-3 competitors? Do they sell one product or many? How does their portfolio structure compare to yours?
+**Web research:** When the user provides a company URL or asks for research-backed input, delegate to a subagent immediately to extract product offerings from the company's website, documentation, or marketing pages. This is a data source, not an afterthought — use it early to fill gaps.
 
-**Customer journey:**
-- Do different customer segments buy different things, or does everyone buy the same thing?
-- If a customer visited your website, would they immediately understand what you sell and how the offerings relate to each other?
-- What does a typical customer buy first? What do they buy next? Is there a natural expansion path through your portfolio?
-- Do customers ever buy one product and never touch the others? What does that tell you about portfolio coherence?
+### State what you found
 
-**Web research (optional):** When the user provides a company URL or asks for research-backed input, delegate to a subagent to extract product offerings from the company's website, documentation, or marketing pages. This is especially useful when the user hasn't formally documented their product portfolio yet.
+Present your inferences as testable assumptions before asking anything:
 
-Do not ask all of these. Read the room. If the user has a clear portfolio and just wants to capture it, move quickly. If they're uncertain about product boundaries, spend more time here.
+- Product count and boundaries from `portfolio.json` products list and existing `products/` files
+- Revenue model signals from product descriptions (subscription vs. project indicators)
+- Customer segments from `canvas_context` (if available)
+- Differentiation from UVP and unfair_advantage fields (if available)
+- Maturity signals from product descriptions, launch dates, or feature readiness levels
+
+Example: "Based on your portfolio, I see 3 products structured around managed services, cloud infrastructure, and consulting. The descriptions suggest project-based revenue models for consulting and subscription for cloud. Your UVP emphasizes certified partnerships — correct me if any of this is off."
+
+### Gap-filling questions (ask only what data doesn't answer)
+
+After stating inferences, ask only about genuine gaps. Conditionalize every question — if the data already answers it, skip it:
+
+- **Revenue model**: Ask only if product descriptions don't indicate whether it's subscription, project, or hybrid
+- **Offerings in development**: Ask only if no products have `maturity: "concept"` or `"development"`
+- **Where you lose deals**: Always worth asking — hard to infer from data
+- **Customer buying pattern**: Ask only if no customer profiles or canvas_context exist — "What does a typical customer buy first? Is there an expansion path?"
+- **Growth potential**: Ask only if maturity data doesn't reveal lifecycle position
+
+Do not ask "Walk me through what you sell" — the data answers this. Do not ask "What makes you different" — UVP and positioning fields answer this. Focus on what genuinely requires the user's judgment: competitive losses, growth bets, and buying dynamics.
+
+### Propose with caveats
+
+Do not wait for all answers. Propose a product structure based on available data with explicit caveats for uncertain areas: "I'm proposing this structure based on what I found — the revenue model for consulting is my assumption since it wasn't specified. Push back on anything that's off."
 
 ## Phase 2: Portfolio Shaping
 

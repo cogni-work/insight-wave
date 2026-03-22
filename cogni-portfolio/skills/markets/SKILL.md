@@ -58,28 +58,47 @@ The workflow adapts to what the user brings. Don't force every interaction throu
 - **User wants to add/edit a specific market** → Handle the operation, but assess whether it reveals a broader issue
 - **User wants to expand to a new region** → Focus on region selection and what translates vs. what doesn't
 
-In all cases, read `portfolio.json` for company context, check `products/` and `features/` for existing capabilities. Markets without features to sell into are academic exercises — make sure there's substance behind every market you propose.
+In all cases, read available data before asking questions — see "Read available data" in the Strategic Discovery section. Markets without features to sell into are academic exercises — make sure there's substance behind every market you propose.
 
-**Internal context (optional):** If `context/context-index.json` exists in the project directory, read entries in `by_relevance["markets"]` or `by_category["market"]`. Internal TAM analyses, customer segmentation studies, and market research provide proprietary sizing data and segment definitions that should take precedence over web research estimates when available. When context entries link to specific market slugs via `entities`, apply that context to those markets specifically.
+## Strategic Discovery (Data-First)
 
-## Strategic Discovery (when the user is starting fresh or vague)
-
-Before proposing markets, understand the business and its fit. Have a conversation — but don't pose questions you'll answer yourself. State what you can infer from existing data and flag assumptions explicitly.
+Before proposing markets, understand the business and its fit by reading available data first.
 
 **Discovery before proposals.** When the user is vague, do not propose specific markets in your first response. State your inferences, ask your questions, and wait for answers. Your questions should actually influence your recommendations — if you propose markets before hearing answers, the questions were theater. Present your market hypothesis only after the user has confirmed or corrected your inferences. The exception: if the user explicitly asks you to just propose something, go ahead — but frame proposals as "based on what I can see, subject to your input on X and Y."
 
-### What to infer and what to ask
+### Read available data (silent, before any questions)
 
-**Infer from existing entities:** Products and features tell you what the company sells. If a monitoring product has features like "container orchestration" and "Kubernetes integration," that strongly suggests cloud-native engineering teams as a market. State these inferences: "Based on your feature set, I see a natural fit with cloud-native engineering teams — correct me if wrong."
+Read all of the following that exist:
 
-**Ask only what you can't infer:**
-- Where are your current customers? (geography, industry, size)
-- Are there segments you've tried to sell into and failed? What happened?
-- Do different customer types use your product differently?
-- Are there markets you're curious about but haven't explored?
-- What's your go-to-market motion — direct sales, self-serve, channel partners?
+- **`portfolio.json`** — company context, `canvas_context` (customer segments, channels, problems)
+- **`products/*.json`** — what the company sells (descriptions, positioning, revenue_model)
+- **`features/*.json`** — capabilities reveal buyer personas (e.g., "Kubernetes integration" → cloud-native engineering teams)
+- **`markets/*.json`** — existing markets (check for gaps and overlap)
+- **`customers/*.json`** — existing customer data reveals geographic and segment patterns
+- **`propositions/*.json`** — existing propositions reveal which markets are already being served
+- **`context/context-index.json`** — check `by_relevance["markets"]` or `by_category["market"]`. Internal TAM analyses, customer segmentation studies, and market research provide proprietary sizing data and segment definitions that should take precedence over web research estimates when available. When context entries link to specific market slugs via `entities`, apply that context to those markets specifically.
 
-Do not ask all of these. If the user has a clear picture and just wants to capture it, move quickly. If they're uncertain about who to sell to, spend more time here.
+### State inferences from data
+
+Present what you learned as testable assumptions:
+
+- From features, infer buyer personas: "Your feature set is entirely pipeline infrastructure — that points to engineering-led buyers"
+- From `canvas_context.channels`, infer go-to-market motion
+- From existing markets, identify coverage gaps: "You have 2 markets in DACH, zero in US"
+- From customers, infer geographic and segment patterns
+- From product descriptions, infer vertical fit
+
+### Gap-filling questions (ask only what data doesn't answer)
+
+After stating inferences, ask only about genuine gaps. Conditionalize every question:
+
+- **Current customers**: Ask only if no customer files exist and portfolio.json lacks geographic indicators
+- **Failed segments**: Always worth asking — hard to infer from data
+- **Different usage patterns**: Ask only if features don't reveal distinct use cases
+- **Unexplored markets**: Always worth asking — the user's curiosity is valuable signal
+- **Go-to-market motion**: Ask only if `canvas_context.channels` and portfolio.json lack channel information
+
+Do not ask all of these. If the user has a clear picture and just wants to capture it, move quickly.
 
 ### Select Target Regions
 

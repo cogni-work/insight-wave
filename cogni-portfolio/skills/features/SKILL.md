@@ -42,24 +42,39 @@ The workflow adapts to what the user brings. Don't force every interaction throu
 - **User asks to review existing features** → Jump to review mode — first run structural triage (fill missing required fields like `product_slug`, `taxonomy_mapping`, `readiness`), then critique what's there, cross-reference with the product description, propose improvements
 - **User wants to add/edit a specific feature** → Handle the operation, but assess whether it reveals a broader issue
 
-In all cases, read `portfolio.json` for company context and check `products/` for existing products. If no products exist, tell the user to define them first using the `products` skill. If only one product exists, use it automatically. If multiple exist, ask which product to work on.
+In all cases, read available data before asking questions — see the data-read list in Discovery below. If no products exist, tell the user to define them first using the `products` skill. If only one product exists, use it automatically. If multiple exist, ask which product to work on.
 
-## Discovery (when the user is vague or starting fresh)
+## Discovery (Data-First)
 
-Before listing features, understand the product. Have a conversation — but don't pose questions you'll answer yourself. Instead, state what you can infer from existing data (product description, company context) and flag your assumptions explicitly: "Based on your product description, I'm assuming you have X — correct me if wrong." This is more efficient than asking questions and waiting for answers that may never come.
+Before listing features, understand the product by reading all available data first.
 
-### What to infer and what to ask
+### Read available data (silent, before any questions)
 
-**Infer from the product file:** The product description in `products/{slug}.json` often contains implicit features. Extract every capability claim and use them as your starting point. State these as assumptions: "Your product description mentions 'automatic schema detection' — I'm treating that as a feature."
+Read all of the following that exist:
 
-**Ask only what you can't infer:**
+- **`portfolio.json`** — company context, industry, `canvas_context` (if populated)
+- **`products/{slug}.json`** — the product description often contains implicit features. Extract every capability claim as your starting point.
+- **`features/*.json`** — existing features for this product and sibling products (for overlap detection)
+- **`context/context-index.json`** — check `by_relevance["features"]` or `by_category["technical"]`. Product roadmaps, architecture docs, and technical specs inform capability decomposition and help identify features the user may not have mentioned. When context entries link to specific product slugs via `entities`, apply that context to features of those products specifically.
+- **`customers/*.json`** — customer pain points can inform feature prioritization
+- **`propositions/*.json`** — existing propositions reveal which features are most commercially important
+
+### State inferences from data
+
+State what you can infer from existing data and flag your assumptions explicitly: "Based on your product description, I'm assuming you have X — correct me if wrong." This is more efficient than asking questions and waiting for answers that may never come.
+
+Specifically:
+- Extract every capability claim from the product description and state them as assumed features
+- Note any features implied by customer pain points or proposition DOES statements
+- Flag potential overlaps with sibling product features
+
+### Gap-filling questions (ask only what data doesn't answer)
+
 - What's the core technology or engine that powers the product?
 - What does the product do that competitors don't?
 - What do customers take for granted that's actually non-trivial to build?
 
 Do not ask all of these. If the user has a clear picture and just wants to capture it, move quickly. If they're vague about what their product does ("it's a platform"), spend more time here.
-
-**Internal context (optional):** If `context/context-index.json` exists in the project directory, read entries in `by_relevance["features"]` or `by_category["technical"]`. Product roadmaps, architecture docs, and technical specs inform capability decomposition and help identify features the user may not have mentioned. When context entries link to specific product slugs via `entities`, apply that context to features of those products specifically.
 
 **Web research (optional):** When the user provides a product URL or asks for research-backed features, delegate to a subagent (Agent tool) to extract capabilities from the product's website, documentation, or marketing pages. For improving existing features with quality issues, see the Research & Improve section — the `quality-enricher` agent does targeted company-scoped web research based on specific quality gaps.
 

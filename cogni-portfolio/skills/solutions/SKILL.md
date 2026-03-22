@@ -83,7 +83,9 @@ For the selected proposition, read (in parallel where possible):
 - `"hybrid"` → Skip to **Step 3s** (use subscription structure with project add-ons)
 - `"project"` or absent → Continue to **Step 3** (Project Solutions)
 
-Summarize the key context for the user in 2-3 sentences before proposing anything. Include the solution type you'll use and why: "This is a subscription product (revenue_model: subscription) targeting mid-market buyers. The solution should be onboarding + subscription tiers, not a consulting engagement."
+**State inferences before proposing.** Summarize key context as testable assumptions: "This is a subscription product (revenue_model: subscription) targeting mid-market buyers, so I'll design onboarding + subscription tiers, not a consulting engagement. Your competitor charges EUR 50K-200K range based on competitor data. Your customer profile shows CTO-level buyers who prioritize time-to-value under 2 weeks — I'll scope the PoV tier accordingly. Correct me if any of this is off."
+
+If cost model data, delivery_defaults, or rate cards exist in context, present the rates you found rather than asking for them. Ask only about pricing inputs that no data source could answer.
 
 ### 3. Co-develop Implementation Phases (Project Solutions)
 

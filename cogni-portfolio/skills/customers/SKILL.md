@@ -27,17 +27,27 @@ List existing markets (read `markets/` directory) and identify those without cus
 - Create profiles for all markets without them
 - Create a profile for a specific market
 
-### 2. Gather Customer Intelligence
+### 2. Gather Customer Intelligence (Data-First)
 
-For each market, build the customer profile from available context:
+For each market, read all available data before asking the user anything:
 
 - **Company context** (`portfolio.json`): Industry knowledge informs buyer types
 - **Market definition** (`markets/{slug}.json`): Segmentation criteria constrain the buyer
 - **Proposition messaging** (`propositions/`): DOES/MEANS statements reveal which pain points are being addressed
+- **Competitor analysis** (`competitors/`): Competitor targeting reveals buyer roles and decision patterns
 - **Internal context** (`context/context-index.json`, if it exists) -- read entries in `by_relevance["customers"]`. Interview transcripts, CRM summaries, and buyer persona research provide first-hand buyer intelligence. When context entries link to specific market slugs via `entities`, apply that context to those market profiles specifically.
-- **User input**: The user may know their buyers well — ask directly
 
 **Web research (optional)**: When the user requests research-backed profiles, delegate to a subagent (Agent tool) to search for industry buyer surveys, role descriptions, and purchasing behavior data for this market segment. This is especially useful when the user lacks first-hand buyer knowledge.
+
+### 2b. State Inferences Before Building
+
+Before building profiles, present what you inferred from available data as testable assumptions:
+
+- "Based on your market segmentation (mid-market SaaS, 50-500 employees), I'm inferring a VP Engineering buyer as the primary decision-maker."
+- "Your proposition DOES statements around MTTR reduction suggest SRE pain points — I'll use these as the primary pain points."
+- "Your competitor analysis shows competitors targeting CIOs — this suggests you need a CIO profile in the buying committee too."
+
+Ask the user only about aspects not covered by existing data — focus on: buying committee dynamics (who has veto power), information sources (where buyers learn), and deal stall points (where purchases get stuck). Do not re-ask about pain points if propositions already cover them, or about decision-makers if the data makes them obvious.
 
 ### 3. Build Customer Profiles
 
@@ -84,11 +94,9 @@ Write to `customers/{market-slug}.json` (same slug as the market):
 
 ### 5. Review with User
 
-Present each market's profiles for review. The user likely knows their buyers better than any research — ask explicitly:
+Present each market's profiles for review. Frame it as "confirm or correct my inferences" rather than fresh discovery:
 
-- Are these the right roles? Missing anyone?
-- Do the pain points ring true?
-- Anything surprising or off about the buying criteria?
+"Here's what I built from your portfolio data — are these the right roles? Anything missing or off?"
 
 Iterate until the profiles feel accurate.
 

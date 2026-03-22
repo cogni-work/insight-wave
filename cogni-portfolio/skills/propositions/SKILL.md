@@ -59,23 +59,41 @@ When generating multiple propositions for the same market, watch for repetitive 
 
 After batch generation, do a quick cross-check: read all generated propositions for the market and flag any talking point that appears 3+ times. Propose rewrites for the duplicates.
 
-## Strategic Assessment (when the user is exploring or starting fresh)
+## Strategic Assessment (Data-First)
 
-Before generating propositions, understand the messaging landscape. Have a conversation — but don't just ask questions. State what you observe and flag your assessment explicitly.
+Before generating propositions, understand the messaging landscape by reading all available data first.
 
-### What to assess and what to ask
+### Read available data (silent, before any questions)
 
-**Assess from existing entities:** Read the feature descriptions and market definitions already in the portfolio. Cross-reference them to form a preliminary view: "Your Real-time Monitoring feature seems strongest for the Mid-market SaaS market because their #1 pain point is uptime during scaling — I'd start there."
+Read all of the following that exist:
 
-**Probe the buyer's world:**
-- What language do buyers in this market actually use? (Industry jargon matters — "MTTR" lands with SRE teams, "system availability" lands with CIOs)
-- What's the buying trigger? (Pain event, budget cycle, compliance deadline, competitive pressure?)
-- Who are the decision-makers, and what metrics do they care about?
-- What do competitors claim in this market? Where is the white space?
+- **`portfolio.json`** — company context, language
+- **`features/*.json`** — all feature descriptions (these become the IS layer)
+- **`markets/*.json`** — all market definitions with segmentation and pain points
+- **`propositions/*.json`** — existing propositions (understand coverage and quality)
+- **`customers/*.json`** — buyer personas with pain points, buying criteria, and decision roles
+- **`competitors/*.json`** — competitive positioning and claims
+- **`context/context-index.json`** — check `by_relevance["propositions"]`. For each matching slug, read `context/{slug}.json` and incorporate the `summary` and `detail` into your assessment. Strategic context informs positioning angles for DOES/MEANS statements. Competitive context reveals differentiation opportunities. Customer context provides buyer language and pain point framing. When context entries reference specific feature or market slugs via the `entities` field, apply that intelligence to those propositions specifically. Context supplements but does not override user input or portfolio entity data.
 
-**Ask only what you can't infer.** If the market definition includes pain points and buyer personas, use those directly. Don't repeat questions the user already answered during market definition.
+### State what you found
 
-**Internal context (optional):** If `context/context-index.json` exists in the project directory, read it and look up entries in `by_relevance["propositions"]`. For each matching slug, read `context/{slug}.json` and incorporate the `summary` and `detail` into your assessment. Strategic context informs positioning angles for DOES/MEANS statements. Competitive context reveals differentiation opportunities. Customer context provides buyer language and pain point framing. When context entries reference specific feature or market slugs via the `entities` field, apply that intelligence to those propositions specifically. Context supplements but does not override user input or portfolio entity data.
+Present inferences from the data before asking anything:
+
+- From customer profiles: buyer language, pain points, and decision criteria
+- From competitor files: competitive claims and white space opportunities
+- From feature descriptions: the strongest DOES angles based on mechanism specificity
+- From market definitions: which Feature x Market pairs have the strongest natural fit
+
+Example: "Your customer profiles show CTO-level buyers focused on MTTR reduction. Your competitors claim 'AI-powered insights' but none cite specific latency benchmarks — that's your white space for the Monitoring feature."
+
+### Gap-filling questions (ask only what data doesn't answer)
+
+After stating inferences, ask only about genuine gaps. If customer profiles exist for this market, do not ask about buyer language, decision-makers, or buying criteria — present what you found and ask the user to correct.
+
+- **Buyer language**: Ask only if no customer profiles exist for this market
+- **Buying trigger**: Ask only if customer `buying_criteria` don't reveal trigger events
+- **Decision-makers**: Ask only if no customer profiles exist (customers/*.json already has this)
+- **Competitor claims**: Ask only if no competitor files exist for relevant propositions
 
 **Web research (optional):** When the user requests research-backed messaging, delegate to a subagent (Agent tool) to search for industry benchmarks, competitor claims, and supporting evidence relevant to each market segment. Add findings to the `evidence` array. This is especially useful for quantifying DOES statements with real market data.
 
