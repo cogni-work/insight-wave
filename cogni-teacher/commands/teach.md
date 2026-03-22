@@ -28,7 +28,7 @@ Map input to course IDs:
 - 8, research, researcher, gpt-researcher → research
 - 9, marketing, content, campaign → marketing
 - 10, sales, pitch, why-change → sales
-- 11, diamond, consulting, orchestrator, double-diamond → diamond
+- 11, diamond, consulting, orchestrator, double-diamond → consulting
 
 Steps:
 1. Load the teach skill to get curriculum context and delivery rules

@@ -34,7 +34,7 @@ Eleven courses, designed to build on each other:
 | 8 | `research` | Research Reports | cogni-research |
 | 9 | `marketing` | B2B Marketing Content | cogni-marketing |
 | 10 | `sales` | Sales Pitches | cogni-sales |
-| 11 | `diamond` | Consulting Orchestration | cogni-consulting |
+| 11 | `consulting` | Consulting Orchestration | cogni-consulting |
 
 ## How to Teach
 

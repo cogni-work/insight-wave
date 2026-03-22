@@ -1,6 +1,6 @@
 {
   "name": "cogni-teacher",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Interactive 45-minute courses teaching Claude Cowork fundamentals and cogni-works marketplace plugins to consultants. 11-course curriculum with hands-on exercises, quizzes, and progress tracking.",
   "author": {
     "name": "Stephan de Haas",
