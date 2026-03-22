@@ -32,9 +32,8 @@ Exceptions where English stays:
 
 ## Environment
 
-The skill scripts live at `${COGNI_WORKSPACE_PLUGIN}/skills/cogni-issues/scripts/`.
-If `COGNI_WORKSPACE_PLUGIN` is not set, fall back to the workspace root's plugin path
-(typically the directory containing `.claude-plugin/plugin.json`). If you still can't
+The skill scripts live at `${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/`.
+`CLAUDE_PLUGIN_ROOT` points to the cogni-help plugin directory. If you can't
 find the scripts, tell the user — don't guess paths.
 
 ## Modes

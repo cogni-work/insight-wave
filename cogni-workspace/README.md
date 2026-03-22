@@ -49,8 +49,9 @@ This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/
 /update-workspace  # refresh after plugin changes
 /pick-theme        # select a theme interactively
 /manage-themes     # extract, create, audit, or apply themes
-/cogni-issues      # file a GitHub issue against cogni-works
 ```
+
+> **Note:** Issue filing (`/issues`) has moved to [cogni-help](../cogni-help).
 
 Or describe what you want:
 
@@ -74,7 +75,6 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | `init-workspace` | skill | Full workspace initialization — dependencies, discovery, preferences, settings, themes |
 | `manage-themes` | skill | 8 theme operations: recommend, list, grab from website, grab from PPTX, create from preset, audit, generate showcase, apply |
 | `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
-| `cogni-issues` | skill | GitHub issue lifecycle — create (with duplicate check and root cause hypothesis), list, status, browse |
 | `update-workspace` | skill | Re-scan plugins, refresh env vars, update output styles, backup and rollback support |
 | `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
@@ -87,11 +87,10 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       6 workspace management skills
+├── skills/                       5 workspace management skills
 │   ├── init-workspace/
 │   ├── manage-themes/
 │   ├── pick-theme/
-│   ├── cogni-issues/
 │   ├── update-workspace/
 │   └── workspace-status/
 ├── hooks/                        Session lifecycle hooks

@@ -25,7 +25,7 @@ Eleven courses, designed to build on each other:
 | # | Course ID | Title | Plugins Covered |
 |---|-----------|-------|-----------------|
 | 1 | `cowork-fundamentals` | Claude Cowork Fundamentals | cogni-help (meta) |
-| 2 | `workspace-obsidian` | Workspace & Obsidian Setup | cogni-workspace (incl. cogni-issues) + cogni-obsidian |
+| 2 | `workspace-obsidian` | Workspace & Obsidian Setup | cogni-workspace + cogni-obsidian + cogni-help:cogni-issues |
 | 3 | `basic-tools` | Basic Tools | cogni-copywriting + cogni-narrative + cogni-claims |
 | 4 | `tips-scouting` | Trend Scouting & Selection | cogni-tips (Part 1) |
 | 5 | `tips-reporting` | Trend Reporting | cogni-tips (Part 2) |
