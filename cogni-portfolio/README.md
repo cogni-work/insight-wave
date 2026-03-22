@@ -1,158 +1,164 @@
-# Portfolio Messaging Plugin
+# cogni-portfolio
 
-A portfolio messaging and proposition planning plugin for [Claude Cowork](https://claude.ai/cowork). Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis to export-ready deliverables.
+A [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis to export-ready deliverables.
 
-> **Note**: This plugin assists with B2B messaging strategy and portfolio planning. All outputs — especially market sizing, competitive intelligence, and claim verification — should be reviewed by domain experts before use in sales materials, proposals, or strategic decisions.
+## Why this exists
+
+B2B companies know what they sell — but struggle to articulate why each market segment should care. The gap between product knowledge and market-specific messaging is where most positioning stalls:
+
+| Problem | What happens | Impact |
+|---------|-------------|--------|
+| Inside-out messaging | Product descriptions list features without connecting to buyer pain | Prospects don't see themselves in the pitch |
+| No market differentiation | Same positioning for every segment — enterprise, mid-market, and SME hear identical value props | Messaging resonates with nobody specifically |
+| Manual portfolio analysis | Sizing markets, mapping competitors, and writing propositions per Feature x Market takes weeks of analyst time | Portfolio positioning takes 2 weeks of work per product line |
+| Scattered deliverables | Propositions, competitive intel, and pricing live in disconnected spreadsheets and slide decks | Sales teams can't find or trust the latest messaging |
+
+## What it is
+
+A structured portfolio messaging workflow for Claude Cowork. Eight pluggable taxonomy templates (B2B ICT, SaaS, FinTech, HealthTech, etc.) provide industry-standard classification. The IS/DOES/MEANS framework ensures every proposition answers: what IS the capability, what DOES it do for the buyer, and what does it MEAN for their business.
+
+## What it does
+
+1. **Setup** a portfolio project — capture company context, select industry taxonomy, initialize directory structure
+2. **Define** products, features (IS layer), and target markets with TAM/SAM/SOM sizing
+3. **Generate** IS/DOES/MEANS propositions for each Feature x Market pair — individually or in batch
+4. **Plan** solutions with implementation phases and tiered pricing (PoV/S/M/L)
+5. **Analyze** 3-5 competitors per proposition with positioning, strengths, weaknesses, and differentiation
+6. **Profile** ideal customers and buyer personas per target market
+7. **Verify** research-backed claims against cited sources via cogni-claims
+8. **Synthesize** a structured messaging repository and export proposals, briefs, and workbooks
+
+## What it means for you
+
+- **Portfolio positioning in days, not weeks.** What used to take 2 weeks of analyst time per product line — market sizing, competitive mapping, proposition writing — runs in structured parallel with research agents.
+- **Market-specific by design.** Every proposition is scoped to a Feature x Market pair. The same feature gets different DOES/MEANS messaging for enterprise vs. mid-market.
+- **Eight industry taxonomies built in.** B2B ICT (57 categories), SaaS, FinTech, HealthTech, MarTech, Industrial Tech, Professional Services, Commercial Open Source — auto-selected by company context.
+- **Export-ready.** Proposals, market briefs, portfolio workbooks (markdown and XLSX), and an interactive HTML dashboard — ready for sales, investors, or internal strategy.
 
 ## Installation
 
 This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/cogni-works) and is installed automatically with the marketplace.
 
-## Skills
+> **Note**: All outputs — especially market sizing, competitive intelligence, and claim verification — should be reviewed by domain experts before use in sales materials, proposals, or strategic decisions.
 
-| Skill | Description |
-|-------|-------------|
-| `portfolio-setup` | Create a new portfolio project — capture company context, initialize directory structure, and generate portfolio.json |
-| `products` | Define and manage named product offerings with positioning, pricing tier, maturity, and versioning |
-| `features` | Add market-independent capabilities (IS layer) per product, with bulk import from documentation |
-| `portfolio-ingest` | Extract portfolio entities from uploaded documents (md, docx, pptx, xlsx, pdf) in the uploads folder |
-| `markets` | Discover and size target markets with TAM/SAM/SOM — via LLM estimation or delegated web research |
-| `propositions` | Generate IS/DOES/MEANS messaging for each Feature x Market pair, individually or in batch |
-| `solutions` | Define implementation plans and pricing tiers (PoV/S/M/L) per proposition for customer business cases |
-| `packages` | Bundle solutions into sellable packages per Product x Market combination with tiered pricing |
-| `compete` | Analyze 3-5 competitors per proposition with positioning, strengths, weaknesses, and differentiation |
-| `customers` | Create ideal customer profiles and buyer personas per target market |
-| `portfolio-verify` | Orchestrate claim verification for research-backed assertions (delegates to cogni-claims plugin) |
-| `synthesize` | Generate structured messaging repository with per-market summaries and integrated claim status |
-| `portfolio-export` | Produce deliverables — proposition proposals, market briefs, portfolio workbooks (markdown and XLSX) |
-| `portfolio-dashboard` | Generate an interactive HTML dashboard showing the full portfolio status |
-| `portfolio-scan` | Discover a company's service offerings via web research, classify against a portfolio taxonomy template (e.g., B2B ICT: 8 dimensions / 57 categories), and import as portfolio entities |
-| `tips-bridge` | Bidirectional integration between cogni-tips TIPS analysis and cogni-portfolio product portfolio |
-| `portfolio-resume` | Detect current workflow phase and recommend next actions for an existing project |
+## Quick start
 
-## Agents
+```
+/portfolio-setup                           # create project, capture company context
+/products                                  # define named offerings
+/features                                  # add capabilities per product (IS layer)
+/markets                                   # discover and size target markets
+/propositions                              # generate IS/DOES/MEANS messaging
+/solutions                                 # define implementation plans and pricing
+/compete                                   # analyze competitors per proposition
+/customers                                 # create buyer personas per market
+/portfolio-verify                          # verify claims against sources
+/synthesize                                # generate messaging repository
+/portfolio-export                          # produce proposals, briefs, workbooks
+/portfolio-dashboard                       # interactive HTML status dashboard
+```
 
-| Agent | Description |
-|-------|-------------|
-| `market-researcher` | Web research agent for TAM/SAM/SOM sizing data with claim submission for verification |
-| `competitor-researcher` | Web research agent for competitive intelligence per proposition with claim tracking |
-| `customer-researcher` | Web research agent for named customer profiling and industry context |
-| `customer-review-assessor` | Reviews customer profiles for completeness, accuracy, and sales actionability |
-| `proposition-generator` | Generates IS/DOES/MEANS messaging for a single Feature x Market pair with optional web research |
-| `proposition-quality-assessor` | Reviews propositions for messaging quality, evidence strength, and market fit |
-| `solution-planner` | Plans implementation phases and pricing tiers for a single proposition |
-| `solution-review-assessor` | Reviews solutions for pricing viability, implementation feasibility, and tier differentiation |
-| `feature-quality-assessor` | Assesses feature description quality using LLM intelligence — works in any language |
-| `quality-enricher` | General-purpose quality enrichment agent for iterative improvement cycles |
-| `portfolio-web-researcher` | Template-parameterized parallel web research agent for portfolio scanning across taxonomy dimensions |
+Or just describe what you want in natural language:
 
-## Example Workflows
+- "Set up a portfolio project for our cloud services"
+- "Generate propositions for all features in the enterprise segment"
+- "Who are our top 3 competitors for managed security in mid-market?"
+- "Export a market brief for the DACH healthcare vertical"
 
-### Full Portfolio Build
+## Try it
 
-1. Run `/portfolio-setup` to create a new project and define your company context
-2. (Optional) Drop existing documents into `uploads/` and run `/portfolio-ingest` to import data
-3. Run `/products` to define your named offerings
-4. Run `/features` to add capabilities per product
-5. Run `/markets` to discover and size 3-7 target markets
-6. Run `/propositions` to generate IS/DOES/MEANS messaging for all Feature x Market pairs
-7. Run `/solutions` to define implementation plans and pricing tiers
-8. Run `/compete` to analyze competitors per proposition
-8. Run `/customers` to create buyer personas per market
-9. Run `/portfolio-verify` to check research-backed claims against sources
-10. Run `/synthesize` to generate the messaging repository
-11. Run `/portfolio-export` to produce proposals, briefs, and workbooks
+After installing, type one prompt:
 
-### Resume Existing Work
+> Set up a portfolio project for a cloud infrastructure company targeting mid-market SaaS
 
-1. Run `/portfolio-resume` to detect your current phase and see progress (also detects unprocessed uploads)
-2. Follow the recommended next action
+Claude captures your company context, auto-selects the B2B ICT taxonomy, initializes the project, and walks you through defining products, features, and target markets. From there, generate propositions, competitive analysis, and export-ready deliverables.
 
-### Quick Market Entry Analysis
-
-1. Run `/portfolio-setup` with a focused product scope
-2. Run `/features` to define key capabilities
-3. Run `/markets` with web research for validated sizing
-4. Run `/propositions` to generate messaging for priority markets
-5. Run `/portfolio-export market-brief` to produce market-specific content
-
-## Data Model
+## Data model
 
 All entities are stored as JSON files in the project directory:
 
 | Entity | Storage | Key Fields |
 |--------|---------|------------|
-| Project | `portfolio.json` | company name, description, industry |
+| Project | `portfolio.json` | company name, description, industry, taxonomy, delivery defaults |
 | Product | `products/{slug}.json` | name, positioning, pricing tier, maturity |
 | Feature | `features/{slug}.json` | product_slug, name, description, category |
 | Market | `markets/{slug}.json` | name, segmentation, TAM/SAM/SOM |
-| Proposition | `propositions/{feature}--{market}.json` | IS/DOES/MEANS statements, evidence |
+| Proposition | `propositions/{feature}--{market}.json` | IS/DOES/MEANS statements, evidence, quality score |
 | Solution | `solutions/{feature}--{market}.json` | implementation phases, pricing tiers (PoV/S/M/L) |
 | Competitor | `competitors/{feature}--{market}.json` | name, positioning, strengths, weaknesses |
 | Customer | `customers/{market}.json` | role, pain points, buying criteria |
+| Package | `packages/{product}--{market}.json` | bundled solution tiers |
 
-## Dependencies
+See [references/data-model.md](references/data-model.md) for the full schema with JSON examples and entity relationships.
 
-This plugin works standalone for core messaging workflows. Optional integrations enhance specific capabilities:
+## How it works
 
-- **cogni-claims plugin** — Required for `/portfolio-verify` (claim verification against cited sources)
-- **document-skills plugin** — Required for `/portfolio-ingest` (docx, pptx, xlsx, pdf extraction) and XLSX export in `/portfolio-export`
+Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files organized by entity. The workflow follows a logical progression: setup → products → features → markets → propositions → solutions → compete → customers → verify → synthesize → export. Research-intensive steps (market sizing, competitive analysis, customer profiling) dispatch parallel web-research agents. Propositions are scored by quality assessors against DOES/MEANS criteria, with a quality gate for downstream consumption.
 
-> **Note:** Without these plugins, you can still build the full portfolio through synthesis. Verification and XLSX export will be unavailable.
+## Components
+
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `portfolio-setup` | skill | Create project, capture company context, select taxonomy |
+| `products` | skill | Define and manage named product offerings |
+| `features` | skill | Add market-independent capabilities (IS layer) per product |
+| `portfolio-ingest` | skill | Extract entities from uploaded documents (md, docx, pptx, xlsx, pdf) |
+| `markets` | skill | Discover and size target markets with TAM/SAM/SOM |
+| `propositions` | skill | Generate IS/DOES/MEANS messaging per Feature x Market |
+| `solutions` | skill | Define implementation plans and tiered pricing |
+| `packages` | skill | Bundle solutions into sellable packages per Product x Market |
+| `compete` | skill | Analyze 3-5 competitors per proposition |
+| `customers` | skill | Create ideal customer profiles and buyer personas |
+| `portfolio-verify` | skill | Orchestrate claim verification via cogni-claims |
+| `synthesize` | skill | Generate structured messaging repository |
+| `portfolio-export` | skill | Produce proposals, briefs, and workbooks |
+| `portfolio-dashboard` | skill | Interactive HTML dashboard |
+| `portfolio-scan` | skill | Discover offerings via web research and classify against taxonomy |
+| `tips-bridge` | skill | Bidirectional integration with cogni-tips TIPS analysis |
+| `portfolio-resume` | skill | Detect workflow phase and recommend next actions |
+| `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
+| `competitor-researcher` | agent | Web research for competitive intelligence |
+| `customer-researcher` | agent | Web research for named customer profiling |
+| `customer-review-assessor` | agent | Reviews customer profiles for completeness |
+| `proposition-generator` | agent | Generates IS/DOES/MEANS messaging with optional research |
+| `proposition-quality-assessor` | agent | Reviews propositions for quality and evidence strength |
+| `solution-planner` | agent | Plans implementation phases and pricing tiers |
+| `solution-review-assessor` | agent | Reviews solutions for pricing viability |
+| `feature-quality-assessor` | agent | Assesses feature description quality |
+| `quality-enricher` | agent | General-purpose iterative improvement |
+| `portfolio-web-researcher` | agent | Parallel web research across taxonomy dimensions |
 
 ## Architecture
 
 ```
 cogni-portfolio/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── templates/                    Pluggable taxonomy templates
-│   ├── b2b-fintech/             B2B Fintech (8 dims, 48 cats)
-│   ├── b2b-healthtech/          B2B HealthTech (8 dims, 46 cats)
-│   ├── b2b-ict/                 B2B ICT (8 dims, 57 cats)
-│   ├── b2b-industrial-tech/     B2B Industrial Tech (8 dims, 48 cats)
-│   ├── b2b-martech/             B2B MarTech (8 dims, 45 cats)
-│   ├── b2b-opensource/          B2B Commercial Open Source (8 dims, 50 cats)
-│   ├── b2b-professional-services/ B2B Prof. Services (8 dims, 44 cats)
-│   └── b2b-saas/                B2B SaaS (8 dims, 47 cats)
+├── templates/                    8 pluggable taxonomy templates
+│   ├── b2b-ict/                  Enterprise ICT (8 dims, 57 cats)
+│   ├── b2b-saas/                 B2B SaaS (8 dims, 47 cats)
+│   ├── b2b-fintech/              FinTech (8 dims, 48 cats)
+│   ├── b2b-healthtech/           HealthTech (8 dims, 46 cats)
+│   ├── b2b-martech/              MarTech (8 dims, 45 cats)
+│   ├── b2b-industrial-tech/      Industrial Tech (8 dims, 48 cats)
+│   ├── b2b-professional-services/ Prof. Services (8 dims, 44 cats)
+│   └── b2b-opensource/           Commercial OSS (8 dims, 50 cats)
 ├── skills/                       17 portfolio skills
-│   ├── portfolio-setup/
-│   ├── products/
-│   ├── features/
-│   ├── portfolio-ingest/
-│   ├── markets/
-│   ├── propositions/
-│   ├── solutions/
-│   ├── packages/
-│   ├── compete/
-│   ├── customers/
-│   ├── portfolio-verify/
-│   ├── synthesize/
-│   ├── portfolio-export/
-│   ├── portfolio-dashboard/
-│   ├── portfolio-scan/
-│   ├── tips-bridge/
-│   └── portfolio-resume/
 ├── agents/                       11 delegation agents
-│   ├── market-researcher.md
-│   ├── competitor-researcher.md
-│   ├── customer-researcher.md
-│   ├── customer-review-assessor.md
-│   ├── proposition-generator.md
-│   ├── proposition-quality-assessor.md
-│   ├── solution-planner.md
-│   ├── solution-review-assessor.md
-│   ├── feature-quality-assessor.md
-│   ├── quality-enricher.md
-│   └── portfolio-web-researcher.md
+├── references/
+│   └── data-model.md             Full entity schema
 └── scripts/                      7 utility scripts
-    ├── append-claim.sh
-    ├── cascade-rename.sh
-    ├── project-init.sh
-    ├── project-status.sh
-    ├── sync-portfolio.sh
-    ├── validate-entities.sh
-    └── generate-scan-mapping.sh
 ```
+
+## Dependencies
+
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-claims | No | Claim verification for research-backed assertions via portfolio-verify |
+| document-skills | No | Document ingestion (docx, pptx, xlsx, pdf) and XLSX export |
+| cogni-tips | No | Bidirectional TIPS integration via tips-bridge |
+| cogni-canvas | No | Lean Canvas extraction via portfolio-canvas |
+
+cogni-portfolio is standalone for core messaging workflows. Verification and XLSX export require their respective plugins.
 
 ## Custom development
 

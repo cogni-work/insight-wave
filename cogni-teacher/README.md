@@ -29,24 +29,6 @@ This plugin provides a structured learning path from workspace setup through adv
 - **Real artifacts.** Exercises create actual files using the plugins being taught — not toy examples.
 - **Persistent progress.** Course completion, current module, and timestamps tracked across sessions.
 
-## Dependencies
-
-| Plugin | Required | Purpose |
-|--------|----------|---------|
-| cogni-workspace | Yes | Course 2: workspace initialization and theme management |
-| cogni-obsidian | Yes | Course 2: Obsidian vault setup and note management |
-| cogni-copywriting | Yes | Course 3: document polishing and stakeholder review |
-| cogni-narrative | Yes | Course 3: executive narrative transformation |
-| cogni-claims | Yes | Course 3: citation verification |
-| cogni-tips | Yes | Courses 4-5: trend scouting and reporting pipeline |
-| cogni-portfolio | Yes | Course 6: portfolio messaging and propositions |
-| cogni-visual | Yes | Course 7: slide decks and visual deliverables |
-| cogni-gpt-researcher | Yes | Course 8: multi-agent research reports |
-| cogni-marketing | Yes | Course 9: B2B marketing content engine |
-| cogni-sales | Yes | Course 10: sales pitch generation |
-| cogni-canvas | Yes | Course 6: Lean Canvas authoring as portfolio precursor |
-| cogni-diamond | Yes | Course 11: Double Diamond consulting orchestration |
-
 ## Installation
 
 This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/cogni-works) and is installed automatically with the marketplace.
@@ -157,6 +139,26 @@ cogni-teacher/
     ├── course-status.sh
     └── reset-progress.sh
 ```
+
+## Dependencies
+
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-workspace | Yes | Course 2: workspace initialization and theme management |
+| cogni-obsidian | Yes | Course 2: Obsidian vault setup and note management |
+| cogni-copywriting | Yes | Course 3: document polishing and stakeholder review |
+| cogni-narrative | Yes | Course 3: executive narrative transformation |
+| cogni-claims | Yes | Course 3: citation verification |
+| cogni-tips | Yes | Courses 4-5: trend scouting and reporting pipeline |
+| cogni-portfolio | Yes | Course 6: portfolio messaging and propositions |
+| cogni-canvas | Yes | Course 6: Lean Canvas authoring as portfolio precursor |
+| cogni-visual | Yes | Course 7: slide decks and visual deliverables |
+| cogni-gpt-researcher | Yes | Course 8: multi-agent research reports |
+| cogni-marketing | Yes | Course 9: B2B marketing content engine |
+| cogni-sales | Yes | Course 10: sales pitch generation |
+| cogni-diamond | Yes | Course 11: Double Diamond consulting orchestration |
+
+Each course teaches the corresponding plugin — all are required for the full curriculum but courses can be taken independently.
 
 ## Custom development
 

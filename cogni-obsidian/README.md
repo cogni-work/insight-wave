@@ -107,6 +107,14 @@ cogni-obsidian/
 
 This plugin follows the cogni-x **convention-based zero-coupling** architecture: each plugin owns its output scaffolding from a workspace root provided via environment variables. cogni-obsidian provides the vault and terminal integration layer — it does not manage plugin-specific folder structures.
 
+## Dependencies
+
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-workspace | No | Provides workspace root path and environment variables |
+
+cogni-obsidian is standalone. All cogni-x plugin outputs become browsable vault content automatically through their wikilink conventions.
+
 ## Custom development
 
 Need custom workspace integrations, enterprise vault configurations, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).

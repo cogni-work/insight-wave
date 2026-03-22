@@ -39,20 +39,20 @@ You want AI-native workflows for your sales and marketing teams — either self-
 
 | Plugin | What it does |
 |--------|-------------|
-| [cogni-canvas](./cogni-canvas) | Lean Canvas authoring and refinement. Guides users through creating business model hypotheses with section-by-section critique, coherence checking, and version tracking. |
+| [cogni-canvas](./cogni-canvas) | Lean Canvas authoring and refinement — guided Q&A, section-by-section critique, multi-persona stress testing, and version tracking. |
 | [cogni-claims](./cogni-claims) | Verify sourced claims against cited URLs. Catches citation errors, misquotations, and unsupported conclusions before content ships. |
-| [cogni-copywriting](./cogni-copywriting) | Professional copywriting toolkit with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review, sales enhancement, and readability optimization. |
-| [cogni-diamond](./cogni-diamond) | Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to cogni-works plugins at the right moment. Vision-first, method-aware, phase-gated. |
-| [cogni-gpt-researcher](./cogni-gpt-researcher) | Multi-agent research report generator. STORM-inspired editorial workflow with parallel web research, claims-verified review loops, and three report types (basic, detailed, deep). |
-| [cogni-marketing](./cogni-marketing) | B2B marketing content engine. Bridges TIPS themes and portfolio propositions into channel-ready content across 16 formats — thought leadership, demand gen, lead gen, sales enablement, ABM. |
-| [cogni-narrative](./cogni-narrative) | Story arc-driven narrative transformation. Transforms structured content into compelling executive narratives using 6 story arc frameworks. |
-| [cogni-obsidian](./cogni-obsidian) | Obsidian integration for Claude Cowork workplaces. Scaffolds vaults with Terminal plugin, manages vault configuration, and provides note management with frontmatter support. |
-| [cogni-portfolio](./cogni-portfolio) | Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features, advantages, and benefits with TAM/SAM/SOM targeting, competitor and customer analysis. |
-| [cogni-sales](./cogni-sales) | B2B sales pitch generation using Corporate Visions Why Change methodology. Creates presentations and proposals for named customers or market segments. |
-| [cogni-teacher](./cogni-teacher) | Interactive 45-minute courses teaching Claude Cowork fundamentals and cogni-works plugins. 11-course curriculum with exercises and progress tracking. |
-| [cogni-tips](./cogni-tips) | Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar with the TIPS framework for industry trend analysis. Bilingual (EN/DE). |
-| [cogni-visual](./cogni-visual) | Transform polished narratives into visual deliverables — slide decks, big picture journey maps, Big Block solution architectures, web narratives, and poster storyboards. |
-| [cogni-workspace](./cogni-workspace) | Lean workspace orchestrator. Manages shared foundation (env vars, settings), theme management, plugin discovery, and workspace health. |
+| [cogni-copywriting](./cogni-copywriting) | Professional copywriting toolkit with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), multi-stakeholder review, and readability optimization. Bilingual EN/DE. |
+| [cogni-diamond](./cogni-diamond) | Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver by dispatching to cogni-works plugins at the right phase. Vision-first, method-aware, phase-gated. |
+| [cogni-gpt-researcher](./cogni-gpt-researcher) | Multi-agent research report generator. STORM-inspired editorial workflow with parallel web research, claims-verified review loops, and three depth levels (basic, detailed, deep). |
+| [cogni-marketing](./cogni-marketing) | B2B marketing content engine. Bridges TIPS themes and portfolio propositions into channel-ready content across 16 formats — thought leadership, demand gen, lead gen, sales enablement, ABM. Bilingual DE/EN. |
+| [cogni-narrative](./cogni-narrative) | Story arc-driven narrative transformation. Transforms structured content into executive narratives using 6 story arc frameworks and 8 narrative techniques. Bilingual EN/DE. |
+| [cogni-obsidian](./cogni-obsidian) | Obsidian integration for Claude Cowork workplaces. Scaffolds vaults with Terminal plugin, manages terminal profiles across platforms, and provides note management with frontmatter support. |
+| [cogni-portfolio](./cogni-portfolio) | Portfolio messaging and proposition planning using IS/DOES/MEANS framework. Eight industry taxonomies, TAM/SAM/SOM market sizing, competitive analysis, and export-ready deliverables. |
+| [cogni-sales](./cogni-sales) | B2B sales pitch generation using Corporate Visions Why Change methodology. Research-backed presentations and proposals for named customers or market segments. Bilingual DE/EN. |
+| [cogni-teacher](./cogni-teacher) | Interactive 45-minute courses teaching Claude Cowork fundamentals and cogni-works plugins. 11-course curriculum with hands-on exercises and progress tracking. |
+| [cogni-tips](./cogni-tips) | Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar with the TIPS framework for DACH-focused industry trend analysis. Bilingual EN/DE. |
+| [cogni-visual](./cogni-visual) | Transform polished narratives into visual deliverables — slide decks, big-picture journey maps, Big Block solution architectures, scrollable web narratives, and poster storyboards. |
+| [cogni-workspace](./cogni-workspace) | Lean workspace orchestrator. Manages shared foundation (env vars, settings), theme management, plugin discovery, and workspace health diagnostics. |
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins.
 

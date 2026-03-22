@@ -1,6 +1,6 @@
 {
   "name": "cogni-gpt-researcher",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, and hybrid research sources. Market-aware search with intent-based language routing (dach, de, us, uk, fr). Configurable tones, citation formats (APA/MLA/Chicago/Harvard/IEEE/Wikilink), auto agent-role selection, source curation, domain filtering, and optional image generation. Integrates with cogni-claims for interactive source verification. Native Claude Code implementation.",
   "author": {
     "name": "Stephan de Haas",

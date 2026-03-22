@@ -108,6 +108,10 @@ cogni-workspace/
     └── output-styles/            Language-specific behavioral anchors (EN/DE)
 ```
 
+## Dependencies
+
+cogni-workspace has no plugin dependencies — it is the foundation layer that other plugins depend on.
+
 ## Custom development
 
 Need enterprise workspace configurations, custom theme infrastructure, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).

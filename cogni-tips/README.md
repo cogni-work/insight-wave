@@ -134,6 +134,16 @@ cogni-tips/
     └── initialize-trend-project.sh
 ```
 
+## Dependencies
+
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-claims | No | Verify citations in trend reports against source URLs |
+| cogni-narrative | No | Arc-driven transformation of trend report output |
+| cogni-portfolio | No | Bidirectional integration via tips-bridge (portfolio context export, opportunity import) |
+
+cogni-tips is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, and portfolio mapping.
+
 ## Custom development
 
 Need a custom trend framework, non-DACH market adaptation, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).

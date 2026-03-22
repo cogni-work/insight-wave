@@ -79,6 +79,19 @@ cogni-gpt-researcher-<slug>/
     └── review-verdicts/         Reviewer decisions per iteration
 ```
 
+## Data model
+
+Four entity types with Dublin Core metadata, wikilink cross-references, and ISO 8601 timestamps:
+
+| Entity | Storage | Key Fields |
+|--------|---------|------------|
+| `SubQuestion` | `00-sub-questions/data/sq-*.md` | query, parent_topic, section_index, status (pending → researched / failed) |
+| `Context` | `01-contexts/data/ctx-*.md` | sub_question_ref, source_refs[], key_findings[], search_queries_used[] |
+| `Source` | `02-sources/data/src-*.md` | url, title, fetch_method, content_hash, cited_by[] |
+| `ReportClaim` | `03-report-claims/data/rc-*.md` | statement, source_ref, verification_status, deviation_type |
+
+All entities are markdown with YAML frontmatter — Obsidian-browsable with wikilink graph navigation. See [references/data-model.md](references/data-model.md) for the full schema.
+
 ## Report types
 
 | Type | Sub-questions | Agents | Words | Use case |

@@ -1,97 +1,90 @@
 # cogni-visual
 
-A visual deliverables plugin for [Claude Cowork](https://claude.ai/cowork). Transforms polished narratives into presentation briefs, big-picture journey maps, Big Block solution architecture diagrams, scrollable web narratives, and printed poster storyboards. Works downstream of cogni-narrative and cogni-copywriting in a compose-polish-visualize pipeline.
+A [Claude Cowork](https://claude.ai/cowork) plugin that transforms polished narratives into visual deliverables — slide decks, big-picture journey maps, Big Block solution architectures, scrollable web narratives, and printed poster storyboards.
 
-> **Note**: This plugin generates intermediate briefs (YAML + Markdown) that are then rendered by downstream tools — `document-skills:pptx` for slide decks, [Excalidraw MCP](https://github.com/yctimlin/mcp_excalidraw) for big-picture journey maps, and [Pencil MCP](https://pencil.li) for web and storyboard canvases. A theme from cogni-workspace is required for branded output.
+## Why this exists
+
+The last mile of consulting delivery is visual production. Insights and narratives are ready — but turning them into presentations, diagrams, and branded collateral is where projects stall:
+
+| Problem | What happens | Impact |
+|---------|-------------|--------|
+| Manual visual production | Creating a branded slide deck from narrative content takes 1-2 days of formatting work | Delivery bottleneck — insights ready on Tuesday, client sees them on Thursday |
+| Format fragmentation | Same core message needs slides for the boardroom, a journey map for the workshop, a web page for the follow-up | Each format is a separate production effort |
+| Template fatigue | Generic templates produce generic-looking output; custom design is expensive | Deliverables look like every other consultancy's output |
+
+## What it is
+
+A brief-based visual production pipeline. Five skills generate structured briefs (YAML + Markdown) from narratives or data. Two renderers and downstream tools (document-skills:pptx, Excalidraw MCP, Pencil MCP) turn those briefs into final output files. All visuals inherit brand identity from cogni-workspace themes.
+
+## What it does
+
+1. **Analyze** a narrative — detect story arc, model the audience, extract key assertions and data points
+2. **Brief** the visual — select format (slides, journey map, solution architecture, web page, poster), map content to layout units, generate image prompts
+3. **Render** the output — produce .pptx, .excalidraw, .pen, or .html via the appropriate downstream tool
+4. **Review** the result — zone-based quality checks for big-picture scenes (4 parallel reviewers, 9 quality gates)
+
+## What it means for you
+
+- **Narrative to slides in minutes.** Assertion headlines, number plays, speaker notes, and 11 slide layout types — generated from your polished narrative, not typed from scratch.
+- **Five visual formats from one pipeline.** Slides for the boardroom, journey maps for workshops, solution architectures from TIPS data, web pages for digital follow-up, poster storyboards for print.
+- **Brand-driven, not template-driven.** Visuals inherit colors, fonts, and identity from your cogni-workspace theme — every output looks like yours.
 
 ## Installation
 
 This plugin is part of the [cogni-works monorepo](https://github.com/cogni-work/cogni-works) and is installed automatically with the marketplace.
 
-## Skills
-
-| Skill | Description |
-|-------|-------------|
-| `story-to-slides` | Multi-slide presentation brief from any narrative — audience modeling, message architecture, assertion headlines, number plays, speaker notes, and 11 slide layout types |
-| `story-to-big-picture` | Single-canvas visual journey map brief — metaphor selection (6 options), station decomposition, absolute positioning, AI image prompts, and theme-driven rendering |
-| `story-to-big-block` | Big Block solution architecture brief from TIPS value-modeler output — tier classification, path connections, implementation waves, SPI and foundation mapping |
-| `story-to-web` | Scrollable landing-page-style web brief — style guide selection (200+ tags), 10 section types, design token variables, auto-layout, and responsive typography |
-| `story-to-storyboard` | Multi-poster print storyboard brief — 5-zone poster anatomy, A0-A3 print sizes at 150 DPI, font scaling tables, and CMYK-safe color constraints |
-| `render-big-picture` | Render a big-picture-brief into a richly illustrated Excalidraw scene — station-first pipeline with parallel agents, 1100-1500 elements, dark/light color modes |
-| `render-big-block` | Render a big-block-brief into a structured Excalidraw diagram — sequential pipeline, tier bands, solution blocks, path connections, 150-250 elements |
-
-## Example Workflows
-
-### Create a Slide Deck
+## Quick start
 
 ```
-You: Create a presentation brief from my-narrative.md
-
-Claude: [Reads narrative, detects arc_id from frontmatter]
-        [Models audience, builds message architecture]
-        [Maps narrative elements to 11 slide layout types]
-        [Writes assertion headlines, number plays, speaker notes]
-        [Outputs presentation-brief.md — ready for document-skills:pptx]
+story-to-slides <narrative.md>             # presentation brief → document-skills:pptx
+story-to-big-picture <narrative.md>        # journey map brief → render-big-picture → Excalidraw
+story-to-big-block                         # solution architecture brief → render-big-block → Excalidraw
+story-to-web <narrative.md>                # web narrative brief → Pencil MCP
+story-to-storyboard <narrative.md>         # poster storyboard brief → Pencil MCP
 ```
 
-### Create a Big-Picture Journey Map
+Or just describe what you want in natural language:
 
-```
-You: Create a big picture from my-narrative.md
+- "Create a presentation from my narrative"
+- "Turn this into a big-picture journey map"
+- "Build a Big Block solution architecture from my TIPS value model"
+- "Create a scrollable web version of my narrative"
 
-Claude: [Reads narrative, maps arc_id to visual arc_type]
-        [Presents 6 journey metaphors — user selects one]
-        [Decomposes narrative into stations with x,y coordinates]
-        [Generates AI image prompts for landscape and stations]
-        [Outputs big-picture-brief.md — ready for Excalidraw MCP rendering]
-```
+## Try it
 
-### Create a Big Block Solution Architecture
+After installing, type one prompt:
 
-```
-You: Create a Big Block from my TIPS value model
+> Create a presentation brief from my narrative and render it as slides
 
-Claude: [Reads TIPS value-modeler Phase 4 output (JSON)]
-        [Classifies solutions into BR tiers (1-4)]
-        [Maps TIPS path connections between blocks]
-        [Assigns implementation waves (1-3)]
-        [Outputs big-block-brief.md — ready for Excalidraw MCP rendering]
-```
+Claude reads your narrative, detects the story arc from frontmatter, models the audience, maps content to slide layouts with assertion headlines and number plays, and outputs a presentation brief ready for PPTX rendering.
 
-### Create a Scrollable Web Narrative
+## How it works
 
-```
-You: Create a web narrative from my-narrative.md
+The pipeline follows a compose-polish-visualize flow: narratives from cogni-narrative are polished by cogni-copywriting, then visualized here. Each visual skill produces a structured brief (YAML frontmatter + Markdown body). Renderers consume the brief and produce the final file. For big-picture scenes, parallel station-structure and station-enrichment agents compose 1100-1500 element illustrated scenes. For Big Block diagrams, a sequential pipeline produces 150-250 element structured diagrams from TIPS value-modeler data.
 
-Claude: [Reads narrative, queries Pencil MCP for style guide tags]
-        [User selects visual style from matching guides]
-        [Maps narrative to 10 section types with design tokens]
-        [Generates AI image prompts, sets typography variables]
-        [Outputs web-narrative-brief.md — ready for Pencil MCP rendering]
-```
+## Components
 
-### Create a Printed Poster Storyboard
-
-```
-You: Create a storyboard from my-narrative.md
-
-Claude: [Reads narrative, selects print size (A0-A3)]
-        [Decomposes into poster sequence (title, content, data, summary)]
-        [Applies 5-zone anatomy per poster with font scaling]
-        [Generates image prompts, validates print constraints]
-        [Outputs storyboard-brief.md — ready for Pencil MCP rendering]
-```
-
-## Pipeline Position
-
-```
-cogni-narrative  →  cogni-copywriting  →  cogni-visual
-(compose)           (polish)              (visualize)
-```
-
-- **Upstream**: Narratives from cogni-narrative, polished by cogni-copywriting
-- **Themes**: Brand themes from `cogni-workspace/themes/{id}/theme.md`
-- **Renderers**: `document-skills:pptx` for slides; Excalidraw MCP for big-picture; Pencil MCP for web and storyboard
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `story-to-slides` | skill | Multi-slide presentation brief — audience modeling, assertion headlines, 11 layout types |
+| `story-to-big-picture` | skill | Single-canvas journey map brief — 6 metaphors, station decomposition, AI image prompts |
+| `story-to-big-block` | skill | Solution architecture brief from TIPS value-modeler — tier classification, path connections |
+| `story-to-web` | skill | Scrollable web brief — 200+ style guide tags, 10 section types, design tokens |
+| `story-to-storyboard` | skill | Multi-poster print brief — 5-zone anatomy, A0-A3 sizes, CMYK-safe colors |
+| `render-big-picture` | skill | Render journey map brief into Excalidraw scene (1100-1500 elements, dark/light mode) |
+| `render-big-block` | skill | Render solution architecture brief into Excalidraw diagram (150-250 elements) |
+| `story-to-slides` | agent | Orchestrates the story-to-slides skill |
+| `pptx` | agent | Renders briefs into .pptx via document-skills |
+| `story-to-big-picture` | agent | Orchestrates the story-to-big-picture skill |
+| `station-structure-artist` | agent | Composes station structure (130-160 elements per station) |
+| `station-enrichment-artist` | agent | Adds fine detail to stations (100-130 elements per station) |
+| `zone-reviewer` | agent | Reviews 1/4 zone of canvas for quality and contrast |
+| `story-to-web` | agent | Orchestrates the story-to-web skill |
+| `web` | agent | Renders briefs into .pen via Pencil MCP |
+| `story-to-storyboard` | agent | Orchestrates the story-to-storyboard skill |
+| `storyboard` | agent | Renders briefs into multi-poster .pen via Pencil MCP |
+| `/render-big-picture` | command | Invoke the big-picture rendering pipeline |
+| `/render-big-block` | command | Invoke the Big Block rendering pipeline |
 
 ## Architecture
 
@@ -107,22 +100,7 @@ cogni-visual/
 │   ├── render-big-picture/
 │   └── render-big-block/
 ├── agents/                       13 agents (orchestration + rendering + workers)
-│   ├── story-to-slides.md        Orchestrates story-to-slides skill
-│   ├── pptx.md                   Renders briefs into .pptx
-│   ├── story-to-big-picture.md   Orchestrates story-to-big-picture skill
-│   ├── big-picture.md            Delegates to render-big-picture skill
-│   ├── station-structure-artist.md  Worker — composes station structure (130-160 elements)
-│   ├── station-enrichment-artist.md Worker — adds fine detail (100-130 elements)
-│   ├── zone-reviewer.md          Worker — reviews 1/4 zone of canvas
-│   ├── story-to-big-block.md     Orchestrates story-to-big-block skill
-│   ├── big-block.md              Delegates to render-big-block skill
-│   ├── story-to-web.md           Orchestrates story-to-web skill
-│   ├── web.md                    Renders briefs into .pen via Pencil MCP
-│   ├── story-to-storyboard.md    Orchestrates story-to-storyboard skill
-│   └── storyboard.md             Renders briefs into .pen via Pencil MCP
 ├── commands/                     2 slash commands
-│   ├── render-big-picture.md
-│   └── render-big-block.md
 └── libraries/                    12 shared reference files
     ├── arc-taxonomy.md           Arc ID → visual arc type mapping
     ├── cta-taxonomy.md           CTA types and urgency levels
@@ -133,39 +111,17 @@ cogni-visual/
     └── storyboard-layouts.md     Poster dimensions and zone anatomy
 ```
 
-### Skills vs Agents
+## Dependencies
 
-**Skills** are the intelligence layer — they analyze narratives, select visual strategies, and produce structured briefs. **Agents** are the execution layer — they orchestrate skill invocations or render briefs into final output files. Skills are user-facing; agents are internal.
-
-## Configuration
-
-### Theme Integration
-
-All visual outputs require a brand theme. Point to your theme file in the narrative frontmatter or provide the path when invoking a skill:
-
-```yaml
-theme_path: /path/to/cogni-workspace/themes/your-brand/theme.md
-```
-
-Themes define colors, fonts, and visual identity. Create themes using the `grab-theme` skill in cogni-workspace.
-
-### Excalidraw MCP (Big Picture)
-
-The big-picture renderer requires [Excalidraw MCP](https://github.com/yctimlin/mcp_excalidraw) for canvas rendering. It provides 26 tools for element-level CRUD, grouping, alignment, export (PNG/SVG/URL), and live preview via WebSocket. Ensure it is configured in your `.mcp.json`.
-
-### Pencil MCP (Web & Storyboard)
-
-Two renderers (web, storyboard) require [Pencil MCP](https://pencil.li) for canvas rendering. Ensure it is configured in your `.mcp.json`.
-
-## Prerequisites
-
-- [Claude Cowork](https://claude.ai/cowork) installed
-- cogni-narrative (upstream — produces narratives)
-- cogni-copywriting (upstream — polishes narratives)
-- cogni-workspace (provides brand themes)
-- document-skills plugin (provides `pptx` skill for slide rendering)
-- Excalidraw MCP (for big-picture rendering — github.com/yctimlin/mcp_excalidraw)
-- Pencil MCP (for web and storyboard rendering)
+| Plugin | Required | Purpose |
+|--------|----------|---------|
+| cogni-narrative | Yes | Produces narratives (upstream — compose step) |
+| cogni-copywriting | Yes | Polishes narratives (upstream — polish step) |
+| cogni-workspace | Yes | Provides brand themes for all visual output |
+| cogni-tips | No | TIPS value-modeler data for Big Block diagrams |
+| document-skills | No | PPTX rendering for slide briefs |
+| Excalidraw MCP | No | Canvas rendering for big-picture and Big Block (github.com/yctimlin/mcp_excalidraw) |
+| Pencil MCP | No | Canvas rendering for web narratives and poster storyboards (pencil.li) |
 
 ## Custom development
 
