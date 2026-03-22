@@ -70,14 +70,14 @@ next_actions = []
 current_status = phase_state.get(current, {}).get("status", "pending")
 
 if current_status == "pending":
-    next_actions.append({"action": f"Start {current} phase", "skill": f"diamond-{current}"})
+    next_actions.append({"action": f"Start {current} phase", "skill": f"consulting-{current}"})
 elif current_status == "in-progress":
-    next_actions.append({"action": f"Continue {current} phase", "skill": f"diamond-{current}"})
+    next_actions.append({"action": f"Continue {current} phase", "skill": f"consulting-{current}"})
 elif current_status == "complete":
     idx = phase_order.index(current)
     if idx < len(phase_order) - 1:
         next_phase = phase_order[idx + 1]
-        next_actions.append({"action": f"Advance to {next_phase} phase", "skill": f"diamond-{next_phase}"})
+        next_actions.append({"action": f"Advance to {next_phase} phase", "skill": f"consulting-{next_phase}"})
     else:
         next_actions.append({"action": "Generate deliverable package", "skill": "consulting-export"})
 

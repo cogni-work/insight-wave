@@ -11,7 +11,7 @@
             "timeout": 5,
             "enabled": true,
             "name": "phase-gate-guard",
-            "description": "Warns if diamond phase prerequisites are incomplete before allowing phase skills to execute"
+            "description": "Warns if consulting phase prerequisites are incomplete before allowing phase skills to execute"
           }
         ]
       }

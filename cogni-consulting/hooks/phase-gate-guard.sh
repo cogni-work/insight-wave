@@ -20,12 +20,12 @@ except:
     print('')
 " 2>/dev/null || echo "")
 
-# Only check diamond phase skills
+# Only check consulting phase skills
 case "$SKILL_NAME" in
   consulting-discover|consulting-define|consulting-develop|consulting-deliver)
     ;;
   *)
-    # Not a diamond phase skill — pass through
+    # Not a consulting phase skill — pass through
     exit 0
     ;;
 esac
@@ -46,7 +46,7 @@ import json, sys, os
 
 project_dir = sys.argv[1]
 skill_name = sys.argv[2]
-phase = skill_name.replace("diamond-", "")
+phase = skill_name.replace("consulting-", "")
 
 with open(f"{project_dir}/consulting-project.json") as f:
     project = json.load(f)
