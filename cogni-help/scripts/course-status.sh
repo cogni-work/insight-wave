@@ -14,7 +14,7 @@ fi
 
 PROGRESS_FILE="$PROJECT_DIR/.claude/cogni-help.local.md"
 
-ALL_COURSES='["cowork-fundamentals","workspace-obsidian","basic-tools","tips-scouting","tips-reporting","portfolio","visual","research","marketing","sales"]'
+ALL_COURSES='["cowork-fundamentals","workspace-obsidian","basic-tools","trends-scouting","trends-reporting","portfolio","visual","research","marketing","sales"]'
 
 if [ ! -f "$PROGRESS_FILE" ]; then
   # No progress file — all courses not started

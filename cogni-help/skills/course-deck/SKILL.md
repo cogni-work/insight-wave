@@ -119,8 +119,8 @@ Map user input to course files:
 | 1, cowork, fundamentals | 01-cowork-fundamentals |
 | 2, workspace, obsidian | 02-workspace-obsidian |
 | 3, basic, tools, copywriting | 03-basic-tools |
-| 4, scouting, tips-scouting | 04-trends-scouting |
-| 5, reporting, tips-reporting | 05-trends-reporting |
+| 4, scouting, trends-scouting | 04-trends-scouting |
+| 5, reporting, trends-reporting | 05-trends-reporting |
 | 6, portfolio | 06-portfolio |
 | 7, visual | 07-visual |
 

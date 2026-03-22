@@ -543,7 +543,7 @@ export default function CogniWorkThemeShowcase() {
               {[
                 { name: "cogni-claims", status: "Aktiv", statusColor: theme.success, score: 94, trend: "+12%" },
                 { name: "cogni-portfolio", status: "In Arbeit", statusColor: theme.warning, score: 78, trend: "+5%" },
-                { name: "tips-scout", status: "Planung", statusColor: theme.info, score: 62, trend: "Neu" },
+                { name: "trend-scout", status: "Planung", statusColor: theme.info, score: 62, trend: "Neu" },
               ].map((row) => (
                 <tr key={row.name} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <td style={{ padding: "12px 16px", color: theme.textLight, fontWeight: 500 }}>{row.name}</td>

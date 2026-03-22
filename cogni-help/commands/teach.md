@@ -21,8 +21,8 @@ Map input to course IDs:
 - 1, cowork, fundamentals → cowork-fundamentals
 - 2, workspace, obsidian → workspace-obsidian
 - 3, basic, tools, copywriting, narrative, claims → basic-tools
-- 4, scouting, tips-scouting, selection → tips-scouting
-- 5, reporting, tips-reporting → tips-reporting
+- 4, scouting, trends-scouting, selection → trends-scouting
+- 5, reporting, trends-reporting → trends-reporting
 - 6, portfolio, canvas → portfolio
 - 7, visual → visual
 - 8, research, researcher, gpt-researcher → research

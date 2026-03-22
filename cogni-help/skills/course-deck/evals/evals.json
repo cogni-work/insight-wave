@@ -16,7 +16,7 @@
     {
       "id": 2,
       "prompt": "I need a presentation to introduce new consultants to the tips scouting course",
-      "expected_output": "A PPTX file named course-4-tips-scouting-intro.pptx with ~6-8 slides introducing the TIPS Scouting course, using cogni-work dark theme",
+      "expected_output": "A PPTX file named course-4-trends-scouting-intro.pptx with ~6-8 slides introducing the TIPS Scouting course, using cogni-work dark theme",
       "files": []
     }
   ]

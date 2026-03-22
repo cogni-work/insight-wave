@@ -1,6 +1,6 @@
 {
   "name": "cogni-help",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Central help hub for the cogni-works ecosystem. Interactive courses (11-course curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.",
   "author": {
     "name": "Stephan de Haas",

@@ -10,7 +10,7 @@
     {
       "id": 1,
       "prompt": "I want to learn about trend scouting",
-      "expected_output": "Maps 'trend scouting' to Course 4 (tips-scouting), begins Module 1 of TIPS framework course with theory on the Smarter Service Trendradar",
+      "expected_output": "Maps 'trend scouting' to Course 4 (trends-scouting), begins Module 1 of TIPS framework course with theory on the Smarter Service Trendradar",
       "files": []
     },
     {
