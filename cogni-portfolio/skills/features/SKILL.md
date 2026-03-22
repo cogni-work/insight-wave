@@ -367,6 +367,10 @@ When quality assessment reveals warn or fail dimensions, offer to research the c
 
 Not all quality issues require research. Conciseness (too long/short) and language quality (awkward phrasing) can be fixed by rewriting from existing content — no web search needed. Offer a direct rewrite for these dimensions and reserve research for mechanism clarity, differentiation, and scope issues where company-specific knowledge is the missing ingredient.
 
+### Deep Dive
+
+When the user wants more than quality-gap repair — competitive landscape, strategic positioning, or interactive co-creation — direct them to the `feature-deep-dive` skill. It runs broad research (20-30 searches including competitors, analysts, and buyer perception), reads user-provided documents via Explore agents, presents findings interactively, and co-creates the description through strategic dialogue. Use the deep-dive skill when the user says things like "deep dive on X", "how does X compare to competitors", "let's workshop feature X", or provides documents they want analyzed for a specific feature.
+
 ## Validate Against Portfolio
 
 Cross-reference features with existing portfolio entities:
