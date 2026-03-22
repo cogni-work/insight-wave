@@ -195,7 +195,54 @@ Present the proposed features as a table with your consulting commentary:
 
 Then deliver your assessment — not as a checklist but as a coherent perspective on the feature set's strengths, gaps, and what to prioritize next. End with a clear recommendation: "Build propositions for X and Y first, because they carry your differentiation."
 
-## Quality Gate
+After presenting the feature set, run the Quality Completion Gate below before signaling that features are ready. Do not suggest moving to propositions or markets until the completion gate passes — fixing quality issues now, while the feature context is fresh, is far cheaper than revisiting them later.
+
+## Quality Completion Gate
+
+This gate bridges "features exist" and "features are ready for propositions." It runs the existing quality assessment layers in sequence, surfaces issues, and proposes fixes inline — so quality problems are resolved while the user still has full context about each feature.
+
+### When to Trigger
+
+Run the completion gate whenever:
+- You finish creating or shaping a batch of features (3+ features written in one session)
+- The user says features are "done", "complete", "ready", or asks to move to propositions/markets
+- You present a Feature Review and features were edited as a result
+
+Do NOT trigger after single-feature edits or minor metadata changes — those run per-feature re-assessment (see Quality Assessment Layers below), not the full gate.
+
+### The Completion Loop
+
+1. **Run structural validation** — `$CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>`. Fix structural issues silently (missing fields are mechanical, not judgment calls).
+
+2. **Run description quality assessment** — spawn the `feature-quality-assessor` agent. Collect per-feature pass/warn/fail results.
+
+3. **Triage the results into three buckets:**
+
+   - **Flag features** (overall fail, or any dimension at fail): These must be fixed before the features phase can complete. Present each with the specific issue and a proposed rewrite. The user confirms, edits, or provides direction for each one.
+
+   - **Warn features** (overall warn, no fails): These should be fixed now — it is far cheaper to sharpen them while the feature context is fresh than to revisit later. Present each with a proposed improvement as a before/after comparison. The user can accept, edit, or explicitly defer each one.
+
+   - **Pass features**: Confirm they are clean. No action needed.
+
+4. **For flag/warn features, draft improvements inline.** Use the same logic as Research & Improve: conciseness and language issues get direct rewrites; mechanism clarity and differentiation issues get research-backed rewrites via the `quality-enricher` agent. Present improvements as before/after tables (same format as Research & Improve section).
+
+5. **After fixes, re-run the assessor** on changed features to confirm improvement. If any features still have flag status after one fix round, surface them to the user with a clear explanation: "This feature still has [issue]. Here is my best suggestion — would you like to apply it, rewrite it yourself, or accept the current quality level?"
+
+6. **Run stakeholder review** (Layer 3) only after all features pass Layer 2 at pass or warn level. Follow the existing closed-loop protocol in the Quality Assessment Layers section below.
+
+7. **Signal completion.** Once the stakeholder review reaches "accept" (or the user explicitly decides to proceed despite "revise" after 2 rounds), confirm that the feature set is ready and recommend the next step (markets or propositions).
+
+### Deferred Warnings
+
+When a user explicitly defers a warn feature (step 3), note it in your session summary when delegating to the session-guardian. This ensures the warning surfaces on resume with the context of "you chose to defer this" rather than appearing as a surprise.
+
+### Tone
+
+This gate should feel like a consultant's quality review, not a compiler error. Frame it as: "Before we wrap up features, let me run a quality check to make sure these are ready for propositions. I found N issues worth addressing now..." — not as a blocker that prevents the user from moving on.
+
+## Quality Assessment Layers
+
+The following three layers are the assessment tools used by the Quality Completion Gate above and by per-feature operations (editing, reviewing). Each layer catches different failure modes; the completion gate orchestrates them in sequence.
 
 Quality assessment uses three layers:
 
@@ -400,4 +447,4 @@ For features with quality issues that need company-specific information to fix (
 
 ## Session Management
 
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished.
+After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished. Include quality state in the summary: how many features passed, how many have deferred warnings, and whether the stakeholder review reached "accept".
