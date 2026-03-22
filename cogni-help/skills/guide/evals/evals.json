@@ -1,0 +1,29 @@
+{
+  "skill_name": "guide",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I need to verify some claims in a research report before sending it to the client",
+      "expected_output": "Recommends cogni-claims for claim verification, mentions it works with cogni-research output",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Which plugins should I use to go from a trend analysis to a marketing campaign?",
+      "expected_output": "Suggests the pipeline: cogni-tips (scouting) → cogni-portfolio (propositions) → cogni-marketing (content). Mentions /workflow command for the trend-to-marketing template",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "What can I do with cogni-works?",
+      "expected_output": "Shows the ecosystem map grouped by category (Research, Content, Go-to-Market, Orchestration, Support) with brief descriptions",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I have a rough memo and need to turn it into a polished executive presentation",
+      "expected_output": "Recommends cogni-copywriting (polish the memo), then cogni-narrative (transform to exec narrative), then cogni-visual (render as slides). Multi-step pipeline recommendation",
+      "files": []
+    }
+  ]
+}
