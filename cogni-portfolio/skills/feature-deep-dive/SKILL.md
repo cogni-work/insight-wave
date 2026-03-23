@@ -58,14 +58,54 @@ determines research strategy and co-creation direction.
 
 When the user provides or references documents (PDFs, slide decks, web pages, URLs) as input for the deep dive, use Explore agents to extract relevant intelligence before or alongside the web research phase. This is a key capability — users often have internal competitive briefs, analyst reports, RFP responses, or product specs that contain richer information than public web sources.
 
-**How to handle document input:**
+**How to handle different input types:**
 
 - **User provides a file path** (PDF, DOCX, slides): Read the file directly, or for large documents, spawn an Explore agent to extract feature-relevant sections (competitive positioning, technical architecture, buyer requirements, capability descriptions)
 - **User provides a URL**: Spawn an Explore agent to read the web page and extract relevant intelligence about the capability, competitive landscape, or buyer needs
 - **User references context/ documents**: Read the relevant files from the context index
 - **User says "look at this" or shares content inline**: Extract the relevant information directly from the conversation
+- **User provides a local directory path** (repo, plugin, codebase): This is often the richest source of truth for mechanism clarity and technical differentiation — the actual implementation reveals what the feature really does, not what marketing says it does. Spawn an Explore agent (use "very thorough" thoroughness) to analyze the codebase. See the codebase exploration section below.
 
-When using Explore agents for document analysis, provide clear instructions:
+### Exploring local codebases and repos
+
+When the user points to a local directory (e.g., a plugin, a repo, a service), the implementation itself is the primary source for writing sharp feature descriptions. Marketing copy and product pages describe intent; code describes reality.
+
+**When to explore a codebase:**
+- User provides a path like `/path/to/plugin` or `~/repos/my-service`
+- The feature being deep-dived IS a software product or plugin (common in this portfolio)
+- The current description is vague and the user says "look at what it actually does"
+- You need mechanism clarity that web research can't provide (proprietary architecture, unique algorithms, integration patterns)
+
+**What to extract from a codebase:**
+
+Spawn an Explore agent with thoroughness "very thorough" and these instructions:
+
+```
+Explore the codebase at [path] to understand the "[feature-name]" capability.
+
+Extract:
+1. ARCHITECTURE: What are the main components, how do they connect? What's the core algorithm or processing pipeline?
+2. UNIQUE MECHANISMS: What does this implementation do differently from standard approaches? Look for custom algorithms, proprietary frameworks, novel integration patterns, patented methods.
+3. TECHNICAL DIFFERENTIATORS: What would be hard for a competitor to replicate? Look for: depth of domain modeling, breadth of integrations, sophistication of orchestration, data models that encode domain expertise.
+4. SCALE/SCOPE SIGNALS: How many entities, integrations, or workflow steps does it handle? Quantify where possible (e.g., "supports 8 entity types", "orchestrates 13 agents", "covers 57 taxonomy categories").
+5. USER-FACING CAPABILITIES: What can the end user actually DO with this? Map code capabilities to buyer-visible features.
+
+Focus on what makes this implementation distinctive, not on generic code structure.
+Return findings organized by these 5 categories with specific file paths as evidence.
+```
+
+**How codebase intelligence feeds the deep dive:**
+
+- **Mechanism clarity**: The code reveals the actual "how" — use this to write Anchor-How-Differentiator descriptions grounded in reality rather than marketing
+- **Differentiation vectors**: Implementation complexity that's hard to replicate is a genuine moat — surface it in the findings briefing
+- **Word count discipline**: Code exploration often reveals so much substance that the challenge becomes selecting the ONE most differentiating mechanism for a 15-35 word description. Use the co-creation dialogue to help the user prioritize.
+- **Cross-reference with web research**: Compare what the code actually does with how competitors describe similar capabilities. The gap between "what we actually built" and "what they claim" is where differentiation lives.
+
+Launch codebase Explore agents in parallel with web research (Phase 2) — they answer different questions. Web research maps the market; codebase exploration maps the product.
+
+### General document exploration instructions
+
+When using Explore agents for documents (not codebases), provide clear instructions:
 ```
 Read [document/URL] and extract:
 1. Competitive positioning for [feature-category] capabilities
@@ -85,11 +125,32 @@ After reading context, state what you know:
 - "This feature belongs to [product]. It has propositions for [N] markets."
 - "I found [existing competitive analysis / prior deep-dive / relevant context documents]."
 - "Based on the product description, the key capability claims are [X, Y, Z]."
-
-Then ask one scoping question:
-"What's the primary goal for this deep dive — competitive differentiation, technical positioning, description co-creation, or all three?"
+- Show the current description and your initial assessment of what's strong and what's weak.
 
 If the user provided documents, acknowledge them: "I'll incorporate the intelligence from [document] into the research."
+
+### Gather additional context before research
+
+Do NOT jump straight to research delegation. First, ask the user targeted questions to focus the research and avoid wasting tokens on irrelevant searches. The goal is to understand what the user already knows so research fills genuine gaps rather than rediscovering what's obvious.
+
+**Always ask (pick the 2-3 most relevant):**
+
+1. **What's weak about the current description?** The user often already knows — "it's too long", "it doesn't say what's unique", "it sounds like every competitor". This directly shapes which quality dimensions to research.
+2. **What angle or mechanism should lead?** The user has domain knowledge about which technical differentiator matters most to their buyers. "Should the description lead with the patent-backed methodology, the integration architecture, or the AI-powered analysis?"
+3. **Who are the known competitors?** The user often knows their competitive landscape better than web search can discover. "Who do you lose deals to for this capability? Who do buyers compare you with?"
+4. **What does the buyer care about?** "When buyers evaluate this capability, what do they ask about first? What objections come up?"
+5. **Any internal context?** "Is there anything about this feature's roadmap, recent changes, or strategic importance that I should know?"
+6. **Additional materials?** "Do you have any files, links, or documents I should read first — competitor briefs, analyst reports, product pages, architecture docs? If this feature IS a software product or plugin, point me to the codebase and I'll analyze the actual implementation." This is especially important because users often have materials far richer than what web search can find — and for software features, the code itself is the most authoritative source of mechanism clarity and differentiation.
+
+**Adaptive questioning based on user's stated goal:**
+
+- User says "sharper formulation" / "schärfere Formulierung" → Focus on #1 and #2 (what's weak, what angle to lead with). Research will target mechanism clarity and differentiation.
+- User says "competitive differentiation" → Focus on #3 and #4 (competitors, buyer criteria). Research will map the competitive landscape.
+- User says "everything" or is vague → Ask #1 and #3 as minimum, then let research fill the rest.
+
+**Do not ask all 5 questions.** Pick the 2-3 that the context doesn't already answer. If the user provided rich context (documents, detailed prompt), you may only need one question. If the user is terse ("deep dive on X"), ask 2-3.
+
+Wait for the user's answers before delegating to research. Their input directly shapes the research strategy — which search batches to prioritize, which competitors to look up, which differentiation angles to explore.
 
 ## Phase 2: Research Delegation
 
@@ -102,6 +163,7 @@ Delegate broad web research to the `feature-deep-diver` agent via the Agent tool
 - Product context: product name, product description
 - Sibling feature slugs and names (for cross-feature positioning context)
 - Any intelligence extracted from context documents or user-provided documents (summarized — don't send raw documents to the agent)
+- **User context from Phase 1** — what the user said about weaknesses, preferred angles, known competitors, and buyer priorities. This focuses the agent's research strategy.
 - Project directory path
 
 ### Launch pattern:
