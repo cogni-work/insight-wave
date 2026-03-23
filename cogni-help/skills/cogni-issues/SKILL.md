@@ -2,9 +2,10 @@
 name: cogni-issues
 description: |
   File and track GitHub issues (bugs, feature requests, change requests, questions) against
-  insight-wave ecosystem plugins. Guides users through a short consultation to capture the
-  right details, resolves the target plugin's repository automatically, drafts issues from
-  templates, creates them via `gh` CLI, and tracks them locally.
+  insight-wave ecosystem plugins using the GitHub MCP connector in Cowork. Guides users
+  through a short consultation to capture the right details, resolves the target plugin's
+  repository automatically, drafts issues from templates, creates them via GitHub MCP tools,
+  and tracks them locally.
   Use this skill whenever the user wants to report a bug, request a feature, file a change
   request, ask a question about a plugin, list filed issues, or check issue status.
   Also trigger when the user says things like "this plugin is broken", "I found a problem
@@ -18,7 +19,10 @@ description: |
 
 Manage the lifecycle of GitHub issues for insight-wave ecosystem plugins: consult with the
 user to understand the problem clearly, resolve which repository the plugin belongs to,
-draft issues from templates, create them via `gh`, and track them locally.
+draft issues from templates, create them via GitHub MCP tools, and track them locally.
+
+All GitHub operations go through the **GitHub connector** — the built-in Cowork integration
+that provides `mcp__github__*` tools. Never shell out to the `gh` CLI for issue operations.
 
 ## Language
 
@@ -45,94 +49,82 @@ The skill scripts live at `${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/`.
 `CLAUDE_PLUGIN_ROOT` points to the cogni-help plugin directory. If you can't
 find the scripts, tell the user — don't guess paths.
 
+## GitHub MCP Tools
+
+All GitHub operations use MCP tools from the built-in GitHub connector. The key tools:
+
+| Operation | MCP Tool | Purpose |
+|-----------|----------|---------|
+| Create issue | `mcp__github__create_issue` | Create a new issue on a repository |
+| List issues | `mcp__github__list_issues` | List issues for a repository |
+| Get issue | `mcp__github__get_issue` | Get details of a specific issue |
+| Search issues | `mcp__github__search_issues` | Search across issues |
+
+Before using any MCP tool, load it via `ToolSearch` first (e.g., `select:mcp__github__create_issue`).
+
 ## Modes
 
 | Mode | Triggers | Action |
 |------|----------|--------|
-| **setup** | "set up issues", "configure gh", first-time detection, "ich kann kein Issue erstellen" | Check gh status, guide install + auth |
+| **setup** | First-time detection (MCP tools not available), "set up issues", "ich kann kein Issue erstellen" | Guide user to enable GitHub connector |
 | **create** | reporting bugs, requesting features, filing change requests, asking plugin questions | Consult, resolve, draft, confirm, create, log |
 | **list** | "my issues", "show issues", "what have I filed" | Read local state, display grouped by plugin |
-| **status** | "check issue #N", "any updates on my issue" | Fetch from GitHub, update local record |
-| **browse** | "open issue", "show in browser" | Open via `gh issue view --web` |
+| **status** | "check issue #N", "any updates on my issue" | Fetch from GitHub via MCP, update local record |
+| **browse** | "open issue", "show in browser" | Provide the GitHub issue URL |
 
 Default to **list** when intent is unclear.
 
 ## Prerequisites
 
-Before any `gh` operation, check readiness:
+Before any GitHub MCP operation, verify the connector is enabled:
 
-```bash
-bash "${SKILL_DIR}/scripts/setup-gh.sh" check
-```
-
-If `all_ready` is `true`, proceed. If `false`, switch to **setup mode** and guide the user
-through what's missing. Do not attempt issue creation without valid auth — fail fast but
-fail helpfully.
+1. Use `ToolSearch` to look for `mcp__github__create_issue`
+2. If the tool is found, the GitHub connector is active — proceed
+3. If the tool is not found, switch to **setup mode**
 
 ## Setup mode
 
-Many users — especially in Cowork — have never used GitHub or the `gh` CLI. Setup mode
-walks them through everything they need, one step at a time, in their own language.
+The GitHub connector is a built-in Cowork integration — no CLI tools, tokens, or
+Docker containers to install. The user just needs to toggle it on.
 
-### 1. Run the check
+### 1. Check connector status
 
-```bash
-bash "${SKILL_DIR}/scripts/setup-gh.sh" check
-```
+Use `ToolSearch` with query `mcp__github__create_issue`. If it returns a tool
+definition, the connector is already enabled — tell the user they're all set and
+offer to file an issue.
 
-The output tells you exactly what's missing: `gh_installed`, `gh_authenticated`, `platform`,
-and `package_manager`.
+### 2. If the connector is not enabled
 
-### 2. If `all_ready` is already true
+Walk the user through enabling it in the Cowork UI, in their language:
 
-Tell the user they're all set and offer to file an issue. No further setup needed.
+**English:**
+> To file GitHub issues, you need to enable the GitHub connector:
+> 1. Click the **+** button in the lower left of the chat
+> 2. Hover over **Connectors**
+> 3. Find **GitHub** and toggle it **on**
+> 4. Follow the OAuth prompt to authorize access to your GitHub account
+>
+> Once that's done, tell me and I'll verify the connection.
 
-### 3. If `gh_installed` is false
+**German:**
+> Um GitHub Issues erstellen zu können, musst du den GitHub Connector aktivieren:
+> 1. Klicke auf das **+** unten links im Chat
+> 2. Fahre mit der Maus über **Connectors**
+> 3. Finde **GitHub** und schalte es **ein**
+> 4. Folge der OAuth-Aufforderung, um den Zugriff auf dein GitHub-Konto zu autorisieren
+>
+> Sag mir Bescheid, wenn du fertig bist — ich prüfe dann die Verbindung.
 
-The user needs the GitHub CLI. Present the right install command based on `package_manager`:
+### 3. After the user confirms
 
-| Package manager | Command |
-|----------------|---------|
-| `brew` (macOS) | `brew install gh` |
-| `apt` (Debian/Ubuntu) | First add the repo, then `sudo apt install gh` |
-| `dnf` (Fedora/RHEL) | `sudo dnf install gh` |
-| `snap` | `sudo snap install gh` |
-| `null` (none found) | Direct them to https://cli.github.com/ for manual download |
+Re-check with `ToolSearch`. If the tools are now available, confirm success. If
+still missing, suggest the user refresh Cowork or check if OAuth completed
+successfully.
 
-**Explain in plain language** what `gh` is: "It's a small command-line tool from GitHub
-that lets you create issues, pull requests, and more — right from your terminal. You only
-need to install it once."
+### 4. Setup complete
 
-Ask the user to run the install command in their terminal and tell you when it's done.
-Then re-run `setup-gh.sh check` to confirm.
-
-### 4. If `gh_authenticated` is false
-
-The user needs to log in to GitHub. This step is interactive — Claude cannot run it for
-them because it opens a browser for OAuth.
-
-**If the user doesn't have a GitHub account yet**, tell them:
-- Go to https://github.com/join
-- Create a free account (they only need a username, email, and password)
-- Come back when done
-
-**Once they have an account**, walk them through authentication:
-
-1. Tell them to type `gh auth login` in their terminal
-2. Explain what they'll see — a series of questions:
-   - **Where do you use GitHub?** → Choose "GitHub.com"
-   - **Preferred protocol?** → Choose "HTTPS"
-   - **Authenticate?** → Choose "Login with a web browser"
-3. A code will appear in the terminal — they paste it in the browser window that opens
-4. They authorize the GitHub CLI in the browser
-5. Done — the terminal confirms they're logged in
-
-After they confirm, re-run `setup-gh.sh check` to verify `gh_authenticated` is now `true`.
-
-### 5. Setup complete
-
-Confirm everything is ready. If the user came here because they were trying to file an
-issue, offer to continue with the **create** flow now.
+If the user came here because they were trying to file an issue, continue with
+the **create** flow.
 
 ## Workspace init
 
@@ -148,8 +140,8 @@ bash "${SKILL_DIR}/scripts/issue-store.sh" init "${working_dir}"
 
 ### 1. Check readiness and resolve the plugin
 
-First, run `setup-gh.sh check`. If `all_ready` is `false`, tell the user you need to set
-up a few things first, enter **setup mode**, and return here once setup completes.
+First, verify GitHub MCP tools are available (see Prerequisites). If not, enter
+**setup mode** and return here once the connector is enabled.
 
 If the user hasn't named a specific plugin, ask which plugin this is about. Then resolve it:
 
@@ -162,13 +154,10 @@ and ask; success → extract `owner_repo`, `version`, `marketplace`.
 
 ### 2. Check for duplicates
 
-Before investing in consultation and drafting, do a quick search for existing issues:
+Before investing in consultation and drafting, search for existing issues using MCP:
 
-```bash
-gh issue list --repo "<owner_repo>" --state open --search "<keywords>" --limit 5
-```
-
-Use 2-3 keywords from the user's complaint. If you find a likely match, show it to the
+Use `mcp__github__search_issues` with a query like `repo:<owner_repo> is:open <keywords>`
+using 2-3 keywords from the user's complaint. If you find a likely match, show it to the
 user and ask: "This looks similar — is it the same problem, or something different?" If
 it's the same, link them to the existing issue instead of creating a duplicate.
 
@@ -244,14 +233,12 @@ Show the complete draft (title + body) and ask for approval in the user's langua
 Never create without explicit confirmation. If the user wants changes, apply them and
 show the updated draft.
 
-### 7. Create on GitHub
+### 7. Create on GitHub via MCP
 
-```bash
-gh issue create --repo "<owner_repo>" --title "<title>" --body "<body>" --label "<label>"
-```
+Use the `mcp__github__create_issue` tool with the owner, repo, title, body, and labels.
 
-Label mapping is in `references/issue-templates.md`. If the label doesn't exist on
-the repo, retry without `--label` and mention this to the user.
+Label mapping is in `references/issue-templates.md`. If creation fails due to a
+non-existent label, retry without labels and mention this to the user.
 
 If creation fails, show the error and suggest next steps — don't retry blindly.
 
@@ -270,7 +257,7 @@ echo '<json_record>' | bash "${SKILL_DIR}/scripts/issue-store.sh" add "${working
 The record includes: `id`, `plugin`, `marketplace`, `repository`, `github_number`,
 `github_url`, `type`, `title`, `status` ("open"), `created_at`, `updated_at`.
 
-Parse `github_number` and `github_url` from `gh issue create` output.
+Parse `github_number` and `github_url` from the MCP tool response.
 
 ### 9. Confirm
 
@@ -287,23 +274,19 @@ If empty, suggest the create flow.
 
 ## Status mode
 
-1. Look up the issue in local state to get `owner_repo` and `github_number`
-2. Fetch from GitHub:
-   ```bash
-   gh issue view <number> --repo "<owner_repo>" --json state,title,labels,comments,updatedAt
-   ```
+1. Look up the issue in local state to get `owner`, `repo`, and `github_number`
+2. Fetch from GitHub using `mcp__github__get_issue` with the owner, repo, and issue number
 3. Update local record via `update-status`
 4. Show: state, latest comments summary, labels, last update
 
 ## Browse mode
 
-```bash
-gh issue view <number> --repo "<owner_repo>" --web
-```
+Provide the GitHub issue URL from local state. The URL follows the pattern:
+`https://github.com/<owner>/<repo>/issues/<number>`
 
 ## Scripts
 
-- **`scripts/setup-gh.sh`** — Checks gh CLI installation and authentication status. Returns JSON with `all_ready` boolean. Run with `check` command.
+- **`scripts/setup-gh.sh`** — Legacy check script. The primary readiness check is now done via `ToolSearch` for GitHub MCP tools. This script provides platform info only.
 - **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning marketplace.json files. All insight-wave plugins resolve to the monorepo `insight-wave/insight-wave`.
 - **`scripts/issue-store.sh`** — Local JSON state management (init, gen-id, add, read, update-status). The `add` command reads JSON from stdin for safety.
 
