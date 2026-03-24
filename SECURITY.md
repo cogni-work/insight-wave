@@ -37,7 +37,7 @@ Security issues in insight-wave plugins include:
 Out of scope:
 
 - Issues in upstream tools (Claude Code, Obsidian, Excalidraw) — report these to their respective maintainers
-- Feature requests or non-security bugs — use [GitHub Issues](https://github.com/insight-wave/insight-wave/issues)
+- Feature requests or non-security bugs — use [GitHub Issues](https://github.com/cogni-work/insight-wave/issues)
 
 ## Disclosure
 

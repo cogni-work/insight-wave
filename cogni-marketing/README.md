@@ -34,7 +34,7 @@ This plugin automates the bridge: it reads your portfolio propositions and TIPS 
 
 ## Installation
 
-This plugin is part of the [insight-wave monorepo](https://github.com/insight-wave/insight-wave) and is installed automatically with the marketplace.
+This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
 **Prerequisites:**
 - **cogni-portfolio** (required — provides propositions, markets, competitors)

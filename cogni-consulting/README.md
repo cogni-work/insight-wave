@@ -33,7 +33,7 @@ A process orchestrator for the insight-wave ecosystem. cogni-consulting doesn't 
 
 ## Installation
 
-This plugin is part of the [insight-wave monorepo](https://github.com/insight-wave/insight-wave) and is installed automatically with the marketplace.
+This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
 ## Quick start
 

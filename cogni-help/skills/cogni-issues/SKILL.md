@@ -345,7 +345,7 @@ Provide the GitHub issue URL from local state. The URL follows the pattern:
 ## Scripts
 
 - **`scripts/setup-gh.sh`** — Legacy check script. The primary readiness check is now done via `ToolSearch` for GitHub MCP tools. This script provides platform info only.
-- **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning marketplace.json files. All insight-wave plugins resolve to the monorepo `insight-wave/insight-wave`.
+- **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning marketplace.json files. All insight-wave plugins resolve to the monorepo `cogni-work/insight-wave`.
 - **`scripts/issue-store.sh`** — Local JSON state management (init, gen-id, add, read, update-status). The `add` command reads JSON from stdin for safety.
 
 ## References

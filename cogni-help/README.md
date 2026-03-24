@@ -1,6 +1,6 @@
 # cogni-help
 
-Central help hub for the [insight-wave](https://github.com/insight-wave/insight-wave) ecosystem. Interactive courses, plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.
+Central help hub for the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem. Interactive courses, plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.
 
 ## Why this exists
 

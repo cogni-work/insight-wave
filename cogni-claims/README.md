@@ -37,7 +37,7 @@ If you ship research, reports, or any content that leans on sourced claims, this
 
 ## Installation
 
-This plugin is part of the [insight-wave monorepo](https://github.com/insight-wave/insight-wave) and is installed automatically with the marketplace.
+This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
 ## Quick start
 

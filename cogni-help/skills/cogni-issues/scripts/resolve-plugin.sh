@@ -85,7 +85,7 @@ for mp_path in mp_paths:
     marketplace_name = data.get('name', 'unknown')
 
     # Monorepo is the only issue channel — individual plugin repos are archived
-    MARKETPLACE_REPOS = {'insight-wave': 'insight-wave/insight-wave'}
+    MARKETPLACE_REPOS = {'insight-wave': 'cogni-work/insight-wave'}
 
     for plugin in data.get('plugins', []):
         if plugin.get('name') == plugin_name:

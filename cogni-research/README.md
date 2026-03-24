@@ -37,7 +37,7 @@ If you produce research, analysis, or any content that needs to be both sourced 
 
 ## Installation
 
-This plugin is part of the [insight-wave monorepo](https://github.com/insight-wave/insight-wave) and is installed automatically with the marketplace.
+This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
 **Prerequisites:**
 - Web access enabled (for research)

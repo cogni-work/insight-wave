@@ -30,7 +30,7 @@ This plugin scaffolds a complete Obsidian vault — including the Terminal plugi
 
 ## Installation
 
-This plugin is part of the [insight-wave monorepo](https://github.com/insight-wave/insight-wave) and is installed automatically with the marketplace.
+This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
 **Prerequisites:**
 - [Obsidian](https://obsidian.md/) installed

@@ -99,4 +99,4 @@ This project follows the [Contributor Covenant v2.1](CODE_OF_CONDUCT.md). Please
 
 ## Questions?
 
-Open an issue on the [insight-wave repository](https://github.com/insight-wave/insight-wave/issues) if you have questions about contributing.
+Open an issue on the [insight-wave repository](https://github.com/cogni-work/insight-wave/issues) if you have questions about contributing.

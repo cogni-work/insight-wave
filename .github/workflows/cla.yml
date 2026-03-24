@@ -25,13 +25,13 @@ jobs:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_TOKEN }}
         with:
           path-to-signatures: "signatures.json"
-          path-to-document: "https://github.com/insight-wave/insight-wave/blob/main/CLA.md"
-          remote-organization-name: insight-wave
+          path-to-document: "https://github.com/cogni-work/insight-wave/blob/main/CLA.md"
+          remote-organization-name: cogni-work
           remote-repository-name: insight-wave
           branch: "main"
           allowlist: sdh07,dependabot[bot],github-actions[bot]
           custom-notsigned-prcomment: |
-            Thank you for your contribution! Before we can merge this PR, you need to sign the [Contributor License Agreement](https://github.com/insight-wave/insight-wave/blob/main/CLA.md).
+            Thank you for your contribution! Before we can merge this PR, you need to sign the [Contributor License Agreement](https://github.com/cogni-work/insight-wave/blob/main/CLA.md).
 
             To sign, please comment on this PR with:
 

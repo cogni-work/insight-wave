@@ -61,7 +61,7 @@ See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plug
 ### Add the marketplace
 
 ```shell
-/plugin marketplace add insight-wave/insight-wave
+/plugin marketplace add cogni-work/insight-wave
 ```
 
 ### Install a plugin
@@ -135,7 +135,7 @@ Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai) to discuss your re
 
 We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, CLA requirements, and marketplace plugin guidelines. By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-All plugins are developed directly in this monorepo. To report issues or suggest improvements, open an issue on [insight-wave](https://github.com/insight-wave/insight-wave/issues).
+All plugins are developed directly in this monorepo. To report issues or suggest improvements, open an issue on [insight-wave](https://github.com/cogni-work/insight-wave/issues).
 
 ## License
 
