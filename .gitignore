@@ -12,8 +12,9 @@ __pycache__/
 # Node
 node_modules/
 
-# Skill eval workspaces (dev-time artifacts)
+# Skill eval workspaces and eval data (dev-time artifacts)
 *-workspace/
+**/evals/
 
 # Eval iteration outputs
 cogni-portfolio-evals/
