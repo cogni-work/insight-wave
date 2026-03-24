@@ -343,18 +343,19 @@ always sees the full draft before it goes to GitHub.
 
 ### Exercise
 
-Before starting, check if the GitHub CLI is ready:
+Before starting, check if the browser is connected and the user is logged into GitHub:
 
-Run the readiness check:
-```bash
-bash "$(dirname "$(find "$(pwd)" -path "*/cogni-issues/scripts/setup-gh.sh" 2>/dev/null | head -1)")/setup-gh.sh" check 2>/dev/null
-```
+1. Use `ToolSearch` to look for `mcp__claude-in-chrome__tabs_context_mcp` — if the
+   tool is not found, guide the user to install and activate the claude-in-chrome
+   browser extension. This is part of the exercise.
+2. Navigate to `https://github.com` and check login state with `javascript_tool`:
+   ```javascript
+   document.querySelector('meta[name="user-login"]')?.content || 'not-logged-in'
+   ```
+3. If the result is `'not-logged-in'`, walk the user through signing into GitHub
+   in their browser — no CLI tools or tokens needed.
 
-If this returns `"all_ready": false` or fails, guide the user through the setup
-process — this is part of the exercise. Walk them through installing the `gh` CLI
-and authenticating (the setup-gh.sh script detects their platform and package manager).
-
-Once gh is ready, ask the user to file their first issue:
+Once the browser is connected and logged in, ask the user to file their first issue:
 
 > "Tell Claude: **I have a question about insight-wave — which course should I
 > take after finishing Course 2?**"

@@ -138,8 +138,8 @@ If found, suggest renaming to the current filename.
 
 - **Missing COGNI_WORKSPACE_ROOT**: Many plugins need this env var. Check
   `.workspace-env.sh` exists and is sourced.
-- **gh CLI not authenticated**: Required for cogni-issues. Run
-  `bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/setup-gh.sh" check`
+- **GitHub not logged in**: Required for cogni-issues. The skill uses browser
+  automation — navigate to `https://github.com` and check login state.
 - **Missing node/npm**: Required for PPTX generation (cogni-visual, course-deck).
 
 ## Full Scan Mode

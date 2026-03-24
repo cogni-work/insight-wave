@@ -33,14 +33,15 @@ mv diamond-project.json consulting-project.json
 
 ---
 
-## gh CLI not authenticated
+## GitHub not logged in
 
-**Symptom**: `/issues` fails with authentication error.
+**Symptom**: `/issues` fails with authentication or login error.
 
-**Cause**: The `gh` CLI is not installed or not logged in.
+**Cause**: The user is not logged into GitHub in Chrome.
 
 **Fix**: Run `/issues` with no argument — the cogni-issues skill will detect the
-missing auth and walk you through setup. Or manually: `gh auth login`.
+missing login and walk you through signing in via the browser. No CLI tools or
+tokens needed.
 
 ---
 
