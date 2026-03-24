@@ -1,6 +1,6 @@
 {
   "name": "cogni-consulting",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment with the right scope. Vision-first, method-aware, phase-gated.",
   "author": {
     "name": "Stephan de Haas",
