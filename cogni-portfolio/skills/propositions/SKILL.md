@@ -449,6 +449,19 @@ For propositions with quality issues that need company-specific information to f
 
 When proposition quality assessment reveals weak DOES or MEANS messaging, offer to research the company and draft improved statements. The quality assessor identifies WHAT is weak; web research provides the company-specific information to fix it — customer success stories, case studies, market-specific use cases, and concrete metrics.
 
+### Reactive vs. Proactive Improvement
+
+| Situation | Use |
+|---|---|
+| Fix DOES/MEANS that scored warn/fail on specific quality dimensions | **This flow** (quality-enricher — reactive, targeted gap repair) |
+| Validate buyer language against real market usage | `proposition-deep-dive` skill |
+| Analyze how competitors message the same capability for this market | `proposition-deep-dive` skill |
+| Co-create DOES/MEANS through strategic dialogue with evidence | `proposition-deep-dive` skill |
+| Enrich evidence with customer refs, benchmarks, analyst quotes | `proposition-deep-dive` skill |
+| Validate whether the status-quo contrast targets the right pain | `proposition-deep-dive` skill |
+
+For propositions that need more than reactive quality repair — where you want to validate buyer language, research competitive messaging, or co-create sharper DOES/MEANS through evidence-backed dialogue — recommend the `proposition-deep-dive` skill instead.
+
 ### When to Offer
 
 - After proposition quality assessment shows any proposition with overall "warn" or "fail"

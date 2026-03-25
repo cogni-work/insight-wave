@@ -320,7 +320,9 @@ Check for dependent propositions in `propositions/{slug}--*.json`. If any exist:
 
 "This feature has [N] downstream propositions that may need updating to reflect the new
 positioning. The description change may affect how DOES/MEANS statements are grounded.
-Run the `propositions` skill to review them."
+Run the `propositions` skill to review them, or for intensive single-proposition sharpening
+with buyer language validation and competitive messaging research, use `proposition-deep-dive`
+on the highest-priority propositions."
 
 ### 4. Proposition seed notes (optional)
 
