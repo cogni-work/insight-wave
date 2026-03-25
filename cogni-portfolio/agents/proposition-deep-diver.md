@@ -140,19 +140,27 @@ For non-English portfolios, add localized case study searches:
 
 **What to extract:** Specific, citable evidence — named customers ("Telekom migrated 2,500 workloads"), quantified outcomes ("35% cost reduction"), analyst validation ("Gartner positioned as Leader"). Vague evidence ("numerous satisfied customers") is worthless.
 
-### Batch 4 — MEANS Escalation & Pain Validation (4-6 searches)
+### Batch 4 — MEANS Escalation, Pain Validation & Need Validation (4-8 searches)
 
-Validate whether the DOES targets the right pain and whether the MEANS quantification can be sharpened.
+Validate whether the DOES targets the right pain, whether the MEANS quantification can be sharpened, and whether the DOES addresses the buyer's actual need (not the provider's service improvement).
 
+**Pain validation:**
 - `"{market-vertical}" {pain-from-current-DOES} priority OR importance {year}` — is this the #1 pain?
 - `"{market-vertical}" {feature-category} business impact metrics` — what outcomes buyers track
 - `"{market-vertical}" CIO OR CISO OR CDO priorities {year}` — decision-maker priorities for this market
 - `"{feature-category}" before after {market-vertical}` — status-quo contrast evidence
 - `"{market-vertical}" {feature-category} implementation results {year}` — quantified customer outcomes
 
-For non-English: localized variants for pain-point and priority searches.
+**Need validation** (2-3 searches — especially important when buyer is classified as consumer):
+- `{market-vertical} "without" OR "ohne" {specialist-category} {feature-keywords}` — how buyers describe independence from specialists (consultants, agencies, integrators)
+- `{market-vertical} "in-house" OR "intern" OR "self-service" {feature-keywords}` — self-service framing from buyer side
+- `{market-vertical} {specialist-category} "alternative" OR "replacement" OR "Ersatz"` — what buyers search for when they want to replace specialists
 
-**What to extract:** Whether the current DOES targets the right pain (is it the buyer's #1 concern, or #5?). What KPIs buyers in this market actually track. Industry benchmarks that could sharpen MEANS quantification ("MTTR reduction of 40-60% typical" is more credible than a made-up number).
+The need validation searches are critical for consumer markets where the provider-lens trap is most common. If the buyer is a consumer, the DOES must frame independence — not improved provider service. These searches confirm whether buyers actually seek independence from the specialist category.
+
+For non-English: localized variants for pain-point, priority, and need-validation searches.
+
+**What to extract:** Whether the current DOES targets the right pain (is it the buyer's #1 concern, or #5?). What KPIs buyers in this market actually track. Industry benchmarks that could sharpen MEANS quantification. Whether buyers are actively seeking independence from the specialist category (confirms consumer need) or seeking better specialist service (suggests practitioner need).
 
 ### Adaptive Research
 
@@ -319,10 +327,25 @@ Write the full research report to `research/deep-dive-{feature-slug}--{market-sl
       "Ways to escalate from operational advantage to business/personal impact"
     ]
   },
+  "need_validation": {
+    "buyer_classification": "practitioner|consumer|enabler",
+    "current_need_framing": "What need the current DOES addresses",
+    "actual_buyer_need": "What buyers actually want based on research",
+    "provider_lens_detected": false,
+    "independence_evidence": [
+      {
+        "signal": "What buyers say about wanting independence from specialists",
+        "source_url": "https://..."
+      }
+    ],
+    "alignment": "high|medium|low",
+    "pivot_suggestion": "If alignment is low — how the DOES should reframe the need (null if aligned)"
+  },
   "does_assessment": {
     "current_statement": "Current DOES text",
     "buyer_centricity": "high|medium|low",
     "buyer_perspective": "high|medium|low",
+    "need_correctness": "high|medium|low",
     "market_specificity": "high|medium|low",
     "differentiation": "high|medium|low",
     "status_quo_contrast": "high|medium|low",

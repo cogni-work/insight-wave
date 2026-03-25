@@ -231,6 +231,7 @@ A proposition maps one feature to one target market with IS/DOES/MEANS messaging
     "does_score": {
       "buyer_centricity": "pass",
       "buyer_perspective": "pass",
+      "need_correctness": "pass",
       "market_specificity": "warn",
       "differentiation": "pass",
       "status_quo_contrast": "pass",

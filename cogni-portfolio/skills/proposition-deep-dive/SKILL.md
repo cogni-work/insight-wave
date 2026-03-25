@@ -174,12 +174,13 @@ If buyer language research reveals RFP-style evaluation criteria: "Buyers in [ma
 
 ### Part D — DOES/MEANS Assessment
 
-Current DOES assessment against 6 quality dimensions:
+Current DOES assessment against 7 quality dimensions:
 
 | Dimension | Score | Finding |
 |---|---|---|
 | Buyer-centricity | [pass/warn/fail] | [specific finding] |
 | Buyer-perspective correctness | [pass/warn/fail] | [practitioner/consumer/enabler — does the DOES reflect how THIS buyer relates to the capability?] |
+| Need correctness | [pass/warn/fail] | [Does the DOES address the buyer's actual need? Consumer: independence from specialist. Practitioner: acceleration. Enabler: client differentiation. Fail if consumer DOES frames provider-service improvement.] |
 | Market-specificity | [pass/warn/fail] | [specific finding] |
 | Differentiation | [pass/warn/fail] | [specific finding] |
 | Status-quo contrast | [pass/warn/fail] | [specific finding] |
@@ -216,7 +217,7 @@ This is the core of the deep dive. The co-creation works on DOES and MEANS — s
 
 ### Skip logic — assess before co-creating
 
-Before starting the co-creation dialogue, check the DOES and MEANS assessments from Phase 3. If one layer scores **pass on all quality dimensions** (6 for DOES, 5 for MEANS), skip it and focus the dialogue on the weaker layer. Specifically:
+Before starting the co-creation dialogue, check the DOES and MEANS assessments from Phase 3. If one layer scores **pass on all quality dimensions** (7 for DOES, 5 for MEANS), skip it and focus the dialogue on the weaker layer. Specifically:
 
 - **DOES all-pass, MEANS has warn/fail**: Skip DOES entirely. Open with "The DOES is strong across all dimensions — no changes needed. Let's focus on the MEANS." Then proceed directly to the MEANS directions.
 - **MEANS all-pass, DOES has warn/fail**: Skip MEANS. Focus dialogue on DOES only.
@@ -244,6 +245,7 @@ Which direction resonates more with how you talk to buyers in [market]? Or is th
    - Word count (15-30 words)
    - Buyer-centricity: written from buyer's perspective ("you can...", "teams can...")?
    - Buyer-perspective correctness: reflects the buyer's actual relationship to this capability (practitioner/consumer/enabler)?
+   - Need correctness: addresses the buyer's actual need? Consumer buyer must see independence framing, not provider-service improvement. Apply provider-lens trap test.
    - Market-specificity: references pain points unique to this market? Passes market-swap test?
    - Differentiation: could a competitor credibly make this claim?
    - Status-quo contrast: implies or states what changes vs. current approach?
@@ -255,6 +257,7 @@ Which direction resonates more with how you talk to buyers in [market]? Or is th
    | Word count | N | N |
    | Buyer-centricity | [assessment] | [assessment] |
    | Buyer-perspective | [assessment] | [assessment] |
+   | Need correctness | [assessment] | [assessment] |
    | Market-specificity | [assessment] | [assessment] |
    | Differentiation | [assessment] | [assessment] |
    | Status-quo contrast | [assessment] | [assessment] |
@@ -300,7 +303,7 @@ If the user wants to work on DOES and MEANS together, present paired options:
 "**Option A**: DOES: '[seed]' -> MEANS: '[seed]' — [rationale for the pair]
 **Option B**: DOES: '[seed]' -> MEANS: '[seed]' — [rationale for the pair]"
 
-Apply all 11 quality dimensions to each pair. This mode is faster but makes it harder to isolate issues. Suggest sequential mode if both layers have significant problems.
+Apply all 12 quality dimensions to each pair. This mode is faster but makes it harder to isolate issues. Suggest sequential mode if both layers have significant problems.
 
 ### Dialogue rules
 

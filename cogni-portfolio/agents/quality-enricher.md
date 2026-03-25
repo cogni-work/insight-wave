@@ -134,6 +134,13 @@ Note: the agent receives both `language` (portfolio-level) and the market JSON (
 - `{market-vertical} {feature-keywords} self-service OR professional OR reseller` — clarify buyer archetype
 - Also read `customers/{market-slug}.json` (if it exists) for buyer personas and their relationship to this capability. If customer profiles describe the buyer as a consumer (needs the outcome but doesn't have internal capability), the DOES must frame self-service empowerment, not professional acceleration. If profiles describe a practitioner, frame acceleration/amplification.
 
+**need_correctness** (DOES frames value through the provider's lens instead of the buyer's actual need — e.g., telling a consumer buyer "your consultant delivers better results" instead of "you gain the capability yourself"):
+- `{market-vertical} "without" OR "ohne" {specialist-category} {feature-keywords}` — how buyers describe independence from specialists
+- `{market-vertical} "in-house" OR "intern" OR "self-service" {feature-keywords}` — self-service framing from buyer side
+- `{market-vertical} {specialist-category} "alternative" OR "replacement" OR "Ersatz"` — what buyers search for when they want to replace the specialist category
+- Also re-read `customers/{market-slug}.json` — if buyer pain points mention dependency on or cost of external specialists (e.g., "kein Budget fuer externe Berater", "Abhaengigkeit von Dienstleistern"), the buyer's need is independence. Any DOES that frames improved provider service is wrong and must be rewritten from the buyer's actual need: gaining the capability themselves, eliminating the dependency.
+- Determine the specialist category the buyer wants to replace (e.g., "Management-Beratung", "Marketing-Agentur", "IT-Systemintegrator") and ensure the rewritten DOES explicitly or implicitly frames independence from that category.
+
 **market_specificity** (generic, passes market-swap test):
 - `"{company}" {product-name} {market-vertical} use case`
 - `"{company}" {market-vertical} pain points solved`
@@ -306,7 +313,7 @@ Your rewrites must pass the same quality gates that flagged the original. Before
 
 - Feature descriptions: 20-35 words (count with `.split()`), mechanism-focused, no outcome verbs
   (reduces, enables, ensures), no parity adjectives (robust, innovative, cutting-edge)
-- Proposition DOES: 15-30 words, buyer-centric framing, perspective-correct (practitioner/consumer/enabler), market-specific, differentiated
+- Proposition DOES: 15-30 words, buyer-centric framing, perspective-correct (practitioner/consumer/enabler), need-correct (consumer = independence framing, not provider-improvement), market-specific, differentiated
 - Proposition MEANS: 15-30 words, measurable outcome, escalates beyond DOES, quantified if evidence exists, aligned with buyer's buying criteria when customer profiles exist
 
 A rewrite that introduces new quality issues is worse than no rewrite at all.

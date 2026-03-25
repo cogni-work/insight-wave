@@ -178,9 +178,11 @@ After generating propositions (single or batch), assess messaging quality:
 
 1. **Structural validation** — `$CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>` checks DOES/MEANS word counts against the 15-30 word target. Fast, catches obvious bloat or terseness.
 
-2. **Messaging quality assessment** — spawn the `proposition-quality-assessor` agent to evaluate DOES and MEANS across 11 dimensions:
-   - DOES: Buyer-centricity, Buyer-perspective correctness, Market-specificity, Differentiation, Status-quo contrast, Conciseness
-   - MEANS: Outcome specificity, Escalation, Quantification, Emotional resonance, Conciseness
+2. **Messaging quality assessment** — spawn the `proposition-quality-assessor` agent to evaluate DOES and MEANS across 12 dimensions:
+   - DOES (7): Buyer-centricity, Buyer-perspective correctness, **Need correctness**, Market-specificity, Differentiation, Status-quo contrast, Conciseness
+   - MEANS (5): Outcome specificity, Escalation, Quantification, Emotional resonance, Conciseness
+
+   The **need correctness** dimension catches the subtlest buyer-perspective failure: propositions that correctly classify the buyer archetype but frame value through the provider's lens. Example: telling an SME buyer "your consultant delivers better results" when the buyer's actual need is "I can do this without a consultant." This dimension specifically detects provider-lens contamination in consumer-market propositions.
 
 If a proposition has an overall "fail" from the assessor (two or more dimension failures), **flag it for rewrite** before it flows into downstream deliverables. Show the specific dimension failures and suggested rewrites to the user.
 
@@ -188,7 +190,21 @@ Propositions with "warn" can proceed but flag the warnings — they represent im
 
 This post-check applies to both single-proposition and batch generation paths. In batch mode, present a summary table of pass/warn/fail counts alongside the proposition review table.
 
-**Variant quality**: When a proposition has variants, assess each variant's DOES/MEANS alongside the primary using the same 10 dimensions. Report variant quality in the summary table with the variant's angle label. Variants with "fail" should be flagged for rewrite or deletion — weak variants dilute the proposition rather than strengthen it.
+3. **Stakeholder review** — after the messaging quality assessment passes (no "fail" propositions remaining or all fails have been rewritten), spawn the `proposition-review-assessor` agent for each market that received new or updated propositions. This is the final quality gate before propositions flow into downstream deliverables (competitor analysis, solutions, sales materials).
+
+   The stakeholder review evaluates propositions as a set from three perspectives:
+   - **Simulated Buyer Persona**: "Would I recognize this as my problem? Does this speak to MY need?" — catches provider-lens contamination the per-dimension assessor missed
+   - **Sales Person**: "Can I say this in a customer meeting? Is this credible?" — catches claims that look good on paper but fail in conversation
+   - **Product Marketer**: "Is the messaging coherent across the set? Are we telling one story?" — catches inconsistency, redundancy, and fragmented differentiation
+
+   Verdicts:
+   - **accept**: Propositions are ready for downstream use (solutions, competitors, sales materials)
+   - **revise**: Present findings grouped by perspective. Offer to rewrite the flagged propositions. Re-run the stakeholder review after fixes.
+   - **reject**: Block downstream flow. Fundamental rework needed — the proposition set doesn't resonate with the buyer persona, isn't credible for sales, or is incoherent as a set. Direct the user to rewrite using the `proposition-deep-dive` skill for the worst offenders.
+
+   The stakeholder review is especially important for consumer markets (B2B-SME, self-service buyers) where the provider-lens trap is most common. If the buyer persona perspective flags need-correctness issues, these are CRITICAL priority — they indicate the messaging team is thinking inside-out.
+
+**Variant quality**: When a proposition has variants, assess each variant's DOES/MEANS alongside the primary using the same 12 dimensions. Report variant quality in the summary table with the variant's angle label. Variants with "fail" should be flagged for rewrite or deletion — weak variants dilute the proposition rather than strengthen it.
 
 ## Post-Generation Review Checkpoint
 

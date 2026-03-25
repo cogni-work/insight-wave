@@ -54,6 +54,28 @@ Then determine the buyer's relationship to this feature before drafting:
 
 This perspective analysis is the single most important step. A proposition that gets the buyer's relationship wrong -- framing a self-service tool as a professional accelerator, or vice versa -- fails regardless of how polished the language is.
 
+## Buyer Need Derivation (Mandatory Pre-Draft Step)
+
+After classifying the buyer's relationship, explicitly reason through these three questions before writing any statement. This is your deepest quality gate — a proposition that identifies the right archetype but addresses the wrong need is unfixable by polish.
+
+4. **What is the buyer's current state?** How does this buyer currently address the need that this feature serves? Be concrete: "The SME currently hires an external consulting firm at EUR 1.000-2.000/day for strategy work" — not "The buyer lacks this capability."
+
+5. **What does this buyer actually want?** Derive from the perspective classification:
+   - **Practitioner**: "They want to do [their professional activity] faster, better, or more consistently." The feature accelerates their existing workflow. Their need is professional excellence, not capability acquisition.
+   - **Consumer**: "They want to [achieve the outcome] themselves, without depending on [the specialist category they currently hire]." The feature replaces the external dependency. Their need is independence and self-sufficiency. **CRITICAL**: if your DOES implies the buyer still needs the specialist (consultant, agency, integrator, etc.), you have the wrong need — you are writing the proposition for the specialist, not the buyer.
+   - **Enabler**: "They want to offer [capability] to their own clients as a differentiating part of their service." The feature powers their client offering. Their need is competitive differentiation and revenue growth.
+
+6. **Provider-lens trap test**: Read your draft DOES aloud. Does it describe:
+   (a) The buyer's world changing — they can do something new, or stop depending on someone (correct), or
+   (b) The provider's service improving — their vendor/consultant/agency delivers better results (wrong for consumer/enabler)?
+
+   **Concrete example** — Feature: "AI-powered consulting methodology (Double Diamond)". Buyer: B2B-SME (consumer).
+   - **WRONG DOES**: "Sie erhalten von Ihrem Beratungspartner validierte Handlungsempfehlungen statt Bauchgefuehl-Folien" — this tells the SME their consultant is better. But the SME's actual need is NOT better consulting from an external firm; it's having their own strategy capability without the external firm.
+   - **RIGHT DOES**: "Sie entwickeln Ihre eigene Unternehmensstrategie mit KI-gestuetzter Methodik — von der Problemanalyse bis zur validierten Loesung — ohne externen Berater."
+   - The wrong version frames value through the provider's lens (better consulting delivery). The right version frames value through the buyer's lens (independence from consultants).
+
+   If your draft fails the provider-lens test, go back to step 5 and rewrite from the buyer's actual need before proceeding. Do not try to fix provider-lens framing by rephrasing — the entire proposition direction needs to change.
+
 ## IS/DOES/MEANS Framework
 
 - **IS** (Feature): Restate the feature description at full length (20-35 words). Do not compress or abbreviate — the IS statement should be at least as long as the original feature description. You may lightly adapt for market context but the statement must remain factual and capability-focused. If the feature description is already 20-35 words, reuse it verbatim or expand slightly with technical specifics. A common failure mode is compressing the feature into 10-15 words — this loses mechanism clarity and fails the word count gate.
@@ -133,6 +155,7 @@ Before writing the file, verify each layer against these criteria:
 **DOES statement:**
 - Written from the buyer's perspective ("you can...", "teams can...") — not "it provides..." or "our solution enables..."
 - **Perspective-correct**: The DOES reflects the buyer's actual relationship to this capability. A self-service user should not see messaging written for a professional practitioner, and vice versa. An SME buying consulting methodology should read "You consult yourself", not "Your external consultant works faster."
+- **Need-correct**: The DOES addresses the buyer's actual need, not an improved provider service. For consumer buyers: does the DOES frame independence from the specialist category? If it references a consultant/agency/integrator as the source of value, the need is wrong. Re-run the provider-lens trap test from the Buyer Need Derivation step.
 - References a pain point specific to THIS market segment — would not work if you swapped in a different market
 - **Customer-grounded**: When customer profiles exist, DOES references or paraphrases at least one pain point from the primary buyer profile
 - Includes implicit or explicit contrast with the buyer's current approach (what changes?)
