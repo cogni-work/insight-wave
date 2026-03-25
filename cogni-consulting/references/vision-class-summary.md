@@ -14,5 +14,6 @@ description: Quick-reference table of all vision classes for use in setup and re
 | `digital-transformation` | Current-to-target state mapping with transition roadmap | "Digitize field service operations" |
 | `innovation-portfolio` | Prioritized innovation investment bets across horizons | "Balance R&D across Act/Plan/Observe" |
 | `market-entry` | Market feasibility assessment and entry strategy | "Evaluate expansion into French market" |
+| `business-model-hypothesis` | Validated Lean Canvas with research-backed hypothesis | "Validate product-market fit for new SaaS venture" |
 
 For detailed method recommendations per phase, see `vision-classes.md`.

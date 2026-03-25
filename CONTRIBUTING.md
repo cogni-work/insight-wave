@@ -9,7 +9,6 @@ Core plugins are maintained by insight-wave and licensed under AGPL-3.0:
 - cogni-workspace
 - cogni-trends
 - cogni-narrative
-- cogni-canvas
 - cogni-claims
 - cogni-copywriting
 - cogni-consulting

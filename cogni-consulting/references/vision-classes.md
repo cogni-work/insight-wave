@@ -90,3 +90,15 @@ Each vision class represents a type of consulting engagement outcome. The class 
 | Define | Assumption verification, assumption mapping | cogni-claims |
 | Develop | Proposition modeling, scenario planning | cogni-portfolio |
 | Deliver | Opportunity scoring, business case canvas, claims verification | cogni-claims, cogni-portfolio |
+
+## business-model-hypothesis
+
+**Outcome**: Validated Lean Canvas with research-backed sections and multi-perspective stress test.
+**Typical duration**: 2-4 weeks | **Decision type**: Hypothesis validation (go to portfolio / pivot / kill)
+
+| Phase | Recommended Methods | Plugin Dispatch |
+|---|---|---|
+| Discover | Desk research (market-focused), stakeholder mapping, competitive baseline | cogni-research, cogni-portfolio |
+| Define | Assumption mapping, affinity clustering, HMW synthesis | cogni-claims |
+| Develop | Lean canvas authoring, lean canvas refinement | — |
+| Deliver | Lean canvas stress-test, claims verification | cogni-claims |

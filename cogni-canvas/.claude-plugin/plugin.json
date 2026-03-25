@@ -1,9 +1,0 @@
-{
-  "name": "cogni-canvas",
-  "version": "0.2.5",
-  "description": "Define and iteratively refine Lean Canvas business model hypotheses",
-  "author": {
-    "name": "insight-wave",
-    "email": "stephan@cogni-work.ai"
-  }
-}

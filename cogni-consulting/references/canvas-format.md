@@ -76,9 +76,9 @@ Append an evolution log after the 9 sections:
 ## Status Inference Rules
 
 When reading an existing canvas without frontmatter, infer section status:
-- Section contains only "?" or is missing → `unfilled`
-- Section has content but is vague or incomplete → `draft`
-- Section has specific, substantive content → `filled`
+- Section contains only "?" or is missing -> `unfilled`
+- Section has content but is vague or incomplete -> `draft`
+- Section has specific, substantive content -> `filled`
 
 ## Version Bump Rules
 

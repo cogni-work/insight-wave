@@ -384,7 +384,7 @@ Ask the user to:
 
 Congratulations — you have completed all 11 courses in the cogni-help curriculum!
 
-**Your complete insight-wave toolkit (14 plugins)**:
+**Your complete insight-wave toolkit (13 plugins)**:
 1. **Claude Cowork** — Your agentic AI platform (Course 1)
 2. **cogni-workspace** — Shared project foundation (Course 2)
 3. **cogni-obsidian** — Knowledge management dashboard (Course 2)
@@ -392,17 +392,16 @@ Congratulations — you have completed all 11 courses in the cogni-help curricul
 5. **cogni-narrative** — Executive narrative transformation (Course 3)
 6. **cogni-claims** — Citation verification (Course 3)
 7. **cogni-trends** — Strategic trend research pipeline (Courses 4-5)
-8. **cogni-canvas** — Lean Canvas business hypotheses (Course 6)
-9. **cogni-portfolio** — Product/service messaging (Course 6)
-10. **cogni-visual** — Presentations & visual deliverables (Course 7)
-11. **cogni-research** — Multi-agent research reports (Course 8)
-12. **cogni-marketing** — B2B content engine (Course 9)
-13. **cogni-sales** — Sales pitch generation (Course 10)
-14. **cogni-consulting** — Double Diamond consulting orchestrator (Course 11)
+8. **cogni-portfolio** — Product/service messaging (Course 6)
+9. **cogni-visual** — Presentations & visual deliverables (Course 7)
+10. **cogni-research** — Multi-agent research reports (Course 8)
+11. **cogni-marketing** — B2B content engine (Course 9)
+12. **cogni-sales** — Sales pitch generation (Course 10)
+13. **cogni-consulting** — Double Diamond consulting orchestrator incl. Lean Canvas (Courses 6, 11)
 
 **The consulting meta-workflow**:
 ```
-Canvas (hypothesis) → Portfolio (messaging) → Research → Analyze → Write → Verify → Polish → Market → Sell → Present
+Lean Canvas (hypothesis, via cogni-consulting) → Portfolio (messaging) → Research → Analyze → Write → Verify → Polish → Market → Sell → Present
                                               └─── cogni-consulting orchestrates all of this ───┘
 ```
 

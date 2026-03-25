@@ -1,7 +1,7 @@
 # Course 6: Portfolio Messaging
 
 **Duration**: 45 minutes | **Modules**: 6 | **Prerequisites**: Course 3
-**Plugins**: cogni-canvas (v0.1.0), cogni-portfolio
+**Plugins**: cogni-consulting (business-model-hypothesis), cogni-portfolio
 **Audience**: Consultants building product/service portfolios for SMEs
 
 ---
@@ -10,8 +10,9 @@
 
 ### Theory (3 min)
 
-Before diving into portfolio messaging, you need a business hypothesis. **cogni-canvas**
-helps you build a **Lean Canvas** — a one-page business model that captures the core
+Before diving into portfolio messaging, you need a business hypothesis. The
+**business-model-hypothesis** vision class in **cogni-consulting** helps you build a
+research-backed **Lean Canvas** — a one-page business model that captures the core
 assumptions about your product/service:
 
 | Section | Question | Example |
@@ -30,24 +31,24 @@ assumptions about your product/service:
 in detailed messaging. It's cheaper to refine a hypothesis than to rework a full
 portfolio.
 
-**Two skills**:
-- `canvas-create` — guided Q&A to build a new canvas from scratch
-- `canvas-refine` — critique and improve an existing canvas section by section
+**Two consulting methods**:
+- `lean-canvas-authoring` — guided Q&A to build a new canvas from scratch
+- `lean-canvas-refinement` — critique and improve an existing canvas section by section
 
 ### Demo
 
 Walk through canvas creation:
-1. Run `canvas-create` and observe the guided Q&A flow
+1. Run `lean-canvas-authoring` via cogni-consulting and observe the guided Q&A flow
 2. Show how the 9 sections build on each other
 3. Show the resulting markdown file with YAML frontmatter (version tracking, section status)
-4. Demonstrate `canvas-refine` — critique one section and improve it
+4. Demonstrate `lean-canvas-refinement` — critique one section and improve it
 5. Preview: how `portfolio-canvas` will extract entities for the rest of this course
 
 ### Exercise
 
 Ask the user to:
 1. Think of a product or service they know well (their own or a client's)
-2. Run `canvas-create` or fill in a canvas manually
+2. Run `lean-canvas-authoring` via cogni-consulting or fill in a canvas manually
 3. Focus on Problem, Customer Segments, and Unique Value Proposition first
 4. Check: does the UVP actually address the problems for those segments?
 
@@ -73,7 +74,7 @@ Create `_teacher-exercises/canvas-draft.md` with a template if the user prefers 
 
 - Lean Canvas captures your business hypothesis on one page
 - 9 sections force clarity about problem, solution, and differentiation
-- `canvas-create` for new canvases, `canvas-refine` for iterative improvement
+- `lean-canvas-authoring` for new canvases, `lean-canvas-refinement` for iterative improvement
 - The canvas feeds into portfolio messaging via `portfolio-canvas` entity extraction
 - Start with Problem → Customer Segments → UVP, then fill in the rest
 
@@ -413,7 +414,7 @@ Ask the user to:
 ## Course Completion
 
 Congratulations! You now know how to:
-- Start with a Lean Canvas hypothesis (cogni-canvas)
+- Start with a Lean Canvas hypothesis (cogni-consulting business-model-hypothesis)
 - Apply IS/DOES/MEANS messaging framework (cogni-portfolio)
 - Define markets with TAM/SAM/SOM
 - Conduct competitor and customer analysis for messaging

@@ -20,10 +20,12 @@ cogni-consulting/{engagement-slug}/
 ├── develop/                               # D2 diverge outputs
 │   ├── options/                           # Generated solution options
 │   ├── propositions/                      # → cogni-portfolio propositions
-│   └── scenarios/                         # Scenario planning artifacts
+│   ├── scenarios/                         # Scenario planning artifacts
+│   └── lean-canvas.md                     # Lean Canvas (business-model-hypothesis class)
 ├── deliver/                               # D2 converge outputs
 │   ├── claims/                            # → cogni-claims final verification
 │   ├── business-case.md                   # Business case canvas
+│   ├── canvas-stress-test.md              # Lean Canvas stress-test report (business-model-hypothesis class)
 │   └── roadmap.md                         # Implementation roadmap
 └── output/                                # Final deliverable package
     └── {format}/                          # → cogni-visual / document-skills
@@ -133,7 +135,7 @@ Audit trail of decisions made during the engagement with rationale and traceabil
 
 ## Vision Classes
 
-7 engagement types that determine recommended methods and deliverables:
+8 engagement types that determine recommended methods and deliverables:
 
 | Class | Outcome | Typical Duration |
 |-------|---------|------------------|
@@ -144,6 +146,7 @@ Audit trail of decisions made during the engagement with rationale and traceabil
 | `digital-transformation` | Current-to-target state mapping with transition roadmap | 6-12 weeks |
 | `innovation-portfolio` | Prioritized innovation investment bets across horizons | 4-8 weeks |
 | `market-entry` | Market feasibility assessment and entry strategy | 4-8 weeks |
+| `business-model-hypothesis` | Validated Lean Canvas with research-backed hypothesis | 2-4 weeks |
 
 ## Phase State Machine
 

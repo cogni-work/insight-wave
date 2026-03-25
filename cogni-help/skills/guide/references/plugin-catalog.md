@@ -5,19 +5,6 @@ skills/commands, and when to recommend it.
 
 ---
 
-## cogni-canvas
-
-**Purpose**: Lean Canvas business model authoring and iterative refinement.
-
-**Key commands**: `/canvas`
-
-**Use when**: User needs to define a business model hypothesis, validate product-market
-fit assumptions, or create a structured Lean Canvas as input for portfolio messaging.
-
-**Feeds into**: cogni-portfolio (canvas → propositions)
-
----
-
 ## cogni-claims
 
 **Purpose**: Claim verification against cited sources. Detects deviations between what
@@ -35,7 +22,8 @@ to verify research output before publishing.
 ## cogni-consulting
 
 **Purpose**: Double Diamond consulting orchestrator. Guides engagements through Discover,
-Define, Develop, Deliver phases by dispatching to other insight-wave plugins.
+Define, Develop, Deliver phases by dispatching to other insight-wave plugins. Also includes
+Lean Canvas authoring and refinement via the business-model-hypothesis vision class.
 
 **Key commands**: `/consulting-setup`, `/consulting-discover`, `/consulting-define`,
 `/consulting-develop`, `/consulting-deliver`
@@ -126,7 +114,7 @@ knowledge management alongside insight-wave plugins.
 **Use when**: User needs to define product/service propositions, map them to markets,
 size the opportunity, or analyze competitors.
 
-**Requires**: cogni-canvas (optional, for hypothesis input)
+**Requires**: cogni-consulting (optional, for Lean Canvas hypothesis input)
 **Feeds into**: cogni-marketing (propositions → content), cogni-sales (propositions → pitch)
 
 ---

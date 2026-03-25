@@ -42,14 +42,14 @@ graph LR
 
 **Command**: `/consulting-define`
 
-**Dispatches to**: cogni-portfolio (propositions), cogni-canvas (business model),
-cogni-narrative (problem framing)
+**Dispatches to**: cogni-portfolio (propositions), cogni-consulting lean canvas methods
+(business-model-hypothesis vision class), cogni-narrative (problem framing)
 
 **Output**: Defined problem space, portfolio propositions, business model hypothesis
 
 **Tips**:
 - This is where breadth converges to focus — select the strongest opportunities
-- Use cogni-canvas to test business model hypotheses quickly
+- Use cogni-consulting's lean canvas methods to test business model hypotheses quickly
 - Use cogni-portfolio to structure propositions with IS/DOES/MEANS
 - The narrative here frames the problem — why this matters, why now
 

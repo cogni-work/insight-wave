@@ -59,6 +59,10 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the vision class's r
 |---|---|---|
 | Scenario planning | 2-4 future scenarios with implications | `references/methods/scenario-planning.md` |
 | Opportunity scoring | Scored option matrix with criteria | `references/methods/opportunity-scoring.md` |
+| Lean canvas authoring | Research-backed business model hypothesis | `references/methods/lean-canvas-authoring.md` |
+| Lean canvas refinement | Iterative canvas improvement | `references/methods/lean-canvas-refinement.md` |
+
+**Note**: Lean canvas methods are recommended for `business-model-hypothesis`, `market-entry`, `innovation-portfolio`, and `gtm-roadmap` vision classes. For `business-model-hypothesis`, the lean canvas IS the primary Develop output (replacing proposition modeling and option synthesis). Read `$CLAUDE_PLUGIN_ROOT/references/methods/lean-canvas-authoring.md` for the full guided workflow.
 
 Ask: "Which methods do you want for option generation? I recommend [2-3 based on vision class]. You can adjust."
 

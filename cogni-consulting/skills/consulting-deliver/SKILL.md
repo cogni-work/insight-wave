@@ -57,6 +57,9 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver in-prog
 |---|---|---|
 | Opportunity scoring | Score options against weighted criteria | `references/methods/opportunity-scoring.md` |
 | Business case canvas | Structure financials and assumptions | `references/methods/business-case-canvas.md` |
+| Lean canvas stress-test | Multi-persona pressure test of Lean Canvas | `references/methods/lean-canvas-stress-test.md` |
+
+**Note**: For `business-model-hypothesis` vision class, replace opportunity scoring and business case canvas with the lean canvas stress-test as the primary Deliver method. The stress-test runs 4 parallel persona agents (Investor, Customer, Technical, Operations) against the canvas from Develop, then synthesizes findings into a prioritized improvement plan. Read `$CLAUDE_PLUGIN_ROOT/references/methods/lean-canvas-stress-test.md` for the full workflow.
 
 Ask: "Deliver plan: I recommend scoring options first, then verifying claims, then building the business case. Adjust?"
 

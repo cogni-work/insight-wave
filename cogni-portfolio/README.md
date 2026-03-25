@@ -156,7 +156,7 @@ cogni-portfolio/
 | cogni-claims | No | Claim verification for research-backed assertions via portfolio-verify |
 | document-skills | No | Document ingestion (docx, pptx, xlsx, pdf) and XLSX export |
 | cogni-trends | No | Bidirectional TIPS integration via trends-bridge |
-| cogni-canvas | No | Lean Canvas extraction via portfolio-canvas |
+| cogni-consulting | No | Lean Canvas extraction via portfolio-canvas (canvases produced by business-model-hypothesis vision class) |
 
 cogni-portfolio is standalone for core messaging workflows. Verification and XLSX export require their respective plugins.
 

@@ -250,26 +250,8 @@
       ]
     },
     {
-      "name": "cogni-canvas",
-      "description": "Lean Canvas authoring and refinement. Guides users through creating business model hypotheses from scratch or iteratively improving existing canvases with section-by-section critique, coherence checking, and version tracking.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
-      "source": "./cogni-canvas",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "lean-canvas",
-        "business-model",
-        "hypothesis",
-        "startup",
-        "refinement"
-      ]
-    },
-    {
       "name": "cogni-consulting",
-      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated.",
+      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring and multi-persona stress testing via the business-model-hypothesis vision class.",
       "author": {
         "name": "Stephan de Haas",
         "email": "stephan@cogni-work.ai"
@@ -285,7 +267,10 @@
         "problem-framing",
         "solution-design",
         "phase-gated",
-        "cross-plugin"
+        "cross-plugin",
+        "lean-canvas",
+        "business-model",
+        "hypothesis"
       ]
     }
   ]

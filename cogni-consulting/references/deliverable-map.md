@@ -23,6 +23,8 @@ Each vision class produces a different set of deliverables. This map defines the
 | Scenario Matrix | 2×2 scenario analysis with implications | PPTX, Excalidraw | Develop |
 | Cost Reduction Playbook | Prioritized savings opportunities with implementation | XLSX, DOCX | Deliver |
 | Transformation Roadmap | Current→target state with transition phases | PPTX, Excalidraw | Deliver |
+| Lean Canvas | Research-backed business model hypothesis | MD | Develop |
+| Canvas Stress-Test Report | Multi-persona evaluation with synthesis | MD | Deliver |
 
 ## Vision Class → Default Package
 
@@ -74,3 +76,10 @@ Each vision class produces a different set of deliverables. This map defines the
 4. Business Case (XLSX + DOCX)
 5. Action Roadmap (PPTX)
 6. Claim Verification Log (MD)
+
+### business-model-hypothesis
+1. Lean Canvas (MD)
+2. Canvas Stress-Test Report (MD)
+3. Executive Summary (PPTX)
+4. Action Roadmap (PPTX)
+5. Claim Verification Log (MD)

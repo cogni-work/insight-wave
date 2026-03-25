@@ -48,7 +48,9 @@ Each engagement lives in `cogni-consulting/{slug}/` with:
 
 ## Vision Classes
 
-7 engagement types: strategic-options, business-case, gtm-roadmap, cost-optimization, digital-transformation, innovation-portfolio, market-entry. Each maps to recommended methods and deliverables via `references/vision-classes.md` and `references/deliverable-map.md`.
+8 engagement types: strategic-options, business-case, gtm-roadmap, cost-optimization, digital-transformation, innovation-portfolio, market-entry, business-model-hypothesis. Each maps to recommended methods and deliverables via `references/vision-classes.md` and `references/deliverable-map.md`.
+
+The `business-model-hypothesis` class uses Lean Canvas methods (authoring, refinement, stress-test) instead of traditional proposition modeling. Canvas reference materials live in `references/canvas-format.md`, `references/lean-canvas-sections.md`, and stress-test personas in `references/personas/canvas/`.
 
 ## Scripts
 

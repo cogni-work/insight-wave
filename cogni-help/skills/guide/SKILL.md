@@ -66,6 +66,6 @@ When the user asks for an overview (no specific task), present the ecosystem map
 **Content & Transformation**: cogni-narrative, cogni-copywriting, cogni-visual
 **Go-to-Market**: cogni-marketing, cogni-sales
 **Orchestration**: cogni-consulting, cogni-workspace
-**Support & Learning**: cogni-help (this plugin), cogni-canvas, cogni-obsidian
+**Support & Learning**: cogni-help (this plugin), cogni-obsidian
 
 For detailed information on any plugin, read the full catalog reference.

@@ -67,7 +67,7 @@ Or describe what you want:
 | 3 | Basic Tools | cogni-copywriting, cogni-narrative, cogni-claims |
 | 4 | Trend Scouting | cogni-trends (Part 1) |
 | 5 | Trend Reporting | cogni-trends (Part 2) |
-| 6 | Portfolio Messaging | cogni-canvas, cogni-portfolio |
+| 6 | Portfolio Messaging | cogni-consulting, cogni-portfolio |
 | 7 | Visual Deliverables | cogni-visual |
 | 8 | Research Reports | cogni-research |
 | 9 | B2B Marketing | cogni-marketing |

@@ -16,7 +16,6 @@ graph LR
     end
 
     subgraph Data["Data Layer"]
-        CV[cogni-canvas<br/>lean canvases]
         PF[cogni-portfolio<br/>products, features, markets<br/>propositions, solutions]
         TI[cogni-trends<br/>trends, investment themes<br/>value models, catalogs]
         GR[cogni-research<br/>sub-questions, contexts<br/>sources, report-claims]
@@ -37,9 +36,6 @@ graph LR
     DM -->|dispatches discover/develop/deliver| PF
     DM -->|dispatches define/deliver| CL
     DM -->|dispatches export| VI
-
-    %% Canvas → Portfolio
-    CV -->|portfolio-canvas extraction| PF
 
     %% Foundation → All
     WS -.->|themes| VI
@@ -88,8 +84,7 @@ graph LR
 | **cogni-visual** | Brief (YAML frontmatter + Markdown body) | Per-deliverable brief files | Reads theme from cogni-workspace. Reads narrative via `arc_id` |
 | **cogni-workspace** | Theme, WorkspaceConfig | Markdown (theme.md) + JSON (settings) | Theme files consumed by all visual plugins. Env vars consumed by all plugins |
 | **cogni-obsidian** | VaultConfig, TerminalProfile | JSON config files in `.obsidian/` | Provides Obsidian browsing layer for all plugin outputs |
-| **cogni-consulting** | Engagement (consulting-project.json), PhaseState, ExecutionLog, MethodLog, DecisionLog | JSON files in engagement directory | Dispatches to cogni-research, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual. No data exports — orchestration only |
-| **cogni-canvas** | LeanCanvas (9 sections, version history, per-section status) | Markdown with YAML frontmatter | Consumed by cogni-portfolio:portfolio-canvas for entity extraction |
+| **cogni-consulting** | Engagement (consulting-project.json), PhaseState, ExecutionLog, MethodLog, DecisionLog, LeanCanvas (9 sections, version history, per-section status) | JSON files in engagement directory; Lean Canvas as Markdown with YAML frontmatter | Dispatches to cogni-research, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual. Lean Canvas files produced by business-model-hypothesis vision class, consumed by cogni-portfolio:portfolio-canvas for entity extraction |
 
 ## Cross-Plugin Bridge Files
 
@@ -102,7 +97,7 @@ graph LR
 | `marketing-project.json` | cogni-marketing | (internal) | Brand voice, source paths, market-GTM path configuration |
 | `claims.json` | various | cogni-claims | Claim records with source URLs, status, and deviation evidence |
 | `consulting-project.json` | cogni-consulting | (internal) | Engagement config, vision class, phase state, plugin path references |
-| `canvas-{slug}.md` | cogni-canvas | cogni-portfolio | Lean Canvas with 9 sections for portfolio-canvas entity extraction |
+| `canvas-{slug}.md` | cogni-consulting | cogni-portfolio | Lean Canvas with 9 sections for portfolio-canvas entity extraction (produced by business-model-hypothesis vision class) |
 
 ## Naming Conventions
 
@@ -115,7 +110,7 @@ graph LR
 | cogni-research | `{entity-type}-[slug]-[hash8]` | `src-acme-cloud-2a1f3e8b` |
 | cogni-claims | `claim-{uuid-v4}` | `claim-550e8400-e29b-41d4-a716-446655440000` |
 | cogni-consulting | `{client}-{engagement-type}` | `acme-market-entry` |
-| cogni-canvas | `canvas-{product-or-venture}` | `canvas-cloud-monitoring-saas` |
+| cogni-consulting | `canvas-{product-or-venture}` (Lean Canvas files) | `canvas-cloud-monitoring-saas` |
 
 ## Data Isolation Principle
 
