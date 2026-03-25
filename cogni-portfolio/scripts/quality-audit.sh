@@ -60,7 +60,6 @@ for f, d in _feature_data:
     desc = d.get('description', '')
     words = desc.split()
     wc = len(words)
-    cc = len(desc)
 
     # Word count checks
     if wc < 15 or wc > 50:
@@ -69,11 +68,6 @@ for f, d in _feature_data:
     elif wc < 20 or wc > 35:
         issues.append({'dimension': 'word_count', 'severity': 'warn',
                        'detail': f'Description has {wc} words (target 20-35)'})
-
-    # Char count check
-    if cc > 150:
-        issues.append({'dimension': 'char_count', 'severity': 'warn',
-                       'detail': f'Description is {cc} chars (target ≤150)'})
 
     # Parity language check
     matches = PARITY_WORDS.findall(desc)
@@ -104,7 +98,6 @@ for f in sorted(glob.glob(os.path.join(proj, 'propositions', '*.json'))):
     does = d.get('does_statement', '')
     does_words = does.split()
     does_wc = len(does_words)
-    does_cc = len(does)
 
     if does_wc < 10 or does_wc > 40:
         issues.append({'dimension': 'does_word_count', 'severity': 'flag',
@@ -112,10 +105,6 @@ for f in sorted(glob.glob(os.path.join(proj, 'propositions', '*.json'))):
     elif does_wc < 15 or does_wc > 30:
         issues.append({'dimension': 'does_word_count', 'severity': 'warn',
                        'detail': f'DOES has {does_wc} words (target 15-30)'})
-
-    if does_cc > 200:
-        issues.append({'dimension': 'does_char_count', 'severity': 'warn',
-                       'detail': f'DOES is {does_cc} chars (target ≤200)'})
 
     # Parity DOES check
     parity = PARITY_DOES.findall(does)
@@ -127,7 +116,6 @@ for f in sorted(glob.glob(os.path.join(proj, 'propositions', '*.json'))):
     means = d.get('means_statement', '')
     means_words = means.split()
     means_wc = len(means_words)
-    means_cc = len(means)
 
     if means_wc < 10 or means_wc > 40:
         issues.append({'dimension': 'means_word_count', 'severity': 'flag',
@@ -135,16 +123,6 @@ for f in sorted(glob.glob(os.path.join(proj, 'propositions', '*.json'))):
     elif means_wc < 15 or means_wc > 30:
         issues.append({'dimension': 'means_word_count', 'severity': 'warn',
                        'detail': f'MEANS has {means_wc} words (target 15-30)'})
-
-    if means_cc > 200:
-        issues.append({'dimension': 'means_char_count', 'severity': 'warn',
-                       'detail': f'MEANS is {means_cc} chars (target ≤200)'})
-
-    # IS statement check
-    is_stmt = d.get('is_statement', '')
-    if len(is_stmt) > 150:
-        issues.append({'dimension': 'is_char_count', 'severity': 'warn',
-                       'detail': f'IS is {len(is_stmt)} chars (target ≤150)'})
 
     # Missing evidence check
     evidence = d.get('evidence', None)

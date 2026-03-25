@@ -271,14 +271,14 @@ Craft each proposition with the user:
 
 Every field has a strict length target. Concise messaging is sharper messaging — if a statement needs two sentences, the first sentence was too vague.
 
-| Field | Words | Characters | Sentences |
-|-------|-------|------------|-----------|
-| `is_statement` | 20-35 | max 150 | 1 |
-| `does_statement` | 15-30 | max 200 | 1-2 |
-| `means_statement` | 15-30 | max 200 | 1-2 |
-| `evidence[].statement` | — | — | 1 |
+| Field | Words | Sentences |
+|-------|-------|-----------|
+| `is_statement` | 20-35 | 1 |
+| `does_statement` | 15-30 | 1-2 |
+| `means_statement` | 15-30 | 1-2 |
+| `evidence[].statement` | — | 1 |
 
-These limits apply to all languages. For German (which runs ~15% longer than English), prioritize precision over completeness — cut filler words, not meaning. If a statement exceeds the limit, tighten the wording rather than splitting into multiple sentences.
+Word count targets apply equally to all languages. German compound nouns count as single words, keeping word-based limits fair across languages.
 
 ### Proposition JSON Schema
 

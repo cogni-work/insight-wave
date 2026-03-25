@@ -201,7 +201,7 @@ Proposition-level `overall` is the worse of `does_assessment.overall` and `means
 Only include `note` when the score is warn or fail — leave empty string for pass.
 Only include `suggestion` when proposition-level overall is warn or fail — leave empty string for pass.
 
-**Important**: When you suggest a rewritten DOES or MEANS statement, it MUST itself be within the 15-30 word target and max 200 characters. Count the words in your rewrite before including it. A suggestion that violates the rules it's enforcing undermines the assessment.
+**Important**: When you suggest a rewritten DOES or MEANS statement, it MUST itself be within the 15-30 word target. Count the words in your rewrite before including it. A suggestion that violates the rules it's enforcing undermines the assessment.
 
 ## Process
 

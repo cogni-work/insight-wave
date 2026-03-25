@@ -77,7 +77,7 @@ The product's `revenue_model` determines the package structure:
 
 | Field | Target |
 |-------|--------|
-| `positioning` | 1 sentence, max 80 characters |
+| `positioning` | 1 sentence, 8-12 words |
 | `tiers[].scope` | 1-2 sentences, contractually specific |
 
 Package positioning is a headline, not a paragraph. Tier scopes should be concise but contractually meaningful — include workload counts, system domains, and delivery timelines.

@@ -99,14 +99,14 @@ Optional: `evidence`, `created`
 
 Every field has strict length and word-count targets. Concise messaging is sharper — if a statement needs two sentences, the first sentence was too vague.
 
-| Field | Words | Characters | Sentences |
-|-------|-------|------------|-----------|
-| `is_statement` | 20-35 | max 150 | 1 |
-| `does_statement` | 15-30 | max 200 | 1-2 |
-| `means_statement` | 15-30 | max 200 | 1-2 |
-| `evidence[].statement` | — | — | 1 |
+| Field | Words | Sentences |
+|-------|-------|-----------|
+| `is_statement` | 20-35 | 1 |
+| `does_statement` | 15-30 | 1-2 |
+| `means_statement` | 15-30 | 1-2 |
+| `evidence[].statement` | — | 1 |
 
-For German content (~15% longer), prioritize precision over completeness — cut filler words, not meaning. If a statement exceeds the limit, tighten wording rather than splitting into multiple sentences.
+Word count targets apply equally to all languages. German compound nouns count as single words, keeping word-based limits fair across languages.
 
 ## Quality Checklist
 
@@ -115,7 +115,7 @@ Before writing the file, verify each layer against these criteria:
 **IS statement:**
 - Factual and capability-focused — no superlatives or marketing language
 - Describes YOUR SOLUTION/CAPABILITY, never the buyer's problem or current state
-- 20-35 words, max 150 characters (for German, character limit may flex to ~250 due to compound nouns, but word count is firm)
+- 20-35 words (firm for all languages)
 - **No internal vendor jargon**: Replace internal methodology names, acronyms, and branded process names with plain-language descriptions. "CMF-Methodik" → "strukturierte Migrationsmethodik", "6R-Strategien" → "sechs Migrationsstrategien von Rehost bis Retire", "Factory-Teams" → "spezialisierte Migrationsteams". The IS statement must be understandable to a buyer who has never heard of your internal frameworks.
 
 **DOES statement:**
@@ -123,7 +123,7 @@ Before writing the file, verify each layer against these criteria:
 - References a pain point specific to THIS market segment — would not work if you swapped in a different market
 - Includes implicit or explicit contrast with the buyer's current approach (what changes?)
 - Could not be credibly claimed by a competitor — if it could, sharpen around what's unique
-- 15-30 words, max 200 characters
+- 15-30 words
 
 **MEANS statement:**
 - Names a measurable business outcome the buyer would put in a business case (KPI, dollar figure, named metric)
@@ -131,7 +131,7 @@ Before writing the file, verify each layer against these criteria:
 - Includes or implies quantification (numbers, timeframes, named metrics). Every number must be grounded: either cite a reference customer who achieved it, qualify with "bis zu" and back it with an evidence entry, or use an industry benchmark with source. Ungrounded percentages ("30% Kostenreduktion" without a source) undermine credibility with CFOs and procurement
 - Passes the "so what?" test: a CFO would approve budget for this
 - Where possible, add a personal/career dimension alongside the business metric — what does this mean for the decision-maker's board credibility, team retention, or risk exposure?
-- 15-30 words, max 200 characters
+- 15-30 words
 
 **Cross-check:**
 - DOES and MEANS are clearly different from what you'd write for a different market
