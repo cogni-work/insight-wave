@@ -157,7 +157,9 @@ $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>
    - Customer profile coverage: which markets have `customers/{market-slug}.json` files (these produce perspective-correct, buyer-grounded propositions) vs. which markets don't (these will use inferred buyer perspective from market descriptions — weaker messaging). For markets without profiles, recommend: "Consider running the `customers` skill first for sharper messaging."
    - Offer: "Before I start generating, would you like to: (a) open the dashboard to review the current portfolio state, (b) see the full feature descriptions that will become the IS layer, or (c) proceed with generation?"
 
-   Wait for the user's explicit response. This checkpoint exists because once propositions are generated, the user needs to understand what they're built on. Reviewing features after proposition generation means reviewing backwards — it's much harder to spot a weak IS statement when you're already reading DOES/MEANS messaging built on top of it.
+   Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present the feature descriptions with quality status. Only proceed to generation after the user confirms.
+
+   This checkpoint exists because once propositions are generated, the user needs to understand what they're built on. Reviewing features after proposition generation means reviewing backwards — it's much harder to spot a weak IS statement when you're already reading DOES/MEANS messaging built on top of it.
 
 If a feature has structural errors, an overall "fail" from the quality assessor, or the feature set has not passed stakeholder review (verdict != "accept"), **refuse to generate its proposition**. Instead:
 
@@ -220,7 +222,7 @@ Present a comprehensive milestone summary:
 Then offer the user review options:
 - "Would you like to: (a) open the dashboard to see the full Feature x Market matrix with the new propositions, (b) read through the generated propositions in detail — I'll present them grouped by feature or market, (c) focus on the flagged propositions that need attention, or (d) proceed to the next tier / next steps?"
 
-Wait for the user's explicit response. Do not suggest generating the next tier or moving to solutions until the user has had the chance to review what was just created.
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. Do not suggest generating the next tier or moving to solutions until the user has had the chance to review what was just created.
 
 The reason this matters: propositions are the messaging foundation for everything downstream — competitor battlecards, customer profiles, pitch decks, proposals. If the user discovers a weak DOES or a missing evidence gap only after solutions and competitors are built on top, the rework cascades. Five minutes of review here saves hours of rework later.
 
