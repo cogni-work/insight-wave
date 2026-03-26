@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Workplace Orchestrator - Claude Code Launcher
 # Version: 4.0.0
-# Plugin: cogni-obsidian
+# Plugin: cogni-workspace
 # Launches Claude Code with language-specific output-style from Obsidian Terminal
 
 set -e
@@ -24,7 +24,7 @@ show_header() {
     clear
     echo -e "${CYAN}╔════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║    ${BLUE}${BOLD}WORKPLACE${NC}${CYAN} with claude code          ║${NC}"
-    echo -e "${CYAN}║      ${MAGENTA}cogni-obsidian v0.9.1${CYAN}             ║${NC}"
+    echo -e "${CYAN}║      ${MAGENTA}cogni-workspace v4.0.0${CYAN}             ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════╝${NC}"
     echo
 }
