@@ -167,7 +167,3 @@ Write the updated customer JSON with both `profiles` and `named_customers`.
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present (e.g., `"de"`), write all user-facing text content in that language — pain_points, buying_criteria, decision_role, information_sources, fit_rationale, and all descriptive fields. This means full sentences in the target language, not English sentences with embedded domain terms. For `"de"`: write `"SAP IS-U Ablösung bis 2027 erzwingt Cloud-Migrationsentscheidung unter Zeitdruck bei gleichzeitigem 24/7-Netzbetrieb"`, not `"SAP IS-U end-of-life forces a cloud migration decision under time pressure while maintaining 24/7 grid operations"`. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
 - Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas
-
-## Session Management
-
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

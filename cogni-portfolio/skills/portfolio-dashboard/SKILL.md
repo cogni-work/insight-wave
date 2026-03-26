@@ -26,9 +26,12 @@ Scan the workspace for `portfolio.json` files under `cogni-portfolio/` paths. If
 
 ### 2. Pick Theme
 
-Use the `cogni-workspace:pick-theme` skill to let the user select a theme. The skill returns `theme_path`, `theme_name`, and `theme_slug`.
+First, check if `<project-dir>/output/design-variables.json` already exists from a previous dashboard run. If it does, ask the user: "A dashboard theme is already configured. Reuse it, or pick a new one?" Default to reuse — most re-runs just want fresh data with the same look.
 
-**Skip conditions** (auto-select without prompting):
+- **If reusing**: skip directly to step 4 (Generate the Dashboard). Steps 2 and 3 are done.
+- **If picking new** (or no design-variables exist): use the `cogni-workspace:pick-theme` skill to let the user select a theme. The skill returns `theme_path`, `theme_name`, and `theme_slug`.
+
+**Additional skip conditions** (auto-select without prompting):
 - The caller already provided a `theme_path`
 - Only one theme exists in the workspace (auto-select it)
 
@@ -116,7 +119,7 @@ Skills should offer a dashboard at these checkpoints:
 ### How it works at a checkpoint
 
 When a skill offers "open the dashboard" at a review checkpoint:
-1. Delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate and open the dashboard
+1. Delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to regenerate and open the dashboard
 2. After the dashboard opens, the calling skill resumes and asks the user if they're ready to proceed
 3. The dashboard generation is a snapshot — it reflects the portfolio state at that moment, which is exactly what the user needs to review before the next phase changes things
 
@@ -130,6 +133,3 @@ This is lightweight — the generator script runs in seconds and the HTML is sel
 - The dashboard lives at `output/dashboard.html` alongside the synthesis README
 - **Communication Language**: Read `portfolio.json` in the project root. If a `language` field is present, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. If no `language` field is present, default to English.
 
-## Session Management
-
-After completing this skill's core operation, always delegate to the `session-guardian` agent with `trigger_mode: "capstone"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

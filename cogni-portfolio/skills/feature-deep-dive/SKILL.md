@@ -337,7 +337,7 @@ competitive differentiation hooks, quantified outcomes — offer to note them:
 
 Want me to note these as seeds for proposition generation?"
 
-If yes, mention them in the session summary for the session-guardian to carry forward.
+If yes, save the proposition seeds as a note in the feature's JSON file under a `proposition_seeds` field so downstream skills can pick them up.
 
 ## Important Notes
 
@@ -355,13 +355,3 @@ If yes, mention them in the session summary for the session-guardian to carry fo
   want more than quality-gap repair. The deep dive produces a feature description that meets
   all the same quality standards (15-35 words, Anchor-How-Differentiator, no outcome language,
   Value Wedge test).
-
-## Session Management
-
-After completing the deep dive, delegate to the `session-guardian` agent with
-`trigger_mode: "capstone"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a `session_summary` that includes:
-- Feature slug and product
-- Research scope (searches executed, competitors found, documents analyzed)
-- Description change (before/after)
-- Downstream impact (propositions affected)
-- Any deferred proposition seed notes

@@ -247,7 +247,7 @@ Do NOT trigger after single-feature edits or minor metadata changes — those ru
    - A table of all features with their quality status (pass/warn/deferred)
    - Offer: "Would you like to review the updated features before I run the stakeholder review? You can: (a) open the dashboard for a visual overview, (b) I list the full descriptions here, or (c) proceed directly to the stakeholder review."
 
-   Wait for the user's explicit response. If they choose (a), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present each feature's name, description, word count, and quality status. Only proceed to step 7 after the user confirms.
+   Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present each feature's name, description, word count, and quality status. Only proceed to step 7 after the user confirms.
 
    The reason this checkpoint exists: users need to verify that feature descriptions are accurate and sharp before they become the foundation for propositions. Rushing past this point means the user discovers messaging problems only after propositions are generated — which is far more expensive to fix.
 
@@ -268,7 +268,7 @@ Do NOT trigger after single-feature edits or minor metadata changes — those ru
 
 ### Deferred Warnings
 
-When a user explicitly defers a warn feature (step 3), note it in your session summary when delegating to the session-guardian. This ensures the warning surfaces on resume with the context of "you chose to defer this" rather than appearing as a surprise.
+When a user explicitly defers a warn feature (step 3), the quality assessment data captures this decision. The deferred status surfaces on resume via the health check, with the context of "you chose to defer this" rather than appearing as a surprise.
 
 ### Tone
 
@@ -482,7 +482,3 @@ For features with quality issues that need company-specific information to fix (
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (feature names, descriptions) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.
 - Refer to `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md` for complete entity schemas
-
-## Session Management
-
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished. Include quality state in the summary: how many features passed, how many have deferred warnings, and whether the stakeholder review reached "accept".

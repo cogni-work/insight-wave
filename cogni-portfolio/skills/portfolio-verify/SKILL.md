@@ -112,7 +112,3 @@ If all claims are verified or resolved, confirm the portfolio is ready for synth
 - Re-running verification on already-verified claims is safe (re-checks the source)
 - The `cogni-claims/` directory lives inside the portfolio project directory (managed by the cogni-claims plugin)
 - **Communication Language**: Read `portfolio.json` in the project root. If a `language` field is present, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. If no `language` field is present, default to English.
-
-## Session Management
-
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

@@ -928,7 +928,3 @@ No shared database, no tight coupling — just slug-based references resolved at
 Use the portfolio project's language for all generated content (features, propositions,
 evidence). Use the TIPS project's language when reading TIPS data. If they differ,
 translate ST descriptions to the portfolio language when creating features.
-
-## Session Management
-
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

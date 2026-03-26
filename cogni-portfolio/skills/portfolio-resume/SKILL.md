@@ -72,7 +72,7 @@ After the table:
   - For parity language: "1 feature uses parity language ("innovative", "robust")"
   - For proposition issues: "1 proposition DOES is too long (42 words, target 15-30)"
   - If a flagged feature has downstream propositions, note the cascade risk: fixing the feature description may require refreshing its propositions
-  - **Deferred vs new warnings**: If the previous session summary (from session-guardian) mentions deferred warnings, present them separately: "Deferred from last session: cogni-sales (12 words — you chose to skip this)". New warnings (features created or edited since the last quality check) are presented normally. This distinction prevents surprise — the user should recognize deferred items as conscious decisions, not new problems.
+  - **Deferred vs new warnings**: If the quality assessment data includes deferred features (features where the user chose to skip a warning), present them separately: "Deferred from previous session: cogni-sales (12 words — you chose to skip this)". New warnings (features created or edited since the last quality check) are presented normally. This distinction prevents surprise — the user should recognize deferred items as conscious decisions, not new problems.
   - End with actionable guidance: "Consider running features or propositions skill to review and fix these before generating downstream content."
   - Offer deep assessment: "For thorough quality assessment including mechanism and customer-relevance checks, ask for a full quality audit."
   - If no entities are flagged, skip this section entirely (don't show "0 flagged")
