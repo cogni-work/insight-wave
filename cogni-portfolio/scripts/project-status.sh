@@ -463,6 +463,10 @@ case "$PHASE" in
     add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending"
     ;;
   enrichment)
+    if [ "$CUSTOMERS_PCT" -lt 100 ]; then
+      missing_cust=$((MARKETS - CUSTOMERS))
+      add_action "customers" "$missing_cust market(s) lack customer profiles"
+    fi
     if [ "$SOLUTIONS_PCT" -lt 100 ]; then
       missing_sol=$((PROPOSITIONS - SOLUTIONS))
       add_action "solutions" "$missing_sol proposition(s) lack solution plans"
@@ -474,10 +478,6 @@ case "$PHASE" in
     if [ "$COMPETITORS_PCT" -lt 100 ]; then
       missing_comp=$((PROPOSITIONS - COMPETITORS))
       add_action "compete" "$missing_comp proposition(s) lack competitor analysis"
-    fi
-    if [ "$CUSTOMERS_PCT" -lt 100 ]; then
-      missing_cust=$((MARKETS - CUSTOMERS))
-      add_action "customers" "$missing_cust market(s) lack customer profiles"
     fi
     ;;
   verification)

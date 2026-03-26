@@ -752,7 +752,7 @@ Scan offerings are intermediate research artifacts stored in `research/.logs/`, 
 | Export | portfolio-export | Generate proposals, market briefs, XLSX workbooks |
 | Bridge | trends-bridge | Bidirectional TIPS integration (matching, enrichment, opportunities) |
 
-Recommended pipeline order: setup -> [products -> features -> markets -> propositions] -> solutions -> packages -> [compete, customers] -> verify -> synthesize -> export
+Recommended pipeline order: setup -> [products -> features -> markets -> propositions] -> customers -> solutions -> packages -> compete -> verify -> synthesize -> export
 
 ## Entity Relationships
 

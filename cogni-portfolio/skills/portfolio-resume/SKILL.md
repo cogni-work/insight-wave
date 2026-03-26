@@ -97,7 +97,7 @@ If the phase is `complete`, congratulate the user and suggest reviewing outputs 
 | `features` | Products exist, no features | Run `features` skill |
 | `markets` | Features defined, no markets | Run `markets` skill |
 | `propositions` | Feature x Market pairs need messaging | Run `propositions` skill |
-| `enrichment` | Propositions exist, solution/competitor/customer gaps remain | Run `solutions`, `compete`, and/or `customers` |
+| `enrichment` | Propositions exist, customer/solution/competitor gaps remain | Run `customers`, `solutions`, and/or `compete` |
 | `verification` | Unverified or deviated claims pending | Run `verify` skill |
 | `synthesis` | All entities complete, claims clean | Run `synthesize` skill |
 | `export` | Overview generated, deliverables pending | Run `export` skill |

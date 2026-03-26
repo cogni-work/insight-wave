@@ -49,9 +49,9 @@ This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work
 /features                                  # add capabilities per product (IS layer)
 /markets                                   # discover and size target markets
 /propositions                              # generate IS/DOES/MEANS messaging
+/customers                                 # create buyer personas per market
 /solutions                                 # define implementation plans and pricing
 /compete                                   # analyze competitors per proposition
-/customers                                 # create buyer personas per market
 /portfolio-verify                          # verify claims against sources
 /synthesize                                # generate messaging repository
 /portfolio-export                          # produce proposals, briefs, workbooks
@@ -93,7 +93,7 @@ See [references/data-model.md](references/data-model.md) for the full schema wit
 
 ## How it works
 
-Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files organized by entity. The workflow follows a logical progression: setup → products → features → markets → propositions → solutions → compete → customers → verify → synthesize → export. Research-intensive steps (market sizing, competitive analysis, customer profiling) dispatch parallel web-research agents. Propositions are scored by quality assessors against DOES/MEANS criteria, with a quality gate for downstream consumption.
+Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files organized by entity. The workflow follows a logical progression: setup → products → features → markets → propositions → customers → solutions → compete → verify → synthesize → export. Research-intensive steps (market sizing, competitive analysis, customer profiling) dispatch parallel web-research agents. Propositions are scored by quality assessors against DOES/MEANS criteria, with a quality gate for downstream consumption.
 
 ## Components
 
