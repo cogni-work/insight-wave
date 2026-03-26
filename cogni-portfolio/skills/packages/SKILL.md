@@ -353,4 +353,4 @@ Packages have no downstream dependents — they can be deleted freely. Confirm w
 
 ## Session Management
 
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished.
+After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

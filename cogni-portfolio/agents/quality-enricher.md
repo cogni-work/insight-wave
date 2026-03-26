@@ -35,6 +35,10 @@ real, company-specific information through targeted web research. You bridge the
 quality assessment (which identifies WHAT is weak) and the actual fix (which requires
 information about the specific company and product).
 
+## Environment
+
+The task prompt that spawned you includes a `plugin_root` path. Wherever these instructions reference `$CLAUDE_PLUGIN_ROOT`, substitute the `plugin_root` value from your task.
+
 ## Your Task
 
 You receive one entity (feature or proposition) along with its quality assessment results.

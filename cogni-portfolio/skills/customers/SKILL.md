@@ -145,7 +145,7 @@ Two modes of operation:
 
 Present the list and let the user select which to research.
 
-For each selected company, delegate research to the `customer-researcher` agent (via the Agent tool). Launch agents in parallel when researching multiple companies. Each agent returns a structured JSON object — do NOT let agents write files directly.
+For each selected company, delegate research to the `customer-researcher` agent (via the Agent tool). Launch agents in parallel when researching multiple companies. Always include `plugin_root: $CLAUDE_PLUGIN_ROOT` in the agent task prompt. Each agent returns a structured JSON object — do NOT let agents write files directly.
 
 Merge all returned results into a `named_customers` array in the customer JSON. Deduplicate by `domain` — if a company already exists, update rather than duplicate.
 
@@ -170,4 +170,4 @@ Write the updated customer JSON with both `profiles` and `named_customers`.
 
 ## Session Management
 
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished.
+After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

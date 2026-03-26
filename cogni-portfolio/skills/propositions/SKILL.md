@@ -330,7 +330,7 @@ Each evidence entry is an object with `statement` (required), `source_url` (stri
 
 **Single proposition**: Craft one proposition interactively. Read the feature, its parent product, and the market JSON files. Draft IS/DOES/MEANS statements and present them with your reasoning for each choice. Invite the user to push back — "I used 'MTTR reduction' as the DOES anchor because SRE teams in this market track it obsessively. If your buyers are more CIO-level, we might reframe around 'service availability guarantees' instead."
 
-**Batch generation**: For multiple propositions, delegate each to the `proposition-generator` agent. Launch agents in parallel for independent Feature x Market pairs. When delegating, include the customer file path if `customers/{market-slug}.json` exists — the agent reads it for buyer perspective and pain-point language. If no customer file exists for a market, note this in the task so the agent knows to infer buyer perspective from the market description. But first, confirm the priority list with the user — don't generate everything blindly.
+**Batch generation**: For multiple propositions, delegate each to the `proposition-generator` agent. Launch agents in parallel for independent Feature x Market pairs. When delegating, include the customer file path if `customers/{market-slug}.json` exists — the agent reads it for buyer perspective and pain-point language. If no customer file exists for a market, note this in the task so the agent knows to infer buyer perspective from the market description. Always include `plugin_root: $CLAUDE_PLUGIN_ROOT` in the agent task prompt so the agent can resolve script paths. But first, confirm the priority list with the user — don't generate everything blindly.
 
 **Variant-aware batch generation**: During batch generation, scan existing propositions for `tips_enrichment` metadata. When a proposition has `tips_enrichment` with `st_refs`, offer to generate variants for each referenced ST's value chain. Present these as a separate tier after primary generation:
 
@@ -501,6 +501,7 @@ For propositions that need more than reactive quality repair — where you want 
 
    Derive `regional_url` from the company domain and portfolio language. Common pattern: `{domain}/{lang}` (e.g., `t-systems.com/de`). If the company context already includes an explicit `regional_urls` map, use the entry for the portfolio language. Pass both `domain` (for English backup) and `regional_url` (for localized search). The agent also receives the market JSON (which contains `region`) — it uses this to look up the region locale from `regions.json` for market-scoped search queries.
    - The project directory path
+   - `plugin_root: $CLAUDE_PLUGIN_ROOT`
 
    Launch multiple agents in parallel for different propositions.
 
@@ -536,4 +537,4 @@ Conciseness issues (word count) and escalation problems (MEANS repeats DOES) can
 
 ## Session Management
 
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished.
+After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

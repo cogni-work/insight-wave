@@ -40,7 +40,7 @@ For each selected proposition, identify 3-5 relevant competitors. Three sources:
 - Recent competitive moves, pricing changes, product launches
 - Market analyst reports and comparisons
 
-Multiple agents can be launched in parallel for different propositions.
+Always include `plugin_root: $CLAUDE_PLUGIN_ROOT` in the agent task prompt. Multiple agents can be launched in parallel for different propositions.
 
 **LLM knowledge (fallback)**: When web search is unavailable, identify known competitors based on the feature category and market segment. Clearly note that competitor data is based on training knowledge and may not reflect latest positioning.
 
@@ -175,4 +175,4 @@ Strong differentiation statements:
 
 ## Session Management
 
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished.
+After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

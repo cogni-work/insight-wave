@@ -113,6 +113,7 @@ Delegate broad research to the `proposition-deep-diver` agent via the Agent tool
 - Feature deep-dive findings if `research/deep-dive-{feature-slug}.json` exists (summarized — differentiation vectors, buyer perception, evidence)
 - **User context from Phase 1** — what the user said about weaknesses, buyer objections, internal evidence, status-quo accuracy, and outcome priorities
 - Project directory path
+- `plugin_root: $CLAUDE_PLUGIN_ROOT`
 
 ### Launch pattern:
 
@@ -129,6 +130,7 @@ Existing customer intelligence: {summary or "none"}
 Feature deep-dive findings: {summary or "none — consider running feature-deep-dive first"}
 User context: {weaknesses identified, buyer objections, internal evidence, status-quo assessment, outcome priorities}
 Project directory: {path}
+plugin_root: {$CLAUDE_PLUGIN_ROOT}
 ```
 
 ### While the agent works:
@@ -388,7 +390,7 @@ Assign the next sequential `variant_id` (check existing variants). Set `tips_ref
 ## Session Management
 
 After completing the deep dive, delegate to the `session-guardian` agent with
-`trigger_mode: "capstone"` and a `session_summary` that includes:
+`trigger_mode: "capstone"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a `session_summary` that includes:
 - Proposition slug (feature--market)
 - Research scope (searches executed, competitors analyzed, evidence found)
 - DOES change (before/after)

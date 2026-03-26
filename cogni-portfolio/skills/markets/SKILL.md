@@ -209,7 +209,7 @@ The `region` must be a valid code from the region taxonomy (`$CLAUDE_PLUGIN_ROOT
 
 For each market, determine TAM/SAM/SOM. Two modes:
 
-**Web research (default)**: Delegate to a subagent (Agent tool, subagent_type: `cogni-portfolio:market-researcher`) to search for market reports, analyst estimates, and industry data. Provide the subagent with: the **exact file path** of the market JSON to update (e.g., `<project-dir>/markets/mid-market-saas-dach.json`), the path to `portfolio.json`, market name, segmentation criteria, feature categories, and region scope. Multiple agents can be launched in parallel for different markets. Use the region's default currency from the taxonomy.
+**Web research (default)**: Delegate to a subagent (Agent tool, subagent_type: `cogni-portfolio:market-researcher`) to search for market reports, analyst estimates, and industry data. Provide the subagent with: the **exact file path** of the market JSON to update (e.g., `<project-dir>/markets/mid-market-saas-dach.json`), the path to `portfolio.json`, market name, segmentation criteria, feature categories, and region scope. Always include `plugin_root: $CLAUDE_PLUGIN_ROOT` in the agent task prompt. Multiple agents can be launched in parallel for different markets. Use the region's default currency from the taxonomy.
 
 **LLM estimation (fallback)**: When web search is unavailable, generate reasonable estimates from training knowledge. Clearly label these as estimates and note confidence level. Always prefer bottom-up SOM: number of target companies x realistic ACV x achievable penetration rate. The bottom-up calculation must be visible in `som.source` — e.g., `"40 customers x EUR 800K ACV in 3 years"`. A SOM without a visible unit calculation is not credible and will be challenged in review.
 
@@ -319,4 +319,4 @@ When proposing markets, prioritize segments where:
 
 ## Session Management
 
-After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and a brief `session_summary` of what was accomplished.
+After heavy operations (bulk creation of 10+ entities, reviews with structural changes, or 3+ portfolio skills invoked this session), delegate to the `session-guardian` agent with `trigger_mode: "conditional"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

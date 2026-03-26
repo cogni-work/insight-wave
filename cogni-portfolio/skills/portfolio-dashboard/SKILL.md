@@ -116,7 +116,7 @@ Skills should offer a dashboard at these checkpoints:
 ### How it works at a checkpoint
 
 When a skill offers "open the dashboard" at a review checkpoint:
-1. Delegate to the `session-guardian` agent with `trigger_mode: "conditional"` to generate and open the dashboard
+1. Delegate to the `session-guardian` agent with `trigger_mode: "conditional"` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate and open the dashboard
 2. After the dashboard opens, the calling skill resumes and asks the user if they're ready to proceed
 3. The dashboard generation is a snapshot — it reflects the portfolio state at that moment, which is exactly what the user needs to review before the next phase changes things
 
@@ -132,4 +132,4 @@ This is lightweight — the generator script runs in seconds and the HTML is sel
 
 ## Session Management
 
-After completing this skill's core operation, always delegate to the `session-guardian` agent with `trigger_mode: "capstone"` and a brief `session_summary` of what was accomplished.
+After completing this skill's core operation, always delegate to the `session-guardian` agent with `trigger_mode: "capstone"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

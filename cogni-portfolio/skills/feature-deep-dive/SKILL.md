@@ -166,6 +166,7 @@ Delegate broad web research to the `feature-deep-diver` agent via the Agent tool
 - Any intelligence extracted from context documents or user-provided documents (summarized — don't send raw documents to the agent)
 - **User context from Phase 1** — what the user said about weaknesses, preferred angles, known competitors, and buyer priorities. This focuses the agent's research strategy.
 - Project directory path
+- `plugin_root: $CLAUDE_PLUGIN_ROOT`
 
 ### Launch pattern:
 
@@ -178,6 +179,7 @@ Product context: {product name, product description}
 Sibling features: {list of slug: name pairs}
 Additional intelligence: {summary from context docs or user documents, if any}
 Project directory: {path}
+plugin_root: {$CLAUDE_PLUGIN_ROOT}
 ```
 
 ### Parallel document exploration:
@@ -357,7 +359,7 @@ If yes, mention them in the session summary for the session-guardian to carry fo
 ## Session Management
 
 After completing the deep dive, delegate to the `session-guardian` agent with
-`trigger_mode: "capstone"` and a `session_summary` that includes:
+`trigger_mode: "capstone"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a `session_summary` that includes:
 - Feature slug and product
 - Research scope (searches executed, competitors found, documents analyzed)
 - Description change (before/after)

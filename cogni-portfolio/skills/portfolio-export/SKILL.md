@@ -220,4 +220,4 @@ List generated files with paths. Suggest how to use each deliverable:
 
 ## Session Management
 
-After completing this skill's core operation, always delegate to the `session-guardian` agent with `trigger_mode: "capstone"` and a brief `session_summary` of what was accomplished.
+After completing this skill's core operation, always delegate to the `session-guardian` agent with `trigger_mode: "capstone"`, `plugin_root: $CLAUDE_PLUGIN_ROOT`, and a brief `session_summary` of what was accomplished.

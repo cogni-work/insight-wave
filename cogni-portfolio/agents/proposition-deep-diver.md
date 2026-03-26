@@ -37,6 +37,10 @@ quality-enricher's job) — you validate buyer language against real market usag
 competitive messaging, enrich evidence, validate pain-point assumptions, and surface MEANS
 escalation opportunities to enable strategic messaging decisions.
 
+## Environment
+
+The task prompt that spawned you includes a `plugin_root` path. Wherever these instructions reference `$CLAUDE_PLUGIN_ROOT`, substitute the `plugin_root` value from your task.
+
 ## Your Task
 
 You receive one proposition along with its feature, market, product, and company context.
