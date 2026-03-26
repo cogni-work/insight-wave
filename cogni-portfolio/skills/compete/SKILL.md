@@ -143,7 +143,13 @@ After the review loop converges (or reaches max iterations):
 
 ### 6. Review with User
 
-Present competitor analysis per proposition. The user may know competitors the research missed, or may disagree with positioning claims. Iterate until accurate.
+Present competitor analysis per proposition, then offer:
+
+- "Would you like to: (a) open the dashboard to see the competitive landscape across all propositions, (b) review individual competitor files in detail, or (c) proceed to the next steps?"
+
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed.
+
+The user may know competitors the research missed, or may disagree with positioning claims. Iterate until accurate.
 
 ## Trap Questions
 

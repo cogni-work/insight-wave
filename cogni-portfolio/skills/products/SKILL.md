@@ -168,6 +168,10 @@ Then deliver your strategic recommendation — not as a list of observations but
 
 Do not just ask "does this look right?" — present a position and let the user push back. "I would merge Analytics Platform and Embedded BI into a single product with two deployment models, because they share core technology and maintaining them as separate products doubles your feature management burden" is better than "there may be some overlap between these two products worth considering."
 
+After presenting, offer: "Would you like to: (a) open the dashboard to see the product-feature tree and portfolio overview, (b) review individual product details, or (c) proceed to sync and validation?"
+
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed.
+
 ## Phase 4: Sync portfolio.json
 
 After creating, editing, or deleting products, run the centralized sync script to keep the portfolio consistent:

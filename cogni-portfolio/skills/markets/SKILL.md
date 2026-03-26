@@ -229,6 +229,10 @@ Then deliver your strategic recommendation — not as a checklist but as a coher
 - **Biggest risk** — the one market assumption that could be wrong and what that would mean
 - **Recommended next steps** — generate propositions for the beachhead market first, then expand
 
+After presenting, offer: "Would you like to: (a) open the dashboard to see the market coverage matrix alongside products and features, (b) review individual market details, or (c) proceed to validation and next steps?"
+
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed.
+
 ## Validate Against Portfolio
 
 Cross-reference markets with existing portfolio entities:

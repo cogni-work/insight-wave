@@ -160,6 +160,10 @@ Present the named customer results for user review:
 
 Write the updated customer JSON with both `profiles` and `named_customers`.
 
+After writing, offer: "Would you like to: (a) open the dashboard to see customer coverage across all markets, (b) review the full customer profiles in detail, or (c) proceed to the next steps?"
+
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed.
+
 ## Important Notes
 
 - Customer files share the same slug as their parent market

@@ -143,7 +143,11 @@ Present a synthesis summary before finalizing:
 - Claim verification status (if applicable)
 - Files generated in `output/`
 
-Ask explicitly:
+Then offer: "Would you like to: (a) open the dashboard to see the full portfolio status alongside the synthesis output, (b) read through the generated README in detail, or (c) proceed to export?"
+
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed.
+
+Also ask:
 - Does the README structure capture what you need?
 - Any sections to expand or trim?
 - Ready to proceed to export, or want to fill gaps first?

@@ -304,6 +304,10 @@ Subscription tiers also require: `price_monthly`, `price_annual` (either can be 
 bash $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh "<project-dir>"
 ```
 
+After validation, offer: "Would you like to: (a) open the dashboard to see the package tiers and bundle economics across all products, (b) review individual package details, or (c) proceed to the next steps?"
+
+Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed.
+
 ## Package Review
 
 When reviewing existing packages:
