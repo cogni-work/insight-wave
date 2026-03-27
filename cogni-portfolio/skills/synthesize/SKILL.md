@@ -82,7 +82,7 @@ Write `output/README.md` as the main messaging repository. The structure is desi
 [For each market: description, segmentation, TAM/SAM/SOM summary]
 
 ## Proposition Messaging Matrix
-[Table: Feature x Market with IS/DOES/MEANS for each cell, grouped by product. Within each product, order features by sort_order ascending.]
+[Table: Feature x Market with IS/DOES/MEANS for each cell, grouped by product. Within each product, order features by sort_order ascending. For Feature x Market pairs that are explicitly excluded (via the feature's `excluded_markets` array), show "N/A — {reason}" in the cell rather than leaving it blank. This makes the exclusion visible and intentional in the messaging repository.]
 
 ## Packages
 [If packages/ exists: show each package grouped by product.

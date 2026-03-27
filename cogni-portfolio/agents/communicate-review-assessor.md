@@ -326,7 +326,10 @@ weakness because it signals organizational confusion to the buyer who reads both
 
 ### Coverage
 Are all markets represented in market views? Are all products represented in the overview?
-Missing coverage creates gaps in the sales pipeline.
+Missing coverage creates gaps in the sales pipeline. However, Feature x Market pairs that are
+explicitly excluded via the feature's `excluded_markets` array are intentionally absent — do not
+flag these as coverage gaps. The communicate output should not promise capabilities for markets
+where the feature has been excluded.
 
 ### Redundancy
 Are market views just the overview with a market name inserted? If the market-tailored view

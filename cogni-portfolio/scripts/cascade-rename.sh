@@ -71,6 +71,7 @@ solutions_dir = os.path.join(project_dir, 'solutions')
 packages_dir = os.path.join(project_dir, 'packages')
 competitors_dir = os.path.join(project_dir, 'competitors')
 customers_dir = os.path.join(project_dir, 'customers')
+features_dir = os.path.join(project_dir, 'features')
 
 if entity_type == 'feature':
     # Propositions: {feature}--{market}.json -> rename files where feature matches
@@ -191,6 +192,23 @@ elif entity_type == 'market':
                 if old_path != new_path:
                     os.remove(old_path)
                 changes.append({'file': os.path.basename(new_path), 'action': 'renamed'})
+
+    # Features: update excluded_markets entries referencing the old market slug
+    if os.path.isdir(features_dir):
+        for fname in os.listdir(features_dir):
+            if not fname.endswith('.json'):
+                continue
+            fpath = os.path.join(features_dir, fname)
+            data = read_json(fpath)
+            excluded = data.get('excluded_markets', [])
+            updated = False
+            for exc in excluded:
+                if exc.get('market_slug') == old_slug:
+                    exc['market_slug'] = new_slug
+                    updated = True
+            if updated:
+                write_json(fpath, data)
+                changes.append({'file': fname, 'action': 'updated', 'field': 'excluded_markets'})
 
 elif entity_type == 'product':
     # Packages: {product}--{market}.json -> rename files where product matches

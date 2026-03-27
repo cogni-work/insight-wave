@@ -49,7 +49,33 @@ if [ -f "$PROJECT_DIR/context/context-index.json" ]; then
   CONTEXT_ENTRIES=$((CONTEXT_ENTRIES - 1))
   if [ "$CONTEXT_ENTRIES" -lt 0 ]; then CONTEXT_ENTRIES=0; fi
 fi
-EXPECTED_PROPOSITIONS=$((FEATURES * MARKETS))
+# Build excluded Feature x Market pairs from features/*.json excluded_markets
+EXCLUDED_COUNT=0
+EXCLUDED_PAIRS_JSON="[]"
+if [ "$FEATURES" -gt 0 ] && [ "$MARKETS" -gt 0 ]; then
+  eval "$(python3 -c "
+import json, os, glob
+
+excluded = []
+market_files = set(os.path.basename(f)[:-5] for f in glob.glob('$PROJECT_DIR/markets/*.json'))
+for f in glob.glob('$PROJECT_DIR/features/*.json'):
+    try:
+        d = json.load(open(f))
+        f_slug = os.path.basename(f)[:-5]
+        for exc in d.get('excluded_markets', []):
+            m_slug = exc.get('market_slug', '')
+            if m_slug in market_files:
+                excluded.append({'pair': f'{f_slug}--{m_slug}', 'feature_slug': f_slug, 'market_slug': m_slug, 'reason': exc.get('reason', '')})
+    except Exception:
+        pass
+print(f'EXCLUDED_COUNT={len(excluded)}')
+print(f'EXCLUDED_PAIRS_JSON={chr(39)}{json.dumps(excluded)}{chr(39)}')
+" 2>/dev/null || echo 'EXCLUDED_COUNT=0
+EXCLUDED_PAIRS_JSON='"'"'[]'"'")"
+fi
+
+EXPECTED_PROPOSITIONS=$((FEATURES * MARKETS - EXCLUDED_COUNT))
+if [ "$EXPECTED_PROPOSITIONS" -lt 0 ]; then EXPECTED_PROPOSITIONS=0; fi
 
 # Collect product slugs as JSON array
 product_arr="["
@@ -187,6 +213,21 @@ print(f'feature_quality_slugs={chr(39)}[{slugs}]{chr(39)}')
 " 2>/dev/null)"
 fi
 
+# Build a newline-separated list of excluded pair strings for fast shell lookup
+_excluded_pair_list=$(python3 -c "
+import json, sys
+try:
+    pairs = json.loads('$EXCLUDED_PAIRS_JSON')
+    for p in pairs:
+        print(p['pair'])
+except Exception:
+    pass
+" 2>/dev/null || true)
+
+_is_excluded() {
+  [ -n "$_excluded_pair_list" ] && echo "$_excluded_pair_list" | grep -qxF "$1" 2>/dev/null
+}
+
 # Find missing propositions (Feature x Market pairs without a proposition file)
 missing_arr="["
 missing_sol_arr="["
@@ -200,6 +241,10 @@ if [ "$FEATURES" -gt 0 ] && [ "$MARKETS" -gt 0 ]; then
       [ -f "$m" ] || continue
       m_slug=$(basename "$m" .json)
       pair="${f_slug}--${m_slug}"
+      # Skip excluded Feature x Market pairs
+      if _is_excluded "$pair"; then
+        continue
+      fi
       prop="$PROJECT_DIR/propositions/${pair}.json"
       if [ ! -f "$prop" ]; then
         if $first; then first=false; else missing_arr="$missing_arr, "; fi
@@ -302,6 +347,14 @@ for m in glob.glob('$PROJECT_DIR/markets/*.json'):
     except Exception:
         pass
 
+# Build excluded pairs lookup: {(feature_slug, market_slug): reason}
+excluded_lookup = {}
+for f_slug_ex, feat_ex in features.items():
+    for exc in feat_ex.get('excluded_markets', []):
+        m_ex = exc.get('market_slug', '')
+        if m_ex in markets:
+            excluded_lookup[(f_slug_ex, m_ex)] = exc.get('reason', '')
+
 matrix = []
 for f_slug, feat in sorted(features.items(), key=lambda item: (item[1].get('sort_order') if item[1].get('sort_order') is not None else float('inf'), item[0])):
     readiness = feat.get('readiness', 'ga')
@@ -310,8 +363,11 @@ for f_slug, feat in sorted(features.items(), key=lambda item: (item[1].get('sort
         pair = f'{f_slug}--{m_slug}'
         has_proposition = os.path.exists(os.path.join('$PROJECT_DIR', 'propositions', pair + '.json'))
 
+        # Excluded tier: explicitly marked as not relevant on the feature
+        if (f_slug, m_slug) in excluded_lookup:
+            tier = 'excluded'
         # Skip tier: planned features or aspirational markets
-        if readiness == 'planned' or priority == 'aspirational':
+        elif readiness == 'planned' or priority == 'aspirational':
             tier = 'skip'
         # High tier: GA feature + beachhead market
         elif readiness == 'ga' and priority == 'beachhead':
@@ -323,7 +379,7 @@ for f_slug, feat in sorted(features.items(), key=lambda item: (item[1].get('sort
         else:
             tier = 'medium'
 
-        matrix.append({
+        entry = {
             'pair': pair,
             'feature_slug': f_slug,
             'market_slug': m_slug,
@@ -331,7 +387,10 @@ for f_slug, feat in sorted(features.items(), key=lambda item: (item[1].get('sort
             'priority': priority,
             'tier': tier,
             'has_proposition': has_proposition
-        })
+        }
+        if tier == 'excluded':
+            entry['reason'] = excluded_lookup[(f_slug, m_slug)]
+        matrix.append(entry)
 
 print(json.dumps(matrix))
 " 2>/dev/null || echo "[]")
@@ -553,7 +612,11 @@ case "$PHASE" in
     add_action "markets" "Features defined but no target markets yet"
     ;;
   propositions)
-    add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending"
+    if [ "$EXCLUDED_COUNT" -gt 0 ]; then
+      add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending ($EXCLUDED_COUNT excluded)"
+    else
+      add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending"
+    fi
     ;;
   enrichment)
     if [ "$CUSTOMERS_PCT" -lt 100 ]; then
@@ -808,7 +871,8 @@ cat << EOF
     "context_entries": $CONTEXT_ENTRIES,
     "features_without_readiness": $features_without_readiness,
     "markets_without_priority": $markets_without_priority,
-    "feature_quality_warnings": $feature_quality_warnings
+    "feature_quality_warnings": $feature_quality_warnings,
+    "excluded_pairs": $EXCLUDED_COUNT
   },
   "feature_quality_warning_slugs": $feature_quality_slugs,
   "readiness_summary": $readiness_summary,
@@ -826,6 +890,7 @@ cat << EOF
   "markets": $market_arr,
   "regions": $region_summary,
   "missing_propositions": $missing_arr,
+  "excluded_pairs": $EXCLUDED_PAIRS_JSON,
   "missing_solutions": $missing_sol_arr,
   "missing_packages": $missing_pkg_arr,
   "packageable_pairs": $packageable_arr,

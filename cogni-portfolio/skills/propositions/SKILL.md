@@ -50,6 +50,29 @@ Tier assignments are computed by `project-status.sh` based on feature readiness 
 - **Medium** — other viable combinations. Generate after high-tier pairs are confirmed.
 - **Low** — beta feature + expansion market. Generate only if the user explicitly wants them.
 - **Skip** — planned feature or aspirational market. Exclude from generation and explain why.
+- **Excluded** — Feature x Market pair explicitly marked as not relevant via the feature's `excluded_markets` array. Do not generate. Show the exclusion reason to the user. These pairs are already excluded from the expected count and will not appear in missing-proposition lists.
+
+### Persisting Exclusion Decisions
+
+When you recommend skipping a Feature x Market pair and the user confirms, persist the decision by adding the market to `excluded_markets` in `features/{feature-slug}.json`. This ensures the decision survives across sessions and is respected by all downstream consumers (dashboard, resume, quality assessors, synthesize). Always include a reason — use the rationale discussed during consultation.
+
+```json
+{
+  "excluded_markets": [
+    {
+      "market_slug": "iot-industrial-dach",
+      "reason": "IoT buyers need edge-level telemetry, not cloud infrastructure monitoring"
+    }
+  ]
+}
+```
+
+Example exchange:
+- You: "I'd skip IoT for cloud-monitoring — IoT buyers need edge-level telemetry, not cloud infrastructure monitoring."
+- User: "Agreed."
+- Action: Add the entry above to `features/cloud-monitoring.json`.
+
+To remove an exclusion later, delete the entry from the array. The pair will reappear as a missing proposition in the next status check.
 
 ### Batch Deduplication
 
@@ -129,7 +152,7 @@ After analyzing the portfolio, present your proposed messaging strategy with a c
 - **Priority pairs** — which Feature x Market combinations carry the strongest differentiation and address the most urgent buyer needs. Explain why these matter most.
 - **Messaging quality assessment** — for existing propositions, which ones are sharp and which need rework? Be specific: "The DOES statement for cloud-monitoring in enterprise-fintech is too generic — it says 'reduces downtime' but every monitoring tool claims that. I'd rewrite it around regulatory audit trails, which is unique to your product."
 - **Coverage gaps** — Feature x Market pairs that don't exist but should, because the feature addresses an obvious pain in that market
-- **Pairs to skip** — combinations where the feature doesn't meaningfully address the market's needs. Generating a proposition for every pair creates noise — explicitly say which ones aren't worth it and why.
+- **Pairs to skip** — combinations where the feature doesn't meaningfully address the market's needs. Generating a proposition for every pair creates noise — explicitly say which ones aren't worth it and why. When the user confirms a skip recommendation, persist it as an exclusion (see "Persisting Exclusion Decisions" above).
 - **Differentiation risk** — propositions where your messaging sounds like a competitor's. Flag these and propose alternatives that create clear daylight.
 - **Upstream issues** — if weak propositions trace back to vague features or poorly defined markets, say so. "I can't write a sharp DOES statement for 'Data Analytics' because the feature description is too broad — I'd split it into 'Custom Dashboards' and 'Predictive Analytics' first."
 

@@ -174,9 +174,17 @@ is where deals get lost.
 Does the proposition set cover the use cases buyers in this market actually ask about? Are there
 obvious capability questions a buyer would ask that no proposition addresses?
 
-- **Pass**: No obvious gaps — the proposition set covers the buyer's evaluation scope
-- **Warn**: 1 topic buyers commonly ask about that isn't covered by any proposition
-- **Fail**: 2+ common buyer questions with no corresponding proposition
+When evaluating completeness, read each feature's `excluded_markets` array. Feature x Market pairs
+listed there are intentionally excluded and must not be counted as coverage gaps. The exclusion
+reason (in the `reason` field) explains why the feature was deemed irrelevant for this market.
+A well-reasoned exclusion is not a gap — it is a conscious portfolio decision.
+
+However, if a feature excludes ALL defined markets, flag this as suspicious: it may indicate
+the feature doesn't belong in the portfolio at all.
+
+- **Pass**: No obvious gaps — the proposition set covers the buyer's evaluation scope (excluding intentionally excluded pairs)
+- **Warn**: 1 topic buyers commonly ask about that isn't covered by any proposition (and is not in `excluded_markets`)
+- **Fail**: 2+ common buyer questions with no corresponding proposition (and not in `excluded_markets`), OR a feature that excludes ALL markets
 
 ---
 

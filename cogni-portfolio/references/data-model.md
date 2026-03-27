@@ -143,18 +143,30 @@ A feature is market-independent. It describes what the product/service IS. Each 
     "category_name": "Cloud-Native Platform",
     "horizon": "current"
   },
+  "excluded_markets": [
+    {
+      "market_slug": "iot-industrial-dach",
+      "reason": "IoT buyers need edge-level telemetry, not cloud infrastructure monitoring"
+    }
+  ],
   "created": "2026-01-15"
 }
 ```
 
 Required fields: `slug`, `product_slug`, `name`, `description`
-Optional fields: `category`, `readiness`, `taxonomy_mapping`, `sort_order`, `source_file`, `created`, `updated`
+Optional fields: `category`, `readiness`, `taxonomy_mapping`, `sort_order`, `excluded_markets`, `source_file`, `created`, `updated`
 
 Valid `readiness` values: `ga` (generally available), `beta` (limited availability / pilot), `planned` (roadmap only)
 
 `sort_order` (integer, optional): Controls display ordering within a product. Lower numbers appear first — customer-facing value at top, infrastructure/utility at bottom. Use increments of 10 (10, 20, 30...) to leave room for insertions. Features without `sort_order` sort after all ordered features, then alphabetically by slug.
 
 Valid `taxonomy_mapping.horizon` values: `current` (0-1yr, GA), `emerging` (1-3yr, pilot/beta), `future` (3+yr, roadmap)
+
+`excluded_markets` (array of objects, optional): Feature x Market pairs explicitly marked as "not relevant." Each entry has:
+- `market_slug` (string, required): Must match an existing `markets/{slug}.json` file
+- `reason` (string, required): Explains why this feature is not relevant for that market
+
+Excluded pairs are subtracted from expected proposition counts and omitted from missing-proposition lists. Downstream quality assessors, the dashboard, and synthesize treat them as intentionally absent — not as gaps. The propositions skill can persist exclusion decisions from its consultation workflow directly into this field.
 
 ### markets/{slug}.json
 

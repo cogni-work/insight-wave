@@ -177,9 +177,11 @@ Once you and the user agree on the feature set, structure each feature:
 }
 ```
 
-Required: `slug`, `product_slug`, `name`, `description`. Strongly recommended (fill on every feature): `taxonomy_mapping` (with `dimension`, `category_id`, `category_name`), `readiness` (`ga`/`beta`/`planned`), `sort_order`. Optional: `category`, `created`, `updated`.
+Required: `slug`, `product_slug`, `name`, `description`. Strongly recommended (fill on every feature): `taxonomy_mapping` (with `dimension`, `category_id`, `category_name`), `readiness` (`ga`/`beta`/`planned`), `sort_order`. Optional: `category`, `excluded_markets`, `created`, `updated`.
 
 Valid `readiness` values: `ga` (generally available), `beta` (limited availability / pilot), `planned` (roadmap only, not yet built).
+
+`excluded_markets` (array of objects, optional): Marks specific markets where this feature is not relevant. Each entry has `market_slug` (must match an existing market) and `reason` (why the feature doesn't apply). Excluded pairs are subtracted from expected proposition counts and won't be flagged as missing by quality controls, the dashboard, or resume. Use this when a feature genuinely doesn't address a market's needs — not as a deferral mechanism (use readiness/priority tiers for that). Example: `[{"market_slug": "iot-industrial-dach", "reason": "IoT buyers need edge-level telemetry, not cloud infrastructure monitoring"}]`
 
 `sort_order` (integer): Controls display ordering within a product in the dashboard and reports. Use increments of 10 (10, 20, 30...) to leave room for insertions. Features without `sort_order` sort after all ordered features, then alphabetically by slug.
 

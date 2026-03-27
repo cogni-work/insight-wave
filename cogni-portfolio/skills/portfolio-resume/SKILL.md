@@ -51,7 +51,7 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 | Products | N | |
 | Features | N | |
 | Markets | N | |
-| Propositions | N / expected | pct% |
+| Propositions | N / expected (E excluded) | pct% |
 | Solutions | N / propositions | pct% |
 | Packages | N / packageable | pct% |
 | Competitors | N / propositions | pct% |
@@ -60,6 +60,8 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 | Communicate | N files | A accepted, R revise, J rejected (if > 0), STALE if upstream changed |
 | Context | N entries | breakdown by category (e.g., 3 pricing, 2 competitive, 1 strategic) |
 | Uploads | N | pending ingestion (if > 0) |
+
+The Propositions row shows `N / expected (E excluded)` where `expected` already subtracts excluded pairs and `E` is the count from `counts.excluded_pairs`. Only show the "(E excluded)" suffix when E > 0.
 
 If `margin_health` is present in the status output and has `solutions_with_cost_model > 0`, add a margin health line after the table:
 - **Margin health** — N solutions with cost models, N tiers below target (target: Y%), N negative-margin tiers. Show margins split by type: project avg margin X%, subscription avg gross margin X%. These are different metrics (effort-based vs. unit economics) so present them separately. Flag negative project margins and subscription LTV/CAC < 3 as urgent.
@@ -81,7 +83,7 @@ After the table:
 - **Stale communicate files** — if `communicate.stale` is `true`, highlight this prominently: "Communicate files may need refresh — upstream data changed since they were generated." Present the reason from `communicate.stale_reason`. Recommend running `portfolio-communicate` to regenerate. This appears alongside stale entity warnings since it represents the same class of problem (downstream output invalidated by upstream changes).
 - **Context notice** — if `counts.context_entries > 0`, mention available context entries with a category breakdown. Read `context/context-index.json` for the `by_category` map to show counts per category. This helps the user understand what intelligence is available for downstream skills. If context exists but downstream skills haven't been run yet, highlight this: "N context entries from ingested documents are ready — these will automatically inform propositions, solutions, and other skills."
 - **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase
-- **Gaps** — if `missing_propositions` is non-empty, list the first few missing pairs; note incomplete solutions/competitors/customers
+- **Gaps** — if `missing_propositions` is non-empty, list the first few missing pairs; note incomplete solutions/competitors/customers. If `excluded_pairs` is non-empty, note excluded pairs are intentional: "N Feature x Market pairs are excluded (not relevant)." If all gaps are accounted for by exclusions, say so rather than listing missing pairs.
 
 Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report. The user should feel oriented, not overwhelmed.
 

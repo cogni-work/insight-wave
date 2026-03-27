@@ -886,6 +886,13 @@ body::after {{
   opacity: 0.3;
 }}
 .cell.missing:hover {{ opacity: 0.6; box-shadow: 0 4px 16px color-mix(in srgb, var(--red) 25%, transparent); }}
+.cell.excluded {{
+  background: var(--muted);
+  color: var(--text);
+  opacity: 0.25;
+  cursor: default;
+}}
+.cell.excluded:hover {{ opacity: 0.4; }}
 .matrix .feature-label {{
   font-size: 13px;
   color: var(--text);
@@ -1880,8 +1887,13 @@ body::after {{
         ("Competitors", counts.get("competitors", 0), counts.get("propositions", 0), completion.get("competitors_pct", 0)),
     ]
 
+    excluded_count = counts.get("excluded_pairs", 0)
+
     for label, val, expected, pct in entity_cards:
-        sub = f"of {expected}" if expected is not None else ""
+        excl_note = ""
+        if label == "Propositions" and excluded_count > 0:
+            excl_note = f" ({excluded_count} excluded)"
+        sub = (f"of {expected}" if expected is not None else "") + excl_note
         bar_html = ""
         if pct is not None:
             color = "var(--green)" if pct >= 100 else ("var(--yellow)" if pct >= 50 else "var(--red)")
@@ -1979,6 +1991,16 @@ body::after {{
         html += "  </div>\n</div>\n"
 
     # --- Feature x Market Matrix ---
+    # Build excluded pairs lookup from status data
+    _excluded_set = set()
+    _excluded_reasons = {}
+    if status:
+        for ep in status.get("excluded_pairs", []):
+            p = ep.get("pair", "")
+            if p:
+                _excluded_set.add(p)
+                _excluded_reasons[p] = ep.get("reason", "Excluded")
+
     if feature_slugs and market_slugs:
         html += """
 <!-- Feature x Market Matrix -->
@@ -2011,6 +2033,10 @@ body::after {{
                 html += f'      <tr><td class="feature-label" title="{escape_html(f.get("description", ""))}">{escape_html(f.get("name", fs))}</td>\n'
                 for ms in market_slugs:
                     pair = f"{fs}--{ms}"
+                    if pair in _excluded_set:
+                        reason = _excluded_reasons.get(pair, "Excluded")
+                        html += f'        <td><button class="cell excluded" title="{escape_html(reason)}">&#8709;</button></td>\n'
+                        continue
                     has_prop = pair in data["propositions"]
                     has_sol = pair in data["solutions"]
                     if has_prop and has_sol:
@@ -2039,6 +2065,7 @@ body::after {{
         html += '<span><span class="legend-dot" style="background:var(--green)"></span> Proposition + Solution</span>'
         html += '<span><span class="legend-dot" style="background:var(--yellow)"></span> Proposition only</span>'
         html += '<span><span class="legend-dot" style="background:var(--red);opacity:0.4"></span> Missing</span>'
+        html += '<span><span class="legend-dot" style="background:var(--muted);opacity:0.3"></span> Excluded (N/A)</span>'
         html += '</div>\n</div>\n'
 
     # --- Taxonomy Coverage Heatmap & Gap Analysis ---

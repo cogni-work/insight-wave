@@ -122,6 +122,47 @@ with open('$f') as fh:
   done
 fi
 
+# Validate excluded_markets entries on features
+if [ -d "$PROJECT_DIR/features" ] && [ -d "$PROJECT_DIR/markets" ]; then
+  while IFS='|' read -r level slug msg; do
+    if [ "$level" = "ERROR" ]; then
+      add_error "feature" "$slug" "$msg"
+    else
+      add_warning "feature" "$slug" "$msg"
+    fi
+  done < <(python3 -c "
+import json, os, glob
+
+market_files = set(os.path.basename(f)[:-5] for f in glob.glob('$PROJECT_DIR/markets/*.json'))
+market_count = len(market_files)
+
+for f in glob.glob('$PROJECT_DIR/features/*.json'):
+    try:
+        d = json.load(open(f))
+        f_slug = os.path.basename(f)[:-5]
+        excluded = d.get('excluded_markets', [])
+        if not isinstance(excluded, list):
+            print(f'ERROR|{f_slug}|excluded_markets must be an array')
+            continue
+        for i, exc in enumerate(excluded):
+            if not isinstance(exc, dict):
+                print(f'ERROR|{f_slug}|excluded_markets[{i}] must be an object with market_slug and reason')
+                continue
+            ms = exc.get('market_slug', '')
+            reason = exc.get('reason', '')
+            if not ms:
+                print(f'ERROR|{f_slug}|excluded_markets[{i}] missing market_slug')
+            elif ms not in market_files:
+                print(f'WARN|{f_slug}|excluded_markets references non-existent market: {ms}')
+            if not reason:
+                print(f'ERROR|{f_slug}|excluded_markets entry for {ms} missing reason')
+        if excluded and market_count > 0 and len([e for e in excluded if isinstance(e, dict) and e.get('market_slug', '') in market_files]) >= market_count:
+            print(f'WARN|{f_slug}|Feature excludes ALL defined markets -- consider removing this feature from the portfolio')
+    except Exception:
+        pass
+" 2>/dev/null)
+fi
+
 # Warn on singleton categories (possible typos)
 if [ -d "$PROJECT_DIR/features" ]; then
   while IFS='|' read -r slug msg; do
