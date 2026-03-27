@@ -21,3 +21,6 @@ node_modules/
 
 # Eval iteration outputs
 cogni-portfolio-evals/
+
+# Diagram test pipeline (closed-loop test artifacts)
+cogni-research/test-diagram-pipeline/
