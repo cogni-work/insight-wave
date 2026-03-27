@@ -646,7 +646,7 @@ case "$PHASE" in
     add_action "export" "Synthesis done -- ready to generate deliverables"
     ;;
   communicate)
-    add_action "communicate" "Export done -- ready to generate customer-facing documentation"
+    add_action "communicate" "Export done -- ready to generate portfolio communication (customer narratives, repo docs, or custom)"
     ;;
   complete)
     ;;

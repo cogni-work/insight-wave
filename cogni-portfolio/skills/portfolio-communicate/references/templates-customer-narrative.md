@@ -1,6 +1,12 @@
-# Output Templates
+# Templates: Customer Narrative
 
-Detailed markdown templates for each output level of the portfolio-communicate skill. Each template shows the heading structure, section-by-section content guidance, and data source mapping.
+Output templates for the `customer-narrative` use case. Transforms portfolio entities into customer-facing narratives — value-led stories presenting the company's offerings through the buyer's lens.
+
+**Use case**: `customer-narrative`
+**Audience**: Buyers, executives, decision-makers evaluating the company's offerings
+**Voice**: Company speaks to buyer ("we"/"you"). Professional but conversational.
+
+Each template shows the heading structure, section-by-section content guidance, and data source mapping.
 
 ---
 
@@ -31,7 +37,7 @@ source_entities:
 
 ## Level 1: Portfolio Overview
 
-**Output**: `output/communicate/portfolio-overview.md`
+**Output**: `output/communicate/customer-narrative/portfolio-overview.md`
 
 **Data sources**: portfolio.json, products/*.json, features/*.json, propositions/*.json (all), packages/*.json (if available)
 
@@ -111,7 +117,7 @@ Include contact mechanism if available from portfolio.json.}
 
 ## Level 2: Market-Tailored View
 
-**Output**: `output/communicate/market/{market-slug}.md`
+**Output**: `output/communicate/customer-narrative/market/{market-slug}.md`
 
 **Data sources**: portfolio.json, the specific market JSON, all propositions targeting this market, their parent features and products, solutions for those propositions, packages for relevant product x market pairs, customers/{market}.json, competitors for those propositions
 
@@ -207,7 +213,7 @@ how [company] can support your [market-specific goal]."}
 
 ## Level 3: Customer-Tailored View
 
-**Output**: `output/communicate/customer/{market-slug}--{persona}.md`
+**Output**: `output/communicate/customer-narrative/customer/{market-slug}--{persona}.md`
 
 **Data sources**: All market-level sources + specific persona from customers/{market}.json (role, seniority, pain_points, buying_criteria, budget_authority)
 

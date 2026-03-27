@@ -1,43 +1,43 @@
 ---
 name: portfolio-communicate
 description: |
-  Generate customer-facing portfolio documentation as markdown — general overview,
-  market-tailored views, or customer-tailored views. Use whenever the user mentions
-  "communicate portfolio", "portfolio for customers", "customer-facing documentation",
-  "portfolio documentation", "present portfolio", "portfolio overview for customers",
-  "what do we offer", "capability overview", "service catalog", "customer documentation",
-  "external portfolio", "portfolio narrative", or wants to turn internal portfolio data
-  into something a buyer or executive can read — even if they don't say "communicate"
-  explicitly. Also trigger when the user has completed synthesize or export and asks
-  "how do I present this to customers" or "make this customer-ready".
+  Generate portfolio documentation for any audience — customer-facing narratives,
+  repository documentation, developer guides, or custom use cases. Routes through
+  a use-case registry that matches the audience and purpose to the right voice,
+  templates, and review perspectives. Use whenever the user mentions
+  "communicate portfolio", "portfolio documentation", "customer-facing documentation",
+  "present portfolio", "portfolio overview", "capability overview", "service catalog",
+  "enrich README", "repo documentation", "developer documentation", "update README
+  with portfolio", "document the project", "open-source documentation", "GitHub README",
+  "project overview for developers", "technical documentation from portfolio",
+  "what do we offer", "external portfolio", "portfolio narrative", "make this
+  customer-ready", or wants to turn internal portfolio data into something any
+  audience can read — even if they don't say "communicate" explicitly. Also trigger
+  when the user has completed synthesize or export and asks "how do I present this"
+  or "how do I document this".
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
 # Portfolio Communicate
 
-Generate customer-facing markdown documentation from portfolio entities. Where `synthesize` produces an internal messaging repository (tables, matrices, gap flags) and `portfolio-export` produces per-proposition proposals and per-market briefs, this skill produces **portfolio-level narratives** that present the company's offerings through the buyer's lens.
+Generate documentation from portfolio entities for any audience and purpose. Where `synthesize` produces an internal messaging repository (tables, matrices, gap flags) and `portfolio-export` produces per-proposition proposals and per-market briefs, this skill produces **audience-tailored narratives** that present the company's offerings through the reader's lens — whether that reader is a buyer, a developer, an investor, or someone else entirely.
 
 ## Core Concept
 
-Internal portfolio documentation serves internal teams — it exposes gaps, uses slugs, shows TAM/SAM/SOM numbers, and organizes by entity type. Customers never see that. What they need is a value-led story: what the company does for people like them, why it matters, and what engaging looks like.
+Internal portfolio documentation serves internal teams — it exposes gaps, uses slugs, shows TAM/SAM/SOM numbers, and organizes by entity type. External audiences never see that. What they need depends on who they are:
 
-This skill reads the same entity files as synthesize and export, but transforms them with a different lens:
+| Audience | What they need |
+|----------|---------------|
+| Buyers/executives | Value-led stories: what you do for people like them, why it matters, what engaging looks like |
+| Developers/community | Technical clarity: what the project does, how it works, how to get started |
+| Investors | Business potential: problem, solution, market, traction, differentiation |
+| Partners | Integration points: what capabilities exist, how to build on them |
 
-| Internal (synthesize) | Customer-facing (communicate) |
-|----------------------|------------------------------|
-| Feature IS descriptions | Capabilities framed as customer value |
-| TAM/SAM/SOM numbers | Market context from the buyer's perspective |
-| Proposition matrices | Value stories organized by buyer need |
-| Gap flags and coverage | Omitted — only present what exists |
-| Competitor analysis tables | Differentiation woven into the narrative |
-
-The output is self-contained markdown designed for two paths:
-1. **Direct use** — readable in Obsidian, GitHub, email, or any markdown renderer
-2. **Pipeline input** — feed into `cogni-narrative` for arc transformation, then to `story-to-web`, `story-to-slides`, or `story-to-big-picture` for visual formats
+This skill reads the same entity files as synthesize and export, but transforms them through a **use-case lens** that matches the audience and purpose. Each use case defines its own voice, output templates, and review criteria.
 
 ## Prerequisites
 
-Verify the portfolio is sufficiently complete before generating customer-facing content:
+Verify the portfolio is sufficiently complete before generating:
 
 ```bash
 bash $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh "<project-dir>"
@@ -48,128 +48,125 @@ Minimum requirements:
 - At least 1 product, 1 feature (with valid product_slug), 1 market, and 1 proposition
 - `portfolio.json` has company context filled in
 
-Running `synthesize` first is recommended as a quality gate — if the internal messaging repository reads well, customer-facing output will be strong. Not strictly required.
+Running `synthesize` first is recommended as a quality gate — if the internal messaging repository reads well, output will be strong. Not strictly required.
 
-If `cogni-claims/claims.json` exists, check claim verification status. Warn about unverified claims and recommend running the `verify` skill first. Allow the user to proceed — omit unverified claims from customer-facing output rather than flagging them (unlike synthesize which marks them).
-
-## Output Levels
-
-Three levels of customer-facing documentation, each progressively more tailored:
-
-### 1. Portfolio Overview
-
-**Output**: `output/communicate/portfolio-overview.md`
-
-The general entry point — presents the full company offering as a coherent story. Covers all products and key capabilities without market-specific tailoring. Suitable for website "What We Do" content, general capability decks, or first-contact materials.
-
-### 2. Market-Tailored View
-
-**Output**: `output/communicate/market/{market-slug}.md`
-
-Filtered for a specific target market. Shows only propositions, solutions, and competitive positioning relevant to that market's buyers. Reframes capabilities through the buyer's needs and language. Suitable for segment-specific landing pages, targeted outreach, or market entry materials.
-
-### 3. Customer-Tailored View
-
-**Output**: `output/communicate/customer/{market-slug}--{persona}.md`
-
-Personalized for a specific buyer persona within a market. Opens with the persona's pain points, filters propositions by their buying criteria, and frames investment for their budget authority level. Suitable for executive briefings, personalized pitch prep, or account-based outreach.
+If `cogni-claims/claims.json` exists, check claim verification status. Warn about unverified claims and recommend running the `verify` skill first. Allow the user to proceed — handle unverified claims according to the use case (customer-narrative: omit silently; repo-documentation: include with `[unverified]` marker; ad-hoc: ask the user).
 
 ## Workflow
 
-### 1. Determine Scope
+### Step 0: Determine Use Case
 
-Infer the scope from the user's request. Only ask for clarification if genuinely ambiguous.
+Read `references/use-case-registry.md` for the full registry of available use cases. Also check for `communicate-use-cases.json` in the project root for user-defined custom use cases.
 
-If the request is vague ("communicate portfolio to customers"), present the options:
-- **Overview** — general portfolio documentation for any audience
-- **Market** — tailored for a specific market (which one?)
-- **Customer** — tailored for a specific buyer persona (which market and persona?)
-- **All** — overview + all markets + all customer personas
+**Infer the use case from the user's request.** Match against trigger phrases and context from the registry. Inference priority:
 
-### 2. Load Entities
+1. **Explicit match** — user mentions a use case by name or a clear trigger phrase
+2. **Context match** — the request context implies a use case (e.g., mentioning "README" implies `repo-documentation`)
+3. **Custom match** — check `communicate-use-cases.json` for custom use cases whose audience/name matches
+4. **Ambiguous** — present the use case menu
 
-Read entity files from the project directory:
+If the request is ambiguous, present options:
+
+> "What do you want to use the portfolio content for?"
+> - **Customer narratives** — website content, sales materials, executive briefings (company speaks to buyer)
+> - **Repository documentation** — README enrichment, plugin overviews, getting-started guides (project speaks to developer)
+> - {any custom use cases from communicate-use-cases.json}
+> - **Something else** — describe your purpose and I'll help shape the output
+
+**If the user selects "something else"**, follow the ad-hoc flow (see [Ad-Hoc Use Cases](#ad-hoc-use-cases) below).
+
+### Step 1: Determine Scope
+
+Load the scope options from the selected use case (see registry). Only ask for clarification if genuinely ambiguous.
+
+For **`customer-narrative`**: overview, market (which one?), customer (which market and persona?), or all.
+For **`repo-documentation`**: readme-enrichment, plugin-overview, use-case-gallery, or all.
+For **custom/ad-hoc use cases**: use the scopes defined in the use case configuration.
+
+If the request is vague, present the scope options from the selected use case.
+
+### Step 2: Load Entities
+
+Read entity files from the project directory. Which entities to load depends on the use case and scope:
+
+**All use cases:**
 - `portfolio.json` for company context and language
 - All `products/*.json`, `features/*.json`
+
+**Customer-narrative (all scopes):**
 - All `propositions/*.json` (filter by market for tailored views)
 - All `solutions/*.json` and `packages/*.json` (if available)
 - `markets/*.json` and `customers/*.json` (for tailored views)
 - `competitors/*.json` (for differentiation, woven into narrative)
 
-**Internal context (optional):** If `context/context-index.json` exists, read relevant entries. Strategic context enriches the company positioning. Competitive context sharpens differentiation claims. Incorporate high-confidence context naturally into the narrative.
+**Repo-documentation:**
+- All `propositions/*.json` (for value framing and breadth indicators)
+- `markets/*.json` (for use-case derivation)
+- `customers/*.json` (for persona-based scenario descriptions)
+- Solutions and competitors are optional — include if they enrich technical descriptions
 
-### 3. Generate Markdown
+**Ad-hoc/custom:** Load all entities by default, let the generation step filter what's relevant.
 
-Before generating any output, read `references/output-templates.md` for the complete template structure, section guidance, and tone transformation examples. Apply these writing principles throughout:
+**Internal context (optional):** If `context/context-index.json` exists, read relevant entries. Strategic context enriches company positioning. Competitive context sharpens differentiation.
 
-**Voice**: Write from the company's perspective speaking to the buyer. Use "we" for the company, "you" for the buyer. Professional but conversational — not a brochure, not a contract.
+### Step 3: Generate Markdown
 
-**Value-led structure**: Lead every section with what the buyer gains, not what the product is. DOES and MEANS statements before IS. The buyer's problem before the company's solution.
+Load the template file for the selected use case from the registry's `template` reference. For built-in use cases:
+- `customer-narrative` -> read `references/templates-customer-narrative.md`
+- `repo-documentation` -> read `references/templates-repo-documentation.md`
 
-**No internal leakage**: Never expose slugs, entity types, sort_order, TAM/SAM/SOM figures, gap flags, coverage percentages, cost models, or internal margins. These are internal planning artifacts.
+For custom use cases, generate section structure based on the use case's `voice`, `scopes`, and `audience` fields — no separate template file is needed.
 
-**Evidence over assertions**: Where propositions have evidence arrays, weave specific data points and outcomes into the narrative. Skip unverified claims entirely — only include verified or unchecked (no claims system) evidence.
+For ad-hoc use cases, use the parameters collected during the ad-hoc flow.
 
-**Differentiation, not comparison**: Draw on competitor analysis to sharpen positioning without naming competitors or making comparative claims. "We do X" is stronger than "Unlike others, we do X."
+**Output path:** Write to `output/communicate/{use-case-id}/` followed by the scope-specific filename from the template.
 
-**Packages over features**: When packages exist for a product x market, present the bundled offering rather than listing individual features. Buyers think in solutions, not feature lists.
+**Backward compatibility:** If old-format files exist at `output/communicate/portfolio-overview.md` (without use-case subdirectory), mention that the output structure has changed and that new files will be in `output/communicate/customer-narrative/`. Do not automatically migrate or delete old files.
 
-**Proposition filtering for customer-tailored views**: At Level 3 (customer-tailored), do NOT include all propositions from the market. Read the persona's `buying_criteria` from the customer profile and select only the propositions whose DOES/MEANS directly address those criteria. A Managing Partner cares about different capabilities than a Head of Delivery. Aim for 5-7 propositions maximum — a busy executive will not read 10+ capability sections. Each section must earn its place by connecting to this specific persona's priorities. When in doubt, cut — fewer targeted sections beat comprehensive coverage at this level.
+### Step 4: Stakeholder Review (Closed Loop)
 
-**Proper character encoding**: Always use proper Unicode characters in generated output — German umlauts (ä, ö, ü, ß), em dashes (—), curly quotes where appropriate. Never substitute ae/oe/ue for ä/ö/ü, and never use ss where ß belongs (e.g., "Maßgeschneidert" not "Massgeschneidert", "Straße" not "Strasse"). The output is customer-facing prose, not ASCII-safe code.
-
-### 4. Stakeholder Review (Closed Loop)
-
-After generating markdown output, delegate to the `communicate-review-assessor` agent for a
-three-perspective quality assessment. This catches buyer disengagement, internal leakage,
-phantom claims, and generic positioning before the document reaches customers.
+After generating output, delegate to the `communicate-review-assessor` agent for quality assessment. The assessor adapts its perspectives based on the use case.
 
 **Spawn the agent** with:
 - Project directory path
 - The generated output file path
-- The output level (`overview`, `market`, or `customer`)
-- The market slug (for market and customer levels)
-- The persona identifier (for customer level)
+- The use case ID (`customer-narrative`, `repo-documentation`, or custom ID)
+- The scope (`overview`, `readme-enrichment`, etc.)
+- The market slug (for market and customer scopes)
+- The persona identifier (for customer scope)
+
+For **ad-hoc and custom use cases**, also pass the review perspectives defined during the ad-hoc flow or in the custom use case's `review.perspectives` array.
 
 **Processing the verdict:**
 
-**accept** (all perspectives score 85+): The document is ready for customer-facing use.
-Store the review JSON and proceed to step 5. Even on accept, surface any `optional_improvements`
-from the synthesis to the user — they may want to apply these refinements before downstream
-pipeline steps.
+**accept** (all perspectives score 85+): The document is ready. Store the review JSON and proceed to step 5. Surface any `optional_improvements` from the synthesis to the user.
 
 **revise** (all perspectives score 70+ but not all 85+):
 1. Parse `revision_guidance` and `critical_improvements` from the review JSON
 2. Re-read the generated markdown
 3. Apply CRITICAL improvements first, then HIGH. For each improvement:
-   - Cross-reference the source entities (propositions, customer profiles) to ensure accuracy
-   - Preserve: YAML frontmatter structure, evidence citations, German characters, narrative arc
+   - Cross-reference source entities to ensure accuracy
+   - Preserve: YAML frontmatter, evidence citations, proper character encoding, narrative structure
 4. Write the revised markdown (overwrite the same output file)
 5. Re-run the assessor (round 2)
-6. Maximum 2 revision rounds. After round 2, present any remaining issues to the user
-   for decision — regardless of severity
+6. Maximum 2 revision rounds. After round 2, present remaining issues to the user
 
-**reject** (any perspective below 50): Surface the full assessment to the user. Do not
-auto-retry. The output likely has fundamental issues (internal leakage, wrong buyer perspective,
-claims disconnected from portfolio data). Ask the user whether to regenerate from scratch
-or address specific issues manually.
+**reject** (any perspective below 50): Surface the full assessment to the user. Do not auto-retry. Ask whether to regenerate from scratch or address specific issues manually.
 
 **Interactive vs batch mode:**
-- **Single file**: Present the assessment summary to the user after round 1. Let them
-  decide whether to auto-revise or adjust manually before round 2.
-- **Batch ("All" scope)**: Run the loop automatically. Files that accept after round 1
-  skip round 2. Files that fail after round 2 are flagged in the batch summary for
-  manual attention.
+- **Single file**: Present assessment summary after round 1. Let the user decide whether to auto-revise or adjust manually.
+- **Batch ("All" scope)**: Run the loop automatically. Files that accept after round 1 skip round 2. Files that fail after round 2 are flagged in the batch summary.
+
+**Skipping review:** Some ad-hoc use cases may not need formal review. If the user indicated review is not needed during the ad-hoc flow, skip this step and go directly to step 5.
 
 **Store review results** alongside each generated file:
-- `output/communicate/portfolio-overview.review.json`
-- `output/communicate/market/{market-slug}.review.json`
-- `output/communicate/customer/{market-slug}--{persona}.review.json`
+- `output/communicate/{use-case-id}/{filename}.review.json`
 
 The review JSON contains all rounds with timestamps and final verdict:
 ```json
 {
   "skill": "portfolio-communicate",
+  "use_case": "customer-narrative",
   "assessor": "communicate-review-assessor",
   "rounds": [
     { "round": 1, "verdict": "revise", "overall_score": 74, "timestamp": "...", "full_assessment": { "..." } },
@@ -180,39 +177,79 @@ The review JSON contains all rounds with timestamps and final verdict:
 }
 ```
 
-### 5. Present Results and Suggest Next Steps
+### Step 5: Present Results and Suggest Next Steps
 
 List generated files with paths AND their review status.
 
-**If all files accepted:**
-Show per-file review scores, then suggest the downstream pipeline:
+**If all files accepted**, show per-file review scores, then suggest the downstream pipeline appropriate for the use case:
+
+For **customer-narrative**:
 - **Polish prose**: "Run `/copywrite` on any generated file to polish for executive readability"
-- **Arc narrative**: "Run `/narrative --source-path output/communicate/portfolio-overview.md` to transform into an arc-driven executive narrative"
+- **Arc narrative**: "Run `/narrative --source-path output/communicate/customer-narrative/...` to transform into an arc-driven executive narrative"
 - **Visual formats** (after narrative): `/story-to-web` for landing pages, `/story-to-slides` for presentations, `/story-to-big-picture` for visual journey maps
 
-**If any files in revise after max rounds:**
-Show remaining issues per file. Suggest targeted manual edits before downstream pipeline.
-Offer to re-run review after user edits.
+For **repo-documentation**:
+- **Polish prose**: "Run `/copywrite` to polish for readability"
+- **Merge into README**: "Copy the sections you need from `output/communicate/repo-docs/readme-sections.md` into your project's README"
+- No narrative arc transformation — developer docs don't need story arcs
 
-**If any files rejected:**
-Block downstream suggestions for those files. Show the diagnosis with specific failure
-points. Suggest regeneration or manual intervention before attempting downstream pipeline.
+For **custom/ad-hoc use cases**: suggest downstream steps from the use case's `downstream` field, or recommend `/copywrite` as a safe default.
+
+**If any files in revise after max rounds:** Show remaining issues per file. Suggest targeted manual edits before downstream pipeline.
+
+**If any files rejected:** Block downstream suggestions for those files. Show diagnosis with specific failure points. Suggest regeneration or manual intervention.
+
+**Save as custom use case (ad-hoc only):** If this was an ad-hoc run, offer: "Would you like to save this configuration as a reusable use case? Next time you can just reference it by name." If yes, write to `communicate-use-cases.json` in the project root (create the file if it doesn't exist; append to the `use_cases` array if it does).
+
+## Ad-Hoc Use Cases
+
+When the user selects "something else" or describes a purpose that doesn't match any registered use case, guide them through defining the parameters:
+
+**1. Audience**: "Who will read this?" Suggest common options based on what the portfolio contains:
+- Developers / technical evaluators
+- Investors / board members
+- Partners / channel partners
+- Internal team / new hires
+- Regulators / compliance reviewers
+- Let the user describe their own audience
+
+**2. Voice/Tone**: "How should it sound?" Suggest based on the audience:
+- Technical but accessible (developers)
+- Confident, data-backed (investors)
+- Collaborative, integration-focused (partners)
+- Clear, structured (internal)
+- Or let the user describe their preferred tone
+
+**3. Sections**: "What sections do you need?" Suggest a structure based on the audience:
+- For developers: overview, capabilities, architecture, getting started
+- For investors: problem, solution, market, traction, differentiation, team
+- For partners: capabilities, integration points, joint value, engagement model
+- For internal: what we sell, who we sell to, how we position, competitive landscape
+- Let the user adjust — add, remove, or rename sections
+
+**4. Review**: "Should we review the output quality?" Suggest appropriate perspectives based on the audience. If the user wants review, ask from whose perspective (or suggest based on audience). If the user skips review, generation still runs but step 4 is skipped.
+
+**5. Generate** using the collected parameters. The voice, sections, and entity selection follow from the audience definition. Write output to `output/communicate/ad-hoc/` (or a user-chosen directory name).
+
+**6. Persist (optional)**: After generation, offer to save as a reusable custom use case.
 
 ## Important Notes
 
-- Output goes to `output/communicate/` — separate from synthesize (`output/README.md`) and export (`output/proposals/`, `output/briefs/`)
-- Re-running overwrites previous output for that scope
-- Each generated file includes YAML frontmatter compatible with `cogni-narrative` input requirements
+- Output goes to `output/communicate/{use-case-id}/` — separate from synthesize (`output/README.md`) and export (`output/proposals/`, `output/briefs/`)
+- Re-running overwrites previous output for that scope within the use case
+- Each generated file includes YAML frontmatter with `use_case` field
 - **Content Language**: Read `portfolio.json` `language` field. Generate content in that language if present, default to English
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language. Technical terms, skill names, and CLI commands remain in English
+- **Proper character encoding**: Always use proper Unicode characters — German umlauts (ä, ö, ü, ß), em dashes (—), curly quotes where appropriate. Never substitute ASCII approximations.
 
 ## Additional Resources
 
 ### Reference Files
 
-For detailed output templates including heading structure, section guidance, data source mapping, and tone examples:
-- **`references/output-templates.md`** — Complete markdown templates for all three output levels
+- **`references/use-case-registry.md`** — Registry of available use cases with trigger phrases, voice profiles, scope options, and review configuration
+- **`references/templates-customer-narrative.md`** — Complete markdown templates for customer-facing narratives (overview, market, customer)
+- **`references/templates-repo-documentation.md`** — Templates for developer-facing content (readme-enrichment, plugin-overview, use-case-gallery)
 
 ### Agents
 
-- **`communicate-review-assessor`** — Three-perspective stakeholder review for customer-facing output quality (Target Buyer, Marketing Director, Sales Director). Spawned automatically after generation in step 4.
+- **`communicate-review-assessor`** — Use-case-aware stakeholder review for output quality. Adapts perspectives based on the use case: buyer/marketing/sales for customer narratives, developer/maintainer/writer for repo documentation, custom perspectives for ad-hoc use cases.
