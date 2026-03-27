@@ -58,6 +58,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3
    - **supporting** sources: cite only when no higher-tier source covers the same point
    - Address any diversity warnings noted in the curation
 6. Scan context entities for `follow_up_questions` arrays (present in deep research mode). Collect all follow-up questions with `pursued: true` — these represent the research tree's branching points and can serve as natural cross-section transition hints during writing (e.g., "This raises the question of..." or "A related consideration is...")
+7. Check for `.metadata/diagram-plan.json` — if present, load the diagram plan. Each entry specifies a concept, Mermaid diagram type, target section, and data source references. You will use this plan in Phase 2.5 to embed Mermaid code blocks at the right positions
 
 ### Phase 1: Outline Generation
 
@@ -108,22 +109,40 @@ Based on report type:
 6. Use professional, analytical tone
 7. When you have multiple sources for the same topic, use them to build a richer narrative — compare findings, note agreements and disagreements, and synthesize across sources rather than relying on a single source per section
 
-### Phase 2.5: Image Placeholders (when generate_images is true)
+### Phase 2.5: Diagram Embedding (when diagram plan exists)
 
-When `generate_images` is `true` in project-config.json AND report type is basic/detailed/deep:
+When `.metadata/diagram-plan.json` was loaded in Phase 0 AND report type is basic/detailed/deep:
 
-1. After writing all sections, identify 2-5 positions where images would enhance understanding
-2. Insert placeholder markers at those positions:
-   ```markdown
-   <!-- IMAGE: [Detailed description of desired image]. Style: diagram|infographic|illustration. Context: [which section this supports] -->
-   ```
-3. Good candidates for images:
-   - After section introductions (overview diagrams)
-   - In data-heavy sections (charts, comparative tables)
-   - For process/workflow descriptions (flow diagrams)
-   - For architecture descriptions (system diagrams)
+Diagrams are embedded as Mermaid fenced code blocks directly in the markdown. Mermaid renders natively in Obsidian, GitHub, and HTML exports — no external tools or image files needed. The diagram plan from Phase 3.5 tells you *what* to visualize and *where* to place it, but you construct the actual Mermaid syntax based on the research data.
 
-Do NOT generate images yourself — the orchestrator handles image generation in Phase 4.5 after the draft is written.
+1. For each entry in the diagram plan, generate a Mermaid code block at the appropriate position in the draft (after the target section header or within the relevant paragraphs)
+2. Use the plan's `concept`, `diagram_type`, and `data_sources` to construct accurate Mermaid syntax. Read the referenced context entities to extract the actual data for the diagram
+3. Follow these Mermaid guidelines:
+   - Always start with the theme directive: `%%{init: {'theme':'neutral'}}%%`
+   - Keep diagrams under 15 nodes for readability
+   - Use short node labels (2-5 words) — put detail in the caption
+   - Use the correct Mermaid type keyword for each diagram (flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, mindmap, pie, timeline)
+
+4. Embed using fenced code blocks with the `mermaid` language tag:
+
+````markdown
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+flowchart LR
+    A[Data Collection] --> B[Preprocessing]
+    B --> C{Quality Check}
+    C -->|Pass| D[Model Training]
+    C -->|Fail| B
+```
+*Figure 1: Machine learning pipeline showing the iterative quality loop before model training.*
+````
+
+5. Each diagram MUST be followed by an italicized caption: `*Figure N: description*`
+6. Number figures sequentially across the entire report (Figure 1, Figure 2, etc.)
+7. You may add 1-2 additional diagrams beyond the plan if the content strongly warrants it, up to the `max_diagrams` limit from project-config.json (default: 3)
+8. If a planned diagram cannot be accurately constructed from the available data (e.g., the context entity lacks specific numbers for a pie chart), skip it rather than inventing data — diagram accuracy matters more than diagram count
+
+For content that cannot be represented as Mermaid (photographs, artistic illustrations), you may still insert informational placeholder markers: `<!-- IMAGE: Description. Style: infographic|illustration -->`. These are NOT processed automatically — they serve as suggestions for the user.
 
 ### Phase 3: Output
 

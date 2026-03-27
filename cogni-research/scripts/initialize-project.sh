@@ -3,7 +3,7 @@ set -euo pipefail
 # initialize-project.sh - Create project directory structure for a research report
 # Version: 1.0.0
 #
-# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|hybrid>] [--document-paths <path1,path2,...>] [--suffix <N>]
+# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|hybrid>] [--document-paths <path1,path2,...>] [--generate-diagrams] [--max-diagrams <N>] [--diagram-style <mermaid|excalidraw|hybrid>] [--suffix <N>]
 #
 # Creates:
 #   {workspace}/{slug}-{date}/
@@ -34,6 +34,9 @@ REPORT_SOURCE=""
 DOCUMENT_PATHS=""
 CURATE_SOURCES=""
 GENERATE_IMAGES=""
+GENERATE_DIAGRAMS=""
+MAX_DIAGRAMS=""
+DIAGRAM_STYLE=""
 SUFFIX=""
 
 while [[ $# -gt 0 ]]; do
@@ -54,6 +57,9 @@ while [[ $# -gt 0 ]]; do
     --document-paths) DOCUMENT_PATHS="$2"; shift 2;;
     --curate-sources) CURATE_SOURCES="true"; shift 1;;
     --generate-images) GENERATE_IMAGES="true"; shift 1;;
+    --generate-diagrams) GENERATE_DIAGRAMS="true"; shift 1;;
+    --max-diagrams) MAX_DIAGRAMS="$2"; shift 2;;
+    --diagram-style) DIAGRAM_STYLE="$2"; shift 2;;
     --suffix) SUFFIX="$2"; shift 2;;
     *) echo "{\"success\": false, \"error\": \"Unknown argument: $1\"}" >&2; exit 2;;
   esac
@@ -85,6 +91,11 @@ fi
 VALID_CITATION_FORMATS="apa mla chicago harvard ieee wikilink"
 if [[ -n "$CITATION_FORMAT" ]] && ! echo "$VALID_CITATION_FORMATS" | grep -qw "$CITATION_FORMAT"; then
   echo "{\"success\": false, \"error\": \"Invalid --citation-format: $CITATION_FORMAT. Valid formats: $VALID_CITATION_FORMATS\"}" >&2
+  exit 2
+fi
+
+if [[ -n "$DIAGRAM_STYLE" ]] && [[ ! "$DIAGRAM_STYLE" =~ ^(mermaid|excalidraw|hybrid)$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --diagram-style: $DIAGRAM_STYLE. Must be mermaid, excalidraw, or hybrid.\"}" >&2
   exit 2
 fi
 
@@ -202,6 +213,16 @@ if [[ "$CURATE_SOURCES" == "true" ]]; then
 fi
 if [[ "$GENERATE_IMAGES" == "true" ]]; then
   CONFIG=$(echo "$CONFIG" | jq '. + {generate_images: true}')
+fi
+# --generate-diagrams (or backward compat from --generate-images)
+if [[ "$GENERATE_DIAGRAMS" == "true" ]] || [[ "$GENERATE_IMAGES" == "true" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq '. + {generate_diagrams: true}')
+fi
+if [[ -n "$MAX_DIAGRAMS" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --argjson v "$MAX_DIAGRAMS" '. + {max_diagrams: $v}')
+fi
+if [[ -n "$DIAGRAM_STYLE" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --arg v "$DIAGRAM_STYLE" '. + {diagram_style: $v}')
 fi
 
 echo "$CONFIG" > "$PROJECT_DIR/.metadata/project-config.json"

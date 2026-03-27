@@ -42,7 +42,7 @@ When this skill loads:
 > **Tone**: objective *(default)* | analytical | critical | persuasive | formal | informative | explanatory | descriptive | comparative | speculative | narrative | optimistic | simple
 > **Citations**: APA *(default)* | MLA | Chicago | Harvard | IEEE | Wikilink
 > **Market**: global *(default)* | dach | de | us | uk | fr (localizes search queries + authority sources)
-> Advanced: output language, sub-question count, source mode (web/local/hybrid), domain filter, researcher role, image generation — ask about any of these
+> Advanced: output language, sub-question count, source mode (web/local/hybrid), domain filter, researcher role, diagram generation — ask about any of these
 >
 > Reply with your choices, or "go" for defaults.
 
@@ -87,7 +87,7 @@ Read these reference files when the corresponding phase needs them:
 | `references/agent-roles.md` | Phase 1 — auto-selecting researcher role |
 | `references/writing-tones.md` | Phase 0 — resolving tone parameter |
 | `references/citation-formats.md` | Phase 0 — resolving citation format |
-| `references/image-generation.md` | Phase 4.5 — image generation (when enabled) |
+| `references/diagram-generation.md` | Phase 3.5 — diagram planning (when enabled) |
 | `references/review-criteria.md` | Phase 5 — understanding review scoring |
 
 ## Workflow
@@ -112,7 +112,7 @@ Scan the user's request and extract any options they already specified. These be
 - **Report source**: "analyze these PDFs", "research from my files" → "local"; both web and local → "hybrid". Default: "web"
 - **Document paths**: file paths or glob patterns for local/hybrid mode
 - **Curate sources**: "prioritize authoritative sources" → enable
-- **Generate images**: "add diagrams", "make it visual" → enable
+- **Generate diagrams**: "add diagrams", "make it visual", "include charts", "with visuals" → enable `generate_diagrams`. Legacy: "add images" also enables this
 - **Project location**: "save in standard folder", "store here", "put it in ~/research" → capture. Default: ask in Step 2b (no silent default)
 
 #### Step 2: Interactive Configuration
@@ -128,7 +128,7 @@ Present the user with a configuration menu using `AskUserQuestion` so they can s
    - **Tone** (only if not detected): list all 13 options, mark default
    - **Citations** (only if not detected): list all 5 formats, mark default
    - **Market** (only if not detected): global | dach | de | us | uk | fr
-4. Always include one line for advanced options: "Advanced: output language, sub-question count, source mode (web/local/hybrid), domain filter, researcher role, image generation — ask about any of these"
+4. Always include one line for advanced options: "Advanced: output language, sub-question count, source mode (web/local/hybrid), domain filter, researcher role, diagram generation — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
 **Conditional skip**: If the user's prompt already specified ALL primary options (type + tone + citations) OR included urgency signals ("just go", "start now", "defaults are fine"), collapse the menu to a compact confirmation:
@@ -181,7 +181,10 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--report-source "<web|local|hybrid>"] \
   [--document-paths "<path1,path2,...>"] \
   [--curate-sources] \
-  [--generate-images]
+  [--generate-images] \
+  [--generate-diagrams] \
+  [--max-diagrams <N>] \
+  [--diagram-style <mermaid|excalidraw|hybrid>]
 ```
 
 Check the `already_exists` field in the JSON output before proceeding.
@@ -410,6 +413,46 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/merge-context.py" \
 
 Verify output: contexts count, sources count, total words. If too few sources (< 3), consider re-running failed sub-questions.
 
+### Phase 3.5: Diagram Planning (conditional)
+
+When `generate_diagrams` is `true` (or legacy `generate_images` is `true`) in project-config.json AND report type is `basic`, `detailed`, or `deep`:
+
+Diagram planning identifies which research concepts would benefit from visual representation before the writer begins. This prevents random or forced diagram placement — the writer receives a focused manifest of visualization opportunities grounded in the actual research findings.
+
+**Read**: `references/diagram-generation.md` for supported diagram types and content-to-diagram mapping.
+
+1. Read `.metadata/aggregated-context.json` for merged findings
+2. Analyze the research context to identify 2-3 concepts that would benefit from Mermaid diagrams, considering:
+   - Process flows described in the research (→ flowchart)
+   - Comparative data across entities (→ pie chart)
+   - Architectural or structural relationships (→ class diagram)
+   - Temporal progressions or timelines (→ timeline)
+   - Multi-party interactions (→ sequence diagram)
+   - Topic hierarchies (→ mindmap)
+3. For each concept, determine the best Mermaid diagram type using the content-to-diagram mapping table in `references/diagram-generation.md`
+4. Write `.metadata/diagram-plan.json`:
+
+```json
+{
+  "diagrams": [
+    {
+      "id": "diag-01",
+      "concept": "Short description of the visualization concept",
+      "diagram_type": "flowchart|sequence|class|state|mindmap|pie|timeline",
+      "target_section": "Section heading where this diagram belongs",
+      "description": "What the diagram should show and why it adds value",
+      "data_sources": ["ctx-entity-slugs-that-contain-the-data"]
+    }
+  ]
+}
+```
+
+5. Pass the diagram plan path to the writer in Phase 4
+
+Read `max_diagrams` from project-config.json (default: 3) to cap the number of planned diagrams.
+
+Skip diagram planning for outline and resource report types — these formats are too concise for inline visuals.
+
 ### Phase 4: Report Writing
 
 Spawn writer agent:
@@ -424,24 +467,9 @@ Task(writer,
   OUTPUT_LANGUAGE=<output_language>)
 ```
 
-Verify: draft written to `output/draft-v1.md`, reasonable word count.
+If `.metadata/diagram-plan.json` exists (from Phase 3.5), the writer loads it automatically and embeds Mermaid code blocks at planned positions. See the writer agent instructions for details.
 
-#### Phase 4.5: Image Generation (optional)
-
-When `generate_images` is `true` in project-config.json AND the report type is `basic`, `detailed`, or `deep`:
-
-1. Read `references/image-generation.md` for provider options and style-to-provider mapping
-2. Create `output/images/` directory if it doesn't exist
-3. Scan the draft for image placeholder markers (`<!-- IMAGE: ... -->`)
-4. For each placeholder, determine the image style from the marker (diagram, infographic, illustration)
-5. **Route to the correct provider based on style**:
-   - **diagram** style → Use Excalidraw MCP (`mcp__excalidraw__batch_create_elements` + `mcp__excalidraw__export_to_image`). Build the diagram elements programmatically from the description, then export as PNG
-   - **illustration/infographic** style → Invoke `Skill(cogni-visual:generate-image)` if available
-   - **Fallback** → Try external API if API key available, otherwise leave placeholder
-6. Replace each resolved `<!-- IMAGE: ... -->` marker with `![Description](output/images/<filename>.png)` in the draft
-7. Log generated vs. unresolved images to `.logs/phase-4.5-images.jsonl`
-
-Skip for outline and resource report types.
+Verify: draft written to `output/draft-v1.md`, reasonable word count. If diagrams were enabled, verify Mermaid code blocks are present in the draft.
 
 ### Phase 5: Structural Review
 

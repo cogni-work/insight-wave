@@ -12,6 +12,8 @@ The HTML export uses a self-contained template with CSS custom properties. When 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{report_title}</title>
   {google_fonts_import}
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad: true, theme: 'neutral'});</script>
   <style>
     :root {
       --color-bg: {colors.background|#ffffff};
@@ -144,6 +146,28 @@ The HTML export uses a self-contained template with CSS custom properties. When 
       font-family: var(--font-headers);
     }
 
+    /* Mermaid diagram blocks */
+    pre.mermaid {
+      text-align: center;
+      max-width: 800px;
+      margin: 1.5rem auto;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+    /* Figure captions (italicized line after diagrams) */
+    figure {
+      margin: 1.5rem auto;
+      text-align: center;
+      max-width: 800px;
+    }
+    figcaption {
+      font-style: italic;
+      font-size: 0.9em;
+      color: var(--color-text-muted);
+      margin-top: 0.5rem;
+    }
+
     @media print {
       body { max-width: 100%; padding: 1rem; font-size: 11pt; }
       .toc { page-break-after: always; }
@@ -200,6 +224,45 @@ try:
 except ImportError:
     html = simple_md_to_html(md_text)
 ```
+
+## Mermaid Diagram Handling
+
+### HTML Export
+
+Mermaid code blocks in the markdown report are rendered client-side by the Mermaid CDN script already included in the HTML template. During MD→HTML conversion:
+
+1. Detect fenced ` ```mermaid ` code blocks
+2. Convert them to `<pre class="mermaid">` elements (NOT `<code>` — Mermaid.js expects `<pre class="mermaid">` or `<div class="mermaid">`)
+3. Wrap each diagram and its caption in a `<figure>` element:
+
+```html
+<figure>
+  <pre class="mermaid">
+    flowchart LR
+      A[Start] --> B[End]
+  </pre>
+  <figcaption>Figure 1: Description of the diagram.</figcaption>
+</figure>
+```
+
+The italicized caption line (`*Figure N: ...*`) immediately following a Mermaid block should be extracted and placed inside `<figcaption>`.
+
+### PDF / DOCX Export (Pre-rendering)
+
+Mermaid code blocks must be pre-rendered to images before PDF or DOCX conversion, since these formats cannot execute JavaScript.
+
+**Pre-rendering fallback chain:**
+
+1. **mermaid-cli** (`mmdc`): Check `which mmdc`. If available:
+   ```bash
+   mmdc -i diagram.mmd -o output/images/diagram-N.svg -t neutral --width 800
+   ```
+   Replace the `<pre class="mermaid">` block with `<img src="output/images/diagram-N.svg" alt="Figure N description">`.
+
+2. **Excalidraw MCP**: If `mmdc` is not available but Excalidraw MCP tools are accessible, use `mcp__excalidraw__create_from_mermaid` to convert each Mermaid block, then `mcp__excalidraw__export_to_image` to export as PNG.
+
+3. **Fallback**: If neither pre-renderer is available, leave Mermaid blocks as styled `<pre><code>` blocks in the output. Add a note in the Phase 3 report:
+   > "Diagrams appear as code blocks in PDF/DOCX. For rendered diagrams, install mermaid-cli: `npm install -g @mermaid-js/mermaid-cli`"
 
 ## Citation Normalization
 

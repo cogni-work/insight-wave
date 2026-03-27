@@ -71,6 +71,18 @@ Evaluate the draft on 5 dimensions (0.0-1.0 each):
 | **Depth** | Substantive analysis vs surface-level? Specific evidence? | 0.20 |
 | **Clarity** | Clear writing, professional tone, well-organized? When OUTPUT_LANGUAGE is not English: evaluate prose quality in the output language — proper character encoding, natural professional register, no awkward literal translations from English | 0.15 |
 
+#### Diagram Quality Gate
+
+If the draft contains Mermaid code blocks (` ```mermaid `), verify:
+
+1. **Syntax validity**: Each Mermaid block starts with a valid diagram type declaration (`flowchart`, `sequenceDiagram`, `classDiagram`, `stateDiagram-v2`, `mindmap`, `pie`, `timeline`). Brackets and quotes are balanced. No unclosed nodes or missing arrow syntax.
+2. **Captions present**: Each Mermaid block is followed by an italicized caption (`*Figure N: ...*`). Missing captions are a medium-severity issue.
+3. **Contextual relevance**: Diagrams appear near their related content, not orphaned in unrelated sections. A diagram about "cloud architecture" should not appear in a section about "market trends".
+4. **Readability**: Flag diagrams with more than 20 nodes as potentially unreadable — suggest simplification in the issues list.
+5. **Figure numbering**: Verify figures are numbered sequentially (Figure 1, Figure 2, ...) without gaps or duplicates.
+
+Diagram issues are informational (low severity) unless syntax is invalid (medium severity) — they should not alone trigger a revise verdict.
+
 #### Reference URL Gate
 
 Scan the references section for entries missing URLs. Count references that have "Available:" text or a description but no actual `https://` link. If more than 20% of references lack clickable URLs, flag as a high-severity issue: "References missing URLs: N of M references have no clickable link." This forces a revise verdict because a reference without a URL cannot be verified by the reader.

@@ -1,6 +1,8 @@
 # Image Generation Reference
 
-## Overview
+> **Superseded**: This reference has been replaced by `references/diagram-generation.md`, which uses Mermaid code blocks for inline diagrams instead of AI-generated images. Setting `generate_images: true` in project-config.json is treated as `generate_diagrams: true`. See `diagram-generation.md` for the current approach.
+
+## Overview (Legacy)
 
 Optional inline image generation for research reports. When enabled, the writer agent can request AI-generated illustrations to be embedded in the report. Images are generated after the draft is written and inserted at marked positions.
 

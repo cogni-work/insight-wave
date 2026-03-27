@@ -96,25 +96,28 @@ For wikilink `[[N]]` citations without embedded URLs: resolve reference numbers 
 - Optionally copy to a user-specified location
 
 **HTML**:
-1. Read `references/export-formats.md` for the HTML template
+1. Read `references/export-formats.md` for the HTML template (includes Mermaid CDN script and diagram CSS)
 2. Read `{REPORT_DIR}/report.md`
 3. If `{REPORT_DIR}/design-variables.json` exists, inject theme tokens into the HTML template's CSS custom properties. If no design variables, use the hardcoded fallback values in the template.
 4. If `google_fonts_import` is non-empty, insert it as a `<style>` tag in `<head>`
-5. Generate self-contained HTML with: table of contents from headings, clickable source links (underlined, colored), clean typography
-6. Write to `{REPORT_DIR}/report.html`
+5. **Mermaid diagrams**: Convert fenced ` ```mermaid ` code blocks to `<pre class="mermaid">` elements. Wrap each diagram + its caption in `<figure>/<figcaption>`. See `references/export-formats.md` § "Mermaid Diagram Handling" for conversion details. The Mermaid CDN script in the template handles client-side rendering.
+6. Generate self-contained HTML with: table of contents from headings, clickable source links (underlined, colored), clean typography
+7. Write to `{REPORT_DIR}/report.html`
 
 **PDF**:
 1. First generate HTML (as above) — the HTML already carries theme styling
-2. **Preferred**: Invoke `Skill(document-skills:pdf)` to create the PDF from HTML with full formatting control (reportlab-based, no external dependency). Pass `{REPORT_DIR}/design-variables.json` if it exists so the skill can apply theme tokens to PDF-native elements.
-3. **Fallback**: If the pdf skill is unavailable and `weasyprint` is installed: `python3 -c "import weasyprint; weasyprint.HTML('{REPORT_DIR}/report.html').write_pdf('{REPORT_DIR}/report.pdf')"` — weasyprint preserves `<a href>` hyperlinks automatically.
-4. **Last resort**: Inform user HTML is available, suggest browser print-to-PDF
-5. Write to `{REPORT_DIR}/report.pdf`
+2. **Pre-render Mermaid diagrams**: If the report contains Mermaid code blocks, they must be pre-rendered before PDF conversion (PDF cannot execute JavaScript). Follow the pre-rendering fallback chain in `references/export-formats.md` § "PDF / DOCX Export": try `mmdc` first, then Excalidraw MCP, then fall back to code blocks with a user note.
+3. **Preferred**: Invoke `Skill(document-skills:pdf)` to create the PDF from HTML with full formatting control (reportlab-based, no external dependency). Pass `{REPORT_DIR}/design-variables.json` if it exists so the skill can apply theme tokens to PDF-native elements.
+4. **Fallback**: If the pdf skill is unavailable and `weasyprint` is installed: `python3 -c "import weasyprint; weasyprint.HTML('{REPORT_DIR}/report.html').write_pdf('{REPORT_DIR}/report.pdf')"` — weasyprint preserves `<a href>` hyperlinks automatically.
+5. **Last resort**: Inform user HTML is available, suggest browser print-to-PDF
+6. Write to `{REPORT_DIR}/report.pdf`
 
 **DOCX** (Word):
-1. **Preferred**: Invoke `Skill(document-skills:docx)` to create the DOCX from the markdown report with professional formatting (headings, ToC, hyperlinked citations). Pass theme tokens if available: `heading_font` (fonts.headers), `body_font` (fonts.body), `accent_color` (colors.accent), `link_color` (colors.link). The docx skill preserves markdown links as Word hyperlinks.
-2. **Fallback**: If the docx skill is unavailable, check if `pandoc` is available: `which pandoc`. If so: `pandoc {REPORT_DIR}/report.md -o {REPORT_DIR}/report.docx --from markdown --to docx`. Pandoc preserves `[text](url)` as clickable Word hyperlinks.
-3. **Last resort**: Inform user and suggest `brew install pandoc` or `apt install pandoc`
-4. Write to `{REPORT_DIR}/report.docx`
+1. **Pre-render Mermaid diagrams**: Same as PDF — Mermaid code blocks must be pre-rendered to PNG before DOCX conversion. Follow the same fallback chain (mmdc → Excalidraw MCP → code blocks). Save rendered images to `{REPORT_DIR}/images/` and replace Mermaid blocks with `![Figure N](images/diagram-N.png)` in the markdown before conversion.
+2. **Preferred**: Invoke `Skill(document-skills:docx)` to create the DOCX from the markdown report with professional formatting (headings, ToC, hyperlinked citations). Pass theme tokens if available: `heading_font` (fonts.headers), `body_font` (fonts.body), `accent_color` (colors.accent), `link_color` (colors.link). The docx skill preserves markdown links as Word hyperlinks.
+3. **Fallback**: If the docx skill is unavailable, check if `pandoc` is available: `which pandoc`. If so: `pandoc {REPORT_DIR}/report.md -o {REPORT_DIR}/report.docx --from markdown --to docx`. Pandoc preserves `[text](url)` as clickable Word hyperlinks.
+4. **Last resort**: Inform user and suggest `brew install pandoc` or `apt install pandoc`
+5. Write to `{REPORT_DIR}/report.docx`
 
 **Presentation** (optional):
 - If cogni-visual is available, delegate: `Skill(cogni-visual:presentation-brief)`
