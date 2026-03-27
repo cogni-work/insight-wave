@@ -334,6 +334,32 @@ def load_all_entities(project_dir):
     if os.path.isfile(claims_path):
         data["claims"] = load_json(claims_path)
 
+    # Load communicate output files and their review verdicts
+    communicate_dir = os.path.join(project_dir, "output", "communicate")
+    communicate_files = []
+    if os.path.isdir(communicate_dir):
+        for root, _dirs, files in os.walk(communicate_dir):
+            for fname in sorted(files):
+                if fname.endswith(".md") and not fname.endswith(".review.md"):
+                    fp = os.path.join(root, fname)
+                    rel = os.path.relpath(fp, project_dir)
+                    review_path = fp.rsplit(".", 1)[0] + ".review.json"
+                    review = load_json(review_path) if os.path.isfile(review_path) else None
+                    # Determine level from path
+                    if "customer/" in rel:
+                        level = "customer"
+                    elif "market/" in rel:
+                        level = "market"
+                    else:
+                        level = "overview"
+                    communicate_files.append({
+                        "path": rel,
+                        "name": fname.replace(".md", ""),
+                        "level": level,
+                        "review": review,
+                    })
+    data["communicate"] = communicate_files
+
     # Load TIPS data (portfolio-anchored STs and opportunities)
     data["tips"] = load_tips_data(project_dir, data)
 
@@ -468,8 +494,9 @@ def generate_html(data, status, project_dir, theme):
     phase = status.get("phase", "unknown") if status else "unknown"
     next_actions = status.get("next_actions", []) if status else []
     claims_status = status.get("claims", {}) if status else {}
+    communicate_files = data.get("communicate", [])
 
-    phases = ["products", "features", "markets", "propositions", "enrichment", "verification", "synthesis", "export", "complete"]
+    phases = ["products", "features", "markets", "propositions", "enrichment", "verification", "synthesis", "export", "communicate", "complete"]
     phase_idx = phases.index(phase) if phase in phases else 0
     phase_pct = int((phase_idx / (len(phases) - 1)) * 100) if len(phases) > 1 else 0
 
@@ -1804,6 +1831,7 @@ body::after {{
   <a href="#" data-section="Packages">Packages</a>
   <a href="#" data-section="Margin">Margins</a>
   {'<a href="#" data-section="Innovation">Pipeline</a>' if opportunities_data else ''}
+  {'<a href="#" data-section="Communicate">Docs</a>' if communicate_files else ''}
   <a href="#" data-section="Claims">Claims</a>
   <a href="#" data-section="Next">Actions</a>
 </nav>
@@ -2662,6 +2690,63 @@ body::after {{
       {f'<div style="font-size:13px;color:var(--text2);margin-bottom:8px">{feat_desc}</div>' if feat_desc else ''}
       {f'<div class="anchor-needs">{unmet_pills}</div>' if unmet_pills else ''}
       {f'<div style="font-size:11px;color:var(--text2);margin-top:8px;font-family:var(--font-mono)">ST: {tips_ref}</div>' if tips_ref else ''}
+    </div>
+"""
+        html += "  </div>\n</div>\n"
+
+    # --- Customer-Facing Documentation ---
+    if communicate_files:
+        level_labels = {"overview": "Overview", "market": "Market", "customer": "Customer"}
+        html += """
+<!-- Customer-Facing Documentation -->
+<div class="section reveal" data-section="Communicate">
+  <div class="section-title">Customer-Facing Documentation</div>
+  <div class="card-grid">
+"""
+        for cf in communicate_files:
+            name = escape_html(cf["name"])
+            level = cf["level"]
+            level_label = level_labels.get(level, level.title())
+            review = cf.get("review")
+            if review:
+                verdict = review.get("final_verdict", "pending")
+                score = review.get("final_score", 0)
+                v_color = "var(--green)" if verdict == "accept" else ("var(--yellow)" if verdict == "revise" else "var(--red)")
+                verdict_html = f'<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;color:{v_color};background:rgba(0,0,0,0.05)">{verdict.title()} ({score})</span>'
+                # Extract per-perspective scores from latest round
+                rounds = review.get("rounds", [])
+                perspective_html = ""
+                if rounds:
+                    latest = rounds[-1]
+                    fa = latest.get("full_assessment", {})
+                    perspectives = fa.get("perspectives", [])
+                    if not perspectives:
+                        # Try alternate structure
+                        for pkey in ["target_buyer", "marketing_director", "sales_director"]:
+                            p = fa.get(pkey)
+                            if p:
+                                perspectives.append(p)
+                    if perspectives:
+                        perspective_html = '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
+                        for p in perspectives:
+                            pname = escape_html(p.get("perspective", p.get("name", "?")))
+                            pscore = p.get("score", 0)
+                            pc = "var(--green)" if pscore >= 85 else ("var(--yellow)" if pscore >= 70 else "var(--red)")
+                            perspective_html += f'<span style="font-size:11px;color:{pc}">{pname}: {pscore}</span>'
+                        perspective_html += '</div>'
+            else:
+                verdict_html = '<span style="font-size:11px;color:var(--text2)">No review</span>'
+                perspective_html = ""
+            level_chip_bg = "rgba(46,125,50,0.1)" if level == "overview" else ("rgba(21,101,192,0.1)" if level == "market" else "rgba(156,39,176,0.1)")
+            level_chip_color = "var(--green)" if level == "overview" else ("#1565C0" if level == "market" else "#9C27B0")
+            html += f"""    <div class="entity-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-weight:600">{name}</div>
+        <span style="padding:2px 8px;border-radius:6px;font-size:11px;background:{level_chip_bg};color:{level_chip_color}">{level_label}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:4px">{escape_html(cf["path"])}</div>
+      <div style="margin-top:6px">{verdict_html}</div>
+      {perspective_html}
     </div>
 """
         html += "  </div>\n</div>\n"

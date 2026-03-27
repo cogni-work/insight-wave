@@ -83,7 +83,7 @@ Tell the user the dashboard is open. If they want to refresh after making change
 
 The generated HTML includes these sections, all in a single-page app with drill-down panels:
 
-0. **Sticky Navigation** — Pill-style nav bar with section links, active state tracking via scroll detection, backdrop blur. Click any link to smooth-scroll to that section. Nav order follows the portfolio workflow: Overview → Products → Markets → Matrix → Taxonomy → [Anchors] → Customers → Solutions → Packages → Margins → [Pipeline] → Claims → Actions.
+0. **Sticky Navigation** — Pill-style nav bar with section links, active state tracking via scroll detection, backdrop blur. Click any link to smooth-scroll to that section. Nav order follows the portfolio workflow: Overview → Products → Markets → Matrix → Taxonomy → [Anchors] → Customers → Solutions → Packages → Margins → [Pipeline] → [Docs] → Claims → Actions.
 1. **Header** — Company name, industry, project slug, last updated. Bricolage Grotesque typography with gradient mesh background.
 2. **Phase & Progress** — Current workflow phase with visual progress bar, completion percentages per entity type
 3. **Entity Counts** — Card grid showing products, features, markets, propositions, solutions, packages, competitors, customers with counts, completion bars, and expected totals
@@ -97,8 +97,9 @@ The generated HTML includes these sections, all in a single-page app with drill-
 11. **Packages** — Product bundles as clickable cards. Each package shows product->market, package type chip, positioning, and tier cards with pricing and included solution pills. Click to drill down into full tier detail with bundle savings.
 12. **Margin Health** (if any solutions have `cost_model`) — Separated by solution type. Project solutions show effort-based margins per tier. Subscription solutions show unit economics (LTV/CAC, gross margin, churn). Color-coded: green for healthy, yellow for below-target, red for negative/failing. This section is marked INTERNAL/CONFIDENTIAL.
 13. **Innovation Pipeline** — (shown when `portfolio-opportunities.json` exists in a linked TIPS project) Summary stats: total opportunities, estimated revenue, build/buy/partner breakdown. Opportunity cards sorted by `opportunity_score` (descending). Each card shows: opportunity name, score gauge (0-10, color gradient green/yellow/red), classification badge (build/buy/partner), priority badge (high/medium/low), revenue estimate with confidence, feature spec description, unmet needs as pills, and source ST reference. Hidden when no opportunities file exists.
-14. **Claims Status** — Verification summary (verified, unverified, deviated, resolved) with progress bar
-15. **Next Actions** — Recommended next skills from project-status
+14. **Customer-Facing Documentation** — (shown when `output/communicate/` has files) Cards per communicate output file with level chip (Overview/Market/Customer), file path, review verdict badge (accept/revise/reject with score), and per-perspective mini-scorecard (Target Buyer, Marketing Director, Sales Director scores). Hidden when no communicate output exists.
+15. **Claims Status** — Verification summary (verified, unverified, deviated, resolved) with progress bar
+16. **Next Actions** — Recommended next skills from project-status
 
 ## Shared Pattern
 

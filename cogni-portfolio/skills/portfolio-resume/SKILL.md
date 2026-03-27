@@ -57,6 +57,7 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 | Competitors | N / propositions | pct% |
 | Customers | N / markets | pct% |
 | Claims | N total | V verified, D deviated, U unverified |
+| Communicate | N files | A accepted, R revise, J rejected (if > 0) |
 | Context | N entries | breakdown by category (e.g., 3 pricing, 2 competitive, 1 strategic) |
 | Uploads | N | pending ingestion (if > 0) |
 
@@ -101,6 +102,7 @@ If the phase is `complete`, congratulate the user and suggest reviewing outputs 
 | `verification` | Unverified or deviated claims pending | Run `verify` skill |
 | `synthesis` | All entities complete, claims clean | Run `synthesize` skill |
 | `export` | Overview generated, deliverables pending | Run `export` skill |
+| `communicate` | Deliverables generated, customer-facing docs pending | Run `communicate` skill |
 | `complete` | All workflow stages finished | Review outputs or re-export |
 
 ## Multi-Session Design

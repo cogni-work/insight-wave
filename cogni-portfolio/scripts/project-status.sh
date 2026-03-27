@@ -370,6 +370,42 @@ if [ -f "$PROJECT_DIR/output/README.md" ]; then HAS_README="true"; fi
 HAS_XLSX="false"
 if [ -f "$PROJECT_DIR/output/portfolio.xlsx" ]; then HAS_XLSX="true"; fi
 
+# Count communicate output files and review verdicts
+COMMUNICATE_TOTAL=0
+COMMUNICATE_ACCEPTED=0
+COMMUNICATE_REVISE=0
+COMMUNICATE_REJECTED=0
+HAS_COMMUNICATE="false"
+if [ -d "$PROJECT_DIR/output/communicate" ]; then
+  COMMUNICATE_TOTAL=$(find "$PROJECT_DIR/output/communicate" -name '*.md' -not -name '*.review.*' 2>/dev/null | wc -l)
+  COMMUNICATE_TOTAL=$(echo "$COMMUNICATE_TOTAL" | tr -d ' ')
+  if [ "$COMMUNICATE_TOTAL" -gt 0 ]; then
+    HAS_COMMUNICATE="true"
+    eval "$(python3 -c "
+import json, os
+accepted = revise = rejected = 0
+seen = set()
+for root, dirs, files in os.walk('$PROJECT_DIR/output/communicate'):
+    for f in files:
+        if f.endswith('.review.json'):
+            fp = os.path.join(root, f)
+            if fp in seen: continue
+            seen.add(fp)
+            try:
+                d = json.load(open(fp))
+                v = d.get('final_verdict', '')
+                if v == 'accept': accepted += 1
+                elif v == 'revise': revise += 1
+                elif v == 'reject': rejected += 1
+            except Exception:
+                pass
+print(f'COMMUNICATE_ACCEPTED={accepted}')
+print(f'COMMUNICATE_REVISE={revise}')
+print(f'COMMUNICATE_REJECTED={rejected}')
+" 2>/dev/null)"
+  fi
+fi
+
 # Count unprocessed uploads (exclude processed/ subdirectory)
 UPLOADS=0
 if [ -d "$PROJECT_DIR/uploads" ]; then
@@ -427,6 +463,8 @@ elif [ "$HAS_README" = "false" ]; then
   PHASE="synthesis"
 elif [ "$HAS_XLSX" = "false" ]; then
   PHASE="export"
+elif [ "$HAS_COMMUNICATE" = "false" ]; then
+  PHASE="communicate"
 else
   PHASE="complete"
 fi
@@ -488,6 +526,9 @@ case "$PHASE" in
     ;;
   export)
     add_action "export" "Synthesis done -- ready to generate deliverables"
+    ;;
+  communicate)
+    add_action "communicate" "Export done -- ready to generate customer-facing documentation"
     ;;
   complete)
     ;;
@@ -746,6 +787,12 @@ cat << EOF
   },
   "margin_health": $margin_health,
   "stale_entities": $stale_entities,
-  "quality_audit": $quality_audit
+  "quality_audit": $quality_audit,
+  "communicate": {
+    "total": $COMMUNICATE_TOTAL,
+    "accepted": $COMMUNICATE_ACCEPTED,
+    "revise": $COMMUNICATE_REVISE,
+    "rejected": $COMMUNICATE_REJECTED
+  }
 }
 EOF

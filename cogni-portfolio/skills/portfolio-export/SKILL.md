@@ -209,6 +209,8 @@ List generated files with paths. Suggest how to use each deliverable:
 - Briefs: distribute to marketing for campaign planning
 - Workbook: share with leadership for portfolio review
 
+Also suggest: "For customer-facing narratives (portfolio overview, market-tailored, or persona-tailored views), run `/portfolio-communicate`."
+
 ## Important Notes
 
 - Exports read from entity files directly, not from `output/README.md` — they are independently generated
