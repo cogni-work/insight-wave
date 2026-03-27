@@ -1,258 +1,68 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "insight-wave",
-  "description": "Open-source Claude Code plugins for knowledge work — consulting, B2B sales, and marketing.",
   "owner": {
-    "name": "Stephan de Haas",
-    "email": "stephan@cogni-work.ai"
+    "name": "Stephan de Haas"
   },
   "plugins": [
     {
       "name": "cogni-claims",
-      "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-claims",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "claim-verification",
-        "fact-checking",
-        "source-validation"
-      ]
+      "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution."
     },
     {
       "name": "cogni-narrative",
-      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 6 story arc frameworks including TIPS-native trend panorama. Includes narrative review scoring and derivative format adaptation.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-narrative",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "narrative",
-        "story-arc",
-        "executive-writing",
-        "strategic-foresight",
-        "trend-panorama",
-        "review",
-        "adapt"
-      ]
+      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 6 story arc frameworks including TIPS-native trend panorama. Includes narrative review scoring and derivative format adaptation."
     },
     {
       "name": "cogni-copywriting",
-      "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), and multi-language support.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-copywriting",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "copywriting",
-        "document-polishing",
-        "messaging-frameworks",
-        "readability",
-        "sales-copy",
-        "power-positions"
-      ]
+      "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), and multi-language support."
     },
     {
       "name": "cogni-workspace",
-      "description": "Lean workspace orchestrator for insight-wave marketplace plugins. Manages shared foundation (env vars, settings), theme management, theme picker, plugin discovery, workspace health, and Obsidian vault integration.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-workspace",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "workspace",
-        "themes",
-        "orchestrator",
-        "insight-wave"
-      ]
+      "description": "Lean workspace orchestrator for insight-wave marketplace plugins. Manages shared foundation (env vars, settings), theme management, theme picker, plugin discovery, workspace health, and Obsidian vault integration."
     },
     {
       "name": "cogni-trends",
-      "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE).",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-trends",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "tips",
-        "trend-scout",
-        "trends",
-        "strategic-trends",
-        "bilingual",
-        "trend-report"
-      ]
+      "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions) for industry trend analysis. Bilingual support (EN/DE)."
     },
     {
       "name": "cogni-portfolio",
-      "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-portfolio",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "portfolio",
-        "messaging",
-        "b2b",
-        "fab",
-        "sme",
-        "propositions",
-        "packages"
-      ]
+      "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis."
     },
     {
       "name": "cogni-visual",
-      "description": "Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-visual",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "presentations",
-        "slides",
-        "pptx",
-        "visual",
-        "narrative",
-        "big-picture",
-        "journey-map",
-        "excalidraw",
-        "web",
-        "storyboard"
-      ]
+      "description": "Transform polished narratives into visual deliverables — presentation briefs, slide decks, big picture journey maps, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering."
     },
     {
       "name": "cogni-help",
-      "description": "Central help hub for the insight-wave ecosystem. Interactive courses (11-course curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-help",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "help",
-        "guide",
-        "courses",
-        "training",
-        "workflow",
-        "troubleshoot",
-        "cheatsheet",
-        "issues",
-        "discovery",
-        "onboarding"
-      ]
+      "description": "Central help hub for the insight-wave ecosystem. Interactive courses (11-course curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing."
     },
     {
       "name": "cogni-marketing",
-      "description": "B2B marketing content engine bridging cogni-trends investment themes (Handlungsfelder) and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-marketing",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "marketing",
-        "content-marketing",
-        "b2b",
-        "thought-leadership",
-        "lead-generation",
-        "demand-generation",
-        "sales-enablement",
-        "abm",
-        "campaign",
-        "gtm"
-      ]
+      "description": "B2B marketing content engine bridging cogni-trends investment themes (Handlungsfelder) and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN."
     },
     {
       "name": "cogni-research",
-      "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel web research, claims-verified review loops, and three report types (basic, detailed, deep). Integrates with cogni-claims for source verification.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-research",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "research",
-        "report",
-        "multi-agent",
-        "storm",
-        "parallel-search",
-        "review-loop",
-        "deep-research",
-        "claims-verification"
-      ]
+      "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel web research, claims-verified review loops, and three report types (basic, detailed, deep). Integrates with cogni-claims for source verification."
     },
     {
       "name": "cogni-sales",
-      "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Bilingual DE/EN.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-sales",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "sales",
-        "pitch",
-        "why-change",
-        "proposal",
-        "presentation",
-        "b2b",
-        "corporate-visions",
-        "acquisition",
-        "segment-pitch"
-      ]
+      "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Bilingual DE/EN."
     },
     {
       "name": "cogni-consulting",
-      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring and multi-persona stress testing via the business-model-hypothesis vision class.",
-      "author": {
-        "name": "Stephan de Haas",
-        "email": "stephan@cogni-work.ai"
-      },
       "source": "./cogni-consulting",
-      "category": "productivity",
-      "license": "AGPL-3.0-only",
-      "keywords": [
-        "double-diamond",
-        "consulting",
-        "orchestrator",
-        "strategy",
-        "problem-framing",
-        "solution-design",
-        "phase-gated",
-        "cross-plugin",
-        "lean-canvas",
-        "business-model",
-        "hypothesis"
-      ]
+      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring and multi-persona stress testing via the business-model-hypothesis vision class."
     }
   ]
 }
