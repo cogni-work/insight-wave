@@ -36,6 +36,7 @@ Generate internal-facing content that equips sales and consulting teams with the
    - Packages: bundled tiers with pricing
    - Customer profiles: buyer personas with pain points, buying criteria, decision roles
 3. Load TIPS data: solution template readiness (what the portfolio covers vs. gaps)
+4. **Optional enrichment**: If `sources.enriched_portfolio_narratives` exists in `marketing-project.json`, read the market-level and persona-level customer narratives for this market. These contain pre-written buyer-facing language that strengthens objection handlers and one-pagers with tested messaging. Especially useful for the "When we win" sections in battle cards.
 
 ### Step 2: Generate Content
 

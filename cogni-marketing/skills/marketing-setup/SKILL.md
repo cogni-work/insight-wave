@@ -29,17 +29,21 @@ Scan the working directory for existing sources:
 1. **Find cogni-portfolio projects**: Glob for `**/portfolio.json` files. For each, read to confirm it has `products` and `markets` populated.
 2. **Find cogni-trends projects**: Glob for `**/tips-project.json` files. For each, check that `tips-value-model.json` exists alongside it (value-modeler completed).
 3. **Find existing marketing projects**: Glob for `**/marketing-project.json` to avoid duplicates.
+4. **Find portfolio-communicate output** (optional enrichment): For each discovered portfolio project, check if `output/communicate/customer-narrative/` exists. If it does, list the files found (overview, market-level, customer-level narratives). These are pre-written audience-tailored narratives that content generation skills can reference for richer voice and messaging consistency. Store discovered paths in `marketing-project.json` under `sources.enriched_portfolio_narratives`.
 
 Present discovered sources to user:
 ```
 Portfolio projects found:
   1. acme-cloud (4 products, 3 markets, 12 propositions)
+     └─ Customer narratives: 1 overview, 3 market, 5 persona (enrichment available)
   2. beta-services (2 products, 1 market, 4 propositions)
 
 TIPS projects found:
   1. b2b-ict-ai-trends (5 themes, 18 solution templates)
   2. manufacturing-digital (4 themes, 12 solution templates)
 ```
+
+If customer narratives were found, note this briefly — they will be available as optional enrichment for content generation skills (voice consistency, messaging alignment).
 
 Ask user to select one portfolio and one TIPS project. If only one of each exists, confirm automatically.
 

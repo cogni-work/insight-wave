@@ -32,6 +32,7 @@ Generate high-frequency, channel-optimized content that drives awareness and int
 3. Load TIPS data: trend hook + implication tension (awareness/consideration angles)
 4. Load portfolio: propositions for this market (DOES/MEANS statements — the value message)
 5. Check for existing thought leadership content in this cell — derive from it if available
+6. **Optional enrichment**: If `sources.enriched_portfolio_narratives` exists in `marketing-project.json`, read the market-level customer narrative for this market. Use it as a messaging reference for value language and buyer framing — it reflects how the portfolio speaks to this market's buyers. Do not copy verbatim; adapt for channel-specific tone.
 
 ### Step 2: Generate Content
 

@@ -187,6 +187,7 @@ For **customer-narrative**:
 - **Polish prose**: "Run `/copywrite` on any generated file to polish for executive readability"
 - **Arc narrative**: "Run `/narrative --source-path output/communicate/customer-narrative/...` to transform into an arc-driven executive narrative"
 - **Visual formats** (after narrative): `/story-to-web` for landing pages, `/story-to-slides` for presentations, `/story-to-big-picture` for visual journey maps
+- **Marketing content** (if cogni-marketing installed): "These customer narratives are automatically discovered by `/marketing-setup` and used as voice/messaging enrichment when generating marketing content — ensuring consistency between how you present your portfolio and how your marketing speaks to the same audience"
 
 For **repo-documentation**:
 - **Polish prose**: "Run `/copywrite` to polish for readability"

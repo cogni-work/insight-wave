@@ -36,6 +36,7 @@ Generate expert-positioning content that leverages TIPS trend analysis (WHY NOW)
 4. Load portfolio context:
    - Propositions for this market (IS/DOES/MEANS — for domain authority, not sales pitch)
    - Company positioning (from `portfolio.json`)
+5. **Optional enrichment**: If `sources.enriched_portfolio_narratives` exists in `marketing-project.json`, read the market-level customer narrative for this market. Use it as a voice and messaging reference — it contains pre-written audience-tailored language that helps maintain consistency between portfolio communication and marketing content. Do not copy verbatim; use it to inform tone and framing.
 
 ### Step 2: Select Format
 

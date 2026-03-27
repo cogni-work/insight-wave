@@ -41,7 +41,12 @@ cogni-marketing/{project-slug}/
 
   "sources": {
     "tips_project": "relative path to cogni-trends project",
-    "portfolio_project": "relative path to cogni-portfolio project"
+    "portfolio_project": "relative path to cogni-portfolio project",
+    "enriched_portfolio_narratives": {
+      "overview": "relative path to customer-narrative/portfolio-overview.md (or null)",
+      "markets": { "{market-slug}": "relative path to market narrative (or null)" },
+      "personas": { "{market-slug}--{persona}": "relative path to persona narrative (or null)" }
+    }
   },
 
   "brand": {
@@ -174,7 +179,7 @@ created: ISO-8601
 ## Cross-Plugin References
 
 - **cogni-trends**: `sources.tips_project` → reads `tips-value-model.json` for strategic themes, `trend-scout-output.json` for trend data, `tips-trend-report-claims.json` for evidence
-- **cogni-portfolio**: `sources.portfolio_project` → reads `propositions/`, `competitors/`, `customers/`, `solutions/`, `packages/`, `portfolio.json`
+- **cogni-portfolio**: `sources.portfolio_project` → reads `propositions/`, `competitors/`, `customers/`, `solutions/`, `packages/`, `portfolio.json`. Optionally reads `output/communicate/customer-narrative/` for pre-written audience-tailored narratives (via `sources.enriched_portfolio_narratives`)
 - **cogni-copywriting**: Generated content can be piped to `copywriter` skill for polishing
 - **cogni-narrative**: Long-form thought leadership can be piped to `narrative` skill for arc-driven transformation
 - **cogni-visual**: Content briefs can be piped to `story-to-slides` or `canvas` for visual deliverables
