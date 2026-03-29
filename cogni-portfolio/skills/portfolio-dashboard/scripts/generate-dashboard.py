@@ -1937,13 +1937,15 @@ body::after {{
             for fs in sorted(product_features.keys(), key=lambda s: feature_sort_key(s, product_features)):
                 f = product_features[fs]
                 fname = escape_html(f.get("name", fs))
+                fpurpose = escape_html(f.get("purpose", ""))
                 fdesc = escape_html(f.get("description", ""))
                 readiness = f.get("readiness", "")
                 readiness_html = f'<span class="readiness readiness-{escape_html(readiness)}">{escape_html(readiness)}</span>' if readiness else ''
                 # Anchor badge if this feature has portfolio-anchored STs
                 feat_sts = anchored_sts.get(fs, [])
                 anchor_html = f'<span class="anchor-badge" title="{len(feat_sts)} anchored Solution Template{"s" if len(feat_sts) != 1 else ""}">\u2693 {len(feat_sts)} ST{"s" if len(feat_sts) != 1 else ""}</span>' if feat_sts else ''
-                html += f'      <div class="feature-item"><span class="fname">{fname}{readiness_html}{anchor_html}</span><br><span class="fdesc">{fdesc}</span></div>\n'
+                purpose_html = f'<br><span class="fpurpose" style="color: var(--text2); font-style: italic; font-size: 0.85em;">{fpurpose}</span>' if fpurpose else ''
+                html += f'      <div class="feature-item"><span class="fname">{fname}{readiness_html}{anchor_html}</span>{purpose_html}<br><span class="fdesc">{fdesc}</span></div>\n'
             html += "    </div>\n  </div>\n"
         html += "</div>\n"
 

@@ -58,6 +58,8 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 | Customers | N / markets | pct% |
 | Claims | N total | V verified, D deviated, U unverified |
 | Communicate | N files | A accepted, R revise, J rejected (if > 0), STALE if upstream changed |
+| Architecture | exists/missing | STALE if products/features changed since last generation |
+| Purpose | N / total features | coverage percentage — low coverage limits architecture and customer narrative quality |
 | Context | N entries | breakdown by category (e.g., 3 pricing, 2 competitive, 1 strategic) |
 | Uploads | N | pending ingestion (if > 0) |
 
@@ -81,6 +83,8 @@ After the table:
   - If no entities are flagged, skip this section entirely (don't show "0 flagged")
 - **Stale entities** — if `stale_entities` is non-empty, show them as priority actions before the regular next steps. Group by reason type: "N propositions need refresh because their upstream features were updated" is more useful than listing each one. If a stale entity also has quality warnings, lead with the quality issue (fix the root cause first, then refresh the proposition).
 - **Stale communicate files** — if `communicate.stale` is `true`, highlight this prominently: "Communicate files may need refresh — upstream data changed since they were generated." Present the reason from `communicate.stale_reason`. Recommend running `portfolio-communicate` to regenerate. This appears alongside stale entity warnings since it represents the same class of problem (downstream output invalidated by upstream changes).
+- **Stale architecture diagram** — if `architecture.stale` is `true`, mention that the architecture diagram may be outdated because products or features changed since it was generated. Recommend running `portfolio-architecture` to refresh. If `architecture.exists` is `false` and features exist, suggest generating the architecture diagram as a visual checkpoint.
+- **Purpose coverage** — if `purpose_coverage.total_features > 0` and `purpose_coverage.with_purpose` is less than half of `total_features`, note low purpose coverage: "N of M features have purpose statements. Adding purpose improves architecture diagrams and customer-facing materials." Recommend running the `features` skill to add purpose statements.
 - **Context notice** — if `counts.context_entries > 0`, mention available context entries with a category breakdown. Read `context/context-index.json` for the `by_category` map to show counts per category. This helps the user understand what intelligence is available for downstream skills. If context exists but downstream skills haven't been run yet, highlight this: "N context entries from ingested documents are ready — these will automatically inform propositions, solutions, and other skills."
 - **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase
 - **Gaps** — if `missing_propositions` is non-empty, list the first few missing pairs; note incomplete solutions/competitors/customers. If `excluded_pairs` is non-empty, note excluded pairs are intentional: "N Feature x Market pairs are excluded (not relevant)." If all gaps are accounted for by exclusions, say so rather than listing missing pairs.

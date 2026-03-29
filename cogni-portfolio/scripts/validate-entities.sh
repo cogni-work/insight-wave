@@ -163,6 +163,35 @@ for f in glob.glob('$PROJECT_DIR/features/*.json'):
 " 2>/dev/null)
 fi
 
+# Validate feature purpose field (optional -- only checked when present)
+if [ -d "$PROJECT_DIR/features" ]; then
+  while IFS='|' read -r slug msg; do
+    add_warning "feature" "$slug" "$msg"
+  done < <(python3 -c "
+import json, os, glob
+for f in glob.glob('$PROJECT_DIR/features/*.json'):
+    try:
+        d = json.load(open(f))
+        slug = os.path.basename(f)[:-5]
+        purpose = d.get('purpose', '')
+        if not purpose:
+            continue
+        if not isinstance(purpose, str) or not purpose.strip():
+            print(f'{slug}|purpose field is present but empty')
+            continue
+        words = purpose.strip().split()
+        if len(words) < 5:
+            print(f'{slug}|purpose has only {len(words)} words (target is 5-12 words)')
+        elif len(words) > 12:
+            print(f'{slug}|purpose has {len(words)} words (target is 5-12 words)')
+        name = d.get('name', '').strip().lower()
+        if purpose.strip().lower() == name:
+            print(f'{slug}|purpose is identical to name -- purpose should add information beyond the label')
+    except Exception:
+        pass
+" 2>/dev/null)
+fi
+
 # Warn on singleton categories (possible typos)
 if [ -d "$PROJECT_DIR/features" ]; then
   while IFS='|' read -r slug msg; do

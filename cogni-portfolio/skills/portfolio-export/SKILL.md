@@ -127,7 +127,7 @@ Structured spreadsheet with all portfolio data for analysis and sharing.
 
 **Sheets**:
 - **Products**: All products with positioning, pricing tier, and maturity
-- **Features**: All features with descriptions, categories, and parent product — ordered by sort_order ascending within each product (features without sort_order last, then alphabetically by slug)
+- **Features**: All features with purpose (when present), descriptions, categories, and parent product — ordered by sort_order ascending within each product (features without sort_order last, then alphabetically by slug). The Purpose column appears between Name and Description.
 - **Markets**: All markets with segmentation and TAM/SAM/SOM — ordered by sort_order ascending (markets without sort_order last, then alphabetically by slug)
 - **Proposition Matrix**: Feature x Market grid with IS/DOES/MEANS, grouped by product — within each product, order features by sort_order ascending; market columns ordered by sort_order ascending
 - **Packages**: All packages with product, market, tier names, included solutions per tier, pricing, and bundle savings

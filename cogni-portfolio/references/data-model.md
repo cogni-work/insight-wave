@@ -135,6 +135,7 @@ A feature is market-independent. It describes what the product/service IS. Each 
   "slug": "cloud-monitoring",
   "product_slug": "cloud-platform",
   "name": "Cloud Infrastructure Monitoring",
+  "purpose": "Real-time visibility into cloud health and incidents",
   "description": "Real-time monitoring of cloud infrastructure with automated alerting.",
   "category": "observability",
   "readiness": "ga",
@@ -157,7 +158,26 @@ A feature is market-independent. It describes what the product/service IS. Each 
 ```
 
 Required fields: `slug`, `product_slug`, `name`, `description`
-Optional fields: `category`, `readiness`, `taxonomy_mapping`, `sort_order`, `excluded_markets`, `source_file`, `created`, `updated`
+Strongly recommended fields: `purpose`, `readiness`, `sort_order`, `taxonomy_mapping`
+Optional fields: `category`, `excluded_markets`, `source_file`, `created`, `updated`
+
+`purpose` (string, 5-12 words): A customer-readable statement answering "What is this feature FOR?" — the problem it solves or the capability it provides, in language suitable for architecture diagrams, portfolio overviews, and customer conversations. Sits between `name` (label) and `description` (mechanism) in the messaging hierarchy:
+
+| Field | Answers | Audience | Length |
+|-------|---------|----------|--------|
+| `name` | "What is this called?" | Everyone | 2-5 words |
+| `purpose` | "What is this for?" | Customer-facing | 5-12 words |
+| `description` | "How does this work?" | Strategist | 15-35 words |
+
+Writing pattern: `[Core-capability-noun] for/of [problem-domain]` — e.g., "Why-Change Pitches for target accounts", "Feature×Market value proposition matrix". The test: could you use this as a subtitle under the feature name in an architecture diagram, and would a customer immediately understand what the feature is about?
+
+Purpose anti-patterns to avoid:
+- Mechanism language ("LLM-gestützte Analyse von...") — belongs in `description`
+- Market-specific language ("für KMU im DACH-Raum") — belongs in propositions
+- Outcome/benefit language ("Reduces time-to-market by...") — belongs in MEANS
+- Restating the `name` — purpose must add information beyond the label
+
+Skills that consume `purpose` fall back to `name` when `purpose` is absent.
 
 Valid `readiness` values: `ga` (generally available), `beta` (limited availability / pilot), `planned` (roadmap only)
 

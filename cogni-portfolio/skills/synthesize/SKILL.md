@@ -76,7 +76,7 @@ Write `output/README.md` as the main messaging repository. The structure is desi
 [For each product:]
 ### [Product Name]
 #### Features
-[Table of features belonging to this product, ordered by sort_order ascending — features without sort_order last, then alphabetically by slug. Include IS descriptions.]
+[Table of features belonging to this product, ordered by sort_order ascending — features without sort_order last, then alphabetically by slug. When a feature has a `purpose` field, show it between the name and description. Include IS descriptions.]
 
 ## Target Markets
 [For each market: description, segmentation, TAM/SAM/SOM summary]

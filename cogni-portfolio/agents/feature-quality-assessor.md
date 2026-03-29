@@ -42,7 +42,7 @@ against five quality dimensions. Return structured JSON output.
 ## Input
 
 You will receive a project directory path. Read all `features/*.json` files.
-Each feature has: `name`, `description`, `slug`, `product_slug`, and optionally `category`.
+Each feature has: `name`, `description`, `slug`, `product_slug`, and optionally `purpose`, `category`.
 
 ## Quality Dimensions
 
@@ -94,6 +94,18 @@ Also flag number-stuffing as a conciseness anti-pattern — descriptions that li
 
 Also flag structural density — descriptions that pass the word count but pack multiple parallel components separated by commas. A 30-word description listing 5 components is concise by count but dense by structure. When this co-occurs with a mechanism_clarity warn/fail for feature-density, escalate conciseness to at least warn.
 
+### 6. Purpose Clarity (conditional — only assess when `purpose` field is present)
+
+The `purpose` field answers "What is this feature FOR?" in 5-12 customer-readable words. It sits between the feature `name` (label) and `description` (mechanism) — more informative than a name, more accessible than a technical description. It appears as a subtitle in architecture diagrams and portfolio overviews.
+
+**Only assess this dimension when the feature JSON contains a `purpose` field.** When `purpose` is absent, omit this dimension from the output entirely — it does not affect the overall score.
+
+Use the Bash tool to count words in the purpose, just like for descriptions.
+
+- **Pass**: 5-12 words, customer-readable (a buyer would understand it without technical context), adds meaningful information beyond the `name`, and stays in "what is this for" territory without drifting into mechanism detail or market-specific language
+- **Warn**: Present but reads like a mechanism description (IS-layer leak, e.g., "LLM-gestützte Pipeline für dreistufige Analyse"), OR is near-identical to the `name` (adds no information), OR outside 5-12 words (3-4 or 13-15 words)
+- **Fail**: Contains market-specific language ("für KMU im DACH-Raum") or outcome/benefit language ("reduces cost by 40%") that belongs in propositions, OR <3 or >15 words
+
 ## Output Format
 
 Return ONLY valid JSON (no markdown fencing, no explanation before or after):
@@ -114,7 +126,8 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
         "scope_mece": {"score": "pass", "note": ""},
         "differentiation": {"score": "warn", "note": "Generic monitoring claim — specify what makes detection unique"},
         "language_quality": {"score": "pass", "note": ""},
-        "conciseness": {"score": "pass", "note": ""}
+        "conciseness": {"score": "pass", "note": ""},
+        "purpose_clarity": {"score": "pass", "note": ""}
       },
       "suggestion": "Add specifics about detection method to stand out from generic APM tools"
     }
@@ -123,9 +136,11 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
 ```
 
 Rules for `overall`:
-- **pass**: All five dimensions pass
+- **pass**: All assessed dimensions pass
 - **warn**: Any warns but no fails, OR exactly one fail
 - **fail**: Two or more fails
+
+The `purpose_clarity` dimension is only included when the feature has a `purpose` field. When absent, omit the key from `dimensions` entirely — the overall score is computed from the five core dimensions only. When present, it participates in the overall score like any other dimension.
 
 Only include `note` when the score is warn or fail — leave empty string for pass.
 Only include `suggestion` when overall is warn or fail — leave empty string for pass.

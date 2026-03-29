@@ -61,9 +61,11 @@ Draw from product description and positioning fields.}
 
 **Key capabilities:**
 
-{For each feature belonging to this product (ordered by sort_order), transform the IS
-description into a customer-facing capability statement. Focus on what the capability
-enables for the buyer, not what it technically is.
+{For each feature belonging to this product (ordered by sort_order), transform into a
+customer-facing capability statement. When the feature has a `purpose` field, use it as
+the lead — it is already customer-readable. Supplement with the IS description for depth.
+When purpose is absent, transform the IS description into customer-facing language.
+Focus on what the capability enables for the buyer, not what it technically is.
 
 Format as a brief list — each capability gets 1-2 sentences maximum.
 If packages exist for this product, group capabilities by package tier

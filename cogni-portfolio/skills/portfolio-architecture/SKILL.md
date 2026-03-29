@@ -17,8 +17,9 @@ Generate an interactive Excalidraw diagram that visualizes the product-feature h
 ## When This Skill Adds Value
 
 - After defining or restructuring products — see the full hierarchy at a glance
-- After shaping features — verify grouping, coverage, and readiness distribution
+- After shaping features — verify grouping, coverage, and readiness distribution. Architecture review is a natural checkpoint between features and propositions: visual review surfaces structural issues that are expensive to fix after propositions exist
 - During portfolio review — spot gaps (empty products), orphaned features, or imbalanced distribution
+- When preparing customer-facing materials — the diagram with purpose subtitles serves as a portfolio overview for customers
 - When other skills offer "view the architecture diagram" at review checkpoints
 
 ## Workflow
@@ -52,7 +53,7 @@ Read all `products/*.json` and `features/*.json` from the project directory.
 
 Build two data structures:
 - **products**: array of `{slug, name, maturity, revenue_model}` sorted by name
-- **features_by_product**: map of `product_slug` → array of `{slug, name, readiness, sort_order}` sorted by `sort_order` then by slug
+- **features_by_product**: map of `product_slug` → array of `{slug, name, purpose, readiness, sort_order}` sorted by `sort_order` then by slug
 
 **Important**: Ignore the `category` field on features. Features appear directly inside their product — no category sub-groupings.
 
@@ -71,7 +72,7 @@ For fresh generation, call `clear_canvas` first.
 | Product gap | 40px horizontal |
 | Product header height | 60px (name + metadata) |
 | Feature width | 260px (20px inset each side) |
-| Feature height | 40px |
+| Feature height | 56px when any feature in project has `purpose`, otherwise 40px |
 | Feature gap | 12px vertical |
 | Feature top margin | 20px below header |
 
@@ -86,11 +87,13 @@ Product at index `i`:
 
 #### Feature Position
 
+Determine `feature_height` once for the project: if any feature across all products has a `purpose` field, use 56px; otherwise use 40px. This keeps all feature rectangles the same height for visual consistency.
+
 Feature at index `j` inside product at index `i`:
 - `x = product_x + 20`
-- `y = product_y + 60 + 20 + j × (40 + 12)`
+- `y = product_y + 60 + 20 + j × (feature_height + 12)`
 - `width = 260`
-- `height = 40`
+- `height = feature_height`
 
 #### Color Scheme
 
@@ -113,7 +116,8 @@ For each product, create these elements via `batch_create_elements`:
 3. **Product metadata** — `type: "text"`, `fontSize: 14`, maturity + revenue_model below name, color `#64748b`, `id: "product-meta-{slug}"`
 4. For each feature:
    - **Feature rectangle** — `type: "rectangle"`, colored by readiness, `id: "feature-{slug}"`
-   - **Feature label** — `type: "text"`, `fontSize: 16`, centered in rectangle, `id: "feature-label-{slug}"`
+   - **Feature label** — `type: "text"`, `fontSize: 16`, vertically centered at `y + 8` when purpose exists or vertically centered when absent, `id: "feature-label-{slug}"`
+   - **Feature purpose** (when `purpose` field exists) — `type: "text"`, `fontSize: 12`, color `#64748b`, positioned at `y + 30` within the feature rectangle, `id: "feature-purpose-{slug}"`. When `purpose` is absent, omit this element.
 
 After creating all elements for one product, call `group_elements(elementIds=[...])`.
 
@@ -154,12 +158,21 @@ Ask the user: "Would you like to make any changes, or shall I save the diagram?"
 3. Optionally call `export_to_excalidraw_url` for a shareable link
 4. Confirm save path to the user
 
-### 8. Offer Next Steps
+### 8. Offer Context-Aware Next Steps
 
+Run `$CLAUDE_PLUGIN_ROOT/scripts/project-status.sh <project-dir>` to determine project state. Then present a context-aware menu — always offer the core options, plus conditional options based on data:
+
+**Always available:**
 - **(a) Refine products** — delegate to the `products` skill
 - **(b) Refine features** — delegate to the `features` skill
 - **(c) Open the dashboard** — delegate to the `dashboard-refresher` agent
 - **(d) Done** — diagram saved at `output/architecture.excalidraw`
+
+**Conditional (show when relevant):**
+- **Add purpose statements** — when >50% of GA features lack a `purpose` field. Say: "X of Y features are missing purpose statements. Adding them would make this diagram more informative for customers. Want me to draft them?" Delegate to the `features` skill.
+- **Run quality check** — when any features have warn/fail quality status. Delegate to the `features` skill quality completion gate.
+- **Generate propositions** — when Feature×Market pairs are missing propositions. Delegate to the `propositions` skill.
+- **Resume portfolio** — when the project has entities beyond features. Delegate to the `portfolio-resume` skill for a full status overview.
 
 ## Important Notes
 

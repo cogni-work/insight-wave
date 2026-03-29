@@ -138,6 +138,30 @@ Both avoid outcome language. But the second names the mechanism a buyer would re
 
 **Apply the proposition leak test.** After writing a feature description, scan it for language that answers "who benefits?" or "what changes for the buyer?" If any sentence passes that test, it has leaked from proposition territory into the feature. Extract it — it will be valuable later when crafting propositions, but it dilutes the feature description now.
 
+### Purpose Statement (Strongly Recommended)
+
+After writing the description, draft a **purpose** statement for each feature. The purpose answers "What is this feature FOR?" in **5-12 customer-readable words** — the subtitle you would put under the feature name in an architecture diagram or portfolio overview. It bridges the gap between the feature `name` (too terse for context) and the `description` (too mechanism-focused for customers).
+
+**Writing pattern**: `[Core-capability-noun] for/of [problem-domain]`
+
+Examples:
+- "Why-Change Pitches für Zielkunden" (cogni-sales)
+- "Feature×Market Wertaussagen-Matrix" (cogni-portfolio)
+- "Echtzeit-Überwachung der Cloud-Infrastruktur" (cloud-monitoring)
+- "Strukturierte Beratungsprojekte nach Double Diamond" (cogni-consulting)
+
+The test: could you use this as a subtitle in an architecture diagram, and would a customer immediately understand what the feature is about? If yes, it is a good purpose.
+
+**Self-check before saving each purpose:**
+- Does it differ from the `name`? → Purpose must add information beyond the label
+- Does it differ from the first clause of the `description`? → Purpose is customer-facing, not mechanism-focused
+- Is it 5-12 words? → If you need more, you are writing a description
+- Does it avoid mechanism language? → "LLM-gestützte Pipeline" belongs in description
+- Does it avoid market-specific language? → "für KMU im DACH-Raum" belongs in propositions
+- Does it avoid outcome language? → "Reduces time-to-market" belongs in MEANS
+
+Skills that consume `purpose` (architecture diagrams, dashboards, customer narratives, export) fall back to `name` when purpose is absent. Adding purpose now saves rework when generating customer-facing materials later.
+
 ### Building Your Recommendation
 
 After analyzing the product, present your proposed feature set with a consulting perspective:
@@ -164,6 +188,7 @@ Once you and the user agree on the feature set, structure each feature:
   "slug": "cloud-monitoring",
   "product_slug": "cloud-platform",
   "name": "Cloud Infrastructure Monitoring",
+  "purpose": "Real-time visibility into cloud health and incidents",
   "description": "Monitors cloud infrastructure — servers, containers, networks — in real time, correlates metrics across layers, and triggers automated alerts on threshold violations.",
   "category": "observability",
   "taxonomy_mapping": {
@@ -177,7 +202,7 @@ Once you and the user agree on the feature set, structure each feature:
 }
 ```
 
-Required: `slug`, `product_slug`, `name`, `description`. Strongly recommended (fill on every feature): `taxonomy_mapping` (with `dimension`, `category_id`, `category_name`), `readiness` (`ga`/`beta`/`planned`), `sort_order`. Optional: `category`, `excluded_markets`, `created`, `updated`.
+Required: `slug`, `product_slug`, `name`, `description`. Strongly recommended (fill on every feature): `purpose` (5-12 words, customer-readable "what is this for"), `taxonomy_mapping` (with `dimension`, `category_id`, `category_name`), `readiness` (`ga`/`beta`/`planned`), `sort_order`. Optional: `category`, `excluded_markets`, `created`, `updated`.
 
 Valid `readiness` values: `ga` (generally available), `beta` (limited availability / pilot), `planned` (roadmap only, not yet built).
 
@@ -203,9 +228,9 @@ When presenting your feature recommendation, propose sort_order values and expla
 
 Present the proposed features as a table with your consulting commentary:
 
-| Sort | Slug | Product | Name | Category |
-|---:|---|---|---|---|
-| 10 | cloud-monitoring | cloud-platform | Cloud Infrastructure Monitoring | observability |
+| Sort | Slug | Product | Name | Purpose | Category |
+|---:|---|---|---|---|---|
+| 10 | cloud-monitoring | cloud-platform | Cloud Infrastructure Monitoring | Real-time visibility into cloud health and incidents | observability |
 
 Then deliver your assessment — not as a checklist but as a coherent perspective on the feature set's strengths, gaps, and what to prioritize next. End with a clear recommendation: "Build propositions for X and Y first, because they carry your differentiation."
 
@@ -244,7 +269,9 @@ Do NOT trigger after single-feature edits or minor metadata changes — those ru
 
 5. **After fixes, re-run the assessor** on changed features to confirm improvement. If any features still have flag status after one fix round, surface them to the user with a clear explanation: "This feature still has [issue]. Here is my best suggestion — would you like to apply it, rewrite it yourself, or accept the current quality level?"
 
-6. **Review checkpoint — present material before stakeholder review.** Before launching the stakeholder review, pause and give the user the opportunity to read what was produced. This is a mandatory interaction point — do not auto-continue into the stakeholder review.
+6. **Purpose coverage check.** After quality fixes, check how many GA features have a `purpose` field. If more than half lack purpose and the user plans to use customer-facing outputs (architecture diagrams, communicate, export), recommend adding purpose statements now: "X of Y features are missing a purpose statement. Adding them now will make architecture diagrams and customer narratives more informative. Want me to draft purpose statements for the missing features?"
+
+7. **Review checkpoint — present material before stakeholder review.** Before launching the stakeholder review, pause and give the user the opportunity to read what was produced. This is a mandatory interaction point — do not auto-continue into the stakeholder review.
 
    Present a concise milestone summary:
    - How many features were created/updated, how many passed quality assessment

@@ -47,7 +47,8 @@ Your job is to:
 1. Understand exactly which quality dimensions are weak and why
 2. Research the company to find specific information that addresses those gaps
 3. Draft an improved description using what you found
-4. Return structured JSON with the original, proposed replacement, and evidence
+4. For features: also draft or improve the `purpose` field (5-12 customer-readable words answering "what is this for?") if it is missing or weak. Purpose is distinct from description — it is customer-facing, not mechanism-focused.
+5. Return structured JSON with the original, proposed replacement, and evidence
 
 ## Input
 
@@ -200,10 +201,12 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
   "entity_type": "feature",
   "slug": "api-gateway",
   "original": {
-    "description": "API Gateway for routing API traffic."
+    "description": "API Gateway for routing API traffic.",
+    "purpose": ""
   },
   "proposed": {
-    "description": "Routes, authenticates, and rate-limits API traffic across microservices using a policy-driven sidecar proxy with sub-millisecond latency overhead."
+    "description": "Routes, authenticates, and rate-limits API traffic across microservices using a policy-driven sidecar proxy with sub-millisecond latency overhead.",
+    "purpose": "Secure API traffic management for microservices"
   },
   "dimensions_addressed": ["mechanism_clarity", "differentiation"],
   "evidence": [

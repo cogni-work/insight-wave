@@ -515,6 +515,58 @@ else:
 " 2>/dev/null || echo 'COMMUNICATE_STALE=false')"
 fi
 
+# Detect architecture diagram existence and staleness
+HAS_ARCHITECTURE="false"
+ARCHITECTURE_STALE="false"
+ARCHITECTURE_STALE_REASON=""
+if [ -f "$PROJECT_DIR/output/architecture.excalidraw" ]; then
+  HAS_ARCHITECTURE="true"
+  eval "$(python3 -c "
+import os, glob
+
+proj = '$PROJECT_DIR'
+arch_mtime = os.path.getmtime(os.path.join(proj, 'output', 'architecture.excalidraw'))
+
+# Find newest upstream file across products and features
+newest_upstream = 0
+newest_source = ''
+for label, pattern in {'products': os.path.join(proj, 'products', '*.json'),
+                       'features': os.path.join(proj, 'features', '*.json')}.items():
+    for f in glob.glob(pattern):
+        mt = os.path.getmtime(f)
+        if mt > newest_upstream:
+            newest_upstream = mt
+            newest_source = label + '/' + os.path.basename(f)
+
+if newest_upstream > arch_mtime:
+    print('ARCHITECTURE_STALE=true')
+    print('ARCHITECTURE_STALE_REASON=' + repr(newest_source + ' modified after architecture diagram was generated'))
+else:
+    print('ARCHITECTURE_STALE=false')
+" 2>/dev/null || echo 'ARCHITECTURE_STALE=false')"
+fi
+
+# Count features with purpose field
+PURPOSE_TOTAL=0
+PURPOSE_WITH=0
+if [ -d "$PROJECT_DIR/features" ]; then
+  eval "$(python3 -c "
+import json, os, glob
+total = 0
+with_purpose = 0
+for f in glob.glob('$PROJECT_DIR/features/*.json'):
+    try:
+        d = json.load(open(f))
+        total += 1
+        if d.get('purpose', '').strip():
+            with_purpose += 1
+    except Exception:
+        pass
+print(f'PURPOSE_TOTAL={total}')
+print(f'PURPOSE_WITH={with_purpose}')
+" 2>/dev/null || echo 'PURPOSE_TOTAL=0'; echo 'PURPOSE_WITH=0')"
+fi
+
 # Count unprocessed uploads (exclude processed/ subdirectory)
 UPLOADS=0
 if [ -d "$PROJECT_DIR/uploads" ]; then
@@ -594,6 +646,16 @@ fi
 # Recommend communicate refresh when stale (phase-independent)
 if [ "$COMMUNICATE_STALE" = "true" ]; then
   add_action "communicate" "Communicate files may be stale — $COMMUNICATE_STALE_REASON"
+fi
+
+# Recommend architecture refresh when stale (phase-independent)
+if [ "$ARCHITECTURE_STALE" = "true" ]; then
+  add_action "portfolio-architecture" "Architecture diagram may be stale — $ARCHITECTURE_STALE_REASON"
+fi
+
+# Recommend adding purpose statements when coverage is low (phase-independent)
+if [ "$PURPOSE_TOTAL" -gt 0 ] && [ "$PURPOSE_WITH" -lt "$((PURPOSE_TOTAL / 2))" ]; then
+  add_action "features" "$PURPOSE_WITH of $PURPOSE_TOTAL features have purpose statements — add purpose to improve architecture diagrams and customer narratives"
 fi
 
 # Note available context entries (informational, phase-independent)
@@ -915,6 +977,15 @@ cat << EOF
     "rejected": $COMMUNICATE_REJECTED,
     "stale": $COMMUNICATE_STALE,
     "stale_reason": "$COMMUNICATE_STALE_REASON"
+  },
+  "architecture": {
+    "exists": $HAS_ARCHITECTURE,
+    "stale": $ARCHITECTURE_STALE,
+    "stale_reason": "$ARCHITECTURE_STALE_REASON"
+  },
+  "purpose_coverage": {
+    "total_features": $PURPOSE_TOTAL,
+    "with_purpose": $PURPOSE_WITH
   }
 }
 EOF

@@ -243,13 +243,15 @@ indicate overlap or insufficient scoping. Each feature should produce a distinct
 - **Fail**: 2+ features would blur together in a demo — a buyer would ask what the difference is
 
 #### 4. Value-at-a-Glance (15%)
-Does the feature name + first phrase of the description communicate the capability within
-3 seconds? In a pitch deck or demo agenda, the consultant has moments to signal why this
-capability matters. Names and descriptions that require explanation before they make sense
-create friction.
+Does the feature communicate its value within 3 seconds? In a pitch deck, architecture diagram,
+or demo agenda, the consultant has moments to signal why this capability matters. When a feature
+has a `purpose` field, assess whether name + purpose together communicate the capability
+immediately. When purpose is absent, assess name + first phrase of description. Features with
+a clear purpose statement naturally score higher here — the purpose is designed for exactly
+this use case.
 
-- **Pass**: Name + opening phrase communicates the capability immediately
-- **Warn**: Name is clear but description requires full reading to understand
+- **Pass**: Name + purpose (or opening description phrase) communicates the capability immediately
+- **Warn**: Name is clear but requires reading the full description to understand value. Note: if the feature lacks a `purpose` field and would benefit from one, mention this in the note.
 - **Fail**: Name and opening are opaque — the consultant would need to explain before showing
 
 #### 5. Cross-Feature Narrative (10%)
