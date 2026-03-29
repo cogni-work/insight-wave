@@ -70,14 +70,6 @@ Or with theme fallback:
 python3 $CLAUDE_PLUGIN_ROOT/skills/portfolio-dashboard/scripts/generate-dashboard.py "<project_dir>" --theme "<path-to-theme.md>"
 ```
 
-### 2b. Regenerate Architecture Diagram
-
-Also regenerate the architecture diagram (non-blocking — dashboard takes priority):
-
-```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/generate-architecture-diagram.sh "<project_dir>" || true
-```
-
 ### 3. Handle Result
 
 - **On success** (exit code 0): proceed to step 4.

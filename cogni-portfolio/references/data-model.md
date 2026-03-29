@@ -27,7 +27,7 @@ cogni-portfolio/{project-slug}/
 │   └── {source-slug}--{seq}.json           # Individual context entries
 ├── uploads/                                # Source documents for ingestion
 ├── output/                                 # Generated exports (proposals, briefs, XLSX)
-│   ├── architecture.md                    # Product-feature architecture diagram (mermaid)
+│   ├── architecture.excalidraw            # Product-feature architecture diagram (Excalidraw)
 │   ├── dashboard.html                     # Interactive portfolio dashboard (HTML)
 │   └── README.md                          # Synthesized messaging repository
 └── research/                               # Portfolio scan artifacts (when scan is used)
