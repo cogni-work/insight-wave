@@ -71,7 +71,7 @@ It also creates data directories for each registered plugin under the workspace 
 
 Pass the plugins argument as either a JSON string or a path to a JSON file containing the plugin array from the discovery step.
 
-### 5. Install Output Styles and Theme Template
+### 5. Install Output Styles, CLAUDE.md Templates, and Theme Template
 
 Copy the language-appropriate output-style file. These files contain behavioral anchors that shape Claude's communication patterns in this workspace:
 
@@ -80,7 +80,21 @@ cp "${CLAUDE_PLUGIN_ROOT}/assets/output-styles/workspace-${LANGUAGE}.md" \
    "${TARGET_DIR}/.claude/output-styles/"
 ```
 
-Create the `output-styles` directory first if needed. Then copy the theme template:
+Copy the language-specific CLAUDE.md template to the workspace root and to the templates directory (used by the Obsidian Terminal launcher for per-session language switching):
+
+```bash
+cp "${CLAUDE_PLUGIN_ROOT}/assets/claude-templates/CLAUDE.${LANGUAGE}.md" \
+   "${TARGET_DIR}/CLAUDE.md"
+
+mkdir -p "${TARGET_DIR}/.claude/templates"
+cp "${CLAUDE_PLUGIN_ROOT}/assets/claude-templates/CLAUDE.en.md" \
+   "${CLAUDE_PLUGIN_ROOT}/assets/claude-templates/CLAUDE.de.md" \
+   "${TARGET_DIR}/.claude/templates/"
+```
+
+The CLAUDE.md at workspace root ensures Claude uses the correct language and orthography (including umlauts for German). The templates directory enables the Obsidian launcher to switch languages per session.
+
+Create the `output-styles` and `templates` directories first if needed. Then copy the theme template:
 
 ```bash
 cp -r "${CLAUDE_PLUGIN_ROOT}/themes/_template/" \
