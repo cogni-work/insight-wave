@@ -130,6 +130,8 @@ Set `created` to today's date. Include `"source_file": "<filename>"` in each ent
 
 For features, ensure `product_slug` references a valid product. If a referenced product doesn't exist yet, propose creating it first or ask the user to assign a different product.
 
+For each feature, draft a `purpose` field (5-12 words): a customer-readable statement answering "what is this feature FOR?" — the problem it solves or capability it provides. Derive purpose from the source document's context (e.g., section headings, executive summaries, or capability descriptions that frame the feature's value).
+
 Assign `sort_order` to each feature following the value-to-utility spectrum: customer-facing value features get low numbers (10, 20, 30...), infrastructure/utility features get high numbers (70+). Use increments of 10 to leave room for insertions. This controls display ordering in the dashboard and reports.
 
 ### 7. Write Context Entry Files

@@ -51,7 +51,7 @@ You receive one feature along with its product and company context. Your job is 
 ## Input
 
 You will receive via the task prompt:
-- **Feature JSON**: the feature to research (slug, name, description, category, product_slug)
+- **Feature JSON**: the feature to research (slug, name, purpose, description, category, product_slug)
 - **Company context**: company name, domain/website URL, regional_url, language, industry
 - **Product context**: product name, product description
 - **Sibling features**: names and slugs of other features in the same product (for portfolio positioning)
@@ -177,10 +177,11 @@ Compile:
 
 ### 4. Description Assessment
 
-Compare the current feature description against what the competitive landscape reveals:
+Compare the current feature description (and `purpose` if present) against what the competitive landscape reveals:
 - **Competitive gap**: what competitors emphasize that the current description doesn't address
 - **Language alignment**: does the description use buyer language or internal jargon?
 - **Differentiation potential**: does the description leverage the strongest differentiation vector?
+- **Purpose alignment**: if the feature has a `purpose` field, does it accurately reflect the buyer-facing capability? If no purpose exists, propose one (5-12 words, customer-readable, answers "what is this for?").
 
 Propose 2 positioning directions with rationale and a seed phrase for each:
 - One emphasizing **technical depth** (lead with the specific mechanism)
@@ -244,6 +245,8 @@ use `buyer_perception`, not `buyer_language` or `buyer_evaluation_criteria`).
     "evaluation_criteria": ["What buyers compare when selecting — the RFP checklist"]
   },
   "description_assessment": {
+    "current_purpose": "The feature's current purpose text (null if absent)",
+    "proposed_purpose": "Proposed purpose statement (5-12 words) — only if missing or weak",
     "current_description": "The feature's current description text",
     "competitive_gap": "What competitors address that the current description doesn't",
     "language_alignment": "high|medium|low",

@@ -151,6 +151,7 @@ For each confirmed entity, write JSON following the schemas in `$CLAUDE_PLUGIN_R
 **Features** — write to `features/{slug}.json`:
 - Set `readiness: "planned"` (not yet built) unless the canvas indicates otherwise
 - Set `product_slug` to the parent product
+- Draft a `purpose` field (5-12 words): a customer-readable statement answering "what is this feature FOR?" — the problem it solves or the capability it provides. Purpose sits between name (label) and description (mechanism). Example: name "Cloud Monitoring", purpose "Real-time visibility into cloud health and incidents".
 - Write market-independent IS-layer descriptions (what it IS, not what it does for a specific segment)
 - Assign `sort_order` following the value-to-utility spectrum: customer-facing value features get low numbers (10, 20, 30...), infrastructure/utility features get high numbers (70+). Use increments of 10.
 

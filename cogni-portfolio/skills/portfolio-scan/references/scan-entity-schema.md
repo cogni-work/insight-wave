@@ -34,6 +34,7 @@ When importing offerings as portfolio features (Phase 7), map fields as follows:
 | Offering Field | Feature Field | Notes |
 |---|---|---|
 | Name | `name` + `slug` (kebab-case) | Slug derived from name |
+| — | `purpose` | Derived: 5-12 word customer-readable statement of what the feature is FOR (from web copy context) |
 | Description | `description` | Direct mapping |
 | Category ID | `taxonomy_mapping.category_id` | From taxonomy classification |
 | Dimension | `taxonomy_mapping.dimension` | First digit of category ID |

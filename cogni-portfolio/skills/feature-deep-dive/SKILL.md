@@ -159,7 +159,7 @@ Delegate broad web research to the `feature-deep-diver` agent via the Agent tool
 
 ### What to send the agent:
 
-- Full feature JSON (slug, name, description, category, product_slug)
+- Full feature JSON (slug, name, purpose, description, category, product_slug)
 - Company context from `portfolio.json`: company name, domain, regional_url (derive from domain + language), language, industry
 - Product context: product name, product description
 - Sibling feature slugs and names (for cross-feature positioning context)
@@ -273,6 +273,7 @@ Which direction resonates more with how you talk to buyers? Or is there a third 
 
    | | Current | Proposed |
    |---|---|---|
+   | Purpose | "[current or —]" | "[proposed]" |
    | Description | "[current]" | "[proposed]" |
    | Word count | N | N |
    | Anchor-How-Diff | [assessment] | [assessment] |
@@ -311,6 +312,8 @@ When the user accepts a description:
 ### 1. Update the feature file
 
 Write the improved description to `features/{slug}.json`. Set `updated` to today's date.
+
+If the research report includes a `proposed_purpose` (or the co-creation dialogue surfaced a better purpose), update or add the `purpose` field too. If the feature had no purpose before, draft one (5-12 words, customer-readable, answers "what is this for?") and present it alongside the description for user approval.
 
 ### 2. Research report
 

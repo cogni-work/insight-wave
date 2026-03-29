@@ -350,6 +350,8 @@ For each confirmed offering, generate a feature entity. The template maps:
 
 See [references/scan-entity-schema.md](references/scan-entity-schema.md) for the complete offering-to-feature field mapping.
 
+**Feature purpose (strongly recommended):** Draft a `purpose` field (5-12 words) for each feature — a customer-readable statement answering "what is this feature FOR?". Derive purpose from the offering's web copy, focusing on the problem it solves or capability it provides. Purpose sits between name (label) and description (mechanism) and is used in architecture diagrams, dashboards, and customer narratives.
+
 **Feature description quality (IS-layer):** The `description` field is an IS-layer statement — it describes the mechanism of WHAT the offering is, not what it achieves. Feature descriptions flow directly into downstream proposition generation, so quality here prevents rework later. Each description must:
 - Be **20-35 words** (not shorter — a 10-word description lacks the specificity downstream skills need)
 - Describe the **mechanism** — what the offering technically IS and how it works, not what outcome it delivers

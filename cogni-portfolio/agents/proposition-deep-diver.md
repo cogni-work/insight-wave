@@ -57,7 +57,7 @@ Your job is to:
 
 You will receive via the task prompt:
 - **Proposition JSON**: the proposition to research (slug, feature_slug, market_slug, is/does/means_statement, evidence)
-- **Feature JSON**: parent feature (slug, name, description, category, product_slug)
+- **Feature JSON**: parent feature (slug, name, purpose, description, category, product_slug)
 - **Market JSON**: target market (slug, name, description, region, segmentation, pain_points)
 - **Company context**: company name, domain/website URL, regional_url, language, industry
 - **Product context**: product name, product description, pricing_tier

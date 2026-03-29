@@ -37,7 +37,7 @@ The task prompt that spawned you includes a `plugin_root` path. Wherever these i
 
 Read these files to build a complete picture before drafting:
 
-1. **Feature JSON** at the path provided in the task -- this is the IS layer
+1. **Feature JSON** at the path provided in the task -- this is the IS layer. Note the `purpose` field (when present) — it answers "what is this feature FOR?" in 5-12 customer-readable words and bridges the gap between the feature name and its mechanism description. Use it to orient yourself on the buyer's perspective before drafting.
 2. **Parent product JSON** at `products/{product_slug}.json` (using `product_slug` from the feature) -- positioning and pricing tier inform tone
 3. **Market JSON** at the path provided in the task -- segmentation and pain points drive DOES/MEANS
 4. **portfolio.json** -- company context and strategic direction
