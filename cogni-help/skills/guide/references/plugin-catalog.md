@@ -35,6 +35,24 @@ orchestration that calls the right plugins at the right time.
 
 ---
 
+## cogni-docs
+
+**Purpose**: Documentation automation — drift detection, README generation, IS/DOES/MEANS
+power messaging, description synchronization, bridge-style root README, comprehensive
+docs/ directory, and CLAUDE.md developer guides.
+
+**Key commands**: `/doc-start` (guided entry point), `/doc-audit`, `/doc-generate`,
+`/doc-power`, `/doc-bridge`, `/doc-hub`, `/doc-sync`, `/doc-claude`
+
+**Use when**: User wants to document a repo, check documentation health, fix stale
+READMEs, improve plugin messaging, generate user documentation, or any generic "help
+me with docs" request. Always recommend `/doc-start` as the entry point — it scans,
+assesses, and recommends the right next step.
+
+**Works with**: cogni-copywriting (optional text polish via `--polish` flag)
+
+---
+
 ## cogni-copywriting
 
 **Purpose**: Document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR,

@@ -33,13 +33,14 @@ Keep in English regardless of language setting:
 
 ## Available Workflows
 
-Five bundled templates covering the most common plugin chains:
+Six bundled templates covering the most common plugin chains:
 
 | Workflow | Pipeline | Use case |
 |----------|----------|----------|
 | `research-to-slides` | research → narrative → visual | Analyst producing a presentation from research |
 | `trend-to-marketing` | tips → portfolio → marketing | GTM team turning trends into campaigns |
 | `portfolio-to-pitch` | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
+| `docs-pipeline` | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo |
 | `new-engagement` | consulting setup → 4 phases | Consultant starting a structured engagement |
 | `full-onboarding` | workspace → help courses 1-11 | New user learning the full ecosystem |
 
