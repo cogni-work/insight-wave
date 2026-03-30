@@ -202,7 +202,7 @@ Excalidraw, Pencil MCP, and PPTX rendering.
 **Purpose**: Lean workspace orchestrator. Manages shared foundation (env vars, settings),
 theme management, plugin discovery, and workspace health diagnostics.
 
-**Key commands**: `/init-workspace`, `/workspace-status`, `/pick-theme`, `/manage-themes`
+**Key commands**: `/manage-workspace`, `/workspace-status`, `/pick-theme`, `/manage-themes`
 
 **Use when**: User needs to initialize or maintain their insight-wave workspace, manage
 themes, or diagnose workspace configuration issues.

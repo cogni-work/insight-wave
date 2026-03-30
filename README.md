@@ -156,7 +156,7 @@ Or browse interactively with `/plugin` and go to the **Discover** tab.
 ### 3. Initialize your workspace
 
 ```
-/init-workspace
+/manage-workspace
 ```
 
 This runs dependency checks, discovers installed plugins, gathers your preferences, and generates shared settings. See the [getting started guide](docs/getting-started.md) for the full walkthrough.

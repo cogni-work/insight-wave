@@ -74,7 +74,7 @@ The guide skill reads your task description, consults the plugin catalog, and re
 
 ### `teach` — Interactive course delivery
 
-The teach skill delivers any of the 11 courses interactively. It tracks your progress per course and adapts pacing based on your responses.
+The teach skill delivers any of the 12 courses interactively. It tracks your progress per course and adapts pacing based on your responses.
 
 Start or resume a course by number:
 
@@ -206,7 +206,7 @@ Issue state is tracked locally in `cogni-issues/issues.json` in your project dir
 
 The course-deck skill generates PPTX slide decks for training sessions. Two modes:
 
-1. **Curriculum overview** — all 11 courses at a glance, for introducing the program to a group
+1. **Curriculum overview** — all 12 courses at a glance, for introducing the program to a group
 2. **Course introduction** — learning objectives, module breakdown, and prerequisites for a specific course
 
 ```
@@ -245,7 +245,7 @@ Before running any course involving plugin-specific work, ensure the workspace i
 
 Walk a new user through the full ecosystem:
 
-1. Run `init-workspace` from cogni-workspace to prepare the environment
+1. Run `manage-workspace` from cogni-workspace to prepare the environment
 2. Start `/teach 1` — Cowork Fundamentals covers the mental model and navigation
 3. Continue through `/teach 2` — Workspace and Obsidian for environment setup
 4. Use `/guide` to match their first real task to the right plugin

@@ -60,7 +60,7 @@ Install `cogni-workspace` first — it provides the shared foundation (environme
 Navigate to the directory where you want your workspace (a project folder or your home directory for a shared workspace), then run:
 
 ```
-/init-workspace
+/manage-workspace
 ```
 
 The skill walks you through four steps:

@@ -19,7 +19,7 @@ Output          cogni-narrative  cogni-copywriting  cogni-visual
                 cogni-sales      cogni-marketing
 ```
 
-**Foundation layer** (cogni-workspace) provides shared infrastructure: themes, environment variables, Obsidian vault configuration. Every plugin that produces visual HTML output reads theme files from cogni-workspace. No plugin writes to cogni-workspace except through the `pick-theme` and `init-workspace` skills.
+**Foundation layer** (cogni-workspace) provides shared infrastructure: themes, environment variables, Obsidian vault configuration. Every plugin that produces visual HTML output reads theme files from cogni-workspace. No plugin writes to cogni-workspace except through the `pick-theme` and `manage-workspace` skills.
 
 **Data layer** plugins each own a specialized knowledge domain:
 - cogni-portfolio owns product and market knowledge (features, propositions, competitors)

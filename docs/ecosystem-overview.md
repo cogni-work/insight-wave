@@ -16,7 +16,7 @@ The 12 plugins are grouped by the role they play in a typical engagement.
 |--------|-------------|
 | [cogni-workspace](../cogni-workspace/README.md) | Initializes the shared workspace: environment variables, plugin discovery, theme management, and Obsidian vault integration. Every other plugin depends on it. |
 
-Run `/init-workspace` once per project directory before using any other plugin.
+Run `/manage-workspace` once per project directory before using any other plugin.
 
 ### Research and Analysis
 
@@ -125,7 +125,7 @@ For the entity-level diagram see [er-diagram.md](er-diagram.md).
 
 All plugins depend on cogni-workspace for three shared concerns:
 
-**Environment variables.** `init-workspace` generates `.claude/settings.local.json`, which Claude Code auto-injects at session start. Plugins resolve sibling plugin paths via these variables rather than hardcoding paths.
+**Environment variables.** `manage-workspace` generates `.claude/settings.local.json`, which Claude Code auto-injects at session start. Plugins resolve sibling plugin paths via these variables rather than hardcoding paths.
 
 **Theme management.** Visual plugins (cogni-visual, cogni-narrative, cogni-marketing) call the `pick-theme` skill from cogni-workspace to resolve a brand theme. Themes live in `{workspace}/cogni-workspace/themes/` and are shared across all plugins that produce HTML or visual output.
 

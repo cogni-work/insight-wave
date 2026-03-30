@@ -51,7 +51,7 @@ tokens needed.
 
 **Cause**: Workspace not initialized, or `.workspace-env.sh` not sourced by session hook.
 
-**Fix**: Run `/init-workspace` to set up the workspace, or `/workspace-status` to
+**Fix**: Run `/manage-workspace` to set up or update the workspace, or `/workspace-status` to
 diagnose what's missing.
 
 ---

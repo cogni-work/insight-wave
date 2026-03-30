@@ -15,7 +15,7 @@ Find the workspace using this priority:
 2. `$PROJECT_AGENTS_OPS_ROOT` environment variable
 3. Current working directory
 
-If no `.workspace-config.json` exists at the resolved path, stop and tell the user no workspace was found. Suggest they run `init-workspace` to create one and explain briefly what a workspace provides (centralized config, plugin discovery, shared themes).
+If no `.workspace-config.json` exists at the resolved path, stop and tell the user no workspace was found. Suggest they run `manage-workspace` to create one and explain briefly what a workspace provides (centralized config, plugin discovery, shared themes).
 
 ## Running the Checks
 
@@ -34,7 +34,7 @@ These files form the workspace skeleton. Without them, other checks can't run re
 
 Read `.workspace-config.json` to extract: version, language, installed_plugins, created_at, updated_at.
 
-**If a required file is missing**: report CRITICAL and suggest `init-workspace`. Skip checks that depend on the missing file rather than producing misleading results.
+**If a required file is missing**: report CRITICAL and suggest `manage-workspace`. Skip checks that depend on the missing file rather than producing misleading results.
 
 ### 2. Environment
 
@@ -55,7 +55,7 @@ Read the actual values from `.claude/settings.local.json` (the `env` object) and
 
 ### 3. Plugin Registry
 
-Plugins can drift out of sync — a user might install a new plugin without running `update-workspace`, or uninstall one without cleaning up the config. This check catches that drift.
+Plugins can drift out of sync — a user might install a new plugin without running `manage-workspace`, or uninstall one without cleaning up the config. This check catches that drift.
 
 Run plugin discovery:
 ```bash
@@ -65,8 +65,8 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/discover-plugins.sh
 Compare the discovered plugins against `installed_plugins` in `.workspace-config.json`:
 
 - **Registered and installed**: healthy, no action needed
-- **Registered but not installed**: the plugin was removed or its cache was cleared. Suggest running `update-workspace` to clean up the stale registration.
-- **Installed but not registered**: a new plugin is available but the workspace doesn't know about it yet. Suggest running `update-workspace` to wire it in.
+- **Registered but not installed**: the plugin was removed or its cache was cleared. Suggest running `manage-workspace` to clean up the stale registration.
+- **Installed but not registered**: a new plugin is available but the workspace doesn't know about it yet. Suggest running `manage-workspace` to wire it in.
 
 If `discover-plugins.sh` returns `"success": false`, report the error from `data.error` and note that plugin discovery couldn't complete.
 
@@ -115,15 +115,15 @@ Language: EN | Last updated: 2026-03-04
 ```
 Plugins:      WARNING  | 5 registered, 6 installed
   New: cogni-narrative (installed but not registered)
-  -> Run update-workspace to register it
+  -> Run manage-workspace to register it
 
 Environment:  WARNING  | 12 vars set, 2 broken
   Broken: COGNI_NARRATIVE_ROOT -> /path/does/not/exist
   Broken: COGNI_NARRATIVE_PLUGIN -> /path/does/not/exist
-  -> Run update-workspace to refresh environment variables
+  -> Run manage-workspace to refresh environment variables
 ```
 
-Every issue should end with a concrete next step — either a skill to run (`init-workspace`, `update-workspace`, `manage-themes`) or a command to execute.
+Every issue should end with a concrete next step — either a skill to run (`manage-workspace`, `manage-workspace`, `manage-themes`) or a command to execute.
 
 ## Quick vs Detailed Mode
 

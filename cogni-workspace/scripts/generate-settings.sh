@@ -130,11 +130,6 @@ with open(config_path, "w") as f:
     json.dump(config, f, indent=2)
     f.write("\n")
 
-# Create plugin data directories
-for p in plugins:
-    name = p.get("name", p) if isinstance(p, dict) else p
-    os.makedirs(os.path.join(target, name), exist_ok=True)
-
 # Output result
 result = {
     "success": True,

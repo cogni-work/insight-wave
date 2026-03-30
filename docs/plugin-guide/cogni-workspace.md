@@ -8,7 +8,7 @@
 
 cogni-workspace is the foundation layer for the insight-wave ecosystem. Before any other cogni-x plugin can run reliably, it needs: a place to find the workspace root, environment variables pointing to shared resources, a theme directory, and knowledge of which other plugins are installed. cogni-workspace provides all of this through a single initialization command and a set of management skills.
 
-In practice, most users interact with cogni-workspace twice: once when setting up a new workspace (`init-workspace`), and occasionally when something drifts out of sync (`workspace-status`, `update-workspace`). Theme management and Obsidian integration are optional — use them if you want visual consistency across plugin outputs or a terminal-integrated note-taking environment.
+In practice, most users interact with cogni-workspace twice: once when setting up a new workspace (`manage-workspace`), and occasionally when something drifts out of sync (`workspace-status`, `manage-workspace`). Theme management and Obsidian integration are optional — use them if you want visual consistency across plugin outputs or a terminal-integrated note-taking environment.
 
 The plugin imposes no data model on the workspace. It writes four files during initialization — `.workspace-config.json`, `.workspace-env.sh`, `.claude/settings.local.json`, and output style templates — and then stays out of the way.
 
@@ -29,7 +29,7 @@ The plugin imposes no data model on the workspace. It writes four files during i
 
 ### Prerequisites
 
-Before running `init-workspace`, ensure these tools are installed:
+Before running `manage-workspace`, ensure these tools are installed:
 
 | Dependency | Required | Purpose |
 |-----------|----------|---------|
@@ -53,7 +53,7 @@ Initialize a insight-wave workspace here
 or:
 
 ```
-/init-workspace
+/manage-workspace
 ```
 
 What the initialization does:
@@ -80,14 +80,12 @@ cogni-workspace/themes/    shared theme storage
 
 ## Capabilities
 
-### `init-workspace` — Full workspace initialization
+### `manage-workspace` — Initialize or update a workspace
 
-Initializes a workspace from scratch. Interactive: asks about language, integrations, and output preferences before writing any files. Safe to run on an empty directory or one that has not been initialized before.
-
-If a workspace already exists at the path, use `update-workspace` instead to avoid overwriting settings.
+A single command that auto-detects whether to initialize or update. If no `.workspace-config.json` exists, it runs the full initialization flow (dependency checks, plugin discovery, preference gathering, settings generation). If one exists, it runs the update flow (backup, re-scan plugins, refresh env vars, update output styles) while preserving user customizations.
 
 ```
-/init-workspace
+/manage-workspace
 ```
 
 ---
@@ -113,24 +111,6 @@ What's the status of my workspace?
 ```
 
 If the diagnostic finds issues, each finding comes with a specific fix. Infrastructure-level problems (env vars, settings) are workspace concerns; plugin-level problems (broken skills, missing references) are handled by cogni-help's `troubleshoot` skill.
-
----
-
-### `update-workspace` — Refresh after plugin changes
-
-Re-scans installed plugins, refreshes environment variables, and updates output style templates. Does not overwrite user-customized values. Creates a backup before modifying any existing file.
-
-Use after installing new plugins or after the workspace has been moved to a different path:
-
-```
-/update-workspace
-```
-
-```
-Update my workspace after installing new plugins
-```
-
-If the update produces unexpected results, the backup allows rollback.
 
 ---
 
@@ -229,7 +209,7 @@ cogni-workspace is the foundation layer. It has no plugin dependencies. Every ot
 ### Workflow 1: Set up a brand-new workspace
 
 1. Install insight-wave plugins from the marketplace
-2. Run `/init-workspace` in your project directory — answer the language and integration questions
+2. Run `/manage-workspace` in your project directory — answer the language and integration questions
 3. Run `/workspace-status` to confirm all five tiers are green
 4. Run `/manage-themes` to extract your brand theme from your website or a PPTX template
 5. Run `/setup-obsidian` if you want Obsidian integration
@@ -244,13 +224,13 @@ This workflow is detailed in [../workflows/full-onboarding.md](../workflows/full
 2. If themes tier fails: run `/manage-themes list` to see what themes are registered
 3. If the theme directory is empty: run `/manage-themes` and create or install a theme
 4. If the theme directory exists but the plugin still cannot find it: check that the plugin is reading `$COGNI_WORKSPACE_ROOT/themes/` (the env var should be set by `.workspace-env.sh`)
-5. If the env var is missing: run `/update-workspace` to refresh environment variables
+5. If the env var is missing: run `/manage-workspace` to refresh environment variables
 
 ### Workflow 3: Update the workspace after moving the project directory
 
 When you move a workspace to a different path, absolute paths stored in `.workspace-env.sh` and `.claude/settings.local.json` become stale:
 
-1. Run `/update-workspace` from the new path — it re-scans for installed plugins and regenerates env vars
+1. Run `/manage-workspace` from the new path — it re-scans for installed plugins and regenerates env vars
 2. Run `/workspace-status` to confirm the workspace resolves correctly at the new path
 3. If you use Obsidian, run `/update-obsidian` to fix terminal launcher paths (especially important on WSL)
 
@@ -260,12 +240,12 @@ When you move a workspace to a different path, absolute paths stored in `.worksp
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| A plugin cannot find `.workspace-env.sh` | The session hook did not run, or the workspace was not initialized | Run `/workspace-status`; if the foundation tier fails, re-run `/init-workspace` |
+| A plugin cannot find `.workspace-env.sh` | The session hook did not run, or the workspace was not initialized | Run `/workspace-status`; if the foundation tier fails, re-run `/manage-workspace` |
 | `jq: command not found` in script output | `jq` is not installed | Install via your package manager: `brew install jq` (macOS), `apt install jq` (Debian/Ubuntu) |
 | Themes directory exists but visual plugin uses wrong colors | Plugin is reading a stale theme path | Run `/pick-theme` to re-select the theme; the selection updates the workspace default |
 | `workspace-status` passes but a plugin skill still fails | The failure is at plugin level, not workspace level | Run cogni-help's `/troubleshoot` for plugin-level diagnostics |
 | Obsidian terminal profile shows a doubled path (WSL) | WSL path duplication in the profile arguments | Run `/update-obsidian` — it specifically fixes doubled paths and stale args |
-| `/init-workspace` succeeds but a newly installed plugin is not discovered | The plugin was installed after initialization | Run `/update-workspace` to re-scan and register the new plugin |
+| `/manage-workspace` succeeds but a newly installed plugin is not discovered | The plugin was installed after initialization | Run `/manage-workspace` to re-scan and register the new plugin |
 | German umlaut characters break workspace initialization | Shell locale not set for UTF-8 | Set `LANG=de_DE.UTF-8` before running init; the script includes umlaut support from v0.2+ |
 
 ---

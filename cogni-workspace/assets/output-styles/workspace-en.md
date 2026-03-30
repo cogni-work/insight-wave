@@ -14,8 +14,7 @@ When the user's intent involves workspace management, route to the appropriate s
 
 | Intent Pattern | Route To |
 |----------------|----------|
-| Create/init/setup workspace | init-workspace |
-| Update/refresh/sync workspace | update-workspace |
+| Create/init/setup/update/refresh/sync workspace | manage-workspace |
 | Theme grab/list/apply/create | manage-themes |
 | Workspace status/health/check | workspace-status |
 

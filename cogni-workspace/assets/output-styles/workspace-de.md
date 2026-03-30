@@ -16,8 +16,7 @@ Wenn die Absicht des Benutzers Workspace-Verwaltung betrifft, zum passenden Skil
 
 | Intent-Muster | Weiterleiten an |
 |----------------|-----------------|
-| Workspace erstellen/initialisieren/einrichten | init-workspace |
-| Workspace aktualisieren/synchronisieren | update-workspace |
+| Workspace erstellen/initialisieren/einrichten/aktualisieren/synchronisieren | manage-workspace |
 | Theme extrahieren/auflisten/anwenden/erstellen | manage-themes |
 | Workspace Status/Gesundheit/Prüfen | workspace-status |
 

@@ -15,7 +15,7 @@ graph LR
 
 ## Step 1: Initialize Workspace
 
-**Command**: `/init-workspace`
+**Command**: `/manage-workspace`
 
 **Input**: Your project directory
 **Output**: Configured workspace with env vars, settings, themes, and plugin discovery
