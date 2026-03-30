@@ -19,7 +19,7 @@ Include the quality assessment in the agent's task prompt under "Quality assessm
 
 - The target proposition must exist in `propositions/{feature-slug}--{market-slug}.json`
 - If the proposition doesn't exist yet, create it first using batch generation or single-pair crafting, then return here
-- For best results, run `feature-deep-dive` on the parent feature first — its differentiation vectors and buyer perception data directly feed proposition messaging. Recommended but not required.
+- For best results, run the `features` skill's Deep Dive workflow on the parent feature first — its differentiation vectors and buyer perception data directly feed proposition messaging. Recommended but not required.
 
 ## Phase 1: Context Load
 
@@ -54,7 +54,7 @@ After reading context, present:
 If prior quality-assessor output was provided, reference it: "The quality assessment scored DOES [overall] (weakest: [dimensions]) and MEANS [overall] (weakest: [dimensions]). The deep dive will focus research on these gaps."
 
 If the IS layer (feature description) is vague or weak, flag it immediately:
-"The feature description is too vague for sharp proposition messaging — [specific issue]. Consider running `feature-deep-dive` to strengthen the IS layer first. We can proceed with what we have, but the DOES/MEANS will be limited by the IS quality."
+"The feature description is too vague for sharp proposition messaging — [specific issue]. Consider running the `features` skill's Deep Dive to strengthen the IS layer first. We can proceed with what we have, but the DOES/MEANS will be limited by the IS quality."
 
 ### Gather additional context before research
 
@@ -108,7 +108,7 @@ Company context: {name, domain, regional_url, language, industry}
 Product context: {product name, product description, pricing_tier}
 Existing competitor intelligence: {summary or "none"}
 Existing customer intelligence: {summary or "none"}
-Feature deep-dive findings: {summary or "none — consider running feature-deep-dive first"}
+Feature deep-dive findings: {summary or "none — consider running the features skill's Deep Dive first"}
 Quality assessment results: {dimension scores and notes, or "none — first deep dive"}
 User context: {weaknesses identified, buyer objections, internal evidence, status-quo assessment, outcome priorities}
 Project directory: {path}
@@ -334,7 +334,7 @@ Offer to note these for the next deep dive or batch review.
 
 If the deep dive revealed that the IS layer (feature description) is limiting proposition quality:
 
-"The feature description for [feature] is [specific issue — too vague, missing mechanism, no differentiator]. This limits how sharp the DOES/MEANS can be. Consider running `feature-deep-dive` to strengthen the IS layer, then revisit this proposition."
+"The feature description for [feature] is [specific issue — too vague, missing mechanism, no differentiator]. This limits how sharp the DOES/MEANS can be. Consider running the `features` skill's Deep Dive to strengthen the IS layer, then revisit this proposition."
 
 ### 7. Variant opportunity
 
@@ -366,4 +366,4 @@ Assign the next sequential `variant_id` (check existing variants). Set `tips_ref
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language.
 - **One proposition at a time.** Deep dives are intensive — if the user wants to deep-dive multiple propositions, sequence them. Don't parallelize the co-creation dialogue.
 - **Prior deep dives.** If `research/deep-dive-{feature-slug}--{market-slug}.json` exists from a previous session, offer: "A proposition deep dive was run on [date]. Want to refresh the research or continue from the existing findings?"
-- **IS layer is read-only.** The deep dive does not modify the feature description. If the IS layer needs work, signal upstream to `feature-deep-dive`.
+- **IS layer is read-only.** The deep dive does not modify the feature description. If the IS layer needs work, signal upstream to the `features` skill's Deep Dive workflow.

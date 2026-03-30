@@ -6,6 +6,13 @@ description: |
   "what does it do", feature extraction, feature inventory, or wants to
   break a product into its component capabilities — even if they don't
   say "feature" explicitly.
+
+  Also use for deep dive on a single feature: "deep dive on X", "research feature X",
+  "competitive landscape for X", "workshop feature X", "strengthen differentiation for X",
+  "how does X compare to competitors", "what does the market say about X",
+  "explore documents about feature X", "read this document and improve feature X",
+  "Differenzierung schärfen für X", "Wettbewerbsanalyse für Feature X" —
+  even if they don't say "deep dive" explicitly.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 ---
 
@@ -423,9 +430,50 @@ When quality assessment reveals warn or fail dimensions, offer to research the c
 
 Not all quality issues require research. Conciseness (too long/short) and language quality (awkward phrasing) can be fixed by rewriting from existing content — no web search needed. Offer a direct rewrite for these dimensions and reserve research for mechanism clarity, differentiation, and scope issues where company-specific knowledge is the missing ingredient.
 
-### Deep Dive
+### Quick Fix vs. Deep Dive
 
-When the user wants more than quality-gap repair — competitive landscape, strategic positioning, or interactive co-creation — direct them to the `feature-deep-dive` skill. It runs broad research (20-30 searches including competitors, analysts, and buyer perception), reads user-provided documents via Explore agents, presents findings interactively, and co-creates the description through strategic dialogue. Use the deep-dive skill when the user says things like "deep dive on X", "how does X compare to competitors", "let's workshop feature X", or provides documents they want analyzed for a specific feature.
+| Situation | Use |
+|---|---|
+| Fix descriptions that scored warn/fail on 1-2 dimensions (conciseness, language) | **Quick Fix** (quality-enricher — reactive, targeted gap repair) |
+| 3+ dimensions scored fail on a single feature | **Deep Dive** (below) — broad research needed |
+| Understand competitive landscape for a capability | **Deep Dive** (below) |
+| Strengthen differentiation with evidence | **Deep Dive** (below) |
+| Co-create a description through strategic dialogue | **Deep Dive** (below) |
+| Explore documents to inform feature positioning | **Deep Dive** (below) |
+| Stakeholder review verdict is "reject" for specific features | **Deep Dive** on worst offenders |
+
+For features that need more than reactive quality repair — where you want to map the competitive landscape, research differentiation vectors, or co-create a sharper description through evidence-backed dialogue — use the Deep Dive workflow below instead of the Quick Fix.
+
+## Deep Dive (Single-Feature Intensive)
+
+For features needing more than reactive quality repair — competitive landscape mapping, technical differentiation research, buyer perception analysis, or co-creation dialogue. One feature at a time. The deep dive produces strategic intelligence that informs not just the feature description but also downstream proposition messaging, competitive positioning, and sales enablement.
+
+### When to Enter
+
+- User explicitly says "deep dive", "research feature X", "competitive landscape", "workshop feature X", "strengthen differentiation", or similar
+- Quality assessor scored `mechanism_clarity` and `differentiation_potential` both as fail (these dimensions require competitive research, not just company-scoped search)
+- 3+ dimensions scored fail on a single feature
+- Stakeholder review verdict is "reject" — deep-dive the worst offenders
+- User provides documents (competitor briefs, codebase, architecture docs) they want analyzed for a specific feature
+
+### Auto-recommend Logic
+
+After running the feature-quality-assessor, check each feature's results:
+- If `mechanism_clarity` and `differentiation_potential` both scored fail -> auto-recommend deep dive (explain why: "These gaps need competitive landscape research and buyer perception data, not just company website information")
+- If 3+ dimensions scored fail -> auto-recommend deep dive
+- Otherwise -> offer Quick Fix first, mention deep dive as an option
+
+### Workflow
+
+The deep dive is a 5-phase process: Context Load -> Research Delegation -> Findings Briefing -> Co-Creation Dialogue -> Output Artifacts.
+
+**Full workflow details:** Read `$CLAUDE_PLUGIN_ROOT/skills/features/references/deep-dive-workflow.md`
+
+When entering the deep dive:
+1. If quality-assessor output exists for this feature, pass it to the `feature-deep-diver` agent (avoids redoing quality assessment from scratch — the agent refines rather than re-assesses)
+2. Delegate research to the `feature-deep-diver` agent via the Agent tool (not quality-enricher)
+3. After research completes, conduct the co-creation dialogue with the user per the reference
+4. Write the improved feature, set `updated` to today's date, and warn about downstream cascade
 
 ## Validate Against Portfolio
 

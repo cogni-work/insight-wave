@@ -128,7 +128,6 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `trends-bridge` | skill | Bidirectional integration with cogni-trends TIPS analysis |
 | `portfolio-resume` | skill | Detect workflow phase and recommend next actions |
 | `portfolio-canvas` | skill | Bootstrap portfolio from a Lean Canvas or Business Model Canvas |
-| `feature-deep-dive` | skill | Deep research for a single feature — competitive landscape, differentiation, market positioning |
 | `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
 | `competitor-researcher` | agent | Web research for competitive intelligence |
 | `customer-researcher` | agent | Web research for named customer profiling |
@@ -161,7 +160,7 @@ cogni-portfolio/
 │   ├── b2b-industrial-tech/      Industrial Tech (8 dims, 48 cats)
 │   ├── b2b-professional-services/ Prof. Services (8 dims, 44 cats)
 │   └── b2b-opensource/           Commercial OSS (8 dims, 50 cats)
-├── skills/                       21 portfolio skills
+├── skills/                       20 portfolio skills
 ├── agents/                       17 delegation agents
 ├── references/
 │   └── data-model.md             Full entity schema

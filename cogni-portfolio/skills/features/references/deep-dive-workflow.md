@@ -1,43 +1,25 @@
----
-name: feature-deep-dive
-description: |
-  Deep research and strategic co-creation for a single feature — competitive landscape,
-  technical differentiation, market positioning, buyer perception. Use when the user wants
-  to understand how a feature competes in the market, strengthen its differentiation,
-  research competitors for a specific capability, or co-create the feature description
-  through dialogue rather than reactive quality repair.
+# Deep Dive Workflow Reference
 
-  Use for: "deep dive on X", "research feature X", "competitive landscape for X",
-  "workshop feature X", "strengthen differentiation for X", "let's improve feature X together",
-  "how does X compare to competitors", "what does the market say about X",
-  "explore documents about feature X", "read this document and improve feature X",
-  "Differenzierung schärfen für X", "Wettbewerbsanalyse für Feature X" —
-  even if they don't say "deep dive" explicitly.
-allowed-tools: Read, Write, Edit, Glob, Grep, Agent
----
+This reference defines the Deep Dive workflow for the features skill. The deep dive is a 5-phase process that maps the competitive landscape, identifies differentiation vectors, surfaces buyer perception, and co-creates an improved feature description through strategic dialogue with the user.
 
-# Feature Deep Dive
+Unlike the Quick Fix path (quality-enricher, which reactively patches specific quality gaps), the deep dive is proactive and comprehensive — it produces strategic intelligence that informs not just the feature description but also downstream proposition messaging, competitive positioning, and sales enablement materials.
 
-You are a strategic product analyst conducting a focused deep dive on a single feature. Unlike the features skill's Research & Improve flow (which reactively fixes quality gaps), a deep dive is proactive and comprehensive: you research the competitive landscape, identify differentiation vectors, surface buyer perception, and then co-create an improved feature description through dialogue with the user.
+## Integration with Quality Assessment
 
-The deep dive produces strategic intelligence that informs not just the feature description but also downstream proposition messaging, competitive positioning, and sales enablement.
+When entering the deep dive after a quality assessment has already been run (feature-quality-assessor), pass the assessment results to the `feature-deep-diver` agent. This avoids redoing the assessment from scratch. The deep-diver refines the assessment based on research findings — it may upgrade or downgrade dimension scores based on evidence.
 
-## When to Use (vs. Features Skill)
+**Score mapping** (quality-assessor -> deep-diver baseline):
+- pass -> high
+- warn -> medium
+- fail -> low
 
-| Situation | Use |
-|---|---|
-| Fix a description that scored warn/fail on quality | Features skill → quality-enricher |
-| Understand competitive landscape for a capability | **This skill** |
-| Strengthen differentiation with evidence | **This skill** |
-| Co-create a description through strategic dialogue | **This skill** |
-| Explore documents to inform feature positioning | **This skill** |
-| Bulk create/edit/review features | Features skill |
+Include the quality assessment in the agent's task prompt under "Quality assessment results (prior)".
 
 ## Prerequisites
 
 - At least one product must exist in `products/`
 - The target feature must exist in `features/{slug}.json` (or the user must identify which feature to deep-dive)
-- If the user wants to deep-dive a feature that doesn't exist yet, create it first using the features skill, then come back here
+- If the user wants to deep-dive a feature that doesn't exist yet, create it first using the features skill's creation workflow, then return here
 
 ## Phase 1: Context Load
 
@@ -130,6 +112,8 @@ After reading context, state what you know:
 
 If the user provided documents, acknowledge them: "I'll incorporate the intelligence from [document] into the research."
 
+If prior quality-assessor output was provided, reference it: "The quality assessment scored [overall] (weakest: [dimensions]). The deep dive will focus research on these gaps."
+
 ### Gather additional context before research
 
 Do NOT jump straight to research delegation. First, ask the user targeted questions to focus the research and avoid wasting tokens on irrelevant searches. The goal is to understand what the user already knows so research fills genuine gaps rather than rediscovering what's obvious.
@@ -141,15 +125,15 @@ Do NOT jump straight to research delegation. First, ask the user targeted questi
 3. **Who are the known competitors?** The user often knows their competitive landscape better than web search can discover. "Who do you lose deals to for this capability? Who do buyers compare you with?"
 4. **What does the buyer care about?** "When buyers evaluate this capability, what do they ask about first? What objections come up?"
 5. **Any internal context?** "Is there anything about this feature's roadmap, recent changes, or strategic importance that I should know?"
-6. **Additional materials?** "Do you have any files, links, or documents I should read first — competitor briefs, analyst reports, product pages, architecture docs? If this feature IS a software product or plugin, point me to the codebase and I'll analyze the actual implementation." This is especially important because users often have materials far richer than what web search can find — and for software features, the code itself is the most authoritative source of mechanism clarity and differentiation.
+6. **Additional materials?** "Do you have any files, links, or documents I should read first — competitor briefs, analyst reports, product pages, architecture docs? If this feature IS a software product or plugin, point me to the codebase and I'll analyze the actual implementation."
 
 **Adaptive questioning based on user's stated goal:**
 
-- User says "sharper formulation" / "schärfere Formulierung" → Focus on #1 and #2 (what's weak, what angle to lead with). Research will target mechanism clarity and differentiation.
-- User says "competitive differentiation" → Focus on #3 and #4 (competitors, buyer criteria). Research will map the competitive landscape.
-- User says "everything" or is vague → Ask #1 and #3 as minimum, then let research fill the rest.
+- User says "sharper formulation" / "schärfere Formulierung" -> Focus on #1 and #2 (what's weak, what angle to lead with). Research will target mechanism clarity and differentiation.
+- User says "competitive differentiation" -> Focus on #3 and #4 (competitors, buyer criteria). Research will map the competitive landscape.
+- User says "everything" or is vague -> Ask #1 and #3 as minimum, then let research fill the rest.
 
-**Do not ask all 5 questions.** Pick the 2-3 that the context doesn't already answer. If the user provided rich context (documents, detailed prompt), you may only need one question. If the user is terse ("deep dive on X"), ask 2-3.
+**Do not ask all 6 questions.** Pick the 2-3 that the context doesn't already answer. If the user provided rich context (documents, detailed prompt), you may only need one question. If the user is terse ("deep dive on X"), ask 2-3.
 
 Wait for the user's answers before delegating to research. Their input directly shapes the research strategy — which search batches to prioritize, which competitors to look up, which differentiation angles to explore.
 
@@ -165,6 +149,7 @@ Delegate broad web research to the `feature-deep-diver` agent via the Agent tool
 - Sibling feature slugs and names (for cross-feature positioning context)
 - Any intelligence extracted from context documents or user-provided documents (summarized — don't send raw documents to the agent)
 - **User context from Phase 1** — what the user said about weaknesses, preferred angles, known competitors, and buyer priorities. This focuses the agent's research strategy.
+- **Quality assessment results** (if available) — dimension scores and notes from feature-quality-assessor
 - Project directory path
 - `plugin_root: $CLAUDE_PLUGIN_ROOT`
 
@@ -178,6 +163,7 @@ Company context: {name, domain, regional_url, language, industry}
 Product context: {product name, product description}
 Sibling features: {list of slug: name pairs}
 Additional intelligence: {summary from context docs or user documents, if any}
+Quality assessment results: {dimension scores and notes, or "none — first deep dive"}
 Project directory: {path}
 plugin_root: {$CLAUDE_PLUGIN_ROOT}
 ```
@@ -261,7 +247,7 @@ Which direction resonates more with how you talk to buyers? Or is there a third 
 
 ### Iteration loop
 
-1. **User picks a direction** (or proposes a third) → Draft a full candidate description
+1. **User picks a direction** (or proposes a third) -> Draft a full candidate description
 2. **Apply quality checks inline**:
    - Word count (15-35 words, 15-35 for German)
    - Anchor-How-Differentiator pattern present?
@@ -282,7 +268,7 @@ Which direction resonates more with how you talk to buyers? Or is there a third 
 4. **Ask one targeted question** to fill the biggest remaining gap:
    - "What's the specific mechanism behind [capability]? Token bucket, sliding window, or something else?"
    - "Do you want to emphasize [angle A] or [angle B] in the differentiator?"
-5. **Incorporate user input** → Revise the candidate → Present again
+5. **Incorporate user input** -> Revise the candidate -> Present again
 
 ### Dialogue rules
 
@@ -354,7 +340,7 @@ If yes, save the proposition seeds as a note in the feature's JSON file under a 
 - **Prior deep dives.** If `research/deep-dive-{slug}.json` exists from a previous session,
   offer: "A deep dive on this feature was run on [date]. Want to refresh the research or
   continue from the existing findings?"
-- **Integration with features skill.** The features skill may direct users here when they
-  want more than quality-gap repair. The deep dive produces a feature description that meets
+- **Integration with features skill.** The deep dive produces a feature description that meets
   all the same quality standards (15-35 words, Anchor-How-Differentiator, no outcome language,
-  Value Wedge test).
+  Value Wedge test). After the deep dive completes, the features skill's quality gate can
+  re-assess to confirm the improvement.
