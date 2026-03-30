@@ -123,7 +123,7 @@ Environment:  WARNING  | 12 vars set, 2 broken
   -> Run manage-workspace to refresh environment variables
 ```
 
-Every issue should end with a concrete next step — either a skill to run (`manage-workspace`, `manage-workspace`, `manage-themes`) or a command to execute.
+Every issue should end with a concrete next step — either a skill to run (`manage-workspace`, `manage-themes`) or a command to execute.
 
 ## Quick vs Detailed Mode
 
