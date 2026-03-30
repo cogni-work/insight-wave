@@ -129,9 +129,9 @@ If yes, run the setup script:
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-obsidian.sh" "${TARGET_DIR}"
 ```
 
-If `.obsidian/` already exists, skip and mention that the update flow can refresh the terminal config.
+If `.obsidian/` already exists, skip and mention that the update step (Update Mode step 5) can refresh the terminal config.
 
-If the user declines, let them know they can set it up later.
+If the user declines, let them know they can run a workspace update later to add it.
 
 ### 6. Summarize
 

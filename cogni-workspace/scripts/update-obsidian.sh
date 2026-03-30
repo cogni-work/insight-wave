@@ -322,7 +322,7 @@ main() {
     workplace_dir="$(cd "$workplace_dir" 2>/dev/null && pwd)" || error_json "Cannot access: $workplace_dir" 1
 
     # Locate template from plugin root
-    local template_dir="${PLUGIN_ROOT}/skills/setup-obsidian/templates/obsidian/plugins/terminal"
+    local template_dir="${PLUGIN_ROOT}/templates/obsidian/plugins/terminal"
     local template_data="$template_dir/data.json"
     local workplace_terminal_dir="$workplace_dir/.obsidian/plugins/terminal"
     local workplace_data="$workplace_terminal_dir/data.json"

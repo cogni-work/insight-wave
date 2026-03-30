@@ -26,8 +26,7 @@ The shared foundation layer for the insight-wave ecosystem. Every cogni-x plugin
 3. **Pick themes** — centralized theme picker used by all visual plugins
 4. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
 5. **Diagnose** workspace health — five-tier report (foundation, env vars, plugin registry, themes, dependencies)
-6. **Set up Obsidian** — scaffold `.obsidian/` vault with Terminal plugin and Claude Code launcher
-7. **Update Obsidian** — incrementally refresh terminal profiles without overwriting customizations
+6. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
 
 ## What it means for you
 
@@ -53,8 +52,6 @@ This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work
 /workspace-status  # check health
 /pick-theme        # select a theme interactively
 /manage-themes     # extract, create, audit, or apply themes
-/setup-obsidian    # scaffold Obsidian vault with terminal integration
-/update-obsidian   # refresh terminal profiles in existing vault
 ```
 
 > **Note:** Issue filing (`/issues`) has moved to [cogni-help](../cogni-help).
@@ -82,8 +79,6 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | `manage-themes` | skill | 8 theme operations: recommend, list, grab from website, grab from PPTX, create from preset, audit, generate showcase, apply |
 | `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
 | `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
-| `setup-obsidian` | skill | Scaffold Obsidian vault with Terminal plugin, Tokyonight theme, and Claude Code launcher |
-| `update-obsidian` | skill | Incrementally update terminal profiles and launcher scripts without overwriting customizations |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
 | `check-dependencies.sh` | script | Returns JSON with availability/version of required and optional dependencies |
 | `check-skill-names.sh` | script | Validates skill directory names against plugin.json manifest for consistency |
@@ -98,14 +93,13 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       6 workspace management skills
-│   ├── manage-workspace/
+├── skills/                       4 workspace management skills
+│   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
 │   ├── manage-themes/
 │   ├── pick-theme/
-│   ├── setup-obsidian/           Obsidian vault scaffolding
-│   │   └── templates/obsidian/   Vault config templates
-│   ├── update-obsidian/          Obsidian config updater
 │   └── workspace-status/
+├── templates/                    Shared templates
+│   └── obsidian/                 Obsidian vault config templates
 ├── hooks/                        Session lifecycle hooks
 │   ├── hooks.json
 │   └── on-session-start.sh

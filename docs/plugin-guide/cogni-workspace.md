@@ -25,7 +25,7 @@ The plugin imposes no data model on the workspace. It writes four files during i
 | **Output style** | A language-specific behavioral anchor file (EN/DE) that shapes how plugin outputs are formatted |
 | **Session hook** | `on-session-start.sh` — sources the workspace environment and validates plugin availability each time a session opens |
 | **Five-tier diagnostic** | The structure of `workspace-status` output: foundation → env vars → plugin registry → themes → dependencies |
-| **Obsidian vault** | A `.obsidian/` configuration directory that `setup-obsidian` scaffolds inside the workspace |
+| **Obsidian vault** | A `.obsidian/` configuration directory scaffolded by `manage-workspace` during initialization |
 
 ### Prerequisites
 
@@ -157,32 +157,14 @@ The skill scans both the plugin's bundled theme directory and your workspace the
 
 ---
 
-### `setup-obsidian` — Scaffold an Obsidian vault
+### Obsidian Integration (via `manage-workspace`)
 
-Creates a `.obsidian/` configuration directory inside your workspace so you can open it as an Obsidian vault. The vault comes preconfigured with:
+Obsidian vault setup and updates are handled as sub-steps of `manage-workspace`:
 
-- Terminal plugin with a Tokyonight-themed terminal profile
-- A launcher script that opens Claude Code from within Obsidian
-- Language selection and permission mode handling in the launcher
-- Sensible vault defaults: live preview, line numbers, file explorer, search, backlinks
+- **During initialization**: if you indicate Obsidian use, the skill scaffolds `.obsidian/` with a Terminal plugin, Tokyonight-themed terminal, and Claude Code launcher
+- **During update**: if `.obsidian/` exists, the skill offers to refresh terminal profiles and launcher scripts without overwriting customizations, fixing common WSL issues
 
-```
-/setup-obsidian
-```
-
-Prerequisites: Obsidian must be installed. The skill handles Terminal plugin installation automatically via a download step.
-
----
-
-### `update-obsidian` — Refresh an existing Obsidian vault
-
-Merges updated terminal profiles and launcher scripts into an existing `.obsidian/` vault without overwriting profiles or scripts you have customized. Fixes common issues — doubled paths on WSL, stale arguments, deprecated profile names.
-
-Use when you have moved your workspace, upgraded the plugin, or when terminal profiles stop working:
-
-```
-/update-obsidian
-```
+Prerequisites: Obsidian must be installed. The skill handles Terminal plugin installation automatically.
 
 ---
 
@@ -212,7 +194,7 @@ cogni-workspace is the foundation layer. It has no plugin dependencies. Every ot
 2. Run `/manage-workspace` in your project directory — answer the language and integration questions
 3. Run `/workspace-status` to confirm all five tiers are green
 4. Run `/manage-themes` to extract your brand theme from your website or a PPTX template
-5. Run `/setup-obsidian` if you want Obsidian integration
+5. Obsidian integration is offered during `/manage-workspace` if you indicate Obsidian use
 
 Total time: 10–15 minutes. After this, all installed plugins can resolve themes, env vars, and plugin paths without additional configuration.
 
@@ -232,7 +214,7 @@ When you move a workspace to a different path, absolute paths stored in `.worksp
 
 1. Run `/manage-workspace` from the new path — it re-scans for installed plugins and regenerates env vars
 2. Run `/workspace-status` to confirm the workspace resolves correctly at the new path
-3. If you use Obsidian, run `/update-obsidian` to fix terminal launcher paths (especially important on WSL)
+3. If you use Obsidian, `/manage-workspace` will offer to fix terminal launcher paths during the update (especially important on WSL)
 
 ---
 
@@ -244,7 +226,7 @@ When you move a workspace to a different path, absolute paths stored in `.worksp
 | `jq: command not found` in script output | `jq` is not installed | Install via your package manager: `brew install jq` (macOS), `apt install jq` (Debian/Ubuntu) |
 | Themes directory exists but visual plugin uses wrong colors | Plugin is reading a stale theme path | Run `/pick-theme` to re-select the theme; the selection updates the workspace default |
 | `workspace-status` passes but a plugin skill still fails | The failure is at plugin level, not workspace level | Run cogni-help's `/troubleshoot` for plugin-level diagnostics |
-| Obsidian terminal profile shows a doubled path (WSL) | WSL path duplication in the profile arguments | Run `/update-obsidian` — it specifically fixes doubled paths and stale args |
+| Obsidian terminal profile shows a doubled path (WSL) | WSL path duplication in the profile arguments | Run `/manage-workspace` — the update flow fixes doubled paths and stale args |
 | `/manage-workspace` succeeds but a newly installed plugin is not discovered | The plugin was installed after initialization | Run `/manage-workspace` to re-scan and register the new plugin |
 | German umlaut characters break workspace initialization | Shell locale not set for UTF-8 | Set `LANG=de_DE.UTF-8` before running init; the script includes umlaut support from v0.2+ |
 

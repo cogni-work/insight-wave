@@ -73,7 +73,7 @@ The skill walks you through four steps:
    - `.workspace-env.sh` — the same variables for use outside Claude Code (Obsidian Terminal, CI)
    - `.workspace-config.json` — workspace metadata (version, language, registered plugins)
 
-If you use Obsidian, the skill offers to scaffold the vault with a Terminal plugin and Claude Code launcher — you can also do this later with `/setup-obsidian`.
+If you use Obsidian, the skill offers to scaffold the vault with a Terminal plugin and Claude Code launcher.
 
 After initialization, run `/workspace-status` any time to check that environment variables are set correctly and all registered plugins are reachable.
 
