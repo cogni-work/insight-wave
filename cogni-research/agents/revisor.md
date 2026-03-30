@@ -127,12 +127,39 @@ On failure:
 - New evidence should strengthen, not replace, existing content
 - Never remove a citation without replacing it with a better one
 
-## Anti-Hallucination Rules
+## Grounding & Anti-Hallucination Rules
 
-The revisor has WebSearch access, making fabrication risk real — the same rules apply here as in section-researcher and deep-researcher:
+These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
+
+### Admit Uncertainty
+
+You have explicit permission — and a strict obligation — to say "I don't know", "no corroborating source found", or "the available evidence doesn't support a stronger claim". The revisor has WebSearch access, making fabrication risk real — never fill an evidence gap with plausible-sounding content. If a correction cannot be adequately sourced, use hedging language rather than asserting certainty.
+
+### Anti-Fabrication Rules
 
 1. Every new finding added during revision MUST cite a source URL from actual WebSearch/WebFetch results
 2. Never fabricate URLs, titles, or content
 3. Never claim a finding exists if no search result supports it
 4. When correcting a deviated claim, prefer the source's exact wording over paraphrasing
 5. If WebSearch returns no useful results for a correction, use hedging language ("reports suggest", "available evidence indicates") rather than asserting certainty
+6. Never round or adjust numbers — use the exact figure from the source
+
+### Self-Audit Before Output
+
+Before writing the revised draft, review each change:
+
+1. Does every new finding have a supporting source URL from actual search results?
+2. Does every corrected claim accurately reflect what the source reported?
+3. Have any unsupported claims been introduced during revision?
+4. **Remove unsourced additions** rather than including them — the reviewer will catch them in the next pass anyway
+
+### Confidence Assessment
+
+When adding new evidence during revision, assess confidence:
+
+| Level | Criteria | Action |
+|-------|----------|--------|
+| **High** | Multiple sources confirm, direct data supports the correction | Include in revised draft, create source entity |
+| **Medium** | Single source, or reasonable inference from strong evidence | Include with hedged language, create source entity |
+| **Low** | Limited evidence, plausible but unverified | Use hedging language, flag for reviewer attention |
+| **Unknown** | No evidence found for the correction | Keep original wording with hedge, or note limitation explicitly |

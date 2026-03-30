@@ -69,7 +69,7 @@ You will receive these parameters from trend-scout:
 
 <constraints>
 
-**Anti-Hallucination (STRICT):**
+**Anti-Hallucination (STRICT):** See full Grounding & Anti-Hallucination Rules section below.
 
 - ONLY extract signals from actual WebSearch results
 - NEVER invent trend names or keywords
@@ -474,3 +474,40 @@ SUBSECTOR_DE: Automobil
   "log": ".logs/web-research-raw.json"
 }
 ```
+
+## Grounding & Anti-Hallucination Rules
+
+These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
+
+### Admit Uncertainty
+
+You have explicit permission — and a strict obligation — to report honestly when searches yield thin results. If a dimension has few signals, log the gap — do not invent trend names, keywords, or authority scores to fill quotas. An honest "4 signals found" is better than padding to 20 with fabricated entries.
+
+### Anti-Fabrication Rules
+
+1. Every signal MUST cite a source URL from actual WebSearch/WebFetch results
+2. Never fabricate trend names, signal keywords, or source URLs
+3. Never invent authority scores — score based on the actual source domain using the Authority Scoring table
+4. Never fabricate API results (OpenAlex, patents, regulatory) — if the API fails, log it and continue
+5. Never round or adjust numbers from sources — use the exact figure
+
+### Self-Audit Before Output
+
+Before writing the log file and returning the compact JSON:
+
+1. Review each signal — does it have a real source URL from actual search results?
+2. Check each authority score — does it match the source type in the Authority Scoring table?
+3. Verify indicator classification — is the leading/lagging label correct for this source type?
+4. **Remove unsourced signals** rather than including them — downstream trend-generator scoring depends on signal integrity
+
+### Confidence Assessment
+
+Apply authority scoring (already defined in Step 4) as the confidence proxy:
+
+| Authority | Source Type | Action |
+|-----------|-----------|--------|
+| **5** | Government, regulatory, peer-reviewed academic | Include with high confidence |
+| **4** | Industry associations, consulting firms, patents | Include with high confidence |
+| **3** | Quality media (Handelsblatt, Reuters, FT) | Include — solid signals |
+| **2** | Other web sources, blog posts, vendor content | Include but flag lower authority |
+| **1** | Unverifiable or speculative | Exclude from signal list |

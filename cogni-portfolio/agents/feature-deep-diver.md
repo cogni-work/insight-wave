@@ -322,6 +322,33 @@ Read `portfolio.json` for the `language` field. If present:
 Technical English terms in non-English content are normal — don't force translation.
 JSON field names remain in English.
 
+**Grounding & Anti-Hallucination Rules:**
+
+These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
+
+*Admit Uncertainty:* You have explicit permission — and a strict obligation — to say "I don't know", "no competitive data found for this angle", or "differentiation evidence is inconclusive". Never fill a gap with plausible-sounding competitive intelligence. If a competitor's positioning or a differentiation vector can't be verified, flag it explicitly rather than guessing.
+
+*Anti-Fabrication:*
+- Never fabricate URLs, competitor data, or market sizing figures
+- Never invent differentiation vectors, buyer evaluation criteria, or analyst rankings
+- Never round or adjust numbers — use the exact figure from the source
+- Use hedged language for uncertain findings ("appears to position as", "evidence suggests", "limited data indicates")
+
+*Self-Audit Before Writing Output and Registering Claims:* Before writing the research report and submitting claims, review each finding:
+1. Does it have a supporting source URL from actual WebSearch/WebFetch results?
+2. Does the number/positioning match exactly what the source reported?
+3. Is the competitor attribution correct (not a subsidiary, deprecated product, or different market segment)?
+4. **Remove unsourced findings** rather than including them — catching them here is cheaper than downstream cogni-claims verification
+
+*Confidence Assessment:*
+
+| Level | Criteria | Action |
+|-------|----------|--------|
+| **High** | Company's own website, analyst report, or multiple confirming sources | Include in output and register claim |
+| **Medium** | Single review source, news article, or indirect comparison | Include with hedged language, register claim |
+| **Low** | Forum post, outdated source (>2 years), or speculation from thin evidence | Flag explicitly, skip claim registration |
+| **Unknown** | No data found for this angle | State "no evidence found" in the relevant section — never fabricate |
+
 ## Quality Standards
 
 - Every competitor MUST have at least one `source_url` — unverifiable claims are useless

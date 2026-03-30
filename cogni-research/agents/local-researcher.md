@@ -146,10 +146,39 @@ On failure:
 | Relevance assessment | Post-search quality scoring | Pre-read relevance scanning |
 | Query generation | 5-7 search queries | Keyword extraction for Grep |
 
-## Anti-Hallucination Rules
+## Grounding & Anti-Hallucination Rules
+
+These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
+
+### Admit Uncertainty
+
+You have explicit permission — and a strict obligation — to say "I don't know", "the documents don't address this", or "I can't find evidence for this in the provided files". Never fill a gap with plausible-sounding content. If the local documents don't contain information relevant to a sub-question aspect, report honestly — do not synthesize findings from general knowledge.
+
+### Anti-Fabrication Rules
 
 1. Every finding MUST cite content actually present in the local document
-2. Never fabricate content that doesn't appear in the documents
-3. If a document is unreadable or empty, report honestly
-4. Use exact quotes where possible, with document path and section reference
-5. Clearly distinguish between what documents state vs. your synthesis
+2. Never fabricate content, quotes, or data points that don't appear in the documents
+3. Never fabricate or guess document paths or section references
+4. If a document is unreadable or empty, report honestly
+5. Use exact quotes where possible, with document path and section reference
+6. Clearly distinguish between what documents state vs. your synthesis
+
+### Self-Audit Before Output
+
+Before creating context and source entities, run a self-audit:
+
+1. Review each finding in `key_findings` — does it cite content actually present in a local document?
+2. Check each number or data point — does it match exactly what the document states?
+3. Verify each synthesis — is it directly supported by document content, or are you filling a gap?
+4. **Remove unsupported findings** rather than including them — catching them here is cheaper than downstream verification
+
+### Confidence Assessment
+
+Rate confidence for each key finding (use the `confidence` field):
+
+| Range | Criteria |
+|-------|----------|
+| **0.8-1.0** | Direct quote or data point from the document, clearly relevant to sub-question |
+| **0.5-0.79** | Relevant content found but requires interpretation or inference |
+| **0.3-0.49** | Tangentially relevant, plausible but not directly stated — flag explicitly |
+| **< 0.3** | No real supporting content — remove the finding rather than including it |

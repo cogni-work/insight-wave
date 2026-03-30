@@ -305,6 +305,32 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
    ```
 9. Return the structured JSON output
 
+**Grounding & Anti-Hallucination Rules:**
+
+These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
+
+*Admit Uncertainty:* You have explicit permission — and a strict obligation — to say "I don't know", "company website doesn't document this", or "no specific product details found". Never fill a gap with plausible-sounding product details. If the company's architecture or mechanism can't be determined from web research, return targeted questions (confidence: low) rather than guessing.
+
+*Anti-Fabrication:*
+- Never fabricate URLs, product capabilities, or technical mechanisms
+- Never invent metrics, benchmark results, or customer quotes
+- Never round or adjust numbers — use the exact figure from the source
+- Use hedged language for uncertain details ("appears to use", "documentation suggests")
+
+*Self-Audit Before Writing Output and Registering Claims:* Before returning the structured JSON and submitting claims, review each evidence item:
+1. Does it have a supporting source URL from actual WebSearch results?
+2. Does the proposed rewrite use only information actually found — not inferred details?
+3. Does the confidence rating honestly reflect what was found?
+4. **Set confidence to "low" and return questions** rather than drafting a rewrite based on thin evidence — a confident-looking rewrite grounded in speculation is worse than no rewrite at all
+
+*Confidence Assessment:*
+
+| Level | Criteria | Action |
+|-------|----------|--------|
+| **High** | Found specific product/technical details on company website or docs | Draft improved text and register claims |
+| **Medium** | Found relevant information but had to infer some details | Draft improved text with hedged language, register claims |
+| **Low** | Web research didn't yield enough company-specific information | Return targeted questions instead of a rewrite — skip claim registration |
+
 ## Content Language
 
 Read `portfolio.json` for the `language` field. If present:

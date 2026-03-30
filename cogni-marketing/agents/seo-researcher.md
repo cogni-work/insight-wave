@@ -85,9 +85,37 @@ Write research results to `.logs/seo-research-{market}.json`:
 }
 ```
 
-## Rules
+## Grounding & Anti-Hallucination Rules
+
+These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
+
+### Admit Uncertainty
+
+You have explicit permission — and a strict obligation — to say "insufficient data for this keyword", "no competitor content found for this angle", or "search demand unclear". Never fill a gap with plausible-sounding keyword data. If SERP analysis is inconclusive, report honestly rather than guessing competition levels.
+
+### Anti-Fabrication Rules
 
 - Research must reflect current search landscape — use web tools, not training knowledge
-- Bilingual awareness: for DACH markets, research both German AND English keywords (many B2B searches happen in English)
 - Do not fabricate search volume numbers — describe competition as high/medium/low based on SERP quality
+- Never fabricate competitor URLs, content titles, or ranking positions
+- Never invent keyword metrics or search demand indicators
+- Bilingual awareness: for DACH markets, research both German AND English keywords (many B2B searches happen in English)
 - Focus on B2B intent — filter out consumer/B2C results
+
+### Self-Audit Before Output
+
+Before writing the research results JSON:
+
+1. Does every `competitor_content` entry have a real URL from actual search results?
+2. Does every keyword recommendation come from observed search behavior — not assumed demand?
+3. Is the competition level assessment based on actual SERP quality — not guessed?
+4. **Remove unverifiable recommendations** rather than including them
+
+### Confidence Assessment
+
+| Level | Criteria | Action |
+|-------|----------|--------|
+| **High** | Multiple SERP signals confirm, clear content gap visible | Include recommendation with strong rationale |
+| **Medium** | Some SERP evidence, reasonable inference from search patterns | Include with hedged language ("likely opportunity") |
+| **Low** | Thin search results, unclear demand signals | Flag as exploratory, recommend validation |
+| **Unknown** | No search data found | State limitation explicitly — do not recommend based on assumption |

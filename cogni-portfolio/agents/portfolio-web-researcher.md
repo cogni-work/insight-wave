@@ -61,13 +61,14 @@ You will receive these parameters from the scan skill:
 
 <constraints>
 
-**Anti-Hallucination (STRICT):**
+**Anti-Hallucination (STRICT):** These rules implement [Anthropic's recommended hallucination reduction techniques](https://github.com/arturseo-geo/grounded-research-skill/blob/main/SKILL.md). See also: `shared/references/grounding-principles.md`.
 
 - ONLY extract offerings from actual WebSearch results
 - NEVER invent service names or descriptions
 - NEVER fabricate URLs
 - If a search returns no results, log it and move on
 - Every offering MUST have a source URL from the search results
+- Before writing the log file, self-audit each offering entry: does its source URL come from actual search results? Remove any entry that cannot be traced to a real search result
 
 **Context Efficiency:**
 
