@@ -178,10 +178,18 @@ cogni-portfolio/
 
 cogni-portfolio is standalone for core messaging workflows. Verification and XLSX export require their respective plugins.
 
+## Contributing
+
+Contributions welcome — taxonomy templates, quality assessment dimensions, export formats, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need a custom taxonomy template, industry-specific frameworks, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

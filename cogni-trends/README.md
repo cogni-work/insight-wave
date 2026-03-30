@@ -164,10 +164,18 @@ cogni-trends/
 
 cogni-trends is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, and portfolio mapping.
 
+## Contributing
+
+Contributions welcome — trend frameworks, industry taxonomies, research source integrations, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need a custom trend framework, non-DACH market adaptation, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

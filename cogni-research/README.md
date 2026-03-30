@@ -169,6 +169,10 @@ This plugin is an **independent reimplementation** — no source code from the o
 - **GPT-Researcher** by [Assaf Elovic / Tavily](https://github.com/assafelovic/gpt-researcher) (Apache-2.0) — multi-agent research architecture that inspired this plugin's parallel research and iterative review design.
 - **STORM** by [Stanford OVAL](https://arxiv.org/abs/2402.14207) — perspective-driven article generation framework. GPT-Researcher's editorial workflow builds on STORM's multi-perspective synthesis approach.
 
+## Contributing
+
+Contributions welcome — report types, research strategies, citation formats, and documentation. See the [insight-wave contribution guide](https://github.com/cogni-work/insight-wave/blob/main/CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need custom research workflows, internal knowledge base integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
@@ -176,3 +180,7 @@ Need custom research workflows, internal knowledge base integration, or a new pl
 ## License
 
 [AGPL-3.0](LICENSE)
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

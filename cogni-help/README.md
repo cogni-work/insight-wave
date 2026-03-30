@@ -132,10 +132,18 @@ cogni-help/
 All ecosystem plugins are soft dependencies — required for their respective courses
 but not for using guide, troubleshoot, workflow, cheatsheet, or issues.
 
+## Contributing
+
+Contributions welcome — course content, workflow templates, diagnostic checks, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need custom training courses or a new plugin? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

@@ -155,6 +155,10 @@ cogni-marketing/
 | cogni-visual | No | Slide decks and visual assets from content briefs |
 | cogni-claims | No | Evidence verification for sourced claims in content |
 
+## Contributing
+
+Contributions welcome — content formats, channel adapters, brand voice presets, and documentation. See the [insight-wave contribution guide](https://github.com/cogni-work/insight-wave/blob/main/CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need custom content formats, CRM integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
@@ -162,3 +166,7 @@ Need custom content formats, CRM integration, or a new plugin for your domain? C
 ## License
 
 [AGPL-3.0](LICENSE)
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

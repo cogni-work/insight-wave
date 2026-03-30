@@ -126,10 +126,18 @@ cogni-visual/
 | Excalidraw MCP | No | Canvas rendering for big-picture and Big Block (github.com/yctimlin/mcp_excalidraw) |
 | Pencil MCP | No | Canvas rendering for web narratives and poster storyboards (pencil.li) |
 
+## Contributing
+
+Contributions welcome — visual templates, layout types, rendering improvements, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need custom visual templates, branded rendering pipelines, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

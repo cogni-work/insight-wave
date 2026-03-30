@@ -139,10 +139,18 @@ cogni-sales/
 | cogni-copywriting | No | Executive polish on final deliverables |
 | cogni-visual | No | PPTX generation from sales presentation |
 
+## Contributing
+
+Contributions welcome — sales methodologies, pitch templates, evidence strategies, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need a custom sales methodology, CRM integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

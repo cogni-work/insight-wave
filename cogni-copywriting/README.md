@@ -144,10 +144,18 @@ cogni-copywriting/
 
 cogni-copywriting is standalone. It's consumed by cogni-sales, cogni-marketing, and cogni-research as an optional polish step.
 
+## Contributing
+
+Contributions welcome — new messaging frameworks, persona definitions, language rules, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need custom messaging frameworks, house style integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.

@@ -134,6 +134,10 @@ cogni-consulting/
 
 cogni-consulting is standalone as an orchestrator — it provides value even without other plugins by structuring the engagement methodology. Each plugin integration adds depth to the corresponding phase.
 
+## Contributing
+
+Contributions welcome — consulting methods, vision classes, deliverable templates, and documentation. See the [insight-wave contribution guide](https://github.com/cogni-work/insight-wave/blob/main/CONTRIBUTING.md) for guidelines.
+
 ## Custom development
 
 Need a custom engagement methodology, additional vision classes, or integration with your internal project management tools? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
@@ -141,3 +145,7 @@ Need a custom engagement methodology, additional vision classes, or integration 
 ## License
 
 [AGPL-3.0](LICENSE)
+
+---
+
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.
