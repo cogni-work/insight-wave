@@ -113,7 +113,7 @@ Detects German language automatically, loads Wolf Schneider style rules — brea
 | `copy-reader` | skill | Multi-stakeholder review — 5 parallel personas with cross-persona synthesis, blind spot detection, and auto-improvement |
 | `copy-json` | skill | Adapter that polishes text fields inside JSON files by delegating to copywriter |
 | `audit-copywriter` | skill | Audit arc-preservation references against cogni-narrative upstream definitions |
-| `copywriter` | agent (sonnet) | Delegation agent for parallel document polishing tasks |
+| `copywriter` | agent (opus) | Delegation agent for parallel document polishing tasks |
 | `reader` | agent (sonnet) | Delegation agent for parallel stakeholder review tasks |
 | `/copywrite` | command | Polish a document with messaging frameworks and readability optimization |
 | `/review-doc` | command | Run parallel stakeholder personas, synthesize feedback, auto-apply improvements |

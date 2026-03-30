@@ -123,7 +123,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `portfolio-export` | skill | Produce proposals, briefs, and workbooks |
 | `portfolio-communicate` | skill | Generate portfolio documentation for any audience (customer narratives, repo docs, custom) |
 | `portfolio-dashboard` | skill | Interactive HTML dashboard |
-| `portfolio-architecture` | skill | Layered mermaid diagram of products, features, readiness states, and cross-product bridges |
+| `portfolio-architecture` | skill | Interactive Excalidraw architecture diagram of products, features, and cross-product bridges |
 | `portfolio-scan` | skill | Discover offerings via web research and classify against taxonomy |
 | `trends-bridge` | skill | Bidirectional integration with cogni-trends TIPS analysis |
 | `portfolio-resume` | skill | Detect workflow phase and recommend next actions |

@@ -161,8 +161,10 @@ cogni-trends/
 | cogni-claims | No | Verify citations in trend reports against source URLs |
 | cogni-narrative | No | Arc-driven transformation of trend report output |
 | cogni-portfolio | No | Bidirectional integration via trends-bridge (portfolio context export, opportunity import) |
+| cogni-copywriting | No | Executive polish on trend reports with tone scoping |
+| cogni-visual | No | Big Block diagrams from value-modeler solution networks |
 
-cogni-trends is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, and portfolio mapping.
+cogni-trends is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, portfolio mapping, and visual output.
 
 ## Contributing
 
