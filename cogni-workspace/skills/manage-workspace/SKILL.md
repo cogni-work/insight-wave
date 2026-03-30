@@ -1,7 +1,7 @@
 ---
 name: manage-workspace
 description: >-
-  Initialize or update a insight-wave workspace — the shared foundation that all
+  Initialize or update an insight-wave workspace — the shared foundation that all
   marketplace plugins depend on. Use this skill whenever someone asks to create,
   set up, scaffold, initialize, update, refresh, or sync a workspace — including
   phrases like "set up my workplace", "get started with cogni", "create a new
@@ -9,14 +9,18 @@ description: >-
   "re-scan plugins", or any mention of workspace initialization or updates. Also
   trigger when someone runs a fresh plugin install and needs the shared foundation
   that plugins depend on, or when plugins were added/removed and the workspace
-  needs to catch up.
+  needs to catch up. Even if the user just says "new project", "start fresh",
+  "add a plugin", "wire up my workspace", or "my plugins can't find each other",
+  this skill applies.
 version: 0.3.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
 # Manage Workspace
 
-A insight-wave workspace is the shared foundation that all marketplace plugins depend on. It centralizes environment configuration, theme storage, and plugin registration so that plugins can find each other and share resources. Without a workspace, plugins operate in isolation and can't resolve paths or discover themes.
+## Why This Exists
+
+An insight-wave workspace is the shared foundation that all marketplace plugins depend on. It centralizes environment configuration, theme storage, and plugin registration so that plugins can find each other and share resources. Without a workspace, plugins operate in isolation and can't resolve paths or discover themes.
 
 This skill handles both initial creation and ongoing updates. It auto-detects which mode to use based on whether a workspace already exists.
 

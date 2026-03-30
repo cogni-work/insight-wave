@@ -10,6 +10,7 @@ description: >-
   output. Triggers on phrases like "pick a theme", "choose theme", "which theme",
   "select a theme", or when any visual output skill needs theme resolution. Also
   triggers when skills internally need theme selection as a prerequisite step.
+  Also triggers on "apply a theme", "use this theme", or "theme my output".
   This is the single standard entry point for theme selection across both
   insight-wave and insight-wave-pro marketplaces.
 version: 0.1.0

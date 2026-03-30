@@ -13,14 +13,17 @@ description: >-
   or building a theme — e.g., "what theme for my brand?", "help me pick a
   theme", "I need a visual identity for my startup". Even if the user just says
   "make it match our brand", "use our company colors", or "grab the style from
-  that site", this skill applies.
+  that site", this skill applies. Also triggers on "brand guidelines", "design
+  system", "brand identity", or "visual standards".
 version: 0.2.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Skill
 ---
 
 # Manage Themes
 
-Manage visual design themes for the insight-wave workspace. Themes are compact markdown files containing color palettes, typography, and design principles consumed by all plugins that produce visual output (slides, documents, diagrams, reports).
+## Why This Exists
+
+Without centralized theme management, visual plugins each hardcode their own colors and fonts, producing inconsistent outputs. This skill provides a single place to create, store, audit, and apply themes so every visual output — slides, documents, diagrams, reports — shares a coherent brand identity. Themes are compact markdown files containing color palettes, typography, and design principles.
 
 ## Prerequisites
 
@@ -62,13 +65,13 @@ When the user asks for theme advice — e.g., "what theme for my brand?", "help 
 
 | User has... | Action |
 |---|---|
-| A website URL | → **Operation #2** (Grab from Website) — extract the real brand |
-| A PPTX template | → **Operation #3** (Grab from PPTX) — extract from the template |
+| A website URL | → **Operation #3** (Grab from Website) — extract the real brand |
+| A PPTX template | → **Operation #4** (Grab from PPTX) — extract from the template |
 | Specific colors/fonts but no file | → Create a custom theme.md directly from their inputs, following the template |
-| Nothing concrete, just a description | → **Operation #4** (Create from Preset) — recommend 2-3 theme-factory presets that match their mood/industry, let them pick or blend |
-| An existing workspace theme that's close | → **Operation #5** (Audit/Improve) — review it and suggest targeted tweaks |
+| Nothing concrete, just a description | → **Operation #5** (Create from Preset) — recommend 2-3 theme-factory presets that match their mood/industry, let them pick or blend |
+| An existing workspace theme that's close | → **Operation #6** (Audit/Improve) — review it and suggest targeted tweaks |
 
-After creating or selecting a theme, always run a quick audit (Operation #5) on the result before finalizing — this catches contrast issues and missing sections early. Then offer to generate a theme showcase (Operation #7) so the user can see all tokens in action.
+After creating or selecting a theme, always run a quick audit (Operation #6) on the result before finalizing — this catches contrast issues and missing sections early. Then offer to generate a theme showcase (Operation #7) so the user can see all tokens in action.
 
 ### 2. List Themes
 
@@ -221,7 +224,7 @@ When the user asks to apply a theme, read the theme.md and feed its contents int
 3. Include the full theme.md content in the prompt/context when invoking the downstream skill. The consuming skill needs the raw color hex codes, font names, and design principles to apply them. For example:
    - **Slides** (`document-skills:pptx`): pass theme colors and fonts so they map to slide master styles
    - **Documents** (`document-skills:docx`): pass palette for heading colors, accent boxes, table styling
-   - **Diagrams** (`cogni-workspace:diagram-expert`): pass primary/secondary/accent colors and design principles
+   - **Diagrams** (e.g., `cogni-visual:render-big-picture`, `cogni-visual:render-big-block`): pass primary/secondary/accent colors and design principles
    - **Web/HTML outputs**: pass full palette and typography for CSS variable mapping
 
 The theme.md content is the single source of truth — always read it fresh rather than relying on cached or partial values.
