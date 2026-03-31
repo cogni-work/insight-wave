@@ -1,7 +1,7 @@
 ---
 name: trend-report
 description: |
-  Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims. Produces a theme-first report where 3-7 investment themes drive the narrative — each investment theme tells a CxO-level investment story using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) backed by T→I→P→S value chain evidence. Reads agreed trend candidates, enriches each with web-sourced quantitative evidence via parallel agents, assembles the report with strategic executive summary and portfolio analysis, invokes cogni-claims:claim-work for automated verification, and polishes the final prose for executive readability via cogni-copywriting. Required pipeline: trend-scout → value-modeler → trend-report. Use when: (1) trend-scout and value-modeler have completed, (2) user wants a written trend report, (3) user mentions "trend report", "TIPS report", "write up trends", "summarize trends", "trend analysis document", "strategic stories", (4) preparing a deliverable from scouted trends, (5) user asks to "generate report from trends" or "create trend deliverable". Always use this skill when trend-scout output exists and the user wants any kind of written trend analysis — even if they don't use the exact phrase "trend report".
+  Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims. The user selects a report-level narrative arc from cogni-narrative's 7 story arcs (corporate-visions, technology-futures, competitive-intelligence, strategic-foresight, industry-transformation, trend-panorama, theme-thesis) — the arc frames the executive summary, bridge paragraphs between themes, and a synthesis closing section that bind investment themes into one cohesive narrative. Each investment theme internally uses the theme-thesis arc (Why Change → Why Now → Why You → Why Pay) backed by T→I→P→S value chain evidence. Reads agreed trend candidates, enriches each with web-sourced quantitative evidence via parallel agents, assembles the report with arc-framed executive summary, bridge paragraphs, theme sections, synthesis section, and claims registry. Invokes cogni-claims:claim-work for automated verification and polishes the final prose via cogni-copywriting. Required pipeline: trend-scout → value-modeler → trend-report. Use when: (1) trend-scout and value-modeler have completed, (2) user wants a written trend report, (3) user mentions "trend report", "TIPS report", "write up trends", "summarize trends", "trend analysis document", "strategic stories", (4) preparing a deliverable from scouted trends, (5) user asks to "generate report from trends" or "create trend deliverable". Always use this skill when trend-scout output exists and the user wants any kind of written trend analysis — even if they don't use the exact phrase "trend report".
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill
 ---
 
@@ -14,12 +14,14 @@ Generate a strategic TIPS trend report from agreed trend-scout candidates. Organ
 Transform agreed trend-scout candidates into a strategic, evidence-backed report:
 
 1. Load value-modeler investment themes and validate prerequisites
-2. Enrich each trend with quantitative evidence from web research
-3. Assemble investment theme narratives using Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) with embedded evidence
-4. Generate inline citations for every quantitative claim
-5. Produce a claims registry compatible with `cogni-claims:claim-work`
-6. Optionally verify claims via cogni-claims:claim-work
-7. Polish report prose for executive readability via cogni-copywriting
+2. User selects a report-level narrative arc (from cogni-narrative's 7 arcs) to frame the overall story
+3. Enrich each trend with quantitative evidence from web research
+4. Assemble investment theme narratives using theme-thesis arc (Why Change → Why Now → Why You → Why Pay) with embedded evidence
+5. Generate arc-framed executive summary, bridge paragraphs between themes, and synthesis closing section
+6. Generate inline citations for every quantitative claim
+7. Produce a claims registry compatible with `cogni-claims:claim-work`
+8. Optionally verify claims via cogni-claims:claim-work
+9. Polish report prose for executive readability via cogni-copywriting
 
 ## Language Support
 
@@ -75,6 +77,7 @@ Read references **only when needed** for the specific phase:
 |-----------|--------------|
 | [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md) | Language detection and resolution pattern |
 | [$CLAUDE_PLUGIN_ROOT/references/data-model.md]($CLAUDE_PLUGIN_ROOT/references/data-model.md) | Understanding entity schemas and project structure |
+| [references/report-arc-frames.md](references/report-arc-frames.md) | Arc-specific framing templates for exec summary, bridges, synthesis (Phase 0.4b + Phase 2) |
 | [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) | Assembling the investment theme report (Phase 2) |
 | [references/report-structure.md](references/report-structure.md) | Dimension section templates (written by Phase 1 agents) |
 | [references/evidence-enrichment.md](references/evidence-enrichment.md) | Configuring agent web search strategy (Phase 1) |
@@ -94,9 +97,9 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 3.5 → Phase 4
    │          │          │         │          │           └─ Update metadata, display summary
    │          │          │         │          └─ Executive polish via cogni-copywriting
    │          │          │         └─ Optional claim-work verification
-   │          │          └─ Investment theme narratives (Corporate Visions arc) + evidence weaving
+   │          │          └─ Theme narratives + arc-framed exec summary + bridges + synthesis
    │          └─ 4 parallel agents: enrich trends, write sections + enriched JSONs, extract claims
-   └─ Project discovery, load trend-scout + value-modeler output, validate gate
+   └─ Project discovery, arc selection, load trend-scout + value-modeler output, validate gate
 ```
 
 ---
@@ -201,6 +204,50 @@ AskUserQuestion:
 
 The option matching the current default gets the arrow marker. Set `LANGUAGE` to the user's choice. Update `project_language` in trend-scout-output.json if changed.
 
+#### Step 0.4b: Select Report-Level Narrative Arc
+
+Read [references/report-arc-frames.md](references/report-arc-frames.md) for the full arc frame definitions.
+
+The report-level arc determines how investment themes connect into one cohesive narrative — the executive summary voice, bridge paragraphs between themes, and the synthesis closing section. It does NOT change how individual theme sections are written internally (those always use the `theme-thesis` arc).
+
+Present the 7 available arcs via `AskUserQuestion`. The recommended default is `corporate-visions` (the proven B2B persuasion frame). Auto-detect a different recommendation if the topic strongly signals another arc (e.g., heavily regulatory topics → `industry-transformation`).
+
+**If INTERACTION_LANGUAGE == "de":**
+```yaml
+AskUserQuestion:
+  question: "{PHASE_0_ARC_QUESTION}"
+  header: "{PHASE_0_ARC_HEADER}"
+  options:
+    - label: "{ARC_CORPORATE_VISIONS}"
+      description: "{ARC_CORPORATE_VISIONS_DESC}"
+    - label: "{ARC_TECHNOLOGY_FUTURES}"
+      description: "{ARC_TECHNOLOGY_FUTURES_DESC}"
+    - label: "{ARC_INDUSTRY_TRANSFORMATION}"
+      description: "{ARC_INDUSTRY_TRANSFORMATION_DESC}"
+    - label: "{ARC_STRATEGIC_FORESIGHT}"
+      description: "{ARC_STRATEGIC_FORESIGHT_DESC}"
+```
+
+**If INTERACTION_LANGUAGE == "en":**
+```yaml
+AskUserQuestion:
+  question: "{PHASE_0_ARC_QUESTION}"
+  header: "{PHASE_0_ARC_HEADER}"
+  options:
+    - label: "{ARC_CORPORATE_VISIONS}"
+      description: "{ARC_CORPORATE_VISIONS_DESC}"
+    - label: "{ARC_TECHNOLOGY_FUTURES}"
+      description: "{ARC_TECHNOLOGY_FUTURES_DESC}"
+    - label: "{ARC_INDUSTRY_TRANSFORMATION}"
+      description: "{ARC_INDUSTRY_TRANSFORMATION_DESC}"
+    - label: "{ARC_STRATEGIC_FORESIGHT}"
+      description: "{ARC_STRATEGIC_FORESIGHT_DESC}"
+```
+
+> **AskUserQuestion limit:** The picker supports max 4 options. Present the 4 most relevant arcs based on the topic. The recommended arc is always first (with arrow marker). If the user selects "Other", show the remaining 3 arcs (`competitive-intelligence`, `trend-panorama`, `theme-thesis`) in a follow-up question.
+
+Set `REPORT_ARC_ID` to the user's choice (e.g., `corporate-visions`, `technology-futures`). This variable is passed to Phase 2 for arc-aware assembly.
+
 #### Step 0.5: Load i18n Labels
 
 Read the labels file matching the chosen language:
@@ -215,6 +262,8 @@ On re-runs, remove stale files to prevent mixing old and new content:
 rm -f "{PROJECT_PATH}/.logs/report-header.md" \
       "{PROJECT_PATH}/.logs/report-section-"*.md \
       "{PROJECT_PATH}/.logs/report-investment-theme-"*.md \
+      "{PROJECT_PATH}/.logs/report-bridge-"*.md \
+      "{PROJECT_PATH}/.logs/report-synthesis.md" \
       "{PROJECT_PATH}/.logs/enriched-trends-"*.json \
       "{PROJECT_PATH}/.logs/claims-"*.json \
       "{PROJECT_PATH}/.logs/report-claims-registry.md" \
@@ -294,12 +343,14 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 **Summary of steps** (details in the reference):
 
 1. **Read value model** — Read `.logs/phase2-value-model.json` for investment themes, value chains, solution templates, orphan candidates, coverage data
-2. **Dispatch investment theme agents** — For each investment theme, dispatch a `cogni-trends:trend-report-investment-theme-writer` agent with `MARKET_REGION: {MARKET_REGION}` in the prompt. All agents in a single message (parallel). Each agent self-loads evidence from disk, writes `report-investment-theme-{investment_theme_id}.md`, and returns compact JSON with word count, citation count, quality gate status, and top claims.
+2. **Dispatch investment theme agents** — For each investment theme, dispatch a `cogni-trends:trend-report-investment-theme-writer` agent with `MARKET_REGION: {MARKET_REGION}` and `REPORT_ARC_ID: {REPORT_ARC_ID}` in the prompt. All agents in a single message (parallel). Each agent self-loads evidence from disk, writes `report-investment-theme-{investment_theme_id}.md`, and returns compact JSON with word count, citation count, quality gate status, and top claims.
 3. **Collect agent results** — Validate all agents returned `ok: true` and quality gates passed. Retry once on failure.
-4. **Write executive summary** — Read ALL `report-investment-theme-{investment_theme_id}.md` files, then synthesize a flat Zusammenfassung (no subsections, no tables — numbered investment theme list using thesis headings + punchy closing paragraph). Write `report-header.md`.
-5. **Write claims registry** — Read 4 `claims-{dimension}.json` files once, map claims to investment themes via value model, write `report-claims-registry.md`
-6. **Assemble** — Concatenate with cat: header + investment themes (ordered) + claims → `tips-trend-report.md`
-7. **Merge claims** → `tips-trend-report-claims.json`
+4. **Write executive summary** — Read ALL `report-investment-theme-{investment_theme_id}.md` files. Use `REPORT_ARC_ID` to select the arc-specific opener and closer patterns from `report-arc-frames.md`. Write `report-header.md`.
+5. **Write bridge paragraphs** — For each consecutive theme pair, generate a 2-4 sentence bridge using the arc's bridge pattern. Write `report-bridge-{N}-{N+1}.md` files.
+6. **Write synthesis section** — Generate a 300-500 word closing section using the arc's synthesis frame. Aggregates evidence across all themes. Write `report-synthesis.md`.
+7. **Write claims registry** — Read 4 `claims-{dimension}.json` files once, map claims to investment themes via value model, write `report-claims-registry.md`
+8. **Assemble** — Concatenate: header + (theme1 + bridge-1-2 + theme2 + bridge-2-3 + ... + themeN) + synthesis + claims → `tips-trend-report.md`
+9. **Merge claims** → `tips-trend-report-claims.json`
 
 **Resume logic:** Before dispatching an agent for an investment theme, check if `report-investment-theme-{investment_theme_id}.md` already exists and is >1000 bytes. If so, skip that agent — display `"{PHASE_2_INVESTMENT_THEME_AGENT_SKIP_RESUME}"` and continue. This means re-runs only dispatch for missing investment themes.
 

@@ -62,6 +62,7 @@ Per agent:
     STRATEGIC_QUESTION: {theme.strategic_question}
     EXECUTIVE_SPONSOR_TYPE: {theme.executive_sponsor_type}
     LANGUAGE: {LANGUAGE}
+    REPORT_ARC_ID: {REPORT_ARC_ID}
     INVESTMENT_THEME_INDEX: {1-based index in investment_themes array}
     VALUE_CHAINS: {JSON array of this investment theme's value chains from value_chains[],
       filtered by investment_theme_ref == investment_theme_id. Include full chain objects:
@@ -183,6 +184,7 @@ title: "{REPORT_TITLE}"
 industry: {INDUSTRY_EN}
 subsector: {SUBSECTOR_EN}
 language: {LANGUAGE}
+report_arc: {REPORT_ARC_ID}
 generated_by: trend-report
 source_skills:
   - trend-scout
@@ -195,21 +197,30 @@ generated_at: "{ISO-8601}"
 ---
 ```
 
-### Executive Summary Content
+### Executive Summary Content — Arc-Aware
 
 The Zusammenfassung is ONE flat section — no subsections (`###`), no tables. A CxO reading only this section should feel "I must act."
+
+**The opener and closer adopt the report-level arc's rhetorical frame.** Read the selected arc's templates from [references/report-arc-frames.md](references/report-arc-frames.md) and use the "Exec Summary Opener" and "Exec Summary Closer" patterns. The middle section (bridge sentence + numbered list) stays the same for all arcs.
 
 ```markdown
 # {REPORT_TITLE}
 
 ## {EXEC_SUMMARY_LABEL}
 
-{UNCONSIDERED NEED OPENER: 2-3 tight sentences. Synthesized from reading all investment theme
-sections — pull the most surprising reframe across investment themes. Challenge the reader's
-mental model. Anchor with one specific data point lifted from the investment theme prose.
-NOT neutral landscape framing ("Die Branche steht vor...").
+{ARC-SPECIFIC OPENER: 2-3 tight sentences using the selected arc's opener pattern.
+Synthesized from reading all investment theme sections — pull the most surprising
+evidence across investment themes. Anchor with one specific data point lifted from
+the investment theme prose. NOT neutral landscape framing.
 
-Pattern: "The prevailing assumption is [X]. [N] converging forces reveal: [reframe]."}
+Examples by arc:
+- corporate-visions: Challenge prevailing assumption with unconsidered need
+- technology-futures: Open with most surprising technology convergence
+- strategic-foresight: Open with strongest converging signals
+- industry-transformation: Open with dominant structural forces
+- competitive-intelligence: Open with most significant competitive shift
+- trend-panorama: Open with force-to-foundation chain
+- theme-thesis: Open with portfolio investment framing}
 
 {BRIDGE SENTENCE: One sentence that transitions from the opener to the investment theme list.
 It frames what the bullets are — strategic questions that demand answers.
@@ -222,16 +233,17 @@ Pattern: "Fünf Handlungsfelder bündeln den Handlungsbedarf:" or
 ...
 {N}. **{theme_N.name}**: {theme_N.thesis_heading}
 
-{CLOSING PARAGRAPH: 2-3 sentences that weave urgency, headline evidence, and
-cost-of-inaction into a single compelling arc. Source everything from the investment theme
-sections you just read — specific numbers, deadlines, ratios.
+{ARC-SPECIFIC CLOSER: 2-3 sentences using the selected arc's closer pattern.
+Source everything from the investment theme sections — specific numbers, deadlines, ratios.
 
-Include: the decisive time window, the aggregate cost-of-inaction ratio across
-investment themes, and one undeniable closing sentence.
-
-Pattern: "Together these [N] investment themes create a [window] — [convergence point].
-Proactive investment: €X Mio. Cost of inaction: €Y Mio. over three years.
-Die Entscheidung liegt vor Ihnen."}
+Examples by arc:
+- corporate-visions: Aggregate cost-of-inaction vs. proactive investment ratio
+- technology-futures: Capability readiness and learning advantage window
+- strategic-foresight: Decision framing with hedging approach
+- industry-transformation: Leadership positioning in transformed landscape
+- competitive-intelligence: Strategic positioning window with first-mover advantage
+- trend-panorama: Foundation urgency — awareness without foundations is theater
+- theme-thesis: Portfolio return vs. aggregate delay cost}
 ```
 
 **Rules:**
@@ -271,18 +283,103 @@ Must end with two trailing newlines.
 
 ---
 
+## Step 2.5b: Generate Bridge Paragraphs
+
+Display `"{PHASE_2_BRIDGES_START}"`.
+
+The orchestrator already has all investment theme sections in context from Step 2.4. For each consecutive pair of themes (Theme 1→2, Theme 2→3, ..., Theme N-1→N), generate a bridge paragraph.
+
+**Process:**
+1. Read the arc-specific bridge pattern from [references/report-arc-frames.md](references/report-arc-frames.md) for `REPORT_ARC_ID`
+2. For each pair (Theme N, Theme N+1):
+   - Extract 1-2 specific data points from Theme N's section (numbers, deadlines, entities)
+   - Extract 1-2 specific data points from Theme N+1's section
+   - Write a 2-4 sentence bridge using the arc's bridge pattern and vocabulary
+   - The bridge must demonstrate a causal or strategic link — NOT a generic transition
+3. Write each bridge to `{PROJECT_PATH}/.logs/report-bridge-{N}-{N+1}.md`
+4. Display `"{PHASE_2_BRIDGE_WRITTEN}"` for each
+
+**Bridge format:**
+
+```markdown
+
+> **{BRIDGE_LABEL}:** {2-4 sentences using the arc's bridge pattern. Must reference specific
+> evidence from both the preceding and following theme — numbers, entities, or deadlines.
+> Generic transitions like "Building on the previous theme" are insufficient.}
+
+```
+
+**Quality gate:** Every bridge must contain at least one specific data point from the preceding theme AND one from the following theme. If evidence is insufficient, write the bridge anyway using qualitative connections — but log a WARNING.
+
+Must start and end with one blank line (for clean concatenation between theme sections).
+
+---
+
+## Step 2.5c: Generate Synthesis Section
+
+Display `"{PHASE_2_SYNTHESIS_START}"`.
+
+The synthesis section is a 300-500 word closing section that ties all investment themes together through the report-level arc's final element lens. It replaces the pattern where the report simply stops after the last theme's "Nächste Schritte."
+
+**Process:**
+1. Read the arc-specific synthesis frame from [references/report-arc-frames.md](references/report-arc-frames.md) for `REPORT_ARC_ID`
+2. Look up the synthesis heading from i18n labels: `SYNTHESIS_{REPORT_ARC_ID_UPPERCASE}` (e.g., `SYNTHESIS_CORPORATE_VISIONS`)
+3. Read all theme sections (already in context) and the agent-returned metadata (why_pay_ratio, top_claims, etc.)
+4. Write the synthesis section following the arc's synthesis frame
+
+**Synthesis format:**
+
+```markdown
+## {SYNTHESIS_HEADING}
+
+{Opening: 2-3 sentences through the arc's synthesis lens}
+
+{Body: 200-350 words that:
+- Aggregate the strongest evidence across themes
+- Identify shared foundations / investments that unlock multiple themes
+- Present the combined cost-of-inaction vs. proactive investment
+- Apply the arc's specific synthesis technique}
+
+{Unified Action Roadmap — sequences ACROSS themes:}
+1. **{Calendar timeframe}**: {Cross-theme action — names which themes it enables}
+2. **{Calendar timeframe}**: {Cross-theme action}
+3. **{Calendar timeframe}**: {Cross-theme action}
+
+{Closing: 1-2 sentences — the arc's decisive closing statement}
+```
+
+Write to `{PROJECT_PATH}/.logs/report-synthesis.md`. Display `"{PHASE_2_SYNTHESIS_WRITTEN}"`.
+
+Must end with two trailing newlines.
+
+> **Note:** Per-theme "Nächste Schritte" remain in each theme section — they're specific and actionable per domain. The synthesis roadmap is the cross-theme orchestration layer on top.
+
+---
+
 ## Step 2.6: Assemble Final Report
 
-Verify all files exist, then concatenate in this order:
+Verify all files exist, then concatenate in this order — bridges interleaved between themes, synthesis before claims:
 
 ```bash
-# Build file list for investment theme mode
+# Build file list: header
 FILES="{PROJECT_PATH}/.logs/report-header.md"
 
-# Investment theme sections in order
-for investment_theme_id in it-001 it-002 ... it-N; do
-  FILES="$FILES {PROJECT_PATH}/.logs/report-investment-theme-${investment_theme_id}.md"
+# Investment theme sections with bridges interleaved
+THEME_IDS=(it-001 it-002 ... it-N)
+for i in "${!THEME_IDS[@]}"; do
+  FILES="$FILES {PROJECT_PATH}/.logs/report-investment-theme-${THEME_IDS[$i]}.md"
+  # Add bridge after each theme except the last
+  NEXT=$((i + 1))
+  if [ $NEXT -lt ${#THEME_IDS[@]} ]; then
+    BRIDGE_FILE="{PROJECT_PATH}/.logs/report-bridge-$((i+1))-$((i+2)).md"
+    if [ -f "$BRIDGE_FILE" ]; then
+      FILES="$FILES $BRIDGE_FILE"
+    fi
+  fi
 done
+
+# Synthesis section (before claims)
+FILES="$FILES {PROJECT_PATH}/.logs/report-synthesis.md"
 
 # Claims registry
 FILES="$FILES {PROJECT_PATH}/.logs/report-claims-registry.md"
@@ -296,6 +393,8 @@ Read first 3 + last 3 lines of the assembled report:
 - First lines should start with `---` (YAML frontmatter)
 - Last lines should contain the claims total
 - Report should contain exactly N investment theme H2 headers matching `## {N}. {theme.name}`
+- Report should contain the synthesis H2 header matching `## {SYNTHESIS_HEADING}`
+- Report should contain N-1 bridge blockquotes between theme sections
 
 ---
 

@@ -144,6 +144,49 @@ WHY_PAY: "Why Pay: The Business Case"
 COST_OF_INACTION: "Cost of Action vs. Cost of Inaction"
 ```
 
+## Report Arc Selection
+
+```text
+PHASE_0_ARC_QUESTION: "Which narrative arc should frame the report? This determines how themes connect — not how individual themes are written."
+PHASE_0_ARC_HEADER: "Report Arc"
+ARC_CORPORATE_VISIONS: "Corporate Visions (Recommended)"
+ARC_CORPORATE_VISIONS_DESC: "Challenge assumptions, create urgency, quantify inaction — the B2B persuasion frame"
+ARC_TECHNOLOGY_FUTURES: "Technology Futures"
+ARC_TECHNOLOGY_FUTURES_DESC: "Map emerging capabilities, show convergence, quantify required investment"
+ARC_COMPETITIVE_INTELLIGENCE: "Competitive Intelligence"
+ARC_COMPETITIVE_INTELLIGENCE_DESC: "Map landscape shifts, identify positioning opportunities, assess threats"
+ARC_STRATEGIC_FORESIGHT: "Strategic Foresight"
+ARC_STRATEGIC_FORESIGHT_DESC: "Read signals, build scenarios, frame decisions under uncertainty"
+ARC_INDUSTRY_TRANSFORMATION: "Industry Transformation"
+ARC_INDUSTRY_TRANSFORMATION_DESC: "Identify structural forces, acknowledge friction, chart evolution path"
+ARC_TREND_PANORAMA: "Trend Panorama (TIPS-native)"
+ARC_TREND_PANORAMA_DESC: "Map forces → impact → horizons → foundations across the Trendradar"
+ARC_THEME_THESIS: "Theme Thesis"
+ARC_THEME_THESIS_DESC: "Each theme as an investment thesis with its own quantified business case"
+```
+
+## Synthesis Section Headings (per arc)
+
+```text
+SYNTHESIS_CORPORATE_VISIONS: "The Investment Decision"
+SYNTHESIS_TECHNOLOGY_FUTURES: "What's Required"
+SYNTHESIS_COMPETITIVE_INTELLIGENCE: "Strategic Implications"
+SYNTHESIS_STRATEGIC_FORESIGHT: "The Decisions Ahead"
+SYNTHESIS_INDUSTRY_TRANSFORMATION: "Leadership Positioning"
+SYNTHESIS_TREND_PANORAMA: "Strategic Foundations"
+SYNTHESIS_THEME_THESIS: "Aggregate Investment Case"
+```
+
+## Bridge Paragraph Labels
+
+```text
+BRIDGE_LABEL: "Strategic Link"
+PHASE_2_BRIDGES_START: "Generating bridge paragraphs between investment themes..."
+PHASE_2_SYNTHESIS_START: "Writing synthesis section..."
+PHASE_2_BRIDGE_WRITTEN: "Bridge {N}→{N+1}: {FROM_NAME} → {TO_NAME}"
+PHASE_2_SYNTHESIS_WRITTEN: "Synthesis section written"
+```
+
 ## Phase Messages (Investment Theme Mode)
 
 ```text

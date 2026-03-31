@@ -144,6 +144,49 @@ WHY_PAY: "Geschäftliche Auswirkungen: Der Business Case"
 COST_OF_INACTION: "Handlungskosten vs. Untätigkeitskosten"
 ```
 
+## Auswahl des Report-Erzählbogens
+
+```text
+PHASE_0_ARC_QUESTION: "Welcher Erzählbogen soll den Bericht rahmen? Dies bestimmt, wie die Handlungsfelder zusammenhängen — nicht wie einzelne Handlungsfelder geschrieben werden."
+PHASE_0_ARC_HEADER: "Report-Erzählbogen"
+ARC_CORPORATE_VISIONS: "Corporate Visions (Empfohlen)"
+ARC_CORPORATE_VISIONS_DESC: "Annahmen hinterfragen, Dringlichkeit erzeugen, Untätigkeit beziffern — der B2B-Überzeugungsrahmen"
+ARC_TECHNOLOGY_FUTURES: "Technology Futures"
+ARC_TECHNOLOGY_FUTURES_DESC: "Aufkommende Fähigkeiten kartieren, Konvergenz zeigen, erforderliche Investitionen beziffern"
+ARC_COMPETITIVE_INTELLIGENCE: "Competitive Intelligence"
+ARC_COMPETITIVE_INTELLIGENCE_DESC: "Wettbewerbsverschiebungen kartieren, Positionierungschancen identifizieren, Bedrohungen bewerten"
+ARC_STRATEGIC_FORESIGHT: "Strategic Foresight"
+ARC_STRATEGIC_FORESIGHT_DESC: "Signale lesen, Szenarien aufbauen, Entscheidungen unter Unsicherheit rahmen"
+ARC_INDUSTRY_TRANSFORMATION: "Branchentransformation"
+ARC_INDUSTRY_TRANSFORMATION_DESC: "Strukturelle Kräfte identifizieren, Reibungspunkte anerkennen, Transformationspfad aufzeigen"
+ARC_TREND_PANORAMA: "Trend-Panorama (TIPS-nativ)"
+ARC_TREND_PANORAMA_DESC: "Kräfte → Auswirkungen → Horizonte → Fundamente über den Trendradar kartieren"
+ARC_THEME_THESIS: "Handlungsfeld-These"
+ARC_THEME_THESIS_DESC: "Jedes Handlungsfeld als Investitionsthese mit eigenem quantifiziertem Business Case"
+```
+
+## Synthese-Abschnittsüberschriften (pro Erzählbogen)
+
+```text
+SYNTHESIS_CORPORATE_VISIONS: "Die Investitionsentscheidung"
+SYNTHESIS_TECHNOLOGY_FUTURES: "Was erforderlich ist"
+SYNTHESIS_COMPETITIVE_INTELLIGENCE: "Strategische Implikationen"
+SYNTHESIS_STRATEGIC_FORESIGHT: "Die anstehenden Entscheidungen"
+SYNTHESIS_INDUSTRY_TRANSFORMATION: "Führungspositionierung"
+SYNTHESIS_TREND_PANORAMA: "Strategische Grundlagen"
+SYNTHESIS_THEME_THESIS: "Aggregierter Investitionsfall"
+```
+
+## Brückenabsatz-Bezeichnungen
+
+```text
+BRIDGE_LABEL: "Strategische Verknüpfung"
+PHASE_2_BRIDGES_START: "Generiere Brückenabsätze zwischen Handlungsfeldern..."
+PHASE_2_SYNTHESIS_START: "Schreibe Synthese-Abschnitt..."
+PHASE_2_BRIDGE_WRITTEN: "Brücke {N}→{N+1}: {FROM_NAME} → {TO_NAME}"
+PHASE_2_SYNTHESIS_WRITTEN: "Synthese-Abschnitt geschrieben"
+```
+
 ## Phasenmeldungen (Handlungsfeld-Modus)
 
 ```text
