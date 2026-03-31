@@ -185,10 +185,30 @@ $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>
    - Stakeholder review verdict and score
    - The relevance matrix from `project-status.sh` — which pairs are High/Medium/Low/Skip
    - Feature readiness summary (how many GA/Beta/Planned, any deferred warnings from the features phase)
-   - Customer profile coverage: which markets have `customers/{market-slug}.json` files (these produce perspective-correct, buyer-grounded propositions) vs. which markets don't (these will use inferred buyer perspective from market descriptions — weaker messaging). For markets without profiles, recommend: "Consider running the `customers` skill first for sharper messaging."
-   - Offer: "Before I start generating, would you like to: (a) open the dashboard to review the current portfolio state, (b) see the full feature descriptions that will become the IS layer, or (c) proceed with generation?"
+   - **Customer profile coverage gate** — check which markets have `customers/{market-slug}.json` files (these produce perspective-correct, buyer-grounded propositions) vs. which don't (these will use inferred buyer perspective from market descriptions — weaker messaging). Present this as a coverage table so the user sees the gap clearly. Markets without customer profiles produce propositions with generic pain points instead of role-specific buying criteria and persona-grounded language.
 
-   Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present the feature descriptions with quality status. Only proceed to generation after the user confirms.
+     **When zero customer profiles exist**, offer:
+     - (a) open the dashboard to review the current portfolio state
+     - (b) see the full feature descriptions that will become the IS layer
+     - (c) run the `customers` skill first for buyer-grounded propositions **(recommended)**
+     - (d) proceed without customer profiles — I'll use inferred buyer perspective
+
+     **When some but not all markets have profiles**, offer:
+     - (a) open the dashboard to review the current portfolio state
+     - (b) see the full feature descriptions that will become the IS layer
+     - (c) add customer profiles for the remaining N market(s) first **(recommended)**
+     - (d) proceed — generate with profiles where available, infer for the rest
+
+     **When all markets have profiles**, offer:
+     - (a) open the dashboard to review the current portfolio state
+     - (b) see the full feature descriptions that will become the IS layer
+     - (c) proceed with generation
+
+     The user must explicitly choose option (d) to bypass. Do not auto-proceed past this checkpoint when customer profiles are missing — buyer-grounded messaging is materially better than inferred messaging, and this is the last opportunity to add profiles before generating a large batch.
+
+   Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present the feature descriptions with quality status. If they choose (c) where customer profiles are missing, direct them to the `customers` skill. Only proceed to generation after the user confirms (c) when all profiles exist, or explicitly chooses (d).
+
+   After batch generation, log which propositions were generated with customer profile data vs. inferred buyer perspective, so the user can later identify which propositions to revisit after adding customer profiles.
 
    This checkpoint exists because once propositions are generated, the user needs to understand what they're built on. Reviewing features after proposition generation means reviewing backwards — it's much harder to spot a weak IS statement when you're already reading DOES/MEANS messaging built on top of it.
 

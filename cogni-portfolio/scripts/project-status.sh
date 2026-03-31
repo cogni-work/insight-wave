@@ -614,6 +614,8 @@ elif [ "$FEATURES" -eq 0 ]; then
   PHASE="features"
 elif [ "$MARKETS" -eq 0 ]; then
   PHASE="markets"
+elif [ "$CUSTOMERS" -eq 0 ]; then
+  PHASE="customers"
 elif [ "$MISSING_COUNT" -gt 0 ]; then
   PHASE="propositions"
 elif [ "$SOLUTIONS_PCT" -lt 100 ] || [ "$COMPETITORS_PCT" -lt 100 ] || [ "$CUSTOMERS_PCT" -lt 100 ]; then
@@ -673,7 +675,15 @@ case "$PHASE" in
   markets)
     add_action "markets" "Features defined but no target markets yet"
     ;;
+  customers)
+    add_action "customers" "$MARKETS market(s) defined but no customer profiles — profiles sharpen proposition messaging"
+    add_action "propositions" "Skip to propositions without customer profiles (weaker messaging)"
+    ;;
   propositions)
+    if [ "$CUSTOMERS_PCT" -lt 100 ] && [ "$CUSTOMERS" -gt 0 ]; then
+      missing_cust=$((MARKETS - CUSTOMERS))
+      add_action "customers" "$missing_cust market(s) still lack customer profiles — add for sharper messaging"
+    fi
     if [ "$EXCLUDED_COUNT" -gt 0 ]; then
       add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending ($EXCLUDED_COUNT excluded)"
     else

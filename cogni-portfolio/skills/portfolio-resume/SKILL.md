@@ -104,8 +104,9 @@ If the phase is `complete`, congratulate the user and suggest reviewing outputs 
 | `products` | No products defined yet | Run `products` skill |
 | `features` | Products exist, no features | Run `features` skill |
 | `markets` | Features defined, no markets | Run `markets` skill |
+| `customers` | Markets defined, no customer profiles yet | Run `customers` skill (or skip to `propositions` for weaker messaging) |
 | `propositions` | Feature x Market pairs need messaging | Run `propositions` skill |
-| `enrichment` | Propositions exist, customer/solution/competitor gaps remain | Run `customers`, `solutions`, and/or `compete` |
+| `enrichment` | Propositions exist, solution/competitor gaps remain | Run `solutions`, `compete`, and/or `customers` for remaining markets |
 | `verification` | Unverified or deviated claims pending | Run `verify` skill |
 | `synthesis` | All entities complete, claims clean | Run `synthesize` skill |
 | `export` | Overview generated, deliverables pending | Run `export` skill |

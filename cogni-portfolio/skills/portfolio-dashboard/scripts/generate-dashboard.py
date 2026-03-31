@@ -496,7 +496,7 @@ def generate_html(data, status, project_dir, theme):
     claims_status = status.get("claims", {}) if status else {}
     communicate_files = data.get("communicate", [])
 
-    phases = ["products", "features", "markets", "propositions", "enrichment", "verification", "synthesis", "export", "communicate", "complete"]
+    phases = ["products", "features", "markets", "customers", "propositions", "enrichment", "verification", "synthesis", "export", "communicate", "complete"]
     phase_idx = phases.index(phase) if phase in phases else 0
     phase_pct = int((phase_idx / (len(phases) - 1)) * 100) if len(phases) > 1 else 0
 

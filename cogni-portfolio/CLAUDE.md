@@ -84,14 +84,14 @@ references/
 ## Typical Workflow
 
 ```
-portfolio-setup → products → features → markets → propositions → solutions → packages
-                                                        ↓
-                                                   compete, customers
-                                                        ↓
-                                              portfolio-verify (claims)
-                                                        ↓
-                                         synthesize → portfolio-export
-                                                    → portfolio-communicate
+portfolio-setup → products → features → markets → customers → propositions → solutions → packages
+                                                                    ↓
+                                                               compete
+                                                                    ↓
+                                                          portfolio-verify (claims)
+                                                                    ↓
+                                                     synthesize → portfolio-export
+                                                                → portfolio-communicate
                                                     → portfolio-dashboard
 ```
 
