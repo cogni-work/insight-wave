@@ -207,6 +207,28 @@ except Exception:
 " 2>/dev/null)"
   fi
 fi
+# Detect revision state: claims resolved but report not yet revised
+HAS_REVISION_PENDING="false"
+HAS_REVISION_DONE="false"
+if [ -f "$PROJECT_DIR/cogni-claims/claims.json" ]; then
+  eval "$(python3 -c "
+import json
+try:
+    d = json.load(open('$PROJECT_DIR/cogni-claims/claims.json'))
+    claims = d if isinstance(d, list) else d.get('claims', [])
+    removals = sum(1 for c in claims if isinstance(c, dict) and c.get('verification', {}).get('resolution') in ('remove', 'correct'))
+    if removals > 0:
+        print('HAS_REVISION_PENDING=true')
+        print(f'REVISION_CHANGES={removals}')
+except Exception:
+    pass
+" 2>/dev/null)"
+fi
+# Check if revision was already applied
+for vfile in "$PROJECT_DIR"/tips-trend-report-v*.md; do
+  [ -f "$vfile" ] && HAS_REVISION_DONE="true" && HAS_REVISION_PENDING="false" && break
+done
+
 [ -f "$PROJECT_DIR/output/tips-trend-report-enriched.html" ] && HAS_ENRICHED_REPORT="true"
 HAS_DASHBOARD="false"
 [ -f "$PROJECT_DIR/output/trends-dashboard.html" ] && HAS_DASHBOARD="true"
@@ -394,7 +416,9 @@ elif [ "$WORKFLOW_STATE" = "phase-3" ]; then
   PHASE="presenting"
 elif [ "$WORKFLOW_STATE" = "phase-4" ] || [ "$WORKFLOW_STATE" = "agreed" ]; then
   if [ "$HAS_REPORT" = "true" ]; then
-    if [ "$HAS_VERIFICATION" = "true" ]; then
+    if [ "$HAS_REVISION_PENDING" = "true" ]; then
+      PHASE="revision"
+    elif [ "$HAS_VERIFICATION" = "true" ]; then
       PHASE="complete"
     elif [ "$HAS_CLAIMS" = "true" ] && [ "$CLAIMS_TOTAL" -gt 0 ]; then
       PHASE="verification"
@@ -477,6 +501,9 @@ case "$PHASE" in
     ;;
   verification)
     add_action "cogni-claims:claims" "$CLAIMS_TOTAL claims extracted — ready for verification"
+    ;;
+  revision)
+    add_action "trend-report" "${REVISION_CHANGES:-0} claims resolved — revise report to apply corrections and removals"
     ;;
   complete)
     # Polish

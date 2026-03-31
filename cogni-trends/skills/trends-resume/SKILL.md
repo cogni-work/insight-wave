@@ -171,6 +171,7 @@ If the phase is `complete`, congratulate the user and present the downstream opt
 | `modeling-complete` | Value model complete with ranked solutions | Run `trend-report`, or `/trends-catalog import` |
 | `reporting` | Value model complete, report not yet generated | Run `trend-report` |
 | `verification` | Report done, claims pending verification | Run `cogni-claims:claims` |
+| `revision` | Claims verified and resolved, report revision pending | Run `trend-report` Phase 5 (revision) |
 | `complete` | All stages finished | Report complete — choose from downstream options below |
 
 **Stale Blueprints:** When `stale_warnings` contains a `stale_blueprints` entry (portfolio context
@@ -189,6 +190,7 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 **Polish & Verify**
 - `cogni-copywriting:copywrite` — Polish report prose for executive readability (tone scope)
 - `cogni-claims:claims` — Verify extracted claims against cited sources
+- `trend-report` Phase 5 — Revise report after claims resolution (apply corrections, remove unverifiable claims)
 
 **Visualize**
 - `cogni-visual:enrich-report` — Themed HTML with Chart.js visualizations and Excalidraw diagrams

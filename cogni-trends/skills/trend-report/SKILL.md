@@ -21,7 +21,8 @@ Transform agreed trend-scout candidates into a strategic, evidence-backed report
 6. Generate inline citations for every quantitative claim
 7. Produce a claims registry compatible with `cogni-claims:claims`
 8. Optionally verify claims via cogni-claims:claims
-9. Recommend downstream polish, visualization, and export options via `/trends-resume`
+9. If claims have deviations, revise the report with corrections and removals (Phase 5)
+10. Recommend downstream polish, visualization, and export options via `/trends-resume`
 
 ## Language Support
 
@@ -84,14 +85,16 @@ Read references **only when needed** for the specific phase:
 | [references/i18n/labels-en.md](references/i18n/labels-en.md) | English report headings and labels |
 | [references/i18n/labels-de.md](references/i18n/labels-de.md) | German report headings and labels |
 | [references/phase-3-claim-verification.md](references/phase-3-claim-verification.md) | Running claim verification (Phase 3) |
+| [references/phase-5-revision.md](references/phase-5-revision.md) | Post-verification report revision (Phase 5) |
 
 ## Workflow Overview
 
 Track progress through these phases as you go:
 
 ```text
-Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
-   │          │          │         │          │
+Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5
+   │          │          │         │          │          │
+   │          │          │         │          │          └─ Post-verification revision (if claims have deviations)
    │          │          │         │          └─ Update metadata, display summary, recommend /trends-resume
    │          │          │         └─ Optional claims verification
    │          │          └─ Theme narratives + arc-framed exec summary + bridges + synthesis
@@ -395,6 +398,21 @@ Verification: {verdict or "skipped"}
 
 Run /trends-resume to see your full options — polish, visualize, present, export, or accumulate.
 ```
+
+---
+
+### Phase 5: Post-Verification Revision (Conditional)
+
+Read [references/phase-5-revision.md](references/phase-5-revision.md) for the full workflow. Triggers when claims verification (Phase 3) or a later `/claims` session produced resolved deviations that require report corrections or claim removals. If all claims verified clean or the user skipped verification, this phase is skipped.
+
+Dispatches the `trend-report-revisor` agent to:
+- Remove unverifiable claims from the report body and claims registry table (no strikethrough — clean removal)
+- Correct inaccurate claims with verified replacement text
+- Find replacement evidence via WebSearch when removed claims leave gaps in the argument
+- Renumber the claims registry table sequentially
+- Output a versioned revision (`tips-trend-report-v2.md`) that becomes the new canonical report
+
+This phase also handles the **deferred flow**: when the user verified and resolved claims in a separate session via `/claims` and returns via `/trends-resume`, the resume skill detects the `revision` phase and routes here.
 
 ---
 

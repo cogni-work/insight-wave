@@ -17,11 +17,12 @@ skills/                         6 trend intelligence skills
   trends-dashboard/               Interactive HTML dashboard of full TIPS project lifecycle
   trends-resume/                  Resume project mid-stream with full state recovery
 
-agents/                         4 research agents
+agents/                         5 research agents
   trend-web-researcher.md         Bilingual web research (EN/DE), returns aggregated signals (haiku)
   trend-generator.md              Generate 60 scored candidates using TIPS + Ansoff + Rogers + CRAAP (opus)
   trend-report-writer.md          Write one Trendradar dimension section with citations (sonnet)
   trend-report-investment-theme-writer.md  Write one investment theme using Corporate Visions arc (sonnet)
+  trend-report-revisor.md         Post-verification report revision — apply claim corrections/removals (sonnet)
 
 catalogs/                       Industry knowledge base
   b2b-ict/                        B2B ICT catalog (general subsector)
@@ -52,7 +53,7 @@ references/
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 6 | trend-scout, value-modeler, trend-report, trends-catalog, trends-dashboard, trends-resume |
-| Agents | 4 | trend-web-researcher (haiku), trend-generator (opus), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet) |
+| Agents | 5 | trend-web-researcher (haiku), trend-generator (opus), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-revisor (sonnet) |
 
 ## Workflow Pipeline
 
