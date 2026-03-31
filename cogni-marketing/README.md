@@ -21,12 +21,12 @@ A content generation bridge between strategy and execution in the insight-wave e
 
 ## What it does
 
-1. **Setup** a marketing project linked to your cogni-portfolio and cogni-trends data — configure brand voice, select markets, map strategic themes to GTM paths
-2. **Strategize** by building a 3D content matrix (market × GTM path × content type) with auto-recommended formats and priority sequencing
+1. **Setup** a marketing project linked to your cogni-portfolio and cogni-trends data — configure brand voice, select markets, map strategic themes to GTM paths → `marketing-project.json` → content-strategy, campaign-builder
+2. **Strategize** by building a 3D content matrix (market × GTM path × content type) with auto-recommended formats and priority sequencing → `content-matrix.json` → campaign-builder, content-calendar
 3. **Generate** content per type — thought leadership, demand generation, lead generation, sales enablement, or ABM — using parallel content-writer agents
-4. **Campaign** by orchestrating content into multi-channel campaigns with day-based timelines and phased funnel progression (attract → engage → convert)
+4. **Campaign** by orchestrating content into multi-channel campaigns with day-based timelines and phased funnel progression (attract → engage → convert) → `campaigns/*.json` → content-calendar, marketing-dashboard
 5. **Schedule** via a content calendar with publication dates, channel assignments, and cadence tracking
-6. **Track** coverage and progress through an interactive HTML dashboard
+6. **Track** coverage and progress through an interactive HTML dashboard → `output/dashboard.html` (interactive dashboard)
 
 ## What it means for you
 
@@ -117,6 +117,17 @@ Content pieces are markdown files with YAML frontmatter tracking type, format, m
 | `content-writer` | agent (sonnet) | Generates individual content pieces per format spec, brand voice, and source data |
 | `channel-adapter` | agent (sonnet) | Adapts existing content to different channels while preserving core message |
 | `seo-researcher` | agent (sonnet) | Researches SEO keywords and competitor content for GTM path/market combinations |
+| `/marketing-setup` | command | Initialize a cogni-marketing project with brand, markets, and GTM paths |
+| `/content-strategy` | command | Build the content matrix (market x GTM path x content type) with format recommendations |
+| `/thought-leadership` | command | Generate thought leadership content (blog, LinkedIn article, keynote, podcast, op-ed) |
+| `/demand-gen` | command | Generate demand generation content (LinkedIn posts, SEO articles, carousels, video scripts) |
+| `/lead-gen` | command | Generate lead generation content (whitepapers, landing pages, email nurture, webinars) |
+| `/sales-enablement` | command | Generate sales enablement content (battle cards, one-pagers, demo scripts, objection handlers) |
+| `/abm` | command | Generate account-based marketing content (account plans, personalized emails, executive briefings) |
+| `/campaign` | command | Build a multi-channel campaign with touch sequences and timeline |
+| `/content-calendar` | command | Generate or update the editorial content calendar |
+| `/marketing-dashboard` | command | Generate interactive HTML dashboard visualizing content coverage and campaign progress |
+| `/marketing-resume` | command | Resume a marketing project — show status, content gaps, and recommended next action |
 
 ## Architecture
 
@@ -166,7 +177,7 @@ Need custom content formats, CRM integration, or a new plugin for your domain? C
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 

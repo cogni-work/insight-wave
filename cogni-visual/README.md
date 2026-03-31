@@ -19,9 +19,9 @@ A brief-based visual production pipeline. Five skills generate structured briefs
 ## What it does
 
 1. **Analyze** a narrative — detect story arc, model the audience, extract key assertions and data points
-2. **Brief** the visual — select format (slides, journey map, solution architecture, web page, poster), map content to layout units, generate image prompts
+2. **Brief** the visual — select format (slides, journey map, solution architecture, web page, poster), map content to layout units, generate image prompts → `presentation-brief.md` → pptx (PowerPoint deck)
 3. **Render** the output — produce .pptx, .excalidraw, .pen, or .html via the appropriate downstream tool
-4. **Enrich** a markdown report — post-process into themed HTML with Chart.js data visualizations and Excalidraw concept diagrams embedded as inline SVG
+4. **Enrich** a markdown report — post-process into themed HTML with Chart.js data visualizations and Excalidraw concept diagrams embedded as inline SVG → `{report}-enriched.html` (branded interactive HTML)
 5. **Review** the result — zone-based quality checks for big-picture scenes (4 parallel reviewers, 9 quality gates)
 
 ## What it means for you

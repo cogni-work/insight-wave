@@ -26,7 +26,7 @@ A pitch generation pipeline built on the Corporate Visions Why Change methodolog
 3. **Why Now** — research urgency drivers: regulatory deadlines, competitive moves, market windows, technology tipping points
 4. **Why You** — research differentiation: unique capabilities, competitive gaps, proof points, customer evidence
 5. **Why Pay** — research business impact: ROI models, TCO comparisons, risk quantification, value realization timelines
-6. **Synthesize** — assemble all phases into a `sales-presentation.md` and `sales-proposal.md` with sequential citations
+6. **Synthesize** — assemble all phases into a `sales-presentation.md` and `sales-proposal.md` with sequential citations → `sales-presentation.md` + `sales-proposal.md` → story-to-slides, copywriter (presentation deck)
 
 ## What it means for you
 

@@ -21,7 +21,7 @@ A systematic claim-verification workflow for Claude Cowork. Other plugins genera
 
 ## What it does
 
-1. **Submit** claims with their source URLs — individually or batch-imported from markdown
+1. **Submit** claims with their source URLs — individually or batch-imported from markdown → `cogni-claims/claims.json` → consulting-deliver, synthesize
 2. **Verify** them by fetching each source and detecting deviations (misquotation, unsupported conclusions, selective omission, data staleness, source contradiction)
 3. **Review** a dashboard showing all claims grouped by status, with inline deviation summaries and severity indicators
 4. **Inspect** flagged claims by opening the source in your browser with the relevant passage highlighted for side-by-side comparison

@@ -25,7 +25,7 @@ A STORM-inspired editorial research pipeline for the insight-wave ecosystem. Par
 1. **Decompose** your topic into orthogonal sub-questions grounded by preliminary web search
 2. **Research** in parallel — one agent per sub-question, searching the web and extracting findings
 3. **Aggregate** sources across all sub-questions, deduplicate, and enforce quality thresholds
-4. **Write** a structured report with inline citations linking every claim to its source
+4. **Write** a structured report with inline citations linking every claim to its source → `research-report.md` → enrich-report, claims, copywriter (branded HTML)
 5. **Review** structurally — automated quality gate checks completeness, coherence, depth, and clarity
 6. **Verify** (separate step) — extract claims and check each against its source URL via cogni-claims in a dedicated context window
 
@@ -190,7 +190,7 @@ Need custom research workflows, internal knowledge base integration, or a new pl
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 

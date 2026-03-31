@@ -32,6 +32,10 @@ A meta-plugin for the insight-wave ecosystem. While other plugins produce conten
 - **Chain plugins into pipelines.** 6 workflow templates turn multi-plugin sequences into repeatable playbooks — research-to-slides in 3 steps, portfolio-to-pitch in 4.
 - **Diagnose before you escalate.** 5-tier health check catches missing dependencies, stale configs, and plugin integrity issues before they surface as cryptic runtime failures.
 
+## Installation
+
+This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+
 ## Quick start
 
 ```

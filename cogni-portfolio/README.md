@@ -19,14 +19,14 @@ A structured portfolio messaging workflow for Claude Cowork. Eight pluggable tax
 
 ## What it does
 
-1. **Setup** a portfolio project — capture company context, select industry taxonomy, initialize directory structure
-2. **Define** products, features (IS layer), and target markets with TAM/SAM/SOM sizing
-3. **Generate** IS/DOES/MEANS propositions for each Feature x Market pair — individually or in batch
-4. **Plan** solutions with implementation phases and tiered pricing (PoV/S/M/L)
-5. **Analyze** 3-5 competitors per proposition with positioning, strengths, weaknesses, and differentiation
-6. **Profile** ideal customers and buyer personas per target market
+1. **Setup** a portfolio project — capture company context, select industry taxonomy, initialize directory structure → `portfolio.json` → features, markets, products, portfolio-scan
+2. **Define** products, features (IS layer), and target markets with TAM/SAM/SOM sizing → `features/*.json` → propositions, solutions, packages
+3. **Generate** IS/DOES/MEANS propositions for each Feature x Market pair — individually or in batch → `propositions/{feature}--{market}.json` → solutions, packages, synthesize, compete
+4. **Plan** solutions with implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change, synthesize
+5. **Analyze** 3-5 competitors per proposition with positioning, strengths, weaknesses, and differentiation → `competitors/*.json` → propositions, synthesize
+6. **Profile** ideal customers and buyer personas per target market → `customers/*.json` → synthesize, portfolio-communicate
 7. **Verify** research-backed claims against cited sources via cogni-claims
-8. **Synthesize** a structured messaging repository and export proposals, briefs, and workbooks
+8. **Synthesize** a structured messaging repository and export proposals, briefs, and workbooks → `output/README.md` → portfolio-communicate, portfolio-dashboard, portfolio-export
 9. **Bootstrap** from a Lean Canvas or Business Model Canvas — extract products, features, and markets from a founding-stage hypothesis document
 10. **Deep-dive** into individual features or propositions with competitive landscape research, buyer language validation, and interactive co-creation
 
