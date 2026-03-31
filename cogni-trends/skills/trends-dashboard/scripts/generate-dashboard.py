@@ -355,6 +355,7 @@ def load_tips_data(project_dir):
         "modeler_state": None,
         "has_report": os.path.isfile(os.path.join(project_dir, "tips-trend-report.md")),
         "has_insight": os.path.isfile(os.path.join(project_dir, "tips-insight-summary.md")),
+        "report_content": None,
         "catalog": None,
     }
 
@@ -369,6 +370,15 @@ def load_tips_data(project_dir):
     # Claims
     claims_path = os.path.join(project_dir, "tips-trend-report-claims.json")
     data["claims"] = load_json(claims_path)
+
+    # Report content (parsed markdown)
+    if data["has_report"]:
+        report_path = os.path.join(project_dir, "tips-trend-report.md")
+        try:
+            with open(report_path, encoding="utf-8") as f:
+                data["report_content"] = parse_report_md(f.read())
+        except Exception:
+            data["report_content"] = None
 
     # Modeler state
     ms_path = os.path.join(project_dir, ".metadata", "value-modeler-output.json")
@@ -415,6 +425,185 @@ def esc_js(text):
     if not isinstance(text, str):
         text = str(text) if text is not None else ""
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "").replace("'", "\\'")
+
+
+# ---------------------------------------------------------------------------
+# Markdown → HTML converter (stdlib-only, covers report subset)
+# ---------------------------------------------------------------------------
+
+def _inline_fmt(line):
+    """Apply inline markdown formatting to an already HTML-escaped line."""
+    # Links: [text](url) — must run before bold so **[t](u)** works
+    line = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" target="_blank" rel="noopener">\1</a>', line)
+    # Bold: **text**
+    line = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', line)
+    return line
+
+
+def md_to_html(text):
+    """Convert a subset of markdown to HTML (headings, bold, links, blockquotes,
+    lists, tables, horizontal rules, paragraphs).  No external dependencies."""
+    lines = text.split("\n")
+    out = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+
+        # Empty line — close nothing, skip
+        if not stripped:
+            i += 1
+            continue
+
+        # Horizontal rule
+        if re.match(r'^---+$', stripped):
+            out.append('<hr>')
+            i += 1
+            continue
+
+        # Headings
+        m = re.match(r'^(#{1,4})\s+(.+)$', stripped)
+        if m:
+            level = len(m.group(1))
+            heading_text = _inline_fmt(esc(m.group(2)))
+            out.append(f'<h{level} class="report-h{level}">{heading_text}</h{level}>')
+            i += 1
+            continue
+
+        # Blockquote (collect consecutive > lines)
+        if stripped.startswith('>'):
+            bq_lines = []
+            while i < len(lines) and lines[i].strip().startswith('>'):
+                bq_lines.append(_inline_fmt(esc(lines[i].strip().lstrip('> '))))
+                i += 1
+            out.append('<blockquote>' + '<br>'.join(bq_lines) + '</blockquote>')
+            continue
+
+        # Table (detect | ... | pattern followed by |---|---| separator)
+        if '|' in stripped and stripped.startswith('|'):
+            table_lines = []
+            while i < len(lines) and lines[i].strip().startswith('|'):
+                table_lines.append(lines[i].strip())
+                i += 1
+            if len(table_lines) >= 2:
+                out.append('<table class="report-table"><thead><tr>')
+                header_cells = [c.strip() for c in table_lines[0].strip('|').split('|')]
+                for c in header_cells:
+                    out.append(f'<th>{_inline_fmt(esc(c))}</th>')
+                out.append('</tr></thead><tbody>')
+                start = 2 if re.match(r'^[\s|:-]+$', table_lines[1].replace('-', '').replace(':', '').replace('|', '').replace(' ', '')) else 1
+                for row in table_lines[start:]:
+                    cells = [c.strip() for c in row.strip('|').split('|')]
+                    out.append('<tr>' + ''.join(f'<td>{_inline_fmt(esc(c))}</td>' for c in cells) + '</tr>')
+                out.append('</tbody></table>')
+            continue
+
+        # Ordered list
+        if re.match(r'^\d+\.\s', stripped):
+            out.append('<ol>')
+            while i < len(lines) and re.match(r'^\s*\d+\.\s', lines[i]):
+                item = re.sub(r'^\s*\d+\.\s+', '', lines[i])
+                out.append(f'<li>{_inline_fmt(esc(item.strip()))}</li>')
+                i += 1
+            out.append('</ol>')
+            continue
+
+        # Unordered list
+        if stripped.startswith('- ') or stripped.startswith('* '):
+            out.append('<ul>')
+            while i < len(lines) and (lines[i].strip().startswith('- ') or lines[i].strip().startswith('* ')):
+                item = re.sub(r'^\s*[-*]\s+', '', lines[i])
+                out.append(f'<li>{_inline_fmt(esc(item.strip()))}</li>')
+                i += 1
+            out.append('</ul>')
+            continue
+
+        # Paragraph — collect consecutive non-special lines
+        para = []
+        while i < len(lines):
+            s = lines[i].strip()
+            if not s or s.startswith('#') or s.startswith('>') or s.startswith('|') or re.match(r'^---+$', s) or re.match(r'^\d+\.\s', s) or s.startswith('- ') or s.startswith('* '):
+                break
+            para.append(_inline_fmt(esc(s)))
+            i += 1
+        if para:
+            out.append('<p>' + ' '.join(para) + '</p>')
+
+    return '\n'.join(out)
+
+
+# ---------------------------------------------------------------------------
+# Report markdown parser
+# ---------------------------------------------------------------------------
+
+def _parse_frontmatter(text):
+    """Extract YAML-like frontmatter as a flat dict. Returns (frontmatter, body)."""
+    if not text.startswith('---'):
+        return {}, text
+    parts = text.split('---', 2)
+    if len(parts) < 3:
+        return {}, text
+    fm_text = parts[1]
+    body = parts[2].lstrip('\n')
+    fm = {}
+    current_key = None
+    for line in fm_text.strip().split('\n'):
+        m = re.match(r'^(\w[\w_]*)\s*:\s*(.*)$', line)
+        if m:
+            key, val = m.group(1), m.group(2).strip().strip('"').strip("'")
+            if val:
+                # Try numeric
+                try:
+                    fm[key] = int(val)
+                except ValueError:
+                    fm[key] = val
+            else:
+                fm[key] = []
+            current_key = key
+        elif line.strip().startswith('- ') and current_key and isinstance(fm.get(current_key), list):
+            fm[current_key].append(line.strip().lstrip('- ').strip())
+    return fm, body
+
+
+def parse_report_md(content):
+    """Parse tips-trend-report.md into structured sections."""
+    fm, body = _parse_frontmatter(content)
+
+    # Split on H2 headings, keeping headings
+    sections = re.split(r'^(## .+)$', body, flags=re.MULTILINE)
+
+    result = {
+        "frontmatter": fm,
+        "executive_summary": None,
+        "themes": [],
+        "portfolio_analysis": None,
+    }
+
+    # sections[0] is content before first H2 (usually H1 title — skip)
+    i = 1
+    while i < len(sections) - 1:
+        heading = sections[i].strip().lstrip('#').strip()
+        content_block = sections[i + 1].strip()
+        i += 2
+
+        # Classify by heading
+        heading_lower = heading.lower()
+        if any(kw in heading_lower for kw in ['zusammenfassung', 'executive summary', 'summary']):
+            result["executive_summary"] = content_block
+        elif re.match(r'^\d+\.', heading):
+            # Numbered theme: "1. Thesis Title" or "1. Thesis Title\n#### Sub-heading"
+            m = re.match(r'^(\d+)\.\s*(.+)$', heading)
+            if m:
+                result["themes"].append({
+                    "number": int(m.group(1)),
+                    "name": m.group(2).strip(),
+                    "content": content_block,
+                })
+        elif any(kw in heading_lower for kw in ['portfolio', 'analyse', 'analysis']):
+            result["portfolio_analysis"] = content_block
+        # Skip claims registry (handled by JSON) and title duplicates
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -1345,6 +1534,54 @@ body::after {{
 }}
 
 /* Claims table */
+/* Report content styling */
+.report-content {{
+  font-size: 14px; line-height: 1.7; color: var(--text);
+}}
+.report-content .report-h2 {{
+  font-size: 20px; font-weight: 700; margin: 24px 0 12px 0;
+  font-family: var(--font-headers);
+}}
+.report-content .report-h3 {{
+  font-size: 16px; font-weight: 600; margin: 20px 0 8px 0;
+  font-family: var(--font-headers);
+}}
+.report-content .report-h4 {{
+  font-size: 14px; font-weight: 600; margin: 16px 0 6px 0; color: var(--text2);
+  font-family: var(--font-headers);
+}}
+.report-content blockquote {{
+  border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0;
+  background: var(--surface); border-radius: 0 {radius} {radius} 0;
+  font-style: italic; color: var(--text2);
+}}
+.report-content a {{
+  color: var(--accent-dark); text-decoration: underline;
+  text-decoration-color: var(--accent-muted);
+}}
+.report-content a:hover {{ color: var(--accent); }}
+.report-content strong {{ font-weight: 600; }}
+.report-content p {{ margin: 8px 0; }}
+.report-content ol, .report-content ul {{ padding-left: 24px; margin: 8px 0; }}
+.report-content li {{ margin: 4px 0; }}
+.report-content hr {{ border: none; border-top: 1px solid var(--border); margin: 16px 0; }}
+.report-content .report-table {{
+  width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;
+}}
+.report-content .report-table th {{
+  text-align: left; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text2); font-weight: 600;
+  padding: 8px 12px; border-bottom: 2px solid var(--border);
+}}
+.report-content .report-table td {{
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+}}
+.report-theme-section {{
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: {radius}; padding: 24px; margin-bottom: 16px;
+  box-shadow: {shadows['sm']};
+}}
+
 .claims-table {{
   width: 100%; border-collapse: collapse; font-size: 13px;
 }}
@@ -1906,6 +2143,7 @@ body::after {{
     html += "    </div>\n"
 
     # ==================== REPORT TAB ====================
+    report_content = data.get("report_content")
     html += f"""
     <!-- REPORT TAB -->
     <div class="tab-panel" id="panel-report">
@@ -1917,14 +2155,51 @@ body::after {{
       </div>
 """
     else:
-        # Report status
+        # Report status cards
         html += f'      <div class="section reveal" id="sec-report-status">\n'
         html += f'        <div class="section-title">{L["report_status"]}</div>\n'
         html += '        <div class="cards">\n'
         html += f'          <div class="card"><div class="label">Report</div><div class="value">{"&#10003;" if data["has_report"] else "&#10007;"}</div></div>\n'
         html += f'          <div class="card"><div class="label">Claims</div><div class="value">{len(claims_list)}</div></div>\n'
         html += f'          <div class="card"><div class="label">Insight</div><div class="value">{"&#10003;" if data["has_insight"] else "&#10007;"}</div></div>\n'
+        if report_content and report_content.get("frontmatter"):
+            rfm = report_content["frontmatter"]
+            if rfm.get("total_investment_themes"):
+                html += f'          <div class="card"><div class="label">Themes</div><div class="value">{rfm["total_investment_themes"]}</div></div>\n'
+            if rfm.get("industry"):
+                html += f'          <div class="card"><div class="label">Industry</div><div class="value">{esc(str(rfm["industry"]))}</div></div>\n'
+            if rfm.get("language"):
+                html += f'          <div class="card"><div class="label">Language</div><div class="value">{esc(str(rfm["language"]).upper())}</div></div>\n'
         html += '        </div>\n      </div>\n'
+
+        # Executive Summary
+        if report_content and report_content.get("executive_summary"):
+            summary_label = "Zusammenfassung" if lang == "de" else "Executive Summary"
+            html += f'      <div class="section reveal" id="sec-report-summary">\n'
+            html += f'        <div class="section-title">{summary_label}</div>\n'
+            html += '        <div class="report-content">\n'
+            html += md_to_html(report_content["executive_summary"])
+            html += '\n        </div>\n      </div>\n'
+
+        # Investment Theme sections
+        if report_content and report_content.get("themes"):
+            for theme in report_content["themes"]:
+                t_num = theme["number"]
+                t_name = theme["name"]
+                html += f'      <div class="section reveal report-theme-section" id="sec-report-theme-{t_num}">\n'
+                html += f'        <div class="section-title">{t_num}. {esc(t_name)}</div>\n'
+                html += '        <div class="report-content">\n'
+                html += md_to_html(theme["content"])
+                html += '\n        </div>\n      </div>\n'
+
+        # Portfolio Analysis
+        if report_content and report_content.get("portfolio_analysis"):
+            portfolio_label = "Portfolio-Analyse" if lang == "de" else "Portfolio Analysis"
+            html += f'      <div class="section reveal" id="sec-report-portfolio">\n'
+            html += f'        <div class="section-title">{portfolio_label}</div>\n'
+            html += '        <div class="report-content">\n'
+            html += md_to_html(report_content["portfolio_analysis"])
+            html += '\n        </div>\n      </div>\n'
 
         # Claims table
         if claims_list:
@@ -2023,6 +2298,11 @@ body::after {{
     html += f"var THEMES = {themes_json};\n"
     html += f"var ALL_STS = {all_sts_json};\n"
     html += f"var CLAIMS = {claims_json};\n"
+    # Report theme names for left panel index
+    report_theme_names = []
+    if report_content and report_content.get("themes"):
+        report_theme_names = [{"number": t["number"], "name": t["name"]} for t in report_content["themes"]]
+    html += f"var REPORT_THEMES = {json.dumps(report_theme_names, default=str)};\n"
     html += f"var GRAPH_DATA = {graph_json};\n"
     html += f"var DIMENSIONS = {dimensions_json};\n"
     html += f"var HORIZONS = {horizons_json};\n"
@@ -2097,6 +2377,12 @@ function updateLeftPanel(tabId) {
     html += '<div class="section-group">';
     html += '<div class="section-label">Sections</div>';
     html += '<button class="section-item" onclick="scrollToSection(\\'sec-report-status\\')">Status</button>';
+    if (REPORT_THEMES && REPORT_THEMES.length > 0) {
+      html += '<button class="section-item" onclick="scrollToSection(\\'sec-report-summary\\')">Summary</button>';
+      REPORT_THEMES.forEach(function(t) {
+        html += '<button class="section-item" onclick="scrollToSection(\\'sec-report-theme-' + t.number + '\\')">' + t.number + '. ' + t.name.substring(0, 40) + (t.name.length > 40 ? '...' : '') + '</button>';
+      });
+    }
     if (CLAIMS.length > 0) {
       html += '<button class="section-item" onclick="scrollToSection(\\'sec-report-claims\\')">Claims</button>';
     }

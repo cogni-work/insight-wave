@@ -181,14 +181,15 @@ Strategic themes and solution ranking from value-modeler:
 
 ### Tab 4: Report
 
-Trend report status and claims:
+Full rendered trend report content from `tips-trend-report.md`, plus claims data:
 
-- **Report Status** — which sections exist (4 TIPS dimension sections), word count, citation count
-- **Claims Registry** — table of all claims with: statement, source URL, citation count, verification status badge (verified/unverified/deviated/resolved). Sortable and filterable
-- **Insight Summary** — if `tips-insight-summary.md` exists, rendered as formatted HTML
-- **Executive Polish** — status indicator for cogni-copywriting pass
+- **Report Status** — metadata cards showing report/claims/insight existence, investment theme count, industry, language
+- **Executive Summary** — full rendered executive summary with inline citation links, investment theme overview, and cost-of-inaction framing
+- **Investment Themes** — each theme rendered as a styled card with: strategic question (blockquote), Why Change narrative, Why Now forcing functions, Why You solution capabilities, Why Pay business case. Inline citations rendered as clickable links
+- **Portfolio Analysis** — theme overview tables, horizon distribution, MECE validation, evidence coverage (if present in the report)
+- **Claims Registry** — table of all claims with: statement, verification status badge (verified/unverified/deviated/resolved), source URL
 
-**Left index**: Report sections (T, I, P, S dimension sections), Claims, Insight Summary.
+**Left index**: Status, Summary, each investment theme by name, Claims.
 
 ### Tab 5: Catalog
 
