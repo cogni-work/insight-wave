@@ -92,7 +92,7 @@ flowchart LR
 
 1. **Mermaid inline code blocks** (always available) — the writer embeds ` ```mermaid ` fenced code blocks directly in the draft. Works everywhere: Obsidian, GitHub, HTML (with CDN), and most modern markdown renderers.
 
-2. **Excalidraw MCP upgrade** (at export time) — when `diagram_style` is `excalidraw` or `hybrid`, the export-report skill converts Mermaid blocks to editable Excalidraw diagrams via `mcp__excalidraw__create_from_mermaid`, then exports as PNG/SVG. Produces hand-drawn-style diagrams that match the report's visual theme.
+2. **Excalidraw MCP upgrade** (at export time) — when `diagram_style` is `excalidraw` or `hybrid`, the enrich-report skill converts Mermaid blocks to editable Excalidraw diagrams via `mcp__excalidraw__create_from_mermaid`, then exports as PNG/SVG. Produces hand-drawn-style diagrams that match the report's visual theme.
 
 3. **Placeholder markers** (fallback for non-diagram visuals) — for content that cannot be represented as Mermaid (photographs, artistic illustrations, data visualizations requiring specific chart libraries), the writer may still insert:
    ```markdown
@@ -129,7 +129,7 @@ The writer receives this plan and generates accurate Mermaid code blocks at the 
 Mermaid code blocks are preserved as-is. Obsidian, GitHub, and most modern tools render them natively.
 
 ### HTML
-The export-report skill injects the Mermaid CDN script into the HTML template:
+The enrich-report skill (cogni-visual) injects the Mermaid CDN script into the HTML when Mermaid blocks are detected:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>mermaid.initialize({startOnLoad: true, theme: 'neutral'});</script>

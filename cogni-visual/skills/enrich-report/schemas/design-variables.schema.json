@@ -31,7 +31,7 @@
         "text_light":   { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
         "text_muted":   { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
       },
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "status": {
       "type": "object",

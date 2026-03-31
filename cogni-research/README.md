@@ -114,7 +114,7 @@ The pipeline uses two skills that split the work across separate context windows
 |-----------|------|--------------|
 | `research-report` | skill | Main orchestrator — six-phase pipeline from topic to structurally reviewed report |
 | `verify-report` | skill | Claims verification — extracts claims, verifies against sources via cogni-claims, revises deviations |
-| `export-report` | skill | Export finalized report to HTML, PDF, or Markdown |
+| `export-report` | skill | **Deprecated** — use cogni-visual:enrich-report instead (supports HTML, PDF, DOCX) |
 | `research-report-workspace` | skill | Workspace-aware research orchestration for integrated project environments |
 | `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question |
 | `local-researcher` | agent (sonnet) | Parallel document analyst for local/hybrid research mode |
@@ -170,7 +170,8 @@ cogni-research/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-claims | No | Claims verification loop in `verify-report` — extracts and checks claims against source URLs |
-| cogni-workspace | No | Branded theming in `export-report` — applies theme colors and fonts to HTML/PDF exports |
+| cogni-visual | No | Visual enrichment and format export via `enrich-report` — themed HTML with charts, optional PDF/DOCX |
+| cogni-workspace | No | Theme selection for visual exports (consumed via cogni-visual:enrich-report) |
 
 ## Attribution
 

@@ -13,7 +13,7 @@ skills/              Intelligent transformation & rendering skills
   story-to-big-block/  Big Block solution architecture brief from TIPS value-modeler output
   render-big-picture/  Orchestrator skill — station-first pipeline (v4.2, 1100-1500 elements, dark/light mode)
   render-big-block/    Orchestrator skill — sequential pipeline (v1.0, 150-250 elements, dark/light mode)
-  enrich-report/       Post-processing: markdown report → themed HTML with Chart.js + Excalidraw SVG
+  enrich-report/       Post-processing: markdown report → themed HTML (+ optional PDF/DOCX) with Chart.js + Excalidraw SVG
     scripts/
       generate-enriched-report.py  Python HTML generator (markdown→HTML, theme injection, chart mounting)
     schemas/
@@ -165,15 +165,16 @@ Key differences from Big Picture:
 cogni-narrative -> cogni-copywriting -> cogni-visual
 (compose)         (polish)            (visualize)
 
-cogni-trends/cogni-research → enrich-report → browser / export
-(text report)                 (post-process)   (themed HTML)
+cogni-trends/cogni-research → enrich-report → browser / PDF / DOCX
+(text report)                 (post-process)   (themed HTML + optional format export)
 ```
 
 - **Upstream (narrative skills):** Narratives from cogni-narrative, polished by cogni-copywriting
 - **Upstream (big-block):** TIPS value-modeler Phase 4 output from cogni-trends
 - **External:** Themes from cogni-workspace (`/cogni-workspace/themes/{id}/theme.md`)
-- **Downstream:** `document-skills:pptx` renders slide briefs; Excalidraw MCP renders big-picture briefs; Pencil MCP renders web and storyboard briefs
+- **Downstream:** `document-skills:pptx` renders slide briefs; Excalidraw MCP renders big-picture briefs; Pencil MCP renders web and storyboard briefs; `document-skills:pdf` and `document-skills:docx` handle format export from enrich-report
 - **Web HTML export:** Web agent reads rendered .pen design tree to generate self-contained HTML + integration manifest for `export-html-report` landing page overlay
+- **Report output consolidation:** enrich-report is the single output skill for all report formats (HTML, PDF, DOCX). It supersedes the deprecated cogni-research:export-report. The `formats` parameter controls output: `["html"]` (default), `["html", "pdf"]`, `["html", "docx"]`, or all three. The `density` parameter controls enrichment volume: `none` for themed prose only, `minimal`/`balanced`/`rich` for data visualizations.
 
 ## Key Conventions
 
@@ -193,7 +194,7 @@ cogni-trends/cogni-research → enrich-report → browser / export
 | Aspect | story-to-slides | story-to-big-picture | story-to-big-block | render-big-picture | render-big-block | story-to-web | story-to-storyboard | enrich-report |
 |--------|----------------|---------------------|-------------------|-------------------|-----------------|-------------|---------------------|---------------|
 | Input | Narrative (prose) | Narrative (prose) | Value-modeler (JSON) | Brief (v3.0) | Brief (v1.0) | Narrative (prose) | Narrative (prose) | Markdown report (any) |
-| Output | Multi-slide YAML brief | Single-canvas scene brief (v3.0) | Solution architecture brief (v1.0) | .excalidraw illustrated scene | .excalidraw structured diagram | Scrollable section brief | Multi-poster print brief | Self-contained themed HTML |
+| Output | Multi-slide YAML brief | Single-canvas scene brief (v3.0) | Solution architecture brief (v1.0) | .excalidraw illustrated scene | .excalidraw structured diagram | Scrollable section brief | Multi-poster print brief | Self-contained themed HTML + optional PDF/DOCX |
 | Renderer | PPTX skill | N/A (produces brief) | render-big-block | Excalidraw MCP (station-first, N+N+4 agents) | Excalidraw MCP (sequential, 8 phases) | Pencil MCP (web agent) | Pencil MCP (storyboard agent) | Python script + Chart.js CDN + Excalidraw MCP (SVG export) |
 | Layout unit | Slide with layout type | Station as landscape object | Solution block in tier band | Station as 250+ element two-pass illustration | Solution block in tier grid | Section with auto-layout | Poster with 1-3 stacked sections | Report section with injected chart/SVG |
 | Element count | N/A | N/A | N/A | 1100-1500 total (stations only) | 150-250 total | N/A | N/A | 10-22 enrichments (Chart.js + SVG) |

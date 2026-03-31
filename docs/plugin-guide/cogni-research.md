@@ -132,11 +132,9 @@ Claims verification in a fresh context window. Extracts verifiable factual claim
 
 ---
 
-### export-report
+### export-report (deprecated)
 
-Export a finalized report to HTML, PDF, or DOCX with branded theming from cogni-workspace. The HTML export is self-contained with auto-generated table of contents.
-
-**Example prompt:** "Export the EU AI regulation report as a branded HTML document"
+> **Superseded by cogni-visual:enrich-report**, which produces superior themed HTML with interactive charts and now supports PDF/DOCX export via the `formats` parameter. Use `/enrich-report` instead.
 
 ---
 
@@ -147,7 +145,8 @@ Export a finalized report to HTML, PDF, or DOCX with branded theming from cogni-
 | Plugin | What is consumed |
 |--------|-----------------|
 | cogni-claims | Source URL verification in verify-report (primary dependency) |
-| cogni-workspace | Theme for export-report branded HTML/PDF output |
+| cogni-visual | enrich-report for themed HTML/PDF/DOCX output (replaces export-report) |
+| cogni-workspace | Theme selection for visual exports |
 
 cogni-claims is a soft dependency — research-report runs without it, but verify-report requires it for claims checking.
 

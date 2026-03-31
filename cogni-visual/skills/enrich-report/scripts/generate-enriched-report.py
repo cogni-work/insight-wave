@@ -176,6 +176,7 @@ def _render_block(lines):
     in_blockquote = False
     in_code = False
     code_lines = []
+    code_lang = ''
     table_rows = []
     list_items = []
     bq_lines = []
@@ -187,13 +188,18 @@ def _render_block(lines):
         # Fenced code blocks
         if stripped.startswith('```'):
             if in_code:
-                html_parts.append('<pre><code>' + escape_html('\n'.join(code_lines)) + '</code></pre>')
+                if code_lang == 'mermaid':
+                    html_parts.append('<pre class="mermaid">' + escape_html('\n'.join(code_lines)) + '</pre>')
+                else:
+                    html_parts.append('<pre><code>' + escape_html('\n'.join(code_lines)) + '</code></pre>')
                 code_lines = []
+                code_lang = ''
                 in_code = False
             else:
                 _flush_state(html_parts, in_table, table_rows, in_list, list_items, in_blockquote, bq_lines)
                 in_table = in_list = in_blockquote = False
                 table_rows = []; list_items = []; bq_lines = []
+                code_lang = stripped[3:].strip().lower()
                 in_code = True
             i += 1
             continue
@@ -825,6 +831,14 @@ def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, outp
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     lang_code = language or fm.get("language", "en")
 
+    # Conditionally include Mermaid CDN when mermaid blocks are present
+    has_mermaid = '<pre class="mermaid">' in content_html
+    mermaid_script = (
+        '\n  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>'
+        '\n  <script>mermaid.initialize({startOnLoad: true, theme: "neutral"});</script>'
+        if has_mermaid else ''
+    )
+
     html = f"""<!DOCTYPE html>
 <html lang="{lang_code}">
 <head>
@@ -832,7 +846,7 @@ def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, outp
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{escape_html(title)}</title>
   <style>{css}</style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>{mermaid_script}
 </head>
 <body>
 <div class="layout">

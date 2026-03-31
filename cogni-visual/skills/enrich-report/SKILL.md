@@ -2,26 +2,32 @@
 name: enrich-report
 description: >
   Post-process any completed markdown report (trend-report, research-report, or
-  generic) into a themed, self-contained HTML file with interactive Chart.js data
-  visualizations and Excalidraw concept diagrams embedded as inline SVG. Analyzes
-  the report structure, identifies data-rich sections (statistics, tables, distributions,
-  value chains, timelines, cost comparisons), generates themed charts and diagrams,
-  and assembles a polished HTML deliverable with navigation sidebar — without changing
-  the original markdown. Use this skill whenever the user has an existing text-only
-  report and wants to make it visual: "enrich report", "add charts to report",
-  "visualize my report", "make the report visual", "turn this into a visual HTML",
-  "report mit Diagrammen anreichern", "Bericht visualisieren", "add data
-  visualizations", "generate HTML version with charts", "I need charts in my
-  trend report", "make this presentable with visuals". Also trigger when the user
-  mentions tips-trend-report.md, output/report.md, or any markdown report that
-  "needs visuals", "looks boring", "is text-only", or should become a "dashboard-style"
+  generic) into a themed, self-contained HTML file — optionally with interactive
+  Chart.js data visualizations and Excalidraw concept diagrams embedded as inline
+  SVG. Analyzes the report structure, identifies data-rich sections (statistics,
+  tables, distributions, value chains, timelines, cost comparisons), generates
+  themed charts and diagrams, and assembles a polished HTML deliverable with
+  navigation sidebar — without changing the original markdown. Also supports
+  exporting to PDF and DOCX formats via the `formats` parameter. This is the
+  single output skill for all report formats — it replaces the deprecated
+  cogni-research:export-report. Use this skill whenever the user has an existing
+  text-only report and wants to make it visual or export it: "enrich report",
+  "add charts to report", "visualize my report", "make the report visual",
+  "turn this into a visual HTML", "export report", "save as PDF", "export to PDF",
+  "export to Word", "export to DOCX", "download report", "convert report",
+  "make it pretty", "publish report", "report mit Diagrammen anreichern",
+  "Bericht visualisieren", "als PDF exportieren", "add data visualizations",
+  "generate HTML version with charts", "I need charts in my trend report",
+  "make this presentable with visuals". Also trigger when the user mentions
+  tips-trend-report.md, output/report.md, or any markdown report that "needs
+  visuals", "looks boring", "is text-only", or should become a "dashboard-style"
   or "themed HTML" output. This skill works on EXISTING reports (post-processing) —
   it does NOT create new reports (use research-report/trend-report), does NOT create
   slide decks (use story-to-slides), does NOT create posters or journey maps (use
   story-to-big-picture), does NOT create web landing pages (use story-to-web), does
   NOT create TIPS dashboards (use trends-dashboard), and does NOT polish prose
   (use cogni-copywriting).
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Agent
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Agent, Skill
 ---
 
 # Enrich Report
@@ -56,7 +62,8 @@ The HTML assembly uses a Python generator script (`scripts/generate-enriched-rep
 | `language` | from frontmatter | `en` or `de` — affects chart labels, axis titles, summary card text |
 | `theme` | interactive | Theme path, or omit to trigger `cogni-workspace:pick-theme` |
 | `design_variables` | derived from theme | Pre-computed design-variables.json path (skips derivation) |
-| `density` | `balanced` | Enrichment density: `minimal` (5-8 visuals), `balanced` (10-15), `rich` (15-22) |
+| `density` | `balanced` | Enrichment density: `none` (0 visuals, themed prose only), `minimal` (5-8), `balanced` (10-15), `rich` (15-22) |
+| `formats` | `["html"]` | Output formats: `html`, `pdf`, `docx`. HTML is always produced first; PDF/DOCX are derived from it. |
 | `interactive` | `true` | Interactive enrichment review checkpoint at Phase 3 |
 | `enrichment_types` | all | Whitelist: e.g., `["kpi-dashboard", "tips-flow", "horizon-chart"]` |
 | `skip_types` | none | Blacklist: e.g., `["summary-card"]` |
@@ -86,9 +93,12 @@ German reports use real Unicode umlauts (ä ö ü ß), dot-separated thousands (
 ### Density controls enrichment volume
 
 The `density` parameter gates how many enrichments pass the scoring threshold:
+- **none** — Zero visualizations. Produces a beautifully themed HTML with sidebar navigation, styled prose, and preserved citations — but no charts or diagrams. Use for "make it pretty" without visual noise, or as a clean base for PDF/DOCX export.
 - **minimal** — Only "always-on" structural enrichments (KPI dashboard, primary value chain flows). 5-8 visuals.
 - **balanced** — Structural + high-scoring content-detected enrichments. 10-15 visuals. Default.
 - **rich** — Everything that scores above minimum threshold. 15-22 visuals. Best for workshop materials.
+
+When `density=none`: skip Phases 1-4 (structural analysis, enrichment planning, interactive review, visualization generation). Go directly from Phase 0 to Phase 5 with an empty enrichment plan.
 
 ---
 
@@ -394,6 +404,47 @@ Print summary:
 
 ---
 
+### Phase 7: Format Export (conditional)
+
+> Convert the enriched HTML to PDF or DOCX when requested.
+
+This phase only runs when `formats` includes `pdf` or `docx`. The HTML output from Phase 5/6 is always the starting point.
+
+**PDF export:**
+
+1. Read `references/07-citation-normalization.md` — not for HTML citations (which are already correct), but for understanding the citation landscape in case pre-processing is needed.
+2. **Mermaid pre-rendering**: If the HTML contains `<pre class="mermaid">` blocks, these render client-side via JavaScript and will appear blank in static PDF conversion. Pre-render them before PDF generation:
+   - Try `mmdc` (mermaid-cli): extract Mermaid source → render to SVG → replace in HTML
+   - Fallback: use Excalidraw MCP (`mcp__excalidraw__create_from_mermaid` → `export_to_image`)
+   - Last resort: leave as code blocks and note the limitation to the user
+3. **Chart.js pre-rendering**: Chart.js `<canvas>` elements also require JavaScript. For PDF with charts, `document-skills:pdf` can execute JS during rendering. If using weasyprint (no JS), charts will be blank — inform the user and suggest `density=none` for chart-free PDF.
+4. **Generate PDF**:
+   - Preferred: `Skill(document-skills:pdf)` from the enriched HTML. Pass `design-variables.json` for theme token access.
+   - Fallback: If weasyprint is available: `python3 -c "import weasyprint; weasyprint.HTML(filename='{html_path}').write_pdf('{pdf_path}')"`
+   - Last resort: Inform user the HTML is available and suggest browser print-to-PDF
+5. Output: `{output_dir}/{stem}-enriched.pdf`
+
+**DOCX export:**
+
+DOCX cannot represent interactive charts or inline SVG. Convert from the original markdown source (not the HTML) to preserve clean document structure.
+
+1. Read `references/07-citation-normalization.md` for citation normalization patterns.
+2. Normalize citations in the markdown: parse the `## References` section, replace inline citation patterns with numbered superscript markers, strip the original references section.
+3. **Generate DOCX**:
+   - Preferred: `Skill(document-skills:docx)` from the normalized markdown. Pass theme tokens: `heading_font` (fonts.headers), `body_font` (fonts.body), `accent_color` (colors.accent).
+   - Fallback: If pandoc is available: `pandoc {md_path} -o {docx_path} --from markdown --to docx`
+   - Last resort: Inform user and suggest `brew install pandoc` or `pip install pandoc`
+4. Output: `{output_dir}/{stem}.docx`
+
+**Report to user:**
+
+After all requested formats are generated:
+- List exported files with paths and file sizes
+- Note which theme was applied
+- Note any limitations (e.g., "PDF generated without charts — use browser print for charts" or "DOCX contains text only — charts are in the HTML version")
+
+---
+
 ## Bundled Resources
 
 | Reference | Loaded at | Purpose |
@@ -404,6 +455,7 @@ Print summary:
 | `references/04-chart-patterns.md` | Phase 4 | Chart.js config templates per chart type, themed with CSS variables |
 | `references/05-excalidraw-patterns.md` | Phase 4 | Excalidraw element recipes for concept diagrams |
 | `references/06-html-structure.md` | Phase 5 | HTML layout, CSS architecture, responsive breakpoints, script structure |
+| `references/07-citation-normalization.md` | Phase 7 | Citation format detection and normalization for DOCX export |
 | `schemas/design-variables.schema.json` | Phase 0 | JSON schema for design-variables validation |
 | `schemas/enrichment-plan.schema.json` | Phase 2 | JSON schema for enrichment plan validation |
 | `scripts/generate-enriched-report.py` | Phase 5 | Python HTML generator (markdown→HTML, theme injection, chart mounting) |

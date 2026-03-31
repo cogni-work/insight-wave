@@ -138,7 +138,7 @@ This runs 5 parallel stakeholder personas (executive, technical, legal, marketin
 | Skip claims verification | Go directly from Step 1 to Step 3 | Internal-only drafts where accuracy is less critical |
 | Polish only, no structure change | Add `--scope=tone` to `/copywrite` | Report structure is already strong; tone needs work |
 | Run stakeholder review before final polish | Add `/review-doc` between Steps 2 and 3 | High-stakes external reports |
-| Export to HTML or PDF | Run `/export-report` after Step 3 | Sharing beyond Claude Cowork |
+| Export to HTML, PDF, or DOCX | Run `/enrich-report` with `formats: ["html", "pdf"]` after Step 3 | Sharing beyond Claude Cowork |
 | German-language output | Set language in research prompt | DACH stakeholder audiences |
 
 ## Common Pitfalls
