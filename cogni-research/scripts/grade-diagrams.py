@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Grade Mermaid diagram quality in a cogni-research report.
 
-Reads report.md and optionally diagram-plan.json, then produces
-diagram-grading.json with per-diagram and overall pass/fail results.
+Reads report.md and produces diagram-grading.json with per-diagram
+and overall pass/fail results.
 
 Usage:
-    python3 grade-diagrams.py --report <path>/report.md [--plan <path>/diagram-plan.json] [--max-diagrams 3] [--output <path>/diagram-grading.json]
+    python3 grade-diagrams.py --report <path>/report.md [--max-diagrams 3] [--output <path>/diagram-grading.json]
 """
 
 import argparse
@@ -166,27 +166,10 @@ def extract_caption(after_block: str) -> dict:
     return {"present": False, "figure_number": None, "text": "", "word_count": 0}
 
 
-def load_diagram_plan(plan_path: Path) -> list[dict] | None:
-    """Load diagram-plan.json if it exists."""
-    if not plan_path.exists():
-        return None
-    try:
-        with open(plan_path) as f:
-            data = json.load(f)
-        return data.get("diagrams", [])
-    except (json.JSONDecodeError, KeyError):
-        return None
-
-
-def grade_report(report_path: Path, plan_path: Path | None, max_diagrams: int) -> dict:
+def grade_report(report_path: Path, max_diagrams: int) -> dict:
     """Grade all diagrams in a report."""
     content = report_path.read_text(encoding="utf-8")
     blocks = extract_mermaid_blocks(content)
-
-    # Load diagram plan
-    planned_diagrams = None
-    if plan_path:
-        planned_diagrams = load_diagram_plan(plan_path)
 
     diagrams = []
     figure_numbers = []
@@ -204,15 +187,6 @@ def grade_report(report_path: Path, plan_path: Path | None, max_diagrams: int) -
         if diagram_type:
             types_used.append(diagram_type)
 
-        # Check if this diagram was planned
-        planned = False
-        if planned_diagrams:
-            for pd in planned_diagrams:
-                planned_type = pd.get("diagram_type", "")
-                if planned_type.lower() in (diagram_type or "").lower():
-                    planned = True
-                    break
-
         diagrams.append({
             "index": i,
             "type": diagram_type,
@@ -228,7 +202,6 @@ def grade_report(report_path: Path, plan_path: Path | None, max_diagrams: int) -
             "caption_sufficient": caption["word_count"] >= 5,
             "start_line": block["start_line"],
             "end_line": block["end_line"],
-            "planned": planned,
         })
 
     # Sequential numbering check
@@ -238,10 +211,6 @@ def grade_report(report_path: Path, plan_path: Path | None, max_diagrams: int) -
     # Diversity
     unique_types = list(set(types_used))
     all_flowcharts = all(t.startswith("flowchart") for t in types_used) if types_used else False
-
-    # Plan compliance
-    plan_exists = planned_diagrams is not None
-    planned_count = len(planned_diagrams) if planned_diagrams else 0
 
     # Overall checks
     all_types_valid = all(d["type_valid"] for d in diagrams)
@@ -257,8 +226,6 @@ def grade_report(report_path: Path, plan_path: Path | None, max_diagrams: int) -
         "diagram_count": len(blocks),
         "max_diagrams_limit": max_diagrams,
         "within_limit": within_limit,
-        "plan_exists": plan_exists,
-        "planned_count": planned_count,
         "diagrams": diagrams,
         "figure_numbers": figure_numbers,
         "sequential_numbering": sequential_numbering,
@@ -291,7 +258,6 @@ def grade_report(report_path: Path, plan_path: Path | None, max_diagrams: int) -
 def main():
     parser = argparse.ArgumentParser(description="Grade Mermaid diagrams in a research report")
     parser.add_argument("--report", required=True, type=Path, help="Path to report.md")
-    parser.add_argument("--plan", type=Path, default=None, help="Path to diagram-plan.json")
     parser.add_argument("--max-diagrams", type=int, default=3, help="Maximum allowed diagrams")
     parser.add_argument("--output", type=Path, default=None, help="Output path for diagram-grading.json")
     args = parser.parse_args()
@@ -300,7 +266,7 @@ def main():
         print(f"Error: report not found at {args.report}", file=sys.stderr)
         sys.exit(1)
 
-    result = grade_report(args.report, args.plan, args.max_diagrams)
+    result = grade_report(args.report, args.max_diagrams)
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

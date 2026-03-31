@@ -159,8 +159,7 @@ cogni-research/
 │   ├── block-entity-writes.sh
 │   └── review-loop-guard.sh
 ├── evals/                        Evaluation test cases
-│   ├── evals.json
-│   └── evals-diagrams.json
+│   └── evals.json
 ├── schemas/                      4 entity JSON schemas
 ├── scripts/                      Entity + project utilities
 └── references/                   Model strategy documentation

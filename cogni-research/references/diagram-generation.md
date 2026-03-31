@@ -2,26 +2,7 @@
 
 ## Overview
 
-Optional inline diagram generation for research reports using Mermaid code blocks. When enabled, the writer agent embeds Mermaid diagrams directly in the report markdown. Mermaid renders natively in Obsidian, GitHub, and HTML exports — no external API or image files needed.
-
-## Activation
-
-Diagram generation activates when `generate_diagrams` is `true` in project-config.json. Default: `false`.
-
-Backward compatibility: `generate_images: true` is treated as `generate_diagrams: true`.
-
-When to suggest enabling:
-- Detailed or deep reports (enough content to warrant diagrams)
-- Topics with processes, architectures, comparisons, or hierarchies
-- User explicitly requests diagrams, visuals, or "make it visual"
-
-## Configuration
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `generate_diagrams` | bool | false | Enable Mermaid diagram generation |
-| `max_diagrams` | int | 3 | Maximum diagrams per report |
-| `diagram_style` | string | "mermaid" | Rendering approach: `mermaid` (inline code blocks), `excalidraw` (upgrade at export), `hybrid` (both) |
+Mermaid syntax reference for research reports. Diagrams in reports are handled downstream by `cogni-visual:enrich-report`, which analyzes report content and generates interactive charts and concept diagrams. This reference documents Mermaid diagram types and syntax guidelines for any manual diagram insertion or downstream processing.
 
 ## Supported Mermaid Diagram Types
 
@@ -88,41 +69,6 @@ flowchart LR
 *Figure 1: Machine learning pipeline showing the iterative data quality loop that ensures training data meets minimum thresholds before model training begins.*
 ````
 
-## Provider Hierarchy
-
-1. **Mermaid inline code blocks** (always available) — the writer embeds ` ```mermaid ` fenced code blocks directly in the draft. Works everywhere: Obsidian, GitHub, HTML (with CDN), and most modern markdown renderers.
-
-2. **Excalidraw MCP upgrade** (at export time) — when `diagram_style` is `excalidraw` or `hybrid`, the enrich-report skill converts Mermaid blocks to editable Excalidraw diagrams via `mcp__excalidraw__create_from_mermaid`, then exports as PNG/SVG. Produces hand-drawn-style diagrams that match the report's visual theme.
-
-3. **Placeholder markers** (fallback for non-diagram visuals) — for content that cannot be represented as Mermaid (photographs, artistic illustrations, data visualizations requiring specific chart libraries), the writer may still insert:
-   ```markdown
-   <!-- IMAGE: Description of desired illustration. Style: infographic|illustration -->
-   ```
-   These are informational markers for the user to replace manually. They are NOT processed automatically.
-
-## Diagram Planning (Phase 3.5)
-
-Before the writer begins, the orchestrator analyzes the aggregated research context to plan which concepts deserve diagrams. This prevents random or forced visual placement — diagrams should emerge naturally from the content.
-
-The orchestrator writes `.metadata/diagram-plan.json`:
-
-```json
-{
-  "diagrams": [
-    {
-      "id": "diag-01",
-      "concept": "Cloud provider comparison of WebAssembly support",
-      "diagram_type": "pie",
-      "target_section": "Cloud Provider Adoption",
-      "description": "Market share of Wasm support across major cloud providers",
-      "data_sources": ["ctx-cloud-providers-abc123"]
-    }
-  ]
-}
-```
-
-The writer receives this plan and generates accurate Mermaid code blocks at the planned positions, using data from the referenced context entities.
-
 ## Export Handling
 
 ### Markdown
@@ -152,7 +98,7 @@ Mermaid diagrams provide basic inline visualization during report writing. For r
 - Themed design with CSS custom properties from cogni-workspace themes
 - Navigation sidebar and responsive layout
 
-This is complementary to Mermaid: enrich-report analyzes the entire report structure using content-pattern detection to identify data-rich sections that warrant interactive visualization, going beyond the planned diagrams from Phase 3.5. It works regardless of research topic — the enrichment intelligence is driven by content patterns (data tables, comparison structures, statistical clusters, process descriptions), not domain-specific keywords.
+enrich-report analyzes the entire report structure using content-pattern detection to identify data-rich sections that warrant interactive visualization. It works regardless of research topic — the enrichment intelligence is driven by content patterns (data tables, comparison structures, statistical clusters, process descriptions), not domain-specific keywords.
 
 To trigger: Run `/enrich-report` after the report is finalized at `output/report.md`.
 

@@ -12,8 +12,8 @@ research-report skill (orchestrator, phases 0-6)
   → local-researcher agents (parallel local document analysis, sonnet)
   → deep-researcher agents (recursive tree exploration, sonnet)
   → source-curator agent (auto for detailed/deep with 8+ sources, sonnet)
-  → writer agent (report compilation + Mermaid diagrams, sonnet)
-  → reviewer agent (structural + diagram quality gate, sonnet)
+  → writer agent (report compilation, sonnet)
+  → reviewer agent (structural quality gate, sonnet)
 
 verify-report skill (claims verification, separate context window)
   → claim-extractor agent (draft → verifiable claims, sonnet)
@@ -74,10 +74,6 @@ Project config (`project-config.json`) supports these optional fields:
 | `query_domains` | string[] | [] | Restrict web search to these domains |
 | `max_subtopics` | int | per-type default | Override sub-question count |
 | `curate_sources` | bool | auto | Source curation: auto-activates for detailed/deep with 8+ sources. Set `true` to force, `false` to disable |
-| `generate_images` | bool | false | **Legacy** — treated as `generate_diagrams: true`. See `generate_diagrams` |
-| `generate_diagrams` | bool | false | Enable Mermaid diagram generation in reports. Orchestrator plans diagrams (Phase 3.5), writer embeds Mermaid code blocks. See `references/diagram-generation.md` |
-| `max_diagrams` | int | 3 | Maximum diagrams per report (when `generate_diagrams` is true) |
-| `diagram_style` | string | "mermaid" | Rendering approach: `mermaid` (inline code blocks), `excalidraw` (upgrade at export), `hybrid` |
 
 ## Key Conventions
 
