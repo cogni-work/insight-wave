@@ -71,9 +71,9 @@ WEB_RESEARCH_DISABLED: "Web-Recherche deaktiviert. Verwende nur Trainingswissen.
 
 ```text
 GENERATION_START: "Generiere Trendkandidaten für {INDUSTRY} - {SUBSECTOR}..."
-GENERATION_CONTEXT: "Verwende {WEB_COUNT} Web-Signale und Trainingswissen"
+GENERATION_CONTEXT: "Verwende {WEB_COUNT} Web-Signale"
 GENERATION_PROGRESS: "Generiere Kandidaten für {DIMENSION} - {HORIZON}..."
-GENERATION_COMPLETE: "{TOTAL} Kandidaten generiert ({WEB_SOURCED} webbasiert, {TRAINING_SOURCED} trainingsbasiert)"
+GENERATION_COMPLETE: "{TOTAL} webfundierte Kandidaten generiert"
 ```
 
 ---
@@ -83,7 +83,7 @@ GENERATION_COMPLETE: "{TOTAL} Kandidaten generiert ({WEB_SOURCED} webbasiert, {T
 ```text
 PRESENT_WRITING: "Schreibe trend-candidates.md..."
 PRESENT_SUCCESS: "Kandidatendatei geschrieben nach: {PATH}"
-PRESENT_COMPLETE: "Alle 60 Kandidaten automatisch finalisiert. Weiter zur Finalisierung."
+PRESENT_COMPLETE: "Alle {TOTAL} Kandidaten automatisch finalisiert. Weiter zur Finalisierung."
 ```
 
 ---

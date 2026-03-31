@@ -37,7 +37,7 @@ directly to TIPS value chains. They will be used in Phase 2 as "foundation requi
 
 ### Step 1: Candidate Analysis
 
-For each of the 60 candidates, extract:
+For each candidate, extract:
 - Its dimension (determines TIPS role)
 - Its subcategory and horizon
 - Its trend statement and keywords

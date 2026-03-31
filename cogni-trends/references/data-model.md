@@ -196,7 +196,7 @@ Valid `subcategory` values per dimension:
 
 Valid `horizon` values: `act` (immediate, 0-12 months), `plan` (medium-term, 12-36 months), `observe` (long-term, 36+ months)
 
-Valid `source` values: `web-signal` (discovered via web research), `training` (generated from model knowledge), `user_proposed` (added by user)
+Valid `source` values: `web-signal` (discovered via web research). All candidates must be web-grounded — training-sourced generation has been removed.
 
 Valid `confidence_tier` values: `high` (0.80-1.0), `medium` (0.50-0.79), `low` (0.30-0.49), `uncertain` (<0.30)
 
@@ -255,12 +255,12 @@ Location: `.metadata/trend-report-verification.json`
 
 | Dimension | TIPS Role | Subcategories | Candidates per Horizon |
 |-----------|-----------|---------------|----------------------|
-| `externe-effekte` | T (Trends) | wirtschaft, regulierung, gesellschaft | 5 ACT, 5 PLAN, 5 OBSERVE |
-| `neue-horizonte` | P (Possibilities) | strategie, fuehrung, steuerung | 5 ACT, 5 PLAN, 5 OBSERVE |
-| `digitale-wertetreiber` | I (Implications) | customer-experience, produkte-services, geschaeftsprozesse | 5 ACT, 5 PLAN, 5 OBSERVE |
-| `digitales-fundament` | S (Solutions) | kultur, mitarbeitende, technologie | 5 ACT, 5 PLAN, 5 OBSERVE |
+| `externe-effekte` | T (Trends) | wirtschaft, regulierung, gesellschaft | 1-5 ACT, 1-5 PLAN, 1-5 OBSERVE |
+| `neue-horizonte` | P (Possibilities) | strategie, fuehrung, steuerung | 1-5 ACT, 1-5 PLAN, 1-5 OBSERVE |
+| `digitale-wertetreiber` | I (Implications) | customer-experience, produkte-services, geschaeftsprozesse | 1-5 ACT, 1-5 PLAN, 1-5 OBSERVE |
+| `digitales-fundament` | S (Solutions) | kultur, mitarbeitende, technologie | 1-5 ACT, 1-5 PLAN, 1-5 OBSERVE |
 
-**Total**: 4 dimensions x (5 + 5 + 5) = 60 candidates
+**Total**: Variable (12-60 candidates based on available web research signals). All candidates are web-grounded.
 
 ## Workflow Phases
 
@@ -268,8 +268,8 @@ Location: `.metadata/trend-report-verification.json`
 |-------|-------|-------------|-------------|
 | 0 | trend-scout | `initialized` | Language, industry, topic selection; project creation |
 | 1 | trend-scout | `phase-1` | Bilingual web research (32 queries + APIs) |
-| 2 | trend-scout | `phase-2` | Generate 60 candidates with multi-framework scoring |
-| 3 | trend-scout | `phase-3` | Present candidates (all 60 auto-finalized) |
+| 2 | trend-scout | `phase-2` | Generate web-grounded candidates with multi-framework scoring |
+| 3 | trend-scout | `phase-3` | Present candidates (all auto-finalized) |
 | 4 | trend-scout | `phase-4` → `agreed` | Finalize output JSON |
 | R-0 | trend-report | `agreed` | Load input, validate gate, prep agent inputs |
 | R-1 | trend-report | `report-enriching` | 4 parallel agents: evidence + section writing |
@@ -338,7 +338,7 @@ erDiagram
         int sequence
         string name
         string trend_statement
-        string source "web-signal|training|user_proposed"
+        string source "web-signal"
         float score
         string confidence_tier "high|medium|low|uncertain"
         int signal_intensity "1-5 Ansoff scale"
@@ -475,7 +475,7 @@ erDiagram
 tips-project.json (root manifest)
   └── .metadata/trend-scout-output.json (config + candidates + state)
         ├── .logs/web-research-raw.json (raw signals -> candidates)
-        ├── .logs/trend-generator-candidates.json (60 candidates)
+        ├── .logs/trend-generator-candidates.json (web-grounded candidates)
         ├── tips-trend-report.md (report <- candidates)
         │     ├── .logs/report-section-{dimension}.md (4 sections)
         │     ├── tips-trend-report-claims.json (extracted claims)

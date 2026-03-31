@@ -183,7 +183,7 @@ Create `.metadata/value-modeler-output.json`:
   "portfolio_context_version": "2.0" | null,
   "portfolio_context_propositions": 12 | null,
   "portfolio_context_markets_relevant": 2 | null,
-  "candidate_count": 60,
+  "candidate_count": 38,
   "execution": {
     "workflow_state": "initialized",
     "current_phase": 0,

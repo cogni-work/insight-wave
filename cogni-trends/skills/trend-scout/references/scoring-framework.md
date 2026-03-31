@@ -531,56 +531,18 @@ hype_cycle:
 
 ---
 
-## 11. Source-Type Scoring Constraints
+## 11. Web-Only Sourcing Policy
 
 ### Overview
 
-Training-sourced candidates lack verifiable external sources (no URL, no publication date, no author). By CRAAP standards, they score Authority 1-2 ("anonymous/unverified"). By Signal Strength criteria, they score 0.0-0.2 ("unverified, no clear provenance"). These caps must be enforced explicitly since the LLM self-scores its own training-sourced candidates.
+All candidates must be grounded in web research signals — no training-sourced or LLM-knowledge candidates are generated. This follows the same principle as cogni-research: don't include content you can't source. Fewer well-sourced candidates are better than padding with unsourced hypotheses.
 
-### Source-Type Caps
+Every candidate must have:
+- `source: "web-signal"`
+- A valid `source_url` from web research
+- A `freshness_date` from the web signal
 
-| Source Type | source_quality cap | signal_strength cap | confidence_tier max | Rationale |
-|-------------|-------------------|--------------------|--------------------|-----------|
-| `web-signal` | uncapped | uncapped | uncapped | Verifiable source, CRAAP assessable |
-| `training` | MAX 0.4 | MAX 0.3 | "low" (or "medium" if corroborated) | No verifiable source = Authority 1-2 |
-| `user_proposed` | MAX 0.4 | MAX 0.3 | "low" (or "medium" if corroborated) | Same as training unless URL provided |
-
-### Cap Enforcement Logic
-
-```text
-If candidate.source == "training" OR candidate.source == "user_proposed":
-  source_quality = MIN(scored_value, 0.4)
-  signal_strength = MIN(scored_value, 0.3)
-  Recalculate composite with capped values
-  confidence_tier = "low"
-
-  # Cross-validation upgrade
-  If 1+ web signal from Phase 1 matches (2+ keyword overlap OR same name):
-    confidence_tier = "medium"
-    web_corroboration = true
-    corroborated_by = matching_signal_name
-```
-
-### Impact on Composite Score
-
-With caps applied, training-sourced candidates have a theoretical maximum composite of:
-
-```text
-MAX = (0.25 × 1.0) + (0.20 × 1.0) + (0.20 × 1.0) + (0.15 × 0.4) + (0.15 × 0.3) - 0.0
-    = 0.25 + 0.20 + 0.20 + 0.06 + 0.045
-    = 0.755
-```
-
-Impact, Probability, and Strategic Fit remain uncapped — they assess the trend itself, not its sourcing.
-
-### Candidate Labeling
-
-| source | source_label | Display |
-|--------|-------------|---------|
-| `web-signal` | "web-sourced" | [n] (numbered citation) |
-| `training` | "hypothesis" | 📚 |
-| `training` + corroborated | "hypothesis" | 📚 [corr.] |
-| `user_proposed` | "user-proposed" | 👤 |
+Source Quality and Signal Strength are scored normally using CRAAP criteria against the actual web source — no caps needed since all candidates have verifiable sources.
 
 ---
 

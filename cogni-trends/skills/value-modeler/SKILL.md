@@ -21,8 +21,7 @@ Based on the TIPS Value Modeler methodology (Siemens patent WO2018046399A1, free
 
 ## What This Skill Does
 
-The trend-scout skill produces 60 agreed candidates across 4 dimensions. Each candidate lives in its
-dimension as a standalone item. This skill connects them:
+The trend-scout skill produces web-grounded agreed candidates across 4 dimensions (variable count based on web research signals). Each candidate lives in its dimension as a standalone item. This skill connects them:
 
 1. **Builds TIPS value chains** — explicit Trend → Implication → Possibility causal chains across dimensions
 2. **Consolidates into Investment Themes (Handlungsfelder)** — clusters value chains into 3-7 MECE investment domains

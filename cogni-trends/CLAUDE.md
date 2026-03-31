@@ -6,7 +6,7 @@ Strategic trend scouting and reporting pipeline — combines the Smarter Service
 
 ```
 skills/                         6 trend intelligence skills
-  trend-scout/                    End-to-end scouting: industry selection, bilingual web research, 60 candidates
+  trend-scout/                    End-to-end scouting: industry selection, bilingual web research, web-grounded candidates
     references/
       industry-subsectors.md      Industry and subsector classification
   trend-report/                   CxO-level narrative report organized by investment themes
@@ -19,7 +19,7 @@ skills/                         6 trend intelligence skills
 
 agents/                         5 research agents
   trend-web-researcher.md         Bilingual web research (EN/DE), returns aggregated signals (haiku)
-  trend-generator.md              Generate 60 scored candidates using TIPS + Ansoff + Rogers + CRAAP (opus)
+  trend-generator.md              Generate web-grounded scored candidates using TIPS + Ansoff + Rogers + CRAAP (opus)
   trend-report-writer.md          Write one Trendradar dimension section with citations (sonnet)
   trend-report-investment-theme-writer.md  Write one investment theme using Corporate Visions arc (sonnet)
   trend-report-revisor.md         Post-verification report revision — apply claim corrections/removals (sonnet)
@@ -68,7 +68,7 @@ Each stage depends on the previous. `trends-resume` can re-enter at any stage. `
 
 Each project lives in a directory with:
 - `tips-project.json` — Project config and metadata
-- `trend-candidates.md` — 60 scored candidates with TIPS expansion
+- `trend-candidates.md` — Web-grounded scored candidates with TIPS expansion (variable count)
 - `tips-value-model.json` — Relationship networks and solution templates (value-modeler output)
 - `tips-big-block.md` — Solution architecture summary
 - `tips-solution-ranking.md` — Ranked solution templates with BR scores

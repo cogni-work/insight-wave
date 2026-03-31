@@ -12,7 +12,7 @@ Reference Loaded: phase-4-finalize.md | Checksum: trend-scout-p4-final-v1
 
 ## Objective
 
-Update the consolidated `trend-scout-output.json` with all 60 candidates for downstream pipeline consumption (`value-modeler`, `trend-report`).
+Update the consolidated `trend-scout-output.json` with all web-grounded candidates for downstream pipeline consumption (`value-modeler`, `trend-report`).
 
 **Expected Duration:** 10-15 seconds
 
@@ -22,7 +22,7 @@ Update the consolidated `trend-scout-output.json` with all 60 candidates for dow
 
 Before proceeding, verify Phase 3 outputs:
 
-- [ ] TIPS_CANDIDATES_FILE written with all 60 candidates
+- [ ] TIPS_CANDIDATES_FILE written with all web-grounded candidates
 - [ ] All metadata available (industry, subsector, topic, language)
 
 ---
@@ -31,7 +31,7 @@ Before proceeding, verify Phase 3 outputs:
 
 ```bash
 log_phase "Phase 4: Finalize Output" "start"
-log_conditional INFO "Finalizing 60 candidates"
+log_conditional INFO "Finalizing candidates"
 ```
 
 ---
@@ -66,7 +66,7 @@ FINALIZE_OUTPUT=$(bash "$FINALIZE_SCRIPT" \
   --project-path "$PROJECT_PATH" \
   --candidates-file "$CANDIDATES_TMP" \
   --web-count "$WEB_SOURCED_COUNT" \
-  --training-count "$TRAINING_SOURCED_COUNT" \
+  --training-count "0" \
   --search-timestamp "$SEARCH_TIMESTAMP" \
   --web-status "$WEB_RESEARCH_STATUS" \
   --json)
@@ -134,7 +134,7 @@ log_conditional INFO "Output: $OUTPUT_FILE"
 ```text
 ## Trend Scout Complete
 
-Successfully finalized 60 trend candidates for {SUBSECTOR_EN}.
+Successfully finalized {TOTAL_CANDIDATES} web-grounded trend candidates for {SUBSECTOR_EN}.
 
 ### Output Files
 
@@ -145,11 +145,11 @@ Successfully finalized 60 trend candidates for {SUBSECTOR_EN}.
 
 ### Candidate Summary
 
-| Source | Count |
+| Metric | Value |
 |--------|-------|
-| Web Signal | {WEB_COUNT} |
-| Training | {TRAINING_COUNT} |
-| **Total** | **60** |
+| Total Candidates | {TOTAL_CANDIDATES} |
+| Web Sources | {UNIQUE_SOURCES} unique |
+| Cells Covered | {CELLS_WITH_CANDIDATES}/12 |
 
 ### Next Steps
 
@@ -223,7 +223,7 @@ Die Konfiguration und Kandidaten werden aus der konsolidierten Ausgabedatei gela
 
 ## Success Criteria
 
-- [ ] `trend-scout-output.json` updated with all 60 candidates
+- [ ] `trend-scout-output.json` updated with all web-grounded candidates
 - [ ] `trend-candidates.md` written with status `agreed`
 - [ ] Metadata complete (industry, subsector, language, sources)
 - [ ] Success message displayed with next steps
@@ -257,7 +257,7 @@ After trend-scout finalizes, the user proceeds to the next pipeline stage:
 
 3. **Candidate Loading:**
    - Loads candidates from `.tips_candidates.items`
-   - Proceeds directly with 60 candidates
+   - Proceeds with all agreed candidates
 
 4. **Value Modeling:**
    - Builds TIPS relationship networks across dimensions

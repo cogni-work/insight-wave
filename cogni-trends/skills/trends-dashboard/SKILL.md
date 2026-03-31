@@ -133,17 +133,17 @@ Project header with name, industry, subsector, research topic, language, and las
 - **Phase Progress Bar** — visual 8-stage pipeline (Web Research → Candidate Gen → Selection → Report → Claims → Insight → Verification → Polish) with completed/active/pending states
 - **Scoring Summary Cards** — average score, leading indicator %, confidence distribution (high/medium/low) as donut chart
 - **Dimension × Horizon Heatmap** — 4×3 grid (dimensions as rows, horizons ACT/PLAN/OBSERVE as columns) with candidate counts per cell, color-coded by density. Click a cell to filter the graph to that dimension+horizon
-- **Source Integrity** — web-sourced vs training-based breakdown, corroboration rate, average scores by source type
+- **Source Coverage** — total candidates, unique web sources, cells with/without candidates
 
 **Left index**: Progress stages (clickable, scrolls to section).
 
 ### Tab 2: Scout
 
-Deep dive into the 60 trend candidates from trend-scout:
+Deep dive into the web-grounded trend candidates from trend-scout:
 
-- **Candidate Cards** — grouped by dimension, each showing: name, statement, score badge, confidence tier, signal intensity, indicator type (leading/lagging/coincident), diffusion stage, source, freshness date
+- **Candidate Cards** — grouped by dimension, each showing: name, statement, score badge, confidence tier, signal intensity, indicator type (leading/lagging/coincident), diffusion stage, source URL, freshness date
 - **Distribution Charts** — score histogram, confidence pie, indicator type breakdown, diffusion stage funnel
-- **Source Analysis** — training-capped count, corroboration rates, web signal score vs training score comparison
+- **Coverage Analysis** — candidates per cell heatmap, empty cells highlighted, source diversity
 
 **Left index**: Four dimensions (Externe Effekte, Neue Horizonte, Digitale Wertetreiber, Digitales Fundament — or EN equivalents based on project language). Click to scroll to that dimension's candidates.
 

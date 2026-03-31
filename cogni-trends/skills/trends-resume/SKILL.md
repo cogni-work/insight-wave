@@ -84,8 +84,8 @@ Language: {language}
 | Stage | Status | Details |
 |-------|--------|---------|
 | Web Research | Done / Pending | {web_research_status}, {candidates_web} signals found |
-| Candidate Generation | Done / Pending | 60 generated |
-| Candidate Selection | Done / Pending | {candidates_total}/60 agreed |
+| Candidate Generation | Done / Pending | {candidates_total} generated (web-grounded) |
+| Candidate Selection | Done / Pending | {candidates_total}/{candidates_total} agreed |
 | Portfolio Bridge | Done / Ready / N/A | v{context_version} context, {features_count} features |
 | Value Chains & Themes | Done / Pending | {themes_count} strategic themes |
 | Solution Templates | Done / Pending | {solutions_count} solutions generated |
@@ -133,6 +133,7 @@ When Portfolio Bridge status is **Done (upgrade available)** and the phase is `r
 - Average score: {avg_score}
 - Leading indicators: {leading_pct}%
 - Confidence: {high} high, {medium} medium, {low} low
+- All candidates web-grounded (source URLs available)
 
 **Dimension Balance** (if candidates exist):
 

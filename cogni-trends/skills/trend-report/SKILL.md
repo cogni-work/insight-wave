@@ -37,7 +37,7 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 
 ## Prerequisites
 
-- `trend-scout` completed with `execution.workflow_state == "agreed"` and 60 candidates
+- `trend-scout` completed with `execution.workflow_state == "agreed"` and web-grounded candidates
 - `value-modeler` completed with `tips-value-model.json` containing investment themes
 - Web access enabled for evidence enrichment
 - Optional: `cogni-narrative` plugin for theme-thesis arc guidance (graceful fallback if absent — investment themes use flat structure)
@@ -117,7 +117,7 @@ Read [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT
 1. If `--project-path` was provided as argument, use it directly
 2. Otherwise, run `discover-projects.sh --json` to enumerate all projects
 3. For each project, check if `{path}/.metadata/trend-scout-output.json` exists
-4. Read the file and check `execution.workflow_state == "agreed"` and `tips_candidates.total >= 60`
+4. Read the file and check `execution.workflow_state == "agreed"` and `tips_candidates.total >= 12`
 5. Collect eligible projects:
    - 0 eligible: ERROR — "No agreed trend-scout projects found. Run trend-scout first."
    - 1 eligible: Auto-select
@@ -131,7 +131,7 @@ REQUIRED (validate only — do NOT hold candidates or signals in context):
     → Extract: config.industry, config.research_topic
     → Extract: config.market_region (default: "dach" if absent — older projects pre-regionalization)
     → Extract: project_language (top-level, NOT config.language)
-    → Validate: tips_candidates.total >= 60, execution.workflow_state == "agreed"
+    → Validate: tips_candidates.total >= 12, execution.workflow_state == "agreed"
     → Do NOT extract tips_candidates.items — agents read these themselves
 
 REQUIRED (value model — keep in context for Phase 2):
@@ -174,7 +174,7 @@ Read `tips-value-model.json` (already loaded in Step 0.2). Write `{PROJECT_PATH}
 |-------|-----------|------------|
 | Output exists | `.metadata/trend-scout-output.json` | HALT: Run trend-scout first |
 | Workflow state | `== "agreed"` | HALT: Complete trend-scout selection |
-| Candidate count | `>= 60` | HALT: Expected 60 agreed candidates |
+| Candidate count | `>= 12` | HALT: Expected at least 12 agreed web-grounded candidates |
 | Value model exists | `tips-value-model.json` with investment_themes[] | HALT: Run value-modeler first |
 | Config complete | industry, subsector, language present | HALT: Incomplete config |
 
@@ -455,7 +455,7 @@ This phase also handles the **deferred flow**: when the user verified and resolv
 |----------|--------|
 | `trend-scout-output.json` missing | HALT: Run trend-scout first |
 | `workflow_state != "agreed"` | HALT: Complete candidate selection |
-| `tips_candidates.total < 60` | HALT: Expected 60 candidates |
+| `tips_candidates.total < 12` | HALT: Expected at least 12 web-grounded candidates |
 | `tips-value-model.json` missing or no investment themes | HALT: Run value-modeler first |
 | `tips-value-model.json` has investment themes but no value chains | HALT: value-modeler Phase 1 incomplete |
 | No raw signals file (both sources) | WARNING: proceed without signals (~120 searches) |

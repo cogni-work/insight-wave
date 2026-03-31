@@ -12,7 +12,7 @@ Reference Loaded: phase-3-present.md | Checksum: trend-scout-p3-present-v2
 
 ## Objective
 
-Write the final trend list to `trend-candidates.md`. All 60 generated candidates are the agreed list — no user selection step. After writing, proceed directly to Phase 4 (Finalize).
+Write the final trend list to `trend-candidates.md`. All generated candidates (variable count based on web signals) are the agreed list — no user selection step. After writing, proceed directly to Phase 4 (Finalize).
 
 **Expected Duration:** 15-20 seconds (file writing)
 
@@ -24,7 +24,7 @@ Before proceeding, verify Phase 2 outputs:
 
 - [ ] PROJECT_PATH set
 - [ ] PROJECT_LANGUAGE set
-- [ ] CANDIDATES_BY_CELL populated with 60 candidates
+- [ ] CANDIDATES_BY_CELL populated with web-grounded candidates (12-60)
 - [ ] Generation metadata available
 
 ---
@@ -67,8 +67,7 @@ This script:
 | `sc` | score | Composite score (0.0-1.0) |
 | `ct` | confidence_tier | high/medium/low/uncertain |
 | `si` | signal_intensity | Ansoff intensity (1-5) |
-| `src` | source | web-signal or training |
-| `url` | source_url | URL if web-sourced |
+| `url` | source_url | Web source URL (always present) |
 
 ---
 
@@ -91,10 +90,8 @@ research_topic: "{RESEARCH_TOPIC}"
 project_language: "{PROJECT_LANGUAGE}"
 generated_at: "{ISO_TIMESTAMP}"
 generated_by: "trend-scout"
-total_candidates: 60
-web_research_status: "{success|partial|failed|disabled}"
-web_sourced_candidates: {N}
-training_sourced_candidates: {N}
+total_candidates: {N}
+web_research_status: "{success|partial}"
 search_timestamp: "{ISO_TIMESTAMP}"
 ---
 
@@ -123,7 +120,7 @@ search_timestamp: "{ISO_TIMESTAMP}"
 **Research Topic:** {RESEARCH_TOPIC}
 **Generated:** {DATE}
 
-This file contains the final 60 trend candidates across 4 dimensions and 3 planning horizons (5 per cell × 12 cells).
+This file contains {N} web-grounded trend candidates across 4 dimensions and 3 planning horizons (1-5 per cell based on available web research signals).
 ```
 
 ### German Header
@@ -136,7 +133,7 @@ This file contains the final 60 trend candidates across 4 dimensions and 3 plann
 **Forschungsthema:** {RESEARCH_TOPIC}
 **Generiert:** {DATE}
 
-Diese Datei enthält die finalen 60 Trendkandidaten über 4 Dimensionen und 3 Planungshorizonte (5 pro Zelle × 12 Zellen).
+Diese Datei enthält {N} web-fundierte Trendkandidaten über 4 Dimensionen und 3 Planungshorizonte (1-5 pro Zelle basierend auf verfügbaren Web-Recherche-Signalen).
 ```
 
 ---
@@ -153,7 +150,7 @@ Diese Datei enthält die finalen 60 Trendkandidaten über 4 Dimensionen und 3 Pl
 - **Score**: ★★★★★ (0.85) = Star rating + exact composite score (sorted by score)
 - **Confidence**: ✓✓✓ = High, ✓✓○ = Medium, ✓○○ = Low, ?○○ = Uncertain
 - **Intensity**: 1-5 (Ansoff signal level, 1=weak, 5=strong)
-- **Source**: [n] = Web-sourced (see References), 📚 = Hypothesis (training knowledge, unverified), 📚 [corr.] = Hypothesis corroborated by web signal
+- **Source**: [n] = Web-sourced (see References)
 ```
 
 ### German Legend
@@ -166,7 +163,7 @@ Diese Datei enthält die finalen 60 Trendkandidaten über 4 Dimensionen und 3 Pl
 - **Score**: ★★★★★ (0.85) = Sternbewertung + exakter Composite-Score (nach Score sortiert)
 - **Konfidenz**: ✓✓✓ = Hoch, ✓✓○ = Mittel, ✓○○ = Niedrig, ?○○ = Unsicher
 - **Intensität**: 1-5 (Ansoff Signalstärke, 1=schwach, 5=stark)
-- **Quelle**: [n] = Web-recherchiert (siehe Quellenverzeichnis), 📚 = Hypothese (Trainingswissen, ungeprüft), 📚 [korr.] = Hypothese bestätigt durch Web-Signal
+- **Quelle**: [n] = Web-recherchiert (siehe Quellenverzeichnis)
 ```
 
 ---
@@ -182,7 +179,7 @@ SOURCES_REGISTRY = []  # List of {number, url, name}
 citation_counter = 0
 
 For each candidate in CANDIDATES_BY_CELL (in document order):
-  If candidate.source == "web-signal" AND candidate.source_url exists:
+  If candidate.source_url exists:
     # Check if URL already registered
     existing = find_in_registry(candidate.source_url)
 
@@ -196,9 +193,6 @@ For each candidate in CANDIDATES_BY_CELL (in document order):
         name: extract_domain_name(candidate.source_url)  # e.g., "VDMA", "EUR-Lex"
       })
       candidate.citation = "[{citation_counter}]"
-
-  Else if candidate.source == "training":
-    candidate.citation = "📚"
 ```
 
 ### Helper: extract_domain_name
@@ -272,7 +266,7 @@ For each horizon within dimension, generate candidate cards with rich details:
 > **Research:** {research_hint_20_30_words_guiding_downstream_investigation}
 
 ---
-... (repeat for all 5 candidates)
+... (repeat for all candidates in this cell)
 ```
 
 **German:**
@@ -300,7 +294,7 @@ For each horizon within dimension, generate candidate cards with rich details:
 > **Forschung:** {research_hint_20_30_wörter_für_nachgelagerte_untersuchung}
 
 ---
-... (repeat for all 5 candidates)
+... (repeat for all candidates in this cell)
 ```
 
 ### Trend Statement Requirements
@@ -337,7 +331,7 @@ Each candidate MUST include a `research_hint` field (20-30 words) that guides do
 | Score | Star rating + numeric composite score | ★★★★☆ (0.72) |
 | Conf | Confidence tier icon | ✓✓✓ (high) |
 | Int | Ansoff intensity level | 4 |
-| Source | [n] or 📚 | [1] |
+| Source | [n] | [1] |
 
 ### Score-to-Stars Conversion
 
@@ -381,22 +375,22 @@ uncertain → ?○○
 
 ---
 
-## Step 3.6: Generate Source Integrity Summary
+## Step 3.6: Generate Source Coverage Summary
 
 ```markdown
 ---
 
-## Source Integrity
+## Source Coverage
 
 | Metric | Value |
 |--------|-------|
-| Web-sourced candidates | {N} ({pct}%) |
-| Hypotheses (corroborated) | {N} ({pct}%) |
-| Hypotheses (uncorroborated) | {N} ({pct}%) |
-| Avg. web-sourced score | {score} |
-| Avg. hypothesis score | {score} |
+| Total candidates | {N} |
+| Unique web sources | {N} |
+| Cells with candidates | {N}/12 |
+| Average score | {score} |
+| Average confidence | {high/medium/low distribution} |
 
-*Hypotheses are training-knowledge candidates with capped scores (max source_quality=0.4, max signal_strength=0.3). Corroborated hypotheses found matching web signals during Phase 1 research.*
+*All candidates are grounded in web research signals with verifiable source URLs.*
 ```
 
 ---
@@ -420,7 +414,6 @@ The following sources were used for web-sourced candidates:
 | 2 | {source_name_2} | [{title_2}]({url_2}) |
 ...
 
-*📚 = Training knowledge (no external source)*
 ```
 
 ### German
@@ -430,15 +423,13 @@ The following sources were used for web-sourced candidates:
 
 ## Quellenverzeichnis
 
-Folgende Quellen wurden für die Web-recherchierten Kandidaten verwendet:
+Folgende Quellen wurden für die Trendkandidaten verwendet:
 
 | Nr. | Quelle | URL |
 |-----|--------|-----|
 | 1 | {source_name_1} | [{title_1}]({url_1}) |
 | 2 | {source_name_2} | [{title_2}]({url_2}) |
 ...
-
-*📚 = Trainingswissen (keine externe Quelle)*
 ```
 
 ### Citation Format Rules
@@ -446,7 +437,6 @@ Folgende Quellen wurden für die Web-recherchierten Kandidaten verwendet:
 1. **Unique numbering**: Each unique `source_url` gets exactly one number
 2. **Deduplication**: If multiple candidates share the same source, they share the citation number
 3. **Order**: Sources numbered in order of first appearance in the document
-4. **Display**: In tables, web-sourced candidates show `[n]`, training shows `📚`
 
 ---
 
@@ -467,7 +457,8 @@ log_conditional INFO "Written trend-candidates.md to: $TIPS_CANDIDATES_FILE"
 ## Success Criteria
 
 - [ ] trend-candidates.md written to correct location
-- [ ] File contains all 60 candidates organized by dimension/horizon
+- [ ] File contains all web-grounded candidates organized by dimension/horizon
+- [ ] All candidates have source URLs
 - [ ] File uses correct language (EN or DE)
 - [ ] Frontmatter status set to `agreed`
 

@@ -1,7 +1,7 @@
 ---
 name: trend-scout
 description: |
-  Interactive trend scouting workflow with industry selection, bilingual support (DE/EN), and downstream pipeline integration. Scouts trends across 4 dimensions (each trend gets full TIPS expansion). Creates research projects with 60 industry-contextualized trend candidates that feed directly into value-modeler or trend-report. Use when: (1) Starting smarter-service research with industry context, (2) User wants to scout trends for a specific industry and subsector, (3) User mentions "trend scouting", "industry trends", "trend scout", (4) Preparing input for the TIPS pipeline (value-modeler, trend-report).
+  Interactive trend scouting workflow with industry selection, bilingual support (DE/EN), and downstream pipeline integration. Scouts trends across 4 dimensions (each trend gets full TIPS expansion). Creates research projects with web-grounded industry-contextualized trend candidates (variable count based on web research signals) that feed directly into value-modeler or trend-report. Use when: (1) Starting smarter-service research with industry context, (2) User wants to scout trends for a specific industry and subsector, (3) User mentions "trend scouting", "industry trends", "trend scout", (4) Preparing input for the TIPS pipeline (value-modeler, trend-report).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Task, AskUserQuestion, TodoWrite
 ---
 
@@ -15,7 +15,7 @@ This skill enables users to:
 
 1. Select an industry and subsector from a standardized taxonomy
 2. Initialize a research project with semantic slug
-3. Generate 60 trend candidates (5 per cell × 12 cells: 4 dimensions × 3 horizons)
+3. Generate web-grounded trend candidates (1-5 per cell × 12 cells: 4 dimensions × 3 horizons, variable total based on web signals)
 4. Write the final trend list and produce configuration for downstream pipeline skills (`value-modeler`, `trend-report`)
 
 ## Language Support
@@ -36,7 +36,7 @@ Full German and English support throughout. This skill follows the shared langua
 
 This skill reads configuration from project files and generates all outputs to disk — it does not depend on prior conversation context. If invoked after trends-resume or other conversational setup, **context compaction is safe and recommended** before starting.
 
-**Before executing Phase 0**, run `/compact` to free working memory. This skill dispatches a web research agent with 32+ searches (Phase 1) and generates 60 scored candidates with extended thinking (Phase 2) — both require substantial context for processing research signals and candidate scoring. Compacting early maximizes the context available for these heavy phases.
+**Before executing Phase 0**, run `/compact` to free working memory. This skill dispatches a web research agent with 32+ searches (Phase 1) and generates web-grounded scored candidates with extended thinking (Phase 2) — both require substantial context for processing research signals and candidate scoring. Compacting early maximizes the context available for these heavy phases.
 
 If `/compact` is unavailable or this is the first skill in the session (no prior context to reclaim), skip compaction and proceed directly.
 
@@ -118,7 +118,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
    │          │          │         │         │
    │          │          │         │         └─ Write config + JSON, finalize
    │          │          │         └─ Write final trend-candidates.md with scores
-   │          │          └─ Generate + score 60 candidates (mix web + API + training)
+   │          │          └─ Generate + score web-grounded candidates (1-5 per cell)
    │          └─ 32 web searches + academic/patent/regulatory APIs
    └─ Language detect, industry select, project init
 ```
@@ -291,7 +291,7 @@ This tagging flows into the trend-generator's CRAAP scoring — candidates groun
 ```yaml
 Task:
   subagent_type: "cogni-trends:trend-generator"
-  description: "Generate 60 scored trend candidates"
+  description: "Generate web-grounded scored trend candidates"
   prompt: |
     Execute Phase 2 candidate generation for trend-scout.
 
@@ -308,13 +308,14 @@ Task:
 **Agent responsibilities:**
 
 1. Apply embedded scoring framework
-2. Generate 60 trend candidates (5 per cell × 12 cells) using extended thinking (MANDATORY)
-3. Apply multi-framework scoring (TIPS, Ansoff, Rogers, CRAAP)
-4. Classify indicator types (leading/lagging) and diffusion stages
-5. Validate subcategory balance (MIN 1 per subcategory per cell)
-6. Validate portfolio balance (≥40% leading indicators)
-7. Write full results to `{{PROJECT_PATH}}/.logs/trend-generator-candidates.json`
-8. Return compact JSON summary
+2. Generate web-grounded trend candidates (1-5 per cell × 12 cells) using extended thinking (MANDATORY)
+3. Every candidate must be grounded in a web research signal — no training-sourced padding
+4. Apply multi-framework scoring (TIPS, Ansoff, Rogers, CRAAP)
+5. Classify indicator types (leading/lagging) and diffusion stages
+6. Report subcategory coverage (best effort within available web signals)
+7. Validate portfolio balance (≥40% leading indicators)
+8. Write full results to `{{PROJECT_PATH}}/.logs/trend-generator-candidates.json`
+9. Return compact JSON summary
 
 **Process agent response:**
 
@@ -323,8 +324,9 @@ The agent returns compact JSON:
 ```json
 {
   "ok": true,
-  "candidates": {"total": 60, "by_source": {...}, "by_dimension": {...}},
-  "scoring": {"avg_score": 0.65, "confidence": {...}, "indicator": {...}},
+  "candidates": {"total": 38, "web_signals_available": 42, "by_dimension": {...}, "empty_cells": [...]},
+  "scoring": {"avg_score": 0.72, "confidence": {...}, "indicator": {...}},
+  "coverage": {"cells_with_candidates": 11, "cells_total": 12},
   "validation": {"passed": true, "warnings": []},
   "log": ".logs/trend-generator-candidates.json"
 }
@@ -349,12 +351,12 @@ Field mapping for compact format:
 - `d` → dimension, `h` → horizon, `n` → name
 - `s` → trend_statement, `r` → research_hint, `k` → keywords
 - `sc` → score, `ct` → confidence_tier, `si` → signal_intensity
-- `src` → source, `url` → source_url
+- `url` → source_url
 
 **Required outputs:**
 
 - CANDIDATES_BY_CELL loaded from log file
-- TOTAL_CANDIDATES = 60
+- TOTAL_CANDIDATES = variable (12-60, based on web signals)
 - SCORING_METADATA populated from agent response
 - Validation status confirmed
 
@@ -365,19 +367,17 @@ Field mapping for compact format:
 
 **Inline Fallback Generation (when trend-generator agent is unavailable):**
 
-If the trend-generator agent cannot be dispatched, generate the 60 candidates inline. This loses the benefit of extended thinking in a separate context, but still produces the required output.
+If the trend-generator agent cannot be dispatched, generate web-grounded candidates inline. This loses the benefit of extended thinking in a separate context, but still produces the required output.
 
 Steps:
-1. Load web research signals from `{PROJECT_PATH}/.logs/web-research-raw.json` or `{PROJECT_PATH}/phase1-research-summary.json`
-2. **Prioritize web signals for candidate creation:** For each cell, first check if web signals exist for that dimension. Create candidates grounded in web signals first (mark as `source: "web-signal"` with the original URL), then fill remaining slots with training knowledge. Target: at least 50% of candidates should be web-sourced when signals are available.
-3. Generate 60 candidates (5 per cell x 12 cells) following the same dimension/horizon/subcategory structure
-4. Apply the scoring weights from [references/scoring-framework.md](references/scoring-framework.md) — especially the training source caps (source_quality max 0.4, signal_strength max 0.3 for training-only candidates)
-5. Validate subcategory balance: each cell must have MIN 1 candidate per subcategory. If violated, replace the lowest-scored candidate in the over-represented subcategory
+1. Load web research signals from `{PROJECT_PATH}/.logs/web-research-raw.json` or `{PROJECT_PATH}/phase1-research-summary.json`. If no signals exist, halt — do not generate candidates without web evidence.
+2. **Web-only generation:** For each cell, create candidates grounded in available web signals only. If a cell has 2 web signals, it gets 2 candidates. If a cell has 0 web signals, it gets 0 candidates. Do not pad with training knowledge.
+3. Generate candidates (1-5 per cell based on signals) following the same dimension/horizon/subcategory structure
+4. Apply the scoring weights from [references/scoring-framework.md](references/scoring-framework.md)
+5. Report subcategory coverage — gaps indicate where web research found no signals
 6. **Validate and repair horizon-intensity alignment:** ACT candidates must have signal_intensity 4-5 (if < 4, set to 4). OBSERVE candidates must have intensity 1-2 (if > 2, set to 2). PLAN candidates: clamp to [2, 4]. This is a core Ansoff methodology constraint — a trend in the "act now" horizon must show strong signals, and a long-horizon OBSERVE trend must show weak/emerging signals.
 7. Write results to `{PROJECT_PATH}/.logs/trend-generator-candidates.json`
 8. Run `prepare-phase3-data.sh` to generate compact format
-
-**Important:** Even in inline mode, enforce the scoring caps for training-sourced candidates. A training-only candidate with `score: 0.78` signals a scoring cap violation — the theoretical max for a pure training candidate is ~0.60 after caps are applied.
 
 ### Phase 3: Write Final Trend List
 
@@ -385,16 +385,16 @@ Read [references/workflow-phases/phase-3-present.md](references/workflow-phases/
 
 1. Write `trend-candidates.md` to `{PROJECT_PATH}/` (project root) as the **final trend list**
 2. Use bilingual template based on PROJECT_LANGUAGE
-3. Include all 60 candidates organized by dimension and horizon with scores and metadata
-4. Include source integrity summary and references
+3. Include all web-grounded candidates organized by dimension and horizon with scores and metadata
+4. Include source coverage summary and references
 
-All 60 generated candidates are the final agreed list — no user selection step. Proceed directly to Phase 4.
+All generated candidates are the final agreed list — no user selection step. Proceed directly to Phase 4.
 
 ### Phase 4: Finalize Output
 
 Read [references/workflow-phases/phase-4-finalize.md](references/workflow-phases/phase-4-finalize.md), then execute:
 
-1. Update consolidated `trend-scout-output.json` with all 60 candidates
+1. Update consolidated `trend-scout-output.json` with all candidates
 2. Update `tips-project.json` with current timestamp (`updated` field)
 3. Update `trend-candidates.md` frontmatter status to `agreed`
 4. Log completion with next-step instructions
@@ -477,12 +477,11 @@ Location: `{PROJECT_PATH}/.metadata/trend-scout-output.json`
       },
       "scoring_framework_version": "1.0.0"
     },
-    "source_integrity": {
-      "training_capped": true,
-      "training_with_corroboration": 8,
-      "training_without_corroboration": 24,
-      "avg_training_score": 0.48,
-      "avg_web_signal_score": 0.72
+    "coverage": {
+      "cells_with_candidates": 11,
+      "cells_total": 12,
+      "min_per_cell": 0,
+      "max_per_cell": 5
     },
     "items": [
       {
