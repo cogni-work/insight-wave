@@ -12,7 +12,7 @@ Reference Loaded: phase-4-finalize.md | Checksum: trend-scout-p4-final-v1
 
 ## Objective
 
-Update the consolidated `trend-scout-output.json` with all 60 candidates for downstream `deeper-research-0` consumption.
+Update the consolidated `trend-scout-output.json` with all 60 candidates for downstream pipeline consumption (`value-modeler`, `trend-report`).
 
 **Expected Duration:** 10-15 seconds
 
@@ -153,19 +153,25 @@ Successfully finalized 60 trend candidates for {SUBSECTOR_EN}.
 
 ### Next Steps
 
-**Option A — Full Research Pipeline:**
+**Option A — Trend Report:**
 
-To start the full research workflow, invoke the `deeper-research-0` skill with:
+To generate a narrative TIPS trend report directly, invoke the `trend-report` skill:
 
 ```
-tips_source: {PROJECT_PATH}/.metadata/trend-scout-output.json
+/trend-report
 ```
 
-The configuration and candidates will be loaded from the consolidated output file.
+It will auto-discover this project and enrich each trend with web-sourced quantitative evidence.
 
-**Option B — Trend Report:**
+**Option B — Value Modeling (recommended for full pipeline):**
 
-To generate a narrative TIPS trend report directly, invoke the `trend-report` skill. It will auto-discover this project and enrich each trend with web-sourced quantitative evidence.
+To build T→I→P→S relationship networks and ranked solution templates before reporting, invoke the `value-modeler` skill:
+
+```
+/value-modeler
+```
+
+It will load configuration and candidates from the consolidated output file. After value-modeler completes, proceed with `/trend-report` for the full CxO narrative.
 ```
 
 ### German Output
@@ -192,19 +198,25 @@ To generate a narrative TIPS trend report directly, invoke the `trend-report` sk
 
 ### Nächste Schritte
 
-**Option A — Vollständige Recherche-Pipeline:**
+**Option A — Trendbericht:**
 
-Um den Recherche-Workflow zu starten, rufen Sie das `deeper-research-0` Skill auf mit:
+Um direkt einen narrativen TIPS-Trendbericht zu generieren, rufen Sie das `trend-report` Skill auf:
 
 ```
-tips_source: {PROJECT_PATH}/.metadata/trend-scout-output.json
+/trend-report
 ```
 
-Die Konfiguration und Kandidaten werden aus der konsolidierten Ausgabedatei geladen.
+Es erkennt dieses Projekt automatisch und reichert jeden Trend mit webbasierten quantitativen Belegen an.
 
-**Option B — Trendbericht:**
+**Option B — Value Modeling (empfohlen für vollständige Pipeline):**
 
-Um direkt einen narrativen TIPS-Trendbericht zu generieren, rufen Sie das `trend-report` Skill auf. Es erkennt dieses Projekt automatisch und reichert jeden Trend mit webbasierten quantitativen Belegen an.
+Um T→I→P→S Beziehungsnetzwerke und priorisierte Lösungsvorlagen zu erstellen, rufen Sie das `value-modeler` Skill auf:
+
+```
+/value-modeler
+```
+
+Die Konfiguration und Kandidaten werden aus der konsolidierten Ausgabedatei geladen. Nach Abschluss des Value-Modelers fahren Sie mit `/trend-report` für den vollständigen CxO-Bericht fort.
 ```
 
 ---
@@ -227,16 +239,14 @@ Um direkt einen narrativen TIPS-Trendbericht zu generieren, rufen Sie das `trend
 
 ---
 
-## Integration with deeper-research-0
+## Integration with Downstream Pipeline
 
-User invokes `deeper-research-0` with explicit path to trend-scout output:
+After trend-scout finalizes, the user proceeds to the next pipeline stage:
 
-```yaml
-tips_source: {PROJECT_PATH}/.metadata/trend-scout-output.json
-```
+### Primary Path: value-modeler
 
-1. **Phase 0 Detection:**
-   - deeper-research-0 checks for `tips_source` parameter
+1. **Project Discovery:**
+   - value-modeler discovers the project via `tips-project.json`
    - Loads consolidated `trend-scout-output.json`
 
 2. **Auto-Configuration:**
@@ -245,17 +255,21 @@ tips_source: {PROJECT_PATH}/.metadata/trend-scout-output.json
    - Reads `.project_language` from output
    - Skips user prompts for these settings
 
-3. **Candidate Loading (Phase 2):**
+3. **Candidate Loading:**
    - Loads candidates from `.tips_candidates.items`
    - Proceeds directly with 60 candidates
 
-4. **Research Execution:**
-   - Uses industry context from `.config.industry`
-   - Uses subsector for web search queries
+4. **Value Modeling:**
+   - Builds TIPS relationship networks across dimensions
+   - Generates investment themes and ranked solution templates
    - Maintains provenance to trend-scout source file
+
+### Alternative Path: trend-report
+
+If value-modeling is not needed, trend-report can consume trend-scout output directly to produce a CxO-level narrative report.
 
 ---
 
 ## Workflow Complete
 
-The trend-scout skill has completed all phases. User can now proceed to deeper-research-0 with the `tips_source` path.
+The trend-scout skill has completed all phases. User can now proceed to `/value-modeler` (recommended) or `/trend-report` (simpler path).

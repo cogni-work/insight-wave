@@ -1,13 +1,13 @@
 ---
 name: trend-scout
 description: |
-  Interactive trend scouting workflow with industry selection, bilingual support (DE/EN), and deeper-research integration. Scouts trends across 4 dimensions (each trend gets full TIPS expansion). Creates research projects with 60 industry-contextualized trend candidates that are directly finalized for deeper-research-0. Use when: (1) Starting smarter-service research with industry context, (2) User wants to scout trends for a specific industry and subsector, (3) User mentions "trend scouting", "industry trends", "trend scout", (4) Preparing input configuration for deeper-research-0.
+  Interactive trend scouting workflow with industry selection, bilingual support (DE/EN), and downstream pipeline integration. Scouts trends across 4 dimensions (each trend gets full TIPS expansion). Creates research projects with 60 industry-contextualized trend candidates that feed directly into value-modeler or trend-report. Use when: (1) Starting smarter-service research with industry context, (2) User wants to scout trends for a specific industry and subsector, (3) User mentions "trend scouting", "industry trends", "trend scout", (4) Preparing input for the TIPS pipeline (value-modeler, trend-report).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Task, AskUserQuestion, TodoWrite
 ---
 
 # Trend Scout
 
-Interactive workflow for scouting trends across 4 dimensions with industry selection and bilingual support. Each trend discovered is later analyzed through the complete TIPS framework (Trend → Implications → Possibilities → Solutions). Produces configuration files for downstream `deeper-research-0` research.
+Interactive workflow for scouting trends across 4 dimensions with industry selection and bilingual support. Each trend discovered is later analyzed through the complete TIPS framework (Trend → Implications → Possibilities → Solutions). Produces configuration files for downstream `value-modeler` and `trend-report` skills.
 
 ## Purpose
 
@@ -16,7 +16,7 @@ This skill enables users to:
 1. Select an industry and subsector from a standardized taxonomy
 2. Initialize a research project with semantic slug
 3. Generate 60 trend candidates (5 per cell × 12 cells: 4 dimensions × 3 horizons)
-4. Write the final trend list and produce configuration for `deeper-research-0` skill
+4. Write the final trend list and produce configuration for downstream pipeline skills (`value-modeler`, `trend-report`)
 
 ## Language Support
 
@@ -95,7 +95,7 @@ Read references **only when needed** for the specific task:
 | [references/regulatory-feeds.md](references/regulatory-feeds.md) | Regulatory API searches - EUR-Lex, SEC EDGAR, FDA (Phase 1) |
 | [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md) | Project init + industry selection |
 | [references/workflow-phases/phase-3-present.md](references/workflow-phases/phase-3-present.md) | Writing final trend-candidates.md with scores |
-| [references/workflow-phases/phase-4-finalize.md](references/workflow-phases/phase-4-finalize.md) | Generating deeper-research config |
+| [references/workflow-phases/phase-4-finalize.md](references/workflow-phases/phase-4-finalize.md) | Finalizing output for downstream pipeline |
 
 ## Immediate Action: Initialize TodoWrite
 
@@ -105,7 +105,7 @@ Read references **only when needed** for the specific task:
 2. Phase 1: Bilingual Web Research [pending]
 3. Phase 2: Generate Candidate Pool [pending]
 4. Phase 3: Write Final Trend List [pending]
-5. Phase 4: Finalize deeper-research Config [pending]
+5. Phase 4: Finalize Output + Pipeline Config [pending]
 
 Update todo status as you progress through each phase.
 
@@ -524,7 +524,7 @@ Location: `{PROJECT_PATH}/.metadata/trend-scout-output.json`
     "agreed_at": "2025-12-16T11:45:00Z"
   },
 
-  "deeper_analysis_integration": {
+  "downstream_integration": {
     "source_type": "trend-scout",
     "auto_load_candidates": true,
     "auto_configure_research_type": true,
@@ -571,20 +571,27 @@ Each dimension is used to scout trends. Each trend discovered in any dimension i
 
 ---
 
-## Integration with deeper-research-0
+## Integration with Downstream Pipeline
 
-After `trend-scout` completes:
+After `trend-scout` completes, the user proceeds with one of two paths:
 
-1. User invokes `deeper-research-0` skill with explicit path:
+### Option A — Trend Report (simpler path)
 
-   ```yaml
-   tips_source: {PROJECT_PATH}/.metadata/trend-scout-output.json
-   ```
+Invoke `/trend-report` directly to generate a narrative TIPS trend report:
 
-2. deeper-research-0 Phase 0 loads configuration from consolidated output
-3. Auto-configures research_type, DOK level, language from `.config`
-4. deeper-research-0 Phase 2 loads candidates from `.tips_candidates.items`
-5. Research proceeds with all 60 candidates (5 per cell × 12 cells)
+1. trend-report auto-discovers this project via `tips-project.json`
+2. Enriches each trend with web-sourced quantitative evidence
+3. Produces the CxO-level report organized by investment themes
+
+### Option B — Value Modeling (recommended, full pipeline)
+
+Invoke `/value-modeler` to build T→I→P→S relationship networks and ranked solution templates:
+
+1. value-modeler discovers the project and loads `.metadata/trend-scout-output.json`
+2. Auto-configures research_type, DOK level, language from `.config`
+3. Loads candidates from `.tips_candidates.items`
+4. Builds relationship networks, investment themes, and solution templates
+5. After value-modeler completes, invoke `/trend-report` for the full CxO narrative
 
 ---
 

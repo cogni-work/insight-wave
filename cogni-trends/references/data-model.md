@@ -128,7 +128,7 @@ Consolidated output from the trend-scout skill containing project config, candid
     "agreed_at": "2026-01-15T11:45:00Z"
   },
 
-  "deeper_analysis_integration": {
+  "downstream_integration": {
     "source_type": "trend-scout",
     "auto_load_candidates": true,
     "skip_tips_selection": true,

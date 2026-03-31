@@ -44,7 +44,7 @@ This methodology reference documents the academic foundations and systematic app
 |---------|-------------|-------------------|
 | **Perceiving** | Environmental scanning | Phase 1: Web research + API queries |
 | **Prospecting** | Sensemaking and interpretation | Phase 2: Candidate generation + scoring |
-| **Probing** | Strategic action | Phase 4-5: Selection + deeper-research-0 |
+| **Probing** | Strategic action | Phase 4+: Finalization + value-modeler (relationship networks, solution templates) |
 
 ### 1.3 Day & Schoemaker's Peripheral Vision
 
@@ -362,7 +362,7 @@ Key regulations with approaching deadlines:
 | Phase 2 | Ansoff intensity, Rogers diffusion, CRAAP scoring, triangulation |
 | Phase 3 | Confidence tiers, score display |
 | Phase 4 | Human-in-the-loop validation |
-| Phase 5 | Integration with deeper-research-0 (Rohrbeck: Probing) |
+| Phase 5 | Integration with value-modeler (Rohrbeck: Probing) |
 
 ### 9.2 Output Classifications
 

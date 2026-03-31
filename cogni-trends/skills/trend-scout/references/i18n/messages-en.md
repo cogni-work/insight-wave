@@ -103,8 +103,7 @@ FINALIZE_SUCCESS_SUMMARY: |
   - Config: {CONFIG_PATH}
   - Candidates: {CANDIDATES_PATH}
 
-  Next step:
-  To start research, invoke the deeper-research-1 skill on this project.
+  Next step: invoke `/value-modeler` to build TIPS relationship networks and ranked solution templates, or `/trend-report` for a direct narrative trend report.
   The configuration will be automatically loaded.
 ```
 

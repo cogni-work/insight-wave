@@ -103,8 +103,7 @@ FINALIZE_SUCCESS_SUMMARY: |
   - Konfiguration: {CONFIG_PATH}
   - Kandidaten: {CANDIDATES_PATH}
 
-  Nächster Schritt:
-  Um die Recherche zu starten, rufen Sie das deeper-research-1 Skill für dieses Projekt auf.
+  Nächster Schritt: Rufen Sie `/value-modeler` auf, um TIPS-Beziehungsnetzwerke und priorisierte Lösungsvorlagen zu erstellen, oder `/trend-report` für einen direkten narrativen Trendbericht.
   Die Konfiguration wird automatisch geladen.
 ```
 

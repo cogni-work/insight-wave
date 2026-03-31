@@ -239,7 +239,7 @@ jq -n \
             phases_completed: []
         },
 
-        deeper_analysis_integration: {
+        downstream_integration: {
             source_type: "trend-scout",
             auto_load_candidates: true,
             skip_tips_selection: true,
@@ -272,14 +272,19 @@ This project was created by the trend-scout skill from the cogni-trends plugin.
 ### Next Steps
 1. Run trend-scout to generate trend candidates
 2. Review and select candidates in trend-candidates.md
-3. Pass to deeper-research-1 using: \`tips_source: $PROJECT_PATH/.metadata/trend-scout-output.json\`
+3. Invoke \`/value-modeler\` to build relationship networks and solution templates
+4. Or invoke \`/trend-report\` for a direct narrative report
 
-## Integration with deeper-research-1
+## Integration with Downstream Pipeline
 
-After completing trend-scout, invoke deeper-research-1 with:
+After completing trend-scout, invoke value-modeler (recommended) or trend-report:
 \`\`\`
-tips_source: $PROJECT_PATH/.metadata/trend-scout-output.json
+/value-modeler
+# or
+/trend-report
 \`\`\`
+
+Both skills auto-discover this project via \`tips-project.json\`.
 EOF
 
 # Register project in global registry for cross-workspace discovery
