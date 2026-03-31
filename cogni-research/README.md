@@ -25,7 +25,7 @@ A STORM-inspired editorial research pipeline for the insight-wave ecosystem. Par
 1. **Decompose** your topic into orthogonal sub-questions grounded by preliminary web search
 2. **Research** in parallel — one agent per sub-question, searching the web and extracting findings
 3. **Aggregate** sources across all sub-questions, deduplicate, and enforce quality thresholds
-4. **Write** a structured report with inline citations linking every claim to its source → `research-report.md` → enrich-report, claims, copywriter (branded HTML)
+4. **Write** a structured report with inline citations linking every claim to its source → optionally enriched into themed HTML with interactive charts and diagrams via enrich-report
 5. **Review** structurally — automated quality gate checks completeness, coherence, depth, and clarity
 6. **Verify** (separate step) — extract claims and check each against its source URL via cogni-claims in a dedicated context window
 
@@ -35,6 +35,7 @@ If you produce research, analysis, or any content that needs to be both sourced 
 
 - **Fast and parallel.** Basic reports dispatch 5–7 agents concurrently; deep reports run 15–25. Research that would take hours completes in minutes.
 - **Claims-verified, not vibes-verified.** Every factual claim is extracted, matched to its source URL, and checked for deviations — misquotation, unsupported conclusions, selective omission.
+- **Presentation-ready.** Reports finish as themed, interactive HTML with data visualizations — not just markdown. Optional PDF and DOCX export included.
 - **Resumable.** Interrupted runs pick up from the first incomplete phase. No lost work.
 - **Traceable.** Every finding links to a source, every claim links to a verification result. The full workspace is Obsidian-browsable.
 - **Three depth levels.** Quick overview (basic), multi-section report (detailed), or recursive tree exploration (deep) — matched to your needs.

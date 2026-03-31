@@ -51,7 +51,7 @@ Connects industry trends to portfolio solutions for DACH markets. A four-stage p
 
 1. **Scout** trends across 4 Trendradar dimensions with bilingual web research (32 searches + academic, patent, and regulatory API queries), scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality) → `trend-candidates.md` → value-modeler, trend-report
 2. **Model** investment themes (Handlungsfelder) by consolidating trends into T→I→P→S value chains, generating solution blueprints with portfolio composition and readiness scoring — optionally anchored to real products via cogni-portfolio → `tips-value-model.json` → trend-report, story-to-big-block
-3. **Report** CxO-level narratives structured by investment theme using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay), enriched with web-sourced quantitative evidence, inline citations, and a verifiable claims registry → `tips-trend-report.md` → enrich-report, claims (branded HTML)
+3. **Report** CxO-level narratives structured by investment theme using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay), enriched with web-sourced quantitative evidence, inline citations, and a verifiable claims registry → `tips-trend-report.md` → themed HTML with interactive charts and diagrams via enrich-report
 4. **Catalog** curated solutions, SPIs, metrics, and collaterals into persistent industry catalogs for cross-pursuit reuse — each engagement improves the base catalog
 
 ## What it means for you
@@ -62,6 +62,7 @@ If you need to stay ahead of industry trends for strategy, advisory, or portfoli
 - **Framework-scored, not gut-feel.** Every candidate scored on impact, probability, strategic fit, source quality, and signal strength.
 - **From trends to solutions.** T→I→P→S value paths bridge scouted trends to investment themes and portfolio-grounded solution blueprints — not just trend narratives.
 - **Evidence-backed output.** Every quantitative claim in the report has an inline citation you can verify.
+- **Polished visual output.** Reports finish as themed, interactive HTML with Chart.js dashboards and concept diagrams — ready to share, not just a markdown file.
 - **Cross-pursuit learning.** Industry catalogs accumulate curated solutions, SPIs, and metrics — each engagement improves the next.
 - **Multi-session workflow.** Resume any project mid-stream with full state recovery via `/trends-resume`.
 - **DACH-native.** German and English research queries, curated DACH institutional sources (industry associations, Fraunhofer, EUR-Lex), output in your chosen language.

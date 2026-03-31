@@ -503,12 +503,22 @@ Task(revisor,
   MARKET=<market>)
 ```
 
-Maximum 1 structural review iteration. After revision (or if the first review accepts), proceed to Phase 6.
+Maximum 1 structural review iteration. After revision (or if the first review accepts), proceed to Phase 5.5.
+
+### Phase 5.5: Visual Enrichment via cogni-visual (Optional)
+
+Ask the user whether to generate a themed HTML version of the report with interactive charts and diagrams. This transforms the markdown report into a polished, presentation-ready HTML deliverable.
+
+1. Check whether `cogni-visual:enrich-report` is available. If not installed, display a warning and skip to Phase 6.
+2. Ask the user: `"Generate themed HTML with interactive charts and diagrams? (cogni-visual:enrich-report)"`
+3. If the user declines, skip to Phase 6.
+4. If yes, invoke the `cogni-visual:enrich-report` skill with `source_path` pointing to the final accepted draft (`output/report.md` if already copied, otherwise the latest `output/draft-v{N}.md`). The enrich-report skill handles theme selection, enrichment planning, and interactive review — do not duplicate that logic here.
+5. Record the result for the Phase 6 summary.
 
 ### Phase 6: Finalization
 
 1. Copy final accepted draft to `output/report.md`
-   - Do NOT copy, symlink, or duplicate the report to the workspace root or any location outside the project folder. The canonical deliverable is `{project_path}/output/report.md` — the self-contained project directory is the unit of output (report + sources + metadata, all Obsidian-browsable). If the user wants a different format or location, point them to `/enrich-report`.
+   - Do NOT copy, symlink, or duplicate the report to the workspace root or any location outside the project folder. The canonical deliverable is `{project_path}/output/report.md` — the self-contained project directory is the unit of output (report + sources + metadata, all Obsidian-browsable). If the user wants a different format or location, the enrich-report phase (Phase 5.5) handles that.
 2. **Accumulate cost estimates**: Sum `cost_estimate.estimated_usd` from all agent outputs collected during Phases 2-5. Group by agent role (researchers, writer, reviewer, revisor, claim_extractor, source_curator). Write cost summary to `execution-log.json`
 3. Update `.metadata/execution-log.json` with:
    - Phase completion timestamps
@@ -516,6 +526,8 @@ Maximum 1 structural review iteration. After revision (or if the first review ac
    - Final structural review score and iteration count
    - `phase_5_review.claims_verification: "deferred to verify-report"`
    - Cost summary: `{"total_estimated_usd": N, "breakdown": {"researchers": N, "writer": N, ...}}`
+   - `enrich_report_applied`: true/false
+   - `enrich_report_path`: path to enriched HTML or null
 4. Report summary to user:
    - Topic and report type
    - Word count and section count
@@ -528,7 +540,6 @@ Maximum 1 structural review iteration. After revision (or if the first review ac
 
 > **Next steps:**
 > 1. `/verify-report` — Verify claims against cited sources. Runs in a clean context window for thorough fact-checking.
-> 2. `/enrich-report` — Generate themed HTML with interactive charts and diagrams. Add `formats: ["html", "pdf"]` for PDF export, or `formats: ["html", "docx"]` for Word. Use `density: none` for themed prose without charts.
 
 ## Resumption
 

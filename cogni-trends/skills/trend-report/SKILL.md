@@ -22,6 +22,7 @@ Transform agreed trend-scout candidates into a strategic, evidence-backed report
 7. Produce a claims registry compatible with `cogni-claims:claim-work`
 8. Optionally verify claims via cogni-claims:claim-work
 9. Polish report prose for executive readability via cogni-copywriting
+10. Optionally generate themed HTML with interactive charts and diagrams via cogni-visual:enrich-report
 
 ## Language Support
 
@@ -368,6 +369,18 @@ Read [references/phase-3.5-executive-polish.md](references/phase-3.5-executive-p
 
 ---
 
+### Phase 3.7: Visual Enrichment via cogni-visual (Optional)
+
+Ask the user whether to generate a themed HTML version of the report with interactive charts and diagrams. This transforms the markdown report into a polished, presentation-ready HTML deliverable.
+
+1. Check whether `cogni-visual:enrich-report` is available. If not installed, display a warning and skip to Phase 4.
+2. Ask the user: `"Generate themed HTML with interactive charts and diagrams? (cogni-visual:enrich-report)"`
+3. If the user declines, skip to Phase 4.
+4. If yes, invoke the `cogni-visual:enrich-report` skill with `source_path` pointing to `{PROJECT_PATH}/tips-trend-report.md`. The enrich-report skill handles theme selection, enrichment planning, and interactive review — do not duplicate that logic here.
+5. Record the result for the Phase 4 summary.
+
+---
+
 ### Phase 4: Finalization
 
 #### Step 4.1: Update Metadata
@@ -388,7 +401,9 @@ Add to `{PROJECT_PATH}/.metadata/trend-scout-output.json`:
   "trend_report_investment_theme_count": N,
   "trend_report_generated_at": "ISO-8601",
   "copywriter_applied": true,
-  "copywriter_scope": "tone or null"
+  "copywriter_scope": "tone or null",
+  "enrich_report_applied": true,
+  "enrich_report_path": "output/tips-trend-report-enriched.html or null"
 }
 ```
 
@@ -404,11 +419,11 @@ Trends:       60 across {N} investment themes
 Claims:       {total_claims} quantitative claims extracted
 Verification: {verdict or "skipped"}
 Polish:       {copywriter_applied ? "tone (cogni-copywriting)" : "skipped"}
+Enrichment:   {enrich_report_applied ? "themed HTML (cogni-visual)" : "skipped"}
 
 Recommended next steps:
-  1. cogni-visual:enrich-report — Generate themed HTML with charts and diagrams
-  2. export-pdf-report — Generate formal PDF report
-  3. cogni-claims:claim-work — Verify claims (if skipped)
+  1. export-pdf-report — Generate formal PDF report
+  2. cogni-claims:claim-work — Verify claims (if skipped)
 
 Use /trends-resume in your next session to pick up where you left off.
 ```
@@ -446,9 +461,9 @@ Use /trends-resume in your next session to pick up where you left off.
 
 **Pipeline:** `trend-scout → value-modeler → trend-report`
 
-**Optional cross-plugin:** `cogni-narrative` theme-thesis arc (Phase 2 investment theme writer guidance), `cogni-claims:claim-work` (Phase 3), `cogni-copywriting:copywriter` (Phase 3.5), `cogni-visual:enrich-report` (post-completion visual HTML)
+**Optional cross-plugin:** `cogni-narrative` theme-thesis arc (Phase 2 investment theme writer guidance), `cogni-claims:claim-work` (Phase 3), `cogni-copywriting:copywriter` (Phase 3.5), `cogni-visual:enrich-report` (Phase 3.7 themed HTML with charts and diagrams)
 
-**Downstream:** `cogni-visual:enrich-report`, `export-pdf-report`
+**Downstream:** `export-pdf-report`
 
 ## Debugging
 
