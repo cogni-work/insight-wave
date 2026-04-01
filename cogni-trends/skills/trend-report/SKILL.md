@@ -92,14 +92,16 @@ Read references **only when needed** for the specific phase:
 Track progress through these phases as you go:
 
 ```text
-Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5
-   │          │          │         │          │          │
-   │          │          │         │          │          └─ Post-verification revision (if claims have deviations)
-   │          │          │         │          └─ Update metadata, display summary, recommend /trends-resume
-   │          │          │         └─ Optional claims verification
-   │          │          └─ Theme narratives + arc-framed exec summary + bridges + synthesis
-   │          └─ 4 parallel agents: enrich trends, write sections + enriched JSONs, extract claims
-   └─ Project discovery, arc selection, load trend-scout + value-modeler output, validate gate
+Phase 0 → Phase 0.5 → Phase 1 → Phase 2 → Phase 2.5 → Phase 3 → Phase 4 → Phase 5
+   │          │           │          │          │           │          │          │
+   │          │           │          │          │           │          │          └─ Post-verification revision
+   │          │           │          │          │           │          └─ Update metadata, recommend /trends-resume
+   │          │           │          │          │           └─ Optional claims verification
+   │          │           │          │          └─ Structural review (cross-theme quality gate)
+   │          │           │          └─ Theme narratives + exec summary + bridges + synthesis
+   │          │           └─ 4 parallel agents: enrich trends, write sections, extract claims
+   │          └─ Optional deep research for 3-5 high-value ACT-horizon trends
+   └─ Project discovery, arc selection, load inputs, validate gate
 ```
 
 ---
@@ -308,10 +310,69 @@ rm -f "{PROJECT_PATH}/.logs/report-header.md" \
 
 ---
 
+### Phase 0.5: Deep Research Selection (Optional)
+
+**When to run:** Offer this phase when the user wants deeper evidence for high-value trends. Skip if the user wants a fast report or explicitly declines.
+
+**Purpose:** Select 3-5 high-value ACT-horizon trends for recursive deep research before standard evidence enrichment. Deep-researched trends get richer evidence (quantitative data, forcing functions, ROI figures) that makes the Why Change / Why Pay investment theme arguments substantially more credible.
+
+**Step 0.5.1: Select Trends for Deep Research**
+
+Ask the user via AskUserQuestion:
+
+```text
+EN: "I can perform deep research on 3-5 high-value trends before writing the report. This adds ~5-10 minutes but produces richer evidence with quantitative data. Would you like to:
+a) Deep research top ACT-horizon trends (recommended for executive audiences)
+b) Skip deep research and proceed with standard evidence enrichment
+c) Select specific trends for deep research"
+
+DE: "Ich kann eine Tiefenrecherche für 3-5 hochwertige Trends durchführen, bevor der Bericht geschrieben wird. Das dauert ~5-10 Minuten länger, liefert aber reichere Evidenz mit quantitativen Daten. Möchten Sie:
+a) Tiefenrecherche der wichtigsten ACT-Horizont-Trends (empfohlen für Führungskräfte-Publikum)
+b) Tiefenrecherche überspringen und mit Standard-Evidenzanreicherung fortfahren
+c) Spezifische Trends für Tiefenrecherche auswählen"
+```
+
+**Step 0.5.2: Auto-Select or User-Select**
+
+If user chose (a), auto-select using these criteria (in priority order):
+1. ACT-horizon trends with `signal_intensity >= 4` and `confidence_tier == "high"` — sorted by composite score descending
+2. If fewer than 3 qualify, include ACT-horizon trends with `confidence_tier == "medium"` and highest scores
+3. Cap at 5 trends maximum
+
+If user chose (c), present the ACT-horizon trend list and let them pick.
+
+**Step 0.5.3: Dispatch Deep Researchers (Parallel)**
+
+Dispatch one `trend-deep-researcher` agent per selected trend, all in parallel:
+
+```yaml
+Task:
+  subagent_type: "cogni-trends:trend-deep-researcher"
+  description: "Deep research: {TREND_NAME}"
+  prompt: |
+    Perform deep research on this trend candidate.
+
+    PROJECT_PATH: {{PROJECT_PATH}}
+    TREND_NAME: {{TREND_NAME}}
+    TREND_KEYWORDS: {{KEYWORDS}}
+    DIMENSION: {{DIMENSION}}
+    HORIZON: act
+    SUBSECTOR_EN: {{SUBSECTOR_EN}}
+    SUBSECTOR_DE: {{SUBSECTOR_DE}}
+    RESEARCH_HINT: {{RESEARCH_HINT}}
+    MARKET_REGION: {{MARKET_REGION}}
+```
+
+**Process results:** Each agent writes a `.logs/deep-research-{slug}.json` artifact. Log success/failure counts. These artifacts are consumed by Phase 1 trend-report-writer agents — trends with deep research artifacts skip their own WebSearch and use the richer findings directly.
+
+---
+
 ### Phase 1: Evidence Enrichment + Section Generation (PARALLEL)
 
 Read [references/evidence-enrichment.md](references/evidence-enrichment.md) for web search strategy.
 Read [references/claims-format.md](references/claims-format.md) for claims extraction schema.
+
+**Deep research integration:** Before each trend-report-writer agent runs its evidence enrichment, it checks for `{PROJECT_PATH}/.logs/deep-research-{trend-slug}.json`. If a deep research artifact exists for a trend in its dimension, the writer uses the artifact's `synthesis` and `sources` instead of running its own WebSearch for that trend. This is a fourth evidence status alongside `signal_sufficient`, `signal_partial`, and `signal_none`: **`deep_research_available`** — richest evidence tier, no additional search needed.
 
 #### Step 1.1: Dispatch 4 Agents
 
@@ -386,6 +447,43 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 9. **Merge claims** → `tips-trend-report-claims.json`
 
 **Resume logic:** Before dispatching an agent for an investment theme, check if `report-investment-theme-{investment_theme_id}.md` already exists and is >1000 bytes. If so, skip that agent — display `"{PHASE_2_INVESTMENT_THEME_AGENT_SKIP_RESUME}"` and continue. This means re-runs only dispatch for missing investment themes.
+
+---
+
+### Phase 2.5: Structural Review (Optional but Recommended)
+
+**Purpose:** Cross-theme quality check of the assembled report before claims verification. Individual agents have their own quality gates, but this phase catches issues that span themes — duplicate evidence, inconsistent forcing functions, themes with zero quantitative data, missing Handeln/Nichthandeln contrasts.
+
+**Step 2.5.1: Dispatch Reviewer Agent**
+
+```yaml
+Task:
+  subagent_type: "cogni-trends:trend-report-reviewer"
+  description: "Structural review of trend report"
+  prompt: |
+    Review the assembled trend report for structural quality.
+
+    PROJECT_PATH: {{PROJECT_PATH}}
+    REPORT_PATH: {{PROJECT_PATH}}/tips-trend-report.md
+    REVIEW_ITERATION: 1
+    OUTPUT_LANGUAGE: {{PROJECT_LANGUAGE}}
+```
+
+**Step 2.5.2: Process Verdict**
+
+If verdict is `"accept"` (score >= 0.80): proceed to Phase 3.
+
+If verdict is `"revise"`:
+1. Read `revision_priorities` from the verdict
+2. Apply targeted fixes to `tips-trend-report.md`:
+   - Add missing quantitative evidence (may require 1-2 WebSearch calls for specific data points)
+   - Add Nichthandeln contrasts where flagged
+   - Resolve forcing function inconsistencies
+   - Fix duplicate evidence citations
+3. Re-run reviewer with `REVIEW_ITERATION: 2`
+4. Accept regardless of second verdict (max 2 iterations) — log remaining issues as warnings
+
+**Skip condition:** If the user explicitly asks for a fast report or says "skip review", bypass this phase.
 
 ---
 

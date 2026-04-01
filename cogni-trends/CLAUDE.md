@@ -17,12 +17,15 @@ skills/                         6 trend intelligence skills
   trends-dashboard/               Interactive HTML dashboard of full TIPS project lifecycle
   trends-resume/                  Resume project mid-stream with full state recovery
 
-agents/                         5 research agents
-  trend-web-researcher.md         Bilingual web research (EN/DE), returns aggregated signals (haiku)
-  trend-generator.md              Generate 60 scored candidates using TIPS + Ansoff + Rogers + CRAAP (opus)
-  trend-report-writer.md          Write one Trendradar dimension section with citations (sonnet)
+agents/                         8 research agents
+  trend-web-researcher.md         Persona-shaped bilingual web research (EN/DE), grounding-aware, adaptive budget (haiku)
+  trend-generator.md              Generate 60 scored candidates with persona reasoning + TIPS + Ansoff + Rogers + CRAAP (opus)
+  trend-signal-curator.md         Evaluate and tier-rank web signals (primary/secondary/supporting) before generation (haiku)
+  trend-report-writer.md          Write one Trendradar dimension section with citations, deep-research-aware (sonnet)
   trend-report-investment-theme-writer.md  Write one investment theme using Corporate Visions arc (sonnet)
+  trend-report-reviewer.md        Cross-theme structural review with 5-dimension quality rubric (sonnet)
   trend-report-revisor.md         Post-verification report revision — apply claim corrections/removals (sonnet)
+  trend-deep-researcher.md        Recursive TIPS-aligned deep research for high-value ACT-horizon trends (sonnet)
 
 catalogs/                       Industry knowledge base
   b2b-ict/                        B2B ICT catalog (general subsector)
@@ -43,6 +46,7 @@ scripts/                        5 utility scripts
 references/
   data-model.md                   Full entity schemas and project structure
   architecture-pattern.md         Bilingual search architecture (reusable for non-DACH markets)
+  dimension-personas.md           Expert personas per Smarter Service dimension for targeted research
   language-resolution.md          Language configuration and resolution strategy
   research-types/                 Research type specifications
   taxonomies/                     Taxonomy definitions
@@ -53,7 +57,7 @@ references/
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 6 | trend-scout, value-modeler, trend-report, trends-catalog, trends-dashboard, trends-resume |
-| Agents | 5 | trend-web-researcher (haiku), trend-generator (opus), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-revisor (sonnet) |
+| Agents | 8 | trend-web-researcher (haiku), trend-generator (opus), trend-signal-curator (haiku), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-reviewer (sonnet), trend-report-revisor (sonnet), trend-deep-researcher (sonnet) |
 
 ## Workflow Pipeline
 
@@ -105,6 +109,12 @@ Each trend placed on action horizon: Act (0-2y), Plan (2-5y), Observe (5+y).
 
 ## Key Conventions
 
+- Persona-shaped research: each Smarter Service dimension uses an expert persona (Regulatory Analyst, CSO, CX Strategist, CTO) for targeted search queries
+- Preliminary grounding: 3 broad searches before the full research battery to calibrate queries
+- Source quality tiering: signals ranked into primary/secondary/supporting tiers before candidate generation
+- Adaptive query budget (thorough mode): 24 base + 12 flexible-pool searches allocated by signal yield
+- Deep research: optional recursive TIPS-aligned exploration for high-value ACT-horizon trends
+- Structural review: cross-theme quality gate with 5-dimension rubric and Handeln/Nichthandeln contrast checks
 - Bilingual search: English tier (international) + German tier (DACH institutional sources)
 - Curated German sources: VDMA, BITKOM, Fraunhofer, Zukunftsinstitut, EUR-Lex
 - Scripts use JSON output: `{"success": bool, "data": {...}, "error": "string"}`

@@ -85,15 +85,28 @@ Read and filter the data you need — this keeps the orchestrator's context lean
 
 ### Step 1: Evidence Enrichment (Signal-First Strategy)
 
-Reuse evidence from pre-existing raw signals before executing new searches — this avoids redundant web traffic for data already collected by trend-scout.
+Reuse evidence from pre-existing sources before executing new searches — this avoids redundant web traffic for data already collected by trend-scout or deep research.
+
+#### Step 0.9: Check for Deep Research Artifacts
+
+Before signal matching, check for deep research artifacts for each trend in this dimension:
+
+For each trend candidate in this dimension, generate a slug from the trend name (lowercase, spaces→hyphens, truncate 50 chars) and check if `{PROJECT_PATH}/.logs/deep-research-{slug}.json` exists.
+
+If a deep research artifact exists:
+- Mark the trend as `deep_research_available` — this is the richest evidence tier
+- Load the artifact's `synthesis` (pre-written narrative with inline citations), `sources` (verified URLs), and `evidence_summary` (quantitative data flags, forcing functions)
+- **Skip all WebSearch for this trend** — deep research already provides rich evidence
+- Use the artifact's sources directly as citations in the section narrative
 
 #### Step 1a: Extract Evidence from Raw Signals
 
-If raw signals are available (not "none"), scan for matches per trend candidate:
+For trends NOT marked as `deep_research_available`, scan raw signals for matches:
 
 1. Match by comparing trend `name`, `keywords`, `research_hint` against signal `signal`, `keywords`, `source` fields (case-insensitive)
 2. For matched signals, extract: source URL, signal text, authority score, freshness, source type
 3. Classify each trend — be strict about what counts as "sufficient":
+   - `deep_research_available`: Deep research artifact exists with rich evidence. No additional search needed. (Classified in Step 0.9 above.)
    - `signal_sufficient`: 1+ matched signal that contains an **actual number** (dollar amount, percentage, count, year-over-year figure) AND a **source URL**. A signal that merely mentions the topic without concrete data is NOT sufficient.
    - `signal_partial`: Matched signals exist but contain no specific numbers, or contain numbers without a source URL. Always run at least 1 WebSearch to find quantitative backing.
    - `signal_none`: No matching signals found for this trend. Run 2-3 WebSearches.
@@ -110,6 +123,7 @@ REGION_QUALIFIER_DE = REGION_CONFIG.region_qualifiers.de   # may be absent for n
 
 #### Step 1c: Targeted WebSearches for Gaps Only
 
+- **`deep_research_available`** — Skip WebSearch entirely. Use the deep research artifact's `synthesis` as the primary evidence source and its `sources` as citations. Integrate the synthesis narrative into the section (paraphrase, don't copy verbatim — adapt to section voice and length requirements).
 - **`signal_sufficient`** — Skip WebSearch. Use signal URLs as citations.
 - **`signal_partial`** — 1 targeted search (local market fact → append region qualifier):
   ```
@@ -242,9 +256,10 @@ Return ONLY this JSON — nothing else:
   "trends_covered": 13,
   "claims_extracted": 18,
   "signals_matched": 8,
+  "trends_deep_research": 2,
   "trends_signal_sufficient": 4,
-  "trends_signal_partial": 4,
-  "trends_signal_none": 5,
+  "trends_signal_partial": 3,
+  "trends_signal_none": 4,
   "searches_executed": 14,
   "searches_skipped_via_signals": 16,
   "searches_failed": 1,

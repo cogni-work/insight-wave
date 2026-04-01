@@ -52,6 +52,32 @@ PROJECT_INIT_FAILED: "Project initialization failed: {ERROR}"
 
 ---
 
+## Phase 0.5: Configuration Disclosure + Preliminary Grounding
+
+### Configuration Menu
+
+```text
+CONFIG_DISCLOSURE_TITLE: "Research Configuration"
+CONFIG_DISCLOSURE_INTRO: "Before starting research, please confirm your preferences:"
+CONFIG_DEPTH_LABEL: "Research depth"
+CONFIG_DEPTH_STANDARD: "Standard — ~32 web searches, fastest"
+CONFIG_DEPTH_THOROUGH: "Thorough — adaptive budget (~36-48 searches), better signal coverage"
+CONFIG_GROUNDING_LABEL: "Preliminary grounding"
+CONFIG_GROUNDING_ENABLED: "Enabled — 3 broad searches to calibrate research queries (recommended)"
+CONFIG_GROUNDING_SKIP: "Skip — jump directly to full research"
+CONFIG_CONFIRM: "Confirm and start research"
+```
+
+### Grounding Search
+
+```text
+GROUNDING_START: "Running preliminary grounding searches..."
+GROUNDING_COMPLETE: "Grounding complete: dominant themes identified — {THEMES}"
+GROUNDING_SKIPPED: "Preliminary grounding skipped per user configuration."
+```
+
+---
+
 ## Phase 1: Web Research
 
 ```text

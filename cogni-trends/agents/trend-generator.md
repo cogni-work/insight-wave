@@ -192,13 +192,19 @@ Apply caps AFTER initial scoring, then recalculate composite with capped values.
 
 Read and parse the web research data you need — this keeps the orchestrator's context lean for Phase 3.
 
-1. **Load raw signals:** Try reading `{PROJECT_PATH}/.logs/web-research-raw.json`.
+**Prefer curated signals when available.** Curated signals have been quality-scored and tiered (primary/secondary/supporting) by the signal-curator agent, making them more reliable for candidate grounding.
+
+1. **Try curated signals first:** Read `{PROJECT_PATH}/.metadata/curated-signals.json`.
+   - If it exists: use `.curated_signals` array (already scored and tiered). Each signal has `composite_score`, `tier`, and all original fields.
+   - **Tiered generation:** For web-first generation, prefer primary-tier signals (tier = "primary", score >= 0.80) for candidate grounding. Use secondary-tier for remaining slots. Only use supporting-tier when no higher-tier signal covers a subcategory.
+2. **Fallback to raw signals:** If curated file is missing, try `{PROJECT_PATH}/.logs/web-research-raw.json`.
    - If it exists: use `.raw_signals_before_dedup` array (full field names: dimension, signal, keywords, source, freshness, authority, source_type, indicator_type, lead_time).
-2. **Fallback:** If raw file is missing, try `{PROJECT_PATH}/phase1-research-summary.json`.
+   - All signals treated equally (no tier preference).
+3. **Fallback to compact summary:** If raw file is also missing, try `{PROJECT_PATH}/phase1-research-summary.json`.
    - This uses abbreviated field names — expand them: `d`→dimension, `n`→signal, `k`→keywords, `u`→source, `f`→freshness, `a`→authority, `t`→source_type, `i`→indicator_type, `lt`→lead_time.
    - Use the `.items` array after expansion.
-3. **If neither file exists** and `WEB_RESEARCH_AVAILABLE` was true: log warning and proceed with training-only mode.
-4. **Group loaded signals by dimension** (4 groups) for use in Step 2.
+4. **If no signal files exist** and `WEB_RESEARCH_AVAILABLE` was true: log warning and proceed with training-only mode.
+5. **Group loaded signals by dimension** (4 groups) for use in Step 2.
 
 ### Step 2: Prepare Generation Context
 
@@ -215,9 +221,18 @@ Read and parse the web research data you need — this keeps the orchestrator's 
 - Mark all as `source: training`
 - Log warning: "Web research unavailable, using training-only mode"
 
+### Step 2.5: Load Dimension Personas
+
+Read the persona catalog from `$CLAUDE_PLUGIN_ROOT/references/dimension-personas.md`. Extract the 4 personas (one per dimension) for use in Step 3 extended thinking. Each persona provides:
+- An analytical lens that shapes what you look for
+- Subcategory-specific vocabulary that helps evaluate signal relevance
+- Industry adaptation hints for the current subsector
+
+Store as `DIMENSION_PERSONAS` for use in Step 3.
+
 ### Step 3: Generate 60 Candidates (Extended Thinking MANDATORY)
 
-Use extended thinking to generate all 60 candidates systematically:
+Use extended thinking to generate all 60 candidates systematically. For each dimension, adopt the persona's analytical lens — this shapes what you prioritize, how you evaluate strategic fit, and which signals you consider strongest.
 
 <thinking>
 **Candidate Generation for {{SUBSECTOR_EN}} ({{SUBSECTOR_DE}})**
@@ -225,6 +240,8 @@ Use extended thinking to generate all 60 candidates systematically:
 **Generation Matrix:** 4 dimensions x 3 horizons x 5 candidates = 60 total
 
 **Dimension 1: externe-effekte (External Effects)**
+**Persona: Regulatory & Market Analyst** — I am examining external forces through the lens of compliance timelines, enforcement mechanisms, market disruption indicators, and demographic shifts. For {{SUBSECTOR_EN}}, I focus specifically on: [use industry_adaptation_hints from persona catalog for this subsector].
+
 Subcategories (MUST have MIN 1 per horizon):
 - wirtschaft (Economy): Market forces, competition | Anchors: Multikrise, Digital Transform
 - regulierung (Regulation): Policy, compliance | Anchors: CSR-D/LKSG, EU AI Act
@@ -239,14 +256,17 @@ Horizon: PLAN (2-5 years) - Generate 5 candidates
 Horizon: OBSERVE (5+ years) - Generate 5 candidates
 
 **Dimension 2: neue-horizonte (New Horizons)**
+**Persona: Chief Strategy Officer** — I am examining future growth vectors through the lens of business model viability, revenue diversification, M&A patterns, and governance evolution. For {{SUBSECTOR_EN}}, I focus on: [use industry_adaptation_hints for this subsector].
 Subcategories: strategie, fuehrung, steuerung
 [Same structure for each horizon...]
 
 **Dimension 3: digitale-wertetreiber (Digital Value Drivers)**
+**Persona: Customer Experience Strategist** — I am examining digital value creation through the lens of customer journey friction, NPS/conversion benchmarks, digital product ROI, and process automation efficiency. For {{SUBSECTOR_EN}}, I focus on: [use industry_adaptation_hints for this subsector].
 Subcategories: customer-experience, produkte-services, geschaeftsprozesse
 [Same structure for each horizon...]
 
 **Dimension 4: digitales-fundament (Digital Foundation)**
+**Persona: CTO / Workforce Transformation Expert** — I am examining foundational readiness through the lens of technology readiness levels, skills gap analysis, infrastructure scalability, and cultural change metrics. For {{SUBSECTOR_EN}}, I focus on: [use industry_adaptation_hints for this subsector].
 Subcategories: kultur, mitarbeitende, technologie
 [Same structure for each horizon...]
 

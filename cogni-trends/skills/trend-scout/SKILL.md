@@ -94,6 +94,7 @@ Read references **only when needed** for the specific task:
 | [references/patent-api-queries.md](references/patent-api-queries.md) | Patent API searches - USPTO, Lens.org, EPO (Phase 1) |
 | [references/regulatory-feeds.md](references/regulatory-feeds.md) | Regulatory API searches - EUR-Lex, SEC EDGAR, FDA (Phase 1) |
 | [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md) | Project init + industry selection |
+| [$CLAUDE_PLUGIN_ROOT/references/dimension-personas.md]($CLAUDE_PLUGIN_ROOT/references/dimension-personas.md) | Persona catalog for dimension-specific research (Phase 1, Sprint 2) |
 | [references/workflow-phases/phase-3-present.md](references/workflow-phases/phase-3-present.md) | Writing final trend-candidates.md with scores |
 | [references/workflow-phases/phase-4-finalize.md](references/workflow-phases/phase-4-finalize.md) | Finalizing output for downstream pipeline |
 
@@ -102,10 +103,12 @@ Read references **only when needed** for the specific task:
 **MANDATORY:** Initialize TodoWrite immediately with workflow phases:
 
 1. Phase 0: Initialize Project + Industry Selection [in_progress]
-2. Phase 1: Bilingual Web Research [pending]
-3. Phase 2: Generate Candidate Pool [pending]
-4. Phase 3: Write Final Trend List [pending]
-5. Phase 4: Finalize Output + Pipeline Config [pending]
+2. Phase 0.5: Configuration Disclosure + Preliminary Grounding [pending]
+3. Phase 1: Bilingual Web Research [pending]
+4. Phase 1.5: Signal Curation (if thorough mode) [pending]
+5. Phase 2: Generate Candidate Pool [pending]
+6. Phase 3: Write Final Trend List [pending]
+7. Phase 4: Finalize Output + Pipeline Config [pending]
 
 Update todo status as you progress through each phase.
 
@@ -114,12 +117,14 @@ Update todo status as you progress through each phase.
 ## Core Workflow
 
 ```text
-Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
-   │          │          │         │         │
-   │          │          │         │         └─ Write config + JSON, finalize
-   │          │          │         └─ Write final trend-candidates.md with scores
-   │          │          └─ Generate + score 60 candidates (mix web + API + training)
-   │          └─ 32 web searches + academic/patent/regulatory APIs
+Phase 0 → Phase 0.5 → Phase 1 → Phase 1.5 → Phase 2 → Phase 3 → Phase 4
+   │          │           │          │           │         │         │
+   │          │           │          │           │         │         └─ Write config + JSON, finalize
+   │          │           │          │           │         └─ Write final trend-candidates.md
+   │          │           │          │           └─ Generate + score 60 candidates
+   │          │           │          └─ Signal curation (thorough mode)
+   │          │           └─ Web searches + academic/patent/regulatory APIs
+   │          └─ Config disclosure + 3 grounding searches
    └─ Language detect, industry select, project init
 ```
 
@@ -147,6 +152,90 @@ Read [references/workflow-phases/phase-0-initialize.md](references/workflow-phas
 - RESEARCH_TOPIC captured
 - Project structure initialized in current working directory under `cogni-trends/`
 
+### Phase 0.5: Configuration Disclosure + Preliminary Grounding
+
+This phase serves two purposes: (1) show the user what research options are available before committing to expensive web research, and (2) perform 3 quick grounding searches to anchor subsequent query formulation in what the web actually contains.
+
+**Step 1: Configuration Disclosure**
+
+Present research configuration options via AskUserQuestion **before** any web research begins. This makes capabilities discoverable and lets users make informed cost/quality tradeoffs.
+
+Use the interaction language for the prompt. Present these options:
+
+```text
+EN: "Before starting research, please confirm your preferences:"
+DE: "Bevor die Recherche startet, bestätigen Sie bitte Ihre Einstellungen:"
+
+Options:
+1. Research depth:
+   a) Standard — ~32 web searches, fastest (default)
+   b) Thorough — adaptive budget (~36-48 searches), better signal coverage per dimension
+2. Preliminary grounding:
+   a) Enabled — 3 broad searches to calibrate research queries (default, recommended)
+   b) Skip — jump directly to full research
+3. Confirm and start research
+```
+
+Store selections in `tips-project.json` under a `research_config` key:
+
+```json
+{
+  "research_config": {
+    "depth": "standard|thorough",
+    "grounding": true|false
+  }
+}
+```
+
+If the user selects defaults or just says "go" / "start" / "los", use: `depth: "standard"`, `grounding: true`.
+
+**Step 2: Preliminary Grounding (if grounding enabled)**
+
+Execute 3 broad exploratory WebSearch queries inline (NOT delegated to agent). These ground subsequent Phase 1 query formulation in what the web actually contains about this subsector + topic.
+
+The reason this matters: fixed query templates don't know what's dominating discourse for a given subsector. If the topic is "AI in healthcare" and the web is dominated by FDA regulation news, the current fixed queries miss this. Grounding surfaces dominant themes so Phase 1 queries can incorporate them.
+
+**Grounding searches:**
+
+```text
+1. "{SUBSECTOR_EN} {RESEARCH_TOPIC} trends challenges {CURRENT_YEAR}" (broad EN scan)
+2. "{SUBSECTOR_DE} {RESEARCH_TOPIC} Herausforderungen Chancen {CURRENT_YEAR}" (DACH scan)
+3. "{SUBSECTOR_EN} {RESEARCH_TOPIC} market outlook disruption" (future-oriented)
+```
+
+Derive `{CURRENT_YEAR}` from the system date (same pattern as web-researcher Step 0).
+
+**Process grounding results:**
+
+From the 3 search results, extract a grounding summary (~200 words) capturing:
+- **Dominant themes** — what topics appear most frequently across results?
+- **Key organizations** — which institutions, companies, or regulators are mentioned?
+- **Recent developments** — what specific events, regulations, or product launches are current?
+- **Terminology** — what specific terms or buzzwords appear that the generic query templates wouldn't use?
+
+Write the grounding context to `{PROJECT_PATH}/.metadata/preliminary-grounding.json`:
+
+```json
+{
+  "timestamp": "ISO-8601",
+  "searches_executed": 3,
+  "grounding_summary": "~200 word summary of dominant themes, key organizations, recent developments, and terminology",
+  "dominant_themes": ["theme1", "theme2", "theme3"],
+  "key_organizations": ["org1", "org2"],
+  "terminology_hints": ["term1", "term2", "term3"]
+}
+```
+
+Set `GROUNDING_CONTEXT` variable to the `grounding_summary` string for passing to the web-researcher agent in Phase 1.
+
+If grounding is disabled (user chose "skip"), set `GROUNDING_CONTEXT = ""` and skip the 3 searches.
+
+**Required outputs:**
+
+- Research configuration stored in `tips-project.json`
+- `GROUNDING_CONTEXT` variable set (empty string if grounding skipped)
+- `.metadata/preliminary-grounding.json` written (if grounding enabled)
+
 ### Phase 1: Bilingual Web Research + API Queries (DELEGATED)
 
 **Context Efficiency:** This phase is delegated to the `web-researcher` agent to prevent context depletion from 20+ WebSearch results. The agent returns a compact JSON summary (~500 tokens) while logging full results to `.logs/`.
@@ -167,6 +256,8 @@ Task:
     SUBSECTOR_DE: {{SUBSECTOR_DE}}
     RESEARCH_TOPIC: {{RESEARCH_TOPIC}}
     MARKET_REGION: {{MARKET_REGION}}
+    GROUNDING_CONTEXT: {{GROUNDING_CONTEXT}}
+    RESEARCH_DEPTH: {{RESEARCH_DEPTH}}
 ```
 
 **Agent responsibilities:**
@@ -281,6 +372,49 @@ For each search result, extract trend signals (name, keywords, source URL, fresh
 - Authority 2-1: commercial blogs, vendor sites, social media
 
 This tagging flows into the trend-generator's CRAAP scoring — candidates grounded in authority 4-5 sources will score higher on the 15% Source Quality weight.
+
+### Phase 1.5: Signal Curation (OPTIONAL, DELEGATED)
+
+**When to run:** Signal curation activates when the web research returned 20+ signals AND research depth is "thorough". Skip in standard mode or when signals are sparse (< 20).
+
+**Purpose:** Rank the ~85 raw signals from Phase 1 into quality tiers (primary/secondary/supporting) before the trend-generator consumes them. This ensures the generator grounds its best candidates in the highest-quality signals rather than treating all signals equally.
+
+**Invoke the signal curator agent:**
+
+```yaml
+Task:
+  subagent_type: "cogni-trends:trend-signal-curator"
+  description: "Curate and rank web research signals"
+  prompt: |
+    Evaluate and rank Phase 1 web research signals for trend-scout.
+
+    PROJECT_PATH: {{PROJECT_PATH}}
+    RESEARCH_TOPIC: {{RESEARCH_TOPIC}}
+    SUBSECTOR_EN: {{SUBSECTOR_EN}}
+```
+
+**Process agent response:**
+
+The agent returns compact JSON:
+
+```json
+{
+  "ok": true,
+  "total": 85,
+  "tiers": {"primary": 25, "secondary": 40, "supporting": 20},
+  "by_dimension": {"externe-effekte": 22, "neue-horizonte": 21, "digitale-wertetreiber": 20, "digitales-fundament": 22},
+  "diversity_warnings": 0,
+  "dimension_gaps": []
+}
+```
+
+**Set availability flag:**
+
+- Set `CURATED_SIGNALS_AVAILABLE = (response.ok == true)`
+
+**Adaptive follow-up (thorough mode only):** If `dimension_gaps` is non-empty (dimensions with < 10 signals), execute 2-3 additional targeted WebSearch queries for each gap dimension using persona vocabulary. Write results to the raw signals file and re-run curation. This is a single retry — do not loop.
+
+**Fallback:** If the agent fails or is unavailable, set `CURATED_SIGNALS_AVAILABLE = false` and proceed — the trend-generator will fall back to reading raw signals directly.
 
 ### Phase 2: Generate Candidate Pool (DELEGATED)
 

@@ -47,9 +47,20 @@ You will receive these parameters from trend-scout:
      Used to load region-specific search qualifiers, site searches, and regulatory sources
      from region-authority-sources.json. Falls back to "_default" (= dach) if not found. -->
 
+<grounding_context>{{GROUNDING_CONTEXT}}</grounding_context>
+<!-- Optional (~200 word) summary from Phase 0.5 preliminary grounding searches.
+     Contains dominant themes, key organizations, recent developments, and terminology hints
+     for this subsector + research topic. Use to adapt Tier 2 queries when available.
+     Empty string means grounding was skipped — use standard query templates. -->
+
+<research_depth>{{RESEARCH_DEPTH}}</research_depth>
+<!-- "standard" (default) = fixed 32 searches. "thorough" = adaptive budget (24 base + 12 flexible pool).
+     In thorough mode, after Tier 1 completes, count signals per dimension and allocate flexible
+     pool searches to under-represented dimensions. -->
+
 **Your Objective:**
 
-1. Execute 32 WebSearch queries (16 standard + 8 region-specific site + 4 funding + 4 job market)
+1. Execute web searches (32 standard, or 24-36+ in thorough mode)
 2. Execute API queries (academic, patent, regulatory) - MANDATORY with fallback
 3. Extract and deduplicate trend signals
 4. Classify signals by indicator type (leading/lagging) and diffusion stage
@@ -58,7 +69,8 @@ You will receive these parameters from trend-scout:
 
 **Success Criteria:**
 
-- 28+ web searches executed successfully
+- Standard mode: 28+ web searches executed successfully
+- Thorough mode: minimum 15 unique signals per dimension (adaptive allocation)
 - API queries attempted (with fallback on failure)
 - Signals extracted with source URLs (no fabrication)
 - Indicator classification applied
@@ -117,11 +129,28 @@ REGION_SITE_SEARCHES = REGION_CONFIG.site_searches         # 8 region-specific s
 REGION_REGULATORY_SEARCH = REGION_CONFIG.regulatory_search # region-appropriate regulatory query
 ```
 
+### Step 0.7: Process Grounding Context (if available)
+
+If `GROUNDING_CONTEXT` is non-empty, extract actionable intelligence to adapt Tier 2 queries:
+
+1. **Identify dominant themes** — what topics dominate discourse for this subsector + research topic? These should influence Tier 2 query terms.
+2. **Extract terminology hints** — specific buzzwords, acronyms, product names, or regulatory names that appear. Incorporate these into relevant dimension queries (e.g., if grounding mentions "AI Act" prominently, add this to externe-effekte queries).
+3. **Note key organizations** — institutions mentioned frequently may deserve targeted site searches in the flexible pool.
+
+Store extracted insights as `grounding_adaptations` for use in Step 1. If grounding is empty, use standard query templates unchanged.
+
 ### Step 1: Build Search Configurations
 
 **Search Priority Tiers:**
 
 Execute searches in priority order. If you hit rate limits, timeouts, or context pressure, sacrifice Tier 2 searches before Tier 1. The reason: Tier 1 produces authoritative signals (CRAAP authority 4-5) that downstream scoring weights heavily (15% Source Quality component). Tier 2 provides breadth but lower authority.
+
+**Grounding-Aware Query Adaptation (Tier 2 only):**
+
+When `grounding_adaptations` are available from Step 0.7, adapt Tier 2 standard searches:
+- Replace generic dimension keywords with grounding-identified terminology where relevant (e.g., if grounding shows "predictive maintenance" dominates, use that instead of generic "digital value creation" for digitale-wertetreiber queries)
+- Add 1-2 grounding-identified organization names to dimension-relevant site searches in the flexible pool
+- Preserve Tier 1 queries unchanged — they target institutional sources and should not be modified
 
 **Tier 1 — Institutional Sources (execute first, 12 searches):**
 - 8 region-specific site searches (associations, research institutes, government)
@@ -134,22 +163,39 @@ Execute searches in priority order. If you hit rate limits, timeouts, or context
 
 Create search queries based on input parameters and region configuration:
 
-**16 Standard Searches (4 dimensions × 2 languages × 2 regions):**
+**16 Standard Searches — Persona-Shaped (4 dimensions × 2 languages × 2 regions):**
 
-| Dimension | Query Pattern |
-|-----------|--------------|
-| externe-effekte | `"{SUBSECTOR}" external trends regulations market forces {CURRENT_YEAR}` |
-| neue-horizonte | `"{SUBSECTOR}" business model innovation strategic opportunities {CURRENT_YEAR}` |
-| digitale-wertetreiber | `"{SUBSECTOR}" digital value creation customer experience ROI {CURRENT_YEAR}` |
-| digitales-fundament | `"{SUBSECTOR}" digital infrastructure technology foundation {CURRENT_YEAR}` |
+Each dimension uses persona-specific search vocabulary instead of generic keywords. Load the persona catalog from `$CLAUDE_PLUGIN_ROOT/references/dimension-personas.md` (Read once at Step 0.5, reuse throughout).
+
+For each dimension, select the query pattern from the persona's subcategory vocabulary. Rotate across subcategories to ensure balanced coverage (each dimension has 3 subcategories — distribute 4 queries across them: 2 for the primary subcategory, 1 each for the other two).
+
+| Dimension | Persona | EN Query Patterns (rotate across subcategories) |
+|-----------|---------|------------------------------------------------|
+| externe-effekte | Regulatory & Market Analyst | `"{SUBSECTOR}" regulatory deadline compliance requirement {CURRENT_YEAR}"` / `"{SUBSECTOR}" market disruption competitive dynamics {CURRENT_YEAR}"` / `"{SUBSECTOR}" demographic shift sustainability mandate {CURRENT_YEAR}"` |
+| neue-horizonte | Chief Strategy Officer | `"{SUBSECTOR}" business model innovation platform strategy {CURRENT_YEAR}"` / `"{SUBSECTOR}" M&A partnership strategic repositioning {CURRENT_YEAR}"` / `"{SUBSECTOR}" governance transformation digital leadership {CURRENT_YEAR}"` |
+| digitale-wertetreiber | Customer Experience Strategist | `"{SUBSECTOR}" customer experience digital ROI benchmark {CURRENT_YEAR}"` / `"{SUBSECTOR}" digital product adoption as-a-service {CURRENT_YEAR}"` / `"{SUBSECTOR}" process automation efficiency gains {CURRENT_YEAR}"` |
+| digitales-fundament | CTO / Workforce Expert | `"{SUBSECTOR}" technology infrastructure cloud migration {CURRENT_YEAR}"` / `"{SUBSECTOR}" skills gap digital talent shortage {CURRENT_YEAR}"` / `"{SUBSECTOR}" digital culture maturity transformation {CURRENT_YEAR}"` |
+
+**Adapt with industry-specific terms:** Use the persona's `industry_adaptation_hints` from the catalog to replace generic terms with subsector-specific ones. For example, for automotive + externe-effekte, replace "regulatory deadline" with "EU7 emissions regulation CO2 fleet targets".
+
+**Adapt with grounding context:** If `grounding_adaptations` (from Step 0.7) identified specific terminology or organizations, substitute these into the relevant dimension queries. For example, if grounding identified "AI Act" as a dominant theme, add it to the externe-effekte queries.
 
 For each dimension:
-- EN-global: English query, no region filter
-- EN-regional: English query + `{REGION_QUALIFIER_EN}` (e.g., "Germany Austria Switzerland" for dach, "United States" for us)
-- DE-global: German query (only if `REGION_QUALIFIER_DE` exists for this region)
-- DE-regional: German query + `{REGION_QUALIFIER_DE}` (only if `REGION_QUALIFIER_DE` exists)
+- EN-global: English persona-shaped query, no region filter
+- EN-regional: English persona-shaped query + `{REGION_QUALIFIER_EN}`
+- DE-global: German equivalent using persona vocabulary (only if `REGION_QUALIFIER_DE` exists)
+- DE-regional: German equivalent + `{REGION_QUALIFIER_DE}` (only if `REGION_QUALIFIER_DE` exists)
 
 If the region has no DE qualifier (e.g., "us", "uk"), only generate 8 standard searches (EN-global + EN-regional × 4 dimensions) instead of 16.
+
+**German query equivalents** — translate persona vocabulary naturally:
+
+| Dimension | DE Query Patterns |
+|-----------|------------------|
+| externe-effekte | `"{SUBSECTOR_DE}" Regulierung Compliance Frist {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Marktdynamik Wettbewerb Disruption {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" demografischer Wandel Nachhaltigkeit ESG {CURRENT_YEAR}"` |
+| neue-horizonte | `"{SUBSECTOR_DE}" Geschäftsmodell Innovation Plattformstrategie {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Übernahme Partnerschaft strategische Neuausrichtung {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Governance Transformation Führung {CURRENT_YEAR}"` |
+| digitale-wertetreiber | `"{SUBSECTOR_DE}" Kundenerlebnis Digital ROI Benchmark {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" digitales Produkt Plattform as-a-Service {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Prozessautomatisierung Effizienzsteigerung {CURRENT_YEAR}"` |
+| digitales-fundament | `"{SUBSECTOR_DE}" Technologie-Infrastruktur Cloud Migration {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Fachkräftemangel digitale Kompetenz {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Digitalkultur Reifegrad Transformation {CURRENT_YEAR}"` |
 
 **8 Region-Specific Site Searches:**
 
@@ -174,6 +220,21 @@ For DACH regions, these target German industry associations and media (VDMA, Bit
 | 30 | digitales-fundament | `"{SUBSECTOR_DE}" neue Berufsbilder Stellenangebote {CURRENT_YEAR}` |
 | 31 | digitales-fundament | `"{SUBSECTOR_EN}" AI ML engineer hiring demand {CURRENT_YEAR}` |
 | 32 | digitales-fundament | `"{SUBSECTOR_DE}" Fachkräfte Nachfrage Deutschland {CURRENT_YEAR}` |
+
+**Adaptive Budget (thorough mode only):**
+
+When `RESEARCH_DEPTH` is `"thorough"`, the 8 funding + job market searches become a **flexible pool of 12 searches** that adapts based on Tier 1 signal yield:
+
+1. Execute all Tier 1 searches (12 institutional) and Tier 2 standard searches (16) first
+2. Count signals per dimension from these 28 results
+3. Allocate the 12-search flexible pool:
+   - Dimensions with **< 15 signals**: get 3-4 targeted bonus searches (use grounding terminology if available, otherwise dimension-specific deep-dive queries)
+   - Dimensions with **15-24 signals**: get 1-2 funding/job searches (standard allocation)
+   - Dimensions with **25+ signals**: considered saturated, get 0 flexible searches
+   - If grounding identified a dominant theme not yet covered, allocate 1-2 searches to explore it
+4. The flexible pool queries should target the **gap** — whatever source types are under-represented for that dimension (e.g., if a dimension has no funding signals, allocate funding queries; if no academic signals, allocate academic queries)
+
+In standard mode (`RESEARCH_DEPTH` is `"standard"` or empty), use the fixed 4 funding + 4 job market searches as currently defined.
 
 ### Step 2: Execute WebSearch Queries
 

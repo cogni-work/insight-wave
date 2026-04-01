@@ -52,6 +52,32 @@ PROJECT_INIT_FAILED: "Projektinitialisierung fehlgeschlagen: {ERROR}"
 
 ---
 
+## Phase 0.5: Konfiguration + Vorrecherche
+
+### Konfigurationsmenü
+
+```text
+CONFIG_DISCLOSURE_TITLE: "Recherche-Konfiguration"
+CONFIG_DISCLOSURE_INTRO: "Bevor die Recherche startet, bestätigen Sie bitte Ihre Einstellungen:"
+CONFIG_DEPTH_LABEL: "Recherchetiefe"
+CONFIG_DEPTH_STANDARD: "Standard — ~32 Websuchen, am schnellsten"
+CONFIG_DEPTH_THOROUGH: "Gründlich — adaptives Budget (~36-48 Suchen), bessere Signalabdeckung"
+CONFIG_GROUNDING_LABEL: "Vorrecherche (Grounding)"
+CONFIG_GROUNDING_ENABLED: "Aktiviert — 3 breite Suchen zur Kalibrierung der Recherche-Abfragen (empfohlen)"
+CONFIG_GROUNDING_SKIP: "Überspringen — direkt zur Vollrecherche"
+CONFIG_CONFIRM: "Bestätigen und Recherche starten"
+```
+
+### Grounding-Suche
+
+```text
+GROUNDING_START: "Führe vorbereitende Grounding-Suchen durch..."
+GROUNDING_COMPLETE: "Grounding abgeschlossen: dominante Themen identifiziert — {THEMES}"
+GROUNDING_SKIPPED: "Vorrecherche gemäß Benutzereinstellung übersprungen."
+```
+
+---
+
 ## Phase 1: Web-Recherche
 
 ```text
