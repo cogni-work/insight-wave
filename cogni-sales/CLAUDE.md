@@ -24,7 +24,7 @@ commands/                       1 slash command
 
 scripts/                        3 project utilities
   discover-portfolio.sh           Scan workspace for cogni-portfolio projects, return JSON metadata
-  init-pitch-project.sh           Scaffold pitch project directory under cogni-research/{slug}/
+  init-pitch-project.sh           Scaffold pitch project directory under cogni-sales/{slug}/
   pitch-status.sh                 Report pitch state: mode, phase, claims, deliverable readiness
 
 references/
@@ -70,7 +70,7 @@ Each phase has a **quality gate** — the orchestrator presents key findings to 
 | Framing | "Siemens faces..." / "Your current approach..." | "Organizations in this segment face..." |
 | Buyer roles | User-provided titles for specific account | Loaded from portfolio customer profiles or asked for typical segment titles |
 | Deliverables | Deal-specific presentation + proposal | Reusable template presentation + proposal |
-| Project path | `cogni-research/{slug}/pitch/` | `cogni-research/{slug}/segment-pitch/` |
+| Project path | `cogni-sales/{slug}/pitch/` | `cogni-sales/{slug}/segment-pitch/` |
 
 ## Cross-Plugin Integration
 
@@ -85,7 +85,7 @@ Each phase has a **quality gate** — the orchestrator presents key findings to 
 
 ## Data Model
 
-Each pitch project lives at `cogni-research/{slug}/pitch/` (customer) or `cogni-research/{slug}/segment-pitch/` (segment):
+Each pitch project lives at `cogni-sales/{slug}/pitch/` (customer) or `cogni-sales/{slug}/segment-pitch/` (segment):
 
 - `.metadata/pitch-log.json` — Master state: pitch_mode, target, portfolio_path, tips_path, buying_center, workflow_state, language
 - `.metadata/theme-brief.json` — Strategic themes from backwards portfolio reasoning: capability clusters, ranked TIPS themes, portfolio-derived themes, focused search queries
