@@ -1,0 +1,37 @@
+{
+  "skill_name": "enrich-report",
+  "evals": [
+    {
+      "id": 0,
+      "name": "telco-sdlc-balanced",
+      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/ai-vs-traditional-software-engineering-a-2026-03-24/output/report.md with density balanced. Use the default theme.",
+      "expected_output": "Themed HTML file with 10-15 enrichments spread across sections: KPI dashboard in executive summary, comparison-bar charts for data tables, stat-charts for statistical clusters, summary-cards for long sections with thesis statements. No enrichments in References section.",
+      "files": [],
+      "assertions": [
+        "Executive Summary section receives a kpi-dashboard enrichment",
+        "Enrichment plan contains 10-15 total enrichments at balanced density",
+        "No enrichments are placed in the References section",
+        "Sections with comparison tables receive comparison-bar enrichments",
+        "At least one process-flow enrichment is generated for sections describing sequential workflows",
+        "Sections with 800+ words and a thesis statement receive summary-card enrichments",
+        "Enrichments are distributed across at least 6 of the 10 H2 sections",
+        "The enrichment-plan.json validates against the enrichment-plan.schema.json",
+        "The output HTML file exists and contains Chart.js script references"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "telco-sdlc-minimal",
+      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/ai-vs-traditional-software-engineering-a-2026-03-24/output/report.md with density minimal.",
+      "expected_output": "Themed HTML file with 5-8 enrichments: only executive-summary KPI dashboard and highest-scoring content-pattern matches. No per-section baseline forced.",
+      "files": [],
+      "assertions": [
+        "Enrichment plan contains 5-8 total enrichments at minimal density",
+        "Executive Summary kpi-dashboard is included",
+        "No per-section baseline consistency rule is applied at minimal density",
+        "No enrichments are placed in the References section",
+        "The output HTML file exists"
+      ]
+    }
+  ]
+}

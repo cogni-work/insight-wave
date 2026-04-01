@@ -8,6 +8,7 @@ __pycache__/
 
 # Claude Code local settings
 .claude/settings.local.json
+.claude/worktrees/
 
 # macOS
 .DS_Store
