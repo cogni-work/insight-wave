@@ -49,7 +49,7 @@ setup → why-change → why-now → why-you → why-pay → synthesize
 
 **Phase 0 — Setup:** Portfolio discovery, pitch mode selection (customer vs segment), market matching, optional TIPS discovery, solution focus, buyer roles, language, project initialization.
 
-**Phase 1 — Why Change:** Research unconsidered needs. Works backwards from portfolio capabilities to problems. PSB (Problem-Solution-Benefit) structure with contrast patterns.
+**Phase 1 — Why Change:** Research unconsidered needs. The researcher agent first runs Phase 2.5 (Theme Reasoning) — backwards from portfolio capabilities to derive strategic themes, ranking TIPS investment themes by portfolio alignment when available, then generating targeted search queries. Web research follows guided by these themes. PSB (Problem-Solution-Benefit) structure with contrast patterns.
 
 **Phase 2 — Why Now:** Research urgency drivers. Forcing functions with specific timelines — regulatory deadlines, competitive moves, market windows. Quantified cost of inaction.
 
@@ -88,6 +88,7 @@ Each phase has a **quality gate** — the orchestrator presents key findings to 
 Each pitch project lives at `cogni-research/{slug}/pitch/` (customer) or `cogni-research/{slug}/segment-pitch/` (segment):
 
 - `.metadata/pitch-log.json` — Master state: pitch_mode, target, portfolio_path, tips_path, buying_center, workflow_state, language
+- `.metadata/theme-brief.json` — Strategic themes from backwards portfolio reasoning: capability clusters, ranked TIPS themes, portfolio-derived themes, focused search queries
 - `.metadata/claims.json` — Registered claims with source URLs, authority scores (1-5), freshness, evidence type classification
 - `01-why-change/` — `research.json` (structured findings) + `narrative.md` (prose)
 - `02-why-now/` — `research.json` + `narrative.md`

@@ -167,6 +167,11 @@ The agent will:
 ```
 Phase 1: Why Change — Key Findings for {target}
 
+Strategic themes driving this pitch:
+1. [theme_name] — [why_change_angle] (source: tips|portfolio)
+2. [theme_name] — [why_change_angle] (source: tips|portfolio)
+3. ...
+
 Unconsidered needs identified:
 1. [headline] — [one-line summary with key evidence]
 2. [headline] — [one-line summary]
@@ -176,6 +181,8 @@ Claims registered: N (for verification)
 
 Approve to continue, or provide feedback to revise.
 ```
+
+The strategic themes come from `theme-brief.json` generated during Phase 2.5 of the researcher agent. Surfacing them here lets the user course-correct theme selection before subsequent phases build on these themes.
 
 Use AskUserQuestion with options: "Approve and continue", "Revise with feedback".
 

@@ -31,9 +31,10 @@ You are a B2B sales research specialist. For each phase of the "Why Change" arc,
 1. Self-collect context from pitch-log.json and previous phase bridge files
 2. Read the relevant arc pattern from cogni-narrative
 3. Load portfolio data (propositions, solutions, competitors, customers)
-4. Perform web research — company-specific (customer mode) or industry-level (segment mode)
-5. Write structured research.json (bridge file) and narrative.md (prose)
-6. Register web-sourced claims for verification
+4. Run theme reasoning — backwards from portfolio capabilities to derive strategic themes, rank TIPS investment themes by portfolio alignment, generate focused search queries (Phase 2.5, runs once on first invocation)
+5. Perform web research — guided by theme-brief, company-specific (customer mode) or industry-level (segment mode)
+6. Write structured research.json (bridge file) and narrative.md (prose)
+7. Register web-sourced claims for verification
 
 You produce content that is evidence-based, follows the arc methodology, and adapts its framing to the pitch mode.
 
@@ -145,9 +146,150 @@ If `tips_path` is set in pitch-log.json:
 
 If `tips_path` is null, proceed in portfolio-only mode — all phases work without TIPS.
 
+## Phase 2.5: Theme Reasoning (Backwards from Portfolio)
+
+This step produces a `theme-brief.json` that guides web research across all 4 phases. It runs once during the first phase invocation (why-change) and is reused by subsequent phases.
+
+### Guard: check for existing brief
+
+```
+Read: ${project_path}/.metadata/theme-brief.json
+```
+
+If the file exists, read it and skip to Phase 3. Phases 2-4 reuse the brief generated during Phase 1.
+
+### Step 1: Portfolio Strength Clustering
+
+Group the propositions loaded in Phase 2 by capability area. For each cluster, summarize:
+
+- **Capability cluster name**: a short label (e.g., "OT/IT Security & Zero Trust")
+- **Supporting features**: feature slugs in this cluster
+- **IS summary**: what the capability is (from proposition IS statements)
+- **DOES summary**: what it achieves for the buyer (from DOES statements)
+- **MEANS summary**: why competitors cannot replicate it (from MEANS statements)
+
+Aim for 3-6 clusters. If the portfolio has fewer than 3 propositions, each proposition is its own cluster.
+
+### Step 2: Backwards Reasoning (Capabilities → Themes)
+
+For each portfolio strength cluster, reason backwards to derive pitch themes:
+
+1. **Invert DOES → problem**: If the capability "reduces incident response from hours to minutes", the buyer's unconsidered problem is "your current response model measures in hours, creating a window of exposure you're treating as acceptable"
+2. **Derive unconsidered need from MEANS**: If the moat is "own telecommunications backbone + sovereign SOC", the unconsidered need is "most security providers relay your data through infrastructure they don't own — you're outsourcing trust without realizing it"
+3. **Frame per phase**: For each derived theme, articulate:
+   - `why_change_angle`: The unconsidered need (problem the buyer doesn't know they have)
+   - `why_now_angle`: What makes this urgent now (regulatory, competitive, technological)
+   - `why_you_angle`: Why our capability uniquely solves this (from MEANS)
+   - `why_pay_angle`: Cost dimension for business case (what inaction costs)
+
+The reasoning should be buyer-centric, not provider-centric. Frame themes around what the buyer is missing, not what we sell.
+
+### Step 3: TIPS Theme Ranking (if tips_path is set)
+
+If TIPS data was loaded in Phase 2:
+
+1. For each investment theme in `tips-value-model.json`, assess portfolio alignment:
+   - Which portfolio strength clusters map to this theme's solution templates (via `portfolio_mapping` fields)?
+   - How strong is the MEANS differentiation for the matched capabilities?
+   - Does the theme address buyer roles in the `buying_center`?
+2. Score each theme's portfolio alignment (0.0-1.0) based on LLM reasoning — this is a confidence estimate, not a computed metric
+3. Keep the top 3-5 themes, ranked by alignment score
+4. For each ranked theme, annotate with per-phase angles (reuse the theme's narrative + value chain context)
+
+If `tips_path` is null, skip this step entirely — `ranked_themes` will be empty.
+
+### Step 4: Portfolio-Derived Themes
+
+Identify capability clusters from Step 2 that are NOT covered by any ranked TIPS theme (or ALL clusters if no TIPS):
+
+1. For each uncovered cluster, create a portfolio-derived theme using the backwards reasoning from Step 2
+2. Include `derivation_reasoning` explaining how this theme was derived from the portfolio
+
+This step is especially important without TIPS — it ensures every pitch has strategic theme intelligence regardless of TIPS availability.
+
+### Step 5: Generate Focused Search Queries
+
+Using the ranked themes (TIPS) and derived themes (portfolio), generate targeted search queries for each phase:
+
+- **`focused_queries`**: 3-4 queries per phase, each targeting a specific theme angle. These replace the generic industry queries for ~70% of the search budget.
+- **`open_exploration_queries`**: 2 queries per phase using the existing generic patterns (from the Customer Mode / Segment Mode sections below). These catch themes the backwards reasoning might have missed.
+
+For customer mode, focused queries should include `"{customer_name}"` where relevant. For segment mode, use `{customer_industry}` as in the existing patterns.
+
+### Step 6: Write theme-brief.json
+
+Write to `${project_path}/.metadata/theme-brief.json`:
+
+```json
+{
+  "schema_version": "1.0",
+  "generated_for": "{phase}",
+  "tips_available": true,
+  "portfolio_strengths": [
+    {
+      "capability_cluster": "OT/IT Security & Zero Trust",
+      "supporting_features": ["network-security", "sase-zero-trust-access"],
+      "proposition_slugs": ["network-security--grosse-energieversorger-de"],
+      "is_summary": "Integrated OT/IT security platform with SOC managed detection",
+      "does_summary": "Reduces incident response from hours to minutes",
+      "means_summary": "Only German-headquartered MSSP with own telecom backbone + BSI certification"
+    }
+  ],
+  "ranked_themes": [
+    {
+      "theme_id": "theme-004",
+      "theme_name": "Cybersecurity & Regulatorische Daten-Souveränität",
+      "source": "tips",
+      "portfolio_alignment_score": 0.92,
+      "alignment_reasoning": "Direct match to 4 security features with strong MEANS differentiation",
+      "why_change_angle": "Organizations treat OT/IT convergence as a technology project when it is actually an operating model problem",
+      "why_now_angle": "NIS2 deadline Oct 2024, KRITIS-DachG 2025",
+      "why_you_angle": "Only German MSSP with own network + sovereign SOC",
+      "why_pay_angle": "Cost of single OT breach vs integrated platform investment"
+    }
+  ],
+  "portfolio_derived_themes": [
+    {
+      "theme_name": "SAP S/4HANA Migration as Existential Operational Risk",
+      "source": "portfolio",
+      "capability_cluster": "SAP & Application Modernization",
+      "derivation_reasoning": "Portfolio has strong migration propositions; IS-U end-of-support 2027 creates urgent buyer need not covered by any TIPS theme",
+      "why_change_angle": "SAP migration is treated as IT modernization but is actually an operational continuity question",
+      "why_now_angle": "IS-U end-of-support 2027, extended maintenance costly",
+      "why_you_angle": "Proven migration methodology with reference customers",
+      "why_pay_angle": "Delayed migration compounds: parallel maintenance + compliance gap"
+    }
+  ],
+  "focused_queries": {
+    "why-change": ["query1", "query2", "query3"],
+    "why-now": ["query1", "query2", "query3"],
+    "why-you": ["query1", "query2", "query3"],
+    "why-pay": ["query1", "query2", "query3"]
+  },
+  "open_exploration_queries": {
+    "why-change": ["generic query1", "generic query2"],
+    "why-now": ["generic query1", "generic query2"],
+    "why-you": ["generic query1", "generic query2"],
+    "why-pay": ["generic query1", "generic query2"]
+  }
+}
+```
+
+When `tips_available` is false, `ranked_themes` is empty and all themes come from `portfolio_derived_themes`.
+
 ## Phase 3: Web Research
 
 Research approach depends on pitch_mode. Before running web searches, check for reusable signals from TIPS data (Phase 2) — if `tips_path` was loaded, scan the trend signals for findings that directly answer this phase's questions. Only search the web for gaps not covered by existing signals. This avoids redundant searches and produces more consistent evidence across the pitch.
+
+### Theme-Guided Query Selection
+
+If `${project_path}/.metadata/theme-brief.json` exists (it should — Phase 2.5 writes it):
+
+1. Use `focused_queries[{current_phase}]` for the first 3-4 web searches — these target specific themes identified by backwards portfolio reasoning
+2. Use `open_exploration_queries[{current_phase}]` for the remaining 2 searches — these use broader queries to catch themes the reasoning might have missed
+3. Add DACH site-specific searches as usual when `language` is `de`
+
+If theme-brief.json is missing (backwards compatibility), fall back to the generic query patterns in the Customer Mode / Segment Mode sections below.
 
 ### Source Authority Matrix
 
@@ -377,8 +519,13 @@ Return a compact JSON summary:
   "claims_registered": 3,
   "narrative_words": 450,
   "portfolio_refs": ["predictive-analytics--enterprise-manufacturing-dach"],
-  "tips_enriched": false
+  "tips_enriched": false,
+  "theme_brief_generated": true,
+  "themes_count": 4,
+  "themes_summary": ["Theme 1 name", "Theme 2 name"]
 }
 ```
+
+`theme_brief_generated` is true when this invocation created the theme-brief.json (first phase only). `themes_count` and `themes_summary` are always populated from the theme-brief, regardless of which phase generated it.
 
 The orchestrating skill will present findings to the user for the quality gate.

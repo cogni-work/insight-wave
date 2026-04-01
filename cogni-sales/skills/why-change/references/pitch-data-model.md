@@ -101,6 +101,82 @@ Master state file for a pitch project. Lives at `{project}/.metadata/pitch-log.j
 
 ---
 
+## theme-brief.json
+
+Strategic theme intelligence derived by backwards reasoning from portfolio capabilities. Generated once during the first researcher agent invocation (why-change phase), reused by all subsequent phases. Lives at `{project}/.metadata/theme-brief.json`.
+
+### Schema
+
+```json
+{
+  "schema_version": "1.0",
+  "generated_for": "why-change",
+  "tips_available": true,
+  "portfolio_strengths": [
+    {
+      "capability_cluster": "Cluster label",
+      "supporting_features": ["feature-slug-1", "feature-slug-2"],
+      "proposition_slugs": ["feature--market"],
+      "is_summary": "What the capability is",
+      "does_summary": "What it achieves for the buyer",
+      "means_summary": "Why competitors cannot replicate it"
+    }
+  ],
+  "ranked_themes": [
+    {
+      "theme_id": "theme-001",
+      "theme_name": "Investment theme name",
+      "source": "tips",
+      "portfolio_alignment_score": 0.92,
+      "alignment_reasoning": "Why this theme aligns with portfolio strengths",
+      "why_change_angle": "Unconsidered need framing",
+      "why_now_angle": "Urgency driver",
+      "why_you_angle": "Differentiation angle",
+      "why_pay_angle": "Cost dimension"
+    }
+  ],
+  "portfolio_derived_themes": [
+    {
+      "theme_name": "Theme derived from portfolio backwards reasoning",
+      "source": "portfolio",
+      "capability_cluster": "Cluster label",
+      "derivation_reasoning": "How this theme was derived from the portfolio",
+      "why_change_angle": "Unconsidered need framing",
+      "why_now_angle": "Urgency driver",
+      "why_you_angle": "Differentiation angle",
+      "why_pay_angle": "Cost dimension"
+    }
+  ],
+  "focused_queries": {
+    "why-change": ["targeted query 1", "targeted query 2"],
+    "why-now": ["targeted query 1", "targeted query 2"],
+    "why-you": ["targeted query 1", "targeted query 2"],
+    "why-pay": ["targeted query 1", "targeted query 2"]
+  },
+  "open_exploration_queries": {
+    "why-change": ["generic fallback query 1", "generic fallback query 2"],
+    "why-now": ["generic fallback query 1", "generic fallback query 2"],
+    "why-you": ["generic fallback query 1", "generic fallback query 2"],
+    "why-pay": ["generic fallback query 1", "generic fallback query 2"]
+  }
+}
+```
+
+### Field Reference
+
+| Field | Description |
+|-------|-------------|
+| `tips_available` | Whether TIPS data was loaded during generation |
+| `portfolio_strengths[]` | Capability clusters derived from portfolio propositions |
+| `ranked_themes[]` | TIPS investment themes ranked by portfolio alignment (empty if no TIPS) |
+| `portfolio_derived_themes[]` | Themes derived purely from portfolio backwards reasoning |
+| `focused_queries{}` | Per-phase targeted search queries (~70% of search budget) |
+| `open_exploration_queries{}` | Per-phase generic queries for open discovery (~30% of search budget) |
+
+When `tips_available` is false, `ranked_themes` is empty and all themes come from `portfolio_derived_themes`.
+
+---
+
 ## Bridge Files (per phase)
 
 Each content phase writes two files:
