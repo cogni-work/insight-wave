@@ -17,9 +17,10 @@ skills/                         6 trend intelligence skills
   trends-dashboard/               Interactive HTML dashboard of full TIPS project lifecycle
   trends-resume/                  Resume project mid-stream with full state recovery
 
-agents/                         8 research agents
+agents/                         9 research agents
   trend-web-researcher.md         Persona-shaped bilingual web research (EN/DE), grounding-aware, adaptive budget (haiku)
   trend-generator.md              Generate 60 scored candidates with persona reasoning + TIPS + Ansoff + Rogers + CRAAP (opus)
+  trend-candidate-reviewer.md     3-perspective stakeholder review of candidate pool — foresight analyst, domain expert, pipeline consumer (sonnet)
   trend-signal-curator.md         Evaluate and tier-rank web signals (primary/secondary/supporting) before generation (haiku)
   trend-report-writer.md          Write one Trendradar dimension section with citations, deep-research-aware (sonnet)
   trend-report-investment-theme-writer.md  Write one investment theme using Corporate Visions arc (sonnet)
@@ -57,7 +58,7 @@ references/
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 6 | trend-scout, value-modeler, trend-report, trends-catalog, trends-dashboard, trends-resume |
-| Agents | 8 | trend-web-researcher (haiku), trend-generator (opus), trend-signal-curator (haiku), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-reviewer (sonnet), trend-report-revisor (sonnet), trend-deep-researcher (sonnet) |
+| Agents | 9 | trend-web-researcher (haiku), trend-generator (opus), trend-candidate-reviewer (sonnet), trend-signal-curator (haiku), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-reviewer (sonnet), trend-report-revisor (sonnet), trend-deep-researcher (sonnet) |
 
 ## Workflow Pipeline
 
@@ -128,6 +129,7 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 - Source quality tiering: signals ranked into primary/secondary/supporting tiers before candidate generation
 - Adaptive query budget (thorough mode): 24 base + 12 flexible-pool searches allocated by signal yield
 - Deep research: optional recursive TIPS-aligned exploration for high-value ACT-horizon trends
+- Candidate review: 3-perspective stakeholder assessment (foresight analyst, domain expert, pipeline consumer) with accept/revise/reject verdict and surgical repair loop
 - Structural review: cross-theme quality gate with 5-dimension rubric and Handeln/Nichthandeln contrast checks
 - Bilingual search: English tier (international) + German tier (DACH institutional sources)
 - Curated German sources: VDMA, BITKOM, Fraunhofer, Zukunftsinstitut, EUR-Lex

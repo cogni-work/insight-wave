@@ -95,6 +95,7 @@ Read references **only when needed** for the specific task:
 | [references/regulatory-feeds.md](references/regulatory-feeds.md) | Regulatory API searches - EUR-Lex, SEC EDGAR, FDA (Phase 1) |
 | [references/workflow-phases/phase-0-initialize.md](references/workflow-phases/phase-0-initialize.md) | Project init + industry selection |
 | [$CLAUDE_PLUGIN_ROOT/references/dimension-personas.md]($CLAUDE_PLUGIN_ROOT/references/dimension-personas.md) | Persona catalog for dimension-specific research (Phase 1, Sprint 2) |
+| [references/workflow-phases/phase-2.5-review.md](references/workflow-phases/phase-2.5-review.md) | Candidate review: stakeholder assessment, repair protocol, re-review |
 | [references/workflow-phases/phase-3-present.md](references/workflow-phases/phase-3-present.md) | Writing final trend-candidates.md with scores |
 | [references/workflow-phases/phase-4-finalize.md](references/workflow-phases/phase-4-finalize.md) | Finalizing output for downstream pipeline |
 
@@ -107,8 +108,9 @@ Read references **only when needed** for the specific task:
 3. Phase 1: Bilingual Web Research [pending]
 4. Phase 1.5: Signal Curation (if thorough mode) [pending]
 5. Phase 2: Generate Candidate Pool [pending]
-6. Phase 3: Write Final Trend List [pending]
-7. Phase 4: Finalize Output + Pipeline Config [pending]
+6. Phase 2.5: Candidate Review (Stakeholder Assessment) [pending]
+7. Phase 3: Write Final Trend List [pending]
+8. Phase 4: Finalize Output + Pipeline Config [pending]
 
 Update todo status as you progress through each phase.
 
@@ -117,10 +119,11 @@ Update todo status as you progress through each phase.
 ## Core Workflow
 
 ```text
-Phase 0 → Phase 0.5 → Phase 1 → Phase 1.5 → Phase 2 → Phase 3 → Phase 4
-   │          │           │          │           │         │         │
-   │          │           │          │           │         │         └─ Write config + JSON, finalize
-   │          │           │          │           │         └─ Write final trend-candidates.md
+Phase 0 → Phase 0.5 → Phase 1 → Phase 1.5 → Phase 2 → Phase 2.5 → Phase 3 → Phase 4
+   │          │           │          │           │          │          │         │
+   │          │           │          │           │          │          │         └─ Write config + JSON, finalize
+   │          │           │          │           │          │          └─ Write final trend-candidates.md
+   │          │           │          │           │          └─ Stakeholder review + repair loop (max 2 iter)
    │          │           │          │           └─ Generate + score 60 candidates
    │          │           │          └─ Signal curation (thorough mode)
    │          │           └─ Web searches + academic/patent/regulatory APIs
@@ -513,16 +516,48 @@ Steps:
 
 **Important:** Even in inline mode, enforce the scoring caps for training-sourced candidates. A training-only candidate with `score: 0.78` signals a scoring cap violation — the theoretical max for a pure training candidate is ~0.60 after caps are applied.
 
+### Phase 2.5: Candidate Review — Stakeholder Assessment
+
+Read [references/workflow-phases/phase-2.5-review.md](references/workflow-phases/phase-2.5-review.md), then execute:
+
+This phase evaluates the 60 candidates as a pool from three stakeholder perspectives before writing the final list. It catches set-level issues that per-candidate validation misses: duplicates across dimensions, subsector-generic filler, weak clustering, and scoring violations.
+
+**Three perspectives:**
+- **Strategic Foresight Analyst** — methodological soundness (horizon balance, signal grounding, leading indicators, diffusion spread, scoring integrity)
+- **Industry Domain Expert** — subsector relevance (specificity, coherence, distinctiveness, DACH relevance, research hint quality)
+- **Downstream Pipeline Consumer** — fitness for value-modeler/trend-report (TIPS expandability, theme potential, evidence enrichability, solution readiness, cross-dimension linkage)
+
+**Workflow:**
+
+1. Invoke `trend-candidate-reviewer` agent with iteration 1
+2. Process verdict:
+   - **accept** → proceed to Phase 3
+   - **reject** → re-invoke full `trend-generator`, then re-review as iteration 2
+   - **revise** → execute selective repair (cell regeneration, candidate replacement, scoring fixes)
+3. After repair, re-invoke reviewer with iteration 2
+4. If still not accepted after iteration 2 → force accept with issues logged
+
+Max 2 review iterations. See phase reference for invocation templates and repair protocol.
+
+**Required outputs:**
+
+- `.metadata/candidate-review-verdicts/v{N}.json` — review verdict(s)
+- Updated `.logs/trend-generator-candidates.json` (if repairs applied)
+- Updated `.logs/candidates-compact.json` (regenerated after repairs)
+- `candidate_review` metadata in execution state
+
 ### Phase 3: Write Final Trend List
 
 Read [references/workflow-phases/phase-3-present.md](references/workflow-phases/phase-3-present.md), then execute:
+
+**Entry gate:** Phase 2.5 must have completed with a review verdict of "accept" (clean or forced). Check that `.metadata/candidate-review-verdicts/` contains at least one verdict file with `verdict: "accept"`.
 
 1. Write `trend-candidates.md` to `{PROJECT_PATH}/` (project root) as the **final trend list**
 2. Use bilingual template based on PROJECT_LANGUAGE
 3. Include all 60 candidates organized by dimension and horizon with scores and metadata
 4. Include source integrity summary and references
 
-All 60 generated candidates are the final agreed list — no user selection step. Proceed directly to Phase 4.
+All 60 reviewed candidates are the final agreed list — no user selection step. Proceed directly to Phase 4.
 
 ### Phase 4: Finalize Output
 
@@ -654,8 +689,17 @@ Location: `{PROJECT_PATH}/.metadata/trend-scout-output.json`
   "execution": {
     "workflow_state": "agreed",
     "current_phase": 4,
-    "phases_completed": ["phase-0", "phase-1", "phase-2", "phase-3", "phase-4"],
-    "agreed_at": "2025-12-16T11:45:00Z"
+    "phases_completed": ["phase-0", "phase-0.5", "phase-1", "phase-1.5", "phase-2", "phase-2.5", "phase-3", "phase-4"],
+    "agreed_at": "2025-12-16T11:45:00Z",
+    "candidate_review": {
+      "iterations": 1,
+      "final_verdict": "accept",
+      "final_score": 85,
+      "cells_regenerated": 0,
+      "candidates_replaced": 0,
+      "scoring_fixes_applied": 0,
+      "forced_accept": false
+    }
   },
 
   "downstream_integration": {

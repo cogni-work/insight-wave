@@ -60,6 +60,76 @@
         "Each candidate with source=web-signal has a non-empty source_url field",
         "ACT candidates have signal_intensity 4-5, OBSERVE candidates have intensity 1-2 (horizon-intensity alignment)"
       ]
+    },
+    {
+      "id": 3,
+      "name": "eval-review-de-automotive",
+      "prompt": "Ich möchte Trends für die Fertigungsindustrie scouten, Fokus Automobil und KI-gestützte Qualitätskontrolle",
+      "expected_output": "60 reviewed trend candidates in German with stakeholder review verdicts, organized across 4 dimensions x 3 horizons",
+      "files": [],
+      "expectations": [
+        "trend-scout-output.json exists and is valid JSON with 60 candidates",
+        "trend-candidates.md exists and is written in German",
+        ".metadata/candidate-review-verdicts/ directory exists with at least one verdict file",
+        ".metadata/candidate-review-verdicts/v1.json exists and is valid JSON",
+        "v1.json contains verdict field with value 'accept', 'revise', or 'reject'",
+        "v1.json contains stakeholder_reviews array with exactly 3 entries",
+        "v1.json stakeholder perspectives are: strategic_foresight_analyst, industry_domain_expert, downstream_pipeline_consumer",
+        "Each stakeholder review has a score (0-100) and criteria object with 5 scored criteria",
+        "Each criterion has score (pass/warn/fail), weight, and note fields",
+        "v1.json contains set_level_issues array (may be empty if no issues found)",
+        "v1.json contains revision_guidance object with action, priorities, and repair instructions",
+        "If verdict is 'revise', a v2.json exists after repair with final verdict 'accept'",
+        "trend-scout-output.json execution block contains candidate_review metadata",
+        "candidate_review metadata includes iterations count, final_verdict, and final_score",
+        "candidate_review.forced_accept is false when final_verdict is 'accept' with score >= 85",
+        "No training-sourced candidates have composite score > 0.65 (scoring cap enforcement)",
+        "No duplicate trend names across the entire pool (distinctiveness enforced)",
+        "Each dimension has candidates from at least 2 different subcategories (blind spot prevention)",
+        "All 60 candidates in final trend-candidates.md are present (no candidates lost during repair)",
+        "phases_completed in execution state includes 'phase-2.5'"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "eval-review-en-healthcare",
+      "prompt": "Scout trends for the healthcare industry, digital health subsector, focusing on telemedicine adoption in DACH markets",
+      "expected_output": "60 reviewed trend candidates in English with stakeholder review verdicts, bilingual review working correctly",
+      "files": [],
+      "expectations": [
+        "trend-scout-output.json exists and is valid JSON with 60 candidates",
+        "trend-candidates.md exists and is written in English",
+        ".metadata/candidate-review-verdicts/v1.json exists and is valid JSON",
+        "v1.json verdict is 'accept', 'revise', or 'reject'",
+        "v1.json contains 3 stakeholder reviews with scores",
+        "Industry domain expert perspective evaluates healthcare/digital-health specificity, not generic tech trends",
+        "DACH market relevance criterion is scored — healthcare candidates reference EU MDR, DiGA, ePA, or DACH health institutions",
+        "Downstream pipeline consumer perspective evaluates TIPS expandability for telemedicine trends",
+        "trend-scout-output.json execution.candidate_review exists with iterations and final_verdict",
+        "phases_completed includes 'phase-2.5'",
+        "If repairs were made, candidates-compact.json was regenerated (file modification timestamp after v1.json timestamp)"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "eval-review-cycle-effectiveness",
+      "prompt": "Scout trends for the energy industry, renewable energy subsector, focusing on smart grid integration and energy storage in European markets. Use thorough research mode.",
+      "expected_output": "60 reviewed trend candidates with comprehensive stakeholder review that identifies and addresses pool-level quality issues",
+      "files": [],
+      "expectations": [
+        "trend-scout-output.json exists with 60 candidates",
+        ".metadata/candidate-review-verdicts/v1.json exists with complete 3-perspective review",
+        "Strategic foresight analyst perspective evaluates signal grounding (>= 45% web-sourced target)",
+        "Strategic foresight analyst evaluates leading indicator coverage (>= 40% target)",
+        "Industry domain expert evaluates energy/renewable-specific content — not generic sustainability trends",
+        "Industry domain expert checks for EU energy regulations (Clean Energy Package, RED III, grid codes)",
+        "Downstream pipeline consumer evaluates cross-dimension linkage potential for value-modeler",
+        "Set-level issues analysis identifies any duplicate clusters or coverage blind spots",
+        "If review found issues: repair was attempted and v2.json shows improvement over v1.json scores",
+        "Final candidate pool has no dimension where all 15 candidates share a single keyword",
+        "trend-scout-output.json execution.candidate_review.final_score >= 70",
+        "Research hints in final candidates are actionable (specific data sources, quantitative targets, named institutions)"
+      ]
     }
   ]
 }

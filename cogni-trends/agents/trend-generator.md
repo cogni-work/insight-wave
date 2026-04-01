@@ -234,6 +234,13 @@ Store as `DIMENSION_PERSONAS` for use in Step 3.
 
 Use extended thinking to generate all 60 candidates systematically. For each dimension, adopt the persona's analytical lens — this shapes what you prioritize, how you evaluate strategic fit, and which signals you consider strongest.
 
+**TIPS expandability:** Every trend statement must contain a causal mechanism — "X forces Y because Z"
+or "X enables Y by Z". This is what makes the trend expandable into Implications (what does Y mean
+for the buyer?), Possibilities (what solutions address Y?), and Solutions (what can we build?).
+Vague observations like "AI adoption is growing" or "Sustainability becomes important" cannot be
+expanded because they lack a causal mechanism. If you can't articulate why a trend matters in
+the statement itself, the value-modeler cannot build a relationship network from it.
+
 <thinking>
 **Candidate Generation for {{SUBSECTOR_EN}} ({{SUBSECTOR_DE}})**
 
@@ -276,6 +283,41 @@ Subcategories: kultur, mitarbeitende, technologie
 - Training-sourced: [N] ([%]%)
 </thinking>
 
+**Quality Requirements by Horizon:**
+
+OBSERVE candidates are the most common quality failure. Each horizon has distinct quality gates:
+
+- **ACT (0-2y):** Trend statement must name a specific forcing function with a deadline or measurable
+  threshold (e.g., "EU AI Act high-risk classification effective August 2026"). Research hint must
+  name a specific compliance document, standard body, or market sizing report.
+- **PLAN (2-5y):** Trend statement must cite a pilot, investment pattern, or emerging standard that
+  signals momentum. Research hint must name an organization running a pilot or a funding source.
+- **OBSERVE (5+y):** Each OBSERVE candidate MUST cite a specific emerging signal — a patent filing,
+  academic paper, research program, or regulatory proposal — that makes this trend worth watching.
+  "Quantum computing for X" or "Blockchain-based Y" without a named research program is speculation,
+  not a trend. If no specific signal exists for a 5+ year trend idea, drop it and generate a different
+  candidate that CAN cite an emerging signal. The bar is: "What specific weak signal did you find?"
+
+**Value Chain Breadth:**
+
+When generating candidates for an industry subsector, represent the full value chain — not just the
+dominant player type. For automotive: include Tier-1 suppliers (Zulieferer), OEMs, and aftermarket
+perspectives. For healthcare: include payers, providers, MedTech, and pharma perspectives. For
+energy: include generators, grid operators, and consumers. Each dimension should have candidates
+from at least 2 different value chain positions.
+
+**Research Hint Quality:**
+
+Research hints guide the downstream deep-researcher agent, which has web search. A good hint gives
+the researcher a clear first search query. Each hint MUST contain at least one of:
+- A **named institution** to investigate (e.g., "Check Fraunhofer IPA publications on...")
+- A **quantitative target** to validate (e.g., "Verify whether adoption exceeds 16% chasm threshold")
+- A **specific regulatory article** (e.g., "Assess EU AI Act Article 6 high-risk applicability")
+- A **named data source** (e.g., "Cross-reference with Destatis Fachserie 4 Reihe 4.1.1 data")
+
+Bad hints: "Investigate further", "Look into adoption rates", "Research market potential".
+These waste the deep-researcher's search budget on undirected queries.
+
 **Per-Candidate Structure:**
 
 ```yaml
@@ -285,9 +327,9 @@ candidate:
   horizon: "act" | "plan" | "observe"
   sequence: 1-5
   name: "EU AI Act"  # 1-2 words
-  trend_statement: "..."  # 30-50 words: what is happening
+  trend_statement: "..."  # 30-50 words: what is happening, with causal mechanism for TIPS expandability
   keywords: ["kw1", "kw2", "kw3"]  # Exactly 3
-  research_hint: "..."  # 20-30 words: what to investigate
+  research_hint: "..."  # 20-30 words: MUST name a specific institution, data source, regulatory article, or quantitative target
   source: "web-signal" | "training"
   source_label: "web-sourced" | "hypothesis"  # "hypothesis" for training-sourced
   source_url: "https://..."  # Only for web-signal
@@ -395,6 +437,23 @@ Ansoff signal intensity must align with time horizon — this is a core methodol
 4. After intensity repair, recalculate the composite score only if it included signal_intensity as a component. The Ansoff intensity is a classification, not a scoring input — so typically no recalculation is needed.
 
 This matters because downstream skills (value-modeler, trend-report) use horizon-intensity alignment to determine investment urgency. A misaligned candidate misleads strategic prioritization.
+
+**OBSERVE Grounding Validation:**
+
+For each OBSERVE candidate, verify it cites a specific emerging signal — not futuristic speculation.
+Check the `trend_statement` and `research_hint` for at least one of: a named research program,
+patent filing, academic paper topic, regulatory proposal, or pilot project. If an OBSERVE candidate
+is pure speculation (e.g., "Quantum-based X" with no cited signal), replace it with a candidate
+that CAN cite an emerging signal. This is a hard gate — speculative filler in the OBSERVE horizon
+causes the downstream reviewer to flag it and triggers a repair loop that costs more than generating
+a grounded candidate in the first place.
+
+**Research Hint Validation:**
+
+Scan all 60 research hints. If more than 5 hints lack a named institution, data source, regulatory
+article, or quantitative target, log a warning. Hints like "Investigate market potential" or
+"Research adoption trends" are too vague for the deep-researcher agent and should be replaced with
+specific investigation prompts.
 
 **Source-Type Cap Validation:**
 

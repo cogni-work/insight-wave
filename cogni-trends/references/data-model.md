@@ -11,6 +11,9 @@ cogni-trends/{project-slug}/
 ├── tips-insight-summary.md        # Narrative insight summary (trend-report Phase 2.5)
 ├── .metadata/                     # Workflow state + execution data
 │   ├── trend-scout-output.json    # Consolidated scout output (config + candidates + state)
+│   ├── candidate-review-verdicts/ # Stakeholder review verdicts (Phase 2.5)
+│   │   ├── v1.json                # First review iteration verdict
+│   │   └── v2.json                # Second review iteration verdict (if revision needed)
 │   └── trend-report-verification.json  # Claim verification results
 ├── .logs/                         # Debug/audit trail (agent outputs)
 │   ├── web-research-raw.json      # Full web research signals
@@ -474,6 +477,7 @@ erDiagram
 ```
 tips-project.json (root manifest)
   └── .metadata/trend-scout-output.json (config + candidates + state)
+        ├── .metadata/candidate-review-verdicts/v{N}.json (stakeholder review)
         ├── .logs/web-research-raw.json (raw signals -> candidates)
         ├── .logs/trend-generator-candidates.json (60 candidates)
         ├── tips-trend-report.md (report <- candidates)
