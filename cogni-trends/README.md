@@ -49,19 +49,19 @@ A four-stage trend intelligence pipeline for the insight-wave ecosystem. The Sma
 
 Connects industry trends to portfolio solutions for DACH markets. A four-stage pipeline that scouts trends, bridges them to investment themes and solution blueprints via T→I→P→S value paths, generates CxO-level reports, and curates reusable industry catalogs. Bilingual research (EN/DE) with curated German institutional sources.
 
-1. **Scout** trends across 4 Trendradar dimensions with bilingual web research (32 searches + academic, patent, and regulatory API queries), scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality) → `trend-candidates.md` → value-modeler, trend-report
+1. **Scout** trends across 4 Trendradar dimensions using persona-shaped bilingual web research with preliminary grounding (RAG-Fusion), adaptive query budgets (FLARE-inspired), and source quality tiering — scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality) → `trend-candidates.md` → value-modeler, trend-report
 2. **Model** investment themes (Handlungsfelder) by consolidating trends into T→I→P→S value chains, generating solution blueprints with portfolio composition and readiness scoring — optionally anchored to real products via cogni-portfolio → `tips-value-model.json` → trend-report, story-to-big-block
-3. **Report** CxO-level narratives structured by investment theme using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay), enriched with web-sourced quantitative evidence, inline citations, and a verifiable claims registry → `tips-trend-report.md` → themed HTML with interactive charts and diagrams via enrich-report
+3. **Report** CxO-level narratives structured by investment theme using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay), optionally enriched with recursive deep research (STORM-inspired) for high-value trends, structural review with cross-theme quality gates, and a verifiable claims registry → `tips-trend-report.md` → themed HTML with interactive charts and diagrams via enrich-report
 4. **Catalog** curated solutions, SPIs, metrics, and collaterals into persistent industry catalogs for cross-pursuit reuse — each engagement improves the base catalog
 
 ## What it means for you
 
 If you need to stay ahead of industry trends for strategy, advisory, or portfolio decisions, this is your research accelerator.
 
-- **Broad coverage, fast.** 32+ bilingual web searches plus academic and patent sources, executed in minutes.
-- **Framework-scored, not gut-feel.** Every candidate scored on impact, probability, strategic fit, source quality, and signal strength.
+- **Broad coverage, fast.** Persona-shaped bilingual web searches with preliminary grounding, adaptive budgets, and source quality tiering — executed in minutes.
+- **Framework-scored, not gut-feel.** Every candidate scored on impact, probability, strategic fit, source quality (CRAAP), and signal strength using Ansoff and Rogers frameworks.
 - **From trends to solutions.** T→I→P→S value paths bridge scouted trends to investment themes and portfolio-grounded solution blueprints — not just trend narratives.
-- **Evidence-backed output.** Every quantitative claim in the report has an inline citation you can verify.
+- **Evidence-backed output.** Optional deep research (STORM-inspired) for high-value trends, structural review with cross-theme quality gates, and every quantitative claim has an inline citation you can verify.
 - **Polished visual output.** Reports finish as themed, interactive HTML with Chart.js dashboards and concept diagrams — ready to share, not just a markdown file.
 - **Cross-pursuit learning.** Industry catalogs accumulate curated solutions, SPIs, and metrics — each engagement improves the next.
 - **Multi-session workflow.** Resume any project mid-stream with full state recovery via `/trends-resume`.
@@ -100,11 +100,11 @@ trends-resume    → resume a project mid-stream with status and next actions
 
 ## How it works
 
-**trend-scout** initializes a research project, dispatches a **trend-web-researcher** agent for bilingual web research (32 queries + API sources), then a **trend-generator** agent to produce 60 scored candidates using extended thinking. All candidates are finalized automatically for downstream modeling.
+**trend-scout** initializes a research project with interactive configuration disclosure, then runs 3 preliminary grounding searches (RAG-Fusion pattern) to calibrate query formulation. Dispatches a persona-shaped **trend-web-researcher** agent — each Smarter Service dimension gets queries shaped by a domain expert persona (Regulatory Analyst, CSO, CX Strategist, CTO) following the 4strat STEEP multi-agent approach. In thorough mode, the query budget adapts based on signal yield per dimension (FLARE-inspired). An optional **trend-signal-curator** agent ranks the ~85 raw signals into quality tiers (primary/secondary/supporting) using a 5-dimension composite score. Finally, a **trend-generator** agent produces 60 scored candidates using extended thinking with persona reasoning.
 
 **value-modeler** reads scouted candidates and builds T→I→P→S relationship networks, consolidates them into 3-7 MECE investment themes (Handlungsfelder), and generates solution templates with portfolio blueprints. When cogni-portfolio is available, solutions are anchored to real products and features. Includes interactive Business Relevance scoring and multi-framework solution ranking.
 
-**trend-report** reads modeled investment themes and dispatches 3-7 parallel **trend-report-investment-theme-writer** agents (one per theme). Each agent writes a narrative section using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay), enriched with web-sourced quantitative evidence and verifiable claims. The skill assembles the final report with executive summary, portfolio analysis, and claims registry.
+**trend-report** reads modeled investment themes, optionally dispatches 3-5 parallel **trend-deep-researcher** agents for recursive TIPS-aligned deep research on high-value ACT-horizon trends (STORM-inspired tree exploration), then dispatches 4 parallel **trend-report-writer** agents (one per Trendradar dimension) for evidence enrichment. Assembles 3-7 **trend-report-investment-theme-writer** agents (one per theme) using the Corporate Visions arc (Why Change -> Why Now -> Why You -> Why Pay). A **trend-report-reviewer** agent applies a structural quality gate with cross-theme analysis before optional claims verification via cogni-claims.
 
 **trends-catalog** curates solutions, SPIs, metrics, and collaterals from completed projects into persistent industry catalogs. Each engagement improves the base catalog for future pursuits in the same industry.
 
@@ -112,22 +112,61 @@ trends-resume    → resume a project mid-stream with status and next actions
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `trend-scout` | skill | End-to-end trend scouting with industry selection and bilingual research |
-| `trend-report` | skill | Narrative report generation with evidence enrichment and claims extraction |
-| `value-modeler` | skill | Transform trend candidates into investment themes, TIPS paths, and solution templates with portfolio mapping |
-| `trends-catalog` | skill | Industry catalog management for cross-pursuit reuse of solution templates and investment themes |
-| `trends-dashboard` | skill | Interactive HTML dashboard visualizing trend landscape, dimension coverage, and scoring distributions |
-| `trends-resume` | skill | Resume a TIPS session — show project status, phase progress, and recommended next actions |
-| `trend-web-researcher` | agent | Executes 32 bilingual web searches + API queries, returns aggregated signals |
-| `trend-generator` | agent | Generates scored trend candidates using multi-framework analysis (Opus) |
-| `trend-report-writer` | agent | Writes one Trendradar dimension section with TIPS analysis and claims |
-| `trend-report-investment-theme-writer` | agent | Writes investment theme (Handlungsfeld) narrative sections for the trend report |
+| `trend-scout` | skill | End-to-end trend scouting with config disclosure, grounding, persona research, signal curation |
+| `trend-report` | skill | Narrative report with optional deep research, evidence enrichment, structural review, claims |
+| `value-modeler` | skill | Transform trend candidates into investment themes, TIPS paths, and solution templates |
+| `trends-catalog` | skill | Industry catalog management for cross-pursuit reuse |
+| `trends-dashboard` | skill | Interactive HTML dashboard visualizing trend landscape and scoring distributions |
+| `trends-resume` | skill | Resume a TIPS session — show project status, phase progress, next actions |
+| `trend-web-researcher` | agent | Persona-shaped bilingual web research with grounding context and adaptive budget |
+| `trend-generator` | agent | Generates 60 scored candidates with persona reasoning and multi-framework analysis |
+| `trend-signal-curator` | agent | Tier-ranks web signals (primary/secondary/supporting) using 5-dimension composite |
+| `trend-report-writer` | agent | Writes one Trendradar dimension section, deep-research-aware |
+| `trend-report-investment-theme-writer` | agent | Writes investment theme sections using Corporate Visions arc |
+| `trend-report-reviewer` | agent | Cross-theme structural review with 5-dimension quality rubric |
+| `trend-report-revisor` | agent | Post-verification revision applying claim corrections |
+| `trend-deep-researcher` | agent | Recursive TIPS-aligned deep research for high-value trends |
 
-## Attribution
+## Methodology & Attribution
 
-- **Smarter Service Trendradar** by [Bernhard Steimel / Smarter Service](https://www.smarter-service.com/) — 4-dimension trend analysis structure. Source: *Trendbook Kompass fur die Multikrise* (2023).
-- **TIPS framework** originated at [Siemens Industry Software](https://patents.google.com/patent/WO2018046399A1/en) — Trends, Implications, Possibilities, Solutions content structure. Patent WO2018046399A1 (filed 2017, ceased 2019).
-- **Scoring frameworks** — Ansoff Matrix (signal intensity), Rogers Diffusion of Innovations (adoption stage), CRAAP Test (source quality).
+cogni-trends combines established strategic foresight frameworks with state-of-the-art LLM research techniques. Each pipeline stage implements specific, referenceable methods.
+
+### Strategic Foresight Frameworks
+
+| Method | Origin | How cogni-trends uses it |
+|--------|--------|--------------------------|
+| **Smarter Service Trendradar** | Bernhard Steimel, [Smarter Service](https://www.smarter-service.com/) (2023) | 4-dimension model (Externe Effekte, Neue Horizonte, Digitale Wertetreiber, Digitales Fundament) organizes where trends are discovered. Source: *Trendbook Kompass fur die Multikrise* |
+| **TIPS** | [Siemens Patent WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) (filed 2017, ceased 2019) | Trend -> Implications -> Possibilities -> Solutions content expansion applied to every candidate. Freely usable (ceased patent) |
+| **Ansoff Weak Signals** | H. Igor Ansoff, *Strategic Management* (1979) | 5-level signal intensity scale (Turbulence -> Foreseeable) maps to action horizons. ACT requires intensity 4-5; OBSERVE requires 1-2 |
+| **Rogers Diffusion of Innovation** | Everett Rogers, *Diffusion of Innovations* (1962) | Adoption stage classification (Innovators -> Laggards) with chasm threshold at 16%. Validates horizon-diffusion alignment |
+| **CRAAP Test** | Sarah Blakeslee, Meriam Library CSU Chico (2004) | Source quality assessment (Currency, Relevance, Authority, Accuracy, Purpose) applied in both signal extraction and curation |
+| **Corporate Visions** | Tim Riesterer / Corporate Visions Inc. | Why Change -> Why Now -> Why You -> Why Pay narrative arc for investment theme sections in trend reports |
+
+### LLM Research Techniques
+
+| Method | Origin | How cogni-trends uses it |
+|--------|--------|--------------------------|
+| **RAG-Fusion** | Adrian Raudaschl (2023) | Preliminary grounding searches (Phase 0.5) reformulate downstream queries based on initial web results. RAG-Fusion shows +8-10% accuracy and +30-40% comprehensiveness with 3-5 grounding sub-queries |
+| **FLARE** (Forward-Looking Active Retrieval) | Jiang et al., *Active Retrieval Augmented Generation* (2023) | Adaptive query budget allocates flexible search pool based on signal yield per dimension — researching further where gaps exist, stopping where coverage is sufficient. FLARE shows +62% vs baseline retrieval |
+| **STORM** | Shao et al., Stanford (2024); [GPT-Researcher](https://github.com/assafelovic/gpt-researcher) | Recursive tree exploration in trend-deep-researcher agent: decompose trend into TIPS sub-aspects, extract learnings, generate follow-up questions, pursue recursively. Single-agent execution for cost control (vs GPT-Researcher's exponential spawning) |
+| **GPT-Researcher CURATE_SOURCES** | Assaf Elovic, [GPT-Researcher](https://github.com/assafelovic/gpt-researcher) (25K+ stars) | Signal curation with 5-dimension composite scoring (relevance, authority, recency, specificity, uniqueness) and tier ranking (primary/secondary/supporting). Adapted from embedding-based to LLM-based assessment |
+| **4strat STEEP Multi-Agent** | 4strat Platform; referenced in STEEP/PESTLE automation literature | One specialized expert persona per Trendradar dimension (Regulatory Analyst, CSO, CX Strategist, CTO) shapes search vocabulary, question patterns, and authority preferences. Cross-dimension synthesis in the trend-generator |
+| **QAG** (Question-Answer-Generation) | Manakul et al. (2023) | Claims verification via cogni-claims: extract claims from report, formulate verification questions, check against cited sources. Detects misquotation, unsupported conclusions, selective omission |
+
+### Scoring Model
+
+The composite candidate score combines the frameworks above into a single 0.0-1.0 metric:
+
+```
+Composite = (0.25 x Impact) + (0.20 x Probability) + (0.20 x Strategic_Fit)
+          + (0.15 x Source_Quality[CRAAP]) + (0.15 x Signal_Strength) - Uncertainty_Penalty
+
+Training-sourced candidates (no web corroboration):
+  Source_Quality capped at 0.4, Signal_Strength capped at 0.3
+  -> theoretical max composite ~0.60 (vs 1.0 for fully web-grounded)
+```
+
+This scoring model ensures web-grounded candidates with institutional sources consistently outrank LLM training knowledge, reducing hallucination risk in downstream reports.
 
 ## Architecture
 
@@ -135,22 +174,27 @@ trends-resume    → resume a project mid-stream with status and next actions
 cogni-trends/
 ├── .claude-plugin/plugin.json    Plugin manifest
 ├── skills/                       6 trend intelligence skills
-│   ├── trend-scout/
-│   ├── trend-report/
-│   ├── value-modeler/
-│   ├── trends-catalog/
-│   ├── trends-dashboard/
-│   └── trends-resume/
-├── agents/                       4 research agents
-│   ├── trend-web-researcher.md
-│   ├── trend-generator.md
-│   ├── trend-report-writer.md
-│   └── trend-report-investment-theme-writer.md
+│   ├── trend-scout/              Grounding, persona research, signal curation, candidate generation
+│   ├── trend-report/             Deep research, evidence enrichment, structural review, claims
+│   ├── value-modeler/            T→I→P→S relationship networks, solution templates
+│   ├── trends-catalog/           Persistent industry knowledge base
+│   ├── trends-dashboard/         Interactive HTML visualization
+│   └── trends-resume/            Multi-session state recovery
+├── agents/                       8 research agents
+│   ├── trend-web-researcher.md   Persona-shaped bilingual research (haiku)
+│   ├── trend-generator.md        60 scored candidates with persona reasoning (opus)
+│   ├── trend-signal-curator.md   5-dimension signal tiering (haiku)
+│   ├── trend-deep-researcher.md  Recursive TIPS-aligned deep research (sonnet)
+│   ├── trend-report-writer.md    Dimension sections, deep-research-aware (sonnet)
+│   ├── trend-report-investment-theme-writer.md  Corporate Visions arc (sonnet)
+│   ├── trend-report-reviewer.md  Cross-theme structural quality gate (sonnet)
+│   └── trend-report-revisor.md   Post-verification revision (sonnet)
 ├── references/                   Framework documentation
-│   ├── architecture-pattern.md
-│   ├── data-model.md
-│   ├── language-resolution.md
-│   ├── tips-patent.pdf
+│   ├── architecture-pattern.md   Bilingual search architecture (reusable for non-DACH)
+│   ├── dimension-personas.md     Expert personas per Trendradar dimension
+│   ├── data-model.md             Entity schemas and project structure
+│   ├── language-resolution.md    Language configuration and resolution
+│   ├── tips-patent.pdf           TIPS framework patent (ceased, freely usable)
 │   ├── research-types/
 │   └── taxonomies/
 ├── catalogs/                     Industry catalog (cross-pursuit reuse)

@@ -81,20 +81,34 @@ Each project lives in a directory with:
 - `.metadata/` — Execution logs, trend-scout output, verification state
 - `.logs/` — Agent outputs, per-dimension claims, report sections
 
-## Frameworks
+## Frameworks & Methodology
 
-**Smarter Service Trendradar** — 4-dimension model for organizing where trends are discovered:
-- Externe Effekte (external forces)
-- Neue Horizonte (future revenue sources)
-- Digitale Wertetreiber (digital value creation)
-- Digitales Fundament (foundational capabilities)
+### Strategic Foresight Frameworks
 
-Each trend placed on action horizon: Act (0-2y), Plan (2-5y), Observe (5+y).
+- **Smarter Service Trendradar** (Steimel, 2023) — 4-dimension model: Externe Effekte, Neue Horizonte, Digitale Wertetreiber, Digitales Fundament. Each trend on action horizon: Act (0-2y), Plan (2-5y), Observe (5+y)
+- **TIPS** (Siemens WO2018046399A1, ceased 2019) — Trend -> Implications -> Possibilities -> Solutions content expansion
+- **Ansoff Weak Signals** (1979) — 5-level signal intensity scale mapped to action horizons
+- **Rogers Diffusion of Innovation** (1962) — Adoption stage classification with chasm threshold at 16%
+- **CRAAP Test** (Blakeslee, 2004) — Source quality assessment in signal extraction and curation
+- **Corporate Visions** (Riesterer) — Why Change -> Why Now -> Why You -> Why Pay arc for investment themes
 
-**TIPS** — Content expansion applied to every trend:
-- **T**rend → **I**mplications → **P**ossibilities → **S**olutions
+### LLM Research Techniques
 
-**Multi-Framework Scoring** (trend-generator): TIPS + Ansoff signal intensity + Rogers diffusion stage + CRAAP source quality.
+- **RAG-Fusion** (Raudaschl, 2023) — Preliminary grounding searches reformulate downstream queries (+8-10% accuracy)
+- **FLARE** (Jiang et al., 2023) — Adaptive query budget based on signal yield per dimension (+62% vs baseline)
+- **STORM** (Shao et al., Stanford 2024) / **GPT-Researcher** (Elovic) — Recursive tree exploration in deep-researcher agent
+- **CURATE_SOURCES** (GPT-Researcher) — 5-dimension signal tiering adapted from embedding-based to LLM-based assessment
+- **4strat STEEP Multi-Agent** — One expert persona per dimension shapes search vocabulary and authority preferences
+- **QAG** (Manakul et al., 2023) — Claims verification via cogni-claims (extract claims, verify against cited sources)
+
+### Multi-Framework Scoring
+
+```
+Composite = (0.25 x Impact) + (0.20 x Probability) + (0.20 x Strategic_Fit)
+          + (0.15 x Source_Quality[CRAAP]) + (0.15 x Signal_Strength) - Uncertainty_Penalty
+```
+
+Training-sourced candidates capped: source_quality max 0.4, signal_strength max 0.3 (theoretical max ~0.60).
 
 ## Cross-Plugin Integration
 
