@@ -5,7 +5,7 @@ Portfolio messaging and proposition planning — from product definition through
 ## Plugin Architecture
 
 ```
-skills/                         20 portfolio skills
+skills/                         19 portfolio skills
   portfolio-setup/                Initialize project with company context and taxonomy
   portfolio-canvas/               Bootstrap from Lean Canvas or Business Model Canvas
   portfolio-scan/                 Discover offerings via web scanning + taxonomy classification
@@ -24,8 +24,14 @@ skills/                         20 portfolio skills
   customers/                      Ideal customer profiles and buyer personas per market
   portfolio-verify/               Orchestrate claim verification via cogni-claims
   synthesize/                     Aggregate all entities into structured messaging repository
-  portfolio-export/               Generate proposals, briefs, XLSX workbooks
-  portfolio-communicate/          Generate documentation for any audience (customer, developer, custom)
+  portfolio-communicate/          All portfolio output: pitches, proposals, briefs, workbooks, docs
+    references/
+      templates-customer-narrative.md   Customer-facing documentation
+      templates-pitch.md                Arc-structured presentation narratives (cogni-narrative compatible)
+      templates-proposal.md             Per-proposition sales proposals
+      templates-market-brief.md         Per-market marketing briefs
+      templates-repo-documentation.md   Developer-facing documentation
+      use-case-registry.md              Use case routing and configuration
   portfolio-dashboard/            Interactive HTML dashboard of full portfolio status
   portfolio-architecture/         Excalidraw product-feature hierarchy diagram
   trends-bridge/                  Bidirectional integration with cogni-trends TIPS analysis
@@ -78,7 +84,7 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 20 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, synthesize, portfolio-export, portfolio-communicate, portfolio-dashboard, portfolio-architecture, trends-bridge, portfolio-resume |
+| Skills | 19 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, synthesize, portfolio-communicate, portfolio-dashboard, portfolio-architecture, trends-bridge, portfolio-resume |
 | Agents | 17 | market-researcher, competitor-researcher, customer-researcher, customer-review-assessor, proposition-generator, proposition-quality-assessor, proposition-review-assessor, proposition-deep-diver, solution-planner, solution-review-assessor, feature-quality-assessor, feature-review-assessor, feature-deep-diver, quality-enricher, communicate-review-assessor, dashboard-refresher, portfolio-web-researcher |
 
 ## Typical Workflow
@@ -90,9 +96,14 @@ portfolio-setup → products → features → markets → customers → proposit
                                                                     ↓
                                                           portfolio-verify (claims)
                                                                     ↓
-                                                     synthesize → portfolio-export
-                                                                → portfolio-communicate
-                                                    → portfolio-dashboard
+                                                     synthesize → portfolio-communicate
+                                                                     ├── pitch → story-to-slides
+                                                                     ├── proposal
+                                                                     ├── market-brief
+                                                                     ├── workbook (XLSX)
+                                                                     ├── customer-narrative
+                                                                     └── repo-documentation
+                                                                → portfolio-dashboard
 ```
 
 Optional entry points: `portfolio-canvas` (from Lean Canvas), `portfolio-scan` (from website), `portfolio-ingest` (from documents).
@@ -109,7 +120,7 @@ Each project lives in `cogni-portfolio/{project-slug}/` with:
 - `competitors/` — Competitive landscape per proposition (JSON)
 - `customers/` — ICPs and named accounts per market (JSON)
 - `context/` — Extracted intelligence from uploaded documents
-- `output/` — Generated exports (proposals, briefs, XLSX, dashboard)
+- `output/` — Generated output (pitches, proposals, briefs, workbooks, narratives, dashboard)
 - `cogni-claims/` — Web-sourced claim verification registry (optional)
 
 Feature x Market combinations are the core join — they drive propositions, solutions, and competitor analysis.
@@ -143,7 +154,9 @@ Research agents auto-log claims with source URLs to `cogni-claims/claims.json` v
 | cogni-trends | bidirectional | trends-bridge imports solution templates, exports portfolio anchors |
 | cogni-workspace | upstream | portfolio-dashboard uses pick-theme for theme selection |
 | cogni-consulting | upstream | portfolio-canvas consumes Lean Canvas from business-model-hypothesis vision class |
-| document-skills | downstream | portfolio-ingest uses docx/pptx/xlsx readers; portfolio-export uses XLSX writer |
+| document-skills | downstream | portfolio-ingest uses docx/pptx/xlsx readers; portfolio-communicate workbook uses XLSX writer |
+| cogni-narrative | downstream | portfolio-communicate pitch use case reads arc definitions for narrative structure |
+| cogni-visual | downstream | portfolio-communicate pitch output is directly consumable by story-to-slides, story-to-web, story-to-big-picture |
 
 ## Key Conventions
 

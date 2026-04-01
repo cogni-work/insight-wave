@@ -56,6 +56,116 @@ Available communication use cases for portfolio content. Each use case defines a
 
 ---
 
+### `pitch`
+
+| Field | Value |
+|-------|-------|
+| **Name** | Pitch Narrative |
+| **Audience** | Executives, decision-makers, conference audiences, board members |
+| **Voice** | Company presents to audience. Persuasive, evidence-backed, arc-driven. Not documentation — a presentation narrative designed to be spoken, not read at a desk. |
+| **Trigger phrases** | "pitch", "portfolio pitch", "presentation narrative", "pitch deck from portfolio", "slides from portfolio", "present portfolio", "portfolio story", "pitch for [market]", "create a pitch", "portfolio presentation" |
+| **Template** | `references/templates-pitch.md` |
+| **Review** | 3-perspective: Target Buyer, Sales Director, Narrative Coach |
+| **Output path** | `output/communicate/pitch/` |
+
+**Scopes:**
+
+| Scope | Output file | Description |
+|-------|------------|-------------|
+| `market` | `pitch/{market-slug}.md` | Arc-structured narrative for a specific market's buyers |
+| `overview` | `pitch/portfolio-overview.md` | Portfolio-wide narrative for investors, board, or keynotes |
+| `all` | All of the above | Overview + one narrative per market (ordered by priority) |
+
+**Key differentiator**: Pitch output includes `arc_id` in frontmatter — this makes it directly consumable by story-to-slides, story-to-web, story-to-big-picture, and story-to-storyboard without an intermediate `/narrative` step. Default arc: `corporate-visions`.
+
+**Downstream pipeline:** `/narrative-review` → `/copywrite` → `/story-to-slides`, `/story-to-web`, `/story-to-big-picture`, `/story-to-storyboard`
+
+---
+
+### `proposal`
+
+| Field | Value |
+|-------|-------|
+| **Name** | Sales Proposal |
+| **Audience** | Sales teams, prospect-specific customization, buyer evaluation |
+| **Voice** | Company speaks to buyer ("we"/"you"). Professional and direct — lead with value, not preamble. Avoid marketing superlatives. |
+| **Trigger phrases** | "proposal", "create a proposal", "sales proposal", "proposal for [feature] in [market]", "generate proposal", "proposition proposal" |
+| **Template** | `references/templates-proposal.md` |
+| **Review** | 3-perspective: Target Buyer, Sales Director, Pre-Sales Consultant |
+| **Output path** | `output/communicate/proposal/` |
+
+**Scopes:**
+
+| Scope | Output file | Description |
+|-------|------------|-------------|
+| `single` | `proposal/{feature}--{market}.md` | One proposal for a specific proposition |
+| `market` | `proposal/{feature}--{market}.md` (×N) | All proposals for propositions in a specific market |
+| `all` | `proposal/{feature}--{market}.md` (×N) | All proposals, ordered by relevance tier |
+
+**Downstream pipeline:** Share with sales for customization, or `/copywrite` for prose polish
+
+---
+
+### `market-brief`
+
+| Field | Value |
+|-------|-------|
+| **Name** | Marketing Brief |
+| **Audience** | Marketing teams, campaign planning, sales enablement |
+| **Voice** | Internal-facing but polished. Data-rich, structured for marketing team consumption. |
+| **Trigger phrases** | "marketing brief", "market brief", "brief for [market]", "campaign brief", "marketing content package", "messaging brief" |
+| **Template** | `references/templates-market-brief.md` |
+| **Review** | 3-perspective: Marketing Director, Campaign Manager, Sales Director |
+| **Output path** | `output/communicate/market-brief/` |
+
+**Scopes:**
+
+| Scope | Output file | Description |
+|-------|------------|-------------|
+| `single` | `market-brief/{market-slug}.md` | Brief for a specific target market |
+| `all` | `market-brief/{market-slug}.md` (×N) | Briefs for all markets, ordered by priority |
+
+**Downstream pipeline:** Campaign planning, `/copywrite` for polish, feed into cogni-marketing
+
+---
+
+### `workbook`
+
+| Field | Value |
+|-------|-------|
+| **Name** | Portfolio Workbook (XLSX) |
+| **Audience** | Leadership review, portfolio analysis, stakeholder sharing |
+| **Voice** | Data-oriented. No narrative — structured spreadsheet with all portfolio entities. |
+| **Trigger phrases** | "export to Excel", "spreadsheet", "XLSX", "workbook", "portfolio workbook", "send to Excel", "download portfolio", "portfolio data export" |
+| **Template** | None — delegates to `document-skills:xlsx` |
+| **Review** | None (data export) |
+| **Output path** | `output/communicate/workbook/` |
+
+**Scopes:**
+
+| Scope | Output file | Description |
+|-------|------------|-------------|
+| `full` | `workbook/portfolio.xlsx` | All sheets: Products, Features, Markets, Proposition Matrix, Packages, Solutions, Cost Analysis (internal), Competitors, Customers, Summary |
+| `matrix` | `workbook/proposition-matrix.xlsx` | Proposition Matrix sheet only (Feature × Market with IS/DOES/MEANS) |
+
+**Sheets** (for `full` scope):
+1. **Products**: name, positioning, pricing tier, maturity
+2. **Features**: name, purpose, description, category, parent product — ordered by sort_order within product
+3. **Markets**: name, segmentation, TAM/SAM/SOM — ordered by sort_order
+4. **Proposition Matrix**: Feature × Market grid with IS/DOES/MEANS, grouped by product. Includes "Tier" column (high/medium/low/skip/N/A). Excluded pairs show "N/A — {reason}".
+5. **Packages**: product, market, tier names, included solutions, pricing, bundle savings
+6. **Solutions**: grouped by solution type with phases/tiers/pricing
+7. **Cost Analysis** (internal/confidential): effort, margins, unit economics. Flag as CONFIDENTIAL.
+8. **Competitors**: competitive analysis per proposition
+9. **Customers**: buyer profiles per market
+10. **Summary**: portfolio statistics, completion status, margin health (if cost models exist)
+
+**Creation**: Use `document-skills:xlsx` skill. Fallback to CSV files in `output/communicate/workbook/csv/` if xlsx skill unavailable.
+
+**Downstream pipeline:** Share with leadership for portfolio review
+
+---
+
 ## Custom Use Cases
 
 Users can define reusable custom use cases by saving them to `communicate-use-cases.json` in the project root. The skill checks this file alongside the built-in registry.

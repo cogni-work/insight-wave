@@ -1,39 +1,47 @@
 ---
 name: portfolio-communicate
 description: |
-  Generate portfolio documentation for any audience — customer-facing narratives,
-  repository documentation, developer guides, or custom use cases. Routes through
-  a use-case registry that matches the audience and purpose to the right voice,
-  templates, and review perspectives. Use whenever the user mentions
-  "communicate portfolio", "portfolio documentation", "customer-facing documentation",
-  "present portfolio", "portfolio overview", "capability overview", "service catalog",
-  "enrich README", "repo documentation", "developer documentation", "update README
-  with portfolio", "document the project", "open-source documentation", "GitHub README",
-  "project overview for developers", "technical documentation from portfolio",
-  "what do we offer", "external portfolio", "portfolio narrative", "make this
-  customer-ready", or wants to turn internal portfolio data into something any
-  audience can read — even if they don't say "communicate" explicitly. Also trigger
-  when the user has completed synthesize or export and asks "how do I present this"
-  or "how do I document this".
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+  Generate portfolio documentation, pitch narratives, proposals, briefs, and
+  workbooks for any audience. Routes through a use-case registry that matches
+  the audience and purpose to the right voice, templates, and review perspectives.
+  Use whenever the user mentions "communicate portfolio", "portfolio documentation",
+  "customer-facing documentation", "present portfolio", "portfolio overview",
+  "capability overview", "service catalog", "enrich README", "repo documentation",
+  "developer documentation", "update README with portfolio", "document the project",
+  "open-source documentation", "GitHub README", "project overview for developers",
+  "technical documentation from portfolio", "what do we offer", "external portfolio",
+  "portfolio narrative", "make this customer-ready", "pitch", "portfolio pitch",
+  "presentation narrative", "pitch deck from portfolio", "slides from portfolio",
+  "portfolio story", "pitch for [market]", "proposal", "create a proposal",
+  "sales proposal", "marketing brief", "market brief", "export to Excel",
+  "spreadsheet", "XLSX", "workbook", "portfolio workbook", "send to Excel",
+  "download portfolio", "collateral", "deliverable", or wants to turn internal
+  portfolio data into something any audience can read, present, or analyze — even
+  if they don't say "communicate" explicitly. Also trigger when the user has
+  completed synthesize and asks "how do I present this", "how do I document this",
+  or "how do I export this".
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, Skill
 ---
 
 # Portfolio Communicate
 
-Generate documentation from portfolio entities for any audience and purpose. Where `synthesize` produces an internal messaging repository (tables, matrices, gap flags) and `portfolio-export` produces per-proposition proposals and per-market briefs, this skill produces **audience-tailored narratives** that present the company's offerings through the reader's lens — whether that reader is a buyer, a developer, an investor, or someone else entirely.
+The single output skill for the portfolio pipeline. Where `synthesize` produces an internal messaging repository, this skill transforms portfolio entities into **anything an external audience needs** — documentation, pitch narratives, proposals, marketing briefs, or data workbooks. It routes through a use-case registry that matches the audience and purpose to the right voice, templates, and review perspectives.
 
 ## Core Concept
 
-Internal portfolio documentation serves internal teams — it exposes gaps, uses slugs, shows TAM/SAM/SOM numbers, and organizes by entity type. External audiences never see that. What they need depends on who they are:
+Internal portfolio data (slugs, TAM/SAM/SOM, relevance tiers, quality scores) is never what an audience sees. What they need depends on who they are and how they'll consume it:
 
-| Audience | What they need |
-|----------|---------------|
-| Buyers/executives | Value-led stories: what you do for people like them, why it matters, what engaging looks like |
-| Developers/community | Technical clarity: what the project does, how it works, how to get started |
-| Investors | Business potential: problem, solution, market, traction, differentiation |
-| Partners | Integration points: what capabilities exist, how to build on them |
+| Use Case | Audience | Output | Format |
+|----------|----------|--------|--------|
+| `customer-narrative` | Buyers, executives | Value-led documentation for self-paced reading | Markdown |
+| `repo-documentation` | Developers, OSS community | Technical clarity: what, how, getting started | Markdown |
+| `pitch` | Executives, conference, board | Arc-structured presentation narrative (cogni-narrative compatible) | Markdown with `arc_id` |
+| `proposal` | Sales teams, prospects | Per-proposition sales proposal | Markdown |
+| `market-brief` | Marketing teams | Market content package with sizing, buyer profile, messaging | Markdown |
+| `workbook` | Leadership, analysts | Structured spreadsheet with all portfolio data | XLSX |
+| Custom/ad-hoc | Any audience | User-defined voice, sections, review | Markdown |
 
-This skill reads the same entity files as synthesize and export, but transforms them through a **use-case lens** that matches the audience and purpose. Each use case defines its own voice, output templates, and review criteria.
+Each use case defines its own voice, output templates, and review criteria. The `pitch` use case is unique: its output includes `arc_id` in frontmatter, making it directly consumable by story-to-slides, story-to-web, story-to-big-picture, and story-to-storyboard — no intermediate `/narrative` step needed.
 
 ## Prerequisites
 
@@ -68,7 +76,11 @@ Read `references/use-case-registry.md` for the full registry of available use ca
 If the request is ambiguous, present options:
 
 > "What do you want to use the portfolio content for?"
+> - **Pitch narrative** — arc-structured presentation narrative, ready for story-to-slides (company presents to audience)
 > - **Customer narratives** — website content, sales materials, executive briefings (company speaks to buyer)
+> - **Proposals** — per-proposition sales proposals for specific Feature × Market pairs
+> - **Marketing briefs** — market content packages with sizing, buyer profile, messaging themes
+> - **Portfolio workbook** — XLSX spreadsheet with all portfolio data for analysis
 > - **Repository documentation** — README enrichment, plugin overviews, getting-started guides (project speaks to developer)
 > - {any custom use cases from communicate-use-cases.json}
 > - **Something else** — describe your purpose and I'll help shape the output
@@ -80,6 +92,10 @@ If the request is ambiguous, present options:
 Load the scope options from the selected use case (see registry). Only ask for clarification if genuinely ambiguous.
 
 For **`customer-narrative`**: overview, market (which one?), customer (which market and persona?), or all.
+For **`pitch`**: market (which one?), overview (portfolio-wide), or all.
+For **`proposal`**: single (which proposition?), market (all propositions in a market), or all.
+For **`market-brief`**: single (which market?), or all.
+For **`workbook`**: full (all sheets), or matrix (proposition matrix only).
 For **`repo-documentation`**: readme-enrichment, plugin-overview, use-case-gallery, or all.
 For **custom/ad-hoc use cases**: use the scopes defined in the use case configuration.
 
@@ -99,6 +115,28 @@ Read entity files from the project directory. Which entities to load depends on 
 - `markets/*.json` and `customers/*.json` (for tailored views)
 - `competitors/*.json` (for differentiation, woven into narrative)
 
+**Pitch:**
+- `markets/{market-slug}.json` (or all markets for overview/all scopes)
+- All `propositions/{feature}--{market-slug}.json` for the target market(s)
+- `customers/{market-slug}.json` for pain points (Why Change)
+- `competitors/{feature}--{market-slug}.json` for differentiation (Why You)
+- `solutions/{feature}--{market-slug}.json` and `packages/{product}--{market-slug}.json` for pricing (Why Pay)
+- Run `$CLAUDE_PLUGIN_ROOT/scripts/project-status.sh` for relevance tiers
+- Read arc definition from `cogni-narrative/skills/narrative/references/story-arc/{arc-id}/arc-definition.md`
+- Optional: check for TIPS bridge data (trend entities with `urgency: "Act"` for Why Now)
+
+**Proposal:**
+- The specific proposition, its feature, product, market, customer profile, competitor analysis
+- Solution and package for this proposition (if available)
+- Run `$CLAUDE_PLUGIN_ROOT/scripts/project-status.sh` for relevance tiers (when batch generating)
+
+**Market-brief:**
+- The market, all propositions targeting it, customer profile, all competitor analyses
+- Solutions and packages for propositions in this market
+
+**Workbook:**
+- Everything: products, features, markets, propositions, solutions, packages, competitors, customers
+
 **Repo-documentation:**
 - All `propositions/*.json` (for value framing and breadth indicators)
 - `markets/*.json` (for use-case derivation)
@@ -113,6 +151,10 @@ Read entity files from the project directory. Which entities to load depends on 
 
 Load the template file for the selected use case from the registry's `template` reference. For built-in use cases:
 - `customer-narrative` -> read `references/templates-customer-narrative.md`
+- `pitch` -> read `references/templates-pitch.md`
+- `proposal` -> read `references/templates-proposal.md`
+- `market-brief` -> read `references/templates-market-brief.md`
+- `workbook` -> no template; prepare structured data and delegate to `document-skills:xlsx` skill (fallback to CSV)
 - `repo-documentation` -> read `references/templates-repo-documentation.md`
 
 For custom use cases, generate section structure based on the use case's `voice`, `scopes`, and `audience` fields — no separate template file is needed.
@@ -189,6 +231,27 @@ For **customer-narrative**:
 - **Visual formats** (after narrative): `/story-to-web` for landing pages, `/story-to-slides` for presentations, `/story-to-big-picture` for visual journey maps
 - **Marketing content** (if cogni-marketing installed): "These customer narratives are automatically discovered by `/marketing-setup` and used as voice/messaging enrichment when generating marketing content — ensuring consistency between how you present your portfolio and how your marketing speaks to the same audience"
 
+For **pitch**:
+- **Score quality**: "Run `/narrative-review` to score against the arc's quality gates"
+- **Polish prose**: "Run `/copywrite` to polish for executive readability while preserving arc structure"
+- **Visual formats** (direct — no intermediate step needed):
+  - `/story-to-slides` → PowerPoint presentation
+  - `/story-to-web` → scrollable landing page
+  - `/story-to-big-picture` → illustrated visual journey map
+  - `/story-to-storyboard` → multi-poster print storyboard
+- **Deepen**: "Run `/why-change` to add web research, customer-specific context, and TIPS enrichment for a deal-ready version"
+
+For **proposal**:
+- **Polish prose**: "Run `/copywrite` to polish for buyer readability"
+- **Share**: "Customize per prospect and share with sales team"
+
+For **market-brief**:
+- **Polish prose**: "Run `/copywrite` to polish"
+- **Campaign planning**: "Distribute to marketing for campaign planning, or feed into `/content-strategy`"
+
+For **workbook**:
+- **Share**: "Share with leadership for portfolio review and analysis"
+
 For **repo-documentation**:
 - **Polish prose**: "Run `/copywrite` to polish for readability"
 - **Merge into README**: "Copy the sections you need from `output/communicate/repo-docs/readme-sections.md` into your project's README"
@@ -236,7 +299,7 @@ When the user selects "something else" or describes a purpose that doesn't match
 
 ## Important Notes
 
-- Output goes to `output/communicate/{use-case-id}/` — separate from synthesize (`output/README.md`) and export (`output/proposals/`, `output/briefs/`)
+- Output goes to `output/communicate/{use-case-id}/` — separate from synthesize (`output/README.md`)
 - Re-running overwrites previous output for that scope within the use case
 - Each generated file includes YAML frontmatter with `use_case` field
 - **Content Language**: Read `portfolio.json` `language` field. Generate content in that language if present, default to English
@@ -248,7 +311,10 @@ When the user selects "something else" or describes a purpose that doesn't match
 ### Reference Files
 
 - **`references/use-case-registry.md`** — Registry of available use cases with trigger phrases, voice profiles, scope options, and review configuration
-- **`references/templates-customer-narrative.md`** — Complete markdown templates for customer-facing narratives (overview, market, customer)
+- **`references/templates-customer-narrative.md`** — Templates for customer-facing narratives (overview, market, customer)
+- **`references/templates-pitch.md`** — Templates for arc-structured pitch narratives (cogni-narrative compatible)
+- **`references/templates-proposal.md`** — Templates for per-proposition sales proposals
+- **`references/templates-market-brief.md`** — Templates for per-market marketing briefs
 - **`references/templates-repo-documentation.md`** — Templates for developer-facing content (readme-enrichment, plugin-overview, use-case-gallery)
 
 ### Agents
