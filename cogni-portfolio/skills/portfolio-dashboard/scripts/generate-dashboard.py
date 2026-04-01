@@ -298,6 +298,84 @@ def market_sort_key(slug, markets_data):
 
 
 # ---------------------------------------------------------------------------
+# Communicate helpers — frontmatter parsing and preview extraction
+# ---------------------------------------------------------------------------
+
+# Use-case display order and human-readable labels
+UC_LABELS = {
+    "customer-narrative": "Customer Narratives",
+    "pitch": "Pitches",
+    "proposal": "Proposals",
+    "market-brief": "Market Briefs",
+    "repo-documentation": "Repository Documentation",
+    "workbook": "Workbooks",
+}
+UC_ORDER = list(UC_LABELS.keys())
+
+_FM_RE = re.compile(r'\A---\s*\n(.*?\n)---\s*\n', re.DOTALL)
+_FM_LINE_RE = re.compile(r'^(\w[\w_]*):\s*(.*)')
+
+
+def parse_yaml_frontmatter(text):
+    """Extract YAML frontmatter from markdown text (stdlib only, no PyYAML).
+
+    Returns (dict, body_text).  Handles flat key-value pairs and one level of
+    nesting (indented children like source_entities).
+    """
+    m = _FM_RE.match(text)
+    if not m:
+        return {}, text
+    block = m.group(1)
+    body = text[m.end():]
+    result = {}
+    current_key = None
+    for line in block.splitlines():
+        if not line.strip():
+            continue
+        # Indented child line (2+ spaces)
+        if line.startswith("  ") and current_key is not None:
+            child_m = _FM_LINE_RE.match(line.strip())
+            if child_m:
+                ck, cv = child_m.group(1), child_m.group(2).strip().strip('"').strip("'")
+                if not isinstance(result[current_key], dict):
+                    result[current_key] = {}
+                # Try to parse as int
+                try:
+                    cv = int(cv)
+                except (ValueError, TypeError):
+                    pass
+                result[current_key][ck] = cv
+            continue
+        kv = _FM_LINE_RE.match(line)
+        if kv:
+            key, val = kv.group(1), kv.group(2).strip().strip('"').strip("'")
+            current_key = key
+            try:
+                val = int(val)
+            except (ValueError, TypeError):
+                pass
+            result[key] = val
+        else:
+            current_key = None
+    return result, body
+
+
+_MD_STRIP_RE = re.compile(r'^#{1,6}\s+.*$|<!--.*?-->|\*{1,2}|_{1,2}|`{1,3}', re.MULTILINE)
+
+
+def extract_preview(body_text, max_chars=150):
+    """Return the first ~max_chars of prose from markdown body text."""
+    cleaned = _MD_STRIP_RE.sub('', body_text)
+    lines = [l.strip() for l in cleaned.splitlines() if l.strip()]
+    prose = ' '.join(lines)
+    if len(prose) <= max_chars:
+        return prose
+    # Truncate at last word boundary before max_chars
+    truncated = prose[:max_chars].rsplit(' ', 1)[0]
+    return truncated + '...'
+
+
+# ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 
@@ -334,30 +412,70 @@ def load_all_entities(project_dir):
     if os.path.isfile(claims_path):
         data["claims"] = load_json(claims_path)
 
-    # Load communicate output files and their review verdicts
+    # Load communicate output files with frontmatter, previews, and review verdicts
     communicate_dir = os.path.join(project_dir, "output", "communicate")
     communicate_files = []
     if os.path.isdir(communicate_dir):
         for root, _dirs, files in os.walk(communicate_dir):
             for fname in sorted(files):
-                if fname.endswith(".md") and not fname.endswith(".review.md"):
-                    fp = os.path.join(root, fname)
-                    rel = os.path.relpath(fp, project_dir)
+                is_md = fname.endswith(".md") and not fname.endswith(".review.md")
+                is_xlsx = fname.endswith(".xlsx")
+                if not (is_md or is_xlsx):
+                    continue
+                fp = os.path.join(root, fname)
+                rel = os.path.relpath(fp, project_dir)
+                # Derive use case from first directory segment under communicate/
+                rel_from_comm = os.path.relpath(fp, communicate_dir)
+                parts = rel_from_comm.replace("\\", "/").split("/")
+                use_case = parts[0] if len(parts) > 1 else "other"
+                # Level from path pattern (backward compat)
+                if "/customer/" in ("/" + rel):
+                    level = "customer"
+                elif "/market/" in ("/" + rel):
+                    level = "market"
+                else:
+                    level = "overview"
+                entry = {
+                    "path": rel,
+                    "name": fname.rsplit(".", 1)[0],
+                    "use_case": use_case,
+                    "level": level,
+                    "scope": level,
+                    "title": None,
+                    "date_created": None,
+                    "source_entities": None,
+                    "arc_id": None,
+                    "preview": None,
+                    "review": None,
+                    "is_xlsx": is_xlsx,
+                    "file_size": None,
+                }
+                if is_xlsx:
+                    try:
+                        entry["file_size"] = os.path.getsize(fp)
+                    except OSError:
+                        pass
+                if is_md:
+                    try:
+                        with open(fp, encoding="utf-8", errors="replace") as fh:
+                            content = fh.read()
+                        fm, body = parse_yaml_frontmatter(content)
+                        entry["title"] = fm.get("title")
+                        entry["date_created"] = fm.get("date_created", "")
+                        if isinstance(entry["date_created"], str):
+                            entry["date_created"] = entry["date_created"][:10]  # keep date only
+                        entry["source_entities"] = fm.get("source_entities")
+                        entry["arc_id"] = fm.get("arc_id")
+                        if fm.get("scope"):
+                            entry["scope"] = fm["scope"]
+                            entry["level"] = fm["scope"]
+                        entry["preview"] = extract_preview(body)
+                    except Exception:
+                        pass
                     review_path = fp.rsplit(".", 1)[0] + ".review.json"
-                    review = load_json(review_path) if os.path.isfile(review_path) else None
-                    # Determine level from path
-                    if "customer/" in rel:
-                        level = "customer"
-                    elif "market/" in rel:
-                        level = "market"
-                    else:
-                        level = "overview"
-                    communicate_files.append({
-                        "path": rel,
-                        "name": fname.replace(".md", ""),
-                        "level": level,
-                        "review": review,
-                    })
+                    if os.path.isfile(review_path):
+                        entry["review"] = load_json(review_path)
+                communicate_files.append(entry)
     data["communicate"] = communicate_files
 
     # Load TIPS data (portfolio-anchored STs and opportunities)
@@ -473,6 +591,94 @@ def format_currency(value, currency="EUR"):
     if value >= 1_000:
         return f"{currency} {value / 1_000:.0f}K"
     return f"{currency} {value:,.0f}"
+
+
+# ---------------------------------------------------------------------------
+# Communicate card renderer
+# ---------------------------------------------------------------------------
+
+def _render_communicate_card(cf, level_labels):
+    """Render a single communicate file card as HTML."""
+    name = escape_html(cf.get("title") or cf["name"])
+    level = cf.get("scope", cf.get("level", "overview"))
+    level_label = level_labels.get(level, level.title())
+    is_xlsx = cf.get("is_xlsx", False)
+
+    # Scope chip colors
+    level_chip_bg = "rgba(46,125,50,0.1)" if level == "overview" else ("rgba(21,101,192,0.1)" if level == "market" else "rgba(156,39,176,0.1)")
+    level_chip_color = "var(--green)" if level == "overview" else ("#1565C0" if level == "market" else "#9C27B0")
+
+    card = f'    <div class="entity-card">\n'
+    # Title row with scope chip
+    card += f'      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">\n'
+    card += f'        <div style="font-weight:600">{name}</div>\n'
+    chips = f'<span style="padding:2px 8px;border-radius:6px;font-size:11px;background:{level_chip_bg};color:{level_chip_color}">{level_label}</span>'
+    if cf.get("arc_id"):
+        chips += f' <span class="arc-chip">{escape_html(cf["arc_id"])}</span>'
+    if is_xlsx:
+        size_str = ""
+        if cf.get("file_size"):
+            kb = cf["file_size"] / 1024
+            size_str = f" ({kb:.0f} KB)" if kb < 1024 else f" ({kb/1024:.1f} MB)"
+        chips += f' <span class="xlsx-badge">XLSX{size_str}</span>'
+    card += f'        <div style="display:flex;gap:4px;align-items:center">{chips}</div>\n'
+    card += f'      </div>\n'
+
+    # Metadata row: date + source entities
+    meta_parts = []
+    if cf.get("date_created"):
+        meta_parts.append(escape_html(str(cf["date_created"])))
+    se = cf.get("source_entities")
+    if se and isinstance(se, dict):
+        entity_parts = []
+        for ek in ["products", "features", "propositions", "solutions", "packages"]:
+            ev = se.get(ek)
+            if ev and isinstance(ev, int) and ev > 0:
+                entity_parts.append(f"{ev} {ek}")
+        if entity_parts:
+            meta_parts.append(", ".join(entity_parts))
+    if meta_parts:
+        sep = ' <span class="sep">|</span> '
+        card += f'      <div class="comm-meta">{sep.join(meta_parts)}</div>\n'
+
+    # Content preview
+    if cf.get("preview"):
+        card += f'      <div class="comm-preview">{escape_html(cf["preview"])}</div>\n'
+
+    # Review verdict + perspectives (same logic as before)
+    review = cf.get("review")
+    if review:
+        verdict = review.get("final_verdict", "pending")
+        score = review.get("final_score", 0)
+        v_color = "var(--green)" if verdict == "accept" else ("var(--yellow)" if verdict == "revise" else "var(--red)")
+        verdict_html = f'<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;color:{v_color};background:rgba(0,0,0,0.05)">{verdict.title()} ({score})</span>'
+        rounds = review.get("rounds", [])
+        perspective_html = ""
+        if rounds:
+            latest = rounds[-1]
+            fa = latest.get("full_assessment", {})
+            perspectives = fa.get("perspectives", [])
+            if not perspectives:
+                for pkey in ["target_buyer", "marketing_director", "sales_director"]:
+                    p = fa.get(pkey)
+                    if p:
+                        perspectives.append(p)
+            if perspectives:
+                perspective_html = '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
+                for p in perspectives:
+                    pname = escape_html(p.get("perspective", p.get("name", "?")))
+                    pscore = p.get("score", 0)
+                    pc = "var(--green)" if pscore >= 85 else ("var(--yellow)" if pscore >= 70 else "var(--red)")
+                    perspective_html += f'<span style="font-size:11px;color:{pc}">{pname}: {pscore}</span>'
+                perspective_html += '</div>'
+        card += f'      <div style="margin-top:6px">{verdict_html}</div>\n'
+        if perspective_html:
+            card += f'      {perspective_html}\n'
+    elif not is_xlsx:
+        card += '      <div style="margin-top:6px"><span style="font-size:11px;color:var(--text2)">No review</span></div>\n'
+
+    card += '    </div>\n'
+    return card
 
 
 # ---------------------------------------------------------------------------
@@ -1394,6 +1600,97 @@ body::after {{
   margin-bottom: 4px;
 }}
 
+/* Communicate section */
+.comm-summary {{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  align-items: center;
+}}
+.comm-summary-chip {{
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(21,101,192,0.08);
+  color: var(--info);
+  font-weight: 500;
+}}
+.comm-summary-chip.coverage-full {{ background: rgba(46,125,50,0.1); color: var(--green); }}
+.comm-summary-chip.coverage-partial {{ background: rgba(229,161,0,0.1); color: var(--yellow); }}
+.comm-summary-chip.coverage-none {{ background: rgba(211,47,47,0.08); color: var(--red); }}
+.comm-group {{
+  margin-bottom: 22px;
+}}
+.comm-group-header {{
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text2);
+  margin-bottom: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}}
+.comm-group-header .count-badge {{
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}}
+.comm-preview {{
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.4;
+  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}}
+.comm-meta {{
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}}
+.comm-meta .sep {{ opacity: 0.3; }}
+.arc-chip {{
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(200,230,46,0.15);
+  color: var(--accent-dark);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}}
+.xlsx-badge {{
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: rgba(21,101,192,0.1);
+  color: var(--info);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}}
+
 /* Theme badge */
 .theme-badge {{
   display: inline-flex;
@@ -1838,7 +2135,7 @@ body::after {{
   <a href="#" data-section="Packages">Packages</a>
   <a href="#" data-section="Margin">Margins</a>
   {'<a href="#" data-section="Innovation">Pipeline</a>' if opportunities_data else ''}
-  {'<a href="#" data-section="Communicate">Docs</a>' if communicate_files else ''}
+  {'<a href="#" data-section="Communicate">Communicate</a>' if communicate_files else ''}
   <a href="#" data-section="Claims">Claims</a>
   <a href="#" data-section="Next">Actions</a>
 </nav>
@@ -2757,62 +3054,83 @@ body::after {{
 """
         html += "  </div>\n</div>\n"
 
-    # --- Customer-Facing Documentation ---
+    # --- Customer-Facing Documentation (Communicate) ---
     if communicate_files:
         level_labels = {"overview": "Overview", "market": "Market", "customer": "Customer"}
+
+        # Group files by use case
+        uc_groups = {}
+        for cf in communicate_files:
+            uc = cf.get("use_case", "other")
+            uc_groups.setdefault(uc, []).append(cf)
+
+        # Build coverage stats against markets and propositions
+        total_markets = len(data.get("markets", {}))
+        total_propositions = len(data.get("propositions", {}))
+        coverage = {}
+        # Track which markets/propositions have files per use case
+        for uc, files in uc_groups.items():
+            market_slugs = set()
+            prop_slugs = set()
+            for cf in files:
+                fname = cf["name"]
+                if uc == "proposal":
+                    # Proposals use {feature}--{market} naming
+                    if "--" in fname:
+                        prop_slugs.add(fname)
+                elif cf.get("level") == "market" or cf.get("scope") == "market":
+                    market_slugs.add(fname)
+            if uc in ("customer-narrative", "pitch", "market-brief") and total_markets > 0:
+                coverage[uc] = {"have": len(market_slugs), "total": total_markets, "unit": "markets"}
+            elif uc == "proposal" and total_propositions > 0:
+                coverage[uc] = {"have": len(prop_slugs), "total": total_propositions, "unit": "propositions"}
+
         html += """
 <!-- Customer-Facing Documentation -->
 <div class="section reveal" data-section="Communicate">
-  <div class="section-title">Customer-Facing Documentation</div>
-  <div class="card-grid">
+  <div class="section-title">Portfolio Communications</div>
 """
-        for cf in communicate_files:
-            name = escape_html(cf["name"])
-            level = cf["level"]
-            level_label = level_labels.get(level, level.title())
-            review = cf.get("review")
-            if review:
-                verdict = review.get("final_verdict", "pending")
-                score = review.get("final_score", 0)
-                v_color = "var(--green)" if verdict == "accept" else ("var(--yellow)" if verdict == "revise" else "var(--red)")
-                verdict_html = f'<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;color:{v_color};background:rgba(0,0,0,0.05)">{verdict.title()} ({score})</span>'
-                # Extract per-perspective scores from latest round
-                rounds = review.get("rounds", [])
-                perspective_html = ""
-                if rounds:
-                    latest = rounds[-1]
-                    fa = latest.get("full_assessment", {})
-                    perspectives = fa.get("perspectives", [])
-                    if not perspectives:
-                        # Try alternate structure
-                        for pkey in ["target_buyer", "marketing_director", "sales_director"]:
-                            p = fa.get(pkey)
-                            if p:
-                                perspectives.append(p)
-                    if perspectives:
-                        perspective_html = '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
-                        for p in perspectives:
-                            pname = escape_html(p.get("perspective", p.get("name", "?")))
-                            pscore = p.get("score", 0)
-                            pc = "var(--green)" if pscore >= 85 else ("var(--yellow)" if pscore >= 70 else "var(--red)")
-                            perspective_html += f'<span style="font-size:11px;color:{pc}">{pname}: {pscore}</span>'
-                        perspective_html += '</div>'
-            else:
-                verdict_html = '<span style="font-size:11px;color:var(--text2)">No review</span>'
-                perspective_html = ""
-            level_chip_bg = "rgba(46,125,50,0.1)" if level == "overview" else ("rgba(21,101,192,0.1)" if level == "market" else "rgba(156,39,176,0.1)")
-            level_chip_color = "var(--green)" if level == "overview" else ("#1565C0" if level == "market" else "#9C27B0")
-            html += f"""    <div class="entity-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-weight:600">{name}</div>
-        <span style="padding:2px 8px;border-radius:6px;font-size:11px;background:{level_chip_bg};color:{level_chip_color}">{level_label}</span>
-      </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:4px">{escape_html(cf["path"])}</div>
-      <div style="margin-top:6px">{verdict_html}</div>
-      {perspective_html}
-    </div>
-"""
-        html += "  </div>\n</div>\n"
+        # Coverage summary bar
+        total_files = len(communicate_files)
+        total_ucs = len(uc_groups)
+        html += f'  <div class="comm-summary">\n'
+        html += f'    <span class="comm-summary-chip">{total_ucs} use case{"s" if total_ucs != 1 else ""}</span>\n'
+        html += f'    <span class="comm-summary-chip">{total_files} file{"s" if total_files != 1 else ""}</span>\n'
+        for uc_id, cov in coverage.items():
+            uc_label = UC_LABELS.get(uc_id, uc_id.replace("-", " ").title())
+            pct = cov["have"] / cov["total"] if cov["total"] else 0
+            css_cls = "coverage-full" if pct >= 1.0 else ("coverage-partial" if pct > 0 else "coverage-none")
+            html += f'    <span class="comm-summary-chip {css_cls}">{uc_label}: {cov["have"]}/{cov["total"]} {cov["unit"]}</span>\n'
+        html += '  </div>\n'
+
+        # Render each use-case group in defined order, then any remaining
+        rendered_ucs = set()
+        for uc_id in UC_ORDER:
+            if uc_id not in uc_groups:
+                continue
+            rendered_ucs.add(uc_id)
+            uc_label = UC_LABELS.get(uc_id, uc_id.replace("-", " ").title())
+            group_files = uc_groups[uc_id]
+            html += f'  <div class="comm-group">\n'
+            html += f'    <div class="comm-group-header">{uc_label}<span class="count-badge">{len(group_files)}</span></div>\n'
+            html += '    <div class="card-grid">\n'
+            for cf in group_files:
+                html += _render_communicate_card(cf, level_labels)
+            html += '    </div>\n  </div>\n'
+
+        # Render any unknown use cases under "Other"
+        other_ucs = [uc for uc in uc_groups if uc not in rendered_ucs]
+        for uc_id in sorted(other_ucs):
+            uc_label = uc_id.replace("-", " ").title()
+            group_files = uc_groups[uc_id]
+            html += f'  <div class="comm-group">\n'
+            html += f'    <div class="comm-group-header">{escape_html(uc_label)}<span class="count-badge">{len(group_files)}</span></div>\n'
+            html += '    <div class="card-grid">\n'
+            for cf in group_files:
+                html += _render_communicate_card(cf, level_labels)
+            html += '    </div>\n  </div>\n'
+
+        html += "</div>\n"
 
     # --- Claims Status ---
     claims_total = claims_status.get("total", 0)
