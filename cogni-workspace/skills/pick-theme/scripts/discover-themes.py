@@ -9,6 +9,7 @@ Outputs a JSON array of theme objects sorted by modification time (newest first)
 Skips the _template directory. Deduplicates by slug (workspace overrides standard).
 """
 
+import argparse
 import json
 import os
 import re
@@ -90,8 +91,14 @@ def scan_themes_dir(themes_dir, source_label):
 
 
 def main():
-    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
-    workspace_root = os.environ.get("COGNI_WORKSPACE_ROOT", "")
+    parser = argparse.ArgumentParser(description="Discover available themes.")
+    parser.add_argument("--workspace-root", default="", help="Override COGNI_WORKSPACE_ROOT")
+    parser.add_argument("--plugin-root", default="", help="Override CLAUDE_PLUGIN_ROOT")
+    parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
+    args = parser.parse_args()
+
+    plugin_root = args.plugin_root or os.environ.get("CLAUDE_PLUGIN_ROOT", "")
+    workspace_root = args.workspace_root or os.environ.get("COGNI_WORKSPACE_ROOT", "")
 
     # 1. Standard themes (from the plugin itself)
     standard_dir = os.path.join(plugin_root, "themes") if plugin_root else ""
@@ -99,6 +106,9 @@ def main():
 
     # 2. Workspace themes (user-created)
     workspace_dir = os.path.join(workspace_root, "themes") if workspace_root else ""
+    if workspace_root and not os.path.isdir(workspace_dir):
+        print(f"WARNING: workspace themes dir not found: {workspace_dir}", file=sys.stderr)
+        print(f"HINT: COGNI_WORKSPACE_ROOT may be stale. Run /manage-workspace to regenerate.", file=sys.stderr)
     workspace_themes = scan_themes_dir(workspace_dir, "workspace")
 
     # Merge: workspace themes override standard themes with same slug,
@@ -111,7 +121,7 @@ def main():
         key=lambda t: (t["source"] != "workspace", -t.get("mtime", 0), t["name"].lower()),
     )
 
-    if "--pretty" in sys.argv:
+    if args.pretty:
         print(json.dumps(result, indent=2, ensure_ascii=False))
     else:
         print(json.dumps(result, ensure_ascii=False))

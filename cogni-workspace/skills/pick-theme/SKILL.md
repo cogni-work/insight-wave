@@ -146,6 +146,19 @@ The picker can be skipped when:
 
 In these cases, just validate the provided path and proceed.
 
+## Stale Path Detection
+
+After running the discovery script, if the result is empty **and** `COGNI_WORKSPACE_ROOT` is set:
+1. Check if the `COGNI_WORKSPACE_ROOT` directory actually exists on disk
+2. If it doesn't exist, warn the user: "Workspace paths in settings.local.json appear stale (pointing to a previous session). Run `/manage-workspace` in update mode to regenerate paths."
+3. The script prints `WARNING` lines to stderr when it detects this — check stderr output
+
+You can also pass the workspace root explicitly via CLI to bypass stale env vars:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/skills/pick-theme/scripts/discover-themes.py" --workspace-root "$COGNI_WORKSPACE_ROOT"
+```
+
 ## Fallback Behavior
 
 If no themes are found at all (neither standard nor workspace):
@@ -153,6 +166,8 @@ If no themes are found at all (neither standard nor workspace):
 2. If continuing without a theme, return an empty path — the downstream skill should use its own hardcoded fallback
 
 If the discovery script fails (missing python3, permission issues):
-1. Fall back to manual Glob scanning: `*/theme.md` in both directories
+1. Fall back to manual Glob scanning with the `path` parameter set to the base directory:
+   - Standard themes: pattern `*/theme.md`, path `$CLAUDE_PLUGIN_ROOT/themes`
+   - Workspace themes: pattern `*/theme.md`, path `$COGNI_WORKSPACE_ROOT/themes`
 2. Parse theme names from H1 lines
 3. Present via AskUserQuestion as usual
