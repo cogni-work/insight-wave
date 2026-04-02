@@ -1290,6 +1290,30 @@ def generate_css(dv, transition="fade", aspect_ratio="16:9"):
   .notes-panel.visible {{
     transform: translateY(0);
   }}
+  .notes-close {{
+    position: sticky;
+    top: 0;
+    float: right;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-light);
+    font-size: 1.2rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 10;
+    margin-bottom: -32px;
+  }}
+  .notes-close:hover {{
+    background: var(--accent);
+    color: var(--primary);
+    border-color: var(--accent);
+  }}
   .notes-panel .notes-section {{
     font-family: var(--font-headers);
     font-size: 0.8rem;
@@ -1409,7 +1433,7 @@ def generate_css(dv, transition="fade", aspect_ratio="16:9"):
       display: flex !important;
     }}
     .slide-content {{ width: 100%; height: auto; }}
-    .nav-controls, .progress-bar, .help-overlay {{ display: none !important; }}
+    .nav-controls, .progress-bar, .help-overlay, .notes-close {{ display: none !important; }}
     .notes-panel {{
       position: static !important;
       transform: none !important;
@@ -1689,6 +1713,7 @@ def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", langua
 
   <!-- Speaker Notes Panel -->
   <div class="notes-panel">
+    <button class="notes-close" onclick="document.dispatchEvent(new KeyboardEvent('keydown',{{key:'s'}}))" title="Close notes (S / Esc)">&times;</button>
     <div class="notes-content"></div>
   </div>
 

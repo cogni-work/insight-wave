@@ -78,7 +78,8 @@ Invoke the render-html-slides skill with parameters:
   "slides_count": 0,
   "format": "html",
   "file_size_kb": 0,
-  "theme": "{theme_name}"
+  "theme": "{theme_name}",
+  "refinement_rounds": 0
 }
 ```
 
