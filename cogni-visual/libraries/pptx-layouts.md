@@ -155,7 +155,7 @@ When `Number` is absent and `Bullets` is present, each quadrant renders as a tex
 - **Accent bar**: 4px height, full card width, primary or accent color (Champion card uses theme accent)
 - **Label**: 14pt, bold, muted color — role or category name
 - **Sublabel**: 14pt, normal, body color — person title or description
-- **Bullets**: 9pt, normal, body color — 3-4 key messages (first bullet often formatted as "Lead with: {approach}")
+- **Bullets**: 9pt, normal, body color — 3-4 key messages, max 10 words each. Think McKinsey slide bullet — a phrase the audience scans in one glance, not a sentence they read. Longer bullets wrap to illegibility at 9pt in 4.2" width. First bullet often formatted as "Lead with: {approach}"
 
 ### Required Content
 
@@ -341,7 +341,7 @@ Three vertical progression boxes showing IS → DOES → MEANS capability struct
 
 Each box contains:
 - **Layer Label**: "IS" / "DOES" / "MEANS" (12pt, badge)
-- **Content**: 14pt text, 1-2 sentences
+- **Content**: 14pt text. Each box fits ONE line (~15-20 words) at 12pt in 0.9" height. Write like a billboard line or conference badge tagline — phrase notation, NOT full sentences. Full sentences force font shrinking to illegibility.
 - **Separator**: Subtle divider line
 
 ### Label Localization

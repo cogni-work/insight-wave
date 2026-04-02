@@ -900,7 +900,8 @@ Hero-Stat-Box:
 
 Context-Box:
   Headline: [WHY headline — "Why [thing] fails/matters/works"]
-  Bullets:  [3-5 consolidated points, 8-10 words each]
+  Bullets:  [3-5 points, MAX 10 words each — dashboard KPI labels, not explanations.
+             The presenter adds context aloud; the slide shows the anchor. FAIL at validation if >10 words.]
 
 Bottom-Banner:
   Text: [Impact statement — NOT source attribution]
@@ -923,7 +924,7 @@ Bottom-Banner:
   Text: [Summary comparison — "X delivers [improvement] vs. Y"]
 ```
 
-### four-quadrants
+### four-quadrants (stat-card mode)
 
 ```text
 Each Quadrant:
@@ -936,23 +937,37 @@ Keep all quadrants consistent:
   - OR same meaning level (all representing different crisis areas)
 ```
 
+### four-quadrants (text-card mode)
+
+```text
+Each Quadrant:
+  Label:    [Role or category — 2-4 words]
+  Sublabel: [Title or description — 3-6 words, like a LinkedIn headline]
+  Bullets:  [3-4 items, MAX 10 words each — McKinsey slide bullets: a phrase
+             the audience scans in one glance while the presenter talks.
+             NOT sentences. At 9pt in a 4.2" card, sentences wrap and die.]
+```
+
 ### is-does-means
 
 ```text
 IS-Box:
-  Text: [What the solution IS — positioning statement, 1-2 sentences]
-  RULE: Foundation layer. Keep factual and specific.
+  Label: IS  # or IST for German
+  Text: [~15 words — think conference badge tagline: "A [solution type] for [target]".
+         NOT a sentence. NOT an explanation. Just what it IS in a single breath.]
 
 DOES-Box:
-  Text: [What it DOES — capabilities with quantified outcomes]
-  RULE: This is where number plays go. "Reduces X by Y%"
+  Label: DOES  # or MACHT for German
+  Text: [~20 words — think McKinsey "so what" bullet: action + strongest metric in `+` notation.
+         ONE outcome the buyer remembers. Move the rest to speaker notes.]
 
 MEANS-Box:
-  Text: [HOW it works — technology/methodology proof]
-  RULE: Technical credibility layer. Specifics, not buzzwords.
+  Label: MEANS  # or BEDEUTET for German
+  Text: [~15 words — think résumé skills line: "Item + Item + Item".
+         Stack notation only. No conjunctions, no verbs, no "because..."]
 
 Bottom-Banner:
-  Text: [Proof statement — strongest evidence point]
+  Text: [≤12 words — the ONE proof point that earns a nod. Billboard brevity.]
 ```
 
 ### timeline-steps
@@ -979,7 +994,7 @@ RULE: Max 4-6 steps on one slide.
 | Bullets > 12 words | Not scannable | Trim to 8-10 words |
 | Hedging language | Weakens the claim | Remove: "can", "may", "potentially" |
 | Two hero numbers | Dilutes impact | Pick one, move other to sublabel |
-| Paragraph in a slide field | Wrong medium | Break into bullets or trim to 1-2 sentences |
+| Paragraph in a slide field | Wrong medium | Break into bullets (≤10 words each) or compress to phrase notation. Move detail to speaker notes |
 | "Overview" or "Summary" as title | Wasted headline | Replace with the actual conclusion |
 | Same layout 3+ times in a row | Visual monotony | Vary layouts to maintain interest |
 

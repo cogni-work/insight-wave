@@ -198,17 +198,25 @@ REASON through copywriting quality for each slide:
      → FAIL if: bullets >5 per field or clearly too long to scan in one glance
      → FIX: Merge similar bullets, cut weakest, tighten wording
 
-  2b. CHECK IS/DOES/MEANS box text density (is-does-means slides only)
-     → Each box renders at 0.9 inches tall at 12pt font — room for roughly one line
-       of text (~15-20 words). Paragraph-length sentences will overflow or force the
-       renderer to shrink the font to illegibility.
-     → IS-Box Text: ~15 words? Single positioning noun phrase (not a full sentence)?
-     → DOES-Box Text: ~20 words? Action phrase or `+` notation with at least one metric?
-     → MEANS-Box Text: ~15 words? Tech/credential stack notation (no explanatory sentences)?
-     → FAIL if: any box contains paragraph-length sentences that would overflow the 0.9" box
-     → FIX: Apply IS/DOES/MEANS Box Copywriting rules from 05a-slide-copywriting.md —
-       compress to phrase notation, move explanatory context to speaker notes,
-       move the single strongest cut metric to Bottom-Banner
+  2b. CHECK layout-specific word density (HARD GATES — count the words)
+     → is-does-means slides:
+       IS-Box Text: COUNT words. FAIL if >15. Must read like a conference badge tagline (noun phrase, no period).
+       DOES-Box Text: COUNT words. FAIL if >20. Must read like a McKinsey "so what" bullet (`+` notation or action phrase with metric).
+       MEANS-Box Text: COUNT words. FAIL if >15. Must read like a résumé skills line (stack notation, no conjunctions).
+     → stat-card-with-context slides:
+       Context-Box Bullets: COUNT words per bullet. FAIL if any >10. Must read like dashboard KPI labels.
+     → four-quadrants (text-card) slides:
+       Bullets: COUNT words per bullet. FAIL if any >10. McKinsey slide bullet density.
+     → two-columns-equal slides:
+       Column Bullets: COUNT words per bullet. FAIL if any >10.
+     → ALL layouts:
+       Bottom-Banner Text: COUNT words. FAIL if >12. Billboard tagline brevity.
+     → WHY these limits: each box/bullet has a physical size (0.9" for IDM, 4.2×1.5" for quadrants).
+       At presentation font sizes, exceeding the word budget forces font shrinking to illegibility.
+       The audience has ~3 seconds per slide — full sentences create a read-along competition
+       where the presenter loses the room.
+     → FIX: Compress using 05a-slide-copywriting.md techniques. Move overflow content to
+       Speaker-Notes "WHAT YOU NEED TO KNOW" section — the detail is preserved, not deleted.
 
   3. CHECK for hedging language
      → Scan for: "might", "could", "potentially", "somewhat", "relatively",
@@ -420,7 +428,12 @@ Before marking Step 8 complete, verify ALL items. Mark each ✅ or ❌:
 
 ### Layer 3: Copywriting Quality
 - [ ] Number plays applied to statistics
-- [ ] Bullets ≤5 per field, ~8-10 words each (scannable in one glance)
+- [ ] Bullets ≤5 per field, ≤10 words each (scannable in one glance)
+- [ ] IS-Box ≤15 words (badge tagline), DOES-Box ≤20 words (McKinsey bullet + metric), MEANS-Box ≤15 words (skills stack)
+- [ ] Context-Box bullets ≤10 words each (KPI label density)
+- [ ] Four-quadrant text-card bullets ≤10 words each
+- [ ] All column bullets ≤10 words each (two-columns-equal)
+- [ ] Bottom-Banner ≤12 words on all layouts (billboard brevity)
 - [ ] No hedging language in headlines or bullets
 - [ ] All headlines ≤~100 chars (~130 for IS-DOES-MEANS) — specific + complete action titles
 - [ ] Speaker notes present with both sections on all content slides (200-400 words each)

@@ -34,6 +34,8 @@ Two-layer intelligence:
 
 The brief describes WHAT each slide says and which layout to use. The PPTX renderer owns all visual decisions (colors, fonts, spacing) by reading the theme directly — briefs contain no color fields.
 
+**Density principle:** Slides carry the anchor; speaker notes carry the detail. A McKinsey partner's slide has one assertion headline and 3-5 scannable phrases — the partner delivers the depth from memory. Same principle here: when content exceeds a layout's physical capacity, the excess moves to speaker notes. Never force-fit paragraphs on-slide.
+
 ## Parameters
 
 | Parameter | Default | Description |
@@ -302,6 +304,30 @@ Map each slide to best layout from `pptx-layouts.md`. Mandatory rules apply firs
 
 ---
 
+### Step 7.5: Density Pass — Compress to Layout Limits
+
+> Steps 5-6 optimized for message clarity. Now that layouts are assigned, compress each slide's copy to fit its layout's physical box dimensions. Speaker notes absorb the overflow. Think of this step as the difference between a draft memo and a billboard campaign — same message, radically different word budget.
+
+Apply the layout density budget (HARD LIMITS):
+
+| Layout | Field | Max Words | Think of it as... |
+|--------|-------|-----------|-------------------|
+| is-does-means | IS-Box | 15 | Conference badge tagline |
+| is-does-means | DOES-Box | 20 | McKinsey "so what" bullet |
+| is-does-means | MEANS-Box | 15 | Résumé skills line |
+| stat-card | Context-Box Bullets (each) | 10 | Dashboard KPI label |
+| four-quadrants | Bullets (each) | 10 | McKinsey slide bullet |
+| two-columns-equal | Bullets (each) | 10 | McKinsey slide bullet |
+| ALL | Bottom-Banner | 12 | Billboard tagline |
+
+Content exceeding the budget moves to speaker notes (Step 8.2 incorporates it) — it is preserved, not deleted. The slide carries the anchor; the presenter delivers the detail.
+
+**Why this works:** The audience scans each slide in ~3 seconds before the presenter speaks. A 40-word IS-box becomes a reading competition — they read instead of listen, and the presenter loses the room. A 15-word phrase lets the audience absorb the anchor and look up, ready for the presenter's elaboration. The detail lives in speaker notes, not lost.
+
+Content checkpoint: State slides compressed count, total words moved to notes.
+
+---
+
 ### Step 8: Generate YAML Slide Specifications
 
 > The YAML specification is the contract between this skill and the PPTX renderer. Every field must contain final, copy-paste-ready text because the renderer reproduces it exactly — no interpretation, no cleanup.
@@ -311,6 +337,8 @@ Map each slide to best layout from `pptx-layouts.md`. Mandatory rules apply firs
 **Read reference:** `references/07-output-template.md` (Slide YAML Example section)
 
 For each slide, generate content-only YAML following `pptx-layouts.md` field names. Omit all visual fields — the renderer reads the theme. Every slide heading is an assertion headline.
+
+**Density enforcement (Step 7.5):** IS/DOES/MEANS boxes: billboard-line brevity (15/20/15 words max, phrase notation only). All bullets: McKinsey slide bullet density (max 10 words, phrase not sentence). No full sentences in any box or bullet field.
 
 ---
 
