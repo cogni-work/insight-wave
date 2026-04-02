@@ -352,14 +352,18 @@ Generate from citation renumber map (Step 2). Position after closing-slide as la
 
 ---
 
-#### Step 8.2: Generate Internal Prep Slides and Speaker-Notes (Delegated)
+#### Step 8.2: Enrich and Write Complete Brief (Delegated)
 
-> Speaker notes transform a deck from a document into a performance tool. Prep slides give the presenter strategic context before entering the room. This step is delegated to the `slides-enrichment-artist` worker agent, which loads its own heavy references (1,374 lines) in a separate context — keeping the orchestrator's context lean for validation in Step 9.
+> Speaker notes transform a deck from a document into a performance tool. Prep slides give the presenter strategic context before entering the room. The `slides-enrichment-artist` agent loads its own heavy references (1,647 lines) in a separate context, generates prep slides and speaker notes, and **writes the complete presentation-brief.md directly** — eliminating the token-heavy JSON round-trip and the integration step that can stall the orchestrator.
 
 **Prepare the enrichment prompt** with these fields from previous steps:
 
 | Field | Source |
 |-------|--------|
+| `OUTPUT_PATH` | Resolved output path (from parameters or default `{source_dir}/cogni-visual/presentation-brief.md`) |
+| `OUTPUT_TEMPLATE_PATH` | `$CLAUDE_PLUGIN_ROOT/skills/story-to-slides/references/07-output-template.md` |
+| `FRONTMATTER` | All YAML frontmatter fields: type, version (4.0), theme, theme_path, customer, provider, language, generated, arc_type, arc_id, governing_thought, confidence_score, transformation_notes |
+| `TITLE` / `SUBTITLE` | From Step 2 or parameters |
 | `SLIDE_SPECS` | All slide YAML specs from Steps 8 + 8.1 (the complete deck so far) |
 | `AUDIENCE_MODEL` | From Step 3 — mode (Rich/Lean), decision-maker, priorities, objections, champion, blockers |
 | `ARC_ANALYSIS` | From Step 4 — arc_type, governing_thought, section_roles, arc phases |
@@ -367,6 +371,12 @@ Generate from citation renumber map (Step 2). Position after closing-slide as la
 | `ARC_ID` | If set |
 | `ARC_DEFINITION_PATH` | If set (element names for methodology slide phase labels) |
 | `BUYER_APPENDIX_PATH` | If set (enriched Q&A prep) |
+| `CTA_SUMMARY` | From Step 6.1 (or "none") |
+| `GENERATION_METADATA_STATS` | Raw stats: number_plays, headlines_optimized, bullets_consolidated, source_links, layout_distribution, avg_confidence, manual_review |
+
+**Resolve output path** before launching (run via Bash):
+- If `output_path` explicit: `mkdir -p "$(dirname "${output_path}")"`
+- Otherwise: set `output_path = {source_dir}/cogni-visual/presentation-brief.md` and `mkdir -p "{source_dir}/cogni-visual"`
 
 **Launch the `slides-enrichment-artist` agent:**
 
@@ -374,6 +384,31 @@ Generate from citation renumber map (Step 2). Position after closing-slide as la
 Agent tool:
   subagent_type: "cogni-visual:slides-enrichment-artist"
   prompt: |
+    OUTPUT_PATH: {resolved_output_path}
+    OUTPUT_TEMPLATE_PATH: $CLAUDE_PLUGIN_ROOT/skills/story-to-slides/references/07-output-template.md
+
+    FRONTMATTER:
+      type: presentation-brief
+      version: "4.0"
+      theme: {theme_id}
+      theme_path: "{theme_path}"
+      customer: "{customer_name}"
+      provider: "{provider_name}"
+      language: "{language}"
+      generated: "{date}"
+      arc_type: "{arc_type}"
+      arc_id: "{arc_id}"
+      governing_thought: "{governing_thought}"
+      confidence_score: {avg_confidence}
+      transformation_notes: |
+        Story-to-slides transformation.
+        Theme: {theme_id}. Arc: {arc_type}.
+        {N} slides, {avg}% avg confidence.
+        {number_plays} number plays, {headlines_optimized} headlines optimized.
+
+    TITLE: {title}
+    SUBTITLE: {subtitle}
+
     SLIDE_SPECS:
     {all slide YAML from Steps 8 + 8.1}
 
@@ -387,20 +422,23 @@ Agent tool:
     ARC_ID: {arc_id or "none"}
     ARC_DEFINITION_PATH: {path or "none"}
     BUYER_APPENDIX_PATH: {path or "none"}
+
+    CTA_SUMMARY:
+    {cta_summary from Step 6.1 or "none"}
+
+    GENERATION_METADATA_STATS:
+      number_plays: {count}
+      headlines_optimized: {count}
+      bullets_consolidated: {count}
+      source_links: {count}
+      layout_distribution: "{layout_type: count, ...}"
+      avg_confidence: {score}
+      manual_review: [{slide list or "none"}]
 ```
 
-**Collect the response:** The agent returns JSON with:
-- `ok`: true/false
-- `prep_slides`: array of YAML specs for Methodology slide (always) + Buying Center slide (Rich mode only)
-- `speaker_notes`: map of slide_number → Speaker-Notes content
-- `slides_enriched`: count of slides with speaker notes
+**On success** (`ok: true`): The agent wrote the complete brief to `output_path`. Read back the first 30 lines to confirm the file exists and has correct frontmatter. **Skip Step 10** — the brief is already written. Proceed directly to Step 9 (validation).
 
-**Integrate the output:**
-1. Insert prep slides after Slide 1 (title slide). Renumber subsequent slides.
-2. Append Speaker-Notes to each existing slide's YAML spec.
-3. Both prep slides get `Bottom-Banner` with localized INTERNAL warning.
-
-**Fallback:** If the agent fails or returns `ok: false`, fall back to inline execution: read `references/08c-presenter-prep.md` and `references/05b-speaker-notes.md`, then execute Sub-steps 1 (prep slides) and 2 (speaker notes) directly as documented in those references. Log the fallback.
+**On failure** (`ok: false`): Log the error. Fall back to inline execution: read `references/08c-presenter-prep.md` and `references/05b-speaker-notes.md`, generate prep slides and speaker notes inline, insert prep slides after Slide 1, renumber, append speaker notes. Then proceed to Step 10 to write the brief.
 
 ---
 
@@ -427,12 +465,12 @@ Five layers — stop on first failure, fix, re-check:
 
 Launch the `brief-review-assessor` agent with:
 - `brief_type`: `slides`
-- Brief content (write to a `.draft` temp file if the brief hasn't been written yet)
+- Brief content at `output_path` (the file was written by the enrichment agent in Step 8.2, or will be written in Step 10 on the fallback path)
 - `source_narrative`: the narrative path from Step 0
 - `audience_context`: if provided
 - `round`: 1
 
-**On accept (all perspectives ≥85):** Proceed to Step 10.
+**On accept (all perspectives ≥85):** Proceed to Step 10 (or Step 11 if brief already written).
 
 **On revise:**
 1. Apply CRITICAL improvements first, then HIGH improvements — edit the brief content surgically (change specific headlines, layout types, speaker notes, CTAs as recommended)
@@ -447,9 +485,9 @@ Write the review verdict to `{output_dir}/presentation-brief.review.json`.
 
 ---
 
-### Step 10: Write Presentation Brief
+### Step 10: Write Presentation Brief (fallback path only)
 
-> The output path convention keeps generated briefs in a `cogni-visual/` subdirectory, preventing clutter and making it easy for downstream agents to find the brief.
+> If Step 8.2 succeeded (`ok: true`), the enrichment agent already wrote the complete brief. **Skip this step** and proceed to Step 11. This step only executes on the fallback path (agent failure → inline enrichment).
 
 **Read reference:** `references/07-output-template.md` (Brief Output Template section)
 
@@ -497,7 +535,7 @@ Both paths must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, o
 | **05a-slide-copywriting.md** | 6 | Assertion headlines, number plays, bullet consolidation |
 | **05b-speaker-notes.md** | 8.2 | Two-section speaker notes format reference (loaded by slides-enrichment-artist agent) |
 | **06-slide-mapping-rules.md** | 7 | Layout selection, confidence scoring, fallback strategies |
-| **07-output-template.md** | 8, 10 | Slide YAML example, brief output template, citation rules |
+| **07-output-template.md** | 8, 8.2, 10 | Slide YAML example, brief output template, citation rules (also loaded by slides-enrichment-artist agent) |
 | **08b-references-slide.md** | 8.1 | References slide construction |
 | **08c-presenter-prep.md** | 8.2 | Internal prep slides + per-slide speaker notes process (loaded by slides-enrichment-artist agent) |
 | **09-validation-checklist.md** | 9 | Five-layer validation framework |
