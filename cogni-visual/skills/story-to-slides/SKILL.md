@@ -501,25 +501,37 @@ Run the validation checklist (reference `09-validation-checklist.md`) one final 
 
 ---
 
-### Step 11: Generate PPTX Prompt
+### Step 11: Guide User to PPTX Rendering
 
-> The user needs a ready-to-use prompt for a fresh Claude chat with the PPTX skill. Absolute paths make it self-contained — no path-hunting needed.
+> The presentation brief is ready. Now guide the user to the best rendering path — currently **claude.ai chat** with the Anthropic PPTX skill, which produces the highest quality output.
 
-After the brief is written and validated, generate a copy-paste prompt block using the absolute paths resolved during the workflow:
+After the brief is written and validated, tell the user:
+
+1. **Open a new chat on claude.ai** (not Claude Code — the PPTX skill works best in the claude.ai web interface)
+2. **Paste these two files** into the chat window as attachments:
+   - `presentation-brief.md` (the brief you just generated)
+   - `theme.md` (the theme file used in this workflow)
+3. **Use this prompt:**
 
 ```
-─── Copy this prompt into a new Claude chat ───
-
-Please create a PPTX presentation using:
-- Presentation brief: {absolute_path_to_presentation_brief}
-- Theme: {absolute_path_to_theme_md}
-
-────────────────────────────────────────────────
+Please create a PPTX presentation using the attached presentation-brief.md and theme.md
 ```
 
-Replace `{absolute_path_to_presentation_brief}` with the resolved `output_path` and `{absolute_path_to_theme_md}` with the `theme_path` from Step 1.
+Print the absolute paths to both files so the user can locate them easily:
 
-Both paths must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative paths, because the receiving Claude session has no access to variables from this session.
+```
+─── Files to attach in claude.ai ───
+
+Presentation brief: {absolute_path_to_presentation_brief}
+Theme:              {absolute_path_to_theme_md}
+
+Open claude.ai → new chat → attach both files → paste the prompt above.
+─────────────────────────────────────────────────
+```
+
+Replace `{absolute_path_to_presentation_brief}` with the resolved `output_path` and `{absolute_path_to_theme_md}` with the `theme_path` from Step 1. Both paths must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative paths.
+
+**Why claude.ai?** The Anthropic PPTX skill in the claude.ai web interface handles file attachments natively and produces the best slide rendering results. Claude Code can also render via the `document-skills:pptx` skill, but the claude.ai path is currently the recommended workflow for highest quality output.
 
 ---
 
