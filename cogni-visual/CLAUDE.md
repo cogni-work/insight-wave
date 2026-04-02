@@ -48,6 +48,7 @@ agents/              Autonomous rendering agents (brief -> output)
   big-picture.md       Wrapper agent — delegates to render-big-picture skill
   station-structure-artist.md  Worker agent — composes station structure (130-160 elements, Pass 1)
   station-enrichment-artist.md Worker agent — adds fine detail to station (100-130 elements, Pass 2)
+  slides-enrichment-artist.md  Worker agent — generates prep slides + speaker notes (Step 8.2)
   station-connector-artist.md  DEPRECATED (v4.1) — retained for reference
   zone-reviewer.md     Worker agent — reviews and corrects one 1/4 zone of canvas
   story-to-web.md      Orchestrates the story-to-web skill
@@ -80,7 +81,7 @@ libraries/           Shared reference material loaded at Step 1
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 9 | story-to-slides, story-to-big-picture, story-to-big-block, story-to-web, story-to-storyboard, render-big-picture, render-big-block, enrich-report, review-brief |
-| Agents | 15 | story-to-slides, pptx, story-to-big-picture, big-picture (wrapper), story-to-big-block, big-block (wrapper), station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard, enrich-report, brief-review-assessor |
+| Agents | 16 | story-to-slides, pptx, story-to-big-picture, big-picture (wrapper), story-to-big-block, big-block (wrapper), station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), slides-enrichment-artist (worker), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard, enrich-report, brief-review-assessor |
 | Commands | 4 | render-big-picture, render-big-block, enrich-report, review-brief |
 | Libraries | 13 | arc-taxonomy, cta-taxonomy, pptx-layouts, EXAMPLE_BRIEF, big-picture-layouts, EXAMPLE_BIG_PICTURE_BRIEF, big-block-layouts, EXAMPLE_BIG_BLOCK_BRIEF, web-layouts, EXAMPLE_WEB_BRIEF, storyboard-layouts, EXAMPLE_STORYBOARD_BRIEF, brief-review-perspectives |
 

@@ -14,7 +14,7 @@ description: >
   it does NOT render an existing brief (use PPTX skill for that), does NOT create a
   single-canvas poster (use story-to-big-picture), does NOT create a web page
   (use story-to-web), and does NOT enhance prose (use Copywriter skill).
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Agent
 version: 1.0.0
 ---
 
@@ -200,7 +200,7 @@ If arc_id set: read `$CLAUDE_PLUGIN_ROOT/libraries/arc-taxonomy.md`, map to arc_
 
 If pick-theme is unavailable (e.g., cogni-workspace not installed), fall back to Glob scanning `$COGNI_WORKSPACE_ROOT/themes/*/theme.md` and present via AskUserQuestion manually.
 
-**Load libraries:** `pptx-layouts.md`, `EXAMPLE_BRIEF.md`, `cta-taxonomy.md`, `arc-taxonomy.md` (if arc_id set).
+**Load libraries:** `cta-taxonomy.md`, `arc-taxonomy.md` (if arc_id set). The heavier libraries (`pptx-layouts.md` and `EXAMPLE_BRIEF.md`) are deferred to the steps that consume them (Steps 7 and 8) to keep context lean during the creative intelligence steps.
 
 ---
 
@@ -294,6 +294,8 @@ If interactive: present CTA plan via AskUserQuestion (Approve/Adjust). On empty 
 
 > Layout selection translates message type into visual structure. A hero number on a `two-columns-equal` wastes its impact — `stat-card-with-context` isolates the number and makes it the focal point.
 
+**Read library:** `$CLAUDE_PLUGIN_ROOT/libraries/pptx-layouts.md` — slide layout schemas needed for layout selection (this step) and YAML field names (Step 8). Deferred from Step 1 to keep context lean during creative Steps 2-6.
+
 **Read reference:** `references/06-slide-mapping-rules.md`
 
 Map each slide to best layout from `pptx-layouts.md`. Mandatory rules apply first (title-slide, closing-slide), then diagram rules (Mermaid blocks), then content pattern matching. Ensure layout variety and confidence >= threshold.
@@ -303,6 +305,8 @@ Map each slide to best layout from `pptx-layouts.md`. Mandatory rules apply firs
 ### Step 8: Generate YAML Slide Specifications
 
 > The YAML specification is the contract between this skill and the PPTX renderer. Every field must contain final, copy-paste-ready text because the renderer reproduces it exactly — no interpretation, no cleanup.
+
+**Read library:** `$CLAUDE_PLUGIN_ROOT/libraries/EXAMPLE_BRIEF.md` — output format reference needed for YAML spec generation and final brief output (Step 10). Deferred from Step 1 to keep context lean during creative Steps 2-6.
 
 **Read reference:** `references/07-output-template.md` (Slide YAML Example section)
 
@@ -320,21 +324,55 @@ Generate from citation renumber map (Step 2). Position after closing-slide as la
 
 ---
 
-#### Step 8.2: Generate Internal Prep Slides and Speaker-Notes
+#### Step 8.2: Generate Internal Prep Slides and Speaker-Notes (Delegated)
 
-> Speaker notes transform a deck from a document into a performance tool. Prep slides give the presenter strategic context before entering the room.
+> Speaker notes transform a deck from a document into a performance tool. Prep slides give the presenter strategic context before entering the room. This step is delegated to the `slides-enrichment-artist` worker agent, which loads its own heavy references (1,374 lines) in a separate context — keeping the orchestrator's context lean for validation in Step 9.
 
-**Read BOTH references:**
-- `references/08c-presenter-prep.md` — prep slide generation, 10-step speaker notes process, arc-position coaching
-- `references/05b-speaker-notes.md` — two-section format, tags, worked example
+**Prepare the enrichment prompt** with these fields from previous steps:
 
-**Sub-step 1: Internal prep slides** (placed after Slide 1):
-- **Slide 2: Methodology** (always) — `process-flow` with Mermaid pipeline + Detail-Grid. PEAK/RELEASE pacing in notes.
-- **Slide 3: Buying Center** (Rich mode only) — `four-quadrants` text-card mode with stakeholder cards.
+| Field | Source |
+|-------|--------|
+| `SLIDE_SPECS` | All slide YAML specs from Steps 8 + 8.1 (the complete deck so far) |
+| `AUDIENCE_MODEL` | From Step 3 — mode (Rich/Lean), decision-maker, priorities, objections, champion, blockers |
+| `ARC_ANALYSIS` | From Step 4 — arc_type, governing_thought, section_roles, arc phases |
+| `LANGUAGE` | `en` or `de` |
+| `ARC_ID` | If set |
+| `ARC_DEFINITION_PATH` | If set (element names for methodology slide phase labels) |
+| `BUYER_APPENDIX_PATH` | If set (enriched Q&A prep) |
 
-Both get `Bottom-Banner` with localized INTERNAL warning.
+**Launch the `slides-enrichment-artist` agent:**
 
-**Sub-step 2: Speaker-Notes for all slides** — two-section format ("WHAT YOU SAY" + "WHAT YOU NEED TO KNOW"), 200-400 words per slide (enough for rehearsal depth without becoming a teleprompter), arc-position coaching, layout-aware openings, comprehensive Q&A.
+```
+Agent tool:
+  subagent_type: "cogni-visual:slides-enrichment-artist"
+  prompt: |
+    SLIDE_SPECS:
+    {all slide YAML from Steps 8 + 8.1}
+
+    AUDIENCE_MODEL:
+    {audience model from Step 3}
+
+    ARC_ANALYSIS:
+    {arc analysis from Step 4}
+
+    LANGUAGE: {language}
+    ARC_ID: {arc_id or "none"}
+    ARC_DEFINITION_PATH: {path or "none"}
+    BUYER_APPENDIX_PATH: {path or "none"}
+```
+
+**Collect the response:** The agent returns JSON with:
+- `ok`: true/false
+- `prep_slides`: array of YAML specs for Methodology slide (always) + Buying Center slide (Rich mode only)
+- `speaker_notes`: map of slide_number → Speaker-Notes content
+- `slides_enriched`: count of slides with speaker notes
+
+**Integrate the output:**
+1. Insert prep slides after Slide 1 (title slide). Renumber subsequent slides.
+2. Append Speaker-Notes to each existing slide's YAML spec.
+3. Both prep slides get `Bottom-Banner` with localized INTERNAL warning.
+
+**Fallback:** If the agent fails or returns `ok: false`, fall back to inline execution: read `references/08c-presenter-prep.md` and `references/05b-speaker-notes.md`, then execute Sub-steps 1 (prep slides) and 2 (speaker notes) directly as documented in those references. Log the fallback.
 
 ---
 
@@ -429,22 +467,22 @@ Both paths must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, o
 | **03-story-arc-analysis.md** | 4 | Arc detection, governing thought, section roles |
 | **04-message-architecture.md** | 5 | Pyramid Principle, one-message-per-slide, MECE, consolidation |
 | **05a-slide-copywriting.md** | 6 | Assertion headlines, number plays, bullet consolidation |
-| **05b-speaker-notes.md** | 8.2 | Two-section speaker notes format reference |
+| **05b-speaker-notes.md** | 8.2 | Two-section speaker notes format reference (loaded by slides-enrichment-artist agent) |
 | **06-slide-mapping-rules.md** | 7 | Layout selection, confidence scoring, fallback strategies |
 | **07-output-template.md** | 8, 10 | Slide YAML example, brief output template, citation rules |
 | **08b-references-slide.md** | 8.1 | References slide construction |
-| **08c-presenter-prep.md** | 8.2 | Internal prep slides + per-slide speaker notes process |
+| **08c-presenter-prep.md** | 8.2 | Internal prep slides + per-slide speaker notes process (loaded by slides-enrichment-artist agent) |
 | **09-validation-checklist.md** | 9 | Five-layer validation framework |
 | **2g-diagram-simplification.md** | 2.1 | Mermaid diagram detection and simplification |
 
-### Libraries (loaded as needed)
+### Libraries (loaded as needed — progressive disclosure)
 
 | Library | Step | Purpose |
 |---------|------|---------|
 | **arc-taxonomy.md** | 1 | Arc ID → visual arc type mapping, element names |
-| **pptx-layouts.md** | 1, 7 | Slide layout schemas and field definitions |
-| **cta-taxonomy.md** | 6.1 | CTA types, urgency, arc-to-CTA heuristics |
-| **EXAMPLE_BRIEF.md** | 1 | Output format reference |
+| **cta-taxonomy.md** | 1 | CTA types, urgency, arc-to-CTA heuristics |
+| **pptx-layouts.md** | 7 | Slide layout schemas and field definitions (deferred from Step 1) |
+| **EXAMPLE_BRIEF.md** | 8 | Output format reference (deferred from Step 1) |
 
 ## Backward Compatibility
 
