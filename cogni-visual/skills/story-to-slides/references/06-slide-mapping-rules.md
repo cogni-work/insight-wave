@@ -650,6 +650,7 @@ Different layouts signal "new type of information" and re-engage attention. Afte
 ```text
 RULE 1: No 3+ consecutive slides with same layout
   → Swap the one with LOWEST confidence to its best alternative
+  → EXCEPTION: IS-DOES-MEANS runs of N products/capabilities (see below)
 
 RULE 2: stat-card max 4× in a 12-slide deck
   → Merge related stat-cards into a four-quadrants slide
@@ -657,6 +658,13 @@ RULE 2: stat-card max 4× in a 12-slide deck
 RULE 3: At least 3 different layout types per deck
   → Find most-used layout's lowest-confidence slide, switch to new type
 ```
+
+**IS-DOES-MEANS Series Exception:** When a narrative presents N distinct products, services, or capabilities — each requiring its own IS-DOES-MEANS slide — consecutive runs of up to 5 are acceptable, subject to two conditions:
+
+1. **Precede the run with a product-overview slide** (layout: `two-columns-equal` or `four-quadrants`) that maps all N offerings in a single visual. This gives the audience a map before the detail — so consecutive IS-DOES-MEANS slides feel like deepening, not repetition.
+2. **Vary the Bottom-Banner proof** across slides. Each is-does-means slide must have a distinct, specific proof metric in its Bottom-Banner (not the same metric reworded). This creates visual variety at the detail level even when the layout repeats.
+
+If both conditions are met, a run of 3–5 IS-DOES-MEANS slides is intentional structure, not monotony. Log the exception in the validation metadata.
 
 **Fix reasoning:** swap the most FLEXIBLE slide (lowest confidence), not the strongest fit. If no good alternative exists → accept repetition and note for review. Never force a layout switch that makes content awkward.
 

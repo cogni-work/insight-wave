@@ -76,12 +76,26 @@ REASON through headline construction for each slide:
        × "€280K investment, 4.3x return" (noun phrase — no verb)
        ✓ "€280K Investment Returns 4.3x in Year One" (verb: returns)
 
-  5. TRIM to 60 characters maximum
-     → Count characters. If over 60:
+  5. ADD the quantified consequence — every headline should answer "so what in numbers"
+     → After writing the claim, ask: "What does this COST or SAVE or PREVENT in measurable terms?"
+     → Append the consequence as a second clause using "und vermeidet / und erzielt / und spart / und verhindert":
+       × "EAT besetzt Führungsrollen in 2 Wochen" (claim only)
+       ✓ "EAT besetzt Führungsrollen in 2 Wochen und vermeidet EUR 150–300K Spezialistenersatz" (claim + consequence)
+       × "Vier Jobs zeigen den strukturellen Bedarf" (claim only)
+       ✓ "Vier Jobs kosten DT täglich EUR 300K–2M in Governance-Stillstand" (claim + financial consequence)
+       × "AI Reduces Costs" (claim only)
+       ✓ "AI Reduces Costs by 40% — EUR 280K Saved in Year One" (claim + specific number)
+     → If no financial number exists: use risk, time, or probability as the consequence:
+       ✓ "Succession Gaps Unaddressed for >90 Days Triple Board-Level Escalation Risk"
+     → This applies to ALL content slides — not just IS-DOES-MEANS slides.
+
+  5b. LENGTH: prioritize specificity over brevity — up to ~100 characters acceptable
+     → The 60-character limit is a SECONDARY constraint. Specificity wins.
+     → Only cut if the headline wraps to 3 lines on-screen:
        - Cut redundant modifiers ("advanced", "innovative", "comprehensive")
        - Replace clauses with numbers ("which leads to a 40% reduction" → "40% reduction")
        - Use symbols where natural ("€" not "EUR", "%" not "percent")
-     → The 60-char limit ensures the headline fits on one title line without wrapping
+     → A rich, specific 90-char headline beats a vague 50-char one every time.
 
   6. VERIFY the headline tells the story without the body
      → Cover the slide body. Read ONLY the headline.
@@ -95,8 +109,8 @@ REASON through headline construction for each slide:
 | Role | Headline Pattern | Example |
 |------|-----------------|---------|
 | `hook` | [Shocking number] + [consequence] | "688 Deaths. Zero Automated Prevention." |
-| `problem` | [Number] + [problem verb] + [impact] | "42% of Systems Exceed 18-Year Lifespan" |
-| `urgency` | "Every [period], [cost accumulates]" | "Every Month of Delay Costs €230K" |
+| `problem` | [Problem verb] + [quantified cost/consequence] | "Führungsvakua entstehen strukturell und kosten DT EUR 150–300K pro Abgang" |
+| `urgency` | [What escalates] + [what it costs per period] | "Jede Woche ohne Entscheidung kostet EUR 230K in verzögerter Synergierealisierung" |
 | `evidence` | [Data point] + [proves claim] | "3 of 4 Incidents Go Undetected" |
 | `solution` | [Solution] + [achieves result] | "AI Monitoring Detects 97% of Incidents" |
 | `proof` | [Specific capability] + [delivers measurable outcome] | "Integrierte OT/IT-Plattform senkt Reaktionszeit um 60%" |
@@ -123,6 +137,41 @@ Power Position slides (role: `proof`, layout: `is-does-means`) in why-change arc
    - Targeted: `"Souveräne Cloud für Energieversorger — KRITIS-konform ab Tag 1"` (signals understanding)
 
 4. **One Power Position = one headline.** Never combine multiple Power Positions into a single slide title (e.g., "Power Position 2 & 3: Compliance & Sovereign Cloud"). Each Power Position gets its own slide with its own assertion headline. If consolidation is required to meet `max_slides`, merge at the message architecture level (Step 5c) — not by cramming two PP labels into one title.
+
+5. **IS-DOES-MEANS slides require DOES + MEANS consequence as a combined assertion headline.** This rule applies to any IS-DOES-MEANS slide in any arc. The formula is:
+
+   `[Product] + [DOES verb + outcome] + "und vermeidet/erzielt/spart" + [MEANS financial/risk/time consequence]`
+
+   - ✗ `"EAT Interim Management: Volle Führung in 2 Wochen"` — product name as label, DOES only, no consequence
+   - ✓ `"EAT Interim Management besetzt jede DT-Führungsrolle in 2 Wochen und vermeidet EUR 150–300K Spezialistenersatz pro Transition"` — DOES assertion + MEANS consequence in one line
+   - ✗ `"EAT Executive Coaching"` — product name only
+   - ✓ `"EAT Executive Coaching schärft Board-Kommunikation und sichert Führungswirkung in 90 Tagen ohne externe Berater"` — outcome + consequence
+
+   The test: read only the Slide-Title. Does the buyer immediately see WHAT it does AND WHY that matters financially or operationally? If the consequence is missing, the headline is incomplete.
+
+6. **Every title must be a self-contained assertion — it must answer its own "so what".** A title that names only the problem forces the Bottom-Banner to do compensatory work (e.g. "Die Lücke, die EAT schließt"). That wastes the banner and signals an incomplete headline. The consequence — financial cost, risk, time loss, strategic implication — belongs INSIDE the title.
+
+   Test: cover the slide body AND the bottom-banner. Read ONLY the headline. Does the audience understand WHAT is happening AND WHY it matters? If the banner contains the "so what" that the title is missing, the title is incomplete.
+
+   - ✗ `"Führungsvakua entstehen strukturell"` — problem only, no consequence
+   - ✗ `"Führungsvakua entstehen strukturell — die Lücke, die EAT schließt"` — consequence is in the banner, not the title
+   - ✓ `"Führungsvakua entstehen strukturell und kosten DT täglich Entscheidungskapazität, die kein Reporting wartet"` — complete: what happens + so what
+   - ✗ `"Cross-Segment-Eskalationen stagnieren"` — problem only
+   - ✓ `"Cross-Segment-Eskalationen stagnieren 6–8 Wochen und gefährden EUR 500K–2M Synergierealisierung pro Woche"` — complete: what + cost
+
+   Note: naming the solution provider in the title is optional — not required. The completeness of the assertion matters, not whether the provider is mentioned.
+
+### Bottom-Banner Discipline
+
+The Bottom-Banner is a proof strip, not a copywriting rescue line.
+
+| Situation | Correct Bottom-Banner use | Incorrect use |
+|-----------|--------------------------|---------------|
+| Problem/urgency slide | Hard metric not in the title: `"Typische Vakanzkosten: EUR 150–300K pro Abgang"` | Solution bridge: `"Die Lücke, die EAT schließt"` ← this belongs in the title |
+| IS-DOES-MEANS slide | Customer evidence or benchmark: `"DT-Erfahrung: 3 Engagements in 18 Monaten"` | Restating the DOES claim from the title |
+| Hook/opening slide | Omit or use the governing thought | Any marketing slogan |
+
+If writing the Bottom-Banner text feels like it is completing or explaining the Slide-Title, that is a signal the Slide-Title is incomplete. Fix the title instead of patching it with the banner.
 
 ---
 
@@ -586,6 +635,16 @@ REASON through evidence selection for each slide:
        ✓ One percentage + one case study + one before/after (triangulated proof)
      → ASK per candidate: "Does this evidence PROVE the headline, or just relate to it?"
        Proves → include. Relates → speaker notes or discard.
+
+  3b. SURFACE the deck's strongest commercial ratio ON A SLIDE — never only in notes
+     → Before finalizing evidence for investment/proof slides, identify the single highest-leverage
+       commercial comparison in the entire narrative:
+         - Cost of doing nothing vs. cost of acting (e.g., "€2M/week governance risk vs. €25K advisory basket")
+         - ROI ratio (e.g., "60:1 return: €25K advisory cost vs. €1.5M program risk averted")
+         - Replacement cost comparison (e.g., "€150–300K talent replacement vs. €20K/month interim management")
+     → This number must appear as visible slide content (hero stat, bottom banner, or bullet) — NOT only in speaker notes.
+     → The buyer needs to SEE this number to justify the investment to their own organization. Notes-only means it never gets shared upstream.
+     → If no single slide fits naturally, create a dedicated investment slide or enrich the pricing slide's Bottom-Banner with the ratio.
 
   4. DECIDE placement for each piece of evidence
      → Hero evidence → headline number or stat-card hero

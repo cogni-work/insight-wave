@@ -223,11 +223,11 @@ PEAK/RELEASE detection rules (arc-position-based):
 ### Methodology Output Format
 
 ```yaml
-## Slide 2: {localized_methodology_headline}
+## Slide 2: {localized_intern_prefix}: {localized_methodology_headline}
 
 Layout: process-flow
 
-Slide-Title: {localized_methodology_headline}
+Slide-Title: {localized_intern_prefix}: {localized_methodology_headline}
 
 Diagram: |
   graph LR
@@ -291,10 +291,15 @@ Speaker-Notes: |
 | Field | English | German |
 |-------|---------|--------|
 | Slide headline | Pitch Methodology | Pitch-Methodik |
+| Intern title prefix | INTERNAL — REMOVE FROM CLIENT PRESENTATION | INTERN — VOR KUNDENPRÄSENTATION ENTFERNEN |
+| Full Slide-Title (EN) | `INTERNAL — REMOVE FROM CLIENT PRESENTATION: Pitch Methodology` | — |
+| Full Slide-Title (DE) | — | `INTERN — VOR KUNDENPRÄSENTATION ENTFERNEN: Pitch-Methodik` |
 | Pacing guide label | Slide-by-slide pacing guide | Folien-Fahrplan mit Pacing |
 | PEAK marker | (PEAK) | (PEAK) |
 | RELEASE marker | (RELEASE) | (RELEASE) |
-| Internal warning | INTERNAL — REMOVE FROM CLIENT PRESENTATION | INTERN — VOR KUNDENPRÄSENTATION ENTFERNEN |
+| Bottom-Banner text | INTERNAL — REMOVE FROM CLIENT PRESENTATION | INTERN — VOR KUNDENPRÄSENTATION ENTFERNEN |
+
+**Note on the INTERN title:** The INTERN warning lives in the **Slide-Title** (so it is always visible in any slide overview or thumbnail), not only in the Bottom-Banner. Both the title AND the banner carry the warning — belt and suspenders. The bottom-banner provides the visual red-banner treatment during presentation; the title ensures the warning survives if the banner is not rendered.
 
 ---
 
@@ -488,6 +493,17 @@ Read `references/05b-speaker-notes.md` for the **format specification**:
 - Available delivery tags: `[Opening]`, `[Key point]`, `[Pause]`, `[Emphasis]`, `[Transition]`
 - Template syntax (English and German)
 - Exclusion rules (no duplication of visible slide content)
+
+### Language Consistency Rule
+
+**Speaker notes must match the deck language throughout** — headers, body text, delivery tags, and Q&A prep are all written in the same language as the slides.
+
+| Deck language | Notes headers | Delivery tags | Q&A labels |
+|---|---|---|---|
+| English (`language: en`) | `>> WHAT YOU SAY` / `>> WHAT YOU NEED TO KNOW` | `[Energy]`, `[Opening]`, `[Pause]`, `[Transition]` | English |
+| German (`language: de`) | `>> WAS SIE SAGEN` / `>> WAS SIE WISSEN MÜSSEN` | `[Energie]`, `[Einstieg]`, `[Pause]`, `[Überleitung]` | German |
+
+**Mixed language is a quality failure.** If you find yourself writing English sentences in a `language: de` deck's notes (or vice versa), rewrite them. The one exception: proper nouns, brand names, and technical terms without a natural translation may stay in their original language.
 
 Step 7c uses this format but extends it with three additional reasoning layers and one new tag.
 
