@@ -5,7 +5,7 @@ Portfolio messaging and proposition planning — from product definition through
 ## Plugin Architecture
 
 ```
-skills/                         18 portfolio skills
+skills/                         19 portfolio skills
   portfolio-setup/                Initialize project with company context and taxonomy
   portfolio-canvas/               Bootstrap from Lean Canvas or Business Model Canvas
   portfolio-scan/                 Discover offerings via web scanning + taxonomy classification
@@ -33,6 +33,7 @@ skills/                         18 portfolio skills
       use-case-registry.md              Use case routing and configuration
   portfolio-dashboard/            Interactive HTML dashboard of full portfolio status
   portfolio-architecture/         Excalidraw product-feature hierarchy diagram
+  portfolio-lineage/              Source tracking, change detection, and refresh cascades
   trends-bridge/                  Bidirectional integration with cogni-trends TIPS analysis
   portfolio-resume/               Detect workflow phase and recommend next actions
 
@@ -65,7 +66,7 @@ templates/                      8 pluggable industry taxonomies
   b2b-professional-services/      Professional Services (8 dims, 44 categories)
   b2b-opensource/                  Commercial Open Source (8 dims, 50 categories)
 
-scripts/                        8 utility scripts
+scripts/                        9 utility scripts
   project-init.sh                 Initialize project directory structure
   project-status.sh               Show status with entity counts and gap analysis
   quality-audit.sh                Structural quality checks on portfolio entities
@@ -74,6 +75,7 @@ scripts/                        8 utility scripts
   cascade-rename.sh               Cascade slug rename across dependent entity files
   append-claim.sh                 Atomically append claim to cogni-claims/claims.json
   generate-scan-mapping.sh        Generate scan-to-taxonomy mapping
+  source-registry.sh              Source lineage registry management (init, register, check, staleness)
 
 references/
   data-model.md                   Full entity schema and project structure reference
@@ -83,7 +85,7 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 18 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, portfolio-communicate, portfolio-dashboard, portfolio-architecture, trends-bridge, portfolio-resume |
+| Skills | 19 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, portfolio-communicate, portfolio-dashboard, portfolio-architecture, portfolio-lineage, trends-bridge, portfolio-resume |
 | Agents | 17 | market-researcher, competitor-researcher, customer-researcher, customer-review-assessor, proposition-generator, proposition-quality-assessor, proposition-review-assessor, proposition-deep-diver, solution-planner, solution-review-assessor, feature-quality-assessor, feature-review-assessor, feature-deep-diver, quality-enricher, communicate-review-assessor, dashboard-refresher, portfolio-web-researcher |
 
 ## Typical Workflow
@@ -107,10 +109,13 @@ portfolio-setup → products → features → markets → customers → proposit
 
 Optional entry points: `portfolio-canvas` (from Lean Canvas), `portfolio-scan` (from website), `portfolio-ingest` (from documents).
 
+Cross-cutting: `portfolio-lineage` tracks source→entity dependencies, detects drift when documents are re-uploaded, and guides refresh cascades through features→propositions→solutions.
+
 ## Data Model
 
 Each project lives in `cogni-portfolio/{project-slug}/` with:
 - `portfolio.json` — Root manifest (company context, taxonomy selection, config)
+- `source-registry.json` — Source lineage registry (document + URL fingerprints, entity links)
 - `products/` — Product definitions (JSON)
 - `features/` — Market-independent feature definitions (IS layer, JSON)
 - `markets/` — Target markets with TAM/SAM/SOM (JSON)

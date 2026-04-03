@@ -54,7 +54,26 @@ For large documents (PDFs over 20 pages, Excel with many sheets), process in seg
 
 ### 4. Analyze and Classify Content
 
-Read `portfolio.json` to understand the company context. Then analyze extracted content for both entities and context.
+Read `portfolio.json` to understand the company context.
+
+#### Re-Upload Detection
+
+Before classifying content, check if any of the current upload files match previously ingested sources. If `source-registry.json` exists, run:
+
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" check-docs
+```
+
+If the result shows **changed** documents (same filename, different hash), alert the user:
+
+> "This file was previously ingested and created N features and M context entries. The content has changed since last ingestion. Would you like to:
+> 1. **Re-ingest and refresh** — extract new entities/context, mark old linked entities as stale for downstream refresh
+> 2. **Re-ingest fresh** — extract without linking to previous entities (treat as new source)
+> 3. **Skip** — leave this file for later"
+
+If the user chooses option 1, note the previously linked entities for staleness flagging in Step 8b.
+
+Then analyze extracted content for both entities and context.
 
 #### Entity Classification
 
@@ -158,6 +177,41 @@ Include `version`, `entry_count`, and `updated` fields. See `$CLAUDE_PLUGIN_ROOT
 ### 8. Move Processed Files
 
 After all confirmed items are written, move processed files to `uploads/processed/`. Create the directory if it doesn't exist. Only move files that were successfully processed. If a file yielded no usable entities or context (user skipped everything), still move it to avoid re-processing on the next run.
+
+### 8b. Update Source Registry
+
+After moving files, update the source lineage registry for each processed file:
+
+1. If `source-registry.json` does not exist, initialize it:
+   ```bash
+   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" init
+   ```
+
+2. For each processed file, register it with its fingerprint:
+   ```bash
+   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" register-doc "<project-dir>/uploads/processed/<filename>"
+   ```
+
+3. After registration, update the registry entry's `entities` and `context_entries` arrays to include all entities and context entries created from this file. Read `source-registry.json`, find the entry by `source_id`, and add:
+   - Entity paths (e.g., `"features/cloud-monitoring"`, `"products/cloud-platform"`) to `entities`
+   - Context entry slugs (e.g., `"pricing-strategy-2025--001"`) to `context_entries`
+
+4. Write `source_refs` on each created entity, pointing to the registry `source_id`. This supplements the existing `source_file` field for richer lineage tracking:
+   ```json
+   {
+     "source_file": "pricing-strategy-2025.pdf",
+     "source_refs": ["doc--pricing-strategy-2025"]
+   }
+   ```
+
+5. If this is a **re-upload** (detected in Step 4 as a changed document) and the user chose "Re-ingest and refresh":
+   - Set the old registry entry's `status` to `"superseded"`
+   - Set the new entry's `supersedes` field to the old `source_id`
+   - For all entities linked to the old source that were NOT re-created in this batch, write a `lineage_status` field:
+     ```json
+     { "lineage_status": { "status": "stale", "flagged_at": "2026-04-03", "reasons": ["source doc--pricing-strategy-2025 re-uploaded with changes"] } }
+     ```
+   - This ensures `portfolio-resume` and `portfolio-lineage` will surface these stale entities
 
 ### 9. Sync portfolio.json
 

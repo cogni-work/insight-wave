@@ -613,6 +613,7 @@ When entering the deep dive:
 - Product positioning and pricing tier provide useful context for crafting DOES/MEANS statements
 - Not every Feature x Market pair needs a proposition — prioritize pairs where differentiation is strongest and buyer need is most acute
 - Evidence is optional but strengthens downstream proposals and enables claim verification
+- **Source registry integration**: When writing evidence entries with `source_url`, also register the URL in `source-registry.json` if it exists. Read the registry, check if a URL source already exists; if not, add one with `type: "url"` and an `evidence_refs` entry pointing to this proposition + evidence index. When reading existing evidence, check the registry for stale URL sources and warn: "Evidence source X has changed since it was last checked — consider re-verifying before using."
 - Changing a feature or market slug after propositions exist requires renaming proposition files
 - **Content Language**: Read `portfolio.json` in the project root. If a `language` field is present, generate all user-facing text content (IS/DOES/MEANS statements, evidence descriptions) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 - **Communication Language**: If `portfolio.json` has a `language` field, communicate with the user in that language (status messages, instructions, recommendations, questions). Technical terms, skill names, and CLI commands remain in English. Default to English if no `language` field is present.

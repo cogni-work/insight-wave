@@ -61,6 +61,7 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 | Architecture | exists/missing | STALE if products/features changed since last generation |
 | Purpose | N / total features | coverage percentage — low coverage limits architecture and customer narrative quality |
 | Context | N entries | breakdown by category (e.g., 3 pricing, 2 competitive, 1 strategic) |
+| Sources | N (D docs, U urls) | S stale, C current (only if `source_lineage.has_registry` is true) |
 | Uploads | N | pending ingestion (if > 0) |
 
 The Propositions row shows `N / expected (E excluded)` where `expected` already subtracts excluded pairs and `E` is the count from `counts.excluded_pairs`. Only show the "(E excluded)" suffix when E > 0.
@@ -81,12 +82,17 @@ After the table:
   - End with actionable guidance: "Consider running features or propositions skill to review and fix these before generating downstream content."
   - Offer deep assessment: "For thorough quality assessment including mechanism and customer-relevance checks, ask for a full quality audit."
   - If no entities are flagged, skip this section entirely (don't show "0 flagged")
+- **Source drift** — if `source_lineage.has_registry` is true and drift is detected, show this section BEFORE stale entities (since source drift is often the root cause of entity staleness):
+  - If `source_lineage.changed_uploads` is non-empty: "N source documents have been re-uploaded with changes (list filenames). These affect M entities." Group affected entities by source. Recommend: "Run `portfolio-lineage` to assess impact, or `portfolio-ingest` to re-process the updated documents."
+  - If `source_lineage.new_uploads` is non-empty: "N new files in uploads/ have not been ingested yet." Distinguish from changed re-uploads.
+  - If `source_lineage.stale_sources` > 0 and no changed_uploads: "N source entries are marked as stale in the registry." Recommend running `portfolio-lineage check` to investigate.
+  - If `source_lineage.untracked_entities` > 0: "N entities have no source lineage tracking." This is informational, not urgent — mention it after other drift warnings. Recommend running `portfolio-lineage` to backfill.
 - **Stale entities** — if `stale_entities` is non-empty, show them as priority actions before the regular next steps. Group by reason type: "N propositions need refresh because their upstream features were updated" is more useful than listing each one. If a stale entity also has quality warnings, lead with the quality issue (fix the root cause first, then refresh the proposition).
 - **Stale communicate files** — if `communicate.stale` is `true`, highlight this prominently: "Communicate files may need refresh — upstream data changed since they were generated." Present the reason from `communicate.stale_reason`. Recommend running `portfolio-communicate` to regenerate. This appears alongside stale entity warnings since it represents the same class of problem (downstream output invalidated by upstream changes).
 - **Stale architecture diagram** — if `architecture.stale` is `true`, mention that the architecture diagram may be outdated because products or features changed since it was generated. Recommend running `portfolio-architecture` to refresh. If `architecture.exists` is `false` and features exist, suggest generating the architecture diagram as a visual checkpoint.
 - **Purpose coverage** — if `purpose_coverage.total_features > 0` and `purpose_coverage.with_purpose` is less than half of `total_features`, note low purpose coverage: "N of M features have purpose statements. Adding purpose improves architecture diagrams and customer-facing materials." Recommend running the `features` skill to add purpose statements.
 - **Context notice** — if `counts.context_entries > 0`, mention available context entries with a category breakdown. Read `context/context-index.json` for the `by_category` map to show counts per category. This helps the user understand what intelligence is available for downstream skills. If context exists but downstream skills haven't been run yet, highlight this: "N context entries from ingested documents are ready — these will automatically inform propositions, solutions, and other skills."
-- **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase
+- **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase. When `source_lineage.has_registry` is true, distinguish between new uploads (`source_lineage.new_uploads`) and re-uploads (`source_lineage.changed_uploads`): "N new uploads (never ingested) + M re-uploads (source changed since last ingestion)"
 - **Gaps** — if `missing_propositions` is non-empty, list the first few missing pairs; note incomplete solutions/competitors/customers. If `excluded_pairs` is non-empty, note excluded pairs are intentional: "N Feature x Market pairs are excluded (not relevant)." If all gaps are accounted for by exclusions, say so rather than listing missing pairs.
 
 Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report. The user should feel oriented, not overwhelmed.

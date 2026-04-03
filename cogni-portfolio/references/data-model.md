@@ -25,6 +25,7 @@ cogni-portfolio/{project-slug}/
 ├── context/                                # Extracted intelligence from uploaded documents
 │   ├── context-index.json                  # Lookup manifest (by category, relevance, entity)
 │   └── {source-slug}--{seq}.json           # Individual context entries
+├── source-registry.json                    # Source lineage registry (document + URL fingerprints)
 ├── uploads/                                # Source documents for ingestion
 ├── output/                                 # Generated exports (proposals, briefs, XLSX)
 │   ├── architecture.excalidraw            # Product-feature architecture diagram (Excalidraw)
@@ -120,7 +121,7 @@ The `delivery_defaults` object provides company-wide defaults for solution cost 
 ```
 
 Required fields: `slug`, `name`, `description`
-Optional fields: `positioning`, `pricing_tier`, `revenue_model`, `maturity`, `launch_date`, `version`, `source_file`, `created`
+Optional fields: `positioning`, `pricing_tier`, `revenue_model`, `maturity`, `launch_date`, `version`, `source_file`, `source_refs`, `lineage_status`, `created`
 
 Valid `maturity` values: `concept`, `development`, `launch`, `growth`, `mature`, `decline`
 
@@ -159,7 +160,7 @@ A feature is market-independent. It describes what the product/service IS. Each 
 
 Required fields: `slug`, `product_slug`, `name`, `description`
 Strongly recommended fields: `purpose`, `readiness`, `sort_order`, `taxonomy_mapping`
-Optional fields: `category`, `excluded_markets`, `source_file`, `created`, `updated`
+Optional fields: `category`, `excluded_markets`, `source_file`, `source_refs`, `lineage_status`, `created`, `updated`
 
 `purpose` (string, 5-12 words): A customer-readable statement answering "What is this feature FOR?" — the problem it solves or the capability it provides, in language suitable for architecture diagrams, portfolio overviews, and customer conversations. Sits between `name` (label) and `description` (mechanism) in the messaging hierarchy:
 
@@ -221,7 +222,7 @@ A target market defined by region, segmentation criteria, and sized by TAM/SAM/S
 ```
 
 Required fields: `slug`, `name`, `region`, `description`
-Optional fields: `segmentation`, `tam`, `sam`, `som`, `priority`, `sort_order`, `source_file`, `created`, `updated`
+Optional fields: `segmentation`, `tam`, `sam`, `som`, `priority`, `sort_order`, `source_file`, `source_refs`, `lineage_status`, `created`, `updated`
 
 Valid `priority` values: `beachhead` (primary go-to-market), `expansion` (secondary growth), `aspirational` (long-term)
 
@@ -289,7 +290,7 @@ A proposition maps one feature to one target market with IS/DOES/MEANS messaging
 ```
 
 Required fields: `slug`, `feature_slug`, `market_slug`, `is_statement`, `does_statement`, `means_statement`
-Optional fields: `evidence`, `variants`, `tips_enrichment`, `quality_assessment`, `created`, `updated`
+Optional fields: `evidence`, `variants`, `tips_enrichment`, `quality_assessment`, `source_refs`, `lineage_status`, `created`, `updated`
 
 IS/DOES/MEANS word targets: IS 20-35 words, DOES 15-30 words, MEANS 15-30 words
 
@@ -427,7 +428,7 @@ A solution attaches commercial terms to a proposition (same slug). Structure dep
 | `cost_model` | optional (effort-based) | optional (unit economics) | optional | optional |
 
 Common required fields: `slug`, `proposition_slug`
-Common optional fields: `solution_type`, `cost_model`, `created`
+Common optional fields: `solution_type`, `cost_model`, `source_refs`, `lineage_status`, `created`
 
 ### packages/{product-slug}--{market-slug}.json
 
@@ -599,6 +600,116 @@ Lookup manifest rebuilt whenever context entries are added or removed. Provides 
   }
 }
 ```
+
+### source-registry.json (Source Lineage)
+
+Tracks all input sources (documents and URLs) feeding the portfolio, their fingerprints, and which entities they created. Enables change detection and refresh cascades when sources are updated.
+
+```json
+{
+  "version": "1.0",
+  "updated": "2026-04-03",
+  "sources": [
+    {
+      "source_id": "doc--pricing-strategy-2025",
+      "type": "document",
+      "filename": "pricing-strategy-2025.pdf",
+      "path": "uploads/processed/pricing-strategy-2025.pdf",
+      "fingerprint": {
+        "hash": "sha256:a1b2c3d4e5f6...",
+        "computed_at": "2026-03-22"
+      },
+      "ingested_at": "2026-03-22",
+      "entities": ["features/cloud-monitoring", "products/cloud-platform"],
+      "context_entries": ["pricing-strategy-2025--001", "pricing-strategy-2025--002"],
+      "supersedes": null,
+      "status": "current"
+    },
+    {
+      "source_id": "url--gartner-cloud-2025",
+      "type": "url",
+      "url": "https://example.com/gartner-cloud-2025",
+      "title": "Gartner Cloud Monitoring Report 2025",
+      "fingerprint": {
+        "hash": "content:e5f6g7h8...",
+        "computed_at": "2026-03-25"
+      },
+      "last_checked": "2026-03-25",
+      "entities": ["markets/mid-market-saas-dach"],
+      "evidence_refs": [
+        { "proposition": "cloud-monitoring--mid-market-saas-dach", "evidence_index": 0 }
+      ],
+      "status": "current"
+    }
+  ]
+}
+```
+
+Required fields per source entry: `source_id`, `type`, `status`
+
+| Field | Document | URL | Description |
+|-------|----------|-----|-------------|
+| `source_id` | required | required | Deterministic slug: `doc--{filename-slug}` or `url--{title-slug}` |
+| `type` | `"document"` | `"url"` | Source type discriminator |
+| `filename` | required | -- | Original filename in uploads/ |
+| `path` | required | -- | Current file path (usually `uploads/processed/{filename}`) |
+| `url` | -- | required | Source URL |
+| `title` | -- | optional | Page title or report name |
+| `fingerprint` | required | optional | Hash object: `sha256:...` for docs, `content:...` for URLs |
+| `ingested_at` | required | -- | ISO 8601 date when document was ingested |
+| `last_checked` | -- | optional | ISO 8601 date when URL was last verified |
+| `entities` | optional | optional | Array of entity paths derived from this source (e.g., `"features/cloud-monitoring"`) |
+| `context_entries` | optional | -- | Array of context entry slugs created from this document |
+| `evidence_refs` | -- | optional | Array of `{ proposition, evidence_index }` citing this URL |
+| `supersedes` | optional | -- | `source_id` of the previous version this document replaces |
+| `status` | required | required | `current`, `superseded`, `stale`, or `unreachable` |
+
+Valid `status` values:
+
+| Status | Meaning | Trigger |
+|--------|---------|---------|
+| `current` | Source matches its fingerprint, no changes detected | Initial registration or after successful check |
+| `superseded` | A newer version of this document has been ingested | New document registered with `supersedes` pointing here |
+| `stale` | Source content has changed since last ingestion/check | File hash mismatch or URL content change detected |
+| `unreachable` | URL returned 404/timeout on last check | URL verification failure |
+
+The `source_id` is derived deterministically: `doc--{filename-without-extension-kebab}` for documents, `url--{sanitized-title-or-domain-kebab}` for URLs.
+
+### Common Lineage Fields
+
+The following optional fields are available on all entity types (products, features, markets, propositions, solutions):
+
+#### `source_refs` (array of strings)
+
+Array of `source_id` values from `source-registry.json` that contributed to this entity. Provides richer lineage than the existing `source_file` string field. Both fields can coexist — `source_file` for backward compatibility, `source_refs` for full lineage tracking.
+
+```json
+{
+  "source_file": "pricing-strategy-2025.pdf",
+  "source_refs": ["doc--pricing-strategy-2025", "url--gartner-cloud-2025"]
+}
+```
+
+#### `lineage_status` (object)
+
+Written by the `portfolio-lineage` skill or `project-status.sh --health-check` when upstream sources change. Cleared after the entity is refreshed.
+
+```json
+{
+  "lineage_status": {
+    "status": "stale",
+    "flagged_at": "2026-04-03",
+    "reasons": [
+      "source doc--pricing-strategy-2025 superseded by doc--pricing-strategy-2026",
+      "upstream feature cloud-monitoring updated 2026-04-01"
+    ]
+  }
+}
+```
+
+Valid `lineage_status.status` values: `stale` (needs refresh), `refreshing` (refresh in progress)
+
+When `lineage_status` is absent or null, the entity is considered current. After a successful refresh, the field is removed entirely rather than set to a "current" value.
 
 ## Cross-Plugin Schemas
 
@@ -788,6 +899,7 @@ Scan offerings are intermediate research artifacts stored in `research/.logs/`, 
 | Verify | portfolio-verify | Verify web-sourced claims against cited sources |
 | Communicate | portfolio-communicate | Generate pitches, proposals, briefs, workbooks, docs for any audience |
 | Bridge | trends-bridge | Bidirectional TIPS integration (matching, enrichment, opportunities) |
+| Lineage | portfolio-lineage | Source tracking, change detection, and refresh cascades |
 
 Recommended pipeline order: setup -> [products -> features -> markets -> propositions] -> customers -> solutions -> packages -> compete -> verify -> communicate
 
@@ -906,6 +1018,7 @@ erDiagram
 
 ```
 portfolio.json (root manifest)
+├── source-registry.json (source lineage tracking)
 ├── products/{slug}.json
 │   ├── features/{slug}.json (product_slug FK)
 │   │   ├── propositions/{feat}--{mkt}.json (feature_slug + market_slug)

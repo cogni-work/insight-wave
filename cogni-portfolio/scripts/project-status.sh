@@ -912,6 +912,95 @@ print(json.dumps(stale))
 " 2>/dev/null || echo "[]")
 fi
 
+# Source lineage detection (when registry exists and health-check is enabled)
+source_lineage='{"has_registry": false}'
+if $HEALTH_CHECK && [ -f "$PROJECT_DIR/source-registry.json" ]; then
+  source_lineage=$(python3 -c "
+import json, os, glob, subprocess
+
+proj = '$PROJECT_DIR'
+registry_path = os.path.join(proj, 'source-registry.json')
+
+with open(registry_path) as f:
+    registry = json.load(f)
+
+sources = registry.get('sources', [])
+docs = [s for s in sources if s['type'] == 'document']
+urls = [s for s in sources if s['type'] == 'url']
+stale_sources = [s for s in sources if s['status'] in ('stale', 'superseded')]
+
+# Check uploads/ for changed or new files
+changed_uploads = []
+new_uploads = []
+uploads_dir = os.path.join(proj, 'uploads')
+if os.path.isdir(uploads_dir):
+    registered_by_name = {s['filename']: s for s in docs}
+    for entry in os.listdir(uploads_dir):
+        path = os.path.join(uploads_dir, entry)
+        if not os.path.isfile(path) or entry == '.DS_Store':
+            continue
+        # Compute hash
+        result = subprocess.run(['shasum', '-a', '256', path], capture_output=True, text=True)
+        if result.returncode != 0:
+            continue
+        current_hash = 'sha256:' + result.stdout.split()[0]
+        if entry in registered_by_name:
+            reg_hash = registered_by_name[entry].get('fingerprint', {}).get('hash', '')
+            if reg_hash != current_hash:
+                changed_uploads.append(entry)
+        else:
+            new_uploads.append(entry)
+
+# Collect affected entities from changed/stale sources
+affected = set()
+for s in sources:
+    if s['status'] in ('stale', 'superseded') or s.get('filename') in changed_uploads:
+        for e in s.get('entities', []):
+            affected.add(e)
+
+# Count tracked vs untracked entities
+tracked = set()
+for s in sources:
+    for e in s.get('entities', []):
+        tracked.add(e)
+total_entities = 0
+for subdir in ['products', 'features', 'markets']:
+    d = os.path.join(proj, subdir)
+    if os.path.isdir(d):
+        total_entities += len(glob.glob(os.path.join(d, '*.json')))
+untracked = max(0, total_entities - len(tracked))
+
+print(json.dumps({
+    'has_registry': True,
+    'documents': len(docs),
+    'urls': len(urls),
+    'stale_sources': len(stale_sources),
+    'changed_uploads': changed_uploads,
+    'new_uploads': new_uploads,
+    'affected_entities': sorted(affected),
+    'tracked_entities': len(tracked),
+    'untracked_entities': untracked
+}))
+" 2>/dev/null || echo '{"has_registry": false}')
+
+  # Merge source-affected entities into stale_entities
+  if [ "$source_lineage" != '{"has_registry": false}' ]; then
+    stale_entities=$(python3 -c "
+import json
+existing = json.loads('$stale_entities')
+lineage = json.loads('''$source_lineage''')
+existing_slugs = set((e['entity'], e['slug']) for e in existing)
+for ep in lineage.get('affected_entities', []):
+    if '/' in ep:
+        etype, slug = ep.split('/', 1)
+        etype_singular = etype.rstrip('s')
+        if (etype_singular, slug) not in existing_slugs:
+            existing.append({'entity': etype_singular, 'slug': slug, 'reasons': ['source document re-uploaded with changes']})
+print(json.dumps(existing))
+" 2>/dev/null || echo "$stale_entities")
+  fi
+fi
+
 cat << EOF
 {
   "counts": {
@@ -981,6 +1070,7 @@ cat << EOF
   "purpose_coverage": {
     "total_features": $PURPOSE_TOTAL,
     "with_purpose": $PURPOSE_WITH
-  }
+  },
+  "source_lineage": $source_lineage
 }
 EOF

@@ -1,6 +1,6 @@
 {
   "name": "cogni-portfolio",
-  "version": "0.9.54",
+  "version": "0.9.55",
   "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis, deep-dive research for features and propositions, Lean Canvas bootstrapping, presentation-ready pitch narratives, and eight pluggable industry taxonomies.",
   "author": {
     "name": "Stephan de Haas",

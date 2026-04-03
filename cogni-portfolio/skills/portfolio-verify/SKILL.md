@@ -29,6 +29,14 @@ If no `cogni-claims/` directory exists in the project, no claims have been submi
 
 ## Workflow
 
+### 0. Check Source Registry for Stale URLs
+
+Before reviewing claims, check if the source registry has information about URL freshness. If `source-registry.json` exists, read it and identify any URL sources with `status` of `stale` or `unreachable`. If found, present them as high-priority verification targets:
+
+> "N URL sources in the registry are marked as stale or unreachable. Claims citing these sources should be verified first, as the source content may have changed since the claims were submitted."
+
+List the affected URLs and which claims cite them.
+
 ### 1. Show Claim Summary
 
 Read `cogni-claims/claims.json` and present the current state:
@@ -104,6 +112,16 @@ Recommendation: [Resolve remaining deviations / Ready for communicate]
 ```
 
 If all claims are verified or resolved, confirm the portfolio is ready for communicate. If deviations remain, the user may still proceed — the communicate skill will mark unverified content so readers know which data points haven't been checked.
+
+### 7. Update Source Registry
+
+After verification completes, if `source-registry.json` exists, update URL source entries:
+
+- For verified URLs: update `fingerprint.computed_at` and `last_checked` to today's date
+- For unreachable URLs: set `status` to `"unreachable"`
+- For URLs where the source content changed (verification found deviations): set `status` to `"stale"`
+
+This keeps the source registry in sync with verification results so that `portfolio-resume` and `portfolio-lineage` can surface URL freshness alongside document freshness.
 
 ## Important Notes
 
