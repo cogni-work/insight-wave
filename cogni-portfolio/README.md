@@ -24,8 +24,8 @@ A structured portfolio messaging workflow for Claude Cowork. Eight pluggable tax
 3. **Define features** — add market-independent capabilities (IS layer) per product → `features/*.json` → propositions, solutions, packages
 4. **Define markets** — discover, evaluate, and size target markets with TAM/SAM/SOM → `markets/*.json` → propositions, solutions, customers
 5. **Generate propositions** — create IS/DOES/MEANS messaging for each Feature x Market pair → `propositions/{feature}--{market}.json` → solutions, packages, synthesize, compete
-6. **Plan solutions** — define implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change, synthesize
-7. **Define products** — manage top-level product offerings and link to features → `products/*.json` → features, propositions
+6. **Plan solutions** — define implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change, synthesize. Products can define delivery blueprints capturing standard phases, pricing multipliers, and role ratios; the solution-planner uses these as structural templates and adapts per Feature x Market
+7. **Define products** — manage top-level product offerings and link to features → `products/*.json` → features, propositions. Optional delivery blueprints standardize the delivery pattern across markets with drift detection when updated
 8. **Build packages** — bundle solutions into sellable offerings per Product x Market → `packages/*.json` → synthesize, portfolio-communicate
 9. **Analyze competitors** — produce competitive landscape, battle cards, and differentiation per proposition → `competitors/*.json` → propositions, synthesize
 10. **Profile customers** — create ideal customer profiles and buyer personas per market → `customers/*.json` → synthesize, portfolio-communicate
@@ -93,11 +93,11 @@ All entities are stored as JSON files in the project directory:
 | Entity | Storage | Key Fields |
 |--------|---------|------------|
 | Project | `portfolio.json` | company name, description, industry, taxonomy, delivery defaults |
-| Product | `products/{slug}.json` | name, positioning, pricing tier, maturity |
+| Product | `products/{slug}.json` | name, positioning, pricing tier, maturity, delivery_blueprint (optional) |
 | Feature | `features/{slug}.json` | product_slug, name, description, category |
 | Market | `markets/{slug}.json` | name, segmentation, TAM/SAM/SOM |
 | Proposition | `propositions/{feature}--{market}.json` | IS/DOES/MEANS statements, evidence, quality score |
-| Solution | `solutions/{feature}--{market}.json` | implementation phases, pricing tiers (PoV/S/M/L) |
+| Solution | `solutions/{feature}--{market}.json` | implementation phases, pricing tiers (PoV/S/M/L), blueprint_ref + blueprint_version (when generated from blueprint) |
 | Competitor | `competitors/{feature}--{market}.json` | name, positioning, strengths, weaknesses |
 | Customer | `customers/{market}.json` | role, pain points, buying criteria |
 | Package | `packages/{product}--{market}.json` | bundled solution tiers |
@@ -154,7 +154,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 
 ```
 cogni-portfolio/
-├── .claude-plugin/               Plugin manifest (v0.9.55)
+├── .claude-plugin/               Plugin manifest (v0.9.56)
 ├── templates/                    8 pluggable industry taxonomy templates
 │   ├── b2b-ict/                  Enterprise ICT (8 dims, 57 cats)
 │   ├── b2b-saas/                 B2B SaaS (8 dims, 47 cats)

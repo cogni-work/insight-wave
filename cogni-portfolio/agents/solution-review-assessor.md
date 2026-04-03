@@ -289,6 +289,7 @@ Return ONLY valid JSON (no markdown fencing, no explanation before or after):
 {
   "solution_slug": "cloud-monitoring--mid-market-saas-dach",
   "solution_type": "project",
+  "blueprint_drift": {"status": "clean"},
   "overall": "warn",
   "overall_score": 74,
   "stakeholder_reviews": [
@@ -369,14 +370,30 @@ Solution-level overall_score: average of three perspective scores.
 
 Only include `note` when the score is warn or fail — empty string for pass.
 
+## Blueprint Drift Pre-Check
+
+Before scoring perspectives, check for blueprint drift on each solution:
+
+1. If the solution has `blueprint_ref` and `blueprint_version`, read the referenced product's `delivery_blueprint.blueprint_version`
+2. **Version drift**: solution's `blueprint_version` < product's current `blueprint_version` — the blueprint was updated but this solution wasn't regenerated
+3. **Structural drift**: compare solution phase names/counts against the blueprint's expected phases — phases added, removed, or renamed beyond market-specific adaptations
+
+When drift is detected:
+- **Provider SA → Delivery Realism**: downgrade by one level (pass→warn, warn→fail) — the solution's phase structure may no longer match the product's current delivery standard
+- **Provider SA → Phase Architecture**: add a note identifying the drift type and version gap (e.g., "Generated from blueprint v1, current is v3")
+- Add a `blueprint_drift` field to the output JSON: `{"status": "drifted", "solution_version": 1, "current_version": 3, "drift_type": "version"}` or `{"status": "clean"}` or `{"status": "none"}` (no blueprint)
+
+Blueprint drift does not affect the Reviewer or Client SA perspectives — those evaluate commercial and adoption quality independent of internal delivery standards.
+
 ## Process
 
 1. Glob `solutions/*.json` in the provided project directory (or read specific slugs if provided)
 2. For each solution, read the proposition, feature, product, and market context
-3. Detect `solution_type` and apply the appropriate criteria adaptations
-4. Evaluate all three perspectives in sequence
-5. Synthesize: identify conflicts, prioritize improvements, determine verdict
-6. Return the JSON output
+3. Check for blueprint drift (see above)
+4. Detect `solution_type` and apply the appropriate criteria adaptations
+5. Evaluate all three perspectives in sequence
+6. Synthesize: identify conflicts, prioritize improvements, determine verdict
+7. Return the JSON output
 
 Be commercially sharp but fair. The goal is to catch solutions that would fail in a real
 procurement evaluation — unrealistic timelines, arbitrary pricing, missing prerequisites,

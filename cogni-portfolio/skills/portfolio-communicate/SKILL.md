@@ -160,6 +160,8 @@ For ad-hoc use cases, use the parameters collected during the ad-hoc flow.
 
 **Citation rule**: All templates require citations to link to **external source URLs** from entity `evidence[].source_url` fields. Never generate citations that link to internal JSON file paths (e.g., `propositions/x.json`). When an evidence claim has no external URL, present it as an inline estimate without a citation. See each template's Citations section for format details.
 
+**Blueprint metadata is internal.** Solutions may carry `blueprint_ref` and `blueprint_version` fields — these track delivery pattern consistency and are used by the solutions skill for drift detection. Never expose blueprint metadata in customer-facing output (proposals, pitches, customer narratives). It is acceptable to reference the delivery structure itself (phases, timelines) since that comes from the solution content, but not the blueprint versioning mechanism.
+
 **Output path:** Write to `output/communicate/{use-case-id}/` followed by the scope-specific filename from the template.
 
 **Backward compatibility:** If old-format files exist at `output/communicate/portfolio-overview.md` (without use-case subdirectory), mention that the output structure has changed and that new files will be in `output/communicate/customer-narrative/`. Do not automatically migrate or delete old files.

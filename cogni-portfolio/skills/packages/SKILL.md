@@ -56,9 +56,9 @@ If fewer than 2 solutions exist for a product×market pair, packaging doesn't ad
 
 For the selected product×market pair, read:
 
-- **Product JSON** (`products/{product-slug}.json`) — `revenue_model` determines package structure, positioning informs tier narrative
+- **Product JSON** (`products/{product-slug}.json`) — `revenue_model` determines package structure, positioning informs tier narrative. If the product has a `delivery_blueprint`, note its `blueprint_version`
 - **Market JSON** (`markets/{market-slug}.json`) — segmentation, buyer context, pricing expectations
-- **All solutions** for features of this product in this market — these are the building blocks
+- **All solutions** for features of this product in this market — these are the building blocks. **Check blueprint drift**: if any solution has a `blueprint_ref`, compare its `blueprint_version` against the product's current `delivery_blueprint.blueprint_version`. Warn before packaging if drifted solutions exist: "N solutions were generated from an older blueprint version (v{old} → v{current}). Their phase structure and pricing may be outdated. Recommend regenerating drifted solutions via the `solutions` skill before packaging, or proceed with current data." Let the user decide — don't block packaging, but make drift visible
 - **All propositions** for those solutions — IS/DOES/MEANS informs tier descriptions
 - **Customer JSON** (`customers/{market-slug}.json`, if exists) — buyer personas inform which capabilities matter most at entry level
 - **Competitor data** (if exists) — how competitors package influences tier design

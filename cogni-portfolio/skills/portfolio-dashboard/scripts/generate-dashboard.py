@@ -2660,6 +2660,30 @@ body::after {{
 
     # --- Solutions & Pricing ---
     if data["solutions"]:
+        # Build blueprint version lookup from products
+        product_bp_versions = {}
+        for _ps, p_ent in data["products"].items():
+            bp = p_ent.get("delivery_blueprint")
+            if bp and "blueprint_version" in bp:
+                product_bp_versions[p_ent.get("slug", _ps)] = bp["blueprint_version"]
+
+        def blueprint_drift_badge(s_ent):
+            """Return HTML badge for blueprint drift status."""
+            bp_ref = s_ent.get("blueprint_ref")
+            bp_ver = s_ent.get("blueprint_version")
+            if not bp_ref or bp_ver is None:
+                return ""
+            current_ver = product_bp_versions.get(bp_ref)
+            if current_ver is None:
+                return ""
+            if bp_ver < current_ver:
+                return f' <span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--status-fail);color:#fff" title="Blueprint v{bp_ver} → current v{current_ver}">drift v{bp_ver}→v{current_ver}</span>'
+            return f' <span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--status-pass);color:#fff" title="Blueprint v{bp_ver}">bp v{bp_ver}</span>'
+
+        # Count drift stats for summary
+        bp_drifted = sum(1 for s in data["solutions"].values() if s.get("blueprint_ref") and s.get("blueprint_version", 0) < product_bp_versions.get(s.get("blueprint_ref", ""), 0))
+        bp_total = sum(1 for s in data["solutions"].values() if s.get("blueprint_ref"))
+
         # Separate solutions by type
         project_solutions = {}
         subscription_solutions = {}
@@ -2673,10 +2697,16 @@ body::after {{
             else:
                 project_solutions[ss] = s_ent
 
-        html += """
+        bp_summary = ""
+        if bp_total > 0:
+            bp_color = "var(--status-fail)" if bp_drifted > 0 else "var(--status-pass)"
+            bp_summary = f'<div style="margin-bottom:12px;font-size:12px;color:var(--text2)">Blueprint coverage: {bp_total}/{len(data["solutions"])} solutions from blueprints' + (f' · <span style="color:{bp_color};font-weight:600">{bp_drifted} drifted</span>' if bp_drifted > 0 else ' · all current') + '</div>'
+
+        html += f"""
 <!-- Solutions & Pricing -->
 <div class="section reveal">
   <div class="section-title">Solutions & Pricing</div>
+  {bp_summary}
 """
 
         # Project solutions table
@@ -2711,8 +2741,9 @@ body::after {{
                         return "—"
                     return format_currency(t.get("price"), t.get("currency", "EUR"))
 
+                bp_badge = blueprint_drift_badge(s_ent)
                 html += f"""        <tr style="cursor:pointer" onclick="openProposition('{escape_js_string(ss)}')">
-          <td style="font-weight:500">{escape_html(ss)}</td>
+          <td style="font-weight:500">{escape_html(ss)}{bp_badge}</td>
           <td style="font-size:12px;color:var(--text2)">{escape_html(phase_names)}</td>
           <td class="mono">{duration_display}</td>
           <td class="price">{tier_str("proof_of_value")}</td>
@@ -2755,8 +2786,9 @@ body::after {{
 
                 type_badge = f'<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--accent);color:var(--bg)">{escape_html(sol_type)}</span>'
 
+                bp_badge = blueprint_drift_badge(s_ent)
                 html += f"""        <tr style="cursor:pointer" onclick="openProposition('{escape_js_string(ss)}')">
-          <td style="font-weight:500">{escape_html(ss)}</td>
+          <td style="font-weight:500">{escape_html(ss)}{bp_badge}</td>
           <td>{type_badge}</td>
           <td class="mono">{onb_display}</td>
           <td class="price">{sub_tier_str("free")}</td>
@@ -2782,8 +2814,9 @@ body::after {{
                 pct = rev_share.get("partner_pct", "?")
                 model = rev_share.get("model", "?")
 
+                bp_badge = blueprint_drift_badge(s_ent)
                 html += f"""        <tr style="cursor:pointer" onclick="openProposition('{escape_js_string(ss)}')">
-          <td style="font-weight:500">{escape_html(ss)}</td>
+          <td style="font-weight:500">{escape_html(ss)}{bp_badge}</td>
           <td style="font-size:12px;color:var(--text2)">{escape_html(stage_names)}</td>
           <td class="price">{escape_html(str(pct))}%</td>
           <td>{escape_html(str(model))}</td>
