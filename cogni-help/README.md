@@ -42,7 +42,7 @@ This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work
 /guide "I need to create a sales pitch"   # find the right plugin
 /teach 1                                   # start Course 1: Cowork Fundamentals
 /workflow research-to-slides               # see a cross-plugin pipeline
-/cheatsheet cogni-trends                     # quick reference for a plugin
+/cheatsheet cogni-trends                   # quick reference for a plugin
 /troubleshoot                              # run diagnostics
 /issues                                    # file a bug or feature request
 /courses                                   # see course progress
@@ -60,20 +60,20 @@ Or describe what you want:
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `teach` | skill | Interactive course delivery — 12 courses, adaptive pacing, progress tracking |
-| `course-deck` | skill | PPTX generation — curriculum overview or course introduction decks |
-| `guide` | skill | Plugin discovery — match tasks to plugins, ecosystem map |
-| `troubleshoot` | skill | Diagnostics — plugin integrity, dependencies, stale state, known issues |
-| `workflow` | skill | Pipeline templates — 6 cross-plugin workflow playbooks |
-| `cheatsheet` | skill | Quick reference — one-screen cards for any plugin |
-| `cogni-issues` | skill | Issue lifecycle — create, list, status, browse GitHub issues |
+| `course-deck` | skill | Generate PPTX slide decks for curriculum overview or per-course introductions |
+| `guide` | skill | Help users find the right insight-wave plugin or skill for their task |
+| `troubleshoot` | skill | Diagnose and fix common issues with insight-wave plugins |
+| `workflow` | skill | Cross-plugin workflow templates for common multi-plugin pipelines |
+| `cheatsheet` | skill | Generate quick-reference cards for any insight-wave plugin |
+| `cogni-issues` | skill | File and track GitHub issues against insight-wave ecosystem plugins |
 | `course-deck-generator` | agent (sonnet) | PPTX generation as delegated subprocess |
-| `/teach` | command | Start or resume a course |
-| `/courses` | command | Show course progress |
-| `/course-deck` | command | Generate training PPTX |
-| `/guide` | command | Find the right plugin |
-| `/troubleshoot` | command | Run diagnostics |
-| `/workflow` | command | View pipeline templates |
-| `/cheatsheet` | command | Generate quick reference |
+| `/teach` | command | Start or resume an interactive cogni-help course |
+| `/courses` | command | List all available cogni-help courses with completion status |
+| `/course-deck` | command | Generate a PPTX slide deck for course curriculum or course introduction |
+| `/guide` | command | Find the right insight-wave plugin or skill for your task |
+| `/troubleshoot` | command | Diagnose and fix issues with insight-wave plugins |
+| `/workflow` | command | Show cross-plugin workflow templates for common multi-plugin pipelines |
+| `/cheatsheet` | command | Generate a quick-reference card for any insight-wave plugin |
 | `course-status.sh` | script | JSON progress check |
 | `reset-progress.sh` | script | Reset course progress |
 | `health-check.sh` | script | JSON diagnostic output |
@@ -118,7 +118,7 @@ Exercise artifacts are written to `_teacher-exercises/`.
 
 ```
 cogni-help/
-├── .claude-plugin/plugin.json    Plugin manifest (v0.2.15)
+├── .claude-plugin/plugin.json    Plugin manifest (v0.2.16)
 ├── agents/                       1 delegation agent
 │   └── course-deck-generator.md
 ├── skills/                       7 skills

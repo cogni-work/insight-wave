@@ -38,12 +38,12 @@ This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work
 ## Quick start
 
 ```
-consulting-setup                              # frame the vision and scaffold the engagement
-consulting-discover                           # D1 diverge: research, trends, competitive baseline
-consulting-define                             # D1 converge: assumption verification, problem synthesis
-consulting-develop                            # D2 diverge: option generation, proposition modeling
-consulting-deliver                            # D2 converge: business case, roadmap, final verification
-consulting-export                             # generate the deliverable package
+/consulting-setup         # frame the vision and scaffold the engagement
+/consulting-discover      # D1 diverge: research, trends, competitive baseline
+/consulting-define        # D1 converge: assumption verification, problem synthesis
+/consulting-develop       # D2 diverge: option generation, proposition modeling
+/consulting-deliver       # D2 converge: business case, roadmap, final verification
+/consulting-export        # generate the deliverable package
 ```
 
 Or just describe what you need in natural language:
@@ -82,45 +82,64 @@ Each engagement lives in `cogni-consulting/{slug}/` with phase output directorie
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `consulting-setup` | skill | Vision framing and engagement scaffolding |
-| `consulting-discover` | skill | D1 diverge: dispatches research, trends, competitive baseline |
-| `consulting-define` | skill | D1 converge: assumption verification, problem statement synthesis |
-| `consulting-define-workspace` | skill | Workspace-aware Define phase execution for integrated project environments |
-| `consulting-develop` | skill | D2 diverge: option generation, proposition modeling |
-| `consulting-deliver` | skill | D2 converge: opportunity scoring, business case, roadmap |
-| `consulting-resume` | skill | Multi-session re-entry and status dashboard |
-| `consulting-export` | skill | Final deliverable package generation |
-| `phase-analyst` | agent | Phase readiness assessment and method recommendation |
-| `phase-gate-guard` | hook (PreToolUse) | Warns if consulting phase prerequisites are incomplete before allowing phase skills to execute |
+| `consulting-setup` | skill | Initialize a new Double Diamond consulting engagement with vision framing and project scaffolding. |
+| `consulting-discover` | skill | Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding of the problem landscape. |
+| `consulting-define` | skill | Execute the Define phase of a Double Diamond engagement — converge from discovery insights to a clear problem statement. |
+| `consulting-develop` | skill | Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore solution options. |
+| `consulting-deliver` | skill | Execute the Deliver phase of a Double Diamond engagement — converge on validated, actionable outcomes. |
+| `consulting-resume` | skill | Resume, continue, or check status of a Double Diamond consulting engagement. |
+| `consulting-export` | skill | Generate the final deliverable package for a Double Diamond engagement. |
+| `phase-analyst` | agent | Analyze diamond engagement state and assess phase readiness. |
+| `phase-gate-guard` | hook (PreToolUse) | Warns if consulting phase prerequisites are incomplete before allowing phase skills to execute. |
 
 ## Architecture
 
 ```
 cogni-consulting/
-├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       8 engagement skills
+├── .claude-plugin/
+│   └── plugin.json               Plugin manifest
+├── skills/                       7 engagement skills
 │   ├── consulting-setup/
 │   ├── consulting-discover/
 │   ├── consulting-define/
-│   ├── consulting-define-workspace/
 │   ├── consulting-develop/
 │   ├── consulting-deliver/
 │   ├── consulting-resume/
 │   └── consulting-export/
-├── agents/                       1 advisory agent
-│   └── phase-analyst.md
-├── hooks/                        Phase gate enforcement
+├── agents/
+│   └── phase-analyst.md          Phase readiness assessment and method recommendation
+├── hooks/
 │   ├── hooks.json
-│   └── phase-gate-guard.sh
-├── references/                   Method library and vision classes
+│   └── phase-gate-guard.sh       Phase gate enforcement
+├── references/                   Method library, vision classes, and data model
 │   ├── data-model.md
 │   ├── vision-classes.md
 │   ├── vision-class-summary.md
 │   ├── deliverable-map.md
+│   ├── canvas-format.md
+│   ├── lean-canvas-sections.md
 │   ├── methods/                  14 consulting methods
+│   │   ├── affinity-clustering.md
+│   │   ├── assumption-mapping.md
+│   │   ├── business-case-canvas.md
+│   │   ├── customer-journey-analysis.md
+│   │   ├── data-audit.md
+│   │   ├── desk-research-framing.md
+│   │   ├── hmw-synthesis.md
+│   │   ├── lean-canvas-authoring.md
+│   │   ├── lean-canvas-refinement.md
+│   │   ├── lean-canvas-stress-test.md
+│   │   ├── lean-canvas-synthesis-protocol.md
+│   │   ├── opportunity-scoring.md
+│   │   ├── scenario-planning.md
+│   │   └── stakeholder-mapping.md
 │   └── personas/                 Stress-test persona library
 │       └── canvas/               Lean Canvas stress-test personas
-└── scripts/                      3 engagement management scripts
+│           ├── investor.md
+│           ├── operations-finance.md
+│           ├── target-customer.md
+│           └── technical-cofounder.md
+└── scripts/                      Engagement management scripts
     ├── engagement-init.sh
     ├── engagement-status.sh
     └── update-phase.sh

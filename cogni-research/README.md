@@ -25,9 +25,9 @@ A STORM-inspired editorial research pipeline for the insight-wave ecosystem. Par
 1. **Decompose** your topic into orthogonal sub-questions grounded by preliminary web search
 2. **Research** in parallel — one agent per sub-question, searching the web and extracting findings
 3. **Aggregate** sources across all sub-questions, deduplicate, and enforce quality thresholds
-4. **Write** a structured report with inline citations linking every claim to its source → optionally enriched into themed HTML with interactive charts and diagrams via enrich-report
+4. **Write** a structured report with inline citations linking every claim to its source → `research-report.md` optionally enriched into themed HTML with interactive charts and diagrams via `cogni-visual:enrich-report`, then polished by `cogni-claims` claim verification and `cogni-copywriting` copywriter
 5. **Review** structurally — automated quality gate checks completeness, coherence, depth, and clarity
-6. **Verify** (separate step) — extract claims and check each against its source URL via cogni-claims in a dedicated context window
+6. **Verify** (separate step via `verify-report`) — extract claims and check each against its source URL via cogni-claims in a dedicated context window
 
 ## What it means for you
 
@@ -52,12 +52,13 @@ This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work
 
 ## Quick start
 
-Describe what you want in natural language:
+Describe what you want in natural language — no slash commands needed. Claude detects the request and loads the skill automatically:
 
 - "Write a research report on quantum computing's impact on cryptography"
 - "Write a detailed research report on AI adoption in healthcare"
 - "Deep research on the future of autonomous vehicles"
 - "Resume the research on autonomous vehicles"
+- "Verify the report" (after research completes — runs `verify-report` in a fresh context)
 
 ## Try it
 
@@ -117,34 +118,31 @@ The pipeline uses two skills that split the work across separate context windows
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `research-report` | skill | Main orchestrator — six-phase pipeline from topic to structurally reviewed report |
-| `verify-report` | skill | Claims verification — extracts claims, verifies against sources via cogni-claims, revises deviations |
-| `research-report-workspace` | skill | Workspace-aware research orchestration for integrated project environments |
-| `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question |
-| `local-researcher` | agent (sonnet) | Parallel document analyst for local/hybrid research mode |
+| `research-report` | skill | Generate a multi-agent research report using parallel web research with structural review |
+| `verify-report` | skill | Verify claims in a research report against cited sources using cogni-claims |
+| `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question or report section |
+| `local-researcher` | agent (sonnet) | Parallel document analyst for a single sub-question from local files (PDF, DOCX, TXT, MD, CSV) |
 | `deep-researcher` | agent (sonnet) | Recursive tree explorer for deep research mode |
-| `source-curator` | agent (sonnet) | Auto-curates sources for detailed/deep reports with 8+ sources — deduplication, quality scoring, relevance ranking |
-| `writer` | agent (sonnet) | Compiles aggregated context into a structured, cited report |
-| `claim-extractor` | agent (sonnet) | Extracts 10–30 verifiable claims from draft for verification |
-| `reviewer` | agent (sonnet) | Quality gate — scores structure and factual accuracy, issues verdict |
-| `revisor` | agent (sonnet) | Incorporates reviewer feedback and claims deviations into revised draft |
-| `block-entity-writes` | hook (PreToolUse) | Forces entity creation via scripts for consistency and validation |
-| `review-loop-guard` | hook (PostToolUse) | Caps review iterations at 3 to prevent infinite loops |
+| `source-curator` | agent (sonnet) | Ranks, filters, and annotates research sources by quality, relevance, and diversity |
+| `writer` | agent (sonnet) | Compiles aggregated research context and source entities into a cohesive, well-structured report |
+| `claim-extractor` | agent (sonnet) | Extracts verifiable claims from a report draft for downstream verification via cogni-claims |
+| `reviewer` | agent (sonnet) | Evaluates report drafts against structural review criteria and claims verification data |
+| `revisor` | agent (sonnet) | Incorporates reviewer feedback and claims deviation data into a revised draft |
+| `block-entity-writes` | hook (PreToolUse) | Blocks Write/Edit to entity directories — forces entity creation via scripts for consistency |
+| `review-loop-guard` | hook (PostToolUse) | Enforces max 3 review iterations — signals forced acceptance when limit is reached |
 
 ## Architecture
 
 ```
 cogni-research/
-├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       3 orchestration skills
+├── .claude-plugin/               Plugin manifest
+├── skills/                       2 orchestration skills
 │   ├── research-report/
 │   │   ├── SKILL.md
-│   │   └── references/           4 reference guides
-│   ├── verify-report/
-│   │   ├── SKILL.md
-│   │   └── references/           3 reference guides (incl. claims-integration)
-│   └── research-report-workspace/
-│       └── SKILL.md
+│   │   └── references/           Report types, sub-questions, review criteria, agent roles
+│   └── verify-report/
+│       ├── SKILL.md
+│       └── references/           Claims integration, standalone mode, review criteria
 ├── agents/                       8 research agents
 │   ├── section-researcher.md
 │   ├── local-researcher.md
@@ -161,8 +159,8 @@ cogni-research/
 ├── evals/                        Evaluation test cases
 │   └── evals.json
 ├── schemas/                      4 entity JSON schemas
-├── scripts/                      Entity + project utilities
-└── references/                   Model strategy documentation
+├── scripts/                      Entity creation and project utilities
+└── references/                   Model strategy and shared documentation
 ```
 
 ## Dependencies

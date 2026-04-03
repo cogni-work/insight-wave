@@ -27,6 +27,7 @@ A pitch generation pipeline built on the Corporate Visions Why Change methodolog
 4. **Why You** — research differentiation: unique capabilities, competitive gaps, proof points, customer evidence
 5. **Why Pay** — research business impact: ROI models, TCO comparisons, risk quantification, value realization timelines
 6. **Synthesize** — assemble all phases into a `sales-presentation.md` and `sales-proposal.md` with sequential citations → `sales-presentation.md` + `sales-proposal.md` → story-to-slides, copywriter (presentation deck)
+7. **Review** — closed stakeholder loop: buyer, sales director, and marketing director perspectives evaluate the pitch; automated revision if needed (max 2 passes)
 
 ## What it means for you
 
@@ -100,32 +101,37 @@ Each pitch project tracks state in `pitch-log.json` with pitch mode (customer/se
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `why-change` | skill | Main orchestrator — 6-phase pipeline from setup through all four Why Change phases to synthesis |
-| `why-change-researcher` | agent (opus) | Research specialist for all 4 content phases — web research, evidence gathering, narrative writing, claims registration |
-| `pitch-synthesizer` | agent (sonnet) | Assembles final deliverables from completed phase research into presentation and proposal formats |
-| `/why-change` | command | Slash command entry point (aliases: `/pitch`, `/sales-pitch`, `/segment-pitch`) |
-| `discover-portfolio.sh` | script | Find available cogni-portfolio projects in workspace |
-| `init-pitch-project.sh` | script | Initialize pitch project directory structure |
-| `pitch-status.sh` | script | Check status of an existing pitch project for resume workflow |
+| `why-change` | skill | Create a Why Change sales pitch for a named customer or a reusable segment pitch for a market. |
+| `why-change-researcher` | agent (opus) | Research and generate content for a specific phase of the Why Change pitch workflow. |
+| `pitch-synthesizer` | agent (sonnet) | Assemble final sales-presentation.md and sales-proposal.md from phase research. |
+| `pitch-review-assessor` | agent (haiku) | Assess completed sales pitch quality from three stakeholder perspectives: target buyer, sales director, and marketing di |
+| `pitch-revisor` | agent (sonnet) | Revise sales pitch deliverables based on pitch-review-assessor feedback. |
+| `/why-change` | command | Create a Why Change sales pitch for a named customer or market segment (aliases: `/pitch`, `/sales-pitch`, `/segment-pitch`) |
+| `discover-portfolio.sh` | script | Scan workspace for cogni-portfolio projects and return JSON metadata |
+| `init-pitch-project.sh` | script | Scaffold pitch project directory under cogni-sales/{slug}/ |
+| `pitch-status.sh` | script | Report pitch state: mode, phase, claims count, and deliverable readiness |
 
 ## Architecture
 
 ```
 cogni-sales/
-├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       1 pitch skill (why-stay, why-evolve planned)
+├── .claude-plugin/               Plugin manifest (v0.4.0)
+├── skills/                       1 pitch skill
 │   └── why-change/
 │       ├── SKILL.md
-│       └── references/           Pitch data model + output specs
-├── agents/                       2 pitch agents
+│       └── references/
+├── agents/                       4 pitch agents
 │   ├── why-change-researcher.md
-│   └── pitch-synthesizer.md
+│   ├── pitch-synthesizer.md
+│   ├── pitch-review-assessor.md
+│   └── pitch-revisor.md
 ├── commands/                     1 slash command
 │   └── why-change.md
-└── scripts/                      3 project utilities
-    ├── discover-portfolio.sh
-    ├── init-pitch-project.sh
-    └── pitch-status.sh
+├── scripts/                      3 project utilities
+│   ├── discover-portfolio.sh
+│   ├── init-pitch-project.sh
+│   └── pitch-status.sh
+└── references/                   Shared reference files
 ```
 
 ## Dependencies

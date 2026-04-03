@@ -19,16 +19,19 @@ A structured portfolio messaging workflow for Claude Cowork. Eight pluggable tax
 
 ## What it does
 
-1. **Setup** a portfolio project — capture company context, select industry taxonomy, initialize directory structure → `portfolio.json` → features, markets, products, portfolio-scan
-2. **Define** products, features (IS layer), and target markets with TAM/SAM/SOM sizing → `features/*.json` → propositions, solutions, packages
-3. **Generate** IS/DOES/MEANS propositions for each Feature x Market pair — individually or in batch → `propositions/{feature}--{market}.json` → solutions, packages, compete
-4. **Plan** solutions with implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change
-5. **Analyze** 3-5 competitors per proposition with positioning, strengths, weaknesses, and differentiation → `competitors/*.json` → propositions
-6. **Profile** ideal customers and buyer personas per target market → `customers/*.json` → portfolio-communicate
-7. **Verify** research-backed claims against cited sources via cogni-claims
-8. **Communicate** — generate pitches, proposals, briefs, workbooks, and documentation for any audience → `output/communicate/`
-9. **Bootstrap** from a Lean Canvas or Business Model Canvas — extract products, features, and markets from a founding-stage hypothesis document
-10. **Deep-dive** into individual features or propositions with competitive landscape research, buyer language validation, and interactive co-creation
+1. **Setup** — initialize a portfolio project with company context, taxonomy selection, and directory structure → `portfolio.json` → features, markets, products, portfolio-scan
+2. **Scan** — discover what a company offers by scraping their website and classifying findings against the taxonomy → `features/*.json` + `products/*.json` → propositions, solutions
+3. **Define features** — add market-independent capabilities (IS layer) per product → `features/*.json` → propositions, solutions, packages
+4. **Define markets** — discover, evaluate, and size target markets with TAM/SAM/SOM → `markets/*.json` → propositions, solutions, customers
+5. **Generate propositions** — create IS/DOES/MEANS messaging for each Feature x Market pair → `propositions/{feature}--{market}.json` → solutions, packages, synthesize, compete
+6. **Plan solutions** — define implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change, synthesize
+7. **Define products** — manage top-level product offerings and link to features → `products/*.json` → features, propositions
+8. **Build packages** — bundle solutions into sellable offerings per Product x Market → `packages/*.json` → synthesize, portfolio-communicate
+9. **Analyze competitors** — produce competitive landscape, battle cards, and differentiation per proposition → `competitors/*.json` → propositions, synthesize
+10. **Profile customers** — create ideal customer profiles and buyer personas per market → `customers/*.json` → synthesize, portfolio-communicate
+11. **Communicate** — generate pitches, proposals, briefs, workbooks, and documentation for any audience → `output/communicate/{use-case}/*.md` → copywriter, story-to-web, doc-readme-root
+12. **Dashboard** — generate an interactive HTML status view of the full portfolio → `output/dashboard.html`
+13. **Architecture diagram** — generate an Excalidraw product-feature hierarchy diagram → `output/architecture.excalidraw` → doc-readme-root
 
 ## What it means for you
 
@@ -107,60 +110,60 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `portfolio-setup` | skill | Create project, capture company context, select taxonomy |
-| `products` | skill | Define and manage named product offerings |
-| `features` | skill | Add market-independent capabilities (IS layer) per product |
-| `portfolio-ingest` | skill | Extract entities from uploaded documents (md, docx, pptx, xlsx, pdf) |
-| `markets` | skill | Discover and size target markets with TAM/SAM/SOM |
-| `propositions` | skill | Generate IS/DOES/MEANS messaging per Feature x Market (includes deep dive mode) |
-| `solutions` | skill | Define implementation plans and tiered pricing |
-| `packages` | skill | Bundle solutions into sellable packages per Product x Market |
-| `compete` | skill | Analyze 3-5 competitors per proposition |
-| `customers` | skill | Create ideal customer profiles and buyer personas |
-| `portfolio-verify` | skill | Orchestrate claim verification via cogni-claims |
+| `portfolio-setup` | skill | Initialize a new portfolio project with company context and directory structure |
+| `portfolio-canvas` | skill | Bootstrap a portfolio project from a Lean Canvas or Business Model Canvas |
+| `portfolio-scan` | skill | Discover offerings via website scanning and classify against taxonomy |
+| `portfolio-ingest` | skill | Extract portfolio entities from uploaded documents (md, docx, pptx, xlsx, pdf) |
+| `products` | skill | Define and manage the top-level product offerings in the portfolio |
+| `features` | skill | Define and manage market-independent product features (IS layer of FAB) |
+| `markets` | skill | Discover, evaluate, and size target markets for the portfolio |
+| `propositions` | skill | Generate and manage IS/DOES/MEANS (FAB) value propositions per Feature x Market pair |
+| `solutions` | skill | Define implementation plans and pricing tiers for propositions |
+| `packages` | skill | Bundle solutions into sellable packages per Product x Market combination |
+| `compete` | skill | Analyze competitors — competitive landscape, battle cards, positioning, differentiation |
+| `customers` | skill | Create ideal customer profiles and buyer personas per target market |
+| `portfolio-verify` | skill | Verify web-sourced claims in portfolio entities against their cited sources |
 | `portfolio-communicate` | skill | Generate portfolio deliverables for any audience (pitches, proposals, briefs, workbooks, docs) |
-| `portfolio-dashboard` | skill | Interactive HTML dashboard |
-| `portfolio-architecture` | skill | Interactive Excalidraw architecture diagram of products, features, and cross-product bridges |
-| `portfolio-scan` | skill | Discover offerings via web research and classify against taxonomy |
-| `trends-bridge` | skill | Bidirectional integration with cogni-trends TIPS analysis |
-| `portfolio-resume` | skill | Detect workflow phase and recommend next actions |
-| `portfolio-canvas` | skill | Bootstrap portfolio from a Lean Canvas or Business Model Canvas |
+| `portfolio-dashboard` | skill | Generate an interactive HTML dashboard showing the full portfolio status |
+| `portfolio-architecture` | skill | Generate an interactive Excalidraw architecture diagram of products and features |
+| `trends-bridge` | skill | Bidirectional integration between cogni-trends TIPS analysis and the portfolio |
+| `portfolio-resume` | skill | Resume, continue, or check status of a portfolio project |
 | `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
-| `competitor-researcher` | agent | Web research for competitive intelligence |
-| `customer-researcher` | agent | Web research for named customer profiling |
-| `customer-review-assessor` | agent | Reviews customer profiles for completeness |
-| `proposition-generator` | agent | Generates IS/DOES/MEANS messaging with optional research |
-| `proposition-quality-assessor` | agent | Reviews propositions for quality and evidence strength |
-| `solution-planner` | agent | Plans implementation phases and pricing tiers |
-| `solution-review-assessor` | agent | Reviews solutions for pricing viability |
-| `feature-quality-assessor` | agent | Assesses feature description quality |
-| `quality-enricher` | agent | General-purpose iterative improvement |
+| `competitor-researcher` | agent | Web research for competitive intelligence per proposition |
+| `customer-researcher` | agent | Web research for named company profiling per target market |
+| `customer-review-assessor` | agent | Assess customer profile quality from three stakeholder perspectives |
+| `proposition-generator` | agent | Generate IS/DOES/MEANS messaging for a single Feature x Market combination |
+| `proposition-quality-assessor` | agent | Assess DOES/MEANS messaging quality in propositions (any language) |
+| `proposition-review-assessor` | agent | Assess proposition set from buyer, sales, and product manager perspectives |
+| `proposition-deep-diver` | agent | Deep research — buyer language validation, competitive messaging, evidence enrichment |
+| `solution-planner` | agent | Plan implementation phases and pricing tiers for a single proposition |
+| `solution-review-assessor` | agent | Assess solution quality from procurement, provider SA, and client SA perspectives |
+| `feature-quality-assessor` | agent | Assess feature description quality using LLM intelligence (any language) |
+| `feature-review-assessor` | agent | Assess feature set quality from PM, proposition strategist, and pre-sales perspectives |
+| `feature-deep-diver` | agent | Deep research — competitive landscape, technical differentiation, market positioning |
+| `quality-enricher` | agent | Research company-specific information to improve features or propositions with quality gaps |
 | `communicate-review-assessor` | agent | Assess portfolio communication quality from stakeholder perspectives |
 | `dashboard-refresher` | agent | Regenerate the portfolio dashboard HTML from current entity data |
-| `feature-review-assessor` | agent | Assess feature set quality from 3 stakeholder perspectives (product manager, strategist, pre-sales) |
-| `feature-deep-diver` | agent | Web research agent for feature competitive landscape |
-| `proposition-deep-diver` | agent | Web research agent for proposition messaging analysis |
-| `proposition-review-assessor` | agent | Assess proposition set quality from 3 stakeholder perspectives (buyer, sales, marketing) |
-| `portfolio-web-researcher` | agent | Parallel web research across taxonomy dimensions |
+| `portfolio-web-researcher` | agent | Domain-scoped web research for taxonomy-driven portfolio scanning |
 
 ## Architecture
 
 ```
 cogni-portfolio/
-├── .claude-plugin/plugin.json    Plugin manifest
-├── templates/                    8 pluggable taxonomy templates
+├── .claude-plugin/               Plugin manifest (v0.9.54)
+├── templates/                    8 pluggable industry taxonomy templates
 │   ├── b2b-ict/                  Enterprise ICT (8 dims, 57 cats)
 │   ├── b2b-saas/                 B2B SaaS (8 dims, 47 cats)
 │   ├── b2b-fintech/              FinTech (8 dims, 48 cats)
 │   ├── b2b-healthtech/           HealthTech (8 dims, 46 cats)
 │   ├── b2b-martech/              MarTech (8 dims, 45 cats)
 │   ├── b2b-industrial-tech/      Industrial Tech (8 dims, 48 cats)
-│   ├── b2b-professional-services/ Prof. Services (8 dims, 44 cats)
-│   └── b2b-opensource/           Commercial OSS (8 dims, 50 cats)
+│   ├── b2b-professional-services/ Professional Services (8 dims, 44 cats)
+│   └── b2b-opensource/           Commercial Open Source (8 dims, 50 cats)
 ├── skills/                       18 portfolio skills
 ├── agents/                       17 delegation agents
 ├── references/
-│   └── data-model.md             Full entity schema
+│   └── data-model.md             Full entity schema and project structure reference
 └── scripts/                      8 utility scripts
 ```
 
@@ -168,13 +171,16 @@ cogni-portfolio/
 
 | Plugin | Required | Purpose |
 |--------|----------|---------|
+| cogni-narrative | No | Pitch use case reads arc definitions for narrative structure; output is directly consumable by story-to-slides and story-to-web |
+| cogni-visual | No | Pitch output consumable by story-to-slides, story-to-web, story-to-big-picture, and story-to-storyboard |
+| cogni-marketing | No | Customer narratives from portfolio-communicate are auto-discovered by marketing-setup for voice/messaging enrichment |
 | cogni-claims | No | Claim verification for research-backed assertions via portfolio-verify |
-| document-skills | No | Document ingestion (docx, pptx, xlsx, pdf) and XLSX export |
 | cogni-trends | No | Bidirectional TIPS integration via trends-bridge |
-| cogni-workspace | No | Theme selection for portfolio-dashboard via pick-theme skill |
-| cogni-consulting | No | Lean Canvas extraction via portfolio-canvas (canvases produced by business-model-hypothesis vision class) |
+| cogni-workspace | No | Theme selection for portfolio-dashboard via pick-theme |
+| cogni-consulting | No | Lean Canvas extraction via portfolio-canvas (canvases from business-model-hypothesis vision class) |
+| document-skills | No | Document ingestion (docx, pptx, xlsx, pdf) via portfolio-ingest; XLSX export via portfolio-communicate |
 
-cogni-portfolio is standalone for core messaging workflows. Verification and XLSX export require their respective plugins.
+cogni-portfolio is standalone for core messaging workflows. All integrations are optional and activate when the respective plugin is installed.
 
 ## Contributing
 

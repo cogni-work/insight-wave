@@ -19,7 +19,7 @@
       "name": "cogni-narrative",
       "source": "./cogni-narrative",
       "version": "1.8.5",
-      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 7 story arc frameworks including TIPS-native trend panorama and theme-thesis for investment theme narratives. Includes narrative review scoring and derivative format adaptation.",
+      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 8 story arc frameworks including TIPS-native trend panorama, theme-thesis for investment theme narratives, and JTBD portfolio for buyer-job-centric portfolio narratives. Includes narrative review scoring and derivative format adaptation.",
       "keywords": [
         "narrative",
         "story-arc",
@@ -34,7 +34,7 @@
       "name": "cogni-copywriting",
       "source": "./cogni-copywriting",
       "version": "0.2.18",
-      "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, and arc contract audit against cogni-narrative.",
+      "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, and arc contract audit against cogni-narrative.",
       "keywords": [
         "copywriting",
         "document-polishing",
@@ -74,7 +74,7 @@
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
       "version": "0.9.54",
-      "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis, deep-dive research for features and propositions, Lean Canvas bootstrapping, and eight pluggable industry taxonomies.",
+      "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis, deep-dive research for features and propositions, Lean Canvas bootstrapping, presentation-ready pitch narratives, and eight pluggable industry taxonomies.",
       "keywords": [
         "portfolio",
         "messaging",

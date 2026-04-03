@@ -21,7 +21,7 @@ A systematic claim-verification workflow for Claude Cowork. Other plugins genera
 
 ## What it does
 
-1. **Submit** claims with their source URLs — individually or batch-imported from markdown → `cogni-claims/claims.json` → consulting-deliver, synthesize
+1. **Submit** claims with their source URLs — individually or batch-imported from markdown → `cogni-claims/claims.json` → cogni-consulting/consulting-deliver, synthesize
 2. **Verify** them by fetching each source and detecting deviations (misquotation, unsupported conclusions, selective omission, data staleness, source contradiction)
 3. **Review** a dashboard showing all claims grouped by status, with inline deviation summaries and severity indicators
 4. **Inspect** flagged claims by opening the source in your browser with the relevant passage highlighted for side-by-side comparison
@@ -37,17 +37,19 @@ If you ship research, reports, or any content that leans on sourced claims, this
 
 ## Installation
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+cogni-claims is part of the [insight-wave](https://github.com/cogni-work/insight-wave) plugin suite and installs automatically via the Claude Cowork marketplace. No manual setup required.
 
 ## Quick start
 
 ```
-/claims submit --batch        # submit claims from a markdown file with citations
+/claims submit --batch        # batch-import claims from a markdown file with citations
 /claims verify                # verify all unverified claims against their sources
-/claims dashboard             # see what needs attention
-/claims inspect <claim-id>    # open the source in your browser to compare
+/claims dashboard             # review claim statuses and deviation summaries
+/claims inspect <claim-id>    # open the source in your browser with the passage highlighted
 /claims resolve <claim-id>    # decide what to do about a deviation
 ```
+
+Aliases: `/claim`, `/verify-claims`
 
 Or just describe what you want in natural language — the plugin figures out the right mode:
 
@@ -93,39 +95,37 @@ Claims are stored in your project's `cogni-claims/` directory as JSON. When you 
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `claims` | skill | Main orchestrator — handles all five modes (submit, verify, dashboard, inspect, resolve) |
-| `claim-entity` | skill | Cross-plugin data contract — defines ClaimRecord, DeviationRecord, and ResolutionRecord schemas |
-| `claim-verifier` | agent | Fetches a source URL and verifies all claims referencing it |
-| `source-inspector` | agent | Opens a source in the browser and highlights the relevant passage |
-| `/claims` | command | Slash command entry point for all modes |
+| `claims` | skill | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, and resolve claims |
+| `claim-entity` | skill | Cross-plugin data model for claim verification — defines ClaimRecord, DeviationRecord, and ResolutionRecord schemas |
+| `claim-verifier` | agent | Verify claims against a single source URL |
+| `source-inspector` | agent | Open a source URL in the browser and highlight the relevant passage for user inspection |
+| `/claims` | command | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, and resolve claims |
 
 ## Architecture
 
 ```
 cogni-claims/
-├── .claude-plugin/plugin.json    Plugin manifest
+├── .claude-plugin/               Plugin manifest
 ├── skills/                       2 verification skills
-│   ├── claims/
-│   └── claim-entity/
-│       └── references/
-│           └── schema.md         Entity schema definitions
+│   ├── claims/                   Lifecycle orchestrator (submit → verify → resolve)
+│   └── claim-entity/             Cross-plugin data contract and schema definitions
 ├── agents/                       2 verification agents
-│   ├── claim-verifier.md
-│   └── source-inspector.md
-└── commands/                     1 slash command
-    └── claims.md
+│   ├── claim-verifier.md         Source fetch and deviation detection
+│   └── source-inspector.md       Browser-based passage highlighter
+├── commands/                     1 slash command
+│   └── claims.md                 Entry point for all five modes
+└── claims-workspace/             Local runtime state (claims.json, sources, history)
 ```
 
 ## Dependencies
 
+cogni-claims is standalone — it provides a verification service that other plugins consume. No upstream dependencies are required.
+
 | Plugin | Required | Purpose |
 |--------|----------|---------|
-| cogni-research | No | Research reports submit claims for verification via claim-entity contract |
-| cogni-trends | No | Trend reports submit claims for verification |
+| cogni-trends | No | Trend reports submit claims for verification via the claim-entity contract |
 | cogni-portfolio | No | Portfolio propositions submit claims for verification |
-| cogni-sales | No | Sales pitches submit claims for verification |
-
-cogni-claims is standalone — it provides a verification service that other plugins consume. No upstream dependencies are required.
+| cogni-consulting | No | Consulting deliverables submit claims for pre-publish verification |
 
 ## Contributing
 

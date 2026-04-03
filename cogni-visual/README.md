@@ -18,11 +18,16 @@ A brief-based visual production pipeline. Five skills generate structured briefs
 
 ## What it does
 
-1. **Analyze** a narrative — detect story arc, model the audience, extract key assertions and data points
-2. **Brief** the visual — select format (slides, journey map, solution architecture, web page, poster), map content to layout units, generate image prompts → `presentation-brief.md` → pptx (PowerPoint deck)
-3. **Render** the output — produce .pptx, .excalidraw, .pen, or .html via the appropriate downstream tool
-4. **Enrich** a markdown report — post-process into themed HTML with Chart.js data visualizations and Excalidraw concept diagrams embedded as inline SVG → `{report}-enriched.html` (branded interactive HTML)
-5. **Review** the result — zone-based quality checks for big-picture scenes (4 parallel reviewers, 9 quality gates)
+1. **Brief** a presentation from any narrative → `presentation-brief.md` → pptx (PowerPoint deck)
+2. **Brief** a journey map from any narrative → `big-picture-brief.md` → render-big-picture (Excalidraw scene)
+3. **Brief** a poster series from any narrative → `storyboard-brief.md` → storyboard (print poster series)
+4. **Brief** a scrollable web page from any narrative → `web-brief.md` → web (scrollable landing page)
+5. **Brief** a solution architecture from TIPS data → `big-block-brief.md` → render-big-block (Excalidraw diagram)
+6. **Enrich** a markdown report into themed HTML → `{report}-enriched.html` (branded interactive HTML)
+7. **Render** a big-picture brief into an illustrated Excalidraw scene → `{name}.excalidraw` (illustrated journey map)
+8. **Render** a big-block brief into a structured Excalidraw diagram → `{name}.excalidraw` (solution architecture diagram)
+9. **Render** a presentation brief into a browser-ready HTML deck with speaker notes and keyboard navigation
+10. **Review** a visual brief from three stakeholder perspectives — design quality, audience experience, usability
 
 ## What it means for you
 
@@ -34,6 +39,8 @@ A brief-based visual production pipeline. Five skills generate structured briefs
 
 This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
+> **Note:** Excalidraw MCP is required for big-picture and Big Block rendering. Pencil MCP is required for web narrative and storyboard rendering. Both are optional — the brief-generation skills work without them.
+
 ## Quick start
 
 ```
@@ -43,6 +50,10 @@ story-to-big-block                         # solution architecture brief → ren
 story-to-web <narrative.md>                # web narrative brief → Pencil MCP
 story-to-storyboard <narrative.md>         # poster storyboard brief → Pencil MCP
 /enrich-report <report.md>                 # markdown report → themed HTML with charts + diagrams
+/render-big-picture <brief.md>             # big-picture brief → illustrated Excalidraw scene
+/render-big-block <brief.md>               # big-block brief → solution architecture diagram
+/render-html-slides <brief.md>             # presentation brief → self-contained HTML slide deck
+/review-brief <brief.md>                   # visual brief → stakeholder review (3 perspectives)
 ```
 
 Or just describe what you want in natural language:
@@ -68,39 +79,46 @@ The pipeline follows a compose-polish-visualize flow: narratives from cogni-narr
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `story-to-slides` | skill | Multi-slide presentation brief — audience modeling, assertion headlines, 11 layout types |
-| `story-to-big-picture` | skill | Single-canvas journey map brief — 6 metaphors, station decomposition, AI image prompts |
-| `story-to-big-block` | skill | Solution architecture brief from TIPS value-modeler — tier classification, path connections |
-| `story-to-web` | skill | Scrollable web brief — 200+ style guide tags, 10 section types, design tokens |
-| `story-to-storyboard` | skill | Multi-poster print brief — 5-zone anatomy, A0-A3 sizes, CMYK-safe colors |
-| `render-big-picture` | skill | Render journey map brief into Excalidraw scene (1100-1500 elements, dark/light mode) |
-| `render-big-block` | skill | Render solution architecture brief into Excalidraw diagram (150-250 elements) |
-| `enrich-report` | skill | Post-process markdown reports into themed HTML with Chart.js visualizations and Excalidraw concept diagrams |
+| `story-to-slides` | skill | Transform any narrative into an optimized multi-slide presentation brief that the PPTX skill can render |
+| `story-to-big-picture` | skill | Transform any narrative into a single-canvas visual journey map brief — 6 metaphors, station decomposition, AI image prompts |
+| `story-to-big-block` | skill | Transform TIPS value-modeler output into a visual Big Block solution architecture brief for Excalidraw rendering |
+| `story-to-web` | skill | Transform any narrative into an optimized scrollable web narrative brief that the web agent can render |
+| `story-to-storyboard` | skill | Transform any narrative into a multi-poster print storyboard brief for executive walkthroughs |
+| `render-big-picture` | skill | Render a big-picture-brief.md into a richly illustrated Excalidraw scene (1100-1500 elements, dark/light mode) |
+| `render-big-block` | skill | Render a big-block-brief.md into a structured solution architecture diagram using Excalidraw MCP |
+| `render-html-slides` | skill | Render a presentation-brief.md into a self-contained HTML slide presentation with speaker notes and keyboard navigation |
+| `enrich-report` | skill | Post-process any completed markdown report into a themed, self-contained HTML file with Chart.js visualizations |
+| `review-brief` | skill | Review a visual brief from three stakeholder perspectives — design quality, audience experience, and usability |
 | `story-to-slides` | agent | Orchestrates the story-to-slides skill |
-| `pptx` | agent | Renders briefs into .pptx via document-skills |
+| `pptx` | agent | Renders presentation briefs into .pptx via document-skills |
+| `html-slides` | agent | Renders presentation briefs into self-contained HTML slide decks |
+| `slides-enrichment-artist` | agent | Generates prep slides and per-slide speaker notes for a completed slide deck |
 | `story-to-big-picture` | agent | Orchestrates the story-to-big-picture skill |
 | `big-picture` | agent | Wrapper agent — delegates to render-big-picture skill |
 | `station-structure-artist` | agent | Composes station structure (130-160 elements per station) |
 | `station-enrichment-artist` | agent | Adds fine detail to stations (100-130 elements per station) |
-| `zone-reviewer` | agent | Reviews 1/4 zone of canvas for quality and contrast |
+| `zone-reviewer` | agent | Reviews one 1/4 zone of canvas for quality and contrast |
 | `story-to-big-block` | agent | Orchestrates the story-to-big-block skill |
 | `big-block` | agent | Wrapper agent — delegates to render-big-block skill |
 | `story-to-web` | agent | Orchestrates the story-to-web skill |
-| `web` | agent | Renders briefs into .pen via Pencil MCP |
+| `web` | agent | Renders web briefs into .pen + self-contained HTML via Pencil MCP |
 | `story-to-storyboard` | agent | Orchestrates the story-to-storyboard skill |
-| `storyboard` | agent | Renders briefs into multi-poster .pen via Pencil MCP |
+| `storyboard` | agent | Renders storyboard briefs into multi-poster .pen via Pencil MCP |
 | `enrich-report` | agent | Orchestrates the enrich-report skill (markdown report → themed HTML) |
-| `/render-big-picture` | command | Invoke the big-picture rendering pipeline |
-| `/render-big-block` | command | Invoke the Big Block rendering pipeline |
-| `/enrich-report` | command | Enrich a markdown report with themed visualizations and concept diagrams |
+| `brief-review-assessor` | agent | Assesses visual brief quality from three stakeholder perspectives adapted to the brief type |
+| `/render-big-picture` | command | Render a big-picture-brief.md into a richly illustrated Excalidraw scene using parallel artist agents |
+| `/render-big-block` | command | Render a big-block-brief.md into an Excalidraw solution architecture diagram |
+| `/render-html-slides` | command | Render a presentation-brief.md into a themed HTML slide presentation with speaker notes and keyboard navigation |
+| `/enrich-report` | command | Enrich a markdown report with themed Chart.js visualizations and Excalidraw concept diagrams |
+| `/review-brief` | command | Review a visual brief from stakeholder perspectives (design, audience, usability) |
 | `ensure-excalidraw-canvas` | hook (PreToolUse) | Auto-starts Excalidraw canvas frontend before any Excalidraw MCP tool call |
 
 ## Architecture
 
 ```
-cogni-visual/
-├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       8 skills (5 brief generators + 2 renderers + 1 enricher)
+cogni-visual/                              # 10 skills · 17 agents · 5 commands · 1 hook
+├── .claude-plugin/                        # plugin manifest
+├── skills/                               # 10 skills (5 brief generators · 3 renderers · 1 enricher · 1 reviewer)
 │   ├── story-to-slides/
 │   ├── story-to-big-picture/
 │   ├── story-to-big-block/
@@ -108,32 +126,33 @@ cogni-visual/
 │   ├── story-to-storyboard/
 │   ├── render-big-picture/
 │   ├── render-big-block/
-│   └── enrich-report/
-├── agents/                       14 agents (orchestration + rendering + workers)
-├── commands/                     3 slash commands
-├── hooks/                        1 PreToolUse hook (Excalidraw canvas auto-start)
-│   ├── hooks.json
-│   └── ensure-excalidraw-canvas.sh
-└── libraries/                    12 shared reference files
-    ├── arc-taxonomy.md           Arc ID → visual arc type mapping
-    ├── cta-taxonomy.md           CTA types and urgency levels
-    ├── pptx-layouts.md           Slide layout schemas
-    ├── big-picture-layouts.md    Canvas dimensions and station positioning
-    ├── big-block-layouts.md      Block sizing, tier bands, connection routing
-    ├── web-layouts.md            Section types and design tokens
-    └── storyboard-layouts.md     Poster dimensions and zone anatomy
+│   ├── render-html-slides/
+│   ├── enrich-report/
+│   └── review-brief/
+├── agents/                               # 17 agents (orchestration · rendering · workers)
+├── commands/                             # 5 slash commands
+├── hooks/                                # 1 PreToolUse hook (Excalidraw canvas auto-start)
+└── libraries/                            # 13 shared reference files
+    ├── arc-taxonomy.md                   # arc ID → visual arc type mapping
+    ├── cta-taxonomy.md                   # CTA types and urgency levels
+    ├── pptx-layouts.md                   # slide layout schemas
+    ├── big-picture-layouts.md            # canvas dimensions and station positioning
+    ├── big-block-layouts.md              # block sizing, tier bands, connection routing
+    ├── web-layouts.md                    # section types and design tokens
+    ├── storyboard-layouts.md             # poster dimensions and zone anatomy
+    └── brief-review-perspectives.md      # 5 perspective sets for stakeholder review
 ```
 
 ## Dependencies
 
 | Plugin | Required | Purpose |
 |--------|----------|---------|
-| cogni-narrative | Yes | Produces narratives (upstream — compose step) |
-| cogni-copywriting | Yes | Polishes narratives (upstream — polish step) |
+| cogni-narrative | Yes | Produces narratives consumed by all story-to-X skills (upstream compose step) |
+| cogni-copywriting | Yes | Polishes narratives before visual briefing (upstream polish step) |
 | cogni-workspace | Yes | Provides brand themes for all visual output |
-| cogni-trends | No | TIPS value-modeler data for Big Block diagrams |
+| cogni-trends | No | TIPS value-modeler data for Big Block solution architecture diagrams |
 | document-skills | No | PPTX rendering for slide briefs |
-| Excalidraw MCP | No | Canvas rendering for big-picture and Big Block (github.com/yctimlin/mcp_excalidraw) |
+| Excalidraw MCP | No | Canvas rendering for big-picture and Big Block diagrams (github.com/yctimlin/mcp_excalidraw) |
 | Pencil MCP | No | Canvas rendering for web narratives and poster storyboards (pencil.li) |
 
 ## Contributing
