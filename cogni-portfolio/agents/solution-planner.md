@@ -47,6 +47,28 @@ Read these files to build a complete picture before planning. Read all in parall
 6. Check `portfolio.json` for a `language` field. If present, generate all user-facing text content (phase descriptions, scope text, assumption text) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
 7. Check `portfolio.json` for `delivery_defaults` — this provides standard roles, day rates, target margin, and company-wide assumptions. Use these as the baseline for cost modeling. If no defaults exist, use reasonable industry defaults (Solution Architect: 1,800 EUR/day, Implementation Engineer: 1,200 EUR/day, Project Manager: 1,400 EUR/day, target margin: 30%).
 
+## Blueprint Loading
+
+After reading the product JSON (step 3), check for a `delivery_blueprint` object. If present, it provides the standard delivery pattern for this product — use it as the structural starting point instead of designing phases from scratch.
+
+**When a blueprint exists:**
+
+1. **Phase structure as skeleton**: Use the blueprint's `implementation.phases` (project), `onboarding.phases` (subscription), or `program.stages` (partnership) as the starting structure. Adapt phase descriptions to the specific feature's capability — the blueprint provides the delivery pattern, the feature determines what's being delivered in each phase.
+
+2. **Duration from ranges**: Pick specific `duration_weeks` from each phase's `duration_weeks_range` based on market context. Fast-cycle markets (short deal cycles, high buyer maturity) pull toward the low end; complex markets (regulated industries, long deal cycles, legacy environments) pull toward the high end. Add market-specific phases (e.g., regulatory compliance) that aren't in the blueprint when the market demands them.
+
+3. **Pricing from multipliers**: Use `pricing.price_multipliers` to set tier ratios. Determine the base price (PoV tier) from market context — segmentation, TAM/SAM data, competitor pricing, customer deal size. Then apply multipliers: if `small: 3.3` and the PoV is 15,000 EUR, Small is ~50,000 EUR. Adjust when market signals warrant it — the multipliers are guidance, not constraints.
+
+4. **Effort from ratios and scaling**: Use `cost_model_defaults.effort_scaling` to pick total effort per tier (from the range), then distribute across roles using `cost_model_defaults.roles` effort ratios. This replaces the need to estimate effort from scratch for each market.
+
+5. **Merge assumptions**: Start with the blueprint's `standard_assumptions`, then add market-specific assumptions (regulatory requirements, data residency, client-side prerequisites).
+
+6. **Check quality gates**: Apply the blueprint's `quality_gates` in addition to the standard quality gates for this solution type.
+
+7. **Stamp traceability**: Write `"blueprint_ref": "{product-slug}"` and `"blueprint_version": {version}` to the solution JSON output, using the product's current `delivery_blueprint.blueprint_version` value.
+
+**When no blueprint exists:** Proceed exactly as before — design phases, pricing, and effort from context alone. Do not write `blueprint_ref` or `blueprint_version` fields.
+
 ## Business Model Routing
 
 **This is the first decision.** Read the product's `revenue_model` field and route to the appropriate solution structure:
@@ -184,6 +206,8 @@ Write the solution to the path specified in the task:
 {
   "slug": "{feature-slug}--{market-slug}",
   "proposition_slug": "{feature-slug}--{market-slug}",
+  "blueprint_ref": "{product-slug or omit if no blueprint}",
+  "blueprint_version": 1,
   "solution_type": "project",
   "implementation": [
     {
@@ -300,6 +324,8 @@ Instead of effort-based costing, subscription solutions use unit economics:
 {
   "slug": "{feature-slug}--{market-slug}",
   "proposition_slug": "{feature-slug}--{market-slug}",
+  "blueprint_ref": "{product-slug or omit if no blueprint}",
+  "blueprint_version": 1,
   "solution_type": "subscription",
   "onboarding": {
     "description": "Initial setup and enablement",
@@ -380,6 +406,8 @@ Define the revenue-share or referral model: percentage, duration, qualifying con
 {
   "slug": "{feature-slug}--{market-slug}",
   "proposition_slug": "{feature-slug}--{market-slug}",
+  "blueprint_ref": "{product-slug or omit if no blueprint}",
+  "blueprint_version": 1,
   "solution_type": "partnership",
   "program": {
     "stages": [

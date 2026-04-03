@@ -95,6 +95,15 @@ Detect the user's intent and route to the appropriate mode. If ambiguous, start 
    - Report changed, unreachable, and unchanged URLs
    - Recommend running `portfolio-verify` for changed URLs
 
+6. **Blueprint drift check**: For each product with a `delivery_blueprint`, compare `blueprint_version` against `blueprint_version` on all solutions that reference it via `blueprint_ref`. Report drifted solutions:
+
+   **Blueprint drift** (solutions generated from an older blueprint version):
+   | Product | Blueprint v | Drifted Solutions |
+   |---------|------------|-------------------|
+   | cloud-platform | 3 | cloud-monitoring--mid-market (v1), sovereign-cloud--energy-de (v2) |
+
+   Recommend selective regeneration via the solutions skill. Blueprint drift is a distinct staleness path from document changes — it means the delivery pattern was updated but affected solutions weren't regenerated.
+
 ### Mode 3: Trace
 
 **Triggers**: "trace {entity}", "where did X come from", "what sources feed X", "lineage of X"
@@ -162,7 +171,8 @@ Detect the user's intent and route to the appropriate mode. If ambiguous, start 
    - Recommend: "Run the `propositions` skill to regenerate messaging for these N pairs"
 
    **Layer 3 — Solutions** (refresh after propositions are current):
-   - List stale solutions
+   - List stale solutions (from source changes AND blueprint drift)
+   - For blueprint-drifted solutions, note the version gap: "Generated from blueprint v1, current is v3"
    - Recommend: "Run the `solutions` skill to update pricing and implementation plans"
 
 4. Ask whether to re-ingest first: if the staleness was caused by a changed document, recommend running `portfolio-ingest` before refreshing entities, so the new document content informs the refresh.

@@ -149,6 +149,35 @@ Valid `revenue_model` values: `subscription` (SaaS, recurring), `project` (consu
 
 Write each product as a JSON file to `products/{slug}.json`.
 
+### Delivery Blueprint (optional)
+
+After defining `revenue_model` for each product, offer to create a delivery blueprint — the standard delivery pattern that the solution-planner uses as a starting point when generating solutions.
+
+**When to offer:** Always mention the option, but recommend it most strongly for products that will target multiple markets (where blueprint consistency matters). Single-market products benefit less.
+
+**Prompt:** "Would you like to define a standard delivery pattern for {product name}? This captures your typical phase structure, role composition, and pricing strategy — the solution-planner uses it as a skeleton and adapts per market. It saves time and ensures consistent engagement structure across markets."
+
+If the user says yes, guide them through the blueprint based on the product's `revenue_model`:
+
+**Project products:**
+1. **Phases**: "What are the standard phases for delivering this? Typically 2-5 phases — Discovery through Handover. For each phase, what's the typical duration range?" Default to standard patterns if the user doesn't have strong opinions (Discovery 1-2w, Implementation 4-8w, Testing 2-4w, Handover 1-2w).
+2. **Pricing multipliers**: "How do your tiers scale relative to the PoV? For example, if PoV is 1x, is Small typically 3x? Medium 8x?" Default to PoV: 1x, Small: 3-4x, Medium: 7-9x, Large: 15-18x.
+3. **Roles and effort**: "What roles are involved, and roughly what share of effort does each carry?" Default to SA 25%, Engineer 55%, PM 20%.
+4. **Standard assumptions**: "What assumptions apply to every market for this product?" (e.g., remote delivery, staging access timelines).
+
+**Subscription products:**
+1. **Onboarding phases**: Typically 1-2 short phases (Kickoff & Setup, First-Value Delivery).
+2. **Tier structure**: Default free/pro/enterprise with annual discount (~17%).
+3. **Professional services**: Optional standard add-ons (workshops, custom integrations).
+
+**Partnership products:**
+1. **Program stages**: Pilot (1-3m), Certified (6-12m), Strategic (ongoing).
+2. **Revenue share**: Model and percentage range.
+
+Write the blueprint as `delivery_blueprint` on the product JSON with `blueprint_version: 1`. If the user declines, proceed without it — blueprints are optional.
+
+**Updating an existing blueprint:** When modifying a product that already has a `delivery_blueprint`, warn: "Updating the blueprint will increment the version. Existing solutions generated from the previous version will be flagged as drifted — you can selectively regenerate them via the solutions skill." Increment `blueprint_version` by 1 on every blueprint edit.
+
 ### Review Presentation
 
 Present the proposed portfolio as a table with your consulting commentary:

@@ -72,7 +72,7 @@ For the selected proposition, read (in parallel where possible):
 
 - **Proposition JSON** (`propositions/{slug}.json`) -- IS/DOES/MEANS messaging defines what the solution must deliver
 - **Feature JSON** (`features/{feature-slug}.json`) -- the underlying capability
-- **Product JSON** (`products/{product-slug}.json`) -- `revenue_model` determines the solution structure. Also: positioning, pricing tier, and maturity inform price range
+- **Product JSON** (`products/{product-slug}.json`) -- `revenue_model` determines the solution structure. Also: positioning, pricing tier, and maturity inform price range. If the product has a `delivery_blueprint`, it provides the standard delivery pattern — phases, pricing strategy, role composition, and assumptions that the solution-planner uses as a structural starting point
 - **Market JSON** (`markets/{market-slug}.json`) -- region (for currency), segmentation (for scope assumptions), buyer context
 - **Competitor JSON** (`competitors/{slug}.json`, if it exists) -- competitor pricing and positioning inform calibration
 - **Customer JSON** (`customers/{market-slug}.json`, if it exists) -- buyer personas, pain points, and buying criteria inform how to frame phases and tiers
@@ -85,6 +85,8 @@ For the selected proposition, read (in parallel where possible):
 - `"project"` or absent → Continue to **Step 3** (Project Solutions)
 
 **State inferences before proposing.** Summarize key context as testable assumptions: "This is a subscription product (revenue_model: subscription) targeting mid-market buyers, so I'll design onboarding + subscription tiers, not a consulting engagement. Your competitor charges EUR 50K-200K range based on competitor data. Your customer profile shows CTO-level buyers who prioritize time-to-value under 2 weeks — I'll scope the PoV tier accordingly. Correct me if any of this is off."
+
+**Blueprint awareness.** When the product has a `delivery_blueprint`, mention it: "This product has a delivery blueprint (v{N}) with {N} standard phases. I'll use it as the starting point and adapt for this market." In batch generation, note which solutions used a blueprint vs. generated from scratch.
 
 If cost model data, delivery_defaults, or rate cards exist in context, present the rates you found rather than asking for them. Ask only about pricing inputs that no data source could answer.
 
@@ -364,8 +366,18 @@ Use `$CLAUDE_PLUGIN_ROOT/scripts/project-status.sh` to check coverage.
 
 When the user asks to review or improve existing solutions (or when you notice issues during other operations), jump straight into critique:
 
-1. Read all solutions and their source propositions, features, and markets
-2. **DOES delivery audit**: For each solution, does the implementation actually deliver the proposition's DOES statement? Trace the connection explicitly.
+1. Read all solutions and their source propositions, features, products, and markets
+2. **Blueprint drift check**: For solutions with `blueprint_ref`, compare `blueprint_version` against the product's current `delivery_blueprint.blueprint_version`. Flag solutions where the version is behind — these were generated from an older blueprint and may need regeneration. Also check structural drift: compare phase names and counts against the blueprint's expected phases. Report as a summary table:
+
+   | Solution | Blueprint | Solution v | Current v | Drift |
+   |----------|-----------|-----------|-----------|-------|
+   | cloud-monitoring--mid-market-saas-dach | cloud-platform | 1 | 2 | version drift |
+   | cloud-security--mid-market-saas-dach | cloud-platform | 2 | 2 | clean |
+   | sovereign-cloud--energy-de | cloud-platform | 1 | 2 | version + structural drift |
+
+   Recommend selective regeneration for drifted solutions. Distinguish intentional drift (market-specific regulatory phases added) from accidental drift (blueprint was updated but solution wasn't).
+
+3. **DOES delivery audit**: For each solution, does the implementation actually deliver the proposition's DOES statement? Trace the connection explicitly.
 3. **Pricing coherence across portfolio**: Compare all solutions side by side. Are solutions for different markets priced identically despite different buyer segments? Are solutions for different features priced identically despite different implementation complexity?
 4. **Template detection**: Do multiple solutions share copy-paste phase structures? Each solution should reflect the unique nature of delivering that specific capability to that specific market.
 5. **PoV quality sweep**: Read all PoV tiers together. Do they all say "2-week pilot"? A good portfolio has PoV tiers tailored to each proposition -- what "proves value" for monitoring is different from what proves value for analytics.

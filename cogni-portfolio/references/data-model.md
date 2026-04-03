@@ -127,6 +127,84 @@ Valid `maturity` values: `concept`, `development`, `launch`, `growth`, `mature`,
 
 Valid `revenue_model` values: `subscription` (SaaS/license), `project` (consulting/implementation, **default when absent**), `partnership` (revenue-share), `hybrid` (combination)
 
+#### Delivery Blueprint (optional)
+
+A `delivery_blueprint` object on the product captures the standard delivery pattern — phases, pricing strategy, role composition, and assumptions that apply across all markets. The solution-planner agent uses it as a structural starting point when generating per-Feature×Market solutions, adapting durations, pricing, and assumptions to market context.
+
+Products without a `delivery_blueprint` generate solutions from scratch (current behavior, unchanged).
+
+```json
+{
+  "slug": "managed-services",
+  "revenue_model": "project",
+  "delivery_blueprint": {
+    "blueprint_version": 1,
+    "implementation": {
+      "phases": [
+        { "phase": "Discovery & Scoping", "duration_weeks_range": [1, 2] },
+        { "phase": "Core Implementation", "duration_weeks_range": [4, 8] },
+        { "phase": "Integration & Testing", "duration_weeks_range": [2, 4] },
+        { "phase": "Tuning & Handover", "duration_weeks_range": [1, 2] }
+      ]
+    },
+    "pricing": {
+      "tier_structure": ["proof_of_value", "small", "medium", "large"],
+      "price_multipliers": {
+        "proof_of_value": 1.0,
+        "small": 3.3,
+        "medium": 8.0,
+        "large": 16.5
+      }
+    },
+    "cost_model_defaults": {
+      "roles": [
+        { "role": "Solution Architect", "effort_ratio": 0.25 },
+        { "role": "Implementation Engineer", "effort_ratio": 0.55 },
+        { "role": "Project Manager", "effort_ratio": 0.20 }
+      ],
+      "effort_scaling": {
+        "proof_of_value": { "total_days_range": [8, 15] },
+        "small": { "total_days_range": [30, 50] },
+        "medium": { "total_days_range": [60, 100] },
+        "large": { "total_days_range": [100, 150] }
+      }
+    },
+    "standard_assumptions": [
+      "Customer provides staging environment access within 5 business days",
+      "Remote delivery unless on-site explicitly scoped"
+    ],
+    "quality_gates": [
+      "PoV must have defined success criteria and go/no-go moment",
+      "Each tier must represent qualitatively different engagement scope"
+    ]
+  }
+}
+```
+
+Blueprint structure adapts to `revenue_model`:
+
+| `revenue_model` | Blueprint sections |
+|---|---|
+| `project` or absent | `implementation` (phases with `duration_weeks_range`), `pricing` (tier multipliers), `cost_model_defaults` (roles + effort scaling) |
+| `subscription` | `onboarding` (phases), `subscription` (tier structure, annual discount), `professional_services` (standard options), `cost_model_defaults` |
+| `partnership` | `program` (stages with `duration_months_range`), `revenue_share` (model + percentage range) |
+| `hybrid` | `subscription` (required) + optional `onboarding`, `professional_services`, `cost_model_defaults` |
+
+All blueprint types share: `blueprint_version` (integer, required), `standard_assumptions` (array), `quality_gates` (array).
+
+**Design principles:**
+- **Ranges, not fixed values**: `duration_weeks_range: [2, 4]` lets the solution-planner pick market-appropriate durations
+- **Multipliers, not absolute prices**: `price_multipliers` express tier ratios ("Medium is 8× PoV") — the planner sets the base price per market
+- **Effort ratios, not absolute days**: `effort_ratio: 0.25` means 25% of total effort — the planner scales total effort per market/tier
+
+**Blueprint versioning and drift detection:**
+
+`blueprint_version` starts at 1 and is incremented when the blueprint is updated. Generated solutions record `blueprint_ref` (product slug) and `blueprint_version` at generation time. When the product's blueprint version exceeds a solution's recorded version, the solution is flagged as drifted — eligible for selective regeneration.
+
+Two types of drift:
+- **Version drift**: solution's `blueprint_version` < product's current `blueprint_version` (blueprint was updated, solution wasn't regenerated)
+- **Structural drift**: solution's phase structure diverges from the blueprint (phases added, removed, or renamed beyond market-specific adaptations) — detected by comparing phase names and counts
+
 ### features/{slug}.json
 
 A feature is market-independent. It describes what the product/service IS. Each feature belongs to exactly one product.
@@ -428,7 +506,11 @@ A solution attaches commercial terms to a proposition (same slug). Structure dep
 | `cost_model` | optional (effort-based) | optional (unit economics) | optional | optional |
 
 Common required fields: `slug`, `proposition_slug`
-Common optional fields: `solution_type`, `cost_model`, `source_refs`, `lineage_status`, `created`
+Common optional fields: `solution_type`, `cost_model`, `blueprint_ref`, `blueprint_version`, `source_refs`, `lineage_status`, `created`
+
+`blueprint_ref` (string, optional): Product slug identifying which delivery blueprint was used to generate this solution. Present only on solutions generated from a blueprint.
+
+`blueprint_version` (integer, optional): The `blueprint_version` value from the product's `delivery_blueprint` at the time this solution was generated. Used for drift detection — when the product's current `blueprint_version` exceeds this value, the solution is flagged as drifted and eligible for regeneration. Must be present when `blueprint_ref` is present.
 
 ### packages/{product-slug}--{market-slug}.json
 

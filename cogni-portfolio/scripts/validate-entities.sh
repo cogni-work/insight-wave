@@ -86,6 +86,64 @@ with open('$p') as fh:
   done
 fi
 
+# Validate delivery_blueprint on products (optional — only checked when present)
+if [ -d "$PROJECT_DIR/products" ]; then
+  for p in "$PROJECT_DIR/products"/*.json; do
+    [ -f "$p" ] || continue
+    slug=$(basename "$p" .json)
+    bp_exit=0
+    python3 -c "
+import json, sys
+with open('$p') as fh:
+    d = json.load(fh)
+if 'delivery_blueprint' not in d:
+    sys.exit(0)
+bp = d['delivery_blueprint']
+rm = d.get('revenue_model', 'project')
+# blueprint_version is required
+if 'blueprint_version' not in bp or not isinstance(bp['blueprint_version'], int) or bp['blueprint_version'] < 1:
+    sys.exit(1)
+# Structure must match revenue_model
+if rm in ('project', '') or rm is None:
+    if 'implementation' not in bp:
+        sys.exit(2)
+    phases = bp['implementation'].get('phases', [])
+    for ph in phases:
+        r = ph.get('duration_weeks_range', [])
+        if len(r) != 2 or r[0] > r[1] or r[0] <= 0:
+            sys.exit(3)
+elif rm == 'subscription':
+    if 'subscription' not in bp:
+        sys.exit(2)
+elif rm == 'partnership':
+    if 'program' not in bp:
+        sys.exit(2)
+# Validate effort ratios sum to ~1.0 if present
+cmd = bp.get('cost_model_defaults', {})
+roles = cmd.get('roles', [])
+if roles:
+    total = sum(r.get('effort_ratio', 0) for r in roles)
+    if abs(total - 1.0) > 0.05:
+        sys.exit(4)
+# Validate price_multipliers are ordered (project only)
+pm = bp.get('pricing', {}).get('price_multipliers', {})
+if pm:
+    vals = [pm.get(t, 0) for t in ['proof_of_value','small','medium','large'] if t in pm]
+    for i in range(1, len(vals)):
+        if vals[i] < vals[i-1]:
+            sys.exit(5)
+" 2>/dev/null || bp_exit=$?
+    case $bp_exit in
+      0) ;; # no blueprint or valid
+      1) add_error "product" "$slug" "delivery_blueprint.blueprint_version must be a positive integer" ;;
+      2) add_error "product" "$slug" "delivery_blueprint structure does not match revenue_model" ;;
+      3) add_error "product" "$slug" "delivery_blueprint phase duration_weeks_range must be [min, max] with min <= max and min > 0" ;;
+      4) add_warning "product" "$slug" "delivery_blueprint cost_model_defaults.roles effort_ratios do not sum to ~1.0" ;;
+      5) add_warning "product" "$slug" "delivery_blueprint pricing.price_multipliers are not in ascending order" ;;
+    esac
+  done
+fi
+
 # Validate features have required fields (slug, name, description, product_slug)
 if [ -d "$PROJECT_DIR/features" ]; then
   for f in "$PROJECT_DIR/features"/*.json; do
@@ -543,6 +601,37 @@ with open('$s') as fh:
     elif [ "$exit_code" -ne 0 ]; then
       add_error "solution" "$slug" "Missing required fields or invalid structure (needs proposition_slug, implementation phases, pricing tiers)"
     fi
+    # Validate blueprint_ref consistency
+    python3 -c "
+import json, sys
+with open('$s') as fh:
+    d = json.load(fh)
+bp_ref = d.get('blueprint_ref')
+bp_ver = d.get('blueprint_version')
+if bp_ref is None and bp_ver is None:
+    sys.exit(0)  # no blueprint reference — OK
+if bp_ref is not None and bp_ver is None:
+    sys.exit(1)  # blueprint_ref without blueprint_version
+if bp_ref is None and bp_ver is not None:
+    sys.exit(2)  # blueprint_version without blueprint_ref
+# Check referenced product exists and has a blueprint
+import os
+prod_path = os.path.join('$PROJECT_DIR', 'products', bp_ref + '.json')
+if not os.path.isfile(prod_path):
+    sys.exit(3)  # product not found
+with open(prod_path) as pfh:
+    prod = json.load(pfh)
+if 'delivery_blueprint' not in prod:
+    sys.exit(4)  # product has no blueprint
+" 2>/dev/null
+    bp_rc=$?
+    case $bp_rc in
+      0) ;; # valid or no blueprint ref
+      1) add_warning "solution" "$slug" "blueprint_ref present but blueprint_version missing" ;;
+      2) add_warning "solution" "$slug" "blueprint_version present but blueprint_ref missing" ;;
+      3) add_warning "solution" "$slug" "blueprint_ref references non-existent product" ;;
+      4) add_warning "solution" "$slug" "blueprint_ref references product without delivery_blueprint" ;;
+    esac
   done
 fi
 

@@ -71,6 +71,9 @@ If `margin_health` is present in the status output and has `solutions_with_cost_
 
 If `solutions_by_type` is present, show the type breakdown: "N project, N subscription, N partnership".
 
+If `blueprint_status` is present and has `version_drifted > 0`, add a blueprint drift line:
+- **Blueprint drift** — N solutions were generated from an older blueprint version and may need regeneration. List the drifted solution slugs (from `drifted_solutions`). Recommend: "Run the `solutions` skill in review mode to check drift and selectively regenerate." Also show blueprint coverage: "N products have delivery blueprints, N solutions were generated from blueprints."
+
 After the table:
 - **Phase** — translate the `phase` value into plain language (see reference below)
 - **Quality audit** — if `quality_audit` is present and has flagged entities (`features_flagged` or `propositions_flagged` non-empty), show them grouped by issue type before stale entities. Present actionable summaries, not raw data:

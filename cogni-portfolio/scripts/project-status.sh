@@ -727,6 +727,64 @@ print(json.dumps(counts, sort_keys=True))
 " 2>/dev/null || echo "{}")
 fi
 
+# Blueprint coverage and drift detection
+blueprint_status="{}"
+if [ -d "$PROJECT_DIR/products" ] && [ -d "$PROJECT_DIR/solutions" ]; then
+  blueprint_status=$(python3 -c "
+import json, os, glob
+
+proj = '$PROJECT_DIR'
+products_with_blueprint = 0
+products_without_blueprint = 0
+product_blueprints = {}  # product_slug -> current blueprint_version
+
+for pf in glob.glob(os.path.join(proj, 'products', '*.json')):
+    try:
+        d = json.load(open(pf))
+        slug = d.get('slug', os.path.basename(pf)[:-5])
+        bp = d.get('delivery_blueprint')
+        if bp and 'blueprint_version' in bp:
+            products_with_blueprint += 1
+            product_blueprints[slug] = bp['blueprint_version']
+        else:
+            products_without_blueprint += 1
+    except Exception:
+        products_without_blueprint += 1
+
+solutions_with_blueprint = 0
+solutions_without_blueprint = 0
+version_drifted = 0
+drifted_solutions = []
+
+for sf in glob.glob(os.path.join(proj, 'solutions', '*.json')):
+    try:
+        d = json.load(open(sf))
+        bp_ref = d.get('blueprint_ref')
+        bp_ver = d.get('blueprint_version')
+        sol_slug = d.get('slug', os.path.basename(sf)[:-5])
+        if bp_ref and bp_ver is not None:
+            solutions_with_blueprint += 1
+            current_ver = product_blueprints.get(bp_ref)
+            if current_ver is not None and bp_ver < current_ver:
+                version_drifted += 1
+                drifted_solutions.append(sol_slug)
+        else:
+            solutions_without_blueprint += 1
+    except Exception:
+        pass
+
+result = {
+    'products_with_blueprint': products_with_blueprint,
+    'products_without_blueprint': products_without_blueprint,
+    'solutions_from_blueprint': solutions_with_blueprint,
+    'solutions_without_blueprint': solutions_without_blueprint,
+    'version_drifted': version_drifted,
+    'drifted_solutions': drifted_solutions
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}")
+fi
+
 # Margin health: analyze cost_model data across solutions, separated by type
 margin_health="{}"
 solutions_with_cost_model=0
@@ -1041,6 +1099,7 @@ cat << EOF
   "missing_packages": $missing_pkg_arr,
   "packageable_pairs": $packageable_arr,
   "solutions_by_type": $solutions_by_type,
+  "blueprint_status": $blueprint_status,
   "relevance_matrix": $relevance_matrix,
   "phase": "$PHASE",
   "next_actions": $next_actions,
