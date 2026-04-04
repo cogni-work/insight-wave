@@ -142,7 +142,7 @@ Write to `competitors/{feature-slug}--{market-slug}.json`:
 
 After writing the competitor JSON, submit verifiable claims to the claims workspace. For each competitor, identify claims that reference specific data points (pricing, market share, positioning statements) with web source URLs.
 
-For each verifiable claim, generate a UUID and append it atomically using the append-claim script:
+Include `entity_ref` so corrections can propagate back automatically. Use name-based array lookup (`[?name=="..."]`) to target the specific competitor — this stays stable even if competitors are reordered:
 
 ```bash
 UUID=$(python3 -c "import uuid; print(uuid.uuid4())")
@@ -158,9 +158,17 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/append-claim.sh" "<project-dir>" '{
   "deviations": [],
   "resolution": null,
   "source_excerpt": null,
-  "verification_notes": null
+  "verification_notes": null,
+  "entity_ref": {
+    "type": "competitor",
+    "file": "competitors/<feature-slug>--<market-slug>.json",
+    "field_path": "competitors[?name==\"Datadog\"].positioning"
+  },
+  "propagated_at": null
 }'
 ```
+
+Choose the `field_path` based on what the claim asserts: `competitors[?name=="X"].positioning` for positioning claims, `competitors[?name=="X"].differentiation` for differentiation claims, etc.
 
 Submit claims for: pricing data, market share percentages, specific positioning quotes, and quantified strengths/weaknesses. Store the `source_url` used for each competitor in the competitor JSON entry too.
 

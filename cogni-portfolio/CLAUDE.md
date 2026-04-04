@@ -67,7 +67,7 @@ templates/                      8 pluggable industry taxonomies
   b2b-professional-services/      Professional Services (8 dims, 44 categories)
   b2b-opensource/                  Commercial Open Source (8 dims, 50 categories)
 
-scripts/                        9 utility scripts
+scripts/                        10 utility scripts
   project-init.sh                 Initialize project directory structure
   project-status.sh               Show status with entity counts and gap analysis
   quality-audit.sh                Structural quality checks on portfolio entities
@@ -75,6 +75,7 @@ scripts/                        9 utility scripts
   sync-portfolio.sh               Sync portfolio.json with products/ directory state
   cascade-rename.sh               Cascade slug rename across dependent entity files
   append-claim.sh                 Atomically append claim to cogni-claims/claims.json
+  propagate-corrections.sh        Apply resolved claim corrections to entity JSON files
   generate-scan-mapping.sh        Generate scan-to-taxonomy mapping
   source-registry.sh              Source lineage registry management (init, register, check, staleness)
 
@@ -149,13 +150,13 @@ Quality gates block downstream generation when upstream entities fail. Features 
 | Quality Assessment | haiku | feature-quality-assessor, proposition-quality-assessor, feature-review-assessor, proposition-review-assessor, solution-review-assessor, customer-review-assessor, communicate-review-assessor, dashboard-refresher |
 | Web Research | haiku | portfolio-web-researcher |
 
-Research agents auto-log claims with source URLs to `cogni-claims/claims.json` via `scripts/append-claim.sh`.
+Research agents auto-log claims with source URLs and entity provenance (`entity_ref`) to `cogni-claims/claims.json` via `scripts/append-claim.sh`. After verification and resolution, `portfolio-verify` Step 8 propagates corrections back to entity files via `scripts/propagate-corrections.sh` and cascades staleness to downstream entities.
 
 ## Cross-Plugin Integration
 
 | Plugin | Direction | Mechanism |
 |--------|-----------|-----------|
-| cogni-claims | downstream | portfolio-verify orchestrates claim verification; research agents auto-log claims |
+| cogni-claims | bidirectional | portfolio-verify orchestrates claim verification and propagates corrections back to entity files; research agents auto-log claims with entity_ref provenance |
 | cogni-trends | bidirectional | trends-bridge imports solution templates, exports portfolio anchors |
 | cogni-workspace | upstream | portfolio-dashboard uses pick-theme for theme selection |
 | cogni-consulting | upstream | portfolio-canvas consumes Lean Canvas from business-model-hypothesis vision class |

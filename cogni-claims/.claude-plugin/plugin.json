@@ -1,6 +1,6 @@
 {
   "name": "cogni-claims",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
   "author": {
     "name": "Stephan de Haas",

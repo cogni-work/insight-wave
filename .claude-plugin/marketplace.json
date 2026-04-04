@@ -7,7 +7,7 @@
     {
       "name": "cogni-claims",
       "source": "./cogni-claims",
-      "version": "1.0.6",
+      "version": "1.0.7",
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
       "keywords": [
         "claim-verification",
@@ -73,7 +73,7 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.62",
+      "version": "0.9.63",
       "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis, deep-dive research for features and propositions, Lean Canvas bootstrapping, presentation-ready pitch narratives, and eight pluggable industry taxonomies.",
       "keywords": [
         "portfolio",

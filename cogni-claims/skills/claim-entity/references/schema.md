@@ -21,7 +21,9 @@ The ClaimEntity schema defines the data model for the cogni-claims cross-plugin 
   "deviations": [],
   "resolution": null,
   "source_excerpt": null,
-  "verification_notes": null
+  "verification_notes": null,
+  "entity_ref": null,
+  "propagated_at": null
 }
 ```
 
@@ -41,6 +43,8 @@ The ClaimEntity schema defines the data model for the cogni-claims cross-plugin 
 | `resolution` | ResolutionRecord\|null | auto | Resolution details if status is `resolved` |
 | `source_excerpt` | string\|null | auto | Verbatim excerpt from source supporting or contradicting the claim |
 | `verification_notes` | string\|null | auto | Free-text notes from the verification process (e.g., ambiguity explanations) |
+| `entity_ref` | EntityRef\|null | no | Reference to the portfolio entity file and field that this claim describes. Set by the submitting agent so corrections can propagate back to the source entity. |
+| `propagated_at` | string\|null | auto | ISO 8601 timestamp of when a resolved correction was applied back to the entity file. Null until propagation occurs. Prevents double-propagation. |
 
 #### Status Transitions
 
@@ -53,6 +57,35 @@ source_unavailable ──reverify──> verified | deviated | source_unavailabl
 verified   ──reverify──> verified | deviated | source_unavailable
 resolved   ──reverify──> verified | deviated | source_unavailable
 ```
+
+### EntityRef
+
+Optional provenance link from a claim back to the portfolio entity file and field it describes. When present, enables automatic propagation of corrections from resolved claims to their source entity files.
+
+```json
+{
+  "type": "market",
+  "file": "markets/mid-market-saas-dach.json",
+  "field_path": "tam.description"
+}
+```
+
+#### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | enum | yes | Entity type: `market`, `customer`, `competitor`, `proposition` |
+| `file` | string | yes | Relative path from project root to the entity JSON file (e.g., `markets/mid-market-saas-dach.json`) |
+| `field_path` | string | yes | Dot-notation path to the specific field. Supports array indices (`evidence[0].statement`) and name-based lookup (`named_customers[?name=="Siemens AG"].revenue.value`) for stable targeting when array order may change. |
+
+#### Field Path Examples
+
+| Entity Type | Example Field Paths |
+|-------------|-------------------|
+| market | `tam.value`, `tam.description`, `tam.source`, `sam.value`, `som.value` |
+| customer | `named_customers[?name=="Siemens AG"].employees`, `named_customers[?name=="Siemens AG"].revenue.value` |
+| competitor | `competitors[?name=="Datadog"].positioning`, `competitors[?name=="Datadog"].strengths[0]` |
+| proposition | `evidence[0].statement`, `does_statement`, `means_statement` |
 
 ### DeviationRecord
 

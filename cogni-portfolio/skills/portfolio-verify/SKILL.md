@@ -123,6 +123,115 @@ After verification completes, if `source-registry.json` exists, update URL sourc
 
 This keeps the source registry in sync with verification results so that `portfolio-resume` and `portfolio-lineage` can surface URL freshness alongside document freshness.
 
+### 8. Propagate Corrections to Entity Files
+
+After resolution, corrected claims need to flow back into the portfolio entity files that originally contained the wrong data. Without this step, a corrected market size stays wrong in `markets/*.json` and every proposition built on it inherits the error.
+
+This step activates only when resolved claims exist with actions that require entity file changes (`corrected`, `discarded`, or `alternative_source`). If all resolved claims have action `disputed` or `accepted_override`, skip this step — those actions explicitly keep the original data.
+
+**8a. Scan for propagable resolutions:**
+
+Read `cogni-claims/claims.json` and filter for claims where:
+- `status == "resolved"`
+- `resolution.action` is `corrected`, `discarded`, or `alternative_source`
+- `propagated_at` is null (not yet applied to entity files)
+
+If none found, skip to the communicate gate summary.
+
+**8b. Locate target entity files:**
+
+For each claim, determine the target file:
+- If `entity_ref` is present: use `entity_ref.file` and `entity_ref.field_path` directly
+- If `entity_ref` is absent (legacy claims without provenance): run the find-text fallback:
+  ```bash
+  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh find-text "<project-dir>" "<original_statement>"
+  ```
+  - If exactly one match: associate the claim with that file and field path
+  - If multiple matches: list all matches and ask the user which to update
+  - If no matches: report the claim as "not found in entity files" — the text may have been manually edited since submission
+
+**8c. Present propagation plan:**
+
+Show the user what will change, grouped by entity file. This is a confirmation gate — corrections touch portfolio data, so the user must approve:
+
+```
+Propagation Plan — N corrections across M entity files:
+
+markets/mid-market-saas-dach.json:
+  [corrected] tam.value: EUR 789.9 Mrd. → EUR 68.25 Mrd. (claim-abc123)
+  [corrected] tam.description: Updated source text (claim-abc124)
+
+customers/mid-market-saas-dach.json:
+  [corrected] named_customers[?name=="Sybit"].employees: 350 → 153 (claim-def456)
+  [discarded] named_customers[?name=="Source Global"].positioning: Remove (claim-ghi789)
+
+Proceed with all corrections? [yes / inspect individual / skip]
+```
+
+**8d. Apply corrections:**
+
+After user confirmation, apply each correction using the propagation script:
+
+- **corrected**: Replace the value at the target field path
+  ```bash
+  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh apply "<project-dir>" "<entity-file>" "<field-path>" "<corrected-value>"
+  ```
+
+- **discarded**: Remove the data point from the entity file
+  ```bash
+  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh remove "<project-dir>" "<entity-file>" "<field-path>"
+  ```
+
+- **alternative_source**: Update the source URL on the entity
+  ```bash
+  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh update-source "<project-dir>" "<entity-file>" "<field-path>" "<new-url>" "<new-title>"
+  ```
+
+For claims where `entity_ref.field_path` points to a numeric field but the `corrected_statement` is prose, extract the numeric value from the corrected statement and apply it to the value field, then apply the full corrected statement to the description field. Example: claim corrects "EUR 51.8 Mrd. Consulting 2025" to "EUR 49.0 Mrd. Consulting 2025" → update both `tam.value` (49000000000) and `tam.description`.
+
+**8e. Mark as propagated:**
+
+For each successfully applied correction, update `cogni-claims/claims.json`:
+- Set `propagated_at` to the current ISO 8601 timestamp
+- Write a `propagated` event to `cogni-claims/history/{claim-id}.json`
+
+This prevents double-propagation if portfolio-verify is run again.
+
+**8f. Cascade staleness to downstream entities:**
+
+Corrections to upstream entities make downstream entities stale — their content was generated from data that has now changed. Determine the cascade:
+
+- **Market corrected** → all propositions referencing that market slug become stale. Find them: `propositions/*--{market-slug}.json`
+- **Proposition corrected** → the solution for that proposition becomes stale: `solutions/{same-slug}.json`
+- **Customer corrected** → no cascade (customers are leaf entities in the dependency chain)
+- **Competitor corrected** → no cascade (competitors are leaf entities)
+
+For each stale entity, set `"lineage_status": "stale"` on the entity JSON (add the field if absent). This integrates with the existing `portfolio-lineage` refresh system.
+
+Present the cascade:
+```
+Staleness cascade:
+  markets/mid-market-saas-dach.json was corrected
+    → 3 propositions marked stale
+    → 2 solutions marked stale (downstream of stale propositions)
+
+Run portfolio-lineage in refresh mode to regenerate stale entities.
+```
+
+**8g. Report summary:**
+
+```
+Propagation complete:
+  N entity files updated
+  N claims marked as propagated
+  N downstream entities marked stale
+  N claims could not be propagated (no entity_ref, no text match)
+
+Next steps:
+  - Run portfolio-lineage refresh to regenerate stale propositions/solutions
+  - Or proceed to portfolio-communicate (stale entities will be flagged)
+```
+
 ## Important Notes
 
 - This skill orchestrates; `cogni-claims:claims` does the actual verification work

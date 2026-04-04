@@ -186,7 +186,7 @@ Before writing the file, verify each layer against these criteria:
 
 After writing the proposition JSON, submit quantified claims to the claims workspace when web research was used. Claims to submit include: specific metrics in the DOES statement, evidence items with source URLs, and any quantified business outcomes in MEANS.
 
-For each claim with a web source URL, generate a UUID and append it atomically using the append-claim script:
+Include `entity_ref` so corrections can propagate back automatically. For evidence items, use the array index matching the position in the `evidence` array. For claims about the DOES or MEANS statement itself, use `does_statement` or `means_statement`:
 
 ```bash
 UUID=$(python3 -c "import uuid; print(uuid.uuid4())")
@@ -202,7 +202,13 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/append-claim.sh" "<project-dir>" '{
   "deviations": [],
   "resolution": null,
   "source_excerpt": null,
-  "verification_notes": null
+  "verification_notes": null,
+  "entity_ref": {
+    "type": "proposition",
+    "file": "propositions/<feature-slug>--<market-slug>.json",
+    "field_path": "evidence[0].statement"
+  },
+  "propagated_at": null
 }'
 ```
 

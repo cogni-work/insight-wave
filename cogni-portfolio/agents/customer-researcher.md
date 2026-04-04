@@ -107,7 +107,7 @@ The task prompt that spawned you includes a `plugin_root` path. Wherever these i
 
 **Claim Submission:**
 
-After assembling the company profile, submit verifiable claims (revenue figures, employee counts, technology partnerships) to the claims workspace. For each verifiable data point with a web source:
+After assembling the company profile, submit verifiable claims (revenue figures, employee counts, technology partnerships) to the claims workspace. For each verifiable data point with a web source, include `entity_ref` so that corrections can propagate back automatically. Use name-based array lookup (`[?name=="..."]`) for stable targeting — array indices can shift if customers are reordered:
 
 ```bash
 UUID=$(python3 -c "import uuid; print(uuid.uuid4())")
@@ -123,9 +123,17 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/append-claim.sh" "<project-dir>" '{
   "deviations": [],
   "resolution": null,
   "source_excerpt": null,
-  "verification_notes": null
+  "verification_notes": null,
+  "entity_ref": {
+    "type": "customer",
+    "file": "customers/<market-slug>.json",
+    "field_path": "named_customers[?name==\"Siemens AG\"].revenue.value"
+  },
+  "propagated_at": null
 }'
 ```
+
+Choose the `field_path` based on what the claim asserts: `named_customers[?name=="X"].employees` for employee counts, `named_customers[?name=="X"].revenue.value` for revenue, etc.
 
 Submit claims for: revenue data, employee counts, technology stack mentions, and strategic partnership announcements.
 

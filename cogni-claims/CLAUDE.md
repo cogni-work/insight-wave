@@ -41,7 +41,7 @@ Three record types compose the claim lifecycle:
 
 | Record | Key Fields | Purpose |
 |--------|-----------|---------|
-| ClaimRecord | id, statement, source_url, status, deviations[], resolution | Single verifiable claim with lifecycle state |
+| ClaimRecord | id, statement, source_url, status, deviations[], resolution, entity_ref, propagated_at | Single verifiable claim with lifecycle state and entity provenance |
 | DeviationRecord | type, severity, source_excerpt, explanation | Specific discrepancy between claim and source |
 | ResolutionRecord | action, corrected_statement, rationale | User's decision on a deviated claim |
 

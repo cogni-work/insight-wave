@@ -135,7 +135,9 @@ Write ONLY to the market JSON file path provided in the task. Update its `tam`, 
 
 **Claim Submission:**
 
-After writing the market JSON, submit all quantified claims to the claims workspace for downstream verification. For each TAM/SAM/SOM value that has a web source URL (not internal estimates), generate a UUID and append it atomically using the append-claim script:
+After writing the market JSON, submit all quantified claims to the claims workspace for downstream verification. For each TAM/SAM/SOM value that has a web source URL (not internal estimates), generate a UUID and append it atomically using the append-claim script.
+
+Include `entity_ref` so that corrections can propagate back to this file automatically. The `file` is the relative path from the project root to the market JSON you just wrote, and `field_path` identifies which TAM/SAM/SOM field the claim describes — use `tam.description` for claims about the TAM description text, `tam.value` for claims about the numeric value, and similarly for SAM and SOM:
 
 ```bash
 UUID=$(python3 -c "import uuid; print(uuid.uuid4())")
@@ -151,7 +153,13 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/append-claim.sh" "<project-dir>" '{
   "deviations": [],
   "resolution": null,
   "source_excerpt": null,
-  "verification_notes": null
+  "verification_notes": null,
+  "entity_ref": {
+    "type": "market",
+    "file": "markets/<market-slug>.json",
+    "field_path": "tam.description"
+  },
+  "propagated_at": null
 }'
 ```
 

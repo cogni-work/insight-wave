@@ -95,6 +95,11 @@ Complete lifecycle history for a single claim, recording every state transition.
       "event": "resolved",
       "timestamp": "2026-02-23T15:00:00Z",
       "data": { "action": "corrected", "rationale": "..." }
+    },
+    {
+      "event": "propagated",
+      "timestamp": "2026-02-23T15:05:00Z",
+      "data": { "entity_file": "markets/example.json", "field_path": "tam.value", "old_value": "...", "new_value": "..." }
     }
   ]
 }

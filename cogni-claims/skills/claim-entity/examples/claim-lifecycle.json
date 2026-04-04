@@ -33,7 +33,13 @@
       "resolved_at": "2026-02-23T15:00:00Z"
     },
     "source_excerpt": "The report states AI market growth is projected between $800B and $1.5T by 2030.",
-    "verification_notes": "The claim's $1.8T figure exceeds the source's upper bound of $1.5T. This appears to be an unsupported conclusion rather than a misquotation, as the source does discuss AI market growth but with a different projected range."
+    "verification_notes": "The claim's $1.8T figure exceeds the source's upper bound of $1.5T. This appears to be an unsupported conclusion rather than a misquotation, as the source does discuss AI market growth but with a different projected range.",
+    "entity_ref": {
+      "type": "market",
+      "file": "markets/global-ai-market.json",
+      "field_path": "tam.description"
+    },
+    "propagated_at": "2026-02-23T15:05:00Z"
   },
   "history": [
     {
@@ -59,6 +65,16 @@
       "data": {
         "action": "corrected",
         "rationale": "Updated to match the source's stated range."
+      }
+    },
+    {
+      "event": "propagated",
+      "timestamp": "2026-02-23T15:05:00Z",
+      "data": {
+        "entity_file": "markets/global-ai-market.json",
+        "field_path": "tam.description",
+        "old_value": "The global AI market is expected to reach $1.8 trillion by 2030.",
+        "new_value": "The global AI market is projected between $800B and $1.5T by 2030."
       }
     }
   ]
