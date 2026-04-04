@@ -657,7 +657,13 @@ def _render_communicate_card(cf, level_labels):
         if rounds:
             latest = rounds[-1]
             fa = latest.get("full_assessment", {})
-            perspectives = fa.get("perspectives", [])
+            perspectives = fa.get("stakeholder_reviews", [])
+            if not perspectives:
+                raw = fa.get("perspectives", [])
+                if isinstance(raw, dict):
+                    perspectives = list(raw.values())
+                elif isinstance(raw, list):
+                    perspectives = raw
             if not perspectives:
                 for pkey in ["target_buyer", "marketing_director", "sales_director"]:
                     p = fa.get(pkey)
