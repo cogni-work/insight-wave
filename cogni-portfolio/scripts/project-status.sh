@@ -785,6 +785,75 @@ print(json.dumps(result))
 " 2>/dev/null || echo "{}")
 fi
 
+# Shared solution coverage
+shared_solution_status="{}"
+if [ -d "$PROJECT_DIR/solutions" ]; then
+  shared_solution_status=$(python3 -c "
+import json, os, glob
+
+proj = '$PROJECT_DIR'
+shared_refs = 0
+overlay_solutions = 0
+overlay_in_sync = 0
+overlay_drifted = 0
+independent_solutions = 0
+incompatible = 0
+
+# Count shared references
+shared_dir = os.path.join(proj, 'solutions', '_shared')
+if os.path.isdir(shared_dir):
+    for sf in glob.glob(os.path.join(shared_dir, '*.json')):
+        try:
+            d = json.load(open(sf))
+            if d.get('shared_solution'):
+                shared_refs += 1
+        except Exception:
+            pass
+
+# Count overlay vs independent solutions
+for sf in glob.glob(os.path.join(proj, 'solutions', '*.json')):
+    try:
+        d = json.load(open(sf))
+        if d.get('messaging_overlay'):
+            overlay_solutions += 1
+            ref = d.get('shared_solution_ref')
+            if ref:
+                ref_path = os.path.join(proj, 'solutions', ref + '.json')
+                if os.path.isfile(ref_path):
+                    shared = json.load(open(ref_path))
+                    sol_type = d.get('solution_type', 'project')
+                    in_sync = True
+                    if sol_type in ('subscription', 'hybrid'):
+                        s_tiers = d.get('subscription', {}).get('tiers', {})
+                        r_tiers = shared.get('subscription', {}).get('tiers', {})
+                        for tn in r_tiers:
+                            st = s_tiers.get(tn, {})
+                            rt = r_tiers[tn]
+                            if st.get('price_monthly') != rt.get('price_monthly') or st.get('price_annual') != rt.get('price_annual'):
+                                in_sync = False
+                                break
+                    if in_sync:
+                        overlay_in_sync += 1
+                    else:
+                        overlay_drifted += 1
+                else:
+                    overlay_drifted += 1
+        else:
+            independent_solutions += 1
+    except Exception:
+        independent_solutions += 1
+
+result = {
+    'shared_references': shared_refs,
+    'overlay_solutions': overlay_solutions,
+    'overlay_in_sync': overlay_in_sync,
+    'overlay_drifted': overlay_drifted,
+    'independent_solutions': independent_solutions
+}
+print(json.dumps(result))
+" 2>/dev/null || echo "{}")
+fi
+
 # Margin health: analyze cost_model data across solutions, separated by type
 margin_health="{}"
 solutions_with_cost_model=0
@@ -1100,6 +1169,7 @@ cat << EOF
   "packageable_pairs": $packageable_arr,
   "solutions_by_type": $solutions_by_type,
   "blueprint_status": $blueprint_status,
+  "shared_solution_status": $shared_solution_status,
   "relevance_matrix": $relevance_matrix,
   "phase": "$PHASE",
   "next_actions": $next_actions,

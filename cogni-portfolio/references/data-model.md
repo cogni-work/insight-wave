@@ -121,7 +121,7 @@ The `delivery_defaults` object provides company-wide defaults for solution cost 
 ```
 
 Required fields: `slug`, `name`, `description`
-Optional fields: `positioning`, `pricing_tier`, `revenue_model`, `maturity`, `launch_date`, `version`, `source_file`, `source_refs`, `lineage_status`, `created`
+Optional fields: `positioning`, `pricing_tier`, `revenue_model`, `maturity`, `launch_date`, `version`, `shared_solution`, `source_file`, `source_refs`, `lineage_status`, `created`
 
 Valid `maturity` values: `concept`, `development`, `launch`, `growth`, `mature`, `decline`
 
@@ -513,6 +513,52 @@ Common optional fields: `solution_type`, `cost_model`, `blueprint_ref`, `bluepri
 `blueprint_version` (integer, optional): The `blueprint_version` value from the product's `delivery_blueprint` at the time this solution was generated. Used for drift detection — when the product's current `blueprint_version` exceeds this value, the solution is flagged as drifted and eligible for regeneration. Must be present when `blueprint_ref` is present.
 
 `blueprint_guidance_applied` (boolean, optional): Indicates that user-provided blueprint adjustments were applied during batch generation. Present only on solutions generated in batch mode where the user provided non-null adjustments to the blueprint approach in the blueprint discussion step. When `true`, the solution may deviate from the standard blueprint in ways the user explicitly requested.
+
+#### Shared Solutions
+
+When a product's features share the same delivery infrastructure — identical subscription tiers, onboarding structure, cost model, and professional services — generating independent solutions per Feature×Market produces near-identical files where only the feature-specific messaging differs. Shared solutions eliminate this redundancy.
+
+**Product-level declaration:**
+
+Add `"shared_solution": true` to the product JSON. This declares that all features of this product share one commercial structure per market — only onboarding descriptions, tier scope text, and professional service names/scopes vary per feature.
+
+```json
+{
+  "slug": "insight-wave-plugins",
+  "revenue_model": "hybrid",
+  "shared_solution": true,
+  "delivery_blueprint": { ... }
+}
+```
+
+**Reference solutions** are stored at `solutions/_shared/{product-slug}--{market-slug}.json`. They use the same schema as normal solutions plus:
+
+```json
+{
+  "slug": "_shared/insight-wave-plugins--b2b-sales-dach",
+  "shared_solution": true,
+  "product_slug": "insight-wave-plugins",
+  "market_slug": "b2b-sales-dach",
+  "solution_type": "hybrid",
+  "onboarding": { ... },
+  "subscription": { ... },
+  "professional_services": { ... },
+  "cost_model": { ... },
+  "created": "2026-04-04"
+}
+```
+
+The reference solution defines all commercial fields — pricing, cost model, tiers, durations, onboarding pricing, professional services pricing and structure. Text fields that vary per feature use product-level descriptions (e.g., "Plugin-Setup und erste Nutzung" rather than "cogni-sales Pitch-Erstellung").
+
+**Overlay solutions** are the per-Feature×Market files. They inherit commercial structure from the reference and carry feature-specific messaging:
+
+`shared_solution_ref` (string, optional): Relative path to the shared reference solution (e.g., `"_shared/insight-wave-plugins--b2b-sales-dach"`). When present, this solution was derived from a shared reference — its commercial fields (pricing, cost model, tiers, durations) are inherited, and only messaging fields (descriptions, scope text, service names) are feature-specific.
+
+`messaging_overlay` (boolean, optional): When `true`, indicates this solution was generated in overlay mode. Commercial fields must match the referenced shared solution. Editing commercial fields on an overlay creates drift — update the shared reference and regenerate overlays instead.
+
+**Escape hatch**: If a feature's proposition cannot be served by the shared commercial structure (e.g., it requires fundamentally different pricing or delivery phases), the solution-planner flags the incompatibility and generates a full independent solution without `shared_solution_ref`. This solution coexists with overlay solutions for sibling features.
+
+**Shared solution drift**: When a shared reference solution is updated, all overlay solutions referencing it are flagged as stale — their commercial fields may no longer match the reference. The solutions skill offers to regenerate overlays after reference changes. This is distinct from blueprint drift (blueprint version changed) — shared solution drift means the resolved commercial values changed.
 
 ### packages/{product-slug}--{market-slug}.json
 

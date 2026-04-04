@@ -472,6 +472,46 @@ In revision mode:
 
 Do not over-correct. The review identifies specific weaknesses — address those, not adjacent areas that were already acceptable. A revision that rewrites everything defeats the purpose of targeted feedback.
 
+## Overlay Mode
+
+When invoked with a `shared_solution_ref` path, you are in overlay mode. A shared reference solution already defines the complete commercial structure (pricing, cost model, tiers, durations, onboarding pricing, professional services pricing and structure). Your job is to generate only the feature-specific messaging that makes this solution speak to the specific proposition's DOES statement.
+
+In overlay mode:
+
+1. Read the shared reference solution at the provided `shared_solution_ref` path
+2. Read the proposition JSON for this specific Feature×Market combination
+3. Read the feature JSON for capability context (what the feature IS and does)
+4. **Copy ALL commercial fields unchanged** from the shared reference:
+   - All pricing numbers (`price_monthly`, `price_annual`, prices in professional_services options, etc.)
+   - `cost_model` (assumptions, unit_economics, bill_of_materials, effort_by_tier — everything)
+   - `onboarding.pricing` and `onboarding.phases[].duration_weeks` (or `duration_days`)
+   - `subscription.currency`, `subscription.discount_annual_pct`, `subscription.billing_cycle`
+   - `subscription.tiers.*.price_monthly`, `subscription.tiers.*.price_annual`
+   - `subscription.tiers.*.limits`
+   - `blueprint_ref`, `blueprint_version`, `blueprint_guidance_applied` (if present)
+5. **Generate feature-specific text** for each messaging field:
+   - `onboarding.description`: What onboarding means for THIS feature's capability
+   - `onboarding.phases[].description`: What setup/first-value delivery looks like for THIS feature
+   - `subscription.tiers.*.scope`: What each tier includes for THIS feature (e.g., "200 Pitches/Monat" for cogni-sales vs. "Unbegrenzte Trend-Analysen" for cogni-trends)
+   - `professional_services.description`: How optional services relate to THIS feature
+   - `professional_services.options[].name`: Feature-specific service names (e.g., "Pitch-Review & Optimierung" vs. "Trend-Analyse-Workshop")
+   - `professional_services.options[].scope`: What each service delivers for THIS feature
+6. Write `"shared_solution_ref": "{relative-path-to-shared-ref}"` and `"messaging_overlay": true`
+7. Write the complete solution JSON to the specified output path
+
+**Content language**: Follow the same language rules as normal mode — check `portfolio.json` for `language` field.
+
+**Compatibility check**: Before generating messaging, verify that the shared structure can credibly deliver this feature's proposition. If the proposition's DOES statement requires fundamentally different commercial terms (e.g., a feature that needs a multi-month implementation project but the shared structure is a 1-week onboarding), flag the incompatibility in your response:
+
+```
+INCOMPATIBLE: Feature {slug}'s DOES statement "{does_text}" requires {reason}
+which the shared solution structure does not support. Recommend full generation.
+```
+
+Do not force-fit messaging onto an inappropriate structure. Return the incompatibility flag and skip writing the solution file.
+
+**Quality gate in overlay mode**: DOES traceability only. Does the messaging (scope text, onboarding descriptions, service names) credibly reflect delivering THIS feature's proposition? The commercial viability was validated on the shared reference — you are only checking that the words match the capability.
+
 ## Output
 
 Write the solution JSON file and return a brief summary adapted to the solution type:
@@ -482,3 +522,5 @@ Write the solution JSON file and return a brief summary adapted to the solution 
 - **Hybrid**: Subscription tiers + services summary
 
 In revision mode, also return a brief diff summary: what changed and why, referencing the review recommendations addressed.
+
+In overlay mode, return: feature name, a one-line summary of the messaging approach, and confirmation that commercial fields were inherited unchanged. If incompatible, return the incompatibility flag instead.

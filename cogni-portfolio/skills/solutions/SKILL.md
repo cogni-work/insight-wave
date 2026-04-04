@@ -366,8 +366,17 @@ Use `$CLAUDE_PLUGIN_ROOT/scripts/project-status.sh` to check coverage.
 
 When the user asks to review or improve existing solutions (or when you notice issues during other operations), jump straight into critique:
 
-1. Read all solutions and their source propositions, features, products, and markets
-2. **Blueprint drift check**: For solutions with `blueprint_ref`, compare `blueprint_version` against the product's current `delivery_blueprint.blueprint_version`. Flag solutions where the version is behind — these were generated from an older blueprint and may need regeneration. Also check structural drift: compare phase names and counts against the blueprint's expected phases. Report as a summary table:
+1. Read all solutions (including `solutions/_shared/` references) and their source propositions, features, products, and markets
+2. **Shared solution consistency check**: For solutions with `messaging_overlay: true`, verify their commercial fields match the referenced shared solution. Flag drift:
+
+   | Solution | Shared Ref | Commercial Sync | Messaging |
+   |----------|-----------|----------------|-----------|
+   | cogni-sales--b2b-sales-dach | _shared/iwp--b2b-sales-dach | in sync | DOES traceable |
+   | cogni-trends--b2b-sales-dach | _shared/iwp--b2b-sales-dach | DRIFTED (pricing) | DOES traceable |
+
+   When reviewing overlay solutions, focus on messaging quality and DOES traceability — skip commercial evaluation (it belongs on the shared reference). When commercial changes are needed, recommend updating the shared reference and regenerating overlays rather than fixing individual solutions.
+
+3. **Blueprint drift check**: For solutions with `blueprint_ref`, compare `blueprint_version` against the product's current `delivery_blueprint.blueprint_version`. Flag solutions where the version is behind — these were generated from an older blueprint and may need regeneration. Also check structural drift: compare phase names and counts against the blueprint's expected phases. Report as a summary table:
 
    | Solution | Blueprint | Solution v | Current v | Drift |
    |----------|-----------|-----------|-----------|-------|
@@ -493,27 +502,78 @@ Batch mode skips the interactive co-development steps -- use it when the user wa
 
    When the user approves without changes, pass `blueprint_guidance: null`. When revision rounds (step 9) re-launch `solution-planner`, re-pass the same `blueprint_guidance` so revisions respect the user's original adjustments.
 
-6. Launch `solution-planner` agents in parallel for each proposition. Include the `blueprint_guidance` object (or null) in each agent's task prompt.
-7. After each solution is written, launch `solution-review-assessor` agents in parallel to evaluate them
-8. For solutions with verdict "revise": re-launch `solution-planner` with the review feedback (revision mode) and the original `blueprint_guidance`, then re-assess. Maximum 2 revision rounds per solution
-9. Present a batch summary:
-   - **Accepted** (Round 1): solutions that passed stakeholder review on first attempt
-   - **Accepted** (Round 2): solutions that needed one revision round
-   - **Needs attention**: solutions that still have issues after 2 rounds — flag for manual review
-10. Offer to run the portfolio-wide review flow (steps 1-11) across all new solutions
+6. **Detect shared solution products.** For each product in the batch, check the product JSON for `"shared_solution": true`. When found, this product's features share one commercial structure per market — switch to the shared solution workflow instead of launching independent agents per feature.
+
+   For products with `shared_solution: true`:
+
+   a. Present the efficiency gain:
+
+      "**Product {product-name}** has `shared_solution: true` — {N} features × {M} markets = {N×M} solutions.
+      With shared mode: **{M} reference solutions + {N×M} lightweight overlays** instead of {N×M} full generations.
+      Only feature-specific messaging (onboarding descriptions, tier scope text, service names) varies per feature."
+
+   b. For each unique market in the batch, generate ONE reference solution to `solutions/_shared/{product-slug}--{market-slug}.json` using the full `solution-planner` agent. Pass the product context, market context, `delivery_blueprint`, and `blueprint_guidance`. The reference solution defines all commercial fields at the product level — pricing, cost model, tiers, durations, professional services structure. Text fields use product-level descriptions (not feature-specific).
+
+   c. Review each reference solution with `solution-review-assessor` (full 15-criteria evaluation). If verdict is "revise", re-launch the planner in revision mode. Maximum 2 rounds. The reference solution must pass before overlays are generated — it defines the commercial structure all features inherit.
+
+   d. Once reference solutions pass, launch `solution-planner` agents in **overlay mode** in parallel for each Feature×Market combination. Each overlay agent receives:
+      - `shared_solution_ref`: path to the reference solution
+      - Proposition JSON path for this specific Feature×Market
+      - Feature JSON path for capability context
+
+      The overlay agent copies all commercial fields and generates only feature-specific messaging.
+
+   e. For overlay solutions, run a lightweight DOES-traceability check rather than the full stakeholder review. The commercial viability was validated on the reference. Flag any overlays where the solution-planner reported `INCOMPATIBLE` — these need full independent generation.
+
+   For products **without** `shared_solution: true`: proceed with the standard per-proposition agent launch as before.
+
+7. For non-shared products: launch `solution-planner` agents in parallel for each proposition. Include the `blueprint_guidance` object (or null) in each agent's task prompt.
+8. After each solution is written, launch `solution-review-assessor` agents in parallel to evaluate them (full review for non-shared solutions, lightweight for overlays)
+9. For solutions with verdict "revise": re-launch `solution-planner` with the review feedback (revision mode) and the original `blueprint_guidance`, then re-assess. Maximum 2 revision rounds per solution
+10. Present a batch summary:
+    - **Shared solutions**: {M} reference solutions accepted, {N×M} overlays generated ({X} passed, {Y} incompatible → generated independently)
+    - **Independent solutions**: accepted Round 1 / accepted Round 2 / needs attention
+    - **Needs attention**: solutions that still have issues after 2 rounds — flag for manual review
+11. Offer to run the portfolio-wide review flow (steps 1-11) across all new solutions
 
 Then offer the user review options:
 - "Would you like to: (a) open the dashboard to see the solutions with pricing tiers and margin health, (b) review individual solutions in detail, or (c) proceed to the next steps?"
 
 Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. The user can then pick individual solutions to refine interactively.
 
+## Shared Solution Co-Development (Interactive)
+
+When the user wants to work on solutions for a product with `shared_solution: true` interactively (not batch), the flow becomes:
+
+1. **Identify the product and market.** Read the product JSON and confirm `shared_solution: true`. If no shared reference solution exists yet for this Product×Market, co-develop one first.
+
+2. **Co-develop the reference solution.** Use the full consultative flow (Steps 3/3s/3p → 3b → 4 → 5 → 6) but framed at the product level. The user is defining how ALL features of this product are commercially delivered to this market:
+   - "We're defining the shared commercial structure for {product-name} in {market-name}. This will apply to all {N} features. Let's start with the delivery model."
+   - All co-development questions are about the product, not a specific feature: "What's the right Pro price for your plugin suite in this market?" not "What's the right Pro price for cogni-sales?"
+   - Write the reference solution to `solutions/_shared/{product-slug}--{market-slug}.json`
+
+3. **Review the reference solution** with `solution-review-assessor` (full evaluation). Iterate until accepted.
+
+4. **Generate overlays.** Once the reference is accepted, offer to generate all feature overlays for this market:
+   - "The reference solution is ready. Shall I generate messaging for all {N} features, or would you like to start with specific ones?"
+   - Launch `solution-planner` agents in overlay mode for each feature
+   - Present the overlay results grouped by feature with the feature-specific messaging highlighted
+
+5. **Spot-check overlays.** Flag any overlays where DOES traceability is weak or where the solution-planner reported incompatibility.
+
+When the user asks to work on a specific Feature×Market proposition and its product has `shared_solution: true`:
+- If a shared reference exists: offer overlay mode ("This product uses shared solutions. I'll generate feature-specific messaging from the reference. Or would you prefer a fully independent solution for this feature?")
+- If no shared reference exists: "This product is marked for shared solutions but has no reference for {market}. Shall I co-develop the reference first?"
+
 ## Editing Solutions
 
 Read the existing solution JSON, apply the user's changes, and write back. But don't just make the change mechanically -- consider whether the edit reveals a deeper issue. If the user is shortening timelines, are they being realistic or optimistic? If they're lowering prices, is it because competitors are cheaper or because the value proposition doesn't support the price? Surface the underlying question.
 
+**Editing overlay solutions:** When the user wants to change a commercial field (pricing, cost model, tier structure) on a solution with `messaging_overlay: true`, warn about drift: "This solution inherits its commercial structure from the shared reference at `{shared_solution_ref}`. Changing pricing here will create inconsistency with the {N-1} sibling solutions. Would you prefer to update the shared reference and regenerate all overlays?" If the user insists on editing just this solution, apply the change and remove the `messaging_overlay: true` flag — the solution becomes an independent solution that happens to have a `shared_solution_ref` for traceability but is no longer in sync. For messaging-only edits (descriptions, scope text, service names), apply directly — these are feature-specific by design.
+
 ## Listing Solutions
 
-Read all JSON files in the project's `solutions/` directory. Group by `solution_type` and present with type-appropriate columns:
+Read all JSON files in the project's `solutions/` directory **and** `solutions/_shared/` (if it exists). Group by `solution_type` and present with type-appropriate columns. For shared solutions, show the reference and overlay count:
 
 **Project Solutions:**
 

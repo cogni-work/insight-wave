@@ -623,14 +623,90 @@ with open(prod_path) as pfh:
     prod = json.load(pfh)
 if 'delivery_blueprint' not in prod:
     sys.exit(4)  # product has no blueprint
-" 2>/dev/null
-    bp_rc=$?
+" 2>/dev/null && bp_rc=0 || bp_rc=$?
     case $bp_rc in
       0) ;; # valid or no blueprint ref
       1) add_warning "solution" "$slug" "blueprint_ref present but blueprint_version missing" ;;
       2) add_warning "solution" "$slug" "blueprint_version present but blueprint_ref missing" ;;
       3) add_warning "solution" "$slug" "blueprint_ref references non-existent product" ;;
       4) add_warning "solution" "$slug" "blueprint_ref references product without delivery_blueprint" ;;
+    esac
+    # Validate shared_solution_ref consistency
+    python3 -c "
+import json, sys, os
+with open('$s') as fh:
+    d = json.load(fh)
+ref = d.get('shared_solution_ref')
+overlay = d.get('messaging_overlay', False)
+if ref is None and not overlay:
+    sys.exit(0)  # not a shared solution — OK
+if overlay and ref is None:
+    sys.exit(1)  # messaging_overlay=true but no shared_solution_ref
+if ref is not None and not overlay:
+    sys.exit(2)  # shared_solution_ref present but messaging_overlay not set
+# Check referenced shared solution exists
+shared_path = os.path.join('$PROJECT_DIR', 'solutions', ref + '.json')
+if not os.path.isfile(shared_path):
+    sys.exit(3)  # shared reference not found
+# Verify commercial fields match the reference
+with open(shared_path) as sfh:
+    shared = json.load(sfh)
+# Compare pricing fields based on solution type
+sol_type = d.get('solution_type', 'project')
+if sol_type in ('subscription', 'hybrid'):
+    s_tiers = d.get('subscription', {}).get('tiers', {})
+    r_tiers = shared.get('subscription', {}).get('tiers', {})
+    for tier_name in r_tiers:
+        st = s_tiers.get(tier_name, {})
+        rt = r_tiers[tier_name]
+        if st.get('price_monthly') != rt.get('price_monthly') or st.get('price_annual') != rt.get('price_annual'):
+            sys.exit(4)  # pricing drift
+elif sol_type == 'project':
+    s_pricing = d.get('pricing', {})
+    r_pricing = shared.get('pricing', {})
+    for tier_name in r_pricing:
+        if s_pricing.get(tier_name, {}).get('price') != r_pricing[tier_name].get('price'):
+            sys.exit(4)  # pricing drift
+" 2>/dev/null && shared_rc=0 || shared_rc=$?
+    case $shared_rc in
+      0) ;; # valid or not a shared solution
+      1) add_warning "solution" "$slug" "messaging_overlay is true but shared_solution_ref is missing" ;;
+      2) add_warning "solution" "$slug" "shared_solution_ref present but messaging_overlay not set to true" ;;
+      3) add_error "solution" "$slug" "shared_solution_ref references non-existent file" ;;
+      4) add_warning "solution" "$slug" "Pricing drift detected — commercial fields differ from shared reference" ;;
+    esac
+  done
+fi
+
+# Validate shared reference solutions in solutions/_shared/
+if [ -d "$PROJECT_DIR/solutions/_shared" ]; then
+  for s in "$PROJECT_DIR/solutions/_shared"/*.json; do
+    [ -f "$s" ] || continue
+    slug="_shared/$(basename "$s" .json)"
+    python3 -c "
+import json, sys, os
+with open('$s') as fh:
+    d = json.load(fh)
+if not d.get('shared_solution'):
+    sys.exit(1)  # missing shared_solution marker
+prod_slug = d.get('product_slug')
+market_slug = d.get('market_slug')
+if not prod_slug or not market_slug:
+    sys.exit(2)  # missing product_slug or market_slug
+prod_path = os.path.join('$PROJECT_DIR', 'products', prod_slug + '.json')
+if not os.path.isfile(prod_path):
+    sys.exit(3)  # referenced product not found
+with open(prod_path) as pfh:
+    prod = json.load(pfh)
+if not prod.get('shared_solution'):
+    sys.exit(4)  # product not marked as shared_solution
+" 2>/dev/null && shared_ref_rc=0 || shared_ref_rc=$?
+    case $shared_ref_rc in
+      0) ;; # valid
+      1) add_warning "solution" "$slug" "File in _shared/ but missing shared_solution: true marker" ;;
+      2) add_error "solution" "$slug" "Shared reference missing product_slug or market_slug" ;;
+      3) add_error "solution" "$slug" "Shared reference product_slug references non-existent product" ;;
+      4) add_warning "solution" "$slug" "Shared reference product not marked with shared_solution: true" ;;
     esac
   done
 fi

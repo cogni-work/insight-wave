@@ -385,15 +385,63 @@ When drift is detected:
 
 Blueprint drift does not affect the Reviewer or Client SA perspectives — those evaluate commercial and adoption quality independent of internal delivery standards.
 
+## Shared Solution Review
+
+When reviewing solutions, check for two shared-solution scenarios:
+
+### Reviewing a shared reference solution (`solutions/_shared/*.json`)
+
+The reference solution defines the commercial structure that all features of a product inherit for a given market. Apply the full 15-criteria evaluation plus one additional gate:
+
+**Product-level applicability gate**: Are the commercial terms generic enough to work across all features of this product? Check that tier scope descriptions, onboarding descriptions, and professional service scopes use product-level language — not feature-specific language that would be wrong for sibling features. For example, "Plugin-Setup und Workspace-Konfiguration" is product-level; "Pitch-Erstellung nach Corporate Visions" is feature-specific and belongs on the overlay, not the reference.
+
+If the reference contains feature-specific language, flag it as a revision item — the reference should describe the delivery model at the product level, with per-feature specifics delegated to overlays.
+
+### Reviewing an overlay solution (`messaging_overlay: true`)
+
+The commercial structure has already been validated on the shared reference — do not re-evaluate pricing, cost model, tier differentiation, or margin health. Instead, apply a reduced 3-criteria check:
+
+1. **DOES traceability** (from Provider SA): Does the feature-specific messaging (onboarding descriptions, tier scope text, service names) credibly deliver this feature's proposition? Can you trace a line from the DOES statement to what the buyer sees in each tier?
+
+2. **Scope clarity** (from Reviewer/Procurement): Can a buyer understand what they get from the tier descriptions? Are the feature-specific scope sentences concrete and distinguishable from sibling features?
+
+3. **Integration specificity** (from Client SA): Does the messaging acknowledge feature-specific integration needs, prerequisites, or dependencies that differ from the product-level defaults?
+
+Return a simplified assessment JSON for overlay solutions:
+
+```json
+{
+  "slug": "cogni-sales--b2b-sales-dach",
+  "review_mode": "overlay",
+  "shared_solution_ref": "_shared/insight-wave-plugins--b2b-sales-dach",
+  "criteria": {
+    "does_traceability": {"score": "pass", "note": ""},
+    "scope_clarity": {"score": "pass", "note": ""},
+    "integration_specificity": {"score": "warn", "note": "No mention of CRM integration prerequisites"}
+  },
+  "verdict": "accept",
+  "revision_guidance": []
+}
+```
+
+Verdict logic for overlay reviews:
+- **accept**: All 3 criteria pass or warn
+- **revise**: Any criterion is fail — return targeted messaging improvement guidance
+- (No "reject" for overlays — if the commercial structure is fundamentally wrong, that's a reference-level issue)
+
 ## Process
 
-1. Glob `solutions/*.json` in the provided project directory (or read specific slugs if provided)
-2. For each solution, read the proposition, feature, product, and market context
-3. Check for blueprint drift (see above)
-4. Detect `solution_type` and apply the appropriate criteria adaptations
-5. Evaluate all three perspectives in sequence
-6. Synthesize: identify conflicts, prioritize improvements, determine verdict
-7. Return the JSON output
+1. Glob `solutions/*.json` and `solutions/_shared/*.json` in the provided project directory (or read specific slugs if provided)
+2. For each solution:
+   - If `messaging_overlay: true` → apply overlay review (3 criteria)
+   - If file is in `_shared/` → apply reference review (full 15 criteria + product-level gate)
+   - Otherwise → apply standard review (full 15 criteria)
+3. Read the proposition, feature, product, and market context
+4. Check for blueprint drift (see above) — skip for overlay solutions
+5. Detect `solution_type` and apply the appropriate criteria adaptations
+6. Evaluate perspectives appropriate to the review mode
+7. Synthesize: identify conflicts, prioritize improvements, determine verdict
+8. Return the JSON output
 
 Be commercially sharp but fair. The goal is to catch solutions that would fail in a real
 procurement evaluation — unrealistic timelines, arbitrary pricing, missing prerequisites,
