@@ -102,7 +102,20 @@ Keep the tone warm and oriented toward action — this is a welcome-back moment,
 
 ### 5. Recommend Next Action
 
-Present each entry from `next_actions` with the skill name and reason. Offer to proceed with the top recommendation immediately.
+Present entries from `next_actions` **sorted by `priority` (ascending)**. Lower priority numbers represent upstream work that must complete before higher-numbered downstream actions can produce quality output.
+
+**Presentation rules:**
+- Lead with the lowest-priority (most upstream) action as the primary recommendation
+- If multiple actions share the same priority, present them as parallel options the user can tackle in any order
+- When a higher-priority action (e.g., communicate at 10) appears alongside a lower-priority action (e.g., packages at 8), explicitly note the dependency: explain *why* the upstream action should come first
+- Offer to proceed with the top (lowest priority number) recommendation immediately
+
+**Common dependency pairs — explain these when both appear:**
+- packages (8) before communicate (10) — communicate generates deliverables from package data; without current packages, output will be incomplete
+- solutions (7) before packages (8) — packages bundle solutions into tiers; missing solutions mean incomplete bundles
+- propositions (6) before solutions (7) — solutions implement proposition DOES/MEANS; no propositions means nothing to implement
+- features (3) before propositions (6) — propositions map features to markets; feature changes invalidate downstream propositions
+- ingest (1) before everything — new document data may change features, markets, or other entities
 
 If the phase is `complete`, congratulate the user and suggest reviewing outputs or running `portfolio-communicate` for additional deliverables. If communicate files are stale (indicated by a communicate action in `next_actions`), mention that `portfolio-communicate` should be re-run to refresh customer-facing documentation.
 

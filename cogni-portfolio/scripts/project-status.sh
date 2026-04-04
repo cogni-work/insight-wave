@@ -628,27 +628,31 @@ next_actions="["
 na_first=true
 add_action() {
   if $na_first; then na_first=false; else next_actions="$next_actions, "; fi
-  next_actions="$next_actions{\"skill\": \"$1\", \"reason\": \"$2\"}"
+  next_actions="$next_actions{\"skill\": \"$1\", \"reason\": \"$2\", \"priority\": $3}"
 }
+# Priority map (lower = more upstream, execute first):
+#   1=ingest, 2=products, 3=features, 4=markets, 5=customers,
+#   6=propositions, 7=solutions/compete, 8=packages, 9=verify,
+#   10=communicate/architecture
 
 # Recommend ingest when uploads exist (phase-independent)
 if [ "$UPLOADS" -gt 0 ]; then
-  add_action "ingest" "$UPLOADS file(s) in uploads/ awaiting ingestion"
+  add_action "ingest" "$UPLOADS file(s) in uploads/ awaiting ingestion" 1
 fi
 
 # Recommend communicate refresh when stale (phase-independent)
 if [ "$COMMUNICATE_STALE" = "true" ]; then
-  add_action "communicate" "Communicate files may be stale — $COMMUNICATE_STALE_REASON"
+  add_action "communicate" "Communicate files may be stale — $COMMUNICATE_STALE_REASON" 10
 fi
 
 # Recommend architecture refresh when stale (phase-independent)
 if [ "$ARCHITECTURE_STALE" = "true" ]; then
-  add_action "portfolio-architecture" "Architecture diagram may be stale — $ARCHITECTURE_STALE_REASON"
+  add_action "portfolio-architecture" "Architecture diagram may be stale — $ARCHITECTURE_STALE_REASON" 10
 fi
 
 # Recommend adding purpose statements when coverage is low (phase-independent)
 if [ "$PURPOSE_TOTAL" -gt 0 ] && [ "$PURPOSE_WITH" -lt "$((PURPOSE_TOTAL / 2))" ]; then
-  add_action "features" "$PURPOSE_WITH of $PURPOSE_TOTAL features have purpose statements — add purpose to improve architecture diagrams and customer narratives"
+  add_action "features" "$PURPOSE_WITH of $PURPOSE_TOTAL features have purpose statements — add purpose to improve architecture diagrams and customer narratives" 3
 fi
 
 # Note available context entries (informational, phase-independent)
@@ -658,52 +662,52 @@ fi
 
 case "$PHASE" in
   products)
-    add_action "products" "No products defined yet"
+    add_action "products" "No products defined yet" 2
     ;;
   features)
-    add_action "features" "$PRODUCTS product(s) exist but no features defined"
+    add_action "features" "$PRODUCTS product(s) exist but no features defined" 3
     ;;
   markets)
-    add_action "markets" "Features defined but no target markets yet"
+    add_action "markets" "Features defined but no target markets yet" 4
     ;;
   customers)
-    add_action "customers" "$MARKETS market(s) defined but no customer profiles — profiles sharpen proposition messaging"
-    add_action "propositions" "Skip to propositions without customer profiles (weaker messaging)"
+    add_action "customers" "$MARKETS market(s) defined but no customer profiles — profiles sharpen proposition messaging" 5
+    add_action "propositions" "Skip to propositions without customer profiles (weaker messaging)" 6
     ;;
   propositions)
     if [ "$CUSTOMERS_PCT" -lt 100 ] && [ "$CUSTOMERS" -gt 0 ]; then
       missing_cust=$((MARKETS - CUSTOMERS))
-      add_action "customers" "$missing_cust market(s) still lack customer profiles — add for sharper messaging"
+      add_action "customers" "$missing_cust market(s) still lack customer profiles — add for sharper messaging" 5
     fi
     if [ "$EXCLUDED_COUNT" -gt 0 ]; then
-      add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending ($EXCLUDED_COUNT excluded)"
+      add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending ($EXCLUDED_COUNT excluded)" 6
     else
-      add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending"
+      add_action "propositions" "$MISSING_COUNT of $EXPECTED_PROPOSITIONS Feature x Market pairs pending" 6
     fi
     ;;
   enrichment)
     if [ "$CUSTOMERS_PCT" -lt 100 ]; then
       missing_cust=$((MARKETS - CUSTOMERS))
-      add_action "customers" "$missing_cust market(s) lack customer profiles"
+      add_action "customers" "$missing_cust market(s) lack customer profiles" 5
     fi
     if [ "$SOLUTIONS_PCT" -lt 100 ]; then
       missing_sol=$((PROPOSITIONS - SOLUTIONS))
-      add_action "solutions" "$missing_sol proposition(s) lack solution plans"
+      add_action "solutions" "$missing_sol proposition(s) lack solution plans" 7
     fi
     if [ "$PACKAGES_PCT" -lt 100 ] && [ "$PACKAGEABLE_COUNT" -gt 0 ]; then
       missing_pkg=$((PACKAGEABLE_COUNT - PACKAGES))
-      add_action "packages" "$missing_pkg product x market pair(s) ready for packaging"
+      add_action "packages" "$missing_pkg product x market pair(s) ready for packaging" 8
     fi
     if [ "$COMPETITORS_PCT" -lt 100 ]; then
       missing_comp=$((PROPOSITIONS - COMPETITORS))
-      add_action "compete" "$missing_comp proposition(s) lack competitor analysis"
+      add_action "compete" "$missing_comp proposition(s) lack competitor analysis" 7
     fi
     ;;
   verification)
-    add_action "verify" "$CLAIMS_PENDING claim(s) pending verification ($CLAIMS_UNVERIFIED unverified, $CLAIMS_DEVIATED deviated)"
+    add_action "verify" "$CLAIMS_PENDING claim(s) pending verification ($CLAIMS_UNVERIFIED unverified, $CLAIMS_DEVIATED deviated)" 9
     ;;
   communicate)
-    add_action "communicate" "All entities complete -- ready to generate portfolio deliverables (pitches, proposals, briefs, workbooks, docs)"
+    add_action "communicate" "All entities complete -- ready to generate portfolio deliverables (pitches, proposals, briefs, workbooks, docs)" 10
     ;;
   complete)
     ;;
