@@ -581,6 +581,13 @@ def escape_js_string(text):
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "")
 
 
+def _numeric(val):
+    """Extract numeric value from scalar or dict format (e.g. {"value": 400, ...})."""
+    if isinstance(val, dict):
+        return val.get("value")
+    return val
+
+
 def format_currency(value, currency="EUR"):
     if value is None:
         return "N/A"
@@ -2979,11 +2986,11 @@ body::after {{
             for ss, s_ent in sorted(subscription_cm.items()):
                 cm = s_ent["cost_model"]
                 ue = cm.get("unit_economics", {})
-                gm = ue.get("gross_margin_pct")
-                ltv_cac = ue.get("ltv_cac_ratio")
-                churn = ue.get("churn_monthly_pct")
-                cac = ue.get("cac")
-                ltv = ue.get("ltv")
+                gm = _numeric(ue.get("gross_margin_pct"))
+                ltv_cac = _numeric(ue.get("ltv_cac_ratio"))
+                churn = _numeric(ue.get("churn_monthly_pct"))
+                cac = _numeric(ue.get("cac"))
+                ltv = _numeric(ue.get("ltv"))
 
                 def ue_cell(val, good_threshold, bad_threshold, fmt="{:.1f}%", reverse=False):
                     if val is None:
