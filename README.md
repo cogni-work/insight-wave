@@ -140,15 +140,16 @@ For developers and power users who prefer the command line.
 - `bash` 3.2+, `python3` (stdlib only), `jq`
 - Optional: [Obsidian](https://obsidian.md/) for browsable knowledge management
 
-### MCP servers (optional)
+### MCP servers
 
-Some plugins use MCP servers for rendering and browser automation. Install only the ones you need.
+Plugins declare their MCP dependencies in `.mcp.json` files. When you install a plugin from the marketplace, Desktop/Cowork auto-discovers and starts the required MCP servers — no manual configuration needed for auto-installed MCPs.
 
 | MCP Server | Used by | Purpose | Install |
 |------------|---------|---------|---------|
-| excalidraw | [cogni-visual](cogni-visual/README.md), [cogni-portfolio](cogni-portfolio/README.md) | Diagram and journey map rendering | [excalidraw-mcp](https://github.com/excalidraw/excalidraw-mcp) |
-| pencil | [cogni-visual](cogni-visual/README.md) | Web narrative and storyboard rendering | [Pencil](https://docs.pencil.dev/getting-started/installation) |
-| claude-in-chrome | [cogni-help](cogni-help/README.md) | Issue filing, theme extraction | [Chrome extension](https://code.claude.com/docs/en/chrome) |
+| excalidraw | [cogni-visual](cogni-visual/README.md), [cogni-portfolio](cogni-portfolio/README.md) | Diagram and journey map rendering | Auto-installed via plugin `.mcp.json` (npx) |
+| excalidraw_sketch | [cogni-visual](cogni-visual/README.md) | Optional sketch composition | Auto-installed via plugin `.mcp.json` (remote URL) |
+| browsermcp | [cogni-claims](cogni-claims/README.md), [cogni-help](cogni-help/README.md), [cogni-workspace](cogni-workspace/README.md) | Browser automation, claim verification, issue filing | Auto-installed via plugin `.mcp.json` (npx) |
+| pencil | [cogni-visual](cogni-visual/README.md) | Web narrative and storyboard rendering | Manual — open [Pencil](https://pencil.dev) desktop app |
 
 ### Learn more
 

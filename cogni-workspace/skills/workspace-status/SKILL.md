@@ -1,13 +1,13 @@
 ---
 name: workspace-status
 description: "Diagnose and report on the health of an insight-wave workspace. Use this skill whenever the user mentions workspace status, health, diagnostics, or troubleshooting — including check workspace, is my workspace ok, something broke, why isn't my plugin working, diagnose workspace, verify workspace, or any situation where understanding the workspace state would help resolve a problem. Even if the user doesn't explicitly say status, trigger this skill when they describe symptoms that suggest a misconfigured workspace (missing env vars, plugins not found, themes not loading). This is the first skill to reach for when debugging workspace issues."
-version: 0.1.0
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, Skill
+version: 0.2.0
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, Skill, ToolSearch
 ---
 
 # Workspace Status
 
-Diagnose the health of an insight-wave workspace by checking its foundation files, environment variables, plugin registry, themes, and dependencies. The goal is to give the user a clear picture of what's working and what needs attention, with actionable fixes for every issue found.
+Diagnose the health of an insight-wave workspace by checking its foundation files, environment variables, plugin registry, themes, dependencies, and MCP servers. The goal is to give the user a clear picture of what's working and what needs attention, with actionable fixes for every issue found.
 
 ## Locating the Workspace
 
@@ -20,7 +20,7 @@ If no `.workspace-config.json` exists at the resolved path, stop and tell the us
 
 ## Running the Checks
 
-Run all five checks, then present a single consolidated report. The checks are ordered by dependency — foundation must exist before environment makes sense, environment must be correct before plugins can be verified.
+Run all six checks, then present a single consolidated report. The checks are ordered by dependency — foundation must exist before environment makes sense, environment must be correct before plugins can be verified.
 
 ### 1. Foundation
 
@@ -95,6 +95,41 @@ The script returns JSON with each tool's availability and version. Report:
 
 If `check-dependencies.sh` returns `"success": false`, report which required tools are missing.
 
+### 6. MCP Servers
+
+MCP servers power visual rendering (Excalidraw, Pencil), browser automation (browsermcp),
+and other capabilities. Plugins declare their required MCPs in `.mcp.json` files —
+Desktop/Cowork auto-loads them when the plugin is installed. This check verifies that
+required MCPs are actually available in the current session.
+
+Read `references/mcp-registry.md` for the full list of ecosystem MCPs and which plugins
+provide them.
+
+**Detection approach**: Use `ToolSearch` to probe for MCP tool prefixes. For each known
+MCP server, search for one representative tool:
+
+| MCP Server | Probe tool | Provider plugin |
+|------------|-----------|-----------------|
+| `excalidraw` | `mcp__excalidraw__describe_scene` | cogni-visual, cogni-portfolio |
+| `excalidraw_sketch` | `mcp__excalidraw_sketch__read_me` | cogni-visual |
+| `browsermcp` | `mcp__browsermcp__browser_navigate` | cogni-claims, cogni-help, cogni-workspace |
+| `pencil` | `mcp__pencil__get_editor_state` | Pencil desktop app (manual) |
+
+For each MCP, use `ToolSearch` with `select:` prefix to check if the tool exists.
+If `ToolSearch` returns the tool definition, the MCP is loaded. If it returns no match,
+the MCP is not available.
+
+**Report format**:
+
+- **Loaded**: The MCP tools are available in this session
+- **Not loaded**: The MCP is declared by an installed plugin but not available — may need
+  a session restart or the provider plugin may not be installed
+- **Manual**: The MCP requires manual installation (Pencil desktop app) — inform the user
+  but don't flag as an error
+
+Only check MCPs for plugins that are actually installed (cross-reference with the plugin
+registry from Check 3). Don't warn about MCPs for plugins the user hasn't installed.
+
 ## Status Report
 
 Present results as a compact summary. Use OK / WARNING / CRITICAL status per category:
@@ -107,6 +142,7 @@ Environment:  OK       | 12 vars set, 0 missing
 Plugins:      OK       | 5 registered, 5 installed
 Themes:       OK       | 3 themes available
 Dependencies: OK       | 2/2 required, 3/3 optional
+MCP Servers:  OK       | 3/3 loaded (1 manual)
 
 Language: EN | Last updated: 2026-03-04
 ```

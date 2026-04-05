@@ -2,7 +2,7 @@
 name: manage-themes
 description: >-
   Manage visual design themes for the workspace — extract themes from live
-  websites (via Chrome), PowerPoint templates, or presets, then store and apply
+  websites (via browsermcp), PowerPoint templates, or presets, then store and apply
   them to all visual outputs (slides, documents, diagrams, reports). Also audits
   and improves existing themes: contrast/accessibility checks, palette harmony,
   typography pairing, and completeness review. Use this skill whenever the user
@@ -15,8 +15,8 @@ description: >-
   "make it match our brand", "use our company colors", or "grab the style from
   that site", this skill applies. Also triggers on "brand guidelines", "design
   system", "brand identity", or "visual standards".
-version: 0.2.0
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Skill
+version: 0.3.0
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Skill, mcp__browsermcp__browser_navigate, mcp__browsermcp__browser_snapshot, mcp__browsermcp__browser_screenshot, mcp__browsermcp__browser_click
 ---
 
 # Manage Themes
@@ -33,7 +33,7 @@ Before any operation, resolve the workspace themes directory:
 2. Otherwise fall back to `{workspace}/cogni-workspace/themes/`
 3. If the themes directory does not exist, create it (and `_template/` inside it) before proceeding
 
-If Chrome browser automation tools are unavailable, inform the user upfront and suggest PPTX extraction or theme-factory presets as alternatives.
+If browsermcp tools are unavailable, inform the user upfront and suggest PPTX extraction or theme-factory presets as alternatives.
 
 ## Theme Storage
 
@@ -87,45 +87,31 @@ Present each theme with its name (directory name) and first line description fro
 
 ### 3. Grab Theme from Website
 
-Extract a visual theme from a live website using Chrome browser automation. This produces a brand-accurate theme.md from real CSS and visual inspection.
+Extract a visual theme from a live website using browsermcp (Playwright headless). This produces a brand-accurate theme.md from visual inspection and page analysis.
 
-**Requirements**: Chrome browser automation tools (`mcp__claude-in-chrome__*`). Before attempting website extraction, verify Chrome tools are available by checking if `mcp__claude-in-chrome__tabs_context_mcp` is callable. If unavailable, inform the user that Chrome browser automation is required and suggest using theme-factory presets or PPTX extraction instead.
+**Requirements**: browsermcp tools (`mcp__browsermcp__*`). Before attempting website extraction, try `mcp__browsermcp__browser_navigate` to `about:blank`. If unavailable, inform the user that browsermcp is required and suggest using theme-factory presets or PPTX extraction instead.
 
 **Workflow**:
 
-1. Navigate to the target URL using Chrome
-2. Take a screenshot for visual reference
-3. Extract CSS design tokens using JavaScript execution:
-   - Primary/secondary/accent colors from computed styles
-   - Font families and sizes
-   - Background colors
+1. Navigate to the target URL using `browser_navigate`
+2. Take a screenshot using `browser_screenshot` for visual reference
+3. Use `browser_snapshot` to read the page's accessibility tree — extract visible
+   text styles, color descriptions, and structural patterns
+4. Analyze the screenshot visually to identify:
+   - Primary/secondary/accent colors from headers, buttons, CTAs
+   - Font families from headings and body text
+   - Background colors and surface patterns
    - Border radius, spacing patterns
-4. Calculate WCAG contrast ratios for extracted color pairs
-5. Research the brand via WebSearch for design philosophy context
-6. Generate theme.md following the template (see Theme File Format below)
-7. Save to `{themes-dir}/{theme-slug}/theme.md`
-8. Offer to generate a theme showcase (Operation #7)
+5. Research the brand via WebSearch for design philosophy context and official brand colors
+6. Calculate WCAG contrast ratios for extracted color pairs
+7. Generate theme.md following the template (see Theme File Format below)
+8. Save to `{themes-dir}/{theme-slug}/theme.md`
+9. Offer to generate a theme showcase (Operation #7)
 
-**CSS Extraction Script** (execute via JavaScript tool):
-```javascript
-const cs = getComputedStyle(document.documentElement);
-const body = getComputedStyle(document.body);
-JSON.stringify({
-  colors: {
-    primary: cs.getPropertyValue('--primary-color') || cs.color,
-    background: body.backgroundColor,
-    text: body.color,
-    links: getComputedStyle(document.querySelector('a') || document.body).color
-  },
-  typography: {
-    heading: getComputedStyle(document.querySelector('h1,h2,h3') || document.body).fontFamily,
-    body: body.fontFamily,
-    headingSize: getComputedStyle(document.querySelector('h1') || document.body).fontSize
-  }
-});
-```
-
-Augment extracted values with visual inspection of the screenshot. Infer design principles from the overall visual language.
+**Tips for accurate extraction**: Take multiple screenshots (hero section, navigation,
+footer) to capture the full palette. Use WebSearch to find the brand's official style
+guide or press kit — these often list exact hex codes. Cross-reference visual inspection
+with any brand documentation found online.
 
 ### 4. Grab Theme from PPTX
 

@@ -12,7 +12,7 @@ description: >-
   needs to catch up. Even if the user just says "new project", "start fresh",
   "add a plugin", "wire up my workspace", or "my plugins can't find each other",
   this skill applies.
-version: 0.3.0
+version: 0.4.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
@@ -121,7 +121,39 @@ cp -r "${CLAUDE_PLUGIN_ROOT}/themes/_template/" \
 
 The template gives users a starting point for creating custom themes that visual plugins consume.
 
-### 5. Obsidian Integration (Optional)
+### 5. MCP Server Summary
+
+Plugins declare their MCP server dependencies in `.mcp.json` files. When users install
+plugins via the marketplace, Desktop/Cowork auto-discovers and starts these MCPs on the
+host machine — no manual configuration needed for npx-based and URL-based MCPs.
+
+After plugin discovery, scan each confirmed plugin's directory for a `.mcp.json` file:
+
+```bash
+for plugin_path in ${confirmed_plugin_paths}; do
+  if [ -f "${plugin_path}/.mcp.json" ]; then
+    echo "${plugin_path}/.mcp.json"
+  fi
+done
+```
+
+Present a summary of MCP servers that will be auto-loaded:
+
+```
+MCP Servers (auto-configured by plugins):
+  excalidraw       npx excalidraw-mcp           <- cogni-visual, cogni-portfolio
+  excalidraw_sketch https://mcp.excalidraw.com  <- cogni-visual
+  browsermcp       npx @anthropic-ai/browsermcp <- cogni-claims, cogni-help, cogni-workspace
+
+Manual install needed:
+  pencil           Open Pencil desktop app      <- cogni-visual (web/storyboard rendering)
+```
+
+This step is informational only — no files are written. The plugin `.mcp.json` files
+handle everything. The summary helps users understand what's happening behind the scenes
+and what (if anything) requires manual action.
+
+### 6. Obsidian Integration (Optional)
 
 If the user indicated they use Obsidian in step 2, offer to set up Obsidian integration now:
 
@@ -137,7 +169,7 @@ If `.obsidian/` already exists, skip and mention that the update step (Update Mo
 
 If the user declines, let them know they can run a workspace update later to add it.
 
-### 6. Summarize
+### 7. Summarize
 
 Show what was created in a compact format:
 - Workspace path
@@ -198,7 +230,16 @@ Copy latest output-style files from `${CLAUDE_PLUGIN_ROOT}/assets/output-styles/
 
 Refresh `_template/theme.md` from `${CLAUDE_PLUGIN_ROOT}/themes/_template/`. Preserve all user-created themes.
 
-### 5. Update Obsidian Integration (Optional)
+### 5. MCP Server Summary
+
+Same as Init Mode step 5 — scan confirmed plugins for `.mcp.json` files and present
+the MCP summary. In update mode, also note any changes:
+- **New MCPs**: from newly added plugins
+- **Removed MCPs**: from removed plugins (note: the MCP may still be loaded until session restart)
+
+This is informational only — no files written.
+
+### 6. Update Obsidian Integration (Optional)
 
 If `.obsidian/` exists in the workspace, offer to refresh the terminal configuration:
 
@@ -208,7 +249,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/update-obsidian.sh" "${WORKSPACE_DIR}"
 
 This merges new terminal profiles and fixes common issues without touching user customizations. Skip this step if no `.obsidian/` directory is found.
 
-### 6. Verify and Report
+### 7. Verify and Report
 
 Update `.workspace-config.json`:
 - Refresh `installed_plugins` list

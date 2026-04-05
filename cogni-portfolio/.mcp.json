@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "excalidraw_sketch": {
-      "type": "url",
-      "url": "https://mcp.excalidraw.com"
-    },
     "excalidraw": {
       "command": "npx",
       "args": ["-y", "excalidraw-mcp"]
