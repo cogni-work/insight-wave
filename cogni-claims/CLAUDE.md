@@ -20,8 +20,8 @@ skills/                           2 claims skills
       claim-lifecycle.json          End-to-end claim lifecycle example
 
 agents/                           2 verification agents
-  claim-verifier.md                 Fetch one source URL, verify all claims against it (sonnet)
-  source-inspector.md               Open source in browser, highlight relevant passage (sonnet)
+  claim-verifier.md                 Fetch one source URL (WebFetch → browsermcp fallback), verify all claims (sonnet)
+  source-inspector.md               Open source in headless browser (browsermcp), locate passage, capture screenshot (sonnet)
 
 commands/                         1 slash command
   claims.md                         /claims — submit, verify, dashboard, inspect, resolve
@@ -32,7 +32,7 @@ commands/                         1 slash command
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 2 | claims, claim-entity |
-| Agents | 2 | claim-verifier (sonnet), source-inspector (sonnet) |
+| Agents | 2 | claim-verifier (sonnet, WebFetch → browsermcp), source-inspector (sonnet, browsermcp) |
 | Commands | 1 | /claims (aliases: /claim, /verify-claims) |
 
 ## Data Model
@@ -96,6 +96,19 @@ Claims are submitted via `cogni-claims:claims` skill in submit mode. The `claim-
                                                       ──> source-inspector agent (inspect)
                                                       ──> user resolution (resolve)
 ```
+
+## Source Fetching Strategy
+
+Each claim-verifier agent uses a two-method approach for retrieving source content:
+
+1. **Primary: WebFetch** — fast programmatic fetch, works for most open sources
+2. **Fallback: browsermcp** (Playwright headless) — handles anti-bot protection, JS-rendered content, and sources that block programmatic access
+
+Both methods run within each claim-verifier agent instance. Since browsermcp (Playwright) supports parallel browser contexts, multiple claim-verifier agents can use it simultaneously without contention.
+
+The source-inspector agent also uses browsermcp for page navigation, text extraction via accessibility snapshots, and screenshot capture. This works in headless environments (Cowork) where claude-in-chrome is not available.
+
+Source cache files record which method succeeded via `fetch_method`: `"webfetch"` or `"browser"`.
 
 ## Key Conventions
 

@@ -49,11 +49,13 @@ You will receive these in your task prompt:
 ### Step 1: Fetch Source Content
 
 1. Use WebFetch to retrieve the source URL content
-2. If WebFetch fails (403, timeout, empty content) or returns paywall-like content (very short body with login/subscribe keywords), try browser-based fetching as a fallback — many sources block programmatic access but render fine in a browser:
-   - Navigate to the URL using browser automation tools
-   - Wait for the page to load (some sources render content via JavaScript)
-   - Extract the page text
-3. Only mark `source_unavailable` after **both** methods fail — WebFetch failures alone are not sufficient because many legitimate sources use anti-bot measures
+2. If WebFetch fails (403, timeout, empty content) or returns paywall-like content (very short body with login/subscribe keywords), use headless browser as fallback — many sources block programmatic access but render fine in a real browser:
+   a. `mcp__browsermcp__browser_navigate` — navigate to the source URL
+   b. `mcp__browsermcp__browser_wait` — wait 3 seconds for JavaScript rendering
+   c. `mcp__browsermcp__browser_snapshot` — capture the page text via accessibility tree
+   d. Extract the readable text content from the snapshot result
+   If browsermcp tools are not available (tool call errors out), skip directly to step 3.
+3. Only mark `source_unavailable` after **both** methods fail — WebFetch failures alone are not sufficient because many legitimate sources use anti-bot measures that a headless browser bypasses
 
 Cache the result to `cogni-claims/sources/{url-hash}.json`:
 - Generate the hash: `echo -n "<url>" | shasum -a 256 | cut -c1-16`

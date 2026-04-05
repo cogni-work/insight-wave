@@ -52,16 +52,29 @@ Cached content from fetched source URLs. The filename is a deterministic hash of
 }
 ```
 
-For failed fetches:
+For browser-fetched sources (when WebFetch fails but headless browser succeeds):
+```json
+{
+  "url": "https://example.com/js-rendered-report",
+  "fetched_at": "2026-02-23T14:32:00Z",
+  "fetch_method": "browser",
+  "status": "success",
+  "content": "Full text content extracted via headless browser (browsermcp)...",
+  "content_length": 4523,
+  "error": null
+}
+```
+
+For failed fetches (both WebFetch and browser failed):
 ```json
 {
   "url": "https://example.com/paywalled-report",
   "fetched_at": "2026-02-23T14:32:00Z",
-  "fetch_method": "webfetch",
+  "fetch_method": "browser",
   "status": "failed",
   "content": null,
   "content_length": 0,
-  "error": "403 Forbidden — source requires authentication"
+  "error": "403 Forbidden — source requires authentication (both webfetch and browser attempted)"
 }
 ```
 

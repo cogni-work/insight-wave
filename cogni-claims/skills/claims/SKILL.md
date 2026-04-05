@@ -107,9 +107,12 @@ Verification complete:
 - {n} verified (no deviations)
 - {n} deviations detected ({n} critical, {n} high, {n} medium, {n} low)
 - {n} sources unavailable
+- {n} recovered via browser fallback (included in verified/deviated counts above)
 ```
 
-If there are deviated claims with severity `medium` or higher, briefly show each one (claim statement, deviation type, source excerpt) and proactively offer co-browsing (see Co-browsing section below). The goal is a seamless flow: verify → see the problem → decide what to do.
+The "recovered via browser fallback" line shows how many sources were initially unreachable via WebFetch but succeeded when the claim-verifier fell back to headless browser (browsermcp). This helps the user understand the value of the browser fallback and which sources required it.
+
+If there are deviated claims with severity `medium` or higher, briefly show each one (claim statement, deviation type, source excerpt) and proactively offer source inspection (see Source inspection section below). The goal is a seamless flow: verify → see the problem → decide what to do.
 
 ## Dashboard mode
 
@@ -117,7 +120,7 @@ Show the user where things stand. Read `claims.json`, group by status, and rende
 
 The dashboard should give the user a clear picture at a glance and make it obvious what needs attention (deviated claims with high severity) vs. what's fine (verified claims). Show at most 20 claims per status section — see `references/dashboard-format.md` for overflow handling and full layout spec.
 
-For each deviated claim in the "Deviations Requiring Attention" section, include a one-line summary of what the deviation is (not just the type label) so the user can quickly decide which claims to inspect. When presenting action hints, emphasize that `/claims inspect <id>` will open the source in the browser for side-by-side review — this is the primary workflow for handling deviations.
+For each deviated claim in the "Deviations Requiring Attention" section, include a one-line summary of what the deviation is (not just the type label) so the user can quickly decide which claims to inspect. When presenting action hints, emphasize that `/claims inspect <id>` will fetch the source via headless browser, locate the relevant passage, and capture a screenshot for review — this is the primary workflow for handling deviations.
 
 ## Inspect mode
 
@@ -126,12 +129,12 @@ When the user wants to dig into a specific claim's evidence. This mode should fe
 1. Look up the claim by ID
 2. If it has deviations, show each one: type, severity, the verbatim source excerpt, and the explanation. Include a plain-language "What this means" summary that explains the discrepancy in context — why it matters and what a reader would get wrong.
 3. If it's verified, show the supporting excerpt
-4. Automatically launch co-browsing (see Co-browsing section below) — the whole point of inspect mode is to see the evidence in context, so don't just offer, do it
-5. Once the source is visible in the browser, offer to transition directly to resolve mode
+4. Automatically launch source inspection (see Source inspection section below) — the whole point of inspect mode is to see the evidence in context, so don't just offer, do it
+5. Once the source content and screenshot are available, offer to transition directly to resolve mode
 
 ## Resolve mode
 
-Walk the user through resolving a deviated claim. If the source isn't already open in the browser from inspect mode, launch co-browsing (see Co-browsing section below) — the user should be able to see the source while making their decision.
+Walk the user through resolving a deviated claim. If source inspection hasn't been done yet from inspect mode, launch it (see Source inspection section below) — the user should have the source evidence available while making their decision.
 
 1. Look up the claim — it must have status `deviated`
 2. Display the claim, its deviations, and the source excerpt
@@ -159,13 +162,13 @@ These aren't arbitrary rules — they reflect the fundamental nature of LLM-base
 
 - **No silent failures**: If a source can't be fetched, that's important information — it means the claim can't be verified, which is different from being verified clean.
 
-## Co-browsing
+## Source inspection
 
-When the user needs to see a source in context — whether from verify, inspect, or resolve mode — launch the `cogni-claims:source-inspector` agent with the source URL, the verbatim excerpt, the claim statement, and the deviation explanation. This opens the source in the browser and highlights the relevant passage so the user can judge the deviation against the actual page.
+When the user needs to see a source in context — whether from verify, inspect, or resolve mode — launch the `cogni-claims:source-inspector` agent with the source URL, the verbatim excerpt, the claim statement, and the deviation explanation. The source-inspector uses headless browser (browsermcp) to navigate to the page, extract the text, locate the relevant passage, and capture a screenshot as visual evidence.
 
-Co-browsing is valuable because LLM-based deviation findings are assessments, not verdicts. Seeing the source in its original context helps the user make informed decisions. Don't make the user request it explicitly — if they're looking at a deviation, they almost certainly want to see the source.
+Source inspection is valuable because LLM-based deviation findings are assessments, not verdicts. Seeing the source content helps the user make informed decisions. Don't make the user request it explicitly — if they're looking at a deviation, they almost certainly want to see the source.
 
-If the source-inspector reports that highlighting failed, let the user know they may need to search the page manually for the relevant passage.
+The source-inspector returns a structured result with the matched text, surrounding context, and a screenshot. If the passage was not found on the page, let the user know the source may have been updated since verification.
 
 ## Example flows
 
