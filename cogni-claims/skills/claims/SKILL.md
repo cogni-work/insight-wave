@@ -10,7 +10,7 @@ description: |
   against sources, checking citations, finding outdated or mismatched data in cited references,
   reviewing what's been flagged, checking for stale sources, outdated data in references,
   or asking "which claims need attention" or "what did verification find", this skill handles it.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, mcp__browsermcp__browser_navigate, mcp__browsermcp__browser_snapshot
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, mcp__browsermcp__browser_navigate, mcp__browsermcp__browser_snapshot, mcp__browsermcp__browser_wait, mcp__browsermcp__browser_screenshot, mcp__browsermcp__browser_click, mcp__browsermcp__browser_type, mcp__browsermcp__browser_press_key, mcp__browsermcp__browser_hover, mcp__browsermcp__browser_select_option, mcp__browsermcp__browser_go_back, mcp__browsermcp__browser_go_forward, mcp__browsermcp__browser_get_console_logs
 ---
 
 # Claims Verification Orchestrator
@@ -82,7 +82,7 @@ Multiple claims often cite the same source. Group them by `source_url` so each U
 
 Before dispatching agents, verify that browsermcp (Playwright headless) is available — claim-verifier agents rely on it as fallback for paywalled/JS-rendered sources, and source-inspector requires it entirely for the inspect workflow.
 
-1. Attempt `mcp__browsermcp__browser_navigate` to `about:blank`
+1. Attempt `mcp__browsermcp__browser_navigate` to `https://example.com`
 2. If the call **succeeds** → browsermcp is available, proceed silently to Step 3
 3. If the call **errors out** (tool not found, connection refused, MCP server not running) → this is a hard gate. Tell the user:
    - browsermcp is not available in the current environment

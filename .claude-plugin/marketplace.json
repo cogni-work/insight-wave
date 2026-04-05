@@ -7,7 +7,7 @@
     {
       "name": "cogni-claims",
       "source": "./cogni-claims",
-      "version": "1.0.11",
+      "version": "1.0.12",
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
       "keywords": [
         "claim-verification",
