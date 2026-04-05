@@ -7,7 +7,7 @@
     {
       "name": "cogni-claims",
       "source": "./cogni-claims",
-      "version": "1.0.13",
+      "version": "1.0.14",
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, and guides users through resolution.",
       "keywords": [
         "claim-verification",
@@ -107,7 +107,7 @@
     {
       "name": "cogni-help",
       "source": "./cogni-help",
-      "version": "0.2.16",
+      "version": "0.2.17",
       "description": "Central help hub for the insight-wave ecosystem. Interactive courses (12-course curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.",
       "keywords": [
         "help",
@@ -176,7 +176,7 @@
     {
       "name": "cogni-website",
       "source": "./cogni-website",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "description": "Generate multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins. Assembles a deployable static site with shared navigation, theming, and responsive HTML.",
       "keywords": [
         "website",

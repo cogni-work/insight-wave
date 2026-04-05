@@ -2,7 +2,7 @@
   "mcpServers": {
     "browsermcp": {
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/browsermcp@latest"]
+      "args": ["@browsermcp/mcp@latest"]
     }
   }
 }
