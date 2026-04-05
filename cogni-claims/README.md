@@ -26,6 +26,7 @@ A systematic claim-verification workflow for Claude Cowork. Other plugins genera
 3. **Review** a dashboard showing all claims grouped by status, with inline deviation summaries and severity indicators
 4. **Inspect** flagged claims by opening the source in your browser with the relevant passage highlighted for side-by-side comparison
 5. **Resolve** each deviation — correct the claim, dispute the finding, find an alternative source, discard, or accept as-is
+6. **Cobrowse** sources that couldn't be reached automatically — you navigate logins, cookie banners, and dynamic content while Claude reads and verifies in real-time
 
 ## What it means for you
 
@@ -47,6 +48,7 @@ cogni-claims is part of the [insight-wave](https://github.com/cogni-work/insight
 /claims dashboard             # review claim statuses and deviation summaries
 /claims inspect <claim-id>    # open the source in your browser with the passage highlighted
 /claims resolve <claim-id>    # decide what to do about a deviation
+/claims cobrowse               # interactively recover sources that automated verification couldn't reach
 ```
 
 Aliases: `/claim`, `/verify-claims`
@@ -57,6 +59,7 @@ Or just describe what you want in natural language — the plugin figures out th
 - "what's the status of my claims?"
 - "show me what the source actually says for that quantum computing claim"
 - "let's fix the deviated claims one by one"
+- "let's look at those unavailable sources together"
 
 ## Try it
 
@@ -97,11 +100,11 @@ Claims are stored in your project's `cogni-claims/` directory as JSON. When you 
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `claims` | skill | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, and resolve claims |
+| `claims` | skill | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims |
 | `claim-entity` | skill | Cross-plugin data model for claim verification — defines ClaimRecord, DeviationRecord, and ResolutionRecord schemas |
 | `claim-verifier` | agent | Verify claims against a single source URL |
 | `source-inspector` | agent | Open a source URL in the browser and highlight the relevant passage for user inspection |
-| `/claims` | command | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, and resolve claims |
+| `/claims` | command | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims |
 
 ## Architecture
 
@@ -115,7 +118,7 @@ cogni-claims/
 │   ├── claim-verifier.md         Source fetch and deviation detection
 │   └── source-inspector.md       Browser-based passage highlighter
 ├── commands/                     1 slash command
-│   └── claims.md                 Entry point for all five modes
+│   └── claims.md                 Entry point for all six modes
 └── claims-workspace/             Local runtime state (claims.json, sources, history)
 ```
 

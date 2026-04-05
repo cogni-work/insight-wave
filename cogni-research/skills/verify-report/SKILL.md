@@ -249,7 +249,7 @@ When verdict="accept" or iteration reaches 3: proceed to Phase 5.
 | Scenario | Recovery |
 |----------|----------|
 | cogni-claims not installed | Cannot proceed — this skill requires cogni-claims. Tell the user to install cogni-claims plugin |
-| All source URLs unreachable | Report results with source_unavailable count. Suggest user check URLs or try later |
+| All source URLs unreachable | Report results with source_unavailable count. Suggest user run `/claims cobrowse` for interactive recovery, or check URLs manually |
 | Claim extraction produces 0 claims | The draft may lack inline citations. Suggest re-running research-report writer with citation requirements |
 | Review loop reaches max (3) | Accept current draft with quality warning |
 | Project directory not found | Ask user for explicit path |
