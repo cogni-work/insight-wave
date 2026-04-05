@@ -64,7 +64,7 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 | Sources | N (D docs, U urls) | S stale, C current (only if `source_lineage.has_registry` is true) |
 | Uploads | N | pending ingestion (if > 0) |
 
-The Propositions row shows `N / expected (E excluded)` where `expected` already subtracts excluded pairs and `E` is the count from `counts.excluded_pairs`. Only show the "(E excluded)" suffix when E > 0.
+The Propositions row uses `counts.expected_propositions` as the denominator — this value already subtracts excluded pairs. Do NOT compute your own expected count by multiplying features × markets. Show as `N / expected (E excluded)` where `E` is `counts.excluded_pairs`. Only show the "(E excluded)" suffix when E > 0. When N equals expected, show 100% — excluded pairs are design decisions, not gaps.
 
 If `margin_health` is present in the status output and has `solutions_with_cost_model > 0`, add a margin health line after the table:
 - **Margin health** — N solutions with cost models, N tiers below target (target: Y%), N negative-margin tiers. Show margins split by type: project avg margin X%, subscription avg gross margin X%. These are different metrics (effort-based vs. unit economics) so present them separately. Flag negative project margins and subscription LTV/CAC < 3 as urgent.
@@ -96,7 +96,12 @@ After the table:
 - **Purpose coverage** — if `purpose_coverage.total_features > 0` and `purpose_coverage.with_purpose` is less than half of `total_features`, note low purpose coverage: "N of M features have purpose statements. Adding purpose improves architecture diagrams and customer-facing materials." Recommend running the `features` skill to add purpose statements.
 - **Context notice** — if `counts.context_entries > 0`, mention available context entries with a category breakdown. Read `context/context-index.json` for the `by_category` map to show counts per category. This helps the user understand what intelligence is available for downstream skills. If context exists but downstream skills haven't been run yet, highlight this: "N context entries from ingested documents are ready — these will automatically inform propositions, solutions, and other skills."
 - **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase. When `source_lineage.has_registry` is true, distinguish between new uploads (`source_lineage.new_uploads`) and re-uploads (`source_lineage.changed_uploads`): "N new uploads (never ingested) + M re-uploads (source changed since last ingestion)"
-- **Gaps** — if `missing_propositions` is non-empty, list the first few missing pairs; note incomplete solutions/competitors/customers. If `excluded_pairs` is non-empty, note excluded pairs are intentional: "N Feature x Market pairs are excluded (not relevant)." If all gaps are accounted for by exclusions, say so rather than listing missing pairs.
+- **Gaps** — handle exclusions and missing pairs in this order:
+  1. Check `excluded_pairs` from the script output FIRST. These are confirmed design decisions recorded in feature files with explicit reasons — not guesses. If non-empty, state definitively: "N Feature × Market Paare bewusst ausgeschlossen (Design-Entscheidung)." Never use speculative language like "vermutlich" or "möglicherweise" for excluded pairs.
+  2. Check `missing_propositions` — this array already excludes excluded pairs, so any entries here are genuine gaps. List them as actionable items.
+  3. If `missing_propositions` is empty, the proposition matrix is complete. Do NOT list excluded pairs as missing or suggest creating them. A brief mention of the exclusion count in the table row is sufficient.
+  4. If the script reports `counts.excluded_pairs: 0` but `missing_propositions` contains pairs, cross-check by reading feature files for `excluded_markets` arrays as a fallback — the script may have failed to detect them.
+  5. Note incomplete solutions/competitors/customers as separate items.
 
 Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report. The user should feel oriented, not overwhelmed.
 

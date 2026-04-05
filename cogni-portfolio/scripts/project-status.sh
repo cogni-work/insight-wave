@@ -53,12 +53,13 @@ fi
 EXCLUDED_COUNT=0
 EXCLUDED_PAIRS_JSON="[]"
 if [ "$FEATURES" -gt 0 ] && [ "$MARKETS" -gt 0 ]; then
-  eval "$(python3 -c "
-import json, os, glob
+  _excl_json=$(python3 -c "
+import json, os, glob, sys
 
 excluded = []
-market_files = set(os.path.basename(f)[:-5] for f in glob.glob('$PROJECT_DIR/markets/*.json'))
-for f in glob.glob('$PROJECT_DIR/features/*.json'):
+proj = sys.argv[1]
+market_files = set(os.path.basename(f)[:-5] for f in glob.glob(os.path.join(proj, 'markets', '*.json')))
+for f in glob.glob(os.path.join(proj, 'features', '*.json')):
     try:
         d = json.load(open(f))
         f_slug = os.path.basename(f)[:-5]
@@ -66,12 +67,12 @@ for f in glob.glob('$PROJECT_DIR/features/*.json'):
             m_slug = exc.get('market_slug', '')
             if m_slug in market_files:
                 excluded.append({'pair': f'{f_slug}--{m_slug}', 'feature_slug': f_slug, 'market_slug': m_slug, 'reason': exc.get('reason', '')})
-    except Exception:
-        pass
-print(f'EXCLUDED_COUNT={len(excluded)}')
-print(f'EXCLUDED_PAIRS_JSON={chr(39)}{json.dumps(excluded)}{chr(39)}')
-" 2>/dev/null || echo 'EXCLUDED_COUNT=0
-EXCLUDED_PAIRS_JSON='"'"'[]'"'")"
+    except Exception as e:
+        print(f'WARNING: could not read {f}: {e}', file=sys.stderr)
+print(json.dumps({'count': len(excluded), 'pairs': excluded}))
+" "$PROJECT_DIR" 2>/dev/null) || _excl_json='{"count":0,"pairs":[]}'
+  EXCLUDED_COUNT=$(python3 -c "import json,sys; print(json.loads(sys.stdin.read())['count'])" <<< "$_excl_json" 2>/dev/null || echo 0)
+  EXCLUDED_PAIRS_JSON=$(python3 -c "import json,sys; print(json.dumps(json.loads(sys.stdin.read())['pairs']))" <<< "$_excl_json" 2>/dev/null || echo '[]')
 fi
 
 EXPECTED_PROPOSITIONS=$((FEATURES * MARKETS - EXCLUDED_COUNT))
@@ -217,12 +218,12 @@ fi
 _excluded_pair_list=$(python3 -c "
 import json, sys
 try:
-    pairs = json.loads('$EXCLUDED_PAIRS_JSON')
+    pairs = json.loads(sys.stdin.read())
     for p in pairs:
         print(p['pair'])
 except Exception:
     pass
-" 2>/dev/null || true)
+" <<< "$EXCLUDED_PAIRS_JSON" 2>/dev/null || true)
 
 _is_excluded() {
   [ -n "$_excluded_pair_list" ] && echo "$_excluded_pair_list" | grep -qxF "$1" 2>/dev/null
@@ -608,6 +609,8 @@ except Exception:
 fi
 CLAIMS_CLEAN=$((CLAIMS_VERIFIED + CLAIMS_RESOLVED))
 CLAIMS_PENDING=$((CLAIMS_UNVERIFIED + CLAIMS_DEVIATED))
+CLAIMS_PENDING_STABLE=$CLAIMS_PENDING
+CLAIMS_PENDING_STALE=0
 
 # Determine workflow phase (evaluated in priority order)
 if [ "$PRODUCTS" -eq 0 ]; then
