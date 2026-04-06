@@ -97,7 +97,7 @@ If `check-dependencies.sh` returns `"success": false`, report which required too
 
 ### 6. MCP Servers
 
-MCP servers power visual rendering (Excalidraw, Pencil), browser automation (browsermcp),
+MCP servers power visual rendering (Excalidraw, Pencil), browser automation (claude-in-chrome),
 and other capabilities. Plugins declare their required MCPs in `.mcp.json` files —
 Desktop/Cowork auto-loads them when the plugin is installed. This check verifies that
 required MCPs are actually available in the current session.
@@ -112,7 +112,7 @@ MCP server, search for one representative tool:
 |------------|-----------|-----------------|
 | `excalidraw` | `mcp__excalidraw__describe_scene` | cogni-visual, cogni-portfolio |
 | `excalidraw_sketch` | `mcp__excalidraw_sketch__read_me` | cogni-visual |
-| `browsermcp` | `mcp__browsermcp__browser_navigate` | cogni-claims, cogni-help, cogni-workspace |
+| `claude-in-chrome` | `mcp__claude-in-chrome__tabs_context_mcp` | cogni-claims, cogni-help, cogni-website, cogni-workspace |
 | `pencil` | `mcp__pencil__get_editor_state` | Pencil desktop app (manual) |
 
 For each MCP, use `ToolSearch` with `select:` prefix to check if the tool exists.
