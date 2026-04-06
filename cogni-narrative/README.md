@@ -140,6 +140,7 @@ cogni-narrative/
 |--------|----------|---------|
 | cogni-trends | No | Provides trend-scout output for the `trend-panorama` arc |
 | cogni-research | No | Provides research reports as narrative input |
+| cogni-portfolio | No | jtbd-portfolio arc reads portfolio entity files |
 | cogni-copywriting | No | Arc-aware executive polish (downstream) |
 | cogni-visual | No | Slide decks and visual assets from narrative output (downstream) |
 | cogni-sales | No | Consumes Corporate Visions arc patterns (downstream) |

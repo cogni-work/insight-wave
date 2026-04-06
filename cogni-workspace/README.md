@@ -133,6 +133,8 @@ cogni-workspace has no required plugin dependencies — it is the foundation lay
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-visual | No | manage-themes passes color variables to cogni-visual renderers (render-big-picture, render-big-block) |
+| cogni-website | No | Referenced in manage-workspace and workspace-status for website-related workspace configuration |
+| cogni-help | No | Referenced inline in workspace skills for issue filing and guided help |
 
 ## Contributing
 
