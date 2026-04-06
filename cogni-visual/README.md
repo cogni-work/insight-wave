@@ -26,7 +26,7 @@ A brief-based visual production pipeline. Five skills generate structured briefs
 6. **Enrich** a markdown report into themed HTML → `{report}-enriched.html` (branded interactive HTML)
 7. **Render** a big-picture brief into an illustrated Excalidraw scene → `{name}.excalidraw` (illustrated journey map)
 8. **Render** a big-block brief into a structured Excalidraw diagram → `{name}.excalidraw` (solution architecture diagram)
-9. **Render** a presentation brief into a browser-ready HTML deck with speaker notes and keyboard navigation
+9. **Render** a presentation brief into a browser-ready HTML deck → `{name}.html` (self-contained slide deck with speaker notes)
 10. **Review** a visual brief from three stakeholder perspectives — design quality, audience experience, usability
 
 ## What it means for you
@@ -120,6 +120,7 @@ cogni-visual/                              # 10 skills · 17 agents · 5 command
 ├── .claude-plugin/                        # plugin manifest
 ├── skills/                               # 10 skills (5 brief generators · 3 renderers · 1 enricher · 1 reviewer)
 │   ├── story-to-slides/
+│   ├── story-to-slides-workspace/        # dev workspace (iteration artifacts, not a skill)
 │   ├── story-to-big-picture/
 │   ├── story-to-big-block/
 │   ├── story-to-web/
@@ -160,6 +161,14 @@ cogni-visual/                              # 10 skills · 17 agents · 5 command
 ## Contributing
 
 Contributions welcome — visual templates, layout types, rendering improvements, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Known Limitations
+
+| ID | Issue | Severity | Affected Skills | Workaround |
+|----|-------|----------|----------------|------------|
+| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `zone-reviewer` (browser review) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [known-issues registry](https://github.com/anthropics/managed-service/blob/main/cogni-docs/references/known-issues.md) for detailed steps. |
+
+> When both Claude Desktop (Cowork) and Claude Code are installed, their competing native messaging host configurations cause browser automation tools to silently vanish. The `zone-reviewer` agent's browser-based visual review may fail silently — rendered visuals still work, but interactive browser review is unavailable until the conflict is resolved.
 
 ## Custom development
 

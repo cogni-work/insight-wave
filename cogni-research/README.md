@@ -18,7 +18,7 @@ This plugin automates the research-heavy parts — parallel web search, source a
 
 ## What it is
 
-A STORM-inspired editorial research pipeline for the insight-wave ecosystem. Parallel web research agents decompose topics and gather evidence; a source curator ranks quality and diversity; a writer compiles the draft with inline citations; a structural reviewer gates quality before acceptance. Three depth levels — basic, detailed, and deep — match research intensity to the question. Upstream of cogni-narrative (narrative composition) and cogni-visual (visual enrichment); downstream of cogni-claims for source-level verification of every factual assertion.
+A STORM-inspired editorial research pipeline for the insight-wave ecosystem. Parallel web research agents decompose topics and gather evidence; a source curator ranks quality and diversity; a writer compiles the draft with inline citations; a structural reviewer gates quality before acceptance. Five report types — basic, detailed, deep, outline, and resource — match research intensity to the question. Upstream of cogni-narrative (narrative composition) and cogni-visual (visual enrichment); downstream of cogni-claims for source-level verification of every factual assertion.
 
 ## What it does
 
@@ -38,7 +38,7 @@ If you produce research, analysis, or any content that needs to be both sourced 
 - **Presentation-ready.** Reports finish as themed, interactive HTML with data visualizations — not just markdown. Optional PDF and DOCX export included.
 - **Resumable.** Interrupted runs pick up from the first incomplete phase. No lost work.
 - **Traceable.** Every finding links to a source, every claim links to a verification result. The full workspace is Obsidian-browsable.
-- **Three depth levels.** Quick overview (basic), multi-section report (detailed), or recursive tree exploration (deep) — matched to your needs.
+- **Five report types.** Quick overview (basic), multi-section report (detailed), recursive tree exploration (deep), structured framework (outline), or annotated bibliography (resource) — matched to your needs.
 
 ## Installation
 
@@ -105,6 +105,8 @@ All entities are markdown with YAML frontmatter — Obsidian-browsable with wiki
 | Basic | 5 | 7–9 | 3,000–5,000 | Quick overview, single topic |
 | Detailed | 5–10 | 10–15 | 5,000–10,000 | Multi-section report with outline |
 | Deep | 10–20 (tree) | 15–25 | 8,000–15,000 | Recursive exploration, maximum depth |
+| Outline | 5 | 5–7 | 1,000–2,000 | Structured framework only, no prose |
+| Resource | 5 | 5–7 | 1,500–3,000 | Annotated bibliography / reading list |
 
 ## How it works
 

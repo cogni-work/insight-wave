@@ -20,7 +20,7 @@
       "name": "cogni-narrative",
       "source": "./cogni-narrative",
       "version": "1.8.6",
-      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 8 story arc frameworks including TIPS-native trend panorama, theme-thesis for investment theme narratives, and JTBD portfolio for buyer-job-centric portfolio narratives. Includes narrative review scoring and derivative format adaptation.",
+      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 8 story arc frameworks and 8 narrative techniques. Includes TIPS-native trend panorama, theme-thesis for investment theme narratives, and JTBD portfolio for buyer-job-centric portfolio narratives. Narrative review scoring and derivative format adaptation. Bilingual EN/DE.",
       "keywords": [
         "narrative",
         "story-arc",
@@ -178,7 +178,7 @@
       "name": "cogni-website",
       "source": "./cogni-website",
       "version": "0.1.6",
-      "description": "Generate multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins. Assembles a deployable static site with shared navigation, theming, and responsive HTML.",
+      "description": "Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.",
       "keywords": [
         "website",
         "static-site",

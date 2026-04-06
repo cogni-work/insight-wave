@@ -9,8 +9,8 @@
 cogni-help is the navigation and learning layer for the insight-wave ecosystem. With 12 plugins and 70+ skills available in the marketplace, it is easy to know something exists but not know which specific skill handles a given task. cogni-help addresses this in four ways:
 
 1. **Plugin discovery** — describe what you need, and the guide skill matches it to the right plugin and skill
-2. **Structured learning** — an 11-course curriculum covers every plugin from fundamentals through advanced workflows, each course running about 45 minutes
-3. **Workflow templates** — five cross-plugin pipeline playbooks show how to chain plugins into end-to-end workflows (research to slides, trends to marketing, portfolio to pitch)
+2. **Structured learning** — a 12-course curriculum covers every plugin from fundamentals through advanced workflows, each course running about 45 minutes
+3. **Workflow templates** — six cross-plugin pipeline playbooks show how to chain plugins into end-to-end workflows (research to slides, trends to marketing, portfolio to pitch)
 4. **Diagnostics** — the troubleshoot skill checks plugin integrity, workspace health, and dependency state before problems surface as cryptic errors at runtime
 
 cogni-help produces no content of its own — it teaches, routes, templates, and diagnoses. Think of it as the layer that makes the rest of the ecosystem learnable and navigable.
@@ -23,14 +23,14 @@ cogni-help produces no content of its own — it teaches, routes, templates, and
 |------|--------------|
 | **Guide** | Task-to-plugin matching — describe what you want, get the right skill recommendation |
 | **Course** | A ~45-minute interactive module: Theory → Demo → Exercise → Quiz → Recap |
-| **Curriculum** | The 11-course sequence covering the full ecosystem, ordered by dependency |
+| **Curriculum** | The 12-course sequence covering the full ecosystem, ordered by dependency |
 | **Workflow template** | A step-by-step playbook for chaining 3–5 plugins into an end-to-end pipeline |
 | **Cheatsheet** | A one-screen quick-reference card for a specific plugin's commands and concepts |
 | **Troubleshoot** | Plugin-level diagnostics: integrity checks, dependency validation, known issue matching |
 | **Course progress** | Per-user progress stored in `.claude/cogni-help.local.md` — persists across sessions |
 | **Plugin catalog** | The index in `guide/references/plugin-catalog.md` that maps capabilities to plugins |
 
-### The 11-course curriculum
+### The 12-course curriculum
 
 | # | Course | Plugins covered |
 |---|--------|-----------------|
@@ -45,6 +45,7 @@ cogni-help produces no content of its own — it teaches, routes, templates, and
 | 9 | B2B Marketing | cogni-marketing |
 | 10 | Sales Pitches | cogni-sales |
 | 11 | Consulting Orchestration | cogni-consulting |
+| 12 | Documentation Pipeline | cogni-docs |
 
 Courses are designed to be completed in order — later courses assume familiarity with earlier ones. You can jump in at any course if you know the prerequisites.
 
@@ -136,7 +137,8 @@ Available templates:
 | `trend-to-marketing` | cogni-trends → cogni-portfolio → cogni-marketing |
 | `portfolio-to-pitch` | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | `new-engagement` | cogni-consulting phases: Discover → Define → Develop → Deliver |
-| `full-onboarding` | cogni-workspace → cogni-help courses 1–11 |
+| `docs-pipeline` | cogni-research → cogni-docs → cogni-narrative |
+| `full-onboarding` | cogni-workspace → cogni-help courses 1–12 |
 
 Open a specific workflow:
 
@@ -292,7 +294,7 @@ For automated pipeline orchestration, see [cogni-consulting](../plugin-guide/cog
 The highest-value contributions to cogni-help are:
 
 - **New courses** — if a plugin exists in the ecosystem but has no dedicated course, adding one follows the Theory → Demo → Exercise → Quiz → Recap structure used by existing courses
-- **New workflow templates** — if you have developed a repeatable multi-plugin pipeline not in the current five templates, document it as a new workflow definition in `workflow/references/workflows/`
+- **New workflow templates** — if you have developed a repeatable multi-plugin pipeline not in the current six templates, document it as a new workflow definition in `workflow/references/workflows/`
 - **Diagnostic checks** — the troubleshoot skill's known-issues catalog grows best when users report problems and someone encodes the resolution pattern
 - **Plugin catalog updates** — whenever a new plugin or significant new skill lands in the ecosystem, `guide/references/plugin-catalog.md` needs updating
 

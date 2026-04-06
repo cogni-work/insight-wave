@@ -8,7 +8,7 @@ For the canonical IS/DOES/MEANS positioning of this plugin, see the [cogni-visua
 
 ## Overview
 
-cogni-visual sits at the end of the insight-wave delivery pipeline, after content has been composed (cogni-narrative) and polished (cogni-copywriting). It takes three kinds of inputs — narratives in prose, structured data from cogni-trends, and completed markdown reports — and produces six kinds of visual output through a two-stage process: brief generation followed by rendering, plus a report enrichment pipeline.
+cogni-visual sits at the end of the insight-wave delivery pipeline, after content has been composed (cogni-narrative) and polished (cogni-copywriting). It takes three kinds of inputs — narratives in prose, structured data from cogni-trends, and completed markdown reports — and produces seven kinds of visual output through a two-stage process: brief generation followed by rendering, plus a report enrichment pipeline.
 
 **Stage 1 (brief):** A skill reads the source material, models the audience, selects the format, maps content to layout units, and writes a structured brief as YAML frontmatter + Markdown body. The brief describes *what* to visualize — objects, messages, flow — without prescribing drawing operations.
 
@@ -96,9 +96,19 @@ What happens:
 
 ### story-to-slides
 
-Transform any narrative into a multi-slide presentation brief. Models the audience, applies pyramid communication structure, generates assertion headlines with number plays, maps to 11 slide layout types, and produces speaker notes. The brief is rendered into `.pptx` by `document-skills:pptx`.
+Transform any narrative into a multi-slide presentation brief. Models the audience, applies pyramid communication structure, generates assertion headlines with number plays, maps to 11 slide layout types, and produces speaker notes. The brief (`presentation-brief.md`) can be rendered into `.pptx` by `document-skills:pptx` or into a self-contained HTML slide presentation by `render-html-slides`.
 
 **Example prompt:** "Turn my automotive trend report into a 12-slide executive presentation"
+
+---
+
+### render-html-slides
+
+Render a `presentation-brief.md` into a self-contained HTML slide presentation. Produces a single `.html` file with keyboard navigation, speaker notes, and themed styling derived from the active cogni-workspace theme. Offers an alternative HTML output path alongside the existing `story-to-slides` → PPTX pipeline — use this when sharing slides as a web file is preferred over a PPTX download.
+
+Invoke via `/render-html-slides` or by running the skill directly.
+
+**Example prompt:** "/render-html-slides" (when a `presentation-brief.md` is present in the working directory)
 
 ---
 
@@ -181,6 +191,7 @@ This skill supersedes the deprecated `cogni-research:export-report` and is the s
 | Plugin / Tool | What is provided |
 |--------------|-----------------|
 | document-skills:pptx | Presentation brief (`presentation-brief.md`) for PPTX rendering |
+| render-html-slides | Presentation brief (`presentation-brief.md`) for HTML slide rendering |
 | Excalidraw MCP | Big-picture brief and Big Block brief for canvas rendering |
 | Pencil MCP | Web brief and storyboard brief for `.pen` design rendering |
 

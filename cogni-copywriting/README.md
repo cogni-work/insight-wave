@@ -1,6 +1,6 @@
 # cogni-copywriting
 
-Professional copywriting toolkit for [Claude Cowork](https://claude.ai/cowork). Polish documents for executive readability, get multi-stakeholder feedback, and strengthen story arc narratives — in English or German. Applies messaging frameworks, readability standards, and impact techniques so your writing lands.
+Professional copywriting toolkit for [Claude Cowork](https://claude.ai/cowork). Polish documents for executive readability, get multi-stakeholder feedback, strengthen story arc narratives, and enhance sales copy with Power Positions — in English or German. Applies messaging frameworks, readability standards, and impact techniques. Polish JSON fields via the copy-json adapter, and audit arc-preservation references against upstream cogni-narrative definitions.
 
 ## Why this exists
 
@@ -30,10 +30,10 @@ A professional editing toolkit for the insight-wave ecosystem. Seven messaging f
 
 ## What it means for you
 
-- **Executive-ready in one pass.** BLUF framing, Pyramid structure, active voice, visual hierarchy — applied together, not piecemeal.
-- **Multi-stakeholder tested.** 5 parallel personas catch what a single reviewer misses — legal risks, technical gaps, marketing opportunities.
-- **Arc-aware.** Detects `arc_id` frontmatter and applies techniques tuned to each arc element (ratio framing for Why Change, forcing functions for Why Now).
-- **Bilingual.** English uses Flesch scoring; German uses Wolf Schneider rules with Amstad scoring.
+- **Ship** executive-ready documents in one pass — BLUF framing, Pyramid structure, active voice, visual hierarchy applied together, not piecemeal.
+- **Stress-test** with 5 parallel personas to catch what a single reviewer misses — legal risks, technical gaps, marketing opportunities.
+- **Preserve** story arc structure — detects `arc_id` frontmatter and applies techniques tuned to each arc element (ratio framing for Why Change, forcing functions for Why Now).
+- **Write** in English or German — English uses Flesch scoring; German uses Wolf Schneider rules with Amstad scoring.
 
 ## Installation
 

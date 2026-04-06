@@ -23,9 +23,9 @@ A content generation bridge between strategy and execution in the insight-wave e
 
 1. **Setup** a marketing project linked to your cogni-portfolio and cogni-trends data — configure brand voice, select markets, map strategic themes to GTM paths → `marketing-project.json` → content-strategy, campaign-builder
 2. **Strategize** by building a 3D content matrix (market × GTM path × content type) with auto-recommended formats and priority sequencing → `content-matrix.json` → campaign-builder, content-calendar
-3. **Generate** content per type — thought leadership, demand generation, lead generation, sales enablement, or ABM — using parallel content-writer agents
+3. **Generate** content per type — thought leadership, demand generation, lead generation, sales enablement, or ABM — using parallel content-writer agents → `content-matrix.json` → campaign-builder, content-calendar
 4. **Campaign** by orchestrating content into multi-channel campaigns with day-based timelines and phased funnel progression (attract → engage → convert) → `campaigns/*.json` → content-calendar, marketing-dashboard
-5. **Schedule** via a content calendar with publication dates, channel assignments, and cadence tracking
+5. **Schedule** via a content calendar with publication dates, channel assignments, and cadence tracking → `campaigns/*.json` → content-calendar, marketing-dashboard
 6. **Track** coverage and progress through an interactive HTML dashboard → `output/dashboard.html` (interactive dashboard)
 
 ## What it means for you

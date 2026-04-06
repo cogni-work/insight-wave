@@ -1,6 +1,6 @@
 # cogni-help
 
-The onboarding and navigation layer for the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem. Teaches users through a 12-course curriculum, routes tasks to the right plugin, chains multi-plugin workflows, and diagnoses problems — so 12 plugins with 70+ skills feel like one coherent system.
+cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem into a single entry point — teaching users through a 12-course curriculum, routing tasks to the right plugin, chaining multi-plugin workflows, and diagnosing problems — so 12 plugins with 70+ skills behave like one coherent system.
 
 ## Why this exists
 
@@ -27,10 +27,10 @@ A meta-plugin for the insight-wave ecosystem. While other plugins produce conten
 
 ## What it means for you
 
-- **Productive in minutes, not hours.** Describe your task in plain language and the guide skill matches it to the right plugin across 12 plugins and 70+ skills — no memorization required.
-- **Learn by doing.** 12 courses, ~45 minutes each, with hands-on exercises that produce real output. Progress tracking resumes exactly where you left off.
-- **Chain plugins into pipelines.** 6 workflow templates turn multi-plugin sequences into repeatable playbooks — research-to-slides in 3 steps, portfolio-to-pitch in 4.
-- **Diagnose before you escalate.** 5-tier health check catches missing dependencies, stale configs, and plugin integrity issues before they surface as cryptic runtime failures.
+- **Skip the memorization.** Describe your task in plain language and the guide skill routes it to the exact plugin and skill across 12 plugins and 70+ skills — first productive result in under 5 minutes.
+- **Build real skills in 9 hours.** Complete all 12 courses (~45 minutes each) with hands-on exercises that produce real output. Resume any course mid-module — progress is tracked to the lesson.
+- **Collapse multi-plugin work into 3–4 steps.** Run any of 6 workflow templates to chain plugins into repeatable pipelines — research-to-slides in 3 steps, portfolio-to-pitch in 4.
+- **Catch failures before they surface.** Run the 5-tier health check to surface missing dependencies, stale configs, and integrity issues before they become cryptic runtime errors.
 
 ## Installation
 
@@ -44,7 +44,7 @@ This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work
 /workflow research-to-slides               # see a cross-plugin pipeline
 /cheatsheet cogni-trends                   # quick reference for a plugin
 /troubleshoot                              # run diagnostics
-/issues                                    # file a bug or feature request
+cogni-issues                               # file a bug or feature request (skill, no slash command)
 /courses                                   # see course progress
 ```
 
@@ -118,7 +118,7 @@ Exercise artifacts are written to `_teacher-exercises/`.
 
 ```
 cogni-help/
-├── .claude-plugin/plugin.json    Plugin manifest (v0.2.16)
+├── .claude-plugin/plugin.json    Plugin manifest (v0.2.18)
 ├── agents/                       1 delegation agent
 │   └── course-deck-generator.md
 ├── skills/                       7 skills
@@ -151,6 +151,14 @@ but not for using guide, troubleshoot, workflow, cheatsheet, or issues.
 ## Contributing
 
 Contributions welcome — course content, workflow templates, diagnostic checks, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Known Limitations
+
+| ID | Issue | Severity | Affected Skills | Workaround |
+|----|-------|----------|----------------|------------|
+| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/cogni-issues` (browser filing) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [known-issues registry](https://github.com/anthropics/managed-service/blob/main/cogni-docs/references/known-issues.md) for detailed steps. |
+
+> When both Claude Desktop (Cowork) and Claude Code are installed, their competing native messaging host configurations cause browser automation tools to silently vanish. The `/cogni-issues` skill falls back to `gh` CLI — issue filing still works, but interactive browser-based filing is unavailable until the conflict is resolved.
 
 ## Custom development
 

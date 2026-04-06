@@ -17,7 +17,7 @@ This plugin provides the infrastructure layer — workspace initialization, them
 
 ## What it is
 
-The shared foundation layer for the insight-wave ecosystem. Every cogni-x plugin depends on workspace for environment variables, plugin discovery, and theme resolution. A single initialization sets up the entire workspace; health diagnostics catch drift before downstream skills break. Theme management ensures all visual plugins — slides, journey maps, web narratives — render with consistent brand identity.
+Orchestrates the shared foundation that all insight-wave plugins depend on — environment variables, plugin discovery, and theme resolution. A single initialization sets up the entire workspace; health diagnostics catch drift before downstream skills break. Theme management ensures all visual plugins — slides, journey maps, web narratives — render with consistent brand identity.
 
 ## What it does
 
@@ -137,6 +137,14 @@ cogni-workspace has no required plugin dependencies — it is the foundation lay
 ## Contributing
 
 Contributions welcome — theme templates, platform support, diagnostic checks, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Known Limitations
+
+| ID | Issue | Severity | Affected Skills | Workaround |
+|----|-------|----------|----------------|------------|
+| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/manage-themes` (website extraction) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [known-issues registry](https://github.com/anthropics/managed-service/blob/main/cogni-docs/references/known-issues.md) for detailed steps. |
+
+> When both Claude Desktop (Cowork) and Claude Code are installed, their competing native messaging host configurations cause browser automation tools to silently vanish. The `/manage-themes` skill's live website extraction mode falls back to manual theme specification until the conflict is resolved.
 
 ## Custom development
 

@@ -136,6 +136,14 @@ cogni-claims is standalone — it provides a verification service that other plu
 
 Contributions welcome — bug fixes, new deviation types, verification improvements, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Known Limitations
+
+| ID | Issue | Severity | Affected Skills | Workaround |
+|----|-------|----------|----------------|------------|
+| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/claims` (cobrowse) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [known-issues registry](https://github.com/anthropics/managed-service/blob/main/cogni-docs/references/known-issues.md) for detailed steps. |
+
+> When both Claude Desktop (Cowork) and Claude Code are installed, their competing native messaging host configurations cause browser automation tools to silently vanish. The `/claims` cobrowse mode falls back to web fetch only — claim verification still works, but interactive source inspection is unavailable until the conflict is resolved.
+
 ## Custom development
 
 Need a custom verification workflow, integration with your internal systems, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).

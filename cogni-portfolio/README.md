@@ -23,12 +23,12 @@ A structured portfolio messaging workflow for Claude Cowork. Eight pluggable tax
 2. **Scan** — discover what a company offers by scraping their website and classifying findings against the taxonomy → `features/*.json` + `products/*.json` → propositions, solutions
 3. **Define features** — add market-independent capabilities (IS layer) per product → `features/*.json` → propositions, solutions, packages
 4. **Define markets** — discover, evaluate, and size target markets with TAM/SAM/SOM → `markets/*.json` → propositions, solutions, customers
-5. **Generate propositions** — create IS/DOES/MEANS messaging for each Feature x Market pair → `propositions/{feature}--{market}.json` → solutions, packages, synthesize, compete
-6. **Plan solutions** — define implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change, synthesize. Products can define delivery blueprints capturing standard phases, pricing multipliers, and role ratios; the solution-planner uses these as structural templates and adapts per Feature x Market
+5. **Generate propositions** — create IS/DOES/MEANS messaging for each Feature x Market pair → `propositions/{feature}--{market}.json` → solutions, packages, compete
+6. **Plan solutions** — define implementation phases and tiered pricing (PoV/S/M/L) → `solutions/{feature}--{market}.json` → packages, why-change. Products can define delivery blueprints capturing standard phases, pricing multipliers, and role ratios; the solution-planner uses these as structural templates and adapts per Feature x Market
 7. **Define products** — manage top-level product offerings and link to features → `products/*.json` → features, propositions. Optional delivery blueprints standardize the delivery pattern across markets with drift detection when updated
-8. **Build packages** — bundle solutions into sellable offerings per Product x Market → `packages/*.json` → synthesize, portfolio-communicate
-9. **Analyze competitors** — produce competitive landscape, battle cards, and differentiation per proposition → `competitors/*.json` → propositions, synthesize
-10. **Profile customers** — create ideal customer profiles and buyer personas per market → `customers/*.json` → synthesize, portfolio-communicate
+8. **Build packages** — bundle solutions into sellable offerings per Product x Market → `packages/*.json` → portfolio-communicate
+9. **Analyze competitors** — produce competitive landscape, battle cards, and differentiation per proposition → `competitors/*.json` → propositions
+10. **Profile customers** — create ideal customer profiles and buyer personas per market → `customers/*.json` → portfolio-communicate
 11. **Communicate** — generate pitches, proposals, briefs, workbooks, and documentation for any audience → `output/communicate/{use-case}/*.md` → copywriter, story-to-web, doc-readme-root
 12. **Dashboard** — generate an interactive HTML status view of the full portfolio → `output/dashboard.html`
 13. **Architecture diagram** — generate an Excalidraw product-feature hierarchy diagram → `output/architecture.excalidraw` → doc-readme-root
