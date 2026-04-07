@@ -260,11 +260,21 @@ Do NOT trigger after single-feature edits or minor metadata changes — those ru
 
 ### The Completion Loop
 
-1. **Run structural validation** — `$CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>`. Fix structural issues silently (missing fields are mechanical, not judgment calls).
+The Completion Loop runs in two passes: a **set-wide pass** (Layer 0) that catches duplicate features across the product set, followed by the existing **per-feature passes** (structural validation → quality assessment → stakeholder review). Layer 0 runs first because it is wasteful to polish a feature that is about to be merged.
 
-2. **Run description quality assessment** — spawn the `feature-quality-assessor` agent. Collect per-feature pass/warn/fail results.
+1. **Run set-wide dedupe detection (Layer 0)** — spawn the `feature-deduplication-detector` agent once per product in scope, passing `project_dir` and `product_slug`. The agent returns clusters bucketed as `hard_duplicate` (>0.9 confidence), `soft_duplicate` (0.7–0.9), and `related` (0.5–0.7).
 
-3. **Triage the results into three buckets:**
+   - For each `hard_duplicate` cluster, present the surviving slug, the merged slugs, the rationale, and the merge actions (description, source-lineage, sort_order). The user must accept, edit, or defer each cluster before the loop continues. On accept, perform the merge: union the `source_lineage` arrays, take the lower `sort_order`, and remove the merged feature files. Never delete a feature file without an explicit accept.
+   - For each `soft_duplicate` cluster, present the cluster with the agent's `user_question` and let the user adjudicate (merge, keep both, defer).
+   - `related` clusters are informational only — surface them in a brief summary without prompting for action.
+   - If the agent reports zero clusters across all buckets, log "no duplicates found" and continue silently.
+   - Deferred clusters are recorded in the quality data so they resurface on the next gate run instead of being lost.
+
+2. **Run structural validation** — `$CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>`. Fix structural issues silently (missing fields are mechanical, not judgment calls).
+
+3. **Run description quality assessment** — spawn the `feature-quality-assessor` agent. Collect per-feature pass/warn/fail results.
+
+4. **Triage the results into three buckets:**
 
    - **Flag features** (overall fail, or any dimension at fail): These must be fixed before the features phase can complete. Present each with the specific issue and a proposed rewrite. The user confirms, edits, or provides direction for each one.
 
@@ -272,43 +282,44 @@ Do NOT trigger after single-feature edits or minor metadata changes — those ru
 
    - **Pass features**: Confirm they are clean. No action needed.
 
-4. **For flag/warn features, draft improvements inline.** Use the same logic as Research & Improve: conciseness and language issues get direct rewrites; mechanism clarity and differentiation issues get research-backed rewrites via the `quality-enricher` agent. Present improvements as before/after tables (same format as Research & Improve section).
+5. **For flag/warn features, draft improvements inline.** Use the same logic as Research & Improve: conciseness and language issues get direct rewrites; mechanism clarity and differentiation issues get research-backed rewrites via the `quality-enricher` agent. Present improvements as before/after tables (same format as Research & Improve section).
 
-5. **After fixes, re-run the assessor** on changed features to confirm improvement. If any features still have flag status after one fix round, surface them to the user with a clear explanation: "This feature still has [issue]. Here is my best suggestion — would you like to apply it, rewrite it yourself, or accept the current quality level?"
+6. **After fixes, re-run the assessor** on changed features to confirm improvement. If any features still have flag status after one fix round, surface them to the user with a clear explanation: "This feature still has [issue]. Here is my best suggestion — would you like to apply it, rewrite it yourself, or accept the current quality level?"
 
-6. **Purpose coverage check.** After quality fixes, check how many GA features have a `purpose` field. If more than half lack purpose and the user plans to use customer-facing outputs (architecture diagrams, communicate, export), recommend adding purpose statements now: "X of Y features are missing a purpose statement. Adding them now will make architecture diagrams and customer narratives more informative. Want me to draft purpose statements for the missing features?"
+7. **Purpose coverage check.** After quality fixes, check how many GA features have a `purpose` field. If more than half lack purpose and the user plans to use customer-facing outputs (architecture diagrams, communicate, export), recommend adding purpose statements now: "X of Y features are missing a purpose statement. Adding them now will make architecture diagrams and customer narratives more informative. Want me to draft purpose statements for the missing features?"
 
-7. **Review checkpoint — present material before stakeholder review.** Before launching the stakeholder review, pause and give the user the opportunity to read what was produced. This is a mandatory interaction point — do not auto-continue into the stakeholder review.
+8. **Review checkpoint — present material before stakeholder review.** Before launching the stakeholder review, pause and give the user the opportunity to read what was produced. This is a mandatory interaction point — do not auto-continue into the stakeholder review.
 
    Present a concise milestone summary:
    - How many features were created/updated, how many passed quality assessment
+   - How many duplicate clusters were merged or deferred in Layer 0
    - A table of all features with their quality status (pass/warn/deferred)
    - Offer: "Would you like to review the updated features before I run the stakeholder review? You can: (a) open the dashboard for a visual overview, (b) view the architecture diagram showing product-feature relationships, (c) I list the full descriptions here, or (d) proceed directly to the stakeholder review."
 
    If they choose (b), delegate to the `portfolio-architecture` skill to generate and present the mermaid diagram, then ask again if they're ready to proceed.
 
-   Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present each feature's name, description, word count, and quality status. Only proceed to step 7 after the user confirms.
+   Wait for the user's explicit response. If they choose (a), delegate to the `dashboard-refresher` agent with `project_dir` and `plugin_root: $CLAUDE_PLUGIN_ROOT` to generate a dashboard snapshot, then ask again if they're ready to proceed. If they choose (b), present each feature's name, description, word count, and quality status. Only proceed to step 9 after the user confirms.
 
    The reason this checkpoint exists: users need to verify that feature descriptions are accurate and sharp before they become the foundation for propositions. Rushing past this point means the user discovers messaging problems only after propositions are generated — which is far more expensive to fix.
 
-7. **Run stakeholder review** (Layer 3) only after all features pass Layer 2 at pass or warn level and the user has confirmed readiness at the review checkpoint. Follow the existing closed-loop protocol in the Quality Assessment Layers section below.
+9. **Run stakeholder review** (Layer 3) only after all features pass Layer 2 at pass or warn level and the user has confirmed readiness at the review checkpoint. Follow the existing closed-loop protocol in the Quality Assessment Layers section below.
 
-8. **Review checkpoint — present stakeholder findings.** After the stakeholder review completes, present the full results before signaling completion. This is another mandatory interaction point.
+10. **Review checkpoint — present stakeholder findings.** After the stakeholder review completes, present the full results before signaling completion. This is another mandatory interaction point.
 
-   Present:
-   - The verdict (accept/revise/reject) with the overall score
-   - Per-perspective scores and their top concern
-   - Set-level issues (coverage gaps, overlap clusters)
-   - The specific revision guidance if verdict is "revise"
-   - Offer: "Would you like to review the detailed findings, or shall I proceed with the recommended improvements?"
+    Present:
+    - The verdict (accept/revise/reject) with the overall score
+    - Per-perspective scores and their top concern
+    - Set-level issues (coverage gaps, overlap clusters)
+    - The specific revision guidance if verdict is "revise"
+    - Offer: "Would you like to review the detailed findings, or shall I proceed with the recommended improvements?"
 
-   If the verdict is "accept", still present the score and any optional improvements before moving on. The user should see what the assessors found — a silent "accept" that immediately jumps to "ready for propositions" robs the user of insight into their feature set's strengths and remaining edges.
+    If the verdict is "accept", still present the score and any optional improvements before moving on. The user should see what the assessors found — a silent "accept" that immediately jumps to "ready for propositions" robs the user of insight into their feature set's strengths and remaining edges.
 
-9. **Signal completion.** Once the stakeholder review reaches "accept" (or the user explicitly decides to proceed despite "revise" after 2 rounds), confirm that the feature set is ready and recommend the next step (markets or propositions).
+11. **Signal completion.** Once the stakeholder review reaches "accept" (or the user explicitly decides to proceed despite "revise" after 2 rounds), confirm that the feature set is ready and recommend the next step (markets or propositions).
 
 ### Deferred Warnings
 
-When a user explicitly defers a warn feature (step 3), the quality assessment data captures this decision. The deferred status surfaces on resume via the health check, with the context of "you chose to defer this" rather than appearing as a surprise.
+When a user explicitly defers a warn feature (step 4) or a soft-duplicate cluster (step 1), the quality assessment data captures this decision. The deferred status surfaces on resume via the health check, with the context of "you chose to defer this" rather than appearing as a surprise.
 
 ### Tone
 
