@@ -313,7 +313,7 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "company_name": "{COMPANY_NAME}",
   "company_slug": "{COMPANY_SLUG}",
   "created": "{ISO_TIMESTAMP}",
@@ -328,9 +328,28 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
     "not_offered": 0,
     "emerging": 0,
     "extended": 0
+  },
+  "dedupe_summary": {
+    "merged_into_existing": 0,
+    "collapsed_among_candidates": 0,
+    "written_new": 0,
+    "legacy_duplicates_flagged": 0,
+    "soft_duplicates_deferred": 0
   }
 }
 ```
+
+**Counter semantics for `dedupe_summary`** (populated in Phase 7.6 — see below):
+
+- `merged_into_existing` — accepted Table A merges (`candidate_to_existing`); the candidate enriched an existing feature instead of becoming its own file.
+- `collapsed_among_candidates` — accepted Table B collapses (`candidate_to_candidate`); two or more candidates merged into one before any file was written.
+- `written_new` — fresh feature files created by branches C and D (unclustered candidates plus user-flipped "Keep as new" rows).
+- `legacy_duplicates_flagged` — Table E `existing_to_existing` clusters detected this run. Informational only — these are not candidates and are not written by scan; they are surfaced for the `features` Quality Completion Gate to resolve.
+- `soft_duplicates_deferred` — branch E writes (deferred Table C rows persisted with `lineage_status.flagged_as: soft_duplicate_pending_review`).
+
+**Sum invariant:** `merged_into_existing + collapsed_among_candidates + written_new + soft_duplicates_deferred` equals the number of candidates staged at Step 7.3 (`feature-candidates.json`). `legacy_duplicates_flagged` does **not** participate in the sum — legacy duplicates are existing-to-existing pairs, not candidates.
+
+**Schema versioning:** This block was added in `scan-output.json` v1.1.0. Consumers reading older v1.0.0 files must treat the absence of `dedupe_summary` as "not measured", not as zero.
 
 ---
 
@@ -452,6 +471,20 @@ Informational only. Display the clusters with a note:
 
 #### Step 7.6: Apply Resolutions and Write
 
+**Initialize the dedupe counters** before walking the resolution tables. These five integers are what Phase 6 will write into `scan-output.json` `dedupe_summary` after all branches complete:
+
+```
+counters = {
+  "merged_into_existing": 0,
+  "collapsed_among_candidates": 0,
+  "written_new": 0,
+  "legacy_duplicates_flagged": <count of Table E clusters from Step 7.5>,
+  "soft_duplicates_deferred": 0,
+}
+```
+
+`legacy_duplicates_flagged` is set once here from the agent output — Table E rows are not written by scan, so there is no per-row increment for them. The other four are incremented as each branch applies, below.
+
 For each accepted resolution:
 
 **A. `candidate_to_existing` merges (accepted)** — update the existing feature file in place:
@@ -462,12 +495,13 @@ For each accepted resolution:
 5. **Do NOT overwrite `description`, `purpose`, or `name`** — the existing feature may carry human edits. The candidate's richer copy is preserved in `source_lineage` for audit.
 6. Set `lineage_status.status` to `"refreshed"` with `flagged_at: <today>`.
 7. Drop the candidate from the staging list.
+8. `counters.merged_into_existing += 1`.
 
-**B. `candidate_to_candidate` collapses (accepted)** — inside the staging list, merge the cluster's candidates into one (keep the surviving slug's entry, union `_source_offering` into an array). No file I/O.
+**B. `candidate_to_candidate` collapses (accepted)** — inside the staging list, merge the cluster's candidates into one (keep the surviving slug's entry, union `_source_offering` into an array). No file I/O. Increment `counters.collapsed_among_candidates` by `(cluster_size - 1)` — the survivor still becomes a written feature later, so only the absorbed siblings count as collapses.
 
-**C. Unclustered candidates + rejected merges** — write to `features/{slug}.json` with `source_file: "research/{COMPANY_SLUG}-portfolio.md"` and `created: <today>`. Strip the `_candidate` and `_source_offering` markers before writing.
+**C. Unclustered candidates + rejected merges** — write to `features/{slug}.json` with `source_file: "research/{COMPANY_SLUG}-portfolio.md"` and `created: <today>`. Strip the `_candidate` and `_source_offering` markers before writing. `counters.written_new += 1` per file written.
 
-**D. Rejected `candidate_to_existing` merges (user chose "Keep as new")** — write the candidate as a new feature, but prefix its slug with a disambiguator (e.g. `{original-slug}-v2`) if the base slug collides with an existing file.
+**D. Rejected `candidate_to_existing` merges (user chose "Keep as new")** — write the candidate as a new feature, but prefix its slug with a disambiguator (e.g. `{original-slug}-v2`) if the base slug collides with an existing file. `counters.written_new += 1` per file written (branches C and D share the same counter — both produce fresh feature files).
 
 **E. Deferred soft duplicates (Table C — under Approve-all, or explicit "Defer" in Review-each)** — write each deferred candidate to `features/{slug}.json` with `source_file: "research/{COMPANY_SLUG}-portfolio.md"` and `created: <today>`, stripping the `_candidate` and `_source_offering` markers as in branch C. Additionally, set:
 
@@ -480,14 +514,16 @@ For each accepted resolution:
 }
 ```
 
-If the candidate's base slug collides with an existing file, prefix it with a disambiguator (e.g. `{original-slug}-v2`) — same rule as branch D. The `features` Quality Completion Gate Layer 0 (`cogni-portfolio/skills/features/SKILL.md` Completion Loop) will pick the flagged pair up on its next run and re-surface it with both features' descriptions and any attached propositions, which is the right place to make the merge call with full context. Never silently drop a soft-deferred candidate — the dedupe agent's 0.7–0.9 confidence means the distinction is meaningful enough to preserve as evidence.
+If the candidate's base slug collides with an existing file, prefix it with a disambiguator (e.g. `{original-slug}-v2`) — same rule as branch D. The `features` Quality Completion Gate Layer 0 (`cogni-portfolio/skills/features/SKILL.md` Completion Loop) will pick the flagged pair up on its next run and re-surface it with both features' descriptions and any attached propositions, which is the right place to make the merge call with full context. Never silently drop a soft-deferred candidate — the dedupe agent's 0.7–0.9 confidence means the distinction is meaningful enough to preserve as evidence. `counters.soft_duplicates_deferred += 1` per deferred row written.
 
-After all writes are complete, clean up and sync:
+After all writes are complete, clean up, sync, and persist the counters into the metadata file written by Phase 6:
 
 ```bash
 rm -rf "${PROJECT_PATH}/research/.staging"
 bash $CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh "${PROJECT_PATH}"
 ```
+
+Then update `research/.metadata/scan-output.json` in place: read the file, set `dedupe_summary` to the final `counters` dict, and write it back. The Phase 6 metadata write created the block with all-zero defaults; this step replaces it with the real counts. Verify the sum invariant before writing — `merged_into_existing + collapsed_among_candidates + written_new + soft_duplicates_deferred` must equal the candidate count staged at Step 7.3. If the invariant fails, log a warning to the user (do not abort the scan — the data is still useful) and write the counters anyway so the discrepancy is visible in the dashboard.
 
 #### Step 7.7: Set Taxonomy in portfolio.json
 
