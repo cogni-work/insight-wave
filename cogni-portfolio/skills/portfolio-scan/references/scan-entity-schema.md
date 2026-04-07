@@ -63,3 +63,52 @@ partners = (offer.get('partners') or '').replace('|', '\\|')[:60]
 # Use // to provide default for null values
 jq -r '.partners // ""'
 ```
+
+---
+
+## Feature Candidates and Staging
+
+Phase 7.3 does not write features directly. Instead it persists a candidate
+list to a staging file that lives outside `features/` so neither the
+dashboard nor `sync-portfolio.sh` sees it:
+
+```
+${PROJECT_PATH}/research/.staging/feature-candidates.json
+```
+
+Shape: a JSON array of feature-shaped objects. Every candidate carries two
+markers on top of the normal feature schema:
+
+| Field | Required | Purpose |
+|---|---|---|
+| `_candidate` | yes — always `true` | Lets the dedupe agent distinguish candidates from features loaded out of `features/*.json` when the pooled similarity matrix is built. |
+| `_source_offering` | yes | Captures the original offering's `domain`, `link`, and `usp` so Phase 7.6 can write a rich `source_lineage` entry without re-reading `research/.logs/`. |
+
+Example entry:
+
+```json
+{
+  "_candidate": true,
+  "slug": "aws-managed-services",
+  "product_slug": "cloud-services",
+  "name": "AWS Managed Services",
+  "purpose": "Operate AWS workloads end-to-end for regulated enterprises",
+  "description": "...",
+  "taxonomy_mapping": { "dimension": 4, "category_id": "4.1", "category_name": "Managed Hyperscaler Services", "horizon": "current" },
+  "readiness": "ga",
+  "sort_order": 190,
+  "_source_offering": {
+    "domain": "t-systems.com",
+    "link": "https://www.t-systems.com/.../aws-managed-services",
+    "usp": "BSI C5-attested AWS operations with German data residency"
+  }
+}
+```
+
+**Lifecycle:**
+
+1. Phase 7.3 — created. One file per scan run. `mkdir -p` the staging dir first.
+2. Phase 7.4 — read-only by the dedupe agent (via `candidates_file` input).
+3. Phase 7.6 — consumed; `_candidate` and `_source_offering` markers are stripped before any survivor is written to `features/{slug}.json`; the whole `research/.staging/` directory is `rm -rf`'d at the end of the phase.
+
+If a scan is interrupted between 7.3 and 7.6, the staging file is the recovery evidence — it describes exactly what the scan was about to write and can be diffed against the final state to reconstruct what merged into what.

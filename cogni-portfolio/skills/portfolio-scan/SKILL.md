@@ -338,6 +338,8 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
 
 Map discovered offerings to the portfolio data model using the product template. This bridges the research output into actionable entities that downstream skills (propositions, solutions, packages) can build on.
 
+Unlike earlier versions of this skill, Phase 7 **never writes a feature file before running dedupe**. Mapped offerings become in-memory *candidates*, get pooled with existing `features/*.json` by the `feature-deduplication-detector` agent, and only then either (a) merge into an existing stable feature, (b) collapse against another candidate, or (c) get written as a new feature. This preserves stable slugs for downstream entities (propositions, solutions, dashboards) and prevents re-scans from accumulating near-duplicate files.
+
 See `${TEMPLATE_PATH}/product-template.md` for the taxonomy-to-data-model mapping, default product definitions, and JSON examples.
 
 #### Step 7.1: Map Offerings to Features
@@ -367,49 +369,114 @@ See [references/scan-entity-schema.md](references/scan-entity-schema.md) for the
 
 If no products exist in the portfolio, create one product per active dimension using the default product definitions from the template. If products already exist, ask the user to assign each feature to an existing product.
 
-#### Step 7.3: Present Mapping for Confirmation
+#### Step 7.3: Stage Feature Candidates
 
-Present proposed entities for user review (same pattern as the `ingest` skill):
+Do **not** write feature files yet. The old "skip if file exists" check is lexical-only — it silently drops new evidence about a feature you already know about instead of merging it into the existing record. Instead, collect every mapped feature into an in-memory list of **candidates** and persist that list to a staging file:
 
-```markdown
-## Proposed Portfolio Entities
-
-### Products (new)
-| # | Slug | Name | Offerings | Action |
-|---|------|------|-----------|--------|
-| 1 | connectivity-services | Connectivity Services | 7 | Create |
-
-### Features
-| # | Slug | Name | Product | Readiness | Taxonomy | Action |
-|---|------|------|---------|-----------|----------|--------|
-| 1 | managed-sd-wan | Managed SD-WAN Pro | connectivity-services | ga | 1.1 WAN Services | Create |
-| 2 | sase-gateway | SASE Gateway | connectivity-services | ga | 1.2 SASE | Create |
-| ... | ... | ... | ... | ... | ... | ... |
+```
+${PROJECT_PATH}/research/.staging/feature-candidates.json
 ```
 
-Allow the user to:
-- **Approve all** — create all proposed entities
-- **Select individually** — approve, edit, or skip each
-- **Edit before creating** — modify fields before writing
+Each candidate is a normal feature JSON object **plus** a `_candidate: true` marker and a `_source_offering` field carrying the original offering's domain, link, and USP so merges in Step 7.5 can enrich lineage without re-reading the scan logs:
 
-#### Step 7.4: Write Entities and Sync
+```json
+[
+  {
+    "_candidate": true,
+    "slug": "aws-managed-services",
+    "product_slug": "cloud-services",
+    "name": "AWS Managed Services",
+    "purpose": "Operate AWS workloads end-to-end for regulated enterprises",
+    "description": "...",
+    "taxonomy_mapping": { "dimension": 4, "category_id": "4.1", ... },
+    "readiness": "ga",
+    "sort_order": 190,
+    "_source_offering": {
+      "domain": "t-systems.com",
+      "link": "https://www.t-systems.com/...",
+      "usp": "BSI C5-attested AWS operations with German data residency"
+    }
+  }
+]
+```
 
-Before writing, check for pre-existing feature files in `features/`. If any exist from a prior scan or manual creation, skip them unless the user explicitly asks to overwrite. This prevents stale features (which may lack taxonomy_mapping or readiness) from contaminating the output.
+Create the staging directory first with `mkdir -p "${PROJECT_PATH}/research/.staging"`.
 
-For each confirmed entity:
-1. Write product JSON to `products/{slug}.json` (if new products created)
-2. Write feature JSON to `features/{slug}.json` (skip if file already exists)
-3. Set `created` to today's date
-4. Include `"source_file": "research/{COMPANY_SLUG}-portfolio.md"` for traceability
-5. Assign `sort_order` to each feature following the value-to-utility spectrum: customer-facing value features get low numbers (10, 20, 30...), infrastructure/utility features get high numbers (70+). Use increments of 10 to leave room for insertions. This controls display ordering in the dashboard and reports.
+#### Step 7.4: Dedupe Candidates Against Existing Features
 
-After writing, sync the portfolio:
+Dispatch the `feature-deduplication-detector` agent in **candidate mode** once per product that received candidates. Pass:
+
+- `project_dir`: `${PROJECT_PATH}`
+- `product_slug`: the product being analyzed
+- `candidates_file`: `${PROJECT_PATH}/research/.staging/feature-candidates.json`
+- `language`: the portfolio language from `portfolio.json` (hint only)
+
+The agent pools existing features (from `features/*.json`) and candidates into a single similarity matrix and returns clusters tagged with a `resolution_type` per cluster. See the agent's output schema for the full JSON shape.
+
+**Why candidate mode and not the features Quality Gate:** Scan has the source evidence live in context (offering domain, link, USP). The features Quality Gate runs later, with evidence already flattened to `source_file` strings. Merging at scan time means the lineage entries we union in Step 7.5 carry the full provenance, not a stale pointer.
+
+#### Step 7.5: Present Resolutions for Confirmation
+
+Parse the agent output and present the clusters grouped by intent — **not** by confidence bucket. Users make better decisions when every row has the same question attached.
+
+**Table A — Merges into existing features** (`resolution_type: candidate_to_existing`, hard):
+
+| # | Candidate slug | → | Existing slug | Product | Confidence | Rationale | Action |
+|---|---|---|---|---|---|---|---|
+| 1 | aws-managed-services | → | managed-aws-services | cloud-services | 0.95 | slug variant, same capability | Merge (default) / Keep as new |
+
+Default action: **Merge** — the candidate enriches the existing feature's source lineage and is then discarded. User can flip to **Keep as new** to force-write the candidate as a separate feature.
+
+**Table B — Candidate-to-candidate collapses** (`resolution_type: candidate_to_candidate`, hard):
+
+| # | Candidates | Survivor | Product | Confidence | Rationale | Action |
+|---|---|---|---|---|---|---|
+| 1 | aws-managed, managed-aws | aws-managed | cloud-services | 0.92 | same capability, different scan domains | Collapse (default) / Keep both |
+
+**Table C — Needs your call** (all soft duplicates, 0.7–0.9, any resolution type):
+
+Present the agent's `user_question` verbatim. Options per row: **Merge into existing / Keep both / Defer**.
+
+**Table D — New features to create** (unclustered candidates — no hard or soft cluster, from the agent's `unclustered_candidates` list):
+
+Same columns as the old "Proposed Entities" table. Default action: **Create**. User can edit fields or skip rows.
+
+**Table E — Legacy duplicates detected** (`resolution_type: existing_to_existing`):
+
+Informational only. Display the clusters with a note:
+> These are duplicates that already existed in `features/` before this scan. Scan does not auto-merge legacy state. To resolve, run the `features` skill's Quality Completion Gate after the scan completes.
+
+**Action policy:**
+- **Approve all** — apply every default action in Tables A, B, and D; defer every row in Table C.
+- **Review each** — walk the user through rows one at a time.
+
+#### Step 7.6: Apply Resolutions and Write
+
+For each accepted resolution:
+
+**A. `candidate_to_existing` merges (accepted)** — update the existing feature file in place:
+1. Read `features/{surviving_slug}.json`.
+2. Union `source_refs` with a new `source_id` (register the scan report via `bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh register ${PROJECT_PATH} "research/{COMPANY_SLUG}-portfolio.md"` if not already registered).
+3. Append a new entry to `source_lineage` with `entity_role: "merged_from"`, `ingestion_date: <now>`, and the candidate's `_source_offering.link` as evidence.
+4. Take `min(sort_order)`.
+5. **Do NOT overwrite `description`, `purpose`, or `name`** — the existing feature may carry human edits. The candidate's richer copy is preserved in `source_lineage` for audit.
+6. Set `lineage_status.status` to `"refreshed"` with `flagged_at: <today>`.
+7. Drop the candidate from the staging list.
+
+**B. `candidate_to_candidate` collapses (accepted)** — inside the staging list, merge the cluster's candidates into one (keep the surviving slug's entry, union `_source_offering` into an array). No file I/O.
+
+**C. Unclustered candidates + rejected merges** — write to `features/{slug}.json` with `source_file: "research/{COMPANY_SLUG}-portfolio.md"` and `created: <today>`. Strip the `_candidate` and `_source_offering` markers before writing.
+
+**D. Rejected `candidate_to_existing` merges (user chose "Keep as new")** — write the candidate as a new feature, but prefix its slug with a disambiguator (e.g. `{original-slug}-v2`) if the base slug collides with an existing file.
+
+After all writes are complete, clean up and sync:
 
 ```bash
+rm -rf "${PROJECT_PATH}/research/.staging"
 bash $CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh "${PROJECT_PATH}"
 ```
 
-#### Step 7.5: Set Taxonomy in portfolio.json
+#### Step 7.7: Set Taxonomy in portfolio.json
 
 If not already set, update `portfolio.json` to include the taxonomy reference:
 
