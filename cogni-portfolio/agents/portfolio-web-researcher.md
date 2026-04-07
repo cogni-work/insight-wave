@@ -168,6 +168,41 @@ For each discovered offering, populate the full entity schema:
 | Emerging | "beta", "pilot", "preview", "coming soon", "limited" |
 | Future | "roadmap", "planned", "research", "concept", "announced" |
 
+#### Naming Discipline
+
+The downstream `feature-deduplication-detector` is the safety net, not the
+first line of defence. Apply these rules at extraction time so duplicates
+rarely exist in the first place:
+
+1. **Use the provider's exact marketing label for `name`.** Copy the offering
+   name verbatim from the page — no paraphrase, no synthesised "Services" or
+   "Solution" suffix, no pluralisation, no re-casing of the provider's own
+   capitalisation. If the page says "Cloud Transformation", do not return
+   "Cloud Transformation Services".
+
+2. **Derive `slug` deterministically** from the trimmed label: lowercase,
+   kebab-case, then strip the stop-word set used by
+   `feature-deduplication-detector` for lexical comparison —
+   `services`, `platform`, `solution`, `software`, `tools`, `management`.
+   Both ends of the pipeline must agree on this list, so do not extend or
+   shorten it locally. Example: `Managed AWS Services` → `managed-aws`.
+
+3. **Collapse same-page repeated mentions within a single agent run.** When
+   the same offering appears in multiple sections of the same domain (hero,
+   product list, footer, blog), return it once. Each domain contributes at
+   most one candidate per offering. This prevents the multi-section
+   fan-out that downstream dedupe would otherwise have to clean up.
+
+4. **Prefer the provider's sub-brand over the generic category term.** When
+   a page clearly attributes an offering to a named sub-brand (for example,
+   "T-Systems Sovereign Cloud" rather than the generic "Sovereign Cloud"
+   section header), use the sub-brand name. The sub-brand is the marketing
+   label the provider chose; the generic term is the category bucket.
+
+These rules are additive and prompt-level only — no schema change. The
+fallback if any rule is ambiguous (multiple synonyms on one page, no clear
+sub-brand) is the dedupe agent, which still runs.
+
 #### Dual-Category Assignment Rules
 
 Some offerings legitimately span multiple taxonomy categories. When extracting offerings, check against the template's cross-category rules (read `{{TEMPLATE_PATH}}/cross-category-rules.md` if available) and create TWO offering entries if matched.
