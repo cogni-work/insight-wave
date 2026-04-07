@@ -447,8 +447,8 @@ Informational only. Display the clusters with a note:
 > These are duplicates that already existed in `features/` before this scan. Scan does not auto-merge legacy state. To resolve, run the `features` skill's Quality Completion Gate after the scan completes.
 
 **Action policy:**
-- **Approve all** — apply every default action in Tables A, B, and D; defer every row in Table C.
-- **Review each** — walk the user through rows one at a time.
+- **Approve all** — apply every default action in Tables A, B, and D; defer every row in Table C. Deferred Table C rows are **not dropped** — Step 7.6 branch E writes each one to `features/{slug}.json` flagged as `soft_duplicate_pending_review`, so the `features` Quality Completion Gate (Layer 0) re-surfaces the pair on its next run with both features' descriptions attached.
+- **Review each** — walk the user through rows one at a time. Rows the user explicitly defers follow the same branch E write path as under Approve-all.
 
 #### Step 7.6: Apply Resolutions and Write
 
@@ -468,6 +468,19 @@ For each accepted resolution:
 **C. Unclustered candidates + rejected merges** — write to `features/{slug}.json` with `source_file: "research/{COMPANY_SLUG}-portfolio.md"` and `created: <today>`. Strip the `_candidate` and `_source_offering` markers before writing.
 
 **D. Rejected `candidate_to_existing` merges (user chose "Keep as new")** — write the candidate as a new feature, but prefix its slug with a disambiguator (e.g. `{original-slug}-v2`) if the base slug collides with an existing file.
+
+**E. Deferred soft duplicates (Table C — under Approve-all, or explicit "Defer" in Review-each)** — write each deferred candidate to `features/{slug}.json` with `source_file: "research/{COMPANY_SLUG}-portfolio.md"` and `created: <today>`, stripping the `_candidate` and `_source_offering` markers as in branch C. Additionally, set:
+
+```json
+"lineage_status": {
+  "flagged_as": "soft_duplicate_pending_review",
+  "near_match_slug": "<existing_slug from the agent's cluster>",
+  "confidence": <agent confidence, e.g. 0.78>,
+  "flagged_at": "<today>"
+}
+```
+
+If the candidate's base slug collides with an existing file, prefix it with a disambiguator (e.g. `{original-slug}-v2`) — same rule as branch D. The `features` Quality Completion Gate Layer 0 (`cogni-portfolio/skills/features/SKILL.md` Completion Loop) will pick the flagged pair up on its next run and re-surface it with both features' descriptions and any attached propositions, which is the right place to make the merge call with full context. Never silently drop a soft-deferred candidate — the dedupe agent's 0.7–0.9 confidence means the distinction is meaningful enough to preserve as evidence.
 
 After all writes are complete, clean up and sync:
 
