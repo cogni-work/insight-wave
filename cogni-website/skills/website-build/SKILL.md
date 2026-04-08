@@ -39,6 +39,7 @@ Before validating sources, check the legal-pages state:
 3. If `jurisdiction` is set, scan `website-plan.json` for `legal-*` page entries (ids starting with `legal-`).
 4. If none are present, **stop** and tell the user: "Rechtsordnung ist auf {jurisdiction} gesetzt, aber es sind keine rechtlichen Seiten im Plan. Bitte /website-legal ausführen, dann erneut /website-build." Offer to invoke `website-legal` immediately via the `Skill` tool.
 5. If legal pages exist, scan their rendered markdown sources (`content/legal/*.md`) for unfilled `«TODO: ...»` markers and warn the user about each one before continuing — these will appear as visible markers in the published HTML.
+6. Check `legal_config.cookie_categories.uses_analytics` and `legal_config.cookie_categories.uses_marketing_cookies`. If either is `true`, warn loudly: "Die Website verwendet Analyse- oder Marketing-Cookies. Der statische Cookie-Hinweis erfüllt **nicht** die Anforderungen von DSGVO/TTDSG/ePrivacy — er ist nur für Seiten mit ausschließlich technisch notwendigen Cookies korrekt. Vor der Veröffentlichung muss `output/website/.partials/cookie-notice.html` durch ein echtes Consent-Management-Tool ersetzt werden." Do not abort — let the user proceed if they confirm.
 
 ### 1.5. Validate Source Files
 

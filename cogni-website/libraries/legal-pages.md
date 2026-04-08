@@ -209,9 +209,24 @@ Static, non-interactive bottom bar shown on every page (not only legal pages). T
 </aside>
 ```
 
-For EU/EN sites the wording adapts:
+**Language selection rule** — `site-assembler` MUST pick the wording deterministically:
 
-> This website uses only strictly necessary cookies. For more information, see our [Cookie Notice](/pages/cookies.html).
+1. If `website-project.json` `language` is `de`, use the German text above.
+2. If `language` is `en`, use the English text below.
+3. If `language` is unset or any other value, fall back to `legal_config.jurisdiction`: `de` / `at` / `ch` → German, `eu` → English.
+
+English variant:
+
+```html
+<aside class="cookie-notice" role="complementary" aria-label="Cookie notice">
+  <div class="cookie-notice__inner container">
+    <p class="cookie-notice__text">
+      This website uses only strictly necessary cookies. For more information, see our
+      <a href="/pages/cookies.html" class="cookie-notice__link">Cookie Notice</a>.
+    </p>
+  </div>
+</aside>
+```
 
 CSS:
 
