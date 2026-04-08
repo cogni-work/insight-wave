@@ -1,7 +1,12 @@
 {
   "name": "insight-wave",
   "owner": {
-    "name": "Stephan de Haas"
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "metadata": {
+    "description": "Insight-wave is a 13-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, narrative transformation, visual deliverables, sales enablement, claim verification, and end-to-end consulting orchestration.",
+    "version": "1.0.0"
   },
   "plugins": [
     {
@@ -80,7 +85,7 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.69",
+      "version": "0.9.71",
       "description": "Portfolio messaging and proposition planning for SMEs using IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM targeting, competitor and customer analysis, deep-dive research for features and propositions, Lean Canvas bootstrapping, presentation-ready pitch narratives, and eight pluggable industry taxonomies.",
       "keywords": [
         "portfolio",

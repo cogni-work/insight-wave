@@ -8,6 +8,23 @@ Output templates for the `market-brief` use case. Produces marketing content pac
 
 ---
 
+## Handling messaging mode
+
+Market briefs are internal planning artefacts — marketing teams need to see the *whole* shape of the portfolio in this market, including what isn't shippable yet, so they can plan demand-gen campaigns that don't promise vaporware. Unlike customer-facing output, the brief never hides early-stage offerings — it just labels them clearly and routes them into a separate planning bucket.
+
+**Split the Value Propositions section into two tables.** Instead of one grouped listing, produce:
+
+1. **"Available now"** — a table of propositions whose product is in `growth`, `mature`, `launch`, or `development (beta)` mode. Columns: Proposition, IS/DOES/MEANS headline, Relevance tier, **Status** (`GA`, `Newly launched`, `Beta`). Beta rows should have the Status cell call it out explicitly so campaign planners do not build ad copy around beta features without knowing.
+2. **"On the roadmap"** — a table of propositions whose product is in `concept` or `development (planned)` mode. Columns: Proposition, Intended value (derived from DOES but stated in future tense), Target availability (pulled from the product entity if the field exists, otherwise "TBD"), Relevance tier. Flag with a one-line framing: *"Campaign planning for these offerings should focus on awareness/waitlist mechanics, not direct conversion."*
+
+**Sunset handling.** Products in `decline` mode get a short **"Legacy — maintenance only"** subsection after the roadmap table, listing propositions that exist but are closed to new business. Marketing needs to know these exist so they can stop running active campaigns against them.
+
+**Messaging Themes section stays unchanged** — themes cut across propositions regardless of mode. But when a theme's supporting propositions are all in roadmap status, note "Theme is roadmap-only today" so a campaign manager doesn't attempt to launch a campaign around it prematurely.
+
+**Recommended Messaging Themes language guardrail.** For themes anchored on `announce`-mode propositions, phrase the Core Message in future/ambition tense ("We are building toward…") rather than present tense, so ad copy written directly from the brief inherits the correct framing.
+
+---
+
 ## YAML Frontmatter
 
 ```yaml

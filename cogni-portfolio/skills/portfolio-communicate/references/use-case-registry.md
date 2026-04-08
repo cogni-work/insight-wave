@@ -17,6 +17,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | **Template** | `references/templates-customer-narrative.md` |
 | **Review** | Full 3-perspective: Target Buyer, Marketing Director, Sales Director |
 | **Output path** | `output/communicate/customer-narrative/` |
+| **Maturity handling** | All modes allowed. `announce`/`preview` routed to a "On the roadmap" subsection in future/beta-qualified voice; `sunset` omitted from `overview` by default. See SKILL.md → Maturity-Aware Messaging. |
 
 **Scopes:**
 
@@ -42,6 +43,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | **Template** | `references/templates-repo-documentation.md` |
 | **Review** | 3-perspective: Developer Evaluator, Open Source Maintainer, Technical Writer |
 | **Output path** | `output/communicate/repo-docs/` |
+| **Maturity handling** | All modes allowed. Rendered as `Status: new/beta/planned/deprecated` badges rather than marketing labels. `announce`/`deprecated` items skip setup and code examples. |
 
 **Scopes:**
 
@@ -67,6 +69,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | **Template** | `references/templates-pitch.md` |
 | **Review** | 3-perspective: Target Buyer, Sales Director, Narrative Coach |
 | **Output path** | `output/communicate/pitch/` |
+| **Maturity handling** | `standard`/`launch`/`preview` populate Power Positions (preview qualified as beta). `announce` routed to the Why Now / future-outlook beat, never Why You. `sunset` omitted. |
 
 **Scopes:**
 
@@ -93,6 +96,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | **Template** | `references/templates-proposal.md` |
 | **Review** | 3-perspective: Target Buyer, Sales Director, Pre-Sales Consultant |
 | **Output path** | `output/communicate/proposal/` |
+| **Maturity handling** | **Blocks `announce` and `sunset` modes** — a proposal commits to delivering something, so concept-stage and declining products cannot be proposed. `preview` mode requires an Early Access banner, introductory-pricing labels, and a softer CTA. `standard`/`launch` unrestricted. |
 
 **Scopes:**
 
@@ -117,6 +121,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | **Template** | `references/templates-market-brief.md` |
 | **Review** | 3-perspective: Marketing Director, Campaign Manager, Sales Director |
 | **Output path** | `output/communicate/market-brief/` |
+| **Maturity handling** | All modes included but split into distinct tables: "Available now" (standard/launch/preview) and "On the roadmap" (announce). `sunset` goes into a short "Legacy — maintenance only" subsection so marketing can stop active campaigns on it. |
 
 **Scopes:**
 
@@ -140,6 +145,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | **Template** | None — delegates to `document-skills:xlsx` |
 | **Review** | None (data export) |
 | **Output path** | `output/communicate/workbook/` |
+| **Maturity handling** | The Products sheet already carries `maturity`. Add a derived `messaging_mode` column next to it for auditability. All products included regardless of mode — this is a full data export, not a curated view. |
 
 **Scopes:**
 
@@ -149,7 +155,7 @@ Available communication use cases for portfolio content. Each use case defines a
 | `matrix` | `workbook/proposition-matrix.xlsx` | Proposition Matrix sheet only (Feature × Market with IS/DOES/MEANS) |
 
 **Sheets** (for `full` scope):
-1. **Products**: name, positioning, pricing tier, maturity
+1. **Products**: name, positioning, pricing tier, maturity, messaging_mode (derived from maturity + feature readiness — see SKILL.md → Maturity-Aware Messaging)
 2. **Features**: name, purpose, description, category, parent product — ordered by sort_order within product
 3. **Markets**: name, segmentation, TAM/SAM/SOM — ordered by sort_order
 4. **Proposition Matrix**: Feature × Market grid with IS/DOES/MEANS, grouped by product. Includes "Tier" column (high/medium/low/skip/N/A). Excluded pairs show "N/A — {reason}".

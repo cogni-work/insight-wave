@@ -10,6 +10,24 @@ Each template shows the heading structure, section-by-section content guidance, 
 
 ---
 
+## Handling messaging mode
+
+The skill attaches a `messaging_mode` to every product and feature in Step 2 — derived from product `maturity` and feature `readiness`. See SKILL.md → Maturity-Aware Messaging for the mapping table. Customer narratives are buyer-facing, so getting tense and framing right is the whole point of the exercise — a present-tense sentence about a `concept` product is a broken promise.
+
+Apply these rules wherever a product or feature section is rendered:
+
+- **standard** (growth / mature / fallback): the existing voice. Confident present tense. Full proof points. Full engagement framing. No inline label.
+- **launch**: present tense, but tag the product name in its section heading with *(Newly launched)*. Opening sentence may reference recency ("Recently launched for…"). Proof points and pricing are allowed.
+- **preview** (beta): present tense qualified by "in beta" or "early access" on first mention. Evidence items allowed but reframe as "early pilots" rather than delivered outcomes. Any pricing must be labelled "introductory" or "early-access". Tag the product name with *(Beta)*.
+- **announce** (concept / planned development): future tense. "We are building…", "Expected to support…". **No Engagement/Pricing prose.** **No proof points.** These offerings move into a dedicated "Roadmap" subsection (see below) rather than appearing alongside live capabilities. Tag with *(Coming soon)*.
+- **sunset** (decline): neutral voice. "We continue to support existing customers for [product]; we are no longer accepting new engagements." No CTA, no pricing, no proof points. Omit from `overview` scope by default; include only if the scope explicitly names the product. Tag with *(Legacy — existing customers only)*.
+
+**Roadmap subsection.** In the `overview` and `market` scopes, after the main "What We Do" / "How We Help" section, insert a subsection titled **"On the roadmap"** (EN) / **"Auf dem Fahrplan"** (DE) containing the announce-mode and preview-mode offerings. This section carries a one-line framing — e.g. "What we're building next, with expected availability where known." — and then the products in future-tense or beta-qualified voice. This keeps early-stage material visible to the buyer without contaminating the "what you can buy today" narrative.
+
+**Feature-level override inside a standard product.** When a `standard` product contains a `beta` or `planned` feature, describe that specific feature in the stricter voice inline ("…including {feature name} *(in beta)*, which will…") rather than moving the whole product to the Roadmap section. The product stays in the main listing; the feature prose qualifies itself.
+
+---
+
 ## YAML Frontmatter (all levels)
 
 Every generated file includes frontmatter compatible with `cogni-narrative` input:

@@ -144,6 +144,36 @@ Read entity files from the project directory. Which entities to load depends on 
 
 **Internal context (optional):** If `context/context-index.json` exists, read relevant entries. Strategic context enriches company positioning. Competitive context sharpens differentiation.
 
+**Derive a messaging mode for every product and feature.** Before moving on, walk the loaded products and features and attach a `messaging_mode` to each in memory. No new files are read — the signal comes from the `maturity` field already present on products (schema in `cogni-portfolio/references/data-model.md`) and the `readiness` field already present on features. The mapping is defined in [Maturity-Aware Messaging](#maturity-aware-messaging) below. This is the single place where messaging mode is derived; Step 3 and the templates consume it but do not re-derive it.
+
+### Maturity-Aware Messaging
+
+Portfolios are living things. At any moment they contain products at very different stages of real availability: a flagship offering that has been shipping for years, a new service that just launched, a beta that a handful of design partners are piloting, and a concept that is still a roadmap item. **If the generated output describes all of these in the same confident present tense, it overclaims.** A buyer reading "we deliver X" about a concept-stage product will ask for it next week — and every answer from that point forward damages trust.
+
+The fix is not to hide early-stage offerings. The user usually *wants* them in the output — buyers and investors care about what's coming, not just what's shipping today. The fix is to **frame them correctly**: announce what's coming, qualify what's in preview, confidently present what's live, and gracefully handle what's winding down.
+
+#### Messaging modes
+
+Collapse the raw `maturity` × `readiness` signal into **five messaging modes**. Templates branch on the mode, not on the underlying values, so adding a new maturity value later only requires extending this table.
+
+| Product `maturity` | Feature `readiness` (dominant) | Mode | Voice rule |
+|---|---|---|---|
+| `concept` | any | **announce** | Future tense. "We are building…", "Expected availability: …". No delivered-outcome proof points. Pricing hidden or explicitly "indicative". Use labels like *(Coming soon)*. |
+| `development` | `planned` / mixed | **announce** | Same as concept. May reference design-partner or early-access programs when evidence supports it. |
+| `development` | mostly `beta` | **preview** | Present tense, qualified with "in beta" / "early access". Proof points allowed if labelled as pilots. Pricing allowed only as "introductory" or "early-access". Label: *(Beta)*. |
+| `launch` | mostly `ga` | **launch** | Present tense, "newly available" framing. Proof points allowed. Standard pricing. Label: *(Newly launched)*. |
+| `growth` / `mature` | `ga` | **standard** | The existing default voice — confident present tense, full proof points, full pricing. This is the baseline the skill already produces today. |
+| `decline` | any | **sunset** | Neutral tone. "We continue to support existing customers; not accepting new engagements." No CTAs. Omitted from overview listings by default; included only when the scope explicitly asks. Label: *(Legacy — existing customers only)*. |
+| Missing `maturity` | — | **standard** | Fall back to today's behaviour so older projects keep working. Surface a single soft warning at the top of the generated file listing the product slugs that had no maturity set. |
+
+**Product-level vs feature-level resolution.** At the product or portfolio level the product's mode wins. At the sentence level, where a *specific feature* is being described, the effective mode is the stricter of the two (product mode and feature mode) — so a `beta` feature inside a `growth` product is described as "in beta" even though the surrounding product prose is confident. Strictness order, most lenient to most restrictive: `standard` → `launch` → `preview` → `announce` → `sunset`.
+
+**Why a derived mode and not raw maturity.** Templates need a small number of voice choices. Six maturity values times three readiness values times five templates would drift in five different directions. One mode, defined in one place, keeps voice rules consistent across customer narratives, pitches, proposals, briefs and repo documentation.
+
+**Why keep early-stage products visible.** Hiding concept products defeats the reason portfolio-communicate exists — to tell the full story of what the company is doing. The announce mode is specifically designed so that concept material can appear in the output *as an announcement* rather than as an offering. The one exception is the `proposal` use case: generating a sales proposal for something that does not exist yet is the exact failure mode this section exists to prevent, and `templates-proposal.md` blocks it explicitly.
+
+**Carrying the mode into the review loop.** Step 4 passes the mode (or the effective mode per section) to `communicate-review-assessor` so it can flag overclaims — present-tense language describing a concept-stage offering, or proposals generated against announce-mode propositions — as review failures instead of letting them slip through.
+
 ### Step 3: Generate Markdown
 
 Load the template file for the selected use case from the registry's `template` reference. For built-in use cases:
@@ -157,6 +187,8 @@ Load the template file for the selected use case from the registry's `template` 
 For custom use cases, generate section structure based on the use case's `voice`, `scopes`, and `audience` fields — no separate template file is needed.
 
 For ad-hoc use cases, use the parameters collected during the ad-hoc flow.
+
+**Messaging mode rule**: Every template consults the `messaging_mode` attached to each product/feature in Step 2 to decide voice, tense, section visibility and labels. See [Maturity-Aware Messaging](#maturity-aware-messaging) for the authoritative mapping and each template's "Handling messaging mode" block for how that template applies it. If any product in the loaded set is missing `maturity`, prepend the generated file (under the YAML frontmatter, above the first heading) with a single HTML comment of the form `<!-- notice: products without maturity fell back to standard mode: {slug1}, {slug2} -->` so the fallback is auditable without being visible to the end reader.
 
 **Citation rule**: All templates require citations to link to **external source URLs** from entity `evidence[].source_url` fields. Never generate citations that link to internal JSON file paths (e.g., `propositions/x.json`). When an evidence claim has no external URL, present it as an inline estimate without a citation. See each template's Citations section for format details.
 
@@ -177,6 +209,7 @@ After generating output, delegate to the `communicate-review-assessor` agent for
 - The scope (`overview`, `readme-enrichment`, etc.)
 - The market slug (for market and customer scopes)
 - The persona identifier (for customer scope)
+- A `messaging_modes` map of product slug → derived mode (from Step 2), so the assessor can flag any present-tense claim made about an announce-mode product or any proposal generated against an announce-mode proposition
 
 For **ad-hoc and custom use cases**, also pass the review perspectives defined during the ad-hoc flow or in the custom use case's `review.perspectives` array.
 

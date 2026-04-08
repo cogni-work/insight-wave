@@ -6,7 +6,7 @@ description: |
   "pick up where I left off", "portfolio status", "what's next", "show progress",
   "where was I", "how far along", or opens a session that involves an existing
   cogni-portfolio project — even if they don't say "resume" explicitly.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill
 ---
 
 # Portfolio Resume
@@ -27,7 +27,11 @@ Scan the workspace for portfolio projects:
 find . -maxdepth 3 -name "portfolio.json" -path "*/cogni-portfolio/*"
 ```
 
-Each match represents a project (extract the slug from the directory name). If no projects are found, say so and suggest the `setup` skill.
+Each match represents a project (extract the slug from the directory name).
+
+If no projects are found, this workspace has no portfolio yet — briefly tell the user "No portfolio project exists in this workspace yet — let's set one up" (in their language if known) and **dispatch the `portfolio-setup` skill via the Skill tool** to begin initialization. Do not ask the user to re-issue a command; the handoff should be seamless. Once setup completes, control returns here naturally — the user can re-invoke `/portfolio-resume` to see the new project's status, or simply continue with the next-step recommendations setup printed.
+
+This makes `portfolio-resume` a safe single entry point: returning users get the dashboard, new users get walked into setup, and nobody has to know which lifecycle stage they're in.
 
 ### 2. Select Project
 

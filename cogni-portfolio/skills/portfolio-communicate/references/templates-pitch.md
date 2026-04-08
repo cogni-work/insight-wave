@@ -12,6 +12,24 @@ Output templates for the `pitch` use case. Transforms portfolio entities into ar
 
 ---
 
+## Handling messaging mode
+
+Pitches are spoken aloud to an audience, usually in a room where someone can immediately ask "so can I buy this today?". If the narrative features a `concept` capability in the "Why You" beats as if it were delivered, the answer has to be "no, not yet" and the whole pitch loses altitude. The messaging mode (derived in SKILL.md → Maturity-Aware Messaging) prevents that by steering each mode into the arc beat where it actually belongs.
+
+| Mode | Role in the pitch |
+|---|---|
+| **standard** | Baseline. Populates Why You / Portfolio Map / Power Positions with confident IS/DOES/MEANS and full evidence. This is what the template already describes below. |
+| **launch** | Same placement as standard, but the narrator may lead with recency as a "Why Now" reinforcer ("Just released for this market, and already in use by…"). Proof points allowed. |
+| **preview** | Allowed in Power Positions / Portfolio Map, but the DOES layer must be qualified ("rolling out in beta to a set of design partners"). Evidence items are reframed as early pilot outcomes, not delivered results. Never present a preview capability as the main Power Position unless there is literally nothing stronger to lead with. |
+| **announce** | **Does not appear in Why You / Portfolio Map / Power Positions.** Concept material instead feeds the **Why Now** beat (corporate-visions) or **Friction Map → Invitation** transition (jtbd-portfolio) as a future-outlook signal: "The window is also changing because we are building X, expected in [timeframe]." This keeps the roadmap visible without pretending it's deliverable. |
+| **sunset** | Omit from the pitch. Sunset offerings are not what an audience is in the room to hear about. |
+
+**Per-product and per-feature resolution.** Apply the stricter of product and feature modes at the sentence where a specific capability is described. A `growth` product with a `beta` feature should present that feature with "in beta" qualification even inside an otherwise standard Power Position.
+
+**Invitation handling.** The Invitation / Why Pay beat must reference only live engagement options. Do not build an "entry point" around a solution whose parent product is in announce mode — for that case, signal a waitlist or design-partner program instead.
+
+---
+
 ## Arc Selection
 
 **Default**: `jtbd-portfolio` — portfolio pitches present capabilities to buyers who think in outcomes, not features. The JTBD arc's 1:1 job-to-solution mapping mirrors the portfolio's Feature x Market structure, and its verb-phrase jobs surface the buyer language that IS/DOES/MEANS already encodes.

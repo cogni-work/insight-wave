@@ -18,7 +18,7 @@ A portfolio project is the container for all downstream work — products, featu
 
 Getting this right matters because the company context in `portfolio.json` informs every downstream skill. A clear description and accurate industry help the products, markets, and propositions skills generate relevant, on-target output instead of generic filler. A few minutes of care here saves hours of correction later.
 
-If a project already exists for the company, redirect to the `portfolio-resume` skill instead of creating a duplicate.
+If a project already exists for the company (an existing `cogni-portfolio/<slug>/portfolio.json` matching the company), do **not** create a duplicate. Briefly acknowledge that the project exists and **dispatch the `portfolio-resume` skill via the Skill tool** so the user lands on the status dashboard instead of having to re-invoke a command. The two skills bridge to each other in both directions, so users can enter from either side and reach the right place.
 
 ## Workflow
 

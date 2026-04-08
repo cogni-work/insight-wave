@@ -118,4 +118,4 @@ When WebFetch fails and claims are marked `source_unavailable`, the `/claims cob
 - One claim-verifier agent per unique source URL — multiple claims grouped by URL for single fetch
 - Source content cached in `sources/{url-hash}.json` — re-verification re-fetches
 - Resolution actions: `corrected`, `disputed`, `alternative_source`, `discarded`, `accepted_override`
-- Plugin version lives at `.claude-plugin/plugin.json` (currently v1.0.19)
+- Plugin version lives at the marketplace entry in `.claude-plugin/marketplace.json` at the monorepo root (single source of truth for all relative-path plugins; `plugin.json` intentionally carries no `version` field)
