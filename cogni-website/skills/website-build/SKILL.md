@@ -118,7 +118,6 @@ Launch `page-generator` agents in parallel for each page in the plan. For each p
   "page_spec": {page spec from plan},
   "project_dir": "{absolute path}",
   "plugin_root": "$CLAUDE_PLUGIN_ROOT",
-  "css_path": "{relative path from page to css/style.css}",
   "navigation_header": "{header HTML with active state for this page}",
   "navigation_footer": "{footer HTML}",
   "site_title": "{site title from plan}",
@@ -129,10 +128,7 @@ Launch `page-generator` agents in parallel for each page in the plan. For each p
 
 **Active state**: For each page, mark the matching nav link with `site-nav__link--active` class in the header HTML before passing it to the agent.
 
-**CSS path calculation**:
-- `index.html` → `css/style.css`
-- `pages/produkte.html` → `../css/style.css`
-- `pages/produkte/cloud.html` → `../../css/style.css`
+**Stylesheet href**: every generated page links the stylesheet as root-relative `/css/style.css` — no per-page calculation. This matches the root-relative nav hrefs used by the header/footer partials. Do not pass a `css_path` field to `page-generator`; the agent hardcodes the href in its HTML skeleton.
 
 **Homepage hero**: For the homepage page-generator, include the hero HTML partial in the prompt so it can splice it into the hero section instead of generating a CSS-only hero.
 

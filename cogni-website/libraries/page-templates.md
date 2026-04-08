@@ -18,7 +18,7 @@ Every page follows this outer shell:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="{meta_description}">
   <title>{page_title} — {site_title}</title>
-  <link rel="stylesheet" href="{css_path}">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   {navigation_header}
@@ -30,7 +30,7 @@ Every page follows this outer shell:
 </html>
 ```
 
-**Path resolution:** `{css_path}` is relative to the page's location. For `pages/products/cloud.html` it would be `../../css/style.css`.
+**Stylesheet href:** always root-relative `/css/style.css`, regardless of page depth. This matches the root-relative nav hrefs used by the header/footer partials. Do not compute a per-page relative path — the site is always served over HTTP.
 
 ---
 

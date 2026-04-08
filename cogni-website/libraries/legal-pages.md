@@ -37,7 +37,7 @@ Every legal page uses the same two sections: `legal-header` and `legal-body`.
   <meta name="description" content="{meta_description}">
   <meta name="robots" content="index, follow">
   <title>{page_title} — {site_title}</title>
-  <link rel="stylesheet" href="{css_path}">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   {navigation_header}

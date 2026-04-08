@@ -194,7 +194,7 @@
     {
       "name": "cogni-website",
       "source": "./cogni-website",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "description": "Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins \u2014 outputting a deployable static site with shared navigation, theming, and responsive HTML.",
       "keywords": [
         "website",

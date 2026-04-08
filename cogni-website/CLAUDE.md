@@ -92,3 +92,4 @@ The `legal_config` block in `website-project.json` captures the legal entity, re
 - **Language**: German (de) primary output, bilingual support planned
 - **Semantic HTML**: Proper heading hierarchy, landmark elements, meta tags
 - **Self-contained**: No external CDN dependencies, works offline
+- **Served over HTTP**: Output must be served via a web server — root-relative hrefs (stylesheet `/css/style.css`, nav links `/pages/...`) do not resolve via `file://`. Use `python3 -m http.server -d output/website 8080` for local preview.

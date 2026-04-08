@@ -15,7 +15,6 @@ Your task prompt includes:
 - `page_spec` (required): JSON object from website-plan.json describing the page (id, type, slug, title, meta_description, source_files, source_entities, sections)
 - `project_dir` (required): absolute path to the website project directory
 - `plugin_root` (required): absolute path to `$CLAUDE_PLUGIN_ROOT`
-- `css_path` (required): relative path from this page to css/style.css
 - `navigation_header` (required): HTML string for the site header (with active state marked)
 - `navigation_footer` (required): HTML string for the site footer
 - `site_title` (required): site title for the `<title>` tag
@@ -50,7 +49,9 @@ Construct the full HTML document:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="{meta_description}">
   <title>{page_title} — {site_title}</title>
-  <link rel="stylesheet" href="{css_path}">
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Stylesheet href is root-relative on every page, matching the nav partials.
+       Do not compute a per-page relative path — the site is served over HTTP. -->
 </head>
 <body>
   {navigation_header}
