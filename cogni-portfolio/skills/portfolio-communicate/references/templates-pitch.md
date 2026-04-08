@@ -32,7 +32,7 @@ Pitches are spoken aloud to an audience, usually in a room where someone can imm
 
 ## Arc Selection
 
-**Default**: `jtbd-portfolio` — portfolio pitches present capabilities to buyers who think in outcomes, not features. The JTBD arc's 1:1 job-to-solution mapping mirrors the portfolio's Feature x Market structure, and its verb-phrase jobs surface the buyer language that IS/DOES/MEANS already encodes.
+**Default**: `jtbd-portfolio` — portfolio pitches present capabilities to buyers who think in outcomes, not features. The JTBD arc's 1:1 job-to-solution mapping mirrors the portfolio's Feature x Market structure, and its verb-phrase jobs surface the buyer language that IS/DOES/MEANS already encodes. When SKILL.md Step 1b presents the arc picker to the user, `jtbd-portfolio` must be listed **first** so the documented default stays the default in practice. Never present an arc picker that omits `jtbd-portfolio`.
 
 **Override**: Accept `--arc-id` parameter for alternative arcs. When a non-default arc is selected, read the arc definition from `cogni-narrative/skills/narrative/references/story-arc/{arc-id}/arc-definition.md` to get element names, proportions, and quality gates. Adapt the evidence mapping accordingly.
 

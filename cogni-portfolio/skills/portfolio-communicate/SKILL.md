@@ -98,6 +98,25 @@ For **custom/ad-hoc use cases**: use the scopes defined in the use case configur
 
 If the request is vague, present the scope options from the selected use case.
 
+### Step 1b: Arc Selection (pitch use case only)
+
+For the `pitch` use case, the output's `arc_id` controls which story structure cogni-narrative downstream tools render. The `templates-pitch.md` reference defines `jtbd-portfolio` as the standard default — its 1:1 job-to-solution mapping mirrors the portfolio's Feature × Market structure, and its verb-phrase jobs surface the buyer language that IS/DOES/MEANS already encodes. The user can still override.
+
+**Always present this picker via AskUserQuestion before moving to Step 2** — do not silently apply a default, and do not improvise a different list. The picker must list `jtbd-portfolio` first so the documented default stays visible:
+
+> "Welchen Story Arc soll der Pitch verwenden?" / "Which story arc should the pitch use?"
+>
+> - **JTBD Portfolio** (`jtbd-portfolio`) — *recommended default.* Jobs → Friction → Portfolio → Invitation. Best for portfolio introductions, capability overviews, and pre-sales positioning where buyers think in outcomes.
+> - **Corporate Visions** (`corporate-visions`) — Why Change → Why Now → Why You → Why Pay. Best for B2B sales pitches, market-specific pitches, and executive briefings.
+> - **Competitive Intelligence** (`competitive-intelligence`) — Landscape → Shifts → Positioning → Implications. Best for competitive positioning presentations.
+> - **Industry Transformation** (`industry-transformation`) — Forces → Friction → Evolution → Leadership. Best for industry conferences and thought leadership.
+
+If the user explicitly passed `--arc-id` on invocation, skip the picker and use that value. Still validate it against the four supported arcs above — reject unsupported arcs (`technology-futures`, `strategic-foresight`, `trend-panorama`, `theme-thesis`) with the explanation from `templates-pitch.md` that those arcs need cogni-trends or cogni-research input and portfolio data alone is usually insufficient.
+
+Pass the chosen `arc_id` into Step 2 so `cogni-narrative/skills/narrative/references/story-arc/{arc-id}/arc-definition.md` is read for the right arc, and into Step 3 so the frontmatter and evidence mapping use the right arc elements.
+
+Skip this step entirely for non-pitch use cases (`customer-narrative`, `proposal`, `market-brief`, `workbook`, `repo-documentation`, and ad-hoc/custom use cases) — they do not carry `arc_id`.
+
 ### Step 2: Load Entities
 
 Read entity files from the project directory. Which entities to load depends on the use case and scope:
