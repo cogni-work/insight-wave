@@ -8,6 +8,28 @@ Output templates for the `repo-documentation` use case. Transforms portfolio ent
 
 ---
 
+## Handling messaging mode
+
+Developer audiences are already comfortable with the concepts of alpha/beta/stable/deprecated — that is how open-source projects communicate maturity every day. So the repo-documentation use case uses **status badges** rather than marketing-style "coming soon" labels. Badges are terse, scannable, and align with conventions developers already recognise (npm, crates.io, PyPI, GitHub).
+
+**Badge mapping** (append next to product and feature names in all three scopes):
+
+| Messaging mode | Badge | Rendering |
+|---|---|---|
+| **standard** | none | No badge — mature/growth is the default the reader assumes. |
+| **launch** | `Status: new` | `**Status:** new` inline, or a shield-style badge if the document already uses them. |
+| **preview** | `Status: beta` | Same form. |
+| **announce** | `Status: planned` | Same form. The capability still appears in the documentation so contributors can see the roadmap, but any description is in future tense and setup/usage instructions are **omitted** (there is nothing to install yet). |
+| **sunset** | `Status: deprecated` | Appears with a short deprecation note linking to the replacement if one exists. |
+
+**No marketing language.** Do not use *(Coming soon)*, *(Newly launched)* or similar in this use case — those belong to customer-facing templates. Developers want `beta`, `planned`, `deprecated`, `stable`.
+
+**Getting Started / code examples are omitted for `announce` and `deprecated` items** — a reader following instructions for something that doesn't exist yet or has been removed is the single most damaging thing repo documentation can do.
+
+**Use-Case Gallery scope:** use-case scenarios must describe workflows that actually run today. Do not build a gallery scenario around a `planned` feature — flag it in internal notes and skip it.
+
+---
+
 ## YAML Frontmatter
 
 ```yaml

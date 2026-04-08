@@ -33,6 +33,7 @@ You will receive:
 - The scope: use-case-specific (e.g., `overview`, `market`, `customer` for customer-narrative; `readme-enrichment`, `plugin-overview`, `use-case-gallery` for repo-documentation)
 - The market slug (for market and customer scopes)
 - The persona identifier (for customer scope, optional)
+- A **`messaging_modes`** map of product slug → derived mode (one of `standard`, `launch`, `preview`, `announce`, `sunset`). Use it to detect overclaims — see [Maturity Overclaim Check](#maturity-overclaim-check) below.
 - For custom/ad-hoc use cases: an optional `review_perspectives` array defining the three perspectives and their focus areas
 
 Read:
@@ -345,6 +346,38 @@ the difference from competitors using this document alone? Without naming compet
 
 ---
 
+## Maturity Overclaim Check
+
+This check runs for **every** use case — customer-narrative, pitch, proposal, market-brief, repo-documentation, and any custom use case. It is a document-level hard check, not a perspective-weighted criterion, because overclaiming on maturity is a trust failure that no amount of buyer resonance or brand polish can redeem.
+
+Cross-reference the `messaging_modes` map passed in the input against the document body:
+
+1. **`announce` / concept overclaim.** For every product in the map with mode `announce`, scan the document for mentions of that product (by name — use the `name` field from `products/*.json`, and its common variants). Any mention that describes the product in **present tense as a delivered capability** — "we provide…", "our platform does…", "customers use…" — is an overclaim. Customer-facing templates must route these into a Roadmap / "Coming soon" subsection with future-tense framing. The pitch template must confine them to the Why Now / future-outlook beats. The `repo-documentation` template must mark them `Status: planned` with no setup instructions. Any present-tense delivered-capability sentence is a **CRITICAL** finding.
+
+2. **`announce` proposal block.** If the use case is `proposal` and the proposition under review has a product in `announce` (or `sunset`) mode, the skill should have refused to generate the document in the first place. If you are reviewing such a document, that is a **CRITICAL** finding — flag the file as "should not have been generated" and verdict = `reject`.
+
+3. **`preview` / beta under-qualification.** For products in `preview` mode, the document must explicitly mark them as "in beta" / "early access" on first mention (customer-narrative / pitch / market-brief) or `Status: beta` (repo-documentation). For `proposal` use case, a preview-mode proposition additionally requires an Early Access banner and introductory-pricing labelling. Missing qualification is a **HIGH** finding.
+
+4. **`sunset` leakage.** Products in `sunset` mode should not appear in overview-scope customer-narrative or in pitches at all. If they appear without the "legacy / existing customers only" framing, that is a **HIGH** finding.
+
+5. **Missing-maturity notice preserved.** If the generated document contains an HTML comment of the form `<!-- notice: products without maturity fell back to standard mode: ... -->`, leave it intact. Do not flag it as leakage — it is an intentional auditability marker for the human reader.
+
+Record overclaim findings under a new top-level field in the output JSON:
+
+```json
+"maturity_findings": [
+  {
+    "severity": "CRITICAL",
+    "product_slug": "next-gen-analytics",
+    "mode": "announce",
+    "issue": "Product is in concept stage but described in present tense in the 'How We Help' section: 'Our analytics platform delivers real-time insights…'",
+    "suggested_fix": "Move to the Roadmap subsection and reframe in future tense: 'We are building a real-time analytics platform, expected to support…'"
+  }
+]
+```
+
+A single CRITICAL maturity finding pushes the verdict to `revise` at minimum, regardless of perspective scores. Two or more CRITICAL maturity findings, or a proposal-should-not-have-been-generated finding, push the verdict to `reject`.
+
 ## Set-Level Issues
 
 When reviewing multiple output files (e.g., overview + market views generated via "All" scope),
@@ -397,9 +430,9 @@ across touchpoints.
 
 ### Verdict Logic
 
-- All three perspectives score 85+: **accept** — document is ready for customer-facing use and downstream pipeline
-- All perspectives score 70+ but not all 85+: **revise** — targeted improvements needed
-- Any perspective scores below 50: **reject** — fundamental rework needed
+- All three perspectives score 85+ AND no CRITICAL maturity findings: **accept** — document is ready for customer-facing use and downstream pipeline
+- All perspectives score 70+ but not all 85+, OR exactly one CRITICAL maturity finding: **revise** — targeted improvements needed
+- Any perspective scores below 50, OR two or more CRITICAL maturity findings, OR a proposal-should-not-have-been-generated finding: **reject** — fundamental rework needed
 - Otherwise: **revise**
 
 ## Output Format
@@ -533,9 +566,10 @@ Only include `note` when the score is warn or fail — empty string for pass.
 8. Read `solutions/*.json` and `packages/*.json` for engagement/pricing verification (customer-narrative) or workflow descriptions (repo-documentation)
 9. Read `competitors/*.json` (if exist) for differentiation context (customer-narrative only)
 10. Evaluate all three perspectives for the selected use case in sequence
-11. Identify set-level issues (if multiple files reviewed)
-12. Synthesize: identify conflicts, prioritize improvements, determine verdict
-13. Return the JSON output with `use_case` field
+11. Run the [Maturity Overclaim Check](#maturity-overclaim-check) against the `messaging_modes` input — this applies to every use case and can raise the verdict independent of perspective scores
+12. Identify set-level issues (if multiple files reviewed)
+13. Synthesize: identify conflicts, prioritize improvements, determine verdict
+14. Return the JSON output with `use_case` field and the `maturity_findings` array (empty if none)
 
 Adapt your evaluation mindset to the use case:
 - **customer-narrative**: Be commercially sharp and buyer-focused. Catch documents that would fail with real buyers — disengagement, leakage, phantom claims, generic positioning.

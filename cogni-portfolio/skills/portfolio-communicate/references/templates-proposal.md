@@ -8,6 +8,30 @@ Output templates for the `proposal` use case. Transforms a specific proposition 
 
 ---
 
+## Handling messaging mode
+
+A proposal is a *commercial commitment document*. It ends with a call to action for a specific engagement at a specific scope at a specific price. That only makes sense for offerings the company can actually deliver today. The messaging mode (see SKILL.md → Maturity-Aware Messaging) decides whether a proposal can be generated at all.
+
+**announce mode → block generation.** If the proposition's parent product is in `maturity: concept` (or `development` with only `planned` features), the skill must **refuse to write a proposal** for that proposition and instead return a short explanation to the user:
+
+> "The proposition `{feature-slug}--{market-slug}` belongs to product `{product-slug}`, which is currently in concept stage. A sales proposal would commit to delivering something that does not yet exist. Generate a `pitch` instead — it will surface this proposition as a future-outlook signal — or wait until the product reaches preview/launch. If you need to document intent for an internal stakeholder, consider a `market-brief` (which separates 'Available now' from 'Roadmap')."
+
+For the `market` and `all` scopes, silently skip announce-mode propositions and list them in the batch summary as "skipped — concept stage" rather than blocking the entire run.
+
+**preview mode → allowed with qualifiers.** Proposals may be generated for propositions whose product is in preview (beta) mode, but every such proposal must:
+- Carry an **Early Access** banner at the top of the document body (below the frontmatter): *"This offering is currently in early access. Availability, scope and pricing are subject to change before general availability."*
+- Label the Investment section pricing as "Introductory pricing — valid for early-access engagements only".
+- Reframe the Evidence section items as "Early pilot results" rather than delivered outcomes.
+- Soften the "Next Steps" CTA from a hard pilot booking to a design-partner or early-access application.
+
+**launch mode → allowed, full voice.** Same treatment as standard, but the Executive Summary may lead with recency ("Recently released for…"). No other changes.
+
+**standard mode** is the baseline the rest of this template describes.
+
+**sunset mode → block generation.** Treat `decline` the same way as `announce`: refuse and explain, on the grounds that a proposal for a product the company is not accepting new engagements on is actively misleading.
+
+---
+
 ## YAML Frontmatter
 
 ```yaml
