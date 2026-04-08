@@ -46,7 +46,7 @@ Scan the workspace for insight-wave plugin projects using recursive globs. This 
   - Overview narrative (`portfolio-overview.md`)
   - Market-level narratives (`market/*.md`)
   - Persona-level narratives (`customer/*.md`)
-  - These are audience-tailored prose — richer than raw entity JSON. Store their paths for downstream page generation.
+  - These are audience-tailored prose with assertion headlines, pain points, stats, differentiators, and CTAs already written by a copywriter-grade skill. When present, `website-plan` treats them as the **primary** spine for the corresponding pages (home, per-market, per-persona) rather than re-deriving content from raw entity JSON. Store every discovered path — the planner needs them all.
 - Count entities: products, features, markets, propositions, solutions, packages
 
 #### Marketing Discovery (optional)

@@ -35,6 +35,8 @@ Extract:
 
 Read `${plugin_root}/libraries/page-templates.md` and find the section for this page's `type`. Use the HTML patterns and CSS classes defined there.
 
+**Narrative pages with decomposed section blocks.** If `page_spec.sections` is an array of **objects** (not strings) — each with `block_type`, `section_theme`, `headline`, and usually `source_anchor` — the planner has already decomposed the narrative for you. Do not re-plan the page. For each block, look up the matching pattern in the **Section Block Library** appendix of `page-templates.md` (hero, problem-statement, stat-row, feature-alternating, feature-grid, comparison, timeline, testimonial, text-block, cta). Map `section_theme` to the existing CSS modifier (`dark` → `section--dark`, `light` → `section--light`, `light-alt` → `section--light-alt`, `accent` → `section--accent`). Lift body copy verbatim from the narrative markdown at `source_anchor`; do not paraphrase. At the bottom of the page, render any `citations` array as a `<footer class="page-footnotes">` block with numbered items.
+
 **Legal page types** (`legal-imprint`, `legal-privacy`, `legal-cookies`): instead of `page-templates.md`, read `${plugin_root}/libraries/legal-pages.md`. These pages use a single-column "legal text" layout with a `legal-header` and `legal-body` section, no hero, no CTA. The source is a markdown file in `content/legal/` — convert it to HTML using the rules in `legal-pages.md` (omit the H1 and frontmatter, render headings as `<h2>`/`<h3>`, wrap any leftover `«TODO: ...»` markers in `<mark class="legal-todo">`).
 
 ### 3. Generate Page HTML
@@ -100,13 +102,15 @@ When transforming source content to HTML:
 
 ### 5. Section Generation
 
-Generate only the sections listed in `page_spec.sections`. Follow the HTML patterns from page-templates.md for each section type. Key rules:
+Generate only the sections listed in `page_spec.sections`. The list is either a flat array of strings (legacy page types) or an array of block objects (narrative pages — see step 2). Follow the HTML patterns from page-templates.md for each section type. Key rules:
 
-- **Assertion headlines only**: every h2/h3 must contain a verb. No topic labels ("Übersicht", "Produkte"). Write "Entdecken Sie unsere Produkte" instead.
+- **Assertion headlines only**: every h2/h3 must contain a verb. No topic labels ("Übersicht", "Produkte"). Write "Entdecken Sie unsere Produkte" instead. For narrative pages, the headline already lives on the block object — use it verbatim.
+- **Theme alternation**: when rendering a narrative page, respect the `section_theme` the planner assigned. Do not merge or reorder blocks. The planner has already enforced bookends (hero first, cta last) and no-adjacent-duplicate themes.
+- **Copy fidelity**: for narrative pages, open the file in `source_files[0]`, locate the H2 matching `source_anchor`, and lift paragraphs/bullets/stats as-is. Do not rewrite. The narratives were produced by a copywriter-grade skill (`cogni-portfolio:portfolio-communicate`) and are already audience-tuned.
 - **German content**: use proper Unicode (ä, ö, ü, ß, em dashes —), active voice, short sentences
 - **English content**: direct, benefit-focused headlines
 - **Breadcrumbs**: include on all pages except home. Use `Startseite` (de) or `Home` (en) as root.
-- **CTA sections**: every page ends with a call-to-action linking to the contact page
+- **CTA sections**: every page ends with a call-to-action linking to the contact page. Narrative pages already carry a `cta` block as the last entry — do not append a second one.
 
 ### 6. Write Output
 

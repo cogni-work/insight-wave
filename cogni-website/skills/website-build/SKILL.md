@@ -132,6 +132,8 @@ Launch `page-generator` agents in parallel for each page in the plan. For each p
 
 **Homepage hero**: For the homepage page-generator, include the hero HTML partial in the prompt so it can splice it into the hero section instead of generating a CSS-only hero.
 
+**Narrative pages (section-block form)**: For pages whose `sections[]` is an array of block objects (from `website-plan` step 6a — typically `home`, `market`, `audience`), the planner has already done the narrative decomposition. Pass the blocks through verbatim. Do **not** let the page-generator re-decompose them — the instruction to the agent should be "render each block using the matching pattern from the Section Block Library in page-templates.md, lifting copy from the narrative source file at the `source_anchor` for each block."
+
 **Parallelism**: Launch all page-generator agents in a single message for maximum parallelism. Independent pages have no dependencies on each other.
 
 ### 7. Validate Results

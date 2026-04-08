@@ -34,14 +34,22 @@ Read `website-project.json` to get:
 Go beyond the counts from setup — read actual content to understand what's available for each page type.
 
 #### Portfolio Scan
+
+**Narratives first** — these are the primary spine of narrative pages (home, per-market, per-persona). Raw entity JSON becomes enrichment, not the spine.
+
+- Read `output/communicate/customer-narrative/portfolio-overview.md` — frontmatter + prose. This is the spine for the homepage.
+- Read every `output/communicate/customer-narrative/market/*.md` — each becomes the spine for one market page. Extract `market` slug and H1 headline from frontmatter.
+- Read every `output/communicate/customer-narrative/customer/*.md` — each becomes the spine for one persona/audience page. Extract `market` + `persona` slugs from frontmatter.
+
+**Entities for enrichment** — still scan, still useful, but secondary:
+
 - Read all `products/*.json` — extract names, descriptions, positioning, maturity
 - Read all `features/*.json` — extract names, IS statements, product mapping
 - Read all `propositions/*.json` — extract IS/DOES/MEANS, market mapping
 - Read all `solutions/*.json` — extract solution types, pricing tiers
 - Read all `packages/*.json` — extract bundle tiers
 - Read all `markets/*.json` — extract market names, segments
-- Read `output/communicate/customer-narrative/*.md` — extract titles, markets
-- Read `output/README.md` — extract company overview prose
+- Read `output/README.md` — fallback company overview prose if no `portfolio-overview.md` narrative exists
 
 #### Marketing Scan
 - Read all `content/thought-leadership/*.md` — extract titles, dates, markets from frontmatter
@@ -64,21 +72,25 @@ If `sources.research_projects` is non-empty in website-project.json:
 
 Based on discovered content, propose a page list. Apply these rules:
 
-| Page Type | Include When | Always/Conditional |
-|-----------|-------------|-------------------|
-| `home` | Always | Always |
-| `about` | Always | Always |
-| `products` | ≥2 products | Always (even with 1 product) |
-| `product-detail` | Per product | One page per product |
-| `solutions` | ≥1 solution | Conditional |
-| `blog-index` | Marketing content exists AND `include_blog: true` | Conditional |
-| `blog-post` | Per marketing article | One per article |
-| `case-studies` | Customer narratives exist AND `include_case_studies: true` | Conditional |
-| `insights` | Trend report exists AND `include_insights: true` | Conditional |
-| `resources` | Research reports exist AND `include_resources: true` | Conditional |
-| `custom` | User requests ad-hoc pages | Per user request |
-| `contact` | Always | Always |
-| `legal-imprint` / `legal-privacy` / `legal-cookies` | Managed by `website-legal` skill | Footer-only — never proposed by `website-plan` directly |
+| Page Type | Include When | Source spine | Always/Conditional |
+|-----------|-------------|--------------|-------------------|
+| `home` | Always | `customer-narrative/portfolio-overview.md` if present, else `portfolio.json` + top propositions | Always |
+| `market` | Per `customer-narrative/market/*.md` found | `customer-narrative/market/{slug}.md` | One page per market narrative |
+| `audience` | Per `customer-narrative/customer/*.md` found | `customer-narrative/customer/{market}--{persona}.md` | One page per persona narrative |
+| `about` | Always | `portfolio.json` | Always |
+| `products` | ≥2 products | `products/*.json` | Always (even with 1 product) |
+| `product-detail` | Per product | `products/{slug}.json` + features + propositions | One page per product |
+| `solutions` | ≥1 solution | `solutions/*.json` | Conditional |
+| `blog-index` | Marketing content exists AND `include_blog: true` | Marketing `content/` tree | Conditional |
+| `blog-post` | Per marketing article | Single marketing markdown file | One per article |
+| `case-studies` | Customer narratives exist AND `include_case_studies: true` (legacy — prefer `market` / `audience`) | Per-customer narrative | Conditional |
+| `insights` | Trend report exists AND `include_insights: true` | `tips-trend-report.md` | Conditional |
+| `resources` | Research reports exist AND `include_resources: true` | Research `output/report.md` | Conditional |
+| `custom` | User requests ad-hoc pages | User-specified | Per user request |
+| `contact` | Always | Company details from project config | Always |
+| `legal-imprint` / `legal-privacy` / `legal-cookies` | Managed by `website-legal` skill | Legal templates | Footer-only — never proposed by `website-plan` directly |
+
+The `market` and `audience` page types are first-class narrative pages. They get their own URL tree (`pages/markets/{slug}.html`, `pages/audience/{persona}.html`) and appear in the header navigation as dropdown entries when at least two exist, so visitors can jump directly to content tuned to their segment.
 
 Present the proposed structure as a table:
 
@@ -136,12 +148,61 @@ Present navigation for approval:
 ### 6. Map Content to Pages
 
 For each page, determine:
-- `source_files` — markdown files to read for prose content
-- `source_entities` — JSON entity files for structured data
-- `sections` — which template sections to include
+- `source_files` — markdown files to read for prose content (narrative is primary when present)
+- `source_entities` — JSON entity files for structured enrichment
+- `sections` — ordered list of section blocks (see step 6a for narrative pages)
 - `meta_description` — SEO description (generate from content)
 
-Use the page type definitions from `${CLAUDE_PLUGIN_ROOT}/libraries/page-templates.md` as reference for section lists.
+Use the page type definitions from `${CLAUDE_PLUGIN_ROOT}/libraries/page-templates.md` as reference for section lists and the "Section Block Library" appendix for narrative-page section patterns.
+
+### 6a. Decompose Narrative Pages into Section Blocks
+
+For every page whose spine is a `customer-narrative/*.md` file (`home`, `market`, `audience`), do not emit a flat list of generic template section names. Instead, decompose the narrative into an ordered sequence of **section blocks** using the story-to-web pattern. This produces scroll-driven reading experiences instead of entity-card dumps.
+
+The decomposition rules are defined in cogni-visual's story-to-web skill and referenced rather than duplicated here. Read once, apply per page:
+
+- Section taxonomy + decision tree: `$CLAUDE_PLUGIN_ROOT/../cogni-visual/skills/story-to-web/references/02-section-architecture.md` (decision tree lives around lines 145–187)
+- Copywriting rules (assertion headlines, number plays, bullet discipline): `$CLAUDE_PLUGIN_ROOT/../cogni-visual/skills/story-to-web/references/03-section-copywriting.md`
+
+For each narrative page, walk the markdown in order:
+
+1. **Governing thought → `hero` block.** Use the narrative H1 as the assertion headline, the intro paragraph as the subline, and the final-step CTA verb as the hero button text. Section theme: `dark`.
+2. **Each H2 section → one block**, typed by content shape:
+   - Bulleted pain list → `problem-statement` (light)
+   - 3+ numeric data points → `stat-row` (dark)
+   - 4+ parallel capabilities → `feature-grid` (light-alt)
+   - Single argument + implied imagery → `feature-alternating` (light, alternate side per block)
+   - 3–5 sequential steps → `timeline` (light-alt)
+   - Direct attributed quote → `testimonial` (dark)
+   - Before/after or contrast prose → `comparison` (light-alt)
+   - Prose bridge → `text-block` (light)
+3. **Final H2 (CTA / Nächster Schritt / Einstieg) → `cta` block** (accent).
+4. **Enforce theme bookends and alternation:** hero first (`dark`), CTA last (`accent`), and no two adjacent non-bookend blocks may share a `section_theme`. Swap `light` ↔ `light-alt` to resolve collisions.
+5. **Carry citations through:** collect superscript references ([1], [2]…) into a `citations` array on the page spec so the generator can render a footnote block at the bottom of the page.
+
+Each section block in `sections[]` is an object, not a bare string:
+
+```json
+{
+  "block_type": "problem-statement",
+  "section_theme": "light",
+  "arc_role": "problem",
+  "section_label": "Ihre Herausforderungen",
+  "headline": "Legacy-Systeme kosten €134 Millionen pro Jahr — unsichtbar",
+  "body": "...",
+  "bullets": [
+    "Tarifkalkulation dauert 4 Wochen statt 4 Tage",
+    "44% Kundenabbruch in digitalen Journeys"
+  ],
+  "stat_number": "€134M",
+  "confidence": 0.87,
+  "source_anchor": "## Ihre Herausforderungen"
+}
+```
+
+`source_anchor` lets the `page-generator` find the exact H2 in the narrative markdown and lift the copy verbatim without re-authoring it.
+
+**Back-compat note.** Legacy page types (`about`, `products`, `product-detail`, `blog-*`, `insights`, `resources`, `contact`, `legal-*`) keep using the flat `sections: ["hero", "features", "cta"]` string-array form. The page-generator agent accepts both shapes and picks its renderer accordingly. Do not retrofit legacy pages unless the user asks for it.
 
 ### 6a. Merge Legal Pages (if any)
 

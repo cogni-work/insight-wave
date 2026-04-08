@@ -721,3 +721,212 @@ All page templates use a shared set of CSS classes defined in `css/style.css`:
 - `.resource-card` — research report card (resources page)
 - `.resource-card__type` — report type badge
 - `.resource-card__abstract` — report abstract excerpt
+
+---
+
+## Appendix: Section Block Library (for narrative pages)
+
+The page types above (`home`, `about`, `product-detail`, …) use a **flat** section list — `sections: ["hero", "features", "cta"]`. Narrative pages (`home` when sourced from `portfolio-overview.md`, plus the dedicated `market` and `audience` page types) instead receive a **structured** section list from `website-plan` step 6a: an ordered array of block objects, each with `block_type`, `section_theme`, `headline`, and `source_anchor`.
+
+The section-block taxonomy mirrors cogni-visual's story-to-web skill so that narratives surface as scroll-driven reading experiences instead of entity-card dumps. The decomposition rules (decision tree, assertion-headline discipline, number plays, bullet scan-optimization) live in the story-to-web references and are **not** duplicated here:
+
+- Taxonomy + decision tree: `cogni-visual/skills/story-to-web/references/02-section-architecture.md`
+- Copywriting rules: `cogni-visual/skills/story-to-web/references/03-section-copywriting.md`
+
+This appendix only defines the HTML patterns the page-generator emits for each block type, mapping onto the existing stylesheet (no new CSS classes — everything reuses `.section`, `.section--{theme}`, `.hero`, `.stat`, `.card-grid`, `.btn`, `.timeline` already defined in the style reference above).
+
+### Theme → CSS modifier
+
+| `section_theme` | CSS class |
+|---|---|
+| `dark` | `section section--dark` |
+| `light` | `section section--light` |
+| `light-alt` | `section section--light-alt` |
+| `accent` | `section section--accent` |
+
+The planner enforces hero-first / cta-last bookends and no-adjacent-duplicate themes, so the generator should not reorder or recolor blocks.
+
+### Block: `hero`
+
+```html
+<section class="hero hero--dark">
+  <div class="hero__overlay"></div>
+  <div class="hero__content container">
+    <p class="section-label">{section_label}</p>
+    <h1 class="hero__headline">{headline}</h1>
+    <p class="hero__subline">{subline}</p>
+    <a href="{cta_href}" class="btn btn--primary btn--lg">{cta_text}</a>
+  </div>
+</section>
+```
+
+### Block: `problem-statement`
+
+```html
+<section class="section section--light problem-statement">
+  <div class="container content-narrow">
+    <p class="section-label">{section_label}</p>
+    <h2 class="section__headline">{headline}</h2>
+    {optional_stat_callout}
+    <div class="prose">{body}</div>
+    <ul class="problem-statement__bullets">
+      <li>{bullet}</li>
+    </ul>
+  </div>
+</section>
+```
+
+`{optional_stat_callout}` is rendered only if the block carries a `stat_number`:
+
+```html
+<p class="problem-statement__stat"><span class="stat__number">{stat_number}</span></p>
+```
+
+### Block: `stat-row`
+
+```html
+<section class="section section--dark stats-row">
+  <div class="container">
+    <h2 class="section__headline section__headline--light">{headline}</h2>
+    <div class="stats-grid">
+      <div class="stat">
+        <span class="stat__number">{number}</span>
+        <span class="stat__label">{label}</span>
+        <span class="stat__context">{context}</span>
+      </div>
+      <!-- repeat 3–4 -->
+    </div>
+  </div>
+</section>
+```
+
+Each stat element is populated from the block's `stats` array (`[{number, label, context}, ...]`). If the narrative only carries one `stat_number` on the block itself, promote neighboring numeric phrases from the same H2 paragraph into additional stats so the row has ≥3 entries.
+
+### Block: `feature-alternating`
+
+```html
+<section class="section section--light feature-alternating feature-alternating--{side}">
+  <div class="container feature-alternating__grid">
+    <div class="feature-alternating__text">
+      <p class="section-label">{section_label}</p>
+      <h2 class="section__headline">{headline}</h2>
+      <div class="prose">{body}</div>
+    </div>
+    <div class="feature-alternating__image">
+      <div class="image-placeholder" data-prompt="{image_prompt}"></div>
+    </div>
+  </div>
+</section>
+```
+
+`{side}` alternates `left` / `right` each time a `feature-alternating` block appears on the same page. The image div is a placeholder — real images land there in a later iteration; for now the CSS renders a themed gradient so the layout still reads.
+
+### Block: `feature-grid`
+
+```html
+<section class="section section--light-alt feature-grid-section">
+  <div class="container">
+    <h2 class="section__headline">{headline}</h2>
+    <div class="card-grid card-grid--3">
+      <div class="card">
+        <h3 class="card__headline">{item_headline}</h3>
+        <p class="card__body">{item_body}</p>
+      </div>
+      <!-- repeat per item -->
+    </div>
+  </div>
+</section>
+```
+
+### Block: `comparison`
+
+```html
+<section class="section section--light-alt comparison">
+  <div class="container">
+    <h2 class="section__headline">{headline}</h2>
+    <div class="comparison__grid">
+      <div class="comparison__column comparison__column--before">
+        <h3>{before_label}</h3>
+        <ul>{before_points}</ul>
+      </div>
+      <div class="comparison__column comparison__column--after">
+        <h3>{after_label}</h3>
+        <ul>{after_points}</ul>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### Block: `timeline`
+
+```html
+<section class="section section--light-alt">
+  <div class="container">
+    <h2 class="section__headline">{headline}</h2>
+    <ol class="timeline">
+      <li class="timeline__item">
+        <span class="timeline__year">{step_label}</span>
+        <h3 class="timeline__title">{step_headline}</h3>
+        <p class="timeline__description">{step_body}</p>
+      </li>
+      <!-- repeat 3–5 -->
+    </ol>
+  </div>
+</section>
+```
+
+### Block: `testimonial`
+
+```html
+<section class="section section--dark testimonial">
+  <div class="container content-narrow">
+    <blockquote class="testimonial__quote">
+      <p>{quote}</p>
+      <footer class="testimonial__attribution">— {attribution}</footer>
+    </blockquote>
+  </div>
+</section>
+```
+
+### Block: `text-block`
+
+```html
+<section class="section section--light">
+  <div class="container content-narrow">
+    <h2 class="section__headline">{headline}</h2>
+    <div class="prose">{body}</div>
+  </div>
+</section>
+```
+
+### Block: `cta`
+
+```html
+<section class="section section--accent cta-section">
+  <div class="container">
+    <h2 class="cta-section__headline">{headline}</h2>
+    <p class="cta-section__body">{body}</p>
+    <div class="cta-section__buttons">
+      <a href="{primary_href}" class="btn btn--white btn--lg">{primary_cta}</a>
+      <a href="{secondary_href}" class="btn btn--outline-white">{secondary_cta}</a>
+    </div>
+  </div>
+</section>
+```
+
+### Citations footnote
+
+When the page spec carries a `citations` array (collected from the narrative's superscript references), append at the very bottom of `<main>`:
+
+```html
+<footer class="page-footnotes">
+  <h2 class="page-footnotes__headline">Quellen</h2>
+  <ol class="page-footnotes__list">
+    <li id="fn-{n}">{source_text} — <a href="{url}">{url_label}</a></li>
+    <!-- repeat -->
+  </ol>
+</footer>
+```
+
+Render "Quellen" in the page language (`Sources` in English). Inline superscripts in the block body should render as `<sup><a href="#fn-1">1</a></sup>`.

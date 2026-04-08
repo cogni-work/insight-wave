@@ -39,8 +39,121 @@ A complete `website-plan.json` for a German B2B technology company with 3 produc
           "../cogni-portfolio/smartfactory/propositions/energiemanagement--grosse-fertigungsunternehmen-de.json"
         ]
       },
-      "sections": ["hero", "value-props", "product-highlights", "stats", "cta"],
+      "sections": [
+        {
+          "block_type": "hero",
+          "section_theme": "dark",
+          "arc_role": "hook",
+          "section_label": "SmartFactory Solutions",
+          "headline": "Fertigung digitalisieren — ohne IT-Projekt von 18 Monaten",
+          "subline": "Predictive Maintenance, Qualitätssicherung und Energiemanagement für den Mittelstand. Von der Anbindung bis zum ROI in 90 Tagen.",
+          "cta_text": "Strategiegespräch vereinbaren",
+          "cta_href": "/pages/kontakt.html",
+          "source_anchor": "# SmartFactory Solutions"
+        },
+        {
+          "block_type": "problem-statement",
+          "section_theme": "light",
+          "arc_role": "problem",
+          "section_label": "Warum Veränderung",
+          "headline": "Ungeplante Stillstände kosten €134M pro Jahr — unsichtbar",
+          "stat_number": "€134M",
+          "bullets": [
+            "Stillstände im Schnitt 4 Stunden statt 40 Minuten",
+            "44% Ausschussrate in manuellen Prüflinien",
+            "Energiekosten steigen 12% Jahr für Jahr"
+          ],
+          "source_anchor": "## Was wir bieten"
+        },
+        {
+          "block_type": "stat-row",
+          "section_theme": "dark",
+          "arc_role": "urgency",
+          "headline": "Messbare Wirkung in drei Kennzahlen",
+          "stats": [
+            {"number": "73%", "label": "weniger Stillstände", "context": "nach 6 Monaten"},
+            {"number": "€2.4M", "label": "Einsparung pro Linie", "context": "12-Monats-Schnitt"},
+            {"number": "90 Tage", "label": "bis zum ersten ROI", "context": "garantiert"}
+          ],
+          "source_anchor": "## Auf dem Fahrplan"
+        },
+        {
+          "block_type": "feature-alternating",
+          "section_theme": "light",
+          "arc_role": "solution",
+          "section_label": "Für wen wir arbeiten",
+          "headline": "Mittelständische Fertigung — DSGVO-konform und ohne CISO-Blocker",
+          "body": "Unsere Lösungen laufen on-premise oder in deutschen Rechenzentren. Sie behalten die Datenhoheit, wir liefern die Methodik und die Modelle.",
+          "image_prompt": "Modern German mid-sized factory floor, workers collaborating with tablets, natural light",
+          "source_anchor": "## Für wen wir arbeiten"
+        },
+        {
+          "block_type": "feature-alternating",
+          "section_theme": "light-alt",
+          "arc_role": "proof",
+          "section_label": "Warum SmartFactory",
+          "headline": "Methodik statt Black-Box-KI",
+          "body": "Jede Vorhersage ist nachvollziehbar. Jeder Prozessschritt dokumentiert. Keine Wunder-KI, sondern bewährtes Engineering mit modernen Werkzeugen.",
+          "image_prompt": "Engineer reviewing explainable ML dashboard on laptop, industrial setting",
+          "source_anchor": "## Warum cogni-works"
+        },
+        {
+          "block_type": "cta",
+          "section_theme": "accent",
+          "arc_role": "call-to-action",
+          "headline": "In 30 Minuten klären, ob Ihre Linie reif ist",
+          "body": "Kostenloses Erstgespräch. Keine Vorbereitung nötig. Danach wissen Sie, ob ein 90-Tage-Pilot für Sie sinnvoll ist.",
+          "primary_cta": "Gespräch vereinbaren",
+          "primary_href": "/pages/kontakt.html",
+          "secondary_cta": "Open Source testen",
+          "secondary_href": "https://github.com/insight-wave",
+          "source_anchor": "## Nächster Schritt"
+        }
+      ],
+      "citations": [
+        {"n": 1, "source_text": "BMWK Studie: Industrie 4.0 im Mittelstand", "url": "https://example.com/bmwk-2025", "url_label": "bmwk.de/i4-mittelstand"},
+        {"n": 2, "source_text": "VDMA Fertigungsbericht 2025", "url": "https://example.com/vdma-2025", "url_label": "vdma.org/bericht-2025"}
+      ],
       "hero_renderer": "pencil"
+    },
+
+    {
+      "id": "market-b2b-fertigung-dach",
+      "type": "market",
+      "slug": "pages/markets/b2b-fertigung-dach",
+      "title": "Fertigung DACH — SmartFactory Solutions",
+      "meta_description": "Lösungen für mittelständische Fertigungsunternehmen in DACH — Predictive Maintenance, Qualität, Energie.",
+      "source_files": [
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/market/b2b-fertigung-dach.md"
+      ],
+      "source_entities": {
+        "propositions": "../cogni-portfolio/smartfactory/propositions/*grosse-fertigungsunternehmen-de*.json"
+      },
+      "sections": [
+        {"block_type": "hero", "section_theme": "dark", "arc_role": "hook", "headline": "…", "source_anchor": "# …"},
+        {"block_type": "problem-statement", "section_theme": "light", "arc_role": "problem", "headline": "Ihre Herausforderungen", "source_anchor": "## Ihre Herausforderungen"},
+        {"block_type": "feature-grid", "section_theme": "light-alt", "arc_role": "solution", "headline": "Wie wir helfen", "source_anchor": "## Wie wir helfen"},
+        {"block_type": "comparison", "section_theme": "light", "arc_role": "proof", "headline": "Was uns auszeichnet", "source_anchor": "## Was uns auszeichnet"},
+        {"block_type": "cta", "section_theme": "accent", "arc_role": "call-to-action", "headline": "Lassen Sie uns sprechen", "source_anchor": "## Lassen Sie uns sprechen"}
+      ]
+    },
+
+    {
+      "id": "audience-vp-operations",
+      "type": "audience",
+      "slug": "pages/audience/vp-operations",
+      "title": "Für VP Operations — SmartFactory Solutions",
+      "meta_description": "73% weniger ungeplante Stillstände in 90 Tagen — DSGVO-konform, ohne IT-Projekt.",
+      "source_files": [
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/customer/b2b-fertigung-dach--vp-operations.md"
+      ],
+      "sections": [
+        {"block_type": "hero", "section_theme": "dark", "arc_role": "hook", "headline": "…", "source_anchor": "# …"},
+        {"block_type": "problem-statement", "section_theme": "light", "arc_role": "problem", "headline": "Was wir in Ihrer Welt sehen", "source_anchor": "## Was wir in Ihrer Welt sehen"},
+        {"block_type": "feature-alternating", "section_theme": "light-alt", "arc_role": "solution", "headline": "Was wir auf den Tisch bringen", "source_anchor": "## Was wir auf den Tisch bringen"},
+        {"block_type": "timeline", "section_theme": "light", "arc_role": "roadmap", "headline": "Empfohlener Einstiegspunkt", "source_anchor": "## Empfohlener Einstiegspunkt"},
+        {"block_type": "cta", "section_theme": "accent", "arc_role": "call-to-action", "headline": "Pilot-Kunde werden", "source_anchor": "## Wie wir zusammenarbeiten würden"}
+      ]
     },
 
     {
