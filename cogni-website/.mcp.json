@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "pencil": {
-      "command": "pencil",
-      "args": ["mcp-server"]
-    }
-  }
-}
