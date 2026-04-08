@@ -204,7 +204,7 @@ Each section block in `sections[]` is an object, not a bare string:
 
 **Back-compat note.** Legacy page types (`about`, `products`, `product-detail`, `blog-*`, `insights`, `resources`, `contact`, `legal-*`) keep using the flat `sections: ["hero", "features", "cta"]` string-array form. The page-generator agent accepts both shapes and picks its renderer accordingly. Do not retrofit legacy pages unless the user asks for it.
 
-### 6a. Merge Legal Pages (if any)
+### 6b. Merge Legal Pages (if any)
 
 Check the project directory for `legal-pages.json` — this is the queue file written by `website-legal` when it runs before `website-plan`. If it exists:
 

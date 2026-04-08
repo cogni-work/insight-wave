@@ -152,6 +152,8 @@ A complete `website-plan.json` for a German B2B technology company with 3 produc
         {"block_type": "problem-statement", "section_theme": "light", "arc_role": "problem", "headline": "Was wir in Ihrer Welt sehen", "source_anchor": "## Was wir in Ihrer Welt sehen"},
         {"block_type": "feature-alternating", "section_theme": "light-alt", "arc_role": "solution", "headline": "Was wir auf den Tisch bringen", "source_anchor": "## Was wir auf den Tisch bringen"},
         {"block_type": "timeline", "section_theme": "light", "arc_role": "roadmap", "headline": "Empfohlener Einstiegspunkt", "source_anchor": "## Empfohlener Einstiegspunkt"},
+        {"block_type": "testimonial", "section_theme": "dark", "arc_role": "proof", "headline": "Was Kunden sagen", "source_anchor": "## Was Kunden sagen"},
+        {"block_type": "text-block", "section_theme": "light", "arc_role": "context", "headline": "Warum jetzt", "source_anchor": "## Warum jetzt"},
         {"block_type": "cta", "section_theme": "accent", "arc_role": "call-to-action", "headline": "Pilot-Kunde werden", "source_anchor": "## Wie wir zusammenarbeiten würden"}
       ]
     },

@@ -494,6 +494,172 @@ h3 {{ font-size: 1.25rem; }}
   flex-wrap: wrap;
 }}
 
+/* === Section Block Library (narrative pages) === */
+/* Blocks emitted by website-plan step 6a — see libraries/page-templates.md Appendix. */
+
+.section__headline--light {{ color: var(--surface-dark-text); }}
+
+/* problem-statement */
+.problem-statement .section-label {{
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}}
+.problem-statement__stat {{
+  margin: 1.5rem 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}}
+.problem-statement__stat .stat__number {{
+  font-size: inherit;
+  color: inherit;
+}}
+.problem-statement__bullets {{
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}}
+.problem-statement__bullets li {{
+  padding-left: 1.5rem;
+  position: relative;
+  color: var(--text);
+}}
+.problem-statement__bullets li::before {{
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: var(--primary);
+  font-weight: 700;
+}}
+
+/* stat-row */
+.stats-row {{ text-align: center; }}
+.stats-row .stats-grid {{
+  margin-top: 2.5rem;
+}}
+
+/* feature-alternating */
+.feature-alternating__grid {{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+}}
+.feature-alternating--right .feature-alternating__grid {{
+  direction: rtl;
+}}
+.feature-alternating--right .feature-alternating__text,
+.feature-alternating--right .feature-alternating__image {{
+  direction: ltr;
+}}
+.feature-alternating__text .section-label {{
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}}
+.feature-alternating__image {{
+  min-height: 320px;
+  display: flex;
+  align-items: stretch;
+}}
+.image-placeholder {{
+  flex: 1;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--background-alt) 0%, var(--accent-muted, var(--background-alt)) 100%);
+  border: 1px dashed var(--border);
+  min-height: 320px;
+}}
+
+/* feature-grid */
+.feature-grid-section {{ /* reuses .card-grid--3 */ }}
+.feature-grid-section .section__headline {{
+  text-align: center;
+  margin-bottom: 2.5rem;
+}}
+
+/* comparison */
+.comparison__grid {{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}}
+.comparison__column {{
+  padding: 1.75rem;
+  border-radius: var(--radius);
+  background: var(--background);
+  border: 1px solid var(--border);
+}}
+.comparison__column h3 {{
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}}
+.comparison__column ul {{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}}
+.comparison__column--before {{
+  border-color: var(--border);
+  opacity: 0.85;
+}}
+.comparison__column--before h3 {{ color: var(--text-muted); }}
+.comparison__column--after {{
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+}}
+.comparison__column--after h3 {{ color: var(--primary); }}
+
+/* testimonial */
+.testimonial {{ text-align: center; }}
+.testimonial__quote {{
+  margin: 0 auto;
+  padding: 0;
+  max-width: 720px;
+}}
+.testimonial__quote p {{
+  font-size: 1.5rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--surface-dark-text);
+  margin-bottom: 1.5rem;
+}}
+.testimonial__attribution {{
+  font-size: 0.95rem;
+  font-style: normal;
+  color: var(--surface-dark-muted);
+}}
+
+/* page-footnotes (citations carry-through) */
+.page-footnotes {{
+  max-width: 720px;
+  margin: 4rem auto 2rem;
+  padding: 2rem 1.5rem 0;
+  border-top: 1px solid var(--border);
+}}
+.page-footnotes__headline {{
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}}
+.page-footnotes__list {{
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}}
+.page-footnotes__list a {{
+  color: var(--primary);
+  word-break: break-word;
+}}
+
 /* === Mission Quote === */
 .mission-quote {{
   text-align: center;
@@ -537,6 +703,11 @@ h3 {{ font-size: 1.25rem; }}
     flex-direction: column;
     gap: 2rem;
   }}
+  .feature-alternating__grid,
+  .comparison__grid {{
+    grid-template-columns: 1fr;
+  }}
+  .feature-alternating--right .feature-alternating__grid {{ direction: ltr; }}
   .section {{ padding: 3rem 0; }}
   .hero {{ padding: 5rem 0 3rem; }}
   h1 {{ font-size: 2rem; }}
