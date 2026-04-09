@@ -54,7 +54,9 @@ The outputs — a problem statement and HMW questions — become the brief for D
 
 ### 1. Load Context
 
-Read consulting-project.json and `discover/synthesis.md`. Review the themes, surprises, and tensions from Discovery.
+Read consulting-project.json, `discover/synthesis.md`, and all persona files in `personas/`. Review the themes, surprises, and tensions from Discovery.
+
+**Persona context**: If personas exist, present them alongside the synthesis: "These are the people we identified as affected by this engagement. As we converge on a problem statement, we need to ensure their tensions are preserved — not abstracted into boardroom language." List each persona's name, maturity, and core tension.
 
 Update phase state:
 
@@ -136,14 +138,16 @@ Synthesize the verified assumptions, clusters, and HMW questions into a problem 
 
 **Structure**:
 - **Context**: What is the situation? (from Discovery)
-- **Tension**: What is the core conflict or gap?
-- **Question**: What needs to be resolved? (from HMW)
+- **Tension**: What is the core conflict or gap? When personas exist, state the tension in terms the affected people would recognize — not just the business reality
+- **Affected people**: Who experiences this tension? Reference specific personas and their core tensions. This grounds the problem statement in human experience rather than organizational abstraction. If no personas exist, describe who is affected in concrete terms.
+- **Question**: What needs to be resolved? (from HMW — persona-centered when possible)
 - **Constraints**: What boundaries apply? (from engagement vision)
 
 **Example** (strategic-options for DACH market growth):
 > **Context**: The client's DACH cloud portfolio has plateaued at €45M ARR despite 18% market growth, with mid-market share eroding to two vertical-specialist competitors.
 > **Tension**: Current horizontal positioning serves enterprise accounts well but fails to resonate with mid-market buyers who prioritize speed-to-value over feature breadth.
-> **Question**: How might we reposition the portfolio to capture mid-market growth without cannibalizing enterprise margins?
+> **Affected people**: Mid-market IT leads (3-5 person teams) who need to justify cloud investments to non-technical leadership but lack the vendor relationship and proof points that enterprise accounts take for granted. Sales engineers who lose deals to vertical specialists because the horizontal pitch doesn't connect to the buyer's specific industry language.
+> **Question**: How might we help mid-market IT leads justify cloud investment with industry-specific proof points — without cannibalizing enterprise margins?
 > **Constraints**: No M&A, 6-week timeline, existing technology stack.
 
 Draft the problem statement and present for consultant review. The problem statement is the most consultant-dependent artifact in the entire engagement — draft it, but expect 2-3 rounds of refinement. That iteration is where the real value lives.
@@ -178,16 +182,18 @@ FILES TO READ (use Read tool):
 5. Discovery synthesis: {project-dir}/discover/synthesis.md (for traceability)
 6. Diamond project: {project-dir}/consulting-project.json (for engagement context)
 7. Your persona profile: {absolute path to references/personas/{persona}.md}
+8. Design-for personas: {project-dir}/personas/ (all JSON files — these are the people we design for)
 
 INSTRUCTIONS:
-1. Read all files
+1. Read all files, including any persona files in the personas/ directory
 2. Adopt the tone described in your persona profile
 3. Evaluate each of your 5 criteria, assigning PASS / WARN / FAIL
 4. For each criterion, provide specific evidence from the Define artifacts
-5. Calculate your weighted score: PASS=1.0, WARN=0.5, FAIL=0.0
-6. Generate 3-5 questions your stakeholder would ask
-7. Identify the single most important issue from your perspective
-8. List 2-3 concerns that could block Develop phase success
+5. When personas/ files exist, cross-reference them: Are the personas' core tensions preserved in the problem statement? Do the HMW questions name specific personas? Does the "Affected people" section reference the persona data? A problem statement that has persona data available but uses generic "user" language instead is a WARN on User Perspective Fidelity.
+6. Calculate your weighted score: PASS=1.0, WARN=0.5, FAIL=0.0
+7. Generate 3-5 questions your stakeholder would ask
+8. Identify the single most important issue from your perspective
+9. List 2-3 concerns that could block Develop phase success
 
 OUTPUT FORMAT (Markdown):
 

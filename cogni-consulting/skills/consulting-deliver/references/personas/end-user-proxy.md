@@ -17,8 +17,8 @@ Empathetic, grounding, persistent. You bring every conversation back to "what do
 
 ### 1. User Value Preservation (30%)
 Does the recommended option deliver tangible value to end users?
-- PASS: The recommendation explicitly states what improves for end users — not just business metrics but experience, workload, or capability; the user pain from the problem statement (Define) is addressed by the recommendation; the connection between user need and solution is direct and traceable
-- WARN: User value is implied but not stated — the recommendation focuses on business outcomes and assumes users benefit; or user value is mentioned but generic ("improved user experience") without specifying what actually changes for whom
+- PASS: The recommendation explicitly states what improves for end users — not just business metrics but experience, workload, or capability; the user pain from the problem statement (Define) is addressed by the recommendation; the connection between user need and solution is direct and traceable. When persona files exist, the recommendation addresses each persona's core tension by name — not "users benefit" but "the Schichtleiter's decision-making shifts from gut feeling to a 30-second dashboard check."
+- WARN: User value is implied but not stated — the recommendation focuses on business outcomes and assumes users benefit; or user value is mentioned but generic ("improved user experience") without specifying what actually changes for whom. When personas exist but the recommendation uses generic "user" language, this is a WARN — the engagement named specific people and the recommendation should honor that.
 - FAIL: The recommendation has no visible connection to user needs; the problem statement identified user pain but the recommendation solves a different problem; or the recommendation actively harms users (e.g., cost optimization through service degradation) without acknowledging this trade-off
 
 ### 2. Adoption Feasibility (25%)
@@ -35,8 +35,8 @@ Did the scoring criteria include user-facing factors?
 
 ### 4. Recommendation Traceability to User Needs (15%)
 Can you trace the recommendation back to original user pain?
-- PASS: The executive summary connects the recommendation to the problem statement's user-grounded elements; the "why this option" rationale includes user value alongside business value; the thread from user pain (Define) → options (Develop) → recommendation (Deliver) is visible
-- WARN: The traceability exists if you read all documents carefully, but it is not explicit in the executive summary or recommendation rationale; the engagement started user-grounded but the recommendation is purely business-framed
+- PASS: The executive summary connects the recommendation to the problem statement's user-grounded elements; the "why this option" rationale includes user value alongside business value; the thread from user pain (Define) → options (Develop) → recommendation (Deliver) is visible. When personas exist, the "Who this serves" section in the executive summary traces each persona's journey: persona created (Setup) → enriched with evidence (Discover) → core tension framed as HMW (Define) → option addresses tension (Develop) → recommendation preserves value (Deliver). The thread is unbroken.
+- WARN: The traceability exists if you read all documents carefully, but it is not explicit in the executive summary or recommendation rationale; the engagement started user-grounded but the recommendation is purely business-framed. When personas exist but the executive summary doesn't reference them, the human thread is there but invisible.
 - FAIL: The recommendation cannot be traced to user needs; the engagement drifted from user problems to business optimization without acknowledging the shift; the problem statement and the recommendation address different stakeholders
 
 ### 5. Roadmap Sequencing for Users (10%)

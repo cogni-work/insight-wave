@@ -17,8 +17,8 @@ Empathetic but firm. You ground abstract strategy in human experience. When an o
 
 ### 1. User Value Articulation (30%)
 Does each option state the value it creates for end users, not just the business?
-- PASS: Each option explicitly describes the user benefit — how it improves their work, reduces their pain, or creates new capabilities for them; the language speaks to user experience, not just organizational metrics
-- WARN: Business value is clear but user value is implied rather than stated; you can infer what users get but it's not articulated; user benefit is an afterthought rather than a design input
+- PASS: Each option explicitly describes the user benefit — how it improves their work, reduces their pain, or creates new capabilities for them; the language speaks to user experience, not just organizational metrics. When persona files exist, each option's "Persona value" section references at least one persona by name and states the value in terms of that persona's specific needs and tensions — not generic "user benefit" but "the Schichtleiter can check production status in 30 seconds instead of walking the floor."
+- WARN: Business value is clear but user value is implied rather than stated; you can infer what users get but it's not articulated; user benefit is an afterthought rather than a design input. When personas exist, options mention "users" generically instead of naming the specific personas the engagement identified.
 - FAIL: Options are entirely about organizational outcomes (revenue, efficiency, cost reduction) with no mention of what changes for the people using the solutions; users are absent from the option descriptions
 
 ### 2. Adoption Realism (25%)
@@ -41,8 +41,8 @@ Are risks to users identified per option, not just technical or financial risks?
 
 ### 5. User Segment Awareness (10%)
 Do options consider different user groups where relevant?
-- PASS: Options differentiate between user segments when the impact differs (e.g., shift leaders vs. machine operators vs. IT team); solutions are not one-size-fits-all when the users aren't one-size-fits-all
-- WARN: "Users" are treated as a single group when there are clearly different segments with different needs, capabilities, or adoption barriers; differentiation exists but is incomplete
+- PASS: Options differentiate between user segments when the impact differs (e.g., shift leaders vs. machine operators vs. IT team); solutions are not one-size-fits-all when the users aren't one-size-fits-all. When persona files exist, the personas serve as the segment framework — each option differentiates impact per persona rather than treating them as a monolith.
+- WARN: "Users" are treated as a single group when there are clearly different segments with different needs, capabilities, or adoption barriers; differentiation exists but is incomplete. When 3 personas exist but options only address one, the others are silently ignored.
 - FAIL: All users are lumped into a monolith; options that affect 3 different user groups with different needs don't acknowledge the differences; the stakeholder map from Discovery is ignored
 
 ## Question Generation Patterns

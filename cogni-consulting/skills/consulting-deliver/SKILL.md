@@ -57,7 +57,9 @@ This phase balances two tensions: thoroughness (every claim verified, every risk
 
 ### 1. Load Context
 
-Read consulting-project.json, `define/problem-statement.md`, `develop/options/option-synthesis.md`, and the vision deliverables list.
+Read consulting-project.json, `define/problem-statement.md`, `develop/options/option-synthesis.md`, the vision deliverables list, and all persona files in `personas/`.
+
+**Persona context**: If personas exist, present them as the traceability anchors: "As we evaluate options and build the business case, we need to ensure the recommendation serves the people we identified — [persona names]. The thread from their tensions through HMW questions through options should remain visible in the final deliverables."
 
 Update phase state:
 
@@ -163,6 +165,7 @@ Build a phased implementation roadmap for the recommended option(s):
 2. Assign milestones and target dates
 3. Identify owners and dependencies
 4. Note decision points and go/no-go gates
+5. **Persona-specific adoption paths** (when personas exist): Different personas may need different sequencing. A Schichtleiter might need early quick wins to build trust after a failed tablet initiative, while the IT team needs training before they can support the platform. For each phase, note which personas see value and what changes for them. Sequence user-visible value early — roadmaps that put all technical infrastructure before any persona-facing change create a credibility gap where affected people hear about transformation but see nothing change for months.
 
 Save to `deliver/roadmap.md`. Roadmaps should be realistic — better to under-promise than create shelf-ware.
 
@@ -171,6 +174,7 @@ Save to `deliver/roadmap.md`. Roadmaps should be realistic — better to under-p
 Draft a one-page executive summary synthesizing:
 - The engagement vision and problem statement
 - Key discovery insights
+- **Who this serves** (when personas exist): Trace the recommendation back through specific persona needs. For each key persona: "[Persona] had [tension] — we framed HMW [question] — Option [N] addresses this by [specific mechanism]." This makes the human impact of the recommendation visible alongside the business impact. When no personas exist, describe concretely who benefits and how.
 - Recommended option(s) with rationale
 - Business case highlights
 - Immediate next steps
@@ -207,16 +211,18 @@ FILES TO READ (use Read tool):
 7. Problem statement: {project-dir}/define/problem-statement.md (for traceability)
 8. Diamond project: {project-dir}/consulting-project.json (for engagement context)
 9. Your persona profile: {absolute path to references/personas/{persona}.md}
+10. Design-for personas: {project-dir}/personas/ (all JSON files — the people we design for)
 
 INSTRUCTIONS:
-1. Read all files
+1. Read all files, including any persona files in the personas/ directory
 2. Adopt the tone described in your persona profile
 3. Evaluate each of your 5 criteria, assigning PASS / WARN / FAIL
 4. For each criterion, provide specific evidence from the Deliver artifacts
-5. Calculate your weighted score: PASS=1.0, WARN=0.5, FAIL=0.0
-6. Generate 3-5 questions your stakeholder would ask
-7. Identify the single most important issue from your perspective
-8. List 2-3 concerns that could block successful delivery or Export
+5. When personas/ files exist, cross-reference them: Does the recommendation address each persona's core tension? Does the "Who this serves" section in the executive summary trace persona needs through HMW questions to the final recommendation? Does the roadmap include persona-specific adoption paths? The traceability thread — persona (Setup) to enrichment (Discover) to HMW (Define) to option (Develop) to recommendation (Deliver) — should be unbroken.
+6. Calculate your weighted score: PASS=1.0, WARN=0.5, FAIL=0.0
+7. Generate 3-5 questions your stakeholder would ask
+8. Identify the single most important issue from your perspective
+9. List 2-3 concerns that could block successful delivery or Export
 
 OUTPUT FORMAT (Markdown):
 

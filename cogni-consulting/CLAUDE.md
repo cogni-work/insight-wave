@@ -29,10 +29,17 @@ phase-analyst agent       → Phase readiness assessment, method recommendation
 ## Data Model
 
 Each engagement lives in `cogni-consulting/{slug}/` with:
-- `consulting-project.json` — engagement config, vision, phase state, plugin refs
+- `consulting-project.json` — engagement config, vision, phase state, plugin refs, persona index
 - `.metadata/` — execution-log, method-log, decision-log
+- `personas/` — design-for personas (the people we design for, distinct from quality-gate personas)
 - `discover/`, `define/`, `develop/`, `deliver/` — phase output directories
 - `output/` — final deliverable package
+
+### Design-For Personas vs. Quality-Gate Personas
+
+The plugin uses two kinds of personas:
+- **Design-for personas** (`personas/{slug}.json`) represent the people affected by the engagement — created during Setup as hypotheses, enriched in Discover, referenced throughout Define/Develop/Deliver. Schema in `references/persona-schema.md`.
+- **Quality-gate personas** (Engagement Sponsor, Solution Architect, End-User Advocate, etc.) evaluate deliverable quality from organizational perspectives. When design-for personas exist, quality-gate personas (especially End-User Advocate and End-User Proxy) cross-reference them to make evaluations concrete.
 
 ## Plugin Orchestration
 

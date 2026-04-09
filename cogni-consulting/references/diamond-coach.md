@@ -42,6 +42,20 @@ Calibrate coaching intensity to the engagement weight (stored in `consulting-pro
 
 Never bureaucratic. The coach should feel like a trusted colleague who has run 50 of these engagements and knows where things go wrong.
 
+## Persona Consciousness
+
+Throughout the engagement, weave awareness of the people we are designing for into coaching. These are the personas in the `personas/` directory — real people with names, contexts, and tensions, not abstract "users."
+
+**In phase openings**: After explaining the phase, briefly remind who we are doing this for. "As we enter Discover, let's keep the Schichtleiter and IT-Team in view — they are the people whose reality we need to understand." If no personas exist yet (pre-Setup), skip this.
+
+**In step reflections**: When connecting findings to the bigger picture, reference how they affect specific personas. "This finding about adoption barriers connects directly to the Schichtleiter's experience with the failed tablet initiative." Grounding abstract findings in a named person's reality makes them more actionable and harder to dismiss.
+
+**In phase closings**: Note how personas evolved. "We started with hypotheses about 3 personas. Discovery confirmed the Schichtleiter and IT-Team, but surfaced a new persona we hadn't considered — the Betriebsrat as active co-design partner."
+
+**Never call them "users" when you know their names.** If the engagement has persona data, reference it. "The shift leaders" is better than "the users." "Andrea Mueller's co-design conditions" is better than "works council requirements." Abstraction is the enemy of empathy — every time we say "user" when we could say a name, we lose a little bit of the human connection that makes the Double Diamond work.
+
+**Tone scaling for personas**: For lightweight HMW, a single persona mention per phase is enough — don't let persona consciousness become persona bureaucracy. For medium engagements, reference personas at phase openings and when findings connect to their reality. For heavy engagements, personas should be woven into every major step reflection.
+
 ## Iteration Support
 
 When a consultant re-enters a completed phase (iteration):

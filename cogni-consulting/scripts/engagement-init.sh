@@ -26,6 +26,7 @@ mkdir -p "${PROJECT_DIR}/develop/options"
 mkdir -p "${PROJECT_DIR}/develop/scenarios"
 mkdir -p "${PROJECT_DIR}/develop/propositions"
 mkdir -p "${PROJECT_DIR}/deliver"
+mkdir -p "${PROJECT_DIR}/personas"
 mkdir -p "${PROJECT_DIR}/output"
 
 # Initialize execution log

@@ -9,6 +9,8 @@ cogni-consulting/{engagement-slug}/
 │   ├── execution-log.json                 # Phase transitions and timestamps
 │   ├── method-log.json                    # Methods proposed and selected per phase
 │   └── decision-log.json                  # Key decisions with rationale
+├── personas/                              # People we design for (see persona-schema.md)
+│   └── {persona-slug}.json               # One file per persona, evolves across phases
 ├── discover/                              # D1 diverge outputs
 │   ├── research/                          # → cogni-research project
 │   ├── trends/                            # → cogni-trends project
@@ -133,6 +135,40 @@ Audit trail of decisions made during the engagement with rationale and traceabil
   ]
 }
 ```
+
+### personas/{slug}.json (Design-For Personas)
+
+People the engagement aims to help. Created during Setup as hypotheses, enriched during Discover, referenced in Define/Develop/Deliver. Distinct from quality-gate personas (Engagement Sponsor, etc.) which evaluate deliverables.
+
+See `references/persona-schema.md` for the full schema, lifecycle, and portfolio import mapping.
+
+```json
+{
+  "slug": "schichtleiter",
+  "name": "Schichtleiter (Produktionslinie)",
+  "maturity": "hypothesis",
+  "context": "12 Schichtleiter am Standort Sindelfingen",
+  "core_tension": "Soll datengetrieben entscheiden, hat aber keine digitalen Werkzeuge",
+  "empathy_map": { "thinks": [], "feels": [], "says": [], "does": [] },
+  "needs": [],
+  "source": "setup-hypothesis",
+  "portfolio_ref": null,
+  "phase_log": [{"phase": "setup", "action": "created", "date": "2026-03-18"}]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `slug` | Yes | Kebab-case identifier, used as filename |
+| `name` | Yes | Archetype label |
+| `maturity` | Yes | `hypothesis` → `researched` → `validated` |
+| `context` | Yes | Who they are, their relationship to the engagement |
+| `core_tension` | Yes | Central conflict or challenge they face |
+| `empathy_map` | No | Think/Feel/Say/Do — populated during Discover |
+| `needs` | No | Need statements used in persona-centered HMW questions |
+| `source` | Yes | `setup-hypothesis`, `discover-enriched`, `portfolio-import` |
+| `portfolio_ref` | No | Path to cogni-portfolio customer file if imported |
+| `phase_log` | No | Append-only evolution trail |
 
 ## Vision Classes
 

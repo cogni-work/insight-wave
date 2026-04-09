@@ -26,10 +26,11 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 **Task list**: After confirming the engagement context (Step 2), create a task list:
 1. Gather engagement context
 2. Confirm with consultant
-3. Scaffold project structure
-4. Map vision to deliverables
-5. Preview phase plan
-6. Transition to first phase
+3. Identify who this is about (personas)
+4. Scaffold project structure
+5. Map vision to deliverables
+6. Preview phase plan
+7. Transition to first phase
 
 ## Core Concept
 
@@ -82,6 +83,33 @@ Ask explicitly:
 
 Iterate until the user confirms.
 
+### 2b. Who Is This About?
+
+Before moving to structure and methods, identify the people the engagement aims to help. The Double Diamond is grounded in empathy for the people we design for — naming them now creates a lens for everything Discovery uncovers. These are hypotheses, not research conclusions — Discovery will confirm, enrich, or challenge them.
+
+**Diamond Coach framing**: "Before we research, let's name who we think this is about. Who are the people whose daily reality this engagement could change? Not the sponsors or decision-makers — the people who will live with whatever we recommend."
+
+Ask the consultant to identify 1-4 personas:
+- **Name**: An archetype label (e.g., "Schichtleiter", "Field Technician", "Branch Manager")
+- **Context**: One sentence — who they are, how many, their relationship to the engagement
+- **Core tension**: What conflict or challenge they face that makes the current situation unsatisfying
+
+For each persona, write a file to `personas/{slug}.json` using the schema from `$CLAUDE_PLUGIN_ROOT/references/persona-schema.md`. Set `maturity: "hypothesis"`, `source: "setup-hypothesis"`, and initialize the `phase_log` with `{"phase": "setup", "action": "created", "date": "<ISO date>"}`.
+
+**For lightweight HMW**: This step is optional but prompted. Ask: "Who is most affected by this HMW question?" A single persona captured in one exchange is enough. If the consultant has no specific person in mind, skip — the HMW question itself carries the human intent.
+
+**For medium/heavy engagements**: Invest 5-10 minutes here. The personas don't need to be perfect — they will be enriched in Discovery. What matters is that the engagement starts with named people rather than abstract "users."
+
+**Portfolio integration**: If the consultant mentions an existing cogni-portfolio project, check for `customers/{market-slug}.json` files. Offer to import buyer profiles as persona seeds:
+- `profiles[].role` → persona `name`
+- `profiles[].pain_points[0]` → persona `core_tension`
+- `profiles[].decision_role` + `seniority` → persona `context`
+- Set `source: "portfolio-import"`, `portfolio_ref: "customers/{market-slug}.json"`
+
+Remind the consultant: "Portfolio buyer profiles describe who *buys* — the people we design *for* may overlap but aren't always the same. Which of these are the people whose reality this engagement should improve?"
+
+Update the personas index in `consulting-project.json` (see schema below).
+
 ### 3. Create Engagement Structure
 
 Run the init script:
@@ -122,6 +150,7 @@ After the script creates directories, write `consulting-project.json` in the eng
     "develop": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
     "deliver": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 }
   },
+  "personas": [],
   "plugin_refs": {
     "research_project": null,
     "tips_project": null,

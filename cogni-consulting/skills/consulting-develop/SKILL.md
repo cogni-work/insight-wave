@@ -61,7 +61,9 @@ The key principle: **generate before evaluating**. Evaluating during generation 
 
 ### 1. Load Context
 
-Read consulting-project.json, `define/problem-statement.md`, and `define/hmw-questions.md`.
+Read consulting-project.json, `define/problem-statement.md`, `define/hmw-questions.md`, and all persona files in `personas/`.
+
+**Persona context**: If personas exist, present them as design-for targets: "These are the people we're designing solutions for. As we generate options, each one should state what it changes in their daily reality — not just what it does for the organization." List each persona's name, core tension, and (if available) top needs.
 
 Update phase state:
 
@@ -148,7 +150,7 @@ Launch 2 Task agents in parallel (same turn). Each agent reads:
 > - Competitive baseline: {PROJECT_DIR}/discover/competitive/summary.md (if exists)
 > - Engagement config: {PROJECT_DIR}/consulting-project.json
 >
-> Evaluate each proposition against your 5 criteria. For each criterion, assign PASS/WARN/FAIL with specific evidence. When evaluating competitive distinctness or market positioning, you MUST cross-reference the competitive baseline and cite specific competitors by name. Calculate your weighted score per proposition. Then generate 3-5 questions and identify your most critical concern.
+> Evaluate each proposition against your 5 criteria. For each criterion, assign PASS/WARN/FAIL with specific evidence. When evaluating competitive distinctness or market positioning, you MUST cross-reference the competitive baseline and cite specific competitors by name. When persona files exist in {PROJECT_DIR}/personas/, cross-reference them: do the propositions address the needs of the identified personas? A proposition that serves a market segment but ignores the specific personas identified for that segment is a WARN on market fit. Calculate your weighted score per proposition. Then generate 3-5 questions and identify your most critical concern.
 >
 > Respond in {LANGUAGE} (technical terms in English).
 
@@ -213,6 +215,7 @@ After all methods complete, synthesize the options. Use only APPROVED and CONDIT
    - **Description**: What this option entails
    - **Source**: Which method surfaced it (TIPS, portfolio, scenario)
    - **Alignment**: Which HMW question(s) it addresses
+   - **Persona value**: For each affected persona, state what this option changes in their daily reality. Not "improves efficiency" but "shifts decision-making from gut feeling to a dashboard Schichtleiter can check in 30 seconds." When personas exist, this field is required — options without persona-grounded value statements are incomplete. When no personas exist, describe the human impact in concrete terms.
    - **Key assumptions**: What must be true for this to work
    - **Quality gate notes** (if sourced from a CONDITIONAL proposition): List the outstanding improvements flagged in step 4b that have not yet been addressed. These carry forward as known limitations until Deliver resolves them.
 4. Present the option space to the consultant for review
@@ -223,7 +226,10 @@ Save to `develop/options/option-synthesis.md`.
 > **Option 3: "Mobile-First Field Platform"**
 > Build a unified mobile app replacing 4 legacy field tools. Technicians get real-time job scheduling, parts inventory, and customer history in one interface.
 > *Source*: TIPS value modeling (mobile workforce trend) + portfolio proposition (field service × mid-market)
-> *Alignment*: HMW #1 (reduce time-to-resolution) and HMW #3 (improve first-visit fix rate)
+> *Alignment*: HMW #1 (help field technicians resolve issues on first visit)
+> *Persona value*:
+> - **Field Technician**: Replaces the clipboard-and-phone juggle with one device. Knows what parts are in the van before arriving. Cuts "call dispatch for info" from 4x/day to zero.
+> - **Dispatch Coordinator**: Sees real-time technician location and job status instead of relying on end-of-day reports. Can reassign jobs dynamically.
 > *Key assumptions*: Field technicians have reliable mobile connectivity; legacy systems expose APIs for integration.
 
 Present options as equals — ranking happens in Deliver with structured criteria and consultant judgment.
@@ -267,6 +273,7 @@ Each persona evaluates 5 weighted criteria (weights sum to 100%), assigns PASS/W
 > - Problem statement: {PROJECT_DIR}/define/problem-statement.md
 > - HMW questions: {PROJECT_DIR}/define/hmw-questions.md
 > - Engagement config: {PROJECT_DIR}/consulting-project.json
+> - Design-for personas: {PROJECT_DIR}/personas/ (all JSON files — cross-reference when evaluating user value and segment awareness)
 >
 > Evaluate the option space against your 5 criteria. For each criterion, assign PASS/WARN/FAIL with specific evidence. Calculate your weighted score. Then generate 3-5 questions, identify your most critical improvement, and list 2-3 key assumptions.
 >
@@ -330,6 +337,7 @@ For `how-might-we` engagements, replace the plugin-powered pipeline with a guide
 1. **Load context** — Read the refined HMW question(s) from `define/hmw-questions.md` and the discovery synthesis. If desk research was run, read the research summary for domain grounding.
 2. **Run guided ideation** — Read `$CLAUDE_PLUGIN_ROOT/references/methods/guided-ideation.md` and facilitate:
    - Diverge: generate 10-20 ideas, using domain-specific creative constraints (not just generic "what if budget were zero?" but "what if participants had to teach each other instead of learning from a facilitator?")
+   - **Persona lens rounds** (when personas exist): After initial divergence, run a focused round per persona. "If we were designing this specifically for [persona name], knowing what we know about their tensions and needs, what would we create?" This surfaces ideas that generic brainstorming misses because it forces empathy with a specific person. A round for the Schichtleiter might yield "a 30-second morning dashboard" that no one thought of when brainstorming "digital transformation" in the abstract.
    - Cluster: group ideas into 3-6 themes
    - Converge: select top 2-3 ideas based on impact, feasibility, and energy
    - Sketch: flesh each into a domain-appropriate solution design

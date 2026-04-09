@@ -57,6 +57,8 @@ The key principle: **diverge before converging**. Premature closure is the enemy
 
 Read consulting-project.json. Extract: engagement name, vision class, desired outcome, scope, constraints, industry, language.
 
+**Load personas**: Read all files in `personas/`. If personas exist from Setup, present them to the consultant: "We identified these people during setup — they are the lens through which we'll evaluate everything we discover. Let's keep them in view." List each persona's name and core tension. If no personas exist, note this and continue — persona creation can happen during guided methods.
+
 Update phase state to in-progress:
 
 ```bash
@@ -84,6 +86,7 @@ Present the proposed discovery plan, typically 3-5 activities:
 | Stakeholder mapping | Influence/interest matrix, interview agenda |
 | Data audit | Available data inventory, quality assessment, gaps |
 | Customer journey analysis | As-is journey map with pain points |
+| Empathy mapping | Enriched personas with Think/Feel/Say/Do |
 
 **Method mix check**: Before presenting, verify the proposed plan includes at least one internal-facing method (stakeholder mapping, data audit) alongside any external-facing methods (desk research, competitive, trends, customer journey). Discovery that looks only outward misses internal capability constraints, stakeholder dynamics, and data readiness — all of which shape what the Define phase can actually work with. If the vision class recommendations are all external, add stakeholder mapping as a default internal complement.
 
@@ -112,6 +115,8 @@ For each confirmed plugin method, dispatch to the appropriate plugin:
 - Store the project path in `plugin_refs.portfolio_project`
 - Copy or symlink competitive summary to `discover/competitive/`
 
+**Persona import from portfolio**: After dispatching `portfolio-scan` or `compete`, check if `customers/{market-slug}.json` files exist in the portfolio project. If so, and if personas were not already imported during Setup, offer to import buyer profiles as persona seeds using the mapping in `$CLAUDE_PLUGIN_ROOT/references/persona-schema.md`. Remind the consultant that buyer profiles describe who buys — the engagement may design for different people.
+
 Between each plugin dispatch, check with the consultant: "Research complete. Review before moving to trend analysis?"
 
 ### 4. Execute Guided Methods
@@ -123,12 +128,23 @@ For each confirmed guided method, read the method file from `$CLAUDE_PLUGIN_ROOT
 - Build an influence/interest matrix together
 - Draft interview questions aligned to the engagement vision
 - Save outputs to `discover/stakeholder-map.md`
+- **Persona enrichment**: After the stakeholder map is complete, cross-reference with existing personas. For stakeholders marked "directly affected" who match an existing persona, enrich the persona with influence level, engagement strategy, and interview insights. For affected stakeholders not yet represented as personas, propose creating a new one: "This stakeholder group is directly affected but we don't have a persona for them yet. Should we create one?" Write enriched personas back to `personas/{slug}.json`, promote `maturity` to `"researched"`, and append to `phase_log`.
 
 **Data Audit** (`references/methods/data-audit.md`):
 - Inventory available data sources with the consultant
 - Assess quality, recency, and relevance
 - Identify critical gaps
 - Save outputs to `discover/data-audit.md`
+
+**Customer Journey Analysis** (when used):
+- **Persona enrichment**: After the journey map is complete, map pain points and emotions to the relevant personas. Populate the persona's `empathy_map` (especially `feels` and `does` quadrants) and `needs` fields with journey-specific findings. This is the primary mechanism for building empathy map data from evidence rather than assumption.
+
+**Empathy Mapping** (`references/methods/empathy-mapping.md`):
+- Recommended when personas exist from Setup and other guided methods have produced evidence to ground them
+- Walk the consultant through Think/Feel/Say/Do for each persona
+- Surfaces gaps in understanding and say-do contradictions
+- Updates persona files directly — no separate artifact needed
+- Particularly valuable for digital-transformation, cost-optimization, and innovation-portfolio
 
 ### 5. Synthesize Discovery
 
@@ -140,8 +156,9 @@ After all methods complete, produce a discovery synthesis:
 4. Note surprises — findings that challenge initial assumptions
 5. Flag tensions — contradictions or trade-offs between sources, stating which sources disagree and why the disagreement matters
 6. Extract assumptions — for each theme, surface the key assumptions it relies on. Frame them as testable hypotheses: *"Assumption: mid-market buyers prioritize speed over features — to be tested via stakeholder interviews in Define."* The Define phase needs an explicit assumptions register, not just a theme list. Without it, themes are treated as facts rather than hypotheses, and the engagement builds on unverified ground.
-7. Prioritize themes — rank the themes by evidence strength (how many sources support them, how robust the data is) and engagement relevance (how directly the theme connects to the desired outcome). Present the top 3 as "high-confidence, high-impact" themes the engagement should bet on. This helps the consultant and sponsor focus energy where it matters most.
-8. Write `discover/synthesis.md` with sections: Key Themes (with source citations and assumptions), Surprises, Tensions, Assumptions to Test, and Phase Transition Assessment
+7. **Persona check** — Review whether we're learning about the right people. Are there affected groups we missed during Setup that Discovery revealed? Should any persona hypothesis be retired because research shows they're not central? Should new personas be created from discovery findings? If personas were enriched during guided methods, note their current maturity. This check ensures the engagement's empathy lens is correctly focused before Define narrows the problem.
+8. Prioritize themes — rank the themes by evidence strength (how many sources support them, how robust the data is) and engagement relevance (how directly the theme connects to the desired outcome). Present the top 3 as "high-confidence, high-impact" themes the engagement should bet on. This helps the consultant and sponsor focus energy where it matters most.
+9. Write `discover/synthesis.md` with sections: Key Themes (with source citations and assumptions), Surprises, Tensions, Assumptions to Test, Persona Status, and Phase Transition Assessment
 
 **Example synthesis structure**:
 ```markdown

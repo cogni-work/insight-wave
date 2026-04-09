@@ -17,9 +17,9 @@ Empathetic but pointed. You don't oppose strategic framing — you push for it t
 
 ### 1. User Perspective Fidelity (30%)
 Does the problem statement reflect how users actually experience the pain?
-- PASS: The Tension is stated (at least partly) in terms users would recognize and agree with; the Context includes the user's reality, not just the business reality; if you read this to the affected users, they would nod and say "yes, that's our problem"
-- WARN: The user perspective is present but secondary — the framing is predominantly strategic/financial with user impact implied but not stated; users would understand the problem but wouldn't feel seen by the framing
-- FAIL: The problem statement is entirely boardroom language; users and their experience are absent from the framing; the Tension is about market share or margins without any connection to the human experience that creates those numbers
+- PASS: The Tension is stated (at least partly) in terms users would recognize and agree with; the Context includes the user's reality, not just the business reality; if you read this to the affected users, they would nod and say "yes, that's our problem." When persona files exist in `personas/`, the problem statement references them by name and preserves their core tensions — the "Affected people" section connects directly to the persona data.
+- WARN: The user perspective is present but secondary — the framing is predominantly strategic/financial with user impact implied but not stated; users would understand the problem but wouldn't feel seen by the framing. When persona data is available but the problem statement uses generic "user" language instead of naming the specific personas, this is a WARN — the engagement invested in understanding specific people but the framing abstracts them away.
+- FAIL: The problem statement is entirely boardroom language; users and their experience are absent from the framing; the Tension is about market share or margins without any connection to the human experience that creates those numbers. When persona data exists and the problem statement contradicts it (e.g., assumes preferences that the persona's empathy map disproves), this is a FAIL.
 
 ### 2. Pain Point Grounding (25%)
 Are the underlying pain points from Discovery preserved in the framing?
@@ -35,9 +35,9 @@ Do deviated or unverified assumptions represent risks to end users specifically?
 
 ### 4. Missing User Dimensions (15%)
 Were user segments, contexts, or needs from Discovery dropped during clustering?
-- PASS: All significant user-facing insights from Discovery are accounted for — either included in the problem framing, explicitly deprioritized with rationale, or noted as out-of-scope; no silent omissions of user data
-- WARN: Most user insights made it through but 1-2 user segments or needs mentioned in Discovery don't appear in the Define outputs; the omission may be intentional but isn't documented
-- FAIL: Significant user-facing findings from Discovery were lost during clustering — entire user segments, key pain points, or behavioral insights from the customer journey dropped without acknowledgment
+- PASS: All significant user-facing insights from Discovery are accounted for — either included in the problem framing, explicitly deprioritized with rationale, or noted as out-of-scope; no silent omissions of user data. When persona files exist, every persona's core tension is either addressed in the problem statement or explicitly noted as out of scope with rationale.
+- WARN: Most user insights made it through but 1-2 user segments or needs mentioned in Discovery don't appear in the Define outputs; the omission may be intentional but isn't documented. When personas exist, one or more persona's needs appear in the persona file but not in the problem statement or HMW questions without explanation.
+- FAIL: Significant user-facing findings from Discovery were lost during clustering — entire user segments, key pain points, or behavioral insights from the customer journey dropped without acknowledgment. When personas exist, an entire persona that was identified and researched in Discover has been silently dropped from the problem framing.
 
 ### 5. Empathy in Framing (10%)
 Would the affected users recognize their reality in this problem statement?

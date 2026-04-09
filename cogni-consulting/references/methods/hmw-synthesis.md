@@ -24,15 +24,28 @@ Transform theme clusters into actionable "How Might We" questions that frame the
 Present the top 3-5 theme clusters with their insight statements. Confirm these are the right focus areas.
 
 ### Step 2: Draft HMW Questions
-For each priority cluster, draft 2-3 HMW questions. Good HMW questions:
+For each priority cluster, draft 2-3 HMW questions. When personas exist in `personas/`, use **persona-centered framing** — this shifts the question from organizational outcomes to human outcomes, keeping the people we design for at the center.
+
+**Persona-centered format** (recommended when personas exist):
+- "How might we help [persona] to [need/outcome]?"
+- Example: "How might we help shift leaders make data-driven decisions without adding to their cognitive load?"
+- When a HMW addresses multiple personas, name the primary one and note secondary stakeholders: "How might we help the IT team (3 people) manage a platform that shift leaders trust — without creating a vendor dependency they can't exit?"
+
+**Outcome-centered format** (use when no personas exist or for system-level questions):
+- "How might we [outcome]?"
+- Example: "How might we make our monitoring platform the default choice for mid-market hybrid environments?"
+
+The persona-centered format is more powerful because it forces specificity — "reduce costs" becomes "help shift leaders spend less time on paperwork." When both formats seem equally valid, prefer the persona-centered one.
+
+Good HMW questions:
 
 **Are the right scope**:
 - Too broad: "How might we grow the business?" (useless)
 - Too narrow: "How might we add a dark mode toggle?" (premature)
-- Just right: "How might we make our monitoring platform the default choice for mid-market hybrid environments?"
+- Just right: "How might we help shift leaders make data-driven decisions without adding to their cognitive load?"
 
 **Contain a tension**:
-- "How might we reduce service delivery costs while maintaining the quality that differentiates us?"
+- "How might we help the field service team reduce response times while preserving the personal relationships customers depend on?"
 - "How might we enter the French market without cannibalizing our DACH partnerships?"
 
 **Are actionable**:
@@ -58,11 +71,11 @@ Save as `define/hmw-questions.md`:
 
 Based on [N] discovery themes and [N] verified assumptions.
 
-1. **HMW [question]?**
-   Cluster: [source cluster] | Priority: [1-5]
+1. **HMW help [persona] to [need/outcome]?**
+   Cluster: [source cluster] | Priority: [1-5] | Persona: [persona-slug or "system-level"]
 
-2. **HMW [question]?**
-   Cluster: [source cluster] | Priority: [1-5]
+2. **HMW help [persona] to [need/outcome]?**
+   Cluster: [source cluster] | Priority: [1-5] | Persona: [persona-slug or "system-level"]
 
 ...
 ```
