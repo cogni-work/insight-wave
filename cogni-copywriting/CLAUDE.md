@@ -199,4 +199,4 @@ cogni-research --> cogni-narrative --> cogni-copywriting --> cogni-visual
 - Output backup convention: original saved as `.{filename}` (hidden file) before overwrite
 - Copy-json adapter never polishes text itself -- it only handles JSON-to-MD format conversion and delegates all polishing to the copywriter skill
 - Stakeholder review uses parallel Task agents (one per persona) with cross-persona synthesis; 3+ personas on same issue = CRITICAL priority
-- Plugin version lives at the marketplace entry in `.claude-plugin/marketplace.json` at the monorepo root (single source of truth for all relative-path plugins; `plugin.json` intentionally carries no `version` field)
+- Plugin version lives in `.claude-plugin/plugin.json` as the `version` field. Claude Code reads this when displaying plugin info; marketplace sync itself is driven by git commit hash, not the version string

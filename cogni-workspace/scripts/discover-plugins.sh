@@ -26,7 +26,7 @@ fi
 plugins="[]"
 if command -v python3 &>/dev/null; then
   plugins=$(python3 -c "
-import os, json, glob
+import os, json, glob, sys
 
 search_root = '$SEARCH_ROOT'
 found = []
@@ -50,9 +50,16 @@ for pattern in ['*/.claude-plugin/plugin.json', '*/*/.claude-plugin/plugin.json'
                 root_var = f'PLUGIN_{suffix}_ROOT'
                 plugin_var = f'PLUGIN_{suffix}_PLUGIN'
 
+            # Version is authoritative in plugin.json — warn loudly if missing
+            # (marketplace.json no longer carries version; git commit hash drives sync)
+            version = manifest.get('version')
+            if not version:
+                sys.stderr.write(f'[discover-plugins] warning: {plugin_name or manifest_path} has no version field in plugin.json\n')
+                version = 'unknown'
+
             found.append({
                 'name': plugin_name,
-                'version': manifest.get('version', 'unknown'),
+                'version': version,
                 'description': manifest.get('description', ''),
                 'path': plugin_dir,
                 'root_var': root_var,

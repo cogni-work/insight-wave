@@ -120,4 +120,4 @@ Bridge files (`research.json`) carry structured findings with evidence arrays, b
 - Geographic qualification for uniqueness claims — never claim global uniqueness when only regional applies
 - Vendor claim attribution — always prefix with "laut {Vendor}"; never present vendor marketing as provider operational results
 - Revenue-scaled cost-of-inaction — if projected costs are <0.5% of `arr_min`, they are immaterial to a CFO
-- Plugin version lives at the marketplace entry in `.claude-plugin/marketplace.json` at the monorepo root (single source of truth for all relative-path plugins; `plugin.json` intentionally carries no `version` field)
+- Plugin version lives in `.claude-plugin/plugin.json` as the `version` field. Claude Code reads this when displaying plugin info; marketplace sync itself is driven by git commit hash, not the version string
