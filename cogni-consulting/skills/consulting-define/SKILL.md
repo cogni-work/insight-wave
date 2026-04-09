@@ -244,6 +244,24 @@ Mark Define complete:
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define complete
 ```
 
+## Lightweight Define (how-might-we)
+
+For `how-might-we` engagements, the user arrived with a HMW question — Define refines it rather than deriving it from scratch.
+
+**Simplified workflow:**
+
+1. **Read the original HMW question** from the engagement setup (stored in `vision.desired_outcome`) and the discovery synthesis
+2. **Sharpen the HMW** — challenge vagueness, test scope. Use the discovery context to refine:
+   - Is the question specific enough to generate concrete solutions? ("improve culture" → "create a quarterly ritual that gives remote team members visibility into each other's work")
+   - Does it presuppose a solution? ("How might we build an app" → "How might we give field workers real-time access to inventory")
+   - Is the scope realistic given constraints?
+3. **Produce 2-4 refined HMW questions** — variations that frame the challenge from different angles. Let the consultant pick the primary one.
+4. **Write the problem statement** — simpler than the standard template. Context (1-2 sentences), the refined HMW question, and key constraints.
+5. **Skip assumption verification** (cogni-claims) — overkill for lightweight engagements unless the consultant explicitly requests it
+6. **Skip the full persona review** — confirm the problem statement directly with the consultant
+
+Save outputs to the standard paths (`define/problem-statement.md`, `define/hmw-questions.md`) so downstream skills find them.
+
 ## When Things Go Thin
 
 - **Many deviations** (>50% of assumptions): This signals the discovery evidence base was weaker than expected. Rather than patching assumptions one by one, consider whether a targeted research sprint (back to Discover) would be more efficient than proceeding with low-confidence framing.

@@ -271,6 +271,36 @@ Mark Deliver complete:
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver complete
 ```
 
+## Lightweight Deliver (how-might-we)
+
+For `how-might-we` engagements, Deliver produces two focused outputs instead of the full business case pipeline.
+
+**Simplified workflow:**
+
+1. **Load context** — Read the option synthesis from Develop and the original HMW question
+2. **Quick scoring** (if multiple options exist) — Use a simplified opportunity scoring: rank each option on impact (1-5), feasibility (1-5), and time-to-start (1-5). No weighted criteria matrix — just a quick comparison to confirm the preferred option. If the consultant already has a clear preference from Develop, skip scoring entirely.
+3. **Solution brief** — Write a concise document for the selected solution:
+   - The HMW question that framed the challenge
+   - What was designed and why (referencing discovery context and design decisions from ideation)
+   - How it works — key activities, structure, or process
+   - Who is involved and their roles
+   - What success looks like — 2-3 observable outcomes
+   Save to `deliver/solution-brief.md`
+4. **Action plan** — Concrete next steps to make it happen:
+   - Phased steps (preparation → execution → follow-up)
+   - Owner for each step
+   - Timeline with dates
+   - Dependencies and prerequisites
+   - First action: what happens Monday morning?
+   Save to `deliver/action-plan.md`
+5. **Skip claims verification** — No cogni-claims dispatch for lightweight engagements unless the consultant requests it
+6. **Skip the full persona review** — Confirm deliverables directly with the consultant
+7. **Skip business case canvas** — Not needed for bounded challenges
+
+The deliverable package is just two files: the solution brief and the action plan. If the consultant wants a polished version, they can dispatch `consulting-export` to render them as DOCX.
+
+**For collapsed lightweight HMWs**: This phase runs as a continuation of Develop — no phase transition prompt. After the consultant selects their preferred solution from ideation, go directly into the solution brief and action plan. The whole Develop+Deliver sequence should feel like one fluid design session.
+
 ## Method Adaptation
 
 For vision-class-specific method recommendations, read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md`.

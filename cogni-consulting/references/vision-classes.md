@@ -102,3 +102,24 @@ Each vision class represents a type of consulting engagement outcome. The class 
 | Define | Assumption mapping, affinity clustering, HMW synthesis | cogni-claims |
 | Develop | Lean canvas authoring, lean canvas refinement | — |
 | Deliver | Lean canvas stress-test, claims verification | cogni-claims |
+
+## how-might-we
+
+**Outcome**: A designed solution to a specific challenge — with an action plan to make it happen.
+**Typical duration**: 1 session to 2 weeks (depends on complexity) | **Decision type**: Solution design for a known challenge
+
+This class covers any engagement where the consultant arrives with a "How might we...?" question. The complexity can range from lightweight (workshop design, team exercise) to substantial (new product concept, organizational change). The diamond still applies — understand the problem before designing solutions — but phase weight adapts to the HMW's complexity.
+
+**Key difference from other classes**: The user arrives WITH a HMW question. Discover explores it (rather than deriving it from scratch), Define sharpens it, Develop generates solution ideas through guided ideation, and Deliver validates feasibility and produces an action plan.
+
+**Complexity spectrum**: The setup skill assesses domain knowledge needed, stakeholder complexity, and reversibility to recommend one of three engagement shapes:
+- **Lightweight** (workshop, exercise, meeting redesign): Collapse Discover+Define and Develop+Deliver into two conversations. Single session possible.
+- **Medium** (process redesign, training program): Standard 4 phases, lightweight. Desk research recommended.
+- **Heavy** (new product, market strategy, org change): Full 4 phases with cogni-research and optionally cogni-portfolio. Comparable to other vision classes but with HMW framing.
+
+| Phase | Recommended Methods | Plugin Dispatch |
+|---|---|---|
+| Discover | Context mapping, stakeholder identification, desk research (complexity-dependent) | cogni-research (recommended for medium/heavy, optional for lightweight) |
+| Define | Affinity clustering, HMW refinement | — |
+| Develop | Guided ideation, scenario planning (optional) | — |
+| Deliver | Opportunity scoring (lightweight), action planning | — |

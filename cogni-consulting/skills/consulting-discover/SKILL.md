@@ -151,6 +151,42 @@ If ready to converge, mark Discover complete and suggest `consulting-define`:
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" discover complete
 ```
 
+## Discovery for how-might-we
+
+For `how-might-we` engagements, the discovery approach adapts to the HMW's complexity (assessed during setup).
+
+### Lightweight HMW (collapsed Discover+Define)
+
+For simple, bounded challenges (workshop design, team exercise, meeting redesign), Discover and Define run as a single conversation. Engage with the domain immediately — don't stay abstract.
+
+1. **Context mapping with domain engagement** — Ask the consultant about the situation, but reference the actual subject matter. For a Drama Triangle workshop: "What patterns are the consultants seeing — rescuer dynamics with clients, persecutor escalations in steering committees? How familiar are they with Transactional Analysis?" This shows domain understanding and surfaces better design inputs than generic questions.
+2. **Stakeholder + constraints** — Quick: who's involved, what are the boundaries? Keep it to a few questions, not a formal mapping exercise.
+3. **HMW sharpening** (Define, inline) — Based on the context, propose 2-3 refined versions of the HMW question. Let the consultant pick. Write a brief problem statement.
+4. **Skip desk research** unless the consultant asks for it.
+
+Save a combined `discover/synthesis.md` and `define/problem-statement.md`, then move directly to Develop.
+
+### Medium HMW
+
+Standard 4 phases, but each is shorter. **Recommend cogni-research** — dispatch a focused desk research sprint to ground the design in evidence (e.g., "best practices for X", "what approaches exist for Y"). Frame the research topic tightly from the HMW question.
+
+Use the guided exploration from the lightweight path for context mapping, then add:
+- Dispatch `cogni-research:research-report` with mode `basic` or `detailed` depending on scope
+- Store in `plugin_refs.research_project` and symlink summary to `discover/research/`
+
+### Heavy HMW
+
+Use the standard Discover workflow (steps 1-6 above). Recommend cogni-research (detailed mode) and consider cogni-portfolio if competitive context matters. This path is close to other vision classes but framed around the HMW question.
+
+### Synthesis for all HMW variants
+
+Instead of the full 8-step synthesis, produce a discovery summary scaled to complexity:
+- **Lightweight**: Context paragraph, constraints, refined HMW (fits in `discover/synthesis.md`)
+- **Medium**: Context, research highlights, stakeholders, constraints, assumptions to test
+- **Heavy**: Full synthesis with themes, source citations, and assumptions register
+
+Save to `discover/synthesis.md` using the same path so downstream skills find it.
+
 ## Method Adaptation
 
 For vision-class-specific method recommendations, read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md`.

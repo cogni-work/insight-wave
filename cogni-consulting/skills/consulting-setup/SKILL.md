@@ -159,9 +159,24 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the selected vision 
 >
 > This is a starting framework — methods adapt as understanding deepens. Ready to begin Discover?
 
-### 7. Transition to Discover (Optional)
+### 7. Transition to Next Phase
 
-If the user seems eager to dive in, transition directly to the `consulting-discover` skill. If they seem uncertain, end with a clear next-step pointer — they can start any time with `consulting-discover` or check status with `consulting-resume`. Read the room rather than always asking.
+**For `how-might-we` engagements**: The user arrives with a HMW question, which is normally the *output* of the Define phase. Assess the HMW's complexity to calibrate the engagement weight:
+
+**Complexity assessment** — consider three dimensions:
+- **Domain knowledge needed**: Can the consultant design this from experience, or does it require external evidence? A workshop concept draws on facilitation expertise (low). A new B2C product needs market research, competitive analysis, customer understanding (high).
+- **Stakeholder complexity**: Is this one person's decision, or does it require alignment across teams, departments, or leadership? A team exercise is low. A process redesign affecting multiple departments is high.
+- **Reversibility**: Can the solution be adjusted easily after launch, or is it a one-shot commitment? A workshop can be iterated (low). A product launch has high sunk costs (high).
+
+Based on this assessment, offer an appropriate engagement shape:
+
+- **Lightweight HMW** (all dimensions low — e.g., workshop design, team exercise, meeting redesign): Offer to collapse phases. Run Discover+Define as a single context conversation, then Develop+Deliver as a solution design session. The full engagement can happen in one sitting. Engage with the domain immediately — reference the actual subject matter (e.g., "Drama Triangle → Empowerment Dynamic shift") in the phase plan rather than staying abstract.
+- **Medium HMW** (mixed — e.g., process redesign, training program, offsite planning): Use the standard 4 phases but keep them lightweight. Recommend cogni-research for a focused desk research sprint in Discover to ground the design in evidence.
+- **Heavy HMW** (multiple dimensions high — e.g., new product, market strategy, organizational change): Use the full 4-phase diamond with cogni-research recommended in Discover and potentially cogni-portfolio for competitive context. This is close to a standard vision class engagement but with the HMW framing.
+
+Present the assessment and recommended shape to the consultant. They may override — a consultant who knows the domain deeply might want lightweight even for a complex HMW, while a less experienced consultant might want full phases for a simple one.
+
+**For all other engagements**: If the user seems eager to dive in, transition directly to the `consulting-discover` skill. If they seem uncertain, end with a clear next-step pointer — they can start any time with `consulting-discover` or check status with `consulting-resume`. Read the room rather than always asking.
 
 ## Example
 

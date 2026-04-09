@@ -48,9 +48,15 @@ Each engagement lives in `cogni-consulting/{slug}/` with:
 
 ## Vision Classes
 
-8 engagement types: strategic-options, business-case, gtm-roadmap, cost-optimization, digital-transformation, innovation-portfolio, market-entry, business-model-hypothesis. Each maps to recommended methods and deliverables via `references/vision-classes.md` and `references/deliverable-map.md`.
+9 engagement types: strategic-options, business-case, gtm-roadmap, cost-optimization, digital-transformation, innovation-portfolio, market-entry, business-model-hypothesis, how-might-we. Each maps to recommended methods and deliverables via `references/vision-classes.md` and `references/deliverable-map.md`.
 
 The `business-model-hypothesis` class uses Lean Canvas methods (authoring, refinement, stress-test) instead of traditional proposition modeling. Canvas reference materials live in `references/canvas-format.md`, `references/lean-canvas-sections.md`, and stress-test personas in `references/personas/canvas/`.
+
+The `how-might-we` class supports a complexity spectrum from lightweight to heavy. Setup assesses three dimensions (domain knowledge needed, stakeholder complexity, reversibility) to recommend an engagement shape:
+- **Lightweight** (workshop, exercise, meeting redesign): Phases collapse — Discover+Define and Develop+Deliver run as two conversations or a single session. No plugin dispatch. Guided ideation. Solution Brief + Action Plan.
+- **Medium** (process redesign, training program): Standard 4 phases, lightweight. cogni-research recommended.
+- **Heavy** (new product, market strategy, org change): Full 4 phases with cogni-research, cogni-trends, cogni-portfolio. Comparable to other vision classes but with HMW framing.
+Each phase skill has a section describing the HMW-specific workflow scaled to complexity.
 
 ## Scripts
 

@@ -64,6 +64,8 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the vision class's r
 
 **Note**: Lean canvas methods are recommended for `business-model-hypothesis`, `market-entry`, `innovation-portfolio`, and `gtm-roadmap` vision classes. For `business-model-hypothesis`, the lean canvas IS the primary Develop output (replacing proposition modeling and option synthesis). Read `$CLAUDE_PLUGIN_ROOT/references/methods/lean-canvas-authoring.md` for the full guided workflow.
 
+**Note**: For `how-might-we` engagements, guided ideation IS the primary Develop method — skip value modeling (step 3) and proposition modeling (step 4/4b) entirely. See the "Lightweight Develop" section below.
+
 Ask: "Which methods do you want for option generation? I recommend [2-3 based on vision class]. You can adjust."
 
 ### 3. Value Modeling (cogni-trends)
@@ -286,6 +288,28 @@ Mark Develop complete:
 ```bash
 bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" develop complete
 ```
+
+## Develop for how-might-we
+
+For `how-might-we` engagements, replace the plugin-powered pipeline with a guided ideation session. This is the creative heart of the engagement — the consultant designs the solution interactively.
+
+**Engage with the domain, not just the process.** The ideation should reflect knowledge of the subject matter. For a Drama Triangle workshop: propose specific exercise formats (role-play triads, case-based fishbowl, Empowerment Dynamic shift practice). For a B2C product: reference relevant business models, distribution patterns, pricing approaches. Domain-specific suggestions spark better ideas than generic "brainstorm solutions" prompts.
+
+**Workflow (scales with complexity):**
+
+1. **Load context** — Read the refined HMW question(s) from `define/hmw-questions.md` and the discovery synthesis. If desk research was run, read the research summary for domain grounding.
+2. **Run guided ideation** — Read `$CLAUDE_PLUGIN_ROOT/references/methods/guided-ideation.md` and facilitate:
+   - Diverge: generate 10-20 ideas, using domain-specific creative constraints (not just generic "what if budget were zero?" but "what if participants had to teach each other instead of learning from a facilitator?")
+   - Cluster: group ideas into 3-6 themes
+   - Converge: select top 2-3 ideas based on impact, feasibility, and energy
+   - Sketch: flesh each into a domain-appropriate solution design
+3. **Optional scenario planning** — Useful for medium/heavy HMWs. Skip for lightweight.
+4. **Write option synthesis** — Capture options in `develop/options/option-synthesis.md`. For lightweight HMWs, 1-2 strong options is enough. For heavy HMWs, aim for 3-5.
+5. **Skip the full persona review** — Confirm directly with the consultant.
+
+**For collapsed lightweight HMWs**: Develop and Deliver run as one session. After ideation, move directly to the solution brief and action plan without a phase transition.
+
+Save ideation artifacts to `develop/ideation/` and the synthesis to `develop/options/option-synthesis.md`.
 
 ## Method Adaptation
 

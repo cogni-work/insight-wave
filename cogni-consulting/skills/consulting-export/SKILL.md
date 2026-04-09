@@ -49,6 +49,8 @@ For each deliverable, identify the source content and rendering plugin:
 | TIPS Landscape | plugin_refs.tips_project output | cogni-trends trends-dashboard or Excalidraw (via cogni-visual story-to-big-picture) |
 | Portfolio Snapshot | plugin_refs.portfolio_project output | cogni-portfolio portfolio-dashboard |
 | Claim Verification Log | `deliver/claims-verification.md` | document-skills:xlsx or markdown |
+| Solution Brief | `deliver/solution-brief.md` | document-skills:docx or markdown |
+| Action Plan | `deliver/action-plan.md` | document-skills:xlsx or markdown |
 
 ### 3. Generate Each Deliverable
 

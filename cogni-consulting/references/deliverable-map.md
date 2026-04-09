@@ -25,6 +25,8 @@ Each vision class produces a different set of deliverables. This map defines the
 | Transformation Roadmap | Current→target state with transition phases | PPTX, Excalidraw | Deliver |
 | Lean Canvas | Research-backed business model hypothesis | MD | Develop |
 | Canvas Stress-Test Report | Multi-persona evaluation with synthesis | MD | Deliver |
+| Solution Brief | Designed solution with rationale and design decisions | MD, DOCX | Deliver |
+| Action Plan | Phased steps with owners, timeline, and success criteria | MD, XLSX | Deliver |
 
 ## Vision Class → Default Package
 
@@ -83,3 +85,7 @@ Each vision class produces a different set of deliverables. This map defines the
 3. Executive Summary (PPTX)
 4. Action Roadmap (PPTX)
 5. Claim Verification Log (MD)
+
+### how-might-we
+1. Solution Brief (MD)
+2. Action Plan (MD)

@@ -15,5 +15,6 @@ description: Quick-reference table of all vision classes for use in setup and re
 | `innovation-portfolio` | Prioritized innovation investment bets across horizons | "Balance R&D across Act/Plan/Observe" |
 | `market-entry` | Market feasibility assessment and entry strategy | "Evaluate expansion into French market" |
 | `business-model-hypothesis` | Validated Lean Canvas with research-backed hypothesis | "Validate product-market fit for new SaaS venture" |
+| `how-might-we` | Designed solution to a bounded challenge with action plan | "How might we design a better onboarding workshop?" |
 
 For detailed method recommendations per phase, see `vision-classes.md`.
