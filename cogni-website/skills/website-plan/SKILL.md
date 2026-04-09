@@ -35,11 +35,17 @@ Go beyond the counts from setup — read actual content to understand what's ava
 
 #### Portfolio Scan
 
-**Narratives first** — these are the primary spine of narrative pages (home, per-market, per-persona). Raw entity JSON becomes enrichment, not the spine.
+**Narratives first** — these are the primary spine of narrative pages (home, about, capability, persona, approach). Raw entity JSON becomes enrichment, not the spine.
 
-- Read `output/communicate/customer-narrative/portfolio-overview.md` — frontmatter + prose. This is the spine for the homepage.
-- Read every `output/communicate/customer-narrative/market/*.md` — each becomes the spine for one market page. Extract `market` slug and H1 headline from frontmatter.
-- Read every `output/communicate/customer-narrative/customer/*.md` — each becomes the spine for one persona/audience page. Extract `market` + `persona` slugs from frontmatter.
+The v2 `portfolio-communicate` customer-narrative layout produces **one arc-structured file per website component**. Each file carries `arc_id` + `arc_display_name` in its YAML frontmatter (see `cogni-portfolio/skills/portfolio-communicate/references/templates-customer-narrative.md` for the scope → arc mapping). Read the arc id once per file and store it on the plan entry — step 6a dispatches on it:
+
+- Read `output/communicate/customer-narrative/home.md` — frontmatter + prose. Arc: `jtbd-portfolio`. Spine for the homepage.
+- Read `output/communicate/customer-narrative/about.md` — frontmatter + prose. Arc: `company-credo`. Spine for the About page (now a structured narrative page, not a flat entity page).
+- Read `output/communicate/customer-narrative/approach.md` — frontmatter + prose. Arc: `engagement-model`. Spine for the How-We-Work / Unser Ansatz page.
+- Read every `output/communicate/customer-narrative/capabilities/*.md` — each becomes the spine for one capability page. Arc: `corporate-visions`. Extract the feature slug from the filename.
+- Read every `output/communicate/customer-narrative/for/*.md` — each becomes the spine for one persona landing page. Arc: `jtbd-portfolio`. Extract `market` + `persona` slugs from frontmatter (or from the `{market}--{persona}` filename).
+
+**v1 backward-compat:** if `website-project.json` carries an `enriched_portfolio_narratives.v1` sub-object (legacy layout: `portfolio-overview.md`, `market/*.md`, `customer/*.md`), read those files instead and proceed in legacy mode. In legacy mode there is no `about.md`, `capabilities/*.md`, or `approach.md` — the planner falls back to flat entity templates for those page types and prints a one-line reminder to rerun `portfolio-communicate` for the v2 layout. Do not mix layouts: if v2 keys are present, ignore any v1 sub-object that survived a previous setup run.
 
 **Entities for enrichment** — still scan, still useful, but secondary:
 
@@ -49,7 +55,7 @@ Go beyond the counts from setup — read actual content to understand what's ava
 - Read all `solutions/*.json` — extract solution types, pricing tiers
 - Read all `packages/*.json` — extract bundle tiers
 - Read all `markets/*.json` — extract market names, segments
-- Read `output/README.md` — fallback company overview prose if no `portfolio-overview.md` narrative exists
+- Read `output/README.md` — fallback company overview prose if no `home.md` narrative exists (or, in legacy mode, no `portfolio-overview.md`)
 
 #### Marketing Scan
 - Read all `content/thought-leadership/*.md` — extract titles, dates, markets from frontmatter
@@ -72,25 +78,36 @@ If `sources.research_projects` is non-empty in website-project.json:
 
 Based on discovered content, propose a page list. Apply these rules:
 
-| Page Type | Include When | Source spine | Always/Conditional |
-|-----------|-------------|--------------|-------------------|
-| `home` | Always | `customer-narrative/portfolio-overview.md` if present, else `portfolio.json` + top propositions | Always |
-| `market` | Per `customer-narrative/market/*.md` found | `customer-narrative/market/{slug}.md` | One page per market narrative |
-| `audience` | Per `customer-narrative/customer/*.md` found | `customer-narrative/customer/{market}--{persona}.md` | One page per persona narrative |
-| `about` | Always | `portfolio.json` | Always |
-| `products` | ≥2 products | `products/*.json` | Always (even with 1 product) |
-| `product-detail` | Per product | `products/{slug}.json` + features + propositions | One page per product |
-| `solutions` | ≥1 solution | `solutions/*.json` | Conditional |
-| `blog-index` | Marketing content exists AND `include_blog: true` | Marketing `content/` tree | Conditional |
-| `blog-post` | Per marketing article | Single marketing markdown file | One per article |
-| `case-studies` | Customer narratives exist AND `include_case_studies: true` (legacy — prefer `market` / `audience`) | Per-customer narrative | Conditional |
-| `insights` | Trend report exists AND `include_insights: true` | `tips-trend-report.md` | Conditional |
-| `resources` | Research reports exist AND `include_resources: true` | Research `output/report.md` | Conditional |
-| `custom` | User requests ad-hoc pages | User-specified | Per user request |
-| `contact` | Always | Company details from project config | Always |
-| `legal-imprint` / `legal-privacy` / `legal-cookies` | Managed by `website-legal` skill | Legal templates | Footer-only — never proposed by `website-plan` directly |
+| Page Type | Include When | Source spine | Arc | Always/Conditional |
+|-----------|-------------|--------------|-----|-------------------|
+| `home` | Always | `customer-narrative/home.md` if present, else `portfolio.json` + top propositions | `jtbd-portfolio` | Always |
+| `about` | Always | `customer-narrative/about.md` if present, else `portfolio.json` (flat fallback) | `company-credo` | Always — structured when v2 narrative exists, flat otherwise |
+| `capability` | Per `customer-narrative/capabilities/*.md` found | `customer-narrative/capabilities/{feature-slug}.md` | `corporate-visions` | One page per capability narrative. Replaces `product-detail` for features that have a v2 narrative. |
+| `persona` | Per `customer-narrative/for/*.md` found | `customer-narrative/for/{market}--{persona}.md` | `jtbd-portfolio` | One page per persona narrative. Renamed from v1 `audience`. |
+| `approach` | If `customer-narrative/approach.md` present | `customer-narrative/approach.md` | `engagement-model` | Conditional on v2 narrative. Single page (How We Work / Unser Ansatz). |
+| `products` | ≥2 products | `products/*.json` | — | Always (even with 1 product). Acts as an index for capability pages. |
+| `product-detail` | Per product without a capability narrative | `products/{slug}.json` + features + propositions | — | Flat fallback when no `capabilities/{slug}.md` exists |
+| `solutions` | ≥1 solution | `solutions/*.json` | — | Conditional |
+| `blog-index` | Marketing content exists AND `include_blog: true` | Marketing `content/` tree | — | Conditional |
+| `blog-post` | Per marketing article | Single marketing markdown file | — | One per article |
+| `case-studies` | Customer narratives exist AND `include_case_studies: true` (legacy — prefer `persona` / `capability`) | Per-customer narrative | — | Conditional |
+| `insights` | Trend report exists AND `include_insights: true` | `tips-trend-report.md` | — | Conditional |
+| `resources` | Research reports exist AND `include_resources: true` | Research `output/report.md` | — | Conditional |
+| `custom` | User requests ad-hoc pages | User-specified | — | Per user request |
+| `contact` | Always | Company details from project config | — | Always |
+| `legal-imprint` / `legal-privacy` / `legal-cookies` | Managed by `website-legal` skill | Legal templates | — | Footer-only — never proposed by `website-plan` directly |
 
-The `market` and `audience` page types are first-class narrative pages. They get their own URL tree (`pages/markets/{slug}.html`, `pages/audience/{persona}.html`) and appear in the header navigation as dropdown entries when at least two exist, so visitors can jump directly to content tuned to their segment.
+The `capability`, `persona`, and `approach` page types are first-class narrative pages. They get their own URL trees:
+- `capability` → `pages/leistungen/{feature-slug}.html` (DE) or `pages/capabilities/{feature-slug}.html` (EN)
+- `persona` → `pages/fuer/{market}--{persona}.html` (DE) or `pages/for/{market}--{persona}.html` (EN)
+- `approach` → `pages/unser-ansatz.html` (DE) or `pages/approach.html` (EN)
+
+Capability pages appear in the header navigation as a dropdown under "Leistungen" / "Capabilities" when at least two exist; persona pages appear under "Für Sie" / "For You" when at least two exist; approach appears as a top-level link. Visitors can jump directly to the content tuned to their role, their problem, or their evaluation question.
+
+**Deduplication discipline** (enforced by the v2 customer-narrative templates — do not break it):
+- The **Roadmap** block appears on `home` only. Other pages link to it, they do not restate it.
+- **Cross-cutting differentiators** ("why us") appear on `about` only. Capability and persona pages link out.
+- **Capability pages** are the single source of truth for a feature's Why Change → Why Pay. Persona pages link to the relevant capability pages rather than inlining the capability story.
 
 Present the proposed structure as a table:
 
@@ -157,7 +174,18 @@ Use the page type definitions from `${CLAUDE_PLUGIN_ROOT}/libraries/page-templat
 
 ### 6a. Decompose Narrative Pages into Section Blocks
 
-For every page whose spine is a `customer-narrative/*.md` file (`home`, `market`, `audience`), do not emit a flat list of generic template section names. Instead, decompose the narrative into an ordered sequence of **section blocks** using the story-to-web pattern. This produces scroll-driven reading experiences instead of entity-card dumps.
+For every page whose spine is a `customer-narrative/*.md` file (`home`, `about`, `capability`, `persona`, `approach` — any page entry that carries an `arc_id`), do not emit a flat list of generic template section names. Instead, decompose the narrative into an ordered sequence of **section blocks** using the story-to-web pattern. This produces scroll-driven reading experiences instead of entity-card dumps. The existing block_type library (hero, problem-statement, stat-row, feature-alternating, feature-grid, comparison, timeline, testimonial, text-block, cta) covers all five arcs — no new block types are required for `company-credo` or `engagement-model`.
+
+**Arc-to-block hints** (use as a starting point; the decision tree in step 6a step 2 below still governs final block selection based on content shape):
+
+| Arc | Element | Typical block |
+|---|---|---|
+| `jtbd-portfolio` | Jobs → Friction → Portfolio → Invitation | hero → problem-statement → feature-grid → cta |
+| `company-credo` | Mission → Conviction → Credibility → Promise | hero → text-block (or feature-alternating) → stat-row/testimonial → cta |
+| `corporate-visions` | Why Change → Why Now → Why You → Why Pay | problem-statement → stat-row → feature-alternating → cta |
+| `engagement-model` | Principles → Process → Partnership → Outcomes | feature-grid → timeline → feature-alternating → stat-row / cta |
+
+The element → block mapping is authoritative in `$CLAUDE_PLUGIN_ROOT/../cogni-visual/libraries/arc-taxonomy.md` (visual-type column). Read that file once per plan to confirm the mapping instead of duplicating it here.
 
 The decomposition rules are defined in cogni-visual's story-to-web skill and referenced rather than duplicated here. Read once, apply per page:
 

@@ -726,7 +726,26 @@ All page templates use a shared set of CSS classes defined in `css/style.css`:
 
 ## Appendix: Section Block Library (for narrative pages)
 
-The page types above (`home`, `about`, `product-detail`, …) use a **flat** section list — `sections: ["hero", "features", "cta"]`. Narrative pages (`home` when sourced from `portfolio-overview.md`, plus the dedicated `market` and `audience` page types) instead receive a **structured** section list from `website-plan` step 6a: an ordered array of block objects, each with `block_type`, `section_theme`, `headline`, and `source_anchor`.
+The page types above (`products`, `product-detail`, `blog-*`, `insights`, `resources`, `contact`, `legal-*`, …) use a **flat** section list — `sections: ["hero", "features", "cta"]`. Narrative pages — any page whose `page_spec` carries an `arc_id` field, which in the v2 `portfolio-communicate` customer-narrative layout means `home` (arc `jtbd-portfolio`, from `home.md`), `about` (arc `company-credo`, from `about.md`), `capability` (arc `corporate-visions`, one per `capabilities/*.md`), `persona` (arc `jtbd-portfolio`, one per `for/*.md`), and `approach` (arc `engagement-model`, from `approach.md`) — instead receive a **structured** section list from `website-plan` step 6a: an ordered array of block objects, each with `block_type`, `section_theme`, `headline`, and `source_anchor`.
+
+**Arc → block mapping (quick reference).** The ten block types below cover the element vocabulary of all five arcs used by customer-narrative v2. No new block types are required. Typical mappings:
+
+| Arc | Element | Typical block |
+|---|---|---|
+| `jtbd-portfolio` | Jobs / Invitation | hero / cta |
+| `jtbd-portfolio` | Friction | problem-statement |
+| `jtbd-portfolio` | Portfolio | feature-grid |
+| `company-credo` | Mission / Promise | hero / cta |
+| `company-credo` | Conviction | text-block or feature-alternating |
+| `company-credo` | Credibility | stat-row or testimonial |
+| `corporate-visions` | Why Change / Why Now | problem-statement / stat-row |
+| `corporate-visions` | Why You / Why Pay | feature-alternating / cta |
+| `engagement-model` | Principles | feature-grid |
+| `engagement-model` | Process | timeline |
+| `engagement-model` | Partnership | feature-alternating |
+| `engagement-model` | Outcomes | stat-row (or cta) |
+
+The authoritative element → visual-type mapping lives in `cogni-visual/libraries/arc-taxonomy.md`. The table above is a rendering shortcut, not a replacement for the step 6a decision tree, which still chooses block types based on actual content shape (bullets, numeric density, parallel capabilities, sequential steps).
 
 The section-block taxonomy mirrors cogni-visual's story-to-web skill so that narratives surface as scroll-driven reading experiences instead of entity-card dumps. The decomposition rules (decision tree, assertion-headline discipline, number plays, bullet scan-optimization) live in the story-to-web references and are **not** duplicated here:
 

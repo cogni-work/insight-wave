@@ -42,11 +42,14 @@ Scan the workspace for insight-wave plugin projects using recursive globs. This 
 - Glob for `**/portfolio.json` (recursive — do not use narrow single-level globs)
 - Read each `portfolio.json` to extract: company name, description, industry, language
 - Check for synthesized output: `output/README.md`
-- Check for enriched customer narratives at `output/communicate/customer-narrative/`:
-  - Overview narrative (`portfolio-overview.md`)
-  - Market-level narratives (`market/*.md`)
-  - Persona-level narratives (`customer/*.md`)
-  - These are audience-tailored prose with assertion headlines, pain points, stats, differentiators, and CTAs already written by a copywriter-grade skill. When present, `website-plan` treats them as the **primary** spine for the corresponding pages (home, per-market, per-persona) rather than re-deriving content from raw entity JSON. Store every discovered path — the planner needs them all.
+- Check for enriched customer narratives at `output/communicate/customer-narrative/` (v2 layout — one file per website component, each arc-structured with an `arc_id` field in its YAML frontmatter):
+  - Home (`home.md`, arc `jtbd-portfolio`)
+  - About Us (`about.md`, arc `company-credo`)
+  - How We Work (`approach.md`, arc `engagement-model`)
+  - Capability pages (`capabilities/*.md`, arc `corporate-visions`) — one per customer-facing feature
+  - Persona landing pages (`for/*.md`, arc `jtbd-portfolio`) — one per `{market}--{persona}` pair
+  - These are audience-tailored prose with assertion headlines, pain points, stats, differentiators, and CTAs already written by a copywriter-grade skill. When present, `website-plan` treats them as the **primary** spine for the corresponding pages rather than re-deriving content from raw entity JSON. The `arc_id` frontmatter field tells the planner which story-arc decomposition to apply in step 6a. Store every discovered path — the planner needs them all.
+  - **v1 backward-compat:** if the directory instead contains `portfolio-overview.md`, `market/*.md`, or `customer/*.md`, it was produced by an older version of `portfolio-communicate`. Still discover them, but print a warning: "Gefunden: altes customer-narrative-Layout (v1). Bitte `portfolio-communicate` neu ausführen, um die website-orientierte v2-Struktur (`home.md`, `about.md`, `capabilities/*.md`, `for/*.md`, `approach.md`) zu erzeugen." The planner will still read the v1 files, but downstream dedup discipline (Roadmap on home only, differentiators on about only) depends on the v2 layout.
 - Count entities: products, features, markets, propositions, solutions, packages
 
 #### Marketing Discovery (optional)
@@ -72,7 +75,7 @@ Gefundene Inhaltsquellen:
 
 Portfolio: ../acme-cloud/
   ✓ 3 Produkte, 8 Features, 2 Märkte, 12 Propositions
-  ✓ Kundendarstellungen: 1 Übersicht, 2 Markt-Narrative, 3 Persona-Narrative
+  ✓ Customer-Narrative (v2): home.md, about.md, approach.md, 6 Capability-Seiten, 4 Persona-Seiten
   ✓ Synthese erstellt
 
 Marketing: ../acme-marketing/
@@ -97,7 +100,7 @@ If multiple projects of the same type are found, present all and ask the user to
 
 **Soft warnings** (inform but allow proceeding):
 - No propositions → product pages will lack benefit messaging
-- No customer narratives → case studies page not available
+- No customer narratives → About, capability, persona, and approach pages fall back to entity-JSON rendering (flat templates); case studies page not available
 - No marketing content → no blog section
 - No trend report → no insights page
 - No research reports → no resources page
@@ -177,7 +180,7 @@ Write `website-project.json` following the schema documented in `${CLAUDE_PLUGIN
   - `marketing_project` — path to marketing directory (null if not found)
   - `trends_project` — path to trends directory (null if not found)
   - `research_projects` — array of paths to research report directories (empty array if none)
-  - `enriched_portfolio_narratives` — object with `overview`, `markets` (map: slug → path), `personas` (map: slug → path). null if no portfolio-communicate output exists.
+  - `enriched_portfolio_narratives` — object with keys `home`, `about`, `approach` (each a single path), `capabilities` (map: `{feature_slug}` → path), and `personas` (map: `{market}--{persona}` → path). Each entry carries the file's `arc_id` so the planner can pick the right decomposition without re-reading the frontmatter. null if no portfolio-communicate output exists. For v1 projects that still have `portfolio-overview.md` / `market/*.md` / `customer/*.md`, write them into a legacy `v1` sub-object (`{ "v1": { "overview": ..., "markets": {...}, "personas": {...} } }`) so the planner can fall back without confusing the new keys.
 - `build_options` — hero_renderer, include_blog, include_case_studies, include_insights, include_resources
 - `content_discovery` — entity counts per source for change detection by website-resume
 - `legal_config` — jurisdiction (`de`/`at`/`ch`/`eu`/`null`), `legal_entity` (legal_name, legal_form, address, register_court, register_number, vat_id), `responsible_person` (name, role, address_same_as_entity), `contact` (email, phone), `data_protection` (controller_name, controller_contact, dpo_required, dpo_name, dpo_contact). Schema: `${CLAUDE_PLUGIN_ROOT}/skills/website-legal/references/legal-config-schema.md`. Fields not captured in step 3a are written as `null` and filled later by `website-legal`.

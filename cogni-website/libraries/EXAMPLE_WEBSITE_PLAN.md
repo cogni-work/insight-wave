@@ -28,8 +28,10 @@ A complete `website-plan.json` for a German B2B technology company with 3 produc
       "slug": "index",
       "title": "SmartFactory Solutions — Intelligente Fertigung für den Mittelstand",
       "meta_description": "SmartFactory Solutions bietet Predictive Maintenance, Qualitätssicherung und Energiemanagement für mittelständische Fertigungsunternehmen.",
+      "arc_id": "jtbd-portfolio",
+      "arc_display_name": "Jobs to be Done — Portfolio",
       "source_files": [
-        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/portfolio-overview.md"
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/home.md"
       ],
       "source_entities": {
         "products": "../cogni-portfolio/smartfactory/products/*.json",
@@ -118,59 +120,6 @@ A complete `website-plan.json` for a German B2B technology company with 3 produc
     },
 
     {
-      "id": "market-b2b-fertigung-dach",
-      "type": "market",
-      "slug": "pages/markets/b2b-fertigung-dach",
-      "title": "Fertigung DACH — SmartFactory Solutions",
-      "meta_description": "Lösungen für mittelständische Fertigungsunternehmen in DACH — Predictive Maintenance, Qualität, Energie.",
-      "source_files": [
-        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/market/b2b-fertigung-dach.md"
-      ],
-      "source_entities": {
-        "propositions": "../cogni-portfolio/smartfactory/propositions/*grosse-fertigungsunternehmen-de*.json"
-      },
-      "sections": [
-        {"block_type": "hero", "section_theme": "dark", "arc_role": "hook", "headline": "…", "source_anchor": "# …"},
-        {"block_type": "problem-statement", "section_theme": "light", "arc_role": "problem", "headline": "Ihre Herausforderungen", "source_anchor": "## Ihre Herausforderungen"},
-        {"block_type": "feature-grid", "section_theme": "light-alt", "arc_role": "solution", "headline": "Wie wir helfen", "source_anchor": "## Wie wir helfen"},
-        {"block_type": "comparison", "section_theme": "light", "arc_role": "proof", "headline": "Was uns auszeichnet", "source_anchor": "## Was uns auszeichnet"},
-        {"block_type": "cta", "section_theme": "accent", "arc_role": "call-to-action", "headline": "Lassen Sie uns sprechen", "source_anchor": "## Lassen Sie uns sprechen"}
-      ]
-    },
-
-    {
-      "id": "audience-vp-operations",
-      "type": "audience",
-      "slug": "pages/audience/vp-operations",
-      "title": "Für VP Operations — SmartFactory Solutions",
-      "meta_description": "73% weniger ungeplante Stillstände in 90 Tagen — DSGVO-konform, ohne IT-Projekt.",
-      "source_files": [
-        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/customer/b2b-fertigung-dach--vp-operations.md"
-      ],
-      "sections": [
-        {"block_type": "hero", "section_theme": "dark", "arc_role": "hook", "headline": "…", "source_anchor": "# …"},
-        {"block_type": "problem-statement", "section_theme": "light", "arc_role": "problem", "headline": "Was wir in Ihrer Welt sehen", "source_anchor": "## Was wir in Ihrer Welt sehen"},
-        {"block_type": "feature-alternating", "section_theme": "light-alt", "arc_role": "solution", "headline": "Was wir auf den Tisch bringen", "source_anchor": "## Was wir auf den Tisch bringen"},
-        {"block_type": "timeline", "section_theme": "light", "arc_role": "roadmap", "headline": "Empfohlener Einstiegspunkt", "source_anchor": "## Empfohlener Einstiegspunkt"},
-        {"block_type": "testimonial", "section_theme": "dark", "arc_role": "proof", "headline": "Was Kunden sagen", "source_anchor": "## Was Kunden sagen"},
-        {"block_type": "text-block", "section_theme": "light", "arc_role": "context", "headline": "Warum jetzt", "source_anchor": "## Warum jetzt"},
-        {"block_type": "cta", "section_theme": "accent", "arc_role": "call-to-action", "headline": "Pilot-Kunde werden", "source_anchor": "## Wie wir zusammenarbeiten würden"}
-      ]
-    },
-
-    {
-      "id": "about",
-      "type": "about",
-      "slug": "pages/ueber-uns",
-      "title": "Über uns — SmartFactory Solutions",
-      "meta_description": "Erfahren Sie mehr über SmartFactory Solutions, unsere Mission und unsere Geschichte.",
-      "source_files": [
-        "../cogni-portfolio/smartfactory/portfolio.json"
-      ],
-      "sections": ["page-header", "company-story", "mission", "timeline", "cta"]
-    },
-
-    {
       "id": "products",
       "type": "products",
       "slug": "pages/produkte",
@@ -241,15 +190,136 @@ A complete `website-plan.json` for a German B2B technology company with 3 produc
     },
 
     {
-      "id": "case-studies",
-      "type": "case-studies",
-      "slug": "pages/fallstudien",
-      "title": "Fallstudien — SmartFactory Solutions",
-      "meta_description": "Erfahren Sie, wie unsere Kunden mit SmartFactory Solutions ihre Fertigung optimieren.",
+      "id": "about",
+      "type": "about",
+      "slug": "pages/ueber-uns",
+      "title": "Über uns — SmartFactory Solutions",
+      "meta_description": "Wir glauben: Mittelständische Fertigung verdient Digitalisierung ohne 18-Monats-Projekte. Warum wir das Unternehmen gegründet haben.",
+      "arc_id": "company-credo",
+      "arc_display_name": "Company Credo (Mission → Conviction → Credibility → Promise)",
       "source_files": [
-        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/market/*.md"
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/about.md"
       ],
-      "sections": ["page-header", "case-card-grid"]
+      "sections": [
+        {
+          "block_type": "hero",
+          "section_theme": "dark",
+          "arc_role": "hook",
+          "section_label": "Unsere Mission",
+          "headline": "Fertigung im Mittelstand verdient Software, die in Wochen wirkt — nicht in Jahren",
+          "subline": "Warum wir SmartFactory Solutions gegründet haben.",
+          "cta_text": "Strategiegespräch vereinbaren",
+          "cta_href": "/pages/kontakt.html",
+          "source_anchor": "## Mission"
+        },
+        {
+          "block_type": "text-block",
+          "section_theme": "light",
+          "arc_role": "context",
+          "section_label": "Unsere Überzeugung",
+          "headline": "IT-Projekte scheitern an Dauer, nicht an Technik",
+          "source_anchor": "## Überzeugung"
+        },
+        {
+          "block_type": "stat-row",
+          "section_theme": "dark",
+          "arc_role": "proof",
+          "section_label": "Belege",
+          "headline": "Was unsere Kunden in 90 Tagen erreichen",
+          "source_anchor": "## Glaubwürdigkeit"
+        },
+        {
+          "block_type": "cta",
+          "section_theme": "accent",
+          "arc_role": "call-to-action",
+          "section_label": "Unser Versprechen",
+          "headline": "Erster Nutzen in 90 Tagen — oder wir erstatten das Setup",
+          "cta_text": "Strategiegespräch vereinbaren",
+          "cta_href": "/pages/kontakt.html",
+          "source_anchor": "## Versprechen"
+        }
+      ]
+    },
+
+    {
+      "id": "approach",
+      "type": "approach",
+      "slug": "pages/unser-ansatz",
+      "title": "Unser Ansatz — SmartFactory Solutions",
+      "meta_description": "Wie wir mit Ihnen arbeiten: Prinzipien, Prozess, Partnerschaft, Ergebnisse.",
+      "arc_id": "engagement-model",
+      "arc_display_name": "Engagement Model (Principles → Process → Partnership → Outcomes)",
+      "source_files": [
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/approach.md"
+      ],
+      "sections": [
+        {
+          "block_type": "feature-grid",
+          "section_theme": "light",
+          "arc_role": "context",
+          "section_label": "Prinzipien",
+          "headline": "Vier Regeln, an denen wir uns messen lassen",
+          "source_anchor": "## Prinzipien"
+        },
+        {
+          "block_type": "timeline",
+          "section_theme": "light-alt",
+          "arc_role": "sequence",
+          "section_label": "Prozess",
+          "headline": "Von der Anbindung bis zum ROI in 90 Tagen",
+          "source_anchor": "## Prozess"
+        },
+        {
+          "block_type": "feature-alternating",
+          "section_theme": "light",
+          "arc_role": "value",
+          "section_label": "Partnerschaft",
+          "headline": "Wie unser Team mit Ihrem arbeitet",
+          "source_anchor": "## Partnerschaft"
+        },
+        {
+          "block_type": "cta",
+          "section_theme": "accent",
+          "arc_role": "call-to-action",
+          "section_label": "Ergebnisse",
+          "headline": "Messbare Ergebnisse, für die wir einstehen",
+          "cta_text": "Projekt besprechen",
+          "cta_href": "/pages/kontakt.html",
+          "source_anchor": "## Ergebnisse"
+        }
+      ]
+    },
+
+    {
+      "id": "capability-predictive-maintenance",
+      "type": "capability",
+      "slug": "pages/leistungen/predictive-maintenance",
+      "title": "Predictive Maintenance — SmartFactory Solutions",
+      "meta_description": "Ungeplante Stillstände kosten €134M pro Jahr. Wie Predictive Maintenance die Verfügbarkeit in 90 Tagen messbar erhöht.",
+      "arc_id": "corporate-visions",
+      "arc_display_name": "Corporate Visions (Why Change → Why Now → Why You → Why Pay)",
+      "source_files": [
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/capabilities/predictive-maintenance.md"
+      ],
+      "source_entities": {
+        "feature": "../cogni-portfolio/smartfactory/features/predictive-maintenance.json",
+        "propositions": "../cogni-portfolio/smartfactory/propositions/predictive-maintenance--*.json"
+      },
+      "sections": "… decomposed via step 6a: problem-statement → stat-row → feature-alternating → cta …"
+    },
+
+    {
+      "id": "persona-grosse-fertigungsunternehmen-de-werksleiter",
+      "type": "persona",
+      "slug": "pages/fuer/grosse-fertigungsunternehmen-de--werksleiter",
+      "title": "Für Werksleiter — SmartFactory Solutions",
+      "meta_description": "Sie verantworten Durchsatz und OEE. So bekommen Sie beides in 90 Tagen — ohne 18-Monats-IT-Projekt.",
+      "arc_id": "jtbd-portfolio",
+      "arc_display_name": "Jobs to be Done — Portfolio",
+      "source_files": [
+        "../cogni-portfolio/smartfactory/output/communicate/customer-narrative/for/grosse-fertigungsunternehmen-de--werksleiter.md"
+      ],
+      "sections": "… decomposed via step 6a: hero → problem-statement → feature-grid (links to capability pages, does NOT restate them) → cta …"
     },
 
     {

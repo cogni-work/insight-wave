@@ -33,6 +33,27 @@ The plugin discovers and aggregates content from:
 - **cogni-trends** — Trend reports with investment themes for an insights page
 - **cogni-research** — Research reports for a resources/whitepapers page
 
+### Narrative integration contract (portfolio-communicate customer-narrative v2)
+
+The primary spine for every narrative page is the arc-structured markdown produced by `cogni-portfolio`'s `portfolio-communicate` skill under the `customer-narrative` use case. v2 produces **one arc-structured file per website component**, each carrying `arc_id` and `arc_display_name` in its YAML frontmatter:
+
+| File | Page type | Arc (from `cogni-narrative`) |
+|---|---|---|
+| `home.md` | `home` | `jtbd-portfolio` |
+| `about.md` | `about` | `company-credo` |
+| `capabilities/{feature-slug}.md` | `capability` (one per file) | `corporate-visions` |
+| `for/{market-slug}--{persona}.md` | `persona` (one per file) | `jtbd-portfolio` |
+| `approach.md` | `approach` | `engagement-model` |
+
+Any page entry in `website-plan.json` carrying an `arc_id` is rendered through the **Section Block Library** in `libraries/page-templates.md` — not the flat page-type template. `website-plan` step 6a walks the narrative and emits a structured `sections[]` array (hero, problem-statement, stat-row, feature-alternating, feature-grid, comparison, timeline, testimonial, text-block, cta). The ten existing block types cover all five arcs; no arc-specific renderers exist or are needed. The element → block mapping is authoritative in `cogni-visual/libraries/arc-taxonomy.md`.
+
+**Deduplication discipline** (enforced upstream by the customer-narrative templates — do not break it in page planning):
+- Roadmap appears on `home` only.
+- Cross-cutting differentiators appear on `about` only.
+- Persona pages link out to capability pages rather than inlining them.
+
+**v1 backward-compat:** projects produced before `cogni-portfolio 0.9.73` use the legacy layout (`portfolio-overview.md`, `market/*.md`, `customer/*.md`). `website-setup` still discovers them and writes them under `enriched_portfolio_narratives.v1`; `website-plan` reads them in legacy mode and prints a reminder to rerun `portfolio-communicate` for the v2 layout.
+
 ## Dependencies
 
 | Plugin | Required | Purpose |
