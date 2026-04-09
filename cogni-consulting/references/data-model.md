@@ -67,6 +67,7 @@ Central state file for the engagement. Tracks vision, phase progression, and cro
 | `name` | Yes | Human-readable engagement name |
 | `vision_class` | Yes | One of 7 engagement types (see Vision Classes below) |
 | `vision_statement` | Yes | Desired outcome in one sentence |
+| `engagement_weight` | No | For `how-might-we` class: `"lightweight"`, `"medium"`, or `"heavy"`. Controls coaching intensity and phase collapsing. `null` for non-HMW classes. |
 | `language` | No | ISO 639-1 code (default: `en`). Controls communication language; technical terms stay English |
 | `phase_state` | Yes | Per-phase status: `pending` → `in-progress` → `complete` |
 | `plugin_refs` | No | Relative paths to projects created by other plugins |
@@ -152,11 +153,14 @@ Audit trail of decisions made during the engagement with rationale and traceabil
 
 ```
 pending ──▶ in-progress ──▶ complete
-              │
-              └── (phase gate advisory — consultant can override)
+              │                 │
+              │                 └──▶ in-progress (iteration re-entry)
+              └── (phase gate — blocks by default, consultant can override)
 ```
 
-Phase gates are advisory: the phase-analyst agent assesses readiness and warns if criteria aren't met, but the consultant can proceed. Exception: the Develop proposition quality gate blocks by default — propositions failing on high-weight criteria are excluded from Option Synthesis unless explicitly reinstated.
+Each phase tracks an `iteration_count` (default 0) that increments on re-entry from `complete` to `in-progress`. This enables consultants to revisit and refine completed phases without losing the audit trail.
+
+Phase gates are enforced at the skill level: each phase skill checks that required inputs from the previous phase exist and have adequate quality (not just file existence, but content substance). The gate blocks by default — the consultant can override by explicitly requesting to proceed. Exception: the Develop proposition quality gate additionally blocks individual propositions that fail on high-weight criteria.
 
 ## Cross-Plugin Integration
 

@@ -18,14 +18,24 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Skill
 
 Produce the final deliverable package by dispatching to cogni-visual and document-skills plugins. This skill reads all engagement outputs and generates formatted deliverables matched to the engagement vision.
 
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona (brief mode — Export is mechanical).
+
+**Export opening**: "Time to package everything up. Let me check what source content is available and map it to your deliverables."
+
+**Prerequisite gate**: For each deliverable in the engagement's deliverable list, verify that the source content exists. Present a readiness summary:
+
+> **Deliverable readiness:**
+> - Solution Brief: `deliver/solution-brief.md` — ready
+> - Action Plan: `deliver/action-plan.md` — ready
+> - Business Case: `deliver/business-case.md` — **missing** (requires Deliver phase)
+
+If critical deliverables are missing, explain which phase would produce them and offer to proceed with what's available or redirect to the missing phase.
+
 ## Core Concept
 
 Every diamond engagement promises specific deliverables (defined during setup). Export assembles the raw phase outputs into polished, client-ready formats. It acts as a dispatcher — not a renderer — delegating format-specific work to the ecosystem's visual and document plugins.
-
-## Prerequisites
-
-- Deliver phase should be complete (or substantially complete)
-- Engagement deliverables list defined in consulting-project.json
 
 ## Workflow
 

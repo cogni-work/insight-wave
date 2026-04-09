@@ -43,13 +43,22 @@ now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 # Update phase state
 phase_state = project.setdefault("phase_state", {})
-phase_data = phase_state.setdefault(phase, {"status": "pending", "started": None, "completed": None})
+phase_data = phase_state.setdefault(phase, {"status": "pending", "started": None, "completed": None, "iteration_count": 0})
+
+# Detect re-entry: complete -> in-progress (iteration)
+is_reentry = (phase_data.get("status") == "complete" and status == "in-progress")
 
 phase_data["status"] = status
 if status == "in-progress" and not phase_data.get("started"):
     phase_data["started"] = now
+if status == "in-progress" and is_reentry:
+    phase_data["iteration_count"] = phase_data.get("iteration_count", 0) + 1
 if status == "complete":
     phase_data["completed"] = now
+
+# Ensure iteration_count exists (backfill for older engagements)
+if "iteration_count" not in phase_data:
+    phase_data["iteration_count"] = 0
 
 # Update current phase pointer
 if status == "in-progress":
@@ -76,11 +85,23 @@ except (FileNotFoundError, json.JSONDecodeError):
 log_phase = log.setdefault("phases", {}).setdefault(phase, {})
 if status == "in-progress" and not log_phase.get("started"):
     log_phase["started"] = now
+if status == "in-progress" and is_reentry:
+    # Log the re-entry event with iteration count
+    reentries = log_phase.setdefault("reentries", [])
+    reentries.append({
+        "timestamp": now,
+        "iteration": phase_data["iteration_count"]
+    })
 if status == "complete":
     log_phase["completed"] = now
 
 with open(log_path, "w") as f:
     json.dump(log, f, indent=2)
 
-print(json.dumps({"success": True, "data": {"phase": phase, "status": status, "updated": now}}))
+result_data = {"phase": phase, "status": status, "updated": now}
+if is_reentry:
+    result_data["iteration"] = phase_data["iteration_count"]
+    result_data["reentry"] = True
+
+print(json.dumps({"success": True, "data": result_data}))
 PYEOF

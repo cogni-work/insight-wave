@@ -18,16 +18,44 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, Task
 
 Generate and explore solution options that address the problem statement from Define. This is the first phase of Diamond 2 — the goal is to create a rich option space before converging on the best path in Deliver.
 
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona.
+
+**Develop opening**: "We're entering Develop — the divergent half of Diamond 2. We have a clear problem statement; now we need to generate multiple possible solutions — not just the obvious one. The goal is to create genuine strategic choices, not a single recommendation. Evaluating comes later in Deliver; right now, breadth is more valuable than depth."
+
+**Prerequisite gate**: Verify that `define/problem-statement.md` exists and contains a structured problem framing (Context, Tension, Question, or equivalent structure). Also check that `define/hmw-questions.md` exists with at least one HMW question. If missing:
+- Block and redirect: "We need a clear problem statement and HMW questions before we can generate solutions — without them, we'd be solving the wrong problem. Let's complete the Define phase first."
+- For lightweight HMW where Discover+Define were collapsed: check that the inline-produced artifacts exist at the standard paths. If they don't, redirect to consulting-discover to run the collapsed workflow.
+- The consultant can override by explicitly saying "proceed anyway."
+
+**Iteration check**: If `phase_state.develop.status` is `complete`, this is a re-entry. Read existing artifacts in `develop/options/`, `develop/ideation/`, and `develop/propositions/`. Say: "The Develop phase was completed previously. Let's build on the existing options — what would you like to refine or expand?" Focus on the specific area.
+
+**Task list**: After loading context, create a task list scaled to engagement weight:
+
+Standard engagement:
+1. Load context (problem statement + HMW questions)
+2. Propose and confirm develop methods
+3. Value modeling (cogni-trends)
+4. Proposition modeling (cogni-portfolio)
+5. Proposition quality gate
+6. Scenario planning
+7. Option synthesis
+8. Stakeholder review
+9. Log and transition
+
+Lightweight HMW (collapsed Develop+Deliver):
+1. Load context (refined HMW + discovery synthesis)
+2. Run guided ideation
+3. Design the solution
+4. Write solution brief
+5. Write action plan
+
 ## Core Concept
 
 Develop is the creative engine of the engagement. With a clear problem statement and HMW questions from Define, this phase generates multiple possible solutions — not just the obvious one. Good consulting surfaces options the client hadn't considered, challenges "we've always done it this way" thinking, and creates genuine strategic choices.
 
 The key principle: **generate before evaluating**. Evaluating during generation kills options prematurely — an idea that sounds weak in isolation may become the strongest when combined with another. Develop creates the option space; Deliver evaluates it.
-
-## Prerequisites
-
-- Define phase should be complete (problem statement and HMW questions exist)
-- Read `define/problem-statement.md` and `define/hmw-questions.md` as the brief for this phase
 
 ## Workflow
 
@@ -271,6 +299,8 @@ Save review results to `develop/review-summary.md`.
 
 Update method log and decision log.
 
+Apply the Diamond Coach closing protocol: summarize what was accomplished, highlight the strongest options, note any conditional propositions, and preview what Deliver will do with these options.
+
 Present the Develop summary:
 
 > **Develop phase complete.**
@@ -307,9 +337,21 @@ For `how-might-we` engagements, replace the plugin-powered pipeline with a guide
 4. **Write option synthesis** — Capture options in `develop/options/option-synthesis.md`. For lightweight HMWs, 1-2 strong options is enough. For heavy HMWs, aim for 3-5.
 5. **Skip the full persona review** — Confirm directly with the consultant.
 
-**For collapsed lightweight HMWs**: Develop and Deliver run as one session. After ideation, move directly to the solution brief and action plan without a phase transition.
+**For collapsed lightweight HMWs**: Develop and Deliver run as one session. After ideation, move directly to the solution brief and action plan without a phase transition. Save artifacts to **both** phase directories — this is critical for tracking and resume:
 
-Save ideation artifacts to `develop/ideation/` and the synthesis to `develop/options/option-synthesis.md`.
+- Save ideation artifacts to `develop/ideation/`
+- Save the synthesis to `develop/options/option-synthesis.md`
+- Save the solution brief to `deliver/solution-brief.md`
+- Save the action plan to `deliver/action-plan.md`
+
+Then mark **both** Develop and Deliver as complete:
+
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" develop complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver complete
+```
+
+Apply the Diamond Coach closing protocol: summarize the complete Develop+Deliver outcome, reference the specific deliverables produced, and suggest `consulting-export` if the consultant wants polished output formats.
 
 ## Method Adaptation
 

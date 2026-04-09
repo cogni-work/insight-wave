@@ -19,9 +19,11 @@ phase-analyst agent       → Phase readiness assessment, method recommendation
 
 ## Design Principles
 
+- **Diamond Coach** — every phase opens with a coaching introduction (intent + what good looks like), checks prerequisites, creates a task list, and closes with an accomplishment summary. The coach is defined in `references/diamond-coach.md` and calibrated to engagement weight (brief for lightweight HMW, structured for full engagements)
 - **Orchestrator, not producer** — manages engagement state; content work done by existing plugins
 - **Path references, not data copies** — cross-references via slugs/paths, no shared DB
-- **Warn, not block** — phase gates are advisory; consultant can override. Exception: the Develop proposition quality gate (step 4b) blocks by default — propositions that fail on high-weight criteria are excluded from Option Synthesis unless the consultant explicitly reinstates them
+- **Gate, then guide** — phase gates block by default when required inputs are missing or inadequate (not just file existence, but content quality). Consultant can override explicitly. Exception: the Develop proposition quality gate additionally blocks individual propositions
+- **Iteration support** — phases can be re-entered after completion. `iteration_count` tracks revisions. Re-entry reads existing artifacts and refines rather than starting from scratch
 - **Method library, not fixed playbook** — proposes methods per phase; consultant decides
 
 ## Data Model
@@ -72,7 +74,9 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 ## Key Conventions
 
 - Engagement slug in kebab-case, derived from engagement name
-- Phase state tracks: pending → in-progress → complete
+- Phase state tracks: pending → in-progress → complete (→ in-progress for iteration re-entry)
+- Each phase has `iteration_count` (default 0, incremented on re-entry)
+- `engagement_weight` field (`lightweight`/`medium`/`heavy`/null) set during setup for HMW engagements
 - Plugin refs store relative paths to projects created by other plugins
 - Methods are stored as markdown files in `references/methods/` with YAML frontmatter
 - Language field in consulting-project.json controls communication language (technical terms stay English)

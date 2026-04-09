@@ -12,23 +12,44 @@ description: |
   or any request for broad research within an active engagement. Also trigger when the user asks
   about a specific research method (desk research, stakeholder mapping, data audit, customer journey)
   in the context of an ongoing engagement.
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, TaskCreate, TaskUpdate
 ---
 
 # Diamond Discover — Diverge to Understand
 
 Build a rich, multi-perspective understanding of the problem landscape. This is the first phase of Diamond 1 — the goal is to cast a wide net before converging on a problem statement in the Define phase.
 
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona.
+
+**Discover opening**: "We're entering Discover — the divergent half of Diamond 1. The goal is to cast a wide net and build a rich evidence base before we narrow down. The quality of everything downstream — problem framing, solution design, business case — depends on what we uncover here. Let's make sure we're looking in the right places."
+
+**Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first."
+
+**Iteration check**: If `phase_state.discover.status` is `complete`, this is a re-entry. Read existing `discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow.
+
+**Task list**: After loading context, create a task list scaled to engagement weight:
+
+Standard engagement:
+1. Load engagement context
+2. Propose and confirm discovery methods
+3. Execute plugin-powered methods
+4. Execute guided methods
+5. Synthesize discovery findings
+6. Log methods and transition
+
+Lightweight HMW (collapsed Discover+Define):
+1. Map context and explore domain
+2. Identify stakeholders and constraints
+3. Sharpen HMW question
+4. Write synthesis and problem statement
+
 ## Core Concept
 
 Discover is about breadth, not depth. The consultant and client often arrive with assumptions about what the problem is. This phase deliberately widens the lens — through desk research, trend analysis, competitive mapping, stakeholder input, and data audits — to surface insights that challenge or enrich those initial assumptions.
 
 The key principle: **diverge before converging**. Premature closure is the enemy of good consulting. Discover builds the evidence base that Define will synthesize.
-
-## Prerequisites
-
-- An active diamond engagement (consulting-project.json exists). If not, suggest `consulting-setup`.
-- Read the engagement's vision class and scope from consulting-project.json — they determine which methods are most relevant.
 
 ## Workflow
 
@@ -143,6 +164,8 @@ Update the method log:
 
 Update `consulting-project.json` with any new `plugin_refs`.
 
+Apply the Diamond Coach closing protocol: summarize what was accomplished (specific artifacts and key findings), note any gaps or thin areas, and preview what Define will do with these outputs.
+
 Ask the consultant: "Discovery phase complete. The synthesis surfaces [N] key themes. Ready to converge in the Define phase, or do you want to explore any theme further?"
 
 If ready to converge, mark Discover complete and suggest `consulting-define`:
@@ -164,7 +187,14 @@ For simple, bounded challenges (workshop design, team exercise, meeting redesign
 3. **HMW sharpening** (Define, inline) — Based on the context, propose 2-3 refined versions of the HMW question. Let the consultant pick. Write a brief problem statement.
 4. **Skip desk research** unless the consultant asks for it.
 
-Save a combined `discover/synthesis.md` and `define/problem-statement.md`, then move directly to Develop.
+Save a combined `discover/synthesis.md` and `define/problem-statement.md` and `define/hmw-questions.md`. Then mark **both** Discover and Define as complete — this is critical for tracking:
+
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" discover complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define complete
+```
+
+Apply the Diamond Coach closing protocol: summarize what was accomplished in the collapsed Discover+Define, then preview Develop. Move directly to Develop.
 
 ### Medium HMW
 

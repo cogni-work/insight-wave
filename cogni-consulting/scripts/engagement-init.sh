@@ -34,10 +34,10 @@ cat > "${PROJECT_DIR}/.metadata/execution-log.json" << EOFLOG
 {
   "created": "${CREATED_AT}",
   "phases": {
-    "discover": { "started": null, "completed": null },
-    "define": { "started": null, "completed": null },
-    "develop": { "started": null, "completed": null },
-    "deliver": { "started": null, "completed": null }
+    "discover": { "started": null, "completed": null, "iteration_count": 0 },
+    "define": { "started": null, "completed": null, "iteration_count": 0 },
+    "develop": { "started": null, "completed": null, "iteration_count": 0 },
+    "deliver": { "started": null, "completed": null, "iteration_count": 0 }
   }
 }
 EOFLOG

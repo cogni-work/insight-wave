@@ -19,6 +19,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 
 Session entry point for returning to engagement work. This skill orients the consultant by showing where they left off and what to do next — the dashboard view that keeps multi-session engagements on track.
 
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona.
+
+**Resume opening**: Welcome the consultant back warmly: "Welcome back. Let me show you where we left off." Keep it brief — the consultant wants orientation, not ceremony.
+
 ## Core Concept
 
 Diamond engagements span multiple sessions and phases. Without a clear re-entry point, consultants lose context between sessions and waste time reconstructing what happened. This skill bridges that gap: it reads the engagement state, surfaces progress at a glance, and recommends the most valuable next step. The goal is to get the consultant back into productive flow within seconds.
@@ -56,12 +62,12 @@ The consultant should feel like picking up a well-organized notebook, not readin
 **Acme Cloud Portfolio Expansion** (acme-cloud-expansion)
 Client: Acme Cloud Services | Vision: strategic-options | Language: en
 
-| Phase | Status | Files | Plugin Projects |
-|-------|--------|-------|-----------------|
-| Discover | complete | 12 | research: acme-landscape, tips: b2b-ict/acme, portfolio: acme-cloud |
-| Define | in-progress | 3 | claims: verified 8/12 assumptions |
-| Develop | pending | 0 | — |
-| Deliver | pending | 0 | — |
+| Phase | Status | Iterations | Files | Plugin Projects |
+|-------|--------|------------|-------|-----------------|
+| Discover | complete | 0 | 12 | research: acme-landscape, tips: b2b-ict/acme, portfolio: acme-cloud |
+| Define | in-progress | 0 | 3 | claims: verified 8/12 assumptions |
+| Develop | pending | 0 | 0 | — |
+| Deliver | pending | 0 | 0 | — |
 
 After the table:
 
@@ -80,6 +86,12 @@ Present the recommended next action from the status output:
 Offer to proceed with the recommendation immediately.
 
 If all phases are complete, congratulate the consultant and suggest `consulting-export` for the final deliverable package.
+
+### 6. Support Phase Re-entry (Iteration)
+
+If the consultant wants to revisit a completed phase (e.g., "I want to refine the problem statement", "let's go back to Discover"), route them to the appropriate phase skill. The phase skill's iteration support will handle the re-entry — it reads existing artifacts, asks what to refine, and increments the iteration counter via `update-phase.sh`.
+
+Present iteration context before routing: "The Define phase was completed on [date] with [N] themes and [N] HMW questions. Re-entering will let you refine these outputs. The iteration counter will be incremented to track this revision."
 
 ## Example
 

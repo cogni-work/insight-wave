@@ -18,16 +18,37 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, Task
 
 Synthesize discovery findings into a clear, actionable problem statement. This is the convergence half of Diamond 1 — the goal is to narrow from a broad evidence base to the core challenge worth solving.
 
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona.
+
+**Define opening**: "We're entering Define — the convergent half of Diamond 1. Discovery gave us breadth; now we need to make choices. Of everything we uncovered, what is the one challenge that, if solved, would create the most value? The problem statement we write here becomes the brief for all of Diamond 2 — getting this right is the highest-leverage moment in the engagement."
+
+**Prerequisite gate**: Verify that `discover/synthesis.md` exists and contains substantive content — at least one theme heading (`### Theme` or `### `) with source citations (`*Sources:` or evidence references). If the file is missing or empty:
+- Block and redirect: "The Discover phase hasn't produced a synthesis yet. We need evidence before we can frame the problem — without it, we'd be guessing. Let's go back to Discover."
+- The consultant can override by explicitly saying "proceed anyway", but the default is to stop.
+
+**Iteration check**: If `phase_state.define.status` is `complete`, this is a re-entry. Read existing `define/problem-statement.md` and `define/hmw-questions.md`. Say: "The Define phase was completed previously. Let's refine what we have — what would you like to revisit? The problem statement, the HMW questions, or both?" Focus on the specific area.
+
+**Task list**: After loading context, create a task list:
+
+Standard engagement:
+1. Load context and review discovery synthesis
+2. Propose and confirm define methods
+3. Verify assumptions (cogni-claims)
+4. Cluster themes (affinity clustering)
+5. Synthesize HMW questions
+6. Write problem statement
+7. Stakeholder review
+8. Log and transition
+
+Lightweight HMW: Define is typically collapsed into Discover — if this skill is invoked separately for a lightweight HMW, use the simplified workflow (see "Lightweight Define" section below).
+
 ## Core Concept
 
 Define is about making choices. Discovery surfaced many themes, tensions, and opportunities. Define forces the consultant and client to decide: "Of everything we learned, what is the one challenge that, if solved, would create the most value?" This requires both analytical rigor (verifying assumptions) and creative synthesis (reframing the problem).
 
 The outputs — a problem statement and HMW questions — become the brief for Diamond 2. Getting the problem framing wrong means solving the wrong problem, no matter how elegant the solution.
-
-## Prerequisites
-
-- Discovery phase should be complete or substantially progressed (the phase-gate-guard hook will warn if not)
-- Discovery synthesis (`discover/synthesis.md`) should exist — the starting input for Define
 
 ## Workflow
 
@@ -226,6 +247,8 @@ This keeps the "warn, not block" principle intact — the review enforces a qual
 ### 8. Log and Transition
 
 Update method log and decision log with key choices made during Define.
+
+Apply the Diamond Coach closing protocol: summarize what was accomplished, note any limitations or unresolved assumptions, and preview what the Develop phase will do with the problem statement and HMW questions.
 
 Present the Define summary:
 

@@ -19,16 +19,39 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, Task
 
 Evaluate options, verify claims, build the business case, and prepare actionable outcomes. This is the convergence half of Diamond 2 — the goal is to move from a rich option space to validated, decision-ready deliverables.
 
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona.
+
+**Deliver opening**: "We're entering Deliver — the convergent half of Diamond 2. We have options on the table; now we need to evaluate them rigorously, verify our claims, and build the business case. This is where creative ideas become executive-ready recommendations. The goal is actionable outcomes the client can act on Monday morning."
+
+**Prerequisite gate**: Verify that `develop/options/option-synthesis.md` exists and contains at least one named option, OR that `develop/ideation/` contains solution design content (for HMW engagements). If missing:
+- Block and redirect: "We need options to evaluate before we can deliver. The Develop phase should produce an option synthesis or solution design. Let's complete that first."
+- The consultant can override by explicitly saying "proceed anyway."
+
+**Iteration check**: If `phase_state.deliver.status` is `complete`, this is a re-entry. Read existing artifacts in `deliver/` (solution-brief.md, action-plan.md, business-case.md, etc.). Say: "The Deliver phase was completed previously. Let's refine what we have — what would you like to improve? The business case, the roadmap, the solution brief?" Focus on the specific area.
+
+**Task list**: After loading context, create a task list scaled to engagement weight:
+
+Standard engagement:
+1. Load context (options + problem statement)
+2. Propose and confirm deliver methods
+3. Score and rank options
+4. Verify claims (cogni-claims)
+5. Validate positioning (cogni-portfolio)
+6. Build business case
+7. Create action roadmap
+8. Write executive summary
+9. Stakeholder review
+10. Log and transition
+
+Lightweight HMW: Deliver is typically collapsed into Develop — if this skill is invoked separately for a lightweight HMW, use the simplified workflow (see "Lightweight Deliver" section below).
+
 ## Core Concept
 
 Deliver transforms creative options into executive-ready outputs. It applies rigor — feasibility scoring, risk assessment, claims verification — to the options generated in Develop, then packages the survivors into the deliverables promised in the engagement vision.
 
 This phase balances two tensions: thoroughness (every claim verified, every risk assessed) and pragmatism (the engagement needs to conclude with actionable recommendations). The consultant manages this tension; cogni-consulting provides the tools.
-
-## Prerequisites
-
-- Develop phase should be complete (options synthesized in `develop/options/`)
-- Read the option synthesis and problem statement as inputs
 
 ## Workflow
 
@@ -253,6 +276,8 @@ This keeps the "warn, not block" principle intact — the review enforces a qual
 ### 10. Log and Transition
 
 Update method log and decision log.
+
+Apply the Diamond Coach closing protocol: summarize the full engagement arc (from vision through discovery, problem framing, option generation, to this final evaluation), highlight the key recommendation, and note the strength of the evidence base.
 
 Present the Deliver summary:
 

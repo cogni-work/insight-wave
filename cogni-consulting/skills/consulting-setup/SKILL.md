@@ -10,12 +10,26 @@ description: |
   "scope a new piece of work", "new consulting project", or any mention of starting structured
   problem-to-solution work for a client. Also trigger when the user describes a client situation
   that implies a new engagement is needed (e.g., "Telekom wants us to look at their cloud strategy").
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, TaskCreate, TaskUpdate
 ---
 
 # Diamond Engagement Setup
 
 Initialize a cogni-consulting engagement by framing the desired outcome and creating the project structure. This is the entry point for every Double Diamond engagement — getting the vision right here determines which methods, plugins, and deliverables the downstream phases will use.
+
+## Diamond Coach Protocol
+
+Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coach persona for this and all subsequent phases.
+
+**Setup opening**: Welcome the consultant. Briefly explain the Double Diamond process: "We'll move through four phases — first widening our lens to understand the problem (Discover → Define), then widening again to explore solutions before converging on the best path (Develop → Deliver). But first, let's get the vision right — what outcome we're aiming for determines everything downstream."
+
+**Task list**: After confirming the engagement context (Step 2), create a task list:
+1. Gather engagement context
+2. Confirm with consultant
+3. Scaffold project structure
+4. Map vision to deliverables
+5. Preview phase plan
+6. Transition to first phase
 
 ## Core Concept
 
@@ -89,6 +103,7 @@ After the script creates directories, write `consulting-project.json` in the eng
     "slug": "<slug>",
     "client": "<client>",
     "vision_class": "<selected class>",
+    "engagement_weight": null,
     "industry": "<industry>",
     "language": "<language>",
     "created": "<ISO date>",
@@ -102,10 +117,10 @@ After the script creates directories, write `consulting-project.json` in the eng
   },
   "phase_state": {
     "current": "discover",
-    "discover": { "status": "pending", "started": null, "completed": null },
-    "define": { "status": "pending", "started": null, "completed": null },
-    "develop": { "status": "pending", "started": null, "completed": null },
-    "deliver": { "status": "pending", "started": null, "completed": null }
+    "discover": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "define": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "develop": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "deliver": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 }
   },
   "plugin_refs": {
     "research_project": null,
@@ -167,6 +182,8 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the selected vision 
 - **Domain knowledge needed**: Can the consultant design this from experience, or does it require external evidence? A workshop concept draws on facilitation expertise (low). A new B2C product needs market research, competitive analysis, customer understanding (high).
 - **Stakeholder complexity**: Is this one person's decision, or does it require alignment across teams, departments, or leadership? A team exercise is low. A process redesign affecting multiple departments is high.
 - **Reversibility**: Can the solution be adjusted easily after launch, or is it a one-shot commitment? A workshop can be iterated (low). A product launch has high sunk costs (high).
+
+Store the assessed weight in `consulting-project.json` as `engagement.engagement_weight` — one of `"lightweight"`, `"medium"`, or `"heavy"`. This lets downstream skills calibrate their behavior without re-assessing complexity.
 
 Based on this assessment, offer an appropriate engagement shape:
 
