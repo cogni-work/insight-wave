@@ -1,7 +1,7 @@
 {
   "name": "cogni-visual",
-  "version": "0.7.5",
-  "description": "Transform polished narratives and structured data into visual deliverables \u2014 presentation briefs, slide decks, big picture journey maps, Big Block solution architecture diagrams, scrollable web narratives, poster storyboards, and visual assets. Supports Excalidraw, Pencil MCP, and PPTX rendering.",
+  "version": "0.8.0",
+  "description": "Transform polished narratives and structured data into visual deliverables \u2014 presentation briefs, slide decks, big picture journey maps, Big Block solution architecture diagrams, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
@@ -35,6 +35,10 @@
     "html-slides",
     "html-presentation",
     "browser-slides",
+    "infographic",
+    "infografik",
+    "data-poster",
+    "visual-summary",
     "agent",
     "hooks"
   ]

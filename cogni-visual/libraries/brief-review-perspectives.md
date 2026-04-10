@@ -14,6 +14,7 @@ works for the people who will experience the final output, not just the people w
 - [Web Narrative (web-brief)](#web-narrative)
 - [Storyboard (storyboard-brief)](#storyboard)
 - [Big Block (big-block-brief)](#big-block)
+- [Infographic (infographic-brief)](#infographic)
 
 ---
 
@@ -607,6 +608,125 @@ Can this diagram serve as the architecture page in a proposal?
 
 ---
 
+## Infographic
+
+Infographic briefs become single-page visual summaries rendered as self-contained HTML. The
+audience scans these in 10 seconds — they glance at the hero number, read the title, absorb
+2-3 supporting elements, and decide whether to act.
+
+### Perspective A: Information Designer (30%)
+
+You are a data visualization and information design specialist. You evaluate whether the brief
+creates an effective visual hierarchy that communicates its message at a glance.
+
+#### 1. Visual Hierarchy (25%)
+Does the infographic have a clear scan path (title → hero number → supporting blocks → CTA)?
+- **Pass**: The eye naturally follows a hierarchy. Hero numbers dominate, supporting blocks reinforce, nothing competes for primary attention.
+- **Warn**: Mostly clear but 1-2 blocks compete for attention or feel equally weighted when they shouldn't be.
+- **Fail**: No clear hierarchy. All blocks feel equal. The viewer doesn't know where to look first.
+
+#### 2. Data-Ink Ratio (25%)
+Is every visual element earning its place, or is there decorative noise?
+- **Pass**: Every block carries information. No decorative elements without purpose. Word limits respected. Icons clarify rather than decorate.
+- **Warn**: 1-2 blocks feel like filler — they don't add to the message.
+- **Fail**: Multiple blocks are decorative rather than informative. Text walls where numbers should be. Icons that don't clarify.
+
+#### 3. Layout Appropriateness (20%)
+Does the selected layout type match the content pattern?
+- **Pass**: Layout type is the natural fit for this content. Stat-heavy content gets stat-heavy layout. Processes get timeline-flow. The layout amplifies the message.
+- **Warn**: Layout works but isn't optimal — a different layout type would serve this content better.
+- **Fail**: Layout type contradicts the content. Process content in a hub-spoke layout. Data content in a list-grid.
+
+#### 4. Block Density (15%)
+Is the information density appropriate for a single-page scan?
+- **Pass**: 4-8 content blocks. Each block carries one idea. No block requires more than 3 seconds to absorb. Total word count under 150.
+- **Warn**: Slightly dense — 1-2 blocks could be simplified or merged.
+- **Fail**: Overloaded. More than 8 content blocks, or blocks with text walls. Fails the 10-second scan test.
+
+#### 5. Number Presentation (15%)
+Are statistics formatted for maximum visual impact?
+- **Pass**: Hero numbers are isolated in KPI cards. Numbers are ratio-framed for visceral impact. Before/after deltas are explicit. No numbers buried in prose.
+- **Warn**: Numbers are present but not optimally formatted. Some could be more impactful with different framing.
+- **Fail**: Numbers buried in text blocks. No hero number isolation. Statistics presented as prose rather than data.
+
+---
+
+### Perspective B: Target Audience (40%)
+
+You've received this infographic — maybe in an email, on a screen in a meeting room, or
+printed on a handout. You'll give it 10 seconds. You evaluate whether it communicates its
+message in that window.
+
+#### 1. 10-Second Comprehension (30%)
+After 10 seconds of scanning, do you understand the core message?
+- **Pass**: You know the topic, the main claim, and one supporting fact within 10 seconds. The title is an assertion. The hero number anchors the claim.
+- **Warn**: You get the topic but the main claim is unclear. You'd need to read more carefully.
+- **Fail**: After 10 seconds you're still figuring out what this infographic is about.
+
+#### 2. Credibility (25%)
+Do you trust what this infographic claims?
+- **Pass**: Numbers are specific and sourced. Claims are assertions, not hype. The source line provides attribution. You'd forward this to a colleague.
+- **Warn**: Some claims feel unsupported. Numbers are round or feel estimated.
+- **Fail**: Marketing hype. Superlatives without evidence. You'd mentally discount everything.
+
+#### 3. Relevance (20%)
+Does this infographic speak to a problem or opportunity you care about?
+- **Pass**: The title addresses a business problem. The data is contextually relevant. You understand why this matters to you.
+- **Warn**: Informative but the "so what" isn't immediate. You understand the data but not why you should care.
+- **Fail**: The infographic is about the provider, not about your problem. Self-congratulatory.
+
+#### 4. Professional Impression (15%)
+Does this look like a credible business communication?
+- **Pass**: Clean, authoritative, appropriate style for the context. You'd share it externally without caveats.
+- **Warn**: Mostly professional but 1-2 elements feel casual or draft-quality.
+- **Fail**: Looks like a template. Not credible for external distribution.
+
+#### 5. Action Clarity (10%)
+Do you know what to do next?
+- **Pass**: The CTA is clear, specific, and follows naturally from the evidence presented.
+- **Warn**: CTA exists but is vague ("Learn more") or disconnected from the content.
+- **Fail**: No clear next step. Informative but no forward momentum.
+
+---
+
+### Perspective C: Digital Producer (30%)
+
+You are responsible for producing and distributing this infographic across channels — email,
+social media, print handouts, internal decks. You evaluate whether the brief produces a
+deliverable that works across these contexts.
+
+#### 1. Rendering Feasibility (30%)
+Can the renderer produce this infographic without issues?
+- **Pass**: Block types are standard. Chart data is valid. Icon prompts are specific enough for SVG generation. No exotic rendering requirements.
+- **Warn**: 1-2 blocks might need manual adjustment after rendering.
+- **Fail**: Block combinations that the renderer can't handle. Invalid chart data. Vague icon prompts.
+
+#### 2. Multi-Channel Adaptability (25%)
+Would this infographic work across email, social media, and print?
+- **Pass**: Content fits a single-page format. Text is readable at various scales. No dependency on interactivity. Print-friendly color contrast.
+- **Warn**: Works in primary channel but would need adaptation for others.
+- **Fail**: Only works in one specific medium. Too wide for mobile. Colors that print poorly.
+
+#### 3. Brand Consistency (20%)
+Does the style preset and content tone match the brand and context?
+- **Pass**: Style preset matches the distribution context. Consistent tone throughout. Theme colors used appropriately.
+- **Warn**: Mostly consistent but 1-2 elements feel off-brand.
+- **Fail**: Style preset contradicts the brand context. Workshop-style infographic for a board meeting.
+
+#### 4. Shareability (15%)
+Would someone share, screenshot, or reference this infographic?
+- **Pass**: At least 1-2 data points are share-worthy. The title is compelling enough to caption a social post. The infographic has standalone value.
+- **Warn**: Useful but not remarkable. You'd save it but not actively share.
+- **Fail**: No standalone value. Only useful in the context where it was created.
+
+#### 5. Maintenance (10%)
+Can this infographic be updated when data changes?
+- **Pass**: Block structure is clean. Numbers and sources are clearly identified. Updating a quarter's data wouldn't require restructuring.
+- **Warn**: Mostly updatable but some data points are embedded in prose rather than in structured blocks.
+- **Fail**: Data is woven into narrative text. Updating requires rewriting multiple blocks.
+
+---
+
 ## Conflict Resolution
 
 When perspectives disagree, use these tiebreakers:
@@ -629,6 +749,7 @@ When perspectives disagree, use these tiebreakers:
 | **Big Picture** | Story World coherence overrides individual station quality — one weak station in a strong world is better than strong stations in a forced metaphor |
 | **Web** | Hook/opening section is sacred — if Audience flags the opening as weak, that's automatically CRITICAL regardless of other perspectives |
 | **Storyboard** | Readability at distance overrides information density — if Print Designer flags readability, that's HIGH minimum even if content is strong |
+| **Infographic** | 10-second comprehension is sacred — if Target Audience fails to understand the core message in 10 seconds, that's automatically CRITICAL regardless of design quality |
 | **Big Block** | Technical accuracy is non-negotiable — Solution Architect failures on tier logic or connection integrity are automatically CRITICAL |
 
 ### Priority Tiers
