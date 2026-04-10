@@ -95,7 +95,7 @@ Or describe what you want in natural language:
 
 ```
 cogni-website/
-├── .claude-plugin/               Plugin manifest (v0.2.1)
+├── .claude-plugin/               Plugin manifest (v0.3.2)
 │   └── plugin.json
 ├── skills/                       6 workflow skills
 │   ├── website-setup/

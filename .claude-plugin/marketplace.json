@@ -55,7 +55,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "description": "Lean workspace orchestrator for insight-wave marketplace plugins. Manages shared foundation (env vars, settings), theme management, theme picker, plugin discovery, workspace health, and Obsidian vault integration.",
+      "description": "Lean workspace orchestrator for insight-wave marketplace plugins. Manages shared foundation (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, and Obsidian vault integration.",
       "keywords": [
         "workspace",
         "themes",
@@ -200,7 +200,7 @@
     {
       "name": "cogni-consulting",
       "source": "./cogni-consulting",
-      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring and multi-persona stress testing via the business-model-hypothesis vision class.",
+      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring via business-model-hypothesis, and lightweight how-might-we engagements for bounded challenges (workshop design, process improvement, team exercises) using guided ideation.",
       "keywords": [
         "double-diamond",
         "consulting",

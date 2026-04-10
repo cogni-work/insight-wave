@@ -1,6 +1,6 @@
 {
   "name": "cogni-research",
-  "version": "0.6.14",
+  "version": "0.6.15",
   "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, and hybrid source modes. Integrates with cogni-claims for source verification.",
   "author": {
     "name": "Stephan de Haas",

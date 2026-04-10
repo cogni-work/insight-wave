@@ -1,6 +1,6 @@
 # cogni-narrative
 
-Story arc-driven narrative transformation plugin for [Claude Cowork](https://claude.ai/cowork). Transforms research syntheses, analyses, and structured content into compelling executive narratives using 8 story arc frameworks and 8 narrative techniques. Includes TIPS-native trend panorama, theme-thesis for investment theme narratives, and JTBD portfolio arcs for buyer-job-centric portfolio narratives. Narrative review scoring and derivative format adaptation (executive briefs, talking points, one-pagers). Bilingual EN/DE.
+Story arc-driven narrative transformation plugin for [Claude Cowork](https://claude.ai/cowork). Transforms research syntheses, analyses, and structured content into compelling executive narratives using 10 story arc frameworks and 8 narrative techniques. Includes TIPS-native trend panorama, theme-thesis for investment theme narratives, JTBD portfolio arcs for buyer-job-centric portfolio narratives, company-credo for About-Us pages, and engagement-model for How-We-Work pages. Narrative review scoring and derivative format adaptation (executive briefs, talking points, one-pagers). Bilingual EN/DE.
 
 ## Why this exists
 
@@ -19,7 +19,7 @@ This plugin applies structured story arc frameworks — each with defined sectio
 
 ## What it is
 
-A story arc engine for the insight-wave ecosystem. Eight arc frameworks — Corporate Visions for sales, Technology Futures for innovation, Competitive Intelligence for threats, Strategic Foresight for planning, Industry Transformation for change, Trend Panorama for TIPS output, Theme-Thesis for investment theme narratives, and JTBD Portfolio for buyer-job-centric portfolio narratives — impose narrative discipline on structured content. Other plugins produce research and data; cogni-narrative shapes it into executive-grade stories that drive decisions.
+A story arc engine for the insight-wave ecosystem. Ten arc frameworks — Corporate Visions for sales, Technology Futures for innovation, Competitive Intelligence for threats, Strategic Foresight for planning, Industry Transformation for change, Trend Panorama for TIPS output, Theme-Thesis for investment theme narratives, JTBD Portfolio for buyer-job-centric portfolio narratives, Company-Credo for About-Us pages, and Engagement-Model for How-We-Work pages — impose narrative discipline on structured content. Other plugins produce research and data; cogni-narrative shapes it into executive-grade stories that drive decisions.
 
 ## What it does
 
@@ -30,7 +30,7 @@ A story arc engine for the insight-wave ecosystem. Eight arc frameworks — Corp
 ## What it means for you
 
 - **Arc-disciplined, not improvised.** Every narrative follows a proven story arc structure — consistent quality across documents and authors.
-- **Eight frameworks for eight contexts.** Corporate Visions for sales, Technology Futures for innovation, Competitive Intelligence for threats, Strategic Foresight for planning, Industry Transformation for change, Trend Panorama for TIPS output, Theme-Thesis for investment themes, JTBD Portfolio for buyer-job-centric portfolio narratives.
+- **Ten frameworks for ten contexts.** Corporate Visions for sales, Technology Futures for innovation, Competitive Intelligence for threats, Strategic Foresight for planning, Industry Transformation for change, Trend Panorama for TIPS output, Theme-Thesis for investment themes, JTBD Portfolio for buyer-job-centric portfolio narratives, Company-Credo for About-Us pages, Engagement-Model for How-We-Work pages.
 - **Quality-gated.** Automated scoring (0-100, A-F grades) on structural compliance, critical accuracy, evidence density, and language — with improvement suggestions per dimension.
 - **One narrative, three derivative formats.** Executive briefs, talking points, and one-pagers — adapted from the source narrative without rewriting.
 - **Bilingual.** Full EN/DE support with localized section headers and proper Unicode handling.
@@ -76,6 +76,8 @@ Claude reads your research output, auto-detects the best story arc, asks you to 
 | `trend-panorama` | Forces → Impact → Horizons → Foundations | Trend-scout output, TIPS trend reports, multi-horizon landscapes |
 | `theme-thesis` | Why Change → Why Now → Why You → Why Pay | Investment theme narratives within TIPS reports |
 | `jtbd-portfolio` | Jobs → Friction → Portfolio → Invitation | Portfolio introductions, capability overviews, pre-sales |
+| `company-credo` | Mission → Conviction → Credibility → Promise | Website About-Us pages, company introductions |
+| `engagement-model` | Principles → Process → Partnership → Outcomes | Website How-We-Work pages, engagement sections of proposals |
 
 ## Example workflows
 

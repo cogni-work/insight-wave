@@ -1,6 +1,6 @@
 # cogni-workspace
 
-Lean workspace orchestrator for insight-wave [Claude Cowork](https://claude.ai/cowork) marketplace plugins. Manages shared foundation (environment variables, settings), theme management, plugin discovery, workspace health, and Obsidian vault integration — so all cogni-x plugins operate from a consistent, well-configured base.
+The foundation-layer plugin for the [insight-wave](https://claude.ai/cowork) ecosystem — the only plugin that other cogni-x plugins depend on, and the one that must be initialized first. cogni-workspace owns environment configuration, MCP server installation, theme storage, plugin discovery, workspace health diagnostics, and Obsidian vault integration, giving every downstream plugin a consistent, fully-configured base to build on.
 
 ## Why this exists
 
@@ -17,7 +17,9 @@ This plugin provides the infrastructure layer — workspace initialization, them
 
 ## What it is
 
-Orchestrates the shared foundation that all insight-wave plugins depend on — environment variables, plugin discovery, and theme resolution. A single initialization sets up the entire workspace; health diagnostics catch drift before downstream skills break. Theme management ensures all visual plugins — slides, journey maps, web narratives — render with consistent brand identity.
+cogni-workspace implements the **infrastructure-as-plugin pattern**: a dedicated plugin whose sole job is to own the shared state that all other plugins consume — environment variables, plugin registry, theme storage, and tool configuration. It is the only plugin in the ecosystem with no upward dependencies; every other cogni-x plugin depends on it, and none of them duplicate what it provides.
+
+In the Claude Cowork plugin model, workspace-level state (paths, env vars, installed MCPs) cannot be assumed — it must be actively initialized and maintained. cogni-workspace does this in one command and keeps it consistent across plugin updates. Health diagnostics run a five-tier check (foundation, env vars, plugin registry, themes, dependencies) so drift is caught before downstream skills break, not after.
 
 ## What it does
 
@@ -26,7 +28,8 @@ Orchestrates the shared foundation that all insight-wave plugins depend on — e
 3. **Pick themes** — centralized theme picker used by all visual plugins
 4. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
 5. **Diagnose** workspace health — five-tier report (foundation, env vars, plugin registry, themes, dependencies)
-6. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
+6. **Install MCP servers** — clone and build git-based MCP servers, detect native app MCPs, and patch Claude Desktop config so rendering plugins find their tools without manual JSON editing
+7. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
 
 ## What it means for you
 
@@ -79,6 +82,7 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | `manage-themes` | skill | 8 theme operations: recommend, list, grab from website, grab from PPTX, create from preset, audit, generate showcase, apply |
 | `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
 | `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
+| `install-mcp` | skill | End-to-end MCP server installation — clone and build git-based MCPs, configure native app MCPs, and patch Claude Desktop config |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
 | `check-dependencies.sh` | script | Returns JSON with availability/version of required and optional dependencies |
 | `check-skill-names.sh` | script | Validates skill directory names against plugin.json manifest for consistency |
@@ -93,7 +97,8 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       4 workspace management skills
+├── skills/                       5 workspace management skills
+│   ├── install-mcp/              MCP server installation and Desktop config patching
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
 │   ├── manage-themes/
 │   ├── pick-theme/

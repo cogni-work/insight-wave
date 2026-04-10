@@ -1,6 +1,6 @@
 # cogni-claims
 
-A [Claude Cowork](https://claude.ai/cowork) plugin that verifies whether sourced claims actually match what their cited sources say.
+cogni-claims is the citation-integrity layer for [Claude Cowork](https://claude.ai/cowork) — a systematic verification workflow that detects when sourced claims misrepresent, overstate, or contradict what their cited sources actually say.
 
 ## Why this exists
 
@@ -17,7 +17,7 @@ Every claim above has been verified against its source using this plugin. This p
 
 ## What it is
 
-A systematic claim-verification workflow for Claude Cowork. Other plugins generate sourced content — this one checks whether the sources actually say what's claimed. It's designed for cross-plugin use: submit claims from anywhere, verify and resolve them here.
+A systematic claim-verification workflow for Claude Cowork. Other plugins generate sourced content — this one checks whether the sources actually say what's claimed. It detects five deviation types — misquotation, unsupported conclusions, selective omission, data staleness, and source contradiction — and routes each finding through explicit human resolution before publish. It's designed for cross-plugin use: submit claims from anywhere, verify and resolve them here.
 
 ## What it does
 

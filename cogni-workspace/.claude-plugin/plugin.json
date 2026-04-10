@@ -1,6 +1,6 @@
 {
   "name": "cogni-workspace",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Lean workspace orchestrator for insight-wave marketplace plugins. Manages shared foundation (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, and Obsidian vault integration.",
   "author": {
     "name": "Stephan de Haas",

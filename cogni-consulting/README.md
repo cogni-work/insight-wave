@@ -120,6 +120,7 @@ cogni-consulting/
 │   ├── deliverable-map.md
 │   ├── canvas-format.md
 │   ├── lean-canvas-sections.md
+│   ├── persona-schema.md
 │   ├── methods/                  14 consulting methods
 │   │   ├── affinity-clustering.md
 │   │   ├── assumption-mapping.md

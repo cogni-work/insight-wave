@@ -135,6 +135,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
 | `competitor-researcher` | agent | Web research for competitive intelligence per proposition |
 | `customer-researcher` | agent | Web research for named company profiling per target market |
+| `customer-narrative-writer` | agent | Generate a single customer-narrative markdown file (one scope) from portfolio entities — enables parallel fan-out |
 | `customer-review-assessor` | agent | Assess customer profile quality from three stakeholder perspectives |
 | `proposition-generator` | agent | Generate IS/DOES/MEANS messaging for a single Feature x Market combination |
 | `proposition-quality-assessor` | agent | Assess DOES/MEANS messaging quality in propositions (any language) |
@@ -145,6 +146,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `solution-review-assessor` | agent | Assess solution quality from procurement, provider SA, and client SA perspectives |
 | `feature-quality-assessor` | agent | Assess feature description quality using LLM intelligence (any language) |
 | `feature-review-assessor` | agent | Assess feature set quality from PM, proposition strategist, and pre-sales perspectives |
+| `feature-deduplication-detector` | agent | Detect set-wide duplicate features within a single product using lexical and semantic similarity — works in any language |
 | `feature-deep-diver` | agent | Deep research — competitive landscape, technical differentiation, market positioning |
 | `quality-enricher` | agent | Research company-specific information to improve features or propositions with quality gaps |
 | `communicate-review-assessor` | agent | Assess portfolio communication quality from stakeholder perspectives |
@@ -167,7 +169,7 @@ cogni-portfolio/
 │   └── b2b-opensource/           Commercial Open Source (8 dims, 50 cats)
 ├── skills/                       19 portfolio skills
 │   └── portfolio-canvas-workspace/ Dev workspace (evals, iterations — not a skill)
-├── agents/                       18 delegation agents
+├── agents/                       20 delegation agents
 ├── references/
 │   └── data-model.md             Full entity schema and project structure reference
 └── scripts/                      10 utility scripts

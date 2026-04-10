@@ -33,12 +33,12 @@ A STORM-inspired editorial research pipeline for the insight-wave ecosystem. Par
 
 If you produce research, analysis, or any content that needs to be both sourced and correct, this is your end-to-end pipeline.
 
-- **Fast and parallel.** Basic reports dispatch 5–7 agents concurrently; deep reports run 15–25. Research that would take hours completes in minutes.
-- **Claims-verified, not vibes-verified.** Every factual claim is extracted, matched to its source URL, and checked for deviations — misquotation, unsupported conclusions, selective omission.
-- **Presentation-ready.** Reports finish as themed, interactive HTML with data visualizations — not just markdown. Optional PDF and DOCX export included.
-- **Resumable.** Interrupted runs pick up from the first incomplete phase. No lost work.
-- **Traceable.** Every finding links to a source, every claim links to a verification result. The full workspace is Obsidian-browsable.
-- **Five report types.** Quick overview (basic), multi-section report (detailed), recursive tree exploration (deep), structured framework (outline), or annotated bibliography (resource) — matched to your needs.
+- **Ship reports in minutes, not hours.** Basic reports dispatch 5–7 agents concurrently; deep reports run 15–25. Research that would take hours completes in minutes.
+- **Verify every factual claim against its source URL.** Every claim is extracted, matched to its source URL, and checked for deviations — misquotation, unsupported conclusions, selective omission.
+- **Deliver reports as themed, interactive HTML.** Reports finish with data visualizations — not just markdown. Optional PDF and DOCX export included.
+- **Resume interrupted runs from the last completed phase.** Interrupted runs pick up from the first incomplete phase. No lost work.
+- **Trace every finding back to a source.** Every finding links to a source, every claim links to a verification result. The full workspace is Obsidian-browsable.
+- **Match research intensity to the question.** Quick overview (basic), multi-section report (detailed), recursive tree exploration (deep), structured framework (outline), or annotated bibliography (resource) — matched to your needs.
 
 ## Installation
 
