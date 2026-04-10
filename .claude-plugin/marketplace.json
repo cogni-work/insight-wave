@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Insight-wave is a 13-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, narrative transformation, visual deliverables, sales enablement, claim verification, and end-to-end consulting orchestration.",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {

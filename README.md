@@ -77,11 +77,29 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Platform & Quality
 
-[cogni-claims](cogni-claims/README.md) verifies whether sourced claims match what their cited sources actually say — catching misquotations, unsupported conclusions, selective omissions, and stale data. Other plugins register claims during generation; cogni-claims fetches each source and flags deviations for your review. [cogni-workspace](cogni-workspace/README.md) manages the shared foundation — environment variables, theme management, plugin discovery, and workspace health. [cogni-help](cogni-help/README.md) provides a 12-course interactive curriculum, 6 cross-plugin workflow templates, and troubleshooting diagnostics. Together: 13 skills and 3 agents.
+#### Workspace Foundation
+
+[cogni-workspace](cogni-workspace/README.md) manages the shared foundation — environment variables, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 4 skills.
+
+> "Initialize my insight-wave workspace and check plugin health"
+
+→ [Plugin guide](docs/plugin-guide/cogni-workspace.md) · [Getting started](docs/getting-started.md)
+
+#### Source Verification
+
+[cogni-claims](cogni-claims/README.md) verifies whether sourced claims match what their cited sources actually say — catching misquotations, unsupported conclusions, selective omissions, and stale data. Other plugins register claims during generation; cogni-claims fetches each source and flags deviations for your review. 2 skills and 2 agents.
 
 > "Verify all claims in the trend report against their cited sources"
 
-→ [Plugin guide: cogni-claims](docs/plugin-guide/cogni-claims.md) · [Plugin guide: cogni-help](docs/plugin-guide/cogni-help.md)
+→ [Plugin guide](docs/plugin-guide/cogni-claims.md)
+
+#### Help & Learning
+
+[cogni-help](cogni-help/README.md) provides a 12-course interactive curriculum, 6 cross-plugin workflow templates, and troubleshooting diagnostics. Routes tasks to the right plugin, chains multi-plugin workflows, and generates cheatsheets for any plugin. 7 skills and 1 agent.
+
+> "Which plugin should I use to verify claims in my research report?"
+
+→ [Plugin guide](docs/plugin-guide/cogni-help.md)
 
 Beyond the open-source plugins, cogni-works offers consulting services — plugin engineering for domain-specific workflows, managed deployment, and a partner certification program — through [cogni-work.ai](https://cogni-work.ai). Whether you run a consulting practice, a sales organization, or a marketing team, the site shows how these capabilities translate into managed workflows and onboarding for your team.
 
