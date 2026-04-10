@@ -100,13 +100,29 @@ Key integration patterns:
 - Marketplace sync is driven by git commit hash, not the version string
 - Claude Code reads plugin.json version for display; never put version in marketplace.json
 
+### Plugin Maturity Model
+
+Maturity is **hard-derived from the version** — no manual maturity field in plugin.json. Full reference: `cogni-docs/references/maturity-model.md`.
+
+| Stage | Version Range | User Expectation |
+|-------|--------------|-----------------|
+| **Incubating** | `0.0.x` | Skills may change or be removed at any time |
+| **Preview** | `0.x.x` (x≥1) | Core skills defined but may change. Feedback welcome |
+| **Released** | `1.x.x` | Stable API. Breaking changes only at major bumps |
+| **Established** | `2.x.x+` | Proven, deep ecosystem integration |
+| **Archived** | Any + `"archived": true` | Security patches only |
+
+**Maturity boundary crossings**: Bumping from `0.x` to `1.0.0` transitions a plugin from Preview to Released — this is a stability contract. Bumping to `2.0.0` signals Established. Be intentional about crossing these boundaries.
+
+**README callout**: Each pre-1.0 and archived plugin has a maturity callout blockquote after the H1 title (e.g., `> **Preview** (v0.x) — core skills defined but may change.`). doc-generate injects this automatically. doc-audit Check 13 enforces consistency.
+
 ## README Conventions
 
 Plugin READMEs follow a 16-section IS/DOES/MEANS structure:
 
 | # | Section | Category |
 |---|---------|----------|
-| 1 | Title + first paragraph | hand-written (IS compressed) |
+| 1 | Title + maturity callout + first paragraph | mixed (callout auto-generated, pitch hand-written) |
 | 2 | Why this exists | hand-written (problem table) |
 | 3 | What it is | hand-written (IS expanded) |
 | 4 | What it does | auto-generated (from SKILL.md) |
