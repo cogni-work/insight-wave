@@ -67,6 +67,7 @@ agents/              Autonomous rendering agents (brief -> output)
   story-to-storyboard.md  Orchestrates the story-to-storyboard skill
   storyboard.md        Renders storyboard briefs into multi-poster .pen via Pencil MCP
   enrich-report.md     Orchestrates the enrich-report skill (report → themed HTML)
+  concept-diagram.md   Worker agent — generates one concept diagram (TIPS flow, relationship map, process flow, concept sketch) via Excalidraw MCP, returns SVG
   brief-review-assessor.md  Stakeholder review of visual briefs (3 perspectives per brief type, haiku)
 
 libraries/           Shared reference material loaded at Step 1
@@ -90,7 +91,7 @@ libraries/           Shared reference material loaded at Step 1
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 10 | story-to-slides, story-to-big-picture, story-to-big-block, story-to-web, story-to-storyboard, render-big-picture, render-big-block, render-html-slides, enrich-report, review-brief |
-| Agents | 17 | story-to-slides, pptx, html-slides, story-to-big-picture, big-picture (wrapper), story-to-big-block, big-block (wrapper), station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), slides-enrichment-artist (worker), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard, enrich-report, brief-review-assessor |
+| Agents | 18 | story-to-slides, pptx, html-slides, story-to-big-picture, big-picture (wrapper), story-to-big-block, big-block (wrapper), station-structure-artist (worker ×N), station-enrichment-artist (worker ×N), slides-enrichment-artist (worker), zone-reviewer (worker ×4), story-to-web, web, story-to-storyboard, storyboard, enrich-report, concept-diagram (worker), brief-review-assessor |
 | Commands | 5 | render-big-picture, render-big-block, render-html-slides, enrich-report, review-brief |
 | Libraries | 13 | arc-taxonomy, cta-taxonomy, pptx-layouts, EXAMPLE_BRIEF, big-picture-layouts, EXAMPLE_BIG_PICTURE_BRIEF, big-block-layouts, EXAMPLE_BIG_BLOCK_BRIEF, web-layouts, EXAMPLE_WEB_BRIEF, storyboard-layouts, EXAMPLE_STORYBOARD_BRIEF, brief-review-perspectives |
 

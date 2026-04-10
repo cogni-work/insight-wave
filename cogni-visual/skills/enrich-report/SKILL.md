@@ -313,8 +313,6 @@ When `interactive=false`: auto-approve all, log plan.
 > Generate Chart.js configs and Excalidraw SVGs for each approved enrichment.
 
 Read `references/04-chart-patterns.md` for Chart.js configuration templates.
-Read `references/05-excalidraw-patterns.md` for Excalidraw element recipes.
-
 **Data track (Chart.js):**
 
 For each data-track enrichment:
@@ -327,20 +325,16 @@ For each data-track enrichment:
    - `options` — themed: colors from `var(--accent)`, `var(--primary)`, etc.; font-family from `var(--font-body)`; grid colors from `var(--border)`
 4. Chart dimensions: max-width 720px, height auto by type (bar: 400px, doughnut: 350px, radar: 400px, line: 350px).
 
-**Concept track (Excalidraw):**
+**Concept track (Excalidraw via concept-diagram agent):**
 
-For each concept-track enrichment:
+For each concept-track enrichment, sequentially:
 1. Read the section content and extract the conceptual structure (e.g., T→I→P→S chain: trend name, implication names, possibility names, solution names).
-2. Build Excalidraw elements using recipes from `05-excalidraw-patterns.md`:
-   - Rectangles with theme colors (primary, accent, surface)
-   - Arrow connections between elements
-   - Text labels (font-family matches theme headers font)
-   - Group into a self-contained diagram
-3. Use Excalidraw MCP to create elements, then export to SVG via `mcp__excalidraw__export_to_image`.
-4. Store the SVG string for inline embedding.
-5. Clear the Excalidraw canvas between diagrams.
+2. Select `diagram_type` based on the enrichment type from the enrichment plan: `tips-flow` for T→I→P→S chains, `relationship-map` for theme interconnections, `process-flow` for sequential workflows, `concept-sketch` for layered/convergence/phase/matrix patterns.
+3. Dispatch to `concept-diagram` agent with: `DIAGRAM_TYPE`, `DATA` (structured payload extracted from section), `DESIGN_VARIABLES` (from design-variables), `LANGUAGE`.
+4. Collect SVG string from agent JSON response (`svg` field).
+5. Write SVG to `{source_dir}/cogni-visual/svgs/enr-XXX.svg`.
 
-**Parallelization:** If there are 4+ concept enrichments, dispatch Excalidraw diagram generation to subagents (one per diagram) for parallel execution. Data-track enrichments are JSON config generation — fast enough to run sequentially.
+Concept diagrams are dispatched sequentially (not in parallel) because all agents share one Excalidraw canvas — parallel clear/build/export would corrupt each other's work. Each diagram is 10-25 elements, so sequential execution is fast.
 
 ---
 
