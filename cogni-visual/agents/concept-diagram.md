@@ -93,7 +93,7 @@ Follow the recipe for the given `DIAGRAM_TYPE`:
 
 1. Map `DESIGN_VARIABLES.colors` to Excalidraw element properties per the recipe's color rules
 2. Use TIPS dimension colors for tips-flow diagrams: Trend `#F59E0B`, Implication `#06B6D4`, Possibility `#8B5CF6`, Solution `#22C55E`
-3. Apply `LANGUAGE` to column headers (EN: "TREND", "IMPLICATIONS", "POSSIBILITIES", "SOLUTIONS" / DE: "TREND", "IMPLIKATIONEN", "MOGLICHKEITEN", "LOSUNGEN")
+3. Apply `LANGUAGE` to column headers (EN: "TREND", "IMPLICATIONS", "POSSIBILITIES", "SOLUTIONS" / DE: "TREND", "IMPLIKATIONEN", "MÖGLICHKEITEN", "LÖSUNGEN")
 4. Create elements via `mcp__excalidraw__batch_create_elements`
 5. Create arrows in a second batch (after elements exist for spatial reference)
 

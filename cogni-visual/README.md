@@ -108,6 +108,7 @@ The pipeline follows a compose-polish-visualize flow: narratives from cogni-narr
 | `story-to-storyboard` | agent | Orchestrates the story-to-storyboard skill |
 | `storyboard` | agent | Renders storyboard briefs into multi-poster .pen via Pencil MCP |
 | `enrich-report` | agent | Orchestrates the enrich-report skill (markdown report → themed HTML) |
+| `concept-diagram` | agent | Worker agent — generates one concept diagram (TIPS flow, relationship map, process flow, concept sketch) via Excalidraw MCP |
 | `brief-review-assessor` | agent | Assesses visual brief quality from three stakeholder perspectives adapted to the brief type |
 | `/render-big-picture` | command | Render a big-picture-brief.md into a richly illustrated Excalidraw scene using parallel artist agents |
 | `/render-big-block` | command | Render a big-block-brief.md into an Excalidraw solution architecture diagram |
@@ -119,7 +120,7 @@ The pipeline follows a compose-polish-visualize flow: narratives from cogni-narr
 ## Architecture
 
 ```
-cogni-visual/                              # 10 skills · 17 agents · 5 commands · 1 hook
+cogni-visual/                              # 10 skills · 18 agents · 5 commands · 1 hook
 ├── .claude-plugin/                        # plugin manifest
 ├── skills/                               # 10 skills (5 brief generators · 3 renderers · 1 enricher · 1 reviewer)
 │   ├── story-to-slides/
@@ -133,7 +134,7 @@ cogni-visual/                              # 10 skills · 17 agents · 5 command
 │   ├── render-html-slides/
 │   ├── enrich-report/
 │   └── review-brief/
-├── agents/                               # 17 agents (orchestration · rendering · workers)
+├── agents/                               # 18 agents (orchestration · rendering · workers)
 ├── commands/                             # 5 slash commands
 ├── hooks/                                # 1 PreToolUse hook (Excalidraw canvas auto-start)
 └── libraries/                            # 13 shared reference files

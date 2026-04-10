@@ -16,7 +16,7 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
 
 1. Load and follow the skill at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/SKILL.md`
 2. Execute all phases in order (Phase 0 through Phase 6, plus Phase 7 if `formats` includes pdf or docx)
-3. For Phase 4 concept-track enrichments, you may dispatch parallel subagents for Excalidraw diagram generation when there are 4+ concept diagrams
+3. For Phase 4 concept-track enrichments, dispatch concept-diagram subagents sequentially (not in parallel) — all agents share one Excalidraw canvas
 4. Return a compact JSON response:
 
 ```json
