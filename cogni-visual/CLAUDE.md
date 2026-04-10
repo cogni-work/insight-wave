@@ -32,7 +32,7 @@ skills/              Intelligent transformation & rendering skills
       02-section-analysis.md       Section mapping and data extraction rules
       03-enrichment-catalog.md     Enrichment types, triggers, scoring, density thresholds
       04-chart-patterns.md         Chart.js config templates (themed)
-      05-excalidraw-patterns.md    Excalidraw element recipes for concept diagrams
+      (05-excalidraw-patterns.md moved to libraries/excalidraw-patterns.md)
       06-html-structure.md         HTML layout, CSS architecture, responsive breakpoints
     references/
       color-palette.md             Single source of truth for all color/dark mode decisions
@@ -67,7 +67,7 @@ agents/              Autonomous rendering agents (brief -> output)
   story-to-storyboard.md  Orchestrates the story-to-storyboard skill
   storyboard.md        Renders storyboard briefs into multi-poster .pen via Pencil MCP
   enrich-report.md     Orchestrates the enrich-report skill (report → themed HTML)
-  concept-diagram.md   Worker agent — generates one concept diagram (TIPS flow, relationship map, process flow, concept sketch) via Excalidraw MCP, returns SVG
+  concept-diagram.md   Worker agent — generates one concept diagram (TIPS flow, relationship map, process flow, concept sketch) via Excalidraw MCP, returns SVG. Cross-plugin: any skill dispatching to enrich-report benefits from this agent (cogni-portfolio, cogni-consulting, cogni-trends, cogni-research)
   brief-review-assessor.md  Stakeholder review of visual briefs (3 perspectives per brief type, haiku)
 
 libraries/           Shared reference material loaded at Step 1

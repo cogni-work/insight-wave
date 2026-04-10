@@ -62,6 +62,8 @@ For each deliverable, identify the source content and rendering plugin:
 | Solution Brief | `deliver/solution-brief.md` | document-skills:docx or markdown |
 | Action Plan | `deliver/action-plan.md` | document-skills:xlsx or markdown |
 
+**Visual enrichment:** Any markdown-based deliverable (Business Case, Action Roadmap, Solution Brief, Executive Summary, Action Plan) can also be post-processed with `/enrich-report` to produce themed HTML with interactive Chart.js visualizations and Excalidraw concept diagrams (value flows, process flows, relationship maps). This is additive — the original format rendering still applies. Offer this option after each markdown deliverable is generated: "Would you also like a themed HTML version with concept diagrams and charts?"
+
 ### 3. Generate Each Deliverable
 
 For each deliverable in the list:

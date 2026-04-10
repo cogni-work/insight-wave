@@ -327,6 +327,8 @@ Present the Develop summary:
 > - Review: [PASSED / PASSED with observations / PASSED after N revision rounds]
 >
 > Ready to move to Deliver? The final phase will evaluate options, verify claims, build the business case, and generate deliverables.
+>
+> **Optional**: Run `/enrich-report` on `develop/options/option-synthesis.md` for a themed HTML view with concept diagrams showing option relationships and TIPS value chains.
 
 Mark Develop complete:
 

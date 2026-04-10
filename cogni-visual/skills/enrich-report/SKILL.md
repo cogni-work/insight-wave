@@ -448,7 +448,7 @@ After all requested formats are generated:
 | `references/02-section-analysis.md` | Phase 1 | Section mapping rules per report type, data extraction patterns |
 | `references/03-enrichment-catalog.md` | Phase 2 | Enrichment types, trigger conditions, scoring model, density thresholds |
 | `references/04-chart-patterns.md` | Phase 4 | Chart.js config templates per chart type, themed with CSS variables |
-| `references/05-excalidraw-patterns.md` | Phase 4 | Excalidraw element recipes for concept diagrams |
+| `${CLAUDE_PLUGIN_ROOT}/libraries/excalidraw-patterns.md` | Phase 4 | Excalidraw element recipes for concept diagrams (shared library — also used by concept-diagram agent) |
 | `references/06-html-structure.md` | Phase 5 | HTML layout, CSS architecture, responsive breakpoints, script structure |
 | `references/07-citation-normalization.md` | Phase 7 | Citation format detection and normalization for DOCX export |
 | `schemas/design-variables.schema.json` | Phase 0 | JSON schema for design-variables validation |

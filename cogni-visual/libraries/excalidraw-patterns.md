@@ -107,7 +107,7 @@ Element recipes for generating concept diagrams via Excalidraw MCP, themed with 
 **Layout:** Horizontal linear flow (default) or vertical for 6+ steps. Generic process visualization — works for any sequential process described in research text.
 
 ```
-[Step 1] → [Step 2] → [Step 3] → [Step 4] → [Step 5]
+[Step 1] → [Step 2] → [Step 3] → [Step 4] �� [Step 5]
  Label 1     Label 2    Label 3    Label 4    Label 5
 ```
 
@@ -159,9 +159,9 @@ Select the sub-pattern based on the conceptual structure detected in the text:
 │      Value Layer         │  ← accent fill
 ├─────────────────────────┤
 │   Application Layer      │  ← primary fill
-├─────────────────────────┤
+├────────────���────────────┤
 │   Foundation Layer       │  ← surface-dark fill
-└─────────────────────────┘
+└─────��───────────────────┘
 ```
 
 - 3-5 horizontal rectangles stacked vertically (300x60px each, 4px gap)
@@ -186,7 +186,7 @@ Select the sub-pattern based on the conceptual structure detected in the text:
 #### Phase Progression (for "stages", "evolving from", "maturity model")
 
 ```
-[Phase 1] → [Phase 2] → [Phase 3] → [Phase 4]
+[Phase 1] �� [Phase 2] → [Phase 3] → [Phase 4]
   Early        Growth      Mature     Transform
 ```
 
@@ -205,7 +205,7 @@ Select the sub-pattern based on the conceptual structure detected in the text:
     │  Wins    │ Bets      │
     ├──────────┼──────────┤
     │  Low     │ Long      │
-    │  Priority│ Shots     │
+    │  Priority│ Shots     ��
     └──────────┴──────────┘
          Low Impact
 ```
@@ -243,7 +243,7 @@ The exported SVG is embedded inline in the HTML:
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="..." width="720">
     <!-- exported content -->
   </svg>
-  <p class="enrichment-caption">T→I→P→S value chain: {trend_name}</p>
+  <p class="enrichment-caption">T→I���P→S value chain: {trend_name}</p>
 </div>
 ```
 

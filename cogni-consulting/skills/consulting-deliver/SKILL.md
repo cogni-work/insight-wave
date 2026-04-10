@@ -299,6 +299,8 @@ Present the Deliver summary:
 > - Review: [PASSED / PASSED with observations / PASSED after N revision rounds]
 >
 > All four diamond phases are complete. Run `consulting-export` to generate the deliverable package in your chosen formats (PPTX, DOCX, XLSX, Excalidraw).
+>
+> For visual enrichment of individual deliverables (business case, roadmap, solution brief), run `/enrich-report` on any markdown file to generate themed HTML with concept diagrams and interactive charts.
 
 Mark Deliver complete:
 

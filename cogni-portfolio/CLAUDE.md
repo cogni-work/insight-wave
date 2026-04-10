@@ -169,7 +169,7 @@ Research agents auto-log claims with source URLs and entity provenance (`entity_
 | cogni-consulting | upstream | portfolio-canvas consumes Lean Canvas from business-model-hypothesis vision class |
 | document-skills | downstream | portfolio-ingest uses docx/pptx/xlsx readers; portfolio-communicate workbook uses XLSX writer |
 | cogni-narrative | downstream | portfolio-communicate pitch use case reads arc definitions for narrative structure |
-| cogni-visual | downstream | portfolio-communicate pitch output is directly consumable by story-to-slides, story-to-web, story-to-big-picture |
+| cogni-visual | downstream | portfolio-communicate output consumable by story-to-slides, story-to-web, story-to-big-picture; markdown output enrichable via enrich-report (concept diagrams + charts) |
 
 ## Key Conventions
 

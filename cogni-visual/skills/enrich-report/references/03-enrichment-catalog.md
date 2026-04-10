@@ -207,7 +207,7 @@ Complete catalog of enrichment types available for report visualization. Each ty
 
 **What it shows:** Horizontal flow diagram showing one T→I→P→S value chain: one Trend box on the left, connected by arrows to Implication boxes, which connect to Possibility boxes, which connect to Solution boxes.
 
-**Excalidraw pattern:** 4-column flow with color-coded boxes per TIPS dimension. See `05-excalidraw-patterns.md` for element recipes.
+**Excalidraw pattern:** 4-column flow with color-coded boxes per TIPS dimension. See `excalidraw-patterns.md` (in libraries/) for element recipes.
 
 **Trigger conditions:**
 - Section tagged `value-chain` (structural — trend-report)
@@ -227,7 +227,7 @@ Complete catalog of enrichment types available for report visualization. Each ty
 
 **What it shows:** Network diagram showing how investment themes connect to each other — shared trends, cascading implications, or cross-theme dependencies.
 
-**Excalidraw pattern:** Central-radiating layout with theme nodes and labeled connections. See `05-excalidraw-patterns.md`.
+**Excalidraw pattern:** Central-radiating layout with theme nodes and labeled connections. See `excalidraw-patterns.md` (in libraries/).
 
 **Trigger conditions:**
 - Bridge paragraphs that reference theme interconnections
@@ -249,7 +249,7 @@ Complete catalog of enrichment types available for report visualization. Each ty
 
 **What it shows:** Horizontal or vertical flow diagram showing a process, workflow, or causal chain described in the research text. Generic process visualization — not TIPS-specific.
 
-**Excalidraw pattern:** Linear flow with color-coded step boxes connected by arrows. See `05-excalidraw-patterns.md` "process-flow" pattern.
+**Excalidraw pattern:** Linear flow with color-coded step boxes connected by arrows. See `excalidraw-patterns.md` (in libraries/) "process-flow" pattern.
 
 **Trigger conditions:**
 - Section tagged `has-process` (content-pattern tag from section analysis)
@@ -275,7 +275,7 @@ Complete catalog of enrichment types available for report visualization. Each ty
 
 **What it shows:** Simple conceptual diagram for an abstract idea — convergence, transformation phases, strategic positioning, capability layers.
 
-**Excalidraw pattern:** Varies by concept type. See `05-excalidraw-patterns.md` for common concept patterns (layered stack, convergence arrows, phase progression, 2x2 matrix).
+**Excalidraw pattern:** Varies by concept type. See `excalidraw-patterns.md` (in libraries/) for common concept patterns (layered stack, convergence arrows, phase progression, 2x2 matrix).
 
 **Trigger conditions:**
 - Section describes an abstract concept with spatial/structural metaphor (layers, stages, convergence, matrix)

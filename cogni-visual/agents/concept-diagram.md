@@ -81,7 +81,7 @@ Your ENTIRE response must be a SINGLE LINE of JSON — NO text before or after, 
 
 ### Step 1: Load Recipes
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/references/05-excalidraw-patterns.md` for the diagram recipe matching `DIAGRAM_TYPE`. This file contains element sizing, color mapping, positioning rules, and MCP call sequences for each diagram type.
+Read `${CLAUDE_PLUGIN_ROOT}/libraries/excalidraw-patterns.md` for the diagram recipe matching `DIAGRAM_TYPE`. This file contains element sizing, color mapping, positioning rules, and MCP call sequences for each diagram type.
 
 ### Step 2: Clear Canvas
 

@@ -372,6 +372,7 @@ For **customer-narrative**:
   - `/story-to-web` → scrollable web page (one per file, or an indexed multi-page site)
   - `/story-to-slides` → PowerPoint version of any page
   - `/story-to-big-picture` → illustrated visual journey map of the home or about page
+  - `/enrich-report` → themed HTML with concept diagrams (value flows, relationship maps) and interactive charts
 - **Marketing content** (if cogni-marketing installed): "These customer narratives are automatically discovered by `/marketing-setup` and used as voice/messaging enrichment when generating marketing content — ensuring consistency between how the website speaks to buyers and how your marketing speaks to the same audience"
 
 For **pitch**:
@@ -382,14 +383,17 @@ For **pitch**:
   - `/story-to-web` → scrollable landing page
   - `/story-to-big-picture` → illustrated visual journey map
   - `/story-to-storyboard` → multi-poster print storyboard
+  - `/enrich-report` → themed HTML with concept diagrams and data charts
 - **Deepen**: "Run `/why-change` to add web research, customer-specific context, and TIPS enrichment for a deal-ready version"
 
 For **proposal**:
 - **Polish prose**: "Run `/copywrite` to polish for buyer readability"
+- **Visual enrichment**: "Run `/enrich-report` on the proposal to add themed concept diagrams (value-flow diagrams, process-flow for implementation approach, relationship maps for solution dependencies) and interactive charts"
 - **Share**: "Customize per prospect and share with sales team"
 
 For **market-brief**:
 - **Polish prose**: "Run `/copywrite` to polish"
+- **Visual enrichment**: "Run `/enrich-report` to generate themed HTML with concept diagrams and market data charts"
 - **Campaign planning**: "Distribute to marketing for campaign planning, or feed into `/content-strategy`"
 
 For **workbook**:
