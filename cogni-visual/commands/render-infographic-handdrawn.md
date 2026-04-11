@@ -59,6 +59,32 @@ The agent returns single-line JSON. Forward it to the user verbatim, then add a 
 recap naming the output path, share URL, element count, and the style_preset that was
 rendered.
 
+### Step 4: Offer an interactive edit checkpoint
+
+The render is now live in the user's Excalidraw browser — every element is directly
+editable by the user, not only by the agent. Before ending the command, explicitly tell the
+user they can tweak anything on the canvas and that you can re-export their edited state
+back to the original output path. Without this step, any manual touch-ups they make in the
+browser would be lost the next time the pipeline runs.
+
+Print a message in this exact shape, filling in the path from the agent's JSON:
+
+> "The sketchnote/whiteboard is rendered at **`{output_path}`** and live in your
+> Excalidraw browser. Feel free to tweak anything on the canvas — move a zone, fix a
+> typo, swap an icon, adjust spacing. When you're happy with your edits, tell me
+> **`save`** (or `export`, `persist`, `finalize`) and I'll re-export both the
+> `.excalidraw` file and the PNG preview so your final version is what's stored on disk."
+
+End the command here. Do NOT enter a polling loop. When the user comes back with a save
+instruction, the outer conversation will handle it: call `mcp__excalidraw__export_scene`
+with `filePath = {output_path}` to re-write the `.excalidraw` file from the current canvas
+state, then `mcp__excalidraw__export_to_image` with `filePath = {same_dir}/infographic.png`
+to regenerate the PNG. Report the new element count to the user as confirmation.
+
+If the user moves on without saying save, that's fine — the agent's original export is
+already on disk. The checkpoint exists so manual edits don't silently disappear, not to
+force a second save.
+
 ## Concurrency note
 
 Both hand-drawn agents share a single Excalidraw MCP canvas. **Never dispatch two

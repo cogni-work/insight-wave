@@ -106,7 +106,8 @@ Things the Excalidraw MCP requires that you cannot derive from design knowledge.
 | Excalidraw MCP unavailable | Return `{"ok": false, "e": "excalidraw_mcp_unavailable"}` |
 | Canvas not empty after `import_scene` replace | Retry once with a fresh temp file; if still non-empty, return `{"ok": false, "e": "canvas_clear_failed"}` |
 | Invalid `layout_type` | Default to the brief's first valid block ordering and note in `warnings` |
-| Icon cannot be drawn in 2–4 primitives | Substitute a simpler icon (circle, square, or labeled dot) and continue |
+| First-pass icon feels sparse or ambiguous | Add 2–3 more primitives additively (extra tooth, detail line, thicker stroke, scaled-up label anchor). **Never** delete the icon and redraw it — restarts produce smaller, worse icons than first-passes. If still ambiguous after one additive fix, leave it and move on; the zone label carries half the semantic load. |
+| Icon concept genuinely resists 6–10 primitives | Skip the icon entirely in Step 3 planning; let the hero number + label carry the zone. An absent icon reads cleaner than an ambiguous one. |
 | Zone overlap unresolved after 3 fix passes | `restore_snapshot()` to last good state and return with `warnings: ["overlap_unresolved"]` |
 | Brief has more than 12 content blocks | Render the first 12, set `warnings: ["blocks_truncated"]` |
 | `batch_create_elements` rejects more than 25 elements | Split into multiple calls automatically |

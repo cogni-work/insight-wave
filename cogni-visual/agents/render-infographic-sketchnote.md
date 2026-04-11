@@ -71,7 +71,7 @@ spareness, you are drifting into the wrong tradition — stop and re-read the br
 ## What the output must achieve
 
 - **Hero numbers dominate** — the single largest elements in their zone, accent-colored, noticed first.
-- **Icons anchor the eye** — 2–4 primitive shapes each, fitting a small bounding box, never ornamental.
+- **Icons anchor the eye** — 6–10 primitive shapes each, generous ≥120 px bounding box, detailed enough that a stranger reading the zone label next to the icon can identify the concept. Sparse icons are ambiguous icons — the iteration-2 sketchnote failed on this exact axis (2–4 primitive icons read as prohibition signs and UFOs).
 - **Flow is legible** — curved arrows guide reading order between zones; a stranger can trace the path.
 - **Sources are present** — an unsourced infographic is untrustworthy; inline source lines are mandatory.
 - **Style character is unmistakable** — roughness 2, Virgil font, dashed rounded borders, warm fills.
@@ -152,9 +152,20 @@ Work through these questions in order, writing your answers:
    grid in your reasoning: coordinates or row/column labels for each block.
 3. **Hero identification.** Which single number is THE hero? It must be the largest element
    in its zone and ideally on the page. Confirm the brief actually supports the choice.
-4. **Icon selection.** For each block that needs an icon, name the 2–4 primitives you will
-   combine (e.g. "clock = circle + two lines", "shield = rounded triangle + line"). If you
-   cannot describe it in primitives, pick a simpler icon.
+4. **Icon selection.** For each block that needs an icon, name the **6–10 primitives** you
+   will combine and the **≥120×120 px bounding box** the icon will occupy. Be *generous*,
+   not minimalist — the first-pass quality is load-bearing because you will not delete and
+   redraw icons later. Examples of the density and scale the tradition wants:
+   - broken gear + € = outer gear-body ellipse + inner hole + 5–6 tooth rectangles
+     arranged around the perimeter + short zig-zag crack line + large € text anchor
+     inside the hub at fontSize ≥ 32.
+   - sprout + calendar = calendar rectangle + grid cross-lines + top tab + central
+     sprout (stem + 2–3 leaves) rising from the top of the calendar + small date mark.
+   - clock running out = circle + 12/3/6/9 hour marks + two hour hands + trailing
+     motion arc + small drip or hourglass symbol beside it.
+   If a concept genuinely resists 6–10 primitives, that zone is better without an icon —
+   skip the icon and let the hero number + label carry the meaning. An absent icon reads
+   cleaner than an ambiguous one.
 5. **Flow path.** Where do the curved arrows go? A reader should be able to trace the order
    from block to block. Name each connection as "from block X to block Y".
 6. **Accent discipline.** List the elements that will wear accent color. The list must
@@ -173,7 +184,17 @@ Work zone by zone, following the plan from Step 3. For each zone:
 1. `snapshot_scene()` — checkpoint before the zone (lets you `restore_snapshot()` on failure).
 2. Batch up to 25 elements per `batch_create_elements` call; split larger zones across calls.
 3. Draw structure first (dashed rounded zone border, warm fill), then content (hero number, labels), then anchors (icons, source line, any planned emphasis mark).
-4. Move to the next zone; repeat.
+4. **After drawing each icon, glance at it.** Does it have the primitive count and bounding
+   box size you committed to in Step 3? If it feels sparse — fewer than 6 primitives, or a
+   bounding box under 120 px, or a single dominant shape that could be read as something
+   generic (a circle, a rectangle, a cross) — add 2–3 more primitives to it **immediately**,
+   in the next batch. **Additive fixes only**: add a tooth, thicken a stroke, scale up the
+   label anchor, add a detail line. **Never delete an icon and redraw it from scratch** —
+   discarding and restarting is how the iteration-3 prototype produced smaller, worse icons
+   than the first pass. If after one additive fix the icon still feels ambiguous, leave it
+   and move on. Small improvement is better than none, and the zone label next to the icon
+   carries half the semantic load anyway.
+5. Move to the next zone; repeat.
 
 #### Block rendering intent
 
@@ -182,8 +203,8 @@ Each block type has a visual purpose. The brief provides content; you provide co
 | Block type | What it should communicate |
 |------------|---------------------------|
 | **kpi-card** | "This number is the headline." Hero number dominates — largest element in the zone, accent-colored. Everything else (label, source, icon) supports it. |
-| **stat-row** | "Here's the supporting evidence." Scannable row of 2–4 stats — numbers prominent, labels muted, even spacing with slight organic variation. |
-| **comparison-pair** | "See the contrast." Two-column layout with a visible hand-drawn divider. Left (status quo) uses ink and muted gray only — heavier weight, tighter spacing, no accent. Right (proposed / solution) uses the brand accent for 1–2 highlight elements — lighter weight, airier spacing. The contrast is built from weight and tone, not from red-vs-green. See §2 of the common library. |
+| **stat-row** | "Here's the supporting evidence." Scannable row of 2–4 stats — numbers prominent, labels muted, even spacing with slight organic variation. **Do not draw divider lines between stat cells.** Three well-spaced numbers separate themselves visually; roughness-2 divider lines in the tight gap between cells look wavy enough to visually intersect the neighboring text at canvas scale. Use whitespace as the separator — widen the gap between cells instead of reaching for a line. |
+| **comparison-pair** | "See the contrast." Two-column layout with a visible hand-drawn divider. Left (status quo) uses ink and muted gray only — heavier weight, tighter spacing, no accent. Right (proposed / solution) uses the brand accent for 1–2 highlight elements — lighter weight, airier spacing. The contrast is built from weight and tone, not from red-vs-green. See §2 of the common library. **Divider line rules (load-bearing):** the divider must be a strictly vertical line (`width = 0`) with **`roughness: 1`** — override the scene's default roughness-2 on this one element, because a long wavy vertical line reads as diagonal and strikes through the neighboring text. The divider must have a **≥50 px clear buffer on each side**, measured from the widest text in the left column to the divider x-coordinate, and from the divider to the start of the right column. If the layout would force a narrower buffer, widen the comparison zone or shorten the column text; **never squeeze the divider into a tight gap**. |
 | **process-strip** | "Here's how it works." A chain of steps connected by curved arrows. Each step: icon + label. Flow direction must be obvious. |
 | **chart** | "The data tells a story." Bars, lines, or circles with proportional sizing. **Bar heights must be computed from actual data values** (`bar_h = value / max_value * max_bar_height`) — this is data integrity, not aesthetics. |
 | **text-block** | "Here's context." Headline + body. Keep it scannable. |

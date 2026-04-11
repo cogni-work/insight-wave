@@ -75,7 +75,7 @@ drifting into the wrong tradition — stop and re-read the brief's `style_preset
 ## What the output must achieve
 
 - **Hero numbers dominate** — the single largest elements in their zone, accent-colored, noticed first.
-- **Icons anchor the eye** — 2–4 primitive shapes each, fitting a small bounding box, never ornamental.
+- **Icons anchor the eye** — 6–10 primitive shapes each, generous ≥120 px bounding box, detailed enough that a stranger reading the zone label next to the icon can identify the concept. Whiteboard uses few icons, but the ones it does use must be unambiguous — sparse icons are ambiguous icons.
 - **Flow is legible** — arrows guide reading order between zones; a stranger can trace the path.
 - **Sources are present** — an unsourced infographic is untrustworthy; inline source lines are mandatory.
 - **Style character is unmistakable** — roughness 1, Virgil font, solid sharp borders, transparent fills, white canvas.
@@ -160,8 +160,15 @@ Work through these questions in order, writing your answers:
    that is the tradition working.
 3. **Hero identification.** Which single number is THE hero? It must be the largest element
    on the page. Confirm the brief supports the choice.
-4. **Icon selection.** For each block that needs an icon, name the 2–4 primitives you will
-   combine. If you cannot describe it in primitives, pick a simpler icon.
+4. **Icon selection.** For each block that needs an icon, name the **6–10 primitives** you
+   will combine and the **≥120×120 px bounding box** the icon will occupy. Be *generous*,
+   not minimalist — the first-pass quality is load-bearing because you will not delete and
+   redraw icons later. Whiteboard uses fewer icons than sketchnote, but the ones it does
+   use must be unambiguous; a single well-drawn clock (circle + 12/3/6/9 marks + two hands
+   + trailing motion arc + small anchor) is the minimum bar. If a concept genuinely resists
+   6–10 primitives, that zone is better without an icon — skip it and let the hero number
+   + label carry the meaning. An absent icon reads cleaner than an ambiguous one, and
+   whiteboard discipline already favors whitespace over ornament.
 5. **Flow path.** Where do the arrows go? Whiteboard arrows are straight or gently curved,
    not looping — a teacher's line between islands. Name each connection.
 6. **Accent discipline.** List the elements that will wear accent color. The list must
@@ -181,7 +188,15 @@ Work zone by zone, following the plan from Step 3. For each zone:
 1. `snapshot_scene()` — checkpoint before the zone (lets you `restore_snapshot()` on failure).
 2. Batch up to 25 elements per `batch_create_elements` call; split larger zones across calls.
 3. Draw structure first (solid sharp zone border, no fill), then content (hero number, labels), then anchors (icons, source line). No emphasis marks — the accent budget forbids them.
-4. Move to the next zone; repeat.
+4. **After drawing each icon, glance at it.** Does it have the primitive count and bounding
+   box size you committed to in Step 3? If it feels sparse — fewer than 6 primitives, or a
+   bounding box under 120 px, or a single dominant shape that could be read as something
+   generic — add 2–3 more primitives to it **immediately**, in the next batch. **Additive
+   fixes only**: add a detail line, thicken a stroke, scale up the label anchor. **Never
+   delete an icon and redraw it from scratch.** If after one additive fix the icon still
+   feels ambiguous, leave it and move on — on whiteboard, dropping the icon is also valid
+   since the tradition already favors whitespace.
+5. Move to the next zone; repeat.
 
 #### Block rendering intent
 
@@ -190,8 +205,8 @@ Each block type has a visual purpose. The brief provides content; you provide co
 | Block type | What it should communicate |
 |------------|---------------------------|
 | **kpi-card** | "This number is the headline." Hero number dominates — largest element in the zone, accent-colored. Everything else (label, source, icon) supports it in ink. |
-| **stat-row** | "Here's the supporting evidence." Scannable row of 2–4 stats — numbers prominent in ink (not accent, unless one is the hero), labels muted, precisely even spacing. |
-| **comparison-pair** | "See the contrast." Two-column layout with a clean vertical divider. Left (status quo) uses ink and muted gray only — heavier weight, tighter spacing, no accent. Right (proposed / solution) uses the brand accent for **at most one** highlight element (typically the solution-side hero number) — lighter weight, airier spacing. The contrast is built from weight and tone, not from red-vs-green. See §2 of the common library. |
+| **stat-row** | "Here's the supporting evidence." Scannable row of 2–4 stats — numbers prominent in ink (not accent, unless one is the hero), labels muted, precisely even spacing. **Do not draw divider lines between stat cells.** Even spacing is enough separation; divider lines in tight gaps visually intersect the neighboring text at canvas scale even at roughness 1. Use whitespace — widen the cell gap instead. |
+| **comparison-pair** | "See the contrast." Two-column layout with a clean vertical divider. Left (status quo) uses ink and muted gray only — heavier weight, tighter spacing, no accent. Right (proposed / solution) uses the brand accent for **at most one** highlight element (typically the solution-side hero number) — lighter weight, airier spacing. The contrast is built from weight and tone, not from red-vs-green. See §2 of the common library. **Divider line rules (load-bearing):** the divider must be a strictly vertical line (`width = 0`) with **`roughness: 0`** — a straight ruler line, not a wavy one, because even whiteboard's default roughness-1 drifts control points enough on a long vertical stroke to make the line appear to tilt and graze the end of the left column's widest row. The divider must have a **≥50 px clear buffer on each side**, measured from the widest text in the left column to the divider x-coordinate, and from the divider to the start of the right column. If the layout would force a narrower buffer, widen the comparison zone or shorten the column text; **never squeeze the divider into a tight gap**. |
 | **process-strip** | "Here's how it works." A chain of steps connected by straight or gently curved arrows. Each step: icon + label. Flow direction must be obvious. Accent stays on the hero number, not on the arrows. |
 | **chart** | "The data tells a story." Bars, lines, or circles with proportional sizing. **Bar heights must be computed from actual data values** (`bar_h = value / max_value * max_bar_height`) — this is data integrity, not aesthetics. Only the hero data point (if any) may wear the accent. |
 | **text-block** | "Here's context." Headline + body. Keep it scannable. Headline is ink, not accent. |

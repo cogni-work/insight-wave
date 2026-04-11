@@ -27,7 +27,7 @@ description: >
   multi-poster storyboard (use story-to-storyboard), and does NOT enrich an existing
   report with inline visuals (use enrich-report).
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Agent
-version: 0.2.0
+version: 0.2.1
 ---
 
 # Story-to-Infographic Skill
@@ -430,19 +430,37 @@ who want to skip the dispatch step can call the direct commands.
 Example message (sketchnote/whiteboard):
 
 > "Infographic brief written to `{output_path}`.
-> Style preset: **{style_preset}** (hand-drawn family) — run **`/render-infographic`** to render."
+> Style preset: **{style_preset}** (hand-drawn family) — run **`/render-infographic`** to
+> render. After the render completes, the scene is live in your Excalidraw browser and
+> you can tweak anything on the canvas; just tell me **`save`** when you're done and I'll
+> re-export the final version to disk."
 
 Example message (economist):
 
 > "Infographic brief written to `{output_path}`.
-> Style preset: **economist** (The Economist data page) — run **`/render-infographic`** to render."
+> Style preset: **economist** (The Economist data page) — run **`/render-infographic`** to
+> render. After the render completes, the scene is live in your Pencil browser and you can
+> tweak any frame; tell me **`save`** when you're done and I'll refresh the PNG preview."
 
 Example message (editorial/data-viz/corporate):
 
 > "Infographic brief written to `{output_path}`.
-> Style preset: **{style_preset}** (editorial family) — run **`/render-infographic`** to render."
+> Style preset: **{style_preset}** (editorial family) — run **`/render-infographic`** to
+> render. After the render completes, the scene is live in your Pencil browser and you can
+> tweak any frame; tell me **`save`** when you're done and I'll refresh the PNG preview."
 
 Report: layout type, style preset, orientation, block count, total word count, distillation ratio (source words → brief words).
+
+**Post-render edit checkpoint** (reminder for the user and for future maintainers of this
+skill): the render commands (`/render-infographic`, `/render-infographic-handdrawn`,
+`/render-infographic-editorial`) all include an interactive edit checkpoint as their final
+step. After the agent finishes drawing, the command prints a prompt telling the user they
+can edit the live canvas in the browser and say `save` to re-export the final state. This
+is the mechanism that lets a user's manual touch-ups (move a zone, fix a typo, swap an
+icon, adjust an accent mark) become the persisted result. The checkpoint is load-bearing
+— without it, manual edits in the browser would be silently lost the next time the
+pipeline runs. Do not remove it from the render commands when editing them in the future;
+if you restructure the commands, preserve the post-render `save` affordance.
 
 ---
 

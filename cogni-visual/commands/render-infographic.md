@@ -75,6 +75,42 @@ recap naming:
 - The style_preset that was rendered
 - Any warnings in the JSON
 
+### Step 5: Offer an interactive edit checkpoint
+
+The render is now live in the user's Excalidraw or Pencil browser — **every element is
+directly editable by the user**, not only by the agent. Before ending the command, explicitly
+tell the user they can tweak anything on the canvas and that you can re-export their edited
+state back to the original output path. This is the mechanism by which a user's manual
+touch-ups (move a zone, fix a typo, recolor an emphasis mark, swap an icon) become the
+persisted final result — without it, any manual edit they make in the browser would be lost
+the next time someone runs the pipeline.
+
+Print a message in this exact shape, filling in the path from the agent's JSON:
+
+> "The infographic is rendered at **`{output_path}`** and live in your
+> {Excalidraw|Pencil} browser. Feel free to tweak anything on the canvas — move a
+> zone, fix a typo, swap an icon, adjust spacing. When you're happy with your
+> edits, tell me **`save`** (or `export`, `persist`, `finalize`) and I'll
+> re-export both the source file and the PNG preview so your final version is
+> what's stored on disk."
+
+End the command here. Do NOT enter a polling loop or call `describe_scene` proactively —
+the user drives the interaction. When they come back with a save instruction, you (the
+outer conversation) will handle it:
+
+- **Excalidraw (sketchnote / whiteboard):** call `mcp__excalidraw__export_scene` with
+  `filePath = {output_path}` to re-write the `.excalidraw` file from the current canvas,
+  then `mcp__excalidraw__export_to_image` with `filePath = {output_path_without_extension}.png`
+  to regenerate the PNG. Report the new element count to the user.
+- **Pencil (economist / editorial / data-viz / corporate):** Pencil auto-persists changes to
+  the `.pen` file as the user edits, so the source is already current. Re-run
+  `mcp__pencil__export_nodes` (or the agent's export routine) to refresh the PNG preview.
+  Confirm the save to the user.
+
+If the user never says save and moves on to another task, that is fine — the agent's
+original export from Step 4 is already on disk. The checkpoint exists so that manual edits
+don't silently disappear, not to force a second save.
+
 ## Concurrency note
 
 Both hand-drawn agents (`render-infographic-sketchnote` and `render-infographic-whiteboard`)
