@@ -5,9 +5,9 @@ personality independent of theme colors — the theme provides the palette, the 
 the character. Presets are organized into **two rendering families** that determine *which
 agent* will render the brief. Choosing a preset is therefore also choosing a renderer.
 
-**Hand-drawn family** (rendered by `render-infographic-excalidraw` via Excalidraw MCP):
-- **sketchnote** — Mike Rohde / graphic recording tradition
-- **whiteboard** — RSA Animate / Dan Roam "Back of the Napkin" tradition
+**Hand-drawn family** (rendered via Excalidraw MCP — two tradition-specific agents, each unconditional so neither drifts toward the other's discipline):
+- **sketchnote** — Mike Rohde / graphic recording tradition → `render-infographic-sketchnote`
+- **whiteboard** — Dan Roam "Back of the Napkin" / RSA Animate tradition → `render-infographic-whiteboard`
 
 **Editorial family** (rendered by `render-infographic-pencil` via Pencil MCP):
 - **economist** (flagship) — The Economist magazine data page
@@ -116,10 +116,16 @@ content, investor materials. Content that needs to inspire confidence and trust.
 
 # Hand-drawn family
 
-Rendered by `render-infographic-excalidraw` via Excalidraw MCP. The hand-drawn family composes
-live-facilitator scenes where imperfection signals humanity: dashed or solid marker borders,
-rough strokes, Virgil font, primitive-shape icons, and curved arrows that guide reading order.
-Trust comes from the visible hand, not from grid discipline.
+Rendered via Excalidraw MCP by two tradition-specific agents: `render-infographic-sketchnote`
+(sketchnote preset) and `render-infographic-whiteboard` (whiteboard preset). The hand-drawn
+family composes live-facilitator scenes where imperfection signals humanity: dashed or solid
+marker borders, rough strokes, Virgil font, primitive-shape icons, and curved arrows that
+guide reading order. Trust comes from the visible hand, not from grid discipline. Each
+tradition has its own dedicated agent because sketchnote (warm, dashed, several accents) and
+whiteboard (spare, solid, accent only on hero + CTA) have **opposite** discipline rules — a
+single conditional agent drifted toward the looser tradition, so 0.14.0 gives each one an
+unconditional voice and extracts the truly shared concerns (canvas lifecycle, brand-accent
+doctrine, shared review gates) into `libraries/render-excalidraw-common.md`.
 
 ## sketchnote
 

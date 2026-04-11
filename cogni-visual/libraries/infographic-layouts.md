@@ -7,8 +7,9 @@ readable by both render agents — missing v1.1 fields are treated as absent.
 
 Layout type schemas and block type catalog for infographic briefs. The `story-to-infographic`
 skill selects one layout type based on content analysis, and the rendering agents
-(`render-infographic-excalidraw` and `render-infographic-pencil`, dispatched by the
-`/render-infographic` command) use these schemas to compose the visual output.
+(`render-infographic-sketchnote`, `render-infographic-whiteboard`, and
+`render-infographic-pencil`, dispatched by the `/render-infographic` command) use these
+schemas to compose the visual output.
 
 Infographics are single-page visual summaries — they distill a narrative into a scannable
 composition of numbers, icons, short text, and optional charts. Every infographic has exactly

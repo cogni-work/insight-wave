@@ -16,7 +16,7 @@ cogni-visual sits at the end of the insight-wave delivery pipeline, after conten
 
 All visual output inherits brand identity (colors, fonts, identity) from the active cogni-workspace theme. There are no color or font fields in briefs — renderers read `theme.md` directly.
 
-The `/render-infographic` command is a smart dispatcher: it reads the brief's `style_preset` and routes to one of two Opus-powered render agents. Hand-drawn family (sketchnote, whiteboard) goes to `render-infographic-excalidraw` via Excalidraw MCP; editorial family (economist, editorial, data-viz, corporate) goes to `render-infographic-pencil` via Pencil MCP. Direct commands `/render-infographic-excalidraw` and `/render-infographic-pencil` skip the dispatch step when the caller already knows the family.
+The `/render-infographic` command is a smart dispatcher: it reads the brief's `style_preset` and routes to one of three Opus-powered render agents. `sketchnote` goes to `render-infographic-sketchnote` (Mike Rohde / graphic recording — dashed rounded borders, warm fills, several accent marks); `whiteboard` goes to `render-infographic-whiteboard` (Dan Roam "Back of the Napkin" / RSA Animate — solid sharp borders, transparent fills, accent only on hero + CTA); the editorial family (economist, editorial, data-viz, corporate) goes to `render-infographic-pencil` via Pencil MCP. The hand-drawn family is split into two tradition-specific agents so each can carry its own unconditional discipline — a single conditional agent drifted toward the looser tradition. Direct commands `/render-infographic-handdrawn` (auto-routes between sketchnote and whiteboard) and `/render-infographic-editorial` skip the top-level dispatch step when the caller already knows the family.
 
 ---
 

@@ -8,9 +8,10 @@ allowed-tools: Read, Grep, Glob, AskUserQuestion, Agent, mcp__excalidraw__clear_
 Render an infographic-brief.md into a visual output. This command is the **smart dispatcher** —
 it reads the brief's `style_preset` and routes to the right rendering agent. Two families exist:
 
-| Style Presets | Family | Direct Command | Rendering Agent | Output |
+| Style Preset | Family | Direct Command | Rendering Agent | Output |
 |---------------|--------|---------------|-----------------|--------|
-| `sketchnote`, `whiteboard` | Hand-drawn (Mike Rohde / RSA Animate) | `/render-infographic-handdrawn` | `render-infographic-excalidraw` | `.excalidraw` scene |
+| `sketchnote` | Hand-drawn sketchnote (Mike Rohde / graphic recording) | `/render-infographic-handdrawn` | `render-infographic-sketchnote` | `.excalidraw` scene |
+| `whiteboard` | Hand-drawn whiteboard (Dan Roam / RSA Animate) | `/render-infographic-handdrawn` | `render-infographic-whiteboard` | `.excalidraw` scene |
 | `economist`, `editorial`, `data-viz`, `corporate` | Editorial (The Economist data page) | `/render-infographic-editorial` | `render-infographic-pencil` | `.pen` file |
 
 ## Usage
@@ -46,10 +47,14 @@ If any of these are missing or `type`/`version` do not match, abort with a clear
 
 Match the `style_preset` value and dispatch via the `Agent` tool:
 
-- **`sketchnote`** or **`whiteboard`** → dispatch `render-infographic-excalidraw`
+- **`sketchnote`** → dispatch `render-infographic-sketchnote` (Mike Rohde tradition — dashed, warm, several accents)
+- **`whiteboard`** → dispatch `render-infographic-whiteboard` (Dan Roam tradition — solid, transparent, accent only on hero + CTA)
 - **`economist`**, **`editorial`**, **`data-viz`**, or **`corporate`** → dispatch `render-infographic-pencil`
 - **Missing or unrecognized** → ask the user via `AskUserQuestion` which family they want
-  (hand-drawn vs editorial), then dispatch the matching agent
+  (hand-drawn sketchnote, hand-drawn whiteboard, or editorial), then dispatch the matching
+  agent. If the user picks hand-drawn without specifying, ask a second `AskUserQuestion` to
+  disambiguate between sketchnote and whiteboard — the two traditions have opposite
+  discipline rules and the agents refuse to render the wrong preset.
 
 Pass the absolute `BRIEF_PATH` and, if the user provided `--output`, the `OUTPUT_PATH`.
 Prompt template:
@@ -72,10 +77,12 @@ recap naming:
 
 ## Concurrency note
 
-Excalidraw agents share a single MCP canvas. **Never dispatch two Excalidraw-based renders in
-parallel** — they will draw over each other. If rendering multiple sketchnote or whiteboard
-briefs, serialize them. Pencil agents use file-backed documents and can run alongside
-Excalidraw renders safely.
+Both hand-drawn agents (`render-infographic-sketchnote` and `render-infographic-whiteboard`)
+share a single Excalidraw MCP canvas. **Never dispatch two Excalidraw-based renders in
+parallel** — they will draw over each other regardless of which tradition each one is using.
+If rendering multiple hand-drawn briefs (any mix of sketchnote and whiteboard), serialize
+them. Pencil agents use file-backed documents and can run alongside Excalidraw renders
+safely.
 
 ## When to use a direct command instead
 

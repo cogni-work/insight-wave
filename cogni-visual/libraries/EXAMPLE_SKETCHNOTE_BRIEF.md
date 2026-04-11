@@ -29,7 +29,7 @@ transformation_notes: |
 This reference brief demonstrates the v1.1 infographic-brief schema for the **sketchnote**
 style preset — the hand-drawn family, Mike Rohde / graphic recording tradition. Notice:
 
-- `style_preset: sketchnote` routes to `render-infographic-excalidraw` via
+- `style_preset: sketchnote` routes to `render-infographic-sketchnote` via
   `/render-infographic` or the direct `/render-infographic-handdrawn` command.
 - `voice_tone: playful` signals the renderer to use warmer, looser hand-lettering.
 - A `pull-quote` block carries a verbatim workshop participant voice — a natural fit for

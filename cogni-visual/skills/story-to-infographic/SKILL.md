@@ -44,7 +44,8 @@ The brief routes to one of two rendering families, picked by `style_preset`:
 
 | Family | Presets | Render agent | Output |
 |--------|---------|-------------|--------|
-| Hand-drawn | `sketchnote`, `whiteboard` | `render-infographic-excalidraw` (opus) | `.excalidraw` scene |
+| Hand-drawn (sketchnote) | `sketchnote` | `render-infographic-sketchnote` (opus) | `.excalidraw` scene |
+| Hand-drawn (whiteboard) | `whiteboard` | `render-infographic-whiteboard` (opus) | `.excalidraw` scene |
 | Editorial | `economist`, `editorial`, `data-viz`, `corporate` | `render-infographic-pencil` (opus) | `.pen` file |
 
 The universal entry point is `/render-infographic`, which reads the brief's `style_preset` and
