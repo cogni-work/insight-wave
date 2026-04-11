@@ -23,7 +23,7 @@ A brief-based visual production pipeline. Skills generate structured briefs (YAM
 1. **Brief** a presentation from any narrative → `presentation-brief.md` → pptx (PowerPoint deck)
 2. **Brief** a poster series from any narrative → `storyboard-brief.md` → storyboard (print poster series)
 3. **Brief** a scrollable web page from any narrative → `web-brief.md` → web (scrollable landing page)
-4. **Brief** an infographic from any narrative → `infographic-brief.md` → render-infographic (Excalidraw sketchnote)
+4. **Brief** an infographic from any narrative → `infographic-brief.md` → `/render-infographic` (auto-routes to Excalidraw for sketchnote/whiteboard or Pencil MCP for economist/editorial/data-viz/corporate)
 5. **Enrich** a markdown report into themed HTML → `{report}-enriched.html` (branded interactive HTML)
 6. **Render** a presentation brief into a browser-ready HTML deck → `{name}.html` (self-contained slide deck with speaker notes)
 7. **Review** a visual brief from three stakeholder perspectives — design quality, audience experience, usability
@@ -102,18 +102,17 @@ The pipeline follows a compose-polish-visualize flow: narratives from cogni-narr
 ```
 cogni-visual/                              # 8 skills · 11 agents · 4 commands · 1 hook
 ├── .claude-plugin/                        # plugin manifest
-├── skills/                               # 8 skills (4 brief generators · 2 renderers · 1 enricher · 1 reviewer)
+├── skills/                               # 7 skills (4 brief generators · 1 renderer · 1 enricher · 1 reviewer)
 │   ├── story-to-slides/
 │   ├── story-to-slides-workspace/        # dev workspace (iteration artifacts, not a skill)
 │   ├── story-to-web/
 │   ├── story-to-storyboard/
 │   ├── story-to-infographic/
-│   ├── render-infographic/
 │   ├── render-html-slides/
 │   ├── enrich-report/
 │   └── review-brief/
 ├── agents/                               # 11 agents (orchestration · rendering · workers)
-├── commands/                             # 4 slash commands
+├── commands/                             # 6 slash commands (including /render-infographic smart dispatcher and its two direct variants)
 ├── hooks/                                # 1 PreToolUse hook (Excalidraw canvas auto-start)
 └── libraries/                            # 12 shared reference files
     ├── arc-taxonomy.md                   # arc ID → visual arc type mapping

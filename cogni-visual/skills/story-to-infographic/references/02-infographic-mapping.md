@@ -49,11 +49,17 @@ When content matches multiple layouts:
 
 | Source Context | Style Preset | Why |
 |---------------|-------------|-----|
-| Trend report, market analysis, research report | `data-viz` | Data-forward aesthetic matches analytical content |
-| Executive summary, board presentation, investment thesis | `editorial` | Clean magazine aesthetic signals authority |
-| Workshop material, ideation output, brainstorm summary | `sketchnote` | Informal feel matches collaborative context |
+| C-suite insight summary, investor data story, leadership briefing, flagship trend report | `economist` | The Economist magazine aesthetic — dense stats, red accent, cream background, maximum editorial credibility |
+| Trend report, market analysis, research report (data-forward) | `data-viz` | Dashboard aesthetic matches analytical content when density isn't the goal |
+| Executive summary, board presentation, investment thesis | `editorial` | Clean magazine aesthetic signals authority without Economist-level density |
+| Workshop material, ideation output, brainstorm summary | `sketchnote` | Informal hand-drawn feel matches collaborative context |
 | Compliance report, governance overview, regulatory content | `corporate` | Conservative aesthetic builds trust |
-| Strategy session, internal alignment, team planning | `whiteboard` | Minimal aesthetic avoids distraction |
+| Strategy session, internal alignment, team planning | `whiteboard` | Minimal hand-drawn aesthetic avoids distraction |
+
+**Family rule:** `economist`, `editorial`, `data-viz`, and `corporate` all belong to the
+**editorial family** (rendered via Pencil MCP). `sketchnote` and `whiteboard` belong to the
+**hand-drawn family** (rendered via Excalidraw). Picking a preset also picks the renderer —
+see `03-style-presets.md` for the full family description.
 
 ### Arc Type → Style Preset (secondary heuristic)
 
@@ -61,11 +67,11 @@ When source context is ambiguous, arc type provides a signal:
 
 | Arc Type | Preferred Style | Why |
 |----------|----------------|-----|
-| `why-change` | `data-viz` or `editorial` | Evidence-heavy arcs need data-forward or authoritative aesthetics |
+| `why-change` | `economist`, `data-viz`, or `editorial` | Evidence-heavy arcs need dense, data-forward or authoritative aesthetics — `economist` when the audience is C-suite |
 | `problem-solution` | `editorial` or `corporate` | Solution framing benefits from clean, trustworthy aesthetics |
-| `journey` | `sketchnote` or `whiteboard` | Journey arcs have a narrative quality that informal styles support |
-| `argument` | `editorial` | Rhetorical structure benefits from strong type hierarchy |
-| `report` | `data-viz` | Reports are inherently data-forward |
+| `journey` | `sketchnote` or `whiteboard` | Journey arcs have a narrative quality that informal hand-drawn styles support |
+| `argument` | `editorial` or `economist` | Rhetorical structure benefits from strong type hierarchy; `economist` when the argument rests on dense data |
+| `report` | `economist` or `data-viz` | Reports are inherently data-forward — `economist` for flagship leadership reports, `data-viz` for dashboards |
 
 ### User Override
 
@@ -75,15 +81,16 @@ setting, brand requirements) overrides any heuristic.
 
 ## Layout + Style Compatibility
 
-All 7 layouts work with all 5 style presets — there are no forbidden combinations. However,
-some combinations are particularly effective:
+All 7 layouts work with all 6 style presets — there are no forbidden combinations. However,
+some combinations are particularly effective. Columns are grouped by family:
 
-| | editorial | data-viz | sketchnote | corporate | whiteboard |
-|---|---|---|---|---|---|
-| stat-heavy | good | **excellent** | ok | good | ok |
-| timeline-flow | good | ok | **excellent** | ok | good |
-| comparison | **excellent** | good | ok | good | good |
-| hub-spoke | good | ok | **excellent** | ok | **excellent** |
-| funnel-pyramid | good | good | ok | **excellent** | ok |
-| list-grid | good | ok | **excellent** | good | good |
-| flow-diagram | good | **excellent** | ok | good | good |
+| | **economist** | editorial | data-viz | corporate | **sketchnote** | whiteboard |
+|---|---|---|---|---|---|---|
+| | *editorial family (Pencil)* | editorial | editorial | editorial | *hand-drawn family (Excalidraw)* | hand-drawn |
+| stat-heavy | **excellent** | good | **excellent** | good | ok | ok |
+| timeline-flow | good | good | ok | ok | **excellent** | good |
+| comparison | **excellent** | **excellent** | good | good | ok | good |
+| hub-spoke | good | good | ok | ok | **excellent** | **excellent** |
+| funnel-pyramid | good | good | good | **excellent** | ok | ok |
+| list-grid | good | good | ok | good | **excellent** | good |
+| flow-diagram | **excellent** | good | **excellent** | good | ok | good |

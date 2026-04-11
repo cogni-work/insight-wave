@@ -1,11 +1,55 @@
 # Style Presets
 
-Five style presets that control the CSS aesthetic layer of infographics. Each preset defines
-visual personality independent of theme colors — the theme provides the palette, the preset
-provides the character.
+Six style presets that control the visual character of infographics. Each preset defines
+personality independent of theme colors — the theme provides the palette, the preset provides
+the character. Presets are organized into **two rendering families** that determine *which
+agent* will render the brief. Choosing a preset is therefore also choosing a renderer.
 
-The preset is stored in the brief frontmatter as `style_preset`. The Python renderer applies
-it via `data-style="{preset}"` on the root container, scoping all CSS rules.
+**Hand-drawn family** (rendered by `render-infographic-excalidraw` via Excalidraw MCP):
+- **sketchnote** — Mike Rohde / graphic recording tradition
+- **whiteboard** — RSA Animate / Dan Roam "Back of the Napkin" tradition
+
+**Editorial family** (rendered by `render-infographic-pencil` via Pencil MCP):
+- **economist** (flagship) — The Economist magazine data page
+- **editorial** — Harvard Business Review / McKinsey Quarterly
+- **data-viz** — Bloomberg Terminal / dashboard-forward
+- **corporate** — annual report / compliance document
+
+The preset is stored in the brief frontmatter as `style_preset`. The rendering dispatcher
+(`/render-infographic`) reads this value and routes the brief to the right family's agent.
+
+---
+
+# Editorial family
+
+Rendered by `render-infographic-pencil` via Pencil MCP. The editorial family composes dense,
+disciplined newspaper-quality pages where blocks share rows in a 2–3 column grid, red (or
+theme-primary) rule lines separate sections, and hero numbers earn trust through scale.
+Restraint is the signature — no rounded corners, no drop shadows, no decorative elements.
+
+## economist
+
+**Character:** The Economist magazine editorial — the flagship of the editorial family. Bold
+stat callouts, clean grid, minimal ornamentation. Numbers dominate the page, color is
+disciplined (red accent only), and information density is high but spacious. Think weekly
+newsmagazine data page — authoritative, precise, visually striking without being decorative.
+
+**Visual DNA:**
+- Cream/off-white background (`#FBF9F3`) — warm, not sterile
+- Deep red (`#C00000`) for bar charts, accent borders, rule lines, and icon highlights
+- Near-black (`#1A1A1A`) for body text and headlines
+- Amber (`#D4A017`) for secondary callout icons and tertiary accents
+- Sharp edges — `border-radius: 0` for all blocks, no exceptions
+- Percentage signs and units rendered at same visual weight as digits (not superscript)
+- Thin 2px red rule lines under section headers
+- Monospace or tabular figures for all numbers — numbers are the star
+- No shadows, no gradients, no rounded corners, no decorative elements
+- High white-space discipline — generous padding (40-60px), clean gutters
+- Simple bar charts with solid red fills — no 3D, no patterns, no chartjunk
+
+**Best for:** C-suite insight summaries, trend reports for senior leadership, investor-facing
+data stories, board presentations, research findings. Content where "The Economist credibility"
+is the design goal — data-forward, editorially confident, zero visual noise.
 
 ---
 
@@ -48,6 +92,33 @@ narratives. Content where numbers tell the story.
 
 ---
 
+## corporate
+
+**Character:** Conservative, trust-building, brand-safe. Think annual report or compliance
+document — structured, reliable, no surprises. The visual equivalent of a firm handshake.
+
+**Visual DNA:**
+- Primary color headers on dark backgrounds (surface_dark)
+- Structured grid with solid borders (2px solid)
+- Serif-friendly typography where theme supports it
+- Badge-style labels (small caps, bordered, pill-shaped)
+- Moderate spacing — 32px between blocks, 20px internal padding
+- Consistent block sizing — all blocks same height within rows
+- Footer prominent with full attribution and source line
+- No playfulness — no rotations, no dashed borders, no rounded corners beyond 4px
+
+**Best for:** Board presentations, compliance reports, governance overviews, regulatory
+content, investor materials. Content that needs to inspire confidence and trust.
+
+---
+
+# Hand-drawn family
+
+Rendered by `render-infographic-excalidraw` via Excalidraw MCP. The hand-drawn family composes
+live-facilitator scenes where imperfection signals humanity: dashed or solid marker borders,
+rough strokes, Virgil font, primitive-shape icons, and curved arrows that guide reading order.
+Trust comes from the visible hand, not from grid discipline.
+
 ## sketchnote
 
 **Character:** Hand-drawn feel, informal, workshop-ready. Think visual note-taking at a
@@ -69,26 +140,6 @@ team retrospectives. Content that needs to feel collaborative and accessible.
 
 ---
 
-## corporate
-
-**Character:** Conservative, trust-building, brand-safe. Think annual report or compliance
-document — structured, reliable, no surprises. The visual equivalent of a firm handshake.
-
-**Visual DNA:**
-- Primary color headers on dark backgrounds (surface_dark)
-- Structured grid with solid borders (2px solid)
-- Serif-friendly typography where theme supports it
-- Badge-style labels (small caps, bordered, pill-shaped)
-- Moderate spacing — 32px between blocks, 20px internal padding
-- Consistent block sizing — all blocks same height within rows
-- Footer prominent with full attribution and source line
-- No playfulness — no rotations, no dashed borders, no rounded corners beyond 4px
-
-**Best for:** Board presentations, compliance reports, governance overviews, regulatory
-content, investor materials. Content that needs to inspire confidence and trust.
-
----
-
 ## whiteboard
 
 **Character:** Minimal, black-and-white with accent highlights, marker-pen feel. Think
@@ -106,32 +157,6 @@ strategy session whiteboard captured and cleaned up — focused, no distractions
 
 **Best for:** Strategy sessions, internal alignment, team planning, quick visual summaries.
 Content that needs to communicate clearly without aesthetic distraction.
-
----
-
-## economist
-
-**Character:** The Economist magazine editorial. Bold stat callouts, clean grid, minimal
-ornamentation. Numbers dominate the page, color is disciplined (red accent only), and
-information density is high but spacious. Think weekly newsmagazine data page — authoritative,
-precise, visually striking without being decorative.
-
-**Visual DNA:**
-- Cream/off-white background (`#FBF9F3`) — warm, not sterile
-- Deep red (`#C00000`) for bar charts, accent borders, rule lines, and icon highlights
-- Near-black (`#1A1A1A`) for body text and headlines
-- Amber (`#D4A017`) for secondary callout icons and tertiary accents
-- Sharp edges — `border-radius: 0` for all blocks, no exceptions
-- Percentage signs and units rendered at same visual weight as digits (not superscript)
-- Thin 2px red rule lines under section headers
-- Monospace or tabular figures for all numbers — numbers are the star
-- No shadows, no gradients, no rounded corners, no decorative elements
-- High white-space discipline — generous padding (40-60px), clean gutters
-- Simple bar charts with solid red fills — no 3D, no patterns, no chartjunk
-
-**Best for:** C-suite insight summaries, trend reports for senior leadership, investor-facing
-data stories, board presentations, research findings. Content where "The Economist credibility"
-is the design goal — data-forward, editorially confident, zero visual noise.
 
 ---
 

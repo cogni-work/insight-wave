@@ -20,8 +20,11 @@ Pass through all user-provided parameters. If the user provides a source path, t
 language, layout type, or style preset, forward them.
 
 After the skill completes, report the output path and key metrics (layout type, style
-preset, orientation, block count, distillation ratio). Guide the user to the appropriate
-renderer based on style preset:
+preset, orientation, block count, distillation ratio). Guide the user to the renderer:
 
-- `sketchnote`, `whiteboard` → `/render-infographic` (Excalidraw, hand-drawn)
-- `economist`, `editorial`, `data-viz`, `corporate` → `/render-infographic-pencil` (Pencil MCP, clean editorial)
+- Universal entry point: `/render-infographic` — reads the brief's `style_preset` and
+  auto-routes to the right agent (Excalidraw for sketchnote/whiteboard, Pencil MCP for
+  economist/editorial/data-viz/corporate).
+- Direct commands (skip dispatch) for power users who already know the family:
+  - `/render-infographic-excalidraw` — hand-drawn sketchnote/whiteboard
+  - `/render-infographic-pencil` — editorial including the Economist flagship style

@@ -4,8 +4,9 @@ description: >
   Render an infographic-brief.md (v1.0) into a hand-drawn Excalidraw scene — sketchnote or
   whiteboard style. Use when the user wants a hand-drawn infographic, sketchnote infographic,
   whiteboard infographic, or when the brief's style_preset is sketchnote or whiteboard.
-  Dispatched by the render-infographic skill. Not for clean/editorial styles (use
-  render-infographic-pencil for economist, editorial, data-viz, corporate).
+  Dispatched by the /render-infographic command (auto-routed on sketchnote/whiteboard style
+  preset) or the /render-infographic-excalidraw command (direct). Not for clean/editorial
+  styles (use render-infographic-pencil for economist, editorial, data-viz, corporate).
 model: opus
 color: green
 tools: Read, Write, Bash, Grep, Glob, mcp__excalidraw__clear_canvas, mcp__excalidraw__create_element, mcp__excalidraw__batch_create_elements, mcp__excalidraw__group_elements, mcp__excalidraw__describe_scene, mcp__excalidraw__get_canvas_screenshot, mcp__excalidraw__snapshot_scene, mcp__excalidraw__restore_snapshot, mcp__excalidraw__export_scene, mcp__excalidraw__export_to_excalidraw_url, mcp__excalidraw__export_to_image, mcp__excalidraw__query_elements, mcp__excalidraw__update_element, mcp__excalidraw__delete_element, mcp__excalidraw__get_element, mcp__excalidraw__import_scene

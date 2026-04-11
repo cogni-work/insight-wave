@@ -1,0 +1,23 @@
+{
+  "skill_name": "render-infographic",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Render this infographic brief as a sketchnote-style Excalidraw scene. The brief is at {workspace}/eval-sketchnote-brief/infographic-brief.md. Save outputs to {workspace}/eval-sketchnote-brief/with_skill/outputs/",
+      "expected_output": "Hand-drawn sketchnote infographic in Excalidraw with all 6 content blocks, icons, chart, flowing arrows, dashed borders, warm feel",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Render this infographic brief as an Economist-style editorial page using Pencil MCP. The brief is at {workspace}/eval-economist-brief/infographic-brief.md. Save outputs to {workspace}/eval-economist-brief/with_skill/outputs/",
+      "expected_output": "Pixel-precise editorial .pen file with cream background, Economist red accent, sharp corners, proportional bar chart, dense newspaper-like layout",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Render this comparison-layout infographic brief as a whiteboard-style Excalidraw scene. The brief is at {workspace}/eval-comparison-brief/infographic-brief.md. Save outputs to {workspace}/eval-comparison-brief/with_skill/outputs/",
+      "expected_output": "Clean whiteboard infographic with side-by-side comparison columns, minimal color, strong contrast between before/after, clear reading flow",
+      "files": []
+    }
+  ]
+}

@@ -9,10 +9,14 @@ description: >
   from narrative", "stat sheet", "KPI poster", or wants to distill a narrative into a
   scannable visual with hero numbers, icons, and minimal text. Also trigger for "dashboard
   poster", "Einseiter mit Zahlen", "visual one-pager", and requests to summarize a report
-  as a single visual page. Produces an infographic-brief.md that render-infographic
-  (Excalidraw sketchnote) or render-infographic-pencil (Pencil MCP editorial) renders
-  into visual output. Important: this skill CREATES the brief from a
-  narrative source — it does NOT render an existing brief (use render-infographic or render-infographic-pencil for that),
+  as a single visual page. Produces an infographic-brief.md in one of two style families:
+  a hand-drawn family (sketchnote, whiteboard) rendered via /render-infographic-excalidraw
+  into an Excalidraw scene, or an editorial family (economist — The Economist data page style,
+  plus editorial, data-viz, corporate) rendered via /render-infographic-pencil into a Pencil
+  MCP .pen file. The unified /render-infographic command auto-routes based on the brief's
+  style_preset. Important: this skill CREATES the brief from a narrative source — it does
+  NOT render an existing brief (use /render-infographic to auto-route or one of the direct
+  render commands for that),
   does NOT create slides (use story-to-slides), does NOT create a scrollable web page (use
   story-to-web), does NOT create a multi-poster storyboard (use story-to-storyboard), and
   does NOT enrich an existing report with inline visuals (use enrich-report).
@@ -345,22 +349,30 @@ transformation_notes: |
 
 ### Step 10: Guide to Rendering
 
-Tell the user the brief is ready and recommend the right renderer based on style preset:
+Tell the user the brief is ready. The universal entry point is `/render-infographic`, which
+auto-routes to the right rendering family based on the brief's `style_preset`. Power users
+who want to skip the dispatch step can call the direct commands.
 
-| Style Preset | Renderer | Command |
-|-------------|----------|---------|
-| `sketchnote`, `whiteboard` | Excalidraw (hand-drawn) | `/render-infographic` |
-| `economist`, `editorial`, `data-viz`, `corporate` | Pencil MCP (pixel-precise) | `/render-infographic-pencil` |
+| Style Preset | Family | Rendering Agent | Universal | Direct |
+|--------------|--------|-----------------|-----------|--------|
+| `sketchnote`, `whiteboard` | Hand-drawn (Mike Rohde / RSA Animate) | Excalidraw | `/render-infographic` | `/render-infographic-excalidraw` |
+| `economist` | Editorial (The Economist data page — flagship) | Pencil MCP | `/render-infographic` | `/render-infographic-pencil` |
+| `editorial`, `data-viz`, `corporate` | Editorial | Pencil MCP | `/render-infographic` | `/render-infographic-pencil` |
 
-Example message:
-
-> "Infographic brief written to `{output_path}`.
-> Style preset: **{style_preset}** — recommended renderer: **`/render-infographic-pencil`** (clean editorial via Pencil MCP)."
-
-For `sketchnote`/`whiteboard`:
+Example message (sketchnote/whiteboard):
 
 > "Infographic brief written to `{output_path}`.
-> Style preset: **{style_preset}** — recommended renderer: **`/render-infographic`** (hand-drawn Excalidraw sketchnote)."
+> Style preset: **{style_preset}** (hand-drawn family) — run **`/render-infographic`** to render as an Excalidraw scene."
+
+Example message (economist):
+
+> "Infographic brief written to `{output_path}`.
+> Style preset: **economist** (The Economist data page) — run **`/render-infographic`** to render as a Pencil .pen file."
+
+Example message (editorial/data-viz/corporate):
+
+> "Infographic brief written to `{output_path}`.
+> Style preset: **{style_preset}** (editorial family) — run **`/render-infographic`** to render as a Pencil .pen file."
 
 Report: layout type, style preset, orientation, block count, total word count, distillation ratio (source words → brief words).
 

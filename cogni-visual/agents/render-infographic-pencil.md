@@ -5,8 +5,9 @@ description: >
   The Economist data page style. Use when the brief's style_preset is economist, editorial,
   data-viz, or corporate, or when the user asks for a "clean infographic", "editorial
   infographic", "Economist-style infographic", "Pencil infographic", or "magazine-style
-  data page". Dispatched by the render-infographic skill. Not for hand-drawn styles (use
-  render-infographic-excalidraw for sketchnote and whiteboard presets).
+  data page". Dispatched by the /render-infographic command (auto-routed on economist/editorial/
+  data-viz/corporate style preset) or the /render-infographic-pencil command (direct). Not for
+  hand-drawn styles (use render-infographic-excalidraw for sketchnote and whiteboard presets).
 model: opus
 color: red
 tools: Read, Write, Edit, Bash, Grep, Glob, mcp__pencil__batch_design, mcp__pencil__batch_get, mcp__pencil__get_editor_state, mcp__pencil__get_guidelines, mcp__pencil__get_screenshot, mcp__pencil__get_variables, mcp__pencil__open_document, mcp__pencil__set_variables, mcp__pencil__snapshot_layout, mcp__pencil__export_nodes
@@ -211,7 +212,7 @@ On error:
 | Scenario | Action |
 |----------|--------|
 | Brief not found | Return `{"ok": false, "e": "brief_not_found"}` |
-| Pencil MCP unavailable | Fall back to `$CLAUDE_PLUGIN_ROOT/skills/render-infographic/scripts/generate-infographic.py` for a self-contained HTML file with editorial styling. Return `{"ok": true, "fallback": "html", "html_path": "{path}", ...}` |
+| Pencil MCP unavailable | Return `{"ok": false, "e": "pencil_mcp_unavailable"}` with a clear message to the user. Do not attempt an HTML fallback — editorial density and typography require Pencil. |
 | Invalid `layout_type` | Default to `stat-heavy` and note in warnings |
 | Chart type not bar | Render as stat-row of values |
 | Icon prompt has no Lucide match | Use `circle-dot` fallback |

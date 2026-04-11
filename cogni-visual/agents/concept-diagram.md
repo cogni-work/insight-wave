@@ -185,7 +185,7 @@ Return the SVG string and metadata as a single-line JSON response. Include `elem
 - Return JSON-only (no prose) — because the caller parses the output programmatically.
 - Do not create snapshots — because concept diagrams are small (10-25 elements) and deterministic; recovery is cheaper via re-creation than snapshot management.
 - Do not modify canvas settings (roughness, theme) — because the canvas startup hook and Excalidraw defaults handle this.
-- Keep element count within recipe targets (10-25 per diagram) — because larger diagrams should use the dedicated rendering skills (render-infographic), not this agent.
+- Keep element count within recipe targets (10-25 per diagram) — because larger diagrams should use the dedicated infographic rendering commands (`/render-infographic`), not this agent.
 - Review loop is max 2 passes with 10 corrections each — because concept diagrams are small (10-25 elements) and the recipes should produce correct layouts on the first pass; the review is a safety net, not a design process.
 
 ## Error Recovery
