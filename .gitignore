@@ -29,3 +29,6 @@ cogni-portfolio-evals/
 
 # Diagram test pipeline (closed-loop test artifacts)
 cogni-research/test-diagram-pipeline/
+
+# Render agent scratch files (canvas-clearing temp scenes, etc.)
+.tmp/
