@@ -19,10 +19,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, Task, Skill, AskU
 # Research Report Skill
 
 When this skill loads:
-1. If no topic was provided → ask: "What topic should I research?"
-2. If topic provided → extract any options already in the user's prompt (report type, tone, citations, language, source mode, etc.), then present the **Configuration Menu** (Phase 0 Step 2) so the user can confirm or customize before research begins
-3. If the user explicitly said "just go", "defaults", or specified all key options (type + tone + citations) → skip the interactive menu, show a one-line confirmation of detected settings, and proceed directly
-4. Never greet or re-explain capabilities
+1. If no topic was provided → ask: "What topic should I research?" — then STOP and wait for the user's answer
+2. Once topic is known (either from the original prompt or from the user's answer to step 1):
+   - Extract any options already stated (report type, tone, citations, source mode, market, etc.)
+   - **ALWAYS present the full Configuration Menu** (Phase 0 Step 2) using AskUserQuestion — even if no options were detected, even if most will be defaults. The menu IS the skill's core UX; skipping it is a bug.
+   - The ONLY exception: the user explicitly said "just go", "defaults are fine", "start now", or specified ALL of type + tone + citations + source mode in their prompt.
+3. Never greet, re-explain capabilities, or auto-confirm defaults without showing the menu first
 
 ## Quick Example
 
@@ -141,7 +143,13 @@ Present the user with a configuration menu using `AskUserQuestion` so they can s
 4. Always include one line for advanced options: "Advanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
-**Conditional skip**: If the user's prompt already specified ALL primary options (type + tone + citations + source mode) OR included urgency signals ("just go", "start now", "defaults are fine"), collapse the menu to a compact confirmation:
+**Default behavior is to SHOW the menu.** The conditional skip below is the exception, not the rule. If in doubt, show the menu. A user who only provided a topic — even with a market like "DACH" or a depth like "deep" — has NOT specified all options.
+
+**Conditional skip** (strict): Skip the interactive menu ONLY when one of these is true:
+1. The user's **original prompt** (not a follow-up topic answer) explicitly specified ALL FOUR primary options: type + tone + citations + source mode
+2. The user used an explicit urgency signal: "just go", "start now", "defaults are fine", "use defaults"
+
+If neither condition is met, present the full menu. Collapse to a compact confirmation only when one of the above holds:
 > "Starting **detailed** research on X — analytical tone, IEEE citations, English. Change anything? (or 'go')"
 
 **Handling user responses:**
