@@ -43,7 +43,12 @@ When this skill loads:
 > **Tone**: objective *(default)* | analytical | critical | persuasive | formal | informative | explanatory | descriptive | comparative | speculative | narrative | optimistic | simple
 > **Citations**: APA *(default)* | MLA | Chicago | Harvard | IEEE | Wikilink
 > **Market**: global *(default)* | dach | de | us | uk | fr (localizes search queries + authority sources)
-> Advanced: output language, sub-question count, source mode (web/local/wiki/hybrid), wiki paths, domain filter, researcher role — ask about any of these
+> **Sources** (where to research):
+> `web` *(default)* = search the internet
+> `local` = analyze your documents (PDF, DOCX, MD, CSV, ...)
+> `wiki` = query your cogni-wiki knowledge bases
+> `hybrid` = combine web + documents + wiki
+> Advanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these
 >
 > Reply with your choices, or "go" for defaults.
 
@@ -128,10 +133,15 @@ Present the user with a configuration menu using `AskUserQuestion` so they can s
    - **Tone** (only if not detected): list all 13 options, mark default
    - **Citations** (only if not detected): list all 5 formats, mark default
    - **Market** (only if not detected): global | dach | de | us | uk | fr
-4. Always include one line for advanced options: "Advanced: output language, sub-question count, source mode (web/local/wiki/hybrid), wiki paths, domain filter, researcher role, diagram generation — ask about any of these"
+   - **Sources** (only if report_source not detected): show all 4 modes with one-line descriptions:
+     - `web` *(default)* = search the internet
+     - `local` = analyze your documents (PDF, DOCX, MD, CSV, ...)
+     - `wiki` = query your cogni-wiki knowledge bases
+     - `hybrid` = combine web + documents + wiki
+4. Always include one line for advanced options: "Advanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
-**Conditional skip**: If the user's prompt already specified ALL primary options (type + tone + citations) OR included urgency signals ("just go", "start now", "defaults are fine"), collapse the menu to a compact confirmation:
+**Conditional skip**: If the user's prompt already specified ALL primary options (type + tone + citations + source mode) OR included urgency signals ("just go", "start now", "defaults are fine"), collapse the menu to a compact confirmation:
 > "Starting **detailed** research on X — analytical tone, IEEE citations, English. Change anything? (or 'go')"
 
 **Handling user responses:**
@@ -139,6 +149,14 @@ Present the user with a configuration menu using `AskUserQuestion` so they can s
 - Specific choices ("deep, analytical, IEEE") → merge with detected values, then proceed to Step 2b
 - Question about an advanced option ("what roles are available?") → read the relevant reference file (`references/agent-roles.md`, `references/writing-tones.md`, etc.), explain the option, then re-present the menu
 - Partial choices ("make it detailed") → update that option, ask if anything else or proceed
+
+**Source mode follow-up**: When the user selects `local`, `wiki`, or `hybrid` as their source mode (either in this menu or detected from the original prompt), ask the necessary follow-up questions before proceeding to Step 2b:
+
+- **`local`**: "Which documents should I analyze? Provide file paths or glob patterns (e.g., `~/docs/*.pdf`, `./data/`)."
+- **`wiki`**: "Which cogni-wiki should I query? Provide the wiki root path(s) (e.g., `~/cogni-wikis/my-wiki`)."
+- **`hybrid`**: Ask for both document paths (if `document_paths` not already set) and wiki paths (if `wiki_paths` not already set). Web research is always included in hybrid mode.
+
+If the user already provided paths in their original prompt (detected in Step 1), skip the follow-up for that path type.
 
 #### Step 2b: Ask for project location (mandatory)
 
