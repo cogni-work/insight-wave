@@ -6,9 +6,10 @@ description: |
   deep (recursive tree exploration). Claims verification runs separately via verify-report.
   Supports configurable writing tones, auto/manual researcher roles, source URL pre-fetch,
   domain-restricted search, custom sub-question counts, and local document research.
-  Three source modes: web (default), local (analyze user's documents), hybrid (web + documents).
+  Four source modes: web (default), local (analyze user's documents), wiki (query cogni-wiki instances), hybrid (web + documents + wikis).
   Use when the user asks to "research report", "investigate", "deep research", "write a report",
   "gpt-researcher", "multi-agent research", "analyze these documents", "research from my files",
+  "research from my wiki", "use my wiki for research", "query the wiki",
   or requests comprehensive topic analysis with citations.
   Also use when the user wants to "resume research", "continue research report", "pick up the research",
   "finish the report", "what happened to my report", or resume an interrupted research run.
@@ -42,7 +43,7 @@ When this skill loads:
 > **Tone**: objective *(default)* | analytical | critical | persuasive | formal | informative | explanatory | descriptive | comparative | speculative | narrative | optimistic | simple
 > **Citations**: APA *(default)* | MLA | Chicago | Harvard | IEEE | Wikilink
 > **Market**: global *(default)* | dach | de | us | uk | fr (localizes search queries + authority sources)
-> Advanced: output language, sub-question count, source mode (web/local/hybrid), domain filter, researcher role — ask about any of these
+> Advanced: output language, sub-question count, source mode (web/local/wiki/hybrid), wiki paths, domain filter, researcher role — ask about any of these
 >
 > Reply with your choices, or "go" for defaults.
 
@@ -108,8 +109,9 @@ Scan the user's request and extract any options they already specified. These be
 - **Source URLs**: any URLs in the prompt → collect for pre-fetch
 - **Query domains**: "only .gov sources", "restrict to arxiv" → collect domains
 - **Max subtopics**: "use 8 sub-questions", "12 dimensions" → capture count
-- **Report source**: "analyze these PDFs", "research from my files" → "local"; both web and local → "hybrid". Default: "web"
+- **Report source**: "analyze these PDFs", "research from my files" → "local"; "use my wiki", "query the wiki", "from my wiki" → "wiki"; combinations like "wiki and web" → "hybrid". Default: "web"
 - **Document paths**: file paths or glob patterns for local/hybrid mode
+- **Wiki paths**: paths to cogni-wiki roots (e.g., `~/cogni-wikis/my-wiki`) → collect for wiki_paths. Triggered by wiki directory paths or mentions of "wiki", "knowledge base"
 - **Curate sources**: "prioritize authoritative sources" → enable
 - **Project location**: "save in standard folder", "store here", "put it in ~/research" → capture. Default: ask in Step 2b (no silent default)
 
@@ -126,7 +128,7 @@ Present the user with a configuration menu using `AskUserQuestion` so they can s
    - **Tone** (only if not detected): list all 13 options, mark default
    - **Citations** (only if not detected): list all 5 formats, mark default
    - **Market** (only if not detected): global | dach | de | us | uk | fr
-4. Always include one line for advanced options: "Advanced: output language, sub-question count, source mode (web/local/hybrid), domain filter, researcher role, diagram generation — ask about any of these"
+4. Always include one line for advanced options: "Advanced: output language, sub-question count, source mode (web/local/wiki/hybrid), wiki paths, domain filter, researcher role, diagram generation — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
 **Conditional skip**: If the user's prompt already specified ALL primary options (type + tone + citations) OR included urgency signals ("just go", "start now", "defaults are fine"), collapse the menu to a compact confirmation:
@@ -343,21 +345,47 @@ For each sub-question entity in 00-sub-questions/data/:
 
 Deep mode with local sources: use local-researcher (not deep-researcher). The recursive tree algorithm is designed for web search breadth — local documents don't benefit from recursive decomposition. If the user requests deep + local, run local-researchers with the deep sub-question tree but without internal recursion.
 
-#### Hybrid mode (report_source = "hybrid")
+#### Wiki mode (report_source = "wiki")
 
-Run both local and web researchers for each sub-question, then merge their findings in Phase 3. This produces the richest context but uses 2x the agents.
+Spawn wiki-researcher agents instead of section-researchers. Each agent queries all configured cogni-wiki instances for findings relevant to its sub-question. The wiki-researcher follows wiki-query's index-first discovery pattern: read `wiki/index.md`, select relevant pages, read those pages, extract grounded findings.
 
 ```
 For each sub-question entity in 00-sub-questions/data/:
-  # Local research first (documents)
-  Task(local-researcher,
+  Task(wiki-researcher,
     SUB_QUESTION_PATH=<path>,
     PROJECT_PATH=<project_path>,
-    DOCUMENT_PATHS=<from project-config.json document_paths>,
+    WIKI_PATHS=<comma-separated wiki roots from project-config.json wiki_paths>,
     OUTPUT_LANGUAGE=<output_language>,
     run_in_background=true)
+```
 
-  # Web research in parallel
+Deep mode with wiki sources: use wiki-researcher (not deep-researcher), same rationale as local — the recursive tree algorithm is designed for web search breadth, not pre-synthesized knowledge.
+
+#### Hybrid mode (report_source = "hybrid")
+
+Run available researcher types in parallel based on configured paths, then merge all findings in Phase 3. This produces the richest context.
+
+```
+For each sub-question entity in 00-sub-questions/data/:
+  # Wiki research (if wiki_paths configured)
+  if wiki_paths:
+    Task(wiki-researcher,
+      SUB_QUESTION_PATH=<path>,
+      PROJECT_PATH=<project_path>,
+      WIKI_PATHS=<comma-separated wiki roots from project-config.json wiki_paths>,
+      OUTPUT_LANGUAGE=<output_language>,
+      run_in_background=true)
+
+  # Local research (if document_paths configured)
+  if document_paths:
+    Task(local-researcher,
+      SUB_QUESTION_PATH=<path>,
+      PROJECT_PATH=<project_path>,
+      DOCUMENT_PATHS=<from project-config.json document_paths>,
+      OUTPUT_LANGUAGE=<output_language>,
+      run_in_background=true)
+
+  # Web research (always in hybrid mode)
   Task(section-researcher,
     SUB_QUESTION_PATH=<path>,
     PROJECT_PATH=<project_path>,
@@ -368,7 +396,7 @@ For each sub-question entity in 00-sub-questions/data/:
     run_in_background=true)
 ```
 
-Both agents create separate context entities for the same sub-question. The merge-context script (Phase 3) handles deduplication across local and web sources.
+All researcher types create separate context entities for the same sub-question. The merge-context script (Phase 3) handles deduplication across wiki, local, and web sources.
 
 Batch in groups of 4-5 to respect concurrency limits. Wait for each batch before starting next.
 

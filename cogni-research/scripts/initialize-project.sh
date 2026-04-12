@@ -3,7 +3,7 @@ set -euo pipefail
 # initialize-project.sh - Create project directory structure for a research report
 # Version: 1.0.0
 #
-# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|hybrid>] [--document-paths <path1,path2,...>] [--suffix <N>]
+# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--suffix <N>]
 #
 # Creates:
 #   {workspace}/{slug}-{date}/
@@ -32,6 +32,7 @@ MAX_SUBTOPICS=""
 CITATION_FORMAT=""
 REPORT_SOURCE=""
 DOCUMENT_PATHS=""
+WIKI_PATHS=""
 CURATE_SOURCES=""
 SUFFIX=""
 
@@ -51,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --citation-format) CITATION_FORMAT="$2"; shift 2;;
     --report-source) REPORT_SOURCE="$2"; shift 2;;
     --document-paths) DOCUMENT_PATHS="$2"; shift 2;;
+    --wiki-paths) WIKI_PATHS="$2"; shift 2;;
     --curate-sources) CURATE_SOURCES="true"; shift 1;;
     --suffix) SUFFIX="$2"; shift 2;;
     *) echo "{\"success\": false, \"error\": \"Unknown argument: $1\"}" >&2; exit 2;;
@@ -86,8 +88,8 @@ if [[ -n "$CITATION_FORMAT" ]] && ! echo "$VALID_CITATION_FORMATS" | grep -qw "$
   exit 2
 fi
 
-if [[ -n "$REPORT_SOURCE" ]] && [[ ! "$REPORT_SOURCE" =~ ^(web|local|hybrid)$ ]]; then
-  echo "{\"success\": false, \"error\": \"Invalid --report-source: $REPORT_SOURCE. Must be web, local, or hybrid.\"}" >&2
+if [[ -n "$REPORT_SOURCE" ]] && [[ ! "$REPORT_SOURCE" =~ ^(web|local|wiki|hybrid)$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --report-source: $REPORT_SOURCE. Must be web, local, wiki, or hybrid.\"}" >&2
   exit 2
 fi
 
@@ -194,6 +196,9 @@ if [[ -n "$REPORT_SOURCE" ]]; then
 fi
 if [[ -n "$DOCUMENT_PATHS" ]]; then
   CONFIG=$(echo "$CONFIG" | jq --arg v "$DOCUMENT_PATHS" '. + {document_paths: ($v | split(",") | map(ltrimstr(" ") | rtrimstr(" ")) | map(select(length > 0)))}')
+fi
+if [[ -n "$WIKI_PATHS" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --arg v "$WIKI_PATHS" '. + {wiki_paths: ($v | split(",") | map(ltrimstr(" ") | rtrimstr(" ")) | map(select(length > 0)))}')
 fi
 if [[ "$CURATE_SOURCES" == "true" ]]; then
   CONFIG=$(echo "$CONFIG" | jq '. + {curate_sources: true}')
