@@ -76,7 +76,7 @@ if [[ ! "$REPORT_TYPE" =~ ^(basic|detailed|deep|outline|resource)$ ]]; then
 fi
 
 # Validate optional parameters against allowed values
-VALID_TONES="objective analytical persuasive critical narrative simple exploratory comparative evaluative diplomatic provocative technical humorous empathetic"
+VALID_TONES="objective formal analytical persuasive informative explanatory descriptive critical comparative speculative narrative optimistic simple casual executive"
 if [[ -n "$TONE" ]] && ! echo "$VALID_TONES" | grep -qw "$TONE"; then
   echo "{\"success\": false, \"error\": \"Invalid --tone: $TONE. Valid tones: $VALID_TONES\"}" >&2
   exit 2

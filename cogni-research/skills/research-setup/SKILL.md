@@ -44,7 +44,7 @@ Otherwise -> call `AskUserQuestion` for project location (Step 3). YOUR TURN END
 
 **Skill's ONLY action this turn** — call AskUserQuestion with the menu as the question parameter:
 
-    AskUserQuestion(question="Research Configuration\n\nTopic: quantum computing's impact on cryptography\nDetected: type = basic\n\nDepth:\n- basic = 3-5K words, 5 sub-questions\n- detailed = 5-10K words, up to 10 sub-questions\n- deep = 8-15K words, recursive tree\n- outline = structured framework only\n- resource = annotated source list\n\nTone: objective (default) | analytical | critical | ...\nCitations: APA (default) | MLA | Chicago | Harvard | IEEE | Wikilink\nMarket: global (default) | dach | de | us | uk | fr\nSources: web (default) | local | wiki | hybrid\n\nAdvanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these\n\nReply with your choices, or 'go' for defaults.")
+    AskUserQuestion(question="Research Configuration\n\nTopic: quantum computing's impact on cryptography\nDetected: type = basic\n\nDepth:\n- basic = 3-5K words, 5 sub-questions\n- detailed = 5-10K words, up to 10 sub-questions\n- deep = 8-15K words, recursive tree\n- outline = structured framework only\n- resource = annotated source list\n\nTone: objective (default) | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive\nCitations: APA (default) | MLA | Chicago | Harvard | IEEE | Wikilink\nMarket: global (default) | dach | de | us | uk | fr\nSources: web (default) | local | wiki | hybrid\n\nAdvanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these\n\nReply with your choices, or 'go' for defaults.")
 
 **TURN ENDS.** No text output. No "Perfekt". No "Starting research". The user sees the AskUserQuestion dialog and replies in the next turn.
 
@@ -85,7 +85,7 @@ Scan the user's request and extract any options they already specified. These be
 2. List any options already extracted from the prompt (e.g., "Detected: type = deep, citations = IEEE")
 3. For **unset primary options**, show the compact chooser:
    - **Depth** (only if report type not yet detected): list all 5 types with word counts and one-line descriptions
-   - **Tone** (only if not detected): list all 13 options, mark default
+   - **Tone** (only if not detected): show these options: objective *(default)* | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive
    - **Citations** (only if not detected): list all 5 formats, mark default
    - **Market** (only if not detected): global | dach | de | us | uk | fr
    - **Sources** (only if report_source not detected): show all 4 modes with one-line descriptions:

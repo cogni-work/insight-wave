@@ -142,6 +142,7 @@ When OUTPUT_LANGUAGE=en (default), write in English. Sources in other languages 
   - **critical**: Evaluative, weighs pros/cons, identifies limitations
   - **narrative**: Story-driven, chronological, human-centered
   - **simple**: Plain language, short sentences, minimal jargon
+  - **executive**: Concise, decision-oriented, bottom-line-first
   - The tone and role work together: role controls *what* expertise to apply, tone controls *how* to present it
 - Lead with the most important findings, not methodology
 - Use evidence-based assertions, not speculation

@@ -20,6 +20,7 @@ Available writing tones for report generation. The tone shapes vocabulary, sente
 | **optimistic** | Highlights opportunities, positive framing, solution-oriented | Innovation reports, opportunity scans |
 | **simple** | Short sentences, plain language, minimal jargon | Executive summaries, broad audiences |
 | **casual** | Conversational, direct, approachable | Internal memos, blog-style |
+| **executive** | Concise, decision-oriented, bottom-line-first emphasis | C-suite briefings, board updates, steering committee reports |
 
 ## Default
 
