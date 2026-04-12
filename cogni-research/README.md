@@ -2,7 +2,7 @@
 
 > **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
 
-Multi-agent research report generator for [Claude Cowork](https://claude.ai/cowork). STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and three source modes (web, local documents, hybrid) — from quick overviews to deep recursive explorations.
+Multi-agent research report generator for [Claude Cowork](https://claude.ai/cowork). STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and four source modes (web, local documents, wiki, hybrid) — from quick overviews to deep recursive explorations.
 
 ## Why this exists
 
@@ -114,7 +114,7 @@ All entities are markdown with YAML frontmatter — Obsidian-browsable with wiki
 
 The pipeline uses two skills that split the work across separate context windows:
 
-**research-report** orchestrates six phases. Phase 0 initializes the project workspace and runs preliminary web searches to ground the research. Phase 1 decomposes the topic into orthogonal sub-questions with search guidance for each. Phase 2 dispatches **section-researcher** agents (sonnet) in batches of 4–5 — each agent runs 5–7 web searches, fetches top results, curates sources with quality scores, and creates context + source entities. For deep reports, **deep-researcher** agents (sonnet) perform recursive tree exploration instead. Phase 3 aggregates all contexts, deduplicates sources, and enforces a 25,000-word context limit. Phase 4 hands the aggregated context to the **writer** agent (sonnet), which produces a structured draft with inline citations. Phase 5 runs a structural-only review (completeness, coherence, source diversity, depth, clarity). Phase 6 copies the accepted draft to `output/report.md`.
+**research-report** orchestrates six phases. Phase 0 initializes the project workspace and runs preliminary web searches to ground the research. Phase 1 decomposes the topic into orthogonal sub-questions with search guidance for each. Phase 2 dispatches **section-researcher** agents (sonnet) in batches of 4–5 — each agent runs 5–7 web searches, fetches top results, curates sources with quality scores, and creates context + source entities. For wiki source mode, **wiki-researcher** agents (sonnet) query cogni-wiki instances using index-first page discovery. For deep reports, **deep-researcher** agents (sonnet) perform recursive tree exploration instead. Phase 3 aggregates all contexts, deduplicates sources, and enforces a 25,000-word context limit. Phase 4 hands the aggregated context to the **writer** agent (sonnet), which produces a structured draft with inline citations. Phase 5 runs a structural-only review (completeness, coherence, source diversity, depth, clarity). Phase 6 copies the accepted draft to `output/report.md`.
 
 **verify-report** then runs in a fresh context window — loading only the draft and source entities, not the research data. It extracts 10–30 verifiable claims from the draft, submits them to cogni-claims for source URL verification, presents results to the user, and runs up to 3 review-revision iterations to fix any factual deviations found. This architectural split ensures claims verification gets full context attention.
 
@@ -126,6 +126,7 @@ The pipeline uses two skills that split the work across separate context windows
 | `verify-report` | skill | Verify claims in a research report against cited sources using cogni-claims |
 | `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question or report section |
 | `local-researcher` | agent (sonnet) | Parallel document analyst for a single sub-question from local files (PDF, DOCX, TXT, MD, CSV) |
+| `wiki-researcher` | agent (sonnet) | Parallel wiki researcher querying cogni-wiki instances for a single sub-question using index-first page discovery |
 | `deep-researcher` | agent (sonnet) | Recursive tree explorer for deep research mode |
 | `source-curator` | agent (sonnet) | Ranks, filters, and annotates research sources by quality, relevance, and diversity |
 | `writer` | agent (sonnet) | Compiles aggregated research context and source entities into a cohesive, well-structured report |
@@ -148,9 +149,10 @@ cogni-research/
 │   └── verify-report/
 │       ├── SKILL.md
 │       └── references/           Claims integration, standalone mode, review criteria
-├── agents/                       8 research agents
+├── agents/                       9 research agents
 │   ├── section-researcher.md
 │   ├── local-researcher.md
+│   ├── wiki-researcher.md
 │   ├── deep-researcher.md
 │   ├── source-curator.md
 │   ├── writer.md
