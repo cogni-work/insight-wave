@@ -4,39 +4,35 @@ description: |
   Configure and initialize a cogni-research project. Presents an interactive
   Configuration Menu for report type, tone, citations, market, source mode,
   and advanced options. Creates the project directory with project-config.json.
-  Use when setting up a new research project, configuring research options,
-  or when research-report detects no initialized project.
-  Also use when the user says "configure research", "set up research project",
-  "research settings", or "research options".
+  This skill is the mandatory first step for all research workflows — research-report
+  cannot execute without an initialized project.
+  Use when setting up a new research project, configuring research parameters,
+  changing research settings, or when research-report detects no initialized project.
+  Trigger phrases: "configure research", "set up research project",
+  "research settings", "research options", "research configuration",
+  "configure my report", "change research settings", "report settings",
+  "new research project", "initialize research", "research preferences".
 allowed-tools: Read, Bash, Glob, ToolSearch, AskUserQuestion
 ---
 
 # Research Setup
 
-This skill configures and initializes a research project. It collects user preferences via AskUserQuestion and creates the project directory. It does NOT perform any research — that is handled by the research-report skill after setup completes.
+This skill configures and initializes a research project. It collects user preferences via AskUserQuestion and creates the project directory. It does not perform any research — that is handled by the research-report skill after setup completes.
 
-## CRITICAL: Tool Setup and Question Discipline
+## Interaction Model
 
-**Before your first AskUserQuestion call**, fetch its schema: call `ToolSearch(query="select:AskUserQuestion")`. Do this once per session — after that, AskUserQuestion is callable.
+**Before your first AskUserQuestion call**, fetch its schema: call `ToolSearch(query="select:AskUserQuestion")`. Do this once per session.
 
-**All user-facing questions go through AskUserQuestion — never as text output.**
+This skill communicates with the user exclusively through `AskUserQuestion` tool calls. The reason: AskUserQuestion renders as a structured dialog in the UI, while text output appears as a separate chat bubble. If you print a menu as text and also call AskUserQuestion, the user sees the same content twice in two different formats — confusing and wasteful. If you add conversational filler ("Perfekt!", "Great, starting research...") before or after the tool call, it creates an extra chat bubble that interrupts the clean dialog flow.
 
-DO NOT output configuration menus, confirmations, or settings as text in your response.
-DO NOT auto-confirm defaults (no "Perfekt", "Great", "Starting research", or any acknowledgment).
-DO NOT produce text that duplicates or previews what the AskUserQuestion dialog will show.
+The principle: put your question content in the `question` parameter of AskUserQuestion, and produce no text output on that turn. Each AskUserQuestion call ends your turn — the user must respond before you can continue.
 
-The ONLY way to present a question is via the `AskUserQuestion` tool call. The content goes in the tool's `question` parameter — not in your text output. After calling `AskUserQuestion`, your turn is OVER. Produce no further tool calls, no further text.
+### Turn Structure
 
-**Turn 1** (no topic provided): Call `AskUserQuestion` with question "What topic should I research?"
-YOUR TURN ENDS.
-
-**Turn 1 or 2** (topic known): Extract options (Step 1), assemble the Configuration Menu (Step 2), pass it as the `question` parameter of `AskUserQuestion`.
-YOUR TURN ENDS. Do not auto-confirm. Do not initialize the project.
-
-**Next turn** (user replied to config menu): Process their choices. If source mode needs paths -> call `AskUserQuestion` for paths. YOUR TURN ENDS.
-Otherwise -> call `AskUserQuestion` for project location (Step 3). YOUR TURN ENDS.
-
-**Next turn** (location answered): Run initialize-project.sh (Step 4). Print the project path. Setup is complete.
+- **Turn 1** (no topic provided): Ask "What topic should I research?" (turn ends)
+- **Turn 1 or 2** (topic known): Extract options (Step 1), assemble the Configuration Menu (Step 2), pass it as the `question` parameter of AskUserQuestion (turn ends)
+- **Next turn** (user replied to config menu): Process choices. If source mode needs paths, ask for paths (turn ends). Otherwise, ask for project location via Step 3 (turn ends).
+- **Next turn** (location answered): Run initialize-project.sh (Step 4). Print the project path. Setup is complete.
 
 ## Quick Example
 
@@ -46,7 +42,7 @@ Otherwise -> call `AskUserQuestion` for project location (Step 3). YOUR TURN END
 
     AskUserQuestion(question="Research Configuration\n\nTopic: quantum computing's impact on cryptography\nDetected: type = basic\n\nDepth:\n- basic = 3-5K words, 5 sub-questions\n- detailed = 5-10K words, up to 10 sub-questions\n- deep = 8-15K words, recursive tree\n- outline = structured framework only\n- resource = annotated source list\n\nTone: objective (default) | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive\nCitations: APA (default) | MLA | Chicago | Harvard | IEEE | Wikilink\nMarket: global (default) | dach | de | us | uk | fr\nSources: web (default) | local | wiki | hybrid\n\nAdvanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these\n\nReply with your choices, or 'go' for defaults.")
 
-**TURN ENDS.** No text output. No "Perfekt". No "Starting research". The user sees the AskUserQuestion dialog and replies in the next turn.
+The user sees the AskUserQuestion dialog and replies in the next turn. No text output accompanies the call.
 
 ## Workflow
 
@@ -67,17 +63,9 @@ Scan the user's request and extract any options they already specified. These be
 - **Wiki paths**: paths to cogni-wiki roots -> collect for wiki_paths
 - **Curate sources**: "prioritize authoritative sources" -> enable
 
-### Step 2: Configuration Menu (TURN-ENDING)
+### Step 2: Configuration Menu (turn ends)
 
-**GATE RULE**: This step produces exactly ONE action — an `AskUserQuestion` tool call — and NOTHING else.
-
-**DO NOT:**
-- Print the menu as markdown text, blockquotes, or conversational output
-- Auto-select defaults and skip asking ("deep, analytical, APA — starting now")
-- Acknowledge detected settings before asking ("Perfekt — deep, analytical, APA")
-- Produce any text output before or after the tool call
-
-**DO:** Assemble the menu text below, then pass it as the `question` parameter of a single `AskUserQuestion` call. That call is your entire turn.
+Assemble the menu dynamically and pass it as the `question` parameter of a single AskUserQuestion call:
 
 **Assemble the menu dynamically:**
 
@@ -96,13 +84,11 @@ Scan the user's request and extract any options they already specified. These be
 4. Always include one line for advanced options: "Advanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
-**Menu variations** (AskUserQuestion is always called — there is no skip path):
+**Menu variations** — both use AskUserQuestion because auto-starting research without confirmation wastes compute if the user wanted to tweak something:
 
 - **Normal case** (any option unset): Show the full menu with all choosers above.
 - **All four primary options pre-specified** (type + tone + citations + source mode all in the user's original prompt), or user said "just go" / "defaults are fine" / "start now": Show a compact confirmation instead:
   "Starting **{type}** research on {topic} — {tone} tone, {citations} citations, {source} sources. Change anything? (reply 'go' to confirm)"
-
-Either way, call `AskUserQuestion`. Either way, your turn ends.
 
 **Handling user responses (next turn):**
 - "go" / "defaults" / "start" -> accept detected + default values
@@ -112,7 +98,7 @@ Either way, call `AskUserQuestion`. Either way, your turn ends.
 
 After accepting configuration: if the resolved `report_source` is `local`, `wiki`, or `hybrid`, run the **Source mode follow-up** below before proceeding to Step 3. If `report_source` is `web` (or defaulted to web), skip to Step 3.
 
-**Source mode follow-up** (TURN-ENDING): When the user selects `local`, `wiki`, or `hybrid`:
+**Source mode follow-up** (turn ends): When the user selects `local`, `wiki`, or `hybrid`:
 
 - **`local`**: Call `AskUserQuestion` with: "Which documents should I analyze? Provide file paths or glob patterns (e.g., `~/docs/*.pdf`, `./data/`)."
 - **`wiki`**: Call `AskUserQuestion` with: "Which cogni-wiki should I query? Provide the wiki root path(s) (e.g., `~/cogni-wikis/my-wiki`)."
@@ -120,7 +106,7 @@ After accepting configuration: if the resolved `report_source` is `local`, `wiki
 
 If the user already provided paths in their original prompt (detected in Step 1), skip the follow-up for that path type.
 
-### Step 3: Ask for Project Location (TURN-ENDING)
+### Step 3: Ask for Project Location (turn ends)
 
 After research configuration is confirmed, **always** ask where to store the project. The only exception is when the user already specified a location (e.g., "save in standard", "put it in ~/research", "here").
 

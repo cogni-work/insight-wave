@@ -86,19 +86,7 @@ Check for an initialized project. Look for `project-config.json` in:
 
 Read `market` and `output_language` from `project-config.json` (stored by `initialize-project.sh`). These control search localization and report output language respectively.
 
-```bash
-MARKET=$(jq -r '.market // empty' "${PROJECT_PATH}/.metadata/project-config.json" 2>/dev/null)
-if [[ -z "$MARKET" ]]; then
-  # Backward compat: derive market from legacy language field
-  LANG=$(jq -r '.language // "en"' "${PROJECT_PATH}/.metadata/project-config.json")
-  MARKET=$( [[ "$LANG" == "de" ]] && echo "dach" || echo "global" )
-fi
-OUTPUT_LANGUAGE=$(jq -r '.output_language // empty' "${PROJECT_PATH}/.metadata/project-config.json" 2>/dev/null)
-if [[ -z "$OUTPUT_LANGUAGE" ]]; then
-  # Derive from market config default_output_language
-  OUTPUT_LANGUAGE=$(jq -r --arg m "$MARKET" '.[$m].default_output_language // ._default.default_output_language // "en"' "${CLAUDE_PLUGIN_ROOT}/references/market-sources.json" 2>/dev/null || echo "en")
-fi
-```
+Backward compatibility: if `market` is absent, derive it from the legacy `language` field (`"de"` maps to `"dach"`, anything else maps to `"global"`). If `output_language` is absent, look up the market's `default_output_language` in `${CLAUDE_PLUGIN_ROOT}/references/market-sources.json`, falling back to `"en"`.
 
 **`MARKET`** controls search localization for researcher agents:
 - Researcher agents load `${CLAUDE_PLUGIN_ROOT}/references/market-sources.json` and use the market entry to generate intent-based bilingual queries, boost authority sources, and apply geographic modifiers
@@ -379,7 +367,7 @@ Ask the user whether to generate a themed HTML version of the report with intera
 ### Phase 6: Finalization
 
 1. Copy final accepted draft to `output/report.md`
-   - Do NOT copy, symlink, or duplicate the report to the workspace root or any location outside the project folder. The canonical deliverable is `{project_path}/output/report.md` — the self-contained project directory is the unit of output (report + sources + metadata, all Obsidian-browsable). If the user wants a different format or location, the enrich-report phase (Phase 5.5) handles that.
+   - The project directory is a self-contained unit of output — report, sources, and metadata together, all Obsidian-browsable. Keep the canonical deliverable at `{project_path}/output/report.md` and do not copy or symlink it elsewhere. If the user wants a different format or location, the enrich-report phase (Phase 5.5) handles that.
 2. **Accumulate cost estimates**: Sum `cost_estimate.estimated_usd` from all agent outputs collected during Phases 2-5. Group by agent role (researchers, writer, reviewer, revisor, claim_extractor, source_curator). Write cost summary to `execution-log.json`
 3. Update `.metadata/execution-log.json` with:
    - Phase completion timestamps

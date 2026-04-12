@@ -187,7 +187,7 @@ This phase runs only if the user chose **proceed** or **fix** in Phase 3. The re
 
 **Read**: `references/review-criteria.md` for the scoring rubric (shared with research-report).
 
-Maximum 3 iterations. Each iteration:
+Maximum 3 iterations — beyond this, returns diminish sharply because the reviewer and revisor start cycling on the same issues, and accumulated context from multiple draft versions saturates the window. Each iteration:
 
 #### 4a: Review
 
