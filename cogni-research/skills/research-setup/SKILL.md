@@ -8,18 +8,22 @@ description: |
   or when research-report detects no initialized project.
   Also use when the user says "configure research", "set up research project",
   "research settings", or "research options".
-allowed-tools: Read, Bash, Glob, AskUserQuestion
+allowed-tools: Read, Bash, Glob, ToolSearch, AskUserQuestion
 ---
 
 # Research Setup
 
 This skill configures and initializes a research project. It collects user preferences via AskUserQuestion and creates the project directory. It does NOT perform any research — that is handled by the research-report skill after setup completes.
 
-## CRITICAL: All Questions Use the AskUserQuestion Tool
+## CRITICAL: Tool Setup and Question Discipline
+
+**Before your first AskUserQuestion call**, fetch its schema: call `ToolSearch(query="select:AskUserQuestion")`. Do this once per session — after that, AskUserQuestion is callable.
+
+**All user-facing questions go through AskUserQuestion — never as text output.**
 
 DO NOT output configuration menus, confirmations, or settings as text in your response.
 DO NOT auto-confirm defaults (no "Perfekt", "Great", "Starting research", or any acknowledgment).
-DO NOT produce any text output before or after calling AskUserQuestion.
+DO NOT produce text that duplicates or previews what the AskUserQuestion dialog will show.
 
 The ONLY way to present a question is via the `AskUserQuestion` tool call. The content goes in the tool's `question` parameter — not in your text output. After calling `AskUserQuestion`, your turn is OVER. Produce no further tool calls, no further text.
 
