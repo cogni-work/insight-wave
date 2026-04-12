@@ -1,9 +1,14 @@
 # Infographic Layouts
 
-**Schema version: 1.1** — infographic-brief.md documents should declare `version: "1.1"`
-in their frontmatter. v1.1 adds the `pull-quote` block type, the `voice_tone` frontmatter
-field, and the `palette_override` frontmatter field on top of v1.0. v1.0 briefs remain
-readable by both render agents — missing v1.1 fields are treated as absent.
+**Schema version: 1.2** — infographic-brief.md documents should declare `version: "1.2"`
+in their frontmatter. v1.2 extends the `svg-diagram` block with an `editorial-sketch` mode
+that dispatches to the new `editorial-sketch` worker agent for one-color line-art editorial
+landmarks (cartographic outlines, stakeholder silhouettes, object line art, small process
+diagrams, metaphor sketches) embedded beside a data block on editorial-family render paths.
+v1.1 added the `pull-quote` block type, the `voice_tone` frontmatter field, and the
+`palette_override` frontmatter field on top of v1.0. v1.0 and v1.1 briefs remain readable by
+all render agents — missing fields are treated as absent, and missing `Mode:` on an
+`svg-diagram` block defaults to `concept` (the pre-v1.2 behaviour).
 
 Layout type schemas and block type catalog for infographic briefs. The `story-to-infographic`
 skill selects one layout type based on content analysis, and the rendering agents
@@ -437,10 +442,19 @@ Items:
 
 ### svg-diagram
 
-Dispatched to concept-diagram-svg agent. For hub-spoke and flow-diagram layouts.
+A rendered vector visual embedded beside or inside a block row. The block has two
+**modes**, each dispatched to a different worker agent with a different visual discipline:
+
+| Mode | Agent | Visual language | Use when |
+|------|-------|-----------------|----------|
+| `concept` *(default)* | `concept-diagram-svg` | Rounded boxes, gradient fills, drop shadows, labels inside shapes — the rich concept-diagram style used for hub-spoke and flow diagrams | The block carries structured relationship data (hub+spokes, steps, 2x2 axes, layered stacks) that belongs on its own as a diagram |
+| `editorial-sketch` | `editorial-sketch` | One-color outline line art, no gradients, no shadows, no text inside the sketch — the disciplined editorial landmark style used on Economist / FT data pages | The block illustrates another block's data (a map for a regional stat, a silhouette for a quote, a factory for a productivity stat) and must obey editorial data-ink discipline on the Pencil canvas |
+
+**Concept mode** (original v1.0 behaviour — hub-spoke / flow-diagram layouts):
 
 ```yaml
 Block-Type: svg-diagram
+Mode: concept
 Diagram-Type: relationship-map          # relationship-map, process-flow, concept-sketch
 Concept-Subtype: convergence            # only for concept-sketch: layered-stack, convergence, phase-progression, 2x2-matrix
 Data:
@@ -452,7 +466,36 @@ Data:
     - label: "Eskalationssteuerung"
 ```
 
-**Constraints:** Data format must match concept-diagram-svg agent's DATA payload schema per diagram type. See `$CLAUDE_PLUGIN_ROOT/libraries/svg-patterns.md`.
+**Editorial-sketch mode** (v1.2 — editorial landmark illustrations beside data blocks,
+for the editorial family of style presets — economist, editorial, data-viz, corporate):
+
+```yaml
+Block-Type: svg-diagram
+Mode: editorial-sketch
+Sketch-Subtype: cartographic-outline    # cartographic-outline, stakeholder-silhouette, object-line-art, process-diagram, metaphor-sketch
+Subject: "Outline of Germany with 5 city dot markers"  # one concrete noun phrase — what a reader could point at
+Data-Link: block-3                       # id (or 1-based index) of the sibling data block this illustration supports
+Caption: "DACH-Region"                   # optional, max 4 words — rendered by the editorial renderer in the adjacent Pencil text node (NOT inside the SVG). If omitted, the sketch carries no label at all.
+Max-Width-Ratio: 0.4                     # 0.25 | 0.33 | 0.4 | 0.5 — share of row width. Defaults are subtype-dependent: cartographic-outline → 0.4 (cartography needs pixels to stay legible), other subtypes → 0.33. Override only when the composition explicitly needs a different ratio.
+```
+
+**Editorial-sketch constraints (enforced by the editorial-sketch agent, re-validated by the
+render-infographic-pencil agent at Step 4):**
+
+- Pairs with an existing data block via `Data-Link` — never spans a row alone.
+- One color only (the resolved `--accent-primary` for the active theme).
+- No text drawn inside the SVG — captions live in adjacent Pencil text nodes so they stay
+  in brand typography and weight.
+- Max 2 editorial-sketch blocks per infographic — density discipline.
+- Only used on editorial-family presets (`economist`, `editorial`, `data-viz`, `corporate`).
+  Hand-drawn presets use the sketchnote / whiteboard agents' native illustration capability
+  and should NOT emit editorial-sketch svg-diagrams.
+- `Subject` must be concrete (a named object, region, figure, or diagram shape) — no
+  decorative flourishes, no "abstract swirls representing innovation."
+
+**Constraints (both modes):** Data/Subject format must match the dispatched agent's input
+contract. Concept mode → `$CLAUDE_PLUGIN_ROOT/libraries/svg-patterns.md`. Editorial-sketch
+mode → `$CLAUDE_PLUGIN_ROOT/agents/editorial-sketch.md`.
 
 ### cta
 

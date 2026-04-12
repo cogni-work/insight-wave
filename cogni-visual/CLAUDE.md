@@ -65,11 +65,15 @@ agents/              Autonomous rendering agents (brief -> output)
   story-to-infographic.md  Orchestrates the story-to-infographic skill
   render-infographic-sketchnote.md  Renders infographic briefs into hand-drawn Excalidraw scenes — sketchnote tradition only (Mike Rohde / graphic recording — dashed rounded borders, warm fills, several accent marks, opus)
   render-infographic-whiteboard.md  Renders infographic briefs into hand-drawn Excalidraw scenes — whiteboard tradition only (Dan Roam "Back of the Napkin" / RSA Animate — solid sharp borders, transparent fills, accent only on hero + CTA, opus)
-  render-infographic-pencil.md  Renders infographic briefs into editorial .pen via Pencil MCP (economist, editorial, data-viz, corporate presets, opus)
+  render-infographic-pencil.md  Renders infographic briefs into editorial .pen via Pencil MCP (economist, editorial, data-viz, corporate presets, opus). v1.2: dispatches editorial-sketch worker for svg-diagram blocks in editorial-sketch mode and places rasterized PNGs beside data-link partners.
+  editorial-sketch.md  Worker agent — generates one editorial-discipline line-art sketch as inline SVG (cartographic-outline, stakeholder-silhouette, object-line-art, process-diagram, metaphor-sketch) and writes it to {brief_dir}/.sketches/. Strict one-color outline discipline: no gradients, no shadows, no inline text, no decorative rounded corners. Called by render-infographic-pencil at Step 2.5 when the brief contains svg-diagram blocks in editorial-sketch mode.
   enrich-report.md     Orchestrates the enrich-report skill (report → themed HTML)
   concept-diagram.md   Worker agent — generates one concept diagram via Excalidraw MCP, returns SVG. Retained as fallback for Excalidraw-native output scenarios (interactive .excalidraw files). Superseded by concept-diagram-svg for enrich-report
   concept-diagram-svg.md  Worker agent — generates one concept diagram as clean inline SVG using LLM-crafted geometric primitives. No Excalidraw dependency. Produces gradient fills, drop shadows, zone backgrounds. Visual review via browser screenshot. Default for enrich-report concept track. Cross-plugin: any skill dispatching to enrich-report benefits (cogni-portfolio, cogni-consulting, cogni-trends, cogni-research)
   brief-review-assessor.md  Stakeholder review of visual briefs (3 perspectives per brief type, haiku)
+
+scripts/             Plugin-shared utility scripts (called by agents, not skills)
+  rasterize-sketch.py  Rasterize an SVG file to PNG for Pencil MCP embedding. Detects rsvg-convert / cairosvg / inkscape on PATH (first one wins). Used by render-infographic-pencil Step 2.5 to convert editorial-sketch SVGs into PNGs that Pencil can place as file-backed images in frames. Graceful fallback when no rasterizer is available — returns JSON error with install_hint so the caller can demote sketch blocks to text-blocks without crashing the render.
 
 libraries/           Shared reference material loaded at Step 1
   arc-taxonomy.md          Shared arc_id → arc_type mapping + element names (all skills)
@@ -96,7 +100,7 @@ libraries/           Shared reference material loaded at Step 1
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 7 | story-to-slides, story-to-web, story-to-storyboard, story-to-infographic, render-html-slides, enrich-report, review-brief |
-| Agents | 16 | story-to-slides, pptx, html-slides, slides-enrichment-artist (worker), story-to-web, web, story-to-storyboard, storyboard, story-to-infographic, render-infographic-sketchnote (opus), render-infographic-whiteboard (opus), render-infographic-pencil (opus), enrich-report, concept-diagram (worker, Excalidraw fallback), concept-diagram-svg (worker, default inline SVG), brief-review-assessor |
+| Agents | 17 | story-to-slides, pptx, html-slides, slides-enrichment-artist (worker), story-to-web, web, story-to-storyboard, storyboard, story-to-infographic, render-infographic-sketchnote (opus), render-infographic-whiteboard (opus), render-infographic-pencil (opus), editorial-sketch (worker, one-color line-art for editorial sketches), enrich-report, concept-diagram (worker, Excalidraw fallback), concept-diagram-svg (worker, default inline SVG), brief-review-assessor |
 | Commands | 6 | render-html-slides, render-infographic, render-infographic-handdrawn, render-infographic-editorial, enrich-report, review-brief |
 | Libraries | 16 | arc-taxonomy, cta-taxonomy, pptx-layouts, EXAMPLE_BRIEF, web-layouts, EXAMPLE_WEB_BRIEF, storyboard-layouts, EXAMPLE_STORYBOARD_BRIEF, infographic-layouts, infographic-pencil-layouts, EXAMPLE_INFOGRAPHIC_BRIEF, EXAMPLE_SKETCHNOTE_BRIEF, EXAMPLE_ECONOMIST_BRIEF, brief-review-perspectives, svg-patterns, render-excalidraw-common |
 

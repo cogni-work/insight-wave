@@ -39,6 +39,12 @@ mapping lives in `agents/render-infographic-pencil.md:Step 2`. The short version
 
 No fourth accent color. No tinted block backgrounds. No card borders.
 
+**One-color icon discipline.** Every icon on the page (`type: "icon_font"` elements in
+kpi-cards, stat-rows, icon-grids, process-strips, CTA buttons) uses `$--accent-primary` —
+never `$--accent-secondary`. The secondary accent exists **only** for `chart-fill-2` on
+contrast bar charts. A stat-row icon in amber while an adjacent kpi-card icon is red reads
+as traffic-light coding and breaks editorial authority. This is a firm rule, not a guideline.
+
 ### Canonical Economist palette (opt-in — `palette_override: canonical`)
 
 When the brief explicitly sets `palette_override: canonical` (and `style_preset: economist`),
@@ -190,3 +196,63 @@ bar_h = (value / max_value) * 180
 
 Each bar: rectangle with `fill: "$--chart-fill"`, value label (11px bold) above, category
 label (10px muted) below. Bars sit directly on the cream background with thin baseline rule.
+
+### Editorial Sketch (one-color line-art landmark beside data)
+
+Editorial sketches arrive as pre-rasterized PNGs on disk — the `render-infographic-pencil`
+agent runs Step 2.5 before opening the document, so by the time you call `batch_design` the
+PNG file already exists at `{brief_dir}/.sketches/{block_id}.png`. You never call `G()` for
+these — the image is deterministic, disciplined, and brand-accent-locked by the
+`editorial-sketch` worker agent plus `scripts/rasterize-sketch.py`.
+
+The sketch **pairs with its Data-Link partner inside the same row** — it is never placed on
+its own row, and it is never placed in a different row from its partner. Read the brief's
+`Max-Width-Ratio` to decide how much of the row width the sketch gets. **Defaults by
+subtype:** `cartographic-outline` defaults to `0.4` (cartography needs pixels to stay
+legible), other subtypes default to `0.33`. Give the partner the complement. Use the
+standard row `gap: 32` — the sketch and its partner are a pair, not a pair-plus-gutter.
+
+**Frame dimensions are driven by the rasterizer output, not pre-allocated.** Read `width`
+and `height` from the `rasterize-sketch.py` response JSON and size the Pencil frame to
+match the actual PNG aspect ratio. A portrait sketch (480×620) gets a portrait frame; a
+landscape sketch (640×360) gets a landscape frame. Do not stretch, do not crop.
+
+```
+# Partner is a kpi-card on the left, sketch sits on the right, portrait PNG (480x620):
+# sketch_col gets 394px (≈0.4 of 984), so the frame is ~394x509 preserving the 480:620 ratio.
+row=I(page, {x: 48, y: Y, width: 984, height: 540, layout: "horizontal", gap: 32})
+  kpi=I(row, {width: 546, layout: "vertical", gap: 8})
+    // ... hero number, label, sublabel ...
+  sketch_col=I(row, {width: 394, layout: "vertical", gap: 8, padding: [16, 0, 0, 0]})
+    I(sketch_col, {type: "text", fontSize: 11, fontWeight: "Bold", fill: "$--accent-primary", letterSpacing: 1.5, content: "DACH-REGION"})
+    I(sketch_col, {type: "frame", name: "sketch-block-3", width: 394, height: 509, fill: {type: "image", src: "{brief_dir}/.sketches/block-3.png", fit: "contain"}})
+```
+
+**Caption discipline:** render exactly the brief's `Caption` field as a single uppercase
+letterspaced primary-accent label above (or below) the sketch frame — nothing else. No
+agent-invented sub-captions like "Cities: X, Y, Z", no marker list, no attribution line.
+If the brief has no `Caption`, the sketch carries no label at all. The markers are
+already visible in the sketch; labeling them redundantly violates data-ink discipline.
+
+**Discipline rules for sketch frames:**
+
+- `cornerRadius: 0` — never rounded, even when other Pencil examples show rounded image frames.
+- No `filter`, no shadow, no border — the sketch is already outline-only and any Pencil-side
+  effect would double-decorate it.
+- `fit: "contain"` — preserve the rasterized aspect ratio. Never `fit: "cover"` (would crop).
+- The caption label (11px bold primary-accent uppercase, letterSpacing 1.5) is a **separate
+  Pencil text node above or below the sketch frame**, never drawn inside the SVG. This is
+  how the caption stays in brand typography.
+- `width`/`height` on the frame match the PNG's real rasterized dimensions (the rasterizer
+  returned them in its JSON output). Do not stretch or squash the image.
+
+**When to place the sketch on the left vs right of its partner:**
+
+- If the partner's heaviest visual element sits on the partner's left edge (e.g., a hero
+  number in the left column of a kpi-card), put the sketch on the right to keep the eye's
+  landing point anchored.
+- If the partner is a chart with bars stepping up from left to right, put the sketch on the
+  left so the eye doesn't bounce back from the growth direction.
+- If the partner is a pull-quote, put the sketch on the opposite side from the quote's
+  emphasis mark / attribution.
+- Default when unsure: sketch right, partner left.

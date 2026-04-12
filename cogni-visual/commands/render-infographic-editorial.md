@@ -1,5 +1,5 @@
 ---
-description: Render an infographic-brief.md as a pixel-precise editorial .pen file via Pencil MCP — The Economist data page style (data journalism, Tufte data-ink discipline, Financial Times visual journalism tradition). Use for "editorial infographic", "Economist infographic", "Economist-style infographic", "The Economist data page", "magazine-style data page", "data journalism infographic", "FT-style infographic", "Tufte data-ink infographic", "data-viz infographic", "corporate infographic", "clean infographic", or when you already know the brief uses economist/editorial/data-viz/corporate style_preset. Direct dispatcher — for style-unknown briefs or auto-routing use /render-infographic instead.
+description: Render an infographic-brief.md as a pixel-precise editorial .pen file via Pencil MCP — The Economist data page style (data journalism, Tufte data-ink discipline, Financial Times visual journalism tradition). Supports v1.2 editorial-sketch blocks — one-color outline line-art landmarks (maps, silhouettes, object line art, metaphor sketches) embedded beside data blocks. Use for "editorial infographic", "Economist infographic", "Economist-style infographic", "The Economist data page", "magazine-style data page", "data journalism infographic", "FT-style infographic", "Tufte data-ink infographic", "data-viz infographic", "corporate infographic", "clean infographic", or when you already know the brief uses economist/editorial/data-viz/corporate style_preset. Direct dispatcher — for style-unknown briefs or auto-routing use /render-infographic instead.
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Agent, mcp__pencil__batch_design, mcp__pencil__batch_get, mcp__pencil__export_nodes, mcp__pencil__get_editor_state, mcp__pencil__get_guidelines, mcp__pencil__get_screenshot, mcp__pencil__get_variables, mcp__pencil__open_document, mcp__pencil__set_variables, mcp__pencil__snapshot_layout
 ---
 
@@ -11,6 +11,16 @@ discipline, Financial Times visual journalism). Direct dispatcher to the
 `render-infographic-pencil` agent — skips the style-preset routing in `/render-infographic`,
 so only use this when you already know the brief's `style_preset` is `economist`, `editorial`,
 `data-viz`, or `corporate`.
+
+**v1.2 — editorial sketches.** Briefs may include `svg-diagram` blocks in `editorial-sketch`
+mode. These are one-color outline line-art landmarks (cartographic outlines, stakeholder
+silhouettes, object line art, small process diagrams, metaphor sketches) that pair with a
+data block and make it read faster — a map next to a regional stat, a factory beside a
+productivity number. The renderer dispatches the `editorial-sketch` worker agent for each
+sketch block, rasterizes the returned SVG via `scripts/rasterize-sketch.py`, and drops the
+PNG into a Pencil frame beside its `Data-Link` partner. Graceful fallback: if the rasterizer
+binary (`rsvg-convert` / `cairosvg` / `inkscape`) is missing, the sketch blocks demote to
+text-blocks and the render still ships with a `sketch_rasterizer_missing` warning.
 
 ## Usage
 

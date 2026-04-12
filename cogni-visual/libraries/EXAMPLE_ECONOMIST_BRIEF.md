@@ -1,6 +1,6 @@
 ---
 type: infographic-brief
-version: "1.1"
+version: "1.2"
 theme: smarter-service
 theme_path: "/cogni-workspace/themes/smarter-service/theme.md"
 customer: "European Capital Partners"
@@ -20,14 +20,15 @@ confidence_score: 0.92
 transformation_notes: |
   Story-to-infographic transformation.
   Theme: smarter-service. Style: economist. Layout: stat-heavy. Orientation: portrait.
-  Source: investment-thesis.md (4200 words) → 12 content blocks, 4 hero numbers, 1 pull-quote.
+  Source: investment-thesis.md (4200 words) → 12 content blocks, 4 hero numbers, 1 pull-quote, 1 editorial sketch.
   Editorial family — The Economist data page tradition. Voice: analytical.
   Economist discipline applied with theme accents (palette_override: theme).
+  One editorial-sketch block (cartographic outline of Europe) pairs with the refinancing chart.
 ---
 
 # Infographic Brief: The European Mid-Cap Rewiring Window
 
-This reference brief demonstrates the v1.1 infographic-brief schema for the **economist**
+This reference brief demonstrates the v1.2 infographic-brief schema for the **economist**
 style preset — the editorial family, The Economist data page tradition. Notice:
 
 - `style_preset: economist` routes to `render-infographic-pencil` via `/render-infographic`
@@ -38,6 +39,8 @@ style preset — the editorial family, The Economist data page tradition. Notice
   **discipline**, wearing the brand.
 - Dense 10–14 block layout (economist is the only preset that allows 250-word density).
 - A single `pull-quote` block — the editorial signature move.
+- A single `svg-diagram` block in **editorial-sketch mode** (v1.2) — a one-color outline
+  of Europe that sits beside the refinancing chart and makes the geographic scope concrete.
 
 ---
 
@@ -95,6 +98,31 @@ Data:
     - label: "% of mid-cap debt refinancing"
       values: [8, 19, 34, 27, 12]
 ```
+
+---
+
+## Block 3b: Editorial Landmark (Europe outline)
+
+```yaml
+Block-Type: svg-diagram
+Mode: editorial-sketch
+Sketch-Subtype: cartographic-outline
+Subject: "Outline of continental Europe with small dot markers on 5 mid-cap industrial centres (Ruhr, Lyon, Milan, Gothenburg, Katowice)"
+Data-Link: block-3
+Caption: "MID-CAP SCOPE"
+Max-Width-Ratio: 0.33
+```
+
+Why this block earns its place: the refinancing chart (block 3) is entirely about European
+mid-cap industrials, but the chart alone shows percentages without naming *where*. The
+editorial sketch — a one-color outline of Europe with five small dot markers on the main
+industrial centres — turns the abstract number into a concrete geography. The renderer
+will place it to the right of the chart (chart bars grow left-to-right, so the sketch sits
+on the trailing edge), at 33% of the row width, with the caption "MID-CAP SCOPE" in the
+primary accent above the sketch frame. No text inside the sketch itself — the city names
+are implicit in the dot positions, because the chart's adjacent text handles any explicit
+labels. This is how editorial sketches earn their place: they make the data read faster
+without carrying independent information.
 
 ---
 
