@@ -1,0 +1,222 @@
+#!/usr/bin/env bash
+# wiki_status.sh — collect status facts for a cogni-wiki and emit JSON.
+#
+# Usage:
+#   wiki_status.sh --wiki-root <path>
+#
+# Output contract:
+#   {"success": true|false, "data": { ... }, "error": "string"}
+#
+# Bash 3.2 compatible. stdlib only (grep, find, awk, sed, date, python3 for JSON).
+#
+# Rationale: a shell script is the right tool here because everything we need
+# is file counting, date arithmetic, and grep over log.md. Delegating to python3
+# only for JSON assembly keeps the shell portion trivial and portable.
+
+set -u
+
+# ---------- arg parse ----------
+usage() {
+  cat <<'USAGE'
+wiki_status.sh — collect status facts for a cogni-wiki and emit JSON.
+
+Usage:
+  wiki_status.sh --wiki-root <path>
+  wiki_status.sh -h | --help
+
+Output contract:
+  {"success": true|false, "data": { ... }, "error": "string"}
+USAGE
+}
+
+WIKI_ROOT=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --wiki-root)
+      WIKI_ROOT="${2:-}"
+      shift 2
+      ;;
+    *)
+      printf '{"success": false, "data": {}, "error": "unknown arg: %s"}\n' "$1"
+      exit 1
+      ;;
+  esac
+done
+
+fail() {
+  msg="$1"
+  # Escape double quotes and backslashes for JSON.
+  escaped=$(printf '%s' "$msg" | sed 's/\\/\\\\/g; s/"/\\"/g')
+  printf '{"success": false, "data": {}, "error": "%s"}\n' "$escaped"
+  exit 1
+}
+
+if [ -z "$WIKI_ROOT" ]; then
+  fail "missing --wiki-root"
+fi
+
+if [ ! -f "$WIKI_ROOT/.cogni-wiki/config.json" ]; then
+  fail "not a cogni-wiki: $WIKI_ROOT/.cogni-wiki/config.json not found"
+fi
+
+PAGES_DIR="$WIKI_ROOT/wiki/pages"
+LOG_FILE="$WIKI_ROOT/wiki/log.md"
+RAW_DIR="$WIKI_ROOT/raw"
+CONFIG_FILE="$WIKI_ROOT/.cogni-wiki/config.json"
+
+# ---------- counts ----------
+entries_count=0
+lint_count=0
+if [ -d "$PAGES_DIR" ]; then
+  entries_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name '*.md' ! -name 'lint-*.md' 2>/dev/null | wc -l | tr -d ' ')
+  lint_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name 'lint-*.md' 2>/dev/null | wc -l | tr -d ' ')
+fi
+
+raw_file_count=0
+if [ -d "$RAW_DIR" ]; then
+  raw_file_count=$(find "$RAW_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+fi
+
+# ---------- last lint date ----------
+last_lint=""
+days_since_lint=""
+if [ -d "$PAGES_DIR" ]; then
+  # Latest lint filename by sort (YYYY-MM-DD sorts lexicographically).
+  last_lint_file=$(ls -1 "$PAGES_DIR"/lint-*.md 2>/dev/null | sort | tail -n 1)
+  if [ -n "$last_lint_file" ]; then
+    last_lint=$(basename "$last_lint_file" .md | sed 's/^lint-//')
+    # Date arithmetic: macOS vs GNU. Try GNU first, fall back to BSD.
+    if date -d "$last_lint" +%s >/dev/null 2>&1; then
+      last_epoch=$(date -d "$last_lint" +%s)
+    else
+      last_epoch=$(date -j -f "%Y-%m-%d" "$last_lint" +%s 2>/dev/null || echo "")
+    fi
+    if [ -n "$last_epoch" ]; then
+      now_epoch=$(date +%s)
+      days_since_lint=$(( (now_epoch - last_epoch) / 86400 ))
+    fi
+  fi
+fi
+
+# ---------- 30-day log activity ----------
+ingest_count_30d=0
+query_count_30d=0
+update_count_30d=0
+if [ -f "$LOG_FILE" ]; then
+  # Compute cutoff date (30 days ago) in YYYY-MM-DD.
+  if date -d "30 days ago" +%Y-%m-%d >/dev/null 2>&1; then
+    cutoff=$(date -d "30 days ago" +%Y-%m-%d)
+  else
+    cutoff=$(date -v -30d +%Y-%m-%d 2>/dev/null || echo "")
+  fi
+  if [ -n "$cutoff" ]; then
+    # Use awk to parse "## [YYYY-MM-DD] op | ..." lines where date >= cutoff.
+    # We pass cutoff as a variable and compare lexicographically (safe for ISO dates).
+    counts=$(awk -v cutoff="$cutoff" '
+      /^## \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]/ {
+        date = substr($0, 5, 10)
+        if (date >= cutoff) {
+          # Extract op token after the closing bracket.
+          rest = substr($0, 16)
+          sub(/^ */, "", rest)
+          op = rest
+          sub(/ .*/, "", op)
+          if (op == "ingest") ingest++
+          else if (op == "query") query++
+          else if (op == "update") update++
+        }
+      }
+      END {
+        printf "%d %d %d", (ingest+0), (query+0), (update+0)
+      }
+    ' "$LOG_FILE")
+    ingest_count_30d=$(printf '%s' "$counts" | awk '{print $1}')
+    query_count_30d=$(printf '%s' "$counts" | awk '{print $2}')
+    update_count_30d=$(printf '%s' "$counts" | awk '{print $3}')
+  fi
+fi
+
+# ---------- recent log ----------
+recent_log=""
+if [ -f "$LOG_FILE" ]; then
+  recent_log=$(grep -E '^## \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]' "$LOG_FILE" 2>/dev/null | tail -n 10 || true)
+fi
+
+# ---------- orphan raw files (quick heuristic) ----------
+orphan_raw_count=0
+if [ -d "$RAW_DIR" ] && [ -d "$PAGES_DIR" ]; then
+  # For every file in raw/, check whether any page's frontmatter mentions its basename.
+  while IFS= read -r rawfile; do
+    [ -z "$rawfile" ] && continue
+    base=$(basename "$rawfile")
+    if ! grep -rqF "$base" "$PAGES_DIR" 2>/dev/null; then
+      orphan_raw_count=$((orphan_raw_count + 1))
+    fi
+  done <<EOF
+$(find "$RAW_DIR" -maxdepth 1 -type f 2>/dev/null)
+EOF
+fi
+
+# ---------- assemble JSON via python3 ----------
+# Pass values via env to avoid shell-escape hell.
+export WS_ENTRIES_COUNT="$entries_count"
+export WS_LINT_COUNT="$lint_count"
+export WS_RAW_FILE_COUNT="$raw_file_count"
+export WS_ORPHAN_RAW_COUNT="$orphan_raw_count"
+export WS_LAST_LINT="$last_lint"
+export WS_DAYS_SINCE_LINT="$days_since_lint"
+export WS_INGEST_30="$ingest_count_30d"
+export WS_QUERY_30="$query_count_30d"
+export WS_UPDATE_30="$update_count_30d"
+export WS_RECENT_LOG="$recent_log"
+export WS_CONFIG_FILE="$CONFIG_FILE"
+
+python3 - <<'PY'
+import json
+import os
+
+def to_int_or_none(s):
+    s = (s or "").strip()
+    if not s:
+        return None
+    try:
+        return int(s)
+    except ValueError:
+        return None
+
+try:
+    with open(os.environ["WS_CONFIG_FILE"], "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+except Exception as e:
+    print(json.dumps({"success": False, "data": {}, "error": f"config.json unreadable: {e}"}))
+    raise SystemExit(1)
+
+recent_log_raw = os.environ.get("WS_RECENT_LOG", "")
+recent_log_lines = [line for line in recent_log_raw.splitlines() if line.strip()]
+
+last_lint = os.environ.get("WS_LAST_LINT", "").strip() or None
+
+data = {
+    "name": cfg.get("name"),
+    "slug": cfg.get("slug"),
+    "description": cfg.get("description"),
+    "created": cfg.get("created"),
+    "entries_count": int(os.environ.get("WS_ENTRIES_COUNT", "0") or 0),
+    "lint_count": int(os.environ.get("WS_LINT_COUNT", "0") or 0),
+    "raw_file_count": int(os.environ.get("WS_RAW_FILE_COUNT", "0") or 0),
+    "orphan_raw_count": int(os.environ.get("WS_ORPHAN_RAW_COUNT", "0") or 0),
+    "last_lint": last_lint,
+    "days_since_lint": to_int_or_none(os.environ.get("WS_DAYS_SINCE_LINT", "")),
+    "ingest_count_30d": int(os.environ.get("WS_INGEST_30", "0") or 0),
+    "query_count_30d": int(os.environ.get("WS_QUERY_30", "0") or 0),
+    "update_count_30d": int(os.environ.get("WS_UPDATE_30", "0") or 0),
+    "recent_log": recent_log_lines,
+    "schema_version": cfg.get("schema_version"),
+}
+
+print(json.dumps({"success": True, "data": data, "error": ""}))
+PY

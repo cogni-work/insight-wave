@@ -1,0 +1,106 @@
+# cogni-wiki
+
+> **Incubating** (v0.0.x) — skills may change or be removed at any time.
+
+**Karpathy-style compounding personal wiki for Claude Code.** Claude maintains a persistent, interlinked markdown knowledge base for you — ingesting sources into summary pages, answering queries from the wiki (not memory), auditing for contradictions and orphans, and updating pages with diff-gated revisions.
+
+Inspired by [Andrej Karpathy's LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and the reference Claude Code implementation [kfchou/wiki-skills](https://github.com/kfchou/wiki-skills).
+
+## Why this exists
+
+People abandon personal wikis because the bookkeeping is tedious. Every new source means rewriting summaries, updating cross-references, re-reading old pages to spot contradictions, deleting stale claims. Humans give up after a month. RAG-based tools skip the bookkeeping entirely — but then every query re-discovers the same ground, nothing compounds, and the knowledge base never gets denser.
+
+Karpathy's insight: LLMs are unusually good at exactly the bookkeeping humans hate. Let Claude do it. You curate the raw sources; Claude writes and maintains the wiki.
+
+| Problem | With a RAG tool | With cogni-wiki |
+|---------|-----------------|-----------------|
+| Summarising a new paper | Done on-the-fly each query | Done once, filed forever |
+| Cross-references | Vector similarity, ephemeral | Explicit `[[wikilinks]]`, audited |
+| Contradictions between sources | Hidden in the retrieval | Surfaced by `wiki-lint` |
+| Stale claims | Still retrievable | Flagged and reconciled |
+| Compounding over time | No — same effort per query | Yes — wiki gets denser each ingest |
+
+## What it is
+
+**IS:** A seven-skill plugin (`wiki-setup`, `wiki-ingest`, `wiki-query`, `wiki-lint`, `wiki-update`, `wiki-resume`, `wiki-dashboard`) that operates on a simple directory layout Claude maintains automatically.
+
+**Wiki layout** (created by `wiki-setup`):
+
+```
+<wiki-root>/
+├── SCHEMA.md                 The contract — conventions, frontmatter, linking rules
+├── raw/                      Your immutable source documents
+├── assets/                   Attachments
+├── wiki/
+│   ├── index.md              One-line summary of every page
+│   ├── log.md                Append-only operation log
+│   ├── overview.md           Evolving synthesis
+│   └── pages/                Flat, slug-named markdown pages
+└── .cogni-wiki/config.json   Plugin metadata
+```
+
+**Page frontmatter** (YAML):
+
+```yaml
+---
+id: constitutional-ai
+title: Constitutional AI
+type: concept
+tags: [llms, safety, karpathy]
+created: 2026-04-12
+updated: 2026-04-12
+sources: [../raw/bai-et-al-2022.pdf]
+---
+```
+
+## What it means for you
+
+- **A knowledge base that compounds.** Every source you add leaves the wiki denser and more interconnected than before — the opposite of RAG, where every query starts from zero.
+- **No memory-based answers.** `wiki-query` physically reads the wiki before answering. If the wiki is silent, the answer says so — no hallucinated filler.
+- **A self-describing artifact.** `SCHEMA.md` ships inside every wiki so the wiki remains readable even if cogni-wiki is uninstalled or replaced.
+- **Portable plain markdown.** No vector store, no embeddings, no proprietary format. Open the wiki in Obsidian, VS Code, or `grep` and it still works.
+- **Diff-before-write discipline.** `wiki-update` shows the change before modifying a page and requires a source citation for every new claim.
+
+## Installation
+
+```bash
+claude plugin install cogni-wiki
+```
+
+Configure the default wiki root (optional) in `.claude/cogni-wiki.local.md`:
+
+```markdown
+---
+wiki_root: ~/cogni-wikis
+default_wiki: primary
+---
+```
+
+## Quick start
+
+```
+/cogni-wiki:wiki-setup                   # Bootstrap a new wiki
+# (drop a paper in ~/cogni-wikis/primary/raw/)
+/cogni-wiki:wiki-ingest                  # Summarise + cross-link
+/cogni-wiki:wiki-query "what did I learn about X?"
+/cogni-wiki:wiki-lint                    # After every 5–10 ingests
+/cogni-wiki:wiki-dashboard               # Visual overview
+/cogni-wiki:wiki-resume                  # "Where was I?"
+```
+
+## Relationship to Claude Code auto-memory
+
+Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/` — that layer is **Claude's learning about you** (feedback, preferences, session-spanning patterns). cogni-wiki is the complementary primitive: **your learning about your domain** — explicitly curated, portable across projects, queryable. No duplication; different intent.
+
+## Credits
+
+- **Andrej Karpathy** — [LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). The pattern this plugin implements.
+- **kfchou/wiki-skills** — [reference Claude Code implementation](https://github.com/kfchou/wiki-skills). The five-skill shape (`wiki-init`, `wiki-ingest`, `wiki-query`, `wiki-lint`, `wiki-update`) that inspired this plugin's layout. cogni-wiki adds `wiki-resume` and `wiki-dashboard` to match cogni-* ecosystem conventions.
+
+## License
+
+AGPL-3.0-only — see `LICENSE`.
+
+---
+
+*Built by [Stephan de Haas](mailto:stephan@cogni-work.ai) as part of the [insight-wave](../) monorepo.*

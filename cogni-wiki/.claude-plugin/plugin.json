@@ -1,0 +1,22 @@
+{
+  "name": "cogni-wiki",
+  "version": "0.0.1",
+  "description": "Karpathy-style compounding personal wiki for Claude Code. Claude maintains a persistent, interlinked markdown knowledge base — ingesting sources into summary pages, answering queries from the wiki (not memory), auditing for contradictions and orphans, and updating pages with diff-gated revisions. Inspired by Andrej Karpathy's LLM Wiki pattern and the reference implementation by kfchou/wiki-skills.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "wiki",
+    "knowledge-base",
+    "karpathy",
+    "notes",
+    "compound-knowledge",
+    "ingest",
+    "query",
+    "lint",
+    "obsidian",
+    "backlinks"
+  ]
+}
