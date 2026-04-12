@@ -1,6 +1,6 @@
 # cogni-wiki
 
-Karpathy-style compounding wiki engine for the insight-wave ecosystem — Claude maintains a persistent, interlinked markdown knowledge base across sessions.
+Compile-time knowledge engine for personal and small-team knowledge work — a better-RAG alternative where Claude maintains a persistent, interlinked markdown wiki across sessions. Based on Karpathy's LLM Wiki pattern.
 
 ## Plugin Architecture
 

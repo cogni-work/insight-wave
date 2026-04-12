@@ -242,17 +242,17 @@
       "source": "./cogni-wiki",
       "version": "0.0.2",
       "maturity": "incubating",
-      "description": "Karpathy-style compounding personal wiki for Claude Code. Claude maintains a persistent, interlinked markdown knowledge base — ingesting sources into summary pages, answering queries from the wiki (not memory), auditing for contradictions and orphans, and updating pages with diff-gated revisions. Inspired by Andrej Karpathy's LLM Wiki pattern and the reference implementation by kfchou/wiki-skills.",
+      "description": "A better RAG for personal knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
       "keywords": [
         "wiki",
         "knowledge-base",
+        "rag-alternative",
+        "compile-time-knowledge",
         "karpathy",
-        "notes",
         "compound-knowledge",
         "ingest",
         "query",
         "lint",
-        "obsidian",
         "backlinks"
       ]
     }

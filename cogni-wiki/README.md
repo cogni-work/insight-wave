@@ -2,23 +2,27 @@
 
 > **Incubating** (v0.0.x) — skills may change or be removed at any time.
 
-**Karpathy-style compounding personal wiki for Claude Code.** Claude maintains a persistent, interlinked markdown knowledge base for you — ingesting sources into summary pages, answering queries from the wiki (not memory), auditing for contradictions and orphans, and updating pages with diff-gated revisions.
+**A better RAG for personal and small-team knowledge work.** Instead of re-discovering the same information every query through embedding similarity, cogni-wiki has Claude compile sources once into a persistent, interlinked markdown wiki — no vector store, no chunking heuristics, no opaque retrieval. Knowledge compounds with every ingest; answers trace to readable markdown files, not vector math. Plain files, plain backlinks, plain Unix tools.
 
-Inspired by [Andrej Karpathy's LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and the reference Claude Code implementation [kfchou/wiki-skills](https://github.com/kfchou/wiki-skills).
+Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and the reference implementation by [kfchou/wiki-skills](https://github.com/kfchou/wiki-skills).
 
 ## Why this exists
 
-People abandon personal wikis because the bookkeeping is tedious. Every new source means rewriting summaries, updating cross-references, re-reading old pages to spot contradictions, deleting stale claims. Humans give up after a month. RAG-based tools skip the bookkeeping entirely — but then every query re-discovers the same ground, nothing compounds, and the knowledge base never gets denser.
+RAG promised to give LLMs access to your private knowledge. In practice, every query re-discovers the same ground — embeddings silently miss semantic matches, synthesis happens from scratch each time, and nothing compounds across sessions. You pay a "synthesis tax" on every question, and when an answer is wrong, tracing which chunks were retrieved and why requires reverse-engineering opaque vector math.
 
-Karpathy's insight: LLMs are unusually good at exactly the bookkeeping humans hate. Let Claude do it. You curate the raw sources; Claude writes and maintains the wiki.
+Karpathy's insight: what if knowledge was **compiled once at ingestion** instead of **retrieved per query**? The LLM reads your sources, writes structured summaries, cross-references them, flags contradictions — and then every future query reads pre-synthesized articles directly. The wiki gets denser with each ingest. RAG stays flat.
 
-| Problem | With a RAG tool | With cogni-wiki |
-|---------|-----------------|-----------------|
-| Summarising a new paper | Done on-the-fly each query | Done once, filed forever |
-| Cross-references | Vector similarity, ephemeral | Explicit `[[wikilinks]]`, audited |
-| Contradictions between sources | Hidden in the retrieval | Surfaced by `wiki-lint` |
-| Stale claims | Still retrievable | Flagged and reconciled |
+| Problem | RAG | cogni-wiki |
+|---------|-----|------------|
+| Summarising a new source | On-the-fly each query | Compiled once, filed forever |
+| Cross-references | Vector similarity (ephemeral, can miss) | Explicit `[[wikilinks]]` (audited) |
+| Contradictions between sources | Hidden in retrieval noise | Surfaced by `wiki-lint` at ingest |
+| Stale claims | Still retrievable, silently | Flagged and reconciled |
+| Debugging wrong answers | Reverse-engineer vector math | Read the markdown file |
+| Token efficiency | 2K–5K chunks re-retrieved per query | Pre-synthesized; up to 95% reduction vs full-doc loading |
 | Compounding over time | No — same effort per query | Yes — wiki gets denser each ingest |
+
+**Where RAG still wins:** Scale beyond ~50K–100K tokens of compiled content; rapidly changing data (daily feeds, inventory); strict source-level attribution for legal/compliance; multi-domain enterprise with role-based access. For those cases, use RAG — or combine both (the hybrid approach [never lost a single round](references/claude-research-karparthy.md) in head-to-head benchmarks).
 
 ## What it is
 

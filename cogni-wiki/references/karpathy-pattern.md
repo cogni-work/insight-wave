@@ -34,6 +34,14 @@ Humans abandon personal wikis because maintenance is tedious — rewriting summa
 
 Karpathy's argument: RAG rediscovers the same information every query. A wiki **accumulates**. Each ingest distills raw material into reusable form; each query reinforces or extends that form. After N ingests the wiki is a dense, structured artifact that costs pennies to read end-to-end — no vector store, no embeddings, no chunking heuristics. Plain markdown, plain backlinks, plain Unix tools.
 
+Three structural advantages over RAG:
+
+1. **Retrieval reliability.** RAG depends on embedding similarity, which silently misses semantic matches ("cancellation policy" won't match "ending your subscription"). The wiki loads pre-synthesized articles directly — if the content exists, the LLM sees it.
+2. **Synthesis cost.** RAG pays a synthesis tax on every query, reconciling disparate fragments each time. The wiki pays that cost once at ingestion.
+3. **Debuggability.** When RAG gives a wrong answer, tracing which chunks were retrieved requires reverse-engineering vector math. With the wiki, every claim traces to a readable markdown file.
+
+**Honest scope.** The wiki's sweet spot is bounded knowledge bases under ~50K–100K tokens of compiled content. RAG remains the correct choice for large-scale corpora (100K+ documents), rapidly changing data, strict source-level attribution (legal/compliance), and multi-domain enterprise with RBAC. The strongest evidence from community benchmarks: the combined wiki+RAG approach outperformed either method alone.
+
 ## What This Plugin Adds on Top
 
 - **Two extra skills** — `wiki-resume` (status dashboard) and `wiki-dashboard` (self-contained HTML overview) — beyond the reference five, matching cogni-* conventions where every plugin surfaces its own state.
