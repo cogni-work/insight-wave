@@ -250,8 +250,9 @@ When verdict="accept" or iteration reaches 3: proceed to Phase 5.
 > The report is now fact-checked. Two independent downstream paths:
 >
 > **Polish & Visualize** (most common — keeps the research report format):
-> 1. `/copywriter` — Polish for executive readability (BLUF, tighter prose)
-> 2. `/enrich-report` — Themed HTML with interactive charts
+> 1. `/copywrite` — Polish for executive readability (BLUF, tighter prose)
+> 2. `/story-to-infographic` + `/render-infographic` — Infographic header (Pencil, 10-step validated)
+> 3. `/enrich-report` — Themed HTML with charts (reuses infographic from step 2)
 >
 > **Narrative path** (alternative — transforms the report into a story-arc document):
 > - `/cogni-narrative:narrative` — Executive narrative with story arc framework

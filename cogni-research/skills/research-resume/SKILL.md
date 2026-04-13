@@ -81,6 +81,7 @@ Downstream plugins leave filesystem traces when they process research output. Ch
 
 - `copywrite_applied`: `{project_path}/output/.report.md` exists (cogni-copywriting creates this hidden backup before overwriting the report in-place)
 - `narrative_applied`: `{project_path}/output/insight-summary.md` exists AND its YAML frontmatter contains an `arc_id` field (the `arc_id` distinguishes a genuine narrative output from a user-created file with the same name)
+- `infographic_applied`: `{project_path}/cogni-visual/infographic-brief.md` exists (story-to-infographic produces this brief)
 - `enrich_report_standalone`: `{project_path}/output/report-enriched.html` exists (standalone enrich-report run after Phase 6; Phase 5.5 enrichment is already covered by `enrich_report_applied` in execution-log)
 - `narrative_enriched`: `{project_path}/output/insight-summary-enriched.html` exists
 - `narrative_polished`: `{project_path}/output/.insight-summary.md` exists (copywriter backup for narrative)
@@ -135,7 +136,7 @@ Cost: ${total_estimated_usd} (researchers ${N}, writer ${N}, reviewer ${N})
 
 **Downstream Actions** (only show when the project is fully complete — condition 10 in the decision tree):
 ```
-Downstream: Copywrite {Done/—} | Narrative {Done/—} | Enrich-report {Done/—}
+Downstream: Copywrite {Done/—} | Infographic {Done/—} | Enrich-report {Done/—} | Narrative {Done/—}
 ```
 Use "Done" when the Step 3F detection signal is positive, "—" when absent. This gives the user an instant read on what's left to do.
 
@@ -188,8 +189,10 @@ For each downstream action below, check its Step 3F signal. Already-completed ac
 **Path A — Polish & Visualize** (keeps the research report format):
 1. `cogni-copywriting:copywrite` — Polish report for executive readability (BLUF, tighter prose, consistent tone)
    - If `copywrite_applied` is true: show "Report already polished" instead of offering this step
-2. `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the report (optional, for premium Pencil-rendered visual header with 10-step validation)
-3. `cogni-visual:enrich-report` — Themed HTML with interactive charts and concept diagrams (detects and reuses existing infographic if step 2 was done; otherwise generates a simplified infographic inline)
+2. `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the report (Pencil-rendered header with 10-step distillation, 4-layer validation, reviewer agent)
+   - Why before enrich-report: this produces the validated infographic header that enrich-report reuses. Without it, enrich-report falls back to a simplified inline distillation — fewer validation steps, no reviewer pass, hardcoded to economist preset.
+   - If `infographic_applied` is true: show "Infographic already rendered" instead of offering this step
+3. `cogni-visual:enrich-report` — Themed HTML with interactive charts and concept diagrams (reuses the infographic from step 2 as report header)
    - If `enrich_report_applied` (from execution-log) or `enrich_report_standalone` is true: show "Enriched HTML already generated" instead
 
 **Path B — Narrative transformation** (converts to story-arc document):
@@ -205,7 +208,14 @@ For each downstream action below, check its Step 3F signal. Already-completed ac
 
 If all downstream actions have been completed, say so explicitly: "All downstream processing complete — report polished, narrative generated, enriched HTML produced." Offer only `research-setup` as the next action.
 
-Highlight the top 2-3 most impactful *available* (not-yet-done) actions. Offer to proceed with the user's choice immediately.
+Present all available Path A steps in pipeline order using this template:
+
+> **Visual pipeline** (recommended order):
+> 1. `/copywrite` — Polish for executive readability
+> 2. `/story-to-infographic` + `/render-infographic` — Infographic header (Pencil, 10-step validated)
+> 3. `/enrich-report` — Themed HTML with charts (reuses infographic from step 2)
+
+For already-completed steps, show them as done (e.g., "~~`/copywrite`~~ Done") but keep the full sequence visible so the user sees where they are. Offer to proceed with the next available step.
 
 ## Phase Reference
 

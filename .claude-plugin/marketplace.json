@@ -45,7 +45,7 @@
     {
       "name": "cogni-copywriting",
       "source": "./cogni-copywriting",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "maturity": "preview",
       "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, and arc contract audit against cogni-narrative.",
       "keywords": [
@@ -165,7 +165,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.6.22",
+      "version": "0.6.23",
       "maturity": "preview",
       "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
@@ -223,7 +223,7 @@
       "source": "./cogni-consulting",
       "version": "0.0.9",
       "maturity": "incubating",
-      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes themed HTML engagement reports with concept diagrams and data charts, Lean Canvas authoring via business-model-hypothesis, and lightweight how-might-we engagements for bounded challenges.",
+      "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring via business-model-hypothesis, and lightweight how-might-we engagements for bounded challenges (workshop design, process improvement, team exercises) using guided ideation.",
       "keywords": [
         "double-diamond",
         "consulting",
@@ -242,7 +242,7 @@
       "source": "./cogni-wiki",
       "version": "0.0.3",
       "maturity": "incubating",
-      "description": "A better RAG for personal knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
+      "description": "A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
       "keywords": [
         "wiki",
         "knowledge-base",
