@@ -462,15 +462,124 @@ output JSON's `warnings` field.
    This is best-effort. The render's job is to produce a page the reader trusts — the save
    is a convenience layer on top, not a correctness gate.
 
+### Step 5b: Generate HTML Fragment (optional)
+
+   After the PNG export succeeds, generate an embeddable HTML fragment from the rendered
+   `.pen` design tree. This fragment allows `enrich-report` to embed the Pencil-designed
+   infographic as native, selectable, responsive HTML — superior to a base64 PNG lightbox.
+
+   **Why this matters:** The infographic header is the first thing the reader sees. A native
+   HTML fragment preserves Pencil's editorial precision (typography, density, rule lines) while
+   making text selectable, links clickable, and the layout natively responsive. The PNG path
+   remains as fallback for when this step fails.
+
+   **Skip this step if the PNG export failed** — the HTML fragment is a quality enhancement,
+   not a correctness gate. The PNG is the minimum viable output.
+
+   1. **Read design variables.** Call `get_variables` on the `.pen` file to retrieve all
+      resolved design tokens (colors, fonts). These become CSS custom properties.
+
+      ```text
+      get_variables → { "--accent-primary": "#C00000", "--surface": "#FBF9F3", ... }
+      ```
+
+   2. **Read the .pen design tree.** Use `batch_get` to walk the rendered page:
+
+      - **First pass:** `batch_get(filePath="{output_path}", readDepth=1)` — identify the root
+        page frame and its direct children (title band, content rows, footer).
+      - **Second pass:** For each child, read with `readDepth=4` to get all text nodes, layout
+        properties, fills, fonts, and image frames.
+
+   3. **Capture image-bearing frames.** For nodes with image fills (editorial sketches, chart
+      illustrations), use `get_screenshot` to export each as PNG. Save to
+      `{brief_dir}/fragment-images/{node_name}.png`. Track the mapping:
+      `node_id → ./fragment-images/{node_name}.png`.
+
+      If screenshot capture fails for a node, use a solid-color placeholder matching the
+      node's fill color.
+
+   4. **Convert .pen tree to HTML fragment.** Walk the node tree depth-first using these
+      mapping rules (same approach as `web.md` Step 9.5):
+
+      | .pen Node | HTML Element |
+      |-----------|-------------|
+      | frame (layout: vertical) | `<div style="display:flex; flex-direction:column">` |
+      | frame (layout: horizontal) | `<div style="display:flex; flex-direction:row">` |
+      | frame (layout: none) | `<div style="position:relative">` |
+      | text (fontSize ≥ 36px) | `<h2>` |
+      | text (fontSize ≥ 20px, fontWeight bold) | `<h3>` |
+      | text (any other) | `<p>` or `<span>` |
+      | icon_font | `<span>` with Lucide icon class |
+      | frame with image fill | `<div><img src="./fragment-images/..."></div>` |
+      | rectangle (height ≤ 4px, fill = rule-color) | `<hr>` (editorial rule line) |
+
+      **Layout properties → CSS:** `width: fill_container` → `flex:1; width:100%`;
+      `gap` → `gap`; `padding` → `padding`; `cornerRadius` → `border-radius`;
+      `fill: $--var` → `background: var(--var)`.
+
+      **Resolve variable references:** Replace `$--variable-name` with `var(--variable-name)`
+      in CSS, using the hex values from Step 5b.1 as fallbacks.
+
+   5. **Assemble the HTML fragment.** Write to `{brief_dir}/infographic-fragment.html`:
+
+      ```html
+      <div class="infographic-pencil-fragment">
+        <style>
+          .infographic-pencil-fragment {
+            /* Design tokens from get_variables */
+            --accent-primary: #C00000;
+            --surface: #FBF9F3;
+            /* ... all resolved tokens ... */
+            max-width: 860px;
+            margin: 0 auto;
+            font-family: var(--font-body, system-ui, sans-serif);
+          }
+          /* Scoped styles for the fragment */
+          .infographic-pencil-fragment hr {
+            border: none;
+            border-top: 3px solid var(--accent-primary);
+            margin: 0;
+          }
+          /* Responsive: stack horizontal layouts on mobile */
+          @media (max-width: 768px) {
+            .infographic-pencil-fragment [style*="flex-direction: row"] {
+              flex-direction: column !important;
+            }
+          }
+        </style>
+        <!-- Converted .pen tree -->
+        {html_from_tree_walk}
+      </div>
+      ```
+
+      **Fragment contract:**
+      - Single `<div class="infographic-pencil-fragment">` wrapper — no `<html>`, `<head>`, `<body>`
+      - All CSS scoped inside `.infographic-pencil-fragment` to avoid bleeding into the host page
+      - CSS custom properties defined on the wrapper element (not `:root`)
+      - Image paths relative to `brief_dir` (the consuming script resolves or inlines them)
+      - Responsive: flex-wrap fallbacks at 768px breakpoint
+
+   6. **Validate the fragment.**
+      - File exists and is > 500 bytes
+      - Contains at least one `<h2>` or `<h3>` (the title)
+      - Contains at least one element with a hero number (fontSize ≥ 36px text)
+      - If validation fails, delete the fragment file and record
+        `warnings: ["fragment_generation_failed"]` — the PNG remains the authoritative artifact
+
+   **Error handling:** If any step in 5b fails (Pencil MCP read errors, tree-walk conversion
+   issues, file write failure), record `warnings: ["fragment_generation_failed: {reason}"]` and
+   continue to Step 5.3. The PNG is the correctness gate; the HTML fragment is best-effort.
+
 3. **Self-check before returning:**
    - Was the `.pen` file actually written? (best-effort — record as warning if it wasn't)
    - Was the PNG exported? (required — this IS the correctness gate)
+   - Was the HTML fragment written? (best-effort — record as warning if it wasn't)
    - Does the JSON below use real values from the run, not placeholders? (required)
 
 Return single-line JSON (no prose before or after):
 
 ```json
-{"ok": true, "pen_path": "{path}", "layout_type": "{type}", "style_preset": "{preset}", "orientation": "{orientation}", "blocks_rendered": {N}, "total_ops": {N}}
+{"ok": true, "pen_path": "{path}", "fragment_path": "{path_or_null}", "layout_type": "{type}", "style_preset": "{preset}", "orientation": "{orientation}", "blocks_rendered": {N}, "total_ops": {N}}
 ```
 
 On error:
