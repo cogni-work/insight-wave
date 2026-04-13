@@ -75,6 +75,16 @@ Since cogni-research has no `project-status.sh`, read the project state directly
 - Read `.metadata/user-claims-review.json` if it exists — contains user decisions on deviations
 - Check whether `execution-log.json` has `phase_5_review.claims_verification` set (it reads `"deferred to verify-report"` when research-report finishes without verification)
 
+**F. Detect downstream actions already performed:**
+
+Downstream plugins leave filesystem traces when they process research output. Check these signals so the dashboard and next-steps can reflect what the user has already done — even across sessions:
+
+- `copywrite_applied`: `{project_path}/output/.report.md` exists (cogni-copywriting creates this hidden backup before overwriting the report in-place)
+- `narrative_applied`: `{project_path}/output/insight-summary.md` exists AND its YAML frontmatter contains an `arc_id` field (the `arc_id` distinguishes a genuine narrative output from a user-created file with the same name)
+- `enrich_report_standalone`: `{project_path}/output/report-enriched.html` exists (standalone enrich-report run after Phase 6; Phase 5.5 enrichment is already covered by `enrich_report_applied` in execution-log)
+- `narrative_enriched`: `{project_path}/output/insight-summary-enriched.html` exists
+- `narrative_polished`: `{project_path}/output/.insight-summary.md` exists (copywriter backup for narrative)
+
 ### 4. Present Dashboard
 
 Show a concise, scannable summary. Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report.
@@ -123,6 +133,12 @@ Review: structural {final_score} ({iterations} iteration) | claims: {deferred/do
 Cost: ${total_estimated_usd} (researchers ${N}, writer ${N}, reviewer ${N})
 ```
 
+**Downstream Actions** (only show when the project is fully complete — condition 10 in the decision tree):
+```
+Downstream: Copywrite {Done/—} | Narrative {Done/—} | Enrich-report {Done/—}
+```
+Use "Done" when the Step 3F detection signal is positive, "—" when absent. This gives the user an instant read on what's left to do.
+
 ### 5. Health Checks
 
 Apply these checks after the dashboard and surface warnings before recommending next actions:
@@ -164,21 +180,30 @@ For conditions 2-7, research-report has built-in resumption logic — it reads `
 
 ### Downstream Options for Completed Reports
 
-When the project is fully complete (report finalized + claims verified or user chose to skip verification), present downstream options as two independent paths:
+When the project is fully complete (report finalized + claims verified or user chose to skip verification), present downstream options. Use the detection data from Step 3F to determine which actions have already been performed.
+
+For each downstream action below, check its Step 3F signal. Already-completed actions: acknowledge briefly (e.g., "Report already polished") but do not offer to re-run. Available actions: present as actionable next steps with dispatch offer.
 
 **Path A — Polish & Visualize** (keeps the research report format):
 1. `cogni-copywriting:copywrite` — Polish report for executive readability (BLUF, tighter prose, consistent tone)
+   - If `copywrite_applied` is true: show "Report already polished" instead of offering this step
 2. `cogni-visual:enrich-report` — Themed HTML with interactive charts and concept diagrams
+   - If `enrich_report_applied` (from execution-log) or `enrich_report_standalone` is true: show "Enriched HTML already generated" instead
 
 **Path B — Narrative transformation** (converts to story-arc document):
 - `cogni-narrative:narrative` — Transform into executive narrative with story arc framework
+  - If `narrative_applied` is true: show "Narrative already generated (output/insight-summary.md)" instead
 - After narrative: optionally polish with `cogni-copywriting:copywrite`, then visualize with `cogni-visual:enrich-report`
+  - Post-narrative polish: detected via `narrative_polished` (`output/.insight-summary.md` exists)
+  - Post-narrative enrichment: detected via `narrative_enriched` (`output/insight-summary-enriched.html` exists)
 
 **Other:**
 - `verify-report` — Verify claims against cited sources (if not yet done)
 - `research-setup` — Start a new research project
 
-Highlight the top 2-3 most impactful actions based on what hasn't been done yet. Offer to proceed with the user's choice immediately.
+If all downstream actions have been completed, say so explicitly: "All downstream processing complete — report polished, narrative generated, enriched HTML produced." Offer only `research-setup` as the next action.
+
+Highlight the top 2-3 most impactful *available* (not-yet-done) actions. Offer to proceed with the user's choice immediately.
 
 ## Phase Reference
 
