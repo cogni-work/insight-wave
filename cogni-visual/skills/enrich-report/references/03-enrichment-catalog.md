@@ -381,14 +381,39 @@ At `rich`: baseline + all qualifying content-pattern enrichments + `process-flow
 
 ---
 
+## Type Split: Infographic vs Report Body
+
+With the two-zone architecture, enrichment types are split between the infographic header and the report body:
+
+**Infographic-only types** (rendered in the infographic header by the Python script from `infographic-data.json` — NOT placed in the report body):
+- `kpi-dashboard` — hero numbers live in the infographic KPI row
+- `stat-chart` — statistical clusters are captured by infographic charts
+- `distribution-doughnut` — proportional data shown in infographic chart
+- `theme-radar` — theme comparison shown in infographic chart
+- `coverage-heatmap` — coverage data shown in infographic chart
+- `horizon-chart` — horizon distribution shown in infographic chart
+
+**Report-body types** (placed as sparse illustrations between paragraphs):
+- `process-flow` — sequential workflows that benefit from spatial representation
+- `concept-sketch` — abstract concepts (layers, phases, convergence) where a diagram aids comprehension
+- `comparison-bar` — only for complex data tables with 5+ rows where text comparison is cognitively expensive
+- `timeline-chart` — only for regulatory deadline sections where temporal sequence matters
+- `summary-card` — BLUF callout for sections >800 words (max 2 per report)
+
+**Dual types:**
+- `tips-flow` — if 1 value chain exists, include in infographic; if multiple, place in report body
+- `relationship-map` — infographic if showing overall theme connections; report body if section-specific
+
+The Python script enforces this split by stripping infographic-only types from the enrichment plan during validation.
+
 ## Scoring Reference
 
 | Score Range | Meaning | Density Required |
 |-------------|---------|-----------------|
 | 80-100 | Essential — structural, always high value | `minimal` |
 | 50-79 | Strong — clear data, good fit | `balanced` |
-| 25-49 | Moderate — useful but not critical | `balanced` (near cap) |
-| 10-24 | Optional — adds variety, lower confidence | `rich` |
+| 25-49 | Moderate — useful but not critical | `rich` |
+| 10-24 | Optional — adds variety, lower confidence | `rich` (near cap) |
 | 0-9 | Skip — insufficient data or poor fit | never |
 
 ## Type Diversity Scoring
@@ -409,7 +434,13 @@ The purpose is to ensure visual variety — a report with 6 comparison-bars and 
 ## Spacing Rules
 
 - **Minimum distance:** 300 words between any two enrichments (measured in source text between injection points).
+- **Per-section cap:** Maximum 1 enrichment per section at `balanced` density, maximum 2 at `rich`. The Python script enforces this by keeping highest-scoring enrichments per section.
+- **Total density caps (report body only — infographic is separate):**
+  - `minimal`: 2 enrichments maximum
+  - `balanced`: 5 enrichments maximum
+  - `rich`: 8 enrichments maximum
+  The Python script enforces these caps — even if the enrichment plan exceeds them, the script trims to the cap and logs what was dropped.
 - **Variety rule:** No more than 2 consecutive enrichments of the same type. If a third would occur, skip the lowest-scoring one.
 - **Section boundary:** Enrichments inject AFTER the relevant content block, BEFORE the next heading. Never inject before a section's first paragraph.
-- **Appendix exclusion:** Never place enrichments inside reference/appendix sections: `claims-registry`, `quellenregister`, `references`, `bibliography`, `literaturverzeichnis`. These are data SOURCES for charts, not visualization hosts. If an enrichment's data comes from an appendix table, place it in the last narrative section before the appendix (typically `synthesis` or `die-investitionsentscheidung`).
-- **Synthesis placement:** When a chart summarizes cross-theme data (claims distribution, investment comparison across all Handlungsfelder), place it in the synthesis/closing section — after the paragraph containing the aggregate numbers, not at the section start.
+- **Appendix exclusion:** Never place enrichments inside reference/appendix sections: `claims-registry`, `quellenregister`, `references`, `bibliography`, `literaturverzeichnis`. These are data SOURCES for charts, not visualization hosts.
+- **Visual-to-text ratio:** Within any single section, the combined vertical space of enrichments (estimated at 300px per chart, 100px per summary-card, 250px per concept diagram) should not exceed the vertical space of the prose. If a section has 200 words (~400px of text), it can accommodate at most 1 illustration.

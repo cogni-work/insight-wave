@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 """Generate a self-contained themed HTML file from a markdown report + enrichment plan.
 
+Two-zone architecture:
+  1. Infographic header — editorial visual executive summary (from infographic-data.json)
+  2. Report body — full prose with sidebar navigation and sparse illustrations
+
 Usage:
     python3 generate-enriched-report.py \
         --source <report.md> \
         --enrichment-plan <enrichment-plan.json> \
-        --chart-configs <chart-configs.json> \
         --design-variables <design-variables.json> \
         --output <output.html> \
         --language <en|de> \
-        [--svg-dir <path/to/svgs/>]
+        [--infographic-data <infographic-data.json>] \
+        [--svg-dir <path/to/svgs/>] \
+        [--density <balanced>]
+
+Chart.js configs are generated internally from enrichment data — no chart-configs.json needed.
 
 Output: Self-contained HTML file with themed report + Chart.js visualizations + inline SVGs.
-Returns JSON: {"status": "ok", "path": "<output-path>"} or {"error": "..."}
+Returns JSON: {"status": "ok", "path": "<output-path>", "validation": {...}} or {"error": "..."}
 """
 
 import json
@@ -335,17 +342,321 @@ def _render_list(items):
 
 
 # ---------------------------------------------------------------------------
-# Enrichment injection
+# Chart.js config generation (from structured enrichment data)
 # ---------------------------------------------------------------------------
 
-def build_enrichment_html(enrichment, chart_configs, svg_dir, dv):
+def _color_palette(dv):
+    """Return a list of themed hex colors for chart datasets."""
+    c = dv["colors"]
+    s = dv["status"]
+    return [
+        c["accent"], c["primary"], c["secondary"],
+        s["info"], s["success"], s["warning"],
+        c["accent_muted"], s["danger"],
+    ]
+
+
+def _chart_defaults(dv):
+    """Base Chart.js options inherited by all charts."""
+    return {
+        "responsive": True,
+        "maintainAspectRatio": True,
+        "plugins": {
+            "legend": {
+                "position": "bottom",
+                "labels": {
+                    "font": {"family": dv["fonts"]["body"], "size": 13},
+                    "color": dv["colors"]["text"],
+                    "padding": 16,
+                    "usePointStyle": True,
+                },
+            },
+            "tooltip": {
+                "backgroundColor": dv["colors"]["surface_dark"],
+                "titleColor": dv["colors"]["text_light"],
+                "bodyColor": dv["colors"]["text_light"],
+                "cornerRadius": 8,
+                "padding": 12,
+            },
+        },
+    }
+
+
+def generate_chart_config(enrichment, dv):
+    """Generate a complete Chart.js config from an enrichment's structured data.
+
+    The LLM extracts data (labels, values, type). This function applies the
+    correct Chart.js template, resolves colors from design-variables, and
+    returns a ready-to-embed config dict.
+    """
+    etype = enrichment.get("type", "")
+    data = enrichment.get("data", {})
+    eid = enrichment.get("id", "enr-000")
+    palette = _color_palette(dv)
+    defaults = _chart_defaults(dv)
+
+    if etype == "kpi-dashboard":
+        return None  # KPI dashboards are custom HTML, not Chart.js
+
+    labels = data.get("labels", [])
+    values = data.get("values", [])
+    datasets_raw = data.get("datasets", [])
+    unit = data.get("unit", "")
+
+    # Extract from legacy data shapes (items[], claims[], stats[], segments[])
+    if not labels:
+        for key in ("items", "claims", "stats", "segments"):
+            items = data.get(key, [])
+            if items:
+                labels = [it.get("label", "") for it in items]
+                values = [it.get("value", 0) for it in items]
+                if not unit:
+                    unit = items[0].get("unit", "") if items else ""
+                break
+
+    if not labels and not datasets_raw:
+        return None  # No data to chart
+
+    config = {"chart_id": eid}
+
+    if etype == "comparison-bar":
+        config["type"] = "bar"
+        config["data"] = {
+            "labels": labels,
+            "datasets": [{
+                "label": unit or "Value",
+                "data": values,
+                "backgroundColor": [palette[i % len(palette)] for i in range(len(values))],
+                "borderRadius": 6,
+            }],
+        }
+        config["options"] = {
+            **defaults,
+            "indexAxis": "y",
+            "scales": {
+                "x": {
+                    "beginAtZero": True,
+                    "ticks": {
+                        "font": {"family": dv["fonts"]["body"], "size": 12},
+                        "color": dv["colors"]["text_muted"],
+                        "callback_suffix": unit,
+                    },
+                    "grid": {"color": dv["colors"]["border"], "lineWidth": 0.5},
+                },
+            },
+            "plugins": {**defaults["plugins"], "legend": {"display": False}},
+        }
+
+    elif etype == "stat-chart":
+        config["type"] = "bar"
+        if datasets_raw:
+            config["data"] = {
+                "labels": labels,
+                "datasets": [{
+                    "label": ds.get("label", ""),
+                    "data": ds.get("values", []),
+                    "backgroundColor": palette[i % len(palette)],
+                    "borderRadius": 4,
+                } for i, ds in enumerate(datasets_raw)],
+            }
+        else:
+            config["data"] = {
+                "labels": labels,
+                "datasets": [{
+                    "label": unit or "Value",
+                    "data": values,
+                    "backgroundColor": [palette[i % len(palette)] for i in range(len(values))],
+                    "borderRadius": 6,
+                }],
+            }
+        config["options"] = {
+            **defaults,
+            "scales": {
+                "y": {
+                    "beginAtZero": True,
+                    "ticks": {
+                        "font": {"family": dv["fonts"]["body"], "size": 12},
+                        "color": dv["colors"]["text_muted"],
+                    },
+                    "grid": {"color": dv["colors"]["border"], "lineWidth": 0.5},
+                },
+            },
+        }
+
+    elif etype == "distribution-doughnut":
+        config["type"] = "doughnut"
+        config["data"] = {
+            "labels": labels,
+            "datasets": [{
+                "data": values,
+                "backgroundColor": [palette[i % len(palette)] for i in range(len(values))],
+            }],
+        }
+        config["options"] = {
+            **defaults,
+            "plugins": {
+                **defaults["plugins"],
+                "legend": {**defaults["plugins"]["legend"], "position": "right"},
+            },
+        }
+
+    elif etype == "timeline-chart":
+        config["type"] = "line"
+        config["data"] = {
+            "labels": labels,
+            "datasets": [{
+                "label": unit or "Events",
+                "data": values if values else [1] * len(labels),
+                "borderColor": dv["colors"]["accent"],
+                "backgroundColor": dv["colors"]["accent"] + "20",
+                "pointBackgroundColor": dv["colors"]["accent"],
+                "pointRadius": 6,
+                "fill": False,
+                "tension": 0,
+            }],
+        }
+        config["options"] = {
+            **defaults,
+            "plugins": {**defaults["plugins"], "legend": {"display": False}},
+        }
+
+    elif etype == "horizon-chart":
+        config["type"] = "bar"
+        # Stacked horizontal
+        if datasets_raw:
+            config["data"] = {
+                "labels": labels,
+                "datasets": [{
+                    "label": ds.get("label", ""),
+                    "data": ds.get("values", []),
+                    "backgroundColor": palette[i % len(palette)],
+                } for i, ds in enumerate(datasets_raw)],
+            }
+        else:
+            config["data"] = {
+                "labels": labels,
+                "datasets": [{"data": values, "backgroundColor": palette[0]}],
+            }
+        config["options"] = {
+            **defaults,
+            "indexAxis": "y",
+            "scales": {
+                "x": {"stacked": True, "beginAtZero": True},
+                "y": {"stacked": True},
+            },
+        }
+
+    elif etype in ("theme-radar", "coverage-heatmap"):
+        if etype == "theme-radar":
+            config["type"] = "radar"
+        else:
+            config["type"] = "bar"
+        if datasets_raw:
+            config["data"] = {
+                "labels": labels,
+                "datasets": [{
+                    "label": ds.get("label", ""),
+                    "data": ds.get("values", []),
+                    "borderColor": palette[i % len(palette)],
+                    "backgroundColor": palette[i % len(palette)] + "20",
+                    "pointBackgroundColor": palette[i % len(palette)],
+                } for i, ds in enumerate(datasets_raw)],
+            }
+        else:
+            config["data"] = {
+                "labels": labels,
+                "datasets": [{
+                    "data": values,
+                    "borderColor": palette[0],
+                    "backgroundColor": palette[0] + "20",
+                    "pointBackgroundColor": palette[0],
+                }],
+            }
+        config["options"] = defaults
+
+    else:
+        # Fallback: simple bar chart
+        config["type"] = "bar"
+        config["data"] = {
+            "labels": labels,
+            "datasets": [{
+                "data": values,
+                "backgroundColor": [palette[i % len(palette)] for i in range(len(values))],
+                "borderRadius": 6,
+            }],
+        }
+        config["options"] = {**defaults, "plugins": {**defaults["plugins"], "legend": {"display": False}}}
+
+    return config
+
+
+# ---------------------------------------------------------------------------
+# Enrichment plan validation
+# ---------------------------------------------------------------------------
+
+DENSITY_CAPS = {"minimal": 2, "balanced": 5, "rich": 8, "none": 0}
+SECTION_CAPS = {"minimal": 1, "balanced": 1, "rich": 2, "none": 0}
+INFOGRAPHIC_ONLY_TYPES = {"kpi-dashboard", "stat-chart", "distribution-doughnut",
+                          "theme-radar", "coverage-heatmap", "horizon-chart"}
+
+
+def validate_enrichment_plan(plan, density):
+    """Validate and trim enrichment plan to enforce density, type, and spacing rules.
+
+    Returns (validated_enrichments, trimmed_log).
+    """
+    enrichments = plan.get("enrichments", [])
+    density = density or "balanced"
+    cap = DENSITY_CAPS.get(density, 5)
+    sec_cap = SECTION_CAPS.get(density, 1)
+    trimmed = []
+
+    if cap == 0:
+        return [], [f"density={density}: all enrichments removed"]
+
+    # Step 1: Remove infographic-only types from report body
+    filtered = []
+    for enr in enrichments:
+        if enr.get("type", "") in INFOGRAPHIC_ONLY_TYPES:
+            trimmed.append(f"Moved to infographic: {enr.get('id', '?')} ({enr.get('type', '?')}) — dashboard type")
+        else:
+            filtered.append(enr)
+
+    # Step 2: Enforce per-section caps
+    section_counts = {}
+    capped = []
+    for enr in sorted(filtered, key=lambda e: e.get("score", 0), reverse=True):
+        sec = enr.get("target_section", "")
+        section_counts[sec] = section_counts.get(sec, 0) + 1
+        if section_counts[sec] <= sec_cap:
+            capped.append(enr)
+        else:
+            trimmed.append(f"Section cap: {enr.get('id', '?')} — section '{sec}' already has {sec_cap} enrichment(s)")
+
+    # Step 3: Enforce total density cap (keep highest-scoring)
+    by_score = sorted(capped, key=lambda e: e.get("score", 0), reverse=True)
+    kept = by_score[:cap]
+    for enr in by_score[cap:]:
+        trimmed.append(f"Density cap ({cap}): {enr.get('id', '?')} (score={enr.get('score', 0)})")
+
+    # Step 4: Sort by injection line for proper placement order
+    kept.sort(key=lambda e: e.get("injection_after_line", 0))
+
+    return kept, trimmed
+
+
+# ---------------------------------------------------------------------------
+# Enrichment rendering
+# ---------------------------------------------------------------------------
+
+def build_enrichment_html(enrichment, svg_dir, dv):
     """Build HTML for a single enrichment based on its type and track."""
     eid = enrichment.get("id", "enr-000")
     etype = enrichment.get("type", "")
     track = enrichment.get("track", "data")
 
     if track == "data":
-        return _build_chart_html(eid, etype, enrichment, chart_configs, dv)
+        return _build_chart_html(eid, etype, enrichment, dv)
     elif track == "concept":
         return _build_svg_html(eid, etype, enrichment, svg_dir)
     elif track == "html":
@@ -353,22 +664,14 @@ def build_enrichment_html(enrichment, chart_configs, svg_dir, dv):
     return ''
 
 
-def _build_chart_html(eid, etype, enrichment, chart_configs, dv):
+def _build_chart_html(eid, etype, enrichment, dv):
     """Build HTML for a Chart.js data visualization."""
     if etype == "kpi-dashboard":
         return _build_kpi_html(eid, enrichment, dv)
 
-    # Canvas-based chart
-    config = None
-    for cfg in chart_configs:
-        if cfg.get("chart_id") == eid:
-            config = cfg
-            break
-    if not config:
-        return f'<!-- enrichment {eid}: no chart config found -->'
-
-    desc = enrichment.get("description", "")
+    # Chart config is generated by generate_chart_config — we just need the canvas
     height = _chart_height(etype, enrichment)
+    desc = enrichment.get("description", "")
 
     html = f'''<div class="enrichment chart-container" data-type="{etype}" data-id="{eid}">
   <canvas id="{eid}" style="max-height: {height}px;"></canvas>
@@ -442,21 +745,204 @@ def _build_card_html(eid, etype, enrichment, dv):
 def _chart_height(etype, enrichment):
     """Determine chart height based on type and data size."""
     heights = {
-        "horizon-chart": 400,
-        "theme-radar": 400,
-        "coverage-heatmap": 350,
-        "distribution-doughnut": 350,
+        "horizon-chart": 350,
+        "theme-radar": 350,
+        "coverage-heatmap": 300,
+        "distribution-doughnut": 300,
         "timeline-chart": 200,
-        "comparison-bar": 350,
-        "stat-chart": 350,
+        "comparison-bar": 300,
+        "stat-chart": 300,
     }
-    h = heights.get(etype, 350)
+    h = heights.get(etype, 300)
     # Scale bar charts by item count
-    if etype in ("horizon-chart", "comparison-bar"):
-        items = len(enrichment.get("data", {}).get("stats", []))
-        if items > 5:
-            h = max(h, items * 60 + 80)
-    return h
+    data = enrichment.get("data", {})
+    items = data.get("items", data.get("labels", []))
+    if etype in ("horizon-chart", "comparison-bar") and len(items) > 5:
+        h = max(h, len(items) * 50 + 80)
+    return min(h, 400)  # Hard cap at 400px in report body
+
+
+# ---------------------------------------------------------------------------
+# Infographic header rendering
+# ---------------------------------------------------------------------------
+
+def generate_infographic_header(ig_data, dv):
+    """Render an editorial infographic (Economist-style) from infographic-data.json.
+
+    This produces an inline element meant to be inserted AFTER the executive
+    summary section in the report body, not as a separate pre-report header.
+
+    Returns (infographic_html, chart_configs_list).
+    """
+    if not ig_data:
+        return '', []
+
+    title = escape_html(ig_data.get("title", ""))
+    subtitle = escape_html(ig_data.get("subtitle", ""))
+    kpis = ig_data.get("kpis", [])
+    charts = ig_data.get("charts", [])
+    pullquote = ig_data.get("pullquote")
+    comparison = ig_data.get("comparison")
+    sources = escape_html(ig_data.get("sources", ""))
+
+    parts = []
+    parts.append('<div class="infographic-editorial">')
+
+    # Editorial title
+    parts.append(f'<div class="ig-title">{title}</div>')
+    if subtitle:
+        parts.append(f'<div class="ig-subtitle">{subtitle}</div>')
+
+    # KPI strip — editorial callouts, not cards
+    if kpis:
+        parts.append('<div class="ig-kpi-strip">')
+        for kpi in kpis[:5]:
+            val = escape_html(str(kpi.get("value", "")))
+            lab = escape_html(str(kpi.get("label", "")))
+            src = kpi.get("source", "")
+            src_url = kpi.get("source_url", "")
+            src_html = ""
+            if src and src_url:
+                src_html = f'<div class="ig-src"><a href="{escape_html(src_url)}" target="_blank" rel="noopener">{escape_html(src)}</a></div>'
+            elif src:
+                src_html = f'<div class="ig-src">{escape_html(src)}</div>'
+            parts.append(f'''<div class="ig-kpi-item">
+  <div class="ig-num">{val}</div>
+  <div class="ig-label">{lab}</div>
+  {src_html}
+</div>''')
+        parts.append('</div>')
+
+    # Editorial grid — chart + pullquote + comparison in 3-column layout
+    has_content = charts or pullquote or comparison
+    if has_content:
+        parts.append('<div class="ig-editorial-grid">')
+
+        # Charts
+        chart_configs = []
+        for i, chart in enumerate(charts[:2]):
+            cid = f"ig-chart-{i}"
+            chart_title = escape_html(chart.get("title", ""))
+            parts.append(f'''<div class="ig-chart-wrap">
+  <div class="ig-chart-title">{chart_title}</div>
+  <canvas id="{cid}" style="max-height: 240px;"></canvas>
+</div>''')
+            ig_enr = {
+                "id": cid,
+                "type": chart.get("type", "comparison-bar"),
+                "data": chart.get("data", {}),
+            }
+            cfg = generate_chart_config(ig_enr, dv)
+            if cfg:
+                chart_configs.append(cfg)
+
+        # Pull-quote — editorial serif italic
+        if pullquote and pullquote.get("text"):
+            qt = escape_html(pullquote["text"])
+            attr = escape_html(pullquote.get("attribution", ""))
+            attr_html = f'<cite>— {attr}</cite>' if attr else ''
+            parts.append(f'''<div class="ig-pullquote">
+  <blockquote>&ldquo;{qt}&rdquo;</blockquote>
+  {attr_html}
+</div>''')
+
+        # Comparison — editorial two-column
+        if comparison:
+            ll = escape_html(comparison.get("left_label", ""))
+            rl = escape_html(comparison.get("right_label", ""))
+            left = comparison.get("left_items", [])
+            right = comparison.get("right_items", [])
+            left_html = ''.join(f'<li>{escape_html(it)}</li>' for it in left)
+            right_html = ''.join(f'<li>{escape_html(it)}</li>' for it in right)
+            parts.append(f'''<div class="ig-comparison">
+  <div class="ig-comparison-inner">
+    <div>
+      <div class="ig-col-label">{ll}</div>
+      <ul>{left_html}</ul>
+    </div>
+    <div>
+      <div class="ig-col-label">{rl}</div>
+      <ul>{right_html}</ul>
+    </div>
+  </div>
+</div>''')
+
+        # Sources
+        if sources:
+            parts.append(f'<div class="ig-sources">{sources}</div>')
+
+        parts.append('</div>')  # .ig-editorial-grid
+
+    parts.append('</div>')  # .infographic-editorial
+
+    return '\n'.join(parts), chart_configs if charts else []
+
+
+# ---------------------------------------------------------------------------
+# Content preservation verification
+# ---------------------------------------------------------------------------
+
+def _count_words(text):
+    """Count words in a text string."""
+    return len(re.findall(r'\b\w+\b', text))
+
+
+def _strip_html_tags(html):
+    """Strip HTML tags to get plain text."""
+    return re.sub(r'<[^>]+>', ' ', html)
+
+
+def verify_content_preservation(source_md, output_html):
+    """Verify the output HTML preserves the source markdown content.
+
+    Returns dict with pass/fail and diagnostics.
+    """
+    # Strip frontmatter from source
+    lines = source_md.split('\n')
+    _, start = parse_frontmatter(lines)
+    source_body = '\n'.join(lines[start:])
+    source_words = _count_words(source_body)
+    source_h2_count = len(re.findall(r'^## ', source_md, re.MULTILINE))
+
+    # Strip infographic header and enrichment containers from HTML
+    # Remove infographic header
+    html_body = re.sub(
+        r'<div class="infographic-header">.*?<div class="infographic-divider"></div>',
+        '', output_html, flags=re.DOTALL)
+    # Remove enrichment containers
+    html_body = re.sub(
+        r'<div class="enrichment[^"]*"[^>]*>.*?</div>\s*(?:</div>)?',
+        '', html_body, flags=re.DOTALL)
+    # Strip tags to get text
+    html_text = _strip_html_tags(html_body)
+    html_words = _count_words(html_text)
+
+    html_h2_count = len(re.findall(r'<h2\b', output_html))
+    html_p_count = len(re.findall(r'<p\b', output_html))
+
+    # Non-empty, non-heading source lines (rough paragraph count)
+    source_content_lines = [l for l in lines[start:] if l.strip()
+                           and not l.strip().startswith('#')
+                           and not l.strip().startswith('---')]
+    source_para_estimate = len(source_content_lines)
+
+    word_ratio = html_words / source_words if source_words > 0 else 0
+    word_pass = word_ratio >= 0.80
+    h2_pass = html_h2_count >= source_h2_count
+    p_pass = html_p_count >= source_para_estimate * 0.3  # 30% — paragraphs merge/split
+
+    return {
+        "pass": word_pass and h2_pass,
+        "source_words": source_words,
+        "html_words": html_words,
+        "word_ratio": round(word_ratio, 2),
+        "word_pass": word_pass,
+        "source_h2": source_h2_count,
+        "html_h2": html_h2_count,
+        "h2_pass": h2_pass,
+        "html_p": html_p_count,
+        "p_pass": p_pass,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -512,6 +998,219 @@ body {{
   -webkit-font-smoothing: antialiased;
 }}
 
+/* ========== EDITORIAL INFOGRAPHIC (Economist-style, inline after exec summary) ========== */
+
+.infographic-editorial {{
+  max-width: 860px;
+  margin: 48px auto 48px;
+  padding: 40px 48px;
+  background: var(--surface);
+  border-top: 3px solid var(--accent);
+  border-bottom: 1px solid var(--border);
+  page-break-inside: avoid;
+}}
+
+/* Pencil-rendered infographic image */
+.infographic-rendered {{
+  padding: 0;
+  overflow: hidden;
+}}
+.ig-image {{
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+  cursor: zoom-in;
+  transition: opacity 0.15s ease;
+}}
+.ig-image:hover {{
+  opacity: 0.92;
+}}
+
+/* Full-screen lightbox */
+.ig-lightbox {{
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.88);
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  flex-direction: column;
+  padding: 24px;
+}}
+.ig-lightbox img {{
+  max-width: 95vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}}
+.ig-lightbox-hint {{
+  color: rgba(255,255,255,0.5);
+  font-size: 0.8rem;
+  margin-top: 12px;
+  letter-spacing: 0.03em;
+}}
+
+/* Editorial title — large serif-feel, restrained */
+.infographic-editorial .ig-title {{
+  font-family: var(--font-headers);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  margin: 0 0 4px;
+}}
+.infographic-editorial .ig-subtitle {{
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0 0 28px;
+  letter-spacing: 0.02em;
+}}
+
+/* Landscape editorial grid — 3 columns for data density */
+.ig-editorial-grid {{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px 32px;
+  margin-bottom: 24px;
+}}
+
+/* KPI callouts — inline editorial style, not cards */
+.ig-kpi-strip {{
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+}}
+.ig-kpi-item {{
+  flex: 1;
+  text-align: left;
+  padding: 0 20px;
+  border-right: 1px solid var(--border);
+}}
+.ig-kpi-item:first-child {{ padding-left: 0; }}
+.ig-kpi-item:last-child {{ border-right: none; }}
+.ig-kpi-item .ig-num {{
+  font-family: var(--font-headers);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+  line-height: 1.1;
+}}
+.ig-kpi-item .ig-label {{
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.3;
+}}
+.ig-kpi-item .ig-src {{
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-style: italic;
+}}
+.ig-kpi-item .ig-src a {{ color: var(--accent-dark); text-decoration: none; }}
+
+/* Chart — editorial, no card shadow */
+.ig-chart-wrap {{
+  padding: 0;
+}}
+.ig-chart-wrap .ig-chart-title {{
+  font-family: var(--font-headers);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+}}
+
+/* Pull-quote — editorial italic */
+.ig-pullquote {{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 0;
+}}
+.ig-pullquote blockquote {{
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.55;
+  border-left: 2px solid var(--accent);
+  padding: 0 0 0 16px;
+  margin: 0;
+  background: none;
+}}
+.ig-pullquote cite {{
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-style: normal;
+  padding-left: 18px;
+}}
+
+/* Comparison — editorial two-column */
+.ig-comparison {{
+  grid-column: span 2;
+}}
+.ig-comparison-inner {{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}}
+.ig-col-label {{
+  font-family: var(--font-headers);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--accent);
+}}
+.ig-comparison ul {{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}}
+.ig-comparison li {{
+  font-size: 0.82rem;
+  padding: 5px 0;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.4;
+}}
+.ig-comparison li:last-child {{ border-bottom: none; }}
+
+/* Sources line */
+.ig-sources {{
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  letter-spacing: 0.02em;
+}}
+
+@media (max-width: 768px) {{
+  .infographic-editorial {{ padding: 24px 20px; }}
+  .ig-editorial-grid {{ grid-template-columns: 1fr; }}
+  .ig-kpi-strip {{ flex-direction: column; gap: 16px; }}
+  .ig-kpi-item {{ border-right: none; border-bottom: 1px solid var(--border); padding: 0 0 12px; }}
+  .ig-kpi-item:last-child {{ border-bottom: none; }}
+  .ig-comparison {{ grid-column: span 1; }}
+  .ig-comparison-inner {{ grid-template-columns: 1fr; }}
+}}
+
+/* ========== REPORT BODY ZONE ========== */
+
 /* Layout */
 .layout {{ display: flex; min-height: 100vh; }}
 nav.sidebar {{
@@ -566,7 +1265,7 @@ th {{ background: var(--surface); font-weight: 600; text-align: left; padding: 1
 td {{ padding: 8px 12px; border-bottom: 1px solid var(--border); }}
 tr:hover td {{ background: var(--surface); }}
 
-/* Enrichments */
+/* Enrichments (report body — sparse, visually subordinate) */
 .enrichment {{ margin: 32px 0; }}
 .chart-container {{
   max-width: 720px; margin: 32px auto; padding: 24px;
@@ -578,7 +1277,7 @@ tr:hover td {{ background: var(--surface); }}
   font-style: italic; text-align: center;
 }}
 
-/* KPI cards */
+/* KPI cards (report body — rare, only if density=rich) */
 .kpi-row {{ display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }}
 .kpi-card {{
   flex: 1; min-width: 140px; max-width: 220px;
@@ -613,6 +1312,7 @@ tr:hover td {{ background: var(--surface); }}
 @media (max-width: 1024px) {{
   nav.sidebar {{ display: none; }}
   main.content {{ padding: 24px 20px; max-width: 100%; }}
+  .infographic-inner {{ padding: 0 20px; }}
 }}
 @media (max-width: 768px) {{
   .kpi-row {{ flex-direction: column; align-items: center; }}
@@ -620,6 +1320,7 @@ tr:hover td {{ background: var(--surface); }}
   .chart-container, .concept-diagram, .summary-card {{ padding: 16px; }}
   h1 {{ font-size: 1.6rem; }}
   h2 {{ font-size: 1.3rem; }}
+  .infographic-title {{ font-size: 1.5rem; }}
 }}
 """
 
@@ -639,41 +1340,12 @@ def generate_nav(sections):
     return '\n    '.join(nav_items)
 
 
-def resolve_chart_colors(chart_configs, dv):
-    """Replace var(--name) tokens in chart configs with actual hex values."""
-    var_map = {
-        "var(--accent)": dv["colors"]["accent"],
-        "var(--accent-muted)": dv["colors"]["accent_muted"],
-        "var(--accent-dark)": dv["colors"]["accent_dark"],
-        "var(--primary)": dv["colors"]["primary"],
-        "var(--secondary)": dv["colors"]["secondary"],
-        "var(--surface)": dv["colors"]["surface"],
-        "var(--surface-dark)": dv["colors"]["surface_dark"],
-        "var(--border)": dv["colors"]["border"],
-        "var(--text)": dv["colors"]["text"],
-        "var(--text-light)": dv["colors"]["text_light"],
-        "var(--text-muted)": dv["colors"]["text_muted"],
-        "var(--status-success)": dv["status"]["success"],
-        "var(--status-warning)": dv["status"]["warning"],
-        "var(--status-danger)": dv["status"]["danger"],
-        "var(--status-info)": dv["status"]["info"],
-        "var(--font-headers)": dv["fonts"]["headers"],
-        "var(--font-body)": dv["fonts"]["body"],
-        "var(--font-mono)": dv["fonts"]["mono"],
-    }
-    config_str = json.dumps(chart_configs)
-    for token, value in var_map.items():
-        config_str = config_str.replace(token, value)
-    # Handle alpha variants like "var(--accent)20"
-    config_str = re.sub(r'(#[0-9A-Fa-f]{6})(\d{2})"', r'\g<1>\g<2>"', config_str)
-    return json.loads(config_str)
-
-
 def generate_chart_scripts(chart_configs, dv):
-    """Generate Chart.js initialization scripts."""
-    resolved = resolve_chart_colors(chart_configs, dv)
+    """Generate Chart.js initialization scripts from config dicts."""
     scripts = []
-    for cfg in resolved:
+    for cfg in chart_configs:
+        if not cfg:
+            continue
         cid = cfg.get("chart_id", "")
         ctype = cfg.get("type", "bar")
         data = json.dumps(cfg.get("data", {}))
@@ -693,24 +1365,12 @@ def generate_chart_scripts(chart_configs, dv):
 
 
 def _build_content_line_based(source_path, sections, enrich_by_line, enrich_by_section,
-                               chart_configs, svg_dir, dv):
-    """Build content HTML with enrichments injected at specific source line positions.
-
-    This approach reads the original markdown line-by-line and injects enrichments
-    after their target lines, producing interleaved content rather than stacking
-    all enrichments at section boundaries.
-    """
-    with open(source_path, encoding='utf-8') as f:
-        source_lines = f.read().split('\n')
-
-    _, content_start = parse_frontmatter(source_lines)
-
-    # Track which enrichments have been placed (by id)
-    placed = set()
+                               svg_dir, dv):
+    """Build content HTML with enrichments injected at specific source line positions."""
     content_parts = []
+    chart_configs = []
+    placed = set()  # Global across all sections to prevent duplicates
 
-    # Sort injection lines descending so we process from bottom to top
-    # Actually, we process top to bottom and inject after each target line
     for sec in sections:
         if sec["heading"]:
             tag = f'h{sec["level"]}'
@@ -719,73 +1379,98 @@ def _build_content_line_based(source_path, sections, enrich_by_line, enrich_by_s
         # Inject summary cards BEFORE section body
         for enr in enrich_by_section.get(sec["id"], []):
             if enr.get("type") == "summary-card" and enr["id"] not in placed:
-                content_parts.append(build_enrichment_html(enr, chart_configs, svg_dir, dv))
+                content_parts.append(build_enrichment_html(enr, svg_dir, dv))
                 placed.add(enr["id"])
 
         # Process section body line by line, injecting enrichments at target lines
         sec_lines = sec.get("lines", [])
-        # Render the section content in blocks, checking for injection points
-        # We need to map source line numbers to positions within rendered content
         block_lines = []
         for i, line in enumerate(sec_lines):
-            source_line_num = sec["line_start"] + 1 + i  # +1 for heading line
+            source_line_num = sec["line_start"] + 1 + i
             block_lines.append(line)
 
-            # Check if any enrichment should inject after this source line
             if source_line_num in enrich_by_line:
-                # Flush accumulated block lines as rendered HTML
                 if block_lines:
                     content_parts.append(_render_block(block_lines))
                     block_lines = []
-                # Inject enrichments at this line (skip summary-cards, already placed)
                 for enr in enrich_by_line[source_line_num]:
                     if enr["id"] not in placed and enr.get("type") != "summary-card":
-                        content_parts.append(
-                            build_enrichment_html(enr, chart_configs, svg_dir, dv))
+                        content_parts.append(build_enrichment_html(enr, svg_dir, dv))
+                        cfg = generate_chart_config(enr, dv)
+                        if cfg:
+                            chart_configs.append(cfg)
                         placed.add(enr["id"])
 
-        # Flush remaining block lines
         if block_lines:
             content_parts.append(_render_block(block_lines))
 
-        # Fallback: place any unplaced enrichments for this section at the end
+        # Fallback: place any unplaced enrichments at section end
         for enr in enrich_by_section.get(sec["id"], []):
             if enr["id"] not in placed:
-                content_parts.append(build_enrichment_html(enr, chart_configs, svg_dir, dv))
+                content_parts.append(build_enrichment_html(enr, svg_dir, dv))
+                cfg = generate_chart_config(enr, dv)
+                if cfg:
+                    chart_configs.append(cfg)
                 placed.add(enr["id"])
 
-    return content_parts
+    return content_parts, chart_configs
 
 
-def _build_content_section_based(sections, enrich_by_section, chart_configs, svg_dir, dv):
+def _build_content_section_based(sections, enrich_by_section, svg_dir, dv):
     """Build content HTML with enrichments at section boundaries (fallback)."""
     content_parts = []
+    chart_configs = []
+
     for sec in sections:
         if sec["heading"]:
             tag = f'h{sec["level"]}'
             content_parts.append(f'<{tag} id="{sec["id"]}">{convert_inline(sec["heading"])}</{tag}>')
 
         # Summary cards BEFORE content
-        pre_enrichments = [e for e in enrich_by_section.get(sec["id"], [])
-                          if e.get("type") == "summary-card"]
-        for enr in pre_enrichments:
-            content_parts.append(build_enrichment_html(enr, chart_configs, svg_dir, dv))
+        for enr in enrich_by_section.get(sec["id"], []):
+            if enr.get("type") == "summary-card":
+                content_parts.append(build_enrichment_html(enr, svg_dir, dv))
 
         # Section content
         if sec.get("html"):
             content_parts.append(sec["html"])
 
         # Charts/diagrams AFTER content
-        post_enrichments = [e for e in enrich_by_section.get(sec["id"], [])
-                           if e.get("type") != "summary-card"]
-        for enr in post_enrichments:
-            content_parts.append(build_enrichment_html(enr, chart_configs, svg_dir, dv))
+        for enr in enrich_by_section.get(sec["id"], []):
+            if enr.get("type") != "summary-card":
+                content_parts.append(build_enrichment_html(enr, svg_dir, dv))
+                cfg = generate_chart_config(enr, dv)
+                if cfg:
+                    chart_configs.append(cfg)
 
-    return content_parts
+    return content_parts, chart_configs
 
 
-def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, output_path, language):
-    """Main HTML generation function."""
+def _generate_infographic_image_html(image_path, output_dir):
+    """Embed a Pencil-rendered infographic PNG as base64 for a fully self-contained HTML."""
+    import base64
+    if not image_path or not os.path.isfile(image_path):
+        return ''
+    with open(image_path, 'rb') as f:
+        img_bytes = f.read()
+    b64 = base64.b64encode(img_bytes).decode('ascii')
+    ext = os.path.splitext(image_path)[1].lstrip('.').lower()
+    mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+            'webp': 'image/webp'}.get(ext, 'image/png')
+    return f'''<div class="infographic-editorial infographic-rendered">
+  <img src="data:{mime};base64,{b64}" alt="Editorial Infographic"
+       class="ig-image" onclick="document.getElementById('ig-lightbox').style.display='flex'"
+       title="Click for full-screen view">
+</div>
+<div id="ig-lightbox" class="ig-lightbox" onclick="this.style.display='none'">
+  <img src="data:{mime};base64,{b64}" alt="Editorial Infographic (full screen)">
+  <div class="ig-lightbox-hint">Click anywhere to close</div>
+</div>'''
+
+
+def generate_html(source_path, enrichment_plan, infographic_data, svg_dir, dv,
+                  output_path, language, density, infographic_image=None):
+    """Main HTML generation function — two-zone architecture."""
     with open(source_path, encoding='utf-8') as f:
         md_text = f.read()
 
@@ -793,13 +1478,13 @@ def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, outp
     title = fm.get("title", os.path.splitext(os.path.basename(source_path))[0])
     theme_name = dv.get("theme_name", "default")
 
-    # Build enrichment lookup by source line number for precise placement
-    enrichments = enrichment_plan.get("enrichments", [])
+    # Validate enrichment plan — enforce density, type, and spacing rules
+    validated_enrichments, trim_log = validate_enrichment_plan(enrichment_plan, density)
 
     # Index enrichments by target_section AND by injection_after_line
-    enrich_by_section = {}  # fallback: section-level placement
-    enrich_by_line = {}     # preferred: line-level placement
-    for enr in enrichments:
+    enrich_by_section = {}
+    enrich_by_line = {}
+    for enr in validated_enrichments:
         sec_id = enr.get("target_section", "")
         if sec_id not in enrich_by_section:
             enrich_by_section[sec_id] = []
@@ -811,27 +1496,54 @@ def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, outp
                 enrich_by_line[line] = []
             enrich_by_line[line].append(enr)
 
-    # If we have line-level injection data, use line-based approach
+    # Build report body content with sparse enrichments
     if enrich_by_line:
-        content_parts = _build_content_line_based(
+        content_parts, report_chart_configs = _build_content_line_based(
             source_path, sections, enrich_by_line, enrich_by_section,
-            chart_configs, svg_dir, dv
+            svg_dir, dv
         )
     else:
-        # Fallback: section-level injection (original approach)
-        content_parts = _build_content_section_based(
-            sections, enrich_by_section, chart_configs, svg_dir, dv
+        content_parts, report_chart_configs = _build_content_section_based(
+            sections, enrich_by_section, svg_dir, dv
         )
 
-    # Remove duplicates — line-based injection may have already placed some enrichments
+    # Build infographic and inject AFTER first H2 section (executive summary)
+    # Prefer Pencil-rendered image over HTML fallback
+    output_dir = os.path.dirname(output_path) or '.'
+    if infographic_image and os.path.isfile(infographic_image):
+        ig_html = _generate_infographic_image_html(infographic_image, output_dir)
+        ig_chart_configs = []
+    else:
+        ig_html, ig_chart_configs = generate_infographic_header(infographic_data, dv)
+
+    if ig_html:
+        # Find the boundary between the first H2 section and the second H2 section
+        # Insert infographic at that boundary so it appears after the executive summary
+        first_h2_end = -1
+        h2_count = 0
+        for i, part in enumerate(content_parts):
+            if '<h2 ' in part:
+                h2_count += 1
+                if h2_count == 2:
+                    first_h2_end = i
+                    break
+        if first_h2_end > 0:
+            content_parts.insert(first_h2_end, ig_html)
+        else:
+            # Fallback: put at the end of all content if only 1 H2
+            content_parts.append(ig_html)
+
+    # Combine all chart configs (infographic + report body)
+    all_chart_configs = ig_chart_configs + report_chart_configs
+
     content_html = '\n'.join(content_parts)
     nav_html = generate_nav(sections)
     css = generate_css(dv)
-    chart_scripts = generate_chart_scripts(chart_configs, dv)
+    chart_scripts = generate_chart_scripts(all_chart_configs, dv)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     lang_code = language or fm.get("language", "en")
 
-    # Conditionally include Mermaid CDN when mermaid blocks are present
+    # Conditionally include Mermaid CDN
     has_mermaid = '<pre class="mermaid">' in content_html
     mermaid_script = (
         '\n  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>'
@@ -898,7 +1610,10 @@ def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, outp
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
 
-    return output_path
+    # Content preservation verification
+    validation = verify_content_preservation(md_text, html)
+
+    return output_path, validation, trim_log
 
 
 # ---------------------------------------------------------------------------
@@ -907,14 +1622,18 @@ def generate_html(source_path, enrichment_plan, chart_configs, svg_dir, dv, outp
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Generate enriched HTML report")
+    parser = argparse.ArgumentParser(description="Generate enriched HTML report (two-zone architecture)")
     parser.add_argument("--source", required=True, help="Source markdown report path")
     parser.add_argument("--enrichment-plan", required=True, help="Enrichment plan JSON path")
-    parser.add_argument("--chart-configs", default="", help="Chart configs JSON path")
+    parser.add_argument("--infographic-data", default="", help="Infographic data JSON path (optional)")
     parser.add_argument("--svg-dir", default="", help="Directory with SVG files (enr-XXX.svg)")
     parser.add_argument("--design-variables", default="", help="Design variables JSON path")
     parser.add_argument("--output", required=True, help="Output HTML path")
     parser.add_argument("--language", default="en", help="Language code (en/de)")
+    parser.add_argument("--density", default="balanced", help="Enrichment density (none/minimal/balanced/rich)")
+    parser.add_argument("--infographic-image", default="", help="Pencil-rendered infographic PNG (preferred over HTML fallback)")
+    # Legacy support: --chart-configs is accepted but ignored (configs generated internally)
+    parser.add_argument("--chart-configs", default="", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     try:
@@ -923,21 +1642,38 @@ def main():
         with open(args.enrichment_plan) as f:
             plan = json.load(f)
 
-        chart_configs = []
-        if args.chart_configs and os.path.isfile(args.chart_configs):
-            with open(args.chart_configs) as f:
-                chart_configs = json.load(f)
+        ig_data = None
+        if args.infographic_data and os.path.isfile(args.infographic_data):
+            with open(args.infographic_data) as f:
+                ig_data = json.load(f)
 
-        out = generate_html(
+        out, validation, trim_log = generate_html(
             source_path=args.source,
             enrichment_plan=plan,
-            chart_configs=chart_configs,
+            infographic_data=ig_data,
             svg_dir=args.svg_dir or "",
             dv=dv,
             output_path=args.output,
             language=args.language,
+            density=args.density,
+            infographic_image=args.infographic_image or None,
         )
-        print(json.dumps({"status": "ok", "path": out}))
+
+        result = {
+            "status": "ok",
+            "path": out,
+            "validation": validation,
+        }
+        if trim_log:
+            result["trimmed"] = trim_log
+
+        print(json.dumps(result, indent=2))
+
+        if not validation["pass"]:
+            print(f"\nWARNING: Content preservation check failed!", file=sys.stderr)
+            print(f"  Word ratio: {validation['word_ratio']} (need >= 0.80)", file=sys.stderr)
+            print(f"  Source H2: {validation['source_h2']}, HTML H2: {validation['html_h2']}", file=sys.stderr)
+
     except Exception as e:
         print(json.dumps({"error": str(e)}), file=sys.stderr)
         sys.exit(1)

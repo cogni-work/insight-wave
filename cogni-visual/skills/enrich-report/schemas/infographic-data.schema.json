@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Infographic Data",
+  "description": "Structured data for the enriched report's infographic header zone. Produced by LLM distillation (Phase 2a), consumed by the Python generator script to render the editorial infographic header.",
+  "type": "object",
+  "required": ["title", "subtitle", "kpis", "charts"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Governing assertion — the report's thesis as a self-contained sentence with a verb and quantified consequence.",
+      "minLength": 10,
+      "maxLength": 120
+    },
+    "subtitle": {
+      "type": "string",
+      "description": "Report context: scope, date, source count. Max 15 words.",
+      "maxLength": 120
+    },
+    "kpis": {
+      "type": "array",
+      "description": "Hero numbers for KPI cards. 3-5 items.",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["value", "label"],
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "The number as displayed (preserve formatting: '28 Mrd. €', '43 %', '0,35 %')."
+          },
+          "label": {
+            "type": "string",
+            "description": "Context label, max 6 words.",
+            "maxLength": 60
+          },
+          "source": {
+            "type": "string",
+            "description": "Source name (institution or study)."
+          },
+          "source_url": {
+            "type": "string",
+            "description": "Source URL for attribution link.",
+            "format": "uri"
+          }
+        }
+      }
+    },
+    "charts": {
+      "type": "array",
+      "description": "Chart data for 1-2 infographic charts. The Python script generates Chart.js configs from this structured data.",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["type", "title", "data"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["comparison-bar", "distribution-doughnut", "stat-chart", "timeline-chart", "horizon-chart"],
+            "description": "Chart type — the script maps this to Chart.js chart type and options."
+          },
+          "title": {
+            "type": "string",
+            "description": "Chart title as assertion (contains a verb), not a topic label."
+          },
+          "data": {
+            "type": "object",
+            "description": "Structured chart data.",
+            "required": ["labels", "values"],
+            "properties": {
+              "labels": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Category labels for chart items."
+              },
+              "values": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Numeric values corresponding to labels."
+              },
+              "unit": {
+                "type": "string",
+                "description": "Unit for axis/tooltip display (e.g., '%', 'Mrd. €', 'Mio.')."
+              },
+              "datasets": {
+                "type": "array",
+                "description": "Multiple datasets for grouped/stacked charts. When present, 'values' is ignored.",
+                "items": {
+                  "type": "object",
+                  "required": ["label", "values"],
+                  "properties": {
+                    "label": { "type": "string" },
+                    "values": {
+                      "type": "array",
+                      "items": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pullquote": {
+      "type": ["object", "null"],
+      "description": "Optional pull-quote — the report's sharpest qualitative insight.",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Quote text, max 25 words.",
+          "maxLength": 200
+        },
+        "attribution": {
+          "type": "string",
+          "description": "Source name or institution."
+        }
+      },
+      "required": ["text"]
+    },
+    "comparison": {
+      "type": ["object", "null"],
+      "description": "Optional comparison pair — two-sided contrast (Handeln/Nichthandeln, before/after).",
+      "properties": {
+        "left_label": {
+          "type": "string",
+          "description": "Label for left column."
+        },
+        "right_label": {
+          "type": "string",
+          "description": "Label for right column."
+        },
+        "left_items": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "3-5 items, max 6 words each.",
+          "minItems": 2,
+          "maxItems": 5
+        },
+        "right_items": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "3-5 items, max 6 words each. Must match left_items count.",
+          "minItems": 2,
+          "maxItems": 5
+        }
+      },
+      "required": ["left_label", "right_label", "left_items", "right_items"]
+    },
+    "sources": {
+      "type": "string",
+      "description": "Footer source line for the infographic (e.g., '30+ Primärquellen | April 2026')."
+    }
+  }
+}

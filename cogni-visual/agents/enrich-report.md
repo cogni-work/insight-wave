@@ -40,4 +40,8 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
 - The Python generator script is at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/scripts/generate-enriched-report.py`
 - Design-variables schema is at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/schemas/design-variables.schema.json`
 - Never modify the source markdown report
-- All Chart.js color tokens must be resolved to hex before embedding in HTML
+- **NEVER write HTML tags directly** — all HTML is produced by the Python generator script. If you write `<html>`, `<body>`, `<div>`, `<style>`, or any HTML tags yourself, you have bypassed the script and the output will be wrong. Your outputs are structured JSON files (`infographic-data.json`, `enrichment-plan.json`) and SVG files — nothing else.
+- **chart-configs.json is no longer needed** — the Python script generates Chart.js configs internally from the enrichment plan's `data` field + design variables. Do NOT produce chart-configs.json.
+- Before Phase 5: verify that `infographic-data.json` and `enrichment-plan.json` exist in the workspace. Their absence means earlier phases were skipped.
+- After Phase 5: verify the output HTML contains `.infographic-header`, `.layout`, `.sidebar`, `.content` CSS classes. Their absence means the script was not used.
+- The enriched report is a REPORT with an infographic header and sparse illustrations — not a dashboard. All source prose must appear in the output.

@@ -1,37 +1,76 @@
 # HTML Structure
 
-Layout architecture, CSS patterns, and script structure for the enriched report HTML output.
+Two-zone layout architecture, CSS patterns, and script structure for the enriched report HTML output.
 
-## Overall Layout
+## Two-Zone Architecture
+
+The output has two distinct zones with different purposes:
+
+1. **Infographic header zone** — Full-width editorial visual executive summary. Scannable in 60 seconds. Contains KPI cards, 1-2 charts, pull-quote, comparison pair. This is where all data visualization storytelling lives.
+2. **Report body zone** — Full prose with sidebar navigation. Designed for continuous reading. Contains very sparse illustrations (3-5 max) only where they aid comprehension.
 
 ```
 ┌─────────────────────────────────────────────────────┐
+│            INFOGRAPHIC HEADER ZONE                  │
+│  (full-width, editorial grid, .infographic-header)  │
+│                                                     │
+│  Title: Governing Assertion                         │
+│  ┌──────────┬──────────┬──────────┐                 │
+│  │ KPI Card │ KPI Card │ KPI Card │                 │
+│  └──────────┴──────────┴──────────┘                 │
+│  ┌───────────────┬─────────────────┐                │
+│  │  Chart.js     │  "Pull-quote"   │                │
+│  │   ████ ██     │   — Source       │                │
+│  └───────────────┴─────────────────┘                │
+│  Sources footer                                     │
+├─────────────── divider ─────────────────────────────┤
 │  ┌──────────┐  ┌─────────────────────────────────┐  │
-│  │ Sidebar  │  │  Main Content (max-width 860px) │  │
-│  │ (260px)  │  │                                 │  │
-│  │          │  │  H1 Title                       │  │
-│  │ Contents │  │  ─────────────────              │  │
-│  │ ● Sec 1  │  │  Report prose...               │  │
-│  │ ● Sec 2  │  │                                 │  │
-│  │   ○ 2.1  │  │  ┌─[KPI Dashboard]─────────┐   │  │
-│  │   ○ 2.2  │  │  │ €173B │ 47% │ 3.2x     │   │  │
-│  │ ● Sec 3  │  │  └─────────────────────────┘   │  │
+│  │ Sidebar  │  │  REPORT BODY ZONE               │  │
+│  │ (260px)  │  │  (max-width 860px)              │  │
 │  │          │  │                                 │  │
-│  │          │  │  More prose...                  │  │
+│  │ Contents │  │  ## Section heading              │  │
+│  │ ● Sec 1  │  │  Paragraph text...              │  │
+│  │ ● Sec 2  │  │  Paragraph text...              │  │
+│  │   ○ 2.1  │  │  > Blockquote...                │  │
+│  │   ○ 2.2  │  │  Paragraph text continues...    │  │
+│  │ ● Sec 3  │  │                                 │  │
+│  │          │  │  ┌─[Process Flow SVG]────────┐   │  │
+│  │          │  │  │  (sparse illustration)    │   │  │
+│  │          │  │  └──────────────────────────┘   │  │
 │  │          │  │                                 │  │
-│  │          │  │  ┌─[Chart.js Canvas]────────┐   │  │
-│  │          │  │  │  ████ ██ █████           │   │  │
-│  │          │  │  │  Horizon Distribution     │   │  │
-│  │          │  │  └─────────────────────────┘   │  │
-│  │          │  │                                 │  │
-│  │          │  │  ┌─[Concept SVG]─────────────┐   │  │
-│  │          │  │  │  T → I → P → S flow      │   │  │
-│  │          │  │  └─────────────────────────┘   │  │
+│  │          │  │  Paragraph text continues...    │  │
+│  │          │  │  [Citations preserved]           │  │
 │  │          │  │                                 │  │
 │  │          │  │  Footer                        │  │
 │  └──────────┘  └─────────────────────────────────┘  │
 └─────────────────────────────────────────────────────┘
 ```
+
+## Content-First Layout Rules
+
+The layout supports a reading experience. These rules are enforced by the Python generator script:
+
+1. **Content backbone:** `main.content` is `max-width: 860px` with `padding: 48px 40px`. This is a reading-width column, not a dashboard grid.
+
+2. **Enrichment insets:** All report-body enrichment containers (`.chart-container`, `.concept-diagram`, `.summary-card`) are `max-width: 720px` with `margin: 32px auto`. The 140px width difference creates visual subordination — enrichments are clearly insets within the text flow.
+
+3. **Chart height limits in report body:** Charts are moderate height to avoid dominating the page:
+   - Doughnut/distribution: 300px max
+   - Bar/line/radar: 300px max (hard cap 400px for bar charts with 6+ items)
+   - Timeline: 200px max
+   - Summary cards: auto height
+
+4. **Prohibited in report body:** The following patterns signal "dashboard" and are only allowed in the infographic header:
+   - KPI card grids (`.kpi-row`, `.ig-kpi-card`)
+   - Hero banners or splash sections
+   - Key-findings grids
+   - Sticky horizontal table-of-contents bars
+   - Section-lead cards that replace prose with 1-sentence summaries
+   - More than 2 consecutive enrichments without intervening prose
+
+5. **Typography primacy.** Body text uses `line-height: 1.7` and `var(--font-body)` at browser default size. Headings use `var(--font-headers)` with clear hierarchy (h1: 2.2rem, h2: 1.6rem, h3: 1.2rem, h4: 1.05rem).
+
+6. **Section structure.** Each section follows: heading → prose → (optional enrichment) → more prose. Enrichments appear BETWEEN paragraphs at natural reading breaks, never before the first paragraph.
 
 ## CSS Architecture
 
