@@ -146,17 +146,25 @@ The picker can be skipped when:
 
 In these cases, just validate the provided path and proceed.
 
-## Stale Path Detection
+## Auto-Discovery and Stale Path Handling
 
-After running the discovery script, if the result is empty **and** `COGNI_WORKSPACE_ROOT` is set:
-1. Check if the `COGNI_WORKSPACE_ROOT` directory actually exists on disk
-2. If it doesn't exist, warn the user: "Workspace paths in settings.local.json appear stale (pointing to a previous session). Run `/manage-workspace` in update mode to regenerate paths."
-3. The script prints `WARNING` lines to stderr when it detects this — check stderr output
+The discovery script automatically detects when `COGNI_WORKSPACE_ROOT` is empty, missing, or stale (e.g. pointing to a previous Cowork session path like `/sessions/...`). When this happens, it searches for `.workspace-config.json` in common locations:
 
-You can also pass the workspace root explicitly via CLI to bypass stale env vars:
+1. `$PROJECT_AGENTS_OPS_ROOT` (if set and valid)
+2. `~/Library/CloudStorage/*/*/` (macOS cloud storage — OneDrive, iCloud, Dropbox)
+3. `~/*/` (direct home subdirectories)
+
+It picks the most recently modified workspace and scans its `cogni-workspace/themes/` directory. The auto-discovery output appears on stderr:
+```
+WARNING: workspace root not found: /sessions/gallant-vibrant-cori/mnt/TSC/cogni-workspace
+HINT: path looks like a stale Cowork session. Auto-discovering...
+AUTO-DISCOVERED workspace themes: /Users/.../TSC/cogni-workspace/themes
+```
+
+To disable auto-discovery (e.g. in CI/CD), pass `--no-discover`. To override the workspace root explicitly:
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/skills/pick-theme/scripts/discover-themes.py" --workspace-root "$COGNI_WORKSPACE_ROOT"
+python3 "$CLAUDE_PLUGIN_ROOT/skills/pick-theme/scripts/discover-themes.py" --workspace-root "/path/to/workspace"
 ```
 
 ## Fallback Behavior

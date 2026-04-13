@@ -5,11 +5,16 @@ Scans two locations:
   1. Standard themes: $CLAUDE_PLUGIN_ROOT/themes/ (always available, ships with cogni-workspace)
   2. Workspace themes: $COGNI_WORKSPACE_ROOT/themes/ (user-created via manage-themes)
 
+When COGNI_WORKSPACE_ROOT is empty or points to a non-existent path (e.g. stale
+Cowork session), auto-discovers workspaces by searching for .workspace-config.json
+in common locations under $HOME.
+
 Outputs a JSON array of theme objects sorted by modification time (newest first).
 Skips the _template directory. Deduplicates by slug (workspace overrides standard).
 """
 
 import argparse
+import glob as globmod
 import json
 import os
 import re
@@ -90,10 +95,58 @@ def scan_themes_dir(themes_dir, source_label):
     return themes
 
 
+def is_stale_path(path):
+    """Check if a path is a stale Cowork session path or simply doesn't exist."""
+    if not path:
+        return True
+    if path.startswith("/sessions/"):
+        return True
+    return not os.path.isdir(path)
+
+
+def auto_discover_workspace_root():
+    """Search common locations for .workspace-config.json to find a valid workspace root.
+
+    Returns the workspace root path (parent of .workspace-config.json) or empty string.
+    Searches:
+      1. $PROJECT_AGENTS_OPS_ROOT (if valid)
+      2. CloudStorage directories (OneDrive, iCloud, Dropbox)
+      3. Direct home subdirectories (one level deep)
+    """
+    home = os.path.expanduser("~")
+
+    # Try PROJECT_AGENTS_OPS_ROOT first
+    ops_root = os.environ.get("PROJECT_AGENTS_OPS_ROOT", "")
+    if ops_root and os.path.isfile(os.path.join(ops_root, ".workspace-config.json")):
+        return ops_root
+
+    # Search CloudStorage (macOS OneDrive, iCloud, Dropbox, etc.)
+    cloud_storage = os.path.join(home, "Library", "CloudStorage")
+    if os.path.isdir(cloud_storage):
+        # Search two levels deep: CloudStorage/<provider>/<folder>/.workspace-config.json
+        pattern = os.path.join(cloud_storage, "*", "*", ".workspace-config.json")
+        candidates = globmod.glob(pattern)
+        if candidates:
+            # Pick the most recently modified workspace
+            candidates.sort(key=os.path.getmtime, reverse=True)
+            return os.path.dirname(candidates[0])
+
+    # Search direct home subdirectories (one level)
+    pattern = os.path.join(home, "*", ".workspace-config.json")
+    candidates = globmod.glob(pattern)
+    if candidates:
+        candidates.sort(key=os.path.getmtime, reverse=True)
+        return os.path.dirname(candidates[0])
+
+    return ""
+
+
 def main():
     parser = argparse.ArgumentParser(description="Discover available themes.")
     parser.add_argument("--workspace-root", default="", help="Override COGNI_WORKSPACE_ROOT")
     parser.add_argument("--plugin-root", default="", help="Override CLAUDE_PLUGIN_ROOT")
+    parser.add_argument("--no-discover", action="store_true",
+                        help="Disable auto-discovery when workspace root is missing/stale")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
     args = parser.parse_args()
 
@@ -105,10 +158,48 @@ def main():
     standard_themes = scan_themes_dir(standard_dir, "standard")
 
     # 2. Workspace themes (user-created)
-    workspace_dir = os.path.join(workspace_root, "themes") if workspace_root else ""
-    if workspace_root and not os.path.isdir(workspace_dir):
-        print(f"WARNING: workspace themes dir not found: {workspace_dir}", file=sys.stderr)
-        print(f"HINT: COGNI_WORKSPACE_ROOT may be stale. Run /manage-workspace to regenerate.", file=sys.stderr)
+    # Auto-discover workspace root when the configured path is empty or stale
+    discovered = False
+    if is_stale_path(workspace_root) and not args.no_discover:
+        if workspace_root:
+            print(f"WARNING: workspace root not found: {workspace_root}", file=sys.stderr)
+            if workspace_root.startswith("/sessions/"):
+                print("HINT: path looks like a stale Cowork session. Auto-discovering...", file=sys.stderr)
+            else:
+                print("HINT: COGNI_WORKSPACE_ROOT may be stale. Auto-discovering...", file=sys.stderr)
+
+        discovered_root = auto_discover_workspace_root()
+        if discovered_root:
+            workspace_root = discovered_root
+            discovered = True
+            # The themes dir is at <workspace-root>/cogni-workspace/themes/
+            # Check both direct themes/ and cogni-workspace/themes/
+            candidate_dirs = [
+                os.path.join(workspace_root, "themes"),
+                os.path.join(workspace_root, "cogni-workspace", "themes"),
+            ]
+            workspace_dir = ""
+            for d in candidate_dirs:
+                if os.path.isdir(d):
+                    workspace_dir = d
+                    break
+            if workspace_dir:
+                print(f"AUTO-DISCOVERED workspace themes: {workspace_dir}", file=sys.stderr)
+            else:
+                print(f"AUTO-DISCOVERED workspace at {workspace_root} but no themes/ dir found", file=sys.stderr)
+                workspace_dir = ""
+        else:
+            if not workspace_root:
+                print("WARNING: COGNI_WORKSPACE_ROOT not set and auto-discovery found no workspace", file=sys.stderr)
+            else:
+                print("HINT: Run /manage-workspace to regenerate paths.", file=sys.stderr)
+            workspace_dir = ""
+    else:
+        workspace_dir = os.path.join(workspace_root, "themes") if workspace_root else ""
+        if workspace_root and not os.path.isdir(workspace_dir):
+            print(f"WARNING: workspace themes dir not found: {workspace_dir}", file=sys.stderr)
+            print(f"HINT: COGNI_WORKSPACE_ROOT may be stale. Run /manage-workspace to regenerate.", file=sys.stderr)
+
     workspace_themes = scan_themes_dir(workspace_dir, "workspace")
 
     # Merge: workspace themes override standard themes with same slug,
