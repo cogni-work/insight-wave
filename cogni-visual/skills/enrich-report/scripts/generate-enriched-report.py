@@ -403,6 +403,17 @@ def generate_chart_config(enrichment, dv):
     datasets_raw = data.get("datasets", [])
     unit = data.get("unit", "")
 
+    # Timeline-chart: extract from milestones[] or events[] (date→label, constant Y)
+    if etype == "timeline-chart" and not labels:
+        for key in ("milestones", "events"):
+            items = data.get(key, [])
+            if items:
+                labels = [it.get("date", it.get("label", "")) for it in items]
+                values = [1] * len(items)
+                data["_milestone_labels"] = [it.get("label", "") for it in items]
+                data["_milestone_categories"] = [it.get("category", "") for it in items]
+                break
+
     # Extract from legacy data shapes (items[], claims[], stats[], segments[])
     if not labels:
         for key in ("items", "claims", "stats", "segments"):
@@ -501,23 +512,60 @@ def generate_chart_config(enrichment, dv):
         }
 
     elif etype == "timeline-chart":
+        # Category-based point coloring
+        categories = data.get("_milestone_categories", [])
+        milestone_labels = data.get("_milestone_labels", labels)
+        category_colors = {
+            "regulatory": dv["status"]["warning"],
+            "strategic": dv["colors"]["accent"],
+            "market": dv["status"]["info"],
+            "technical": dv["status"]["success"],
+            "fiscal": dv["status"]["danger"],
+        }
+        default_color = dv["colors"]["accent"]
+        point_colors = [
+            category_colors.get(cat, default_color) for cat in categories
+        ] if categories else [default_color] * len(labels)
+
         config["type"] = "line"
         config["data"] = {
             "labels": labels,
             "datasets": [{
-                "label": unit or "Events",
+                "label": "Milestones",
                 "data": values if values else [1] * len(labels),
-                "borderColor": dv["colors"]["accent"],
+                "borderColor": dv["colors"]["accent"] + "40",
                 "backgroundColor": dv["colors"]["accent"] + "20",
-                "pointBackgroundColor": dv["colors"]["accent"],
-                "pointRadius": 6,
+                "pointBackgroundColor": point_colors,
+                "pointRadius": 8,
+                "pointStyle": "rectRounded",
+                "showLine": True,
+                "borderDash": [5, 5],
                 "fill": False,
                 "tension": 0,
             }],
         }
         config["options"] = {
             **defaults,
-            "plugins": {**defaults["plugins"], "legend": {"display": False}},
+            "scales": {
+                "y": {"display": False},
+                "x": {
+                    "title": {"display": True, "text": unit or "Timeline"},
+                    "ticks": {
+                        "font": {"family": dv["fonts"]["body"], "size": 11},
+                        "color": dv["colors"]["text_muted"],
+                    },
+                },
+            },
+            "plugins": {
+                **defaults["plugins"],
+                "legend": {"display": False},
+                "tooltip": {
+                    **defaults["plugins"].get("tooltip", {}),
+                    "callbacks": {
+                        "label": f"function(ctx) {{ var labels = {json.dumps(milestone_labels, ensure_ascii=False)}; return labels[ctx.dataIndex] || ''; }}"
+                    },
+                },
+            },
         }
 
     elif etype == "horizon-chart":
@@ -1374,6 +1422,8 @@ def generate_chart_scripts(chart_configs, dv):
         ctype = cfg.get("type", "bar")
         data = json.dumps(cfg.get("data", {}))
         options = json.dumps(cfg.get("options", {}))
+        # Unquote JavaScript function strings for Chart.js callbacks
+        options = re.sub(r'"(function\(.*?\)\s*\{.*?\})"', r'\1', options)
         scripts.append(f"""
   (function() {{
     var ctx = document.getElementById('{cid}');
