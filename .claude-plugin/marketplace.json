@@ -74,7 +74,7 @@
     {
       "name": "cogni-trends",
       "source": "./cogni-trends",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "maturity": "preview",
       "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Bilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. DACH-focused, EN/DE.",
       "keywords": [
@@ -107,7 +107,7 @@
     {
       "name": "cogni-visual",
       "source": "./cogni-visual",
-      "version": "0.15.0",
+      "version": "0.15.1",
       "maturity": "preview",
       "description": "Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
       "keywords": [
@@ -165,7 +165,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.6.19",
+      "version": "0.6.20",
       "maturity": "preview",
       "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [

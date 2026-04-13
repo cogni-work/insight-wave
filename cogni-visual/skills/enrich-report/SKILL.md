@@ -204,11 +204,34 @@ Output: section map (held in memory — not written to disk).
 
 ### Phase 2a: Infographic Brief Generation (story-to-infographic pipeline)
 
-> Distill the complete report into an editorial infographic brief, then render it via Pencil MCP.
+> Detect existing infographic artifacts from a prior story-to-infographic run, or generate from scratch.
 
-This phase produces a DIN A4 portrait infographic (Economist data-page style) using the full story-to-infographic pipeline. Two sub-steps:
+This phase produces a DIN A4 portrait infographic (Economist data-page style). Before generating anything, check for pre-existing artifacts — the user may have already run `story-to-infographic` + `/render-infographic` on this report for a higher-quality infographic (10-step distillation with 4-layer validation and reviewer agent, vs. the simplified inline distillation below).
 
-**Step 2a.1 — Generate infographic brief:**
+**Step 2a.0 — Artifact detection (check before generating):**
+
+Check the following paths in order:
+
+1. **PNG exists:** `{source_dir}/cogni-visual/infographic-preview.png`
+   - If this file exists: **skip all of Phase 2a**. The infographic is already rendered.
+   - Tell the user: "Reusing existing infographic-preview.png (skipping distillation + render)."
+   - If `{source_dir}/cogni-visual/infographic-brief.md` also exists, read its `style_preset` from YAML frontmatter and note it: "Detected style_preset: {preset}." This is informational only — do not block or re-generate based on preset.
+   - `infographic-data.json` is NOT required when the PNG exists — the Python script embeds the PNG directly and never reads the JSON fallback.
+   - Proceed to Phase 2b.
+
+2. **Brief exists but no PNG:** `{source_dir}/cogni-visual/infographic-brief.md` exists but `infographic-preview.png` does not
+   - The brief was generated (by story-to-infographic or a prior interrupted run) but never rendered.
+   - Tell the user: "Found existing infographic-brief.md without rendered PNG. Dispatching renderer."
+   - Dispatch the `render-infographic-pencil` agent with the brief:
+     - Input: `{source_dir}/cogni-visual/infographic-brief.md`
+     - Output .pen: `{source_dir}/cogni-visual/infographic.pen`
+     - Export PNG: `{source_dir}/cogni-visual/infographic-preview.png`
+   - If Pencil MCP is not available: ask the user to open Pencil. If they decline, fall through to path 3 below to generate `infographic-data.json` for the HTML fallback.
+   - Proceed to Phase 2b.
+
+3. **Neither exists:** Run the full distillation below (Step 2a.1 + Step 2a.2).
+
+**Step 2a.1 — Generate infographic brief (only if path 3):**
 
 Read `references/08-infographic-distillation.md` for distillation principles.
 
@@ -228,7 +251,7 @@ Apply the 60-second read test. Write brief to `{source_dir}/cogni-visual/infogra
 
 Also write `infographic-data.json` (the structured subset used by the HTML fallback renderer) to `{source_dir}/cogni-visual/infographic-data.json`. Validate against `schemas/infographic-data.schema.json`.
 
-**Step 2a.2 — Render infographic via Pencil MCP:**
+**Step 2a.2 — Render infographic via Pencil MCP (only if path 2 or 3):**
 
 Dispatch the `render-infographic-pencil` agent (editorial family, Economist preset) with the brief:
 - Input: `{source_dir}/cogni-visual/infographic-brief.md`
@@ -239,11 +262,13 @@ The agent uses Pencil MCP tools (`open_document`, `batch_design`, `export_nodes`
 
 **If Pencil MCP is not available** (not open, not installed): Ask the user to open Pencil. Do NOT silently fall back to the HTML-based infographic — the Pencil-rendered version is the intended output quality. If the user declines, fall back to the HTML infographic from `infographic-data.json` and note the limitation.
 
-**Output artifacts:**
-- `{source_dir}/cogni-visual/infographic-brief.md` — the brief (reusable, can be re-rendered)
-- `{source_dir}/cogni-visual/infographic.pen` — the Pencil design file
-- `{source_dir}/cogni-visual/infographic-preview.png` — PNG for HTML embedding
-- `{source_dir}/cogni-visual/infographic-data.json` — structured data (HTML fallback)
+**Output artifacts (vary by path):**
+
+| Path | infographic-brief.md | infographic.pen | infographic-preview.png | infographic-data.json |
+|------|---------------------|----------------|------------------------|----------------------|
+| 1 (PNG exists) | pre-existing | pre-existing | pre-existing (reused) | not needed |
+| 2 (brief only) | pre-existing | generated | generated | not generated |
+| 3 (from scratch) | generated | generated | generated | generated |
 
 ---
 
@@ -410,7 +435,7 @@ Read `references/06-html-structure.md` for the two-zone HTML layout and CSS arch
 **MANDATORY: Execute the Python generator script.** Do NOT generate HTML manually. Do NOT write `<html>`, `<body>`, `<div>`, `<canvas>`, `<style>`, or any HTML tags directly. The script is the single point of HTML generation.
 
 Before calling the script, verify these prerequisite artifacts exist:
-1. `{source_dir}/cogni-visual/infographic-data.json` — from Phase 2a (required)
+1. `{source_dir}/cogni-visual/infographic-preview.png` OR `{source_dir}/cogni-visual/infographic-data.json` — at least one must exist from Phase 2a. The script prefers the PNG (embeds as base64 image with lightbox); the JSON is the HTML fallback when Pencil was unavailable.
 2. `{source_dir}/cogni-visual/enrichment-plan.json` — from Phase 2b (required, may have empty `enrichments` array if `density=none`)
 3. `{source_dir}/cogni-visual/svgs/` — from Phase 4 (directory with `enr-XXX.svg` files; can be empty if no concept-track enrichments)
 

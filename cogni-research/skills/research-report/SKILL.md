@@ -361,10 +361,14 @@ Maximum 1 structural review iteration. After revision (or if the first review ac
 Ask the user whether to generate a themed HTML version of the report with interactive charts and diagrams. This transforms the markdown report into a polished, presentation-ready HTML deliverable.
 
 1. Check whether `cogni-visual:enrich-report` is available. If not installed, display a warning and skip to Phase 6.
-2. Ask the user: `"Generate themed HTML with interactive charts and diagrams? (cogni-visual:enrich-report)"`
-3. If the user declines, skip to Phase 6.
-4. If yes, invoke the `cogni-visual:enrich-report` skill with `source_path` pointing to the final accepted draft (`output/report.md` if already copied, otherwise the latest `output/draft-v{N}.md`). The enrich-report skill handles theme selection, enrichment planning, and interactive review — do not duplicate that logic here.
-5. Record the result for the Phase 6 summary.
+2. Ask the user which visual pipeline to use:
+   - **Option 1: Full visual pipeline** (recommended) — First create a dedicated infographic via `cogni-visual:story-to-infographic`, then render it via `/render-infographic`, then enrich the report via `cogni-visual:enrich-report`. Best results: the infographic header is Pencil-rendered with 10-step distillation, 4-layer validation, and reviewer agent.
+   - **Option 2: Quick enrichment** — Run `cogni-visual:enrich-report` directly. It generates a simplified infographic inline (fewer validation steps, hardcoded to economist preset).
+   - **Option 3: Skip** visual enrichment.
+3. If the user declines (option 3), skip to Phase 6.
+4. If option 1: invoke `cogni-visual:story-to-infographic` with `source_path` pointing to the final accepted draft, then `/render-infographic` to render it, then invoke `cogni-visual:enrich-report` (which will detect and reuse the infographic artifacts).
+5. If option 2: invoke `cogni-visual:enrich-report` directly with `source_path` pointing to the final accepted draft (`output/report.md` if already copied, otherwise the latest `output/draft-v{N}.md`). The enrich-report skill handles theme selection, enrichment planning, and interactive review — do not duplicate that logic here.
+6. Record the result for the Phase 6 summary.
 
 ### Phase 6: Finalization
 
@@ -392,7 +396,7 @@ Ask the user whether to generate a themed HTML version of the report with intera
 > **Next steps:**
 > 1. `/verify-report` — Verify claims against cited sources. Runs in a clean context window for thorough fact-checking.
 > 2. `/copywriter` — Polish the report for executive readability (BLUF structure, tighter prose, consistent tone).
-> 3. `/enrich-report` — Generate themed HTML with interactive charts and diagrams (skip if already done in Phase 5.5).
+> 3. `/story-to-infographic` + `/render-infographic` + `/enrich-report` — Create an editorial infographic first, then generate themed HTML with charts and diagrams. enrich-report detects and reuses the infographic. (Skip if already done in Phase 5.5.)
 
 ## Resumption
 

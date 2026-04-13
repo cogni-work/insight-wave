@@ -176,6 +176,7 @@ For conditions 2-7, research-report has built-in resumption logic — it reads `
 - Verify before polish: running copywrite on unverified claims wastes effort if claims get revised
 - Verify before narrative: narrative transformation should use the verified draft
 - Polish before visual enrichment: enrich-report should use the polished prose
+- Infographic before enrichment: running story-to-infographic first gives enrich-report a Pencil-rendered header (10-step validation, reviewer agent) instead of its simplified inline distillation
 - Narrative is NOT a precondition for enrich-report — they are independent paths
 
 ### Downstream Options for Completed Reports
@@ -187,7 +188,8 @@ For each downstream action below, check its Step 3F signal. Already-completed ac
 **Path A — Polish & Visualize** (keeps the research report format):
 1. `cogni-copywriting:copywrite` — Polish report for executive readability (BLUF, tighter prose, consistent tone)
    - If `copywrite_applied` is true: show "Report already polished" instead of offering this step
-2. `cogni-visual:enrich-report` — Themed HTML with interactive charts and concept diagrams
+2. `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the report (optional, for premium Pencil-rendered visual header with 10-step validation)
+3. `cogni-visual:enrich-report` — Themed HTML with interactive charts and concept diagrams (detects and reuses existing infographic if step 2 was done; otherwise generates a simplified infographic inline)
    - If `enrich_report_applied` (from execution-log) or `enrich_report_standalone` is true: show "Enriched HTML already generated" instead
 
 **Path B — Narrative transformation** (converts to story-arc document):

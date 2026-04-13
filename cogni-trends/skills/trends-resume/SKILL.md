@@ -193,7 +193,8 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 - `trend-report` Phase 5 — Revise report after claims resolution (apply corrections, remove unverifiable claims)
 
 **Visualize**
-- `cogni-visual:enrich-report` — Themed HTML with Chart.js visualizations and Excalidraw diagrams
+- `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the trend report (optional, for premium Pencil-rendered visual header in enriched HTML)
+- `cogni-visual:enrich-report` — Themed HTML with Chart.js visualizations and concept diagrams (detects and reuses existing infographic if story-to-infographic was run first)
 - `cogni-visual:story-to-slides` — PowerPoint presentation brief
 - `cogni-visual:story-to-web` — Scrollable web landing page
 - `cogni-visual:story-to-storyboard` — Multi-poster print storyboard
