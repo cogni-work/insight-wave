@@ -63,10 +63,13 @@ User decisions are stored in `.metadata/user-claims-review.json` and passed to b
 
 ### Step 5: Update Report-Claim Entities
 
-After verification, read `cogni-claims/claims.json` and update report-claim entities:
+After verification, read `cogni-claims/claims.json` and update report-claim entities with all available fields:
 - Set `verification_status` to verified/deviated/source_unavailable
-- Set `deviation_type` and `deviation_severity` if deviated
 - Set `claims_submission_id` to the cogni-claims claim ID
+- Set `deviations` array (full deviation details: type, severity, source_excerpt, explanation)
+- Set `source_excerpt` (verbatim text from source supporting or contradicting the claim)
+- Set `verified_at` (ISO 8601 timestamp of verification)
+- For backward compatibility, also set deprecated `deviation_type` and `deviation_severity` to the highest-severity deviation (if any)
 
 ### Step 6: Pass to Reviewer
 

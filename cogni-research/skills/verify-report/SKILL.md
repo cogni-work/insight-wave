@@ -260,7 +260,7 @@ When verdict="accept" or iteration reaches 3: proceed to Phase 5.
 
 | Scenario | Recovery |
 |----------|----------|
-| cogni-claims not installed | Cannot proceed — this skill requires cogni-claims. Tell the user to install cogni-claims plugin |
+| cogni-claims not installed | Log warning: "cogni-claims unavailable — running structural review only". Skip Phases 2a-2c and Phase 3 (claims submission, verification, interactive review). Run Phase 4 reviewer with structural criteria only (no claims data). Reduce max review iterations from 3 to 2. Recommend installing cogni-claims in Phase 5 next steps. See `references/claims-integration.md` Graceful Degradation section |
 | All source URLs unreachable | Report results with source_unavailable count. Suggest user run `/claims cobrowse` for interactive recovery, or check URLs manually |
 | Claim extraction produces 0 claims | The draft may lack inline citations. Suggest re-running research-report writer with citation requirements |
 | Review loop reaches max (3) | Accept current draft with quality warning |
