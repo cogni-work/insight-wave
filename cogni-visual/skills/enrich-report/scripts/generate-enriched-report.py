@@ -385,13 +385,21 @@ def _chart_defaults(dv):
 def generate_chart_config(enrichment, dv):
     """Generate a complete Chart.js config from an enrichment's structured data.
 
-    The LLM extracts data (labels, values, type). This function applies the
-    correct Chart.js template, resolves colors from design-variables, and
-    returns a ready-to-embed config dict.
+    If the enrichment contains a `chart_config` field with a pre-built Chart.js
+    config (type + data + options), use it directly — the LLM crafted a richer
+    config than our templates can produce. Otherwise, fall back to template
+    generation from the `data` field.
     """
     etype = enrichment.get("type", "")
     data = enrichment.get("data", {})
     eid = enrichment.get("id", "enr-000")
+
+    # LLM-crafted config: use verbatim (preferred path)
+    if "chart_config" in enrichment and enrichment["chart_config"]:
+        cfg = enrichment["chart_config"]
+        cfg["chart_id"] = eid
+        return cfg
+
     palette = _color_palette(dv)
     defaults = _chart_defaults(dv)
 
@@ -431,14 +439,24 @@ def generate_chart_config(enrichment, dv):
     config = {"chart_id": eid}
 
     if etype == "comparison-bar":
+        chart_title = data.get("chart_title", "")
+        axis_label = data.get("axis_label", data.get("x_label", unit or ""))
+        # Extract sublabels for richer tooltips
+        sublabels = []
+        for key in ("items", "claims", "stats", "segments"):
+            for it in data.get(key, []):
+                sublabels.append(it.get("sublabel", ""))
         config["type"] = "bar"
         config["data"] = {
             "labels": labels,
             "datasets": [{
-                "label": unit or "Value",
+                "label": axis_label or "Value",
                 "data": values,
                 "backgroundColor": [palette[i % len(palette)] for i in range(len(values))],
+                "borderColor": [palette[i % len(palette)] for i in range(len(values))],
+                "borderWidth": 1,
                 "borderRadius": 6,
+                "barPercentage": 0.7,
             }],
         }
         config["options"] = {
@@ -447,15 +465,36 @@ def generate_chart_config(enrichment, dv):
             "scales": {
                 "x": {
                     "beginAtZero": True,
+                    "title": {"display": bool(axis_label), "text": axis_label,
+                              "font": {"family": dv["fonts"]["body"], "size": 12, "weight": "bold"},
+                              "color": dv["colors"]["text_muted"]},
                     "ticks": {
                         "font": {"family": dv["fonts"]["body"], "size": 12},
                         "color": dv["colors"]["text_muted"],
-                        "callback_suffix": unit,
                     },
                     "grid": {"color": dv["colors"]["border"], "lineWidth": 0.5},
                 },
+                "y": {
+                    "ticks": {
+                        "font": {"family": dv["fonts"]["body"], "size": 13, "weight": "bold"},
+                        "color": dv["colors"]["text"],
+                    },
+                    "grid": {"display": False},
+                },
             },
-            "plugins": {**defaults["plugins"], "legend": {"display": False}},
+            "plugins": {
+                **defaults["plugins"],
+                "legend": {"display": False},
+                "title": {"display": bool(chart_title), "text": chart_title,
+                          "font": {"family": dv["fonts"]["headers"], "size": 15, "weight": "bold"},
+                          "color": dv["colors"]["text"], "padding": {"bottom": 16}},
+                "tooltip": {
+                    **defaults["plugins"].get("tooltip", {}),
+                    "callbacks": {
+                        "afterLabel": f"function(ctx) {{ var subs = {json.dumps(sublabels, ensure_ascii=False)}; return subs[ctx.dataIndex] || ''; }}"
+                    } if any(sublabels) else {},
+                },
+            },
         }
 
     elif etype == "stat-chart":
@@ -495,26 +534,38 @@ def generate_chart_config(enrichment, dv):
         }
 
     elif etype == "distribution-doughnut":
+        chart_title = data.get("title", data.get("chart_title", ""))
         config["type"] = "doughnut"
         config["data"] = {
             "labels": labels,
             "datasets": [{
                 "data": values,
                 "backgroundColor": [palette[i % len(palette)] for i in range(len(values))],
+                "borderWidth": 2,
+                "borderColor": dv["colors"]["background"],
+                "hoverOffset": 8,
             }],
         }
         config["options"] = {
             **defaults,
+            "cutout": "55%",
             "plugins": {
                 **defaults["plugins"],
-                "legend": {**defaults["plugins"]["legend"], "position": "right"},
+                "legend": {**defaults["plugins"]["legend"], "position": "right",
+                           "labels": {**defaults["plugins"]["legend"]["labels"],
+                                      "usePointStyle": True, "pointStyle": "rectRounded",
+                                      "padding": 14}},
+                "title": {"display": bool(chart_title), "text": chart_title,
+                          "font": {"family": dv["fonts"]["headers"], "size": 15, "weight": "bold"},
+                          "color": dv["colors"]["text"], "padding": {"bottom": 12}},
             },
         }
 
     elif etype == "timeline-chart":
-        # Category-based point coloring
+        # Category-based point coloring and grouping
         categories = data.get("_milestone_categories", [])
         milestone_labels = data.get("_milestone_labels", labels)
+        chart_title = data.get("chart_title", "")
         category_colors = {
             "regulatory": dv["status"]["warning"],
             "strategic": dv["colors"]["accent"],
@@ -527,42 +578,59 @@ def generate_chart_config(enrichment, dv):
             category_colors.get(cat, default_color) for cat in categories
         ] if categories else [default_color] * len(labels)
 
+        # Stagger Y positions to avoid overlapping labels (alternate between rows)
+        y_positions = [(i % 3) for i in range(len(labels))]
+
         config["type"] = "line"
         config["data"] = {
             "labels": labels,
             "datasets": [{
                 "label": "Milestones",
-                "data": values if values else [1] * len(labels),
-                "borderColor": dv["colors"]["accent"] + "40",
-                "backgroundColor": dv["colors"]["accent"] + "20",
+                "data": y_positions if len(labels) > 3 else [1] * len(labels),
+                "borderColor": dv["colors"]["accent"] + "30",
+                "backgroundColor": dv["colors"]["accent"] + "10",
                 "pointBackgroundColor": point_colors,
-                "pointRadius": 8,
-                "pointStyle": "rectRounded",
+                "pointBorderColor": point_colors,
+                "pointBorderWidth": 2,
+                "pointRadius": 10,
+                "pointHoverRadius": 13,
+                "pointStyle": "circle",
                 "showLine": True,
-                "borderDash": [5, 5],
+                "borderWidth": 2,
+                "borderDash": [6, 4],
                 "fill": False,
-                "tension": 0,
+                "tension": 0.2,
             }],
         }
         config["options"] = {
             **defaults,
             "scales": {
-                "y": {"display": False},
+                "y": {"display": False, "min": -1, "max": 4},
                 "x": {
-                    "title": {"display": True, "text": unit or "Timeline"},
+                    "title": {"display": bool(chart_title), "text": chart_title,
+                              "font": {"family": dv["fonts"]["headers"], "size": 13, "weight": "bold"},
+                              "color": dv["colors"]["text_muted"]},
                     "ticks": {
-                        "font": {"family": dv["fonts"]["body"], "size": 11},
-                        "color": dv["colors"]["text_muted"],
+                        "font": {"family": dv["fonts"]["body"], "size": 11, "weight": "bold"},
+                        "color": dv["colors"]["text"],
+                        "maxRotation": 45,
                     },
+                    "grid": {"color": dv["colors"]["border"] + "40", "lineWidth": 1,
+                             "drawTicks": True, "tickLength": 8},
                 },
             },
             "plugins": {
                 **defaults["plugins"],
                 "legend": {"display": False},
+                "title": {"display": bool(chart_title), "text": chart_title,
+                          "font": {"family": dv["fonts"]["headers"], "size": 15, "weight": "bold"},
+                          "color": dv["colors"]["text"], "padding": {"bottom": 12}},
                 "tooltip": {
                     **defaults["plugins"].get("tooltip", {}),
+                    "displayColors": False,
                     "callbacks": {
-                        "label": f"function(ctx) {{ var labels = {json.dumps(milestone_labels, ensure_ascii=False)}; return labels[ctx.dataIndex] || ''; }}"
+                        "title": f"function(items) {{ return items[0].label; }}",
+                        "label": f"function(ctx) {{ var labels = {json.dumps(milestone_labels, ensure_ascii=False)}; var cats = {json.dumps(categories, ensure_ascii=False)}; var l = labels[ctx.dataIndex] || ''; var c = cats[ctx.dataIndex] ? ' [' + cats[ctx.dataIndex] + ']' : ''; return l + c; }}"
                     },
                 },
             },
@@ -793,21 +861,21 @@ def _build_card_html(eid, etype, enrichment, dv):
 def _chart_height(etype, enrichment):
     """Determine chart height based on type and data size."""
     heights = {
-        "horizon-chart": 350,
-        "theme-radar": 350,
-        "coverage-heatmap": 300,
-        "distribution-doughnut": 300,
-        "timeline-chart": 200,
-        "comparison-bar": 300,
-        "stat-chart": 300,
+        "horizon-chart": 380,
+        "theme-radar": 380,
+        "coverage-heatmap": 320,
+        "distribution-doughnut": 340,
+        "timeline-chart": 280,
+        "comparison-bar": 320,
+        "stat-chart": 320,
     }
-    h = heights.get(etype, 300)
+    h = heights.get(etype, 320)
     # Scale bar charts by item count
     data = enrichment.get("data", {})
     items = data.get("items", data.get("labels", []))
     if etype in ("horizon-chart", "comparison-bar") and len(items) > 5:
-        h = max(h, len(items) * 50 + 80)
-    return min(h, 400)  # Hard cap at 400px in report body
+        h = max(h, len(items) * 55 + 100)
+    return min(h, 450)  # Hard cap at 450px in report body
 
 
 # ---------------------------------------------------------------------------
@@ -1424,8 +1492,13 @@ def generate_chart_scripts(chart_configs, dv):
         ctype = cfg.get("type", "bar")
         data = json.dumps(cfg.get("data", {}))
         options = json.dumps(cfg.get("options", {}))
-        # Unquote JavaScript function strings for Chart.js callbacks
-        options = re.sub(r'"(function\(.*?\)\s*\{.*?\})"', r'\1', options)
+        # Unquote JavaScript function strings for Chart.js callbacks.
+        # json.dumps wraps them in quotes and escapes inner quotes as \".
+        # We need to: (1) remove the outer quotes, (2) unescape inner \".
+        def _unquote_js_func(m):
+            body = m.group(1).replace('\\"', '"')
+            return body
+        options = re.sub(r'"(function\(.*?\)\s*\{.*?\})"', _unquote_js_func, options)
         scripts.append(f"""
   (function() {{
     var ctx = document.getElementById('{cid}');
@@ -1523,7 +1596,14 @@ def _build_content_section_based(sections, enrich_by_section, svg_dir, dv):
 
 
 def _generate_infographic_image_html(image_path, output_dir):
-    """Embed a Pencil-rendered infographic PNG as base64 for a fully self-contained HTML."""
+    """Embed a Pencil-rendered infographic PNG as a magazine-style peek strip.
+
+    A vertical strip on the right edge shows a sliver of the infographic —
+    like a magazine page peeking out. Clicking it triggers a 3D page-turn
+    unfold animation revealing the full infographic panel. Click the overlay,
+    the X button, or press Escape to fold it back. Click the image for
+    full-screen lightbox.
+    """
     import base64
     if not image_path or not os.path.isfile(image_path):
         return ''
@@ -1533,15 +1613,200 @@ def _generate_infographic_image_html(image_path, output_dir):
     ext = os.path.splitext(image_path)[1].lstrip('.').lower()
     mime = {'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
             'webp': 'image/webp'}.get(ext, 'image/png')
-    return f'''<div class="infographic-editorial infographic-rendered">
-  <img src="data:{mime};base64,{b64}" alt="Editorial Infographic"
-       class="ig-image" onclick="document.getElementById('ig-lightbox').style.display='flex'"
-       title="Click for full-screen view">
+    return f'''<!-- Infographic: magazine peek strip with page-turn unfold -->
+<style>
+  .ig-mag-wrapper {{
+    position: fixed;
+    top: 0; right: 0;
+    height: 100vh;
+    z-index: 9998;
+    pointer-events: none;
+  }}
+  /* Peek strip: thumbnail + label on right edge, like a magazine page tab */
+  .ig-mag-peek {{
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 140px;
+    cursor: pointer;
+    pointer-events: auto;
+    background: #ffffff;
+    border-radius: 12px 0 0 12px;
+    box-shadow: -4px 2px 20px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-right: none;
+    padding: 12px 10px 14px 12px;
+    transition: width 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  }}
+  .ig-mag-peek:hover {{
+    width: 170px;
+    box-shadow: -6px 4px 32px rgba(0,0,0,0.22);
+    transform: translateY(-50%) translateX(-8px);
+  }}
+  .ig-mag-peek img {{
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    pointer-events: none;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  }}
+  .ig-mag-peek-label {{
+    display: block;
+    text-align: center;
+    margin-top: 8px;
+    font: 700 11px/1.2 system-ui, -apple-system, sans-serif;
+    color: #E20074;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }}
+  /* Overlay */
+  .ig-mag-overlay {{
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9990;
+    background: rgba(0,0,0,0.25);
+  }}
+  .ig-mag-overlay.open {{ display: block; }}
+  /* The page panel — slides in from right to fill content area beside sidebar */
+  .ig-mag-page {{
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 260px;
+    height: 100vh;
+    z-index: 9999;
+    background: #ffffff;
+    box-shadow: -6px 0 40px rgba(0,0,0,0.25);
+    overflow-y: auto;
+    padding: 28px 40px 48px;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+  }}
+  .ig-mag-page.open {{
+    transform: translateX(0);
+  }}
+  .ig-mag-page-close {{
+    position: sticky;
+    top: 0; float: right;
+    background: #333; color: #fff;
+    border: none; border-radius: 50%;
+    width: 36px; height: 36px;
+    font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1;
+  }}
+  .ig-mag-page-close:hover {{ background: #E20074; }}
+  .ig-mag-page-img-wrap {{
+    margin-top: 8px;
+    overflow: auto;
+    height: calc(100vh - 120px);
+    border-radius: 6px;
+    cursor: grab;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }}
+  .ig-mag-page-img-wrap:active {{ cursor: grabbing; }}
+  .ig-mag-page-img-wrap img {{
+    max-height: calc(100vh - 130px);
+    width: auto;
+    max-width: none;
+    border-radius: 6px;
+    transform-origin: top center;
+    transition: transform 0.2s ease;
+    display: block;
+  }}
+  .ig-mag-zoom-controls {{
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+    z-index: 2;
+  }}
+  .ig-mag-zoom-btn {{
+    background: #333; color: #fff;
+    border: none; border-radius: 6px;
+    width: 36px; height: 32px;
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }}
+  .ig-mag-zoom-btn:hover {{ background: #E20074; }}
+  /* Hide peek strip when page is open */
+  .ig-mag-wrapper.open .ig-mag-peek {{ opacity: 0; pointer-events: none; }}
+  @media (max-width: 1024px) {{
+    .ig-mag-page {{ left: 0; }}
+  }}
+  @media (max-width: 768px) {{
+    .ig-mag-peek {{ width: 48px; }}
+    .ig-mag-peek:hover {{ width: 64px; }}
+    .ig-mag-page {{ left: 0; padding: 20px 16px 40px; }}
+  }}
+</style>
+<div class="ig-mag-wrapper" id="ig-mag-wrapper">
+  <div class="ig-mag-peek" onclick="document.getElementById('ig-mag-wrapper').classList.add('open');document.querySelector('.ig-mag-page').classList.add('open');document.querySelector('.ig-mag-overlay').classList.add('open');" title="Click to view infographic">
+    <img src="data:{mime};base64,{b64}" alt="Infographic preview">
+    <span class="ig-mag-peek-label">&#9664; Infographic</span>
+  </div>
+  <div class="ig-mag-page">
+    <button class="ig-mag-page-close" onclick="igClosePanel()" title="Close">&times;</button>
+    <div class="ig-mag-zoom-controls">
+      <button class="ig-mag-zoom-btn" onclick="igZoom(-1)" title="Zoom out">&minus;</button>
+      <button class="ig-mag-zoom-btn" onclick="igZoom(0)" title="Fit to panel">&#8596;</button>
+      <button class="ig-mag-zoom-btn" onclick="igZoom(1)" title="Zoom in">+</button>
+      <button class="ig-mag-zoom-btn" onclick="document.getElementById('enrich-ig-lightbox').style.display='flex';" title="Full screen">&#x26F6;</button>
+    </div>
+    <div class="ig-mag-page-img-wrap" id="ig-mag-img-wrap">
+      <img src="data:{mime};base64,{b64}" alt="Editorial Infographic" id="ig-mag-img">
+    </div>
+  </div>
 </div>
-<div id="ig-lightbox" class="ig-lightbox" onclick="this.style.display='none'">
-  <img src="data:{mime};base64,{b64}" alt="Editorial Infographic (full screen)">
-  <div class="ig-lightbox-hint">Click anywhere to close</div>
-</div>'''
+<div class="ig-mag-overlay" onclick="igClosePanel()"></div>
+<div id="enrich-ig-lightbox" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;cursor:zoom-out;padding:24px;" onclick="this.style.display='none'">
+  <img src="data:{mime};base64,{b64}" alt="Editorial Infographic (full screen)"
+       style="max-height:95vh;max-width:95vw;border-radius:8px;">
+  <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;opacity:0.5;">Click anywhere to close</div>
+</div>
+<script>
+(function(){{
+  var scale=1, minScale=0.5, maxScale=5;
+  var img=document.getElementById('ig-mag-img');
+  var wrap=document.getElementById('ig-mag-img-wrap');
+  function applyZoom(){{
+    img.style.transform='scale('+scale+')';
+    img.style.transformOrigin='top center';
+    if(scale>1.05){{ wrap.style.overflow='auto'; wrap.style.cursor='grab'; }}
+    else{{ wrap.style.overflow='hidden'; wrap.style.cursor='default'; }}
+  }}
+  window.igZoom=function(dir){{
+    if(dir===0){{ scale=1; }}
+    else{{ scale=Math.min(maxScale,Math.max(minScale,scale+(dir*0.4))); }}
+    applyZoom();
+  }};
+  /* Scroll-wheel zoom */
+  wrap.addEventListener('wheel',function(e){{
+    if(!document.querySelector('.ig-mag-page.open')) return;
+    e.preventDefault();
+    igZoom(e.deltaY<0?1:-1);
+  }},{{passive:false}});
+  /* Escape + close reset */
+  function closePanel(){{
+    document.getElementById('ig-mag-wrapper').classList.remove('open');
+    document.querySelector('.ig-mag-page').classList.remove('open');
+    document.querySelector('.ig-mag-overlay').classList.remove('open');
+    document.getElementById('enrich-ig-lightbox').style.display='none';
+    scale=1; applyZoom();
+  }}
+  document.addEventListener('keydown',function(e){{ if(e.key==='Escape') closePanel(); }});
+  /* Expose for close buttons */
+  window.igClosePanel=closePanel;
+}})();
+</script>'''
 
 
 def _load_infographic_html_fragment(html_path, output_dir):
@@ -1716,24 +1981,97 @@ def generate_html(source_path, enrichment_plan, infographic_data, svg_dir, dv,
 # CLI
 # ---------------------------------------------------------------------------
 
+def post_process_html(html_path, source_path, infographic_image=None,
+                      infographic_html_path=None, infographic_data_path=None):
+    """Post-process an LLM-written HTML file: inject infographic + validate content.
+
+    Replaces <!-- INFOGRAPHIC_INJECTION_POINT --> with the infographic header
+    using the three-tier priority cascade, then validates content preservation
+    against the source markdown.
+    """
+    with open(html_path, encoding='utf-8') as f:
+        html = f.read()
+
+    with open(source_path, encoding='utf-8') as f:
+        md_text = f.read()
+
+    output_dir = os.path.dirname(html_path) or '.'
+
+    # Three-tier infographic injection
+    ig_html = _generate_infographic_image_html(infographic_image, output_dir)
+    if not ig_html:
+        ig_html = _load_infographic_html_fragment(infographic_html_path, output_dir)
+    if not ig_html and infographic_data_path and os.path.isfile(infographic_data_path):
+        with open(infographic_data_path) as f:
+            ig_data = json.load(f)
+        # Need design variables for fallback — use defaults
+        ig_html, _ = generate_infographic_header(ig_data, DEFAULT_THEME)
+
+    if ig_html:
+        if '<!-- INFOGRAPHIC_INJECTION_POINT -->' in html:
+            html = html.replace('<!-- INFOGRAPHIC_INJECTION_POINT -->', ig_html)
+        else:
+            # Fallback: inject after <main> tag
+            html = html.replace('<main>', '<main>\n' + ig_html, 1)
+
+    # Write back
+    with open(html_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+
+    # Validate content preservation
+    validation = verify_content_preservation(md_text, html)
+    return html_path, validation
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Generate enriched HTML report (two-zone architecture)")
+    parser.add_argument("--post-process", action="store_true",
+                        help="Post-process mode: inject infographic into LLM-written HTML + validate")
+    parser.add_argument("--html", default="", help="[post-process] Path to LLM-written HTML file")
     parser.add_argument("--source", required=True, help="Source markdown report path")
-    parser.add_argument("--enrichment-plan", required=True, help="Enrichment plan JSON path")
+    parser.add_argument("--enrichment-plan", default="", help="Enrichment plan JSON path")
     parser.add_argument("--infographic-data", default="", help="Infographic data JSON path (optional)")
     parser.add_argument("--svg-dir", default="", help="Directory with SVG files (enr-XXX.svg)")
     parser.add_argument("--design-variables", default="", help="Design variables JSON path")
-    parser.add_argument("--output", required=True, help="Output HTML path")
+    parser.add_argument("--output", default="", help="Output HTML path")
     parser.add_argument("--language", default="en", help="Language code (en/de)")
     parser.add_argument("--density", default="balanced", help="Enrichment density (none/minimal/balanced/rich)")
-    parser.add_argument("--infographic-image", default="", help="Pencil-rendered infographic PNG (pixel-perfect, preferred over HTML fragment and JSON)")
-    parser.add_argument("--infographic-html", default="", help="Pencil-rendered HTML fragment (fallback when PNG unavailable)")
-    # Legacy support: --chart-configs is accepted but ignored (configs generated internally)
+    parser.add_argument("--infographic-image", default="", help="Pencil-rendered infographic PNG")
+    parser.add_argument("--infographic-html", default="", help="Pencil-rendered HTML fragment")
     parser.add_argument("--chart-configs", default="", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     try:
+        # ---- Post-process mode: inject infographic + validate ----
+        if args.post_process:
+            html_path = args.html or args.output
+            if not html_path:
+                print(json.dumps({"error": "--html or --output required in --post-process mode"}),
+                      file=sys.stderr)
+                sys.exit(1)
+
+            out, validation = post_process_html(
+                html_path=html_path,
+                source_path=args.source,
+                infographic_image=args.infographic_image or None,
+                infographic_html_path=args.infographic_html or None,
+                infographic_data_path=args.infographic_data or None,
+            )
+            result = {"status": "ok", "path": out, "validation": validation, "mode": "post-process"}
+            print(json.dumps(result, indent=2))
+            if not validation["pass"]:
+                print(f"\nWARNING: Content preservation check failed!", file=sys.stderr)
+                print(f"  Word ratio: {validation['word_ratio']} (need >= 0.80)", file=sys.stderr)
+                print(f"  Source H2: {validation['source_h2']}, HTML H2: {validation['html_h2']}", file=sys.stderr)
+            return
+
+        # ---- Full generation mode (legacy) ----
+        if not args.enrichment_plan:
+            print(json.dumps({"error": "--enrichment-plan required in full generation mode"}),
+                  file=sys.stderr)
+            sys.exit(1)
+
         dv = load_design_variables(args.design_variables)
 
         with open(args.enrichment_plan) as f:

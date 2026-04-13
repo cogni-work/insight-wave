@@ -3,34 +3,55 @@
   "evals": [
     {
       "id": 0,
-      "name": "telco-sdlc-balanced",
-      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/ai-vs-traditional-software-engineering-a-2026-03-24/output/report.md with density balanced. Use the default theme.",
-      "expected_output": "Themed HTML file with 10-15 enrichments spread across sections: KPI dashboard in executive summary, comparison-bar charts for data tables, stat-charts for statistical clusters, summary-cards for long sections with thesis statements. No enrichments in References section.",
+      "name": "leo-satellite-balanced",
+      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/the-evolution-of-the-leo-satellite-marke-2026-04-13/output/report.md with density balanced. Use the Deutsche Telekom theme (design-variables already at cogni-visual/design-variables.json in the same project directory).",
+      "expected_output": "Themed HTML file with 3-5 enrichments: comparison-bar for operator/country data tables, timeline-chart for IRIS2 milestones, process-flow for telco cooperation models. No enrichments in References. Infographic header with KPI cards for headline numbers (USD 11.81B, 10K satellites, etc).",
       "files": [],
       "assertions": [
-        "Executive Summary section receives a kpi-dashboard enrichment",
-        "Enrichment plan contains 10-15 total enrichments at balanced density",
-        "No enrichments are placed in the References section",
-        "Sections with comparison tables receive comparison-bar enrichments",
-        "At least one process-flow enrichment is generated for sections describing sequential workflows",
-        "Sections with 800+ words and a thesis statement receive summary-card enrichments",
-        "Enrichments are distributed across at least 6 of the 10 H2 sections",
-        "The enrichment-plan.json validates against the enrichment-plan.schema.json",
-        "The output HTML file exists and contains Chart.js script references"
+        "Enrichment plan has 3-5 total enrichments (balanced density range)",
+        "No enrichments target References or appendix sections",
+        "At least one enrichment extracts numeric data from executive summary",
+        "Every enrichment has a non-empty data field with extracted values",
+        "No two enrichments within 15 source lines of each other",
+        "Output HTML contains canvas elements for data-track enrichments",
+        "HTML link count >= 112 (source citation count)",
+        "HTML contains all 13 H2 section headings",
+        "HTML contains sidebar navigation",
+        "Python generator script was used (not hand-written HTML)"
       ]
     },
     {
       "id": 1,
-      "name": "telco-sdlc-minimal",
-      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/ai-vs-traditional-software-engineering-a-2026-03-24/output/report.md with density minimal.",
-      "expected_output": "Themed HTML file with 5-8 enrichments: only executive-summary KPI dashboard and highest-scoring content-pattern matches. No per-section baseline forced.",
+      "name": "leo-satellite-rich",
+      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/the-evolution-of-the-leo-satellite-marke-2026-04-13/output/report.md with density rich. Use the Deutsche Telekom theme.",
+      "expected_output": "Themed HTML with 5-8 enrichments using at least 3 different chart/diagram types. Enrichments spread across 4+ H2 sections. Higher density should add meaningful variety, not just duplicate the balanced set.",
       "files": [],
       "assertions": [
-        "Enrichment plan contains 5-8 total enrichments at minimal density",
-        "Executive Summary kpi-dashboard is included",
-        "No per-section baseline consistency rule is applied at minimal density",
-        "No enrichments are placed in the References section",
-        "The output HTML file exists"
+        "Enrichment plan has 5-8 total enrichments (rich density range)",
+        "At least 3 different enrichment types used",
+        "Enrichments distributed across at least 4 different H2 sections",
+        "No enrichments in References or appendix sections",
+        "Every enrichment has non-empty data field",
+        "No two enrichments within 15 lines of each other",
+        "Output HTML exists with Chart.js canvas elements",
+        "HTML preserves all 13 H2 headings and 112+ citation links",
+        "Rich density adds meaningful variety over balanced"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "leo-satellite-non-interactive",
+      "prompt": "Enrich the research report at /Users/stephandehaas/Library/CloudStorage/OneDrive-deHaas-BeratenderIngenieurfürKI-Digitalisierung/TSC/cogni-research/the-evolution-of-the-leo-satellite-marke-2026-04-13/output/report.md with density balanced and interactive=false. Use the Deutsche Telekom theme.",
+      "expected_output": "Equivalent to the balanced run but fully automated. No user prompts. Same enrichment quality and coverage.",
+      "files": [],
+      "assertions": [
+        "Enrichment plan has 3-5 enrichments (balanced density)",
+        "No AskUserQuestion calls during execution",
+        "Every enrichment has non-empty data field",
+        "Output HTML exists with sidebar, charts, and all 13 headings",
+        "Enrichment types comparable to balanced interactive run",
+        "HTML preserves 112+ citation links",
+        "Python generator script used for HTML assembly"
       ]
     }
   ]
