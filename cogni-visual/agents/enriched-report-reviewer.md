@@ -4,7 +4,7 @@ description: >
   Visual quality review of an enriched HTML report via Browser MCP screenshots.
   Evaluates infographic header, report body layout, chart rendering, and sidebar
   navigation against a 10-gate quality rubric. Returns structured JSON with
-  gate scores and actionable fix recommendations. Use when enrich-report Phase 6b
+  gate scores and actionable fix recommendations. Use when enrich-report Phase 5b
   needs visual validation, or standalone to review any enriched HTML file.
 model: sonnet
 color: yellow
@@ -168,7 +168,7 @@ Each gate failure maps to a specific artifact that can be corrected:
 | G7 (section spacing) | Read `design-variables.json` — increase `spacing.section_gap` |
 | G8 (chart rendering) | Check console logs for JS errors. Read `enrichment-plan.json` — verify chart `data` fields have valid `labels` and `values` arrays. Fix malformed data. |
 | G9 (chart theming) | Read `design-variables.json` — verify `colors.accent`, `colors.primary`, `colors.secondary` are valid hex. Check that the Python script is receiving the design-variables path correctly. |
-| G10 (SVG diagram quality) | Read the failing SVG file from `svgs/` directory — check for clipped viewBox, missing text elements, or overflow. Adjust viewBox dimensions if needed. |
+| G10 (SVG diagram quality) | SVGs are inline in the HTML — identify the failing `<svg>` block, note the specific viewBox/element issue in recommendations. The fix requires regenerating the HTML with corrected inline SVG. |
 
 After applying fixes, re-run the HTML generator:
 ```bash
@@ -193,7 +193,7 @@ If `mcp__browsermcp__browser_navigate` or `mcp__browsermcp__browser_screenshot` 
 {"ok":true,"score":0,"pass":true,"review_passes":0,"gates":{},"fixes_applied":[],"recommendations":["Browser MCP unavailable — visual review skipped"],"screenshots_taken":0}
 ```
 
-The automated Phase 6 validation gates remain the quality floor when visual review is unavailable. This matches concept-diagram-svg's graceful skip pattern.
+The automated Phase 5 validation gates remain the quality floor when visual review is unavailable.
 
 ## Constraints
 

@@ -62,7 +62,7 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 Two-track visualization pipeline:
 
 1. **Data track** — Chart.js charts (bar, doughnut, radar, line, scatter, combo) for statistics, distributions, comparisons, timelines. The LLM writes complete Chart.js configs with multiple datasets, fills, annotations, and themed colors from design-variables. Charts should be visually rich: multi-dataset line charts with scenario fills, grouped bars with axis titles, doughnuts with callout legends, scatter timelines with category-colored milestone points.
-2. **Concept track** — LLM-crafted inline SVG via concept-diagram-svg agent (no Excalidraw dependency) for T→I→P→S flows, relationship maps, strategic concept sketches. Themed with design-variable colors.
+2. **Concept track** — LLM-crafted inline SVG written directly in the HTML (no agent dispatch, no Excalidraw dependency) for T→I→P→S flows, relationship maps, strategic concept sketches. Themed with design-variable colors. Follow `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` recipes for diagram-type-specific element structure and coordinate formulas.
 
 The Python post-processor (`scripts/generate-enriched-report.py --post-process`) handles:
 - Injecting the infographic header (PNG base64 with lightbox, HTML fragment, or JSON fallback)
@@ -123,7 +123,7 @@ The `density` parameter gates how many **report-body** enrichments pass through.
 - **balanced** — 3-5 report-body illustrations. Default. Sparse and purposeful — only process-flows, concept diagrams, or key comparison charts.
 - **rich** — 5-8 report-body illustrations. For workshop materials or reports where more inline visuals aid the reading experience.
 
-When `density=none`: skip Phase 2b and Phase 4 (enrichment planning and visualization generation). Still run Phase 2a (infographic distillation). Go to Phase 5 with an empty enrichment plan but valid infographic data.
+When `density=none`: skip Phase 2b (enrichment planning). Still run Phase 2a (infographic distillation). Go to Phase 4 with an empty enrichment plan but valid infographic data — no charts or SVGs will be generated.
 
 The Python script enforces density caps deterministically — even if the enrichment plan exceeds the limit, the script trims to the cap and logs what was dropped.
 
@@ -287,7 +287,7 @@ The agent uses Pencil MCP tools (`open_document`, `batch_design`, `export_nodes`
 | 2 (brief only) | pre-existing | generated | generated | generated (best-effort) | not generated |
 | 3 (from scratch) | generated | generated | generated | generated (best-effort) | generated |
 
-**Three-tier infographic priority in Phase 5:** The Python script uses the highest-quality artifact available: PNG (pixel-perfect) > HTML fragment (fallback) > JSON fallback. The PNG embeds the Pencil-rendered image as base64 with a lightbox for full-screen viewing; the HTML fragment provides native responsive HTML as fallback when no PNG is available; the JSON generates inline HTML from templates.
+**Three-tier infographic priority in Phase 4:** The Python script uses the highest-quality artifact available: PNG (pixel-perfect) > HTML fragment (fallback) > JSON fallback. The PNG embeds the Pencil-rendered image as base64 with a lightbox for full-screen viewing; the HTML fragment provides native responsive HTML as fallback when no PNG is available; the JSON generates inline HTML from templates.
 
 ---
 
@@ -448,32 +448,13 @@ When `interactive=false`: auto-approve all, log plan.
 
 ---
 
-### Phase 4: Concept Diagram SVG Generation
-
-> Generate concept-diagram SVGs for approved concept-track enrichments.
-
-**Concept track (inline SVG via concept-diagram-svg agent):**
-
-For each concept-track enrichment:
-1. Read the section content and extract the conceptual structure (e.g., process steps, relationship nodes).
-2. Select `diagram_type` based on the enrichment type: `process-flow` for sequential workflows, `concept-sketch` for layered/convergence/phase/matrix patterns, `tips-flow` for T→I→P→S chains, `relationship-map` for theme interconnections.
-3. Dispatch to `concept-diagram-svg` agent with: `DIAGRAM_TYPE`, `CONCEPT_SUBTYPE` (if applicable), `DATA` (structured payload extracted from section), `DESIGN_VARIABLES` (from design-variables), `LANGUAGE`.
-4. Collect SVG string from agent JSON response (`svg` field).
-5. Write SVG to `{source_dir}/cogni-visual/svgs/enr-XXX.svg`.
-
-**Parallelization:** `concept-diagram-svg` agents generate SVG independently — no shared canvas. Dispatch all concept-track enrichments in a single parallel Agent batch for faster execution.
-
-If no concept-track enrichments were approved (all enrichments are data-track), Phase 4 is a no-op.
-
----
-
-### Phase 5: HTML Assembly
+### Phase 4: HTML Assembly
 
 > Write the complete self-contained HTML file, then post-process to inject the infographic and validate.
 
 Read `references/06-html-structure.md` for the two-zone HTML layout and CSS architecture.
 
-**Step 5.1 — Write the HTML file directly.** You produce the entire HTML file using the Write tool. This is where the visual quality of the enriched report is determined — take the time to craft excellent Chart.js configs, a polished layout, and proper responsive CSS.
+**Step 4.1 — Write the HTML file directly.** You produce the entire HTML file using the Write tool. This is where the visual quality of the enriched report is determined — take the time to craft excellent Chart.js configs, a polished layout, and proper responsive CSS.
 
 The HTML must include:
 
@@ -482,7 +463,7 @@ The HTML must include:
 3. **Fixed sidebar navigation** — built from the heading hierarchy (H2/H3) with scroll-spy active state highlighting (IntersectionObserver or scroll offset). Collapsible hamburger on mobile.
 4. **Main content** — convert ALL source markdown to HTML verbatim. Every paragraph, heading, table, blockquote, citation link, list, and horizontal rule must appear. Convert `[text](url)` to `<a href="url" target="_blank">text</a>`. This is the most critical requirement — content preservation is sacred.
 5. **Chart.js visualizations** — for each data-track enrichment from the enrichment plan, write a `<canvas>` element at the planned injection position and a corresponding `new Chart(...)` init in a `<script>` block. **Craft rich, multi-dataset configs:** line charts with scenario bands and fills, grouped bars with axis titles, doughnuts with right-aligned legends, scatter timelines with category-colored milestones, combo bar+line with dual axes. Use the design-variables colors throughout. Each chart gets a descriptive caption below.
-6. **Inline SVGs** — for each concept-track enrichment, read the SVG from `{source_dir}/cogni-visual/svgs/enr-XXX.svg` and embed inline at the planned position.
+6. **Inline SVGs** — for each concept-track enrichment, craft the SVG inline directly in the HTML at the planned injection position. Read `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` at the start of this phase for diagram-type-specific recipes. Select the recipe matching the enrichment type: `process-flow` for sequential workflows, `tips-flow` for T→I→P→S chains, `relationship-map` for theme interconnections, `concept-sketch` for layered/convergence/phase/matrix patterns. Use resolved hex values from design-variables (NOT CSS custom properties) so SVGs render correctly in any context.
 7. **Leave a `<!-- INFOGRAPHIC_INJECTION_POINT -->` comment** immediately after `<main>` and before the first `<h1>`. The post-processor will replace this with the infographic.
 
 Write the HTML to `{output_path}`.
@@ -499,7 +480,20 @@ Write the HTML to `{output_path}`.
 - Always set `responsive: true, maintainAspectRatio: true`
 - Max chart height: 400px via `style="max-height: 400px"` on the canvas
 
-**Step 5.2 — Post-process: inject infographic and validate.**
+**SVG design principles** (for concept-track enrichments — follow `svg-patterns.md` recipes):
+- Standard `<defs>` block: linear gradients (lighter top → darker bottom), drop shadow filter (`dx=0, dy=2, stdDeviation=3, flood-opacity=0.12`), arrow markers with `orient="auto"`
+- Use design-variables hex colors directly (NOT CSS custom properties) — SVGs must be self-contained
+- Text: `text-anchor="middle"`, `dominant-baseline="central"`, `<tspan>` wrapping at 20 chars
+- Boxes: `<rect rx="8">` with gradient fills, `filter="url(#shadow)"` on key elements
+- Arrows: `<line>` or `<path>` with `marker-end` referencing `<defs>` arrowhead
+- Zone backgrounds: large `<rect>` with low-opacity fills to group related elements
+- TIPS dimension colors: Trend `#F59E0B`, Implication `#06B6D4`, Possibility `#8B5CF6`, Solution `#22C55E`
+- Target: 10-25 visible elements, 50-150 SVG lines per diagram
+- Max width: 720px (centered within 860px content column)
+- Font stacks: theme font + `sans-serif` fallback
+- No `<foreignObject>` — native SVG elements only
+
+**Step 4.2 — Post-process: inject infographic and validate.**
 
 Run the Python post-processor to inject the infographic header at the `<!-- INFOGRAPHIC_INJECTION_POINT -->` marker and validate content preservation:
 
@@ -525,7 +519,7 @@ If `--post-process` mode is not available (older script version), inject the inf
 
 ---
 
-### Phase 6: Validation & Output
+### Phase 5: Validation & Output
 
 > Verify the enriched HTML is complete and correct.
 
@@ -550,11 +544,11 @@ Print summary:
 
 ---
 
-### Phase 6b: Visual Quality Review (conditional)
+### Phase 5b: Visual Quality Review (conditional)
 
 > Visually inspect the rendered HTML to catch layout, theming, and rendering issues that automated validation cannot detect — broken Chart.js initialization, theme colors not applied, text overflow, sidebar missing, enrichments clustered together, infographic header failures.
 
-This phase uses Browser MCP to navigate to the enriched HTML, take screenshots at three viewport positions, and evaluate what a human reader would see. It extends the same visual review pattern used by `concept-diagram-svg` for individual SVGs to the full enriched report.
+This phase uses Browser MCP to navigate to the enriched HTML, take screenshots at three viewport positions, and evaluate what a human reader would see. It extends the screenshot-based visual review pattern to the full enriched report.
 
 **When Browser MCP is available:** Dispatch the `enriched-report-reviewer` agent:
 
@@ -568,19 +562,19 @@ Agent(enriched-report-reviewer):
 The agent takes 3 screenshots (infographic header, report body, chart-heavy section), evaluates 10 quality gates (scored 0-10), and returns structured JSON with gate scores and fix recommendations.
 
 **Decision logic:**
-- Score >= 8.0: **ACCEPT** — proceed to Phase 7.
-- Score < 8.0 on first pass: **FIX** — the agent applies targeted corrections to intermediate artifacts (`design-variables.json`, `enrichment-plan.json`, SVGs), re-runs `generate-enriched-report.py`, and re-evaluates. Maximum 2 review passes.
-- Score < 8.0 on second pass: **ACCEPT WITH WARNINGS** — proceed to Phase 7 with known issues logged.
+- Score >= 8.0: **ACCEPT** — proceed to Phase 6.
+- Score < 8.0 on first pass: **FIX** — the agent applies targeted corrections to intermediate artifacts (`design-variables.json`, `enrichment-plan.json`), re-runs `generate-enriched-report.py`, and re-evaluates. Maximum 2 review passes.
+- Score < 8.0 on second pass: **ACCEPT WITH WARNINGS** — proceed to Phase 6 with known issues logged.
 
-**When Browser MCP is unavailable:** Skip Phase 6b entirely. The 6 automated validation gates from Phase 6 remain the quality floor. Log: "Visual review skipped — Browser MCP not available."
+**When Browser MCP is unavailable:** Skip Phase 5b entirely. The 6 automated validation gates from Phase 5 remain the quality floor. Log: "Visual review skipped — Browser MCP not available."
 
 ---
 
-### Phase 7: Format Export (conditional)
+### Phase 6: Format Export (conditional)
 
 > Convert the enriched HTML to PDF or DOCX when requested.
 
-This phase only runs when `formats` includes `pdf` or `docx`. The HTML output from Phase 5/6 is always the starting point.
+This phase only runs when `formats` includes `pdf` or `docx`. The HTML output from Phase 4/5 is always the starting point.
 
 **PDF export:**
 
@@ -626,10 +620,10 @@ After all requested formats are generated:
 | `references/03-enrichment-catalog.md` | Phase 2b | Enrichment types, trigger conditions, scoring model, density thresholds |
 | `references/04-chart-patterns.md` | — (script) | Chart.js config templates (used internally by Python script, not by LLM) |
 | `references/08-infographic-distillation.md` | Phase 2a | Infographic distillation principles, hero number selection, 60-second read test |
-| `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` | Phase 4 | SVG element recipes for concept diagrams (shared library — also used by concept-diagram-svg agent) |
-| `references/06-html-structure.md` | Phase 5 | HTML layout, CSS architecture, responsive breakpoints, script structure |
-| `references/07-citation-normalization.md` | Phase 7 | Citation format detection and normalization for DOCX export |
+| `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` | Phase 4 | SVG element recipes for inline concept diagrams (shared library — also used by concept-diagram-svg agent) |
+| `references/06-html-structure.md` | Phase 4 | HTML layout, CSS architecture, responsive breakpoints, script structure |
+| `references/07-citation-normalization.md` | Phase 6 | Citation format detection and normalization for DOCX export |
 | `schemas/design-variables.schema.json` | Phase 0 | JSON schema for design-variables validation |
 | `schemas/enrichment-plan.schema.json` | Phase 2b | JSON schema for enrichment plan validation |
 | `schemas/infographic-data.schema.json` | Phase 2a | JSON schema for infographic data validation |
-| `scripts/generate-enriched-report.py` | Phase 5 | Python HTML generator (markdown→HTML, theme injection, chart mounting) |
+| `scripts/generate-enriched-report.py` | Phase 4 | Python post-processor (infographic injection, content validation) |
