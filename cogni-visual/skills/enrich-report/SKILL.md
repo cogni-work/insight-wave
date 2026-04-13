@@ -53,22 +53,21 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 2. **Content preservation is sacred.** Every paragraph, citation, table, blockquote, and heading from the source markdown MUST appear in the report body verbatim. Enrichment adds visuals between existing prose — it never replaces, summarizes, or abbreviates prose.
 3. **Visual subordination in the report body.** Content max-width is 860px. Enrichment max-width is 720px (centered within content). Charts max 300px height. This size difference signals that text is the backbone and visuals are insets.
 4. **No dashboard patterns in the report body.** No hero banners, key-findings grids, KPI cards, or section-lead summaries that replace prose. Those elements belong in the infographic header.
-5. **LLMs write the HTML, scripts validate and inject.** The LLM writes the complete self-contained HTML file — all CSS, Chart.js chart configs, sidebar navigation, markdown-to-HTML conversion, and responsive layout. This produces richer, more contextual data visualizations than template-based generation. The Python script serves as a **post-processor** that: (1) injects the Pencil-rendered infographic at the top, and (2) validates content preservation (word count, heading count, citation count). The LLM's creative control over chart design is the key quality differentiator.
+5. **Dedicated HTML writer agent, scripts validate and inject.** The `report-html-writer` opus agent writes the complete self-contained HTML file — all CSS, Chart.js chart configs, sidebar navigation, markdown-to-HTML conversion, and responsive layout. This agent receives a clean context with only the inputs it needs (source markdown, enrichment plan, design variables), producing richer, more contextual data visualizations than template-based generation. The Python script serves as a **post-processor** that: (1) injects the Pencil-rendered infographic at the top, and (2) validates content preservation (word count, heading count, citation count). The LLM's creative control over chart design is the key quality differentiator.
 
 ## Architecture
 
-**The LLM writes the full HTML.** You produce a complete, self-contained HTML file with inline CSS, Chart.js CDN, charts, sidebar, and all report prose. The Python post-processor (`scripts/generate-enriched-report.py --post-process`) then injects the infographic header and runs validation gates. This division plays to each system's strengths: LLMs excel at contextual chart design and layout decisions; scripts excel at deterministic infographic embedding and content verification.
+**The `report-html-writer` agent writes the full HTML.** In Phase 4, you dispatch the dedicated opus worker agent that produces a complete, self-contained HTML file with inline CSS, Chart.js CDN, charts, sidebar, and all report prose. The Python post-processor (`scripts/generate-enriched-report.py --post-process`) then injects the infographic header and runs validation gates. This division plays to each system's strengths: the opus agent excels at contextual chart design, content-preserving markdown-to-HTML conversion, and layout decisions with a focused context; scripts excel at deterministic infographic embedding and content verification.
 
-Two-track visualization pipeline:
+Two-track visualization pipeline (both handled by the `report-html-writer` agent):
 
-1. **Data track** — Chart.js charts (bar, doughnut, radar, line, scatter, combo) for statistics, distributions, comparisons, timelines. The LLM writes complete Chart.js configs with multiple datasets, fills, annotations, and themed colors from design-variables. Charts should be visually rich: multi-dataset line charts with scenario fills, grouped bars with axis titles, doughnuts with callout legends, scatter timelines with category-colored milestone points.
-2. **Concept track** — LLM-crafted inline SVG written directly in the HTML (no agent dispatch, no Excalidraw dependency) for T→I→P→S flows, relationship maps, strategic concept sketches. Themed with design-variable colors. Follow `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` recipes for diagram-type-specific element structure and coordinate formulas.
+1. **Data track** — Chart.js charts (bar, doughnut, radar, line, scatter, combo) for statistics, distributions, comparisons, timelines. The agent writes complete Chart.js configs with multiple datasets, fills, annotations, and themed colors from design-variables. Charts should be visually rich: multi-dataset line charts with scenario fills, grouped bars with axis titles, doughnuts with callout legends, scatter timelines with category-colored milestone points.
+2. **Concept track** — LLM-crafted inline SVG written directly in the HTML (no separate agent dispatch, no Excalidraw dependency) for T→I→P→S flows, relationship maps, strategic concept sketches. Themed with design-variable colors. Follow `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` recipes for diagram-type-specific element structure and coordinate formulas.
 
 The Python post-processor (`scripts/generate-enriched-report.py --post-process`) handles:
 - Injecting the infographic header (PNG base64 with lightbox, HTML fragment, or JSON fallback)
 - Validating content preservation (word count >= 80%, heading count, citation count)
 - Validates the enrichment plan (enforces density caps, type restrictions, per-section caps)
-- Injects sparse visualizations at planned positions between paragraphs
 - Verifies content preservation (word count >= 80% of source)
 
 **Theming** follows the 3-stage design-variables pattern from cogni-workspace:
@@ -450,72 +449,32 @@ When `interactive=false`: auto-approve all, log plan.
 
 ### Phase 4: HTML Assembly
 
-> Write the complete self-contained HTML file, then post-process to inject the infographic and validate.
+> Dispatch the `report-html-writer` agent to produce the complete HTML file with Chart.js charts, inline SVGs, and sidebar navigation, then inject the infographic and validate content preservation.
 
-Read `references/06-html-structure.md` for the two-zone HTML layout and CSS architecture.
+HTML writing is the quality-critical step in the pipeline — it requires producing ~1600 lines of themed, responsive, content-preserving HTML with rich Chart.js configs and inline SVG diagrams. This work is delegated to the dedicated `report-html-writer` opus agent, which receives a clean context with only the inputs it needs (source markdown, enrichment plan, design variables, and reference files). The agent also runs the Python post-processor for infographic injection and content validation.
 
-**Step 4.1 — Write the HTML file directly.** You produce the entire HTML file using the Write tool. This is where the visual quality of the enriched report is determined — take the time to craft excellent Chart.js configs, a polished layout, and proper responsive CSS.
+**Dispatch the `report-html-writer` agent:**
 
-The HTML must include:
-
-1. **DOCTYPE and head** — charset, viewport, Chart.js CDN (`https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js`), Google Fonts import for the theme font
-2. **CSS in `<style>`** — use CSS custom properties from design-variables in a `:root {}` block. Style the layout (sidebar + content), headings, paragraphs, tables, blockquotes, citations, chart containers, responsive breakpoints. Professional typography with the theme font family.
-3. **Fixed sidebar navigation** — built from the heading hierarchy (H2/H3) with scroll-spy active state highlighting (IntersectionObserver or scroll offset). Collapsible hamburger on mobile.
-4. **Main content** — convert ALL source markdown to HTML verbatim. Every paragraph, heading, table, blockquote, citation link, list, and horizontal rule must appear. Convert `[text](url)` to `<a href="url" target="_blank">text</a>`. This is the most critical requirement — content preservation is sacred.
-5. **Chart.js visualizations** — for each data-track enrichment from the enrichment plan, write a `<canvas>` element at the planned injection position and a corresponding `new Chart(...)` init in a `<script>` block. **Craft rich, multi-dataset configs:** line charts with scenario bands and fills, grouped bars with axis titles, doughnuts with right-aligned legends, scatter timelines with category-colored milestones, combo bar+line with dual axes. Use the design-variables colors throughout. Each chart gets a descriptive caption below.
-6. **Inline SVGs** — for each concept-track enrichment, craft the SVG inline directly in the HTML at the planned injection position. Read `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` at the start of this phase for diagram-type-specific recipes. Select the recipe matching the enrichment type: `process-flow` for sequential workflows, `tips-flow` for T→I→P→S chains, `relationship-map` for theme interconnections, `concept-sketch` for layered/convergence/phase/matrix patterns. Use resolved hex values from design-variables (NOT CSS custom properties) so SVGs render correctly in any context.
-7. **Leave a `<!-- INFOGRAPHIC_INJECTION_POINT -->` comment** immediately after `<main>` and before the first `<h1>`. The post-processor will replace this with the infographic.
-
-Write the HTML to `{output_path}`.
-
-**Chart design principles** (these make the difference between good and great):
-- Use **multiple datasets** when data supports it (conservative vs aggressive projections, 2025 vs 2030 comparison, by-category breakdowns)
-- Line charts: `tension: 0.3`, `fill` between datasets, `pointRadius: 4`, `borderDash` for projections
-- Bar charts: `borderRadius: 6`, grouped bars for comparisons, `indexAxis: "y"` for horizontal, axis titles
-- Doughnut: `cutout: "55%"`, right-positioned legend with `usePointStyle: true, pointStyle: "rectRounded"`
-- Timeline/Scatter: category-colored points (use status colors), labeled milestones, NOT a flat y=1 line
-- Combo charts: bar + line overlay with dual Y axes (`yAxisID: "y"` and `yAxisID: "y1"`)
-- Always add `plugins.title` with a descriptive chart title using the header font
-- Always add axis labels via `scales.x.title` / `scales.y.title`
-- Always set `responsive: true, maintainAspectRatio: true`
-- Max chart height: 400px via `style="max-height: 400px"` on the canvas
-
-**SVG design principles** (for concept-track enrichments — follow `svg-patterns.md` recipes):
-- Standard `<defs>` block: linear gradients (lighter top → darker bottom), drop shadow filter (`dx=0, dy=2, stdDeviation=3, flood-opacity=0.12`), arrow markers with `orient="auto"`
-- Use design-variables hex colors directly (NOT CSS custom properties) — SVGs must be self-contained
-- Text: `text-anchor="middle"`, `dominant-baseline="central"`, `<tspan>` wrapping at 20 chars
-- Boxes: `<rect rx="8">` with gradient fills, `filter="url(#shadow)"` on key elements
-- Arrows: `<line>` or `<path>` with `marker-end` referencing `<defs>` arrowhead
-- Zone backgrounds: large `<rect>` with low-opacity fills to group related elements
-- TIPS dimension colors: Trend `#F59E0B`, Implication `#06B6D4`, Possibility `#8B5CF6`, Solution `#22C55E`
-- Target: 10-25 visible elements, 50-150 SVG lines per diagram
-- Max width: 720px (centered within 860px content column)
-- Font stacks: theme font + `sans-serif` fallback
-- No `<foreignObject>` — native SVG elements only
-
-**Step 4.2 — Post-process: inject infographic and validate.**
-
-Run the Python post-processor to inject the infographic header at the `<!-- INFOGRAPHIC_INJECTION_POINT -->` marker and validate content preservation:
-
-```bash
-python3 {SKILL_PATH}/scripts/generate-enriched-report.py --post-process \
-  --html "{output_path}" \
-  --source "{source_path}" \
-  --infographic-image "{actual_png_path_from_phase_2a}" \
-  --infographic-html "{actual_html_fragment_path_from_phase_2a}" \
-  --infographic-data "{source_dir}/cogni-visual/infographic-data.json"
+```
+Agent(report-html-writer):
+  SOURCE_PATH: {source_path}
+  OUTPUT_PATH: {output_path}
+  ENRICHMENT_PLAN_PATH: {source_dir}/cogni-visual/enrichment-plan.json
+  DESIGN_VARIABLES_PATH: {design_variables_path}
+  LANGUAGE: {language}
+  INFOGRAPHIC_IMAGE: {actual_png_path_from_phase_2a}
+  INFOGRAPHIC_HTML: {actual_html_fragment_path_from_phase_2a}
+  INFOGRAPHIC_DATA: {source_dir}/cogni-visual/infographic-data.json
+  SCRIPT_PATH: {SKILL_PATH}/scripts/generate-enriched-report.py
 ```
 
-The post-processor:
-1. Reads the LLM-written HTML
-2. Replaces `<!-- INFOGRAPHIC_INJECTION_POINT -->` with the infographic (three-tier priority: PNG base64 with lightbox > HTML fragment > JSON-generated fallback)
-3. Validates content preservation (word count >= 80% of source, H2 count match, citation count)
-4. Writes the result back to the same file
-5. Returns JSON with `validation` field
+Omit `INFOGRAPHIC_IMAGE`, `INFOGRAPHIC_HTML`, or `INFOGRAPHIC_DATA` if the corresponding artifact does not exist from Phase 2a.
 
-If `validation.pass` is `false`, the HTML has lost narrative content — fix the specific missing sections and re-run validation.
+**Expected response:** JSON with `ok`, `output_path`, `enrichments` (total/data/concept/html counts), `preservation` (source vs HTML word counts, heading counts, citation counts), and `post_processor` (infographic tier used, validation pass/fail).
 
-If `--post-process` mode is not available (older script version), inject the infographic manually: read the PNG, base64-encode it, and replace the injection point comment with an `<img>` tag wrapped in a lightbox div.
+**If `ok` is false:** Read the error, fix the underlying issue (missing enrichment plan, invalid design variables, post-processor script error), and re-dispatch.
+
+**If `preservation.ratio` < 0.80:** The HTML has lost narrative content. Check which sections are missing and re-dispatch with a note about the missing sections.
 
 ---
 

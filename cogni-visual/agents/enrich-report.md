@@ -16,7 +16,7 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
 
 1. Load and follow the skill at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/SKILL.md`
 2. Execute all phases in order (Phase 0 through Phase 3, then Phase 4 through Phase 5, Phase 5b if Browser MCP is available, plus Phase 6 if `formats` includes pdf or docx)
-3. In Phase 4, craft inline SVGs directly in the HTML for concept-track enrichments — follow `svg-patterns.md` recipes loaded at the start of that phase. No agent dispatch needed.
+3. In Phase 4, dispatch the `report-html-writer` agent to produce the HTML file. The writer agent handles all HTML assembly (Chart.js configs, inline SVGs, sidebar navigation, markdown-to-HTML conversion) AND runs the Python post-processor for infographic injection and content validation. You receive a JSON response with content-preservation metrics — check that `ok` is true and `preservation.ratio` >= 0.80 before proceeding.
 4. For Phase 5b visual review, dispatch the `enriched-report-reviewer` agent with the HTML output path, design-variables path, and enrichment-plan path. If the reviewer returns score < 8.0 on its first pass, it will auto-fix and re-review (max 2 passes). If Browser MCP is unavailable, skip Phase 5b.
 5. Return a compact JSON response:
 
@@ -42,7 +42,7 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
 - The Python generator script is at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/scripts/generate-enriched-report.py`
 - Design-variables schema is at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/schemas/design-variables.schema.json`
 - Never modify the source markdown report
-- **You write the complete HTML directly** — the Python script only post-processes (infographic injection + content validation). Chart.js configs and inline SVGs are crafted by you in the HTML.
-- **chart-configs.json is not needed** — you write Chart.js configs directly in the HTML. Do NOT produce a separate chart-configs.json file.
+- **Phase 4 dispatches the `report-html-writer` agent** — an opus worker that writes the complete HTML and runs the Python post-processor. You do NOT write HTML directly. The writer agent handles Chart.js configs, inline SVGs, sidebar navigation, and content preservation.
+- **chart-configs.json is not needed** — the writer agent uses `chart_config` from enrichment-plan.json directly.
 - Before Phase 4: verify that `enrichment-plan.json` exists (unless `density=none`). `infographic-data.json` should exist if Phase 2a path 3 was taken.
 - The enriched report is a REPORT with an infographic header and sparse illustrations — not a dashboard. All source prose must appear in the output.
