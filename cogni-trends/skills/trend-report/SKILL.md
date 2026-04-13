@@ -362,6 +362,7 @@ Task:
     HORIZON: act
     SUBSECTOR_EN: {{SUBSECTOR_EN}}
     SUBSECTOR_DE: {{SUBSECTOR_DE}}
+    SUBSECTOR_LOCAL: {{SUBSECTOR_LOCAL}}
     RESEARCH_HINT: {{RESEARCH_HINT}}
     MARKET_REGION: {{MARKET_REGION}}
 ```
@@ -393,6 +394,7 @@ Per agent:
     Market Region: {MARKET_REGION}
     Industry EN/DE: {INDUSTRY_EN} / {INDUSTRY_DE}
     Subsector EN/DE: {SUBSECTOR_EN} / {SUBSECTOR_DE}
+    Subsector Local: {SUBSECTOR_LOCAL}
     Topic: {TOPIC}
     Labels: {relevant i18n labels}
 ```

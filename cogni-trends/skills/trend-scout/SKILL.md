@@ -257,15 +257,18 @@ Task:
     INDUSTRY_DE: {{INDUSTRY_DE}}
     SUBSECTOR_EN: {{SUBSECTOR_EN}}
     SUBSECTOR_DE: {{SUBSECTOR_DE}}
+    SUBSECTOR_LOCAL: {{SUBSECTOR_LOCAL}}
     RESEARCH_TOPIC: {{RESEARCH_TOPIC}}
     MARKET_REGION: {{MARKET_REGION}}
     GROUNDING_CONTEXT: {{GROUNDING_CONTEXT}}
     RESEARCH_DEPTH: {{RESEARCH_DEPTH}}
 ```
 
+**SUBSECTOR_LOCAL resolution:** For dach/de markets, set `SUBSECTOR_LOCAL` = `SUBSECTOR_DE`. For other European markets (fr, it, pl, nl, es), translate the subsector name into the market's local language at dispatch time (e.g., "Automotive" → FR: "Automobile", IT: "Automobilistico", PL: "Motoryzacja", NL: "Automobiel", ES: "Automoción"). For us/uk markets, set `SUBSECTOR_LOCAL` = `SUBSECTOR_EN`.
+
 **Agent responsibilities:**
 
-1. Build 32 web search configurations (16 standard + 8 DACH site-specific + 4 funding + 4 job market)
+1. Build 32 web search configurations (16 standard + 8 region-specific site-specific + 4 funding + 4 job market)
 2. Execute WebSearch for each config in parallel batches
 3. Execute mandatory API queries (academic, patent, regulatory) with fallback handling
 4. Extract and deduplicate trend signals
@@ -437,6 +440,7 @@ Task:
     INDUSTRY_DE: {{INDUSTRY_DE}}
     SUBSECTOR_EN: {{SUBSECTOR_EN}}
     SUBSECTOR_DE: {{SUBSECTOR_DE}}
+    SUBSECTOR_LOCAL: {{SUBSECTOR_LOCAL}}
     RESEARCH_TOPIC: {{RESEARCH_TOPIC}}
     PROJECT_LANGUAGE: {{PROJECT_LANGUAGE}}
     WEB_RESEARCH_AVAILABLE: {{WEB_RESEARCH_AVAILABLE}}

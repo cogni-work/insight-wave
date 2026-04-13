@@ -57,11 +57,12 @@ You receive these from trend-report:
 - **PROJECT_PATH** — Absolute path to the research project directory
 - **DIMENSION** — Slug: `externe-effekte` | `digitale-wertetreiber` | `neue-horizonte` | `digitales-fundament`
 - **TIPS_ROLE** — Letter and role: "T (Trends)" | "I (Implications)" | "P (Possibilities)" | "S (Solutions)"
-- **LANGUAGE** — Report language: "en" or "de"
+- **LANGUAGE** — Report language ISO 639-1 code: "en", "de", "fr", "it", "pl", "nl", "es". Proper character encoding required: DE (ä/ö/ü/ß), FR (é/è/ê/ç/à/â), IT (à/è/é/ì/ò/ù), PL (ą/ć/ę/ł/ń/ó/ś/ź/ż), NL (ë/ï), ES (á/é/í/ó/ú/ñ/ü). Never use ASCII fallbacks.
 - **INDUSTRY_EN / INDUSTRY_DE** — Industry name in both languages
-- **SUBSECTOR_EN / SUBSECTOR_DE** — Subsector name in both languages
+- **SUBSECTOR_EN / SUBSECTOR_DE** — Subsector name in English and German
+- **SUBSECTOR_LOCAL** — Subsector name in the market's local language. For dach/de markets, same as SUBSECTOR_DE. For other European markets (fr, it, pl, nl, es), the local-language equivalent. Falls back to SUBSECTOR_DE if absent.
 - **TOPIC** — Research focus topic
-- **MARKET_REGION** — Target market region code (e.g., "dach", "de", "us", "uk"). Default: "dach". Used to load region-specific search qualifiers from `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-sources.json`.
+- **MARKET_REGION** — Target market region code (e.g., "dach", "de", "fr", "it", "pl", "nl", "es", "us", "uk"). Default: "dach". Used to load region-specific search qualifiers from `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-sources.json`.
 - **LABELS** — JSON object with i18n labels for report headings
 
 Candidates and raw signals are NOT passed in the prompt — you load them from disk in Step 0.5.
@@ -117,8 +118,9 @@ Load `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-source
 
 ```bash
 REGION_CONFIG = region-authority-sources.json[MARKET_REGION] || region-authority-sources.json["_default"]
-REGION_QUALIFIER_EN = REGION_CONFIG.region_qualifiers.en   # e.g., "Germany Austria Switzerland"
-REGION_QUALIFIER_DE = REGION_CONFIG.region_qualifiers.de   # may be absent for non-DE regions
+REGION_QUALIFIER_EN = REGION_CONFIG.region_qualifiers.en      # e.g., "Germany Austria Switzerland"
+REGION_QUALIFIER_LOCAL = REGION_CONFIG.region_qualifiers.local  # e.g., "Deutschland Österreich Schweiz" (may be absent for EN-only regions)
+SUBSECTOR_LOCAL = {{SUBSECTOR_LOCAL}} || {{SUBSECTOR_DE}}      # local-language subsector name, falls back to DE
 ```
 
 #### Step 1c: Targeted WebSearches for Gaps Only
@@ -132,7 +134,7 @@ REGION_QUALIFIER_DE = REGION_CONFIG.region_qualifiers.de   # may be absent for n
 - **`signal_none`** — 2-3 searches:
   - Query 1 (market size — local fact → append region qualifier): `"{trend_name}" market size {CURRENT_YEAR} {SUBSECTOR_EN} {REGION_QUALIFIER_EN}`
   - Query 2 (growth rate — global best practices → NO region qualifier): `"{trend_name}" growth rate statistics {SUBSECTOR_EN} {CURRENT_YEAR}`
-  - Query 3 (conditional — only if `REGION_QUALIFIER_DE` exists for this region): `"{trend_name_de}" Marktgröße Studie {REGION_QUALIFIER_DE} {CURRENT_YEAR}`
+  - Query 3 (conditional — only if `REGION_QUALIFIER_LOCAL` exists for this region): local-language market size query using `SUBSECTOR_LOCAL` and `REGION_QUALIFIER_LOCAL`. For DE: `"{trend_name_de}" Marktgröße Studie {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}`. For other languages, translate the query pattern naturally (e.g., FR: `"{trend_name_fr}" taille du marché étude {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}`).
 
 Always block: `pinterest.com`, `facebook.com`, `instagram.com`, `tiktok.com`, `reddit.com`.
 

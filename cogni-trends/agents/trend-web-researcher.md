@@ -37,7 +37,12 @@ You will receive these parameters from trend-scout:
 <!-- English subsector name (e.g., "Automotive") -->
 
 <subsector_de>{{SUBSECTOR_DE}}</subsector_de>
-<!-- German subsector name (e.g., "Automobil") -->
+<!-- German subsector name (e.g., "Automobil"). Used for backward compat with DACH projects. -->
+
+<subsector_local>{{SUBSECTOR_LOCAL}}</subsector_local>
+<!-- Local-language subsector name (e.g., "Automobil" for DE, "Automobile" for FR, "Automobilistico" for IT).
+     Preferred over SUBSECTOR_DE for site searches and local-language queries.
+     Falls back to SUBSECTOR_DE if absent (backward compat). -->
 
 <research_topic>{{RESEARCH_TOPIC}}</research_topic>
 <!-- Optional focus topic for the research -->
@@ -123,10 +128,13 @@ Load region-specific search parameters from `$CLAUDE_PLUGIN_ROOT/skills/trend-re
 ```bash
 REGION_CONFIG = region-authority-sources.json[MARKET_REGION]
 # Falls back to region-authority-sources.json["_default"] if MARKET_REGION not found
-REGION_QUALIFIER_EN = REGION_CONFIG.region_qualifiers.en   # e.g., "Germany Austria Switzerland"
-REGION_QUALIFIER_DE = REGION_CONFIG.region_qualifiers.de   # e.g., "Deutschland Österreich Schweiz" (may be absent for non-DE regions)
-REGION_SITE_SEARCHES = REGION_CONFIG.site_searches         # 8 region-specific site searches
-REGION_REGULATORY_SEARCH = REGION_CONFIG.regulatory_search # region-appropriate regulatory query
+REGION_QUALIFIER_EN = REGION_CONFIG.region_qualifiers.en      # e.g., "Germany Austria Switzerland"
+REGION_QUALIFIER_LOCAL = REGION_CONFIG.region_qualifiers.local  # e.g., "Deutschland Österreich Schweiz" (may be absent for EN-only regions like us/uk)
+REGION_LOCAL_LANGUAGE = REGION_CONFIG.local_language            # e.g., "de", "fr", "it", "pl", "nl", "es"
+REGION_SITE_SEARCHES = REGION_CONFIG.site_searches             # 8 region-specific site searches
+REGION_REGULATORY_SEARCH = REGION_CONFIG.regulatory_search     # region-appropriate regulatory query
+# Resolve SUBSECTOR_LOCAL: prefer explicit parameter, fall back to SUBSECTOR_DE for backward compat
+SUBSECTOR_LOCAL = {{SUBSECTOR_LOCAL}} || {{SUBSECTOR_DE}}
 ```
 
 ### Step 0.7: Process Grounding Context (if available)
@@ -183,32 +191,36 @@ For each dimension, select the query pattern from the persona's subcategory voca
 For each dimension:
 - EN-global: English persona-shaped query, no region filter
 - EN-regional: English persona-shaped query + `{REGION_QUALIFIER_EN}`
-- DE-global: German equivalent using persona vocabulary (only if `REGION_QUALIFIER_DE` exists)
-- DE-regional: German equivalent + `{REGION_QUALIFIER_DE}` (only if `REGION_QUALIFIER_DE` exists)
+- LOCAL-global: Local-language equivalent using persona vocabulary (only if `REGION_QUALIFIER_LOCAL` exists)
+- LOCAL-regional: Local-language equivalent + `{REGION_QUALIFIER_LOCAL}` (only if `REGION_QUALIFIER_LOCAL` exists)
 
-If the region has no DE qualifier (e.g., "us", "uk"), only generate 8 standard searches (EN-global + EN-regional × 4 dimensions) instead of 16.
+If the region has no LOCAL qualifier (e.g., "us", "uk"), only generate 8 standard searches (EN-global + EN-regional × 4 dimensions) instead of 16.
 
-**German query equivalents** — translate persona vocabulary naturally:
+**Local-language query equivalents** — translate persona vocabulary into `REGION_LOCAL_LANGUAGE` naturally, using `SUBSECTOR_LOCAL`:
+
+For German (de) markets, use these established patterns:
 
 | Dimension | DE Query Patterns |
 |-----------|------------------|
-| externe-effekte | `"{SUBSECTOR_DE}" Regulierung Compliance Frist {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Marktdynamik Wettbewerb Disruption {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" demografischer Wandel Nachhaltigkeit ESG {CURRENT_YEAR}"` |
-| neue-horizonte | `"{SUBSECTOR_DE}" Geschäftsmodell Innovation Plattformstrategie {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Übernahme Partnerschaft strategische Neuausrichtung {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Governance Transformation Führung {CURRENT_YEAR}"` |
-| digitale-wertetreiber | `"{SUBSECTOR_DE}" Kundenerlebnis Digital ROI Benchmark {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" digitales Produkt Plattform as-a-Service {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Prozessautomatisierung Effizienzsteigerung {CURRENT_YEAR}"` |
-| digitales-fundament | `"{SUBSECTOR_DE}" Technologie-Infrastruktur Cloud Migration {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Fachkräftemangel digitale Kompetenz {CURRENT_YEAR}"` / `"{SUBSECTOR_DE}" Digitalkultur Reifegrad Transformation {CURRENT_YEAR}"` |
+| externe-effekte | `"{SUBSECTOR_LOCAL}" Regulierung Compliance Frist {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" Marktdynamik Wettbewerb Disruption {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" demografischer Wandel Nachhaltigkeit ESG {CURRENT_YEAR}"` |
+| neue-horizonte | `"{SUBSECTOR_LOCAL}" Geschäftsmodell Innovation Plattformstrategie {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" Übernahme Partnerschaft strategische Neuausrichtung {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" Governance Transformation Führung {CURRENT_YEAR}"` |
+| digitale-wertetreiber | `"{SUBSECTOR_LOCAL}" Kundenerlebnis Digital ROI Benchmark {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" digitales Produkt Plattform as-a-Service {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" Prozessautomatisierung Effizienzsteigerung {CURRENT_YEAR}"` |
+| digitales-fundament | `"{SUBSECTOR_LOCAL}" Technologie-Infrastruktur Cloud Migration {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" Fachkräftemangel digitale Kompetenz {CURRENT_YEAR}"` / `"{SUBSECTOR_LOCAL}" Digitalkultur Reifegrad Transformation {CURRENT_YEAR}"` |
+
+For non-German European markets (fr, it, pl, nl, es), construct equivalent local-language queries by translating the same persona vocabulary concepts into `REGION_LOCAL_LANGUAGE`. Use `SUBSECTOR_LOCAL` as the subsector term. Example for FR/externe-effekte: `"{SUBSECTOR_LOCAL}" réglementation conformité échéance {CURRENT_YEAR}"`. The dimension persona shapes the search vocabulary regardless of language — the expert perspective is universal, only the words change.
 
 **8 Region-Specific Site Searches:**
 
-Loaded from `REGION_SITE_SEARCHES` in the region configuration. Each entry specifies a `dimension` and `query` template. Replace `{SUBSECTOR_DE}`, `{SUBSECTOR_EN}`, `{RESEARCH_TOPIC}`, and `{CURRENT_YEAR}` placeholders in each query.
+Loaded from `REGION_SITE_SEARCHES` in the region configuration. Each entry specifies a `dimension` and `query` template. Replace `{SUBSECTOR_LOCAL}`, `{SUBSECTOR_EN}`, `{RESEARCH_TOPIC}`, and `{CURRENT_YEAR}` placeholders in each query. For backward compatibility, also replace `{SUBSECTOR_DE}` if present (existing DACH queries may still use this placeholder).
 
-For DACH regions, these target German industry associations and media (VDMA, Bitkom, Fraunhofer, Handelsblatt, etc.). For US, they target NIST, Congress.gov, HBR, WSJ, etc. For UK, they target gov.uk, UKRI, FT, etc.
+For DACH regions, these target German industry associations and media (VDMA, Bitkom, Fraunhofer, Handelsblatt, etc.). For FR, they target INRIA, ARCEP, Les Echos, BPI France, etc. For IT, AGCOM, CNR, ASI, Il Sole 24 Ore, etc. For US, NIST, Congress.gov, HBR, WSJ, etc. For UK, gov.uk, UKRI, FT, etc.
 
 **4 Funding Signal Searches:**
 
 | # | Dimension | Query |
 |---|-----------|-------|
 | 25 | neue-horizonte | `"{SUBSECTOR_EN}" startup funding investment {CURRENT_YEAR}` |
-| 26 | neue-horizonte | `"{SUBSECTOR_DE}" Startup Finanzierung DACH {CURRENT_YEAR}` |
+| 26 | neue-horizonte | `"{SUBSECTOR_LOCAL}" startup funding {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}` (local-language equivalent, e.g., DE: "Startup Finanzierung DACH", FR: "startup financement France") |
 | 27 | neue-horizonte | `"{SUBSECTOR_EN}" acquisition merger {CURRENT_YEAR}` |
 | 28 | neue-horizonte | `"{SUBSECTOR_EN}" Series A B funding announcement {CURRENT_YEAR}` |
 
@@ -217,9 +229,9 @@ For DACH regions, these target German industry associations and media (VDMA, Bit
 | # | Dimension | Query |
 |---|-----------|-------|
 | 29 | digitales-fundament | `"{SUBSECTOR_EN}" emerging skills hiring trends {CURRENT_YEAR}` |
-| 30 | digitales-fundament | `"{SUBSECTOR_DE}" neue Berufsbilder Stellenangebote {CURRENT_YEAR}` |
+| 30 | digitales-fundament | `"{SUBSECTOR_LOCAL}" local-language job market query {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}` (e.g., DE: "neue Berufsbilder Stellenangebote", FR: "nouveaux métiers offres d'emploi") |
 | 31 | digitales-fundament | `"{SUBSECTOR_EN}" AI ML engineer hiring demand {CURRENT_YEAR}` |
-| 32 | digitales-fundament | `"{SUBSECTOR_DE}" Fachkräfte Nachfrage Deutschland {CURRENT_YEAR}` |
+| 32 | digitales-fundament | `"{SUBSECTOR_LOCAL}" local-language skills demand query {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}` (e.g., DE: "Fachkräfte Nachfrage Deutschland", FR: "compétences numériques demande France") |
 
 **Adaptive Budget (thorough mode only):**
 
@@ -368,6 +380,8 @@ Log file schema (uses **full field names** for debugging readability):
     "industry_de": "{INDUSTRY_DE}",
     "subsector_en": "{SUBSECTOR_EN}",
     "subsector_de": "{SUBSECTOR_DE}",
+    "subsector_local": "{SUBSECTOR_LOCAL}",
+    "market_region": "{MARKET_REGION}",
     "research_topic": "{RESEARCH_TOPIC}",
     "execution_date": "YYYY-MM-DD",
     "current_year": 2026,

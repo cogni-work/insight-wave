@@ -69,7 +69,7 @@ Project config (`project-config.json`) supports these optional fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `market` | string | "global" | Region code for search localization (dach/de/us/uk/fr/global). Controls local-language query generation, authority source boosts, and geographic modifiers. See `references/market-sources.json` |
+| `market` | string | "global" | Region code for search localization (global/dach/de/fr/it/pl/nl/es/us/uk/eu). Controls local-language query generation, authority source boosts, and geographic modifiers. `eu` is a composite market that fans out per-country researchers. See `references/market-sources.json` |
 | `output_language` | string | auto from market | ISO 639-1 code for report output language. Defaults to market's `default_output_language`. Can diverge from market (e.g., market=fr, output_language=en) |
 | `language` | string | "en" | **Legacy** — backward compat alias. When set without `market`, "de" maps to market=dach, "en" maps to market=global |
 | `tone` | string | "objective" | Writing tone — see `references/writing-tones.md` |

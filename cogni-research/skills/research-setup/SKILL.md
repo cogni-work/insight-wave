@@ -67,8 +67,8 @@ Scan the user's request and extract any options they already specified. These be
 - **Report type**: keywords like "detailed", "deep research", "outline", "sources" -> map to basic/detailed/deep/outline/resource
 - **Tone**: style keywords like "analytical", "persuasive", "formal" -> map to tone. Default: "objective"
 - **Citation format**: "IEEE", "APA format", "Chicago style", "wikilink" -> capture. Default: "apa"
-- **Market**: "French market", "DACH", "for Germany", "US market" -> map to region code (fr, dach, de, us, uk). Default: "global"
-- **Output language**: "in German", "auf Deutsch" -> "de" (+ market=dach if no explicit market). "in French" -> "fr". Default: auto (derived from market)
+- **Market**: "French market"->fr, "DACH"->dach, "for Germany"->de, "US market"->us, "UK market"->uk, "Italian market"/"Italy"->it, "Polish market"/"Poland"->pl, "Dutch market"/"Netherlands"->nl, "Spanish market"/"Spain"->es, "European market"/"EU"/"pan-European"->eu. Default: "global"
+- **Output language**: "in German", "auf Deutsch" -> "de" (+ market=dach if no explicit market). "in French" -> "fr". "in Italian" -> "it". "in Polish" -> "pl". "in Dutch" -> "nl". "in Spanish" -> "es". Default: auto (derived from market)
 - **Source URLs**: any URLs in the prompt -> collect for pre-fetch
 - **Query domains**: "only .gov sources", "restrict to arxiv" -> collect domains
 - **Max subtopics**: "use 8 sub-questions", "12 dimensions" -> capture count
@@ -89,7 +89,7 @@ Assemble the menu dynamically and render it as text output:
    - **Depth** (only if report type not yet detected): list all 5 types with word counts and one-line descriptions
    - **Tone** (only if not detected): show these options: objective *(default)* | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive
    - **Citations** (only if not detected): list all 5 formats, mark default
-   - **Market** (only if not detected): global | dach | de | us | uk | fr
+   - **Market** (only if not detected): global | dach | de | fr | it | pl | nl | es | us | uk | eu
    - **Sources** (only if report_source not detected): show all 4 modes with one-line descriptions:
      - `web` *(default)* = search the internet
      - `local` = analyze your documents (PDF, DOCX, MD, CSV, ...)

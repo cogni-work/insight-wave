@@ -75,7 +75,7 @@ For each issue:
 **Language-aware revision** (when `OUTPUT_LANGUAGE` is not "en"):
 - Maintain the output language throughout — do not switch to English when adding content
 - When searching for additional evidence, load market config from `${CLAUDE_PLUGIN_ROOT}/references/market-sources.json` and apply the intent-based language routing described in section-researcher (local-language for regulatory/association sources, English for academic/consulting)
-- Preserve proper character encoding (umlauts ä/ö/ü/ß for German, accents é/è/ê for French, etc.) — never introduce ASCII fallbacks
+- Preserve proper character encoding — never introduce ASCII fallbacks: DE (ä/ö/ü/ß), FR (é/è/ê/ç/à/â), IT (à/è/é/ì/ò/ù), PL (ą/ć/ę/ł/ń/ó/ś/ź/ż), NL (ë/ï), ES (á/é/í/ó/ú/ñ/ü)
 - Keep framework terms in English (SWOT, MECE, etc.)
 
 **Word budget**: Track words added vs. removed. If the revision pushes the report beyond the original draft length + 20%, trim lower-priority additions. The writer agent already calibrated report length to the available context — unbounded growth signals scope creep, not quality improvement.

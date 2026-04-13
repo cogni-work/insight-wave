@@ -176,7 +176,7 @@ Trend reports are organized by investment themes, each following the Corporate V
 When the report language is not English:
 - Maintain the output language throughout all new text
 - When searching for replacement evidence, use the same bilingual search strategy as the original report (English + local language)
-- Preserve proper character encoding (umlauts, accents)
+- Preserve proper character encoding — never introduce ASCII fallbacks: DE (ä/ö/ü/ß), FR (é/è/ê/ç/à/â), IT (à/è/é/ì/ò/ù), PL (ą/ć/ę/ł/ń/ó/ś/ź/ż), NL (ë/ï), ES (á/é/í/ó/ú/ñ/ü)
 - Keep framework terms in English (TIPS, ROI, OEE, etc.)
 
 ## Grounding & Anti-Hallucination Rules

@@ -1,6 +1,7 @@
-> **Note**: This file is a human-readable reference. Research agents use
+> **Note**: This file is a human-readable reference for DACH markets. Research agents use
 > `references/market-sources.json` for programmatic market-specific source lookups.
 > Keep both in sync when updating DACH sources.
+> For other European markets (FR, IT, PL, NL, ES), see `european-sources.md`.
 
 # DACH-Specific Sources for Web Research
 

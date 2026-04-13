@@ -29,6 +29,7 @@ You will receive these parameters:
 | `REVIEW_ITERATION` | Yes | Current review iteration (1 or 2). Max 2. |
 | `SUBSECTOR_EN` | Yes | English subsector name for domain relevance |
 | `SUBSECTOR_DE` | Yes | German subsector name |
+| `SUBSECTOR_LOCAL` | No | Local-language subsector name. For non-DACH markets. Falls back to SUBSECTOR_DE. |
 | `RESEARCH_TOPIC` | Yes | Research focus area |
 | `PROJECT_LANGUAGE` | Yes | Output language (de/en) |
 

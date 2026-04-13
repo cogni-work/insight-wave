@@ -24,9 +24,10 @@ This agent is adapted from cogni-research's deep-researcher pattern. All researc
 | `DIMENSION` | Yes | Smarter Service dimension (externe-effekte, neue-horizonte, digitale-wertetreiber, digitales-fundament) |
 | `HORIZON` | Yes | Action horizon (act, plan, observe) |
 | `SUBSECTOR_EN` | Yes | English subsector name |
-| `SUBSECTOR_DE` | No | German subsector name (for bilingual search) |
+| `SUBSECTOR_DE` | No | German subsector name (for bilingual search, backward compat) |
+| `SUBSECTOR_LOCAL` | No | Local-language subsector name. Preferred over SUBSECTOR_DE for non-DACH markets. Falls back to SUBSECTOR_DE if absent. |
 | `RESEARCH_HINT` | No | Research hint from the trend candidate (guides decomposition) |
-| `MARKET_REGION` | No | Region code (default: "dach"). Controls search localization |
+| `MARKET_REGION` | No | Region code (default: "dach"). Controls search localization. Supports: dach, de, fr, it, pl, nl, es, us, uk. |
 | `CURRENT_YEAR` | No | Four-digit current year for recency-aware queries |
 
 ## Core Workflow
@@ -56,7 +57,7 @@ Decompose the trend into 2-3 sub-aspects aligned with the TIPS framework. This e
 
 For each sub-aspect, formulate 2-3 specific search queries:
 - Apply persona vocabulary from the dimension (regulatory language for externe-effekte, strategy language for neue-horizonte, etc.)
-- Use bilingual queries: 1 English + 1 German per sub-aspect (if SUBSECTOR_DE available)
+- Use bilingual queries: 1 English + 1 local-language per sub-aspect (using SUBSECTOR_LOCAL or SUBSECTOR_DE if available). For non-German markets, construct local-language queries in the market's language.
 - Include `CURRENT_YEAR` in at least 1 query per sub-aspect for recency
 - Total: 6-9 initial queries across sub-aspects
 

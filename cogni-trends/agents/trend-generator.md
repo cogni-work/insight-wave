@@ -41,7 +41,10 @@ You will receive these parameters from trend-scout:
 <!-- English subsector name (e.g., "Automotive") -->
 
 <subsector_de>{{SUBSECTOR_DE}}</subsector_de>
-<!-- German subsector name (e.g., "Automobil") -->
+<!-- German subsector name (e.g., "Automobil"). Backward compat. -->
+
+<subsector_local>{{SUBSECTOR_LOCAL}}</subsector_local>
+<!-- Local-language subsector name. For dach/de same as SUBSECTOR_DE. For other markets, the local equivalent. Falls back to SUBSECTOR_DE if absent. -->
 
 <research_topic>{{RESEARCH_TOPIC}}</research_topic>
 <!-- Research focus area for strategic fit scoring -->

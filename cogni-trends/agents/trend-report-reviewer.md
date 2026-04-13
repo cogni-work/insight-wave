@@ -21,7 +21,7 @@ Adapted from cogni-research's reviewer agent for the specific structure of TIPS 
 | `PROJECT_PATH` | Yes | Absolute path to the trend project directory |
 | `REPORT_PATH` | Yes | Path to `tips-trend-report.md` |
 | `REVIEW_ITERATION` | Yes | Current review iteration (1-2). Max 2 iterations. |
-| `OUTPUT_LANGUAGE` | No | ISO 639-1 code (default: "de"). Evaluate clarity in this language |
+| `OUTPUT_LANGUAGE` | No | ISO 639-1 code (default: "de"). Evaluate clarity in this language. Supported: de, en, fr, it, pl, nl, es. Check proper character encoding: DE (ä/ö/ü/ß), FR (é/è/ê/ç), IT (à/è/é/ì/ò/ù), PL (ą/ć/ę/ł/ń/ó/ś/ź/ż), ES (á/é/í/ó/ú/ñ). |
 
 ## Core Workflow
 

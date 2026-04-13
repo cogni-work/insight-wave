@@ -42,14 +42,14 @@ The trend-report-writer loads region configuration from `region-authority-source
 | Market size / adoption | YES — `{REGION_QUALIFIER_EN}` | Local market data matters (DACH vs US sizes differ 10x) |
 | Regulation / compliance | YES (via region-specific regulatory search) | Regulations are jurisdiction-bound |
 | Growth rate / statistics | NO — global search | Best practices and technology trends are international |
-| DE-language variant | Only if region has `region_qualifiers.de` | US/UK regions have no DE qualifier |
+| Local-language variant | Only if region has `region_qualifiers.local` | US/UK regions have no local qualifier |
 | Salary / compensation | YES — `{REGION_QUALIFIER_EN}` | Salary levels vary by region; cost derivation uses SOLUTION_PRICING, not this file |
 
 **Default behavior:** `MARKET_REGION="dach"` produces identical searches to the pre-regionalization pipeline (backward compatible).
 
 ## WebSearch Query Templates (Gap-Fill Only)
 
-Only executed for trends classified as `signal_partial` or `signal_none`. The agent loads `REGION_QUALIFIER_EN` (and optionally `REGION_QUALIFIER_DE`) from `region-authority-sources.json[MARKET_REGION]`.
+Only executed for trends classified as `signal_partial` or `signal_none`. The agent loads `REGION_QUALIFIER_EN` (and optionally `REGION_QUALIFIER_LOCAL`) from `region-authority-sources.json[MARKET_REGION]`.
 
 ### Partial Gap (1 query)
 
@@ -70,10 +70,11 @@ Only executed for trends classified as `signal_partial` or `signal_none`. The ag
 ```
 
 **Query 3 (conditional) — Regional language variant:**
-Only if region has a `region_qualifiers.de` entry (dach, de regions — NOT us, uk):
-```
-"{trend_name_de}" Marktgröße Studie {REGION_QUALIFIER_DE} {CURRENT_YEAR}
-```
+Only if region has a `region_qualifiers.local` entry (European regions dach, de, fr, it, pl, nl, es — NOT us, uk):
+Construct a local-language market size query using `SUBSECTOR_LOCAL` and `REGION_QUALIFIER_LOCAL`.
+For DE: `"{trend_name_de}" Marktgröße Studie {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}`
+For FR: `"{trend_name_fr}" taille du marché étude {REGION_QUALIFIER_LOCAL} {CURRENT_YEAR}`
+For other languages, translate the same pattern naturally.
 
 ### Blocked Domains
 

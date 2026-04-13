@@ -1,6 +1,6 @@
 # cogni-trends
 
-Strategic trend scouting and reporting pipeline — combines the Smarter Service Trendradar with the TIPS framework to bridge industry trends to portfolio solutions. DACH-focused, bilingual EN/DE.
+Strategic trend scouting and reporting pipeline — combines the Smarter Service Trendradar with the TIPS framework to bridge industry trends to portfolio solutions. Multilingual European markets (DE/FR/IT/PL/NL/ES) + US/UK.
 
 ## Plugin Architecture
 
@@ -131,8 +131,8 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 - Deep research: optional recursive TIPS-aligned exploration for high-value ACT-horizon trends
 - Candidate review: 3-perspective stakeholder assessment (foresight analyst, domain expert, pipeline consumer) with accept/revise/reject verdict and surgical repair loop
 - Structural review: cross-theme quality gate with 5-dimension rubric and Handeln/Nichthandeln contrast checks
-- Bilingual search: English tier (international) + German tier (DACH institutional sources)
-- Curated German sources: VDMA, BITKOM, Fraunhofer, Zukunftsinstitut, EUR-Lex
+- Multilingual search: English tier (international) + local-language tier (regional institutional sources). Supports DE/FR/IT/PL/NL/ES markets via `SUBSECTOR_LOCAL` and `REGION_QUALIFIER_LOCAL` parameters
+- Curated European sources per market in `region-authority-sources.json`. DACH: VDMA, BITKOM, Fraunhofer. FR: INRIA, ARCEP, Les Echos. IT: AGCOM, CNR, ASI. PL: UKE, POLSA. NL: TNO, ACM. ES: CNMC, INTA, CDTI.
 - Scripts use JSON output: `{"success": bool, "data": {...}, "error": "string"}`
 - Scripts are stdlib-only (bash + python3, no pip dependencies)
 - Catalogs accumulate knowledge across engagements — each pursuit enriches the next

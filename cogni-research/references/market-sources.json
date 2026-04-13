@@ -149,18 +149,181 @@
       {"domain": "inria.fr", "category": "research", "authority": 5, "search_pattern": "site:inria.fr {TOPIC_LOCAL} recherche {YEAR}"},
       {"domain": "cnrs.fr", "category": "research", "authority": 5, "search_pattern": "site:cnrs.fr {TOPIC_LOCAL} recherche {YEAR}"},
       {"domain": "cea.fr", "category": "research", "authority": 5, "search_pattern": "site:cea.fr {TOPIC_LOCAL} innovation {YEAR}"},
+      {"domain": "cnes.fr", "category": "research", "authority": 5, "search_pattern": "site:cnes.fr {TOPIC_LOCAL} spatial {YEAR}"},
       {"domain": "insee.fr", "category": "statistics", "authority": 5, "search_pattern": "site:insee.fr {TOPIC_LOCAL} statistiques {YEAR}"},
       {"domain": "legifrance.gouv.fr", "category": "government", "authority": 5, "search_pattern": "site:legifrance.gouv.fr {TOPIC_LOCAL} loi {YEAR}"},
       {"domain": "economie.gouv.fr", "category": "government", "authority": 5, "search_pattern": "site:economie.gouv.fr {TOPIC_LOCAL} numérique {YEAR}"},
+      {"domain": "arcep.fr", "category": "government", "authority": 5, "search_pattern": "site:arcep.fr {TOPIC_LOCAL} télécommunications {YEAR}"},
       {"domain": "bpifrance.fr", "category": "government", "authority": 4, "search_pattern": "site:bpifrance.fr {TOPIC_LOCAL} innovation {YEAR}"},
       {"domain": "medef.com", "category": "association", "authority": 4, "search_pattern": "site:medef.com {TOPIC_LOCAL} industrie {YEAR}"},
       {"domain": "numeum.fr", "category": "association", "authority": 4, "search_pattern": "site:numeum.fr {TOPIC_LOCAL} numérique {YEAR}"},
+      {"domain": "fft.fr", "category": "association", "authority": 4, "search_pattern": "site:fft.fr {TOPIC_LOCAL} télécommunications {YEAR}"},
       {"domain": "lesechos.fr", "category": "media", "authority": 3, "search_pattern": "site:lesechos.fr {TOPIC_LOCAL} {YEAR}"},
       {"domain": "latribune.fr", "category": "media", "authority": 3, "search_pattern": "site:latribune.fr {TOPIC_LOCAL} {YEAR}"},
       {"domain": "usinenouvelle.com", "category": "media", "authority": 3, "search_pattern": "site:usinenouvelle.com {TOPIC_LOCAL} industrie {YEAR}"},
       {"domain": "journaldunet.com", "category": "media", "authority": 3, "search_pattern": "site:journaldunet.com {TOPIC_LOCAL} {YEAR}"}
     ],
     "regulatory_bodies": ["EUR-Lex (EU)", "CNIL", "AMF", "ANSSI", "ARCEP", "Autorité de la concurrence"],
+    "currency": "EUR"
+  },
+
+  "it": {
+    "default_output_language": "it",
+    "local_language": "it",
+    "region_qualifiers": {
+      "en": "Italy",
+      "local": "Italia"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["trasformazione digitale", "intelligenza artificiale", "transizione ecologica", "cybersicurezza", "banda larga", "economia circolare", "competenze digitali", "infrastrutture digitali", "industria 4.0", "telecomunicazioni satellitari"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "DevOps", "Open Source", "Machine Learning", "API", "ERP", "CRM", "LEO", "5G"],
+      "geographic_modifiers": ["Italia", "italiano", "italiana"]
+    },
+    "authority_sources": [
+      {"domain": "cnr.it", "category": "research", "authority": 5, "search_pattern": "site:cnr.it {TOPIC_LOCAL} ricerca {YEAR}"},
+      {"domain": "asi.it", "category": "research", "authority": 5, "search_pattern": "site:asi.it {TOPIC_LOCAL} spazio {YEAR}"},
+      {"domain": "polimi.it", "category": "research", "authority": 5, "search_pattern": "site:polimi.it {TOPIC_LOCAL} ricerca innovazione {YEAR}"},
+      {"domain": "istat.it", "category": "statistics", "authority": 5, "search_pattern": "site:istat.it {TOPIC_LOCAL} statistiche {YEAR}"},
+      {"domain": "gazzettaufficiale.it", "category": "government", "authority": 5, "search_pattern": "site:gazzettaufficiale.it {TOPIC_LOCAL} legge {YEAR}"},
+      {"domain": "mise.gov.it", "category": "government", "authority": 5, "search_pattern": "site:mise.gov.it {TOPIC_LOCAL} digitale innovazione {YEAR}"},
+      {"domain": "agcom.it", "category": "government", "authority": 5, "search_pattern": "site:agcom.it {TOPIC_LOCAL} telecomunicazioni {YEAR}"},
+      {"domain": "agcm.it", "category": "government", "authority": 5, "search_pattern": "site:agcm.it {TOPIC_LOCAL} concorrenza {YEAR}"},
+      {"domain": "confindustriadigitale.it", "category": "association", "authority": 4, "search_pattern": "site:confindustriadigitale.it {TOPIC_LOCAL} digitale {YEAR}"},
+      {"domain": "anie.it", "category": "association", "authority": 4, "search_pattern": "site:anie.it {TOPIC_LOCAL} elettronica industria {YEAR}"},
+      {"domain": "assintel.it", "category": "association", "authority": 4, "search_pattern": "site:assintel.it {TOPIC_LOCAL} ICT {YEAR}"},
+      {"domain": "ambrosetti.eu", "category": "consulting", "authority": 4, "search_pattern": "site:ambrosetti.eu {TOPIC_LOCAL} Italia strategia {YEAR}"},
+      {"domain": "ilsole24ore.com", "category": "media", "authority": 3, "search_pattern": "site:ilsole24ore.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "corcom.it", "category": "media", "authority": 3, "search_pattern": "site:corcom.it {TOPIC_LOCAL} telecomunicazioni digitale {YEAR}"},
+      {"domain": "wired.it", "category": "media", "authority": 3, "search_pattern": "site:wired.it {TOPIC_LOCAL} tecnologia {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "AGCOM", "AGCM", "Garante Privacy", "CONSOB"],
+    "currency": "EUR"
+  },
+
+  "pl": {
+    "default_output_language": "pl",
+    "local_language": "pl",
+    "region_qualifiers": {
+      "en": "Poland",
+      "local": "Polska"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["transformacja cyfrowa", "sztuczna inteligencja", "cyberbezpieczeństwo", "gospodarka cyfrowa", "innowacje technologiczne", "infrastruktura szerokopasmowa", "przemysł 4.0", "kompetencje cyfrowe", "telekomunikacja satelitarna", "łączność satelitarna"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "DevOps", "Open Source", "Machine Learning", "API", "ERP", "CRM", "LEO", "5G"],
+      "geographic_modifiers": ["Polska", "polski", "polska"]
+    },
+    "authority_sources": [
+      {"domain": "pan.pl", "category": "research", "authority": 5, "search_pattern": "site:pan.pl {TOPIC_LOCAL} badania {YEAR}"},
+      {"domain": "nask.pl", "category": "research", "authority": 5, "search_pattern": "site:nask.pl {TOPIC_LOCAL} cyberbezpieczeństwo {YEAR}"},
+      {"domain": "ncbir.gov.pl", "category": "research", "authority": 5, "search_pattern": "site:ncbir.gov.pl {TOPIC_LOCAL} innowacje {YEAR}"},
+      {"domain": "polsa.gov.pl", "category": "research", "authority": 5, "search_pattern": "site:polsa.gov.pl {TOPIC_LOCAL} kosmos satelity {YEAR}"},
+      {"domain": "stat.gov.pl", "category": "statistics", "authority": 5, "search_pattern": "site:stat.gov.pl {TOPIC_LOCAL} statystyki {YEAR}"},
+      {"domain": "isap.sejm.gov.pl", "category": "government", "authority": 5, "search_pattern": "site:isap.sejm.gov.pl {TOPIC_LOCAL} ustawa {YEAR}"},
+      {"domain": "uke.gov.pl", "category": "government", "authority": 5, "search_pattern": "site:uke.gov.pl {TOPIC_LOCAL} telekomunikacja {YEAR}"},
+      {"domain": "uokik.gov.pl", "category": "government", "authority": 5, "search_pattern": "site:uokik.gov.pl {TOPIC_LOCAL} konkurencja {YEAR}"},
+      {"domain": "lewiatan.org", "category": "association", "authority": 4, "search_pattern": "site:lewiatan.org {TOPIC_LOCAL} cyfryzacja {YEAR}"},
+      {"domain": "piit.org.pl", "category": "association", "authority": 4, "search_pattern": "site:piit.org.pl {TOPIC_LOCAL} IT technologia {YEAR}"},
+      {"domain": "kigeit.org.pl", "category": "association", "authority": 4, "search_pattern": "site:kigeit.org.pl {TOPIC_LOCAL} elektronika telekomunikacja {YEAR}"},
+      {"domain": "rp.pl", "category": "media", "authority": 3, "search_pattern": "site:rp.pl {TOPIC_LOCAL} gospodarka {YEAR}"},
+      {"domain": "pb.pl", "category": "media", "authority": 3, "search_pattern": "site:pb.pl {TOPIC_LOCAL} biznes {YEAR}"},
+      {"domain": "computerworld.pl", "category": "media", "authority": 3, "search_pattern": "site:computerworld.pl {TOPIC_LOCAL} technologia {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "UKE", "UOKiK", "UODO", "KNF"],
+    "currency": "PLN"
+  },
+
+  "nl": {
+    "default_output_language": "nl",
+    "local_language": "nl",
+    "region_qualifiers": {
+      "en": "Netherlands",
+      "local": "Nederland"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["digitale transformatie", "kunstmatige intelligentie", "cyberveiligheid", "digitale overheid", "breedbandinfrastructuur", "circulaire economie", "digitale vaardigheden", "satellietcommunicatie", "telecommunicatie", "connectiviteit"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "DevOps", "Open Source", "Machine Learning", "API", "ERP", "CRM", "LEO", "5G"],
+      "geographic_modifiers": ["Nederland", "Nederlands", "Nederlandse"]
+    },
+    "authority_sources": [
+      {"domain": "tno.nl", "category": "research", "authority": 5, "search_pattern": "site:tno.nl {TOPIC_LOCAL} onderzoek {YEAR}"},
+      {"domain": "nwo.nl", "category": "research", "authority": 5, "search_pattern": "site:nwo.nl {TOPIC_LOCAL} onderzoek innovatie {YEAR}"},
+      {"domain": "tudelft.nl", "category": "research", "authority": 5, "search_pattern": "site:tudelft.nl {TOPIC_LOCAL} onderzoek {YEAR}"},
+      {"domain": "spaceoffice.nl", "category": "research", "authority": 5, "search_pattern": "site:spaceoffice.nl {TOPIC_LOCAL} ruimtevaart satellieten {YEAR}"},
+      {"domain": "cbs.nl", "category": "statistics", "authority": 5, "search_pattern": "site:cbs.nl {TOPIC_LOCAL} statistieken {YEAR}"},
+      {"domain": "overheid.nl", "category": "government", "authority": 5, "search_pattern": "site:overheid.nl {TOPIC_LOCAL} beleid {YEAR}"},
+      {"domain": "acm.nl", "category": "government", "authority": 5, "search_pattern": "site:acm.nl {TOPIC_LOCAL} telecommunicatie mededinging {YEAR}"},
+      {"domain": "rvo.nl", "category": "government", "authority": 5, "search_pattern": "site:rvo.nl {TOPIC_LOCAL} innovatie subsidie {YEAR}"},
+      {"domain": "vno-ncw.nl", "category": "association", "authority": 4, "search_pattern": "site:vno-ncw.nl {TOPIC_LOCAL} digitalisering {YEAR}"},
+      {"domain": "nldigital.nl", "category": "association", "authority": 4, "search_pattern": "site:nldigital.nl {TOPIC_LOCAL} digitaal {YEAR}"},
+      {"domain": "fme.nl", "category": "association", "authority": 4, "search_pattern": "site:fme.nl {TOPIC_LOCAL} technologie industrie {YEAR}"},
+      {"domain": "berenschot.nl", "category": "consulting", "authority": 4, "search_pattern": "site:berenschot.nl {TOPIC_LOCAL} strategie {YEAR}"},
+      {"domain": "fd.nl", "category": "media", "authority": 3, "search_pattern": "site:fd.nl {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "emerce.nl", "category": "media", "authority": 3, "search_pattern": "site:emerce.nl {TOPIC_LOCAL} digitaal {YEAR}"},
+      {"domain": "computable.nl", "category": "media", "authority": 3, "search_pattern": "site:computable.nl {TOPIC_LOCAL} IT {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ACM", "Autoriteit Persoonsgegevens", "AFM", "DNB"],
+    "currency": "EUR"
+  },
+
+  "es": {
+    "default_output_language": "es",
+    "local_language": "es",
+    "region_qualifiers": {
+      "en": "Spain",
+      "local": "España"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["transformación digital", "inteligencia artificial", "ciberseguridad", "economía circular", "banda ancha", "competencias digitales", "infraestructura digital", "telecomunicaciones por satélite", "conectividad satelital", "industria 4.0"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "DevOps", "Open Source", "Machine Learning", "API", "ERP", "CRM", "LEO", "5G"],
+      "geographic_modifiers": ["España", "español", "española"]
+    },
+    "authority_sources": [
+      {"domain": "csic.es", "category": "research", "authority": 5, "search_pattern": "site:csic.es {TOPIC_LOCAL} investigación {YEAR}"},
+      {"domain": "cdti.es", "category": "research", "authority": 5, "search_pattern": "site:cdti.es {TOPIC_LOCAL} innovación {YEAR}"},
+      {"domain": "inta.es", "category": "research", "authority": 5, "search_pattern": "site:inta.es {TOPIC_LOCAL} espacio satélites {YEAR}"},
+      {"domain": "ine.es", "category": "statistics", "authority": 5, "search_pattern": "site:ine.es {TOPIC_LOCAL} estadísticas {YEAR}"},
+      {"domain": "boe.es", "category": "government", "authority": 5, "search_pattern": "site:boe.es {TOPIC_LOCAL} ley {YEAR}"},
+      {"domain": "cnmc.es", "category": "government", "authority": 5, "search_pattern": "site:cnmc.es {TOPIC_LOCAL} telecomunicaciones competencia {YEAR}"},
+      {"domain": "red.es", "category": "government", "authority": 5, "search_pattern": "site:red.es {TOPIC_LOCAL} digitalización conectividad {YEAR}"},
+      {"domain": "ceoe.es", "category": "association", "authority": 4, "search_pattern": "site:ceoe.es {TOPIC_LOCAL} empresas {YEAR}"},
+      {"domain": "ametic.es", "category": "association", "authority": 4, "search_pattern": "site:ametic.es {TOPIC_LOCAL} digital telecomunicaciones {YEAR}"},
+      {"domain": "digitales.es", "category": "association", "authority": 4, "search_pattern": "site:digitales.es {TOPIC_LOCAL} tecnología {YEAR}"},
+      {"domain": "indracompany.com", "category": "consulting", "authority": 4, "search_pattern": "site:indracompany.com {TOPIC_LOCAL} espacio defensa {YEAR}"},
+      {"domain": "expansion.com", "category": "media", "authority": 3, "search_pattern": "site:expansion.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "cincodias.elpais.com", "category": "media", "authority": 3, "search_pattern": "site:cincodias.elpais.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "computing.es", "category": "media", "authority": 3, "search_pattern": "site:computing.es {TOPIC_LOCAL} tecnología {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "CNMC", "AEPD", "CNMV", "Banco de España"],
+    "currency": "EUR"
+  },
+
+  "eu": {
+    "_note": "Composite market — orchestrator expands to per-country researchers for market-specific sub-questions. This entry provides EU-wide sources and cross-market defaults.",
+    "default_output_language": "en",
+    "local_language": "en",
+    "composite_markets": ["de", "fr", "it", "pl", "nl", "es"],
+    "region_qualifiers": {
+      "en": "Europe European Union",
+      "local": "Europe European Union"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["digital single market", "European digital strategy", "EU space programme", "spectrum allocation", "cross-border connectivity"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "LEO", "5G", "VHCN", "NGA"],
+      "geographic_modifiers": ["Europe", "EU", "European Union", "European"]
+    },
+    "authority_sources": [
+      {"domain": "eur-lex.europa.eu", "category": "government", "authority": 5, "search_pattern": "site:eur-lex.europa.eu {TOPIC_LOCAL} regulation {YEAR}"},
+      {"domain": "commission.europa.eu", "category": "government", "authority": 5, "search_pattern": "site:commission.europa.eu {TOPIC_LOCAL} strategy digital {YEAR}"},
+      {"domain": "eurostat.ec.europa.eu", "category": "statistics", "authority": 5, "search_pattern": "site:eurostat.ec.europa.eu {TOPIC_LOCAL} statistics {YEAR}"},
+      {"domain": "esa.int", "category": "research", "authority": 5, "search_pattern": "site:esa.int {TOPIC_LOCAL} programme satellite {YEAR}"},
+      {"domain": "easa.europa.eu", "category": "government", "authority": 5, "search_pattern": "site:easa.europa.eu {TOPIC_LOCAL} regulation {YEAR}"},
+      {"domain": "berec.europa.eu", "category": "government", "authority": 5, "search_pattern": "site:berec.europa.eu {TOPIC_LOCAL} telecommunications {YEAR}"},
+      {"domain": "enisa.europa.eu", "category": "government", "authority": 5, "search_pattern": "site:enisa.europa.eu {TOPIC_LOCAL} cybersecurity {YEAR}"},
+      {"domain": "eib.org", "category": "government", "authority": 4, "search_pattern": "site:eib.org {TOPIC_LOCAL} investment digital {YEAR}"},
+      {"domain": "etno.eu", "category": "association", "authority": 4, "search_pattern": "site:etno.eu {TOPIC_LOCAL} telecom {YEAR}"},
+      {"domain": "digitaleurope.org", "category": "association", "authority": 4, "search_pattern": "site:digitaleurope.org {TOPIC_LOCAL} digital {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex", "European Commission", "EASA", "BEREC", "ENISA", "EIB"],
     "currency": "EUR"
   },
 

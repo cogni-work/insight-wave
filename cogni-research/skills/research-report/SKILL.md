@@ -96,7 +96,21 @@ Backward compatibility: if `market` is absent, derive it from the legacy `langua
 - Writer produces the report in the specified language
 - Reviewer evaluates prose quality in the output language
 
-Available markets: `global` (default), `dach`, `de`, `us`, `uk`, `fr`. The market and output language are usually aligned (e.g., market=dach → output_language=de) but can diverge (e.g., market=fr, output_language=en for an English report about the French market).
+Available markets: `global` (default), `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. The market and output language are usually aligned (e.g., market=dach → output_language=de, market=it → output_language=it) but can diverge (e.g., market=fr, output_language=en for an English report about the French market). The `eu` market is a composite that fans out per-country researchers — see composite dispatch below.
+
+#### Composite Market Dispatch (market=eu)
+
+When `market` is `"eu"`, load the market entry from `market-sources.json` and check for the `composite_markets` field. If present:
+
+1. **Store composite context**: `COMPOSITE_MARKETS` = `["de", "fr", "it", "pl", "nl", "es"]`, `IS_COMPOSITE` = true
+2. **Default output language to English**: Cross-market reports are written in English unless explicitly overridden
+3. **Phase 1 sub-question generation**: Generate sub-questions with two types:
+   - **Market-specific**: Questions about individual countries (e.g., "What is the regulatory landscape for LEO satellite in Italy?"). Tag with `target_market: "it"`
+   - **Cross-market**: Questions comparing across countries or about EU-wide aspects (e.g., "How do European spectrum allocation policies compare across DE, FR, IT, PL, NL, ES?"). Tag with `target_market: "eu"`
+4. **Phase 2 researcher dispatch**: For market-specific sub-questions, dispatch section-researcher with `MARKET=<country>`. For cross-market sub-questions, dispatch section-researcher with `MARKET=eu` (uses EU-wide authority sources + geographic modifiers for all 6 countries)
+5. **EU-wide sources**: The `eu` entry in market-sources.json provides EU-level authority sources (EUR-Lex, Eurostat, ESA, BEREC, ETNO, DigitalEurope) used for cross-market questions
+
+This approach leverages the existing parallel researcher dispatch — the composite market simply maps to more researchers with different market parameters. No new agent types needed.
 
 ### Phase 0.5: Preliminary Search
 

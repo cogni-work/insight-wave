@@ -63,11 +63,19 @@ Quality gates block downstream generation when upstream entities fail.
 - Source lineage: entity records include `source_url`, `entity_ref`, `propagated_at` for correction cascades
 - All entity outputs are Obsidian-browsable markdown with YAML frontmatter
 
-### Bilingual Support (EN/DE)
+### Multilingual European Support
 
 - Output language configurable per project (`output_language` in project config)
-- German output uses proper umlauts (never ASCII substitutes)
-- DACH site-specific sources for German research: fraunhofer.de, bitkom.org, vdma.org, destatis.de, handelsblatt.com
+- Supported markets: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu` (composite)
+- Proper character encoding per language — never ASCII substitutes:
+  - DE: ä/ö/ü/ß, FR: é/è/ê/ç, IT: à/è/é/ì/ò/ù, PL: ą/ć/ę/ł/ń/ó/ś/ź/ż, ES: á/é/í/ó/ú/ñ
+- Authority sources curated per market in `references/market-sources.json` (cogni-research) and `references/region-authority-sources.json` (cogni-trends)
+- DACH sources: fraunhofer.de, bitkom.org, vdma.org, destatis.de, handelsblatt.com
+- FR: inria.fr, cnes.fr, arcep.fr, insee.fr, lesechos.fr
+- IT: cnr.it, asi.it, agcom.it, istat.it, ilsole24ore.com
+- PL: pan.pl, polsa.gov.pl, uke.gov.pl, stat.gov.pl, rp.pl
+- NL: tno.nl, spaceoffice.nl, acm.nl, cbs.nl, fd.nl
+- ES: csic.es, inta.es, cnmc.es, ine.es, expansion.com
 - Section header mappings in `references/section-headers-de.md` per plugin
 
 ## Plugin Data Flow

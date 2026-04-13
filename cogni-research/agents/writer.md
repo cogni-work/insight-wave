@@ -124,12 +124,18 @@ On failure:
 
 When the output language is not English, write the entire report in the specified language:
 
-- **Section headings**: Use headings in the output language (e.g., German: "Einleitung", "Zusammenfassung", "Ergebnisse"; French: "Introduction", "Résumé", "Résultats")
-- **Body text**: Write in professional prose with proper character encoding — umlauts (ä, ö, ü, ß) for German, accents (é, è, ê, ç) for French. Never use ASCII fallbacks
+- **Section headings**: Use headings in the output language (e.g., German: "Einleitung", "Zusammenfassung"; French: "Introduction", "Résumé"; Italian: "Introduzione", "Risultati"; Polish: "Wprowadzenie", "Wyniki"; Dutch: "Inleiding", "Resultaten"; Spanish: "Introducción", "Resultados")
+- **Body text**: Write in professional prose with proper character encoding. Never use ASCII fallbacks:
+  - German: umlauts (ä, ö, ü, ß) — never ae/oe/ue/ss
+  - French: accents (é, è, ê, ë, à, â, ç, î, ï, ô, ù, û)
+  - Italian: accented vowels (à, è, é, ì, ò, ù) — critical for meaning (è = "is", e = "and")
+  - Polish: diacritics (ą, ć, ę, ł, ń, ó, ś, ź, ż) — never substitute with base Latin (ł≠l, ą≠a)
+  - Dutch: occasional diacritics (ë, ï in words like "reëel", "geïnteresseerd")
+  - Spanish: accents and special characters (á, é, í, ó, ú, ñ, ü, ¿, ¡)
 - **Framework terms stay English**: SWOT, MECE, McKinsey, TOGAF, and other established framework names remain in English
-- **Technical terms**: Keep widely-used English technical terms (e.g., "Cloud Computing", "IoT", "Machine Learning") but use local equivalents where natural (e.g., German: "Künstliche Intelligenz" alongside "AI"; French: "intelligence artificielle")
+- **Technical terms**: Keep widely-used English technical terms (e.g., "Cloud Computing", "IoT", "Machine Learning") but use local equivalents where natural (e.g., German: "Künstliche Intelligenz", French: "intelligence artificielle", Italian: "intelligenza artificiale", Polish: "sztuczna inteligencja", Spanish: "inteligencia artificial")
 - **Citation format**: Same `[Source: publisher-name](URL)` format regardless of language
-- **Tone**: Professional analytical prose matching the quality expectations of the target market (e.g., Handelsblatt/Roland Berger level for German, Les Echos/BPI France level for French)
+- **Tone**: Professional analytical prose matching the quality expectations of the target market (e.g., Handelsblatt/Roland Berger for German, Les Echos/BPI France for French, Il Sole 24 Ore/Ambrosetti for Italian, Rzeczpospolita for Polish, Het Financieele Dagblad for Dutch, Expansión/Cinco Días for Spanish)
 
 When OUTPUT_LANGUAGE=en (default), write in English. Sources in other languages should be cited normally — the reader can access the URL regardless of source language.
 
