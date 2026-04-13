@@ -1,6 +1,6 @@
 {
   "name": "cogni-visual",
-  "version": "0.16.4",
+  "version": "0.16.5",
   "description": "Transform polished narratives and structured data into visual deliverables \u2014 presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
   "author": {
     "name": "Stephan de Haas",

@@ -503,6 +503,32 @@ Print summary:
 
 ---
 
+### Phase 6b: Visual Quality Review (conditional)
+
+> Visually inspect the rendered HTML to catch layout, theming, and rendering issues that automated validation cannot detect — broken Chart.js initialization, theme colors not applied, text overflow, sidebar missing, enrichments clustered together, infographic header failures.
+
+This phase uses Browser MCP to navigate to the enriched HTML, take screenshots at three viewport positions, and evaluate what a human reader would see. It extends the same visual review pattern used by `concept-diagram-svg` for individual SVGs to the full enriched report.
+
+**When Browser MCP is available:** Dispatch the `enriched-report-reviewer` agent:
+
+```
+Agent(enriched-report-reviewer):
+  HTML_PATH: {output_path}
+  DESIGN_VARIABLES_PATH: {design_variables_path}
+  ENRICHMENT_PLAN_PATH: {source_dir}/cogni-visual/enrichment-plan.json
+```
+
+The agent takes 3 screenshots (infographic header, report body, chart-heavy section), evaluates 10 quality gates (scored 0-10), and returns structured JSON with gate scores and fix recommendations.
+
+**Decision logic:**
+- Score >= 8.0: **ACCEPT** — proceed to Phase 7.
+- Score < 8.0 on first pass: **FIX** — the agent applies targeted corrections to intermediate artifacts (`design-variables.json`, `enrichment-plan.json`, SVGs), re-runs `generate-enriched-report.py`, and re-evaluates. Maximum 2 review passes.
+- Score < 8.0 on second pass: **ACCEPT WITH WARNINGS** — proceed to Phase 7 with known issues logged.
+
+**When Browser MCP is unavailable:** Skip Phase 6b entirely. The 6 automated validation gates from Phase 6 remain the quality floor. Log: "Visual review skipped — Browser MCP not available."
+
+---
+
 ### Phase 7: Format Export (conditional)
 
 > Convert the enriched HTML to PDF or DOCX when requested.

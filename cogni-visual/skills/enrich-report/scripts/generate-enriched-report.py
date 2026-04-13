@@ -1324,8 +1324,9 @@ code {{ font-family: var(--font-mono); font-size: 0.88em; background: var(--surf
 pre {{ background: var(--surface-dark); color: var(--text-light); padding: 16px 20px; border-radius: var(--radius);
        overflow-x: auto; margin: 16px 0; }}
 pre code {{ background: none; padding: 0; color: inherit; }}
-blockquote {{ border-left: 3px solid var(--brand-accent); padding: 12px 20px; margin: 16px 0; background: var(--surface);
-             border-radius: 0 var(--radius) var(--radius) 0; font-style: italic; color: var(--text-muted); }}
+blockquote {{ border-left: 4px solid var(--brand-accent); padding: 12px 20px; margin: 16px 0; background: var(--bg);
+             border-radius: 0 var(--radius) var(--radius) 0; font-style: italic; color: var(--text);
+             box-shadow: 0 1px 3px rgba(0,0,0,0.06); }}
 hr {{ border: none; border-top: 1px solid var(--border); margin: 32px 0; }}
 ul, ol {{ margin: 0 0 16px; padding-left: 24px; }}
 li {{ margin: 4px 0; }}
@@ -1371,8 +1372,9 @@ tr:hover td {{ background: var(--surface); }}
 /* Summary cards */
 .summary-card {{
   max-width: 720px; margin: 24px auto; padding: 20px 24px;
-  background: var(--surface); border-radius: var(--radius);
-  border-left: 4px solid var(--brand-accent); box-shadow: var(--shadow-sm);
+  background: var(--bg); border-radius: var(--radius);
+  border-left: 4px solid var(--brand-accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }}
 .summary-card-content p {{ margin: 0; font-size: 0.95rem; }}
 .summary-badge {{

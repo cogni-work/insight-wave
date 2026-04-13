@@ -15,9 +15,10 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
 ## Instructions
 
 1. Load and follow the skill at `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/SKILL.md`
-2. Execute all phases in order (Phase 0 through Phase 6, plus Phase 7 if `formats` includes pdf or docx)
+2. Execute all phases in order (Phase 0 through Phase 6, Phase 6b if Browser MCP is available, plus Phase 7 if `formats` includes pdf or docx)
 3. For Phase 4 concept-track enrichments, dispatch `concept-diagram-svg` subagents in parallel — each agent generates inline SVG independently (no shared canvas)
-4. Return a compact JSON response:
+4. For Phase 6b visual review, dispatch the `enriched-report-reviewer` agent with the HTML output path, design-variables path, and enrichment-plan path. If the reviewer returns score < 8.0 on its first pass, it will auto-fix and re-review (max 2 passes). If Browser MCP is unavailable, skip Phase 6b.
+5. Return a compact JSON response:
 
 ```json
 {
@@ -30,7 +31,8 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
     "concept": 3,
     "html": 2
   },
-  "skipped": []
+  "skipped": [],
+  "visual_review": {"score": 8.5, "pass": true, "review_passes": 1}
 }
 ```
 
