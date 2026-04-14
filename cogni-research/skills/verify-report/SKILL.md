@@ -1,14 +1,13 @@
 ---
 name: verify-report
 description: |
-  Verify claims in a research report against cited sources using cogni-claims.
-  Works on cogni-research project directories (auto-detects draft, sources,
-  and existing claims) or on any standalone markdown report with inline citations.
-  Use when the user asks to "verify report", "verify claims", "check sources",
-  "fact-check the report", "verify the research", "run claims verification",
-  "check the citations", or wants to re-verify a report after editing.
-  Also use when the user says "verify" after a research-report run completes,
-  or when research-report's Phase 6 summary recommends running verify-report.
+  Verify claims in a research report against their cited sources using cogni-claims.
+  Auto-detects draft, sources, and prior claim verdicts inside a cogni-research project
+  directory, or runs against any standalone markdown report with inline citations. Use
+  whenever the user says "verify report", "verify claims", "check sources", "fact-check
+  the report", "run claims verification", "check the citations", wants to re-verify after
+  editing a report, or simply says "verify" after a research-report run finishes. Also
+  trigger when a research-report Phase 6 summary recommends it.
 allowed-tools: Read, Write, Edit, Glob, Grep, Task, Skill, AskUserQuestion
 ---
 

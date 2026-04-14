@@ -1,17 +1,13 @@
 ---
 name: research-setup
 description: |
-  Configure and initialize a cogni-research project. Presents an interactive
-  Configuration Menu for report type, tone, citations, market, source mode,
-  and advanced options. Creates the project directory with project-config.json.
-  This skill is the mandatory first step for all research workflows — research-report
-  cannot execute without an initialized project.
-  Use when setting up a new research project, configuring research parameters,
-  changing research settings, or when research-report detects no initialized project.
-  Trigger phrases: "configure research", "set up research project",
-  "research settings", "research options", "research configuration",
-  "configure my report", "change research settings", "report settings",
-  "new research project", "initialize research", "research preferences".
+  Configure and initialize a cogni-research project — interactive menu for report type,
+  tone, citation style, market, and source mode (web / local / wiki / hybrid). Creates
+  the project directory and project-config.json. Mandatory first step before research-report
+  can run; research-report routes here automatically when no project is initialized.
+  Use when the user says "set up research project", "configure research", "new research
+  project", "initialize research", "research settings", "change research options",
+  "research preferences", or wants to start a research project before any report is generated.
 allowed-tools: Read, Bash, Glob, ToolSearch, AskUserQuestion, Skill
 ---
 

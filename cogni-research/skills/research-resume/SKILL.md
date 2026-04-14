@@ -1,13 +1,13 @@
 ---
 name: research-resume
 description: |
-  Resume, continue, or check status of a cogni-research project.
-  Use whenever the user mentions "continue research", "resume research",
-  "research status", "where was I with the report", "research progress",
-  "what's next for research", "pick up where I left off", "show research project",
-  "how far is the research", "check research", "open research session",
-  or opens a session involving an existing cogni-research project —
-  even if they don't say "resume" explicitly.
+  Resume, continue, or check status of an existing cogni-research project — shows
+  progress, the next recommended phase, and any interrupted runs. Use whenever the
+  user says "continue research", "resume research", "research status", "where was I
+  with the report", "pick up the research", "finish the report", "what happened to
+  my report", "how far is the research", "check research", or opens a session that
+  already contains a cogni-research project directory, even if they don't say "resume"
+  explicitly. For creating a new report from scratch, use research-report instead.
 allowed-tools: Read, Glob, Grep, Bash, Skill
 ---
 

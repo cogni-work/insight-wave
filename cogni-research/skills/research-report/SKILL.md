@@ -1,18 +1,16 @@
 ---
 name: research-report
 description: |
-  Generate a multi-agent research report using parallel web research with structural
-  review. Three modes: basic (fast single-pass), detailed (multi-section with outline),
-  deep (recursive tree exploration). Claims verification runs separately via verify-report.
-  Supports configurable writing tones, auto/manual researcher roles, source URL pre-fetch,
-  domain-restricted search, custom sub-question counts, and local document research.
-  Four source modes: web (default), local (analyze user's documents), wiki (query cogni-wiki instances), hybrid (web + documents + wikis).
-  Use when the user asks to "research report", "investigate", "deep research", "write a report",
-  "gpt-researcher", "multi-agent research", "analyze these documents", "research from my files",
-  "research from my wiki", "use my wiki for research", "query the wiki",
-  or requests comprehensive topic analysis with citations.
-  Also use when the user wants to "resume research", "continue research report", "pick up the research",
-  "finish the report", "what happened to my report", or resume an interrupted research run.
+  Generate a multi-agent research report using parallel web, local document, or wiki
+  research with structural review. Three modes: basic (fast single-pass), detailed
+  (multi-section with outline), deep (recursive tree exploration). Four source modes:
+  web (default), local (user's files), wiki (cogni-wiki), hybrid. Requires an initialized
+  project — routes to research-setup first if none exists. Use whenever the user asks
+  for a research report, wants to investigate a topic, says "deep research", "gpt-researcher
+  style", "multi-agent research", "analyze these documents", "research from my files",
+  "query the wiki", or requests comprehensive topic analysis with citations. Claims
+  verification runs separately via verify-report. For resuming an interrupted run or
+  checking report progress, use research-resume instead.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, Task, Skill
 ---
 
