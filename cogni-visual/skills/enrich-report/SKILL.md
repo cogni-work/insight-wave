@@ -45,12 +45,12 @@ The pipeline splits creative and deterministic work between an LLM agent and a P
   - **Concept track** — LLM-crafted inline SVG (no Excalidraw dependency) for flows, relationship maps, concept sketches. Uses `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` recipes.
 
 - **`generate-enriched-report.py --post-process` (Python script)** — handles deterministic post-processing after the agent writes the HTML:
-  - Flipbook assembly (when `--layout flipbook`) — transforms scroll HTML into paginated two-page spreads
   - Infographic injection (HTML fragment > PNG base64 > JSON fallback)
   - Content preservation validation (word count >= 80%, heading count, citation count)
   - Enrichment plan validation (density caps, type restrictions)
+  - Flipbook derivation (when called with `--layout flipbook` on a copy of the scroll HTML) — transforms into paginated two-page spreads with cover extraction, lazy Chart.js init, and pagination engine
 
-This division matters because chart design benefits from LLM creativity (contextual axis labels, multi-dataset scenario modeling, chart type selection), while infographic embedding and content verification need deterministic correctness.
+This division matters because chart design benefits from LLM creativity (contextual axis labels, multi-dataset scenario modeling, chart type selection), while infographic embedding, content verification, and flipbook assembly need deterministic correctness. Both layouts are produced from a single agent dispatch — the agent writes scroll HTML once, then the post-processor runs twice (scroll + flipbook).
 
 **Content preservation** — every paragraph, citation, table, blockquote, and heading from the source markdown appears verbatim in the HTML output. Enrichments are injected *between* existing prose, never replacing it. The validation gate enforces a hard floor: HTML word count >= 80% of source, with H2 and citation counts matching. This matters because the enriched report is a *visual rendition* of the source — readers who know the original will notice missing content.
 
@@ -66,12 +66,12 @@ This division matters because chart design benefits from LLM creativity (context
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `source_path` | auto-discovered | Report markdown file path |
-| `output_path` | layout-aware (see below) | HTML output path. Default: `{dir}/output/{stem}-enriched.html` for scroll, `{dir}/output/{stem}-enriched-flipbook.html` for flipbook. Explicit value overrides the convention. |
+| `output_path` | auto | Scroll HTML output path. Default: `{dir}/output/{stem}-enriched.html`. Flipbook variant is always derived as `{stem}-enriched-flipbook.html` alongside it. |
 | `report_type` | `auto` | Override detection: `trend-report`, `research-report`, `generic` |
 | `language` | from frontmatter | `en` or `de` — affects chart labels, axis titles, summary card text |
 | `theme` | interactive | Theme path, or omit to trigger `cogni-workspace:pick-theme` |
 | `design_variables` | derived from theme | Pre-computed design-variables.json path (skips derivation) |
-| `layout` | `scroll` | HTML layout mode: `scroll` (sidebar + continuous scroll — classic), `flipbook` (two-page spread with 3D page-curl animation — magazine-like reading experience). |
+| `layout` | `both` | Output layout mode. Always produces both `scroll` (sidebar + continuous scroll) and `flipbook` (two-page spread with 3D page-curl animation). The agent writes scroll HTML once; the Python post-processor derives the flipbook variant automatically. |
 | `density` | `balanced` | Report-body enrichment density: `none` (0 visuals, themed prose only), `minimal` (1-2), `balanced` (3-5), `rich` (5-8). The infographic header is always generated regardless of density. |
 | `formats` | `["html"]` | Output formats: `html`, `pdf`, `docx`. HTML is always produced first; PDF/DOCX are derived from it. |
 | `interactive` | `true` | Interactive enrichment review checkpoint at Phase 3 |
@@ -145,23 +145,14 @@ This ensures the skill finds pre-existing infographic artifacts regardless of wh
 2. If `theme` path provided: derive design-variables.json from theme.md (read `cogni-workspace/references/design-variables-pattern.md` for derivation rules, validate against `schemas/design-variables.schema.json`).
 3. Otherwise: invoke `cogni-workspace:pick-theme`, then derive.
 
-**Layout selection:**
-If `layout` was not provided as a parameter, ask the user via AskUserQuestion:
-- Header: "Layout"
-- Question: "How should the enriched report be presented?"
-- Options:
-  1. "Scroll (Recommended)" — "Classic sidebar + continuous scroll. Best for long reading sessions and printing."
-  2. "Flipbook" — "Magazine-style two-page spread with 3D page-turning. Best for executive presentations and visual impact."
-- Default (empty response): `scroll`
-
 **Output path resolution:**
-If `output_path` was not explicitly provided:
-- `scroll`: `{source_dir}/output/{stem}-enriched.html`
-- `flipbook`: `{source_dir}/output/{stem}-enriched-flipbook.html`
+Both layouts are always generated from a single agent dispatch. If `output_path` was not explicitly provided:
+- Scroll: `{source_dir}/output/{stem}-enriched.html`
+- Flipbook: `{source_dir}/output/{stem}-enriched-flipbook.html`
 
-This naming convention lets both layouts coexist on disk without overwriting each other. An explicit `output_path` parameter overrides the convention.
+An explicit `output_path` overrides the scroll path; the flipbook path is always derived by inserting `-flipbook` before `.html`.
 
-Store: `report_type`, `source_path`, `source_dir`, `language`, `layout`, `output_path`, `design_variables` (the JSON object).
+Store: `report_type`, `source_path`, `source_dir`, `language`, `scroll_output_path`, `flipbook_output_path`, `design_variables` (the JSON object).
 
 ---
 
@@ -350,33 +341,52 @@ When `interactive=false`: auto-approve all, log plan.
 
 ### Phase 4: HTML Assembly
 
-> Dispatch the `report-html-writer` agent to produce the complete HTML file with Chart.js charts, inline SVGs, and sidebar navigation, then inject the infographic and validate content preservation.
+> Dispatch the `report-html-writer` agent to produce the scroll HTML, then derive the flipbook variant via the Python post-processor — both layouts from a single agent call.
 
-HTML writing is the quality-critical step in the pipeline — it requires producing themed, responsive, content-preserving HTML with rich Chart.js configs and inline SVG diagrams. This work is delegated to the dedicated `report-html-writer` opus agent, which receives a clean context with only the inputs it needs (source markdown, enrichment plan, design variables, and reference files). The agent writes scroll-mode HTML for both layouts. For flipbook mode, the agent adds cover markers and lazy chart init, then the Python post-processor transforms the scroll HTML into the flipbook layout (block wrapping, pagination engine, cover extraction, flipbook CSS/JS). This two-phase assembly keeps the agent's output focused on creative work (chart design, SVG crafting, content conversion) while deterministic flipbook infrastructure is handled by the script.
+HTML writing is the quality-critical step in the pipeline — it requires producing themed, responsive, content-preserving HTML with rich Chart.js configs and inline SVG diagrams. This work is delegated to the dedicated `report-html-writer` opus agent, which receives a clean context with only the inputs it needs (source markdown, enrichment plan, design variables, and reference files). The agent always writes scroll-mode HTML. The Python post-processor then produces the flipbook variant by transforming a copy of the scroll HTML (block wrapping, pagination engine, cover extraction from the first H2 section, lazy Chart.js init conversion, flipbook CSS/JS). This keeps the agent focused on creative work while deterministic flipbook infrastructure is handled by the script.
 
-**Dispatch the `report-html-writer` agent:**
+**Step 4a — Dispatch the `report-html-writer` agent:**
 
 ```
 Agent(report-html-writer):
   SOURCE_PATH: {source_path}
-  OUTPUT_PATH: {output_path}
+  OUTPUT_PATH: {scroll_output_path}
   ENRICHMENT_PLAN_PATH: {source_dir}/cogni-visual/enrichment-plan.json
   DESIGN_VARIABLES_PATH: {design_variables_path}
   LANGUAGE: {language}
-  LAYOUT: {layout}
   INFOGRAPHIC_IMAGE: {actual_png_path_from_phase_2a}
   INFOGRAPHIC_HTML: {actual_html_fragment_path_from_phase_2a}
   INFOGRAPHIC_DATA: {source_dir}/cogni-visual/infographic-data.json
   SCRIPT_PATH: {SKILL_PATH}/scripts/generate-enriched-report.py
 ```
 
-Omit `INFOGRAPHIC_IMAGE`, `INFOGRAPHIC_HTML`, or `INFOGRAPHIC_DATA` if the corresponding artifact does not exist from Phase 2a.
+Omit `INFOGRAPHIC_IMAGE`, `INFOGRAPHIC_HTML`, or `INFOGRAPHIC_DATA` if the corresponding artifact does not exist from Phase 2a. The agent runs the post-processor with `--layout scroll` internally (infographic injection + content validation for the scroll version).
 
 **Expected response:** JSON with `ok`, `output_path`, `enrichments` (total/data/concept/html counts), `preservation` (source vs HTML word counts, heading counts, citation counts), and `post_processor` (infographic tier used, validation pass/fail).
 
 **If `ok` is false:** Read the error, fix the underlying issue (missing enrichment plan, invalid design variables, post-processor script error), and re-dispatch.
 
 **If `preservation.ratio` < 0.80:** The HTML has lost narrative content. Check which sections are missing and re-dispatch with a note about the missing sections.
+
+**Step 4b — Derive flipbook variant:**
+
+After the agent succeeds, generate the flipbook version by copying the agent's raw HTML output and running the post-processor in flipbook mode. The post-processor handles everything: extracting the cover from the first H2 section, wrapping content into semantic blocks, converting Chart.js to lazy initialization, assembling the pagination engine, and injecting the infographic.
+
+```bash
+cp "{scroll_output_path}" "{flipbook_output_path}"
+python3 {SKILL_PATH}/scripts/generate-enriched-report.py --post-process \
+  --html "{flipbook_output_path}" \
+  --source "{source_path}" \
+  --layout "flipbook" \
+  --language "{language}" \
+  --infographic-image "{INFOGRAPHIC_IMAGE}" \
+  --infographic-html "{INFOGRAPHIC_HTML}" \
+  --infographic-data "{INFOGRAPHIC_DATA}"
+```
+
+Omit infographic flags for paths that don't exist. The copy must happen BEFORE this command because the scroll version has already been post-processed (infographic injected) by the agent in Step 4a — but `_assemble_flipbook()` in the post-processor extracts the infographic injection point from the pre-processed HTML and re-injects it in the flipbook's page 2, so this is safe.
+
+**If the flipbook post-processor fails:** Log the error but do not block the pipeline — the scroll version is the primary deliverable. Report the flipbook failure in the output summary.
 
 ---
 
@@ -395,12 +405,12 @@ Omit `INFOGRAPHIC_IMAGE`, `INFOGRAPHIC_HTML`, or `INFOGRAPHIC_DATA` if the corre
 
 If any gate fails: fix the specific issue and re-validate. Do not regenerate from scratch.
 
-**Output:** Write the HTML file to `output_path`. Open it in the browser for the user.
+**Output:** Open the scroll HTML in the browser for the user.
 
 Print summary:
 - Enrichments injected: N (data: X, concept: Y, html: Z)
-- Output: {output_path}
-- Layout: {layout}
+- Scroll: {scroll_output_path}
+- Flipbook: {flipbook_output_path} (or "flipbook generation failed: {reason}" if Step 4b failed)
 - Theme: {theme_name}
 - Skipped: {any enrichments that failed generation, with reasons}
 
@@ -412,11 +422,11 @@ Print summary:
 
 This phase uses Browser MCP to navigate to the enriched HTML, take screenshots at three viewport positions, and evaluate what a human reader would see. It extends the screenshot-based visual review pattern to the full enriched report.
 
-**When Browser MCP is available:** Dispatch the `enriched-report-reviewer` agent:
+**When Browser MCP is available:** Dispatch the `enriched-report-reviewer` agent on the scroll version (primary deliverable):
 
 ```
 Agent(enriched-report-reviewer):
-  HTML_PATH: {output_path}
+  HTML_PATH: {scroll_output_path}
   DESIGN_VARIABLES_PATH: {design_variables_path}
   ENRICHMENT_PLAN_PATH: {source_dir}/cogni-visual/enrichment-plan.json
 ```
@@ -432,45 +442,11 @@ The agent takes 3 screenshots (infographic header, report body, chart-heavy sect
 
 ---
 
-### Phase 5c: Alternative Layout Offer (conditional)
-
-> Offer to generate the other layout style so the user can have both versions.
-
-This phase runs when `interactive=true` (default) and the primary HTML was written successfully.
-
-**Determine alternative:**
-- If current `layout` == `scroll`: alternative is `flipbook`, alternative path is `{source_dir}/output/{stem}-enriched-flipbook.html`
-- If current `layout` == `flipbook`: alternative is `scroll`, alternative path is `{source_dir}/output/{stem}-enriched.html`
-
-**Skip if alternative already exists** on disk — both layouts are already available. Print: "Both layouts available: {output_path} and {alt_output_path}" and proceed to Phase 6.
-
-**Ask via AskUserQuestion:**
-- Header: "Alternative Layout"
-- Question: "The {layout} version is ready. Would you also like a {alternative} version?"
-- Options:
-  1. "Yes" — "Reuses the same theme, enrichment plan, and infographic. Only re-runs HTML assembly and validation."
-  2. "No thanks"
-- Default (empty response): skip
-
-**If accepted:**
-1. Set `alt_output_path` to the alternative path derived above.
-2. Re-dispatch the `report-html-writer` agent with the SAME inputs as Phase 4, except:
-   - `OUTPUT_PATH`: `{alt_output_path}`
-   - `LAYOUT`: `{alternative}`
-   All other parameters (SOURCE_PATH, ENRICHMENT_PLAN_PATH, DESIGN_VARIABLES_PATH, LANGUAGE, INFOGRAPHIC_*, SCRIPT_PATH) remain identical.
-3. Run Phase 5 validation gates on the alternative output.
-4. Run Phase 5b visual review on the alternative output (if Browser MCP is available).
-5. Print: "Both layouts generated: {output_path} ({layout}) and {alt_output_path} ({alternative})"
-
-Do NOT re-run Phases 0-3. The enrichment plan, design variables, and infographic artifacts are layout-independent — only the HTML assembly and post-processing differ.
-
----
-
 ### Phase 6: Format Export (conditional)
 
 > Convert the enriched HTML to PDF or DOCX when requested.
 
-This phase only runs when `formats` includes `pdf` or `docx`. The HTML output from Phase 4/5 is always the starting point. If both layouts were generated in Phase 5c, export from the primary layout only.
+This phase only runs when `formats` includes `pdf` or `docx`. The scroll HTML from Phase 4/5 is the starting point for format export.
 
 **PDF export:**
 
@@ -502,7 +478,7 @@ DOCX cannot represent interactive charts or inline SVG. Convert from the origina
 
 After all requested formats are generated:
 - List exported files with paths and file sizes
-- If both layouts were generated (Phase 5c), list both HTML paths with their layout labels
+- List both HTML paths with their layout labels (scroll + flipbook)
 - Note which theme was applied
 - Note any limitations (e.g., "PDF generated without charts — use browser print for charts" or "DOCX contains text only — charts are in the HTML version")
 
@@ -518,10 +494,10 @@ After all requested formats are generated:
 | `references/04-chart-patterns.md` | — (script) | Chart.js config templates (used internally by Python script, not by LLM) |
 | `references/08-infographic-distillation.md` | Phase 2a | Infographic distillation principles, hero number selection, 60-second read test |
 | `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` | Phase 4 | SVG element recipes for inline concept diagrams (shared library — also used by concept-diagram-svg agent) |
-| `references/06-html-structure.md` | Phase 4 | HTML layout reference — sidebar + continuous scroll, CSS architecture, responsive breakpoints. Used by the agent for both scroll and flipbook modes (agent always writes scroll HTML). |
+| `references/06-html-structure.md` | Phase 4 | HTML layout reference — sidebar + continuous scroll, CSS architecture, responsive breakpoints. The agent writes scroll HTML; the flipbook variant is derived by the post-processor in Step 4b. |
 | `references/07-flipbook-structure.md` | — (script) | Flipbook architecture documentation. CSS and JS are embedded in the Python post-processor as constants; the agent does not read this file. |
 | `references/07-citation-normalization.md` | Phase 6 | Citation format detection and normalization for DOCX export |
 | `schemas/design-variables.schema.json` | Phase 0 | JSON schema for design-variables validation |
 | `schemas/enrichment-plan.schema.json` | Phase 2b | JSON schema for enrichment plan validation |
 | `schemas/infographic-data.schema.json` | Phase 2a | JSON schema for infographic data validation |
-| `scripts/generate-enriched-report.py` | Phase 4 | Python post-processor (flipbook assembly when `--layout flipbook`, infographic injection, content validation) |
+| `scripts/generate-enriched-report.py` | Phase 4 (Step 4a + 4b) | Python post-processor: scroll post-processing (infographic injection, content validation) in Step 4a via agent, flipbook derivation (assembly + infographic injection) in Step 4b via skill |

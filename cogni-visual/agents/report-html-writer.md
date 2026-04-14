@@ -1,13 +1,13 @@
 ---
 name: report-html-writer
 description: >
-  Write a complete self-contained HTML file from a markdown report, enrichment plan, and
-  design variables. Produces themed HTML with Chart.js data visualizations, inline SVG
-  concept diagrams, sidebar navigation, and full prose preservation. Worker agent
-  dispatched by enrich-report Phase 4 — receives serialized inputs, produces the HTML,
-  runs the Python post-processor for infographic injection and content validation, and
-  returns JSON metrics. Use when the enrich-report orchestrator needs high-quality HTML
-  assembly with a clean, focused context.
+  Write a complete self-contained scroll-layout HTML file from a markdown report,
+  enrichment plan, and design variables. Produces themed HTML with Chart.js data
+  visualizations, inline SVG concept diagrams, sidebar navigation, and full prose
+  preservation. Worker agent dispatched by enrich-report Phase 4a — receives serialized
+  inputs, produces the scroll HTML, runs the Python post-processor for infographic
+  injection and content validation, and returns JSON metrics. The flipbook variant is
+  derived by the caller (Phase 4b) via the same post-processor on a copy of this output.
 model: opus
 color: green
 tools:
@@ -51,7 +51,6 @@ Your ENTIRE response must be a SINGLE LINE of JSON — no text before or after, 
 | `INFOGRAPHIC_HTML` | no | Path to infographic HTML fragment (post-processor tier 1) |
 | `INFOGRAPHIC_DATA` | no | Path to infographic-data.json (post-processor tier 3 fallback) |
 | `SCRIPT_PATH` | yes | Path to `generate-enriched-report.py` |
-| `LAYOUT` | no | `scroll` (default) or `flipbook` — determines HTML architecture |
 
 ## Step 1: Read All Inputs
 
@@ -62,8 +61,6 @@ Read these files in parallel:
 3. Design variables (`DESIGN_VARIABLES_PATH`)
 4. HTML structure reference: `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/references/06-html-structure.md`
 5. SVG patterns library: `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md`
-
-The HTML structure reference covers both scroll and flipbook layouts — the agent always writes scroll-format HTML. The post-processor handles flipbook transformation.
 
 ## Step 2: Count Source Content
 
@@ -151,41 +148,28 @@ For each concept-track enrichment:
 - No more than 2 consecutive enrichments without intervening prose
 - No dashboard patterns (KPI grids, hero banners) in the report body — those belong in the infographic header
 
-### 3.9 Flipbook Mode Additions
-
-When `LAYOUT=flipbook`, write the HTML exactly as for scroll mode with two additions:
-
-1. **Cover markers** — wrap the first H2 section (heading + all content until next H2) in `<!-- FLIPBOOK_COVER_CONTENT -->` / `<!-- /FLIPBOOK_COVER_CONTENT -->` comment markers
-2. **Chart.js lazy init** — write chart configs into `window._chartInits` registry (functions that call `new Chart(...)`), NOT immediate execution:
-   ```javascript
-   window._chartInits['enr-001'] = function() { new Chart(...); };
-   ```
-
-The post-processor transforms scroll HTML into flipbook layout automatically — it handles block wrapping, pagination engine, flipbook CSS, cover extraction, navigation, ToC overlay, and all interactive elements. Do NOT write flipbook-specific CSS, JS, or `.block` divs.
-
 ## Step 4: Run Python Post-Processor
 
-Run the post-processor to inject the infographic header and validate content preservation:
+Run the post-processor to inject the infographic header and validate content preservation. The agent always produces scroll-layout HTML — the caller handles flipbook derivation separately.
 
 ```bash
 python3 {SCRIPT_PATH} --post-process \
   --html "{OUTPUT_PATH}" \
   --source "{SOURCE_PATH}" \
-  --layout "{LAYOUT}" \
+  --layout "scroll" \
   --language "{LANGUAGE}" \
   --infographic-image "{INFOGRAPHIC_IMAGE}" \
   --infographic-html "{INFOGRAPHIC_HTML}" \
   --infographic-data "{INFOGRAPHIC_DATA}"
 ```
 
-Omit infographic flags for paths that were not provided. Pass `--layout flipbook` when in flipbook mode.
+Omit infographic flags for paths that were not provided.
 
 **What the post-processor does:**
-1. Flipbook assembly (when `--layout flipbook`) — transforms scroll HTML into paginated two-page spreads
-2. Replaces `<!-- INFOGRAPHIC_INJECTION_POINT -->` with the infographic (tier 1: HTML fragment > tier 2: PNG base64 > tier 3: JSON fallback)
-3. Validates content preservation (word count >= 80%, H2 count match, citation count)
-4. Writes the result back to the same file
-5. Returns JSON with `validation` field
+1. Replaces `<!-- INFOGRAPHIC_INJECTION_POINT -->` with the infographic (tier 1: HTML fragment > tier 2: PNG base64 > tier 3: JSON fallback)
+2. Validates content preservation (word count >= 80%, H2 count match, citation count)
+3. Writes the result back to the same file
+4. Returns JSON with `validation` field
 
 If `validation.pass` is `false`, identify which content was lost, fix the HTML, and re-run.
 
