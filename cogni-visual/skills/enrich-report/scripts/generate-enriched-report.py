@@ -2039,6 +2039,8 @@ def main():
     parser.add_argument("--density", default="balanced", help="Enrichment density (none/minimal/balanced/rich)")
     parser.add_argument("--infographic-image", default="", help="Pencil-rendered infographic PNG")
     parser.add_argument("--infographic-html", default="", help="Pencil-rendered HTML fragment")
+    parser.add_argument("--layout", default="scroll", choices=["scroll", "flipbook"],
+                        help="HTML layout mode (scroll=sidebar+scroll, flipbook=paginated book)")
     parser.add_argument("--chart-configs", default="", help=argparse.SUPPRESS)
     args = parser.parse_args()
 

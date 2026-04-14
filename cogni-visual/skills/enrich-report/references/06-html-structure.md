@@ -1,6 +1,6 @@
 # HTML Structure
 
-Two-zone layout architecture, CSS patterns, and script structure for the enriched report HTML output.
+Two-zone layout architecture, CSS patterns, and script structure for the enriched report HTML output. This is the **scroll** layout (default). For the **flipbook** layout (two-page spread with 3D page-curl), see `07-flipbook-structure.md`.
 
 ## Three-Tier Infographic Priority Cascade
 

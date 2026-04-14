@@ -85,6 +85,7 @@ The Python post-processor (`scripts/generate-enriched-report.py --post-process`)
 | `language` | from frontmatter | `en` or `de` — affects chart labels, axis titles, summary card text |
 | `theme` | interactive | Theme path, or omit to trigger `cogni-workspace:pick-theme` |
 | `design_variables` | derived from theme | Pre-computed design-variables.json path (skips derivation) |
+| `layout` | `scroll` | HTML layout mode: `scroll` (sidebar + continuous scroll — classic), `flipbook` (two-page spread with 3D page-curl animation — magazine-like reading experience). |
 | `density` | `balanced` | Report-body enrichment density: `none` (0 visuals, themed prose only), `minimal` (1-2), `balanced` (3-5), `rich` (5-8). The infographic header is always generated regardless of density. |
 | `formats` | `["html"]` | Output formats: `html`, `pdf`, `docx`. HTML is always produced first; PDF/DOCX are derived from it. |
 | `interactive` | `true` | Interactive enrichment review checkpoint at Phase 3 |
@@ -174,7 +175,16 @@ This ensures the skill finds pre-existing infographic artifacts regardless of wh
 2. If `theme` path provided: derive design-variables.json from theme.md (read `cogni-workspace/references/design-variables-pattern.md` for derivation rules, validate against `schemas/design-variables.schema.json`).
 3. Otherwise: invoke `cogni-workspace:pick-theme`, then derive.
 
-Store: `report_type`, `source_path`, `source_dir`, `language`, `design_variables` (the JSON object).
+**Layout selection:**
+If `layout` was not provided as a parameter, ask the user via AskUserQuestion:
+- Header: "Layout"
+- Question: "How should the enriched report be presented?"
+- Options:
+  1. "Scroll (Recommended)" — "Classic sidebar + continuous scroll. Best for long reading sessions and printing."
+  2. "Flipbook" — "Magazine-style two-page spread with 3D page-turning. Best for executive presentations and visual impact."
+- Default (empty response): `scroll`
+
+Store: `report_type`, `source_path`, `source_dir`, `language`, `layout`, `design_variables` (the JSON object).
 
 ---
 
@@ -462,6 +472,7 @@ Agent(report-html-writer):
   ENRICHMENT_PLAN_PATH: {source_dir}/cogni-visual/enrichment-plan.json
   DESIGN_VARIABLES_PATH: {design_variables_path}
   LANGUAGE: {language}
+  LAYOUT: {layout}
   INFOGRAPHIC_IMAGE: {actual_png_path_from_phase_2a}
   INFOGRAPHIC_HTML: {actual_html_fragment_path_from_phase_2a}
   INFOGRAPHIC_DATA: {source_dir}/cogni-visual/infographic-data.json
@@ -580,7 +591,8 @@ After all requested formats are generated:
 | `references/04-chart-patterns.md` | — (script) | Chart.js config templates (used internally by Python script, not by LLM) |
 | `references/08-infographic-distillation.md` | Phase 2a | Infographic distillation principles, hero number selection, 60-second read test |
 | `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` | Phase 4 | SVG element recipes for inline concept diagrams (shared library — also used by concept-diagram-svg agent) |
-| `references/06-html-structure.md` | Phase 4 | HTML layout, CSS architecture, responsive breakpoints, script structure |
+| `references/06-html-structure.md` | Phase 4 | HTML layout for `scroll` mode — sidebar + continuous scroll, CSS architecture, responsive breakpoints |
+| `references/07-flipbook-structure.md` | Phase 4 | HTML layout for `flipbook` mode — two-page spread, 3D page-curl, JS pagination engine, navigation |
 | `references/07-citation-normalization.md` | Phase 6 | Citation format detection and normalization for DOCX export |
 | `schemas/design-variables.schema.json` | Phase 0 | JSON schema for design-variables validation |
 | `schemas/enrichment-plan.schema.json` | Phase 2b | JSON schema for enrichment plan validation |
