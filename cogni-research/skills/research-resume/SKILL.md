@@ -52,6 +52,7 @@ Since cogni-research has no `project-status.sh`, read the project state directly
   - `phase_0_init`
   - `phase_0.5_preliminary_search`
   - `phase_1_sub_questions`
+  - `phase_1_5_plan` (includes `web_agent`, `channels`, `batch_size`, `recursive_depth`, `sub_question_count`, `total_agents`, `est_cost_usd`, `user_confirmed`, optionally `aborted_at`)
   - `phase_2_research`
   - `phase_3_aggregation`
   - `phase_4_writing`
@@ -67,15 +68,17 @@ Since cogni-research has no `project-status.sh`, read the project state directly
 - Sources: `{project_path}/02-sources/data/*.md`
 - Report claims: `{project_path}/03-report-claims/data/*.md`
 
-**D. Check output files:**
+**D. Read `.logs/phase-1.5-plan.json`** (may not exist — Phase 1.5 hasn't run yet, or the project pre-dates v0.6.26 when the plan preview was introduced). If present, extract `web_agent`, `channels`, `batch_size`, `recursive_depth`, `sub_question_count`, `est_cost_usd`, `user_confirmed`. These values drive the **Execution Plan** row in the Phase Progress Table. The execution-log entry from Step B is the primary signal; this file is the fuller source if the user wants to inspect the trade-off notes.
+
+**E. Check output files:**
 - Glob `{project_path}/output/draft-v*.md` — find the highest version number
 - Check `{project_path}/output/report.md` — finalized report exists?
 
-**E. Check claims verification state:**
+**F. Check claims verification state:**
 - Read `.metadata/user-claims-review.json` if it exists — contains user decisions on deviations
 - Check whether `execution-log.json` has `phase_5_review.claims_verification` set (it reads `"deferred to verify-report"` when research-report finishes without verification)
 
-**F. Detect downstream actions already performed:**
+**G. Detect downstream actions already performed:**
 
 Downstream plugins leave filesystem traces when they process research output. Check these signals so the dashboard and next-steps can reflect what the user has already done — even across sessions:
 
@@ -106,6 +109,7 @@ Created: {created_at}
 | Setup | Done / Pending | {report_type}, {tone}, {citation_format} |
 | Preliminary Search | Done / Pending / Skipped | grounding context |
 | Sub-Questions | Done / Pending | {N} generated (target: {expected for report_type}) |
+| Execution Plan | Done / Pending / Aborted | {web_agent}, {channel_count} channel(s), batch {batch_size}, recursion {on\|off}, est ${cost_range} |
 | Research | Done / Partial / Pending | {contexts_count}/{sub_questions_count} contexts, {sources_count} sources |
 | Source Curation | Done / Skipped | auto for detailed/deep with 8+ sources |
 | Aggregation | Done / Pending | merged context |
@@ -115,7 +119,9 @@ Created: {created_at}
 | Claims Verification | Done / Deferred / Pending | {claims_count} claims |
 | Visual Enrichment | Done / Skipped | themed HTML |
 
-Status values: `Done`, `Partial` (some sub-tasks failed or incomplete), `Pending` (not yet started), `Skipped` (not applicable for this config), `Deferred` (intentionally postponed).
+Status values: `Done`, `Partial` (some sub-tasks failed or incomplete), `Pending` (not yet started), `Skipped` (not applicable for this config), `Deferred` (intentionally postponed), `Aborted` (user explicitly aborted in Phase 1.5 — needs re-confirmation before researchers run).
+
+For the **Execution Plan** row: show `Done` when `execution-log.phases.phase_1_5_plan.status == "done"`; show `Aborted` when `status == "aborted"` or an `aborted_at` field is present; show `Pending` when the key is absent (Phase 1.5 hasn't run, or the project pre-dates v0.6.26). When the plan file or execution-log entry is missing, leave the Details cell blank rather than guessing.
 
 Derive status from execution-log phase entries and entity file counts. When execution-log is missing, reconstruct from file system: sub-questions exist means Phase 1 done, contexts exist means Phase 2 at least partial, etc.
 
@@ -138,7 +144,7 @@ Cost: ${total_estimated_usd} (researchers ${N}, writer ${N}, reviewer ${N})
 ```
 Downstream: Copywrite {Done/—} | Infographic {Done/—} | Enrich-report {Done/—} | Narrative {Done/—}
 ```
-Use "Done" when the Step 3F detection signal is positive, "—" when absent. This gives the user an instant read on what's left to do.
+Use "Done" when the Step 3G detection signal is positive, "—" when absent. This gives the user an instant read on what's left to do.
 
 ### 5. Health Checks
 
@@ -153,6 +159,8 @@ Apply these checks after the dashboard and surface warnings before recommending 
 4. **Missing verification**: If Phase 6 is complete (report finalized) but no claims data exists in `03-report-claims/data/`, flag: "Report finalized but claims never verified. Run `/verify-report` for source fact-checking."
 
 5. **Aged project**: If `created_at` is more than 30 days ago and the project is not finalized, flag: "Project is {N} days old. Web sources may have changed — consider re-running research if source currency matters."
+
+6. **Plan aborted**: If `execution-log.phases.phase_1_5_plan.status == "aborted"` (or an `aborted_at` field is present) and `phase_2_research` has not started, flag: "Execution plan was aborted in the previous session. Resuming will re-enter Phase 1.5 so you can review or adjust the plan before any researcher runs." This is a surfaced signal, not an error — the abort was intentional.
 
 ### 6. Recommend Next Action
 
@@ -182,9 +190,9 @@ For conditions 2-7, research-report has built-in resumption logic — it reads `
 
 ### Downstream Options for Completed Reports
 
-When the project is fully complete (report finalized + claims verified or user chose to skip verification), present downstream options. Use the detection data from Step 3F to determine which actions have already been performed.
+When the project is fully complete (report finalized + claims verified or user chose to skip verification), present downstream options. Use the detection data from Step 3G to determine which actions have already been performed.
 
-For each downstream action below, check its Step 3F signal. Already-completed actions: acknowledge briefly (e.g., "Report already polished") but do not offer to re-run. Available actions: present as actionable next steps with dispatch offer.
+For each downstream action below, check its Step 3G signal. Already-completed actions: acknowledge briefly (e.g., "Report already polished") but do not offer to re-run. Available actions: present as actionable next steps with dispatch offer.
 
 **Path A — Polish & Visualize** (keeps the research report format):
 1. `cogni-copywriting:copywrite` — Polish report for executive readability (BLUF, tighter prose, consistent tone)
@@ -224,6 +232,7 @@ For already-completed steps, show them as done (e.g., "~~`/copywrite`~~ Done") b
 | `phase_0_init` | Project initialized | research-setup |
 | `phase_0.5_preliminary_search` | Grounding search complete | research-report |
 | `phase_1_sub_questions` | Research questions generated | research-report |
+| `phase_1_5_plan` | Execution plan locked (agent mix, channels, batch size, cost) | research-report |
 | `phase_2_research` | Parallel research complete | research-report |
 | `phase_3_aggregation` | Context merged | research-report |
 | `phase_4_writing` | Report drafted | research-report |

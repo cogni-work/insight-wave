@@ -165,7 +165,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.6.26",
+      "version": "0.6.27",
       "maturity": "preview",
       "description": "Multi-agent research report generator. STORM-inspired editorial workflow with parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [

@@ -206,9 +206,13 @@ plan = {
 - `source_mode == "wiki"`  → `["wiki"]` (requires `wiki_paths`)
 - `source_mode == "hybrid"` → include `"web"` always; add `"wiki"` if `wiki_paths` set; add `"local"` if `document_paths` set
 
+If `source_mode == "hybrid"` but neither `wiki_paths` nor `document_paths` is set, `channels` collapses to `["web"]` only. Don't fail — the user asked for hybrid and should get the web leg — but flag this silent downgrade in the 1.5b trade-off lines (see below) so they can fix the config if they meant otherwise.
+
 **Cost estimate** lookup: use the row from `references/model-strategy.md` ("Cost Estimation" table) that matches `report_type × source_mode`. Do not compute a new cost formula — the table is the source of truth. For the hybrid row, report the full low–high range.
 
 #### 1.5b: Print the plan
+
+Print this summary **unconditionally** — even when `confirm_plan=false`. Silent mode only suppresses the confirmation question in 1.5c; the plan itself should always appear in the transcript so the cost/quality decision is auditable after the fact. A silent run that never showed the user what was about to happen defeats the whole point of this phase.
 
 Produce a compact text summary for the user. Use this exact shape (fill in the computed values):
 
@@ -240,11 +244,12 @@ The trade-off lines are where the user actually learns the cost/quality geometry
 - "Recursion off: faster and roughly 2–3× cheaper than recursive deep-research. Turn it on if a sub-question genuinely needs multi-hop exploration rather than one good pass."
 - "Recursion on (depth 2): each web sub-question explores 2–3 follow-ups internally. Better coverage, roughly 2–3× the web cost."
 - "Hybrid channels: wiki and local are cheap file reads; the web channel is the long pole for cost and time."
+- "Hybrid requested but no wiki/document paths configured → running web-only. Add `document_paths` or `wiki_paths` in project-config.json to activate the other channels." (only when hybrid degraded to web-only per 1.5a)
 - "Batch size 4: respects WebFetch rate limits. Drop to 2 if you've seen rate-limit errors on this market; raise to 6 only if you've verified the market is quiet."
 
 #### 1.5c: Confirm or adjust
 
-If `confirm_plan` is `false` in project-config.json, skip 1.5c entirely. Log the computed plan to `.logs/phase-1.5-plan.json` and continue to Phase 2.
+If `confirm_plan` is `false` in project-config.json, skip only the `AskUserQuestion` below — the plan from 1.5b has already been printed, and 1.5d will still record it. Continue to Phase 2 with `user_confirmed: false` in the recorded plan.
 
 Otherwise, ask the user exactly one `AskUserQuestion` with these options — include only those that are meaningful for the current plan:
 
@@ -256,7 +261,7 @@ Otherwise, ask the user exactly one `AskUserQuestion` with these options — inc
 | **Disable recursion** | only if `report_type == "deep"` AND `recursive_depth > 0` | Set `recursive_depth=0`, switch `web_agent` to `section-researcher`, recompute cost, re-display |
 | **Web-only** | only if `source_mode == "hybrid"` | Drop wiki and local from `channels`, recompute fan-out and cost, re-display |
 | **Smaller batches** | only if `batch_size > 2` | Set `batch_size=2`, recompute batch count, re-display |
-| **Abort** | always | Record `aborted_at: phase-1.5` in `.metadata/execution-log.json` and stop without spawning any researcher |
+| **Abort** | always | Write the abort marker to `execution-log.phases.phase_1_5_plan` in 1.5d (see below) and stop without spawning any researcher |
 
 When the user picks a non-Proceed option, apply the change, recompute 1.5a, re-print 1.5b, and ask again. Cap this loop at two rounds — after the second adjustment, default to Proceed on the next turn to avoid endless re-planning on unclear input.
 
@@ -266,9 +271,32 @@ Adjustments that mutate `project-config.json` (recursion depth, batch size, chan
 
 Whether the user confirmed or silent mode was active, write the final plan object to `.logs/phase-1.5-plan.json` so the user can audit it later and so Phase 2 reads a single source of truth for `web_agent`, `channels`, `batch_size`, and `recursive_depth`.
 
+Also record a completion marker in `.metadata/execution-log.json` under `phases.phase_1_5_plan`, so `research-resume` can detect "plan locked, researchers not yet dispatched" without parsing the full plan file:
+
+```json
+{
+  "phase_1_5_plan": {
+    "status": "done",
+    "web_agent": "section-researcher",
+    "channels": ["web"],
+    "batch_size": 4,
+    "recursive_depth": 0,
+    "sub_question_count": 5,
+    "total_agents": 5,
+    "est_cost_usd": "0.15-0.40",
+    "confirmed_at": "<ISO-8601 timestamp>",
+    "user_confirmed": true
+  }
+}
+```
+
+`.logs/phase-1.5-plan.json` remains the full source of truth (including trade-off prose and curation flag); this execution-log entry is the compact summary the resume dashboard surfaces. If the user picked **Abort** in 1.5c, write `{"status": "aborted", "aborted_at": "<ISO timestamp>"}` instead — Phase 2 will check for this marker on re-entry.
+
 ### Phase 2: Parallel Web Research
 
 Parallel execution is the key throughput optimization — a basic report with 5 sub-questions completes research in the time of one. All researchers use sonnet for richer source extraction and better findings quality. Each agent runs independently, so a failure in one does not block the others.
+
+**Abort-marker pre-check.** Before reading the plan, check `.metadata/execution-log.json` for `phases.phase_1_5_plan.status == "aborted"` (or an `aborted_at` field). If set, the previous session aborted in Phase 1.5 — do not silently dispatch researchers on the old plan. Re-enter Phase 1.5 (recompute, re-print, re-confirm) and clear the abort marker in 1.5d once the user confirms a new plan. This preserves the "user owns the cost/quality decision" guarantee across session boundaries.
 
 Read the confirmed plan from `.logs/phase-1.5-plan.json` — it is the single source of truth for `web_agent`, `channels`, `batch_size`, and `recursive_depth`. Do not re-derive these values from `project-config.json` in this phase, because the user may have adjusted them during Phase 1.5 without the changes being written back to config.
 
