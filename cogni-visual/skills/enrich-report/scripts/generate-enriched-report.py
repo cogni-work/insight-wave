@@ -1978,16 +1978,1085 @@ def generate_html(source_path, enrichment_plan, infographic_data, svg_dir, dv,
 
 
 # ---------------------------------------------------------------------------
+# Flipbook Assembly (scroll HTML → flipbook HTML)
+# ---------------------------------------------------------------------------
+
+FLIPBOOK_CSS = """\
+/* Flipbook-specific tokens */
+:root {
+  --page-width: min(48vw, 520px);
+  --page-height: min(92vh, 700px);
+  --page-ratio: 1 / 1.35;
+  --page-padding: 48px 40px;
+  --spine-width: 2px;
+  --turn-duration: 0.8s;
+  --turn-easing: cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.flipbook {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  perspective: 2000px;
+  perspective-origin: center center;
+  background: var(--bg);
+  transition: opacity 0.3s ease;
+}
+.flipbook.ready { opacity: 1 !important; }
+
+.spread {
+  display: flex;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  width: calc(var(--page-width) * 2 + var(--spine-width));
+  height: var(--page-height);
+}
+.spread.active { opacity: 1; pointer-events: auto; z-index: 2; }
+.spread.next { opacity: 1; z-index: 1; }
+
+.spread .page-left,
+.spread .page-right {
+  width: var(--page-width);
+  height: var(--page-height);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.spread .page-left {
+  border-radius: var(--radius) 0 0 var(--radius);
+  border-right: var(--spine-width) solid var(--border);
+}
+.spread .page-right { border-radius: 0 var(--radius) var(--radius) 0; }
+
+.page-inner {
+  padding: var(--page-padding);
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+.page-inner h2 {
+  font-family: var(--font-headers);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--accent);
+  color: var(--primary);
+}
+.page-inner h3 {
+  font-family: var(--font-headers);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+  color: var(--primary);
+}
+.page-inner p { margin: 0 0 12px 0; }
+.page-inner blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface2);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 16px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.page-left .page-number { left: 40px; }
+.page-right .page-number { right: 40px; }
+
+.page-cover .page-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cover-title {
+  font-family: var(--font-headers);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 24px 0;
+  color: var(--primary);
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 16px;
+}
+.cover-summary { font-size: 1rem; line-height: 1.8; color: var(--text); }
+.cover-meta {
+  margin-top: auto;
+  padding-top: 24px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+
+.page-infographic { padding: 0; overflow: hidden; }
+.page-infographic .infographic-editorial {
+  width: 100%; height: 100%; object-fit: contain;
+}
+.page-infographic .infographic-pencil-html { transform-origin: top left; }
+.page-infographic .infographic-rendered img {
+  width: 100%; height: 100%; object-fit: contain;
+}
+
+.page-inner .chart-container { max-width: 100%; margin: 16px 0; }
+.page-inner .chart-container canvas { max-height: 55%; }
+.page-inner .concept-diagram { max-width: 100%; margin: 16px 0; }
+.page-inner .concept-diagram svg { width: 100%; height: auto; max-height: 50%; }
+.page-inner .summary-card {
+  margin: 12px 0;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* 3D page-curl animation */
+.spread.active.turning-forward .page-right {
+  transform-origin: left center;
+  transform: rotateY(-180deg);
+  transition: transform var(--turn-duration) var(--turn-easing);
+  z-index: 10;
+}
+.spread.active.turning-forward .page-right::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.15) 0%, transparent 40%);
+  opacity: 1;
+  transition: opacity var(--turn-duration) var(--turn-easing);
+}
+.spread.next.turning-backward .page-left {
+  transform-origin: right center;
+  transform: rotateY(180deg);
+  transition: transform var(--turn-duration) var(--turn-easing);
+  z-index: 10;
+}
+.spread.next.turning-backward .page-left::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.15) 0%, transparent 40%);
+  opacity: 1;
+  transition: opacity var(--turn-duration) var(--turn-easing);
+}
+
+/* Navigation */
+.flipbook-nav {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  font-family: var(--font-body);
+}
+.nav-btn {
+  width: 36px; height: 36px;
+  border: none; border-radius: 50%;
+  background: var(--surface); color: var(--text);
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 1rem;
+  transition: background 0.2s, transform 0.15s;
+}
+.nav-btn:hover { background: var(--accent); color: var(--primary); transform: scale(1.08); }
+.nav-counter {
+  font-size: 0.85rem; color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 80px; text-align: center;
+}
+
+/* Progress bar */
+.flipbook-progress {
+  position: fixed; top: 0; left: 0; width: 100%; height: 3px;
+  background: var(--border); z-index: 100;
+}
+.flipbook-progress-bar {
+  height: 100%; background: var(--accent);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); width: 0%;
+}
+
+/* ToC overlay */
+.toc-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease; z-index: 200;
+}
+.toc-overlay.open { opacity: 1; pointer-events: auto; }
+.toc-panel {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: min(360px, 80vw);
+  background: var(--surface); padding: 24px;
+  overflow-y: auto;
+  transform: translateX(100%); transition: transform 0.3s ease;
+  box-shadow: var(--shadow-xl);
+}
+.toc-overlay.open .toc-panel { transform: translateX(0); }
+.toc-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 2px solid var(--accent);
+}
+.toc-title {
+  font-family: var(--font-headers); font-size: 1.2rem;
+  font-weight: 600; color: var(--primary);
+}
+.toc-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+.toc-list a {
+  display: flex; justify-content: space-between;
+  padding: 8px 0; text-decoration: none; color: var(--text);
+  border-bottom: 1px solid var(--border); font-size: 0.9rem;
+  transition: color 0.15s;
+}
+.toc-list a:hover { color: var(--accent-dark); }
+.toc-list a.toc-h3 { padding-left: 16px; font-size: 0.85rem; color: var(--text-muted); }
+.toc-list a span { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: 0.8rem; }
+.toc-list a.active { color: var(--accent-dark); font-weight: 500; }
+
+/* Help overlay */
+.help-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+}
+.help-overlay.open { opacity: 1; pointer-events: auto; }
+.help-panel {
+  background: var(--surface); padding: 32px;
+  border-radius: var(--radius); max-width: 400px; width: 90%;
+  box-shadow: var(--shadow-xl);
+}
+.help-panel h3 { margin: 0 0 16px 0; font-family: var(--font-headers); }
+.help-panel table { width: 100%; border-collapse: collapse; }
+.help-panel td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+.help-panel kbd {
+  background: var(--surface2); padding: 2px 6px;
+  border-radius: 4px; font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+.help-close {
+  margin-top: 16px; padding: 8px 24px;
+  background: var(--accent); color: var(--primary);
+  border: none; border-radius: 8px; cursor: pointer;
+  font-weight: 500;
+}
+
+/* Loading indicator */
+.flipbook-loader {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 16px;
+  background: var(--bg); z-index: 300;
+  transition: opacity 0.3s ease;
+}
+.flipbook-loader.hidden { opacity: 0; pointer-events: none; }
+.loader-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { font-family: var(--font-body); font-size: 0.9rem; color: var(--text-muted); }
+
+/* Responsive: tablet single-page */
+@media (max-width: 1024px) {
+  :root { --page-width: min(90vw, 520px); }
+  .spread { width: var(--page-width); }
+  .spread .page-left,
+  .spread .page-right {
+    width: 100%; border-radius: var(--radius); border-right: none;
+  }
+}
+/* Responsive: mobile */
+@media (max-width: 768px) {
+  :root { --page-width: calc(100vw - 32px); --page-padding: 32px 24px; }
+  .flipbook-nav { bottom: 16px; padding: 6px 12px; gap: 8px; }
+  .nav-btn { width: 32px; height: 32px; }
+  .page-inner h2 { font-size: 1.3rem; }
+  .cover-title { font-size: 1.6rem; }
+}
+"""
+
+FLIPBOOK_JS = """\
+document.addEventListener('DOMContentLoaded', function() {
+  var stream = document.getElementById('content-stream');
+  var flipbook = document.getElementById('flipbook');
+  var blocks = Array.from(stream.querySelectorAll('.block'));
+
+  var isMobile = window.innerWidth <= 1024;
+  var pageHeight = computePageHeight();
+  var contentHeight = pageHeight - 96;
+
+  var pages = [];
+  var coverPage = document.querySelector('.page-cover');
+  var infographicPage = document.querySelector('.page-infographic');
+  pages.push(coverPage);
+  pages.push(infographicPage);
+
+  var currentPage = createPage(pages.length + 1);
+  var usedHeight = 0;
+
+  blocks.forEach(function(block) {
+    var type = block.dataset.type;
+    var level = block.dataset.level;
+
+    if (type === 'heading' && level === '2' && usedHeight > 0) {
+      pages.push(currentPage);
+      currentPage = createPage(pages.length + 1);
+      usedHeight = 0;
+    }
+
+    var blockHeight = measureBlock(block, contentHeight);
+
+    if (blockHeight > contentHeight) {
+      if (usedHeight > 0) {
+        pages.push(currentPage);
+        currentPage = createPage(pages.length + 1);
+      }
+      block.style.maxHeight = contentHeight + 'px';
+      block.style.overflowY = 'auto';
+      currentPage.querySelector('.page-inner').appendChild(block);
+      pages.push(currentPage);
+      currentPage = createPage(pages.length + 1);
+      usedHeight = 0;
+      return;
+    }
+
+    if (usedHeight + blockHeight > contentHeight) {
+      pages.push(currentPage);
+      currentPage = createPage(pages.length + 1);
+      usedHeight = 0;
+    }
+
+    currentPage.querySelector('.page-inner').appendChild(block);
+    usedHeight += blockHeight;
+  });
+
+  if (usedHeight > 0) {
+    pages.push(currentPage);
+  }
+
+  stream.remove();
+
+  var spreads = buildSpreads(pages, isMobile);
+  spreads.forEach(function(spread) {
+    flipbook.appendChild(spread);
+  });
+
+  buildToC(pages);
+  initNavigation(spreads, pages.length);
+  initChartsForSpread(0);
+
+  document.getElementById('loader').classList.add('hidden');
+  flipbook.classList.add('ready');
+});
+
+function computePageHeight() {
+  var root = document.documentElement;
+  var style = getComputedStyle(root);
+  var h = style.getPropertyValue('--page-height');
+  if (h && h.indexOf('px') > -1) return parseInt(h);
+  return Math.min(window.innerHeight * 0.92, 700);
+}
+
+function getPageContentWidth() {
+  var root = document.documentElement;
+  var style = getComputedStyle(root);
+  var w = style.getPropertyValue('--page-width');
+  if (w && w.indexOf('px') > -1) return parseInt(w) - 80;
+  return Math.min(window.innerWidth * 0.48, 520) - 80;
+}
+
+function createPage(pageNum) {
+  var page = document.createElement('div');
+  page.className = 'page';
+  page.dataset.page = pageNum;
+  var inner = document.createElement('div');
+  inner.className = 'page-inner';
+  page.appendChild(inner);
+  var num = document.createElement('div');
+  num.className = 'page-number';
+  num.textContent = pageNum;
+  page.appendChild(num);
+  return page;
+}
+
+function measureBlock(block, maxHeight) {
+  var measurer = document.getElementById('block-measurer');
+  if (!measurer) {
+    measurer = document.createElement('div');
+    measurer.id = 'block-measurer';
+    measurer.style.cssText = 'position:absolute;visibility:hidden;' +
+      'width:' + getPageContentWidth() + 'px;' +
+      'padding:0;font-size:0.95rem;line-height:1.7;';
+    document.body.appendChild(measurer);
+  }
+  measurer.appendChild(block);
+  var height = block.getBoundingClientRect().height;
+  measurer.removeChild(block);
+  return height;
+}
+
+function buildSpreads(pages, isMobile) {
+  var spreads = [];
+  if (isMobile) {
+    pages.forEach(function(page, i) {
+      var spread = document.createElement('div');
+      spread.className = 'spread' + (i === 0 ? ' active' : '');
+      spread.dataset.spread = i;
+      page.classList.add('page-single');
+      spread.appendChild(page);
+      spreads.push(spread);
+    });
+  } else {
+    for (var i = 0; i < pages.length; i += 2) {
+      var spread = document.createElement('div');
+      spread.className = 'spread' + (i === 0 ? ' active' : '');
+      spread.dataset.spread = spreads.length;
+      var left = pages[i];
+      left.classList.add('page-left');
+      spread.appendChild(left);
+      if (i + 1 < pages.length) {
+        var right = pages[i + 1];
+        right.classList.add('page-right');
+        spread.appendChild(right);
+      }
+      spreads.push(spread);
+    }
+  }
+  return spreads;
+}
+
+function initNavigation(spreads, totalPages) {
+  var current = 0;
+  var total = spreads.length;
+  var isAnimating = false;
+
+  function goToSpread(index) {
+    if (index < 0 || index >= total || index === current || isAnimating) return;
+    isAnimating = true;
+    var forward = index > current;
+    var oldSpread = spreads[current];
+    var newSpread = spreads[index];
+    newSpread.classList.add('next');
+    if (forward) {
+      oldSpread.classList.add('turning-forward');
+    } else {
+      newSpread.classList.add('turning-backward');
+    }
+    setTimeout(function() {
+      oldSpread.classList.remove('active', 'turning-forward');
+      newSpread.classList.remove('next', 'turning-backward');
+      newSpread.classList.add('active');
+      current = index;
+      isAnimating = false;
+      updateCounter();
+      updateProgress();
+      initChartsForSpread(current);
+      updateTocActive();
+    }, 800);
+  }
+
+  function updateCounter() {
+    var counter = document.getElementById('page-counter');
+    var isMobile = window.innerWidth <= 1024;
+    if (isMobile) {
+      var pageNum = parseInt(spreads[current].querySelector('.page').dataset.page);
+      counter.textContent = pageNum + ' of ' + totalPages;
+    } else {
+      var pages = spreads[current].querySelectorAll('.page');
+      var first = pages[0].dataset.page;
+      var last = pages[pages.length - 1].dataset.page;
+      counter.textContent = first + '-' + last + ' of ' + totalPages;
+    }
+  }
+
+  function updateProgress() {
+    var bar = document.getElementById('progress-bar');
+    bar.style.width = ((current + 1) / total * 100) + '%';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault(); goToSpread(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); goToSpread(current - 1);
+    } else if (e.key === 'Home') { e.preventDefault(); goToSpread(0); }
+    else if (e.key === 'End') { e.preventDefault(); goToSpread(total - 1); }
+    else if (e.key === 't' || e.key === 'T') { toggleToC(); }
+    else if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }
+    else if (e.key === '?' || e.key === 'h' || e.key === 'H') { toggleHelp(); }
+    else if (e.key === 'Escape') { closeOverlays(); }
+  });
+
+  document.getElementById('flipbook').addEventListener('click', function(e) {
+    if (e.target.closest('.flipbook-nav, .toc-overlay, .help-overlay, a, button')) return;
+    var rect = this.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    if (x > rect.width / 2) { goToSpread(current + 1); }
+    else { goToSpread(current - 1); }
+  });
+
+  var touchStartX = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) goToSpread(current + 1);
+      else goToSpread(current - 1);
+    }
+  }, { passive: true });
+
+  document.getElementById('btn-prev').addEventListener('click', function() { goToSpread(current - 1); });
+  document.getElementById('btn-next').addEventListener('click', function() { goToSpread(current + 1); });
+  document.getElementById('btn-toc').addEventListener('click', toggleToC);
+  document.getElementById('btn-toc-close').addEventListener('click', toggleToC);
+
+  document.getElementById('toc-list').addEventListener('click', function(e) {
+    var link = e.target.closest('a');
+    if (link) {
+      e.preventDefault();
+      var spreadIdx = parseInt(link.dataset.spread);
+      goToSpread(spreadIdx);
+      toggleToC();
+    }
+  });
+
+  updateCounter();
+  updateProgress();
+  window._flipbookGoTo = goToSpread;
+  window._flipbookCurrent = function() { return current; };
+}
+
+var chartInitialized = {};
+function initChartsForSpread(spreadIndex) {
+  var spread = document.querySelectorAll('.spread')[spreadIndex];
+  if (!spread) return;
+  var canvases = spread.querySelectorAll('canvas[id^="enr-"]');
+  canvases.forEach(function(canvas) {
+    var id = canvas.id;
+    if (chartInitialized[id]) return;
+    if (window._chartInits && window._chartInits[id]) {
+      window._chartInits[id]();
+      chartInitialized[id] = true;
+    }
+  });
+}
+
+function buildToC(pages) {
+  var tocList = document.getElementById('toc-list');
+  var isMobile = window.innerWidth <= 1024;
+  pages.forEach(function(page, pageIndex) {
+    var headings = page.querySelectorAll('h2, h3');
+    headings.forEach(function(h) {
+      var link = document.createElement('a');
+      link.href = '#';
+      link.className = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
+      link.dataset.spread = isMobile ? pageIndex : Math.floor(pageIndex / 2);
+      link.dataset.page = pageIndex + 1;
+      link.innerHTML = h.textContent + ' <span>p.' + (pageIndex + 1) + '</span>';
+      tocList.appendChild(link);
+    });
+  });
+}
+
+function updateTocActive() {
+  var current = window._flipbookCurrent();
+  document.querySelectorAll('.toc-list a').forEach(function(a) {
+    a.classList.toggle('active', parseInt(a.dataset.spread) === current);
+  });
+}
+
+function toggleToC() { document.getElementById('toc-overlay').classList.toggle('open'); }
+function toggleHelp() { document.getElementById('help-overlay').classList.toggle('open'); }
+function closeOverlays() {
+  document.getElementById('toc-overlay').classList.remove('open');
+  document.getElementById('help-overlay').classList.remove('open');
+}
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(function() {});
+  } else { document.exitFullscreen(); }
+}
+"""
+
+
+def _wrap_content_blocks(main_html):
+    """Wrap top-level HTML elements in .block divs with data-type attributes.
+
+    Parses the scroll-mode <main> content and wraps each top-level element
+    for the flipbook pagination engine.
+    """
+    # Split on top-level HTML elements while preserving them
+    # We match opening tags of known block-level elements
+    block_pattern = re.compile(
+        r'(<(?:h[1-6]|p|blockquote|ul|ol|pre|table|div)\b[^>]*>)',
+        re.IGNORECASE
+    )
+
+    # Use a simpler approach: split the HTML into top-level elements
+    # by finding balanced tags at the top level
+    result = []
+    pos = 0
+    html = main_html.strip()
+
+    while pos < len(html):
+        # Skip whitespace
+        if html[pos] in ' \t\n\r':
+            pos += 1
+            continue
+
+        # Must start with a tag
+        if html[pos] != '<':
+            # Text node — wrap as paragraph
+            end = html.find('<', pos)
+            if end == -1:
+                end = len(html)
+            text = html[pos:end].strip()
+            if text:
+                result.append(f'<div class="block" data-type="paragraph"><p>{text}</p></div>')
+            pos = end
+            continue
+
+        # Comment — pass through
+        if html[pos:pos+4] == '<!--':
+            end = html.find('-->', pos)
+            if end == -1:
+                break
+            result.append(html[pos:end+3])
+            pos = end + 3
+            continue
+
+        # Parse the tag name
+        tag_match = re.match(r'<(\w+)', html[pos:])
+        if not tag_match:
+            pos += 1
+            continue
+
+        tag_name = tag_match.group(1).lower()
+
+        # Self-closing tags (hr, br, img)
+        if tag_name in ('hr', 'br', 'img'):
+            # Find end of tag
+            end = html.find('>', pos)
+            if end == -1:
+                break
+            element = html[pos:end+1]
+            result.append(f'<div class="block" data-type="separator">{element}</div>')
+            pos = end + 1
+            continue
+
+        # Find the matching closing tag (handle nesting)
+        close_tag = f'</{tag_name}>'
+        depth = 0
+        search_pos = pos
+        end_pos = -1
+
+        while search_pos < len(html):
+            # Find next instance of this tag (opening or closing)
+            open_next = html.find(f'<{tag_name}', search_pos + 1)
+            close_next = html.find(close_tag, search_pos + 1)
+
+            if close_next == -1:
+                # No closing tag found — take rest of string
+                end_pos = len(html)
+                break
+
+            if open_next != -1 and open_next < close_next:
+                # Nested opening tag
+                depth += 1
+                search_pos = open_next + len(tag_name) + 1
+            else:
+                if depth == 0:
+                    end_pos = close_next + len(close_tag)
+                    break
+                depth -= 1
+                search_pos = close_next + len(close_tag)
+
+        if end_pos == -1:
+            end_pos = len(html)
+
+        element = html[pos:end_pos]
+
+        # Determine block type and attributes
+        if tag_name in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'):
+            level = tag_name[1]
+            # Extract id for section reference
+            id_match = re.search(r'id="([^"]*)"', element)
+            section_attr = f' data-section="{id_match.group(1)}"' if id_match else ''
+            result.append(
+                f'<div class="block" data-type="heading" data-level="{level}"{section_attr}>'
+                f'{element}</div>'
+            )
+        elif tag_name == 'p':
+            result.append(f'<div class="block" data-type="paragraph">{element}</div>')
+        elif tag_name == 'blockquote':
+            result.append(f'<div class="block" data-type="blockquote">{element}</div>')
+        elif tag_name in ('ul', 'ol'):
+            result.append(f'<div class="block" data-type="list">{element}</div>')
+        elif tag_name == 'pre':
+            result.append(f'<div class="block" data-type="code">{element}</div>')
+        elif tag_name == 'table':
+            result.append(
+                f'<div class="block" data-type="table">'
+                f'<div class="table-wrapper">{element}</div></div>'
+            )
+        elif tag_name == 'div':
+            # Check for enrichment containers
+            if 'chart-container' in element[:200]:
+                # Extract canvas id for enrichment reference
+                canvas_match = re.search(r'<canvas[^>]*id="(enr-[^"]*)"', element)
+                eid = canvas_match.group(1) if canvas_match else ''
+                result.append(
+                    f'<div class="block" data-type="enrichment" '
+                    f'data-enrichment-id="{eid}" data-track="data">{element}</div>'
+                )
+            elif 'concept-diagram' in element[:200]:
+                svg_match = re.search(r'id="(enr-[^"]*)"', element)
+                eid = svg_match.group(1) if svg_match else ''
+                result.append(
+                    f'<div class="block" data-type="enrichment" '
+                    f'data-enrichment-id="{eid}" data-track="concept">{element}</div>'
+                )
+            elif 'summary-card' in element[:200]:
+                result.append(
+                    f'<div class="block" data-type="enrichment" '
+                    f'data-track="html">{element}</div>'
+                )
+            elif 'enrichment' in element[:200]:
+                result.append(
+                    f'<div class="block" data-type="enrichment">{element}</div>'
+                )
+            elif 'table-wrapper' in element[:200]:
+                result.append(f'<div class="block" data-type="table">{element}</div>')
+            else:
+                # Generic div — pass through as paragraph-like block
+                result.append(f'<div class="block" data-type="paragraph">{element}</div>')
+        else:
+            # Unknown element — wrap generically
+            result.append(f'<div class="block" data-type="paragraph">{element}</div>')
+
+        pos = end_pos
+
+    return '\n'.join(result)
+
+
+def _extract_cover_content(html):
+    """Extract cover content from flipbook markers or first H2 section.
+
+    Returns (cover_html, remaining_html).
+    """
+    # Try marker-based extraction first
+    cover_start = html.find('<!-- FLIPBOOK_COVER_CONTENT -->')
+    cover_end = html.find('<!-- /FLIPBOOK_COVER_CONTENT -->')
+    if cover_start != -1 and cover_end != -1:
+        marker_start_len = len('<!-- FLIPBOOK_COVER_CONTENT -->')
+        cover_html = html[cover_start + marker_start_len:cover_end].strip()
+        remaining = html[:cover_start] + html[cover_end + len('<!-- /FLIPBOOK_COVER_CONTENT -->'):]
+        return cover_html, remaining
+
+    # Fallback: extract first H2 section (heading + content until next H2)
+    h2_match = re.search(r'<h2\b[^>]*>', html)
+    if not h2_match:
+        return '', html
+
+    first_h2_start = h2_match.start()
+    # Find the next H2 after the first one
+    next_h2 = re.search(r'<h2\b[^>]*>', html[first_h2_start + 1:])
+    if next_h2:
+        section_end = first_h2_start + 1 + next_h2.start()
+    else:
+        section_end = len(html)
+
+    cover_html = html[first_h2_start:section_end].strip()
+    remaining = html[:first_h2_start] + html[section_end:]
+    return cover_html, remaining
+
+
+def _convert_charts_to_lazy_init(script_block):
+    """Convert immediate Chart.js execution to window._chartInits lazy registry.
+
+    Finds patterns like:
+      new Chart(document.getElementById('enr-001'), { ... });
+    and wraps them in:
+      window._chartInits['enr-001'] = function() { new Chart(...); };
+    """
+    # Check if already using lazy init
+    if '_chartInits' in script_block:
+        return script_block
+
+    # Pattern: new Chart(document.getElementById('enr-XXX'), {config});
+    # This is complex because configs can contain nested braces
+    result = ['window._chartInits = window._chartInits || {};']
+
+    # Find each new Chart(...) call
+    pattern = re.compile(
+        r"new\s+Chart\s*\(\s*document\.getElementById\s*\(\s*['\"]"
+        r"(enr-[^'\"]+)['\"]"
+        r"\s*\)\s*,",
+    )
+
+    pos = 0
+    found_any = False
+    while pos < len(script_block):
+        m = pattern.search(script_block, pos)
+        if not m:
+            # Append remaining non-Chart code
+            remaining = script_block[pos:].strip()
+            if remaining:
+                result.append(remaining)
+            break
+
+        # Append any code before this Chart call
+        before = script_block[pos:m.start()].strip()
+        if before:
+            result.append(before)
+
+        eid = m.group(1)
+        # Find matching closing paren+semicolon by counting braces
+        brace_start = m.end()  # Position right after the comma following getElementById
+        depth = 0
+        i = brace_start
+        while i < len(script_block):
+            c = script_block[i]
+            if c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+            elif c == ')' and depth == 0:
+                # End of new Chart(...) call
+                # Include any trailing semicolon
+                end = i + 1
+                if end < len(script_block) and script_block[end] == ';':
+                    end += 1
+                chart_call = script_block[m.start():end]
+                result.append(
+                    f"window._chartInits['{eid}'] = function() {{ {chart_call} }};"
+                )
+                pos = end
+                found_any = True
+                break
+            i += 1
+        else:
+            # Couldn't find end — append remainder as-is
+            result.append(script_block[pos:])
+            break
+
+    if not found_any:
+        # No Chart calls found — return original with the registry init
+        return 'window._chartInits = window._chartInits || {};\n' + script_block
+
+    return '\n'.join(result)
+
+
+def _assemble_flipbook(scroll_html, language='en'):
+    """Transform scroll-mode HTML into flipbook HTML.
+
+    Extracts the cover content, wraps body content into .block divs,
+    converts Chart.js to lazy init, and assembles the complete flipbook
+    with static CSS and JS.
+    """
+    # Extract title
+    title_match = re.search(r'<title>(.*?)</title>', scroll_html, re.DOTALL)
+    title = title_match.group(1) if title_match else 'Report'
+
+    # Extract the existing <style> block (design tokens + scroll CSS)
+    style_match = re.search(r'<style>(.*?)</style>', scroll_html, re.DOTALL)
+    scroll_css = style_match.group(1) if style_match else ''
+
+    # Extract only the :root {} block from scroll CSS (design tokens)
+    root_match = re.search(r':root\s*\{[^}]*\}', scroll_css)
+    design_tokens_css = root_match.group(0) if root_match else ''
+
+    # Extract Google Fonts @import
+    fonts_match = re.search(r"@import\s+url\([^)]+\);", scroll_css)
+    fonts_import = fonts_match.group(0) if fonts_match else ''
+
+    # Extract <main> content
+    main_match = re.search(
+        r'<main[^>]*>(.*?)</main>',
+        scroll_html, re.DOTALL
+    )
+    if not main_match:
+        # Fallback: try <article>
+        main_match = re.search(r'<article[^>]*>(.*?)</article>', scroll_html, re.DOTALL)
+    main_content = main_match.group(1) if main_match else ''
+
+    # Extract cover content
+    cover_html, remaining_content = _extract_cover_content(main_content)
+
+    # Remove any footer and article wrapper from remaining content
+    remaining_content = re.sub(
+        r'<footer\b[^>]*>.*?</footer>', '', remaining_content, flags=re.DOTALL
+    )
+    remaining_content = re.sub(
+        r'</?article[^>]*>', '', remaining_content
+    ).strip()
+
+    # Wrap remaining content into .block divs
+    block_html = _wrap_content_blocks(remaining_content)
+
+    # Extract <script> block with Chart.js configs
+    # Find the script block that contains Chart.js initialization (not the CDN script tag)
+    script_match = re.search(
+        r'<script>\s*(.*?)\s*</script>\s*</body>',
+        scroll_html, re.DOTALL
+    )
+    chart_script = script_match.group(1) if script_match else ''
+
+    # Convert Chart.js to lazy init
+    lazy_chart_script = _convert_charts_to_lazy_init(chart_script)
+
+    # Extract Chart.js CDN URL
+    chartjs_cdn = 'https://cdn.jsdelivr.net/npm/chart.js@4'
+    cdn_match = re.search(r'src="(https://cdn\.jsdelivr\.net/npm/chart\.js[^"]*)"', scroll_html)
+    if cdn_match:
+        chartjs_cdn = cdn_match.group(1)
+
+    # Extract date info from cover or meta
+    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', scroll_html)
+    date_str = date_match.group(1) if date_match else datetime.now().strftime('%Y-%m-%d')
+
+    toc_label = 'Inhalt' if language == 'de' else 'Contents'
+    loading_text = 'Flipbook wird vorbereitet...' if language == 'de' else 'Preparing flipbook...'
+
+    lang_code = language or 'en'
+
+    return f"""<!DOCTYPE html>
+<html lang="{lang_code}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title}</title>
+  <style>
+    {fonts_import}
+    {design_tokens_css}
+    {FLIPBOOK_CSS}
+  </style>
+  <script src="{chartjs_cdn}"></script>
+</head>
+<body>
+  <div class="flipbook-loader" id="loader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">{loading_text}</div>
+  </div>
+
+  <div class="flipbook" id="flipbook" style="opacity:0">
+    <div class="page page-cover" data-page="1">
+      <div class="page-inner">
+        <h1 class="cover-title">{escape_html(title)}</h1>
+        <div class="cover-summary">
+          {cover_html}
+        </div>
+        <div class="cover-meta">{date_str}</div>
+      </div>
+      <div class="page-number">1</div>
+    </div>
+
+    <div class="page page-infographic" data-page="2">
+      <!-- INFOGRAPHIC_INJECTION_POINT -->
+      <div class="page-number">2</div>
+    </div>
+
+    <div class="content-stream" id="content-stream">
+      {block_html}
+    </div>
+  </div>
+
+  <div class="flipbook-nav" id="nav">
+    <button class="nav-btn" id="btn-prev" aria-label="Previous page">&larr;</button>
+    <span class="nav-counter" id="page-counter">1-2</span>
+    <button class="nav-btn" id="btn-next" aria-label="Next page">&rarr;</button>
+    <button class="nav-btn nav-toc" id="btn-toc" aria-label="{toc_label}">&#9776;</button>
+  </div>
+
+  <div class="flipbook-progress">
+    <div class="flipbook-progress-bar" id="progress-bar"></div>
+  </div>
+
+  <div class="toc-overlay" id="toc-overlay">
+    <div class="toc-panel">
+      <div class="toc-header">
+        <span class="toc-title">{toc_label}</span>
+        <button class="toc-close" id="btn-toc-close">&times;</button>
+      </div>
+      <nav class="toc-list" id="toc-list"></nav>
+    </div>
+  </div>
+
+  <div class="help-overlay" id="help-overlay">
+    <div class="help-panel">
+      <h3>Keyboard Shortcuts</h3>
+      <table>
+        <tr><td><kbd>&rarr;</kbd> <kbd>Space</kbd></td><td>Next spread</td></tr>
+        <tr><td><kbd>&larr;</kbd></td><td>Previous spread</td></tr>
+        <tr><td><kbd>Home</kbd></td><td>First page</td></tr>
+        <tr><td><kbd>End</kbd></td><td>Last page</td></tr>
+        <tr><td><kbd>T</kbd></td><td>Toggle table of contents</td></tr>
+        <tr><td><kbd>F</kbd></td><td>Toggle fullscreen</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Toggle this help</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close overlay</td></tr>
+      </table>
+      <button class="help-close" id="btn-help-close">Got it</button>
+    </div>
+  </div>
+
+  <script>
+    {lazy_chart_script}
+  </script>
+  <script>
+    {FLIPBOOK_JS}
+  </script>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def post_process_html(html_path, source_path, infographic_image=None,
+def post_process_html(html_path, source_path, layout='scroll',
+                      language='en', infographic_image=None,
                       infographic_html_path=None, infographic_data_path=None):
     """Post-process an LLM-written HTML file: inject infographic + validate content.
 
-    Replaces <!-- INFOGRAPHIC_INJECTION_POINT --> with the infographic header
-    using the three-tier priority cascade, then validates content preservation
-    against the source markdown.
+    When layout='flipbook', first transforms scroll-mode HTML into flipbook layout
+    (block wrapping, pagination engine, cover extraction), then injects infographic.
+
+    When layout='scroll', injects infographic at <!-- INFOGRAPHIC_INJECTION_POINT -->
+    using the three-tier priority cascade.
+
+    Always validates content preservation against the source markdown.
     """
     with open(html_path, encoding='utf-8') as f:
         html = f.read()
@@ -1996,6 +3065,10 @@ def post_process_html(html_path, source_path, infographic_image=None,
         md_text = f.read()
 
     output_dir = os.path.dirname(html_path) or '.'
+
+    # Flipbook assembly: transform scroll HTML → flipbook HTML
+    if layout == 'flipbook':
+        html = _assemble_flipbook(html, language=language)
 
     # Three-tier infographic injection: HTML fragment > PNG > JSON
     ig_html = _load_infographic_html_fragment(infographic_html_path, output_dir)
@@ -2011,8 +3084,15 @@ def post_process_html(html_path, source_path, infographic_image=None,
         if '<!-- INFOGRAPHIC_INJECTION_POINT -->' in html:
             html = html.replace('<!-- INFOGRAPHIC_INJECTION_POINT -->', ig_html)
         else:
-            # Fallback: inject after <main> tag
-            html = html.replace('<main>', '<main>\n' + ig_html, 1)
+            # Fallback: inject after <main> tag or into flipbook container
+            if layout == 'flipbook':
+                html = html.replace(
+                    '<div class="page page-infographic"',
+                    f'<div class="page page-infographic">\n{ig_html}\n<div style="display:none"',
+                    1
+                )
+            else:
+                html = html.replace('<main>', '<main>\n' + ig_html, 1)
 
     # Write back
     with open(html_path, 'w', encoding='utf-8') as f:
@@ -2056,6 +3136,8 @@ def main():
             out, validation = post_process_html(
                 html_path=html_path,
                 source_path=args.source,
+                layout=args.layout,
+                language=args.language,
                 infographic_image=args.infographic_image or None,
                 infographic_html_path=args.infographic_html or None,
                 infographic_data_path=args.infographic_data or None,

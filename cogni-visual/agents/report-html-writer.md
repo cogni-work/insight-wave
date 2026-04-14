@@ -59,9 +59,7 @@ Read these files in parallel:
 1. Source markdown report (`SOURCE_PATH`) — this is the content you must preserve verbatim
 2. Enrichment plan (`ENRICHMENT_PLAN_PATH`) — contains enrichment specs, injection positions, and Chart.js configs
 3. Design variables (`DESIGN_VARIABLES_PATH`) — theme colors, fonts, spacing tokens
-4. HTML structure reference — **depends on LAYOUT**:
-   - `scroll` (default): `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/references/06-html-structure.md`
-   - `flipbook`: `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/references/07-flipbook-structure.md`
+4. HTML structure reference: `${CLAUDE_PLUGIN_ROOT}/skills/enrich-report/references/06-html-structure.md` — used for both scroll and flipbook layouts (the agent always writes scroll-format HTML; the post-processor handles flipbook transformation)
 5. SVG patterns library (`${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md`) — recipes for concept-track SVGs
 
 ### Step 2: Pre-Write Content Enumeration
@@ -81,15 +79,12 @@ Record these counts — you will verify them after writing.
 
 Write the entire self-contained HTML file to `OUTPUT_PATH` using the Write tool. This is the quality-critical step.
 
-**If `LAYOUT=flipbook`:** follow `07-flipbook-structure.md` for the HTML structure. The key differences from scroll mode:
+**If `LAYOUT=flipbook`:** write the HTML exactly as for scroll mode (sidebar + continuous content), with two additions:
 
-1. **No sidebar navigation** — replaced by a ToC overlay panel (built by JS after pagination)
-2. **Page 1 = executive summary** — extract the first H2 section (heading + all content until the next H2) and place it in the `.page-cover` div
-3. **Page 2 = infographic** — `<!-- INFOGRAPHIC_INJECTION_POINT -->` inside `.page-infographic`
-4. **Remaining content in `.content-stream`** — every element wrapped in `<div class="block" data-type="...">`. All headings, paragraphs, tables, blockquotes, enrichments become flat `.block` divs. JS handles pagination.
-5. **Chart.js lazy init** — write chart configs into `window._chartInits` registry (functions that call `new Chart(...)`), NOT immediate execution. The flipbook JS calls them when their page becomes visible.
-6. **Embed flipbook CSS + JS** — all CSS from 07-flipbook-structure.md in `<style>`, all JS (pagination engine, navigation, ToC builder, chart lazy init) in `<script>`. Follow the reference verbatim.
-7. **Loading indicator** — include the `.flipbook-loader` div that shows during pagination
+1. **Cover markers** — wrap the first H2 section (heading + all content until the next H2) in `<!-- FLIPBOOK_COVER_CONTENT -->` / `<!-- /FLIPBOOK_COVER_CONTENT -->` comment markers. This tells the post-processor which content becomes the cover page.
+2. **Chart.js lazy init** — write chart configs into `window._chartInits` registry (functions that call `new Chart(...)`), NOT immediate execution: `window._chartInits['enr-001'] = function() { new Chart(...); };`
+
+The post-processor transforms the scroll HTML into a flipbook layout automatically — it handles block wrapping, pagination engine JS, flipbook CSS, cover extraction, navigation, ToC overlay, and all interactive elements. You do NOT need to write flipbook-specific CSS, JS, or `.block` divs.
 
 Then continue to Step 4 (post-processor) with `--layout flipbook`.
 
@@ -144,16 +139,18 @@ python3 {SCRIPT_PATH} --post-process \
   --html "{OUTPUT_PATH}" \
   --source "{SOURCE_PATH}" \
   --layout "{LAYOUT}" \
+  --language "{LANGUAGE}" \
   --infographic-image "{INFOGRAPHIC_IMAGE}" \
   --infographic-html "{INFOGRAPHIC_HTML}" \
   --infographic-data "{INFOGRAPHIC_DATA}"
 ```
 
 Omit infographic flags for paths that were not provided. Pass `--layout flipbook` when in flipbook mode. The post-processor:
-1. Replaces `<!-- INFOGRAPHIC_INJECTION_POINT -->` with the infographic (tier 1: HTML fragment > tier 2: PNG base64 > tier 3: JSON fallback)
-2. Validates content preservation (word count >= 80%, H2 count match, citation count)
-3. Writes the result back to the same file
-4. Returns JSON with `validation` field
+1. **Flipbook assembly** (when `--layout flipbook`): transforms scroll HTML into flipbook layout — extracts cover content, wraps body in `.block` divs, injects flipbook CSS/JS (pagination engine, navigation, ToC)
+2. Replaces `<!-- INFOGRAPHIC_INJECTION_POINT -->` with the infographic (tier 1: HTML fragment > tier 2: PNG base64 > tier 3: JSON fallback)
+3. Validates content preservation (word count >= 80%, H2 count match, citation count)
+4. Writes the result back to the same file
+5. Returns JSON with `validation` field
 
 If `validation.pass` is `false`, identify which content was lost, fix the HTML, and re-run validation.
 

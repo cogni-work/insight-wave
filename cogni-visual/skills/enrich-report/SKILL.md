@@ -56,6 +56,7 @@ Two-track visualization pipeline (both handled by the `report-html-writer` agent
 2. **Concept track** — LLM-crafted inline SVG written directly in the HTML (no separate agent dispatch, no Excalidraw dependency) for T→I→P→S flows, relationship maps, strategic concept sketches. Themed with design-variable colors. Follow `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` recipes for diagram-type-specific element structure and coordinate formulas.
 
 The Python post-processor (`scripts/generate-enriched-report.py --post-process`) handles:
+- **Flipbook assembly** (when `--layout flipbook`) — transforms scroll HTML into flipbook layout: extracts cover content from markers, wraps body elements in `.block` divs for pagination, injects flipbook CSS and JS (pagination engine, navigation, ToC), assembles the complete two-page spread structure. The agent always writes scroll-format HTML; the script handles the flipbook transformation deterministically.
 - Injecting the infographic header (PNG base64 with lightbox, HTML fragment, or JSON fallback)
 - Validating content preservation (word count >= 80%, heading count, citation count)
 - Validates the enrichment plan (enforces density caps, type restrictions, per-section caps)
@@ -449,7 +450,7 @@ When `interactive=false`: auto-approve all, log plan.
 
 > Dispatch the `report-html-writer` agent to produce the complete HTML file with Chart.js charts, inline SVGs, and sidebar navigation, then inject the infographic and validate content preservation.
 
-HTML writing is the quality-critical step in the pipeline — it requires producing ~1600 lines of themed, responsive, content-preserving HTML with rich Chart.js configs and inline SVG diagrams. This work is delegated to the dedicated `report-html-writer` opus agent, which receives a clean context with only the inputs it needs (source markdown, enrichment plan, design variables, and reference files). The agent also runs the Python post-processor for infographic injection and content validation.
+HTML writing is the quality-critical step in the pipeline — it requires producing themed, responsive, content-preserving HTML with rich Chart.js configs and inline SVG diagrams. This work is delegated to the dedicated `report-html-writer` opus agent, which receives a clean context with only the inputs it needs (source markdown, enrichment plan, design variables, and reference files). The agent writes scroll-mode HTML for both layouts. For flipbook mode, the agent adds cover markers and lazy chart init, then the Python post-processor transforms the scroll HTML into the flipbook layout (block wrapping, pagination engine, cover extraction, flipbook CSS/JS). This two-phase assembly keeps the agent's output focused on creative work (chart design, SVG crafting, content conversion) while deterministic flipbook infrastructure is handled by the script.
 
 **Dispatch the `report-html-writer` agent:**
 
@@ -579,10 +580,10 @@ After all requested formats are generated:
 | `references/04-chart-patterns.md` | — (script) | Chart.js config templates (used internally by Python script, not by LLM) |
 | `references/08-infographic-distillation.md` | Phase 2a | Infographic distillation principles, hero number selection, 60-second read test |
 | `${CLAUDE_PLUGIN_ROOT}/libraries/svg-patterns.md` | Phase 4 | SVG element recipes for inline concept diagrams (shared library — also used by concept-diagram-svg agent) |
-| `references/06-html-structure.md` | Phase 4 | HTML layout for `scroll` mode — sidebar + continuous scroll, CSS architecture, responsive breakpoints |
-| `references/07-flipbook-structure.md` | Phase 4 | HTML layout for `flipbook` mode — two-page spread, 3D page-curl, JS pagination engine, navigation |
+| `references/06-html-structure.md` | Phase 4 | HTML layout reference — sidebar + continuous scroll, CSS architecture, responsive breakpoints. Used by the agent for both scroll and flipbook modes (agent always writes scroll HTML). |
+| `references/07-flipbook-structure.md` | — (script) | Flipbook architecture documentation. CSS and JS are embedded in the Python post-processor as constants; the agent does not read this file. |
 | `references/07-citation-normalization.md` | Phase 6 | Citation format detection and normalization for DOCX export |
 | `schemas/design-variables.schema.json` | Phase 0 | JSON schema for design-variables validation |
 | `schemas/enrichment-plan.schema.json` | Phase 2b | JSON schema for enrichment plan validation |
 | `schemas/infographic-data.schema.json` | Phase 2a | JSON schema for infographic data validation |
-| `scripts/generate-enriched-report.py` | Phase 4 | Python post-processor (infographic injection, content validation) |
+| `scripts/generate-enriched-report.py` | Phase 4 | Python post-processor (flipbook assembly when `--layout flipbook`, infographic injection, content validation) |

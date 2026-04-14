@@ -1143,18 +1143,17 @@ The same content preservation rules from 06-html-structure.md apply:
 
 ## Agent Responsibilities (report-html-writer)
 
-When `LAYOUT=flipbook`, the agent:
+When `LAYOUT=flipbook`, the agent writes **scroll-mode HTML** (sidebar + continuous content) with two additions:
 
-1. Reads this file (07-flipbook-structure.md) for HTML architecture
-2. Extracts the executive summary (first H2 section content) for page 1
-3. Writes the `<!-- INFOGRAPHIC_INJECTION_POINT -->` on page 2
-4. Converts all remaining content to `.block` elements in `.content-stream`
-5. Writes Chart.js configs into `window._chartInits` registry (NOT immediate execution)
-6. Embeds the complete pagination engine + navigation JS inline
-7. Embeds all CSS inline (design tokens + flipbook layout + responsive)
-8. Runs the Python post-processor with `--layout flipbook` for infographic injection
+1. Wraps the first H2 section in `<!-- FLIPBOOK_COVER_CONTENT -->` / `<!-- /FLIPBOOK_COVER_CONTENT -->` comment markers
+2. Writes Chart.js configs into `window._chartInits` lazy-init registry (NOT immediate execution)
 
-The Python post-processor handles:
-- Infographic injection into page 2 (three-tier cascade, same as scroll mode)
-- Content validation (word count, heading count, citation count)
+The agent does NOT write flipbook CSS, JS, `.block` wrapping, or pagination engine — that deterministic work is handled by the Python post-processor.
+
+The Python post-processor (`--layout flipbook`) handles:
+- **Flipbook assembly** — extracts cover content, wraps body elements in `.block` divs, injects flipbook CSS (design tokens + layout + 3D animation + responsive), injects pagination engine JS (measurement + spread building + navigation + ToC + chart lazy init), and assembles the complete flipbook HTML structure
+- **Infographic injection** into page 2 (three-tier cascade, same as scroll mode)
+- **Content validation** (word count, heading count, citation count)
+
+This division eliminates output token pressure on the agent (~36% reduction) and ensures the JavaScript pagination engine is reproduced exactly (zero drift risk).
 - CSS variable resolution in chart configs (var(--color) → hex)
