@@ -456,11 +456,9 @@ Verify output: contexts count, sources count, total words. If too few sources (<
 
 ### Phase 4: Report Writing
 
-The writer path branches by report type. **Deep mode uses section-sharded dispatch (Phase 4a/4b/4c)** to escape the single-response output ceiling that pins monolithic deep drafts at ~4–5K words regardless of their declared budget. **Every other mode (basic, detailed, outline, resource) uses the historical single-pass dispatch** — they work today and do not need sharding.
+All report types dispatch a single writer agent in full mode. The writer produces both the outline (`.metadata/writer-outline-v{DRAFT_VERSION}.json`) and the complete draft in one response. Deep mode does **not** shard per section — empirical comparison on the KI-Adoption corpus showed section-sharded dispatch produces fragmented voice, repeated framings, mini-conclusions per section, and hero-stat duplication by construction, while a single-voice expansion chain (writer → revisor → revisor) compounds past the single-call output ceiling via Phase 4.5 / Phase 5 whole-draft re-dispatch and reaches the 8K deep floor with readable single-voice coherence.
 
-#### Phase 4 (non-deep modes — basic, detailed, outline, resource)
-
-Spawn writer agent in full mode:
+Spawn writer agent:
 ```
 Task(writer,
   PROJECT_PATH=<project_path>,
@@ -472,80 +470,15 @@ Task(writer,
   OUTPUT_LANGUAGE=<output_language>)
 ```
 
-Note: no `WRITER_MODE` parameter — the writer defaults to `full` mode and produces both the outline and the complete draft in one response.
+Note: no `WRITER_MODE` parameter — the writer defaults to `full` mode for every report type including deep.
 
 Verify: writer's outline plan written to `.metadata/writer-outline-v1.json` (see `agents/writer.md` Phase 1). **The authoritative file-existence check for the draft itself happens in Phase 4.5 Step 0 below** — do not treat the writer's return JSON as proof of persistence, and do not assume `output/draft-v1.md` exists until Step 0 has confirmed it.
 
-#### Phase 4a (deep mode — outline commit)
-
-Spawn writer agent in outline-only mode. This call commits the section plan and budgets but writes no prose.
-
-```
-Task(writer,
-  PROJECT_PATH=<project_path>,
-  DRAFT_VERSION=1,
-  REPORT_TYPE=deep,
-  WRITER_MODE=outline,
-  RESEARCHER_ROLE=<role>,
-  TONE=<tone>,
-  CITATION_FORMAT=<citation_format>,
-  OUTPUT_LANGUAGE=<output_language>)
-```
-
-Verify `.metadata/writer-outline-v1.json` exists, has `"sections"` array with at least 3 entries, every section has a zero-padded two-digit `"index"`, and `sum(budgets) >= 8400` (5% headroom over the 8,000 deep floor). If any check fails, halt Phase 4 with a user-visible error pointing to the outline file — do not fall through to Phase 4b with a broken plan.
-
-#### Phase 4b (deep mode — per-section context slicing and section fan-out)
-
-1. **Slice aggregated context per section.** Run:
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/merge-context.py" \
-     --project-path "${PROJECT_PATH}" --slice-sections --draft-version 1 --json
-   ```
-   This reads `.metadata/writer-outline-v1.json` + `.metadata/aggregated-context.json` and emits `.metadata/section-contexts/section-{NN}.json` — one compact slice per outline entry, containing only the contexts whose `sub_question_ref` is in the section's `covers_sub_questions` plus the sources those contexts cite. The slice is small by design; each section writer reads one file instead of the full 45K-word aggregated context.
-
-2. **Initialize the rolling section summary.** Create `.metadata/section-summary.txt` as an empty file. This file accumulates a one-paragraph running summary of sections already written and is passed to each subsequent section writer via `PRIOR_SECTIONS_SUMMARY` for coherence.
-
-3. **Dispatch section writers sequentially.** For each section entry in `.metadata/writer-outline-v1.json` (in outline order), dispatch one writer call:
-   ```
-   Task(writer,
-     PROJECT_PATH=<project_path>,
-     DRAFT_VERSION=1,
-     REPORT_TYPE=deep,
-     WRITER_MODE=section,
-     SECTION_INDEX=<section.index>,
-     SECTION_HEADING=<section.heading>,
-     SECTION_BUDGET=<section.budget>,
-     CONTEXT_SLICE_PATH=.metadata/section-contexts/section-<section.index>.json,
-     PRIOR_SECTIONS_SUMMARY=<contents of .metadata/section-summary.txt, or empty string for section 00>,
-     RESEARCHER_ROLE=<role>,
-     TONE=<tone>,
-     CITATION_FORMAT=<citation_format>,
-     OUTPUT_LANGUAGE=<output_language>)
-   ```
-   After each section dispatch returns, verify `.metadata/draft-sections/section-{index}.md` exists and is non-empty. If missing or empty, re-dispatch that section **once** with `EXPANSION_NOTES="Your previous run did not persist the section file. Call the Write tool with the full section markdown as content, then Read it back to verify. Return only the compact status JSON."` On a second failure, halt Phase 4 with a user-visible error naming the section index.
-
-   After verifying the section file, append a one-sentence summary of that section to `.metadata/section-summary.txt` for the next dispatch. Keep the rolling summary under 500 words total — if it grows past that, trim the oldest entries. This is a cheap coherence tether, not a full recap.
-
-   **Sequential, not parallel.** Deep-mode section dispatch runs one section at a time so the rolling summary stays in order and so each section can reference the evidence already used by prior sections without restating it. The cost overhead vs. parallel dispatch is minor (section-writer calls are ~$0.02 each) and the coherence benefit is real.
-
-4. **Assemble the draft.** After all sections are written, run:
-   ```bash
-   "${CLAUDE_PLUGIN_ROOT}/scripts/assemble-draft.sh" \
-     --project-path "${PROJECT_PATH}" --draft-version 1
-   ```
-   This concatenates `.metadata/draft-sections/section-*.md` in outline order to `output/draft-v1.md`, updates each section entry's `drafted_words` field in `writer-outline-v1.json` with the actual word count, and exits non-zero if any section is below 80% of its declared budget. Parse the JSON output — the `deficits` array names any sections that need Phase 4.5 per-section re-dispatch, and the `total_words` field is the authoritative draft length. No need to re-run `wc -w` separately.
-
-#### Phase 4c (deep mode — draft file verification)
-
-After `assemble-draft.sh` returns, confirm `output/draft-v1.md` exists and is non-empty — same existence check as non-deep Phase 4.5 Step 0. In the rare case the assembly step succeeded but the file was deleted between then and now, treat it as a Phase 4 halt: do not fall through to Phase 4.5 expansion logic, print a user-visible error, stop.
-
 #### Phase 4.5: Word-count gate (authoritative, file-level)
 
-The writer's self-reported `words` in return JSON has historically drifted (observed: agent claimed 12,500, actual file was 3,356). The orchestrator must measure the draft itself, not trust the agent's self-report.
+The writer's self-reported `words` in return JSON has historically drifted (observed: agent claimed 12,500, actual file was 3,356). The orchestrator must measure the draft itself, not trust the agent's self-report. Deep mode goes through the same whole-draft re-dispatch path as every other report type — the writer may need one or more expansion passes to compound past the ~5.6–6.1K single-call output ceiling toward the 8K deep floor, and the Phase 5 word-deficit iteration loop (raised to 3 iterations for deep mode, see below) exists to make that compounding safe.
 
-**Deep mode note:** Phase 4c already confirmed `output/draft-v1.md` exists, and `assemble-draft.sh` already wrote per-section `drafted_words` into the outline plus returned a `deficits` array. In deep mode, Step 0 below collapses to "the file exists" (already confirmed in Phase 4c), Steps 1–2 run against the assembled draft, and the re-dispatch branch in Step 4 uses **per-section re-dispatch** rather than a whole-draft re-dispatch. See "Deep mode per-section expansion" at the end of this section.
-
-**Step 0: File-existence precheck (authoritative — non-deep modes only; deep mode covered by Phase 4c).** Before measuring word count, confirm that the writer actually persisted the draft. In hybrid and full-mode runs the writer can exhaust its output token budget writing prose into its response body instead of calling the `Write` tool, leaving the file missing or zero-byte. The word-count gate below would then silently treat this as a catastrophic shortfall and trigger a full expansion re-dispatch for a run that needs a different fix entirely — the writer needs to be told to actually write the file, not to write more words.
+**Step 0: File-existence precheck (authoritative).** Before measuring word count, confirm that the writer actually persisted the draft. The writer can exhaust its output token budget writing prose into its response body instead of calling the `Write` tool, leaving the file missing or zero-byte. The word-count gate below would then silently treat this as a catastrophic shortfall and trigger a full expansion re-dispatch for a run that needs a different fix entirely — the writer needs to be told to actually write the file, not to write more words.
 
 - **0a. Existence check.** Test `[ -s "${PROJECT_PATH}/output/draft-v${DRAFT_VERSION}.md" ]` (exists and non-zero size). If the file is present, skip straight to the word-count measurement at step 1 below.
 - **0b. Log the failure.** If the file is missing or empty, record `phases.phase_4_writer.write_failure` in `.metadata/execution-log.json`:
@@ -566,7 +499,7 @@ The writer's self-reported `words` in return JSON has historically drifted (obse
   ```
 - **0d. Re-check and decide.** After the retry, re-run the existence check. If the file is still missing or empty, **halt Phase 4**: print a user-visible error block containing the topic, the project path, and a pointer to `.metadata/execution-log.json phases.phase_4_writer.write_failure`, then stop. Do not fall through to the `wc -w` measurement or Phase 5 — a phantom draft would corrupt every downstream phase (reviewer, revisor, verify-report). If the retry succeeds, set `phases.phase_4_writer.write_failure.recovered: true` in the execution log so the Phase 6 summary can surface the recovery, then continue to the word-count measurement with the recovered file.
 
-Only once Step 0 confirms the file is present (or Phase 4c confirmed it in deep mode) do the remaining gate steps apply:
+Only once Step 0 confirms the file is present do the remaining gate steps apply:
 
 1. Measure the actual word count from the file:
    ```bash
@@ -582,10 +515,8 @@ Only once Step 0 confirms the file is present (or Phase 4c confirmed it in deep 
    | outline | 1000 |
    | resource | 1500 |
 
-3. Compute `gate_floor`. **Deep mode tightens the floor to `1.0 × floor`** (no tolerance band) because Phase 4a/4b section dispatch is expected to reliably hit the budget — the historical 10% tolerance existed only to accommodate the broken single-pass monolithic dispatch. Non-deep modes keep the 10% tolerance:
-   - Deep: `gate_floor = floor` (8,000 for deep — hard wall)
-   - Basic / detailed / outline / resource: `gate_floor = floor × 0.9` (10% tolerance band, unchanged)
-4. Decision (non-deep branch — deep mode uses the per-section branch below):
+3. Compute `gate_floor = floor × 0.9` uniformly across all report types (10% tolerance band). Deep mode uses the same tolerance as every other type — the ~5.6–6.1K single-call output ceiling means a first-pass deep draft is expected to land under floor, and the expansion re-dispatch + Phase 5 word-deficit loop compound it back up. A hard wall at `1.0 × floor` would uselessly bounce drafts that are one paragraph short of the target, which is exactly what the new `[0.98, 1.00) = 0.75 cap` reviewer band also exists to prevent.
+4. Decision:
    - **`ACTUAL_WORDS >= gate_floor`** → gate passes. Continue to Phase 5.
    - **`ACTUAL_WORDS < gate_floor` AND `project-config.json` has `allow_short: true`** → log the deficit but skip the re-dispatch. Record `phase_4_word_deficit: {actual, floor, action: "allow_short_opt_out"}` in `.metadata/execution-log.json`. Continue to Phase 5.
    - **`ACTUAL_WORDS < gate_floor` AND no `allow_short` opt-out** → re-dispatch the writer **once** with:
@@ -601,60 +532,15 @@ Only once Step 0 confirms the file is present (or Phase 4c confirmed it in deep 
        TARGET_MIN_WORDS=<floor>,
        EXPANSION_NOTES="Previous draft ({actual_words} words) fell below the {floor}-word {type}-mode minimum by {floor - actual_words} words. Read .metadata/writer-outline-v1.json and identify sections whose drafted length fell below their planned budget — expand those first. Add evidence density (cross-source comparison, implications, methodological context, concrete examples from untapped context entities). Do not add new top-level sections. Do not pad with filler or 'in conclusion' restatements.")
      ```
-5. After the re-dispatch, measure `wc -w output/draft-v2.md`. If still below `gate_floor`, do NOT re-dispatch a third time — cap at one expansion attempt to bound cost. Instead:
+5. After the re-dispatch, measure `wc -w output/draft-v2.md`. If still below `gate_floor`, do NOT re-dispatch a third time — cap at one expansion attempt to bound Phase 4 cost. Instead:
    - Log `phase_4_word_deficit: {actual_v1, actual_v2, floor, action: "writer_cap_reached"}` in `.metadata/execution-log.json`
-   - Continue to Phase 5 with `draft-v2.md` as the input — the reviewer's stepped completeness cap will downgrade the verdict, and the Phase 5 expansion-review loop (see Phase 5 below) gives the revisor one more chance to close the gap
+   - Continue to Phase 5 with `draft-v2.md` as the input — the reviewer's stepped completeness cap will downgrade the verdict, and the Phase 5 expansion-review loop (see Phase 5 below — raised to 3 iterations for deep mode) gives the revisor up to two more chances to close the gap
 
-**Deep mode per-section expansion (replaces Steps 4–5 in deep mode):**
-
-Deep mode never re-dispatches the whole draft. Instead, Phase 4.5 consumes the `deficits` array that `assemble-draft.sh` already computed in Phase 4b Step 4, and re-dispatches only the underrunning sections.
-
-- **D1. Parse the assembly report.** The JSON stdout from `assemble-draft.sh` includes `deficits: [{index, heading, budget, drafted_words, shortfall, ratio}, ...]`. If `deficits` is empty **and** `total_words >= 8000`, the gate passes — continue to Phase 5.
-- **D2. `allow_short` opt-out.** If `project-config.json` has `allow_short: true`, log `phase_4_word_deficit: {total_words, floor, deficits, action: "allow_short_opt_out"}` and continue to Phase 5 without re-dispatch.
-- **D3. Per-section re-dispatch.** For each entry in `deficits`, re-dispatch exactly that section via:
-  ```
-  Task(writer,
-    PROJECT_PATH=<project_path>,
-    DRAFT_VERSION=1,
-    REPORT_TYPE=deep,
-    WRITER_MODE=section,
-    SECTION_INDEX=<deficit.index>,
-    SECTION_HEADING=<deficit.heading>,
-    SECTION_BUDGET=<deficit.budget>,
-    CONTEXT_SLICE_PATH=.metadata/section-contexts/section-<deficit.index>.json,
-    PRIOR_SECTIONS_SUMMARY=<current contents of .metadata/section-summary.txt>,
-    RESEARCHER_ROLE=<role>,
-    TONE=<tone>,
-    CITATION_FORMAT=<citation_format>,
-    OUTPUT_LANGUAGE=<output_language>,
-    EXPANSION_NOTES="Previous section draft ({drafted_words} words) fell below the {budget}-word budget by {shortfall} words. Expand with additional evidence from the context slice — cross-source comparison, implications, methodological context, untapped findings. Do not pad with filler or restatements.")
-  ```
-  Reuse the same `SECTION_INDEX` so the re-dispatch overwrites `draft-sections/section-{index}.md` in place. Do not bump to `DRAFT_VERSION=2` — the whole outline is still v1, and only the deficient sections are being patched.
-- **D4. Re-assemble and re-check.** After all per-section re-dispatches return, re-run `assemble-draft.sh` with the same arguments. Parse the new output. If `deficits` is still non-empty or `total_words < 8000`, **cap at one per-section expansion attempt** — log `phase_4_word_deficit: {total_words_v1, total_words_v2, floor, deficits_v2, action: "section_expansion_cap_reached"}` and continue to Phase 5. The Phase 5 expansion-review loop gives the revisor one more chance to close the gap.
-- **D5. Record the gate outcome.** Write to `.metadata/execution-log.json` under `phases.phase_4_writer`:
-  ```json
-  {
-    "phase_4_writer": {
-      "mode": "deep_sectioned",
-      "sections_dispatched": 10,
-      "assembly_passes": [
-        {"pass": 1, "total_words": 7200, "deficits": [{"index": "04", "budget": 1200, "drafted_words": 800}]},
-        {"pass": 2, "total_words": 8350, "deficits": []}
-      ],
-      "floor": 8000,
-      "gate_floor": 8000,
-      "section_re_dispatches": 1,
-      "allow_short": false,
-      "gate_passed": true
-    }
-  }
-  ```
-
-6. Record the gate outcome in `.metadata/execution-log.json` under `phases.phase_4_writer` (non-deep modes only — deep mode uses the D5 shape above):
+6. Record the gate outcome in `.metadata/execution-log.json` under `phases.phase_4_writer`:
    ```json
    {
      "phase_4_writer": {
-       "mode": "monolithic",
+       "mode": "single_voice",
        "drafts": [
          {"version": 1, "actual_words": 3356, "self_reported_words": 12500, "gate_passed": false},
          {"version": 2, "actual_words": 8240, "self_reported_words": 8400, "gate_passed": true}
@@ -700,16 +586,27 @@ Task(revisor,
   MARKET=<market>)
 ```
 
-**Iteration cap** — conditional on the verdict's issue profile:
+**Iteration cap** — conditional on the verdict's issue profile and report type:
 
 - **Default: 1 structural review iteration.** After revision (or if the first review accepts), proceed to Phase 5.5. This is the common case and costs no more than today.
-- **Exception: 2 iterations when iteration 1's verdict contains a high-severity issue whose text begins with `Word deficit`** (the exact phrase emitted by the reviewer's Word Count Gate — see `agents/reviewer.md`). When this issue is present, the revisor runs in expansion mode (see `agents/revisor.md` — the +20% cap is lifted for expansion). Without a second review pass, the expansion cannot be verified and the word-count gate would be a dead letter.
-  - After the revisor produces `draft-v{N+1}.md`, re-run the reviewer once more with `REVIEW_ITERATION=2`, generating `.metadata/review-verdicts/v2.json`.
-  - **Iteration-2 persistence is mandatory.** After the iteration-2 reviewer dispatch returns, verify that `.metadata/review-verdicts/v2.json` exists and is non-empty via `[ -s "${PROJECT_PATH}/.metadata/review-verdicts/v2.json" ]`. If missing, the reviewer failed to persist its verdict — log `phase_5_review.iteration_2_missing: true` in `.metadata/execution-log.json` and halt Phase 5 with a user-visible error. Do not fall through to Phase 5.5 or Phase 6 with an unverified post-revisor draft — the whole point of iteration 2 is to confirm whether the expansion closed the gap.
-  - Regardless of the iteration-2 verdict (accept or revise), proceed to Phase 5.5 — no third iteration. The expansion-review loop is a one-shot: close the gap or log it and move on. **But record `phase_5_review.iteration_2_word_deficit_cleared: true|false`** based on whether v2.json still contains a `Word deficit` issue — Phase 6 reads this flag to decide whether to block promotion.
-  - If `project-config.json` has `allow_short: true`, skip the second iteration entirely — the user opted out of auto-expansion in Phase 4.5, so there is no point spending tokens verifying an expansion that did not happen.
+- **Word-deficit expansion loop**, triggered when iteration 1's verdict contains a high-severity issue whose text begins with `Word deficit` (the exact phrase emitted by the reviewer's Word Count Gate — see `agents/reviewer.md`). When this issue is present, the revisor runs in expansion mode (see `agents/revisor.md` — the +20% cap is lifted for expansion). Without follow-up review passes, the expansion cannot be verified and the word-count gate would be a dead letter.
 
-This narrow exception applies only to word-deficit deficits. Every other revise reason (structural issues, coherence gaps, source diversity) still caps at 1 iteration — no behavior change for the common case, no runaway cost.
+  The iteration cap in this branch depends on report type:
+
+  | Report type | Cap | Rationale |
+  |---|---:|---|
+  | basic, detailed, outline, resource | **2 iterations** | One revisor pass is enough to close a single-call shortfall |
+  | deep | **3 iterations** | Deep mode needs to compound past the ~5.6–6.1K single-call output ceiling to the 8K floor; empirical evidence from the KI-Adoption corpus shows 3 writer/revisor calls (writer + 2 revisor expansions) reach ~8,400 words with single-voice coherence; 2 iterations are structurally insufficient |
+
+  The loop:
+  - After the revisor produces `draft-v{N+1}.md`, re-run the reviewer with `REVIEW_ITERATION=N+1`, generating `.metadata/review-verdicts/v{N+1}.json`.
+  - **Iteration persistence is mandatory.** After each follow-up reviewer dispatch returns, verify the verdict file exists and is non-empty via `[ -s "${PROJECT_PATH}/.metadata/review-verdicts/v${N+1}.json" ]`. If missing, the reviewer failed to persist its verdict — log `phase_5_review.iteration_{N+1}_missing: true` in `.metadata/execution-log.json` and halt Phase 5 with a user-visible error. Do not fall through to Phase 5.5 or Phase 6 with an unverified post-revisor draft — the whole point of the follow-up iteration is to confirm whether the expansion closed the gap.
+  - If the verdict is `accept`, exit the loop and proceed to Phase 5.5.
+  - If the verdict is still `revise` with another `Word deficit` issue AND the cap for the current report type has not been reached, dispatch another revisor expansion pass and then another reviewer pass. Non-deep modes stop after iteration 2; deep mode stops after iteration 3.
+  - Regardless of the final iteration's verdict (accept or revise), proceed to Phase 5.5 once the cap is reached. The expansion-review loop is a bounded compound-and-verify cycle, not an unbounded retry. **Record `phase_5_review.word_deficit_cleared: true|false`** on the final iteration — Phase 6 reads this flag to decide whether to block promotion.
+  - If `project-config.json` has `allow_short: true`, skip the follow-up iterations entirely — the user opted out of auto-expansion in Phase 4.5, so there is no point spending tokens verifying an expansion that did not happen.
+
+This word-deficit exception is the only multi-iteration branch. Every other revise reason (structural issues, coherence gaps, source diversity) still caps at 1 iteration — no behavior change for the common case, no runaway cost.
 
 ### Phase 5.5: Visual Enrichment via cogni-visual (Optional)
 
@@ -727,13 +624,13 @@ Ask the user whether to generate a themed HTML version of the report with intera
 
 ### Phase 6: Finalization
 
-**Promotion gate (new in v0.7.0).** Before copying the accepted draft to `output/report.md`, verify the word-count floor is actually cleared. In deep mode the gate is hard: if `output/draft-v{N}.md` is below 8,000 words **and** `allow_short: true` is not set, do not silently promote. Instead:
+**Promotion gate.** Before copying the accepted draft to `output/report.md`, verify the word-count floor is actually cleared. In deep mode the gate is hard: if `output/draft-v{N}.md` is below 8,000 words **and** `allow_short: true` is not set, do not silently promote. Instead:
 
 1. Measure the final draft: `wc -w < "${PROJECT_PATH}/output/draft-v${N}.md"`.
 2. Resolve the floor from the table in Phase 4.5 Step 2 (8,000 for deep).
 3. **Deep mode only**: if `actual_words < 8000` and `allow_short` is not `true`, present the user with an `AskUserQuestion` choice:
    - **Option A: Accept shorter report** — promote the draft anyway, record `phase_6_promotion.floor_override: true` and `phase_6_promotion.shortfall_words: <floor - actual>` in the execution log, and set `allow_short_accepted` in the summary.
-   - **Option B: Retry deficient sections** — re-enter Phase 4.5 D3 with the current `deficits` array from the latest assembly report (if available) or from a fresh `assemble-draft.sh` run. Cap at one additional retry pass — if it still fails, fall through to the same question with Option B removed.
+   - **Option B: Retry expansion** — dispatch one more revisor expansion pass against the current accepted draft with `TARGET_MIN_WORDS=8000` + `EXPANSION_NOTES` naming the remaining deficit, then re-run the reviewer. Cap at one additional retry — if the new draft still falls short, fall through to the same question with Option B removed.
    - **Option C: Abort** — stop without promotion. Leave the latest `draft-v{N}.md` in place for manual inspection. Print the project path and a pointer to `.metadata/execution-log.json`.
 4. For non-deep modes, keep the existing behavior: the reviewer's verdict and Phase 6 summary warnings are advisory. Short drafts are still promoted automatically with a `⚠ Below target` line in the summary.
 5. For outline / resource modes, the per-type floor is advisory and promotion is never blocked.
@@ -761,7 +658,7 @@ Once the promotion gate passes (or the user selects Option A), continue with the
      - If the final `actual_words < floor`: print `⚠ Below target by {floor - actual_words} words.` followed by one of:
        - `allow_short: true was set — expansion skipped.` (opt-out path)
        - `Writer re-dispatch cap reached after one attempt.` (cap-hit path)
-     - If `phase_5_review.iteration_count == 2`: print `✓ Phase 5 expansion-review loop ran — reviewer re-verified the revised draft.`
+     - If `phase_5_review.iteration_count >= 2`: print `✓ Phase 5 expansion-review loop ran — reviewer re-verified the revised draft ({iteration_count} iterations).`
    - Section count
    - Sources cited
    - Structural review score
@@ -791,7 +688,7 @@ If a project directory already exists at init:
 | Most researchers fail | Proceed with available contexts, note gaps in report |
 | Writer returns `write_failed` (read-back verification failed twice) | Phase 4.5 Step 0 detects the missing/empty draft file, logs `phases.phase_4_writer.write_failure` in `.metadata/execution-log.json`, and re-dispatches the writer once — reusing the same `DRAFT_VERSION` — with emphatic `EXPANSION_NOTES` naming the silent-persist failure mode. On a second failure, Phase 4 halts with a user-visible error pointing to the log entry — no phantom draft reaches Phase 5. On successful recovery, the Phase 6 summary prints the `✓ Phase 4.5 write-failure recovery` line |
 | Draft file missing or zero-byte after writer returns `ok` | Same Phase 4.5 Step 0 recovery path as above — the orchestrator trusts the filesystem, not the return JSON, so the `ok`/`write_failed` distinction does not change the flow |
-| Writer below minimum word count | Phase 4.5 gate re-dispatches writer once with `TARGET_MIN_WORDS` and `EXPANSION_NOTES`. If the second attempt still falls short, Phase 5 expansion-review loop runs (capped at iteration 2). Final deficit surfaced in Phase 6 summary |
+| Writer below minimum word count | Phase 4.5 gate re-dispatches writer once with `TARGET_MIN_WORDS` and `EXPANSION_NOTES`. If the second attempt still falls short, Phase 5 expansion-review loop runs (capped at iteration 2 for basic/detailed/outline/resource, iteration 3 for deep — deep needs the extra revisor pass to compound past the single-call output ceiling to the 8K floor). Final deficit surfaced in Phase 6 summary |
 | Writer self-reports inflated word count | Phase 4.5 measures `wc -w` on the file — self-reported value is ignored for the gate, logged as diagnostic |
 | Claims verification needed | Handled by verify-report skill in a separate context window — not run here |
 | Review loop reaches max (3) | Accept current draft with quality warning |

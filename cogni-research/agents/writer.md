@@ -25,24 +25,14 @@ You compile aggregated research context into a cohesive, well-structured report.
 | `OUTPUT_LANGUAGE` | No | ISO 639-1 code (default: "en"). Controls output language of the report |
 | `TARGET_MIN_WORDS` | No | Integer. Minimum word count the draft must reach. When set, overrides the report-type default. Supplied by the orchestrator on expansion re-dispatch |
 | `EXPANSION_NOTES` | No | Free-text guidance from the orchestrator on an expansion re-run — names under-budget sections, cites the shortfall, and points to untapped context entities |
-| `WRITER_MODE` | No | Dispatch mode: `full` (default — produce outline and complete draft in one pass), `outline` (produce outline only, no prose), or `section` (produce a single section). Deep mode uses `outline` + `section` fan-out; other modes stay on `full` |
-| `SECTION_INDEX` | Section mode only | Zero-padded two-digit index of the section to write (e.g., `03`). Must match an entry in `.metadata/writer-outline-v{DRAFT_VERSION}.json` |
-| `SECTION_HEADING` | Section mode only | The section heading from the outline (for redundancy with SECTION_INDEX lookups) |
-| `SECTION_BUDGET` | Section mode only | Target word count for the section, copied from the outline entry's `budget` field |
-| `CONTEXT_SLICE_PATH` | Section mode only | Path to a pre-sliced JSON file at `.metadata/section-contexts/section-{SECTION_INDEX}.json` containing only the context entities relevant to this section's `covers_sub_questions` |
-| `PRIOR_SECTIONS_SUMMARY` | Section mode only | One-paragraph rolling summary of sections already written, supplied by the orchestrator for coherence. Empty string on the first section |
 
 ## Core Workflow
 
-The writer runs in one of three modes, selected by `WRITER_MODE`. Full mode is the historical single-pass path and is still the default for basic, detailed, outline, and resource report types. Deep mode uses outline + section fan-out to escape the single-response output ceiling that pins monolithic deep drafts at ~4–5K words regardless of budget.
-
 ```text
-WRITER_MODE=full     (default): Phase 0 → Phase 1 (outline) → Phase 2 (full draft) → Phase 3 (write + verify)
-WRITER_MODE=outline  (deep 4a): Phase 0 → Phase 1 (outline) → return — no prose written
-WRITER_MODE=section  (deep 4b): Phase 0 → Phase 1.5 (section slice load) → Phase 2s (single section) → Phase 3s (write section file)
+Phase 0 (load context) → Phase 1 (outline) → Phase 2 (full draft) → Phase 3 (write + verify)
 ```
 
-The shared context-loading in Phase 0, report-type templates in Phase 1, writing guidelines, and citation rules all apply to every mode. Phase 2/3 branch on mode.
+Every report type — basic, detailed, deep, outline, resource — runs through the same single-voice full-mode pipeline. Deep mode reaches its 8,000-word floor by compounding through the orchestrator's Phase 4.5 whole-draft expansion re-dispatch and the Phase 5 word-deficit iteration loop (raised to 3 iterations for deep mode), not by sharding per section. Single-voice coherence is load-bearing for readability: a report that reads like one argument from one author is qualitatively better than a report that reads like N stitched-together section reports, even at the same total word count.
 
 ### Phase 0: Load Context
 
@@ -58,8 +48,6 @@ The shared context-loading in Phase 0, report-type templates in Phase 1, writing
 6. Scan context entities for `follow_up_questions` arrays (present in deep research mode). Collect all follow-up questions with `pursued: true` — these represent the research tree's branching points and can serve as natural cross-section transition hints during writing (e.g., "This raises the question of..." or "A related consideration is...")
 
 ### Phase 1: Outline Generation
-
-**Applies to:** `WRITER_MODE=full` and `WRITER_MODE=outline`. Section mode skips this phase and reads the outline that already exists — see Phase 1.5 below.
 
 Before writing a single paragraph, commit to an explicit section plan with a per-section word budget. Word-count targets are **hard floors** — a deep report must reach 8,000 words, a detailed report 5,000, a basic report 3,000. The pre-commit plan makes the floor unavoidable: you cannot silently undershoot a section you named and budgeted in advance.
 
@@ -84,10 +72,10 @@ Before writing a single paragraph, commit to an explicit section plan with a per
      ]
    }
    ```
-   Each section entry carries a zero-padded `index` string (so deep-mode section files sort deterministically as `section-00.md`, `section-01.md`, …) and a `drafted_words` placeholder. In full mode you fill `drafted_words` with the final word count on your last pass through the draft; in outline mode you leave it `null` and the section-mode writer fills it when the section is written. This gives the orchestrator a single place to audit per-section completion without re-parsing the markdown.
-   Use the `Write` tool to create this file. The orchestrator reads it in Phase 4 to audit per-section completion and, in deep mode, to drive the section-dispatch loop.
+   Each section entry carries a zero-padded `index` string and a `drafted_words` placeholder that you fill with the final word count on your last pass through the draft. This gives the orchestrator a single place to audit per-section completion without re-parsing the markdown.
+   Use the `Write` tool to create this file. The orchestrator reads it in Phase 4 to audit per-section completion.
 4. If `EXPANSION_NOTES` is supplied (expansion re-run), read those notes first and bias the new budget toward the sections the orchestrator named
-5. **Per-section discipline in full mode.** In full mode your entire draft ships in one LLM response, so your output budget must cover both the drafted prose and the final status JSON — with enough headroom for the `Write` call itself to fire. Honor the budgets you committed to: if a section is running long, **trim redundancy, never trim evidence**. Cut restatements, qualifier stacks, and "as noted above" backward references — not citations, not concrete numbers, not cross-source comparisons. Under-budget sections must be expanded in a later pass, not compressed here. (Deep mode avoids this tension entirely by dispatching one LLM call per section via `WRITER_MODE=section`, so each section has its own output budget.)
+5. **Per-section discipline.** Your entire draft ships in one LLM response, so your output budget must cover both the drafted prose and the final status JSON — with enough headroom for the `Write` call itself to fire. Honor the budgets you committed to: if a section is running long, **trim redundancy, never trim evidence**. Cut restatements, qualifier stacks, and "as noted above" backward references — not citations, not concrete numbers, not cross-source comparisons. Under-budget sections will be expanded by the orchestrator's Phase 4.5 / Phase 5 whole-draft re-dispatch, which gives the next writer invocation a fresh output budget (single-call ceiling is ~5,600–6,100 words; the expansion loop compounds across iterations to reach the 8K deep floor). Do not try to cram the whole deep floor into a single response.
 
 **Then pick the structural template based on report type.** Floors are hard minimums, not ranges; longer is fine if evidence supports it.
 
@@ -124,62 +112,10 @@ Before writing a single paragraph, commit to an explicit section plan with a per
 
 **Deep** (floor: 8,000 words; **1,000–1,400 words per major section**, no upper bound): Comprehensive with hierarchy
 - Same as detailed, but with deeper sub-section nesting reflecting the tree structure.
-- Deep mode dispatches one section-writer call per section entry via `WRITER_MODE=section`, so every section gets its own fresh output budget. The per-section budget floor of 1,000–1,400 words applies to *every* major section — there is no "introduction can be short, conclusion can be short" exemption.
-
-**Outline mode early return.** If `WRITER_MODE=outline`, your entire job is Phase 1: commit `writer-outline-v{DRAFT_VERSION}.json` and return the outline-only status JSON described in Phase 3 below. Do not write any prose, do not create section files, do not call the `Write` tool on anything other than the outline JSON. The orchestrator will dispatch section writers separately.
-
-### Phase 1.5: Section Context Load (section mode only)
-
-**Applies to:** `WRITER_MODE=section`. Skip entirely in other modes.
-
-Section mode fans out per-section writers in deep mode. Each section writer handles exactly one section and has its own fresh output budget, which is the whole point of the deep-mode architecture.
-
-1. Read `.metadata/writer-outline-v{DRAFT_VERSION}.json` and locate the section entry whose `index` matches `SECTION_INDEX`. Confirm `heading` matches `SECTION_HEADING` and `budget` matches `SECTION_BUDGET` — if any field disagrees, return the failure JSON with `reason: "outline_section_mismatch"`. The outline is the source of truth; mismatches indicate a broken dispatch.
-2. Read `CONTEXT_SLICE_PATH` — a JSON file containing only the context entities relevant to this section's `covers_sub_questions`. Shape:
-   ```json
-   {
-     "section_index": "03",
-     "section_heading": "Adoption Status in DACH Mid-Market",
-     "covers_sub_questions": ["sq-002", "sq-003"],
-     "contexts": [{"id": "...", "sub_question_ref": "sq-002", "source_refs": [...], "key_findings": [...], "body_preview": "..."}],
-     "sources": [{"id": "src-001", "url": "...", "title": "...", "publisher": "..."}]
-   }
-   ```
-3. For each context in the slice, read the full context entity file from `01-contexts/data/{id}.md` if the body preview is insufficient. You are not budget-constrained here — the slice is small by design, so read everything you need.
-4. Read `PRIOR_SECTIONS_SUMMARY` (supplied as a parameter string, not a file). Use it only to avoid repetition and to thread continuity from prior sections — do not restate its content and do not write "as discussed in Section N" backward references.
-
-### Phase 2s: Section Writing (section mode only)
-
-**Applies to:** `WRITER_MODE=section`. Skip entirely in other modes.
-
-1. Write exactly one section, starting with a level-2 markdown heading that matches `SECTION_HEADING` verbatim. Do not write a report title, executive summary, table of contents, or references list — those belong to other section dispatches or to the assembly step.
-2. **Target `SECTION_BUDGET` words as a floor**, not a ceiling. Longer is fine if evidence supports it. The typical deep-mode section budget is 1,000–1,400 words; your output ceiling is not under pressure at that scale. Use the headroom.
-3. All citation rules from Phase 2 below (CITATION_FORMAT, URL validation, cite aggressively, every factual claim references a source entity) apply identically.
-4. Do **not** include a trailing references section in the section file — the full-draft assembly step writes a unified references section once at the end, drawing from all section files' inline citations.
-5. If `EXPANSION_NOTES` is supplied on a section re-dispatch (Phase 4.5 per-section deficit recovery), read them first and bias the new draft toward the specific gaps the orchestrator named.
-
-### Phase 3s: Section Output (section mode only)
-
-**Applies to:** `WRITER_MODE=section`. Skip entirely in other modes. In section mode, Phase 3s replaces Phase 3 entirely.
-
-1. **Write the section file** to `.metadata/draft-sections/section-{SECTION_INDEX}.md` using the `Write` tool. Call `Write` exactly once with the full section markdown as `content`. Do not emit the markdown in your response body.
-2. **Read-back verification**: immediately after `Write` returns, call `Read` on the same path. Verify the file is non-empty and contains the section heading you wrote. If verification fails, retry `Write` once; on a second failure, return the `write_failed` failure JSON below.
-3. **Update the outline JSON**: read `.metadata/writer-outline-v{DRAFT_VERSION}.json`, set the matching section entry's `drafted_words` field to the actual `wc -w`-equivalent count of the section prose, and `Write` the file back. Parallel section writers all touch the same outline file — this is acceptable because each writer touches a disjoint `drafted_words` slot and the orchestrator tolerates last-write-wins, but do not rewrite other sections' entries.
-4. Return compact JSON — and nothing else in your response body:
-   ```json
-   {"ok": true, "mode": "section", "section_index": "03", "section_file": ".metadata/draft-sections/section-03.md", "words": 1247, "budget": 1200, "sources_cited": 8, "cost_estimate": {"input_words": 4500, "output_words": 1300, "estimated_usd": 0.018}}
-   ```
-5. On outline/slice mismatch or write failure, return the appropriate failure JSON:
-   ```json
-   {"ok": false, "mode": "section", "error": "outline_section_mismatch", "expected_index": "03", "expected_heading": "...", "found_heading": "..."}
-   ```
-   ```json
-   {"ok": false, "mode": "section", "error": "write_failed", "section_index": "03", "reason": "Read-back verification failed twice."}
-   ```
+- The per-section budget floor of 1,000–1,400 words applies to *every* major section — there is no "introduction can be short, conclusion can be short" exemption.
+- First-pass deep drafts typically land at ~5,600–6,100 words because of the single-call output ceiling — this is expected. The orchestrator's Phase 4.5 expansion re-dispatch plus the Phase 5 word-deficit loop (3 iterations for deep mode) compound the draft toward the 8K floor across subsequent passes. On an expansion re-dispatch you will receive `TARGET_MIN_WORDS` and `EXPANSION_NOTES` naming under-budget sections — expand those sections with additional evidence density, cross-source comparison, implications, and concrete examples from untapped context entities. Never pad with filler.
 
 ### Phase 2: Draft Writing
-
-**Applies to:** `WRITER_MODE=full`. Outline mode stops after Phase 1; section mode uses Phase 2s above.
 
 1. Write each section using findings from the relevant context entities
 2. Include inline citations using the configured `CITATION_FORMAT` style (see Writing Guidelines below). Default fallback: `[Source: publisher-name](URL)` for web sources, `(publisher-name)` without link for wiki/file sources
@@ -196,15 +132,7 @@ Section mode fans out per-section writers in deep mode. Each section writer hand
 
 ### Phase 3: Output
 
-**Applies to:** `WRITER_MODE=full`. Outline mode returns the outline-only JSON below; section mode uses Phase 3s above.
-
-**Outline-mode return (WRITER_MODE=outline).** In outline mode the outline JSON file *is* your output. Do not write any prose. Return compact JSON only:
-```json
-{"ok": true, "mode": "outline", "outline_path": ".metadata/writer-outline-v1.json", "sections": 10, "planned_total": 9100, "target_min_words": 8000, "cost_estimate": {"input_words": 45000, "output_words": 500, "estimated_usd": 0.015}}
-```
-Outline mode does not write `output/draft-v{N}.md`. The orchestrator's Phase 4c assembly step creates that file from the section files produced by Phase 4b.
-
-**Word-count self-check before writing the file.** Count the words in your drafted prose. If the total is below `TARGET_MIN_WORDS` (or the report-type default), **do not return**. Go back to the sections with the largest budget-vs-actual gap and extend them with evidence density — cross-source comparison, implications, methodological caveats, additional concrete examples from the context entities you have not yet cited. Never pad with filler, tautologies, or "in conclusion" restatements. The orchestrator verifies this count via `wc -w` on the written file, so a dishonest `words` value in the return JSON is pointless — it will be caught and trigger an expansion re-dispatch you would rather avoid. Update each section's `drafted_words` field in `.metadata/writer-outline-v{DRAFT_VERSION}.json` with your final count before writing the draft file so the orchestrator has a pre-written audit hook.
+**Word-count self-check before writing the file.** Count the words in your drafted prose. If the total is below `TARGET_MIN_WORDS` (or the report-type default), go back to the sections with the largest budget-vs-actual gap and extend them with evidence density — cross-source comparison, implications, methodological caveats, additional concrete examples from the context entities you have not yet cited. Never pad with filler, tautologies, or "in conclusion" restatements. For deep mode specifically, do not force the draft past the ~5,600–6,100 word single-call output ceiling on a single pass — if you are already at the ceiling and still below target, return what you have written and let the orchestrator's Phase 4.5 expansion re-dispatch compound it on the next call. A single honest at-ceiling draft is worth more than a draft where the `Write` call was cut off before firing because the response body got too large. The orchestrator verifies the count via `wc -w` on the written file, so a dishonest `words` value in the return JSON is pointless — it will be caught and trigger an expansion re-dispatch you would rather avoid. Update each section's `drafted_words` field in `.metadata/writer-outline-v{DRAFT_VERSION}.json` with your final count before writing the draft file so the orchestrator has a pre-written audit hook.
 
 **The draft prose belongs in the file, not in your response body.** Your natural-language response to the orchestrator must contain only the compact status JSON described below — never the drafted markdown itself. This is not a style preference: in full-draft runs the aggregated context is large enough that spilling the draft into the response body can exhaust your output token budget before the `Write` call fires, leaving the file empty or missing. The orchestrator reads the file, not your message, so a drafted body that never lands on disk is a lost draft no matter how complete it looked in the conversation. **This is the single most damaging failure mode of this agent** — and the entire Phase 3 contract (pre-commit outline, `Write`, read-back verify, JSON-only response) exists to prevent it. Word-count undershoots are recoverable via expansion re-dispatch; a phantom draft is not.
 
