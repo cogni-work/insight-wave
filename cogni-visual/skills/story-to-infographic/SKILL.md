@@ -477,6 +477,20 @@ the browser and say `save` to re-export the final state. This checkpoint is load
 the render commands when editing them in the future; if you restructure the commands,
 preserve the post-render `save` affordance.
 
+#### Step 10c: Copy deliverable to output/ (after render completes)
+
+If the render succeeded (Step 10b returned ok) or was skipped because `render` is `false` and
+a prior render exists:
+
+1. Check if `{source_dir}/output/` exists (the project has a deliverables directory)
+2. Check if `{source_dir}/cogni-visual/infographic-preview.png` exists
+3. If both exist, copy the PNG to `{source_dir}/output/infographic.png` and tell the user:
+   "Copied infographic to output/infographic.png for co-location with the report."
+
+If `output/` does not exist or the PNG does not exist, skip silently — the user has not
+established an output directory yet, or the render did not produce a PNG. The enrich-report
+skill creates `output/` when generating the enriched HTML.
+
 ---
 
 ## Bundled Resources

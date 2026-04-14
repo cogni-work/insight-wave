@@ -49,7 +49,7 @@ Economist data page — not a dashboard, not a slide, not a poster.
 the governing thought, the hero number, and the call to action within ten seconds. Density
 signals "thoroughly researched"; restraint signals authority.
 
-**Output:** Write the `.pen` file to OUTPUT_PATH, export a PNG preview, and return single-line
+**Output:** Write the `.pen` file to OUTPUT_PATH, export `infographic-preview.png`, and return single-line
 JSON (no prose) summarizing what was rendered.
 </task>
 
@@ -414,10 +414,12 @@ output JSON's `warnings` field.
 
 ### Step 5: Export, Save, and Return
 
-1. Export PNG via `export_nodes({format: "png", ...})`
+1. Export PNG via `export_nodes({format: "png", filePath: "{brief_dir}/infographic-preview.png"})`.
+   The canonical filename is `infographic-preview.png` — this is the name that enrich-report
+   and other downstream consumers search for.
 2. **Flush the `.pen` file to disk.** Pencil MCP has no native `save_document` tool — the
    Electron app holds the document in an in-memory session and only writes the `.pen` file
-   when the user presses Cmd+S in the UI. That makes `preview.png` the only artifact
+   when the user presses Cmd+S in the UI. That makes `infographic-preview.png` the only artifact
    automated tooling can trust, and the `.pen` file stays 0 bytes or missing — a real
    regression for anyone who wants to open the result later.
 
@@ -428,7 +430,7 @@ output JSON's `warnings` field.
    will save whichever document is currently active — and that may not be the one we
    just rendered. Call `get_editor_state` and read the active document's path. If the
    active path does not match `OUTPUT_PATH` exactly, **skip the save** and record
-   `warnings: ["save_target_mismatch: active={active_path}"]`. The `preview.png` is still
+   `warnings: ["save_target_mismatch: active={active_path}"]`. The `infographic-preview.png` is still
    the authoritative visual artifact — a missed save is recoverable, a save to the wrong
    file is not.
 
@@ -454,7 +456,7 @@ output JSON's `warnings` field.
      `warnings: ["pen_file_save_failed"]` and continue. Common reasons: osascript is not
      available (non-macOS host), Pencil is not running, the user has an unsaved-changes
      modal intercepting the keystroke, System Events permissions are denied. Do NOT crash
-     the render on this — `preview.png` still ships as the authoritative visual artifact
+     the render on this — `infographic-preview.png` still ships as the authoritative visual artifact
      and the caller can trigger a manual save if they need the editable `.pen`.
    - **If osascript itself errors** (command not found, permission denied) — same behaviour,
      record `warnings: ["pen_save_unavailable: {reason}"]`, continue.
@@ -579,7 +581,7 @@ output JSON's `warnings` field.
 Return single-line JSON (no prose before or after):
 
 ```json
-{"ok": true, "pen_path": "{path}", "fragment_path": "{path_or_null}", "layout_type": "{type}", "style_preset": "{preset}", "orientation": "{orientation}", "blocks_rendered": {N}, "total_ops": {N}}
+{"ok": true, "pen_path": "{path}", "png_path": "{path}", "fragment_path": "{path_or_null}", "layout_type": "{type}", "style_preset": "{preset}", "orientation": "{orientation}", "blocks_rendered": {N}, "total_ops": {N}}
 ```
 
 On error:

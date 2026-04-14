@@ -1868,12 +1868,12 @@ def generate_html(source_path, enrichment_plan, infographic_data, svg_dir, dv,
         )
 
     # Build infographic and inject AFTER first H2 section (executive summary)
-    # Three-tier priority: Pencil PNG (pixel-perfect) > HTML fragment (fallback) > Python-generated HTML
+    # Three-tier priority: HTML fragment (responsive, selectable) > Pencil PNG (pixel-perfect) > Python-generated HTML (legacy)
     output_dir = os.path.dirname(output_path) or '.'
     ig_chart_configs = []
-    ig_html = _generate_infographic_image_html(infographic_image, output_dir)
+    ig_html = _load_infographic_html_fragment(infographic_html, output_dir)
     if not ig_html:
-        ig_html = _load_infographic_html_fragment(infographic_html, output_dir)
+        ig_html = _generate_infographic_image_html(infographic_image, output_dir)
     if not ig_html:
         ig_html, ig_chart_configs = generate_infographic_header(infographic_data, dv)
 
@@ -1997,10 +1997,10 @@ def post_process_html(html_path, source_path, infographic_image=None,
 
     output_dir = os.path.dirname(html_path) or '.'
 
-    # Three-tier infographic injection
-    ig_html = _generate_infographic_image_html(infographic_image, output_dir)
+    # Three-tier infographic injection: HTML fragment > PNG > JSON
+    ig_html = _load_infographic_html_fragment(infographic_html_path, output_dir)
     if not ig_html:
-        ig_html = _load_infographic_html_fragment(infographic_html_path, output_dir)
+        ig_html = _generate_infographic_image_html(infographic_image, output_dir)
     if not ig_html and infographic_data_path and os.path.isfile(infographic_data_path):
         with open(infographic_data_path) as f:
             ig_data = json.load(f)

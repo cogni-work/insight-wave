@@ -217,24 +217,21 @@ This phase produces a DIN A4 portrait infographic (Economist data-page style). B
 
 **Step 2a.0 — Artifact detection (check before generating):**
 
-Check the following paths in order. For PNG detection, check **all common filename variants** — different upstream skills use different names:
-- `infographic-preview.png` (render-infographic-pencil default)
-- `preview.png` (render-infographic-pencil alternate)
-- `infographic.png` (story-to-infographic / user export)
+Check for rendered infographic artifacts in `{source_dir}/cogni-visual/` only (the canonical location for all visual working artifacts):
+- `{source_dir}/cogni-visual/infographic-fragment.html` (HTML fragment — highest quality, responsive, selectable text)
+- `{source_dir}/cogni-visual/infographic-preview.png` (PNG — pixel-perfect fallback)
 
-Similarly for HTML fragments: `infographic-fragment.html`.
+**Migration (v0.16.11):** If `infographic-preview.png` is not found, also check for the legacy filename `preview.png` in `{source_dir}/cogni-visual/`. If found, rename it to `infographic-preview.png` and continue.
 
-Also check `{source_dir}/output/` as a secondary location — some workflows copy the infographic into the output directory alongside the report.
-
-1. **Rendered artifacts exist:** `{source_dir}/cogni-visual/infographic-fragment.html` OR any of the PNG variants in `{source_dir}/cogni-visual/` OR `{source_dir}/output/`
+1. **Rendered artifacts exist:** `{source_dir}/cogni-visual/infographic-fragment.html` OR `{source_dir}/cogni-visual/infographic-preview.png`
    - If any file exists: **skip all of Phase 2a**. The infographic is already rendered.
    - Tell the user: "Reusing existing infographic artifacts (skipping distillation + render)."
-   - Store the path to the best artifact found (HTML fragment preferred over PNG, cogni-visual/ preferred over output/).
+   - Store the path to the best artifact found (HTML fragment preferred over PNG).
    - If `{source_dir}/cogni-visual/infographic-brief.md` also exists, read its `style_preset` from YAML frontmatter and note it: "Detected style_preset: {preset}." This is informational only — do not block or re-generate based on preset.
-   - `infographic-data.json` is NOT required when rendered artifacts exist — the Python script uses the HTML fragment (highest quality) or PNG directly.
+   - `infographic-data.json` is NOT required when rendered artifacts exist — the post-processor uses the HTML fragment (highest quality) or PNG directly.
    - Proceed to Phase 2b.
 
-2. **Brief exists but no render:** `{source_dir}/cogni-visual/infographic-brief.md` exists but no rendered artifact (fragment HTML or any PNG variant) was found
+2. **Brief exists but no render:** `{source_dir}/cogni-visual/infographic-brief.md` exists but no rendered artifact (fragment HTML or PNG) was found
    - The brief was generated (by story-to-infographic or a prior interrupted run) but never rendered.
    - Tell the user: "Found existing infographic-brief.md without rendered output. Dispatching renderer."
    - Dispatch the `render-infographic-pencil` agent with the brief:
@@ -287,7 +284,7 @@ The agent uses Pencil MCP tools (`open_document`, `batch_design`, `export_nodes`
 | 2 (brief only) | pre-existing | generated | generated | generated (best-effort) | not generated |
 | 3 (from scratch) | generated | generated | generated | generated (best-effort) | generated |
 
-**Three-tier infographic priority in Phase 4:** The Python script uses the highest-quality artifact available: PNG (pixel-perfect) > HTML fragment (fallback) > JSON fallback. The PNG embeds the Pencil-rendered image as base64 with a lightbox for full-screen viewing; the HTML fragment provides native responsive HTML as fallback when no PNG is available; the JSON generates inline HTML from templates.
+**Three-tier infographic priority in Phase 4:** The post-processor uses the highest-quality artifact available: HTML fragment (native responsive HTML with Pencil's editorial precision, selectable text, responsive layout) > PNG (pixel-perfect base64 with magazine peek strip + lightbox) > JSON fallback (template-generated inline HTML). The HTML fragment is preferred because it preserves text selectability, link clickability, and responsive layout from Pencil's tree-walk conversion.
 
 ---
 
