@@ -48,6 +48,11 @@ Never combine both modes in the same turn. Each turn is either pure text or a si
 > **Market:** dach | de | fr | it | pl | nl | es | us | uk | eu   *(required — pick one)*
 > **Sources:** web *(default)* | local (your documents) | wiki (cogni-wiki) | hybrid (web + docs + wiki)
 >
+> **Execution defaults** (research-report will show the full plan before running; change here to pre-set):
+> - **Confirm before running:** yes *(default)* | no   — show the execution plan preview and ask before spawning researchers
+> - **Deep-mode recursion:** off *(default)* | on (depth 2)   — recursive deep-research costs ~2-3× more but explores multi-hop questions
+> - **Batch size:** 4 *(default)* | 2 (gentler) | 6 (faster, only if no rate limits)
+>
 > Advanced: output language, sub-question count, domain filter, researcher role, diagram generation — ask about any of these.
 >
 > Reply with your choices, or "go" for defaults.
@@ -94,6 +99,9 @@ Scan the user's request and extract any options they already specified. These be
 - **Document paths**: file paths or glob patterns for local/hybrid mode
 - **Wiki paths**: paths to cogni-wiki roots -> collect for wiki_paths
 - **Curate sources**: "prioritize authoritative sources" -> enable
+- **Confirm plan**: "just run it", "don't ask", "silent", "skip confirmation" -> `confirm_plan: false`. Default: `true`
+- **Recursion (deep mode)**: "recursive", "multi-hop", "go deeper" -> `recursive_depth: 2`. "no recursion", "single-pass", "flat" -> `recursive_depth: 0`. Default: 0 (off) — deep mode still runs the full sub-question tree, but with `section-researcher` rather than `deep-researcher`, since recursion is a large cost multiplier most users don't actually need
+- **Batch size**: "batch size N", "N at a time", "gentler batches" -> capture int (2/4/6). Default: 4
 
 ### Step 2: Configuration Menu (text output, turn ends)
 
@@ -187,8 +195,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--max-subtopics <N>] \
   [--report-source "<web|local|hybrid>"] \
   [--document-paths "<path1,path2,...>"] \
-  [--curate-sources]
+  [--curate-sources] \
+  [--confirm-plan <true|false>] \
+  [--recursive-depth <0|2>] \
+  [--batch-size <2|4|6>]
 ```
+
+Pass `--confirm-plan`, `--recursive-depth`, `--batch-size` only if the user explicitly picked a non-default value in the Execution defaults block. Omit them otherwise — `research-report` applies the documented defaults (confirm: on, recursion: off, batch size: 4) when the keys are missing from `project-config.json`.
 
 Check the `already_exists` field in the JSON output.
 

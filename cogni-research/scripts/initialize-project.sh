@@ -3,7 +3,7 @@ set -euo pipefail
 # initialize-project.sh - Create project directory structure for a research report
 # Version: 1.0.0
 #
-# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--suffix <N>]
+# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--suffix <N>]
 #
 # Creates:
 #   {workspace}/{slug}-{date}/
@@ -34,6 +34,9 @@ REPORT_SOURCE=""
 DOCUMENT_PATHS=""
 WIKI_PATHS=""
 CURATE_SOURCES=""
+CONFIRM_PLAN=""
+RECURSIVE_DEPTH=""
+BATCH_SIZE=""
 SUFFIX=""
 
 while [[ $# -gt 0 ]]; do
@@ -54,6 +57,9 @@ while [[ $# -gt 0 ]]; do
     --document-paths) DOCUMENT_PATHS="$2"; shift 2;;
     --wiki-paths) WIKI_PATHS="$2"; shift 2;;
     --curate-sources) CURATE_SOURCES="true"; shift 1;;
+    --confirm-plan) CONFIRM_PLAN="$2"; shift 2;;
+    --recursive-depth) RECURSIVE_DEPTH="$2"; shift 2;;
+    --batch-size) BATCH_SIZE="$2"; shift 2;;
     --suffix) SUFFIX="$2"; shift 2;;
     *) echo "{\"success\": false, \"error\": \"Unknown argument: $1\"}" >&2; exit 2;;
   esac
@@ -90,6 +96,21 @@ fi
 
 if [[ -n "$REPORT_SOURCE" ]] && [[ ! "$REPORT_SOURCE" =~ ^(web|local|wiki|hybrid)$ ]]; then
   echo "{\"success\": false, \"error\": \"Invalid --report-source: $REPORT_SOURCE. Must be web, local, wiki, or hybrid.\"}" >&2
+  exit 2
+fi
+
+if [[ -n "$CONFIRM_PLAN" ]] && [[ ! "$CONFIRM_PLAN" =~ ^(true|false)$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --confirm-plan: $CONFIRM_PLAN. Must be true or false.\"}" >&2
+  exit 2
+fi
+
+if [[ -n "$RECURSIVE_DEPTH" ]] && ! [[ "$RECURSIVE_DEPTH" =~ ^[0-9]+$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --recursive-depth: $RECURSIVE_DEPTH. Must be a non-negative integer (0 disables recursion).\"}" >&2
+  exit 2
+fi
+
+if [[ -n "$BATCH_SIZE" ]] && ! [[ "$BATCH_SIZE" =~ ^[1-9][0-9]*$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --batch-size: $BATCH_SIZE. Must be a positive integer.\"}" >&2
   exit 2
 fi
 
@@ -221,6 +242,15 @@ if [[ -n "$WIKI_PATHS" ]]; then
 fi
 if [[ "$CURATE_SOURCES" == "true" ]]; then
   CONFIG=$(echo "$CONFIG" | jq '. + {curate_sources: true}')
+fi
+if [[ -n "$CONFIRM_PLAN" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --argjson v "$CONFIRM_PLAN" '. + {confirm_plan: $v}')
+fi
+if [[ -n "$RECURSIVE_DEPTH" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --argjson v "$RECURSIVE_DEPTH" '. + {recursive_depth: $v}')
+fi
+if [[ -n "$BATCH_SIZE" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --argjson v "$BATCH_SIZE" '. + {batch_size: $v}')
 fi
 echo "$CONFIG" > "$PROJECT_DIR/.metadata/project-config.json"
 

@@ -62,6 +62,7 @@ Read these reference files when the corresponding phase needs them:
 | `references/report-types.md` | Phase 1 — choosing report type and planning |
 | `references/sub-question-generation.md` | Phase 1 — decomposing user query |
 | `references/deep-research-tree.md` | Phase 1 (deep mode) — building research tree |
+| `references/model-strategy.md` | Phase 1.5 — cost estimate table for plan preview |
 | `references/agent-roles.md` | Phase 1 — auto-selecting researcher role |
 | `references/writing-tones.md` | Phase 0 — resolving tone parameter |
 | `references/citation-formats.md` | Phase 0 — resolving citation format |
@@ -168,11 +169,108 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-entity.sh" \
   --json
 ```
 
+### Phase 1.5: Execution Plan Preview
+
+Search strategy is not an implementation detail — it is a cost/quality trade-off the user should see and be able to steer before agents start spawning. Deep + hybrid on a 13-sub-question topic can quietly become 26+ researchers and $2-3 of spend; silently picking `deep-researcher` over `section-researcher`, or `batch_size=4` over `batch_size=2`, hides decisions the user would often prefer to make themselves. This phase surfaces the plan, explains the trade-offs in plain language, and lets the user confirm or adjust before any researcher is dispatched.
+
+This phase runs after Phase 1 (sub-questions already created) and before Phase 2 (researcher fan-out). It makes no LLM calls and spawns no agents — it computes, prints, asks, and records.
+
+#### 1.5a: Compute the plan
+
+Read the just-created sub-question entities and the full `project-config.json`, then derive a plan object (in your head — no script, this is a few lines of arithmetic):
+
+```
+plan = {
+  "report_type":        <from project-config.json>,
+  "sub_question_count": <actual count in 00-sub-questions/data/>,
+  "source_mode":        <report_source from project-config.json>,
+  "channels":           <resolved list — see below>,
+  "web_agent":          <"deep-researcher" if deep mode AND recursive_depth > 0,
+                         else "section-researcher">,
+  "recursive_depth":    <recursive_depth from project-config.json;
+                         default 2 in deep mode, 0 otherwise>,
+  "batch_size":         <batch_size from project-config.json; default 4>,
+  "total_agents":       <sub_question_count × number of active channels>,
+  "batch_count":        <ceil(total_agents / batch_size)>,
+  "est_cost_usd":       <from references/model-strategy.md cost table,
+                         matched by report_type × source_mode>,
+  "curate_sources":     <true if detailed/deep AND projected source count ≥ 8,
+                         OR if curate_sources is explicitly true in config;
+                         false if explicitly false>
+}
+```
+
+**Resolving `channels`** (the set of researcher types that will actually run):
+- `source_mode == "web"`   → `["web"]`
+- `source_mode == "local"` → `["local"]` (requires `document_paths`)
+- `source_mode == "wiki"`  → `["wiki"]` (requires `wiki_paths`)
+- `source_mode == "hybrid"` → include `"web"` always; add `"wiki"` if `wiki_paths` set; add `"local"` if `document_paths` set
+
+**Cost estimate** lookup: use the row from `references/model-strategy.md` ("Cost Estimation" table) that matches `report_type × source_mode`. Do not compute a new cost formula — the table is the source of truth. For the hybrid row, report the full low–high range.
+
+#### 1.5b: Print the plan
+
+Produce a compact text summary for the user. Use this exact shape (fill in the computed values):
+
+```
+## Execution plan
+
+Topic: <topic from project-config.json>
+Report type: <type> → <sub_question_count> sub-questions generated
+Source mode: <mode> (channels: <comma-separated channels>)
+
+Per sub-question:
+  • web    → <web_agent> (recursion: <on depth=N | off>)
+  • wiki   → wiki-researcher       (only if wiki in channels)
+  • local  → local-researcher      (only if local in channels)
+
+Fan-out: <sub_question_count> sub-Q × <channel_count> channel(s) = <total_agents> researchers
+Batching: <batch_size> concurrent → <batch_count> batches
+Source curation: <enabled | disabled> (<reason>)
+Estimated cost: $<low> – $<high>  (from model-strategy.md, <type>[ (hybrid)])
+
+Trade-offs:
+  • Recursion <on|off>: <one-line explanation of the choice and what flipping it would cost>
+  • <source-mode-specific note>
+  • Batch size <N>: <rate-limit vs. speed note>
+```
+
+The trade-off lines are where the user actually learns the cost/quality geometry. Keep them short and concrete. Examples:
+
+- "Recursion off: faster and roughly 2–3× cheaper than recursive deep-research. Turn it on if a sub-question genuinely needs multi-hop exploration rather than one good pass."
+- "Recursion on (depth 2): each web sub-question explores 2–3 follow-ups internally. Better coverage, roughly 2–3× the web cost."
+- "Hybrid channels: wiki and local are cheap file reads; the web channel is the long pole for cost and time."
+- "Batch size 4: respects WebFetch rate limits. Drop to 2 if you've seen rate-limit errors on this market; raise to 6 only if you've verified the market is quiet."
+
+#### 1.5c: Confirm or adjust
+
+If `confirm_plan` is `false` in project-config.json, skip 1.5c entirely. Log the computed plan to `.logs/phase-1.5-plan.json` and continue to Phase 2.
+
+Otherwise, ask the user exactly one `AskUserQuestion` with these options — include only those that are meaningful for the current plan:
+
+| Option | When to offer | Effect |
+|---|---|---|
+| **Proceed as planned** | always | Continue to Phase 2 with the current plan values |
+| **Fewer sub-questions** | always | Ask for a new count (text output), regenerate sub-question entities, recompute the plan, and re-display |
+| **Enable recursion** | only if `report_type == "deep"` AND `recursive_depth == 0` | Set `recursive_depth=2`, switch `web_agent` to `deep-researcher`, recompute cost, re-display |
+| **Disable recursion** | only if `report_type == "deep"` AND `recursive_depth > 0` | Set `recursive_depth=0`, switch `web_agent` to `section-researcher`, recompute cost, re-display |
+| **Web-only** | only if `source_mode == "hybrid"` | Drop wiki and local from `channels`, recompute fan-out and cost, re-display |
+| **Smaller batches** | only if `batch_size > 2` | Set `batch_size=2`, recompute batch count, re-display |
+| **Abort** | always | Record `aborted_at: phase-1.5` in `.metadata/execution-log.json` and stop without spawning any researcher |
+
+When the user picks a non-Proceed option, apply the change, recompute 1.5a, re-print 1.5b, and ask again. Cap this loop at two rounds — after the second adjustment, default to Proceed on the next turn to avoid endless re-planning on unclear input.
+
+Adjustments that mutate `project-config.json` (recursion depth, batch size, channels, max_subtopics from a "Fewer sub-questions" choice) should be written back so resumed runs inherit the user's decision. Adjustments to sub-question count require deleting the existing sub-question entities and regenerating them via Phase 1 before returning to 1.5a.
+
+#### 1.5d: Record the plan
+
+Whether the user confirmed or silent mode was active, write the final plan object to `.logs/phase-1.5-plan.json` so the user can audit it later and so Phase 2 reads a single source of truth for `web_agent`, `channels`, `batch_size`, and `recursive_depth`.
+
 ### Phase 2: Parallel Web Research
 
-Parallel execution is the key throughput optimization — a basic report with 5 sub-questions completes research in the time of one. All researchers use sonnet for richer source extraction and better findings quality. Batching at 4-5 agents prevents overwhelming the host with concurrent WebFetch requests and avoids rate limiting from search providers. Each agent runs independently, so a failure in one does not block the others.
+Parallel execution is the key throughput optimization — a basic report with 5 sub-questions completes research in the time of one. All researchers use sonnet for richer source extraction and better findings quality. Each agent runs independently, so a failure in one does not block the others.
 
-Read `report_source` from `project-config.json` (default: "web"). This determines which researcher agents to spawn.
+Read the confirmed plan from `.logs/phase-1.5-plan.json` — it is the single source of truth for `web_agent`, `channels`, `batch_size`, and `recursive_depth`. Do not re-derive these values from `project-config.json` in this phase, because the user may have adjusted them during Phase 1.5 without the changes being written back to config.
 
 #### Web mode (report_source = "web", default)
 
@@ -181,9 +279,11 @@ Resolve the current year for recency-aware search queries:
 CURRENT_YEAR=$(date +%Y)
 ```
 
-Spawn section-researcher agents in parallel batches (max 5 per batch):
+Spawn web researcher agents in parallel batches of `batch_size` (from the plan).
 
-**Basic/Detailed/Outline/Resource mode**:
+The agent type is `plan.web_agent` — either `section-researcher` (no recursion) or `deep-researcher` (recursive). Deep mode defaults to `deep-researcher` at depth 2, but the user may have disabled recursion in Phase 1.5, in which case deep mode runs through `section-researcher` across the full leaf sub-question set.
+
+**`section-researcher` path** (all modes when `plan.web_agent == "section-researcher"`):
 ```
 For each sub-question entity in 00-sub-questions/data/:
   Task(section-researcher,
@@ -196,7 +296,7 @@ For each sub-question entity in 00-sub-questions/data/:
     run_in_background=true)
 ```
 
-**Deep mode**:
+**`deep-researcher` path** (deep mode when `plan.web_agent == "deep-researcher"`):
 ```
 For each leaf sub-question in 00-sub-questions/data/:
   Task(deep-researcher,
@@ -206,7 +306,7 @@ For each leaf sub-question in 00-sub-questions/data/:
     CURRENT_YEAR=<current_year>,
     SOURCE_URLS=<from project-config.json, if set>,
     QUERY_DOMAINS=<from project-config.json, if set>,
-    DEPTH=2,
+    DEPTH=<plan.recursive_depth>,
     run_in_background=true)
 ```
 
@@ -244,14 +344,14 @@ Deep mode with wiki sources: use wiki-researcher (not deep-researcher), same rat
 
 #### Hybrid mode (report_source = "hybrid")
 
-Run available researcher types in parallel based on configured paths, then merge all findings in Phase 3. This produces the richest context.
+Run the researcher types listed in `plan.channels` in parallel, then merge all findings in Phase 3. This produces the richest context.
 
-Hybrid mode is additive: each channel gets the full sub-question set. If deep mode produces 8 leaf sub-questions, hybrid spawns 8 web-researchers + 8 wiki-researchers (16 total), not 4+4. Wiki and local researchers are cheap (local file reads, no rate limiting), so the added coverage justifies the extra agents. Only the batching cap (4-5 concurrent) constrains throughput.
+Hybrid mode is additive: each active channel gets the full sub-question set. If deep mode produces 8 leaf sub-questions and `plan.channels` is `["web", "wiki"]`, hybrid spawns 8 web-researchers + 8 wiki-researchers (16 total). Wiki and local researchers are cheap (local file reads, no rate limiting), so the added coverage usually justifies the extra agents — but the user can drop channels via the "Web-only" option in Phase 1.5 if they want a cheaper run.
 
 ```
 For each sub-question entity in 00-sub-questions/data/:
-  # Wiki research (if wiki_paths configured)
-  if wiki_paths:
+  # Wiki research (only if "wiki" in plan.channels)
+  if "wiki" in plan.channels:
     Task(wiki-researcher,
       SUB_QUESTION_PATH=<path>,
       PROJECT_PATH=<project_path>,
@@ -259,8 +359,8 @@ For each sub-question entity in 00-sub-questions/data/:
       OUTPUT_LANGUAGE=<output_language>,
       run_in_background=true)
 
-  # Local research (if document_paths configured)
-  if document_paths:
+  # Local research (only if "local" in plan.channels)
+  if "local" in plan.channels:
     Task(local-researcher,
       SUB_QUESTION_PATH=<path>,
       PROJECT_PATH=<project_path>,
@@ -268,20 +368,21 @@ For each sub-question entity in 00-sub-questions/data/:
       OUTPUT_LANGUAGE=<output_language>,
       run_in_background=true)
 
-  # Web research (always in hybrid mode)
-  Task(section-researcher,
+  # Web research (always active in hybrid — always in plan.channels)
+  Task(<plan.web_agent>,
     SUB_QUESTION_PATH=<path>,
     PROJECT_PATH=<project_path>,
     MARKET=<market>,
     CURRENT_YEAR=<current_year>,
     SOURCE_URLS=<from project-config.json, if set>,
     QUERY_DOMAINS=<from project-config.json, if set>,
+    DEPTH=<plan.recursive_depth>,   # only if plan.web_agent == "deep-researcher"
     run_in_background=true)
 ```
 
 All researcher types create separate context entities for the same sub-question. The merge-context script (Phase 3) handles deduplication across wiki, local, and web sources.
 
-Batch in groups of 4-5 to respect concurrency limits. Wait for each batch before starting next.
+Batch in groups of `plan.batch_size` to respect concurrency limits. Wait for each batch before starting next.
 
 After all researchers complete:
 - Check return values for failures

@@ -82,6 +82,9 @@ Project config (`project-config.json`) supports these optional fields:
 | `query_domains` | string[] | [] | Restrict web search to these domains |
 | `max_subtopics` | int | per-type default | Override sub-question count |
 | `curate_sources` | bool | auto | Source curation: auto-activates for detailed/deep with 8+ sources. Set `true` to force, `false` to disable |
+| `confirm_plan` | bool | `true` | Phase 1.5 execution plan preview: when `true`, research-report prints the plan (sub-Q count × channels × agent type × recursion × batches × cost) and asks the user to confirm or adjust before spawning researchers. Set `false` for silent runs — plan is still logged to `.logs/phase-1.5-plan.json` |
+| `recursive_depth` | int | `0` (deep mode may override via plan confirmation) | Controls deep-mode web researcher type. `0` forces `section-researcher` even in deep mode (flat single-pass); `2` uses `deep-researcher` with 2-level internal recursion. Ignored in basic/detailed/outline/resource modes |
+| `batch_size` | int | `4` | Parallel researcher batch size in Phase 2. `2` is gentler on WebFetch rate limits; `6` is faster on quiet markets. Applies to all source modes |
 
 ## Key Conventions
 
