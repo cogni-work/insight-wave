@@ -2114,9 +2114,9 @@ FLIPBOOK_CSS = """\
 }
 
 .page-inner .chart-container { max-width: 100%; margin: 16px 0; }
-.page-inner .chart-container canvas { max-height: 55%; }
+.page-inner .chart-container canvas { max-height: calc(var(--content-height, 580px) * 0.55); }
 .page-inner .concept-diagram { max-width: 100%; margin: 16px 0; }
-.page-inner .concept-diagram svg { width: 100%; height: auto; max-height: 50%; }
+.page-inner .concept-diagram svg { width: 100%; height: auto; max-height: calc(var(--content-height, 580px) * 0.5); }
 .page-inner .summary-card {
   margin: 12px 0;
   padding: 12px 16px;
@@ -2124,6 +2124,27 @@ FLIPBOOK_CSS = """\
   border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius) var(--radius) 0;
 }
+
+/* Block measurer — mirrors .page-inner styling for accurate height measurement */
+.block-measurer {
+  position: absolute !important;
+  visibility: hidden !important;
+  height: auto !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+/* Scrollable page-inner for oversized text blocks (tables, code, long lists) */
+.page-inner.scrollable {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.page-inner.scrollable::-webkit-scrollbar { width: 4px; }
+.page-inner.scrollable::-webkit-scrollbar-track { background: transparent; }
+.page-inner.scrollable::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Scaled-to-fit enrichment blocks */
+.block.scaled-to-fit { transform-origin: top left; }
 
 /* 3D page-curl animation */
 .spread.active.turning-forward .page-right {
@@ -2306,14 +2327,17 @@ FLIPBOOK_CSS = """\
 """
 
 FLIPBOOK_JS = """\
-document.addEventListener('DOMContentLoaded', function() {
+function paginateAndReveal() {
   var stream = document.getElementById('content-stream');
   var flipbook = document.getElementById('flipbook');
   var blocks = Array.from(stream.querySelectorAll('.block'));
 
   var isMobile = window.innerWidth <= 1024;
   var pageHeight = computePageHeight();
-  var contentHeight = pageHeight - 96;
+  var PAGE_NUMBER_RESERVE = 24;
+  var contentHeight = pageHeight - 96 - PAGE_NUMBER_RESERVE;
+
+  document.documentElement.style.setProperty('--content-height', contentHeight + 'px');
 
   var pages = [];
   var coverPage = document.querySelector('.page-cover');
@@ -2323,6 +2347,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var currentPage = createPage(pages.length + 1);
   var usedHeight = 0;
+
+  var MIN_SCALE = 0.6;
 
   blocks.forEach(function(block) {
     var type = block.dataset.type;
@@ -2341,8 +2367,23 @@ document.addEventListener('DOMContentLoaded', function() {
         pages.push(currentPage);
         currentPage = createPage(pages.length + 1);
       }
-      block.style.maxHeight = contentHeight + 'px';
-      block.style.overflowY = 'auto';
+
+      var track = block.dataset.track;
+      if (track === 'data' || track === 'concept') {
+        var scaleFactor = contentHeight / blockHeight;
+        if (scaleFactor >= MIN_SCALE) {
+          block.classList.add('scaled-to-fit');
+          block.style.transform = 'scale(' + scaleFactor + ')';
+          block.style.width = (100 / scaleFactor) + '%';
+        } else {
+          block.style.maxHeight = contentHeight + 'px';
+          block.style.overflowY = 'auto';
+        }
+      } else {
+        block.style.maxHeight = contentHeight + 'px';
+        currentPage.querySelector('.page-inner').classList.add('scrollable');
+      }
+
       currentPage.querySelector('.page-inner').appendChild(block);
       pages.push(currentPage);
       currentPage = createPage(pages.length + 1);
@@ -2375,8 +2416,18 @@ document.addEventListener('DOMContentLoaded', function() {
   initNavigation(spreads, pages.length);
   initChartsForSpread(0);
 
+  verifyPageFit(contentHeight);
+
   document.getElementById('loader').classList.add('hidden');
   flipbook.classList.add('ready');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(paginateAndReveal);
+  } else {
+    paginateAndReveal();
+  }
 });
 
 function computePageHeight() {
@@ -2414,9 +2465,8 @@ function measureBlock(block, maxHeight) {
   if (!measurer) {
     measurer = document.createElement('div');
     measurer.id = 'block-measurer';
-    measurer.style.cssText = 'position:absolute;visibility:hidden;' +
-      'width:' + getPageContentWidth() + 'px;' +
-      'padding:0;font-size:0.95rem;line-height:1.7;';
+    measurer.className = 'page-inner block-measurer';
+    measurer.style.width = getPageContentWidth() + 'px';
     document.body.appendChild(measurer);
   }
   measurer.appendChild(block);
@@ -2562,6 +2612,8 @@ var chartInitialized = {};
 function initChartsForSpread(spreadIndex) {
   var spread = document.querySelectorAll('.spread')[spreadIndex];
   if (!spread) return;
+  var pageHeight = computePageHeight();
+  var contentH = pageHeight - 96 - 24;
   var canvases = spread.querySelectorAll('canvas[id^="enr-"]');
   canvases.forEach(function(canvas) {
     var id = canvas.id;
@@ -2569,6 +2621,41 @@ function initChartsForSpread(spreadIndex) {
     if (window._chartInits && window._chartInits[id]) {
       window._chartInits[id]();
       chartInitialized[id] = true;
+      var block = canvas.closest('.block');
+      if (block && !block.classList.contains('scaled-to-fit')) {
+        var blockH = block.getBoundingClientRect().height;
+        if (blockH > contentH) {
+          var scale = contentH / blockH;
+          if (scale >= 0.6) {
+            block.classList.add('scaled-to-fit');
+            block.style.transform = 'scale(' + scale + ')';
+            block.style.width = (100 / scale) + '%';
+          }
+        }
+      }
+    }
+  });
+}
+
+function verifyPageFit(contentH) {
+  document.querySelectorAll('.page-inner').forEach(function(inner) {
+    if (inner.scrollHeight > inner.clientHeight + 2) {
+      var visualBlocks = inner.querySelectorAll('[data-track="data"], [data-track="concept"]');
+      if (visualBlocks.length > 0 && inner.querySelectorAll('.block').length <= 2) {
+        var block = inner.querySelector('.block');
+        if (block && !block.classList.contains('scaled-to-fit')) {
+          var scale = inner.clientHeight / inner.scrollHeight;
+          if (scale >= 0.6) {
+            block.classList.add('scaled-to-fit');
+            block.style.transform = 'scale(' + scale + ')';
+            block.style.width = (100 / scale) + '%';
+          } else {
+            inner.classList.add('scrollable');
+          }
+        }
+      } else {
+        inner.classList.add('scrollable');
+      }
     }
   });
 }

@@ -175,9 +175,29 @@ Every content element in `.content-stream` is wrapped in a `.block` div with a `
 | `paragraph` | `<p>` | Never split. If it doesn't fit, move to next page. |
 | `blockquote` | `<blockquote>` | Never split. Move to next page if needed. |
 | `list` | `<ul>` or `<ol>` | Never split. Move to next page if needed. |
-| `table` | `<div class="table-wrapper"><table>` | If taller than page, gets own page with `overflow-y: auto`. |
-| `enrichment` | Chart, SVG, or summary card | Never split. If doesn't fit, gets own page. Charts max 60% page height. |
-| `code` | `<pre><code>` | If taller than page, gets own page with `overflow-y: auto`. |
+| `table` | `<div class="table-wrapper"><table>` | If taller than page, gets own page with scrollable `.page-inner`. |
+| `enrichment` | Chart, SVG, or summary card | Never split. If doesn't fit, gets own page. Visual enrichments (data/concept tracks) are scaled-to-fit via CSS transform (min scale 0.6); below that threshold, falls back to scrollable page. |
+| `code` | `<pre><code>` | If taller than page, gets own page with scrollable `.page-inner`. |
+
+### Oversized Block Strategy
+
+When a block exceeds the available content height, the pagination engine applies a two-tier strategy:
+
+**Tier A — Scale-to-fit (visual enrichments):** Blocks with `data-track="data"` or `data-track="concept"` (charts, SVGs, concept diagrams) are shrunk via `transform: scale()` to fit within the page. A minimum scale factor of 0.6 is enforced — below that, the block falls back to Tier B. The `scaled-to-fit` CSS class is added for styling.
+
+**Tier B — Scrollable page (text blocks):** Tables, code blocks, long lists, and any visual block below the 0.6 scale threshold get a scrollable `.page-inner` via the `scrollable` CSS class. A thin 4px scrollbar appears within the page boundaries.
+
+### Content Height Calculation
+
+```
+contentHeight = pageHeight - 96 (padding: 48px top + 48px bottom) - 24 (page number reserve)
+```
+
+The `--content-height` CSS variable is set from JS so CSS `max-height` constraints can reference actual available space. Chart canvases use `max-height: calc(var(--content-height) * 0.55)` and SVG diagrams use `max-height: calc(var(--content-height) * 0.5)`.
+
+### Post-Pagination Verification
+
+After pagination completes, `verifyPageFit()` checks every `.page-inner` for overflow (`scrollHeight > clientHeight`). Any remaining overflow is corrected by scaling visual blocks or enabling scroll on text-heavy pages. Pagination also waits for `document.fonts.ready` to ensure web fonts are loaded before measuring blocks.
 
 ## CSS Architecture
 
@@ -197,6 +217,7 @@ Same `:root {}` custom properties as the scroll layout — colors, fonts, spacin
   --spine-width: 2px;
   --turn-duration: 0.8s;
   --turn-easing: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --content-height: 580px;            /* set by JS: pageHeight - 96 - 24 */
 }
 ```
 
