@@ -66,7 +66,7 @@ This division matters because chart design benefits from LLM creativity (context
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `source_path` | auto-discovered | Report markdown file path |
-| `output_path` | `{dir}/output/{stem}-enriched.html` | HTML output path |
+| `output_path` | layout-aware (see below) | HTML output path. Default: `{dir}/output/{stem}-enriched.html` for scroll, `{dir}/output/{stem}-enriched-flipbook.html` for flipbook. Explicit value overrides the convention. |
 | `report_type` | `auto` | Override detection: `trend-report`, `research-report`, `generic` |
 | `language` | from frontmatter | `en` or `de` — affects chart labels, axis titles, summary card text |
 | `theme` | interactive | Theme path, or omit to trigger `cogni-workspace:pick-theme` |
@@ -154,7 +154,14 @@ If `layout` was not provided as a parameter, ask the user via AskUserQuestion:
   2. "Flipbook" — "Magazine-style two-page spread with 3D page-turning. Best for executive presentations and visual impact."
 - Default (empty response): `scroll`
 
-Store: `report_type`, `source_path`, `source_dir`, `language`, `layout`, `design_variables` (the JSON object).
+**Output path resolution:**
+If `output_path` was not explicitly provided:
+- `scroll`: `{source_dir}/output/{stem}-enriched.html`
+- `flipbook`: `{source_dir}/output/{stem}-enriched-flipbook.html`
+
+This naming convention lets both layouts coexist on disk without overwriting each other. An explicit `output_path` parameter overrides the convention.
+
+Store: `report_type`, `source_path`, `source_dir`, `language`, `layout`, `output_path`, `design_variables` (the JSON object).
 
 ---
 
@@ -393,6 +400,7 @@ If any gate fails: fix the specific issue and re-validate. Do not regenerate fro
 Print summary:
 - Enrichments injected: N (data: X, concept: Y, html: Z)
 - Output: {output_path}
+- Layout: {layout}
 - Theme: {theme_name}
 - Skipped: {any enrichments that failed generation, with reasons}
 
@@ -424,11 +432,45 @@ The agent takes 3 screenshots (infographic header, report body, chart-heavy sect
 
 ---
 
+### Phase 5c: Alternative Layout Offer (conditional)
+
+> Offer to generate the other layout style so the user can have both versions.
+
+This phase runs when `interactive=true` (default) and the primary HTML was written successfully.
+
+**Determine alternative:**
+- If current `layout` == `scroll`: alternative is `flipbook`, alternative path is `{source_dir}/output/{stem}-enriched-flipbook.html`
+- If current `layout` == `flipbook`: alternative is `scroll`, alternative path is `{source_dir}/output/{stem}-enriched.html`
+
+**Skip if alternative already exists** on disk — both layouts are already available. Print: "Both layouts available: {output_path} and {alt_output_path}" and proceed to Phase 6.
+
+**Ask via AskUserQuestion:**
+- Header: "Alternative Layout"
+- Question: "The {layout} version is ready. Would you also like a {alternative} version?"
+- Options:
+  1. "Yes" — "Reuses the same theme, enrichment plan, and infographic. Only re-runs HTML assembly and validation."
+  2. "No thanks"
+- Default (empty response): skip
+
+**If accepted:**
+1. Set `alt_output_path` to the alternative path derived above.
+2. Re-dispatch the `report-html-writer` agent with the SAME inputs as Phase 4, except:
+   - `OUTPUT_PATH`: `{alt_output_path}`
+   - `LAYOUT`: `{alternative}`
+   All other parameters (SOURCE_PATH, ENRICHMENT_PLAN_PATH, DESIGN_VARIABLES_PATH, LANGUAGE, INFOGRAPHIC_*, SCRIPT_PATH) remain identical.
+3. Run Phase 5 validation gates on the alternative output.
+4. Run Phase 5b visual review on the alternative output (if Browser MCP is available).
+5. Print: "Both layouts generated: {output_path} ({layout}) and {alt_output_path} ({alternative})"
+
+Do NOT re-run Phases 0-3. The enrichment plan, design variables, and infographic artifacts are layout-independent — only the HTML assembly and post-processing differ.
+
+---
+
 ### Phase 6: Format Export (conditional)
 
 > Convert the enriched HTML to PDF or DOCX when requested.
 
-This phase only runs when `formats` includes `pdf` or `docx`. The HTML output from Phase 4/5 is always the starting point.
+This phase only runs when `formats` includes `pdf` or `docx`. The HTML output from Phase 4/5 is always the starting point. If both layouts were generated in Phase 5c, export from the primary layout only.
 
 **PDF export:**
 
@@ -442,7 +484,7 @@ This phase only runs when `formats` includes `pdf` or `docx`. The HTML output fr
    - Preferred: `Skill(document-skills:pdf)` from the enriched HTML. Pass `design-variables.json` for theme token access.
    - Fallback: If weasyprint is available: `python3 -c "import weasyprint; weasyprint.HTML(filename='{html_path}').write_pdf('{pdf_path}')"`
    - Last resort: Inform user the HTML is available and suggest browser print-to-PDF
-5. Output: `{output_dir}/{stem}-enriched.pdf`
+5. Output: `{output_dir}/{stem}-enriched.pdf` (scroll) or `{output_dir}/{stem}-enriched-flipbook.pdf` (flipbook). Mirror the layout suffix from the HTML filename.
 
 **DOCX export:**
 
@@ -460,6 +502,7 @@ DOCX cannot represent interactive charts or inline SVG. Convert from the origina
 
 After all requested formats are generated:
 - List exported files with paths and file sizes
+- If both layouts were generated (Phase 5c), list both HTML paths with their layout labels
 - Note which theme was applied
 - Note any limitations (e.g., "PDF generated without charts — use browser print for charts" or "DOCX contains text only — charts are in the HTML version")
 

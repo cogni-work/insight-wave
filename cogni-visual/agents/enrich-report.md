@@ -24,6 +24,9 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
 {
   "status": "ok",
   "output_path": "/path/to/enriched.html",
+  "layout": "scroll",
+  "alt_output_path": "/path/to/enriched-flipbook.html",
+  "alt_layout": "flipbook",
   "theme": "theme-name",
   "enrichments": {
     "total": 12,
@@ -35,6 +38,9 @@ You are the enrich-report agent. Your job is to execute the enrich-report skill 
   "visual_review": {"score": 8.5, "pass": true, "review_passes": 1}
 }
 ```
+
+- `layout` — the primary layout used (`scroll` or `flipbook`)
+- `alt_output_path` and `alt_layout` — present only if the user accepted the alternative layout offer in Phase 5c. Omit both fields if only one layout was generated.
 
 ## Important
 
