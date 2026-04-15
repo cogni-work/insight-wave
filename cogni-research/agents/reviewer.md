@@ -79,14 +79,17 @@ Before scoring dimensions, count the draft's words (use `wc -w` via Bash on the 
 - **Outline**: 1000 words minimum
 - **Resource**: 1500 words minimum
 
-Compute the delivered-to-minimum ratio: `ratio = actual_words / minimum`. Apply a stepped cap on the completeness score based on how severe the deficit is — a 50% shortfall is a categorically worse failure than a 10% shortfall, and the score must reflect that so the Phase 3 decision matrix actually forces a revise rather than silently letting the weighted average drift past the accept threshold:
+Compute the delivered-to-minimum ratio: `ratio = actual_words / minimum`. Apply a stepped cap on the completeness score based on how severe the deficit is — a 50% shortfall is a categorically worse failure than a 2% shortfall, and the score must reflect that so the Phase 3 decision matrix actually forces a revise when it should, but doesn't uselessly bounce drafts that are within rounding noise of the floor:
 
 - `ratio ≥ 1.00` — no cap, score completeness normally
-- `0.75 ≤ ratio < 1.00` — cap completeness at **0.60** (mild shortfall)
+- `0.98 ≤ ratio < 1.00` — cap completeness at **0.75** (rounding-noise band; the draft is within 2% of the floor and does not need full expansion — the stepped cap still nudges the verdict but the higher band avoids a bounce-back on a draft the user would reasonably ship as-is)
+- `0.75 ≤ ratio < 0.98` — cap completeness at **0.60** (mild-to-moderate shortfall)
 - `0.50 ≤ ratio < 0.75` — cap completeness at **0.45** (significant shortfall)
 - `ratio < 0.50` — cap completeness at **0.30** (catastrophic shortfall — forces overall weighted score below the 0.75 accept threshold even when every other dimension is perfect)
 
-When any cap applies, add a high-severity issue to the issues list whose text begins with the exact phrase `Word deficit` — the revisor keys on this prefix to switch into expansion mode. Recommended issue text:
+When the `[0.98, 1.00)` rounding-noise band applies, add a **low-severity** issue whose text begins with `Word deficit (rounding-noise)` rather than the plain `Word deficit` prefix — the revisor does **not** switch into expansion mode for this band, and the Phase 5 iteration loop does not trigger a second pass. The whole point of the band is that no expansion is needed; flagging it as informational surfaces the shortfall in the verdict without driving another writer call.
+
+When any deeper cap (`[0.75, 0.98)`, `[0.50, 0.75)`, `< 0.50`) applies, add a **high-severity** issue whose text begins with the exact phrase `Word deficit` (no `(rounding-noise)` suffix) — the revisor keys on this prefix to switch into expansion mode. Recommended issue text:
 
 ```
 Word deficit: delivered N words, minimum M required for {report_type} mode (ratio: R). Expand under-budget sections with additional evidence density rather than new top-level content.
