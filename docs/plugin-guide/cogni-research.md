@@ -37,13 +37,16 @@ Never run verify-report in the same session as a long research-report run withou
 | Detailed | 5–10 | 10–15 | 5,000–10,000 | Multi-section report with outline |
 | Deep | 10–20 (tree) | 15–25 | 8,000–15,000 | Recursive exploration, maximum depth |
 
-### Three Source Modes
+### Four Source Modes
 
 | Mode | What it researches |
 |------|--------------------|
 | web | Live web search via WebSearch + WebFetch (default) |
 | local | User-provided documents (PDF, MD, TXT, CSV, JSON) via Read + Glob + Grep |
-| hybrid | Both web and local researchers in parallel, merged in aggregation |
+| wiki | Compiled knowledge from one or more cogni-wiki instances — `wiki-researcher` agents read the wiki indexes and extract grounded findings from pre-synthesized wiki pages, never from model memory |
+| hybrid | Runs web, local, and/or wiki researchers in parallel and merges results during aggregation |
+
+Use wiki mode when you've already ingested the relevant sources into a cogni-wiki with `/wiki-ingest` — the researcher reads the wiki's compile-time synthesis instead of re-fetching and re-summarising the same sources for every question. Combine it with web or local in hybrid mode when wiki coverage is partial.
 
 ### Entity Model
 
@@ -110,7 +113,7 @@ What happens:
 
 ### research-report
 
-Main orchestration skill — six-phase pipeline from topic to structurally reviewed draft. Supports three depths (basic/detailed/deep), three source modes (web/local/hybrid), and configurable options for market localization, output language, tone, citation format, researcher role, source URL pre-fetch, domain filtering, and sub-question count.
+Main orchestration skill — six-phase pipeline from topic to structurally reviewed draft. Supports three depths (basic/detailed/deep), four source modes (web/local/wiki/hybrid), and configurable options for market localization, output language, tone, citation format, researcher role, source URL pre-fetch, domain filtering, and sub-question count.
 
 **Example prompt:** "Write a deep research report on quantum computing's impact on post-quantum cryptography, focus on NIST standardization"
 
@@ -163,6 +166,7 @@ Reads the current project directory and recommends the next action — resume an
 | Plugin | What is consumed |
 |--------|-----------------|
 | cogni-claims | Source URL verification in verify-report (primary dependency) |
+| cogni-wiki | Pre-synthesized wiki pages read by `wiki-researcher` agents in `wiki` and `hybrid` source modes |
 | cogni-visual | `enrich-report` for themed HTML with Chart.js visualizations and Excalidraw diagrams, plus optional PDF/DOCX export |
 | cogni-workspace | Theme selection for visual exports |
 

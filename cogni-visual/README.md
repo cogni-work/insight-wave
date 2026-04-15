@@ -120,7 +120,7 @@ The pipeline follows a compose-polish-visualize flow: narratives from cogni-narr
 
 ```
 cogni-visual/                              # 7 skills · 19 agents · 6 commands · 1 hook
-├── .claude-plugin/                        Plugin manifest (v0.16.19)
+├── .claude-plugin/                        Plugin manifest (v0.16.20)
 ├── skills/                               7 visual skills (4 brief generators · 1 renderer · 1 enricher · 1 reviewer)
 │   ├── story-to-slides/
 │   ├── story-to-web/
