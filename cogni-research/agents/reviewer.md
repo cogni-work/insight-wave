@@ -90,7 +90,7 @@ Compute `density = cites / words × 1000` for each section. Apply the tiered thr
 | `[3.0, 6.0)` | **low** | low-severity issue |
 | `< 3.0` | **high** | **high-severity** issue |
 
-The 6.0 floor is calibrated against the writer's single-pass baseline (8.0 on KI-Adoption v1) — a well-cited draft naturally sits above 6.0; a section below 3.0 is approaching "uncited prose". Sections below 100 body words are exempt (tiny conclusions or callouts cannot carry meaningful density signal).
+The 6.0 floor is calibrated against the writer's single-pass baseline (8.0 on KI-Adoption v1) — a well-cited draft naturally sits above 6.0; the `[3.0, 6.0)` low band is the **nudge zone** where a section is thin but not failing, and a section below 3.0 is approaching "uncited prose". Sections below 100 body words are exempt (tiny conclusions or callouts cannot carry meaningful density signal).
 
 Based on the count and severity of degraded sections, apply a **stepped cap on the Depth dimension** — the same cap pattern the Word Count Gate uses for completeness, for the same reason: a dimension score that ignores a categorical failure is worse than a bounded score that reflects it:
 
