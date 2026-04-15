@@ -82,6 +82,38 @@
       "timezone": "Europe/Skopje",
       "regulatory_bodies": ["AZLP", "AEK", "MKD-CIRT"]
     },
+    "fr": {
+      "name": "France",
+      "scope": ["FR"],
+      "currency": "EUR",
+      "locale": "fr-FR",
+      "timezone": "Europe/Paris",
+      "regulatory_bodies": ["CNIL", "ARCEP", "ANSSI"]
+    },
+    "it": {
+      "name": "Italy",
+      "scope": ["IT"],
+      "currency": "EUR",
+      "locale": "it-IT",
+      "timezone": "Europe/Rome",
+      "regulatory_bodies": ["Garante Privacy", "AGCOM", "ACN"]
+    },
+    "nl": {
+      "name": "Netherlands",
+      "scope": ["NL"],
+      "currency": "EUR",
+      "locale": "nl-NL",
+      "timezone": "Europe/Amsterdam",
+      "regulatory_bodies": ["Autoriteit Persoonsgegevens", "ACM", "NCSC-NL"]
+    },
+    "es": {
+      "name": "Spain",
+      "scope": ["ES"],
+      "currency": "EUR",
+      "locale": "es-ES",
+      "timezone": "Europe/Madrid",
+      "regulatory_bodies": ["AEPD", "CNMC", "INCIBE"]
+    },
     "dach": {
       "name": "DACH",
       "scope": ["DE", "AT", "CH"],
