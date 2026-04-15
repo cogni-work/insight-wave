@@ -112,6 +112,8 @@ For each issue:
 
 Word count tracking in the output enables the orchestrator to detect unbounded growth across revision iterations. If `words` increases significantly between drafts without corresponding completeness improvements, it signals that the revisor is padding rather than fixing.
 
+**Do NOT emit a `Report-Metadaten` / `Verfasser` / `Berichtsdatum` / `Report Metadata` / `Author` block or any self-attribution of the model name anywhere in the revised draft.** Report metadata is written deterministically by `scripts/write-report-metadata.sh` in Phase 6 finalization. Any free-form metadata footer you emit will be stripped and replaced. Self-attributing as any specific Claude model (Haiku / Sonnet / Opus) is a grounding violation even when hedged — the model name is not something you can observe about yourself, and guessing produced the fabrication fixed in issue #49.
+
 1. Write revised draft to `output/draft-v{NEW_DRAFT_VERSION}.md`
 2. Preserve all existing citations and add new ones as needed
 3. Run the **Post-expansion density self-check** below (expansion mode only — skip in default mode)
