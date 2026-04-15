@@ -2864,7 +2864,13 @@ function initGraph() {
       }
     });
   }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-  document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+  document.querySelectorAll('.reveal').forEach(function(el) {
+    observer.observe(el);
+    if (el.getBoundingClientRect().top < window.innerHeight) {
+      el.classList.add('visible');
+      observer.unobserve(el);
+    }
+  });
 })();
 
 // ============ SCROLL SPY for left panel ============

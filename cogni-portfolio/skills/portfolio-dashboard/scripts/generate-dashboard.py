@@ -3595,6 +3595,10 @@ function fmtCurrency(val, cur) {{
 
   document.querySelectorAll('.reveal').forEach(function(el) {{
     observer.observe(el);
+    if (el.getBoundingClientRect().top < window.innerHeight) {{
+      el.classList.add('visible');
+      observer.unobserve(el);
+    }}
   }});
 
   /* Nav: smooth scroll to sections and active state tracking */
