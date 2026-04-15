@@ -33,6 +33,11 @@ GERMAN_MONTHS = [
     "Juli", "August", "September", "Oktober", "November", "Dezember",
 ]
 
+ENGLISH_MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
+
 FOOTER_PATTERN = re.compile(
     r"\n*\*\*(?:Report-Metadaten|Report Metadata)\*\*:.*?(?=\n\n|\Z)",
     re.DOTALL,
@@ -89,7 +94,7 @@ def format_date(lang: str) -> str:
     if lang.startswith("de"):
         return f"{today.day}. {GERMAN_MONTHS[today.month - 1]} {today.year}"
     if lang.startswith("en"):
-        return today.strftime("%B %-d, %Y") if os.name != "nt" else today.strftime("%B %d, %Y")
+        return f"{ENGLISH_MONTHS[today.month - 1]} {today.day}, {today.year}"
     return today.isoformat()
 
 
