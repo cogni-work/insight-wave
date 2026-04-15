@@ -196,6 +196,183 @@
     "org_size_reference": "mid-size organization with £400M revenue"
   },
 
+  "at": {
+    "region_qualifiers": {
+      "en": "Austria",
+      "local": "Österreich"
+    },
+    "local_language": "de",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:rtr.at {SUBSECTOR_LOCAL} Telekom Regulierung {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:bwb.gv.at {SUBSECTOR_LOCAL} Wettbewerb Digitalisierung {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:ffg.at {SUBSECTOR_LOCAL} Forschung Innovation {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:aws.at {SUBSECTOR_LOCAL} Startup Innovation {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:diepresse.com {SUBSECTOR_LOCAL} Wirtschaft Digitalisierung {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:ubit.at {SUBSECTOR_LOCAL} IT Innovation {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Austria digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:ey.com {SUBSECTOR_EN} Austria digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "RTR", "BWB", "DSB", "FMA"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Austria {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "cz": {
+    "region_qualifiers": {
+      "en": "Czech Republic",
+      "local": "Česko"
+    },
+    "local_language": "cs",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:ctu.cz {SUBSECTOR_LOCAL} telekomunikace regulace {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:uohs.cz {SUBSECTOR_LOCAL} hospodářská soutěž digitální {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:avcr.cz {SUBSECTOR_LOCAL} výzkum inovace {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:czechinvest.org {SUBSECTOR_LOCAL} inovace startup {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:hn.cz {SUBSECTOR_LOCAL} digitální transformace {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:lupa.cz {SUBSECTOR_LOCAL} technologie digitalizace {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Czech Republic digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Czech digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ČTÚ", "ÚOHS", "ÚOOÚ", "DIA", "ČNB"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Czech Republic {CURRENT_YEAR}",
+    "currency": "CZK",
+    "org_size_reference": "mid-size organization with 12B CZK revenue"
+  },
+
+  "sk": {
+    "region_qualifiers": {
+      "en": "Slovakia",
+      "local": "Slovensko"
+    },
+    "local_language": "sk",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:teleoff.gov.sk {SUBSECTOR_LOCAL} telekomunikácie regulácia {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:antimon.gov.sk {SUBSECTOR_LOCAL} hospodárska súťaž digitálne {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:sav.sk {SUBSECTOR_LOCAL} výskum inovácie {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:sbagency.sk {SUBSECTOR_LOCAL} startup inovácie {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:hnonline.sk {SUBSECTOR_LOCAL} digitálna transformácia {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:itas.sk {SUBSECTOR_LOCAL} IT priemysel {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Slovakia digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Slovakia digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "RÚ SR", "PMÚ SR", "Úrad na ochranu osobných údajov SR", "NBS", "NBÚ"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Slovakia {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "hu": {
+    "region_qualifiers": {
+      "en": "Hungary",
+      "local": "Magyarország"
+    },
+    "local_language": "hu",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:nmhh.hu {SUBSECTOR_LOCAL} távközlés szabályozás {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:gvh.hu {SUBSECTOR_LOCAL} versenyjog digitális {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:mta.hu {SUBSECTOR_LOCAL} kutatás innováció {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:nkfih.gov.hu {SUBSECTOR_LOCAL} innováció K+F {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:portfolio.hu {SUBSECTOR_LOCAL} digitális átalakulás {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:ivsz.hu {SUBSECTOR_LOCAL} IKT iparág {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Hungary digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Hungary digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "NMHH", "GVH", "NAIH", "MNB", "NKFH"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Hungary {CURRENT_YEAR}",
+    "currency": "HUF",
+    "org_size_reference": "mid-size organization with 180B HUF revenue"
+  },
+
+  "ro": {
+    "region_qualifiers": {
+      "en": "Romania",
+      "local": "România"
+    },
+    "local_language": "ro",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:ancom.ro {SUBSECTOR_LOCAL} comunicații reglementare {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:consiliulconcurentei.ro {SUBSECTOR_LOCAL} concurență digital {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:acad.ro {SUBSECTOR_LOCAL} cercetare inovație {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:adr.gov.ro {SUBSECTOR_LOCAL} digitalizare inovație {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:zf.ro {SUBSECTOR_LOCAL} transformare digitală {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:anis.ro {SUBSECTOR_LOCAL} industrie software IT {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Romania digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Romania digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ANCOM", "Consiliul Concurenței", "ADR", "ANSPDCP", "ASF"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Romania {CURRENT_YEAR}",
+    "currency": "RON",
+    "org_size_reference": "mid-size organization with 2.5B RON revenue"
+  },
+
+  "hr": {
+    "region_qualifiers": {
+      "en": "Croatia",
+      "local": "Hrvatska"
+    },
+    "local_language": "hr",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:hakom.hr {SUBSECTOR_LOCAL} elektroničke komunikacije regulativa {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:aztn.hr {SUBSECTOR_LOCAL} tržišno natjecanje digitalno {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:info.hazu.hr {SUBSECTOR_LOCAL} istraživanje inovacije {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:hamagbicro.hr {SUBSECTOR_LOCAL} inovacije startup {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:poslovni.hr {SUBSECTOR_LOCAL} digitalna transformacija {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:bug.hr {SUBSECTOR_LOCAL} tehnologija digitalizacija {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Croatia digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Croatia digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "HAKOM", "AZTN", "AZOP", "HANFA", "HAMAG-BICRO"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Croatia {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "gr": {
+    "region_qualifiers": {
+      "en": "Greece",
+      "local": "Ελλάδα"
+    },
+    "local_language": "el",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:eett.gr {SUBSECTOR_LOCAL} τηλεπικοινωνίες ρύθμιση {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:epant.gr {SUBSECTOR_LOCAL} ανταγωνισμός ψηφιακή αγορά {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:eie.gr {SUBSECTOR_LOCAL} έρευνα καινοτομία {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:elevategreece.gov.gr {SUBSECTOR_LOCAL} startup καινοτομία {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:naftemporiki.gr {SUBSECTOR_LOCAL} ψηφιακός μετασχηματισμός {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:sepe.gr {SUBSECTOR_LOCAL} ψηφιακή τεχνολογία κλάδος {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Greece digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Greece digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "EETT", "EPANT", "HDPA", "Bank of Greece", "Hellenic Capital Market Commission"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Greece {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "mk": {
+    "_note": "EU candidate country, not an EU member. Regulatory alignment follows the EU acquis rather than direct EUR-Lex applicability. Currency is the Macedonian denar (MKD); Latin 'Severna Makedonija' used for search compatibility.",
+    "region_qualifiers": {
+      "en": "North Macedonia",
+      "local": "Severna Makedonija"
+    },
+    "local_language": "mk",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:aek.mk {SUBSECTOR_LOCAL} електронски комуникации регулатива {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:kzk.gov.mk {SUBSECTOR_LOCAL} конкуренција дигитално {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:manu.edu.mk {SUBSECTOR_LOCAL} истражување иновации {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:fitr.mk {SUBSECTOR_LOCAL} иновации стартап {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:kapital.mk {SUBSECTOR_LOCAL} дигитална трансформација {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:masit.org.mk {SUBSECTOR_LOCAL} ИКТ индустрија {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} North Macedonia digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} North Macedonia digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EU acquis alignment (candidate)", "AEK", "KZK", "FITR", "MANU"],
+    "regulatory_search": "\"EU acquis\" \"{SUBSECTOR_EN}\" compliance \"North Macedonia\" {CURRENT_YEAR}",
+    "currency": "MKD",
+    "org_size_reference": "mid-size organization with 3B MKD revenue"
+  },
+
   "_default": {
     "_note": "Fallback entry — identical to dach. Used when MARKET_REGION is not found in this file.",
     "region_qualifiers": {
