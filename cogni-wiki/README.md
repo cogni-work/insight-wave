@@ -61,13 +61,13 @@ sources: [../raw/bai-et-al-2022.pdf]
 
 ## What it does
 
-1. **Bootstrap** a new wiki with directory layout, SCHEMA.md contract, and seed files
-2. **Ingest** source documents into structured wiki pages with YAML frontmatter, backlink audit, and index updates
-3. **Query** the wiki to answer questions — reads pages directly, never from model memory, with `[[wikilink]]` citations
-4. **Lint** the wiki for health problems — broken wikilinks, orphan pages, stale dates, frontmatter gaps, contradictions
-5. **Update** existing pages with diff-before-write discipline, source citation requirements, and stale-sweep of related pages
+1. **Bootstrap** a new wiki with directory layout, SCHEMA.md contract, and seed files → `.cogni-wiki/config.json` + `wiki/index.md` + `wiki/log.md` + `wiki/overview.md` → wiki-ingest, wiki-query, wiki-lint, wiki-update, wiki-resume, wiki-dashboard
+2. **Ingest** source documents into structured wiki pages with YAML frontmatter, backlink audit, and index updates → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-update, wiki-dashboard
+3. **Query** the wiki to answer questions — reads pages directly, never from model memory, with `[[wikilink]]` citations → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-update, wiki-dashboard
+4. **Lint** the wiki for health problems — broken wikilinks, orphan pages, stale dates, frontmatter gaps, contradictions → `wiki/pages/lint-*.md` → wiki-update, wiki-query
+5. **Update** existing pages with diff-before-write discipline, source citation requirements, and stale-sweep of related pages → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-dashboard
 6. **Resume** with status, activity summary, and recommended next action
-7. **Dashboard** as a self-contained HTML overview — pages by type, tag cloud, backlink graph, and activity histograms
+7. **Dashboard** as a self-contained HTML overview — pages by type, tag cloud, backlink graph, and activity histograms → `wiki-dashboard.html` (self-contained HTML dashboard)
 
 ## What it means for you
 

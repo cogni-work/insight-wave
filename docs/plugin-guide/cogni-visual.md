@@ -24,7 +24,7 @@ The `/render-infographic` command is a smart dispatcher: it reads the brief's `s
 
 ### Brief-Based Architecture
 
-All five brief-generating skills produce a structured brief rather than calling a renderer directly. This separation means:
+All four brief-generating skills produce a structured brief rather than calling a renderer directly. This separation means:
 
 - Briefs are reviewable and editable before rendering
 - The same brief can be rendered by different downstream tools as formats evolve
@@ -38,7 +38,7 @@ Narrative skills detect the story arc from the source document's `arc_id` frontm
 
 ### Assertion Headlines
 
-Every slide title, station headline, section headline, and poster headline must be an assertion — it contains a verb and makes a claim. Topic labels ("Digital Transformation") are rejected; assertions ("Digital transformation is creating $4.2T in new industry value") are required. This applies to all five brief-generating skills.
+Every slide title, station headline, section headline, and poster headline must be an assertion — it contains a verb and makes a claim. Topic labels ("Digital Transformation") are rejected; assertions ("Digital transformation is creating $4.2T in new industry value") are required. This applies to all four brief-generating skills.
 
 ### Number Plays
 
@@ -139,7 +139,7 @@ This skill supersedes the deprecated `cogni-research:export-report` and is the s
 
 | Plugin | What is consumed |
 |--------|-----------------|
-| cogni-narrative | Polished narratives with `arc_id` frontmatter as source for all five brief-generating skills |
+| cogni-narrative | Polished narratives with `arc_id` frontmatter as source for all four brief-generating skills |
 | cogni-copywriting | Executive-polished prose (narratives should be copywriting-complete before visual transformation) |
 | cogni-trends | Trend reports for enrich-report |
 | cogni-research | Completed research reports for enrich-report (themed HTML with visualizations) |

@@ -154,12 +154,13 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `communicate-review-assessor` | agent | Assess portfolio communication quality from stakeholder perspectives |
 | `dashboard-refresher` | agent | Regenerate the portfolio dashboard HTML from current entity data |
 | `portfolio-web-researcher` | agent | Domain-scoped web research for taxonomy-driven portfolio scanning |
+| `ensure-excalidraw-canvas` | hook (PreToolUse) | Auto-start the Excalidraw canvas frontend before any `mcp__excalidraw__*` tool call |
 
 ## Architecture
 
 ```
 cogni-portfolio/
-├── .claude-plugin/               Plugin manifest (v0.9.4)
+├── .claude-plugin/               Plugin manifest
 ├── templates/                    8 pluggable industry taxonomy templates
 │   ├── b2b-ict/                  Enterprise ICT (8 dims, 57 cats)
 │   ├── b2b-saas/                 B2B SaaS (8 dims, 47 cats)
@@ -172,6 +173,7 @@ cogni-portfolio/
 ├── skills/                       19 portfolio skills
 │   └── portfolio-canvas-workspace/ Dev workspace (evals, iterations — not a skill)
 ├── agents/                       20 delegation agents
+├── hooks/                        1 guardrail hook (Excalidraw canvas auto-start)
 ├── references/
 │   └── data-model.md             Full entity schema and project structure reference
 └── scripts/                      10 utility scripts

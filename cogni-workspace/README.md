@@ -36,6 +36,7 @@ In the Claude Cowork plugin model, workspace-level state (paths, env vars, insta
 ## What it means for you
 
 - **One command to set up or update.** `manage-workspace` auto-detects mode, discovers installed plugins, generates env vars, settings, themes, and output styles — replacing 20+ minutes of manual scaffolding per project.
+- **Zero hand-edited MCP config.** `install-mcp` clones and builds git-based MCP servers (Excalidraw, Pencil), detects native app MCPs (browsermcp, claude-in-chrome), and patches Claude Desktop config with automatic backup — rendering plugins like cogni-visual and cogni-portfolio find their tools without a single JSON edit.
 - **Consistent theming across all visual output.** Slides, journey maps, web narratives, and dashboards across 5+ visual plugins inherit colors and fonts from one theme file — reskinning the entire ecosystem is a single-file edit, not 5+ separate ones.
 - **Catch workspace drift before skills break.** Five-tier health diagnostics (foundation, env vars, plugin registry, themes, dependencies) surface mismatches and missing deps before they cause cryptic runtime failures.
 - **Safe updates with rollback in seconds.** `manage-workspace` backs up before modifying — if an update breaks something, restore the previous state in one command, no manual file recovery.

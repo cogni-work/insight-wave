@@ -31,7 +31,7 @@ A brief-based visual production pipeline. Skills generate structured briefs (YAM
 ## What it means for you
 
 - **Narrative to slides in under 10 minutes.** Assertion headlines, number plays, speaker notes, and 11 slide layout types — generated from your polished narrative, not typed from scratch. What used to take 1-2 days of formatting now takes one prompt.
-- **Multiple visual formats from one narrative.** Slides for the boardroom, web pages for digital follow-up, poster storyboards for print, infographics for quick summaries — all from the same source document, no re-authoring.
+- **Multiple visual formats from one narrative.** Slides for the boardroom, web pages for digital follow-up, poster storyboards for print, infographics in three traditions (Mike Rohde sketchnote, Dan Roam whiteboard, Economist editorial), and markdown reports enriched into themed HTML with interactive Chart.js charts and inline SVG concept diagrams — all from the same source document, no re-authoring.
 - **Brand-driven, not template-driven.** Visuals inherit colors, fonts, and identity from your cogni-workspace theme — changing one theme file reskins all output, not editing each object.
 - **Review before you render.** Three-stakeholder brief review catches weak headlines, missing CTAs, and layout mismatches before committing to a rendering pipeline — cheaper to fix a line of text than re-render.
 
@@ -43,7 +43,7 @@ A brief-based visual production pipeline. Skills generate structured briefs (YAM
 
 This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
 
-> **Note:** Excalidraw MCP is required for infographic rendering. Pencil MCP is required for web narrative and storyboard rendering. Both are optional — the brief-generation skills work without them.
+> **Note:** Excalidraw MCP is required for hand-drawn infographic rendering (sketchnote, whiteboard traditions). Pencil MCP is required for editorial infographic rendering (economist, editorial, data-viz, corporate), web narratives, and storyboards. Both MCPs are optional — the brief-generation skills work without them.
 
 ## Quick start
 

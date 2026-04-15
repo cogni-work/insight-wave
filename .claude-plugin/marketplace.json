@@ -61,7 +61,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "version": "0.6.2",
+      "version": "0.6.3",
       "maturity": "preview",
       "description": "Foundation-layer plugin for insight-wave marketplace plugins. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, and Obsidian vault integration.",
       "keywords": [
@@ -107,7 +107,7 @@
     {
       "name": "cogni-visual",
       "source": "./cogni-visual",
-      "version": "0.16.19",
+      "version": "0.16.20",
       "maturity": "preview",
       "description": "Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
       "keywords": [
@@ -165,9 +165,9 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.7.11",
+      "version": "0.7.12",
       "maturity": "preview",
-      "description": "Multi-agent research report generator with localized search across 10 markets (DACH, DE, FR, IT, PL, NL, ES, US, UK, EU) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
+      "description": "Multi-agent research report generator with localized search across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
         "research",
         "report",
@@ -221,7 +221,7 @@
     {
       "name": "cogni-consulting",
       "source": "./cogni-consulting",
-      "version": "0.0.9",
+      "version": "0.0.10",
       "maturity": "incubating",
       "description": "Double Diamond consulting orchestrator. Guides engagements through Discover, Define, Develop, Deliver phases by dispatching to insight-wave plugins (research, trends, portfolio, claims) at the right moment. Vision-first, method-aware, phase-gated. Includes Lean Canvas authoring via business-model-hypothesis, and lightweight how-might-we engagements for bounded challenges (workshop design, process improvement, team exercises) using guided ideation.",
       "keywords": [
@@ -234,13 +234,14 @@
         "phase-gated",
         "cross-plugin",
         "agent",
+        "hooks",
         "html-report"
       ]
     },
     {
       "name": "cogni-wiki",
       "source": "./cogni-wiki",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "maturity": "incubating",
       "description": "A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
       "keywords": [
