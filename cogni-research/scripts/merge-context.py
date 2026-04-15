@@ -17,6 +17,15 @@ Aggregation:
       - Total word count and source count
 
     Output: {"success": true, "contexts": N, "sources": N, "total_words": N}
+
+Note on depth vs. length (v0.7.7, issue #35): Context aggregation caps scale by
+    report_type (research depth), not target_words (writer output floor). Length
+    became decoupled from depth in v0.7.7 — target_words controls the writer's
+    word-count floor, depth still drives input density because the writer needs
+    more raw evidence to reach a longer floor on a wider tree, not because the
+    floor itself scales linearly with input. A deep project with target_words=5000
+    still gets the 45K-word input cap, because evidence density is a depth property
+    not a length property. Do not add a target_words branch to the cap table below.
 """
 
 import argparse

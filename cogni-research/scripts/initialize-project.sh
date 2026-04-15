@@ -3,7 +3,13 @@ set -euo pipefail
 # initialize-project.sh - Create project directory structure for a research report
 # Version: 1.0.0
 #
-# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--allow-short <true|false>] [--suffix <N>]
+# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--allow-short <true|false>] [--target-words <N>] [--suffix <N>]
+#
+# --target-words controls the writer word-count floor independently of --type.
+# If omitted, falls back to the default-by-depth table: basic 3000, detailed 5000,
+# deep 5000, outline 1000, resource 1500. Deep-mode default reduced from 8000 to
+# 5000 in v0.7.7 (issue #35). Set --target-words 8000 explicitly for the old
+# 8K-deep behaviour.
 #
 # Creates:
 #   {workspace}/{slug}-{date}/
@@ -38,6 +44,7 @@ CONFIRM_PLAN=""
 RECURSIVE_DEPTH=""
 BATCH_SIZE=""
 ALLOW_SHORT=""
+TARGET_WORDS=""
 SUFFIX=""
 
 while [[ $# -gt 0 ]]; do
@@ -62,6 +69,7 @@ while [[ $# -gt 0 ]]; do
     --recursive-depth) RECURSIVE_DEPTH="$2"; shift 2;;
     --batch-size) BATCH_SIZE="$2"; shift 2;;
     --allow-short) ALLOW_SHORT="$2"; shift 2;;
+    --target-words) TARGET_WORDS="$2"; shift 2;;
     --suffix) SUFFIX="$2"; shift 2;;
     *) echo "{\"success\": false, \"error\": \"Unknown argument: $1\"}" >&2; exit 2;;
   esac
@@ -114,6 +122,27 @@ fi
 if [[ -n "$BATCH_SIZE" ]] && ! [[ "$BATCH_SIZE" =~ ^[1-9][0-9]*$ ]]; then
   echo "{\"success\": false, \"error\": \"Invalid --batch-size: $BATCH_SIZE. Must be a positive integer.\"}" >&2
   exit 2
+fi
+
+if [[ -n "$TARGET_WORDS" ]] && ! [[ "$TARGET_WORDS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --target-words: $TARGET_WORDS. Must be a positive integer.\"}" >&2
+  exit 2
+fi
+
+# Resolve target_words from default-by-depth when not explicitly supplied.
+# Keeps length decoupled from depth: the user can override per project, and
+# depth-only runs still get a sensible default. Deep reduced from 8000 to
+# 5000 in v0.7.7 (issue #35) to align with the single-voice writer sweet
+# spot (~5.6-6.1K single-call ceiling) and professional deep-research norms.
+# Set --target-words 8000 to restore the old 8K-deep behaviour.
+if [[ -z "$TARGET_WORDS" ]]; then
+  case "$REPORT_TYPE" in
+    basic)    TARGET_WORDS=3000;;
+    detailed) TARGET_WORDS=5000;;
+    deep)     TARGET_WORDS=5000;;
+    outline)  TARGET_WORDS=1000;;
+    resource) TARGET_WORDS=1500;;
+  esac
 fi
 
 # Derive the canonical market list from market-sources.json so this script
@@ -262,6 +291,7 @@ fi
 if [[ "$ALLOW_SHORT" == "true" ]]; then
   CONFIG=$(echo "$CONFIG" | jq '. + {allow_short: true}')
 fi
+CONFIG=$(echo "$CONFIG" | jq --argjson v "$TARGET_WORDS" '. + {target_words: $v}')
 echo "$CONFIG" > "$PROJECT_DIR/.metadata/project-config.json"
 
 # Initialize execution log using jq

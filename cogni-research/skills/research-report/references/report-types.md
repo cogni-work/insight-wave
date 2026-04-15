@@ -1,12 +1,30 @@
 # Report Types Reference
 
+## Length and depth are independent
+
+**Depth** (`report_type`) controls the research tree shape and sub-question count. **Length** (`target_words`) controls the writer word-count floor. Set them independently in `project-config.json`.
+
+The word counts listed under each type below are **defaults for `target_words` when the user does not set it explicitly** — not hard coupling between depth and length. Override via the `target_words` field or the `--target-words <N>` flag on `initialize-project.sh`.
+
+In v0.7.7 (issue #35) the deep-mode default was reduced from 8000 to 5000 words to align with professional deep-research norms and the single-voice writer's sweet spot. Set `target_words: 8000` explicitly to restore the old floor. `allow_short: true` semantics are unchanged — still the escape hatch that disables all expansion gates.
+
+Default-by-depth table:
+
+| Depth (`report_type`) | Default `target_words` |
+|---|---|
+| basic     | 3000 |
+| detailed  | 5000 |
+| **deep**  | **5000** (reduced from 8000 in v0.7.7) |
+| outline   | 1000 |
+| resource  | 1500 |
+
 ## Basic Report
 
 **When**: User asks for a "research report", "overview", or doesn't specify type.
 
 **Structure**:
 - Default 5 sub-questions (override with `max_subtopics`), single-pass parallel research
-- 3000-5000 words final report
+- Default `target_words: 3000` (override via `target_words` in project-config)
 - Simple structure: intro → sections → conclusion → references
 - 1-2 review iterations typical
 
@@ -18,7 +36,7 @@
 
 **Structure**:
 - Default 5-10 section outline (override with `max_subtopics`), parallel research per section
-- 5000-10000 words final report
+- Default `target_words: 5000` (override via `target_words` in project-config)
 - Rich structure: executive summary → intro → multi-section analysis → cross-cutting themes → recommendations → references
 - 2-3 review iterations typical
 
@@ -30,7 +48,7 @@
 
 **Structure**:
 - Research tree: 3-5 top-level branches × 2-3 sub-branches = 10-20 leaf nodes (override leaf count with `max_subtopics`)
-- 8000-15000 words final report
+- Default `target_words: 5000` (reduced from 8000 in v0.7.7 — override via `target_words` in project-config; set `target_words: 8000` or higher for long-form / whitepaper deliverables)
 - Hierarchical structure reflecting tree depth
 - 2-3 review iterations typical
 
@@ -44,7 +62,7 @@
 
 **Structure**:
 - Default 5 sub-questions (override with `max_subtopics`), single-pass parallel research
-- 1000-2000 words output — NOT a full prose report
+- Default `target_words: 1000` — NOT a full prose report
 - Hierarchical outline: H2 main sections → H3 sub-sections → bullet-point key findings
 - Each section includes 2-3 key findings with source citations
 - No narrative flow, no transitions — pure structured information
@@ -61,7 +79,7 @@
 
 **Structure**:
 - Default 5 sub-questions (override with `max_subtopics`), single-pass parallel research
-- 1500-3000 words output
+- Default `target_words: 1500` (override via `target_words` in project-config)
 - Organized by sub-topic: each section lists 3-5 curated sources with annotations
 - Per-source annotation: title, publisher, relevance summary (2-3 sentences), quality score, key takeaway
 - Summary section at the end: overall source landscape, coverage gaps, recommended starting points

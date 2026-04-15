@@ -68,6 +68,12 @@ The user replies naturally: "go", "deep, analytical", "detailed with IEEE citati
 Scan the user's request and extract any options they already specified. These become "detected" settings that will not be re-asked in the configuration menu.
 
 - **Report type**: keywords like "detailed", "deep research", "outline", "sources" -> map to basic/detailed/deep/outline/resource
+- **Target words (length)**: length is now independent of depth (v0.7.7, issue #35). Capture explicit integers and named presets separately from report type, and only apply a detected length if it actually differs from the depth default — otherwise let the default-by-depth table handle it.
+  - **Named presets**: `brief` → 1500, `standard` → 3000, `deep-dive` → 5000, `comprehensive` → 8000, `whitepaper` → 12000. Trigger on phrases like "brief", "short", "standard length", "deep-dive", "comprehensive", "long-form", "whitepaper", "white paper", "reference document".
+  - **Explicit integers**: "5K words", "~8000 words", "roughly 6500", "about 5,000 words", "10K", "12k" → parse to the nearest 500-word value and pass through.
+  - **Interaction with `report_type`**: the two are orthogonal. "deep research, whitepaper length" → `report_type=deep, target_words=12000`. "detailed but short" → `report_type=detailed, target_words=3000`. "basic, make it thorough" → `report_type=basic, target_words=5000`. "deep research on X" with no length cue → `report_type=deep` (default `target_words=5000`, reduced from 8000 in v0.7.7 — pass `--target-words 8000` only if the user asks for it explicitly).
+  - **Default resolution**: if no length cue was detected, do NOT pass `--target-words` to `initialize-project.sh`; let the script apply its default-by-depth table. If a length cue was detected, pass `--target-words <N>` with the resolved integer.
+  - **Ambiguity guard**: if the user only said "long" or "short" without a scale anchor, ask a clarifying follow-up ("about 3K words, 5K, or closer to 10K?") — don't guess.
 - **Tone**: style keywords like "analytical", "persuasive", "formal" -> map to tone. Default: "objective"
 - **Citation format**: "IEEE", "APA format", "Chicago style", "wikilink" -> capture. Default: "apa"
 - **Market**: must resolve to one of the 10 canonical codes defined in `references/market-sources.json`: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. There is no "global" option — downstream researchers use these codes to pick authority-source profiles, and an unknown code silently falls back to the DACH `_default` profile, masking user intent.
@@ -115,7 +121,8 @@ Assemble the menu dynamically and render it as text output:
 1. Show the detected topic
 2. List any options already extracted from the prompt (e.g., "Detected: type = deep, citations = IEEE")
 3. For **unset primary options**, show the compact chooser:
-   - **Depth** (only if report type not yet detected): list all 5 types with word counts and one-line descriptions
+   - **Depth** (only if report type not yet detected): list all 5 types with one-line descriptions **without** word counts — length is decoupled from depth and has its own row. Example: "basic = standard report, 5 sub-questions | detailed = multi-section with outline, 5-10 sub-questions | deep = recursive tree, 10-20 leaf sub-questions | outline = structured framework, no prose | resource = annotated bibliography".
+   - **Length** (only if target_words not detected): show the 5 named presets with their word counts and mark the default derived from the detected or selected depth: `brief (1.5K) | standard (3K) | deep-dive (5K, deep default in v0.7.7) | comprehensive (8K) | whitepaper (12K)`. Add a one-line note: "Length is optional — defaults to 3K/5K/5K/1K/1.5K for basic/detailed/deep/outline/resource. Override with a preset above or an explicit integer (e.g., `target_words: 6500`)."
    - **Tone** (only if not detected): show these options: objective *(default)* | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive
    - **Citations** (only if not detected): list all 5 formats, mark default
    - **Market** (only if not detected with confidence, or ambiguous): `dach | de | fr | it | pl | nl | es | us | uk | eu`. If Step 1 flagged the market as ambiguous (tier 3), prefix this row with a one-line note: `> I couldn't tell which market you mean from the topic — please pick one.` The canonical list equals the keys of `references/market-sources.json` minus `_default` — keep this menu in sync with that file (if a new market is added there, add it here; if one is removed, remove it here).
@@ -201,10 +208,13 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--curate-sources] \
   [--confirm-plan <true|false>] \
   [--recursive-depth <0|2>] \
-  [--batch-size <2|4|6>]
+  [--batch-size <2|4|6>] \
+  [--target-words <N>]
 ```
 
 Pass `--confirm-plan`, `--recursive-depth`, `--batch-size` only if the user explicitly picked a non-default value in the Execution defaults block. Omit them otherwise — `research-report` applies the documented defaults (confirm: on, recursion: off, batch size: 4) when the keys are missing from `project-config.json`.
+
+Pass `--target-words` only if the user explicitly picked a length preset or integer in Step 1 (from a named preset like "whitepaper" or an integer like "~5000 words"). Omit it when the user accepted depth-default length — `initialize-project.sh` applies the default-by-depth table (basic 3000, detailed 5000, **deep 5000**, outline 1000, resource 1500) and writes `target_words` into project-config.json at creation so the value is pinned for the project's lifetime. In v0.7.7 the deep default was reduced from 8000 to 5000 (issue #35); users who want the old 8K-deep floor set `target_words: 8000` explicitly (via a length preset choice, an integer in the prompt, or hand-editing project-config.json).
 
 Check the `already_exists` field in the JSON output.
 

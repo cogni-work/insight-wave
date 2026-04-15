@@ -45,13 +45,15 @@ Then run `/verify-report` to verify claims against cited sources in a fresh cont
 
 ## Report Types
 
-| Type | Trigger | Sub-Questions | Words | Use Case |
+Depth (`report_type`) and length (`target_words`) are independent knobs. The word counts below are the **defaults for `target_words`** when the user does not set it explicitly — they are not hard coupling between depth and length. Set `target_words` directly in project-config.json (or via `initialize-project.sh --target-words <N>`) to override per project.
+
+| Type | Trigger | Sub-Questions | Default target_words | Use Case |
 |------|---------|--------------|-------|----------|
-| **basic** | "research report on X" | 5 | 3000-5000 | Standard research report |
-| **detailed** | "detailed research report on X" | 5-10 | 5000-10000 | Comprehensive analysis |
-| **deep** | "deep research on X" | 10-20 (tree) | 8000-15000 | Maximum depth + breadth |
-| **outline** | "outline on X" | 5 | 1000-2000 | Structured framework, no prose |
-| **resource** | "sources on X", "reading list" | 5 | 1500-3000 | Annotated bibliography |
+| **basic** | "research report on X" | 5 | 3000 | Standard research report |
+| **detailed** | "detailed research report on X" | 5-10 | 5000 | Comprehensive analysis |
+| **deep** | "deep research on X" | 10-20 (tree) | 5000 (reduced from 8000 in v0.7.7; set `target_words: 8000+` for long-form) | Maximum depth + breadth |
+| **outline** | "outline on X" | 5 | 1000 | Structured framework, no prose |
+| **resource** | "sources on X", "reading list" | 5 | 1500 | Annotated bibliography |
 
 Default: **basic** unless user specifies otherwise.
 
@@ -203,7 +205,18 @@ plan = {
                          matched by report_type × source_mode>,
   "curate_sources":     <true if detailed/deep AND projected source count ≥ 8,
                          OR if curate_sources is explicitly true in config;
-                         false if explicitly false>
+                         false if explicitly false>,
+  "target_words":       <target_words from project-config.json. Default
+                         resolution when the field is missing: basic 3000,
+                         detailed 5000, deep 5000, outline 1000, resource 1500.
+                         In v0.7.7 the deep default was reduced from 8000 to
+                         5000 (issue #35) — if the field is missing AND
+                         report_type == "deep", set `target_words_restore_notice: true`
+                         on the plan object so 1.5b can print a one-line
+                         restore instruction. Projects created with
+                         initialize-project.sh >= v0.7.7 always have
+                         target_words set explicitly, so the notice only fires
+                         on pre-v0.7.7 project re-runs.>
 }
 ```
 
@@ -228,6 +241,7 @@ Produce a compact text summary for the user. Use this exact shape (fill in the c
 
 Topic: <topic from project-config.json>
 Report type: <type> → <sub_question_count> sub-questions generated
+Length: <target_words> words (<"user-set" if field was present in project-config.json, else "default for <type>">)
 Source mode: <mode> (channels: <comma-separated channels>)
 
 Per sub-question:
@@ -253,6 +267,7 @@ The trade-off lines are where the user actually learns the cost/quality geometry
 - "Hybrid channels: wiki and local are cheap file reads; the web channel is the long pole for cost and time."
 - "Hybrid requested but no wiki/document paths configured → running web-only. Add `document_paths` or `wiki_paths` in project-config.json to activate the other channels." (only when hybrid degraded to web-only per 1.5a)
 - "Batch size 4: respects WebFetch rate limits. Drop to 2 if you've seen rate-limit errors on this market; raise to 6 only if you've verified the market is quiet."
+- "Deep-mode default length reduced from 8K to 5K in v0.7.7 — set `target_words: 8000` in project-config.json to restore the old long-form deep floor." (only when `target_words_restore_notice == true` on the plan — pre-v0.7.7 project re-run)
 
 #### 1.5c: Confirm or adjust
 
@@ -467,8 +482,11 @@ Task(writer,
   RESEARCHER_ROLE=<role from project-config.json>,
   TONE=<tone from project-config.json, default "objective">,
   CITATION_FORMAT=<citation_format from project-config.json, default "apa">,
-  OUTPUT_LANGUAGE=<output_language>)
+  OUTPUT_LANGUAGE=<output_language>,
+  TARGET_MIN_WORDS=<target_words resolved on the Phase 1.5a plan object — Phase 1.5a is the single resolution site; it reads project-config.json target_words with the default-by-depth fallback when the field is missing, then pins the value onto the plan at .logs/phase-1.5-plan.json for every downstream phase to consume>)
 ```
+
+**Always pass `TARGET_MIN_WORDS` on every writer dispatch**, not just expansion re-dispatches. Since length is decoupled from depth in v0.7.7 (issue #35), the writer no longer has a safe fallback to a per-type constant — it needs the orchestrator-resolved `target_words` value on the first pass so its Phase 1 outline budgets match the project's actual length floor. Phase 4 reads the value from the Phase 1.5a plan object (it does not re-resolve from project-config.json); this keeps Phase 1.5a as the single source of truth and prevents three-site drift. The writer's documented per-type fallback table is retained only as a last-resort safety net for agent-level testing where the orchestrator is absent.
 
 Note: no `WRITER_MODE` parameter — the writer defaults to `full` mode for every report type including deep.
 
@@ -495,6 +513,7 @@ The writer's self-reported `words` in return JSON has historically drifted (obse
     TONE=<tone>,
     CITATION_FORMAT=<citation_format>,
     OUTPUT_LANGUAGE=<output_language>,
+    TARGET_MIN_WORDS=<target_words>,
     EXPANSION_NOTES="Your previous run returned draft text in the response body instead of writing output/draft-v{N}.md to disk. Call the Write tool with the full drafted markdown as content. After Write returns, call Read on the same path to verify persistence. Return only the compact status JSON — never the drafted prose itself. See agents/writer.md Phase 3 for the read-back contract.")
   ```
 - **0d. Re-check and decide.** After the retry, re-run the existence check. If the file is still missing or empty, **halt Phase 4**: print a user-visible error block containing the topic, the project path, and a pointer to `.metadata/execution-log.json phases.phase_4_writer.write_failure`, then stop. Do not fall through to the `wc -w` measurement or Phase 5 — a phantom draft would corrupt every downstream phase (reviewer, revisor, verify-report). If the retry succeeds, set `phases.phase_4_writer.write_failure.recovered: true` in the execution log so the Phase 6 summary can surface the recovery, then continue to the word-count measurement with the recovered file.
@@ -505,17 +524,23 @@ Only once Step 0 confirms the file is present do the remaining gate steps apply:
    ```bash
    ACTUAL_WORDS=$(wc -w < "${PROJECT_PATH}/output/draft-v1.md" | tr -d ' ')
    ```
-2. Resolve the minimum floor for this report type:
+2. Resolve the minimum floor from `project-config.json`:
 
-   | Report type | Minimum floor |
+   ```bash
+   floor=$(jq -r '.target_words // empty' "${PROJECT_PATH}/.metadata/project-config.json")
+   ```
+
+   If `target_words` is set, use it directly. If the field is missing (pre-v0.7.7 project re-run), fall back to the default-by-depth table below. In v0.7.7 the deep-mode default was reduced from 8000 to 5000 — projects created before this change and re-run against the new orchestrator will silently resolve deep → 5000 unless `target_words: 8000` is set explicitly. Phase 1.5a prints a one-line restore notice when this fallback fires so the user knows how to opt back into the old floor.
+
+   | Report type | Default `target_words` (fallback when field is missing) |
    |---|---|
    | basic | 3000 |
    | detailed | 5000 |
-   | deep | 8000 |
+   | deep | 5000 (was 8000 pre-v0.7.7 — set `target_words: 8000` to restore) |
    | outline | 1000 |
    | resource | 1500 |
 
-3. Compute `gate_floor = floor × 0.9` uniformly across all report types (10% tolerance band). Deep mode uses the same tolerance as every other type — the ~5.6–6.1K single-call output ceiling means a first-pass deep draft is expected to land under floor, and the expansion re-dispatch + Phase 5 word-deficit loop compound it back up. A hard wall at `1.0 × floor` would uselessly bounce drafts that are one paragraph short of the target, which is exactly what the new `[0.98, 1.00) = 0.75 cap` reviewer band also exists to prevent.
+3. Compute `gate_floor = floor × 0.9` uniformly across all report types (10% tolerance band). Deep mode uses the same tolerance as every other type — the ~5.6–6.1K single-call output ceiling means a first-pass deep draft targeting `target_words >= 8000` is expected to land under floor, and the expansion re-dispatch + Phase 5 word-deficit loop compound it back up. A hard wall at `1.0 × floor` would uselessly bounce drafts that are one paragraph short of the target, which is exactly what the new `[0.98, 1.00) = 0.75 cap` reviewer band also exists to prevent. At the new default `target_words: 5000` for deep, a single writer pass reaches the floor without expansion in most cases — the expansion chain becomes an opt-in for explicit 8K+ runs rather than the common path.
 4. Decision:
    - **`ACTUAL_WORDS >= gate_floor`** → gate passes. Continue to Phase 5.
    - **`ACTUAL_WORDS < gate_floor` AND `project-config.json` has `allow_short: true`** → log the deficit but skip the re-dispatch. Record `phase_4_word_deficit: {actual, floor, action: "allow_short_opt_out"}` in `.metadata/execution-log.json`. Continue to Phase 5.
@@ -624,16 +649,18 @@ Ask the user whether to generate a themed HTML version of the report with intera
 
 ### Phase 6: Finalization
 
-**Promotion gate.** Before copying the accepted draft to `output/report.md`, verify the word-count floor is actually cleared. In deep mode the gate is hard: if `output/draft-v{N}.md` is below 8,000 words **and** `allow_short: true` is not set, do not silently promote. Instead:
+**Promotion gate.** Before copying the accepted draft to `output/report.md`, verify the word-count floor is actually cleared. The **hard promotion gate** fires when `report_type == "deep"` AND `target_words >= 8000` AND `allow_short != true` AND `actual_words < target_words` — that is, a long-form deep run (explicit opt-in to 8K+) that fell short. In that case, do not silently promote. Instead:
 
 1. Measure the final draft: `wc -w < "${PROJECT_PATH}/output/draft-v${N}.md"`.
-2. Resolve the floor from the table in Phase 4.5 Step 2 (8,000 for deep).
-3. **Deep mode only**: if `actual_words < 8000` and `allow_short` is not `true`, present the user with an `AskUserQuestion` choice:
-   - **Option A: Accept shorter report** — promote the draft anyway, record `phase_6_promotion.floor_override: true` and `phase_6_promotion.shortfall_words: <floor - actual>` in the execution log, and set `allow_short_accepted` in the summary.
-   - **Option B: Retry expansion** — dispatch one more revisor expansion pass against the current accepted draft with `TARGET_MIN_WORDS=8000` + `EXPANSION_NOTES` naming the remaining deficit, then re-run the reviewer. Cap at one additional retry — if the new draft still falls short, fall through to the same question with Option B removed.
+2. Read the resolved floor from the Phase 1.5a plan object (`.logs/phase-1.5-plan.json target_words`). That value was pinned at plan-confirmation time and already consumed by Phase 4.5 — do not re-resolve from project-config.json here, and do not assume Phase 4.5 recomputed it. Three resolution sites invite drift; one resolution site and two consumers is the contract.
+3. **Hard-gate branch (`report_type == "deep"` AND `target_words >= 8000` AND `allow_short` unset)**: if `actual_words < target_words`, present the user with an `AskUserQuestion` choice:
+   - **Option A: Accept shorter report** — promote the draft anyway, record `phase_6_promotion.floor_override: true` and `phase_6_promotion.shortfall_words: <target_words - actual>` in the execution log, and set `allow_short_accepted` in the summary.
+   - **Option B: Retry expansion** — dispatch one more revisor expansion pass against the current accepted draft with `TARGET_MIN_WORDS=<target_words>` + `EXPANSION_NOTES` naming the remaining deficit, then re-run the reviewer. Cap at one additional retry — if the new draft still falls short, fall through to the same question with Option B removed.
    - **Option C: Abort** — stop without promotion. Leave the latest `draft-v{N}.md` in place for manual inspection. Print the project path and a pointer to `.metadata/execution-log.json`.
-4. For non-deep modes, keep the existing behavior: the reviewer's verdict and Phase 6 summary warnings are advisory. Short drafts are still promoted automatically with a `⚠ Below target` line in the summary.
-5. For outline / resource modes, the per-type floor is advisory and promotion is never blocked.
+4. **Soft-gate branch (everything else — including deep with `target_words < 8000`, the new v0.7.7 default)**: keep the advisory behavior. The reviewer's verdict and Phase 6 summary warnings are informational. Short drafts are still promoted automatically with a `⚠ Below target` line in the summary. This is the right default for the 5K-deep common case: the single-voice writer reaches 5K on first pass in most runs, and a one-paragraph shortfall does not justify a hard stop-the-world question.
+5. For outline / resource modes, the per-type floor is advisory and promotion is never blocked. Same rule applies regardless of whether the user set `target_words` explicitly — these modes are structural, not prose-floor-driven.
+
+The hard-gate narrowing (deep AND `target_words >= 8000`) preserves today's behavior for users who explicitly opted into the 8K+ long-form path while letting the new 5K-deep default promote through the soft path like detailed/basic. Users who want the old hard stop back set `target_words: 8000` in project-config.json.
 
 Once the promotion gate passes (or the user selects Option A), continue with the existing finalization steps:
 
@@ -650,7 +677,7 @@ Once the promotion gate passes (or the user selects Option A), continue with the
    - `enrich_report_path`: path to enriched HTML or null
 4. Report summary to user:
    - Topic and report type
-   - **Word count**: always formatted as `Delivered: N words (target: {min}–{max} for {report_type} mode)`. Resolve `{min}` and `{max}` from the Report Types table in Phase 1 (basic 3000–5000, detailed 5000–10000, deep 8000–15000, outline 1000–2000, resource 1500–3000).
+   - **Word count**: always formatted as `Delivered: N words (target: {target_words} words)`. Resolve `{target_words}` from `project-config.json` (with the default-by-depth fallback from Phase 4.5 Step 2 if the field is missing). Length is decoupled from depth in v0.7.7 — there is no per-type range; the user committed to a specific target in setup or via the default-by-depth table, and the summary reports against that target. If `phases.phase_4_writer.re_dispatches >= 1`, also show `(expanded from {v1_words} via expansion chain)` so the user sees when the gate earned its cost.
    - **Word-count gate status** — read `.metadata/execution-log.json phases.phase_4_writer`:
      - If `phases.phase_4_writer.write_failure` exists and `write_failure.recovered == true`: print `✓ Phase 4.5 write-failure recovery: writer persisted the draft on retry after a first-run silent-persist failure.` Then continue to the branches below — the write-failure line is additive, not a replacement for the word-count status.
      - If `re_dispatches == 0` and the final `actual_words >= floor`: do not print any warning

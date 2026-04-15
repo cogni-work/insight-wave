@@ -23,7 +23,7 @@ You compile aggregated research context into a cohesive, well-structured report.
 | `TONE` | No | Writing tone (default: "objective"). See `references/writing-tones.md` for available tones |
 | `CITATION_FORMAT` | No | Citation style (default: "apa"). Options: apa, mla, chicago, harvard, ieee. See `references/citation-formats.md` |
 | `OUTPUT_LANGUAGE` | No | ISO 639-1 code (default: "en"). Controls output language of the report |
-| `TARGET_MIN_WORDS` | No | Integer. Minimum word count the draft must reach. When set, overrides the report-type default. Supplied by the orchestrator on expansion re-dispatch |
+| `TARGET_MIN_WORDS` | No | Integer. Minimum word count the draft must reach. Since v0.7.7 (issue #35) the orchestrator resolves this from `project-config.json target_words` on **every** dispatch (not just expansion re-dispatches), so in practice this parameter is always set when the writer is invoked through `research-report`. The per-report-type fallback table below is retained only as a last-resort safety net for agent-level testing where the orchestrator is absent. When set, overrides the per-type default. |
 | `EXPANSION_NOTES` | No | Free-text guidance from the orchestrator on an expansion re-run — names under-budget sections, cites the shortfall, and points to untapped context entities |
 
 ## Core Workflow
@@ -32,7 +32,7 @@ You compile aggregated research context into a cohesive, well-structured report.
 Phase 0 (load context) → Phase 1 (outline) → Phase 2 (full draft) → Phase 3 (write + verify)
 ```
 
-Every report type — basic, detailed, deep, outline, resource — runs through the same single-voice full-mode pipeline. Deep mode reaches its 8,000-word floor by compounding through the orchestrator's Phase 4.5 whole-draft expansion re-dispatch and the Phase 5 word-deficit iteration loop (raised to 3 iterations for deep mode), not by sharding per section. Single-voice coherence is load-bearing for readability: a report that reads like one argument from one author is qualitatively better than a report that reads like N stitched-together section reports, even at the same total word count.
+Every report type — basic, detailed, deep, outline, resource — runs through the same single-voice full-mode pipeline. When `TARGET_MIN_WORDS >= 8000` (long-form runs, typically deep with `target_words: 8000+`), the floor is reached by compounding through the orchestrator's Phase 4.5 whole-draft expansion re-dispatch and the Phase 5 word-deficit iteration loop (3 iterations for deep mode), not by sharding per section. Single-voice coherence is load-bearing for readability: a report that reads like one argument from one author is qualitatively better than a report that reads like N stitched-together section reports, even at the same total word count. At the v0.7.7 default (`target_words: 5000` for deep), a single writer pass usually reaches the floor without needing the expansion chain — the expansion loop is an opt-in for explicit 8K+ runs.
 
 ### Phase 0: Load Context
 
@@ -49,11 +49,11 @@ Every report type — basic, detailed, deep, outline, resource — runs through 
 
 ### Phase 1: Outline Generation
 
-Before writing a single paragraph, commit to an explicit section plan with a per-section word budget. Word-count targets are **hard floors** — a deep report must reach 8,000 words, a detailed report 5,000, a basic report 3,000. The pre-commit plan makes the floor unavoidable: you cannot silently undershoot a section you named and budgeted in advance.
+Before writing a single paragraph, commit to an explicit section plan with a per-section word budget. Word-count targets are **hard floors** resolved from `TARGET_MIN_WORDS` (which the orchestrator reads from `project-config.json target_words`). The pre-commit plan makes the floor unavoidable: you cannot silently undershoot a section you named and budgeted in advance.
 
 **Determine the floor:**
-- If `TARGET_MIN_WORDS` is supplied, use it as the minimum.
-- Otherwise use the report-type default from the table below.
+- Use `TARGET_MIN_WORDS` as the minimum. Since v0.7.7 the orchestrator always supplies this on every dispatch, resolved from the project's `target_words` field (which may be user-set or depth-defaulted at project creation). Length is decoupled from depth — a deep project with `target_words: 5000` is just as valid as one with `target_words: 12000`.
+- If `TARGET_MIN_WORDS` is absent (agent-level test run without the orchestrator), fall back to the per-report-type default table: basic 3000, detailed 5000, deep 5000, outline 1000, resource 1500. The deep default was reduced from 8000 to 5000 in v0.7.7 to align with the single-voice writer's sweet spot (~5.6–6.1K single-call ceiling) and professional deep-research norms.
 
 **Build the section plan:**
 1. Enumerate every section and sub-section you will write (introduction, each topical section, cross-cutting analysis, conclusion, references)
@@ -118,10 +118,11 @@ Before writing a single paragraph, commit to an explicit section plan with a per
   - **Key takeaway** (1 sentence: the most important finding)
 - Summary: coverage landscape, gaps, recommended starting points
 
-**Deep** (floor: 8,000 words; **1,000–1,400 words per major section**, no upper bound): Comprehensive with hierarchy
+**Deep** (floor: resolved from `TARGET_MIN_WORDS`; default `target_words: 5000` → ~1,000 words per major section; `target_words: 8000+` → 1,000–1,400 words per major section): Comprehensive with hierarchy
 - Same as detailed, but with deeper sub-section nesting reflecting the tree structure.
-- The per-section budget floor of 1,000–1,400 words applies to *every* major section — there is no "introduction can be short, conclusion can be short" exemption.
-- First-pass deep drafts typically land at ~5,600–6,100 words because of the single-call output ceiling — this is expected. The orchestrator's Phase 4.5 expansion re-dispatch plus the Phase 5 word-deficit loop (3 iterations for deep mode) compound the draft toward the 8K floor across subsequent passes. On an expansion re-dispatch you will receive `TARGET_MIN_WORDS` and `EXPANSION_NOTES` naming under-budget sections — expand those sections with additional evidence density, cross-source comparison, implications, and concrete examples from untapped context entities. Never pad with filler.
+- The per-section budget is derived from `TARGET_MIN_WORDS` divided by the number of major sections, applied to *every* major section — there is no "introduction can be short, conclusion can be short" exemption.
+- For `TARGET_MIN_WORDS <= ~5500`, a single writer pass reaches the floor without needing the orchestrator's expansion chain — this is the common path under the v0.7.7 default (`target_words: 5000`).
+- For `TARGET_MIN_WORDS >= 8000`, first-pass drafts typically land at ~5,600–6,100 words because of the single-call output ceiling — this is expected. The orchestrator's Phase 4.5 expansion re-dispatch plus the Phase 5 word-deficit loop (3 iterations for deep mode) compound the draft toward the 8K+ floor across subsequent passes. On an expansion re-dispatch you will receive updated `TARGET_MIN_WORDS` and `EXPANSION_NOTES` naming under-budget sections — expand those sections with additional evidence density, cross-source comparison, implications, and concrete examples from untapped context entities. Never pad with filler.
 
 ### Phase 2: Draft Writing
 
@@ -199,7 +200,7 @@ When OUTPUT_LANGUAGE=en (default), write in English. Sources in other languages 
   - **ieee**: Numbered `[[N](url)]` inline, numbered reference list
   - **wikilink**: Superscript `<sup>[[N]](#ref-N)</sup>` inline, anchored numbered reference list. Number sources sequentially by first appearance. Each reference entry starts with `<a id="ref-N"></a>` anchor. The inline superscript links to that anchor so readers can jump to the reference. **Every wikilink citation MUST use the full `<sup>[[N]](#ref-N)</sup>` format — never bare `[[N]]` without the `<sup>` wrapper and `#ref-N` anchor link.** Bare `[[N]]` breaks HTML export. For multiple citations, repeat the full format: `<sup>[[1]](#ref-1)</sup><sup>[[2]](#ref-2)</sup>`
   - For `https://` sources, always include URLs as clickable markdown hyperlinks. For `wiki://` and `file://` sources, use the `original_url` if available; otherwise render the reference with title/author attribution and a non-clickable provenance marker
-- **Word count targets are hard floors enforced by the orchestrator via `wc -w` on the written file.** Basic ≥ 3000, detailed ≥ 5000, deep ≥ 8000, outline ≥ 1000, resource ≥ 1500. If `TARGET_MIN_WORDS` is supplied, it overrides these defaults. The pre-commit section plan in Phase 1 exists to make the floor unavoidable — do not undercut the budgets you wrote. If a section is under budget, expand it with more evidence, cross-source comparison, implications, or methodological context — never with filler, tautologies, or "as discussed above" restatements. An honest short-and-sharp report is still worse than an honest at-target report here, because downstream pipelines (verify, copywriter, enrich-report) depend on the declared target being met
+- **Word count targets are hard floors enforced by the orchestrator via `wc -w` on the written file.** The floor is resolved from `TARGET_MIN_WORDS` (which the orchestrator reads from `project-config.json target_words`). Agent-level fallback table when `TARGET_MIN_WORDS` is absent: basic 3000, detailed 5000, deep 5000 (reduced from 8000 in v0.7.7 — set `target_words: 8000` in project-config.json for the old long-form deep floor), outline 1000, resource 1500. The pre-commit section plan in Phase 1 exists to make the floor unavoidable — do not undercut the budgets you wrote. If a section is under budget, expand it with more evidence, cross-source comparison, implications, or methodological context — never with filler, tautologies, or "as discussed above" restatements. An honest short-and-sharp report is still worse than an honest at-target report here, because downstream pipelines (verify, copywriter, enrich-report) depend on the declared target being met
 - If `RESEARCHER_ROLE` is provided, adopt that persona's analytical lens, terminology, and domain expertise throughout the report. For example, a "Financial Analyst" should use financial metrics and investor-oriented framing; a "Scientific Literature Reviewer" should use academic citation conventions and methodological rigor
 - If no role is provided, default to professional, analytical approach
 - **Tone**: Apply the `TONE` parameter to shape rhetorical style. For reference, read `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`. Key tones:
