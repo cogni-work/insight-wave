@@ -1,6 +1,6 @@
 # cogni-wiki
 
-> **Incubating** (v0.0.3) — skills, data formats, and workflows may change at any time.
+> **Incubating** (v0.0.4) — skills, data formats, and workflows may change at any time.
 
 **A better RAG for personal and small-team knowledge work.** Instead of re-discovering the same information every query through embedding similarity, cogni-wiki has Claude compile sources once into a persistent, interlinked markdown wiki — no vector store, no chunking heuristics, no opaque retrieval. Knowledge compounds with every ingest; answers trace to readable markdown files, not vector math. Plain files, plain backlinks, plain Unix tools.
 

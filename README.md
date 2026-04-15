@@ -302,7 +302,6 @@ insight-wave/
 ├── CONTRIBUTING.md                         # Contribution guide & CLA info
 ├── LICENSE                                 # AGPL-3.0-only
 ├── MARKETPLACE_TERMS.md                    # Third-party plugin terms
-├── ROADMAP.md                              # Patent-based ecosystem roadmap
 ├── SECURITY.md                             # Vulnerability disclosure policy
 ├── community-plugin-contributing-template.md
 └── README.md

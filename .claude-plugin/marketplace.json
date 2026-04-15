@@ -30,7 +30,7 @@
       "source": "./cogni-narrative",
       "version": "0.9.2",
       "maturity": "preview",
-      "description": "Story arc-driven narrative transformation. Transforms research syntheses and structured content into compelling executive narratives using 10 story arc frameworks and 8 narrative techniques. Includes TIPS-native trend panorama, theme-thesis for investment theme narratives, JTBD portfolio for buyer-job-centric portfolio narratives, company-credo for About-Us pages, and engagement-model for How-We-Work pages. Narrative review scoring and derivative format adaptation. Bilingual EN/DE.",
+      "description": "Story arc engine for the insight-wave ecosystem. Transforms structured research and portfolio output into executive-grade narratives using 10 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama + 6 more) and 8 narrative techniques. Sits between cogni-research and cogni-copywriting, feeding cogni-visual, cogni-sales, and cogni-marketing. Includes narrative review scoring (0-100, A-F) and derivative-format adaptation (executive brief, talking points, one-pager). Bilingual EN/DE.",
       "keywords": [
         "narrative",
         "story-arc",
