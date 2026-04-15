@@ -524,21 +524,13 @@ Only once Step 0 confirms the file is present do the remaining gate steps apply:
    ```bash
    ACTUAL_WORDS=$(wc -w < "${PROJECT_PATH}/output/draft-v1.md" | tr -d ' ')
    ```
-2. Resolve the minimum floor from `project-config.json`:
+2. Read the resolved floor from the Phase 1.5a plan object:
 
    ```bash
-   floor=$(jq -r '.target_words // empty' "${PROJECT_PATH}/.metadata/project-config.json")
+   floor=$(jq -r '.target_words' "${PROJECT_PATH}/.logs/phase-1.5-plan.json")
    ```
 
-   If `target_words` is set, use it directly. If the field is missing (pre-v0.7.7 project re-run), fall back to the default-by-depth table below. In v0.7.7 the deep-mode default was reduced from 8000 to 5000 — projects created before this change and re-run against the new orchestrator will silently resolve deep → 5000 unless `target_words: 8000` is set explicitly. Phase 1.5a prints a one-line restore notice when this fallback fires so the user knows how to opt back into the old floor.
-
-   | Report type | Default `target_words` (fallback when field is missing) |
-   |---|---|
-   | basic | 3000 |
-   | detailed | 5000 |
-   | deep | 5000 (was 8000 pre-v0.7.7 — set `target_words: 8000` to restore) |
-   | outline | 1000 |
-   | resource | 1500 |
+   Phase 1.5a is the single resolution site — it reads `target_words` from `project-config.json` with the default-by-depth fallback (basic 3000, detailed 5000, deep 5000, outline 1000, resource 1500) when the field is missing, and pins the resolved value onto the plan object at plan-confirmation time. Phase 4.5 is a **consumer**: do not re-read `project-config.json` here and do not re-apply the fallback table. Three resolution sites invite drift; one resolution site and two consumers (Phase 4.5, Phase 6) is the contract. If you need to inspect the fallback logic or the v0.7.7 8K→5K deep-default change, read Phase 1.5a — the restore notice and the fallback table live there, not here.
 
 3. Compute `gate_floor = floor × 0.9` uniformly across all report types (10% tolerance band). Deep mode uses the same tolerance as every other type — the ~5.6–6.1K single-call output ceiling means a first-pass deep draft targeting `target_words >= 8000` is expected to land under floor, and the expansion re-dispatch + Phase 5 word-deficit loop compound it back up. A hard wall at `1.0 × floor` would uselessly bounce drafts that are one paragraph short of the target, which is exactly what the new `[0.98, 1.00) = 0.75 cap` reviewer band also exists to prevent. At the new default `target_words: 5000` for deep, a single writer pass reaches the floor without expansion in most cases — the expansion chain becomes an opt-in for explicit 8K+ runs rather than the common path.
 4. Decision:
@@ -677,7 +669,7 @@ Once the promotion gate passes (or the user selects Option A), continue with the
    - `enrich_report_path`: path to enriched HTML or null
 4. Report summary to user:
    - Topic and report type
-   - **Word count**: always formatted as `Delivered: N words (target: {target_words} words)`. Resolve `{target_words}` from `project-config.json` (with the default-by-depth fallback from Phase 4.5 Step 2 if the field is missing). Length is decoupled from depth in v0.7.7 — there is no per-type range; the user committed to a specific target in setup or via the default-by-depth table, and the summary reports against that target. If `phases.phase_4_writer.re_dispatches >= 1`, also show `(expanded from {v1_words} via expansion chain)` so the user sees when the gate earned its cost.
+   - **Word count**: always formatted as `Delivered: N words (target: {target_words} words)`. Read `{target_words}` from the Phase 1.5a plan object at `.logs/phase-1.5-plan.json` — the single resolution site that Phase 4 dispatch, Phase 4.5 Step 2, and the Phase 6 promotion gate all consume. Do not re-resolve from `project-config.json` here. Length is decoupled from depth in v0.7.7 — there is no per-type range; the user committed to a specific target in setup (or via the default-by-depth fallback Phase 1.5a applied), and the summary reports against that target. If `phases.phase_4_writer.re_dispatches >= 1`, also show `(expanded from {v1_words} via expansion chain)` so the user sees when the gate earned its cost.
    - **Word-count gate status** — read `.metadata/execution-log.json phases.phase_4_writer`:
      - If `phases.phase_4_writer.write_failure` exists and `write_failure.recovered == true`: print `✓ Phase 4.5 write-failure recovery: writer persisted the draft on retry after a first-run silent-persist failure.` Then continue to the branches below — the write-failure line is additive, not a replacement for the word-count status.
      - If `re_dispatches == 0` and the final `actual_words >= floor`: do not print any warning
