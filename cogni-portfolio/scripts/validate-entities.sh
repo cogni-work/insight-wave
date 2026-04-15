@@ -322,8 +322,23 @@ for f in glob.glob('$PROJECT_DIR/features/*.json'):
 " 2>/dev/null)
 fi
 
-# Valid region codes from the taxonomy
-VALID_REGIONS="de dach eu uk nordics us na cn apac jp latam mea global"
+# Valid region codes derived from the taxonomy so the whitelist can never drift
+# from regions.json. Falls back to the canonical minimum if the file is
+# unreadable (defensive; should not occur in practice).
+PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REGIONS_JSON="$PLUGIN_ROOT/skills/portfolio-setup/references/regions.json"
+VALID_REGIONS=$(python3 -c "
+import json
+try:
+    with open('$REGIONS_JSON') as fh:
+        data = json.load(fh)
+    print(' '.join(sorted(data.get('regions', {}).keys())))
+except Exception:
+    pass
+" 2>/dev/null)
+if [ -z "$VALID_REGIONS" ]; then
+  VALID_REGIONS="de dach eu uk nordics us na cn apac jp latam mea global"
+fi
 
 # Validate markets have required fields (slug, name, region, description)
 if [ -d "$PROJECT_DIR/markets" ]; then

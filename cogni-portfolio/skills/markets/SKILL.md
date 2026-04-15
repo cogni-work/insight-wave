@@ -103,7 +103,7 @@ Do not ask all of these. If the user has a clear picture and just wants to captu
 
 ### Select Target Regions
 
-Before proposing segments, establish which regions to target. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json` and present the available regions. Ask the user which regions to focus on — a typical expansion path starts narrow (e.g., `de` or `dach`) and widens over time (`eu`, `us`, etc.).
+Before proposing segments, establish which regions to target. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json` and present the available regions. Ask the user which regions to focus on — a typical expansion path starts narrow (e.g., `de`, `at`, `pl` or `dach`) and widens over time (`eu`, `us`, etc.). Single-country codes are also available for NatCo-style per-country portfolios — where each national operating subsidiary is treated as its own country portfolio — e.g., `at`, `cz`, `sk`, `hu`, `ro`, `hr`, `gr`, `mk` across Central and Southeast Europe.
 
 If markets already exist, show a region summary of current coverage:
 

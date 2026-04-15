@@ -6,7 +6,81 @@
       "scope": ["DE"],
       "currency": "EUR",
       "locale": "de-DE",
-      "timezone": "Europe/Berlin"
+      "timezone": "Europe/Berlin",
+      "regulatory_bodies": ["BfDI", "Bundesnetzagentur (BNetzA)", "BSI"]
+    },
+    "at": {
+      "name": "Austria",
+      "scope": ["AT"],
+      "currency": "EUR",
+      "locale": "de-AT",
+      "timezone": "Europe/Vienna",
+      "regulatory_bodies": ["Datenschutzbehörde (DSB)", "RTR-GmbH", "CERT.at"]
+    },
+    "pl": {
+      "name": "Poland",
+      "scope": ["PL"],
+      "currency": "PLN",
+      "locale": "pl-PL",
+      "timezone": "Europe/Warsaw",
+      "regulatory_bodies": ["UODO", "UKE", "CSIRT NASK"]
+    },
+    "cz": {
+      "name": "Czech Republic",
+      "scope": ["CZ"],
+      "currency": "CZK",
+      "locale": "cs-CZ",
+      "timezone": "Europe/Prague",
+      "regulatory_bodies": ["ÚOOÚ", "ČTÚ", "NÚKIB"]
+    },
+    "sk": {
+      "name": "Slovakia",
+      "scope": ["SK"],
+      "currency": "EUR",
+      "locale": "sk-SK",
+      "timezone": "Europe/Bratislava",
+      "regulatory_bodies": ["Úrad na ochranu osobných údajov", "Regulačný úrad pre elektronické komunikácie", "SK-CERT"]
+    },
+    "hu": {
+      "name": "Hungary",
+      "scope": ["HU"],
+      "currency": "HUF",
+      "locale": "hu-HU",
+      "timezone": "Europe/Budapest",
+      "regulatory_bodies": ["NAIH", "NMHH", "National Cybersecurity Center"]
+    },
+    "ro": {
+      "name": "Romania",
+      "scope": ["RO"],
+      "currency": "RON",
+      "locale": "ro-RO",
+      "timezone": "Europe/Bucharest",
+      "regulatory_bodies": ["ANSPDCP", "ANCOM", "DNSC"]
+    },
+    "hr": {
+      "name": "Croatia",
+      "scope": ["HR"],
+      "currency": "EUR",
+      "locale": "hr-HR",
+      "timezone": "Europe/Zagreb",
+      "notes": "Joined the Eurozone on 2023-01-01; HRK retired",
+      "regulatory_bodies": ["AZOP", "HAKOM", "ZSIS"]
+    },
+    "gr": {
+      "name": "Greece",
+      "scope": ["GR"],
+      "currency": "EUR",
+      "locale": "el-GR",
+      "timezone": "Europe/Athens",
+      "regulatory_bodies": ["Hellenic DPA", "EETT", "National Cybersecurity Authority"]
+    },
+    "mk": {
+      "name": "North Macedonia",
+      "scope": ["MK"],
+      "currency": "MKD",
+      "locale": "mk-MK",
+      "timezone": "Europe/Skopje",
+      "regulatory_bodies": ["AZLP", "AEK", "MKD-CIRT"]
     },
     "dach": {
       "name": "DACH",
