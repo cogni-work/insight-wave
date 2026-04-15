@@ -98,7 +98,7 @@ if [[ -n "$TONE" ]] && ! echo "$VALID_TONES" | grep -qw "$TONE"; then
   exit 2
 fi
 
-VALID_CITATION_FORMATS="apa mla chicago harvard ieee wikilink"
+VALID_CITATION_FORMATS="apa mla chicago harvard ieee wikilink local-wikilink"
 if [[ -n "$CITATION_FORMAT" ]] && ! echo "$VALID_CITATION_FORMATS" | grep -qw "$CITATION_FORMAT"; then
   echo "{\"success\": false, \"error\": \"Invalid --citation-format: $CITATION_FORMAT. Valid formats: $VALID_CITATION_FORMATS\"}" >&2
   exit 2

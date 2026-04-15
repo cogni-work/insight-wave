@@ -200,7 +200,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--market "<region-code>"] \
   [--output-language "<lang>"] \
   [--tone "<tone>"] \
-  [--citation-format "<apa|mla|chicago|harvard|ieee>"] \
+  [--citation-format "<apa|mla|chicago|harvard|ieee|wikilink|local-wikilink>"] \
   [--source-urls "<url1,url2,...>"] \
   [--query-domains "<domain1,domain2,...>"] \
   [--max-subtopics <N>] \
