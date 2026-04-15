@@ -659,6 +659,10 @@ Once the promotion gate passes (or the user selects Option A), continue with the
 
 1. Copy final accepted draft to `output/report.md`
    - The project directory is a self-contained unit of output — report, sources, and metadata together, all Obsidian-browsable. Keep the canonical deliverable at `{project_path}/output/report.md` and do not copy or symlink it elsewhere. If the user wants a different format or location, the enrich-report phase (Phase 5.5) handles that.
+   - **Write deterministic Report-Metadaten footer.** Immediately after the copy, run `${CLAUDE_PLUGIN_ROOT}/scripts/write-report-metadata.sh --project-path {project_path} --target-file {project_path}/output/report.md`.
+     - The script owns the `**Report-Metadaten**:` / `**Report Metadata**:` block at the tail of `output/report.md` — it replaces only that named region, never other content. Inputs: `agents/revisor.md` YAML `model:` field (source of truth for author attribution), `.metadata/execution-log.json` `phases.phase_5_review.iteration_count`, and `project-config.json` `output_language` for date formatting and DE/EN labels.
+     - Fail-open: on non-zero exit or `{"success": false}` JSON (including the degenerate case where `agents/revisor.md` has no `model:` field and the script raises `ValueError`), log the error to `.metadata/execution-log.json` `phases.phase_6_finalization.metadata_write_error` and continue — the report ships without the footer rather than blocking finalization.
+     - Why this step exists: replaces the hallucinated LLM-generated footer that caused issue #49 (revisor self-attributing as Haiku when the agent YAML declares Sonnet).
 2. **Accumulate cost estimates**: Sum `cost_estimate.estimated_usd` from all agent outputs collected during Phases 2-5. Group by agent role (researchers, writer, reviewer, revisor, claim_extractor, source_curator). Write cost summary to `execution-log.json`
 3. Update `.metadata/execution-log.json` with:
    - Phase completion timestamps
