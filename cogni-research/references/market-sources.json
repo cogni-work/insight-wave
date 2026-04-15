@@ -297,6 +297,166 @@
     "currency": "EUR"
   },
 
+  "at": {
+    "default_output_language": "de",
+    "local_language": "de",
+    "region_qualifiers": {"en": "Austria", "local": "Österreich"},
+    "local_query_tips": {
+      "compound_nouns": ["Digitalisierung", "künstliche Intelligenz", "Cybersicherheit", "Breitbandausbau", "Datenschutz", "Industrie 4.0", "digitale Transformation", "E-Government"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Österreich", "österreichisch", "Austria", "AT"]
+    },
+    "authority_sources": [
+      {"domain": "statistik.at", "category": "statistics", "authority": 5, "search_pattern": "site:statistik.at {TOPIC_LOCAL} Statistik {YEAR}"},
+      {"domain": "oeaw.ac.at", "category": "research", "authority": 5, "search_pattern": "site:oeaw.ac.at {TOPIC_LOCAL} Forschung {YEAR}"},
+      {"domain": "rtr.at", "category": "government", "authority": 5, "search_pattern": "site:rtr.at {TOPIC_LOCAL} Telekom Regulierung {YEAR}"},
+      {"domain": "wko.at", "category": "association", "authority": 4, "search_pattern": "site:wko.at {TOPIC_LOCAL} Wirtschaft Digitalisierung {YEAR}"},
+      {"domain": "derstandard.at", "category": "media", "authority": 3, "search_pattern": "site:derstandard.at {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "Datenschutzbehörde (DSB)", "RTR-GmbH", "CERT.at"],
+    "currency": "EUR"
+  },
+
+  "cz": {
+    "default_output_language": "cs",
+    "local_language": "cs",
+    "region_qualifiers": {"en": "Czech Republic Czechia", "local": "Česká republika Česko"},
+    "local_query_tips": {
+      "compound_nouns": ["digitalizace", "umělá inteligence", "kybernetická bezpečnost", "digitální transformace", "ochrana osobních údajů", "průmysl 4.0", "datová ekonomika"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Česká republika", "Česko", "český", "česká", "Czechia"]
+    },
+    "authority_sources": [
+      {"domain": "czso.cz", "category": "statistics", "authority": 5, "search_pattern": "site:czso.cz {TOPIC_LOCAL} statistika {YEAR}"},
+      {"domain": "avcr.cz", "category": "research", "authority": 5, "search_pattern": "site:avcr.cz {TOPIC_LOCAL} výzkum {YEAR}"},
+      {"domain": "ctu.cz", "category": "government", "authority": 5, "search_pattern": "site:ctu.cz {TOPIC_LOCAL} telekomunikace regulace {YEAR}"},
+      {"domain": "uoou.cz", "category": "government", "authority": 5, "search_pattern": "site:uoou.cz {TOPIC_LOCAL} ochrana údajů {YEAR}"},
+      {"domain": "e15.cz", "category": "media", "authority": 3, "search_pattern": "site:e15.cz {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ÚOOÚ", "ČTÚ", "NÚKIB"],
+    "currency": "CZK"
+  },
+
+  "sk": {
+    "default_output_language": "sk",
+    "local_language": "sk",
+    "region_qualifiers": {"en": "Slovakia Slovak Republic", "local": "Slovensko Slovenská republika"},
+    "local_query_tips": {
+      "compound_nouns": ["digitalizácia", "umelá inteligencia", "kybernetická bezpečnosť", "digitálna transformácia", "ochrana osobných údajov", "priemysel 4.0"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Slovensko", "slovenský", "slovenská", "Slovakia"]
+    },
+    "authority_sources": [
+      {"domain": "slovak.statistics.sk", "category": "statistics", "authority": 5, "search_pattern": "site:slovak.statistics.sk {TOPIC_LOCAL} štatistika {YEAR}"},
+      {"domain": "sav.sk", "category": "research", "authority": 5, "search_pattern": "site:sav.sk {TOPIC_LOCAL} výskum {YEAR}"},
+      {"domain": "teleoff.gov.sk", "category": "government", "authority": 5, "search_pattern": "site:teleoff.gov.sk {TOPIC_LOCAL} telekomunikácie {YEAR}"},
+      {"domain": "dataprotection.gov.sk", "category": "government", "authority": 5, "search_pattern": "site:dataprotection.gov.sk {TOPIC_LOCAL} ochrana údajov {YEAR}"},
+      {"domain": "hnonline.sk", "category": "media", "authority": 3, "search_pattern": "site:hnonline.sk {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "Úrad na ochranu osobných údajov SR", "Regulačný úrad pre elektronické komunikácie", "SK-CERT"],
+    "currency": "EUR"
+  },
+
+  "hu": {
+    "default_output_language": "hu",
+    "local_language": "hu",
+    "region_qualifiers": {"en": "Hungary", "local": "Magyarország"},
+    "local_query_tips": {
+      "compound_nouns": ["digitalizáció", "mesterséges intelligencia", "kiberbiztonság", "digitális átalakulás", "adatvédelem", "ipar 4.0", "szélessávú hálózat"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Magyarország", "magyar", "Hungary"]
+    },
+    "authority_sources": [
+      {"domain": "ksh.hu", "category": "statistics", "authority": 5, "search_pattern": "site:ksh.hu {TOPIC_LOCAL} statisztika {YEAR}"},
+      {"domain": "hun-ren.hu", "category": "research", "authority": 5, "search_pattern": "site:hun-ren.hu {TOPIC_LOCAL} kutatás {YEAR}"},
+      {"domain": "nmhh.hu", "category": "government", "authority": 5, "search_pattern": "site:nmhh.hu {TOPIC_LOCAL} távközlés szabályozás {YEAR}"},
+      {"domain": "naih.hu", "category": "government", "authority": 5, "search_pattern": "site:naih.hu {TOPIC_LOCAL} adatvédelem {YEAR}"},
+      {"domain": "portfolio.hu", "category": "media", "authority": 3, "search_pattern": "site:portfolio.hu {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "NAIH", "NMHH", "National Cybersecurity Center"],
+    "currency": "HUF"
+  },
+
+  "ro": {
+    "default_output_language": "ro",
+    "local_language": "ro",
+    "region_qualifiers": {"en": "Romania", "local": "România"},
+    "local_query_tips": {
+      "compound_nouns": ["digitalizare", "inteligență artificială", "securitate cibernetică", "transformare digitală", "protecția datelor", "industria 4.0", "bandă largă"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["România", "român", "română", "Romania"]
+    },
+    "authority_sources": [
+      {"domain": "insse.ro", "category": "statistics", "authority": 5, "search_pattern": "site:insse.ro {TOPIC_LOCAL} statistică {YEAR}"},
+      {"domain": "academiaromana.ro", "category": "research", "authority": 5, "search_pattern": "site:academiaromana.ro {TOPIC_LOCAL} cercetare {YEAR}"},
+      {"domain": "ancom.ro", "category": "government", "authority": 5, "search_pattern": "site:ancom.ro {TOPIC_LOCAL} comunicații reglementare {YEAR}"},
+      {"domain": "dataprotection.ro", "category": "government", "authority": 5, "search_pattern": "site:dataprotection.ro {TOPIC_LOCAL} date personale {YEAR}"},
+      {"domain": "zf.ro", "category": "media", "authority": 3, "search_pattern": "site:zf.ro {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ANSPDCP", "ANCOM", "DNSC"],
+    "currency": "RON"
+  },
+
+  "hr": {
+    "default_output_language": "hr",
+    "local_language": "hr",
+    "region_qualifiers": {"en": "Croatia", "local": "Hrvatska"},
+    "local_query_tips": {
+      "compound_nouns": ["digitalizacija", "umjetna inteligencija", "kibernetička sigurnost", "digitalna transformacija", "zaštita podataka", "industrija 4.0", "širokopojasni pristup"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Hrvatska", "hrvatski", "hrvatska", "Croatia"]
+    },
+    "authority_sources": [
+      {"domain": "dzs.hr", "category": "statistics", "authority": 5, "search_pattern": "site:dzs.hr {TOPIC_LOCAL} statistika {YEAR}"},
+      {"domain": "hazu.hr", "category": "research", "authority": 5, "search_pattern": "site:hazu.hr {TOPIC_LOCAL} znanost istraživanje {YEAR}"},
+      {"domain": "hakom.hr", "category": "government", "authority": 5, "search_pattern": "site:hakom.hr {TOPIC_LOCAL} elektroničke komunikacije {YEAR}"},
+      {"domain": "azop.hr", "category": "government", "authority": 5, "search_pattern": "site:azop.hr {TOPIC_LOCAL} zaštita podataka {YEAR}"},
+      {"domain": "poslovni.hr", "category": "media", "authority": 3, "search_pattern": "site:poslovni.hr {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "AZOP", "HAKOM", "ZSIS"],
+    "currency": "EUR"
+  },
+
+  "gr": {
+    "default_output_language": "el",
+    "local_language": "el",
+    "region_qualifiers": {"en": "Greece Hellenic Republic", "local": "Ελλάδα Ελληνική Δημοκρατία"},
+    "local_query_tips": {
+      "compound_nouns": ["ψηφιοποίηση", "τεχνητή νοημοσύνη", "κυβερνοασφάλεια", "ψηφιακός μετασχηματισμός", "προστασία δεδομένων", "βιομηχανία 4.0", "ευρυζωνικότητα"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Ελλάδα", "ελληνικός", "ελληνική", "Greece", "Hellenic"]
+    },
+    "authority_sources": [
+      {"domain": "www.statistics.gr", "category": "statistics", "authority": 5, "search_pattern": "site:www.statistics.gr {TOPIC_LOCAL} στατιστική {YEAR}"},
+      {"domain": "academyofathens.gr", "category": "research", "authority": 5, "search_pattern": "site:academyofathens.gr {TOPIC_LOCAL} έρευνα {YEAR}"},
+      {"domain": "eett.gr", "category": "government", "authority": 5, "search_pattern": "site:eett.gr {TOPIC_LOCAL} τηλεπικοινωνίες {YEAR}"},
+      {"domain": "dpa.gr", "category": "government", "authority": 5, "search_pattern": "site:dpa.gr {TOPIC_LOCAL} προστασία δεδομένων {YEAR}"},
+      {"domain": "kathimerini.gr", "category": "media", "authority": 3, "search_pattern": "site:kathimerini.gr {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "Hellenic DPA", "EETT", "National Cybersecurity Authority"],
+    "currency": "EUR"
+  },
+
+  "mk": {
+    "default_output_language": "mk",
+    "local_language": "mk",
+    "region_qualifiers": {"en": "North Macedonia", "local": "Северна Македонија"},
+    "local_query_tips": {
+      "compound_nouns": ["дигитализација", "вештачка интелигенција", "сајбер безбедност", "дигитална трансформација", "заштита на податоци", "индустрија 4.0"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["Северна Македонија", "македонски", "North Macedonia"]
+    },
+    "authority_sources": [
+      {"domain": "stat.gov.mk", "category": "statistics", "authority": 5, "search_pattern": "site:stat.gov.mk {TOPIC_LOCAL} статистика {YEAR}"},
+      {"domain": "manu.edu.mk", "category": "research", "authority": 5, "search_pattern": "site:manu.edu.mk {TOPIC_LOCAL} наука {YEAR}"},
+      {"domain": "aek.mk", "category": "government", "authority": 5, "search_pattern": "site:aek.mk {TOPIC_LOCAL} комуникации {YEAR}"},
+      {"domain": "azlp.mk", "category": "government", "authority": 5, "search_pattern": "site:azlp.mk {TOPIC_LOCAL} лични податоци {YEAR}"},
+      {"domain": "kapital.mk", "category": "media", "authority": 3, "search_pattern": "site:kapital.mk {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["AZLP", "AEK", "MKD-CIRT"],
+    "currency": "MKD"
+  },
+
   "eu": {
     "_note": "Composite market — orchestrator expands to per-country researchers for market-specific sub-questions. This entry provides EU-wide sources and cross-market defaults.",
     "default_output_language": "en",
