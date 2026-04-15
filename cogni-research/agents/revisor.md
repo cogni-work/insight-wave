@@ -92,6 +92,11 @@ For each issue:
 - **Default mode** — when the verdict has no high-severity word-deficit issue: track words added vs. removed. If the revision pushes the report beyond the original draft length + 20%, trim lower-priority additions. The writer agent already calibrated report length to the available context — unbounded growth signals scope creep, not quality improvement.
 - **Expansion mode** — when the verdict's issues list contains a high-severity issue whose text begins with `word deficit` or `Word deficit` (the exact phrase the reviewer emits from its Word Count Gate): the +20% cap is lifted. Grow the draft toward the report-type minimum (basic 3000 / detailed 5000 / deep 8000 / outline 1000 / resource 1500). Target for expansion is `max(report_type_minimum, original_words × 1.2)`. If the verdict names specific sections as under budget, bias new content toward those sections first.
   - Expansion mode is still bound by the anti-fabrication rules in Phase 2 and the grounding rules below. Every new finding must cite an existing source entity or a new source discovered via the **Source-Mode Evidence Gathering** helper (wiki page, local document excerpt, or WebSearch result, as appropriate to `report_source`). Prefer reusing already-curated sources from `02-sources/data/` before pulling in new ones — use `Grep` on that directory for key terms from the evidence gap before dispatching a fresh channel query. The aim is evidence density, not new topics.
+  - **Citation density parity.** This rule has four parts, each enforced independently:
+    - *Parity measurement.* Before expanding any existing section, measure its pre-expansion citation density (inline cites per 1,000 words). After expansion, that section's post-expansion density must be **≥ its pre-expansion density**.
+    - *Trim before under-citing.* If the available sources cannot honestly support that density, **add less prose** — under-citation is worse than under-expansion.
+    - *Connective tissue is **NOT** exempt.* Transitional paragraphs, framing sentences, methodological qualifiers, and cross-section bridges must be backed by evidence at the same rate as the section they live in. They are **not** exempt connective tissue.
+    - *Triggering unit is the paragraph, not the "new finding".* The triggering unit for citation is the paragraph's word count, not the presence of a "new finding" — this closes the loophole where restatement and bridge prose expanded section length without pulling in evidence. Source-discipline still applies: route any new evidence query through the **Source-Mode Evidence Gathering** helper so wiki/local/hybrid projects pull from their configured channels, not the open web.
   - Do not add new top-level sections in expansion mode unless the verdict explicitly names a missing section. Deepen existing sections with cross-source comparison, implications, methodological context, and concrete examples from the research tree.
   - If after expansion you still cannot reach the floor without filler, stop short of the floor and let the orchestrator's Phase 4 gate log the deficit rather than padding.
 
@@ -105,18 +110,45 @@ Word count tracking in the output enables the orchestrator to detect unbounded g
 
 1. Write revised draft to `output/draft-v{NEW_DRAFT_VERSION}.md`
 2. Preserve all existing citations and add new ones as needed
-3. Return compact JSON:
+3. Run the **Post-expansion density self-check** below (expansion mode only — skip in default mode)
+4. Return compact JSON:
 
 ```json
-{"ok": true, "draft": "output/draft-v2.md", "fixes_applied": 5, "new_sources": 2, "words": 3800, "cost_estimate": {"input_words": 12000, "output_words": 4000, "estimated_usd": 0.072}}
+{
+  "ok": true,
+  "draft": "output/draft-v2.md",
+  "fixes_applied": 5,
+  "new_sources": 2,
+  "words": 3800,
+  "citation_density": {
+    "overall": {"old": 8.0, "new": 7.2},
+    "per_section": [
+      {"heading": "Synthese und strategische Handlungsempfehlungen", "old_words": 452, "new_words": 784, "old_cites": 0, "new_cites": 1, "old_density": 0.0, "new_density": 1.3, "status": "degraded"},
+      {"heading": "Strukturelle Hemmnisse", "old_words": 541, "new_words": 728, "old_cites": 4, "new_cites": 6, "old_density": 7.4, "new_density": 8.2, "status": "ok"}
+    ],
+    "degraded_sections": ["Synthese und strategische Handlungsempfehlungen"]
+  },
+  "citation_density_warning": "Section 'Synthese und strategische Handlungsempfehlungen' expanded 73% but density remained below 90% of pre-expansion baseline after one retry.",
+  "cost_estimate": {"input_words": 12000, "output_words": 4000, "estimated_usd": 0.072}
+}
 ```
 
-Include `cost_estimate` with approximate word counts for all content read (draft + verdicts + source entities) and produced (revised draft). See `references/model-strategy.md` for the estimation formula.
+The `citation_density` block is populated **only in expansion mode**. In default-mode revisions (no word-deficit issue in the verdict) the block may be omitted entirely from the JSON, or returned with `overall: {}`, `per_section: []`, and `degraded_sections: []`. Downstream parsers must accept both shapes and must not assume `overall.old` / `overall.new` are present. Use `overall: {}` rather than `overall: null` or `overall: {"old": 0, "new": 0}` — a numeric-zero value would be mistaken for a real measurement of zero density. The `citation_density_warning` field is present only when one or more sections failed the self-check after retry; omit it otherwise. Include `cost_estimate` with approximate word counts for all content read (draft + verdicts + source entities) and produced (revised draft). See `references/model-strategy.md` for the estimation formula.
 
 On failure:
 ```json
 {"ok": false, "error": "Draft file not found at output/draft-v1.md"}
 ```
+
+#### Post-expansion density self-check (expansion mode only)
+
+Skip this entire sub-phase in default mode. In expansion mode, run all five substeps before returning the JSON above:
+
+1. Parse both `DRAFT_PATH` (prior draft) and the new draft for H2 section boundaries.
+2. For each H2 section, count body words (excluding a trailing `## References` or `## Quellen` section) and inline citations (markdown link references, `[Source: ...](...)` patterns, or numeric footnotes — whichever citation format the project uses).
+3. For any section where `new_words / old_words > 1.20` (expansion of ≥20%), compute `old_density = old_cites / old_words × 1000` and `new_density = new_cites / new_words × 1000`. If `new_density < old_density × 0.90`, mark the section **degraded**.
+4. On any degraded section, add targeted citations — prefer existing source entities, fall back to a single **Source-Mode Evidence Gathering** pass (wiki / local / web according to `report_source`, never hardcoded WebSearch) — and re-measure once. If the section still fails after one retry, record it in `degraded_sections[]` and emit a `citation_density_warning` string in the return JSON naming the deficient sections so the orchestrator can surface it in the Phase 6 summary.
+5. Never silently pad prose to mask a density failure — trimming the expansion is always the correct response when sources cannot honestly support the density.
 
 ## Source-Mode Evidence Gathering
 
