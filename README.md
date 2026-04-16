@@ -83,7 +83,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 > "Initialize my insight-wave workspace and check plugin health"
 
-→ [Plugin guide](docs/plugin-guide/cogni-workspace.md) · [Getting started](docs/getting-started.md)
+→ [Plugin guide](docs/plugin-guide/cogni-workspace.md) · [Getting started](docs/workflows/install-to-infographic.md)
 
 #### Source Verification
 
@@ -189,7 +189,7 @@ The insight-wave marketplace lives at [`cogni-work/insight-wave`](https://github
 /plugin marketplace add cogni-work/insight-wave
 ```
 
-For the full walkthrough, see [Getting Started](docs/getting-started.md).
+For the full walkthrough, see [Getting Started](docs/workflows/install-to-infographic.md).
 
 ### Core requirements
 
@@ -221,7 +221,7 @@ For the full deployment guide including GDPR compliance, data handling policies,
 
 ### Learn more
 
-- [Getting started guide](docs/getting-started.md) — full installation walkthrough
+- [Getting started guide](docs/workflows/install-to-infographic.md) — install, workspace, first infographic (~15 minutes)
 - [Ecosystem overview](docs/ecosystem-overview.md) — plugin landscape and data flow
 - [Plugin anatomy](docs/architecture/plugin-anatomy.md) — how plugins are structured
 - [MCP overview](https://docs.anthropic.com/en/docs/build-with-claude/mcp) — what Model Context Protocol is and how it works
@@ -263,7 +263,7 @@ Or browse interactively with `/plugin` and go to the **Discover** tab.
 /manage-workspace
 ```
 
-This runs dependency checks, discovers installed plugins, gathers your preferences, and generates shared settings. See the [getting started guide](docs/getting-started.md) for the full walkthrough.
+This runs dependency checks, discovers installed plugins, gathers your preferences, and generates shared settings. See the [getting started guide](docs/workflows/install-to-infographic.md) for the full walkthrough.
 
 ## How it works
 
@@ -276,10 +276,10 @@ insight-wave/
 ├── .claude-plugin/
 │   └── marketplace.json                    # Marketplace manifest (14 plugins)
 ├── docs/                                   # User documentation
-│   ├── getting-started.md                  # Installation and first steps
+│   ├── getting-started.md                  # Forwarder → workflows/install-to-infographic.md
 │   ├── ecosystem-overview.md               # Plugin landscape and data flow
 │   ├── plugin-guide/                       # Per-plugin deep dives (14 guides)
-│   ├── workflows/                          # Cross-plugin pipeline guides (6 workflows)
+│   ├── workflows/                          # Cross-plugin pipeline guides (7 workflows)
 │   ├── architecture/                       # Design philosophy, plugin anatomy, ER diagram
 │   └── contributing/                       # Plugin development guide
 ├── cogni-claims/                           # Claim verification
@@ -330,9 +330,9 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 
 **91 skills, 74 agents** across the ecosystem.
 
-See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/getting-started.md).
+See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 
-Workflow guides: [Research to Report](docs/workflows/research-to-report.md) | [Portfolio to Pitch](docs/workflows/portfolio-to-pitch.md) | [Portfolio to Website](docs/workflows/portfolio-to-website.md) | [Trends to Solutions](docs/workflows/trends-to-solutions.md) | [Consulting Engagement](docs/workflows/consulting-engagement.md) | [Content Pipeline](docs/workflows/content-pipeline.md)
+Workflow guides: [Install to Infographic](docs/workflows/install-to-infographic.md) | [Research to Report](docs/workflows/research-to-report.md) | [Portfolio to Pitch](docs/workflows/portfolio-to-pitch.md) | [Portfolio to Website](docs/workflows/portfolio-to-website.md) | [Trends to Solutions](docs/workflows/trends-to-solutions.md) | [Consulting Engagement](docs/workflows/consulting-engagement.md) | [Content Pipeline](docs/workflows/content-pipeline.md)
 
 ## Contributing
 

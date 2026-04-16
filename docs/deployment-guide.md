@@ -6,7 +6,7 @@ Enterprise deployment reference for Claude Code and Claude Cowork — security c
 >
 > If this guide is more than 90 days old, consider running `/doc-deploy` in the cogni-docs plugin to refresh the underlying data before relying on specific configuration values.
 
-For the canonical plugin and workspace setup, see [Getting Started](getting-started.md). This guide covers the infrastructure and compliance layer that sits underneath.
+For the canonical plugin and workspace setup, see [Install to Infographic](workflows/install-to-infographic.md). This guide covers the infrastructure and compliance layer that sits underneath.
 
 ---
 
@@ -584,7 +584,7 @@ For current rates, see the [Anthropic pricing page](https://www.anthropic.com/pr
 
 ## Further Reading
 
-- [Getting Started](getting-started.md) — workspace and plugin setup
+- [Install to Infographic](workflows/install-to-infographic.md) — workspace and plugin setup
 - [Ecosystem Overview](ecosystem-overview.md) — how the plugins fit together
 - [cogni-workspace plugin guide](plugin-guide/cogni-workspace.md) — workspace initialization details
 - [Anthropic documentation](https://docs.anthropic.com/)
