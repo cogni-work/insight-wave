@@ -328,7 +328,7 @@ Six end-to-end workflow guides document the cross-plugin pipelines:
 
 ## See Also
 
-- [Getting Started](getting-started.md) — install the marketplace and run your first report
+- [Install to Infographic](workflows/install-to-infographic.md) — install the marketplace, set up your workspace, and produce your first infographic
 - [er-diagram.md](er-diagram.md) — cross-plugin entity relationship diagram
 - Plugin guides in [docs/plugin-guide/](plugin-guide/) — per-plugin tutorials with worked examples
 - Workflow guides in [docs/workflows/](workflows/) — end-to-end pipeline walkthroughs
