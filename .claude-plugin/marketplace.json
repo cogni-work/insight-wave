@@ -5,7 +5,7 @@
     "email": "stephan@cogni-work.ai"
   },
   "metadata": {
-    "description": "Insight-wave is a 14-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, narrative transformation, visual deliverables, sales enablement, claim verification, knowledge management, and end-to-end consulting orchestration.",
+    "description": "Insight-wave is a 14-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines \u2014 trend scouting, portfolio messaging, narrative transformation, visual deliverables, sales enablement, claim verification, knowledge management, and end-to-end consulting orchestration.",
     "version": "1.0.1"
   },
   "plugins": [
@@ -92,7 +92,7 @@
       "source": "./cogni-portfolio",
       "version": "0.9.8",
       "maturity": "preview",
-      "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies.",
+      "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework \u2014 market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies.",
       "keywords": [
         "portfolio",
         "messaging",
@@ -109,7 +109,7 @@
       "source": "./cogni-visual",
       "version": "0.16.20",
       "maturity": "preview",
-      "description": "Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
+      "description": "Transform polished narratives and structured data into visual deliverables \u2014 presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
       "keywords": [
         "presentations",
         "slides",
@@ -167,7 +167,7 @@
       "source": "./cogni-research",
       "version": "0.7.12",
       "maturity": "preview",
-      "description": "Multi-agent research report generator with localized search across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
+      "description": "Multi-agent research report generator with localized search across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU) \u2014 intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
         "research",
         "report",
@@ -204,7 +204,7 @@
       "source": "./cogni-website",
       "version": "0.0.4",
       "maturity": "incubating",
-      "description": "Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.",
+      "description": "Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins \u2014 outputting a deployable static site with shared navigation, theming, and responsive HTML.",
       "keywords": [
         "website",
         "static-site",
@@ -232,10 +232,10 @@
         "problem-framing",
         "solution-design",
         "phase-gated",
+        "vision-framing",
         "cross-plugin",
         "agent",
-        "hooks",
-        "html-report"
+        "hooks"
       ]
     },
     {
@@ -243,7 +243,7 @@
       "source": "./cogni-wiki",
       "version": "0.0.4",
       "maturity": "incubating",
-      "description": "A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
+      "description": "A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest \u2014 no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
       "keywords": [
         "wiki",
         "knowledge-base",
