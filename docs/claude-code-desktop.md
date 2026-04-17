@@ -8,9 +8,7 @@ cogni-docs/skills/doc-hub/references/doc-templates.md.
 
 # Claude Code desktop installation guide for consultants
 
-This guide gets you from zero to a working **Claude Code** setup — authenticated with your Claude Max subscription and ready to install the insight-wave plugin suite. It covers **macOS 13+** and **Windows 10 (1809+) / 11**, uses Anthropic's **native installer** (recommended as of April 2026), and flags the exact places where Mac and Windows steps diverge. Expect about **15 minutes** for a first-time setup; then jump to [From Install to Infographic](workflows/install-to-infographic.md) to add the insight-wave marketplace.
-
-A note on what changed in 2026: Anthropic replaced the old npm-based installer with a one-line native installer that auto-updates in the background. **Windows no longer requires WSL2** — native Windows works fine as long as Git for Windows is installed. If you followed an older guide, the instructions below supersede it.
+This guide gets you from zero to a working **Claude Code** setup — authenticated with your Claude Max subscription and ready to install the insight-wave plugin suite. It covers **macOS 13+** and **Windows 10 (1809+) / 11**, uses Anthropic's **native installer**, and flags the exact places where Mac and Windows steps diverge. Expect about **15 minutes** for a first-time setup; then jump to [From Install to Infographic](workflows/install-to-infographic.md) to add the insight-wave marketplace.
 
 ---
 
