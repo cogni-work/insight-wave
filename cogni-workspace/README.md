@@ -2,6 +2,8 @@
 
 > **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
 
+> **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
+
 The foundation-layer plugin for the [insight-wave](https://claude.ai/cowork) ecosystem — the only plugin that other cogni-x plugins depend on, and the one that must be initialized first. cogni-workspace owns environment configuration, MCP server installation, theme storage, plugin discovery, workspace health diagnostics, and Obsidian vault integration — so every cogni-x plugin starts running, not configuring.
 
 ## Why this exists
@@ -41,41 +43,15 @@ In the Claude Cowork plugin model, workspace-level state (paths, env vars, insta
 - **Catch workspace drift before skills break.** Five-tier health diagnostics (foundation, env vars, plugin registry, themes, dependencies) surface mismatches and missing deps before they cause cryptic runtime failures.
 - **Safe updates with rollback in seconds.** `manage-workspace` backs up before modifying — if an update breaks something, restore the previous state in one command, no manual file recovery.
 
-## Installation
+## Install
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+Install insight-wave via Claude Code desktop:
 
-### Claude Code desktop (recommended for insight-wave)
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-Install Claude Code via the native installer, then register the insight-wave marketplace and install this plugin:
-
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
-
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-workspace@insight-wave
-```
-
-### Claude Cowork (short text-only tasks)
-
-Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, Enterprise). For insight-wave, prefer Claude Code desktop — Cowork has two caveats that affect this plugin's workflows:
-
-- **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
-- **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
-
-See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
-
-**Prerequisites:**
-- `jq` (required — JSON processing)
-- `python3` (required — stdlib only, no pip)
-- `bash 3.2+` (required)
-- Optional: `curl`, `git`, `bc`
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 ## Quick start
 
@@ -174,6 +150,8 @@ cogni-workspace has no required plugin dependencies — it is the foundation lay
 | cogni-visual | No | manage-themes passes color variables to cogni-visual renderers (render-big-picture, render-big-block) |
 | cogni-website | No | Referenced in manage-workspace and workspace-status for website-related workspace configuration |
 | cogni-help | No | Referenced inline in workspace skills for issue filing and guided help |
+| cogni-portfolio | No | install-mcp references cogni-portfolio as a consumer of excalidraw MCP in the installation plan |
+| cogni-claims | No | workspace-status references cogni-claims as a provider plugin for the claude-in-chrome MCP server check |
 
 ## Contributing
 
@@ -183,7 +161,7 @@ Contributions welcome — theme templates, platform support, diagnostic checks, 
 
 | ID | Issue | Severity | Affected Skills | Workaround |
 |----|-------|----------|----------------|------------|
-| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/manage-themes` (website extraction) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [known-issues registry](https://github.com/anthropics/managed-service/blob/main/cogni-docs/references/known-issues.md) for detailed steps. |
+| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/manage-themes` (website extraction) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [Known Issues Registry](../docs/known-issues.md#ki-001) for detailed steps. |
 
 > When both Claude Desktop (Cowork) and Claude Code are installed, their competing native messaging host configurations cause browser automation tools to silently vanish. The `/manage-themes` skill's live website extraction mode falls back to manual theme specification until the conflict is resolved.
 

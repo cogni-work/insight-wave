@@ -1,6 +1,8 @@
 # cogni-trends
 
-> **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
+> **Preview** (v0.4) — core skills defined but may change. Feedback welcome.
+
+> **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
 A [Claude Cowork](https://claude.ai/cowork) plugin for scouting, selecting, and reporting on strategic industry trends — **rooted in the German Mittelstand, covering European markets (DE/FR/IT/PL/NL/ES) and US/UK**. Combines the [Smarter Service Trendradar](https://www.smarter-service.com/2023/01/31/trendradar-fuer-die-multikrise-und-neue-geooekonomie/) (4-dimension structure by Bernhard Steimel) with the TIPS content framework (Trends, Implications, Possibilities, Solutions — a B2B consulting methodology widely used since the early 2000s; see [WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) for a detailed treatment, filed by Siemens 2017, ceased 2019).
 
@@ -70,40 +72,15 @@ If you need to stay ahead of industry trends for strategy, advisory, or portfoli
 - **Multi-session workflow.** Resume any project mid-stream with full state recovery via `/trends-resume` — zero context loss between sessions.
 - **Research your market natively.** Per-market bilingual queries against curated regional institutional sources — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, Les Echos), IT (CNR, AGCOM), PL (UKE, POLSA), NL (TNO, ACM), ES (CNMC, INTA), plus US/UK. Zero reliance on generic US-centric datasets; output in your chosen language.
 
-## Installation
+## Install
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+Install insight-wave via Claude Code desktop:
 
-### Claude Code desktop (recommended for insight-wave)
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-Install Claude Code via the native installer, then register the insight-wave marketplace and install this plugin:
-
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
-
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-trends@insight-wave
-```
-
-### Claude Cowork (short text-only tasks)
-
-Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, Enterprise). For insight-wave, prefer Claude Code desktop — Cowork has two caveats that affect this plugin's workflows:
-
-- **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
-- **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
-
-See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
-
-**Prerequisites:**
-- Web access enabled (for trend research)
-- Optional: `cogni-claims` plugin (recommended for claim verification of trend report citations)
-- Optional: `cogni-narrative` plugin (for insight summary generation)
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 ## Quick start
 

@@ -2,6 +2,8 @@
 
 > **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
 
+> **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
+
 Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.
 
 ## Why this exists
@@ -34,40 +36,22 @@ A static-site generation pipeline purpose-built for the insight-wave ecosystem. 
 8. **Validate and preview** — verify completeness and link integrity; open the site in the default browser; suggest a local HTTP server for full navigation testing
 9. **Resume across sessions** — detect project phase from existing files; compare source modification times against built HTML; flag new entities or newly discovered upstream plugins; recommend targeted partial rebuilds
 
-## Installation
+## What it means for you
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+- **From portfolio data to live website in one session.** Setup, plan, and build run sequentially with interactive checkpoints — what would take a web team 2-3 days of content migration completes in a single working session.
+- **Always current, never stale.** Resume detects when source files have changed since the last build and regenerates only the affected pages — content updates in cogni-portfolio or cogni-marketing propagate to the website without starting from scratch.
+- **One theme, every page.** A single design-variables.json drives all color, font, and shadow tokens across the entire site — reskinning means updating one file, not editing 10+ HTML pages.
+- **Deploy anywhere without build tooling.** The output is a self-contained static folder with validated internal links — drop onto Netlify, Vercel, or S3 with zero configuration.
 
-### Claude Code desktop (recommended for insight-wave)
+## Install
 
-Install Claude Code via the native installer, then register the insight-wave marketplace and install this plugin:
+Install insight-wave via Claude Code desktop:
 
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-website@insight-wave
-```
-
-### Claude Cowork (short text-only tasks)
-
-Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, Enterprise). For insight-wave, prefer Claude Code desktop — Cowork has two caveats that affect this plugin's workflows:
-
-- **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
-- **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
-
-See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
-
-**Prerequisites:**
-- **cogni-portfolio** (required — provides products, features, propositions, markets, solutions)
-- **cogni-workspace** (required — provides theme selection and design variables)
-- Optional: **cogni-marketing** (blog posts, articles, landing pages), **cogni-trends** (insights page), **cogni-research** (resources/whitepapers page)
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 ## Quick start
 
@@ -86,6 +70,20 @@ Or describe what you want in natural language:
 - "Generate a web presence from our portfolio and marketing content"
 - "Resume the website project"
 
+## Try it
+
+Run `/website-setup` in any Claude Code session where cogni-portfolio is installed. The skill discovers available content sources and walks you through theme selection, company details, and legal jurisdiction in a single interactive session.
+
+## Data model
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `website-project.json` | project root | Configuration: sources, theme, build options, `legal_config` |
+| `website-plan.json` | project root | Page blueprint: specs, slugs, source mappings, `legal_links` |
+| `content/legal/*.md` | project directory | Rendered legal page markdown (from website-legal templates) |
+| `output/design-variables.json` | output directory | Color/font tokens derived from selected theme |
+| `output/website/` | output directory | Deployable static site folder |
+
 ## How it works
 
 **Setup** discovers every content source available in the workspace, validates that a portfolio project exists (hard gate), and produces `website-project.json` — the single configuration file that all downstream skills share. Theme selection and hero renderer choice happen here.
@@ -97,13 +95,6 @@ Or describe what you want in natural language:
 **Preview** validates that every planned page was built and that all internal links resolve, then opens `index.html` in the system browser. A local HTTP server command is provided for full relative-path testing.
 
 **Resume** re-enters any interrupted session, detects phase from file state, checks for source changes since the last build, and routes to the correct next skill automatically.
-
-## What it means for you
-
-- **From portfolio data to live website in one session.** Setup, plan, and build run sequentially with interactive checkpoints — what would take a web team 2-3 days of content migration completes in a single working session.
-- **Always current, never stale.** Resume detects when source files have changed since the last build and regenerates only the affected pages — content updates in cogni-portfolio or cogni-marketing propagate to the website without starting from scratch.
-- **One theme, every page.** A single design-variables.json drives all color, font, and shadow tokens across the entire site — reskinning means updating one file, not editing 10+ HTML pages.
-- **Deploy anywhere without build tooling.** The output is a self-contained static folder with validated internal links — drop onto Netlify, Vercel, or S3 with zero configuration.
 
 ## Components
 
@@ -204,10 +195,6 @@ cogni-website/
 | cogni-trends | No | Trend report with investment themes for an Insights page |
 | cogni-research | No | Research reports as whitepapers for a Resources page |
 | cogni-visual | No | Pencil MCP access for AI-generated hero imagery (indirect — via hero-renderer agent) |
-
-## Contributing
-
-Contributions welcome — page templates, navigation patterns, theme integration, and documentation. See the [insight-wave contribution guide](https://github.com/cogni-work/insight-wave/blob/main/CONTRIBUTING.md) for guidelines.
 
 ## Custom development
 

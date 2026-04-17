@@ -1,6 +1,8 @@
 # cogni-claims
 
-> **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
+> **Preview** (v0.10) — core skills defined but may change. Feedback welcome.
+
+> **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
 cogni-claims is the citation-integrity layer for [Claude Cowork](https://claude.ai/cowork) — a systematic verification workflow that detects when sourced claims misrepresent, overstate, or contradict what their cited sources actually say.
 
@@ -40,37 +42,17 @@ If you ship research, reports, or any content that leans on sourced claims, this
 
 ## Known Limitations
 
-> **Chrome native messaging host conflict between Cowork and Claude Code** (S2-major) — Browser-based claim source co-browsing unavailable when Claude Code's native host is active — claim verification falls back to web fetch only. Workaround: Toggle native messaging host configs by renaming the .json file for the unused product and restarting Chrome. See [Known Issues Registry](../../cogni-docs/references/known-issues.md#ki-001) for details.
+> **Chrome native messaging host conflict between Cowork and Claude Code** (S2-major) — Browser-based claim source co-browsing unavailable when Claude Code's native host is active — claim verification falls back to web fetch only. Workaround: Toggle native messaging host configs by renaming the .json file for the unused product and restarting Chrome. See [Known Issues Registry](../docs/known-issues.md#ki-001) for details.
 
-## Installation
+## Install
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+Install insight-wave via Claude Code desktop:
 
-### Claude Code desktop (recommended for insight-wave)
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-Install Claude Code via the native installer, then register the insight-wave marketplace and install this plugin:
-
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
-
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-claims@insight-wave
-```
-
-### Claude Cowork (short text-only tasks)
-
-Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, Enterprise). For insight-wave, prefer Claude Code desktop — Cowork has two caveats that affect this plugin's workflows:
-
-- **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
-- **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
-
-See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 ## Quick start
 
@@ -80,7 +62,7 @@ See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo
 /claims dashboard             # review claim statuses and deviation summaries
 /claims inspect <claim-id>    # open the source in your browser with the passage highlighted
 /claims resolve <claim-id>    # decide what to do about a deviation
-/claims cobrowse               # interactively recover sources that automated verification couldn't reach
+/claims cobrowse              # interactively recover sources that automated verification couldn't reach
 ```
 
 Aliases: `/claim`, `/verify-claims`
@@ -130,19 +112,23 @@ Claims are stored in your project's `cogni-claims/` directory as JSON. When you 
 
 ## Components
 
-| Component | Type | What it does |
-|-----------|------|--------------|
-| `claims` | skill | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims |
-| `claim-entity` | skill | Cross-plugin data model for claim verification — defines ClaimRecord, DeviationRecord, and ResolutionRecord schemas |
-| `claim-verifier` | agent | Verify claims against a single source URL |
-| `source-inspector` | agent | Open a source URL in the browser and highlight the relevant passage for user inspection |
-| `/claims` | command | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims |
+| Component | Type | Description |
+|-----------|------|-------------|
+| `claims` | Skill | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims |
+| `claim-entity` | Skill | Cross-plugin data model for claim verification — defines ClaimRecord, DeviationRecord, and ResolutionRecord schemas |
+| `claim-verifier` | Agent | Verify claims against a single source URL and return deviation analysis as JSON |
+| `source-inspector` | Agent | Fetch a source URL via claude-in-chrome, locate the relevant passage, and present evidence to the user |
+| `/claims` | Command | Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims |
 
 ## Architecture
 
 ```
 cogni-claims/
 ├── .claude-plugin/plugin.json    Plugin manifest
+├── README.md                     Plugin documentation
+├── CLAUDE.md                     Developer guide
+├── CONTRIBUTING.md               Contribution guidelines
+├── LICENSE                       AGPL-3.0
 ├── skills/                       2 verification skills
 │   ├── claims/                   Lifecycle orchestrator (submit → verify → resolve)
 │   └── claim-entity/             Cross-plugin data contract and schema definitions

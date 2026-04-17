@@ -2,6 +2,8 @@
 
 > **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
 
+> **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
+
 cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem into a single entry point — teaching users through a 12-course curriculum, routing tasks to the right plugin, chaining multi-plugin workflows, diagnosing problems, generating one-screen cheatsheets, and filing GitHub issues straight from the session — so 12 plugins with 70+ skills behave like one coherent system.
 
 ## Why this exists
@@ -34,35 +36,15 @@ A meta-plugin for the insight-wave ecosystem. While other plugins produce conten
 - **Collapse multi-plugin work into 3–4 steps.** Run any of 6 workflow templates to chain plugins into repeatable pipelines — research-to-slides in 3 steps, portfolio-to-pitch in 4.
 - **Catch failures before they surface.** Run the 5-tier health check to surface missing dependencies, stale configs, and integrity issues before they become cryptic runtime errors.
 
-## Installation
+## Install
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+Install insight-wave via Claude Code desktop:
 
-### Claude Code desktop (recommended for insight-wave)
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-Install Claude Code via the native installer, then register the insight-wave marketplace and install this plugin:
-
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
-
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-help@insight-wave
-```
-
-### Claude Cowork (short text-only tasks)
-
-Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, Enterprise). For insight-wave, prefer Claude Code desktop — Cowork has two caveats that affect this plugin's workflows:
-
-- **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
-- **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
-
-See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 ## Quick start
 
@@ -186,7 +168,7 @@ Contributions welcome — course content, workflow templates, diagnostic checks,
 
 | ID | Issue | Severity | Affected Skills | Workaround |
 |----|-------|----------|----------------|------------|
-| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/cogni-issues` (browser filing) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [known-issues registry](https://github.com/anthropics/managed-service/blob/main/cogni-docs/references/known-issues.md) for detailed steps. |
+| KI-001 | Chrome native messaging host conflict between Cowork and Claude Code | S2-major | `/cogni-issues` (browser filing) | Toggle native host configs by renaming the `.json` file for the unused product and restarting Chrome. See [Known Issues Registry](../docs/known-issues.md#ki-001) for detailed steps. |
 
 > When both Claude Desktop (Cowork) and Claude Code are installed, their competing native messaging host configurations cause browser automation tools to silently vanish. The `/cogni-issues` skill falls back to `gh` CLI — issue filing still works, but interactive browser-based filing is unavailable until the conflict is resolved.
 
