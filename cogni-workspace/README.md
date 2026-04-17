@@ -2,6 +2,8 @@
 
 > **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
 
+> **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
+
 The foundation-layer plugin for the [insight-wave](https://claude.ai/cowork) ecosystem — the only plugin that other cogni-x plugins depend on, and the one that must be initialized first. cogni-workspace owns environment configuration, MCP server installation, theme storage, plugin discovery, workspace health diagnostics, and Obsidian vault integration — so every cogni-x plugin starts running, not configuring.
 
 ## Why this exists
@@ -43,33 +45,13 @@ In the Claude Cowork plugin model, workspace-level state (paths, env vars, insta
 
 ## Install
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+Install insight-wave via Claude Code desktop:
 
-### Claude Code desktop (recommended for insight-wave)
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-Install Claude Code via the native installer, then register the insight-wave marketplace and install this plugin:
-
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
-
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-workspace@insight-wave
-```
-
-### Claude Cowork (short text-only tasks)
-
-Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, Enterprise). For insight-wave, prefer Claude Code desktop — Cowork has two caveats that affect this plugin's workflows:
-
-- **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
-- **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
-
-See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness (Claude Code desktop)**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 ## Quick start
 

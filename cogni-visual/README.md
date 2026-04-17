@@ -2,6 +2,8 @@
 
 > **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
 
+> **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
+
 A [Claude Cowork](https://claude.ai/cowork) plugin for brief-based visual production — skills distill polished narratives and structured data into YAML+Markdown briefs (slides, infographics, storyboards, web narratives, enriched reports), then rendering agents hand those briefs to PPTX, Excalidraw, Pencil MCP, and HTML backends. Every output inherits brand identity from your cogni-workspace theme instead of generic templates.
 
 ## Why this exists
@@ -39,24 +41,15 @@ A brief-based visual production pipeline. Skills generate structured briefs (YAM
 
 > **Chrome native messaging host conflict between Cowork and Claude Code** (S2-major) — Browser-based zone review for rendered visuals may fail silently when tools are missing. Workaround: Toggle native messaging host configs by renaming the .json file for the unused product and restarting Chrome. See [Known Issues Registry](../docs/known-issues.md#ki-001) for details.
 
-## Installation
+## Install
 
-This plugin is part of the [insight-wave monorepo](https://github.com/cogni-work/insight-wave) and is installed automatically with the marketplace.
+Install insight-wave via Claude Code desktop:
 
-```bash
-# 1. Install Claude Code (macOS — other platforms: https://code.claude.com/docs/en/setup)
-curl -fsSL https://claude.ai/install.sh | bash
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-# 2. Register the insight-wave marketplace
-/plugin marketplace add cogni-work/insight-wave
-
-# 3. Install this plugin
-/plugin install cogni-visual@insight-wave
-```
-
-See the [install-to-infographic workflow](../docs/workflows/install-to-infographic.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
-
-> **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
 > **Note:** Excalidraw MCP is required for hand-drawn infographic rendering (sketchnote, whiteboard traditions). Pencil MCP is required for editorial infographic rendering (economist, editorial, data-viz, corporate), web narratives, and storyboards. Both MCPs are optional — the brief-generation skills work without them.
 
