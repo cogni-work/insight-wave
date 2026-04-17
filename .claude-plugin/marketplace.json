@@ -232,10 +232,10 @@
         "problem-framing",
         "solution-design",
         "phase-gated",
+        "vision-framing",
         "cross-plugin",
         "agent",
-        "hooks",
-        "html-report"
+        "hooks"
       ]
     },
     {
