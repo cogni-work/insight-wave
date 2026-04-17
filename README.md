@@ -156,50 +156,15 @@ Your pipeline needs more content, but the budget doesn't cover additional headco
 
 For CMS integration and managed content operations: [cogni-work.ai](https://cogni-work.ai)
 
-## Prerequisites
+## Install
 
-### Getting started
+Install insight-wave via Claude Code desktop — about 15 minutes from zero:
 
-Choose the path that fits your role:
+- **Walkthrough** — [From Install to Infographic](docs/workflows/install-to-infographic.md) — adds the marketplace, installs plugins, runs `/install-mcp`, renders your first infographic.
+- **Claude Code desktop install** — [Claude Code desktop guide](docs/claude-code-desktop.md) — macOS, Windows, authentication, troubleshooting.
+- **Enterprise deployment** — [Deployment Guide](docs/deployment-guide.md) — GDPR, SSO, managed settings, MDM / Group Policy.
 
-#### Standard path: Claude Desktop / Cowork
-
-For consultants, sales teams, and marketing teams who want to use plugins through a visual interface:
-
-- [Download Claude Desktop](https://claude.ai/download) (macOS, Windows)
-- [Get started with Cowork](https://support.claude.com/en/articles/13345190-get-started-with-cowork) — collaborative working sessions with local file access
-- [Set up MCP servers in Desktop](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) — connect plugins to external tools
-- Course: [Introduction to Claude Cowork](https://anthropic.skilljar.com/introduction-to-claude-cowork)
-
-#### Specialist path: Claude Code
-
-For developers and power users who want CLI access, IDE integration, and full plugin control:
-
-- [Claude Code setup](https://docs.anthropic.com/en/docs/claude-code/setup) (CLI, VS Code, JetBrains)
-- [MCP in Claude Code](https://docs.anthropic.com/en/docs/claude-code/mcp) — configure MCP servers for extended capabilities
-- [Discover and install plugins](https://code.claude.com/docs/en/discover-plugins) — browse and install marketplace plugins
-- Course: [Introduction to Agent Skills](https://anthropic.skilljar.com/introduction-to-agent-skills)
-- Course: [Introduction to Subagents](https://anthropic.skilljar.com/introduction-to-subagents)
-
-### Quick install
-
-The insight-wave marketplace lives at [`cogni-work/insight-wave`](https://github.com/cogni-work/insight-wave):
-
-```
-/plugin marketplace add cogni-work/insight-wave
-```
-
-For the full walkthrough, see [Getting Started](docs/workflows/install-to-infographic.md).
-
-### Core requirements
-
-Both paths require:
-
-- Terminal access (macOS, Linux, or WSL)
-- `bash` 3.2+, `python3` (stdlib only), `jq`
-- Optional: [Obsidian](https://obsidian.md/) for browsable knowledge management
-
-### MCP servers
+### MCP servers at a glance
 
 Some plugins extend their capabilities through external [MCP servers](https://docs.anthropic.com/en/docs/build-with-claude/mcp). Plugins declare their MCP dependencies in `.mcp.json` files — Desktop/Cowork auto-discovers and starts required servers on install.
 
@@ -211,59 +176,11 @@ Some plugins extend their capabilities through external [MCP servers](https://do
 
 Plugins that don't use MCP servers work without them — only install what you need.
 
-### Security & compliance
-
-- **API keys**: Created exclusively through the Claude Console, scoped to Organizations with workspace-level isolation. Rotate regularly and audit via the Admin API.
-- **Data residency**: The direct Anthropic API offers global and US inference geographies. For guaranteed EU data residency, use AWS Bedrock (Frankfurt) or Google Vertex AI (Frankfurt, Zurich).
-- **Enterprise SSO**: Enterprise plan includes SSO with domain capture and SCIM provisioning, one Identity Provider per parent organization.
-
-For the full deployment guide including GDPR compliance, data handling policies, and operations best practices, see [Deployment Guide](docs/deployment-guide.md).
-
 ### Learn more
 
-- [Getting started guide](docs/workflows/install-to-infographic.md) — install, workspace, first infographic (~15 minutes)
-- [Ecosystem overview](docs/ecosystem-overview.md) — plugin landscape and data flow
-- [Plugin anatomy](docs/architecture/plugin-anatomy.md) — how plugins are structured
 - [MCP overview](https://docs.anthropic.com/en/docs/build-with-claude/mcp) — what Model Context Protocol is and how it works
 - [MCP course](https://anthropic.skilljar.com/introduction-to-model-context-protocol) — hands-on introduction to building and using MCP servers
 - [Build an MCP server](https://modelcontextprotocol.io/docs/develop/build-server) — official MCP development docs
-
-## Quick start
-
-### 1. Add the marketplace
-
-```shell
-/plugin marketplace add cogni-work/insight-wave
-```
-
-### 2. Install plugins
-
-```shell
-/plugin install cogni-workspace@insight-wave    # install first — foundation layer
-/plugin install cogni-research@insight-wave
-/plugin install cogni-trends@insight-wave
-/plugin install cogni-portfolio@insight-wave
-/plugin install cogni-narrative@insight-wave
-/plugin install cogni-copywriting@insight-wave
-/plugin install cogni-sales@insight-wave
-/plugin install cogni-marketing@insight-wave
-/plugin install cogni-visual@insight-wave
-/plugin install cogni-claims@insight-wave
-/plugin install cogni-consulting@insight-wave
-/plugin install cogni-website@insight-wave
-/plugin install cogni-wiki@insight-wave
-/plugin install cogni-help@insight-wave
-```
-
-Or browse interactively with `/plugin` and go to the **Discover** tab.
-
-### 3. Initialize your workspace
-
-```
-/manage-workspace
-```
-
-This runs dependency checks, discovers installed plugins, gathers your preferences, and generates shared settings. See the [getting started guide](docs/workflows/install-to-infographic.md) for the full walkthrough.
 
 ## How it works
 
