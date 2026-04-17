@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-Multi-agent research report generator for [Claude Cowork](https://claude.ai/cowork). STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and four source modes (web, local documents, wiki, hybrid) — from quick overviews to deep recursive explorations. Research runs localized across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU) with intent-based bilingual search and per-market authority sources.
+Multi-agent research report generator for the insight-wave ecosystem. STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and four source modes (web, local documents, wiki, hybrid) — from quick overviews to deep recursive explorations. Research runs localized across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU) with intent-based bilingual search and per-market authority sources.
 
 ## Why this exists
 

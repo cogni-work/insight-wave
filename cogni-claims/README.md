@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-cogni-claims is the citation-integrity layer for [Claude Cowork](https://claude.ai/cowork) — a systematic verification workflow that detects when sourced claims misrepresent, overstate, or contradict what their cited sources actually say.
+cogni-claims is the citation-integrity layer for the insight-wave ecosystem — a systematic verification workflow that detects when sourced claims misrepresent, overstate, or contradict what their cited sources actually say.
 
 ## Why this exists
 
