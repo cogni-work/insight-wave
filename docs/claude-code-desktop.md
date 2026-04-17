@@ -14,7 +14,7 @@ This guide gets you from zero to a working **Claude Code** setup — authenticat
 
 ## Prerequisites checklist
 
-Before starting, confirm you have each of the following. You do **not** need to install Node.js unless you plan to use the deprecated npm path (we don't recommend it).
+Before starting, confirm you have each of the following.
 
 | Item | macOS | Windows |
 |---|---|---|
@@ -139,13 +139,7 @@ claude --version
 winget install Anthropic.ClaudeCode
 ```
 
-### Step 2.4: Do I still need WSL2? (short answer: no)
-
-**Native Windows is the recommended path in 2026.** WSL2 is only worth it if you specifically need: (a) Linux-only developer toolchains, or (b) sandboxed command execution (a Claude Code safety feature only available under WSL2). For normal consulting work — documents, spreadsheets, MCP tools, plugins — native Windows works perfectly.
-
-If your firm mandates WSL2, install Ubuntu from the Microsoft Store, open it, and run the **Linux** install command (`curl -fsSL https://claude.ai/install.sh | bash`) inside the WSL shell.
-
-### Step 2.5: Fix PowerShell execution policy (if needed)
+### Step 2.4: Fix PowerShell execution policy (if needed)
 
 If the install script fails with "running scripts is disabled on this system," run this once:
 
@@ -262,7 +256,7 @@ After a fresh install, close and reopen your terminal — PATH changes don't app
 
 ### Node version mismatches
 
-You only hit this if you use the deprecated npm install path or run MCP servers that call `node` directly. Check with `node --version` — Claude Code and most MCP servers need **Node 18 or newer**. Fix by using the native Claude Code binary (zero Node dependency) or by pinning Node via absolute paths in MCP config.
+MCP servers that call `node` directly need **Node 18 or newer**. Check with `node --version`. Fix by pinning Node via absolute paths in MCP config, or by using MCP servers that don't require a local Node install.
 
 ### Authentication failures
 
