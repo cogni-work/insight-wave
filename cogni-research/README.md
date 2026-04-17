@@ -69,7 +69,7 @@ Cowork runs in Claude Desktop and is available on paid plans (Pro, Max, Team, En
 - **Context window**: Cowork caps context at ~200K tokens; long multi-agent flows trigger mid-session compressions.
 - **Pencil MCP fidelity**: lower visual fidelity in Cowork than in Claude Code desktop.
 
-See the [consultant install guide](../cogni-docs/references/Claude%20Code%20desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
+See the [consultant install guide](../docs/claude-code-desktop.md) and the [repo-level deployment guide](../docs/deployment-guide.md) for the full path-by-path walkthrough.
 
 > **insight-wave readiness**: Claude Code desktop is the recommended interface for insight-wave today. This guidance will flip when Cowork closes the context-window and Pencil-fidelity gaps.
 
