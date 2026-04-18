@@ -97,13 +97,24 @@ Write the page file. Do not write anything else yet.
 
 ### 5. Update `wiki/index.md`
 
-Read `wiki/index.md`. Decide which category heading the new page belongs under (create a new `##` heading if needed). Insert the line:
+Decide which category heading the new page belongs under — that decision still belongs to the orchestrator, because it requires judgement about the taxonomy. Then hand the write itself to the helper script so *placement* becomes deterministic:
 
 ```
-- [[{slug}]] — {one-sentence summary}
+${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_index_update.py \
+    --wiki-root <wiki-root> \
+    --slug {slug} \
+    --summary "{one-sentence summary}" \
+    --category "{category heading text}"
 ```
 
-Keep the category list alphabetized within its section.
+The script:
+
+- inserts `- [[{slug}]] — {summary}` under the matching `##` or `###` heading, creating the heading at the end of the file if it does not yet exist;
+- on re-ingest, **updates the existing line in place** rather than appending a duplicate — so `mode: re-ingest` from Step 1 is safe to chain through without extra orchestrator bookkeeping;
+- keeps the category section alphabetised by slug after every insert;
+- writes atomically via `tempfile + os.replace`, same enforcement pattern that Step 6c's `--apply-plan` uses for backlink writes, so a crash mid-write cannot leave a half-updated index.
+
+Output extends the standard `{success, data, error}` contract with `data.action` (`inserted` | `updated`), `data.category`, `data.category_created`, and the final `data.line` that was written. Surface the action in the Step 9 report so the user sees whether this was a new line or an in-place refresh.
 
 ### 6. Run the backlink audit
 
@@ -166,3 +177,4 @@ Tell the user, in ≤5 sentences:
 - `./references/page-frontmatter.md` — full frontmatter schema
 - `./references/ingest-workflow.md` — worked example
 - `./scripts/backlink_audit.py` — candidate backlink finder
+- `./scripts/wiki_index_update.py` — deterministic `wiki/index.md` insert/update helper
