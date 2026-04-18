@@ -11,7 +11,15 @@ Usage:
     backlink_audit.py --wiki-root <path> --new-page <slug>
 
 Output contract:
-    {"success": true, "data": {"candidates": [...]}, "error": ""}
+    {
+      "success": true,
+      "data": {
+        "candidates": [...],
+        "search_terms": [...],
+        "total_pages_scanned": <int>
+      },
+      "error": ""
+    }
 
 Candidate object:
     {
@@ -130,8 +138,9 @@ def compute_tag_document_frequency(pages_dir: Path) -> tuple:
         fm = parse_frontmatter(text)
         _title, tags = extract_terms(text, fm)
         if not tags:
-            # Still counts toward total — it's a page without tags, affecting
-            # the denominator when we compute frequency.
+            # Tagless pages are intentionally counted toward total_pages to
+            # reflect true corpus size; this keeps the IDF denominator honest
+            # so rare tags don't get artificially inflated weights.
             total += 1
             continue
         total += 1
