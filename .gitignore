@@ -33,3 +33,6 @@ cogni-research/test-diagram-pipeline/
 
 # Render agent scratch files (canvas-clearing temp scenes, etc.)
 .tmp/
+
+# Obsidian vault config (per-user; cogni-workspace:manage-workspace scaffolds it)
+.obsidian/
