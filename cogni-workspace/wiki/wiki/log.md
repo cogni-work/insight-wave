@@ -51,3 +51,8 @@ Append-only record of every wiki operation. Never rewritten.
 ## [2026-04-17] ingest | workflow-portfolio-to-website — Workflow: Portfolio to Website (portfolio → workspace → website)
 ## [2026-04-17] ingest | workflow-research-to-report — Workflow: Research to Report (wiki → research → claims → copywriting → visual)
 ## [2026-04-17] ingest | workflow-trends-to-solutions — Workflow: Trends to Solutions (trends → portfolio → visual)
+## [2026-04-17] commit | phase-3 + workspace plumbing shipped to main (commit d5ef57d)
+## [2026-04-17] ingest | phase-4 batch — 90 skill pages generated from SKILL.md frontmatter (one per cogni-* skill across 14 plugins)
+## [2026-04-17] ingest | phase-5 batch — 76 agent pages generated from agents/*.md frontmatter (one per agent across 13 plugins; cogni-workspace and cogni-wiki have no agents)
+## [2026-04-17] index | regenerated wiki/index.md from disk — 211 entries grouped by Ecosystem / Architecture / Concepts / Plugins / Workflows / Skills (per plugin) / Agents (per plugin)
+## [2026-04-17] lint | phase-4+5 sweep — 0 errors, 172 orphan-page warnings (expected for thin entity-leaf pages)
