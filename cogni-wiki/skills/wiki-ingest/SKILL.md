@@ -46,7 +46,7 @@ Derive the target slug from `--title` (or from the source filename / URL title /
 
   Then proceed with the remaining steps — `mode` changes only Step 7 (log entry type) and Step 8 (entry count handling).
 
-The `mode` flag is internal to this skill; it does not surface in frontmatter or config. `wiki-update` remains the right choice for edits that preserve the existing synthesis; `wiki-ingest --mode re-ingest` is for re-synthesising the page from scratch against an updated source.
+See `./references/ingest-workflow.md` §"Mode flag: fresh vs re-ingest" for when to pick `wiki-update` instead of re-ingest.
 
 ### 2. Read the source
 
@@ -58,7 +58,7 @@ Every wiki page must cite a file in `raw/` or a stable URL. This link to raw/ is
 
 ### 3. Surface key takeaways BEFORE writing the page
 
-This is the most important step. Skipping it risks duplicating an existing page or writing content that fragments rather than compounds the wiki. Before writing any page, state in plain prose:
+This is the most important step. Surface takeaways before writing — it prevents duplicate pages and keeps the wiki compounding rather than fragmenting. Before writing any page, state in plain prose:
 
 1. **What the source is** — type, author, date, length
 2. **Three to seven key takeaways** — the claims a future reader of the wiki would actually want
@@ -115,10 +115,17 @@ Edit each page that gains a backlink, updating its `updated:` frontmatter field 
 
 ### 7. Append to `wiki/log.md`
 
-Append a single line. Use `ingest` when `mode: fresh`, `re-ingest` when `mode: re-ingest`:
+Append a single line.
+
+Fresh ingest (`mode: fresh`):
 
 ```
 ## [{YYYY-MM-DD}] ingest    | {slug} — {title}
+```
+
+Re-ingest (`mode: re-ingest`):
+
+```
 ## [{YYYY-MM-DD}] re-ingest | {slug} — {title}
 ```
 
