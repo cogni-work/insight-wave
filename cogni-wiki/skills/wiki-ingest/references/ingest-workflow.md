@@ -134,3 +134,15 @@ Increment `entries_count` in `.cogni-wiki/config.json`. Report: "Ingested as `ma
 - **Add backlinks to every page that matches a keyword.** Force-linking degrades the signal — only add backlinks that a reader of the target page would genuinely benefit from.
 - **Rewrite the index silently.** The index is edited in-place; never regenerated from scratch (which would destroy human-added organization).
 - **Summarize from memory.** If the source says "X", the page says "X". If the source is silent on Y, the page is silent on Y.
+
+## Mode flag: fresh vs re-ingest
+
+`wiki-ingest` exposes one conceptual parameter that does not appear on the command line: `mode`. Step 1 detects it from the filesystem — if a page already exists at the target slug, `mode` is `re-ingest`; otherwise `fresh`. The flag is internal and never surfaces in frontmatter or config.
+
+Pick the right entry point:
+
+- **`wiki-update`** — the page exists and you want to preserve the existing synthesis (fix a claim, add a source, tweak wording).
+- **`wiki-ingest` (→ re-ingest branch)** — the page exists but the underlying source has changed substantively and the page should be re-synthesised from scratch. This is the pilot-rebuild pattern from PR #67.
+- **`wiki-ingest` (→ fresh branch)** — no page at the target slug.
+
+Step 1 emits a verbatim warning on re-ingest that points users back at `wiki-update` for content-only tweaks; the two paths stay distinct even though they share the same skill entry point.

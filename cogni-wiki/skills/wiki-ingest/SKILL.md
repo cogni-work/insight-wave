@@ -20,7 +20,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 ## Never run when
 
 - The wiki has not been set up — check for `.cogni-wiki/config.json`; if missing, offer `wiki-setup` first
-- The source is already summarised in `wiki/pages/` — detect by `grep -l` for the source path or URL in frontmatter; offer `wiki-update` instead
+- The source is already summarised under the same slug and the user wants a content-only edit — in that case offer `wiki-update` instead. Re-ingests of an existing slug (re-synthesising the page from an updated source) are allowed and handled by Step 1's `mode: re-ingest` branch — do not skip the ingest in that case.
 
 ## Parameters
 
@@ -33,9 +33,20 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 
 ## Workflow
 
-### 1. Locate the wiki
+### 1. Locate the wiki and detect ingest mode
 
 Walk upward from the current working directory to find the nearest `.cogni-wiki/config.json`. If none found, stop and offer to run `wiki-setup`.
+
+Derive the target slug from `--title` (or from the source filename / URL title / first heading if `--title` is absent). Then check whether `<wiki-root>/wiki/pages/{slug}.md` already exists:
+
+- **Fresh ingest** (`mode: fresh`) — no page at that slug. Proceed normally.
+- **Re-ingest** (`mode: re-ingest`) — a page at that slug exists. This is an explicit, allowed path (used by pilot rebuilds where the page is being re-synthesised from an updated source), but it is a different operation than a fresh ingest. Emit this warning verbatim to the user before proceeding:
+
+  > Re-ingesting an existing slug (`{slug}`). For content-only tweaks, prefer `wiki-update`; this ingest will overwrite the page, log a `re-ingest` entry, and leave `entries_count` unchanged.
+
+  Then proceed with the remaining steps — `mode` changes only Step 7 (log entry type) and Step 8 (entry count handling).
+
+See `./references/ingest-workflow.md` §"Mode flag: fresh vs re-ingest" for when to pick `wiki-update` instead of re-ingest.
 
 ### 2. Read the source
 
@@ -47,7 +58,7 @@ Every wiki page must cite a file in `raw/` or a stable URL. This link to raw/ is
 
 ### 3. Surface key takeaways BEFORE writing the page
 
-This is the most important step. Skipping it risks duplicating an existing page or writing content that fragments rather than compounds the wiki. Before writing any page, state in plain prose:
+This is the most important step. Surface takeaways before writing — it prevents duplicate pages and keeps the wiki compounding rather than fragmenting. Before writing any page, state in plain prose:
 
 1. **What the source is** — type, author, date, length
 2. **Three to seven key takeaways** — the claims a future reader of the wiki would actually want
@@ -104,17 +115,28 @@ Edit each page that gains a backlink, updating its `updated:` frontmatter field 
 
 ### 7. Append to `wiki/log.md`
 
-Append a single line:
+Append a single line.
+
+Fresh ingest (`mode: fresh`):
 
 ```
-## [{YYYY-MM-DD}] ingest | {slug} — {title}
+## [{YYYY-MM-DD}] ingest    | {slug} — {title}
 ```
+
+Re-ingest (`mode: re-ingest`):
+
+```
+## [{YYYY-MM-DD}] re-ingest | {slug} — {title}
+```
+
+The hyphenated `re-ingest` form parallels the existing lowercase verb grammar (`ingest`, `update`) and keeps the log greppable by operation type.
 
 Never rewrite existing log lines.
 
 ### 8. Update `.cogni-wiki/config.json`
 
-Increment `entries_count`. Leave all other fields untouched.
+- `mode: fresh` — increment `entries_count`. Leave all other fields untouched.
+- `mode: re-ingest` — leave `entries_count` untouched. The field reflects distinct pages in `wiki/pages/`, not ingest invocations; `wiki-resume`, `wiki-dashboard`, and `wiki-lint` all treat it as a page count, so re-ingests must not inflate it.
 
 ### 9. Report to the user
 
@@ -135,7 +157,7 @@ Tell the user, in ≤5 sentences:
 
 - **Never summarise from memory.** The page's claims must all trace back to the source text. If the source is silent on a topic, the page is silent on it.
 - **Never invent backlinks.** Only link to pages that actually exist in `wiki/pages/`.
-- **Never overwrite a page silently.** If `{slug}.md` already exists, stop and offer `wiki-update` instead.
+- **Never overwrite a page silently.** Overwrites are only allowed through the explicit re-ingest path: Step 1 must detect the existing slug, set `mode: re-ingest`, and emit the re-ingest warning before any page write. Silent overwrites (writing to an existing slug without surfacing `mode: re-ingest` to the user) remain forbidden. For content-only edits that preserve the existing synthesis, use `wiki-update` rather than a re-ingest.
 - **Raw first, page second.** Pasted content is persisted to `raw/` before any page work begins.
 
 ## References
