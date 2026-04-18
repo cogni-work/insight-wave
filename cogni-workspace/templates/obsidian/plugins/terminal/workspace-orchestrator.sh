@@ -61,8 +61,8 @@ setup_claude_path() {
 
 select_language() {
     local default_lang="en"
-    if [[ -f "$WORKPLACE_ROOT/.workplace-config.json" ]] && command -v jq &>/dev/null; then
-        default_lang="$(jq -r '.language // "en"' "$WORKPLACE_ROOT/.workplace-config.json" 2>/dev/null || echo "en")"
+    if [[ -f "$WORKPLACE_ROOT/.workspace-config.json" ]] && command -v jq &>/dev/null; then
+        default_lang="$(jq -r '.language // "en"' "$WORKPLACE_ROOT/.workspace-config.json" 2>/dev/null || echo "en")"
     fi
 
     echo -e "${YELLOW}Language:${NC}" >&2
@@ -111,10 +111,10 @@ copy_claude_template() {
 launch_claude() {
     cd "$WORKPLACE_ROOT"
 
-    # Source workplace environment
-    if [[ -f "$WORKPLACE_ROOT/.workplace-env.sh" ]]; then
+    # Source workspace environment
+    if [[ -f "$WORKPLACE_ROOT/.workspace-env.sh" ]]; then
         # shellcheck disable=SC1091
-        source "$WORKPLACE_ROOT/.workplace-env.sh"
+        source "$WORKPLACE_ROOT/.workspace-env.sh"
     fi
 
     echo -e "${GREEN}Launching Claude Code...${NC}"
@@ -129,12 +129,12 @@ launch_claude() {
     echo ""
 
     # Resolve output-style
-    local OUTPUT_STYLE_FILE="$WORKPLACE_ROOT/.claude/output-styles/workplace-${LANGUAGE}.md"
-    local FALLBACK_OUTPUT_STYLE="$WORKPLACE_ROOT/.claude/output-styles/workplace-en.md"
+    local OUTPUT_STYLE_FILE="$WORKPLACE_ROOT/.claude/output-styles/workspace-${LANGUAGE}.md"
+    local FALLBACK_OUTPUT_STYLE="$WORKPLACE_ROOT/.claude/output-styles/workspace-en.md"
 
     if [[ ! -f "$OUTPUT_STYLE_FILE" ]]; then
         if [[ "$LANGUAGE" != "en" ]] && [[ -f "$FALLBACK_OUTPUT_STYLE" ]]; then
-            echo -e "${YELLOW}⚠${NC} workplace-${LANGUAGE}.md not found, using English" >&2
+            echo -e "${YELLOW}⚠${NC} workspace-${LANGUAGE}.md not found, using English" >&2
             LANGUAGE="en"
             OUTPUT_STYLE_FILE="$FALLBACK_OUTPUT_STYLE"
         else
@@ -144,8 +144,8 @@ launch_claude() {
     fi
 
     if [[ -n "$OUTPUT_STYLE_FILE" ]]; then
-        echo -e "${GREEN}Output-style:${NC} workplace-${LANGUAGE}"
-        echo -e "${CYAN}Activate with:${NC} /output-style workplace-${LANGUAGE}"
+        echo -e "${GREEN}Output-style:${NC} workspace-${LANGUAGE}"
+        echo -e "${CYAN}Activate with:${NC} /output-style workspace-${LANGUAGE}"
     fi
     echo ""
 
@@ -171,7 +171,7 @@ main() {
         echo ""
         echo "Starting shell instead..."
         cd "$WORKPLACE_ROOT"
-        [[ -f "$WORKPLACE_ROOT/.workplace-env.sh" ]] && source "$WORKPLACE_ROOT/.workplace-env.sh"
+        [[ -f "$WORKPLACE_ROOT/.workspace-env.sh" ]] && source "$WORKPLACE_ROOT/.workspace-env.sh"
         exec "${SHELL:-bash}"
     fi
 

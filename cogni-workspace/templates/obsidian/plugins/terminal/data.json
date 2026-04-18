@@ -17,7 +17,7 @@
     "workplace": {
       "args": [
         "-c",
-        "export PATH=\"$HOME/bin:$HOME/.local/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH\"; ORCHESTRATOR_SCRIPT=\"{{WORKPLACE_ROOT}}/.obsidian/plugins/terminal/workplace-orchestrator.sh\"; if [ -f \"$ORCHESTRATOR_SCRIPT\" ]; then bash \"$ORCHESTRATOR_SCRIPT\"; else cd {{WORKPLACE_ROOT}} && source .workplace-env.sh 2>/dev/null; exec ${SHELL:-bash}; fi"
+        "export PATH=\"$HOME/bin:$HOME/.local/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH\"; ORCHESTRATOR_SCRIPT=\"{{WORKPLACE_ROOT}}/.obsidian/plugins/terminal/workspace-orchestrator.sh\"; if [ -f \"$ORCHESTRATOR_SCRIPT\" ]; then bash \"$ORCHESTRATOR_SCRIPT\"; else cd {{WORKPLACE_ROOT}} && source .workspace-env.sh 2>/dev/null; exec ${SHELL:-bash}; fi"
       ],
       "executable": "/bin/bash",
       "name": "Workplace (Unix)",
@@ -26,7 +26,7 @@
         "linux": true,
         "win32": false
       },
-      "pythonExecutable": "/usr/bin/python3",
+      "pythonExecutable": "python3",
       "restoreHistory": true,
       "rightClickAction": "copyPaste",
       "successExitCodes": [
@@ -74,7 +74,7 @@
       "args": [
         "bash",
         "-c",
-        "cd '{{WORKPLACE_ROOT_WSL}}' && export PATH=\"$HOME/bin:$HOME/.local/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH\" && ORCHESTRATOR_SCRIPT='{{WORKPLACE_ROOT_WSL}}/.obsidian/plugins/terminal/workplace-orchestrator.sh' && if [ -f \"$ORCHESTRATOR_SCRIPT\" ]; then bash \"$ORCHESTRATOR_SCRIPT\"; else source .workplace-env.sh 2>/dev/null; exec bash; fi"
+        "cd '{{WORKPLACE_ROOT_WSL}}' && export PATH=\"$HOME/bin:$HOME/.local/bin:$HOME/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH\" && ORCHESTRATOR_SCRIPT='{{WORKPLACE_ROOT_WSL}}/.obsidian/plugins/terminal/workspace-orchestrator.sh' && if [ -f \"$ORCHESTRATOR_SCRIPT\" ]; then bash \"$ORCHESTRATOR_SCRIPT\"; else source .workspace-env.sh 2>/dev/null; exec bash; fi"
       ],
       "executable": "wsl.exe",
       "name": "Workplace (WSL)",

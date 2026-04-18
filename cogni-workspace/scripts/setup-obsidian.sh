@@ -216,7 +216,7 @@ install_terminal_plugin() {
 
 update_terminal_profile() {
     local terminal_data_path="${TARGET_OBSIDIAN}/plugins/terminal/data.json"
-    local orchestrator_script="${TARGET_OBSIDIAN}/plugins/terminal/workplace-orchestrator.sh"
+    local orchestrator_script="${TARGET_OBSIDIAN}/plugins/terminal/workspace-orchestrator.sh"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         echo "DRY RUN: Would update paths in terminal profile" >&2
