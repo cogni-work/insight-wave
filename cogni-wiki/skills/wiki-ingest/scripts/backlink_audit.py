@@ -17,9 +17,21 @@ Candidate object:
     {
       "page": "<slug>",
       "matched_terms": ["term1", "term2"],
+      "matched_score": 1.73,            # IDF-weighted sum of matched terms
       "confidence": "low" | "medium" | "high",
       "existing_backlink": true | false
     }
+
+Flags:
+    --top-n <N>           After ranking, keep only the top N candidates.
+    --min-confidence X    Drop candidates below confidence X (low|medium|high).
+
+Ranking is stable: candidates are sorted by confidence bucket (high > medium >
+low), then by matched_score descending, then by page slug alphabetically. Terms
+derived from the page title always have weight 1.0; tag-derived terms are
+weighted by inverse document frequency across wiki/pages/ so common tags like
+`agent` (present on most pages) contribute near-zero signal while rare tags
+like `claim-verification` dominate the score.
 
 stdlib-only. Python 3.8+.
 """
@@ -73,30 +85,85 @@ def parse_frontmatter(text: str) -> dict:
     return out
 
 
-def extract_terms(page_text: str, fm: dict) -> set:
-    """Build a set of search terms from a page's title and tags."""
-    terms: set = set()
+def extract_terms(page_text: str, fm: dict) -> tuple:
+    """Build title-derived and tag-derived search term sets from a page.
+
+    Returns (title_terms, tag_terms) so callers can weight them independently:
+    title terms are inherently specific; tag terms need IDF weighting because
+    common tags like `agent` blow up false-positive candidate counts.
+    """
+    title_terms: set = set()
     title = fm.get("title", "")
     if isinstance(title, str) and title:
-        terms.add(title.strip().lower())
-        # Also add individual non-trivial words
+        title_terms.add(title.strip().lower())
         for word in re.findall(r"[a-zA-Z][a-zA-Z0-9\-]{3,}", title):
-            terms.add(word.lower())
+            title_terms.add(word.lower())
+    tag_terms: set = set()
     tags = fm.get("tags", [])
     if isinstance(tags, list):
         for t in tags:
             if isinstance(t, str):
-                terms.add(t.strip().lower())
-    return {t for t in terms if len(t) >= 4}
+                tag_terms.add(t.strip().lower())
+    title_terms = {t for t in title_terms if len(t) >= 4}
+    tag_terms = {t for t in tag_terms if len(t) >= 4}
+    return title_terms, tag_terms
 
 
-def score_match(matched: list, body_len: int) -> str:
-    n = len(matched)
-    if n >= 3:
+def compute_tag_document_frequency(pages_dir: Path) -> tuple:
+    """Scan all wiki pages to count how many pages carry each tag.
+
+    Returns (tag_df, total_pages). Callers turn this into an inverse-document-
+    frequency weight: weight(tag) = 1 - (tag_df[tag] / total_pages), clamped to
+    a small floor so a tag present on literally every page still contributes a
+    sliver of signal (otherwise the algorithm loses its ability to fall back
+    on tag matches when the title has no hits).
+    """
+    tag_df: dict = {}
+    total = 0
+    for page in pages_dir.glob("*.md"):
+        if page.name.startswith("lint-"):
+            continue
+        try:
+            text = page.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        fm = parse_frontmatter(text)
+        _title, tags = extract_terms(text, fm)
+        if not tags:
+            # Still counts toward total — it's a page without tags, affecting
+            # the denominator when we compute frequency.
+            total += 1
+            continue
+        total += 1
+        for tag in tags:
+            tag_df[tag] = tag_df.get(tag, 0) + 1
+    return tag_df, total
+
+
+def tag_weight(tag: str, tag_df: dict, total_pages: int) -> float:
+    """Return the IDF-style weight for a tag: rare tags score high, common low."""
+    if total_pages <= 0:
+        return 0.5
+    df = tag_df.get(tag, 0)
+    # Clamp to [0.05, 1.0] — a tag on every page still contributes a sliver so
+    # pure-tag matches aren't silently dropped to zero score.
+    raw = 1.0 - (df / total_pages)
+    return max(0.05, min(1.0, raw))
+
+
+def score_match(matched_score: float, match_count: int, body_len: int) -> str:
+    """Bucket the weighted score into confidence tiers.
+
+    The thresholds are chosen empirically against the pilot: a single title-
+    derived term hit (weight 1.0) on a page longer than 200 chars is `medium`;
+    two title hits, or one title hit plus high-weight tag hits summing past
+    1.5, is `high`; everything else (thin tag-only matches) is `low`.
+    """
+    if matched_score >= 1.5 or match_count >= 3:
         return "high"
-    if n == 2:
+    if matched_score >= 0.9 or match_count == 2:
         return "medium"
-    if n == 1 and body_len > 200:
+    if match_count >= 1 and body_len > 200:
         return "low"
     return "low"
 
@@ -105,6 +172,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Find candidate backlinks for a new wiki page")
     parser.add_argument("--wiki-root", required=True, help="Absolute path to the wiki root")
     parser.add_argument("--new-page", required=True, help="Slug of the newly ingested page")
+    parser.add_argument("--top-n", type=int, default=0,
+                        help="After ranking, keep only the top N candidates (0 = no limit)")
+    parser.add_argument("--min-confidence", choices=["low", "medium", "high"],
+                        default="low",
+                        help="Drop candidates below this confidence tier")
     args = parser.parse_args()
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
@@ -125,13 +197,28 @@ def main() -> None:
         return
 
     new_fm = parse_frontmatter(new_text)
-    search_terms = extract_terms(new_text, new_fm)
-    if not search_terms:
+    title_terms, tag_terms = extract_terms(new_text, new_fm)
+    if not title_terms and not tag_terms:
         ok({"candidates": [], "note": "new page has no extractable search terms"})
 
-    # Always include the slug itself and the title lowercased
-    search_terms.add(new_slug)
-    search_terms.add(new_slug.replace("-", " "))
+    # Always include the slug itself and the title lowercased as title-weighted terms.
+    title_terms.add(new_slug)
+    title_terms.add(new_slug.replace("-", " "))
+
+    # Compute tag-IDF once across the whole wiki so common tags like `agent`
+    # contribute near-zero weight and rare tags like `claim-verification` dominate.
+    tag_df, total_pages = compute_tag_document_frequency(pages_dir)
+
+    # Any term that also appears as a tag in the corpus gets IDF-weighted —
+    # even if it came from the title. This catches the failure mode where a
+    # title word like "agent" in "Claim Verifier Agent" would otherwise get
+    # weight 1.0 and drown out the rare tag matches that actually matter.
+    term_weights: dict = {}
+    for t in title_terms | tag_terms:
+        if t in tag_df:
+            term_weights[t] = tag_weight(t, tag_df, total_pages)
+        else:
+            term_weights[t] = 1.0
 
     candidates = []
     for page in sorted(pages_dir.glob("*.md")):
@@ -145,26 +232,39 @@ def main() -> None:
             continue
         body_lower = text.lower()
         body_len = len(text)
-        matched = sorted({term for term in search_terms if term in body_lower})
+        matched = sorted({term for term in term_weights if term in body_lower})
         if not matched:
             continue
+        matched_score = sum(term_weights[term] for term in matched)
         existing_backlink = f"[[{new_slug}]]" in body_lower
         candidates.append(
             {
                 "page": page.stem,
                 "matched_terms": matched,
-                "confidence": score_match(matched, body_len),
+                "matched_score": round(matched_score, 3),
+                "confidence": score_match(matched_score, len(matched), body_len),
                 "existing_backlink": existing_backlink,
             }
         )
 
-    # Rank by confidence, then by number of matched terms, then alphabetically
+    # Rank by confidence bucket, then by weighted score (desc), then by slug.
     order = {"high": 0, "medium": 1, "low": 2}
     candidates.sort(
-        key=lambda c: (order[c["confidence"]], -len(c["matched_terms"]), c["page"])
+        key=lambda c: (order[c["confidence"]], -c["matched_score"], c["page"])
     )
 
-    ok({"candidates": candidates, "search_terms": sorted(search_terms)})
+    # Apply --min-confidence filter, then --top-n cap.
+    if args.min_confidence != "low":
+        cutoff = order[args.min_confidence]
+        candidates = [c for c in candidates if order[c["confidence"]] <= cutoff]
+    if args.top_n > 0:
+        candidates = candidates[: args.top_n]
+
+    ok({
+        "candidates": candidates,
+        "search_terms": sorted(term_weights.keys()),
+        "total_pages_scanned": total_pages,
+    })
 
 
 if __name__ == "__main__":
