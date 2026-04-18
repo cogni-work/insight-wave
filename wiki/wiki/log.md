@@ -56,3 +56,5 @@ Append-only record of every wiki operation. Never rewritten.
 ## [2026-04-17] ingest | phase-5 batch — 76 agent pages generated from agents/*.md frontmatter (one per agent across 13 plugins; cogni-workspace and cogni-wiki have no agents)
 ## [2026-04-17] index | regenerated wiki/index.md from disk — 211 entries grouped by Ecosystem / Architecture / Concepts / Plugins / Workflows / Skills (per plugin) / Agents (per plugin)
 ## [2026-04-17] lint | phase-4+5 sweep — 0 errors, 172 orphan-page warnings (expected for thin entity-leaf pages)
+## [2026-04-18] re-ingest | agent-cogni-claims-claim-verifier — cogni-claims:claim-verifier (agent) [pilot via real wiki-ingest, replaces script-generated stub; 4 backlinks added]
+## [2026-04-18] re-ingest | skill-cogni-portfolio-propositions — cogni-portfolio:propositions (skill) [pilot via real wiki-ingest, replaces script-generated stub; 3 backlinks added across plugin-cogni-portfolio, agent-cogni-portfolio-proposition-generator, agent-cogni-portfolio-proposition-quality-assessor]

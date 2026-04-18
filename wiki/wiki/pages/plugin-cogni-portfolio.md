@@ -4,12 +4,12 @@ title: "cogni-portfolio (plugin)"
 type: entity
 tags: [cogni-portfolio, plugin, portfolio, propositions, fab, is-does-means, b2b]
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-18
 sources:
   - https://github.com/cogni-work/insight-wave/blob/main/cogni-portfolio/README.md
   - https://github.com/cogni-work/insight-wave/blob/main/docs/plugin-guide/cogni-portfolio.md
 status: stable
-related: [concept-data-model-patterns, concept-quality-gates, concept-trends-portfolio-bridge]
+related: [concept-data-model-patterns, concept-quality-gates, concept-trends-portfolio-bridge, skill-cogni-portfolio-propositions]
 ---
 
 > **Preview** (v0.9.8) — core skills defined but may change.
@@ -22,7 +22,7 @@ cogni-portfolio gives B2B companies a structured way to build market-specific me
 
 ## Core data model
 
-The Feature × Market join is the unit of work — see [[concept-data-model-patterns]]. Propositions, solutions, competitors, and packages all live at this intersection. Slugs follow the double-dash convention (`feature--market`) — see [[concept-slug-based-lookups]].
+The Feature × Market join is the unit of work — see [[concept-data-model-patterns]]. [[skill-cogni-portfolio-propositions|Propositions]], solutions, competitors, and packages all live at this intersection. Slugs follow the double-dash convention (`feature--market`) — see [[concept-slug-based-lookups]].
 
 Eight pluggable industry taxonomies (b2b-ict, b2b-saas, b2b-fintech, b2b-healthtech, b2b-martech, b2b-industrial-tech, b2b-professional-services, b2b-opensource) auto-classify features and markets.
 

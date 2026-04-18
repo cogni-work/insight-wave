@@ -4,12 +4,12 @@ title: "cogni-claims (plugin)"
 type: entity
 tags: [cogni-claims, plugin, claims, verification, fact-checking]
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-18
 sources:
   - https://github.com/cogni-work/insight-wave/blob/main/cogni-claims/README.md
   - https://github.com/cogni-work/insight-wave/blob/main/docs/plugin-guide/cogni-claims.md
 status: stable
-related: [concept-claims-propagation, concept-claim-lifecycle]
+related: [concept-claims-propagation, concept-claim-lifecycle, agent-cogni-claims-claim-verifier, agent-cogni-claims-source-inspector]
 ---
 
 > **Preview** (v0.10.1) — core skills defined but may change.
@@ -29,7 +29,7 @@ cogni-claims manages the full lifecycle of sourced-claim verification within an 
 
 ## How it works
 
-Implements the [[concept-claim-lifecycle]] (`unverified → verified | deviated → resolved | source_unavailable`). Verification runs one `claim-verifier` agent per unique source URL, fetching pages and checking all claims citing them in one pass. When sources are unreachable, `source-inspector` opens them in the user's browser via `claude-in-chrome` so the user can compare claim to source visually — see [[concept-mcp-server-map]].
+Implements the [[concept-claim-lifecycle]] (`unverified → verified | deviated → resolved | source_unavailable`). Verification runs one [[agent-cogni-claims-claim-verifier]] per unique source URL — WebFetch-only, claims grouped by URL so each fetch covers many claims in one pass. When sources are unreachable, [[agent-cogni-claims-source-inspector]] opens them in the user's browser via `claude-in-chrome` so the user can compare claim to source visually — see [[concept-mcp-server-map]].
 
 ## Integration
 
