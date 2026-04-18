@@ -4,7 +4,7 @@ title: Claims propagation (auto-log, verify, cascade)
 type: concept
 tags: [cogni-claims, claims, propagation, source-lineage, cogni-research, cogni-portfolio, cogni-trends]
 created: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-18
 sources:
   - https://github.com/cogni-work/insight-wave/blob/main/CLAUDE.md
   - https://github.com/cogni-work/insight-wave/blob/main/docs/architecture/er-diagram.md
@@ -16,7 +16,7 @@ Claims propagation is the cross-plugin pattern that turns sourced assertions int
 ## The four steps
 
 1. **Auto-log on creation.** Research agents append claim records to `cogni-claims/claims.json` as they generate sourced assertions. Each record carries `entity_ref` provenance (the plugin entity the claim came from), `source_url`, and the asserted text. cogni-portfolio uses `scripts/append-claim.sh` for this; cogni-research's report agents auto-log via the same pattern.
-2. **Verify in cogni-claims.** The `cogni-claims:claims` skill walks unverified claims, fetches the cited source, and detects deviations between the claim text and what the source actually says. Verdicts: verified / deviated / resolved (see [[concept-claim-lifecycle]]).
+2. **Verify in cogni-claims.** The `cogni-claims:claims` skill walks unverified claims, groups them by source URL, and dispatches one [[agent-cogni-claims-claim-verifier]] per URL — that agent does the WebFetch and detects deviations between each claim and what the source actually says. Verdicts: verified / deviated / resolved (see [[concept-claim-lifecycle]]).
 3. **Propagate corrections back.** When a claim is marked deviated and the user resolves it (by accepting a corrected version or removing the assertion), the correction propagates to the originating entity file via the `entity_ref` pointer.
 4. **Cascade staleness downstream.** Entities that depend on the corrected entity get marked stale via `propagated_at` timestamps. Downstream skills (e.g., proposition-generator reading a corrected feature) detect stale dependencies and either refresh or warn.
 

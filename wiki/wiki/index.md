@@ -138,7 +138,7 @@ One page per skill across all 14 plugins. Grouped by plugin, alphabetical within
 - [[skill-cogni-portfolio-portfolio-setup]] — Initialize a new cogni-portfolio project with company context and directory structure.
 - [[skill-cogni-portfolio-portfolio-verify]] — Verify web-sourced claims in portfolio entities against their cited sources.
 - [[skill-cogni-portfolio-products]] — Define and manage the top-level product offerings in the portfolio.
-- [[skill-cogni-portfolio-propositions]] — Generate and manage IS/DOES/MEANS (FAB) value propositions per Feature x Market pair.
+- [[skill-cogni-portfolio-propositions]] — IS/DOES/MEANS (FAB) value-messaging engine: turns features into market-specific propositions per Feature × Market pair, with consulting-style critique and four mandatory tests built in.
 - [[skill-cogni-portfolio-solutions]] — Define implementation plans and pricing tiers for propositions to build customer business cases.
 - [[skill-cogni-portfolio-trends-bridge]] — Bidirectional integration between cogni-trends TIPS analysis and cogni-portfolio product portfolio.
 
@@ -206,7 +206,7 @@ One page per agent role across all 14 plugins. Grouped by plugin, alphabetical w
 
 #### cogni-claims
 
-- [[agent-cogni-claims-claim-verifier]] — Verify claims against a single source URL and return deviation analysis as JSON.
+- [[agent-cogni-claims-claim-verifier]] — Single-source verifier: fetch one URL via WebFetch, verify claims against the fetched content, return a strict JSON deviation report.
 - [[agent-cogni-claims-source-inspector]] — Fetch a source URL via claude-in-chrome, locate the relevant passage, and present evidence to the user.
 
 #### cogni-consulting
