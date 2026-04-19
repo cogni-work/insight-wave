@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-The foundation-layer plugin for the [insight-wave](https://claude.ai/cowork) ecosystem — the only plugin that other cogni-x plugins depend on, and the one that must be initialized first. cogni-workspace owns environment configuration, MCP server installation, theme storage, plugin discovery, workspace health diagnostics, and Obsidian vault integration — so every cogni-x plugin starts running, not configuring.
+The foundation-layer plugin for the [insight-wave](https://claude.ai/cowork) ecosystem — the only plugin that other cogni-x plugins depend on, and the one that must be initialized first. cogni-workspace owns environment configuration, MCP server installation, theme storage, plugin discovery, workspace health diagnostics, Obsidian vault integration, and a bundled vendor-curated insight-wave reference wiki queryable via the `ask` skill — so every cogni-x plugin starts running, not configuring.
 
 ## Why this exists
 
@@ -91,6 +91,7 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
 | `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
 | `install-mcp` | skill | End-to-end MCP server installation — clone and build git-based MCPs, configure native app MCPs, and patch Claude Desktop config |
+| `ask` | skill | Answer questions about the insight-wave ecosystem by reading the bundled wiki — grounded, cited, never from memory |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
 | `check-dependencies.sh` | script | Returns JSON with availability/version of required and optional dependencies |
 | `check-skill-names.sh` | script | Validates skill directory names against plugin.json manifest for consistency |
@@ -107,12 +108,14 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       5 workspace management skills
+├── skills/                       6 workspace management skills
+│   ├── ask/                      Query the bundled insight-wave wiki for grounded answers
 │   ├── install-mcp/              MCP server installation and Desktop config patching
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
 │   ├── manage-themes/
 │   ├── pick-theme/
 │   └── workspace-status/
+├── wiki/                         Bundled vendor-curated insight-wave reference wiki (read by ask)
 ├── templates/                    Shared templates
 │   ├── obsidian/                 Obsidian vault config templates
 │   └── mcp-wrappers/             Wrapper scripts for git-based MCP servers
@@ -155,6 +158,7 @@ cogni-workspace has no required plugin dependencies — it is the foundation lay
 | cogni-help | No | Referenced inline in workspace skills for issue filing and guided help |
 | cogni-portfolio | No | install-mcp references cogni-portfolio as a consumer of excalidraw MCP in the installation plan |
 | cogni-claims | No | workspace-status references cogni-claims as a provider plugin for the claude-in-chrome MCP server check |
+| cogni-wiki | No | `ask` wraps `cogni-wiki:wiki-query` to read the bundled insight-wave reference wiki |
 
 ## Contributing
 

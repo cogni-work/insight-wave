@@ -168,6 +168,32 @@ Prerequisites: Obsidian must be installed. The skill handles Terminal plugin ins
 
 ---
 
+### `install-mcp` — MCP server installation
+
+End-to-end MCP server installation for the ecosystem. Clones and builds git-based MCPs (Excalidraw, Pencil), detects native-app MCPs (browsermcp, claude-in-chrome), and patches Claude Desktop's `claude_desktop_config.json` so rendering plugins find their tools without hand-edited JSON.
+
+```
+/install-mcp
+```
+
+Backs up the desktop config before any write; rolls back in one command if an install breaks something. Usually invoked automatically by `manage-workspace` Step 5, but available standalone when you add a new plugin that declares an MCP dependency.
+
+---
+
+### `ask` — Query the bundled insight-wave wiki
+
+Answers questions about the insight-wave ecosystem — plugins, skills, agents, architecture, cross-cutting conventions — by reading the vendor-curated wiki bundled at `${CLAUDE_PLUGIN_ROOT}/wiki/`, not from model memory. Wraps `cogni-wiki:wiki-query` so answers are grounded and cited with `[[wikilinks]]`; if the wiki has no page on the topic, the skill says so rather than guessing.
+
+```
+/ask how does claims propagation work across plugins?
+/ask which plugin generates IS/DOES/MEANS messaging?
+/ask what's the difference between cogni-narrative and cogni-copywriting?
+```
+
+First lookup before grepping source files — faster and doesn't pull plugin internals into your context.
+
+---
+
 ## Integration Points
 
 ### Upstream — cogni-workspace depends on nothing
