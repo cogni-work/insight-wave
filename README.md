@@ -164,6 +164,10 @@ Install insight-wave via Claude Code desktop — about 15 minutes from zero, in 
 2. **Configure for your environment** *(optional, enterprise only)* — [Deployment Guide](docs/deployment-guide.md) — GDPR, SSO, managed settings, MDM / Group Policy. Skip unless your firm mandates managed Claude Code settings before install.
 3. **Install insight-wave and render your first infographic** — [From Install to Infographic](docs/workflows/install-to-infographic.md) — adds the marketplace, installs plugins, runs `/install-mcp`, renders your first infographic. This is the capstone step where you go from installed to producing.
 
+### Security & compliance
+
+For regulated environments — GDPR, SSO, managed settings, MDM / Group Policy, egress controls, audit logging — the [Deployment Guide](docs/deployment-guide.md) covers the enterprise-grade configuration options and trust-boundary decisions. Individual-install users can skip this; it matters only when your firm mandates managed Claude Code settings before install. The guide is derived from `cogni-docs/references/deploy-data.json` and refreshed whenever the underlying Anthropic / Claude Code posture changes.
+
 ### MCP servers at a glance
 
 Some plugins extend their capabilities through external [MCP servers](https://docs.anthropic.com/en/docs/build-with-claude/mcp). Plugins declare their MCP dependencies in `.mcp.json` files — Desktop/Cowork auto-discovers and starts required servers on install.
@@ -243,9 +247,9 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-claims](cogni-claims/README.md) | Quality | 2 | 2 | Source verification — catches misquotations, unsupported conclusions, and stale data in sourced claims |
 | [cogni-help](cogni-help/README.md) | Platform | 7 | 1 | 12-course curriculum, plugin discovery, workflow templates, troubleshooting, and cheatsheets |
 | [cogni-wiki](cogni-wiki/README.md) | Platform | 7 | 0 | Persistent interlinked markdown wiki — compile-time knowledge from sources, wiki-grounded answers, backlink audit, health lint |
-| [cogni-workspace](cogni-workspace/README.md) | Platform | 5 | 0 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration |
+| [cogni-workspace](cogni-workspace/README.md) | Platform | 6 | 0 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki |
 
-**91 skills, 74 agents** across the ecosystem.
+**92 skills, 74 agents** across the ecosystem.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 
