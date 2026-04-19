@@ -112,9 +112,11 @@ The script:
 - inserts `- [[{slug}]] — {summary}` under the matching `##` or `###` heading, creating the heading at the end of the file if it does not yet exist;
 - on re-ingest, **updates the existing line in place** rather than appending a duplicate — so `mode: re-ingest` from Step 1 is safe to chain through without extra orchestrator bookkeeping;
 - keeps the category section alphabetised by slug after every insert;
-- writes atomically via `tempfile + os.replace`, same enforcement pattern that Step 6c's `--apply-plan` uses for backlink writes, so a crash mid-write cannot leave a half-updated index.
+- writes atomically via `tempfile + os.replace` — the same atomic tempfile + os.replace pattern used elsewhere in the plugin — so a crash mid-write cannot leave a half-updated index.
 
 Output extends the standard `{success, data, error}` contract with `data.action` (`inserted` | `updated`), `data.category`, `data.category_created`, and the final `data.line` that was written. Surface the action in the Step 9 report so the user sees whether this was a new line or an in-place refresh.
+
+If the script exits non-zero or returns malformed JSON, report the error to the user and stop; the page write from Step 4 stays on disk, but the index is known-good because of the atomic `tempfile + os.replace`.
 
 ### 6. Run the backlink audit
 

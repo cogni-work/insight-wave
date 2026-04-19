@@ -93,11 +93,31 @@ Many-shot jailbreaking exploits long context windows by stuffing hundreds of fak
 
 ### Step 5: Update `wiki/index.md`
 
-Under the `## Safety` category heading, insert:
+Decide the category heading (here: `Safety`) and hand the write to the helper script so placement and ordering stay deterministic:
 
 ```
-- [[many-shot-jailbreaking]] — Exploiting long context by stuffing fake dialogue turns to prime harmful completions.
+${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_index_update.py \
+    --wiki-root cogni-wiki/ai-research \
+    --slug many-shot-jailbreaking \
+    --summary "Exploiting long context by stuffing fake dialogue turns to prime harmful completions." \
+    --category "Safety"
 ```
+
+The script inserts `- [[many-shot-jailbreaking]] — Exploiting long context by stuffing fake dialogue turns to prime harmful completions.` under the `## Safety` heading (creating the heading if needed), keeps the section alphabetised, and returns:
+
+```json
+{
+  "success": true,
+  "data": {
+    "action": "inserted",
+    "category": "Safety",
+    "category_created": false,
+    "line": "- [[many-shot-jailbreaking]] — Exploiting long context by stuffing fake dialogue turns to prime harmful completions."
+  }
+}
+```
+
+On re-ingest the same invocation returns `action: "updated"` instead of appending a duplicate. If the script exits non-zero or returns malformed JSON, report the error and stop — the page from Step 4 is already on disk and the index is known-good because of the atomic `tempfile + os.replace`.
 
 ### Step 6: Backlink audit
 
