@@ -169,8 +169,6 @@ cogni-marketing/
 | cogni-trends | Yes | Strategic themes (Handlungsfelder), trend data, claims |
 | cogni-copywriting | No | Polish generated content with messaging frameworks |
 | cogni-visual | No | Slide decks and visual assets from content briefs |
-| cogni-narrative | No | Arc-driven transformation for long-form thought leadership |
-| cogni-claims | No | Evidence verification for sourced claims in content |
 
 ## Contributing
 
