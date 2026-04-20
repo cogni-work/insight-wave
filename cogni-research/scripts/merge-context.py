@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 merge-context.py
-Version: 1.2.0
+Version: 1.3.0
 Purpose: Aggregate context entities, deduplicate sources, produce merged context.
 Category: core
 
@@ -72,7 +72,19 @@ def get_max_context_words(report_type: str) -> int:
 
 
 def parse_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:
-    """Parse YAML frontmatter from markdown file. Returns (frontmatter_dict, body)."""
+    """Parse YAML frontmatter from markdown file. Returns (frontmatter_dict, body).
+
+    Splits key/value on the first `:<whitespace>` (not the first `:`), so Dublin Core
+    compound keys like `dc:identifier: <value>` parse correctly. Using `.partition(':')`
+    broke these keys — the key became `dc` and `source_map` never indexed anything,
+    silently emptying every aggregated source list.
+
+    Empty-value lines (`original_url: \\n`) stay as empty strings until a `- ` item
+    proves the field is actually an array. Earlier logic greedily created `[]` on
+    every empty value, which meant every trailing optional scalar field — including
+    the load-bearing `original_url` on wiki source entities — was coerced to `[]`
+    and lost its value when the next non-array key arrived.
+    """
     if not text.startswith('---'):
         return {}, text
 
@@ -84,9 +96,14 @@ def parse_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:
     body = parts[2].strip()
 
     # Simple YAML parser for flat key-value + arrays
-    fm = {}
-    current_key = None
-    current_list = None
+    fm: Dict[str, Any] = {}
+    current_key: Optional[str] = None
+    current_key_is_list: bool = False  # True only once we've seen a `- ` item under current_key
+
+    # Match a key followed by the first ":<whitespace>" separator.
+    # Key can itself contain colons (e.g. dc:identifier) as long as they are not followed
+    # by whitespace. Value is everything after the first ":<whitespace>" run.
+    kv_re = re.compile(r'^([^\s][^\s:]*(?::[^\s:][^\s:]*)*)\s*:\s*(.*)$')
 
     for line in fm_text.split('\n'):
         stripped = line.strip()
@@ -95,52 +112,52 @@ def parse_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:
 
         # Array item
         if stripped.startswith('- ') and current_key:
-            if current_list is None:
-                current_list = []
             item = stripped[2:].strip().strip('"').strip("'")
             # Try parsing as JSON for complex items
             try:
                 item = json.loads(item)
             except (json.JSONDecodeError, TypeError):
                 pass
-            current_list.append(item)
-            fm[current_key] = current_list
+            # Promote current_key to a list on first item, or append if already a list.
+            existing = fm.get(current_key)
+            if not current_key_is_list or not isinstance(existing, list):
+                fm[current_key] = [item]
+                current_key_is_list = True
+            else:
+                existing.append(item)
             continue
 
-        # Key-value pair
-        if ':' in stripped:
-            if current_list is not None:
-                current_list = None
+        # Key-value pair (supports dc:identifier-style compound keys)
+        m = kv_re.match(stripped)
+        if not m:
+            continue
 
-            key, _, value = stripped.partition(':')
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
+        key = m.group(1).strip()
+        value = m.group(2).strip().strip('"').strip("'")
 
-            # Handle empty value (start of array)
-            if not value:
-                current_key = key
-                current_list = []
-                fm[key] = current_list
-                continue
+        current_key = key
+        current_key_is_list = False
 
-            current_key = key
-            current_list = None
+        # Empty value — leave as empty string; a subsequent `- ` item would promote it to a list.
+        if not value:
+            fm[key] = ""
+            continue
 
-            # Type conversion
-            if value == 'null':
-                fm[key] = None
-            elif value == 'true':
-                fm[key] = True
-            elif value == 'false':
-                fm[key] = False
-            else:
+        # Type conversion for simple scalars
+        if value == 'null':
+            fm[key] = None
+        elif value == 'true':
+            fm[key] = True
+        elif value == 'false':
+            fm[key] = False
+        else:
+            try:
+                fm[key] = int(value)
+            except ValueError:
                 try:
-                    fm[key] = int(value)
+                    fm[key] = float(value)
                 except ValueError:
-                    try:
-                        fm[key] = float(value)
-                    except ValueError:
-                        fm[key] = value
+                    fm[key] = value
 
     return fm, body
 
@@ -194,7 +211,16 @@ def main() -> None:
             print(f"ERROR: {msg}", file=sys.stderr)
         sys.exit(1)
 
-    # Build source lookup by ID
+    # Build source lookup by ID. Carry publication metadata through to the writer:
+    # - `original_url` holds the canonical `https://` publisher URL for wiki/file sources
+    #   (see cogni-research/agents/wiki-researcher.md Phase 2). Without this field the
+    #   writer cannot render clickable bibliography entries for wiki sources.
+    # - `url_precision` distinguishes per-resource URLs ("exact") from publisher landing
+    #   pages ("publisher") so the writer can annotate the difference honestly in the
+    #   references section. Missing/unknown defaults to "exact" for https `url`,
+    #   "none" for wiki/file without an original_url.
+    # - `author` and `year` are needed by citation formats (apa/chicago/harvard/…)
+    #   that key the surface string off author-year rather than publisher-year.
     source_map: Dict[str, Dict[str, Any]] = {}
     for fm, body in sources:
         sid = fm.get("dc:identifier", "")
@@ -202,8 +228,12 @@ def main() -> None:
             source_map[sid] = {
                 "id": sid,
                 "url": fm.get("url", ""),
+                "original_url": fm.get("original_url", ""),
+                "url_precision": fm.get("url_precision", ""),
                 "title": fm.get("title", ""),
                 "publisher": fm.get("publisher", ""),
+                "author": fm.get("author", ""),
+                "year": fm.get("year", ""),
                 "citation_count": 0,
             }
 

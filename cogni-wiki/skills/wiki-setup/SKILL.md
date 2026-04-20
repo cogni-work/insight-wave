@@ -28,6 +28,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceedi
 | `--wiki-root` | No | Absolute or relative path to the wiki directory. Defaults to `cogni-wiki/{slug}` relative to the current working directory, where `{slug}` is derived from the wiki name. Use this to place a wiki outside the standard workspace layout. |
 | `--name` | Yes (prompted) | Human-readable wiki name, e.g. `"Primary Knowledge Base"` or `"AI-Safety Research Wiki"`. Used for the slug and for `.cogni-wiki/config.json`. |
 | `--description` | No | One-sentence description of the wiki's scope and purpose. Seeded into `overview.md`. |
+| `--publisher-base-url` | No | Canonical landing URL for the publisher this wiki represents, e.g. `https://www.smarter-service.com/studien/`. Recorded in `.cogni-wiki/config.json` as `publisher_base_url`. Used by downstream readers (notably cogni-research wiki-researcher) as a last-resort fallback URL when a page was ingested from a local file and has no per-page `publisher_url`. Leave unset for general-purpose wikis that span many publishers. |
 
 If parameters are missing, ask the user once with AskUserQuestion. Do not invent a wiki name silently.
 
@@ -101,11 +102,12 @@ Write `<wiki-root>/.cogni-wiki/config.json` with JSON:
   "created": "{{YYYY-MM-DD}}",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.1"
+  "schema_version": "0.0.2",
+  "publisher_base_url": "{{publisher_base_url_or_empty}}"
 }
 ```
 
-Use the current date via `date +%Y-%m-%d`.
+Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. Bump `schema_version` to `"0.0.2"` to mark the addition of `publisher_base_url`; earlier `"0.0.1"` configs remain valid (the field is optional on read).
 
 ### 5. Confirm to the user
 

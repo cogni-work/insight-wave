@@ -15,6 +15,7 @@ updated: YYYY-MM-DD                   # REQUIRED. Set at every edit
 sources:                              # Optional but strongly encouraged
   - ../raw/<filename>                 # Relative path from wiki/pages/ to raw/ file
   - https://<url>                     # Or a stable external URL
+publisher_url: https://<url>          # Optional. Canonical URL at the publisher
 related:                              # Optional. Curated cross-reference list
   - <other-page-slug>
 status: <optional>                    # Optional. e.g. "draft", "stable", "stale"
@@ -66,6 +67,14 @@ Pick the most specific type. `wiki-lint` will warn when a page's body has drifte
 - Or stable URLs
 - A page with no sources is flagged `warn` by `wiki-lint` unless its `type` is `decision` or `note`
 
+### `publisher_url` (optional)
+
+- A single canonical `https://` URL pointing to where the publication lives on the publisher's website.
+- Used by **cogni-research wiki-researcher** to build clickable bibliography entries for wiki-sourced citations. Without it, citations to pages that were ingested from local PDFs (e.g. `sources: [../raw/foo.pdf]`) can only be linked via the wiki instance's `publisher_base_url` fallback — a publisher landing page rather than a per-document permalink.
+- When `sources:` already contains an `https://` URL, that URL is assumed to be the publisher URL and `publisher_url` is redundant (but harmless — explicit wins on read).
+- When `sources:` contains only local paths (`../raw/...`), add `publisher_url` if you know the canonical URL of the original publication. If you don't, leave it off — the wiki instance's `publisher_base_url` (see `.cogni-wiki/config.json`) still gives downstream citations a honest landing-page link.
+- Never fabricate. An empty field is fine; a guessed URL is not.
+
 ### `related` (optional)
 
 - Explicit curated cross-references, complementary to inline `[[wikilinks]]`
@@ -89,6 +98,7 @@ updated: 2026-04-12
 sources:
   - ../raw/karpathy-llm-wiki-gist.md
   - https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
+publisher_url: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 related:
   - compounding-knowledge
   - wiki-vs-rag

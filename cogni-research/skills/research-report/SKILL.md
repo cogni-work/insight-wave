@@ -787,6 +787,15 @@ Once the promotion gate passes (or the user selects Option A), continue with the
      - If `phase_5_review.iteration_count >= 2`: print `✓ Phase 5 expansion-review loop ran — reviewer re-verified the revised draft ({iteration_count} iterations).`
    - Section count
    - Sources cited
+   - **Citation URL coverage** — compute this from `.metadata/aggregated-context.json sources[]`:
+     - Partition cited sources (those with `citation_count > 0`) into three buckets by their URL state:
+       - **exact**: `url.startswith("https://")` OR (`original_url.startswith("https://")` AND `url_precision` != `"publisher"`). These are per-document publisher URLs — what the reader expects.
+       - **publisher**: `original_url.startswith("https://")` AND `url_precision == "publisher"`. These are publisher landing pages from the wiki-researcher's `publisher_base_url` fallback — honest but imprecise.
+       - **none**: no usable URL. These render as unlinked citations in the bibliography.
+     - Print `Citation URL coverage: {exact+publisher}/{total} sources linkable ({exact} exact, {publisher} publisher landing, {none} unlinked)`. Example: `Citation URL coverage: 68/72 sources linkable (58 exact, 10 publisher landing, 4 unlinked)`.
+     - If `none > 0` and the `none` sources are wiki-sourced (check `publisher.startswith("cogni-wiki:")`), append a follow-up line naming the first three offending source entity IDs so the user can backfill `publisher_url` in the wiki pages: `  ⚠ {n} wiki sources missing publisher URL: src-xxx-..., src-yyy-..., src-zzz-... — add publisher_url to the page frontmatter or publisher_base_url to the wiki's .cogni-wiki/config.json`.
+     - Persist the three counts to `.metadata/execution-log.json phases.phase_6_finalization.citation_url_coverage` as `{total, exact, publisher, none}` so verify-report can read the same numbers and the soft-warning is auditable across runs.
+     - This is a soft signal, not a hard gate — it never blocks promotion. Its job is to surface where the wiki-to-research URL pipeline leaks, not to fail runs on incomplete wikis.
    - Structural review score
    - **Estimated cost** (total USD from cost_summary)
    - **Research quality** — pipe the same research_quality JSON (from `phases.phase_6_finalization.research_quality`) to `${CLAUDE_PLUGIN_ROOT}/scripts/research-quality-footer.py --mode echo` and print the multi-line block verbatim. This surfaces the market curation and channel coverage in the live transcript — the user sees that DACH boosted 27 domains, 14 made it into the cited sources, 8 local documents contributed, 12 wiki pages were consulted. The echo complements the markdown footer: the footer lives in the artifact, the echo lives in the session.

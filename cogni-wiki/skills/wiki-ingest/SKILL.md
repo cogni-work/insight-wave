@@ -143,8 +143,11 @@ created: {YYYY-MM-DD}
 updated: {YYYY-MM-DD}
 sources:
   - ../raw/{source-filename}
+publisher_url: https://{publisher canonical URL, only if observable}
 ---
 ```
+
+**On `publisher_url`**: populate it only when the canonical URL is observable — do not fabricate. URL ingest → set it to the source URL (same one passed to WebFetch). File ingest with a URL printed on the PDF cover / in PDF metadata / in source text → use that URL. File ingest with no observable URL → omit the `publisher_url` key entirely (the field is optional). A guessed URL that 404s costs more credibility than an unlinked citation downstream; cogni-research will fall back to the wiki's `publisher_base_url` if set.
 
 Body structure:
 

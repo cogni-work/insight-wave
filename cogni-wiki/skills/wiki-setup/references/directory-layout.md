@@ -25,13 +25,15 @@ Detailed semantics for every file and directory created by `wiki-setup`. Skills 
   "created": "2026-04-12",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.1"
+  "schema_version": "0.0.2",
+  "publisher_base_url": "https://www.smarter-service.com/studien/"
 }
 ```
 
 - `entries_count` is a cached count of files in `wiki/pages/` excluding `lint-*.md`. Each `wiki-ingest` and `wiki-update` increments or recalculates it.
 - `last_lint` is the ISO date of the most recent `wiki-lint` run, or `null`. `wiki-resume` uses it to surface "wiki has not been linted in N days" reminders.
-- `schema_version` tracks the frontmatter and layout contract version. Future migrations can detect old wikis and upgrade them.
+- `schema_version` tracks the frontmatter and layout contract version. Future migrations can detect old wikis and upgrade them. `0.0.2` adds the optional `publisher_base_url` field; `0.0.1` configs remain valid on read.
+- `publisher_base_url` is optional. Set it to the publisher's landing URL when every source in the wiki comes from the same publisher (e.g. an analyst firm's study catalog). **cogni-research wiki-researcher** uses it as a last-resort fallback when a cited page has no per-page `publisher_url` in its frontmatter and no `https://` URL in its `sources:` array — so citations still resolve to the publisher's site rather than landing unlinked. Leave the field unset for wikis that span multiple publishers (fabricating a shared landing page there would mislead readers).
 
 ## Slug derivation rule
 
