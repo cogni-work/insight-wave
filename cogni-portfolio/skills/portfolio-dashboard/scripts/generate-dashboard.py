@@ -13,6 +13,7 @@ import re
 import sys
 import subprocess
 from datetime import datetime
+from urllib.parse import urlparse
 
 
 # ---------------------------------------------------------------------------
@@ -483,8 +484,13 @@ def load_all_entities(project_dir):
 
     # Load scan diagnostic output (scan-output.json v1.2.0+) if present.
     # Only used to render the optional "Provider units" section — never
-    # authoritative for entity data.
-    data["scan_output"] = load_scan_output(project_dir)
+    # authoritative for entity data. If the file is absent, fall back to
+    # aggregating per-feature provider_unit blocks (authoritative per v0.9.9)
+    # so portfolios built via non-scan paths still surface the section.
+    data["scan_output"] = (
+        load_scan_output(project_dir)
+        or derive_provider_units_from_features(data.get("features", {}))
+    )
 
     return data
 
@@ -505,11 +511,84 @@ def load_scan_output(project_dir):
     if not isinstance(units, list) or not units:
         return None
     return {
+        "source": "scan-output",
         "version": raw.get("version", ""),
         "created": raw.get("created", ""),
         "company_name": raw.get("company_name", ""),
         "domains_analyzed": raw.get("domains_analyzed", []),
         "provider_units": units,
+    }
+
+
+def derive_provider_units_from_features(features):
+    """Aggregate per-feature provider_unit blocks into the scan_output shape.
+
+    Used as a fallback when a portfolio was not built via portfolio-scan and
+    therefore has no research/.metadata/scan-output.json, but individual
+    features carry {code, name, country, tier} provider_unit blocks (e.g.
+    portfolios built via portfolio-web-researcher). Per v0.9.9 semantics,
+    the feature-level data is the authoritative source anyway.
+
+    Returns the same shape as load_scan_output() — renderer stays agnostic.
+    Returns None if no feature carries a provider_unit.code.
+    """
+    if not isinstance(features, dict) or not features:
+        return None
+
+    by_code = {}
+    domains_order = []
+    total_with_unit = 0
+
+    for feat in features.values():
+        pu = feat.get("provider_unit") or {}
+        code = pu.get("code")
+        if not code:
+            continue
+        total_with_unit += 1
+        bucket = by_code.setdefault(code, {
+            "code": code,
+            "name": pu.get("name", code),
+            "country": pu.get("country", ""),
+            "tier": pu.get("tier", ""),
+            "domain": "",
+            "feature_count": 0,
+        })
+        bucket["feature_count"] += 1
+        # Fill domain from the first feature's source_url that parses cleanly.
+        if not bucket["domain"]:
+            src = feat.get("source_url") or ""
+            host = urlparse(src).netloc if src else ""
+            if host:
+                host = host.lstrip("www.")
+                bucket["domain"] = host
+                if host not in domains_order:
+                    domains_order.append(host)
+
+    if not by_code:
+        return None
+
+    provider_units = []
+    for code in sorted(by_code.keys()):
+        b = by_code[code]
+        provider_units.append({
+            "code": b["code"],
+            "name": b["name"],
+            "country": b["country"],
+            "tier": b["tier"],
+            "domain": b["domain"],
+            "type": b["tier"],
+            "included": True,
+            "feature_count": b["feature_count"],
+        })
+
+    return {
+        "source": "features",
+        "version": "derived",
+        "created": "",
+        "company_name": "",
+        "domains_analyzed": domains_order,
+        "provider_units": provider_units,
+        "derived_feature_total": total_with_unit,
     }
 
 
@@ -2290,35 +2369,52 @@ body::after {{
             html += "    </div>\n  </div>\n"
         html += "</div>\n"
 
-    # --- Provider Units (scan diagnostic) ---
-    # Only renders when portfolio-scan has written scan-output.json v1.2.0+
-    # with at least one provider unit. Absent for non-scan portfolios.
+    # --- Provider Units ---
+    # Two sources, both rendered through this block:
+    #   scan-output:  portfolio-scan wrote scan-output.json v1.2.0+
+    #   features:     derived on the fly from per-feature provider_unit blocks
+    # Absent entirely when neither source produced any provider units.
     if scan_output:
         units = scan_output.get("provider_units", [])
         created = scan_output.get("created", "")
         created_short = created[:10] if isinstance(created, str) and len(created) >= 10 else ""
         version = scan_output.get("version", "")
         domains = scan_output.get("domains_analyzed", []) or []
+        source = scan_output.get("source", "scan-output")
+        is_derived = source == "features"
         included_units = [u for u in units if u.get("included")]
         total_feature_count = sum((u.get("feature_count") or 0) for u in included_units)
 
-        html += """
-<!-- Provider Units (scan diagnostic) -->
+        section_suffix = "(from feature metadata)" if is_derived else "(scan diagnostic)"
+        html += f"""
+<!-- Provider Units ({source}) -->
 <div class="section reveal">
-  <div class="section-title">Provider units (scan diagnostic)</div>
+  <div class="section-title">Provider units {section_suffix}</div>
 """
-        caption = (
-            "Organizational units (subsidiaries, practice areas, brands) scanned independently by "
-            "<code>portfolio-scan</code>. Diagnostic only — authoritative feature-to-unit mapping "
-            "lives in each feature's <code>source_lineage</code>."
-        )
+        if is_derived:
+            caption = (
+                "Organizational units attributed on individual features — aggregated from each "
+                "feature's <code>provider_unit</code> block. Authoritative per feature; "
+                "<code>portfolio-scan</code> was not run for this project."
+            )
+        else:
+            caption = (
+                "Organizational units (subsidiaries, practice areas, brands) scanned independently by "
+                "<code>portfolio-scan</code>. Diagnostic only — authoritative feature-to-unit mapping "
+                "lives in each feature's <code>source_lineage</code>."
+            )
         html += f'  <div style="font-size:13px;color:var(--text2);margin-bottom:12px;max-width:820px">{caption}</div>\n'
 
         if not included_units:
+            empty_msg = (
+                'No features carry a <code>provider_unit</code> block.'
+                if is_derived
+                else 'No provider units were marked included in the most recent scan.'
+            )
             html += (
                 '  <div style="font-size:13px;color:var(--text2);padding:16px;'
                 'border:1px dashed var(--border);border-radius:var(--radius)">'
-                'No provider units were marked included in the most recent scan.'
+                f'{empty_msg}'
                 '</div>\n'
             )
         else:
@@ -2329,6 +2425,8 @@ body::after {{
                 uname = escape_html(u.get("name", ""))
                 udomain = escape_html(u.get("domain", ""))
                 utype = escape_html(u.get("type", ""))
+                ucountry = escape_html(u.get("country", ""))
+                utier = escape_html(u.get("tier", ""))
                 ucount = u.get("feature_count")
                 ucount_display = ucount if isinstance(ucount, int) else "—"
                 type_chip = (
@@ -2339,26 +2437,37 @@ body::after {{
                     f'style="color:var(--text2);text-decoration:none">{udomain}</a></div>'
                     if udomain else ""
                 )
+                # Country · tier subline (features-derived mode only — scan-output lacks these fields)
+                meta_bits = [b for b in (ucountry, utier) if b]
+                meta_line = (
+                    f'<div class="sub" style="margin-top:4px">{" &middot; ".join(meta_bits)}</div>'
+                    if meta_bits else ""
+                )
                 html += f"""    <div class="card">
       <div class="label">{uname}</div>
       <div class="value">{ucount_display}</div>
       <div class="sub">feature{"s" if ucount_display != 1 else ""} attributed</div>
+      {meta_line}
       {domain_line}
       {type_chip}
     </div>
 """
             html += "  </div>\n"
 
-        # Footer line: included vs total, scan timestamp, domains analyzed count.
+        # Footer line — bits depend on source.
         footer_bits = []
         footer_bits.append(f'{len(included_units)} of {len(units)} units included')
         footer_bits.append(f'{total_feature_count} feature{"s" if total_feature_count != 1 else ""} total')
         if domains:
             footer_bits.append(f'{len(domains)} domain{"s" if len(domains) != 1 else ""} analyzed')
-        if created_short:
-            footer_bits.append(f'scanned {created_short}')
-        if version:
-            footer_bits.append(f'scan-output.json v{escape_html(version)}')
+        if is_derived:
+            derived_total = scan_output.get("derived_feature_total") or total_feature_count
+            footer_bits.append(f'derived from {derived_total} feature{"s" if derived_total != 1 else ""}')
+        else:
+            if created_short:
+                footer_bits.append(f'scanned {created_short}')
+            if version:
+                footer_bits.append(f'scan-output.json v{escape_html(version)}')
         html += (
             '  <div style="margin-top:14px;font-size:12px;color:var(--text2)">'
             + ' &middot; '.join(footer_bits)
