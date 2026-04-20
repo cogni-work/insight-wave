@@ -14,22 +14,34 @@ Before starting, confirm:
 
 ## Step 1: Add the Marketplace
 
-The insight-wave marketplace lives at [`cogni-work/insight-wave`](https://github.com/cogni-work/insight-wave).
+Start Claude Code first — **the commands in this guide are Claude Code slash commands, not shell commands.** Open a terminal (macOS: `Cmd+Space` → type `Terminal` → Enter; Windows: press the Windows key → type `Terminal` → Enter), type `claude`, and press Enter. Claude Code's prompt opens inside the terminal. Paste every command below into that prompt.
 
-Add it to your session:
+The insight-wave marketplace lives at [`cogni-work/insight-wave`](https://github.com/cogni-work/insight-wave). Register it:
 
 ```
 /plugin marketplace add cogni-work/insight-wave
 ```
 
-This registers all available plugins. For this workflow you need `cogni-workspace` and `cogni-visual` at a minimum:
+**Enable automatic marketplace updates** so new plugin versions arrive without you re-running this command. Open the interactive plugin manager:
+
+```
+/plugin
+```
+
+Pick **Marketplaces → insight-wave** and switch on the auto-update option. Claude Code refreshes the marketplace at session start from then on. You can also refresh on demand:
+
+```
+/plugin marketplace update insight-wave
+```
+
+Install the plugins this workflow needs — at minimum `cogni-workspace` and `cogni-visual`:
 
 ```
 /plugin install cogni-workspace@insight-wave
 /plugin install cogni-visual@insight-wave
 ```
 
-Or browse the **Discover** tab interactively via `/plugin`.
+Or browse the **Discover** tab interactively inside `/plugin`.
 
 ## Step 2: Initialize Your Workspace
 
