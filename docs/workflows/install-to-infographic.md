@@ -1,38 +1,16 @@
 # From Install to Infographic
 
-Your first-run workflow with insight-wave: install the marketplace, set up your workspace, extract a theme from your company website, and render your first infographic. Along the way you verify that Pencil MCP and Excalidraw MCP are wired up — so later visual work doesn't stall on a missing dependency.
+Your first-run workflow with insight-wave — the step-3 capstone of the [root README install sequence](../../README.md#install). Starting from an installed, authenticated Claude Code, you add the insight-wave marketplace, set up your workspace, extract a theme from your company website, and render your first infographic. Along the way you verify that Pencil MCP and Excalidraw MCP are wired up — so later visual work doesn't stall on a missing dependency.
 
 ## Prerequisites
 
-Choose the path that fits your role:
+This guide assumes you have already completed steps 1 and — if your firm requires it — step 2 of the [root README `## Install` sequence](../../README.md#install). You are in the right place when Claude Code is installed and signed in.
 
-### Standard path: Claude Cowork
+Before starting, confirm:
 
-For consultants, sales teams, and marketing teams who want to use plugins through a visual interface:
-
-1. [Download Claude Desktop](https://claude.ai/download) (macOS, Windows)
-2. [Get started with Cowork](https://support.claude.com/en/articles/13345190-get-started-with-cowork) — collaborative working sessions with local file access
-3. Course: [Introduction to Claude Cowork](https://anthropic.skilljar.com/introduction-to-claude-cowork)
-
-### Advanced path: Claude Code
-
-For developers and power users who want CLI access, IDE integration, and full plugin control:
-
-1. [Claude Code setup](https://docs.anthropic.com/en/docs/claude-code/setup) (CLI, VS Code, JetBrains)
-2. [Discover and install plugins](https://code.claude.com/docs/en/discover-plugins) — browse and install marketplace plugins
-3. Course: [Introduction to Agent Skills](https://anthropic.skilljar.com/introduction-to-agent-skills)
-
-### Core requirements
-
-Both paths require:
-
-- Terminal access (macOS, Linux, or WSL)
-- `bash` 3.2+, `python3` (stdlib only), `jq`
-- Optional: [Obsidian](https://obsidian.md/) for browsable knowledge management
-
-### Enterprise deployment
-
-For environments with security, SSO, GDPR data residency, and audit-logging requirements, see the [Deployment Guide](../deployment-guide.md) before installing.
+- [ ] **Claude Code installed and authenticated** — `/status` reports `subscription`. See [`../claude-code-desktop.md`](../claude-code-desktop.md) for the platform-specific setup (macOS, Windows, authentication, troubleshooting) if you haven't done this yet.
+- [ ] **Enterprise configuration applied, if your firm requires it** — GDPR, SSO, managed settings, MDM / Group Policy. See [`../deployment-guide.md`](../deployment-guide.md). Skip on a personal laptop.
+- [ ] **Core requirements on the host** — terminal access (macOS, Linux, or WSL); `bash` 3.2+, `python3` (stdlib only), `jq`; optional [Obsidian](https://obsidian.md/) for browsable knowledge management.
 
 ## Step 1: Add the Marketplace
 
