@@ -1,6 +1,8 @@
-# Delivery Unit Classification Rules
+# Provider Unit Classification Rules
 
-## INCLUDE as delivery unit if ANY of these criteria are met
+A **provider unit** is any organizational unit of the target company that will be scanned independently (subsidiary, practice area, acquired product, regional entity, brand). This file defines which to include. *Not to be confused with `delivery_blueprint` on products — that is the commercial implementation pattern, not an organizational unit.*
+
+## INCLUDE as provider unit if ANY of these criteria are met
 
 | Criterion | Examples | Why Include |
 |-----------|----------|-------------|

@@ -78,7 +78,7 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
 7. Read the template files needed for this scan:
    - `${TEMPLATE_PATH}/template.md` — taxonomy definition (dimensions, categories)
    - `${TEMPLATE_PATH}/search-patterns.md` — web search queries
-   - `${TEMPLATE_PATH}/delivery-unit-rules.md` — entity inclusion/exclusion
+   - `${TEMPLATE_PATH}/provider-unit-rules.md` — entity inclusion/exclusion
    - `${TEMPLATE_PATH}/cross-category-rules.md` — dual assignments
    - `${TEMPLATE_PATH}/product-template.md` — taxonomy→data model mapping
    - `${TEMPLATE_PATH}/report-template.md` — output format
@@ -99,7 +99,7 @@ Search for the target company and its affiliated entities. See `${TEMPLATE_PATH}
 
 Extract the parent company, subsidiaries, business units, consulting arms, field services entities, and industry-vertical brands with their web domains.
 
-See `${TEMPLATE_PATH}/delivery-unit-rules.md` for inclusion/exclusion criteria. The guiding principle: when in doubt, include — Phase 3 research will naturally return nothing if an entity isn't relevant.
+See `${TEMPLATE_PATH}/provider-unit-rules.md` for which organizational units count as in-scope **provider units** (subsidiaries, practice areas, acquired products, regional entities). A provider unit is a scoping filter for Phase 3, not a data entity — it does not get its own JSON file. When in doubt, include — Phase 3 returns nothing if a unit has no relevant offerings.
 
 **Subsidiary discovery depth matters.** A scan that only covers the main domain will miss entire product lines that live on subsidiary websites. Run at minimum these searches:
 1. `"{COMPANY_NAME}" subsidiaries` and `"{COMPANY_NAME}" Tochtergesellschaften` (if LANGUAGE=de)
@@ -133,7 +133,7 @@ Store discovered entities in structured format for downstream phases:
 
 ### Phase 1.5: User Confirmation & Validation
 
-**MANDATORY:** Before proceeding to Phase 2, validate and present discovered delivery units.
+**MANDATORY:** Before proceeding to Phase 2, validate and present discovered provider units.
 
 #### Pre-checks (automated, before showing user)
 
@@ -148,7 +148,9 @@ Run these 3 checks silently and fix issues before presenting:
 Use `AskUserQuestion` to present the validated entities:
 
 ```markdown
-## Discovered Delivery Units for {COMPANY_NAME}
+## Discovered Provider Units for {COMPANY_NAME}
+
+*A provider unit is any organizational unit we will scan independently (subsidiary, BU, practice, brand, acquired product). Confirming this list locks Phase 3's domain fan-out.*
 
 | # | Entity | Domain | Type | Include? |
 |---|--------|--------|------|----------|
@@ -159,7 +161,7 @@ Use `AskUserQuestion` to present the validated entities:
 - Consulting/advisory subsidiaries
 - On-site/field services
 - Industry-specific brands (healthcare, automotive, etc.)
-- Regional delivery units
+- Regional provider units
 ```
 
 **If user selects "Add more entities":**
@@ -168,7 +170,7 @@ Use `AskUserQuestion` to present the validated entities:
 3. Re-present updated list
 4. Repeat until confirmed (max 3 iterations)
 
-**If user selects "Confirmed - proceed":** Lock the delivery unit list and proceed to Phase 2.
+**If user selects "Confirmed - proceed":** Lock the provider unit list and proceed to Phase 2. Also persist the confirmed list as a skeleton `provider_units` array for the Phase 6 metadata write (see Phase 6 below) — one object per included unit with `{name, domain, type, included: true}`. This records the Phase-1.5 decision for later diagnosis; Phase 7.6 will enrich each entry with a `feature_count`.
 
 ---
 
@@ -245,7 +247,7 @@ for domain_slug in {list-of-all-domain-slugs}; do
 done
 ```
 
-This is a critical checkpoint — if any domain is missing, the scan will have blind spots for that entire delivery unit. Missing domains typically mean the agent wasn't dispatched (check Step 3.2) or silently failed.
+This is a critical checkpoint — if any domain is missing, the scan will have blind spots for that entire provider unit. Missing domains typically mean the agent wasn't dispatched (check Step 3.2) or silently failed.
 
 **If any log files are missing:**
 1. Check whether the agent was actually invoked for that domain in Step 3.2
@@ -313,7 +315,7 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
 
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "company_name": "{COMPANY_NAME}",
   "company_slug": "{COMPANY_SLUG}",
   "created": "{ISO_TIMESTAMP}",
@@ -329,6 +331,9 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
     "emerging": 0,
     "extended": 0
   },
+  "provider_units": [
+    {"name": "T-Systems MMS", "domain": "t-systems-mms.com", "type": "ict_delivery", "included": true, "feature_count": 12}
+  ],
   "dedupe_summary": {
     "merged_into_existing": 0,
     "collapsed_among_candidates": 0,
@@ -338,6 +343,12 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
   }
 }
 ```
+
+**`provider_units` semantics** (added in v1.2.0):
+
+- One entry per provider unit the user confirmed in Phase 1.5. Skeleton fields (`name`, `domain`, `type`, `included`) are written when the user locks the list; `feature_count` is enriched at Phase 7.6 after dedupe (`feature_count` = total new + merged features whose `_source_offering.domain` matches the unit's domain or docs-subdomains).
+- This array is **diagnostic, not authoritative** — if Phase 7 is interrupted, `feature_count` may be missing or partial. Rely on `features/*.json` `source_lineage` for the canonical mapping.
+- Consumers reading v1.0.0 or v1.1.0 files must treat absent `provider_units` as "not measured", not as "zero units".
 
 **Counter semantics for `dedupe_summary`** (populated in Phase 7.6 — see below):
 
@@ -524,6 +535,8 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh "${PROJECT_PATH}"
 ```
 
 Then update `research/.metadata/scan-output.json` in place: read the file, set `dedupe_summary` to the final `counters` dict, and write it back. The Phase 6 metadata write created the block with all-zero defaults; this step replaces it with the real counts. Verify the sum invariant before writing — `merged_into_existing + collapsed_among_candidates + written_new + soft_duplicates_deferred` must equal the candidate count staged at Step 7.3. If the invariant fails, log a warning to the user (do not abort the scan — the data is still useful) and write the counters anyway so the discrepancy is visible in the dashboard.
+
+**Also enrich `provider_units[]` with `feature_count`** in the same in-place update. For each entry in the existing `provider_units` array (written as a skeleton at Phase 1.5 confirmation), set `feature_count` = number of features this scan produced (branches A, C, D, and E of Step 7.6) whose `_source_offering.domain` matches the unit's `domain` or one of its docs/help subdomains discovered in Phase 1.5. Skeleton entries missing `feature_count` mean the scan was interrupted before 7.6 finalized — leave them as-is rather than synthesizing a value.
 
 #### Step 7.7: Set Taxonomy in portfolio.json
 

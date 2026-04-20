@@ -259,7 +259,7 @@ Extract portfolio entities from uploaded documents: `.md`, `.docx`, `.pptx`, `.x
 
 ### portfolio-scan
 
-Discover a company's service offerings by scanning public websites, classify against the taxonomy template, and import as portfolio entities.
+Discover a company's service offerings by scanning public websites, classify against the taxonomy template, and import as portfolio entities. Before deep research, scan asks you to confirm the list of **provider units** — subsidiaries, practice areas, or brands that will be scanned independently.
 
 **Example prompt:** "Scan Acme Corp's website and map their services to our ICT taxonomy"
 
