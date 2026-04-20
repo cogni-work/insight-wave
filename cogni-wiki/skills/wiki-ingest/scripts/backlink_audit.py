@@ -113,12 +113,38 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import fcntl
 import json
 import os
 import re
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
+
+
+@contextmanager
+def _wiki_lock(wiki_root: Path):
+    """Serialise shared-state writes across concurrent batch-mode workers.
+
+    Issue #84: two batch-mode workers can both apply-plan into the same target
+    page (e.g., the popular `plugin-cogni-*` pages), each read-modify-writing
+    without knowing about the other. The later `os.replace` silently
+    overwrites the earlier backlink insert. This lock serialises apply_plan
+    across workers sharing a wiki root; separate wikis do not block each other.
+    """
+    lock_dir = wiki_root / ".cogni-wiki"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = lock_dir / ".lock"
+    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
 
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -460,7 +486,8 @@ def main() -> None:
         out_empty = {"candidates": [], "note": "new page has no extractable search terms"}
         if args.apply_plan:
             plan = _load_apply_plan(args.apply_plan)
-            applied, skipped, failed = apply_plan(plan, pages_dir, new_slug)
+            with _wiki_lock(wiki_root):
+                applied, skipped, failed = apply_plan(plan, pages_dir, new_slug)
             out_empty["applied"] = applied
             out_empty["skipped_existing_backlink"] = skipped
             out_empty["failed"] = failed
@@ -560,7 +587,8 @@ def main() -> None:
 
     if args.apply_plan:
         plan = _load_apply_plan(args.apply_plan)
-        applied, skipped, failed = apply_plan(plan, pages_dir, new_slug)
+        with _wiki_lock(wiki_root):
+            applied, skipped, failed = apply_plan(plan, pages_dir, new_slug)
         out["applied"] = applied
         out["skipped_existing_backlink"] = skipped
         out["failed"] = failed

@@ -238,8 +238,10 @@ Never rewrite existing log lines.
 
 ### 8. Update `.cogni-wiki/config.json`
 
-- `mode: fresh` — increment `entries_count`. Leave all other fields untouched.
+- `mode: fresh` — invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/config_bump.py --wiki-root <wiki-root> --key entries_count --delta 1`. The script grabs the shared `.cogni-wiki/.lock` before read-modify-write, so concurrent batch-mode workers cannot clobber each other (issue #84). Never edit `config.json` inline — the inline read-modify-write race produced silent under-counts before v0.0.12.
 - `mode: re-ingest` — leave `entries_count` untouched. The field reflects distinct pages in `wiki/pages/`, not ingest invocations; `wiki-resume`, `wiki-dashboard`, and `wiki-lint` all treat it as a page count, so re-ingests must not inflate it.
+
+If `config_bump.py` exits non-zero or returns malformed JSON, report the error but do not abort — the page, index, backlinks, and log are already consistent on disk. The script is idempotent-safe to re-run with a compensating `--delta` to reconcile drift.
 
 ### 9. Report to the user
 

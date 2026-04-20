@@ -36,3 +36,6 @@ cogni-research/test-diagram-pipeline/
 
 # Obsidian vault config (per-user; cogni-workspace:manage-workspace scaffolds it)
 .obsidian/
+
+# cogni-wiki batch-mode lockfile (runtime-only, per-wiki advisory lock)
+**/.cogni-wiki/.lock

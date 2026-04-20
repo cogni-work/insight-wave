@@ -39,9 +39,9 @@ Follow `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/SKILL.md` Steps 1–8 verbatim 
   - `auto_backlinks == null` → hand-curate as today. Invoke `backlink_audit.py` for candidates, **curate by judgement**, then re-invoke with `--apply-plan -` and a curated plan on stdin. Capture `len(data.applied)` for `backlinks_added`.
   - `auto_backlinks == K` (integer) → auto-mode. Invoke `backlink_audit.py --top K --min-confidence medium`, then for each returned candidate read only the target page's title + first paragraph and draft one short sentence containing `[[{slug}]]`. Omit `insert_after_heading` — auto-mode always appends at body end. Pipe the plan to `--apply-plan -` exactly as in hand-curation. Capture `len(data.applied)` for `backlinks_added`. The `--min-confidence medium` filter and the K cap together preserve the "never invent backlinks" discipline: you are still selecting from a pre-filtered set of real textual matches, not generating links from thin air.
 - **Step 7 — log append.** One line to `<wiki_root>/wiki/log.md` with the mode-correct verb (`ingest` for fresh, `re-ingest` for re-ingest).
-- **Step 8 — config update.** `mode: fresh` → increment `entries_count`. `mode: re-ingest` → leave untouched.
+- **Step 8 — config update.** `mode: fresh` → invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/config_bump.py --wiki-root <wiki_root> --key entries_count --delta 1`. The script uses the shared `.cogni-wiki/.lock` so concurrent batch-mode workers cannot race each other's read-modify-write on `config.json` (issue #84). Never edit `config.json` inline. `mode: re-ingest` → do not invoke the script; `entries_count` stays untouched.
 
-Atomicity lives in the scripts (`tempfile + os.replace`, per-page atomic backlink writes). A failure mid-worker leaves the wiki consistent for whatever completed; your job on failure is to **stop at the failing step** and return a structured error — not to attempt cleanup.
+Atomicity lives in the scripts (`tempfile + os.replace` for per-page writes, `fcntl.flock` on `.cogni-wiki/.lock` for shared-state writes — `wiki_index_update.py`, `backlink_audit.py --apply-plan`, `config_bump.py`). A failure mid-worker leaves the wiki consistent for whatever completed; your job on failure is to **stop at the failing step** and return a structured error — not to attempt cleanup.
 
 ## Return payload — mandatory
 
