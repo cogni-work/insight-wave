@@ -24,13 +24,27 @@ All agents use sonnet. Earlier versions used haiku for parallel researchers to s
 | Report Type | Agents | Researcher Agents | Pipeline Agents | Estimated Cost |
 |-------------|--------|-------------------|-----------------|----------------|
 | Basic | ~7 | 3-5 (sonnet) | 2-3 (writer, reviewer, revisor) | ~$0.15-0.40 |
-| Basic (hybrid) | ~12-15 | 6-10 (sonnet, 3-5 per channel) | 2-3 (writer, reviewer, revisor) | ~$0.30-0.70 |
+| Basic (hybrid) | ~9-12 | 5-9 (sonnet — N web + 1-4 wiki + 1-4 local under asymmetric allocation) | 2-3 (writer, reviewer, revisor) | ~$0.22-0.55 |
 | Detailed | ~15 | 5-10 (sonnet) | 4-6 (writer, extractor, reviewer, revisor) | ~$0.40-0.80 |
-| Detailed (hybrid) | ~20-26 | 10-20 (sonnet, 5-10 per channel) | 4-6 (writer, extractor, reviewer, revisor) | ~$0.70-1.50 |
+| Detailed (hybrid) | ~14-20 | 8-14 (sonnet — N web + 1-4 wiki + 1-4 local) | 4-6 (writer, extractor, reviewer, revisor) | ~$0.50-1.10 |
 | Deep | ~25 | 10-20 (sonnet) | 4-6 (writer, extractor, reviewer, revisor) | ~$0.80-1.50 |
-| Deep (hybrid) | ~30-46 | 20-40 (sonnet, 10-20 per channel) | 4-6 (writer, extractor, reviewer, revisor) | ~$1.50-2.80 |
+| Deep (hybrid) | ~22-32 | 16-28 (sonnet — N web + 1-4 wiki + 1-4 local; bigger N dominates, wiki/local capped at 4 each) | 4-6 (writer, extractor, reviewer, revisor) | ~$1.10-2.00 |
 | Outline | ~6 | 3-5 (sonnet) | 1-2 (writer, reviewer) | ~$0.10-0.30 |
 | Resource | ~6 | 3-5 (sonnet) | 1-2 (writer, reviewer) | ~$0.10-0.30 |
+
+### Why the hybrid rows are lower than you'd expect
+
+Before v0.7.14, hybrid mode dispatched `N × number_of_channels` researchers: 8 sub-questions × 3 channels = 24 researcher agents, each re-reading the same wiki index and same local documents. That symmetry made sense for web (where every sub-question needs its own queries and source discovery) but not for wiki and local, which operate over bounded, shared corpora.
+
+Since v0.7.14, `research-report` Phase 1.5a computes `channel_agents` asymmetrically:
+
+- **Web**: always `N` agents, one per sub-question (unchanged).
+- **Wiki**: `clamp(ceil(wiki_page_count / 40), 1, min(N, 4))` agents. Each agent reads the wiki index once and extracts findings for **all** sub-questions in a single pass.
+- **Local**: `clamp(ceil(document_count / 25), 1, min(N, 4))` agents. Each agent runs one Document Relevance Assessment pass over its document slice and emits per-sub-question findings.
+
+The cap at 4 agents per bounded channel is deliberate: beyond 4 agents the corpus sweep is already paralellized enough, and the incremental cost of one more index read rarely pays for itself. For small runs (`N < 4`) the symmetric allocation is preserved — savings are marginal there and the simpler code path is worth keeping.
+
+Ranges in the hybrid rows above assume typical corpus sizes (10–60 docs, 30–200 wiki pages). A power-user project with 500+ wiki pages or 200+ documents will land near the upper bound of its row because the heuristic saturates at the 4-agent cap; a light project with a handful of files lands near the lower bound.
 
 ## Runtime Cost Tracking
 

@@ -199,7 +199,13 @@ plan = {
                          A user who consciously wants depth=0 in deep mode can
                          still choose "Disable recursion" in 1.5c>,
   "batch_size":         <batch_size from project-config.json; default 4>,
-  "total_agents":       <sub_question_count × number of active channels>,
+  "channel_agents":     <per-channel agent count — see "Resolving channel_agents" below.
+                         Always includes one entry per channel in plan.channels.
+                         Web stays 1:1 with sub_question_count; wiki/local batch
+                         against a shared corpus sweep so their count is usually
+                         much smaller than N.>,
+  "total_agents":       <sum of channel_agents values across plan.channels
+                         (no longer sub_question_count × len(channels))>,
   "batch_count":        <ceil(total_agents / batch_size)>,
   "est_cost_usd":       <from references/model-strategy.md cost table,
                          matched by report_type × source_mode>,
@@ -230,6 +236,32 @@ If `source_mode == "hybrid"` but neither `wiki_paths` nor `document_paths` is se
 
 **Channel stats for the plan echo**: when `local` is in channels, glob each `document_paths` entry with Bash (`ls`, `find`, or shell glob) and count the matching files into `plan.document_count`. When `wiki` is in channels, for each path in `wiki_paths` count the markdown pages under `wiki/pages/` (e.g., `find "$wiki_root/wiki/pages" -name '*.md' | wc -l`) and sum into `plan.wiki_page_count`. These counts feed the Market & sources block in 1.5b — they make local/wiki visible as real, measurable channels instead of abstract options. If a glob matches zero files, keep the zero and let the echo flag it ("Local: 0 documents matched your paths — add files or fix the glob") so silent empty channels don't stay silent.
 
+**Resolving `channel_agents`** (asymmetric allocation, v0.7.14+): web research is open-ended and genuinely benefits from one agent per sub-question — different queries, different sources, different recursion trees. Wiki and local research operate over **bounded, shared corpora**: N agents would each re-read the same `wiki/index.md`, re-run the same Document Relevance Assessment over the same PDFs, and re-extract publication metadata from the same pages. That duplication is the waste we size down here. Compute one agent count per channel using this heuristic:
+
+```
+DOCS_PER_AGENT    = 25     # one local-researcher per ~25 documents
+ENTRIES_PER_AGENT = 40     # one wiki-researcher per ~40 wiki pages (sum across all wikis)
+CAP               = 4      # hard ceiling on wiki/local agents — no channel ever fans out beyond this
+TRIGGER_FLOOR     = 4      # N < 4 keeps the legacy 1:1 dispatch; savings aren't worth the extra code path
+
+N = plan.sub_question_count
+
+if N < TRIGGER_FLOOR:
+    channel_agents = {c: N for c in plan.channels}     # legacy path, unchanged
+else:
+    channel_agents = {}
+    if "web"   in plan.channels: channel_agents["web"]   = N
+    if "local" in plan.channels: channel_agents["local"] = clamp(ceil(plan.document_count  / DOCS_PER_AGENT),    1, min(N, CAP))
+    if "wiki"  in plan.channels: channel_agents["wiki"]  = clamp(ceil(plan.wiki_page_count / ENTRIES_PER_AGENT), 1, min(N, CAP))
+```
+
+**Dispatch semantics** (Phase 2 reads these):
+- `channel_agents[c] == N` → legacy path: one agent per sub-question, same as today.
+- `channel_agents[c] == 1` → one agent receives **all** sub-question paths and the **full** corpus. It sweeps the corpus once and emits one context entity per sub-question.
+- `1 < channel_agents[c] < N` → the corpus is partitioned evenly across the `k` agents. Each agent receives **all** sub-question paths but only its slice of the corpus and emits one (partial) context entity per sub-question. `scripts/merge-context.py` Phase 3 already deduplicates multiple contexts per sub-question, so no script change is needed.
+
+Web is never partitioned this way — it always gets `N` agents, one per sub-question, because there is no shared corpus to deduplicate.
+
 **Market summary for the plan echo**: shell out once to `${CLAUDE_PLUGIN_ROOT}/scripts/market-summary.py <market> --format block` and capture the output into `plan.market_block`. This produces the multi-line "Market: X — N authority domains boosted (research: A, associations: B, …)" block that 1.5b embeds under Market & sources. The script reads `references/market-sources.json` directly, so no drift is possible between what the menu promised at setup and what the plan says at dispatch.
 
 **Cost estimate** lookup: use the row from `references/model-strategy.md` ("Cost Estimation" table) that matches `report_type × source_mode`. Do not compute a new cost formula — the table is the source of truth. For the hybrid row, report the full low–high range.
@@ -253,12 +285,13 @@ Market & sources:
   Local:   <plan.document_count> documents ready            (only if local in channels)
   Wiki:    <plan.wiki_page_count> pages indexed across <len(wiki_paths)> wiki(s)   (only if wiki in channels)
 
-Per sub-question:
-  • web    → <web_agent> (recursion: <on depth=N | off>)
-  • wiki   → wiki-researcher       (only if wiki in channels)
-  • local  → local-researcher      (only if local in channels)
+Per channel:
+  • web    → <channel_agents.web> agent(s) — <web_agent> (recursion: <on depth=N | off>) — one per sub-question
+  • wiki   → <channel_agents.wiki> agent(s) — wiki-researcher (batched: <wiki_page_count> pages, <sub_question_count> sub-Qs)     (only if wiki in channels)
+  • local  → <channel_agents.local> agent(s) — local-researcher (batched: <document_count> docs, <sub_question_count> sub-Qs)    (only if local in channels)
 
-Fan-out: <sub_question_count> sub-Q × <channel_count> channel(s) = <total_agents> researchers
+Fan-out: <total_agents> researchers  (<channel breakdown, e.g. "8 web + 2 wiki + 1 local">)
+         (was <sub_question_count × len(channels)> under symmetric allocation)   ← only print when total_agents < sub_question_count × len(channels); the suffix is the user-visible proof batching is doing something. Omit the line entirely when the legacy 1:1 path fires (N < 4).
 Batching: <batch_size> concurrent → <batch_count> batches
 Source curation: <enabled | disabled> (<reason>)
 Estimated cost: $<low> – $<high>  (from model-strategy.md, <type>[ (hybrid)])
@@ -274,7 +307,7 @@ The trade-off lines are where the user actually learns the cost/quality geometry
 
 - "Recursion off: faster and roughly 2–3× cheaper than recursive deep-research. Turn it on if a sub-question genuinely needs multi-hop exploration rather than one good pass."
 - "Recursion on (depth 2): each web sub-question explores 2–3 follow-ups internally. Better coverage, roughly 2–3× the web cost."
-- "Hybrid channels: wiki and local are cheap file reads; the web channel is the long pole for cost and time."
+- "Hybrid channels: wiki and local agents batch sub-questions over a shared corpus sweep (capped at 4 agents per bounded channel, v0.7.14+); the web channel is the long pole for cost and time."
 - "Hybrid requested but no wiki/document paths configured → running web-only. Add `document_paths` or `wiki_paths` in project-config.json to activate the other channels." (only when hybrid degraded to web-only per 1.5a)
 - "Batch size 4: respects WebFetch rate limits. Drop to 2 if you've seen rate-limit errors on this market; raise to 6 only if you've verified the market is quiet."
 - "Deep-mode default length reduced from 8K to 5K in v0.7.7 — set `target_words: 8000` in project-config.json to restore the old long-form deep floor." (only when `target_words_restore_notice == true` on the plan — pre-v0.7.7 project re-run)
@@ -314,6 +347,7 @@ Also record a completion marker in `.metadata/execution-log.json` under `phases.
     "batch_size": 4,
     "recursive_depth": 0,
     "sub_question_count": 5,
+    "channel_agents": {"web": 5},
     "total_agents": 5,
     "est_cost_usd": "0.15-0.40",
     "confirmed_at": "<ISO-8601 timestamp>",
@@ -372,7 +406,25 @@ For each leaf sub-question in 00-sub-questions/data/:
 
 #### Local mode (report_source = "local")
 
-Spawn local-researcher agents instead of section-researchers. All sub-questions research from the same document set, but each agent extracts findings relevant to its specific sub-question.
+Spawn `plan.channel_agents["local"]` local-researcher agent(s) — **not** necessarily one per sub-question. All sub-questions research from the same document set; one agent can efficiently sweep the whole corpus and emit findings for every sub-question in a single pass. See the "Resolving `channel_agents`" block in Phase 1.5a for the heuristic.
+
+**Dispatch rule** — partition documents across `k = plan.channel_agents["local"]` agents; give every agent all sub-question paths and its slice of the corpus:
+
+```
+k = plan.channel_agents["local"]
+doc_slices = partition_evenly(resolved(document_paths), k)   # k lists; flatten singletons into one list if k==1
+all_sub_q_paths = sorted(00-sub-questions/data/*.md)
+
+For each slice in doc_slices:
+  Task(local-researcher,
+    SUB_QUESTION_PATHS=<comma-separated all_sub_q_paths>,   # plural — batched contract (v0.7.14+)
+    PROJECT_PATH=<project_path>,
+    DOCUMENT_PATHS=<comma-separated slice>,
+    OUTPUT_LANGUAGE=<output_language>,
+    run_in_background=true)
+```
+
+Back-compat: when `k == N` (legacy path, e.g. N < 4 sub-questions), fall back to the original one-agent-per-sub-question dispatch with the singular `SUB_QUESTION_PATH`:
 
 ```
 For each sub-question entity in 00-sub-questions/data/:
@@ -388,17 +440,25 @@ Deep mode with local sources: use local-researcher (not deep-researcher). The re
 
 #### Wiki mode (report_source = "wiki")
 
-Spawn wiki-researcher agents instead of section-researchers. Each agent queries all configured cogni-wiki instances for findings relevant to its sub-question. The wiki-researcher follows wiki-query's index-first discovery pattern: read `wiki/index.md`, select relevant pages, read those pages, extract grounded findings.
+Spawn `plan.channel_agents["wiki"]` wiki-researcher agent(s). Each agent queries all configured cogni-wiki instances (or its slice, when partitioned) for findings relevant to every sub-question. The wiki-researcher follows wiki-query's index-first discovery pattern: read `wiki/index.md`, select relevant pages, read those pages, extract grounded findings. A single agent reading the index once and producing findings for every sub-question is strictly cheaper than N agents each re-reading the same index.
+
+**Dispatch rule** — partition `wiki_paths` across `k = plan.channel_agents["wiki"]` agents (usually `k <= len(wiki_paths)`; if `k == 1` all wikis go to the single agent):
 
 ```
-For each sub-question entity in 00-sub-questions/data/:
+k = plan.channel_agents["wiki"]
+wiki_slices = partition_evenly(wiki_paths, k)
+all_sub_q_paths = sorted(00-sub-questions/data/*.md)
+
+For each slice in wiki_slices:
   Task(wiki-researcher,
-    SUB_QUESTION_PATH=<path>,
+    SUB_QUESTION_PATHS=<comma-separated all_sub_q_paths>,
     PROJECT_PATH=<project_path>,
-    WIKI_PATHS=<comma-separated wiki roots from project-config.json wiki_paths>,
+    WIKI_PATHS=<comma-separated slice>,
     OUTPUT_LANGUAGE=<output_language>,
     run_in_background=true)
 ```
+
+Back-compat (`k == N`): one wiki-researcher per sub-question, singular `SUB_QUESTION_PATH`, full `wiki_paths` to each — original dispatch shape preserved for small runs.
 
 Deep mode with wiki sources: use wiki-researcher (not deep-researcher), same rationale as local — the recursive tree algorithm is designed for web search breadth, not pre-synthesized knowledge.
 
@@ -406,29 +466,37 @@ Deep mode with wiki sources: use wiki-researcher (not deep-researcher), same rat
 
 Run the researcher types listed in `plan.channels` in parallel, then merge all findings in Phase 3. This produces the richest context.
 
-Hybrid mode is additive: each active channel gets the full sub-question set. If deep mode produces 8 leaf sub-questions and `plan.channels` is `["web", "wiki"]`, hybrid spawns 8 web-researchers + 8 wiki-researchers (16 total). Wiki and local researchers are cheap (local file reads, no rate limiting), so the added coverage usually justifies the extra agents — but the user can drop channels via the "Web-only" option in Phase 1.5 if they want a cheaper run.
+Hybrid mode is **asymmetric**: `plan.channel_agents["web"] == N`, but wiki and local agents batch sub-questions against a shared corpus sweep (one agent per partition, see Phase 1.5a heuristic). Example: deep mode with 8 leaf sub-questions, `channels=["web","wiki"]`, 30 wiki pages total → 8 web + 1 wiki = 9 researchers (vs. 16 under the pre-v0.7.14 symmetric allocation). Users can still drop channels via the "Web-only" option in Phase 1.5c when they want a cheaper run.
+
+**Dispatch rule** — iterate once per channel; inside each channel use the per-mode rule above:
 
 ```
-For each sub-question entity in 00-sub-questions/data/:
-  # Wiki research (only if "wiki" in plan.channels)
-  if "wiki" in plan.channels:
+# Wiki channel (only if "wiki" in plan.channels)
+if "wiki" in plan.channels:
+  k = plan.channel_agents["wiki"]
+  wiki_slices = partition_evenly(wiki_paths, k)
+  for slice in wiki_slices:
     Task(wiki-researcher,
-      SUB_QUESTION_PATH=<path>,
+      SUB_QUESTION_PATHS=<comma-separated all_sub_q_paths>,
       PROJECT_PATH=<project_path>,
-      WIKI_PATHS=<comma-separated wiki roots from project-config.json wiki_paths>,
+      WIKI_PATHS=<comma-separated slice>,
       OUTPUT_LANGUAGE=<output_language>,
       run_in_background=true)
 
-  # Local research (only if "local" in plan.channels)
-  if "local" in plan.channels:
+# Local channel (only if "local" in plan.channels)
+if "local" in plan.channels:
+  k = plan.channel_agents["local"]
+  doc_slices = partition_evenly(resolved(document_paths), k)
+  for slice in doc_slices:
     Task(local-researcher,
-      SUB_QUESTION_PATH=<path>,
+      SUB_QUESTION_PATHS=<comma-separated all_sub_q_paths>,
       PROJECT_PATH=<project_path>,
-      DOCUMENT_PATHS=<from project-config.json document_paths>,
+      DOCUMENT_PATHS=<comma-separated slice>,
       OUTPUT_LANGUAGE=<output_language>,
       run_in_background=true)
 
-  # Web research (always active in hybrid — always in plan.channels)
+# Web channel (always N agents — never batched)
+For each sub-question entity in 00-sub-questions/data/:
   Task(<plan.web_agent>,
     SUB_QUESTION_PATH=<path>,
     PROJECT_PATH=<project_path>,
@@ -440,7 +508,9 @@ For each sub-question entity in 00-sub-questions/data/:
     run_in_background=true)
 ```
 
-All researcher types create separate context entities for the same sub-question. The merge-context script (Phase 3) handles deduplication across wiki, local, and web sources.
+For small runs (`N < 4`), `channel_agents` degrades to the symmetric `{c: N}` shape, and the wiki/local blocks above reduce to the legacy per-sub-question loop automatically (`k == N` → one agent per slice == one agent per sub-question).
+
+All researcher types create separate context entities for the same sub-question. When a batched wiki/local agent handles multiple sub-questions, it emits one context entity per sub-question (keyed in the filename by sub-question slug); when the corpus is partitioned across several agents, each emits its own partial context per sub-question. The merge-context script (Phase 3) handles deduplication across wiki, local, and web sources — and across multiple partial contexts for the same sub-question.
 
 Batch in groups of `plan.batch_size` to respect concurrency limits. Wait for each batch before starting next.
 
