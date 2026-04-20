@@ -16,6 +16,7 @@ skills/                         7 wiki skills
     references/
       page-frontmatter.md         YAML schema (id, title, tags, type, sources, ...)
       ingest-workflow.md          Step-by-step ingest behavior
+      batch-mode.md               --batch-file input schema, error policy, worked example
   wiki-query/                     Ask questions; answer from wiki, never from memory
     references/
       query-patterns.md           Read-before-answer, citation discipline

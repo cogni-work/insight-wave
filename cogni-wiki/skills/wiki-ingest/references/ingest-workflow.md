@@ -182,3 +182,68 @@ Pick the right entry point:
 - **`wiki-ingest` (→ fresh branch)** — no page at the target slug.
 
 Step 1 emits a verbatim warning on re-ingest that points users back at `wiki-update` for content-only tweaks; the two paths stay distinct even though they share the same skill entry point.
+
+## Batch mode: one dispatch, N sources
+
+`wiki-ingest` also accepts `--batch-file <path>` pointing at a JSON list of per-source entries. In that mode the skill instructions and references load once, Steps 1–8 run per entry, and Step 9 emits one aggregated report. Use it for bulk rebuilds (the canonical case: the 164-page pilot Phase 2) where re-dispatching the skill per source would burn tokens on repeated instruction loads.
+
+### Scenario
+
+The user has three new AI-safety papers staged in `raw/` and wants them all ingested in one go. They write `batch.json`:
+
+```json
+{
+  "sources": [
+    { "source": "raw/bai-et-al-2022.pdf", "title": "Constitutional AI", "type": "summary", "tags": ["llms", "safety"] },
+    { "source": "raw/bai-et-al-2024.pdf", "title": "Many-Shot Jailbreaking", "type": "summary", "tags": ["safety", "long-context"] },
+    { "source": "raw/wei-et-al-2022.pdf", "title": "Chain-of-Thought Prompting", "type": "concept", "tags": ["reasoning"] }
+  ]
+}
+```
+
+Assume the wiki already has a stub at `wiki/pages/constitutional-ai.md`; the other two slugs don't exist yet. They invoke `wiki-ingest --batch-file batch.json`.
+
+### Step 0: dispatch
+
+The skill reads `batch.json`, validates the schema (top-level `sources[]`, per-entry `source` required), confirms all three source paths exist, and enters batch mode. Instructions + `karpathy-pattern.md` + `page-frontmatter.md` load **once**.
+
+### Per-source iteration (Steps 1–8)
+
+**Source 1 — `bai-et-al-2022.pdf`.**
+
+- Step 1 derives slug `constitutional-ai`, detects the existing page, sets `mode: re-ingest`, and emits the verbatim re-ingest warning.
+- Step 3 surfaces takeaways (three-phase critique, scaling behaviour, constitutional principles list).
+- Step 4 overwrites the existing `constitutional-ai.md` with the re-synthesised content.
+- Step 5 calls `wiki_index_update.py`; the script returns `action: "updated"` (not `inserted`) because the index line already exists.
+- Step 6 finds two backlink candidates; orchestrator curates one; `backlink_audit.py --apply-plan` writes the target atomically.
+- Step 7 appends `## [2026-04-19] re-ingest | constitutional-ai — Constitutional AI`.
+- Step 8 leaves `entries_count` unchanged (re-ingest).
+
+**Source 2 — `bai-et-al-2024.pdf`.**
+
+- Step 1 derives slug `many-shot-jailbreaking`, detects no existing page, sets `mode: fresh`.
+- Steps 2–8 proceed as in the single-source example earlier in this document: new page written, index line inserted, one backlink applied to `long-context-vulnerabilities`, log line appended, `entries_count` incremented.
+
+**Source 3 — `wei-et-al-2022.pdf`.**
+
+- Step 1 derives slug `chain-of-thought-prompting`, fresh.
+- Steps 2–8 complete; no backlinks curated this time (the target pages exist but the matches are too shallow to force).
+- `entries_count` incremented.
+
+### Step 9: aggregated report
+
+```
+Batch complete: 3/3 sources
+- constitutional-ai           (re-ingest)  — 1 backlink applied
+- many-shot-jailbreaking      (fresh)      — 1 backlink applied
+- chain-of-thought-prompting  (fresh)      — 0 backlinks applied
+
+entries_count: 42 → 44 (2 fresh, 1 re-ingest unchanged)
+```
+
+### What batch mode does NOT change
+
+- Every per-source step is identical to single-source mode. Step 3's takeaway synthesis still fires; Step 5's `wiki_index_update.py` still runs atomically; Step 6's audit/curate/apply discipline is preserved; Step 8 still distinguishes fresh from re-ingest for `entries_count`.
+- On error, the fail-fast policy halts the loop and reports partial progress. Every completed source is already safely in the wiki because all per-source writes are atomic — see `./batch-mode.md` §"Error policy" for the full resume procedure.
+
+For the full schema, error policy, and the Phase 2 follow-ups deferred from this iteration (continue-on-error, parallel dispatch), read `./batch-mode.md`.

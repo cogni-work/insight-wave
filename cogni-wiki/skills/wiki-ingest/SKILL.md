@@ -1,6 +1,6 @@
 ---
 name: wiki-ingest
-description: "Ingest a source document (file, URL, pasted text, transcript, paper, article) into a Karpathy-style wiki — Claude reads the source, surfaces key takeaways, writes a summary page with YAML frontmatter, updates wiki/index.md, appends to wiki/log.md, and runs a backlink audit to weave the new page into existing knowledge. Use this skill whenever the user says 'ingest this', 'add this to my wiki', 'summarise this paper into the wiki', 'file this source', 'wiki ingest', 'wiki add', drops a document and asks Claude to process it, or pastes content with a request to save it as a wiki page. Also trigger when the user moves a new file into raw/ and asks 'what should I do with this?' — offer to ingest it."
+description: "Ingest a source (file, URL, paste, paper, article) into a Karpathy-style wiki — writes a summary page with YAML frontmatter, updates wiki/index.md, appends to wiki/log.md, and runs a backlink audit. Trigger when the user says 'ingest this', 'add this to my wiki', 'summarise this into the wiki', 'wiki ingest', drops a file in raw/ and asks what to do with it, or asks to batch ingest multiple sources ('ingest these papers', 'batch ingest raw/', 'ingest everything in raw/')."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
@@ -24,14 +24,30 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 
 ## Parameters
 
+Exactly one of `--source` or `--batch-file` must be provided.
+
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--source` | Yes | Path to a file in `raw/`, a URL, or the literal string `--stdin` when the user pasted content |
-| `--title` | No | Override the page title; otherwise derive from the source (first heading, URL title, filename) |
-| `--type` | No | Page type: `concept | entity | summary | decision | learning | note`. Defaults to `summary` for full-source ingests, `note` for short pastes |
-| `--tags` | No | Comma-separated tags |
+| `--source` | Yes (single-source mode) | Path to a file in `raw/`, a URL, or the literal string `--stdin` when the user pasted content. Mutually exclusive with `--batch-file` |
+| `--batch-file` | Yes (batch mode) | Path to a JSON file listing multiple sources to ingest in one dispatch. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` for schema. Mutually exclusive with `--source` |
+| `--title` | No | Override the page title; otherwise derive from the source (first heading, URL title, filename). Single-source mode only — in batch mode, titles are per-entry in the JSON |
+| `--type` | No | Page type: `concept | entity | summary | decision | learning | note`. Defaults to `summary` for full-source ingests, `note` for short pastes. Single-source mode only |
+| `--tags` | No | Comma-separated tags. Single-source mode only |
 
 ## Workflow
+
+### 0. Dispatch: single-source vs batch
+
+If `--batch-file` is present:
+
+- Validate the JSON against the schema in `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` and abort before any write on schema, missing-source, or mutual-exclusion violations (see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Input schema" and §"Error policy").
+- Otherwise, run Steps 1–8 as a loop over `sources[]`. Each entry flows through Step 1's `mode: fresh | re-ingest` detection independently. Detect mode per entry; do not treat the batch as a mode-wide toggle.
+- Fail-fast policy: if any per-source step errors, halt the loop and report what completed, what failed, and what was skipped in Step 9. The wiki stays consistent because every per-source step already writes atomically; see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Error policy" for the details and resume procedure.
+- In Step 9, emit one aggregated report instead of a per-source report.
+
+If `--batch-file` is absent, run Steps 1–9 on the single `--source` as before. This is the existing path; nothing about it changes.
+
+In both cases, the skill instructions and shared references load exactly once per dispatch — one context load, N sources, materially fewer tokens and lower latency than N single-source dispatches.
 
 ### 1. Locate the wiki and detect ingest mode
 
@@ -46,7 +62,7 @@ Derive the target slug from `--title` (or from the source filename / URL title /
 
   Then proceed with the remaining steps — `mode` changes only Step 7 (log entry type) and Step 8 (entry count handling).
 
-See `./references/ingest-workflow.md` §"Mode flag: fresh vs re-ingest" for when to pick `wiki-update` instead of re-ingest.
+See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/ingest-workflow.md` §"Mode flag: fresh vs re-ingest" for when to pick `wiki-update` instead of re-ingest.
 
 ### 2. Read the source
 
@@ -71,7 +87,7 @@ Show this synthesis to the user before proceeding to write. For autonomous runs 
 
 Path: `<wiki-root>/wiki/pages/{slug}.md` where `slug` is derived from the title.
 
-Frontmatter (see `./references/page-frontmatter.md` for the full schema):
+Frontmatter (see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/page-frontmatter.md` for the full schema):
 
 ```yaml
 ---
@@ -169,10 +185,12 @@ Never rewrite existing log lines.
 
 ### 9. Report to the user
 
-Tell the user, in ≤5 sentences:
+**Single-source mode.** Tell the user, in ≤5 sentences:
 - The new page slug and path
 - How many existing pages got backlinks
 - What to do next (usually: drop another source or run `wiki-query`)
+
+**Batch mode.** Emit one aggregated block instead of a per-source report. For every entry that reached this step, print the slug, its resolved mode (`fresh` or `re-ingest`), and its backlink count. Report `entries_count` delta (fresh sources only; re-ingests never increment). On a fail-fast halt, also list the source that failed with its error and any sources that were skipped. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Step 9 in batch mode" for the exact format.
 
 ## Output
 
@@ -192,7 +210,8 @@ Tell the user, in ≤5 sentences:
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` — the pattern
-- `./references/page-frontmatter.md` — full frontmatter schema
-- `./references/ingest-workflow.md` — worked example
-- `./scripts/backlink_audit.py` — candidate backlink finder
-- `./scripts/wiki_index_update.py` — deterministic `wiki/index.md` insert/update helper
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/page-frontmatter.md` — full frontmatter schema
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/ingest-workflow.md` — worked example
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` — `--batch-file` input schema, per-source mode rules, error policy, and worked example
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/backlink_audit.py` — candidate backlink finder
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_index_update.py` — deterministic `wiki/index.md` insert/update helper
