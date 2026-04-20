@@ -5,6 +5,8 @@ Compile-time knowledge engine for personal and small-team knowledge work — a b
 ## Plugin Architecture
 
 ```
+agents/                         1 agent (fan-out worker)
+  ingest-worker.md                Per-source subagent for wiki-ingest batch mode (Steps 1–8)
 skills/                         7 wiki skills
   wiki-setup/                     Bootstrap a new wiki at a user-chosen root
     references/
@@ -18,7 +20,7 @@ skills/                         7 wiki skills
     references/
       page-frontmatter.md         YAML schema (id, title, tags, type, sources, ...)
       ingest-workflow.md          Step-by-step ingest behavior
-      batch-mode.md               --batch-file + --discover schema, error policy, examples
+      batch-mode.md               --batch-file + --discover schema, execution model, error policy, examples
   wiki-query/                     Ask questions; answer from wiki, never from memory
     references/
       query-patterns.md           Read-before-answer, citation discipline
@@ -46,7 +48,7 @@ references/
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 7 | wiki-setup, wiki-ingest, wiki-query, wiki-lint, wiki-update, wiki-resume, wiki-dashboard |
-| Agents | 0 | — (skills are self-contained in MVP) |
+| Agents | 1 | ingest-worker (per-source fan-out worker for wiki-ingest batch mode; not directly dispatchable) |
 | Commands | 0 | — (skills serve as slash commands per plugin-dev guidance) |
 | Hooks | 0 | — (all bookkeeping lives inside skills) |
 | Scripts | 6 | backlink_audit.py, wiki_index_update.py, batch_builder.py, lint_wiki.py, wiki_status.sh, render_dashboard.py |

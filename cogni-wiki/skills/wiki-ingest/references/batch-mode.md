@@ -21,6 +21,39 @@ Do **not** use batch mode when:
 - You have one source to ingest. The single-source path is simpler and its Step 9 report is richer per page.
 - The sources require different user-visible acknowledgments between them (each Step 3 takeaway synthesis still fires per source in batch mode, but a user looking for a decision point per source should run single-source ingests).
 
+## Execution model
+
+Batch mode does **not** run Steps 1–8 as an inline loop in the orchestrator context. Inline looping was the v0.0.8/0.0.9 design; it did not scale past a few dozen sources because each source consumed ~15–20k tokens of orchestrator context (source read + Step 3 synthesis + backlink audit JSON + curation). Issue #82 replaced it with per-source subagent fan-out.
+
+**How fan-out works:**
+
+1. `wiki-ingest` validates the batch schema (whether produced by `batch_builder.py` via `--discover` or supplied by `--batch-file`). Malformed input aborts before any worker fires.
+2. The skill resolves `batch_size` from `<wiki-root>/.cogni-wiki/config.json` (key `batch_size`, range 2–8; default **5**). `batch_size` caps the number of concurrently dispatched workers.
+3. `sources[]` is partitioned into order-preserving chunks of `batch_size` entries. For each chunk, one `ingest-worker` subagent is dispatched per source (`Task(subagent_type: "ingest-worker", run_in_background: true, …)`). The orchestrator waits for the whole chunk to complete before dispatching the next chunk — bounded concurrency.
+4. Each worker owns Steps 1–8 for exactly one source. See `../../../agents/ingest-worker.md` for the agent contract.
+5. Each worker returns a single fenced ` ```json ... ``` ` block as its final message. The orchestrator extracts these blocks and aggregates them into the Step 9 report. No source body, page body, or backlink audit JSON is ever loaded into the orchestrator.
+
+**Worker return schema:**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `source` | string | Echo of the input `source_entry.source`. Lets the orchestrator match returns to batch entries. |
+| `slug` | string \| null | Resolved slug, or `null` if the worker failed before Step 1. |
+| `mode` | `"fresh"` \| `"re-ingest"` \| `null` | Per-entry Step 1 detection. `null` if Step 1 did not complete. |
+| `backlinks_added` | integer | Count from `data.applied` in the Step 6 `--apply-plan` response. `0` if Step 6 was skipped or failed. |
+| `index_action` | `"inserted"` \| `"updated"` \| `null` | From Step 5 `wiki_index_update.py` output. `null` if Step 5 did not run. |
+| `errors` | array | Empty on success. On failure: `[{"step": <1-8 or null>, "message": "<verbatim>"}]`. |
+
+**Concurrency rationale.** Default `batch_size: 5` balances wall-clock on large rebuilds (the 179-source #80 scope) against model-cost burst and subagent dispatch ceilings. Override via `.cogni-wiki/config.json`:
+
+- `batch_size: 2` — metered usage, quiet hosts, slow networks. Gentler on WebFetch rate limits for URL-heavy batches.
+- `batch_size: 5` — default. Sweet spot for ~50–200 source rebuilds on typical developer workstations.
+- `batch_size: 8` — aggressive. Only if you know the Anthropic subagent dispatch limits in your environment tolerate it; no guarantee higher is faster.
+
+**Chunk wall-clock.** A chunk completes when every worker in it finishes, so chunk wall-clock is bounded by the slowest worker. A slow URL fetch in chunk `k` does not starve workers in chunks `k+1…` — they simply wait their turn. Step 3 synthesis inside a worker is visible inside that worker's subagent transcript, not interleaved in the parent; batch mode is reduced-interactivity by construction.
+
+**Fan-out never runs in `--discover-dry-run`.** Workers only fire after the Step 0 confirmation gate; the dry-run prints the resolved batch JSON and exits with no writes.
+
 ## Discovery
 
 `--discover <spec>` asks the skill to enumerate the batch itself instead of the user typing it out. Three specs are supported; pick the one that matches how the user described the job.
@@ -113,11 +146,19 @@ Batch mode does **not** accept a batch-wide mode toggle. Trying to force every s
 
 ## Error policy: fail-fast for Phase 1
 
-If any per-source step (1–8) fails — script non-zero exit, malformed JSON, missing source file, write error — the batch halts immediately and Step 9 reports:
+Workers fail in two shapes; the orchestrator handles them the same way but distinguishes them in the Step 9 report.
+
+**Graceful failure (worker returned a JSON block with populated `errors[]`).** The worker reached a per-source step (1–8), hit a failure (script non-zero exit, malformed JSON from a script, missing source file, WebFetch failure, write error), stopped at that step, and returned `{… "errors": [{"step": <1-8>, "message": "<verbatim>"}]}`. The per-source scripts' atomicity guarantees mean partial work that *had* completed before the failure is consistent on disk.
+
+**Silent crash (worker returned no JSON block).** The subagent terminated without emitting the mandatory final fenced JSON block. The orchestrator synthesizes `{source, slug: null, mode: null, backlinks_added: 0, index_action: null, errors: [{step: null, message: "worker returned no JSON payload"}]}` and treats it as a failure. Do **not** retry — surface the crash so the user can diagnose (the worker's own transcript usually shows the cause).
+
+Either shape triggers the same fail-fast behavior at chunk boundaries: the orchestrator **does not dispatch further chunks** after a chunk returns with any failure. Sources dispatched in the failing chunk that returned cleanly still count as completed (atomic per-source scripts make this safe). Sources in not-yet-dispatched chunks are **skipped** — never attempted.
+
+Step 9 reports:
 
 1. How many sources completed successfully (slugs, modes).
-2. Which source failed and the error.
-3. Which sources were skipped (never attempted).
+2. Which sources failed and the errors.
+3. Which sources were skipped (never attempted because an earlier chunk halted the batch).
 
 The wiki is never left half-written because every per-source step already writes atomically (`wiki/pages/{slug}.md` is one write; `wiki_index_update.py` uses `tempfile + os.replace`; `backlink_audit.py --apply-plan` writes each target atomically; `wiki/log.md` append is one append; `.cogni-wiki/config.json` update is one write). A mid-batch crash leaves the wiki consistent for every source that had completed before the failure.
 
@@ -191,3 +232,4 @@ Some batches can't be expressed as a discovery mode — e.g., three specific pap
 - `./page-frontmatter.md` — YAML schema; unchanged by batch mode.
 - `../scripts/batch_builder.py` — the discovery helper behind `--discover`; usable standalone to produce a batch JSON for review.
 - `../scripts/wiki_index_update.py` and `../scripts/backlink_audit.py` — already atomic and idempotent, so calling them in a loop is safe.
+- `../../../agents/ingest-worker.md` — per-source subagent dispatched from batch mode; owns Steps 1–8 for one source entry and returns the compact JSON payload described in §"Execution model".

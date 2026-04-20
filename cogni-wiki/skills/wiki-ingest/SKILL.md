@@ -63,10 +63,18 @@ Slug collisions in discovery mode are already handled by Step 1's `mode: fresh |
 
 **If `--batch-file` is present** (batch mode):
 
-- Validate the JSON against the schema in `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` and abort before any write on schema, missing-source, or mutual-exclusion violations (see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Input schema" and §"Error policy").
-- Otherwise, run Steps 1–8 as a loop over `sources[]`. Each entry flows through Step 1's `mode: fresh | re-ingest` detection independently. Detect mode per entry; do not treat the batch as a mode-wide toggle.
-- Fail-fast policy: if any per-source step errors, halt the loop and report what completed, what failed, and what was skipped in Step 9. The wiki stays consistent because every per-source step already writes atomically; see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Error policy" for the details and resume procedure.
-- In Step 9, emit one aggregated report instead of a per-source report.
+- Validate the JSON against the schema in `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` and abort before any write on schema, missing-source, or mutual-exclusion violations (see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Input schema" and §"Error policy"). Malformed input never half-dispatches — no worker fires until the whole batch validates.
+- Otherwise, execute `sources[]` via **per-source subagent fan-out**, not an inline loop. The orchestrator must not read page bodies or backlink audit JSON; each source's Steps 1–8 run inside a `cogni-wiki:ingest-worker` subagent with its own context window, and only a compact JSON payload returns here. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Execution model" for the full contract.
+  1. Resolve `batch_size` from `<wiki-root>/.cogni-wiki/config.json` (key `batch_size`, range 2–8). Default **5** if absent. This caps the number of workers dispatched concurrently.
+  2. Partition `sources[]` into order-preserving chunks of `batch_size` entries each (the last chunk may be shorter).
+  3. For each chunk, **in order**:
+     - Dispatch one `Task(subagent_type: "ingest-worker", run_in_background: true, prompt: "source_entry: <json>\nwiki_root: <abs path>\n\nExecute Steps 1–8 per your agent instructions and return the JSON block.")` per source in the chunk. The per-source `source_entry` is the raw batch row (with its `source`, optional `title`, `type`, `tags`); `wiki_root` is the absolute path you resolved in Step 1.
+     - Wait for every Task in the chunk to complete before dispatching the next chunk. Do not stream across chunks — bounded concurrency is the whole point.
+     - For each return, extract the final fenced ` ```json ... ``` ` block. If **no** block is present, synthesize `{source, slug: null, mode: null, backlinks_added: 0, index_action: null, errors: [{step: null, message: "worker returned no JSON payload"}]}` and treat as a failure. Do not retry; surface the crash.
+  4. **Fail-fast across chunks.** If any result in a completed chunk has a non-empty `errors[]`, **halt** — do not dispatch further chunks. Sources dispatched in the failing chunk that returned cleanly still count as completed (the atomic per-source scripts guarantee the wiki is consistent for them). Sources in not-yet-dispatched chunks are reported as "skipped" in Step 9.
+  5. After all chunks complete (or on halt), run Step 9 aggregation from the collected worker returns — the orchestrator never loads per-source bodies.
+- Step 3 takeaway synthesis still fires **per source inside its worker** (autonomous-run semantics, SKILL.md Step 3 line 107). Workers' Step 3 output appears inside their subagent transcripts, not interleaved in the parent; the aggregated Step 9 report restates mode per slug so the user can correlate.
+- In Step 9, emit one aggregated report instead of a per-source report, built from the worker return payloads.
 
 **If neither `--batch-file` nor `--discover` is present**, run Steps 1–9 on the single `--source`. This is the existing path; nothing about it changes.
 
@@ -239,3 +247,4 @@ Never rewrite existing log lines.
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/backlink_audit.py` — candidate backlink finder
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_index_update.py` — deterministic `wiki/index.md` insert/update helper
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/batch_builder.py` — discovery helper; enumerates candidates for `--discover` and emits the batch-mode payload on stdout
+- `${CLAUDE_PLUGIN_ROOT}/agents/ingest-worker.md` — per-source subagent dispatched from batch mode; owns Steps 1–8 for one source entry and returns a compact JSON payload to the orchestrator
