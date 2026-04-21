@@ -157,6 +157,36 @@
     "org_size_reference": "mid-size organization with €500M revenue"
   },
 
+  "mx": {
+    "region_qualifiers": {
+      "en": "Mexico México",
+      "local": "México"
+    },
+    "local_language": "es",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:ift.org.mx {SUBSECTOR_LOCAL} telecomunicaciones regulación {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:inai.org.mx {SUBSECTOR_LOCAL} protección datos privacidad {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:federalregister.gov.mx {SUBSECTOR_EN} Mexico regulation {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:mckinsey.com {SUBSECTOR_EN} Mexico regulation {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:conacyt.mx {SUBSECTOR_LOCAL} innovación investigación {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:unam.mx {SUBSECTOR_LOCAL} investigación {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:bcg.com {SUBSECTOR_EN} Mexico innovation {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:rolandberger.com {SUBSECTOR_EN} Mexico innovation {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:elfinanciero.com.mx {SUBSECTOR_LOCAL} transformación digital {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:eleconomista.com.mx {SUBSECTOR_LOCAL} digital economía {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:expansion.mx {SUBSECTOR_LOCAL} transformación digital {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:mckinsey.com {SUBSECTOR_EN} Mexico digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:canieti.org.mx {SUBSECTOR_LOCAL} TIC industria {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:amiti.org.mx {SUBSECTOR_LOCAL} TI México {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:inegi.org.mx {SUBSECTOR_LOCAL} estadísticas {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} Mexico digital transformation {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["INAI", "IFT", "COFECE", "PROFECO", "CNBV"],
+    "regulatory_search": "\"regulación mexicana\" \"{SUBSECTOR_EN}\" cumplimiento {CURRENT_YEAR}",
+    "currency": "MXN",
+    "org_size_reference": "mid-size organization with 10B MXN revenue"
+  },
+
   "us": {
     "region_qualifiers": {
       "en": "United States"

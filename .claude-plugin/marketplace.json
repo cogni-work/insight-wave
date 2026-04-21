@@ -76,7 +76,7 @@
     {
       "name": "cogni-trends",
       "source": "./cogni-trends",
-      "version": "0.4.6",
+      "version": "0.4.7",
       "maturity": "preview",
       "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK.",
       "keywords": [
@@ -92,7 +92,7 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.11",
+      "version": "0.9.12",
       "maturity": "preview",
       "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies.",
       "keywords": [
@@ -167,9 +167,9 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.7.15",
+      "version": "0.7.16",
       "maturity": "preview",
-      "description": "Multi-agent research report generator with localized search across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
+      "description": "Multi-agent research report generator with localized search across 19 European, Anglo, and LATAM markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
         "research",
         "report",

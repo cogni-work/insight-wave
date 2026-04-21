@@ -180,6 +180,14 @@
       "locale": "ja-JP",
       "timezone": "Asia/Tokyo"
     },
+    "mx": {
+      "name": "Mexico",
+      "scope": ["MX"],
+      "currency": "MXN",
+      "locale": "es-MX",
+      "timezone": "America/Mexico_City",
+      "regulatory_bodies": ["INAI", "IFT", "COFECE"]
+    },
     "latam": {
       "name": "Latin America",
       "scope": ["LATAM"],

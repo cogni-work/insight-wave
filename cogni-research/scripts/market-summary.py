@@ -42,10 +42,11 @@ DISPLAY_NAMES = {
     "hr": "Croatia",
     "gr": "Greece",
     "mk": "North Macedonia",
+    "mx": "Mexico",
 }
 
 # Canonical user-selectable markets — mirror of the research-setup Step 2 list.
-CANONICAL = ["dach", "de", "fr", "it", "pl", "nl", "es", "us", "uk", "eu"]
+CANONICAL = ["dach", "de", "fr", "it", "pl", "nl", "es", "mx", "us", "uk", "eu"]
 
 # ISO code → short label used in the bilingual query echo.
 LANG_LABEL = {

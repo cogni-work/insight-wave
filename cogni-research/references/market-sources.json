@@ -297,6 +297,36 @@
     "currency": "EUR"
   },
 
+  "mx": {
+    "default_output_language": "es",
+    "local_language": "es",
+    "region_qualifiers": {
+      "en": "Mexico México",
+      "local": "México Estados Unidos Mexicanos"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["transformación digital", "ciberseguridad", "inteligencia artificial", "industria 4.0", "protección de datos", "nube pública", "comercio electrónico", "banca digital"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning"],
+      "geographic_modifiers": ["México", "mexicano", "mexicana", "CDMX", "Monterrey", "Guadalajara"]
+    },
+    "authority_sources": [
+      {"domain": "inegi.org.mx", "category": "statistics", "authority": 5, "search_pattern": "site:inegi.org.mx {TOPIC_LOCAL} estadísticas {YEAR}"},
+      {"domain": "conacyt.mx", "category": "research", "authority": 5, "search_pattern": "site:conacyt.mx {TOPIC_LOCAL} investigación {YEAR}"},
+      {"domain": "unam.mx", "category": "research", "authority": 5, "search_pattern": "site:unam.mx {TOPIC_LOCAL} investigación {YEAR}"},
+      {"domain": "banxico.org.mx", "category": "government", "authority": 5, "search_pattern": "site:banxico.org.mx {TOPIC_LOCAL} economía {YEAR}"},
+      {"domain": "ift.org.mx", "category": "government", "authority": 5, "search_pattern": "site:ift.org.mx {TOPIC_LOCAL} telecomunicaciones {YEAR}"},
+      {"domain": "inai.org.mx", "category": "government", "authority": 5, "search_pattern": "site:inai.org.mx {TOPIC_LOCAL} protección de datos {YEAR}"},
+      {"domain": "canieti.org.mx", "category": "association", "authority": 4, "search_pattern": "site:canieti.org.mx {TOPIC_LOCAL} tecnología TIC {YEAR}"},
+      {"domain": "cce.org.mx", "category": "association", "authority": 4, "search_pattern": "site:cce.org.mx {TOPIC_LOCAL} empresas {YEAR}"},
+      {"domain": "amiti.org.mx", "category": "association", "authority": 4, "search_pattern": "site:amiti.org.mx {TOPIC_LOCAL} TI industria {YEAR}"},
+      {"domain": "elfinanciero.com.mx", "category": "media", "authority": 3, "search_pattern": "site:elfinanciero.com.mx {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "eleconomista.com.mx", "category": "media", "authority": 3, "search_pattern": "site:eleconomista.com.mx {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "expansion.mx", "category": "media", "authority": 3, "search_pattern": "site:expansion.mx {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["INAI", "IFT", "COFECE", "PROFECO", "CNBV"],
+    "currency": "MXN"
+  },
+
   "at": {
     "default_output_language": "de",
     "local_language": "de",
