@@ -61,7 +61,7 @@ Never combine both modes in the same turn. Each turn is either pure text or a si
 >   br     Brazil — 14 authority domains (ibge.gov.br, cnpq.br, fapesp.br +11); bilingual PT/EN
 >   us     United States — 13 authority domains (nist.gov, mit.edu, bls.gov +10); English-only
 >   uk     United Kingdom — 10 authority domains (gov.uk, ukri.org, ons.gov.uk +7); English-only
->   eu     EU composite — 10 EU-wide domains; fans out per-country (de, fr, it, pl, nl, es — mx, br excluded, non-EU)
+>   eu     EU composite — 10 EU-wide domains; fans out per-country (de, fr, it, pl, nl, es; mx and br excluded as non-EU)
 > ```
 > (The exact list comes from `scripts/market-summary.py --format table --all` — the skill renders it fresh so the counts and top domains never drift from `references/market-sources.json`.)
 >

@@ -92,9 +92,9 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.13",
+      "version": "0.9.14",
       "maturity": "preview",
-      "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies.",
+      "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies and first-class market coverage spanning DACH/EU, UK/US, and LATAM (MX/BR).",
       "keywords": [
         "portfolio",
         "messaging",
@@ -167,7 +167,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.7.17",
+      "version": "0.7.18",
       "maturity": "preview",
       "description": "Multi-agent research report generator with localized search across 20 European, Anglo, and LATAM markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
@@ -179,6 +179,10 @@
         "review-loop",
         "deep-research",
         "claims-verification",
+        "latam",
+        "brazil",
+        "mexico",
+        "pt",
         "agent"
       ]
     },
