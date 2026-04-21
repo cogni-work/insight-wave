@@ -229,7 +229,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--source-urls "<url1,url2,...>"] \
   [--query-domains "<domain1,domain2,...>"] \
   [--max-subtopics <N>] \
-  [--report-source "<web|local|hybrid>"] \
+  [--report-source "<web|local|wiki|hybrid>"] \
   [--document-paths "<path1,path2,...>"] \
   [--curate-sources] \
   [--confirm-plan <true|false>] \
