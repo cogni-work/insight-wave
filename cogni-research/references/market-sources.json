@@ -329,6 +329,38 @@
     "currency": "MXN"
   },
 
+  "br": {
+    "default_output_language": "pt",
+    "local_language": "pt",
+    "region_qualifiers": {
+      "en": "Brazil Brasil",
+      "local": "Brasil República Federativa do Brasil"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["transformação digital", "cibersegurança", "inteligência artificial", "indústria 4.0", "proteção de dados", "computação em nuvem", "comércio eletrônico", "banco digital", "pagamento instantâneo"],
+      "keep_english": ["Cloud", "IoT", "AI", "SaaS", "API", "5G", "Machine Learning", "PIX"],
+      "geographic_modifiers": ["Brasil", "brasileiro", "brasileira", "São Paulo", "Rio de Janeiro", "nordeste"]
+    },
+    "authority_sources": [
+      {"domain": "ibge.gov.br", "category": "statistics", "authority": 5, "search_pattern": "site:ibge.gov.br {TOPIC_LOCAL} estatísticas {YEAR}"},
+      {"domain": "cnpq.br", "category": "research", "authority": 5, "search_pattern": "site:cnpq.br {TOPIC_LOCAL} pesquisa {YEAR}"},
+      {"domain": "fapesp.br", "category": "research", "authority": 5, "search_pattern": "site:fapesp.br {TOPIC_LOCAL} pesquisa inovação {YEAR}"},
+      {"domain": "fgv.br", "category": "research", "authority": 5, "search_pattern": "site:fgv.br {TOPIC_LOCAL} estudo economia {YEAR}"},
+      {"domain": "bcb.gov.br", "category": "government", "authority": 5, "search_pattern": "site:bcb.gov.br {TOPIC_LOCAL} economia {YEAR}"},
+      {"domain": "anatel.gov.br", "category": "government", "authority": 5, "search_pattern": "site:anatel.gov.br {TOPIC_LOCAL} telecomunicações {YEAR}"},
+      {"domain": "gov.br", "category": "government", "authority": 5, "search_pattern": "site:gov.br/anpd {TOPIC_LOCAL} proteção de dados {YEAR}"},
+      {"domain": "cade.gov.br", "category": "government", "authority": 5, "search_pattern": "site:cade.gov.br {TOPIC_LOCAL} concorrência {YEAR}"},
+      {"domain": "cni.com.br", "category": "association", "authority": 4, "search_pattern": "site:cni.com.br {TOPIC_LOCAL} indústria {YEAR}"},
+      {"domain": "abes.org.br", "category": "association", "authority": 4, "search_pattern": "site:abes.org.br {TOPIC_LOCAL} software {YEAR}"},
+      {"domain": "brasscom.org.br", "category": "association", "authority": 4, "search_pattern": "site:brasscom.org.br {TOPIC_LOCAL} TIC tecnologia {YEAR}"},
+      {"domain": "valor.globo.com", "category": "media", "authority": 3, "search_pattern": "site:valor.globo.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "exame.com", "category": "media", "authority": 3, "search_pattern": "site:exame.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "estadao.com.br", "category": "media", "authority": 3, "search_pattern": "site:estadao.com.br {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["ANPD", "ANATEL", "CADE", "BACEN"],
+    "currency": "BRL"
+  },
+
   "at": {
     "default_output_language": "de",
     "local_language": "de",

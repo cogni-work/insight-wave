@@ -4,9 +4,9 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-> **Markets covered.** 19 localized European, Anglo, and LATAM markets — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, ARCEP, Les Echos), IT (CNR, AGCOM, ASI), PL (UKE, POLSA, GUS), NL (TNO, ACM), ES (CNMC, INTA, CDTI), MX (INEGI, CONACYT, IFT), plus US, UK, and EU — bilingual queries, per-market authority sources, output in your chosen language.
+> **Markets covered.** 20 localized European, Anglo, and LATAM markets — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, ARCEP, Les Echos), IT (CNR, AGCOM, ASI), PL (UKE, POLSA, GUS), NL (TNO, ACM), ES (CNMC, INTA, CDTI), MX (INEGI, CONACYT, IFT), BR (IBGE, CNPq, FAPESP), plus US, UK, and EU — bilingual queries, per-market authority sources, output in your chosen language.
 
-Multi-agent research report generator for the insight-wave ecosystem. STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and four source modes (web, local documents, wiki, hybrid) — from quick overviews to deep recursive explorations. Research runs localized across 19 European, Anglo, and LATAM markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX) with intent-based bilingual search and per-market authority sources.
+Multi-agent research report generator for the insight-wave ecosystem. STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and four source modes (web, local documents, wiki, hybrid) — from quick overviews to deep recursive explorations. Research runs localized across 20 European, Anglo, and LATAM markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR) with intent-based bilingual search and per-market authority sources.
 
 ## Why this exists
 

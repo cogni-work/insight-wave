@@ -2,7 +2,7 @@
 name: research-setup
 description: |
   Configure and initialize a cogni-research project — interactive menu for report type,
-  tone, citation style, target market (11 supported: DACH, DE, FR, IT, PL, NL, ES, MX,
+  tone, citation style, target market (12 supported: DACH, DE, FR, IT, PL, NL, ES, MX, BR,
   US, UK, EU — each with per-market authority sources and intent-based bilingual search),
   output language, and source mode (web / local / wiki / hybrid). Creates the project
   directory and project-config.json. Mandatory first step before research-report can
@@ -58,9 +58,10 @@ Never combine both modes in the same turn. Each turn is either pure text or a si
 >   nl     Netherlands — 15 authority domains (tno.nl, nwo.nl, cbs.nl +12); bilingual NL/EN
 >   es     Spain — 14 authority domains (csic.es, inta.es, ine.es +11); bilingual ES/EN
 >   mx     Mexico — 14 authority domains (inegi.org.mx, inai.org.mx, unam.mx +11); bilingual ES/EN
+>   br     Brazil — 14 authority domains (ibge.gov.br, cnpq.br, fapesp.br +11); bilingual PT/EN
 >   us     United States — 13 authority domains (nist.gov, mit.edu, bls.gov +10); English-only
 >   uk     United Kingdom — 10 authority domains (gov.uk, ukri.org, ons.gov.uk +7); English-only
->   eu     EU composite — 10 EU-wide domains; fans out per-country (de, fr, it, pl, nl, es — mx excluded, non-EU)
+>   eu     EU composite — 10 EU-wide domains; fans out per-country (de, fr, it, pl, nl, es — mx, br excluded, non-EU)
 > ```
 > (The exact list comes from `scripts/market-summary.py --format table --all` — the skill renders it fresh so the counts and top domains never drift from `references/market-sources.json`.)
 >
@@ -96,7 +97,7 @@ Scan the user's request and extract any options they already specified. These be
   - **Ambiguity guard**: if the user only said "long" or "short" without a scale anchor, ask a clarifying follow-up ("about 3K words, 5K, or closer to 10K?") — don't guess.
 - **Tone**: style keywords like "analytical", "persuasive", "formal" -> map to tone. Default: "objective"
 - **Citation format**: "IEEE", "APA format", "Chicago style", "wikilink", "local wikilink" / "local-wikilink" -> capture. Default: "apa"
-- **Market**: must resolve to one of the 11 canonical codes defined in `references/market-sources.json`: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `mx`, `us`, `uk`, `eu`. There is no "global" option — downstream researchers use these codes to pick authority-source profiles, and an unknown code silently falls back to the DACH `_default` profile, masking user intent.
+- **Market**: must resolve to one of the 12 canonical codes defined in `references/market-sources.json`: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `mx`, `br`, `us`, `uk`, `eu`. There is no "global" option — downstream researchers use these codes to pick authority-source profiles, and an unknown code silently falls back to the DACH `_default` profile, masking user intent.
 
   Resolve the market in three tiers, stopping at the first confident match:
 
@@ -110,6 +111,7 @@ Scan the user's request and extract any options they already specified. These be
      - "Netherlands" / "Nederland" / "Dutch market" → `nl`
      - "Spain" / "España" / "spanischer Markt" → `es`
      - "Mexico" / "México" / "mercado mexicano" / "para México" / "CDMX" → `mx`
+     - "Brazil" / "Brasil" / "mercado brasileiro" / "para o Brasil" / "São Paulo" / "SP" → `br`
      - "US market" / "USA" / "United States" → `us`
      - "UK market" / "Great Britain" / "United Kingdom" → `uk`
      - "European market" / "EU" / "pan-European" / "EU-weit" → `eu`
@@ -119,10 +121,11 @@ Scan the user's request and extract any options they already specified. These be
      - topic written in French → `fr`, Italian → `it`, Polish → `pl`, Dutch → `nl`
      - topic written in Spanish with a Mexico cue (CDMX / Monterrey / Guadalajara / CFDI / SAT / Banxico / IFT / INAI) → `mx`
      - topic written in Spanish without any country cue → **ambiguous**, fall through to tier 3 (do NOT silently default to `es` — Mexican queries must never land on Spain by accident)
+     - topic written in Portuguese → `br` (Brazil is the only PT market; no ambiguity guard needed — if Portugal or another Lusophone market is added later, introduce a PT tier-3 guard at that point)
      - topic written in English with no country cue → **ambiguous**, fall through to tier 3
 
   3. **Ambiguous — ask the user**: do NOT invent a default. Render the Configuration Menu with the Market row expanded and a one-line note telling the user you could not tell which market from the topic. Their reply in the next turn resolves it. Never call `initialize-project.sh` without a resolved market — the script will reject it.
-- **Output language**: "in German", "auf Deutsch" -> "de" (+ market=dach if no explicit market). "in French" -> "fr". "in Italian" -> "it". "in Polish" -> "pl". "in Dutch" -> "nl". "in Spanish" -> resolve via market tiers above; do not silently default to `es` — Mexican queries must never land on Spain by accident. Default: auto (derived from market)
+- **Output language**: "in German", "auf Deutsch" -> "de" (+ market=dach if no explicit market). "in French" -> "fr". "in Italian" -> "it". "in Polish" -> "pl". "in Dutch" -> "nl". "in Spanish" -> resolve via market tiers above; do not silently default to `es` — Mexican queries must never land on Spain by accident. "in Portuguese" / "em português" -> "pt" (+ market=br). Default: auto (derived from market)
 - **Source URLs**: any URLs in the prompt -> collect for pre-fetch
 - **Query domains**: "only .gov sources", "restrict to arxiv" -> collect domains
 - **Max subtopics**: "use 8 sub-questions", "12 dimensions" -> capture count
@@ -164,7 +167,7 @@ Assemble the menu dynamically and render it as text output:
   "Starting **{type}** research on {topic} — {tone} tone, {citations} citations, {source} sources. Change anything? (reply 'go' to confirm)"
 
 **Handling user responses (next turn):**
-- "go" / "defaults" / "start" -> accept detected + default values. **Exception**: if market was ambiguous (tier 3 in Step 1) and the user's "go" reply did not pick a market, do NOT proceed — re-render the menu with just the Market row and the note "I still need a market — pick one of: dach, de, fr, it, pl, nl, es, mx, us, uk, eu". The script will reject a missing market anyway; catching it here keeps the conversation clean.
+- "go" / "defaults" / "start" -> accept detected + default values. **Exception**: if market was ambiguous (tier 3 in Step 1) and the user's "go" reply did not pick a market, do NOT proceed — re-render the menu with just the Market row and the note "I still need a market — pick one of: dach, de, fr, it, pl, nl, es, mx, br, us, uk, eu". The script will reject a missing market anyway; catching it here keeps the conversation clean.
 - Specific choices ("deep, analytical, IEEE") -> merge with detected values
 - Question about an advanced option ("what roles are available?") -> read the relevant reference file from `${CLAUDE_PLUGIN_ROOT}/references/` (agent-roles.md, writing-tones.md, citation-formats.md), explain the option as text output, then re-present the menu as text
 - Partial choices ("make it detailed") -> update that option, ask if anything else or proceed

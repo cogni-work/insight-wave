@@ -188,13 +188,21 @@
       "timezone": "America/Mexico_City",
       "regulatory_bodies": ["INAI", "IFT", "COFECE"]
     },
+    "br": {
+      "name": "Brazil",
+      "scope": ["BR"],
+      "currency": "BRL",
+      "locale": "pt-BR",
+      "timezone": "America/Sao_Paulo",
+      "regulatory_bodies": ["ANPD", "ANATEL", "CADE", "BACEN"]
+    },
     "latam": {
       "name": "Latin America",
       "scope": ["LATAM"],
       "currency": "USD",
       "locale": "es-ES",
       "timezone": "America/Sao_Paulo",
-      "notes": "Brazil (BRL) often treated separately from Spanish-speaking LATAM"
+      "notes": "Brazil (BRL) is a first-class market — use region code `br`. This aggregate covers Spanish-speaking LATAM."
     },
     "mea": {
       "name": "Middle East & Africa",

@@ -179,6 +179,28 @@
     "org_size_reference": "mid-size organization with 10B MXN revenue"
   },
 
+  "br": {
+    "region_qualifiers": {
+      "en": "Brazil",
+      "local": "Brasil"
+    },
+    "local_language": "pt",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:anatel.gov.br {SUBSECTOR_LOCAL} telecomunicações regulamentação {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:gov.br/anpd {SUBSECTOR_LOCAL} proteção dados privacidade {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:cnpq.br {SUBSECTOR_LOCAL} pesquisa inovação {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:fapesp.br {SUBSECTOR_LOCAL} pesquisa inovação {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:valor.globo.com {SUBSECTOR_LOCAL} transformação digital {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:exame.com {SUBSECTOR_LOCAL} transformação digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:brasscom.org.br {SUBSECTOR_LOCAL} TIC indústria {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:ibge.gov.br {SUBSECTOR_LOCAL} estatísticas {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["ANPD", "ANATEL", "CADE", "BACEN"],
+    "regulatory_search": "\"regulação brasileira\" \"{SUBSECTOR_EN}\" cumprimento {CURRENT_YEAR}",
+    "currency": "BRL",
+    "org_size_reference": "mid-size organization with 2B BRL revenue"
+  },
+
   "us": {
     "region_qualifiers": {
       "en": "United States"
