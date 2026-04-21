@@ -22,7 +22,7 @@ For a boutique consultancy or solo practitioner, the value is in coordination. R
 | **Vision class** | The engagement type — one of 8 options that determines recommended methods, dispatched plugins, and deliverable format |
 | **Engagement** | A single client or project — lives in `cogni-consulting/{slug}/` with its own phase directories |
 | **Phase state** | Each phase tracks: `pending` → `in-progress` → `complete` |
-| **Phase analyst** | The agent that assesses phase readiness and recommends methods from the 14-method library |
+| **Phase analyst** | The agent that assesses phase readiness and recommends methods from the 16-method library |
 | **Method** | A named consulting technique (e.g., stakeholder mapping, affinity clustering, lean canvas) — proposed per phase, selected by the consultant |
 | **Plugin ref** | A path pointer in `consulting-project.json` to a project created by another plugin — no data is copied, only referenced |
 | **Decision log** | Persistent record of key decisions with rationale and evidence references |
@@ -102,7 +102,7 @@ Start a new consulting project for Acme on digital transformation
 
 Dispatches to cogni-research, cogni-trends, and cogni-portfolio to build the evidence base. Which plugins are dispatched depends on the vision class — a `market-entry` engagement uses research and trends differently than a `cost-optimization` engagement.
 
-The phase-analyst agent recommends methods from the 14-method library for this phase. You select which to apply.
+The phase-analyst agent recommends methods from the 16-method library for this phase. You select which to apply.
 
 ```
 consulting-discover
@@ -306,7 +306,7 @@ Canvas reference materials are in `cogni-consulting/references/canvas-format.md`
 | Plugin dispatch fails silently | The dispatched plugin is not installed in this workspace | Run `workspace-status` to check the plugin registry; install the missing plugin and run `manage-workspace` |
 | `consulting-export` produces empty slides | Phase output files are missing or empty in the phase directories | Check that Deliver phase ran to completion; verify that `deliver/business-case.md` and `deliver/roadmap.md` exist |
 | Re-opening an engagement shows wrong phase status | `consulting-project.json` was manually edited or corrupted | Run `consulting-resume` — it reads all available evidence (file presence, timestamps) to infer the actual state rather than relying solely on the JSON |
-| Method recommendations feel wrong for my domain | The phase-analyst recommends from a 14-method library that may not cover all domains | You can select any method manually; the recommendations are suggestions, not requirements |
+| Method recommendations feel wrong for my domain | The phase-analyst recommends from a 16-method library that may not cover all domains | You can select any method manually; the recommendations are suggestions, not requirements |
 
 ---
 
@@ -315,7 +315,7 @@ Canvas reference materials are in `cogni-consulting/references/canvas-format.md`
 cogni-consulting's most useful extension points are:
 
 - **New vision classes** — the 8 current classes cover common strategic consulting scenarios; industry-specific engagement types (healthcare, fintech, public sector) would benefit from dedicated vision classes with tailored method selections and deliverable maps
-- **New consulting methods** — the 14-method library in `references/methods/` covers standard approaches; new methods follow the YAML frontmatter format in the existing files
+- **New consulting methods** — the 16-method library in `references/methods/` covers standard approaches; new methods follow the YAML frontmatter format in the existing files
 - **New deliverable templates** — `references/deliverable-map.md` maps vision classes to deliverables; new template types require corresponding cogni-visual or document-skills support
 - **Phase gate customization** — the phase-gate-guard hook in `hooks/phase-gate-guard.sh` currently warns on all gates and blocks on the Develop proposition quality gate; different clients may need different gate behaviors
 

@@ -44,9 +44,9 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 3. Split `WIKI_PATHS` on commas to get individual wiki root paths
 4. For each wiki root:
    - Verify `.cogni-wiki/config.json` exists
-   - Read config to extract `name` and `slug`
+   - Read config to extract `name`, `slug`, and `publisher_base_url` (optional — the publisher's landing page URL used as a last-resort fallback when a page has no per-page publisher URL and `sources:` contains no `https://` URL)
    - Verify `wiki/index.md` exists
-5. Build wiki registry: list of `{root, slug, name}` for validated wikis
+5. Build wiki registry: list of `{root, slug, name, publisher_base_url}` for validated wikis
 6. If no valid wikis remain after validation, return error
 
 ### Phase 1: Index-Driven Page Selection
@@ -75,7 +75,13 @@ For each page in the global `pages_to_read[]` list (ordered by maximum relevance
 3. Extract publication metadata from the page body for downstream citation formatting:
    - **Author**: Look for patterns like `**Autoren**:`, `**Author**:`, `**Autor**:`, `**Verfasser**:`, `**Herausgeber**:`, or `by ` followed by names. Extract the primary author's surname (e.g., "Bernhard Steimel" → "Steimel"). If multiple authors, extract all
    - **Year**: Look for patterns like `**Erschienen**:`, `**Published**:`, `**Jahr**:`, or a four-digit year (20xx) in publication context. Also check the page `title` for trailing year patterns (e.g., "Trendbook 2024" → "2024")
-   - **Original URL**: Check the page's `sources:` frontmatter array and body text for `https://` URLs that point to the original publication. If found, record as `original_url`. Local file paths (`../raw/...`) are not original URLs
+   - **Original URL** — resolve in this order, stop at the first hit:
+     1. Frontmatter `publisher_url` field, if present and starts with `https://` — the canonical per-page publisher URL. This is the preferred form. Record `original_url = <that URL>` and `url_precision = "exact"`
+     2. First `https://` URL in the frontmatter `sources:` array — treat as the canonical publisher URL when no explicit `publisher_url` is set. Record `original_url = <that URL>` and `url_precision = "exact"`
+     3. First `https://` URL in the page body that points to the original publication. Record `original_url = <that URL>` and `url_precision = "exact"`. Skip obvious non-publication links (image CDNs, tracking redirects, generic index pages unless nothing more specific exists)
+     4. The wiki registry's `publisher_base_url` for this wiki (from Phase 0 step 4), if set. Record `original_url = <that URL>` and `url_precision = "publisher"` — the writer will annotate the bibliography to signal this is the publisher's landing page, not the specific document. This is an honest fallback: the reader still reaches the publisher and can navigate from there
+     5. If none of the above, leave `original_url` as empty string and set `url_precision = "none"`. Never fabricate a URL
+   - Local file paths (`../raw/...`) in `sources:` are **not** original URLs — skip them in step 2
 4. Extract findings, keyed by sub-question:
    - For each sub-question this page was tagged for, extract findings relevant to that sub-question's `query` and `search_guidance`.
    - Claims, data points, conclusions, definitions, methodologies.
@@ -94,7 +100,7 @@ For each wiki page that yielded findings (for **any** sub-question), create **on
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-entity.sh" \
   --project-path "${PROJECT_PATH}" \
   --entity-type source \
-  --data '{"frontmatter": {"url": "wiki://<wiki-slug>/<page-slug>", "title": "<page title from frontmatter>", "publisher": "cogni-wiki:<wiki-slug>", "author": "<extracted author or empty string>", "year": "<extracted year or empty string>", "original_url": "<https URL from sources/body, or empty string>", "fetch_method": "Read", "fetched_at": "<timestamp>", "quality_score": 0.90}, "content": ""}' \
+  --data '{"frontmatter": {"url": "wiki://<wiki-slug>/<page-slug>", "title": "<page title from frontmatter>", "publisher": "cogni-wiki:<wiki-slug>", "author": "<extracted author or empty string>", "year": "<extracted year or empty string>", "original_url": "<resolved URL or empty string>", "url_precision": "<exact|publisher|none>", "fetch_method": "Read", "fetched_at": "<timestamp>", "quality_score": 0.90}, "content": ""}' \
   --json
 ```
 
@@ -105,7 +111,7 @@ Notes on source entity fields:
 - `title` comes from the page's YAML frontmatter `title` field
 - `author` is extracted from the wiki page body (e.g., "Autoren: Bernhard Steimel" → "Steimel"). Leave as empty string if no author is identifiable. Never fabricate authors
 - `year` is extracted from the wiki page body (e.g., "Erschienen: 2025" → "2025"). Leave as empty string if no year is identifiable. Never guess years
-- `original_url` is the first `https://` URL found in the page's `sources:` frontmatter array or body text that points to the original publication. This gives the writer a clickable URL for the bibliography. Leave as empty string if no web URL is found — local file paths (`../raw/...`) do not qualify
+- `original_url` and `url_precision` together encode the 4-tier resolution documented in Phase 2 step 3. `url_precision: "exact"` means the URL points at the specific document; `"publisher"` means it points at the publisher's landing page (honest fallback); `"none"` means no URL could be resolved and the writer will render an unlinked citation. The writer reads both fields — the precision annotation lets it mark landing-page links as such in the bibliography
 
 Then for **each sub-question in `sub_questions`**, create a context entity carrying only the findings relevant to that sub-question:
 
