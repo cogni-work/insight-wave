@@ -201,6 +201,36 @@
     "org_size_reference": "mid-size organization with 2B BRL revenue"
   },
 
+  "cn": {
+    "region_qualifiers": {
+      "en": "China Mainland China",
+      "local": "中国 中华人民共和国"
+    },
+    "local_language": "zh",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:cac.gov.cn {SUBSECTOR_LOCAL} 网络安全 监管 {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:miit.gov.cn {SUBSECTOR_LOCAL} 工业互联网 监管 {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:mckinsey.com {SUBSECTOR_EN} China regulation compliance {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:gartner.com {SUBSECTOR_EN} China policy trends {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:caict.ac.cn {SUBSECTOR_LOCAL} 人工智能 研究 {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:cas.cn {SUBSECTOR_LOCAL} 前沿 科技 {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:mit.edu {SUBSECTOR_EN} China innovation research {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:hbr.org {SUBSECTOR_EN} China strategy {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:caixin.com {SUBSECTOR_LOCAL} 数字化转型 {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:21jingji.com {SUBSECTOR_LOCAL} 数字经济 {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:wsj.com {SUBSECTOR_EN} China digital transformation {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:forrester.com {SUBSECTOR_EN} China digital trends {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:stats.gov.cn {SUBSECTOR_LOCAL} 统计 数字经济 {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:cesi.cn {SUBSECTOR_LOCAL} 信创 标准 {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} China technology infrastructure {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:accenture.com {SUBSECTOR_EN} China digital infrastructure {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["CAC", "MIIT", "SAMR", "PBOC", "NPC"],
+    "regulatory_search": "\"中国法规\" \"{SUBSECTOR_LOCAL}\" 合规 {CURRENT_YEAR}",
+    "currency": "CNY",
+    "org_size_reference": "mid-size organization with 2B CNY revenue"
+  },
+
   "us": {
     "region_qualifiers": {
       "en": "United States"

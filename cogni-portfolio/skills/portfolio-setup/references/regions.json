@@ -163,7 +163,8 @@
       "scope": ["CN"],
       "currency": "CNY",
       "locale": "zh-CN",
-      "timezone": "Asia/Shanghai"
+      "timezone": "Asia/Shanghai",
+      "regulatory_bodies": ["CAC", "MIIT", "SAMR", "PBOC", "NPC"]
     },
     "apac": {
       "name": "Asia-Pacific",
@@ -171,7 +172,7 @@
       "currency": "USD",
       "locale": "en-US",
       "timezone": "Asia/Singapore",
-      "notes": "Highly diverse; consider sub-regions for specific GTM"
+      "notes": "China (CNY) is a first-class market — use region code `cn` for Mainland China research and GTM. This aggregate covers the remainder of Asia-Pacific; highly diverse, consider sub-regions (e.g., jp, or explicit SEA markets) for specific GTM."
     },
     "jp": {
       "name": "Japan",

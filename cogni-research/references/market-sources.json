@@ -361,6 +361,40 @@
     "currency": "BRL"
   },
 
+  "cn": {
+    "default_output_language": "zh",
+    "local_language": "zh",
+    "region_qualifiers": {
+      "en": "China People's Republic of China Mainland China",
+      "local": "中国 中华人民共和国"
+    },
+    "local_query_tips": {
+      "compound_nouns": ["数字化转型", "人工智能", "网络安全", "工业互联网", "数据保护", "云计算", "信创", "数字经济", "智能制造"],
+      "keep_english": ["IoT", "AI", "SaaS", "API", "5G", "Machine Learning", "Open Source"],
+      "geographic_modifiers": ["中国", "国内", "境内", "大陆", "China"]
+    },
+    "authority_sources": [
+      {"domain": "stats.gov.cn", "category": "statistics", "authority": 5, "search_pattern": "site:stats.gov.cn {TOPIC_LOCAL} 统计 数据 {YEAR}"},
+      {"domain": "cas.cn", "category": "research", "authority": 5, "search_pattern": "site:cas.cn {TOPIC_LOCAL} 研究 {YEAR}"},
+      {"domain": "caict.ac.cn", "category": "research", "authority": 5, "search_pattern": "site:caict.ac.cn {TOPIC_LOCAL} 研究 报告 {YEAR}"},
+      {"domain": "miit.gov.cn", "category": "government", "authority": 5, "search_pattern": "site:miit.gov.cn {TOPIC_LOCAL} 工业 信息化 {YEAR}"},
+      {"domain": "cac.gov.cn", "category": "government", "authority": 5, "search_pattern": "site:cac.gov.cn {TOPIC_LOCAL} 网络安全 {YEAR}"},
+      {"domain": "pbc.gov.cn", "category": "government", "authority": 5, "search_pattern": "site:pbc.gov.cn {TOPIC_LOCAL} 金融 {YEAR}"},
+      {"domain": "cesi.cn", "category": "research", "authority": 4, "search_pattern": "site:cesi.cn {TOPIC_LOCAL} 标准 {YEAR}"},
+      {"domain": "ccidnet.com", "category": "media", "authority": 4, "search_pattern": "site:ccidnet.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "caixin.com", "category": "media", "authority": 3, "search_pattern": "site:caixin.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "21jingji.com", "category": "media", "authority": 3, "search_pattern": "site:21jingji.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "yicai.com", "category": "media", "authority": 3, "search_pattern": "site:yicai.com {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "tmtpost.com", "category": "media", "authority": 3, "search_pattern": "site:tmtpost.com {TOPIC_LOCAL} {YEAR}"}
+    ],
+    "regulatory_bodies": ["CAC", "MIIT", "SAMR", "PBOC", "NPC"],
+    "reachability_notes": {
+      "websearch_preferred_domains": ["stats.gov.cn", "miit.gov.cn", "cac.gov.cn", "pbc.gov.cn"],
+      "_note": "These Mainland China government domains can be intermittently unreachable from outside CN. Prefer WebSearch (quote-mining from snippets) over WebFetch; if WebFetch times out or returns blocked, fall back to the matching WebSearch snippet content rather than retrying."
+    },
+    "currency": "CNY"
+  },
+
   "at": {
     "default_output_language": "de",
     "local_language": "de",
