@@ -1,6 +1,6 @@
 # cogni-wiki
 
-> **Incubating** (v0.0.5) — skills, data formats, and workflows may change at any time.
+> **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
@@ -126,6 +126,7 @@ Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/
 | wiki-update | Skill | Revise an existing wiki page with diff-before-write discipline and source citations |
 | wiki-resume | Skill | Show status, activity, and recommended next action for the wiki |
 | wiki-dashboard | Skill | Generate a self-contained HTML dashboard with tag cloud, backlink graph, and histograms |
+| ingest-worker | Agent | Per-source subagent invoked by wiki-ingest batch mode (Steps 1–8); not directly dispatchable |
 
 ## Architecture
 
@@ -138,6 +139,8 @@ cogni-wiki/
 ├── references/                      Shared reference material
 │   ├── karpathy-pattern.md          Karpathy LLM Wiki pattern
 │   └── claude-research-karparthy.md RAG vs wiki benchmark research
+├── agents/                          1 fan-out worker agent
+│   └── ingest-worker.md             Per-source subagent for wiki-ingest batch mode
 └── skills/                          7 wiki skills
     ├── wiki-setup/                  Bootstrap a new wiki
     ├── wiki-ingest/                 Ingest sources into wiki pages

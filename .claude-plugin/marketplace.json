@@ -256,7 +256,8 @@
         "ingest",
         "query",
         "lint",
-        "backlinks"
+        "backlinks",
+        "agent"
       ]
     }
   ]
