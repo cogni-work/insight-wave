@@ -1,10 +1,12 @@
 # Known Issues Registry
 
-> Last updated: 2026-04-17 | 1 open, 0 mitigated, 0 resolved
+> Last updated: 2026-04-06 | 1 open, 0 mitigated, 0 resolved
+
+This registry tracks cross-cutting platform issues that affect multiple insight-wave plugins. It is maintained by the `doc-issues` skill and consumed by `doc-generate`, `doc-audit`, and `doc-hub` when generating documentation for affected plugins.
+
+---
 
 ## Open Issues
-
-<a id="ki-001"></a>
 
 ### KI-001: Chrome native messaging host conflict between Cowork and Claude Code (S2-major)
 
@@ -26,7 +28,7 @@ When both Claude Desktop (Cowork) and Claude Code are installed, they register c
 3. Restart Chrome after switching — the extension reconnects to the remaining native host
 4. On Windows: equivalent registry entries under `HKCU\Software\Google\Chrome\NativeMessagingHosts\`
 
-Community shell function `chrome-mcp-toggle` automates the toggle. Trail of Bits published a troubleshooting Agent Skill (`trailofbits/skills/claude-in-chrome-troubleshooting`) for automated diagnosis.
+**Automation:** Community shell function `chrome-mcp-toggle` automates the toggle. Trail of Bits published a troubleshooting Agent Skill (`trailofbits/skills/claude-in-chrome-troubleshooting`) for automated diagnosis.
 
 **Related bugs:**
 - Desktop auto-update tool regression: March 2026 update (v1.1.6679 to v1.1.8629) caused toolCount to drop from 19 to 3 on Windows (GitHub #38783, unresolved)
@@ -35,14 +37,14 @@ Community shell function `chrome-mcp-toggle` automates the toggle. Trail of Bits
 - Multiple Chrome installations: Chrome Canary present alongside Chrome causes browser tools to connect to Canary (which lacks the extension) — uninstall Canary to fix
 - MCP tool approval non-persistence: Cowork "Always allow" choices for MCP tools reset at the start of every new session, requiring re-approval each time
 
-**Sources:** `claude-in-chrome-trouble-shoot.md`
+**Sources:** [claude-in-chrome-trouble-shoot.md](../../claude-in-chrome-trouble-shoot.md)
 
 ---
 
 ## Mitigated Issues
 
-*None.*
+_No mitigated issues._
 
 ## Resolved Issues
 
-*None.*
+_No resolved issues._
