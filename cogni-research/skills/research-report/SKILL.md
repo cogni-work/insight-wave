@@ -99,7 +99,7 @@ Backward compatibility: `market` is normally written by `initialize-project.sh` 
 - Writer produces the report in the specified language
 - Reviewer evaluates prose quality in the output language
 
-Available markets (keys of `references/market-sources.json`): `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. There is no `global` option — research-setup resolves ambiguity by asking the user before the project is initialized. The market and output language are usually aligned (e.g., market=dach → output_language=de, market=it → output_language=it) but can diverge (e.g., market=fr, output_language=en for an English report about the French market). The `eu` market is a composite that fans out per-country researchers — see composite dispatch below.
+Available markets (keys of `references/market-sources.json`): `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `mx`, `us`, `uk`, `eu`. There is no `global` option — research-setup resolves ambiguity by asking the user before the project is initialized. The market and output language are usually aligned (e.g., market=dach → output_language=de, market=it → output_language=it) but can diverge (e.g., market=fr, output_language=en for an English report about the French market). The `eu` market is a composite that fans out per-country researchers — see composite dispatch below.
 
 #### Composite Market Dispatch (market=eu)
 
