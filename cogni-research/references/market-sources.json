@@ -395,9 +395,16 @@
       {"domain": "avcr.cz", "category": "research", "authority": 5, "search_pattern": "site:avcr.cz {TOPIC_LOCAL} výzkum {YEAR}"},
       {"domain": "ctu.cz", "category": "government", "authority": 5, "search_pattern": "site:ctu.cz {TOPIC_LOCAL} telekomunikace regulace {YEAR}"},
       {"domain": "uoou.cz", "category": "government", "authority": 5, "search_pattern": "site:uoou.cz {TOPIC_LOCAL} ochrana údajů {YEAR}"},
-      {"domain": "e15.cz", "category": "media", "authority": 3, "search_pattern": "site:e15.cz {TOPIC_LOCAL} {YEAR}"}
+      {"domain": "cnb.cz", "category": "government", "authority": 5, "search_pattern": "site:cnb.cz {TOPIC_LOCAL} ekonomika {YEAR}"},
+      {"domain": "cci.cz", "category": "association", "authority": 4, "search_pattern": "site:cci.cz {TOPIC_LOCAL} podnikání {YEAR}"},
+      {"domain": "spcr.cz", "category": "association", "authority": 4, "search_pattern": "site:spcr.cz {TOPIC_LOCAL} průmysl {YEAR}"},
+      {"domain": "aobp.cz", "category": "association", "authority": 4, "search_pattern": "site:aobp.cz {TOPIC_LOCAL} ICT technologie {YEAR}"},
+      {"domain": "lupa.cz", "category": "media", "authority": 3, "search_pattern": "site:lupa.cz {TOPIC_LOCAL} technologie {YEAR}"},
+      {"domain": "ihned.cz", "category": "media", "authority": 3, "search_pattern": "site:ihned.cz {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "e15.cz", "category": "media", "authority": 3, "search_pattern": "site:e15.cz {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "deloitte.com", "category": "consulting", "authority": 4, "search_pattern": "site:deloitte.com {TOPIC_LOCAL} Czech Republic {YEAR}"}
     ],
-    "regulatory_bodies": ["EUR-Lex (EU)", "ÚOOÚ", "ČTÚ", "NÚKIB"],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ÚOOÚ", "ČTÚ", "NÚKIB", "ČNB"],
     "currency": "CZK"
   },
 
@@ -415,9 +422,15 @@
       {"domain": "sav.sk", "category": "research", "authority": 5, "search_pattern": "site:sav.sk {TOPIC_LOCAL} výskum {YEAR}"},
       {"domain": "teleoff.gov.sk", "category": "government", "authority": 5, "search_pattern": "site:teleoff.gov.sk {TOPIC_LOCAL} telekomunikácie {YEAR}"},
       {"domain": "dataprotection.gov.sk", "category": "government", "authority": 5, "search_pattern": "site:dataprotection.gov.sk {TOPIC_LOCAL} ochrana údajov {YEAR}"},
+      {"domain": "nbs.sk", "category": "government", "authority": 5, "search_pattern": "site:nbs.sk {TOPIC_LOCAL} ekonomika {YEAR}"},
+      {"domain": "sopk.sk", "category": "association", "authority": 4, "search_pattern": "site:sopk.sk {TOPIC_LOCAL} podnikanie {YEAR}"},
+      {"domain": "itas.sk", "category": "association", "authority": 4, "search_pattern": "site:itas.sk {TOPIC_LOCAL} IT technológie {YEAR}"},
+      {"domain": "zpp.sk", "category": "association", "authority": 4, "search_pattern": "site:zpp.sk {TOPIC_LOCAL} podnikatelia {YEAR}"},
+      {"domain": "trend.sk", "category": "media", "authority": 3, "search_pattern": "site:trend.sk {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "zive.sk", "category": "media", "authority": 3, "search_pattern": "site:zive.sk {TOPIC_LOCAL} technológie {YEAR}"},
       {"domain": "hnonline.sk", "category": "media", "authority": 3, "search_pattern": "site:hnonline.sk {TOPIC_LOCAL} {YEAR}"}
     ],
-    "regulatory_bodies": ["EUR-Lex (EU)", "Úrad na ochranu osobných údajov SR", "Regulačný úrad pre elektronické komunikácie", "SK-CERT"],
+    "regulatory_bodies": ["EUR-Lex (EU)", "Úrad na ochranu osobných údajov SR", "Regulačný úrad pre elektronické komunikácie", "SK-CERT", "NBS"],
     "currency": "EUR"
   },
 
@@ -435,9 +448,15 @@
       {"domain": "hun-ren.hu", "category": "research", "authority": 5, "search_pattern": "site:hun-ren.hu {TOPIC_LOCAL} kutatás {YEAR}"},
       {"domain": "nmhh.hu", "category": "government", "authority": 5, "search_pattern": "site:nmhh.hu {TOPIC_LOCAL} távközlés szabályozás {YEAR}"},
       {"domain": "naih.hu", "category": "government", "authority": 5, "search_pattern": "site:naih.hu {TOPIC_LOCAL} adatvédelem {YEAR}"},
+      {"domain": "mnb.hu", "category": "government", "authority": 5, "search_pattern": "site:mnb.hu {TOPIC_LOCAL} gazdaság {YEAR}"},
+      {"domain": "mkik.hu", "category": "association", "authority": 4, "search_pattern": "site:mkik.hu {TOPIC_LOCAL} gazdaság vállalkozás {YEAR}"},
+      {"domain": "ivsz.hu", "category": "association", "authority": 4, "search_pattern": "site:ivsz.hu {TOPIC_LOCAL} IT technológia {YEAR}"},
+      {"domain": "mgyosz.hu", "category": "association", "authority": 4, "search_pattern": "site:mgyosz.hu {TOPIC_LOCAL} munkaadók ipar {YEAR}"},
+      {"domain": "hvg.hu", "category": "media", "authority": 3, "search_pattern": "site:hvg.hu {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "bitport.hu", "category": "media", "authority": 3, "search_pattern": "site:bitport.hu {TOPIC_LOCAL} technológia {YEAR}"},
       {"domain": "portfolio.hu", "category": "media", "authority": 3, "search_pattern": "site:portfolio.hu {TOPIC_LOCAL} {YEAR}"}
     ],
-    "regulatory_bodies": ["EUR-Lex (EU)", "NAIH", "NMHH", "National Cybersecurity Center"],
+    "regulatory_bodies": ["EUR-Lex (EU)", "NAIH", "NMHH", "National Cybersecurity Center", "MNB"],
     "currency": "HUF"
   },
 
@@ -475,9 +494,14 @@
       {"domain": "hazu.hr", "category": "research", "authority": 5, "search_pattern": "site:hazu.hr {TOPIC_LOCAL} znanost istraživanje {YEAR}"},
       {"domain": "hakom.hr", "category": "government", "authority": 5, "search_pattern": "site:hakom.hr {TOPIC_LOCAL} elektroničke komunikacije {YEAR}"},
       {"domain": "azop.hr", "category": "government", "authority": 5, "search_pattern": "site:azop.hr {TOPIC_LOCAL} zaštita podataka {YEAR}"},
+      {"domain": "hnb.hr", "category": "government", "authority": 5, "search_pattern": "site:hnb.hr {TOPIC_LOCAL} gospodarstvo {YEAR}"},
+      {"domain": "hgk.hr", "category": "association", "authority": 4, "search_pattern": "site:hgk.hr {TOPIC_LOCAL} gospodarstvo poduzetništvo {YEAR}"},
+      {"domain": "hup.hr", "category": "association", "authority": 4, "search_pattern": "site:hup.hr {TOPIC_LOCAL} poslodavci {YEAR}"},
+      {"domain": "lider.media", "category": "media", "authority": 3, "search_pattern": "site:lider.media {TOPIC_LOCAL} {YEAR}"},
+      {"domain": "netokracija.com", "category": "media", "authority": 3, "search_pattern": "site:netokracija.com {TOPIC_LOCAL} tehnologija {YEAR}"},
       {"domain": "poslovni.hr", "category": "media", "authority": 3, "search_pattern": "site:poslovni.hr {TOPIC_LOCAL} {YEAR}"}
     ],
-    "regulatory_bodies": ["EUR-Lex (EU)", "AZOP", "HAKOM", "ZSIS"],
+    "regulatory_bodies": ["EUR-Lex (EU)", "AZOP", "HAKOM", "ZSIS", "HNB"],
     "currency": "EUR"
   },
 
@@ -495,9 +519,15 @@
       {"domain": "academyofathens.gr", "category": "research", "authority": 5, "search_pattern": "site:academyofathens.gr {TOPIC_LOCAL} έρευνα {YEAR}"},
       {"domain": "eett.gr", "category": "government", "authority": 5, "search_pattern": "site:eett.gr {TOPIC_LOCAL} τηλεπικοινωνίες {YEAR}"},
       {"domain": "dpa.gr", "category": "government", "authority": 5, "search_pattern": "site:dpa.gr {TOPIC_LOCAL} προστασία δεδομένων {YEAR}"},
+      {"domain": "bankofgreece.gr", "category": "government", "authority": 5, "search_pattern": "site:bankofgreece.gr {TOPIC_LOCAL} οικονομία {YEAR}"},
+      {"domain": "sev.org.gr", "category": "association", "authority": 4, "search_pattern": "site:sev.org.gr {TOPIC_LOCAL} επιχειρήσεις βιομηχανία {YEAR}"},
+      {"domain": "acci.gr", "category": "association", "authority": 4, "search_pattern": "site:acci.gr {TOPIC_LOCAL} επιχειρήσεις εμπόριο {YEAR}"},
+      {"domain": "sepe.gr", "category": "association", "authority": 4, "search_pattern": "site:sepe.gr {TOPIC_LOCAL} πληροφορική τεχνολογία {YEAR}"},
+      {"domain": "sete.gr", "category": "association", "authority": 4, "search_pattern": "site:sete.gr {TOPIC_LOCAL} τουρισμός {YEAR}"},
+      {"domain": "naftemporiki.gr", "category": "media", "authority": 3, "search_pattern": "site:naftemporiki.gr {TOPIC_LOCAL} {YEAR}"},
       {"domain": "kathimerini.gr", "category": "media", "authority": 3, "search_pattern": "site:kathimerini.gr {TOPIC_LOCAL} {YEAR}"}
     ],
-    "regulatory_bodies": ["EUR-Lex (EU)", "Hellenic DPA", "EETT", "National Cybersecurity Authority"],
+    "regulatory_bodies": ["EUR-Lex (EU)", "Hellenic DPA", "EETT", "National Cybersecurity Authority", "Bank of Greece"],
     "currency": "EUR"
   },
 

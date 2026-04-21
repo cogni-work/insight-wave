@@ -167,7 +167,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.7.18",
+      "version": "0.7.19",
       "maturity": "preview",
       "description": "Multi-agent research report generator with localized search across 20 European, Anglo, and LATAM markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
