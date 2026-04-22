@@ -141,6 +141,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `portfolio-dashboard` | skill | Generate an interactive HTML dashboard showing the full portfolio status |
 | `portfolio-architecture` | skill | Generate an interactive Excalidraw architecture diagram of products and features |
 | `portfolio-lineage` | skill | Track source documents and URLs, detect changes, cascade refresh through features → propositions → solutions |
+| `portfolio-consolidate` | skill | Roll up N research-only scan outputs into a taxonomy-shaped coverage matrix across providers |
 | `trends-bridge` | skill | Bidirectional integration between cogni-trends TIPS analysis and the portfolio |
 | `portfolio-resume` | skill | Resume, continue, or check status of a portfolio project |
 | `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
