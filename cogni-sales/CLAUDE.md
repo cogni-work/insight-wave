@@ -1,6 +1,6 @@
 # cogni-sales
 
-B2B sales pitch generation using Corporate Visions Why Change methodology — creates deal-specific or reusable segment pitches from cogni-portfolio data with web research evidence. Bilingual DE/EN.
+B2B sales pitch generation using Corporate Visions Why Change methodology — creates deal-specific or reusable segment pitches from cogni-portfolio data with web research evidence. Multilingual EN / DE / PT-BR.
 
 ## Plugin Architecture
 

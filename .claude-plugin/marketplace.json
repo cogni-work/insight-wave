@@ -192,9 +192,9 @@
     {
       "name": "cogni-sales",
       "source": "./cogni-sales",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "maturity": "preview",
-      "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Bilingual DE/EN.",
+      "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Multilingual EN / DE / PT-BR.",
       "keywords": [
         "sales",
         "pitch",
