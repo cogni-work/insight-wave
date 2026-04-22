@@ -492,6 +492,17 @@ def load_all_entities(project_dir):
         or derive_provider_units_from_features(data.get("features", {}))
     )
 
+    # Shadow-mode scans stage candidates under research/scan-candidates/ instead
+    # of mutating features/. Surface them in the dashboard only when the current
+    # scan ran in shadow mode — otherwise leftover directories from a prior
+    # shadow run could mislead the reader into thinking the current scan is
+    # pending review when it is actually already consolidated.
+    scan_out = data["scan_output"] or {}
+    if scan_out.get("consolidation_mode") == "shadow":
+        data["shadow_candidates"] = load_shadow_candidates(project_dir)
+    else:
+        data["shadow_candidates"] = {}
+
     return data
 
 
@@ -517,6 +528,7 @@ def load_scan_output(project_dir):
         "company_name": raw.get("company_name", ""),
         "domains_analyzed": raw.get("domains_analyzed", []),
         "provider_units": units,
+        "consolidation_mode": raw.get("consolidation_mode", "consolidate"),
     }
 
 
@@ -589,7 +601,63 @@ def derive_provider_units_from_features(features):
         "domains_analyzed": domains_order,
         "provider_units": provider_units,
         "derived_feature_total": total_with_unit,
+        "consolidation_mode": "consolidate",
     }
+
+
+def load_shadow_candidates(project_dir):
+    """Discover shadow candidates produced by a `portfolio-scan --mode=shadow` run.
+
+    Shadow candidates live at `research/scan-candidates/{COMPANY_SLUG}/*.json` and
+    are feature-shaped JSON blobs staged for human review — they are NOT imported
+    into `features/` until the user explicitly promotes them. This loader is
+    best-effort: missing directory, unreadable files, and malformed JSON are all
+    skipped silently, because the dashboard is read-only and must never fail on a
+    stray candidate file.
+
+    Returns a dict keyed by company_slug: {slug: [{slug, product_slug, name,
+    taxonomy_mapping}, ...]}. Empty dict when the directory is absent or empty.
+
+    Gating contract: callers (see `load_all_entities`) invoke this only when
+    `consolidation_mode == 'shadow'`. The helper does not self-gate, so a
+    shadow directory left over from a prior mode switch will not surface
+    unless the current run still requests shadow mode.
+    """
+    root = os.path.join(project_dir, "research", "scan-candidates")
+    if not os.path.isdir(root):
+        return {}
+
+    by_company = {}
+    try:
+        company_dirs = sorted(os.listdir(root))
+    except OSError:
+        return {}
+
+    for company_slug in company_dirs:
+        company_path = os.path.join(root, company_slug)
+        if not os.path.isdir(company_path):
+            continue
+        candidates = []
+        try:
+            entries = sorted(os.listdir(company_path))
+        except OSError:
+            continue
+        for fname in entries:
+            if not fname.endswith(".json"):
+                continue
+            raw = load_json(os.path.join(company_path, fname))
+            if not isinstance(raw, dict):
+                continue
+            candidates.append({
+                "slug": raw.get("slug") or fname[:-5],
+                "product_slug": raw.get("product_slug", ""),
+                "name": raw.get("name", ""),
+                "taxonomy_mapping": raw.get("taxonomy_mapping") or {},
+            })
+        if candidates:
+            by_company[company_slug] = candidates
+
+    return by_company
 
 
 def discover_tips_project(project_dir, data):
@@ -978,6 +1046,7 @@ def generate_html(data, status, project_dir, theme):
     opportunities_data = tips_data.get("opportunities")
     has_tips = bool(anchored_sts) or bool(opportunities_data)
     scan_output = data.get("scan_output")
+    shadow_candidates = data.get("shadow_candidates") or {}
     _tax = portfolio.get("taxonomy") or {}
     has_taxonomy = _tax.get("type") == "b2b-ict" and any(
         f.get("taxonomy_mapping", {}).get("category_id") for f in data["features"].values()
@@ -2649,11 +2718,37 @@ body::after {{
         included_units = [u for u in units if u.get("included")]
         total_feature_count = sum((u.get("feature_count") or 0) for u in included_units)
 
+        # Consolidation-mode badge — rendered only for scan-output source, since
+        # the features-derived fallback has no scan metadata to reason about and
+        # is always implicitly "consolidate".
+        consolidation_mode = scan_output.get("consolidation_mode", "consolidate")
+        mode_badge_html = ""
+        if not is_derived:
+            # CSS tokens used below are all guaranteed by the design-variables
+            # contract (schemas/design-variables.schema.json): --green and --yellow
+            # via status_ok / status_warn, --text2 via text_muted, and --surface2
+            # via surface2 — all four are in the schema's `required` array, so
+            # pick-theme must emit them and no inline hex fallback is needed.
+            _mode_styles = {
+                "consolidate": ("var(--green)", "rgba(46,125,50,0.12)", "consolidated"),
+                "shadow": ("var(--yellow)", "rgba(229,161,0,0.12)", "shadow review"),
+                "research-only": ("var(--text2)", "var(--surface2)", "research only"),
+            }
+            _mc_color, _mc_bg, _mc_label = _mode_styles.get(
+                consolidation_mode, _mode_styles["consolidate"]
+            )
+            mode_badge_html = (
+                f'<span title="scan consolidation_mode: {escape_html(consolidation_mode)}" '
+                f'style="display:inline-block;margin-left:10px;padding:3px 10px;'
+                f'font-size:11px;font-weight:500;color:{_mc_color};background:{_mc_bg};'
+                f'border-radius:5px;vertical-align:middle">{_mc_label}</span>'
+            )
+
         section_suffix = "(from feature metadata)" if is_derived else "(scan diagnostic)"
         html += f"""
 <!-- Provider Units ({source}) -->
 <div class="section reveal">
-  <div class="section-title">Provider units {section_suffix}</div>
+  <div class="section-title">Provider units {section_suffix}{mode_badge_html}</div>
 """
         if is_derived:
             caption = (
@@ -2718,6 +2813,47 @@ body::after {{
 """
             html += "  </div>\n"
 
+        # Shadow-candidate block — rendered only when the scan ran in shadow
+        # mode AND candidates were discovered under research/scan-candidates/.
+        # This is a review aid, not authoritative data: candidates are NOT in
+        # features/ yet and the user must promote them explicitly.
+        if (
+            not is_derived
+            and consolidation_mode == "shadow"
+            and shadow_candidates
+        ):
+            total_candidates = sum(len(v) for v in shadow_candidates.values())
+            html += (
+                '  <div style="margin-top:18px;padding:14px 16px;'
+                'background:rgba(229,161,0,0.06);border:1px solid rgba(229,161,0,0.25);'
+                'border-radius:var(--radius)">\n'
+            )
+            html += (
+                f'    <div style="font-size:13px;font-weight:600;color:var(--yellow);'
+                f'margin-bottom:6px">Shadow candidates '
+                f'({total_candidates} pending review)</div>\n'
+            )
+            html += (
+                '    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;'
+                'max-width:820px">Offerings the scan mapped to feature JSONs but did '
+                '<em>not</em> write into <code>features/</code>. They live under '
+                '<code>research/scan-candidates/{company_slug}/</code> for human '
+                'review — promote, edit, or discard before committing to the '
+                'feature set.</div>\n'
+            )
+            for company_slug in sorted(shadow_candidates.keys()):
+                cands = shadow_candidates[company_slug]
+                slugs_html = " &middot; ".join(
+                    f'<code>{escape_html(c.get("slug", ""))}</code>' for c in cands
+                )
+                html += (
+                    f'    <div style="font-size:12px;margin-top:6px">'
+                    f'<span style="color:var(--text2)">'
+                    f'<code>{escape_html(company_slug)}/</code> '
+                    f'({len(cands)}):</span> {slugs_html}</div>\n'
+                )
+            html += "  </div>\n"
+
         # Footer line — bits depend on source.
         footer_bits = []
         footer_bits.append(f'{len(included_units)} of {len(units)} units included')
@@ -2732,6 +2868,7 @@ body::after {{
                 footer_bits.append(f'scanned {created_short}')
             if version:
                 footer_bits.append(f'scan-output.json v{escape_html(version)}')
+            footer_bits.append(f'mode: {escape_html(consolidation_mode)}')
         html += (
             '  <div style="margin-top:14px;font-size:12px;color:var(--text2)">'
             + ' &middot; '.join(footer_bits)
