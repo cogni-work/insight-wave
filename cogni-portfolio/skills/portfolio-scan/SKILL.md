@@ -73,16 +73,20 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
      - If multiple matches or no match, present available templates via `AskUserQuestion`
      - Once resolved, set `TEMPLATE_PATH=$CLAUDE_PLUGIN_ROOT/templates/{type}`
    - If the user wants to customize their taxonomy (add/rename categories, tweak search patterns), direct them to the `cogni-portfolio:portfolio-taxonomy` skill before running the scan — that skill clones a bundled template into `${PROJECT_PATH}/taxonomy/` so edits survive plugin updates.
-6. **Select consolidation mode:** The scan produces a structured report (Phase 6) regardless of mode. What differs is what Phase 7 does with the discovered offerings. See [references/consolidation-modes.md](references/consolidation-modes.md) for the full rationale and when to pick each mode.
+6. **Select consolidation mode:** The scan produces a structured report (Phase 6) regardless of mode. What differs is what Phase 7 does with the discovered offerings — and, consequentially, **how many features end up in `features/`**. See [references/consolidation-modes.md](references/consolidation-modes.md) for the full rationale and when to pick each mode.
 
-   Present this choice via `AskUserQuestion` with four options:
+   > **Feature-count grain differs sharply by mode.** `consolidate` writes one feature per discovered SKU (often 100–300+ for a large corporate portfolio); `category-aggregation` writes one feature per populated taxonomy category (≤57 for b2b-ict). If the user expects the feature grid to mirror the taxonomy they just confirmed, that is `category-aggregation`.
 
-   | Mode | Phase 7 behaviour | Pick when… |
-   |---|---|---|
-   | `consolidate` *(default)* | Map offerings → features, dedupe against existing `features/*.json`, write merges and new features | Scanning the portfolio's own company — you want the scan to populate / refresh the feature set |
-   | `shadow` | Map offerings → candidate JSON files under `research/scan-candidates/{COMPANY_SLUG}/` — `features/` is untouched | You want to review proposed features before committing them; scanning a reference / partner provider |
-   | `research-only` | Stop after the Phase 6 report — no feature writes, no candidate files | Scanning a competitor, prospect, or any non-self company whose offerings must not enter the feature set |
-   | `category-aggregation` | Group staged candidates by `taxonomy_mapping.category_id` and write one category-grained feature per populated category. Delivery-stack variants are pushed into `research/scan-solutions-draft.json` for downstream solution seeding. | Consolidation / benchmarking scans where the feature count should mirror the taxonomy shape (≤57 features for b2b-ict) rather than each provider offering. Per-stack detail (OTC / AWS / GCP / on-prem) is preserved for `solutions/`, not kept as feature-level variants. |
+   **Check for a pre-set mode first.** If `CONSOLIDATION_MODE` is already set in the environment (caller is `portfolio-setup` Step 5.6c or another upstream skill that asked the user before dispatch), **skip the prompt entirely** and honour the pre-set value — the user has already made this call once; do not ask again. Validate the pre-set value is one of `consolidate | shadow | research-only | category-aggregation`; on an unrecognised value, fall through to the prompt rather than erroring.
+
+   If `CONSOLIDATION_MODE` is unset (the skill was invoked directly, not via `portfolio-setup`), present this choice via `AskUserQuestion` with four options:
+
+   | Mode | Feature count | Phase 7 behaviour | Pick when… |
+   |---|---|---|---|
+   | `consolidate` *(default)* | One per SKU (often 100–300+ for large corporates) | Map offerings → features, dedupe against existing `features/*.json`, write merges and new features | Scanning the portfolio's own company and you want per-SKU granularity in `features/` (each SKU can carry its own proposition / pricing / competitor view downstream) |
+   | `shadow` | Zero in `features/` — staged under `research/scan-candidates/` | Map offerings → candidate JSON files under `research/scan-candidates/{COMPANY_SLUG}/` — `features/` is untouched | You want to review proposed features before committing them; scanning a reference / partner provider |
+   | `research-only` | Zero | Stop after the Phase 6 report — no feature writes, no candidate files | Scanning a competitor, prospect, or any non-self company whose offerings must not enter the feature set |
+   | `category-aggregation` | ≤ taxonomy size (≤57 for b2b-ict, one per populated category) | Group staged candidates by `taxonomy_mapping.category_id` and write one category-grained feature per populated category. Delivery-stack variants are pushed into `research/scan-solutions-draft.json` for downstream solution seeding. | Consolidation / benchmarking scans where the feature count should mirror the taxonomy shape rather than each provider offering. Per-stack detail (OTC / AWS / GCP / on-prem) is preserved for `solutions/`, not kept as feature-level variants. |
 
    Record the selection as `CONSOLIDATION_MODE` (default `consolidate` if the user dismisses the prompt). The choice is persisted into `scan-output.json` in Phase 6 so downstream dashboards and any "promote candidates" utility know how the scan was run.
 

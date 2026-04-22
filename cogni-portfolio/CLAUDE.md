@@ -145,6 +145,21 @@ Each project lives in `cogni-portfolio/{project-slug}/` with:
 
 Feature x Market combinations are the core join — they drive propositions, solutions, and competitor analysis.
 
+## Consolidation Modes and Feature-vs-Solution Grain
+
+`portfolio-scan` supports four consolidation modes (`consolidate` | `shadow` | `research-only` | `category-aggregation`) selected at Phase 0 Step 6 and persisted as `consolidation_mode` in `research/.metadata/scan-output.json`. Mode changes **what grain `features/*.json` represents** — the rest of the pipeline (markets, propositions, solutions) is mode-agnostic but reads the grain differently.
+
+| Mode | Feature grain | SKU / delivery-stack detail lives in |
+|---|---|---|
+| `consolidate` *(default)* | One feature per discovered SKU | The feature itself (one `_source_offering`, one `source_lineage` entry per feature) |
+| `category-aggregation` | One feature per populated taxonomy category (≤57 for b2b-ict) | `solutions/` — seeded from `research/scan-solutions-draft.json`, which Branch F writes with a `delivery_stacks[]` list per category-grained feature |
+| `shadow` | Zero (staged in `research/scan-candidates/`) | Candidate files (promote via `features` skill's promote-shadow workflow) |
+| `research-only` | Zero | Report only (used as input to the `portfolio-consolidate` cross-scan matrix) |
+
+**Why this matters for downstream skills.** Under `category-aggregation` the feature record is a **capability** ("Sovereign Cloud IaaS") and a buyer's real choice between OTC, AWS Frankfurt, GCP Frankfurt, and on-prem sits at the solution layer, not the feature layer. `propositions` generation should stay at the feature grain (one IS/DOES/MEANS per capability); `solutions` should bootstrap multiple delivery-stack entries per feature from `scan-solutions-draft.json` (or be authored manually until the seed-from-scan-draft entry point lands). `compete` and `customers` also key off feature grain, so their outputs under `category-aggregation` describe category-level competitive landscape rather than per-SKU battle cards.
+
+Dashboards must branch on `consolidation_mode` before computing dedupe-health metrics: the `dedupe_summary` sum invariant holds under `consolidate` but not under `category-aggregation` (many candidates legitimately collapse into one feature). See `cogni-portfolio/skills/portfolio-scan/references/consolidation-modes.md` for the full schema and forward-compatibility notes.
+
 ## Three-Layer Quality Assessment
 
 Most entity types go through a three-layer quality pipeline:

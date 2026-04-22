@@ -127,15 +127,36 @@ If the user has no documents or wants to skip, proceed to Step 5.6.
 
 ### 5.6. Portfolio Scan (when URL and taxonomy available)
 
-If a company URL/domain was captured in Step 1 AND a taxonomy template was selected in Step 5, offer to scan:
+If a company URL/domain was captured in Step 1 AND a taxonomy template was selected in Step 5, offer to scan.
 
-> "You have a taxonomy template ({template name}) and a company domain ({domain}). I can scan their public websites now to discover and classify their service portfolio. This typically takes a few minutes. Proceed?"
+#### 5.6a — Offer the scan
 
-If the user confirms, invoke the `portfolio-scan` skill. The portfolio project, `portfolio.json`, and taxonomy are already in place, so scan's Phase 0 will resolve immediately.
+> "You have a taxonomy template ({template name}, {dimension count} dimensions, {category count} categories) and a company domain ({domain}). I can scan their public websites now to discover and classify their service portfolio. This typically takes a few minutes. Proceed?"
 
 If the user declines or no URL was provided, skip to Step 6 — they can run `portfolio-scan` separately later.
 
 If no taxonomy template was selected in Step 5, skip — scanning requires a taxonomy to classify against. Mention: "Portfolio scanning requires a taxonomy template. You can apply one later and run `portfolio-scan` separately."
+
+#### 5.6b — Ask the consolidation-mode question here, before launching scan
+
+The scan's Phase 7 behaviour depends on a **consolidation mode**. The choice determines how many features land in `features/` and whether per-SKU detail is kept at the feature layer or pushed to `solutions/`. This is an executive-level portfolio decision, not a scan implementation detail — so the user must make the call **before** scan starts, not hidden inside scan's Phase 0.
+
+Present the choice via `AskUserQuestion` with these options. Populate `{category count}` from the taxonomy chosen in Step 5 (57 for `b2b-ict`, matching numbers for the other templates).
+
+| Option | Label | Description |
+|---|---|---|
+| `consolidate` | One feature per SKU (default) | Richest detail — every discovered SKU becomes its own feature with its own proposition / pricing / competitor view. Expect 100–300+ features for a large corporate. Pick this for proposition / sales-enablement workflows. |
+| `category-aggregation` | One feature per taxonomy category | Feature grid mirrors the taxonomy you just picked (≤{category count} features). Per-SKU detail (providers, delivery stacks, regions) is preserved for `solutions/`, not at the feature layer. Pick this for consolidation / benchmarking / executive-view workflows. |
+| `shadow` | Stage for review | Offerings land in `research/scan-candidates/` for later review — `features/` is untouched. Pick this when scanning a partner / reference provider you don't own. |
+| `research-only` | Report only | Phase 6 report only — no feature writes. Pick this when scanning a competitor or prospect whose offerings must not enter your feature set. |
+
+Record the selection as `CONSOLIDATION_MODE` in the session environment before dispatching scan, and also note it back to the user so they can confirm before the scan kicks off a multi-minute run:
+
+> "Scanning {company} in `{mode}` mode — {one-line consequence for this mode}. Starting now."
+
+#### 5.6c — Dispatch scan with the mode pre-answered
+
+Invoke the `portfolio-scan` skill with `CONSOLIDATION_MODE` set in the environment. Scan's Phase 0 Step 6 detects the pre-set value and **skips its own mode prompt** — the user has already made the call here. The portfolio project, `portfolio.json`, and taxonomy are already in place, so scan's Phase 0 will otherwise resolve immediately.
 
 ### 6. Confirm and Guide Next Steps
 

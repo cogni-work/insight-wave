@@ -123,9 +123,11 @@ The artifact is **persistent across scan sessions** — it lives at the stable `
 
 ## Choosing a default
 
-The skill prompts the user explicitly rather than heuristically guessing from the company slug. Keep the default as `consolidate` so v1.2.0 behaviour is preserved for any caller (including `portfolio-setup`) that does not pass a mode through.
+The skill prompts the user explicitly rather than heuristically guessing from the company slug. Keep the default as `consolidate` for direct invocations of `portfolio-scan` that do not go through `portfolio-setup` — this preserves v1.2.0 behaviour for any caller that does not pass a mode through.
 
-Callers that know the scan target is not the portfolio owner should pass `consolidation_mode: "research-only"` (or `"shadow"`) explicitly to avoid the prompt and the default.
+**When dispatched from `portfolio-setup` Step 5.6**, the mode choice is made **before** scan launches — the setup skill asks the user directly via its own `AskUserQuestion` and exports `CONSOLIDATION_MODE` in the session environment. Scan's Phase 0 Step 6 honours the pre-set value and skips its own prompt. This is the intended path for first-time setups: the mode decision is a portfolio-level call (do I want SKU-grain features or taxonomy-grain features for this project?) and belongs next to the taxonomy choice, not inside the scan.
+
+Callers that know the scan target is not the portfolio owner should pass `consolidation_mode: "research-only"` (or `"shadow"`) explicitly to avoid both prompts.
 
 ## Forward compatibility
 
