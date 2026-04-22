@@ -17,6 +17,8 @@ Analyze the competitive landscape for each proposition (Feature x Market combina
 
 Competitive analysis is scoped to propositions, not features or markets alone. A "cloud monitoring" feature may compete against Datadog in mid-market SaaS but against Splunk in enterprise fintech. The competitive positioning and differentiation are always market-dependent.
 
+**Boundary with `portfolio-consolidate`**: this skill operates at the **proposition / messaging level** (Feature × Market). For comparing providers at the **taxonomy / capability level** (Company × Category) — e.g., "who offers managed Kubernetes in the DACH ICT peer set" — use the `portfolio-consolidate` skill instead. The two are complementary: `portfolio-consolidate` surfaces peer coverage gaps at the taxonomy level, which can then inform which propositions need competitive analysis here.
+
 ## Workflow
 
 ### 1. Select Propositions to Analyze

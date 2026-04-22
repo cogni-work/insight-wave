@@ -141,6 +141,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `portfolio-dashboard` | skill | Generate an interactive HTML dashboard showing the full portfolio status |
 | `portfolio-architecture` | skill | Generate an interactive Excalidraw architecture diagram of products and features |
 | `portfolio-lineage` | skill | Track source documents and URLs, detect changes, cascade refresh through features → propositions → solutions |
+| `portfolio-consolidate` | skill | Roll up N research-only scan outputs into a taxonomy-shaped coverage matrix across providers |
 | `trends-bridge` | skill | Bidirectional integration between cogni-trends TIPS analysis and the portfolio |
 | `portfolio-resume` | skill | Resume, continue, or check status of a portfolio project |
 | `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
@@ -179,7 +180,7 @@ cogni-portfolio/
 │   ├── b2b-industrial-tech/      Industrial Tech (8 dims, 48 cats)
 │   ├── b2b-professional-services/ Professional Services (8 dims, 44 cats)
 │   └── b2b-opensource/           Commercial Open Source (8 dims, 50 cats)
-├── skills/                       20 portfolio skills
+├── skills/                       21 portfolio skills
 │   └── portfolio-canvas-workspace/ Dev workspace (evals, iterations — not a skill)
 ├── agents/                       20 delegation agents
 ├── hooks/                        1 guardrail hook (Excalidraw canvas auto-start)

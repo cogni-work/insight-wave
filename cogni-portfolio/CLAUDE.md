@@ -5,7 +5,7 @@ Portfolio messaging and proposition planning — from product definition through
 ## Plugin Architecture
 
 ```
-skills/                         20 portfolio skills
+skills/                         21 portfolio skills
   portfolio-setup/                Initialize project with company context and taxonomy
   portfolio-canvas/               Bootstrap from Lean Canvas or Business Model Canvas
   portfolio-scan/                 Discover offerings via web scanning + taxonomy classification
@@ -38,6 +38,7 @@ skills/                         20 portfolio skills
   portfolio-dashboard/            Interactive HTML dashboard of full portfolio status
   portfolio-architecture/         Excalidraw product-feature hierarchy diagram
   portfolio-lineage/              Source tracking, change detection, and refresh cascades
+  portfolio-consolidate/          Cross-scan taxonomy coverage matrix from N research-only scans
   trends-bridge/                  Bidirectional integration with cogni-trends TIPS analysis
   portfolio-resume/               Detect workflow phase and recommend next actions
 
@@ -95,7 +96,7 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 20 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-taxonomy, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, portfolio-communicate, portfolio-dashboard, portfolio-architecture, portfolio-lineage, trends-bridge, portfolio-resume |
+| Skills | 21 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-taxonomy, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, portfolio-communicate, portfolio-dashboard, portfolio-architecture, portfolio-lineage, portfolio-consolidate, trends-bridge, portfolio-resume |
 | Agents | 20 | market-researcher, competitor-researcher, customer-researcher, customer-review-assessor, proposition-generator, proposition-quality-assessor, proposition-review-assessor, proposition-deep-diver, solution-architect, solution-planner, solution-review-assessor, feature-quality-assessor, feature-review-assessor, feature-deduplication-detector, feature-deep-diver, quality-enricher, customer-narrative-writer, communicate-review-assessor, dashboard-refresher, portfolio-web-researcher |
 
 ## Typical Workflow
