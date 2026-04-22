@@ -806,6 +806,134 @@ def _render_communicate_card(cf, level_labels):
 # HTML generation
 # ---------------------------------------------------------------------------
 
+def _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions):
+    # Single source of truth for the four-state Feature x Market encoding
+    # shared by the full matrix and the compact coverage heatmap.
+    if pair in excluded_set:
+        return {
+            "kind": "excluded",
+            "cls": "excluded",
+            "icon": "&#8709;",
+            "title": excluded_reasons.get(pair, "Excluded"),
+        }
+    has_prop = pair in propositions
+    has_sol = pair in solutions
+    if has_prop and has_sol:
+        return {"kind": "full", "cls": "full", "icon": "&#10003;", "title": pair}
+    if has_prop:
+        return {"kind": "partial", "cls": "partial", "icon": "&#9679;", "title": pair}
+    return {"kind": "missing", "cls": "missing", "icon": "&#10005;", "title": pair}
+
+
+def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, excluded_reasons):
+    # Render the above-the-fold coverage block shown in the dashboard header.
+    # Large portfolios (>=10 features AND >=5 markets) get a dense density map;
+    # smaller portfolios get the full matrix inline so the cells stay readable.
+    if not feature_slugs or not market_slugs:
+        return ""
+
+    propositions = data["propositions"]
+    solutions = data["solutions"]
+
+    counts = {"full": 0, "partial": 0, "missing": 0, "excluded": 0}
+    cell_matrix = []  # list of (feature_slug, [state_dict per market])
+    for fs in feature_slugs:
+        row = []
+        for ms in market_slugs:
+            pair = f"{fs}--{ms}"
+            st = _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions)
+            counts[st["kind"]] += 1
+            row.append((pair, st))
+        cell_matrix.append((fs, row))
+
+    total = sum(counts.values())
+    covered = counts["full"] + counts["partial"]
+    pct = int(round((covered / total) * 100)) if total else 0
+
+    legend = (
+        '<div class="coverage-heatmap-legend">'
+        f'<span><span class="legend-dot" style="background:var(--green)"></span>{counts["full"]} full</span>'
+        f'<span><span class="legend-dot" style="background:var(--yellow)"></span>{counts["partial"]} partial</span>'
+        f'<span><span class="legend-dot" style="background:var(--red);opacity:0.5"></span>{counts["missing"]} missing</span>'
+        + (f'<span><span class="legend-dot" style="background:var(--muted);opacity:0.4"></span>{counts["excluded"]} excluded</span>' if counts["excluded"] else '')
+        + '</div>'
+    )
+
+    header = (
+        '<div class="coverage-heatmap-header">'
+        '<span class="coverage-heatmap-label">'
+        f'Feature &times; Market coverage &middot; {covered}/{total} ({pct}%)'
+        '</span>'
+        f'{legend}'
+        '</div>'
+    )
+
+    compressed = (len(feature_slugs) >= 10 and len(market_slugs) >= 5)
+
+    if compressed:
+        rows_html = []
+        for fs, row in cell_matrix:
+            fname = escape_html(data["features"][fs].get("name", fs))
+            cells = []
+            for pair, st in row:
+                if st["kind"] == "excluded":
+                    cells.append(
+                        f'<button type="button" class="coverage-cell excluded" '
+                        f'title="{escape_html(fname)} &times; {escape_html(pair.split("--", 1)[1])} &mdash; {escape_html(st["title"])}" '
+                        f'aria-label="Excluded"></button>'
+                    )
+                else:
+                    mslug = pair.split("--", 1)[1]
+                    mname = escape_html(data["markets"].get(mslug, {}).get("name", mslug))
+                    state_label = st["kind"]
+                    cells.append(
+                        f'<button type="button" class="coverage-cell {st["cls"]}" '
+                        f'onclick="openCoverageCell(\'{escape_js_string(pair)}\')" '
+                        f'title="{escape_html(fname)} &times; {mname} &mdash; {state_label}" '
+                        f'aria-label="{escape_html(fname)} times {mname}, {state_label}"></button>'
+                    )
+            rows_html.append('<div class="coverage-heatmap-row">' + ''.join(cells) + '</div>')
+        body = '<div class="coverage-heatmap">' + ''.join(rows_html) + '</div>'
+    else:
+        # Inline full matrix for small portfolios — readable without compression.
+        thead_cells = ''.join(
+            f'<th title="{escape_html(data["markets"].get(ms, {}).get("name", ms))}">{escape_html(ms)}</th>'
+            for ms in market_slugs
+        )
+        body_rows = []
+        for fs, row in cell_matrix:
+            fname = escape_html(data["features"][fs].get("name", fs))
+            cells = [f'<td class="feat-label" title="{fname}">{fname}</td>']
+            for pair, st in row:
+                if st["kind"] == "excluded":
+                    cells.append(
+                        f'<td><button type="button" class="coverage-cell-inline excluded" '
+                        f'title="{escape_html(st["title"])}"></button></td>'
+                    )
+                else:
+                    mslug = pair.split("--", 1)[1]
+                    mname = escape_html(data["markets"].get(mslug, {}).get("name", mslug))
+                    cells.append(
+                        f'<td><button type="button" class="coverage-cell-inline {st["cls"]}" '
+                        f'onclick="openCoverageCell(\'{escape_js_string(pair)}\')" '
+                        f'title="{escape_html(fname)} &times; {mname} &mdash; {st["kind"]}"></button></td>'
+                    )
+            body_rows.append('<tr>' + ''.join(cells) + '</tr>')
+        body = (
+            '<div class="coverage-inline-matrix"><table>'
+            f'<thead><tr><th></th>{thead_cells}</tr></thead>'
+            f'<tbody>{"".join(body_rows)}</tbody>'
+            '</table></div>'
+        )
+
+    return (
+        '<div class="coverage-heatmap-wrap">'
+        + header
+        + body
+        + '</div>'
+    )
+
+
 def generate_html(data, status, project_dir, theme):
     """Generate the full HTML dashboard string."""
     portfolio = data["portfolio"]
@@ -829,6 +957,21 @@ def generate_html(data, status, project_dir, theme):
 
     market_slugs = sorted(data["markets"].keys(), key=lambda s: market_sort_key(s, data["markets"]))
     feature_slugs = sorted(data["features"].keys(), key=lambda s: feature_sort_key(s, data["features"]))
+
+    # Build excluded pairs lookup once — shared by the header coverage heatmap
+    # and the full Feature x Market matrix section further down.
+    _excluded_set = set()
+    _excluded_reasons = {}
+    if status:
+        for ep in status.get("excluded_pairs", []):
+            p = ep.get("pair", "")
+            if p:
+                _excluded_set.add(p)
+                _excluded_reasons[p] = ep.get("reason", "Excluded")
+
+    coverage_heatmap_html = _build_coverage_heatmap(
+        feature_slugs, market_slugs, data, _excluded_set, _excluded_reasons
+    )
 
     tips_data = data.get("tips", {})
     anchored_sts = tips_data.get("anchored_sts", {})
@@ -2233,10 +2376,130 @@ body::after {{
   background: var(--accent);
   color: var(--bg);
 }}
+/* Coverage heatmap — above-the-fold Feature x Market density in the header */
+.coverage-heatmap-wrap {{
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}}
+.coverage-heatmap-header {{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}}
+.coverage-heatmap-label {{
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.7);
+}}
+.coverage-heatmap-legend {{
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.55);
+  flex-wrap: wrap;
+}}
+.coverage-heatmap-legend span {{
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}}
+.coverage-heatmap-legend .legend-dot {{
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}}
+.coverage-heatmap {{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 2px 0;
+}}
+.coverage-heatmap-row {{
+  display: grid;
+  gap: 2px;
+  grid-auto-flow: column;
+  grid-auto-columns: 12px;
+  align-items: center;
+}}
+.coverage-cell {{
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.15s;
+}}
+.coverage-cell:hover {{
+  transform: scale(1.6);
+  box-shadow: 0 0 8px rgba(0,0,0,0.4);
+  z-index: 2;
+  position: relative;
+}}
+.coverage-cell.full {{ background: var(--green); }}
+.coverage-cell.partial {{ background: var(--yellow); }}
+.coverage-cell.missing {{ background: var(--red); opacity: 0.4; }}
+.coverage-cell.missing:hover {{ opacity: 0.75; }}
+.coverage-cell.excluded {{ background: var(--muted); opacity: 0.25; cursor: default; }}
+.coverage-cell.excluded:hover {{ transform: none; box-shadow: none; }}
+/* Inline full matrix fallback for small portfolios (<10 features x <5 markets) */
+.coverage-inline-matrix {{
+  overflow-x: auto;
+}}
+.coverage-inline-matrix table {{
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 11px;
+}}
+.coverage-inline-matrix th {{
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
+  font-size: 10px;
+  padding: 2px 6px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}}
+.coverage-inline-matrix td {{ padding: 0; }}
+.coverage-inline-matrix td.feat-label {{
+  color: rgba(255,255,255,0.75);
+  font-weight: 500;
+  text-align: left;
+  padding-right: 10px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}}
+.coverage-cell-inline {{
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s;
+}}
+.coverage-cell-inline:hover {{ transform: scale(1.2); }}
+.coverage-cell-inline.full {{ background: var(--green); }}
+.coverage-cell-inline.partial {{ background: var(--yellow); }}
+.coverage-cell-inline.missing {{ background: var(--red); opacity: 0.45; }}
+.coverage-cell-inline.excluded {{ background: var(--muted); opacity: 0.3; cursor: default; }}
 @media (max-width: 768px) {{
   .package-grid {{ grid-template-columns: 1fr; }}
   .topnav {{ padding: 8px 16px; margin: 0 -16px 16px; }}
   .topnav .nav-brand {{ display: none; }}
+  .coverage-heatmap {{ max-height: 140px; }}
 }}
 </style>
 </head>
@@ -2250,7 +2513,7 @@ body::after {{
   <a href="#" data-section="Products">Products</a>
   {'<a href="#" data-section="Provider units">Provider units</a>' if scan_output else ''}
   <a href="#" data-section="Markets">Markets</a>
-  <a href="#" data-section="Matrix">Matrix</a>
+  <a href="#" data-section="Matrix">Feature &times; Market</a>
   {'<a href="#" data-section="Taxonomy">Taxonomy</a>' if has_taxonomy else ''}
   {'<a href="#" data-section="Anchor">Anchors</a>' if anchored_sts else ''}
   <a href="#" data-section="Customers">Customers</a>
@@ -2273,6 +2536,7 @@ body::after {{
   </div>
   {f'<div class="desc">{escape_html(company_desc)}</div>' if company_desc else ''}
   <div class="theme-badge"><span class="swatch" style="background:var(--accent)"></span>Theme: {escape_html(theme["name"])}</div>
+  {coverage_heatmap_html}
 </div>
 
 <!-- Phase Progress -->
@@ -2519,15 +2783,8 @@ body::after {{
         html += "  </div>\n</div>\n"
 
     # --- Feature x Market Matrix ---
-    # Build excluded pairs lookup from status data
-    _excluded_set = set()
-    _excluded_reasons = {}
-    if status:
-        for ep in status.get("excluded_pairs", []):
-            p = ep.get("pair", "")
-            if p:
-                _excluded_set.add(p)
-                _excluded_reasons[p] = ep.get("reason", "Excluded")
+    # _excluded_set / _excluded_reasons are computed once near the top of
+    # generate_html() and shared with the header coverage heatmap.
 
     if feature_slugs and market_slugs:
         html += """
@@ -2561,22 +2818,12 @@ body::after {{
                 html += f'      <tr><td class="feature-label" title="{escape_html(f.get("description", ""))}">{escape_html(f.get("name", fs))}</td>\n'
                 for ms in market_slugs:
                     pair = f"{fs}--{ms}"
-                    if pair in _excluded_set:
-                        reason = _excluded_reasons.get(pair, "Excluded")
-                        html += f'        <td><button class="cell excluded" title="{escape_html(reason)}">&#8709;</button></td>\n'
-                        continue
-                    has_prop = pair in data["propositions"]
-                    has_sol = pair in data["solutions"]
-                    if has_prop and has_sol:
-                        cls = "full"
-                        icon = "&#10003;"
-                    elif has_prop:
-                        cls = "partial"
-                        icon = "&#9679;"
+                    st = _cell_state(pair, _excluded_set, _excluded_reasons,
+                                     data["propositions"], data["solutions"])
+                    if st["kind"] == "excluded":
+                        html += f'        <td><button class="cell excluded" title="{escape_html(st["title"])}">{st["icon"]}</button></td>\n'
                     else:
-                        cls = "missing"
-                        icon = "&#10005;"
-                    html += f'        <td><button class="cell {cls}" onclick="openProposition(\'{escape_js_string(pair)}\')" title="{escape_html(pair)}">{icon}</button></td>\n'
+                        html += f'        <td><button class="cell {st["cls"]}" onclick="openProposition(\'{escape_js_string(pair)}\')" title="{escape_html(st["title"])}">{st["icon"]}</button></td>\n'
                 html += "      </tr>\n"
 
         for ps in sorted(product_groups.keys()):
@@ -3586,6 +3833,20 @@ function openProposition(slug) {{
   var ov = document.getElementById('overlay');
   ov.style.display = 'flex';
   requestAnimationFrame(function() {{ ov.classList.add('open'); }});
+}}
+
+function openCoverageCell(slug) {{
+  // Coverage heatmap click-through: open the Feature x Market drawer and
+  // anchor the background scroll to the full matrix so closing the drawer
+  // lands the reader at the drill-down target.
+  openProposition(slug);
+  var el = Array.from(document.querySelectorAll('.section-title'))
+    .find(function(t) {{ return t.textContent.indexOf('Feature x Market Matrix') >= 0; }});
+  if (el) {{
+    var section = el.closest('.section') || el.parentElement;
+    var y = section.getBoundingClientRect().top + window.pageYOffset - 60;
+    window.scrollTo({{ top: y, behavior: 'smooth' }});
+  }}
 }}
 
 function openMarket(slug) {{
