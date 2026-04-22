@@ -542,6 +542,18 @@ When the user provides a product description, website content, or document:
 4. Propose a structured feature set with your reasoning
 5. Let the user confirm, edit, or remove before creating files
 
+### Promote Shadow Candidates
+
+Trigger this operation when the user says "promote shadow candidates", "import scan candidates", or "pull the shadow features in", or after a `portfolio-scan --mode=shadow` run has staged offerings under `research/scan-candidates/{company_slug}/`.
+
+The full workflow lives in [`references/promote-shadow.md`](references/promote-shadow.md):
+1. List candidates via `$CLAUDE_PLUGIN_ROOT/skills/features/scripts/promote-shadow.py list`
+2. Let the user pick one or many, then show a dry-run preview (target paths, diagnostic fields to strip, delete-vs-archive choice)
+3. Run `promote-shadow.py promote` per selection
+4. Dispatch `feature-deduplication-detector` in candidate mode against the affected product so new features compete with existing ones on equal footing
+
+The helper handles the mechanical bits (`_shadow_candidate` / `_source_offering` field strip, move to `features/{slug}.json`, delete or archive the source).
+
 ### Feature Review
 
 When the user asks to review or improve their feature set (or when you notice issues during other operations), jump straight into the critique — don't start with discovery questions.
@@ -553,11 +565,11 @@ When the user asks to review or improve their feature set (or when you notice is
    - `readiness`: Must be `ga`, `beta`, or `planned`. Default to `ga` for features describing existing production capabilities.
    - Present a structural fix table showing what was missing and what you filled, then write the corrected files immediately. Don't wait for user confirmation on structural fields — these are mechanical fixes, not judgment calls.
 3. **Gap analysis**: Cross-reference every capability claim in `products/{slug}.json` against the feature files. Every capability mentioned in the product description that has no corresponding feature is a concrete gap — list them explicitly, don't just note "there might be gaps."
-3. **Overlap detection**: Flag features with overlapping descriptions and recommend specific merges
-4. **Description quality**: Test each description against the demo test. Tautologies ("Transforms data") and kitchen-sink descriptions ("alerts and dashboards and logging and...") both need rewriting.
-5. **Proposition readiness**: Assess whether each feature's description is specific enough to power a compelling proposition. A feature described as "Connects to data sources" will produce weak propositions — flag it.
-6. **Competitive positioning**: Which features are differentiators vs. table stakes in this product category? This matters because it influences which features to build propositions for first.
-7. **Cross-product check**: Scan sibling products' features for overlaps or bridges.
+4. **Overlap detection**: Flag features with overlapping descriptions and recommend specific merges
+5. **Description quality**: Test each description against the demo test. Tautologies ("Transforms data") and kitchen-sink descriptions ("alerts and dashboards and logging and...") both need rewriting.
+6. **Proposition readiness**: Assess whether each feature's description is specific enough to power a compelling proposition. A feature described as "Connects to data sources" will produce weak propositions — flag it.
+7. **Competitive positioning**: Which features are differentiators vs. table stakes in this product category? This matters because it influences which features to build propositions for first.
+8. **Cross-product check**: Scan sibling products' features for overlaps or bridges.
 
 Present your assessment as a consulting memo — lead with "here's what I'd change and why" backed by specific analysis. Don't list observations and ask "what do you think?" — state your recommended changes and let the user push back.
 
