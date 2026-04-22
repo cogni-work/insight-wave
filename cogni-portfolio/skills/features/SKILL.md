@@ -542,6 +542,12 @@ When the user provides a product description, website content, or document:
 4. Propose a structured feature set with your reasoning
 5. Let the user confirm, edit, or remove before creating files
 
+### Promote Shadow Candidates
+
+When the user says "promote shadow candidates", "import scan candidates", "pull the shadow features in", or after a `portfolio-scan --mode=shadow` run has staged offerings under `research/scan-candidates/{company_slug}/`.
+
+The full workflow lives in [`references/promote-shadow.md`](references/promote-shadow.md) so this entry stays lean. In short: list candidates via `$CLAUDE_PLUGIN_ROOT/skills/features/scripts/promote-shadow.py list`, let the user pick one or many, show a dry-run preview (target paths, diagnostic fields to strip, delete-vs-archive choice), run `promote-shadow.py promote` per selection, then dispatch `feature-deduplication-detector` in candidate mode against the affected product so new features compete with existing ones on equal footing. The helper handles the mechanical bits (`_shadow_candidate` / `_source_offering` field strip, move to `features/{slug}.json`, delete or archive the source).
+
 ### Feature Review
 
 When the user asks to review or improve their feature set (or when you notice issues during other operations), jump straight into the critique — don't start with discovery questions.

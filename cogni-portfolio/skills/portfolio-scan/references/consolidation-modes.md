@@ -30,7 +30,7 @@ Today's behaviour. Use when the scan target is the portfolio's own company and y
 
 Phase 7 maps offerings into the same feature JSON shape but writes them to a parallel staging area — `research/scan-candidates/{COMPANY_SLUG}/{slug}.json` — instead of `features/`. No dedupe agent runs. `portfolio.json` is not updated. `products/` is not created.
 
-This gives a reviewable "what would scan propose?" artifact without mutating curated state. The human-in-the-loop promotion step (a future addition to the `features` skill) reads the shadow directory, runs dedupe against current `features/`, and lets the user pull selected candidates into the real set on demand.
+This gives a reviewable "what would scan propose?" artifact without mutating curated state. The human-in-the-loop promotion step lives in the `features` skill's **Promote Shadow Candidates** operation (see `cogni-portfolio/skills/features/references/promote-shadow.md`): it lists the shadow directory, lets the user pick one or many candidates, strips the two diagnostic fields, writes to `features/{slug}.json`, dispatches `feature-deduplication-detector` in candidate mode so new features compete with existing ones fairly, and either deletes or archives the original.
 
 Shadow candidate file shape — a normal feature JSON plus two diagnostic fields:
 
