@@ -86,7 +86,7 @@ Use when the scan is serving **consolidation or benchmarking** rather than propo
 | Dimension of the offering | In `consolidate` mode | In `category-aggregation` mode |
 |---|---|---|
 | Capability / IS layer | Per-offering feature | Category-grained feature |
-| Delivery stack (provider, region, cloud, on-prem) | Feature-level field or separate features | Solution-level — written to `research/.staging/scan-solutions-draft.json` for `solutions/` to seed |
+| Delivery stack (provider, region, cloud, on-prem) | Feature-level field or separate features | Solution-level — written to `research/scan-solutions-draft.json` for `solutions/` to seed |
 | Compliance posture / certifications | Feature fields | Solution-level (follow-on, see "Forward compatibility") |
 | Pricing & commercial terms | Solution-level (unchanged) | Solution-level (unchanged) |
 | Source lineage (scan link, USP) | `source_lineage` per feature | `source_lineage` per category-grained feature (one entry per absorbed offering with `entity_role: "aggregated_from"`) |
