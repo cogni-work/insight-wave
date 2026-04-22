@@ -36,6 +36,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 3. Validate `PROJECT_PATH` exists with entity directories
 4. Resolve `CLAUDE_PLUGIN_ROOT` for entity creation scripts
 5. Load market config: read `${CLAUDE_PLUGIN_ROOT}/references/market-sources.json`, extract entry for `MARKET` key. If `MARKET` is not found, use `_default`. Store as `market_config` for use in Phase 1 and Phase 3
+6. **Reachability-aware fetch routing**: if `market_config.reachability_notes.websearch_preferred_domains` is a non-empty list (currently populated for `cn` against Mainland gov.cn domains), prefer WebSearch quote-mining over WebFetch for any URL whose host matches one of those domains. If WebFetch is attempted against a listed host and returns a timeout or blocked response, do NOT retry — fall back to the snippet content from the matching WebSearch result and continue. This avoids stalls on domains that are intermittently unreachable from outside the market's home region
 
 ### Phase 0.5: Source URL Processing (when SOURCE_URLS is set)
 
