@@ -63,7 +63,19 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
    - If absent, scan `$CLAUDE_PLUGIN_ROOT/templates/*/template.md` frontmatter for `industry_match` patterns that match `company.industry`
    - If multiple matches or no match, present available templates via AskUserQuestion
    - Once resolved, set `TEMPLATE_PATH=$CLAUDE_PLUGIN_ROOT/templates/{type}`
-6. Set environment variables:
+6. **Select consolidation mode:** The scan produces a structured report (Phase 6) regardless of mode. What differs is what Phase 7 does with the discovered offerings. See [references/consolidation-modes.md](references/consolidation-modes.md) for the full rationale and when to pick each mode.
+
+   Present this choice via `AskUserQuestion` with three options:
+
+   | Mode | Phase 7 behaviour | Pick when… |
+   |---|---|---|
+   | `consolidate` *(default)* | Map offerings → features, dedupe against existing `features/*.json`, write merges and new features | Scanning the portfolio's own company — you want the scan to populate / refresh the feature set |
+   | `shadow` | Map offerings → candidate JSON files under `research/scan-candidates/{COMPANY_SLUG}/` — `features/` is untouched | You want to review proposed features before committing them; scanning a reference / partner provider |
+   | `research-only` | Stop after the Phase 6 report — no feature writes, no candidate files | Scanning a competitor, prospect, or any non-self company whose offerings must not enter the feature set |
+
+   Record the selection as `CONSOLIDATION_MODE` (default `consolidate` if the user dismisses the prompt). The choice is persisted into `scan-output.json` in Phase 6 so downstream dashboards and any "promote candidates" utility know how the scan was run.
+
+7. Set environment variables:
 
 | Variable | Source | Example |
 |----------|--------|---------|
@@ -74,8 +86,9 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
 | TEMPLATE_PATH | `$CLAUDE_PLUGIN_ROOT/templates/{type}` | `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict` |
 | TEMPLATE_TYPE | `portfolio.json` → `taxonomy.type` | `b2b-ict` |
 | LANGUAGE | `portfolio.json` → `language` (default: "en") | `de` |
+| CONSOLIDATION_MODE | Step 6 selection | `consolidate` \| `shadow` \| `research-only` |
 
-7. Read the template files needed for this scan:
+8. Read the template files needed for this scan:
    - `${TEMPLATE_PATH}/template.md` — taxonomy definition (dimensions, categories)
    - `${TEMPLATE_PATH}/search-patterns.md` — web search queries
    - `${TEMPLATE_PATH}/provider-unit-rules.md` — entity inclusion/exclusion
@@ -83,7 +96,7 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
    - `${TEMPLATE_PATH}/product-template.md` — taxonomy→data model mapping
    - `${TEMPLATE_PATH}/report-template.md` — output format
 
-8. Create research directories lazily:
+9. Create research directories lazily:
    ```bash
    mkdir -p "${PROJECT_PATH}/research/.logs"
    mkdir -p "${PROJECT_PATH}/research/.metadata"
@@ -315,12 +328,13 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
 
 ```json
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "company_name": "{COMPANY_NAME}",
   "company_slug": "{COMPANY_SLUG}",
   "created": "{ISO_TIMESTAMP}",
   "skill": "cogni-portfolio:scan",
   "template_type": "{TEMPLATE_TYPE}",
+  "consolidation_mode": "consolidate",
   "output_file": "research/{COMPANY_SLUG}-portfolio.md",
   "domains_analyzed": ["domain1.com", "domain2.com"],
   "dimensions_covered": 8,
@@ -343,6 +357,14 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
   }
 }
 ```
+
+**`consolidation_mode` semantics** (added in v1.3.0):
+
+- `consolidate` — Phase 7 ran the full import+dedupe path; `dedupe_summary` counters are meaningful.
+- `shadow` — Phase 7 produced candidate JSON files under `research/scan-candidates/{COMPANY_SLUG}/` but did **not** touch `features/`. `dedupe_summary` counters are all zero except `written_new` may reflect the candidate file count if useful to dashboards — by convention leave them at zero and rely on a filesystem count of the shadow directory instead.
+- `research-only` — Phase 7 was skipped entirely. `dedupe_summary` counters are all zero. The report is the only deliverable.
+
+Consumers reading v1.2.0 or earlier must treat absent `consolidation_mode` as `"consolidate"` (that was the only behaviour the skill offered before v1.3.0).
 
 **`provider_units` semantics** (added in v1.2.0):
 
@@ -371,6 +393,38 @@ Map discovered offerings to the portfolio data model using the product template.
 Unlike earlier versions of this skill, Phase 7 **never writes a feature file before running dedupe**. Mapped offerings become in-memory *candidates*, get pooled with existing `features/*.json` by the `feature-deduplication-detector` agent, and only then either (a) merge into an existing stable feature, (b) collapse against another candidate, or (c) get written as a new feature. This preserves stable slugs for downstream entities (propositions, solutions, dashboards) and prevents re-scans from accumulating near-duplicate files.
 
 See `${TEMPLATE_PATH}/product-template.md` for the taxonomy-to-data-model mapping, default product definitions, and JSON examples.
+
+#### Phase 7 Mode Branching
+
+Branch on `CONSOLIDATION_MODE` (selected in Phase 0) **before** any mapping work. See [references/consolidation-modes.md](references/consolidation-modes.md) for the full rationale.
+
+- **`research-only`** — **Skip Phase 7 entirely.** Do not run Steps 7.1–7.7. Tell the user: "Scan complete in `research-only` mode — report at `${OUTPUT_FILE}`. No features were created or modified." Then stop the skill.
+- **`shadow`** — Run Steps 7.1, 7.2 (**categorize only — do not create products in `portfolio.json`**), and a modified Step 7.3 that writes candidate JSONs to `research/scan-candidates/${COMPANY_SLUG}/{slug}.json` instead of the staging file. **Skip Steps 7.4–7.7** — no dedupe, no `features/` writes, no `portfolio.json` taxonomy update. Tell the user: "Scan complete in `shadow` mode — N candidate files under `research/scan-candidates/${COMPANY_SLUG}/`. Review them and run the `features` skill's promote step to pull selected candidates into your feature set."
+- **`consolidate`** — Run Steps 7.1 through 7.7 as documented below. This is today's full-import behaviour.
+
+Shadow candidates use the same feature JSON shape as production features **plus** two diagnostic fields documented in [references/consolidation-modes.md](references/consolidation-modes.md):
+
+```json
+{
+  "slug": "aws-managed-services",
+  "product_slug": "cloud-services",
+  "name": "AWS Managed Services",
+  "purpose": "...",
+  "description": "...",
+  "taxonomy_mapping": { "dimension": 4, "category_id": "4.1", "...": "..." },
+  "readiness": "ga",
+  "source_file": "research/{COMPANY_SLUG}-portfolio.md",
+  "created": "<today>",
+  "_shadow_candidate": true,
+  "_source_offering": {
+    "domain": "t-systems.com",
+    "link": "https://www.t-systems.com/...",
+    "usp": "..."
+  }
+}
+```
+
+Create the shadow directory lazily: `mkdir -p "${PROJECT_PATH}/research/scan-candidates/${COMPANY_SLUG}"`.
 
 #### Step 7.1: Map Offerings to Features
 
@@ -577,3 +631,4 @@ If not already set, update `portfolio.json` to include the taxonomy reference:
 | TEMPLATE_PATH | Path to taxonomy template dir | `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict` |
 | TEMPLATE_TYPE | Taxonomy type identifier | `b2b-ict` |
 | LANGUAGE | ISO 639-1 from portfolio.json | `de` |
+| CONSOLIDATION_MODE | Phase 0 Step 6 selection — drives Phase 7 behaviour | `consolidate` \| `shadow` \| `research-only` |
