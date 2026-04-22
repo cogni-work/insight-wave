@@ -76,9 +76,9 @@
     {
       "name": "cogni-trends",
       "source": "./cogni-trends",
-      "version": "0.4.9",
+      "version": "0.4.10",
       "maturity": "preview",
-      "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK + Mexico (MX) + Brazil (BR).",
+      "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK + Mexico (MX) + Brazil (BR) + China (CN).",
       "keywords": [
         "tips",
         "trend-scout",
@@ -92,9 +92,9 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.14",
+      "version": "0.9.15",
       "maturity": "preview",
-      "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies and first-class market coverage spanning DACH/EU, UK/US, and LATAM (MX/BR).",
+      "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).",
       "keywords": [
         "portfolio",
         "messaging",
@@ -169,7 +169,7 @@
       "source": "./cogni-research",
       "version": "0.7.19",
       "maturity": "preview",
-      "description": "Multi-agent research report generator with localized search across 20 European, Anglo, and LATAM markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
+      "description": "Multi-agent research report generator with localized search across 21 European, Anglo, LATAM, and APAC markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR, CN) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [
         "research",
         "report",
@@ -182,6 +182,9 @@
         "latam",
         "brazil",
         "mexico",
+        "china",
+        "cn",
+        "zh",
         "pt",
         "agent"
       ]

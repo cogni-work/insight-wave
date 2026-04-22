@@ -6,7 +6,7 @@ description: |
   (multi-section with outline), deep (recursive tree exploration). Four source modes:
   web (default), local (user's files), wiki (cogni-wiki), hybrid. Requires an initialized
   project — routes to research-setup first if none exists. Runs localized search for the
-  project's configured market (17 supported: DACH, DE, FR, IT, PL, NL, ES, CZ, SK, HU, HR, GR, MX, BR, US, UK, EU)
+  project's configured market (18 supported: DACH, DE, FR, IT, PL, NL, ES, CZ, SK, HU, HR, GR, MX, BR, CN, US, UK, EU)
   with intent-based bilingual search and per-market authority sources. Use whenever the user asks
   for a research report, wants to investigate a topic, says "deep research", "gpt-researcher
   style", "multi-agent research", "analyze these documents", "research from my files",
