@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # validate-taxonomy.sh — Validate the project-local taxonomy bundle created by
-# manage-taxonomies (clone, author, or import mode).
+# portfolio-taxonomy (clone, author, or import mode).
 #
 # Why this exists: clone mode copies a known-good bundled template and the
 # structure is guaranteed by the source. Author/import modes produce files
@@ -41,7 +41,7 @@ PORTFOLIO_JSON="$PROJECT_PATH/portfolio.json"
 
 [ -d "$PROJECT_PATH" ]   || die "project_path not found: $PROJECT_PATH"
 [ -f "$PORTFOLIO_JSON" ] || die "portfolio.json not found: $PORTFOLIO_JSON"
-[ -d "$TAX_DIR" ]        || die "no project-local taxonomy at $TAX_DIR (run manage-taxonomies first)"
+[ -d "$TAX_DIR" ]        || die "no project-local taxonomy at $TAX_DIR (run cogni-portfolio:portfolio-taxonomy first)"
 
 # All validation logic runs in python3 — stdlib only. Collect every check's
 # result into an array, decide pass/fail from the collection, emit JSON.

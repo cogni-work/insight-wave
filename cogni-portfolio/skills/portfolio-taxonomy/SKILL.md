@@ -1,20 +1,20 @@
 ---
-name: manage-taxonomies
+name: portfolio-taxonomy
 description: |
-  Create, customize, or replace the taxonomy a cogni-portfolio project uses to classify
-  offerings. Use whenever the user wants to customize the taxonomy, clone a standard
-  taxonomy for editing, create a new taxonomy from scratch, override the bundled
-  template, add or rename dimensions or categories, tweak search patterns, or import
-  a taxonomy JSON from an external reference model. Triggers on "customize taxonomy",
-  "clone taxonomy", "copy taxonomy", "create a new taxonomy", "my own taxonomy",
-  "override taxonomy", "taxonomy dimensions", "taxonomy categories", "edit search
-  patterns", "import taxonomy", "my industry isn't in the templates". Project-local:
-  the customized taxonomy lives inside the portfolio project, survives plugin updates,
-  and overrides the bundled template during scan and setup resolution.
+  Own and customize the project-local taxonomy that classifies offerings for a
+  cogni-portfolio project — clone a bundled template, author from scratch, or
+  import from an external reference model. Use whenever the user wants to
+  customize the taxonomy, clone a standard taxonomy for editing, create a new
+  taxonomy, override the bundled template, add or rename dimensions or
+  categories, tweak search patterns, import a taxonomy JSON, or says "my
+  industry isn't in the templates", "my vertical isn't supported", or "rename
+  a dimension". Project-local: the customized taxonomy lives inside the
+  portfolio project, survives plugin updates, and overrides the bundled
+  template during scan and setup resolution.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
-# Manage Taxonomies
+# Portfolio Taxonomy
 
 ## Core Concept
 
@@ -22,7 +22,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 
 A taxonomy works best when it matches the industry you are scanning. Often the bundled 8 are close enough; sometimes they are not. This skill is how the user takes ownership of the taxonomy — clones a bundled one to edit, authors a new one, or imports one from an external reference model. The customized taxonomy lives **inside the portfolio project** at `{PROJECT_PATH}/taxonomy/` — it is not shared across projects, it is not written back to the plugin, and it survives plugin updates because it is part of the project's own data.
 
-**Resolver precedence** (used by `portfolio-scan` Phase 0 and `portfolio-setup` Step 5):
+**Resolver precedence** (used by `cogni-portfolio:portfolio-scan` Phase 0 and `cogni-portfolio:portfolio-setup` Step 5):
 
 1. If `{PROJECT_PATH}/taxonomy/` exists → use it (project-local wins)
 2. Else if `portfolio.json` has `taxonomy.type` → load `$CLAUDE_PLUGIN_ROOT/templates/{type}/`
@@ -30,11 +30,17 @@ A taxonomy works best when it matches the industry you are scanning. Often the b
 
 Project-local ownership means the user can safely edit `{PROJECT_PATH}/taxonomy/template.md`, `categories.json`, `search-patterns.md`, and the rest without worrying about plugin updates reverting their changes.
 
+## When NOT to use
+
+Do not edit the bundled templates under `$CLAUDE_PLUGIN_ROOT/templates/*` directly — plugin updates will overwrite those edits. This skill exists so customization lives *inside the project*. If the user is inside the plugin directory tweaking `templates/b2b-ict/categories.json`, stop them and route to this skill instead.
+
+Also not the right skill for: defining individual features or products (use `cogni-portfolio:features` / `cogni-portfolio:products`), or for running the scan itself (use `cogni-portfolio:portfolio-scan`).
+
 ---
 
 ## Prerequisites
 
-A cogni-portfolio project must exist — i.e. `{PROJECT_PATH}/portfolio.json` is readable. If it does not, tell the user to run `cogni-portfolio:setup` first and stop.
+A cogni-portfolio project must exist — i.e. `{PROJECT_PATH}/portfolio.json` is readable. If it does not, tell the user to run `cogni-portfolio:portfolio-setup` first and stop.
 
 ---
 
@@ -60,7 +66,7 @@ If `{PROJECT_PATH}/taxonomy/` **already exists**, add a fourth implicit option i
 
 ### Phase 2a: Clone a Bundled Template
 
-This is the most common path.
+This is the most common path and is short enough to keep inline.
 
 1. **Pick the base template.** List the 8 bundled templates by reading `$CLAUDE_PLUGIN_ROOT/templates/*/template.md` frontmatter — present `type`, short description, dimension count, and category count. Use `AskUserQuestion` with the list.
 
@@ -88,59 +94,19 @@ This is the most common path.
 
    **Keep categories.json and template.md consistent** — every category id that appears in one must appear in the other. A mismatch will confuse the scan's Phase 3 search and Phase 5 status assignment.
 
-5. **Close the loop.** Tell the user: "Taxonomy cloned to `{PROJECT_PATH}/taxonomy/`. Edit the files above, then run `portfolio-scan` — it will now use your customized taxonomy."
+5. **Close the loop.** Tell the user: "Taxonomy cloned to `{PROJECT_PATH}/taxonomy/`. Edit the files above, then run `cogni-portfolio:portfolio-scan` — it will now use your customized taxonomy."
 
 ### Phase 2b: Author a New Taxonomy From Scratch
 
-Use when no bundled template is close enough to be worth cloning. Offered but heavier — interactive and slower than clone.
+Author mode is heavier and more interactive than clone — it collects dimensions, categories, products, and search patterns, then scaffolds the 7-file bundle. The full step-by-step is in a reference file so this SKILL.md stays scannable.
 
-1. **Name and identify.**
-   - Ask for a `type` slug (kebab-case, e.g. `b2b-logistics`, `b2b-automotive-tier1`).
-   - Ask for a one-line description and the `industry_match` patterns (comma-separated keywords that should match this vertical in setup's detection step).
-
-2. **Define dimensions.** Dimension 0 is reused verbatim from any bundled template — it is industry-agnostic (Provider Profile Metrics with 6 categories: Financial Scale, Workforce Capacity, Geographic Presence, Market Position, Certifications, Partnership Ecosystem). Read it from `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict/categories.json` and copy forward.
-
-   For dimensions 1–7, ask the user for:
-   - `dimension_name` (e.g. `Fleet & Telematics`, `Cold Chain`, `Customs & Compliance`)
-   - `dimension_slug` (kebab-case of the name)
-
-   Aim for 5–7 service dimensions. Fewer than 4 misses coverage; more than 8 gets unwieldy.
-
-3. **Define categories per dimension.** For each dimension 1–N ask for 4–10 categories:
-   - `id` = `{dimension}.{number}` (auto-numbered)
-   - `name` (free text, 2–5 words, title case)
-
-4. **Define the product skeleton.** One standard product per dimension 1–N (Dim 0 is never a product). Ask for:
-   - `slug` (kebab-case, defaults to `dimension_slug`)
-   - `name` (title-cased dimension_name usually fits)
-   - One-line description
-
-5. **Generate search-pattern stubs.** For each category, generate two query stubs automatically:
-   - Marketing: `"{dimension_name}" "{category_name}" services {vertical_keyword}`
-   - Technical docs: `"{category_name}" documentation OR product page {vertical_keyword}`
-
-   Write them into `search-patterns.md` with the same section structure the bundled templates use. Tell the user these are starting-point queries — they will want to tune them once they see the first scan results.
-
-6. **Write the 7-file bundle** into `{PROJECT_PATH}/taxonomy/`. Use the bundled `b2b-ict` files as the structural template — copy structure, replace content. The full shape to produce:
-   - `template.md` — frontmatter (type, version `0.1.0`, dimensions count, categories count, industry_match) plus a dimension/category table
-   - `categories.json` — flat array of category objects (one per id)
-   - `search-patterns.md` — Phase 1 (company discovery, copy from b2b-ict), Phase 2 (provider profile, copy from b2b-ict), Phase 3 (per-category stubs you generated)
-   - `product-template.md` — the dimension → product table with the skeleton
-   - `cross-category-rules.md` — start empty with a comment explaining it can be added later
-   - `provider-unit-rules.md` — copy from `b2b-ict` and tell the user to adapt
-   - `report-template.md` — copy from `b2b-ict` (rarely needs vertical-specific edits)
-
-7. **Update `portfolio.json`** — set `taxonomy.type`, `taxonomy.source_path: "taxonomy/"`, `taxonomy.authored_at: <today>`.
+**Read `references/author-mode.md` and follow its 7 steps.** It covers: naming the taxonomy, defining dimensions (including why Dimension 0 is reused verbatim), defining categories per dimension, building the product skeleton, auto-generating search-pattern stubs, writing the 7-file bundle using `b2b-ict` as structural reference, and updating `portfolio.json`. When done, return here for the Validation section below.
 
 ### Phase 2c: Import From External JSON
 
-Use when the user has a structured taxonomy definition in hand.
+Import mode accepts a structured taxonomy definition (JSON, CSV, markdown table) and normalizes it into the canonical 7-file bundle, filling gaps (missing products, missing search patterns) interactively.
 
-1. Ask the user for the input source — a local file path (JSON, CSV, or markdown table). Read it.
-2. Normalize into the internal shape: dimensions[], categories[] (with id/name/dimension mapping), and ideally products[] and search_patterns{} if the source has them.
-3. If products are missing, prompt the user for each dimension's product slug/name/description (same fields as 2b Step 4).
-4. If search patterns are missing, generate stubs as in 2b Step 5 and flag them for tuning.
-5. Write the 7-file bundle and update `portfolio.json` as in 2b Step 6–7.
+**Read `references/import-mode.md` and follow its 6 steps.** It covers: accepting the input source, normalizing into the internal shape (including why dimension 0 is substituted from the bundled template), filling gaps for missing products and search patterns, writing the bundle, and updating `portfolio.json` with provenance. When done, return here for the Validation section below.
 
 ---
 
@@ -165,7 +131,7 @@ The script returns JSON `{"success": bool, "data": {...}}` and exits 0 on full p
 
 On any failure: report the failing check's `detail` verbatim to the user and suggest which file to fix. Do not silently repair — the user's edit intent might differ from the fix. Offer to re-run the script after the user confirms edits.
 
-On success: confirm with the user and tell them the taxonomy is ready for `portfolio-scan`.
+On success: confirm with the user and tell them the taxonomy is ready for `cogni-portfolio:portfolio-scan`.
 
 ---
 
@@ -173,10 +139,10 @@ On success: confirm with the user and tell them the taxonomy is ready for `portf
 
 Once the project-local taxonomy is in place:
 
-- `portfolio-setup` Step 5 — if re-run, will pick up the project-local taxonomy and skip the bundled-template match.
-- `portfolio-scan` Phase 0 Step 5 — resolves to `{PROJECT_PATH}/taxonomy/` first (see [portfolio-scan SKILL.md](../portfolio-scan/SKILL.md) for the resolver order).
+- `cogni-portfolio:portfolio-setup` Step 5 — if re-run, will pick up the project-local taxonomy and skip the bundled-template match.
+- `cogni-portfolio:portfolio-scan` Phase 0 Step 5 — resolves to `{PROJECT_PATH}/taxonomy/` first (see [portfolio-scan SKILL.md](../portfolio-scan/SKILL.md) for the resolver order).
 - `portfolio-web-researcher` agent — reads `{PROJECT_PATH}/taxonomy/search-patterns.md` instead of the plugin-bundled file.
-- `portfolio-dashboard` and `portfolio-communicate` — group features by the user's custom dimensions automatically because they read from `portfolio.json` + discovered features, which already carry the right `taxonomy_mapping`.
+- `cogni-portfolio:portfolio-dashboard` and `cogni-portfolio:portfolio-communicate` — group features by the user's custom dimensions automatically because they read from `portfolio.json` + discovered features, which already carry the right `taxonomy_mapping`.
 
 No code changes in the downstream consumers are needed — they already resolve the template from a single path, and that path now points project-local.
 

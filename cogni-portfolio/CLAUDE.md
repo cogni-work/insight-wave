@@ -12,7 +12,7 @@ skills/                         20 portfolio skills
     references/
       consolidation-modes.md        Scan-time consolidate | shadow | research-only semantics
       scan-entity-schema.md         Offering → feature mapping + scan-output.json schema
-  manage-taxonomies/              Clone, author, or import a project-local taxonomy
+  portfolio-taxonomy/             Clone, author, or import a project-local taxonomy
   portfolio-ingest/               Extract entities from uploaded documents (md, docx, pptx, xlsx, pdf)
   products/                       Define and manage top-level product offerings
   features/                       Define market-independent capabilities (IS layer)
@@ -95,7 +95,7 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 20 | portfolio-setup, portfolio-canvas, portfolio-scan, manage-taxonomies, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, portfolio-communicate, portfolio-dashboard, portfolio-architecture, portfolio-lineage, trends-bridge, portfolio-resume |
+| Skills | 20 | portfolio-setup, portfolio-canvas, portfolio-scan, portfolio-taxonomy, portfolio-ingest, products, features, markets, propositions, solutions, packages, compete, customers, portfolio-verify, portfolio-communicate, portfolio-dashboard, portfolio-architecture, portfolio-lineage, trends-bridge, portfolio-resume |
 | Agents | 20 | market-researcher, competitor-researcher, customer-researcher, customer-review-assessor, proposition-generator, proposition-quality-assessor, proposition-review-assessor, proposition-deep-diver, solution-architect, solution-planner, solution-review-assessor, feature-quality-assessor, feature-review-assessor, feature-deduplication-detector, feature-deep-diver, quality-enricher, customer-narrative-writer, communicate-review-assessor, dashboard-refresher, portfolio-web-researcher |
 
 ## Typical Workflow

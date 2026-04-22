@@ -66,13 +66,13 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
      "$CLAUDE_PLUGIN_ROOT/scripts/validate-taxonomy.sh" "${PROJECT_PATH}"
      ```
 
-     The script returns `{"success": true, "data": {...}}` on pass and exits 0. On failure it prints `{"success": false, "error": "...", "data": {"checks": [...]}}` and exits 1 — when this happens, show the failed checks to the user, tell them to run `cogni-portfolio:manage-taxonomies` (or hand-fix the pointed-to file, then revalidate), and **stop the scan** without starting Phase 1. Bundled templates (Step 5b) skip this step — they are shape-safe by construction.
+     The script returns `{"success": true, "data": {...}}` on pass and exits 0. On failure it prints `{"success": false, "error": "...", "data": {"checks": [...]}}` and exits 1 — when this happens, show the failed checks to the user, tell them to run `cogni-portfolio:portfolio-taxonomy` (or hand-fix the pointed-to file, then revalidate), and **stop the scan** without starting Phase 1. Bundled templates (Step 5b) skip this step — they are shape-safe by construction.
    - **Step 5b — bundled fallback.** If no project-local taxonomy exists:
      - If `portfolio.json` has `taxonomy.type` (e.g. `"b2b-ict"`), load `$CLAUDE_PLUGIN_ROOT/templates/{taxonomy.type}/template.md`
      - If absent, scan `$CLAUDE_PLUGIN_ROOT/templates/*/template.md` frontmatter for `industry_match` patterns that match `company.industry`
      - If multiple matches or no match, present available templates via `AskUserQuestion`
      - Once resolved, set `TEMPLATE_PATH=$CLAUDE_PLUGIN_ROOT/templates/{type}`
-   - If the user wants to customize their taxonomy (add/rename categories, tweak search patterns), direct them to the `cogni-portfolio:manage-taxonomies` skill before running the scan — that skill clones a bundled template into `${PROJECT_PATH}/taxonomy/` so edits survive plugin updates.
+   - If the user wants to customize their taxonomy (add/rename categories, tweak search patterns), direct them to the `cogni-portfolio:portfolio-taxonomy` skill before running the scan — that skill clones a bundled template into `${PROJECT_PATH}/taxonomy/` so edits survive plugin updates.
 6. **Select consolidation mode:** The scan produces a structured report (Phase 6) regardless of mode. What differs is what Phase 7 does with the discovered offerings. See [references/consolidation-modes.md](references/consolidation-modes.md) for the full rationale and when to pick each mode.
 
    Present this choice via `AskUserQuestion` with three options:

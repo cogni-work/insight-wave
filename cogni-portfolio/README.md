@@ -126,7 +126,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `portfolio-setup` | skill | Initialize a new portfolio project with company context and directory structure |
 | `portfolio-canvas` | skill | Bootstrap a portfolio project from a Lean Canvas or Business Model Canvas |
 | `portfolio-scan` | skill | Discover offerings via website scanning and classify against taxonomy |
-| `manage-taxonomies` | skill | Clone, author, or import a project-local taxonomy so categories, search patterns, and product skeleton can be customized without touching bundled templates |
+| `portfolio-taxonomy` | skill | Clone, author, or import a project-local taxonomy so categories, search patterns, and product skeleton can be customized without touching bundled templates |
 | `portfolio-ingest` | skill | Extract portfolio entities from uploaded documents (md, docx, pptx, xlsx, pdf) |
 | `products` | skill | Define and manage the top-level product offerings in the portfolio |
 | `features` | skill | Define and manage market-independent product features (IS layer of FAB) |

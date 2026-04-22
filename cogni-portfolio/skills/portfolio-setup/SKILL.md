@@ -113,7 +113,7 @@ Match the company to a portfolio taxonomy template using all available context â
    - "Based on your company profile, the **B2B ICT Portfolio** template (8 dimensions, 57 service categories) is a good fit. Apply this template?"
 5. If user confirms, add taxonomy to `portfolio.json` (schema unchanged)
 6. If no template matches or user declines, skip â€” the portfolio works fine without a taxonomy template
-7. **Customize path.** After confirming a bundled template, mention the `cogni-portfolio:manage-taxonomies` skill as the way to customize it (clone the bundled template into `{PROJECT_PATH}/taxonomy/` so edits to categories, search patterns, or product skeleton survive plugin updates). If no bundled template fit the user's vertical, the same skill's `author`/`import` modes let them build a taxonomy from scratch.
+7. **Customize path.** After confirming a bundled template, mention the `cogni-portfolio:portfolio-taxonomy` skill as the way to customize it (clone the bundled template into `{PROJECT_PATH}/taxonomy/` so edits to categories, search patterns, or product skeleton survive plugin updates). If no bundled template fit the user's vertical, the same skill's `author`/`import` modes let them build a taxonomy from scratch.
 
 ### 5.5. Ask About Additional Data Sources
 
