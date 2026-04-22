@@ -33,8 +33,50 @@ cogni-portfolio/{project-slug}/
 │   └── README.md                          # Portfolio overview
 └── research/                               # Portfolio scan artifacts (when scan is used)
     ├── research-report.md                  # Scan findings per taxonomy dimension
-    └── .logs/                              # Raw scan data (offerings, sources)
+    ├── scan-solutions-draft.json           # Per-stack delivery seeds for solutions/ (category-aggregation mode only; persistent across sessions)
+    ├── .logs/                              # Raw scan data (offerings, sources)
+    ├── .metadata/
+    │   └── scan-output.json                # Scan-run metadata (consolidation_mode, dedupe_summary, provider_units)
+    └── .staging/                           # Transient scan artifacts (cleaned up after Phase 7.6)
+        └── feature-candidates.json         # Staged candidates before dedupe/aggregation (all modes except research-only)
 ```
+
+### Scan Artifacts
+
+Two scan-produced artifacts are relevant to downstream skills — one transient, one persistent.
+
+**`research/.staging/feature-candidates.json`** *(transient)* — staged feature candidates before dedupe (`consolidate`, `shadow`, `category-aggregation`). Each entry is a normal feature JSON plus `_candidate: true` and `_source_offering` (domain, link, USP). Under `shadow`, candidates are written to `research/scan-candidates/{COMPANY_SLUG}/` instead — this file is used only in `consolidate` and `category-aggregation`. The whole `.staging/` directory is cleaned up at the end of Phase 7.6.
+
+**`research/scan-solutions-draft.json`** *(persistent)* — emitted **only** under `category-aggregation` mode by Phase 7.6 Branch F. Carries per-stack delivery detail that would otherwise be lost when offerings are aggregated into category-grained features. Written at the stable `research/` path (not under `.staging/`) specifically so the `solutions/` skill's forthcoming seed-from-scan-draft entry point can consume it in a later session, not just within the scan run. Schema:
+
+```json
+[
+  {
+    "category_id": "4.1",
+    "category_name": "Managed Hyperscaler Services",
+    "feature_slug": "sovereign-cloud-iaas",
+    "delivery_stacks": [
+      {
+        "domain": "t-systems.com",
+        "provider_unit": "T-Systems International",
+        "link": "https://www.t-systems.com/.../otc",
+        "usp": "BSI C5-attested, German data residency",
+        "delivery_stack": "open-telekom-cloud"
+      }
+    ]
+  }
+]
+```
+
+Fields:
+- `category_id`, `category_name` — from the taxonomy (e.g. `4.1` / `Managed Hyperscaler Services` in b2b-ict).
+- `feature_slug` — the category-grained feature that `solutions/` should seed solutions under.
+- `delivery_stacks[]` — one entry per provider-level delivery variant discovered by the scan:
+  - `domain`, `link`, `usp` — from the staged candidate's `_source_offering`.
+  - `provider_unit` — from Phase 1.5 confirmed units (matched on `domain` or docs-subdomains).
+  - `delivery_stack` — inferred from link host + USP text (e.g. `open-telekom-cloud`, `aws-frankfurt`, `gcp-frankfurt`, `on-prem`, `unknown`). Refinement rules are owned by the consuming `solutions/` entry point, not by scan.
+
+**Lifecycle:** scan writes the file during Phase 7.6 Branch F and does **not** remove it in the post-write sweep — `research/scan-solutions-draft.json` persists across scan sessions so `solutions/` can consume it whenever the user next runs the seed-from-scan-draft entry point. After that entry point has processed a draft, the consuming skill is responsible for deleting or archiving it. Until the `solutions/` seed-from-scan-draft entry point lands, the file is purely diagnostic — inspect it manually with `cat` to see what per-stack seeds the scan proposes.
 
 ## Entity Schemas
 

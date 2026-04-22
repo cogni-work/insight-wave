@@ -75,13 +75,14 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
    - If the user wants to customize their taxonomy (add/rename categories, tweak search patterns), direct them to the `cogni-portfolio:portfolio-taxonomy` skill before running the scan — that skill clones a bundled template into `${PROJECT_PATH}/taxonomy/` so edits survive plugin updates.
 6. **Select consolidation mode:** The scan produces a structured report (Phase 6) regardless of mode. What differs is what Phase 7 does with the discovered offerings. See [references/consolidation-modes.md](references/consolidation-modes.md) for the full rationale and when to pick each mode.
 
-   Present this choice via `AskUserQuestion` with three options:
+   Present this choice via `AskUserQuestion` with four options:
 
    | Mode | Phase 7 behaviour | Pick when… |
    |---|---|---|
    | `consolidate` *(default)* | Map offerings → features, dedupe against existing `features/*.json`, write merges and new features | Scanning the portfolio's own company — you want the scan to populate / refresh the feature set |
    | `shadow` | Map offerings → candidate JSON files under `research/scan-candidates/{COMPANY_SLUG}/` — `features/` is untouched | You want to review proposed features before committing them; scanning a reference / partner provider |
    | `research-only` | Stop after the Phase 6 report — no feature writes, no candidate files | Scanning a competitor, prospect, or any non-self company whose offerings must not enter the feature set |
+   | `category-aggregation` | Group staged candidates by `taxonomy_mapping.category_id` and write one category-grained feature per populated category. Delivery-stack variants are pushed into `research/scan-solutions-draft.json` for downstream solution seeding. | Consolidation / benchmarking scans where the feature count should mirror the taxonomy shape (≤57 features for b2b-ict) rather than each provider offering. Per-stack detail (OTC / AWS / GCP / on-prem) is preserved for `solutions/`, not kept as feature-level variants. |
 
    Record the selection as `CONSOLIDATION_MODE` (default `consolidate` if the user dismisses the prompt). The choice is persisted into `scan-output.json` in Phase 6 so downstream dashboards and any "promote candidates" utility know how the scan was run.
 
@@ -96,7 +97,7 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
 | TEMPLATE_PATH | `$CLAUDE_PLUGIN_ROOT/templates/{type}` | `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict` |
 | TEMPLATE_TYPE | `portfolio.json` → `taxonomy.type` | `b2b-ict` |
 | LANGUAGE | `portfolio.json` → `language` (default: "en") | `de` |
-| CONSOLIDATION_MODE | Step 6 selection | `consolidate` \| `shadow` \| `research-only` |
+| CONSOLIDATION_MODE | Step 6 selection | `consolidate` \| `shadow` \| `research-only` \| `category-aggregation` |
 
 8. Read the template files needed for this scan:
    - `${TEMPLATE_PATH}/template.md` — taxonomy definition (dimensions, categories)
@@ -344,7 +345,7 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
   "created": "{ISO_TIMESTAMP}",
   "skill": "cogni-portfolio:scan",
   "template_type": "{TEMPLATE_TYPE}",
-  "consolidation_mode": "consolidate",
+  "consolidation_mode": "{CONSOLIDATION_MODE}",
   "output_file": "research/{COMPANY_SLUG}-portfolio.md",
   "domains_analyzed": ["domain1.com", "domain2.com"],
   "dimensions_covered": 8,
@@ -368,11 +369,12 @@ Write portfolio metadata to `research/.metadata/scan-output.json`:
 }
 ```
 
-**`consolidation_mode` semantics** (added in v1.3.0):
+**`consolidation_mode` semantics** (added in v1.3.0; `category-aggregation` added in v1.4.0):
 
 - `consolidate` — Phase 7 ran the full import+dedupe path; `dedupe_summary` counters are meaningful.
 - `shadow` — Phase 7 produced candidate JSON files under `research/scan-candidates/{COMPANY_SLUG}/` but did **not** touch `features/`. `dedupe_summary` counters are all zero except `written_new` may reflect the candidate file count if useful to dashboards — by convention leave them at zero and rely on a filesystem count of the shadow directory instead.
 - `research-only` — Phase 7 was skipped entirely. `dedupe_summary` counters are all zero. The report is the only deliverable.
+- `category-aggregation` — Phase 7 skipped the per-offering dedupe agent (Steps 7.4–7.5) and ran the Step 7.6 Branch F aggregation path instead. `dedupe_summary` reports `written_new` = the number of populated taxonomy categories and all other counters = 0. Per-stack detail is recorded in `research/scan-solutions-draft.json` for the `solutions/` skill to consume. Dashboards must read `written_new` under this mode as "one feature per populated category", not as a dedupe outcome.
 
 Consumers reading v1.2.0 or earlier must treat absent `consolidation_mode` as `"consolidate"` (that was the only behaviour the skill offered before v1.3.0).
 
@@ -411,6 +413,7 @@ Branch on `CONSOLIDATION_MODE` (selected in Phase 0) **before** any mapping work
 - **`research-only`** — **Skip Phase 7 entirely.** Do not run Steps 7.1–7.7. Tell the user: "Scan complete in `research-only` mode — report at `${OUTPUT_FILE}`. No features were created or modified." Then stop the skill.
 - **`shadow`** — Run Steps 7.1, 7.2 (**categorize only — do not create products in `portfolio.json`**), and a modified Step 7.3 that writes candidate JSONs to `research/scan-candidates/${COMPANY_SLUG}/{slug}.json` instead of the staging file. **Skip Steps 7.4–7.7** — no dedupe, no `features/` writes, no `portfolio.json` taxonomy update. Tell the user: "Scan complete in `shadow` mode — N candidate files under `research/scan-candidates/${COMPANY_SLUG}/`. To adopt a candidate into your portfolio today, copy its JSON into `features/{slug}.json` and run `cogni-portfolio:features` to normalise it. A first-class promote flow inside the `features` skill is tracked as a follow-on issue — it will land in a later release."
 - **`consolidate`** — Run Steps 7.1 through 7.7 as documented below. This is today's full-import behaviour.
+- **`category-aggregation`** — Run Steps 7.1, 7.2, and 7.3 as documented. **Skip Steps 7.4 and 7.5** (no per-offering dedupe agent — aggregation by category supersedes per-offering similarity). Then run Step 7.6 **Branch F only** (the aggregation write path), which operates on the full staging list instead of per-resolution branches A–E, followed by Step 7.7 as-is (taxonomy update). After the aggregation write, tell the user: "Scan complete in `category-aggregation` mode — N category-grained features written to `features/`, M delivery-stack seeds recorded in `research/scan-solutions-draft.json` for the `solutions/` skill to bootstrap per-stack solution entities."
 
 Shadow candidates use the same feature JSON shape as production features **plus** two diagnostic fields documented in [references/consolidation-modes.md](references/consolidation-modes.md):
 
@@ -591,6 +594,53 @@ For each accepted resolution:
 
 If the candidate's base slug collides with an existing file, prefix it with a disambiguator (e.g. `{original-slug}-v2`) — same rule as branch D. The `features` Quality Completion Gate Layer 0 (`cogni-portfolio/skills/features/SKILL.md` Completion Loop) will pick the flagged pair up on its next run and re-surface it with both features' descriptions and any attached propositions, which is the right place to make the merge call with full context. Never silently drop a soft-deferred candidate — the dedupe agent's 0.7–0.9 confidence means the distinction is meaningful enough to preserve as evidence. `counters.soft_duplicates_deferred += 1` per deferred row written.
 
+**F. `category-aggregation` aggregation (whole-dataset path)** — runs **only** when `CONSOLIDATION_MODE=category-aggregation`. Branches A–E do not apply in this mode (there was no dedupe agent output to walk). Instead, operate on the full staging list from Step 7.3 and write one feature per populated taxonomy category:
+
+1. Read the staging list from `${PROJECT_PATH}/research/.staging/feature-candidates.json`.
+2. Group candidates by `taxonomy_mapping.category_id`. Every candidate must have a category_id from Step 7.1; drop (with a warning) any candidate missing one — it is a mapping bug from Step 7.1, not valid input for aggregation.
+3. For each group with ≥1 candidate, derive the category-grained feature:
+   - **Name:** pick the most-representative offering name in the group — highest-frequency `name` across the candidates, ties broken by longest common prefix. If no majority emerges (including the case where every candidate name appears exactly once), fall back to `taxonomy_mapping.category_name` from the template.
+   - **Slug:** kebab-case of the chosen name. If it collides with an existing feature file, prefix with a disambiguator (same rule as branches D and E).
+   - **Product_slug:** from the first candidate in the group (all candidates in a group share the same dimension, and Step 7.2 already mapped dimensions to products).
+   - **Description:** the richest candidate description in the group (longest within the 20–35 word IS-layer budget from Step 7.1). Record the other candidate descriptions in `source_lineage` for audit — they are the per-stack nuance that would otherwise be lost at aggregation.
+   - **Purpose:** the candidate purpose with the broadest phrasing (shortest acceptable purpose in the 5–12 word budget from Step 7.1).
+   - **Taxonomy_mapping:** copy from the group (all candidates share the same category_id / dimension / horizon by construction). If horizons differ within a group, take `current` > `emerging` > `future` (most-mature horizon wins — downstream dashboards treat the feature's horizon as the provider's **capability** horizon, and the most-mature delivery variant establishes that capability).
+   - **Readiness:** derived from horizon per the existing mapping table.
+   - **Source_file:** `research/{COMPANY_SLUG}-portfolio.md` (same as branches C/D/E).
+   - **Created:** `<today>`.
+   - **Source_lineage:** one entry per candidate in the group, with `entity_role: "aggregated_from"`, `ingestion_date: <now>`, and the candidate's `_source_offering.link` as evidence — this preserves the per-stack evidence trail without exploding the feature count.
+4. Write each derived feature to `features/{slug}.json`, stripping the `_candidate` and `_source_offering` markers as in branch C. `counters.written_new += 1` per file.
+5. **Emit the delivery-stack artifact.** For each group, append one record per candidate (provider-level delivery variant) to `research/scan-solutions-draft.json` (written at the stable `research/` path, **not** under `.staging/`, so it survives the post-write staging sweep and is available to the `solutions/` skill in a later session):
+
+   ```json
+   [
+     {
+       "category_id": "4.1",
+       "category_name": "Managed Hyperscaler Services",
+       "feature_slug": "sovereign-cloud-iaas",
+       "delivery_stacks": [
+         {
+           "domain": "t-systems.com",
+           "provider_unit": "T-Systems International",
+           "link": "https://www.t-systems.com/.../otc",
+           "usp": "BSI C5-attested, German data residency",
+           "delivery_stack": "open-telekom-cloud"
+         },
+         {
+           "domain": "operational-services.de",
+           "provider_unit": "Operational Services",
+           "link": "https://operational-services.de/.../aws-frankfurt",
+           "usp": "AWS Frankfurt with sovereign-by-contract operations",
+           "delivery_stack": "aws-frankfurt"
+         }
+       ]
+     }
+   ]
+   ```
+
+   `delivery_stack` is inferred from `_source_offering.link` host + usp text (e.g. links containing `otc` or `open-telekom-cloud` → `open-telekom-cloud`; `aws`/`amazon` → `aws-{region}`; `gcp`/`google` → `gcp-{region}`; otherwise `on-prem` or `unknown`). The exact inference rules are not load-bearing for this PR — downstream `solutions/` seeding will refine them. Record whatever the scan could infer so the artifact is useful on first pass. Until the `solutions/` seed-from-scan-draft entry point lands (follow-up work), the artifact is purely diagnostic — inspect it manually with `cat` to see what per-stack seeds the scan proposes.
+6. Leave `merged_into_existing`, `collapsed_among_candidates`, `legacy_duplicates_flagged`, and `soft_duplicates_deferred` at 0 — they do not apply under aggregation. (`counters.written_new` is already incremented per file inside step 4's per-group loop; do not re-increment it here.) The sum invariant (staged candidates = branches' outputs) does **not** hold under aggregation by design: many candidates collapse into one feature without going through per-candidate dedupe branches. Skip the invariant check under this mode.
+
 After all writes are complete, clean up, sync, and persist the counters into the metadata file written by Phase 6:
 
 ```bash
@@ -598,7 +648,7 @@ rm -rf "${PROJECT_PATH}/research/.staging"
 bash $CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh "${PROJECT_PATH}"
 ```
 
-Then update `research/.metadata/scan-output.json` in place: read the file, set `dedupe_summary` to the final `counters` dict, and write it back. The Phase 6 metadata write created the block with all-zero defaults; this step replaces it with the real counts. Verify the sum invariant before writing — `merged_into_existing + collapsed_among_candidates + written_new + soft_duplicates_deferred` must equal the candidate count staged at Step 7.3. If the invariant fails, log a warning to the user (do not abort the scan — the data is still useful) and write the counters anyway so the discrepancy is visible in the dashboard.
+Then update `research/.metadata/scan-output.json` in place: read the file, set `dedupe_summary` to the final `counters` dict, and write it back. The Phase 6 metadata write created the block with all-zero defaults; this step replaces it with the real counts. Also persist the chosen mode — set `consolidation_mode` in the same in-place update to whatever `CONSOLIDATION_MODE` was at runtime (`consolidate` / `shadow` / `research-only` / `category-aggregation`) so downstream dashboards and follow-ups like `solutions/` seed-from-scan-draft can tell which aggregation regime produced the feature set. Verify the sum invariant before writing — `merged_into_existing + collapsed_among_candidates + written_new + soft_duplicates_deferred` must equal the candidate count staged at Step 7.3, **except under `category-aggregation`** where the invariant does not hold by design (see Branch F). If the invariant fails under any of the other three modes, log a warning to the user (do not abort the scan — the data is still useful) and write the counters anyway so the discrepancy is visible in the dashboard.
 
 **Also enrich `provider_units[]` with `feature_count`** in the same in-place update. For each entry in the existing `provider_units` array (written as a skeleton at Phase 1.5 confirmation), set `feature_count` = number of features this scan produced (branches A, C, D, and E of Step 7.6) whose `_source_offering.domain` matches the unit's `domain` or one of its docs/help subdomains discovered in Phase 1.5. Skeleton entries missing `feature_count` mean the scan was interrupted before 7.6 finalized — leave them as-is rather than synthesizing a value.
 
@@ -641,4 +691,4 @@ If not already set, update `portfolio.json` to include the taxonomy reference:
 | TEMPLATE_PATH | Path to taxonomy template dir | `$CLAUDE_PLUGIN_ROOT/templates/b2b-ict` |
 | TEMPLATE_TYPE | Taxonomy type identifier | `b2b-ict` |
 | LANGUAGE | ISO 639-1 from portfolio.json | `de` |
-| CONSOLIDATION_MODE | Phase 0 Step 6 selection — drives Phase 7 behaviour | `consolidate` \| `shadow` \| `research-only` |
+| CONSOLIDATION_MODE | Phase 0 Step 6 selection — drives Phase 7 behaviour | `consolidate` \| `shadow` \| `research-only` \| `category-aggregation` |

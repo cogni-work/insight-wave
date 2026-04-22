@@ -4,12 +4,16 @@ The B2B ICT Portfolio taxonomy defines a **product template** — a predefined s
 
 ## Taxonomy → Data Model Mapping
 
-| Taxonomy Level | Portfolio Entity | Mapping Rule |
-|---|---|---|
-| Dimension 0 (Provider Profile) | Provider metadata in `portfolio.json` | Project-level metrics, not a product |
-| Dimensions 1-7 | **Product** (one per dimension) | Only create if dimension has >=1 confirmed offering |
-| Category (e.g. 1.1 WAN Services) | Feature classification slot | Categories are taxonomy positions, not features themselves |
-| Discovered offering | **Feature** (`features/{slug}.json`) | Concrete capability with `taxonomy_mapping` field |
+The mapping is **mode-conditional** — the `CONSOLIDATION_MODE` chosen at Phase 0 of `portfolio-scan` decides whether a discovered offering becomes a feature (per-offering differentiation) or a solution-seed (per-stack delivery detail under a category-grained feature). See [`cogni-portfolio/skills/portfolio-scan/references/consolidation-modes.md`](../../skills/portfolio-scan/references/consolidation-modes.md) for the full rationale.
+
+| Taxonomy Level | Portfolio Entity — `consolidate` / `shadow` (default) | Portfolio Entity — `category-aggregation` | Mapping Rule |
+|---|---|---|---|
+| Dimension 0 (Provider Profile) | Provider metadata in `portfolio.json` | Provider metadata in `portfolio.json` | Project-level metrics, not a product |
+| Dimensions 1-7 | **Product** (one per dimension) | **Product** (one per dimension) | Only create if dimension has >=1 confirmed offering |
+| Category (e.g. 1.1 WAN Services) | Feature classification slot | **Feature** (`features/{slug}.json`) | In `consolidate` / `shadow`, categories are taxonomy positions, not features themselves. In `category-aggregation`, the category itself becomes a category-grained feature (≤57 features for b2b-ict). |
+| Discovered offering | **Feature** (`features/{slug}.json`) | **Solution-seed** entry in `research/scan-solutions-draft.json` — one per delivery stack per category | In `consolidate` / `shadow`, each offering is its own feature (per-provider differentiation). In `category-aggregation`, offerings are rolled up as delivery-stack variants (OTC / AWS / GCP / on-prem / …) under the category-grained feature; `solutions/` seeds per-stack solution entities from the feature-level artifact. |
+
+Under `research-only`, nothing in this table is written — Phase 7 is skipped and the Phase 6 report is the only deliverable. See [consolidation-modes.md](../../skills/portfolio-scan/references/consolidation-modes.md) for when to pick each mode.
 
 ## Why Dimension 0 Is Not a Product
 
