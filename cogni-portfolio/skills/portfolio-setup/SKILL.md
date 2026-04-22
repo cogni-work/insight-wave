@@ -113,7 +113,46 @@ Match the company to a portfolio taxonomy template using all available context �
    - "Based on your company profile, the **B2B ICT Portfolio** template (8 dimensions, 57 service categories) is a good fit. Apply this template?"
 5. If user confirms, add taxonomy to `portfolio.json` (schema unchanged)
 6. If no template matches or user declines, skip — the portfolio works fine without a taxonomy template
-7. **Customize path.** After confirming a bundled template, mention the `cogni-portfolio:portfolio-taxonomy` skill as the way to customize it (clone the bundled template into `{PROJECT_PATH}/taxonomy/` so edits to categories, search patterns, or product skeleton survive plugin updates). If no bundled template fit the user's vertical, the same skill's `author`/`import` modes let them build a taxonomy from scratch.
+7. **Customize path.** After confirming a bundled template (or hitting the "no match" case), **do not** just mention `portfolio-taxonomy` in passing — Step 5.4 below is where the ownership decision actually happens. That step presents the user with an explicit branch so customization isn't a thing they have to know to ask for.
+
+### 5.4. Taxonomy Ownership Decision
+
+The project now has a taxonomy *referenced* in `portfolio.json` (if Step 5 matched a bundled template). Before proceeding, decide how the project should *own* that taxonomy. This matters because:
+
+- A **bundled** taxonomy lives in the plugin directory and changes when the plugin updates. That is the right default when the match is clean and the user has no intent to tweak categories, search patterns, or product skeleton.
+- A **project-local** taxonomy lives in `{PROJECT_PATH}/taxonomy/` and is immune to plugin updates. That is the right default the moment the user wants to rename a category, add an industry-specific dimension, or tweak the web-search patterns used during scan.
+
+Skipping this decision here and letting users "find out later that they needed to customize" is exactly how scan results end up mis-classified against a taxonomy that doesn't fit the business.
+
+#### Branch A — Step 5 already short-circuited on an existing project-local taxonomy
+
+`{PROJECT_PATH}/taxonomy/template.md` was detected in Step 5.1. Display the existing taxonomy's type, dimension count, and category count for confirmation, note that it is project-local (survives plugin updates), and continue to Step 5.5. No ownership prompt — the project already owns its taxonomy.
+
+#### Branch B — Step 5 matched a bundled template
+
+Present this choice via `AskUserQuestion` with four options:
+
+| Option | Label | What happens |
+|---|---|---|
+| `keep-bundled` *(default)* | Use the bundled **{template name}** template as-is | No action. Future plugin updates to this taxonomy will flow through automatically. Proceed to Step 5.5. |
+| `clone` | Clone into the project so edits survive plugin updates | Dispatch `cogni-portfolio:portfolio-taxonomy` in `clone` mode with `{template-type}` pre-selected. The skill copies all 7 canonical taxonomy files into `{PROJECT_PATH}/taxonomy/` and updates `portfolio.json` with `taxonomy.source_path: "taxonomy/"` and `taxonomy.cloned_from: "{template-type}"`. On return, proceed to Step 5.5. |
+| `author` | Author a custom taxonomy from scratch | Dispatch `cogni-portfolio:portfolio-taxonomy` in `author` mode. Interactive construction of all 7 canonical files from a blank slate. Returns to Step 5.5 on completion. Use when the bundled match is only approximate. |
+| `import` | Import an external taxonomy (JSON, spreadsheet, consultancy model) | Dispatch `cogni-portfolio:portfolio-taxonomy` in `import` mode. Returns to Step 5.5 on completion. |
+
+#### Branch C — Step 5 matched nothing, or the user declined the bundled match
+
+Present this choice via `AskUserQuestion` with four options:
+
+| Option | Label | What happens |
+|---|---|---|
+| `pick-bundled` | Pick from the 8 bundled templates anyway | Return to Step 5 and present all 8 templates via `AskUserQuestion`; when the user picks one, come back here with Branch B. |
+| `author` *(recommended)* | Author a custom taxonomy | Dispatch `cogni-portfolio:portfolio-taxonomy` in `author` mode. Returns to Step 5.5 on completion. |
+| `import` | Import an external taxonomy | Dispatch `cogni-portfolio:portfolio-taxonomy` in `import` mode. Returns to Step 5.5 on completion. |
+| `skip` | Skip taxonomy — portfolio works without one | No taxonomy set. Downstream scan will be unavailable; products/features can still be authored manually. Proceed to Step 5.5. |
+
+#### Return semantics
+
+After any dispatch to `portfolio-taxonomy` returns, continue at Step 5.5. If the dispatch produced a project-local taxonomy (`clone`, `author`, or `import`), `portfolio-scan` Phase 0 Step 5a will pick it up automatically via the existing resolver precedence — no additional wiring needed.
 
 ### 5.5. Ask About Additional Data Sources
 

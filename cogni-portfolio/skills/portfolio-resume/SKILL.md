@@ -52,6 +52,8 @@ Show a concise, scannable dashboard. Lead with the company name and project slug
 
 | Entity | Count | Status |
 |--------|-------|--------|
+| Taxonomy | type or "none" | source (bundled / project-local / none) · validation (pass / fail / skipped). If `taxonomy.source == "project-local"` and `taxonomy.validation == "fail"`, append the error count from `taxonomy.validation_errors` |
+| Scan | mode or "not run" | `scan.categories_confirmed` / `scan.categories_total` confirmed, `scan.categories_not_offered` not offered (only when `scan.has_metadata == true`) |
 | Products | N | |
 | Features | N | |
 | Markets | N | |
@@ -99,6 +101,11 @@ After the table:
 - **Stale architecture diagram** — if `architecture.stale` is `true`, mention that the architecture diagram may be outdated because products or features changed since it was generated. Recommend running `portfolio-architecture` to refresh. If `architecture.exists` is `false` and features exist, suggest generating the architecture diagram as a visual checkpoint.
 - **Purpose coverage** — if `purpose_coverage.total_features > 0` and `purpose_coverage.with_purpose` is less than half of `total_features`, note low purpose coverage: "N of M features have purpose statements. Adding purpose improves architecture diagrams and customer-facing materials." Recommend running the `features` skill to add purpose statements.
 - **Context notice** — if `counts.context_entries > 0`, mention available context entries with a category breakdown. Read `context/context-index.json` for the `by_category` map to show counts per category. This helps the user understand what intelligence is available for downstream skills. If context exists but downstream skills haven't been run yet, highlight this: "N context entries from ingested documents are ready — these will automatically inform propositions, solutions, and other skills."
+- **Taxonomy state** — this is the **first** status signal to surface after the table, because scan and downstream classification all depend on it. Read the `taxonomy` block from the script output:
+  - If `taxonomy.configured == false`: call it out as a blocking action — "No taxonomy configured yet. Run `portfolio-taxonomy` to clone a bundled template, author one, or import an external taxonomy before running `portfolio-scan`." Suppress any `portfolio-scan` recommendation from `next_actions` until the taxonomy is in place (the script already does this, but reinforce it in the narrative).
+  - If `taxonomy.source == "project-local"` and `taxonomy.validation == "fail"`: show the failed-check names from `taxonomy.validation_errors` inline ("categories_json: invalid JSON; category_id_format: cannot validate"). Route the user to `portfolio-taxonomy` to fix or hand-edit, then re-run status with `--health-check` to re-validate. Scan is blocked until this clears.
+  - If `taxonomy.source == "project-local"` and `taxonomy.validation == "pass"`: one line acknowledging the project-local taxonomy ("Using customized taxonomy ({type}, cloned from {cloned_from}) — edits survive plugin updates"). Informational, no action.
+  - If `scan.has_metadata == true` and `scan.categories_not_offered > scan.categories_total / 3`: informational — "Scan covered {categories_confirmed}/{categories_total} categories; {categories_not_offered} were empty. If that feels over-scoped for this company, `portfolio-taxonomy` can trim." Never auto-recommend — this is a judgment call that depends on domain context.
 - **Uploads notice** — if `counts.uploads > 0`, always mention pending files regardless of phase. When `source_lineage.has_registry` is true, distinguish between new uploads (`source_lineage.new_uploads`) and re-uploads (`source_lineage.changed_uploads`): "N new uploads (never ingested) + M re-uploads (source changed since last ingestion)"
 - **Gaps** — handle exclusions and missing pairs in this order:
   1. Check `excluded_pairs` from the script output FIRST. These are confirmed design decisions recorded in feature files with explicit reasons — not guesses. If non-empty, state definitively: "N Feature × Market Paare bewusst ausgeschlossen (Design-Entscheidung)." Never use speculative language like "vermutlich" or "möglicherweise" for excluded pairs.
@@ -120,6 +127,8 @@ Present entries from `next_actions` **sorted by `priority` (ascending)**. Lower 
 - Offer to proceed with the top (lowest priority number) recommendation immediately
 
 **Common dependency pairs — explain these when both appear:**
+- portfolio-taxonomy (2) before portfolio-scan (2) — scan reads the taxonomy to classify findings, so a missing or broken taxonomy yields a broken scan report. When `taxonomy.configured == false` or `taxonomy.validation == "fail"`, the script does not emit a scan action; explain the block explicitly so the user knows why.
+- portfolio-scan (2) as an alternative to products (2) when products are empty and a valid taxonomy is in place — scan auto-populates products and features from the web; present both at the same priority as parallel options, not as a queue.
 - packages (8) before communicate (10) — communicate generates deliverables from package data; without current packages, output will be incomplete
 - solutions (7) before packages (8) — packages bundle solutions into tiers; missing solutions mean incomplete bundles
 - propositions (6) before solutions (7) — solutions implement proposition DOES/MEANS; no propositions means nothing to implement
@@ -131,8 +140,13 @@ If the phase is `complete`, congratulate the user and suggest reviewing outputs 
 
 ## Phase Reference
 
+Phases below are the states the script reports via the top-level `phase` field plus three cross-cutting taxonomy/scan states that surface via `next_actions` entries rather than `phase` itself. In other words: `products` can be the `phase` value while the user sees a `portfolio-taxonomy` or `portfolio-scan` action as the *first* recommendation, because those actions are emitted from the phase-independent block and sorted ahead of the phase-specific one by priority.
+
 | Phase | Meaning | What to do |
 |-------|---------|------------|
+| `taxonomy` *(cross-cutting — emitted whenever `taxonomy.configured == false`)* | No taxonomy configured on the project | Run `portfolio-taxonomy` to clone a bundled template, author from scratch, or import an external one. Scan is blocked until this is in place. |
+| `taxonomy-invalid` *(cross-cutting — emitted whenever `taxonomy.source == "project-local"` and `taxonomy.validation == "fail"`)* | Project-local taxonomy fails validation | Run `portfolio-taxonomy` to fix, or hand-edit the taxonomy files under `{PROJECT_PATH}/taxonomy/` and re-run status with `--health-check` to re-validate. Scan is blocked until validation passes. |
+| `scan` *(cross-cutting — emitted when products are empty, a valid taxonomy is configured, and `scan.has_report == false`)* | Taxonomy ready, no scan output, products empty | Run `portfolio-scan` to auto-discover offerings from the web. Presented at the same priority as `products` so the user can also define products manually — this is a choice, not a queue. |
 | `products` | No products defined yet | Run `products` skill |
 | `features` | Products exist, no features | Run `features` skill |
 | `markets` | Features defined, no markets | Run `markets` skill |

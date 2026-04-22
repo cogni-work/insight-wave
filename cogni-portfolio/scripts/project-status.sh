@@ -43,6 +43,123 @@ SOLUTIONS=$(count_json "solutions")
 PACKAGES=$(count_json "packages")
 COMPETITORS=$(count_json "competitors")
 CUSTOMERS=$(count_json "customers")
+
+# Detect taxonomy state (portfolio.json fields + {PROJECT_PATH}/taxonomy/ existence)
+TAXONOMY_CONFIGURED="false"
+TAXONOMY_TYPE="null"
+TAXONOMY_TYPE_BARE=""
+TAXONOMY_SOURCE="none"
+TAXONOMY_DIR_EXISTS="false"
+TAXONOMY_SOURCE_PATH="null"
+TAXONOMY_CLONED_FROM="null"
+TAXONOMY_VALIDATION="skipped"
+TAXONOMY_VALIDATION_ERRORS="[]"
+TAXONOMY_ERROR_COUNT=0
+eval "$(python3 -c "
+import json
+q = chr(39)  # single quote wrapper preserves literal double quotes through eval
+try:
+    d = json.load(open('$PROJECT_DIR/portfolio.json'))
+    tax = d.get('taxonomy') or {}
+    t = tax.get('type')
+    sp = tax.get('source_path')
+    cf = tax.get('cloned_from')
+    if t:
+        print('TAXONOMY_CONFIGURED=true')
+        print(f'TAXONOMY_TYPE={q}{json.dumps(t)}{q}')
+        print(f'TAXONOMY_TYPE_BARE={t}')
+    if sp:
+        print(f'TAXONOMY_SOURCE_PATH={q}{json.dumps(sp)}{q}')
+    if cf:
+        print(f'TAXONOMY_CLONED_FROM={q}{json.dumps(cf)}{q}')
+except Exception:
+    pass
+" 2>/dev/null)"
+if [ -f "$PROJECT_DIR/taxonomy/template.md" ]; then
+  TAXONOMY_DIR_EXISTS="true"
+  TAXONOMY_SOURCE="project-local"
+elif [ "$TAXONOMY_CONFIGURED" = "true" ]; then
+  TAXONOMY_SOURCE="bundled"
+fi
+
+# Detect scan state (research/{slug}-portfolio.md + research/.metadata/scan-output.json)
+SCAN_HAS_REPORT="false"
+SCAN_HAS_METADATA="false"
+SCAN_CONSOLIDATION_MODE="null"
+SCAN_CATEGORIES_TOTAL="null"
+SCAN_CATEGORIES_CONFIRMED="null"
+SCAN_CATEGORIES_NOT_OFFERED="null"
+SCAN_REPORT_PATH="null"
+PROJECT_SLUG=$(python3 -c "
+import json
+try:
+    d = json.load(open('$PROJECT_DIR/portfolio.json'))
+    print(d.get('slug', ''))
+except Exception:
+    print('')
+" 2>/dev/null || echo "")
+if [ -n "$PROJECT_SLUG" ] && [ -f "$PROJECT_DIR/research/${PROJECT_SLUG}-portfolio.md" ]; then
+  SCAN_HAS_REPORT="true"
+  SCAN_REPORT_PATH="\"research/${PROJECT_SLUG}-portfolio.md\""
+fi
+if [ -f "$PROJECT_DIR/research/.metadata/scan-output.json" ]; then
+  SCAN_HAS_METADATA="true"
+  eval "$(python3 -c "
+import json
+q = chr(39)
+try:
+    d = json.load(open('$PROJECT_DIR/research/.metadata/scan-output.json'))
+    cm = d.get('consolidation_mode')
+    ss = d.get('status_summary') or {}
+    ct = d.get('categories_total')
+    if cm:
+        print(f'SCAN_CONSOLIDATION_MODE={q}{json.dumps(cm)}{q}')
+    if ct is not None:
+        print(f'SCAN_CATEGORIES_TOTAL={ct}')
+    conf = ss.get('confirmed')
+    noff = ss.get('not_offered')
+    if conf is not None:
+        print(f'SCAN_CATEGORIES_CONFIRMED={conf}')
+    if noff is not None:
+        print(f'SCAN_CATEGORIES_NOT_OFFERED={noff}')
+except Exception:
+    pass
+" 2>/dev/null)"
+fi
+
+# Validate project-local taxonomy when health-check is enabled.
+# Run this early (before next_actions is built) so the validation result can
+# feed the phase-independent triggers that block scan on broken taxonomies.
+# NOTE: validate-taxonomy.sh exits 1 on a failed validation but still prints
+# a structured JSON blob on stdout. Capture its output regardless of exit code.
+if $HEALTH_CHECK && [ "$TAXONOMY_SOURCE" = "project-local" ]; then
+  TAX_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  tax_val_output=$("$TAX_SCRIPT_DIR/validate-taxonomy.sh" "$PROJECT_DIR" 2>/dev/null) || true
+  if [ -z "$tax_val_output" ]; then
+    tax_val_output='{"success":false,"data":{"checks":[]}}'
+  fi
+  eval "$(python3 -c "
+import json, sys
+q = chr(39)
+try:
+    d = json.loads(sys.stdin.read())
+    checks = d.get('data', {}).get('checks', [])
+    failed = [c for c in checks if not c.get('ok', True)]
+    if d.get('success') and not failed:
+        print('TAXONOMY_VALIDATION=pass')
+        print(f'TAXONOMY_VALIDATION_ERRORS={q}[]{q}')
+        print('TAXONOMY_ERROR_COUNT=0')
+    else:
+        print('TAXONOMY_VALIDATION=fail')
+        errs = json.dumps(failed)
+        print(f'TAXONOMY_VALIDATION_ERRORS={q}{errs}{q}')
+        print(f'TAXONOMY_ERROR_COUNT={len(failed)}')
+except Exception:
+    print('TAXONOMY_VALIDATION=fail')
+    print(f'TAXONOMY_VALIDATION_ERRORS={q}[]{q}')
+    print('TAXONOMY_ERROR_COUNT=1')
+" <<< "$tax_val_output")"
+fi
 # Count context entries (subtract 1 for context-index.json if present)
 CONTEXT_ENTRIES=$(count_json "context")
 if [ -f "$PROJECT_DIR/context/context-index.json" ]; then
@@ -191,7 +308,7 @@ fi
 # Deep quality assessment (mechanism, customer relevance, language) is handled
 # by the feature-quality-assessor agent, which works in any language.
 feature_quality_warnings=0
-feature_quality_slugs="["
+feature_quality_slugs="[]"
 fq_first=true
 if [ -d "$PROJECT_DIR/features" ]; then
   eval "$(python3 -c "
@@ -652,6 +769,16 @@ if [ "$UPLOADS" -gt 0 ]; then
   add_action "ingest" "$UPLOADS file(s) in uploads/ awaiting ingestion" 1
 fi
 
+# Taxonomy not configured — block scanning / classification downstream until one is picked
+if [ "$TAXONOMY_CONFIGURED" = "false" ]; then
+  add_action "portfolio-taxonomy" "No taxonomy configured — pick, clone, or author one before scanning" 2
+fi
+
+# Project-local taxonomy fails validation — block scan until fixed
+if [ "$TAXONOMY_SOURCE" = "project-local" ] && [ "$TAXONOMY_VALIDATION" = "fail" ]; then
+  add_action "portfolio-taxonomy" "Project-local taxonomy fails validation ($TAXONOMY_ERROR_COUNT error(s)) -- run portfolio-taxonomy to fix, or hand-edit and re-run with --health-check" 2
+fi
+
 # Recommend communicate refresh when stale (phase-independent)
 if [ "$COMMUNICATE_STALE" = "true" ]; then
   add_action "communicate" "Communicate files may be stale — $COMMUNICATE_STALE_REASON" 10
@@ -674,7 +801,14 @@ fi
 
 case "$PHASE" in
   products)
-    add_action "products" "No products defined yet" 2
+    # Products empty — offer scan as the auto-discovery alternative when a valid taxonomy is in place.
+    # Same priority as `products` so they render as parallel options (SKILL.md Section 5 rule).
+    if [ "$TAXONOMY_CONFIGURED" = "true" ] && [ "$SCAN_HAS_REPORT" = "false" ] && [ "$TAXONOMY_VALIDATION" != "fail" ]; then
+      add_action "portfolio-scan" "Taxonomy ready ($TAXONOMY_TYPE_BARE) -- run portfolio-scan to auto-discover offerings from the web" 2
+      add_action "products" "No products defined yet -- define manually, or run portfolio-scan to auto-discover" 2
+    else
+      add_action "products" "No products defined yet" 2
+    fi
     ;;
   features)
     add_action "features" "$PRODUCTS product(s) exist but no features defined" 3
@@ -1265,6 +1399,25 @@ cat << EOF
   "purpose_coverage": {
     "total_features": $PURPOSE_TOTAL,
     "with_purpose": $PURPOSE_WITH
+  },
+  "taxonomy": {
+    "configured": $TAXONOMY_CONFIGURED,
+    "type": $TAXONOMY_TYPE,
+    "source": "$TAXONOMY_SOURCE",
+    "dir_exists": $TAXONOMY_DIR_EXISTS,
+    "source_path": $TAXONOMY_SOURCE_PATH,
+    "cloned_from": $TAXONOMY_CLONED_FROM,
+    "validation": "$TAXONOMY_VALIDATION",
+    "validation_errors": $TAXONOMY_VALIDATION_ERRORS
+  },
+  "scan": {
+    "has_report": $SCAN_HAS_REPORT,
+    "has_metadata": $SCAN_HAS_METADATA,
+    "consolidation_mode": $SCAN_CONSOLIDATION_MODE,
+    "categories_total": $SCAN_CATEGORIES_TOTAL,
+    "categories_confirmed": $SCAN_CATEGORIES_CONFIRMED,
+    "categories_not_offered": $SCAN_CATEGORIES_NOT_OFFERED,
+    "report_path": $SCAN_REPORT_PATH
   },
   "source_lineage": $source_lineage
 }
