@@ -33,7 +33,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 > "Set up a portfolio for our cloud monitoring product targeting mid-market SaaS companies in DACH"
 
-→ [Plugin guide](docs/plugin-guide/cogni-portfolio.md)
+→ [Plugin guide](docs/plugin-guide/cogni-portfolio.md) · [Portfolio to Pitch workflow](docs/workflows/portfolio-to-pitch.md)
 
 ### Content Production
 
