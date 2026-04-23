@@ -138,6 +138,8 @@ Present entries from `next_actions` **sorted by `priority` (ascending)**. Lower 
 
 If the phase is `complete`, congratulate the user and suggest reviewing outputs or running `portfolio-communicate` for additional deliverables. If communicate files are stale (indicated by a communicate action in `next_actions`), mention that `portfolio-communicate` should be re-run to refresh customer-facing documentation.
 
+After presenting the recommendation, optionally add a one-line pointer to `portfolio-setup` as a side-door for starting a **new** portfolio project (different company or product line). Only surface this when the current project is in a steady state — phase is `complete`, no stale entities, no quality warnings, no source drift, no pending uploads — so it does not compete with priority-ordered workflow actions. Frame it briefly, e.g. "If you want to start a portfolio for a different company or product line, run `portfolio-setup`." This is an orientation aid, not a recommendation; `portfolio-setup` itself redirects back to `portfolio-resume` when a project for the same company already exists, so there is no risk of accidental duplication.
+
 ## Phase Reference
 
 Phases below are the states the script reports via the top-level `phase` field plus three cross-cutting taxonomy/scan states that surface via `next_actions` entries rather than `phase` itself. In other words: `products` can be the `phase` value while the user sees a `portfolio-taxonomy` or `portfolio-scan` action as the *first* recommendation, because those actions are emitted from the phase-independent block and sorted ahead of the phase-specific one by priority.
