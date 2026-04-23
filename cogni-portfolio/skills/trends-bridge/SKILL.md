@@ -730,26 +730,30 @@ vendor-mode grounding for `cogni-trends` value-modeler Step 2.6 Example
 Enrichment. This step is the v3.2 counterpart to Steps 2.5 and 2.7 — it reads
 portfolio-local data only and never invents web-origin prose.
 
-Source: `cogni-portfolio/{portfolio_ref}/customers/{market-slug}.json → named_customers[]`.
+Source: `portfolio/customers/{market-slug}.json → named_customers[]`.
 
-For each entry with a non-empty `company_name`, emit one
+For each entry with a non-empty `name`, emit one
 `named_customer_references[]` record:
 
 - `market_slug` (required) — the market whose customers file this entry came from
-- `customer_name` (required) — copy from `company_name` verbatim
-- `domain` (optional) — copy from the customer's website root domain if present
+- `customer_name` (required) — copy from `named_customers[].name` verbatim
+- `domain` (optional) — copy `named_customers[].domain` as-is
 - `outcome_summary` (required) — 1–2 sentences summarizing the engagement
-  outcome. Derive from `named_customers[].key_pain_points` + `fit_score`
-  rationale when no explicit outcome text exists. **Must be portfolio-sourced
-  — do not invent web-origin prose.**
-- `fit_score` (optional) — copy `named_customers[].fit_score` as-is (0.0–1.0)
-- `feature_slugs` (optional) — collect feature slugs from any proposition or
-  solution in this market that references this customer. Fall back to an empty
-  array when no linkage exists in `propositions/` or `solutions/`. Allows
-  Step 2.6 to match references to each Solution Template's
-  `portfolio_grounding[feature_slug, market_slug]` mapping.
+  outcome. Derive from `named_customers[].pain_points` combined with
+  `named_customers[].fit_rationale` when no explicit outcome text exists.
+  **Must be portfolio-sourced — do not invent web-origin prose.**
+- `fit_score` (optional) — copy `named_customers[].fit_score` as-is
+  (canonical enum: `high` | `medium` | `low`, per
+  `cogni-portfolio/references/data-model.md:706`)
+- `feature_slugs` (optional) — **v3.2 reserved; always emit as `[]`.** No
+  proposition or solution schema currently stores named-customer linkages,
+  so there is no source to derive feature slugs from. The field is kept on
+  the contract so future schemas that add `named_customer_refs[]` to
+  propositions/solutions can populate it without a v3.3 bump; Step 2.6's
+  `portfolio_grounding[feature_slug, market_slug]` matcher treats an empty
+  array as "no customer-level feature linkage available".
 
-Skip `named_customers[]` entries with an empty or missing `company_name`.
+Skip `named_customers[]` entries with an empty or missing `name`.
 
 If no markets have `named_customers[]` populated, write `named_customer_references[]: []`
 — the field is additive and v3.1 (and earlier) consumers ignore it, so an empty
@@ -843,8 +847,8 @@ Assemble `portfolio-context.json` v3.2:
       "customer_name": "Acme SaaS GmbH",
       "domain": "acme-saas.example.com",
       "outcome_summary": "Reduced incident MTTR from 45 min to 12 min within 90 days of rollout",
-      "fit_score": 0.88,
-      "feature_slugs": ["cloud-monitoring"]
+      "fit_score": "high",
+      "feature_slugs": []
     }
   ]
 }
@@ -856,20 +860,22 @@ Write to `{tips-project-dir}/portfolio-context.json`.
 sourced from each market's `customers/{market-slug}.json → named_customers[]`. Enables
 `cogni-trends` value-modeler Step 2.6 Example Enrichment (vendor mode) to ground Solution
 Templates in concrete portfolio customers without re-reading the portfolio project directly.
-For each `named_customers[]` entry with a non-empty `company_name`, emit one reference:
+For each `named_customers[]` entry with a non-empty `name`, emit one reference:
 
 - `market_slug` (string, required): Market this customer belongs to.
-- `customer_name` (string, required): Company name.
-- `domain` (string, optional): Customer website root domain (if known).
+- `customer_name` (string, required): Copy of `named_customers[].name`.
+- `domain` (string, optional): Copy of `named_customers[].domain` if present.
 - `outcome_summary` (string, required): 1–2 sentences summarizing the engagement outcome.
-  Derive from `named_customers[].key_pain_points` + `fit_score` rationale when no explicit
-  outcome text exists. Must be portfolio-sourced — do not invent web-origin prose.
-- `fit_score` (float, optional): Copy of the named_customer fit_score (0.0–1.0).
-- `feature_slugs` (string array, optional): Features the customer is associated with inside
-  the portfolio (via propositions or solutions). Allows Step 2.6 to match references to each
-  ST's `portfolio_grounding[feature_slug, market_slug]` mapping.
+  Derive from `named_customers[].pain_points` combined with `named_customers[].fit_rationale`
+  when no explicit outcome text exists. Must be portfolio-sourced — do not invent web-origin prose.
+- `fit_score` (string, optional): Copy of `named_customers[].fit_score` — canonical enum
+  `high` | `medium` | `low` (per `cogni-portfolio/references/data-model.md:706`).
+- `feature_slugs` (string array, optional): **v3.2 reserved; always `[]`.** No proposition
+  or solution schema currently stores named-customer linkages, so there is no source to
+  derive feature slugs from. Field is kept on the contract so future schemas that add
+  `named_customer_refs[]` to propositions/solutions can populate it without a v3.3 bump.
 
-The field is additive — see the version notes below for the backward-compatibility contract across v3.1 and earlier consumers.
+See the Schema version notes below for the backward-compatibility contract.
 
 **Schema version notes:**
 - v3.2 adds `named_customer_references[]` — enables vendor-mode example enrichment in cogni-trends value-modeler Step 2.6
