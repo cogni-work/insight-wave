@@ -257,6 +257,14 @@ Extract portfolio entities from uploaded documents: `.md`, `.docx`, `.pptx`, `.x
 
 ---
 
+### portfolio-taxonomy
+
+Own and customize the project-local taxonomy that classifies offerings. Clone a bundled template (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source), author from scratch, or import from an existing portfolio. This is the prerequisite setup step before `portfolio-scan` can classify discovered offerings against a consistent category set.
+
+**Example prompt:** "Clone the b2b-ict taxonomy into this project so I can customize its categories"
+
+---
+
 ### portfolio-scan
 
 Discover a company's service offerings by scanning public websites, classify against the taxonomy template, and import as portfolio entities. Before deep research, scan asks you to confirm the list of **provider units** — subsidiaries, practice areas, or brands that will be scanned independently.
@@ -280,6 +288,14 @@ Five operating modes: **status** (show source registry health), **check** (detec
 Bidirectional integration with cogni-trends: import solution templates from a TIPS value model as portfolio features, or export portfolio context to enrich TIPS solution relevance scoring.
 
 **Example prompt:** "Bridge the automotive TIPS project into my portfolio"
+
+---
+
+### portfolio-consolidate
+
+Roll up N research-only `portfolio-scan` outputs across providers into a taxonomy-shaped coverage matrix. Use for cross-provider market-landscape analysis — which competitors cover which taxonomy categories, where coverage clusters, and where gaps exist — without committing any of the scans as features in your own portfolio.
+
+**Example prompt:** "Consolidate last week's five provider scans into a coverage matrix against the b2b-ict taxonomy"
 
 ---
 
