@@ -120,7 +120,7 @@ Content pieces are markdown files with YAML frontmatter tracking type, format, m
 | `marketing-dashboard` | skill | Interactive HTML dashboard for coverage and progress visualization |
 | `marketing-resume` | skill | Resume a session — show status, gaps, and recommended next actions |
 | `content-writer` | agent (sonnet) | Generates individual content pieces per format spec, brand voice, and source data |
-| `channel-adapter` | agent (sonnet) | Adapts existing content to different channels while preserving core message |
+| `channel-adapter` | agent (haiku) | Adapts existing content to different channels while preserving core message |
 | `seo-researcher` | agent (sonnet) | Researches SEO keywords and competitor content for GTM path/market combinations |
 | `/marketing-setup` | command | Initialize a cogni-marketing project with brand, markets, and GTM paths |
 | `/content-strategy` | command | Build the content matrix (market x GTM path x content type) with format recommendations |

@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-> **Markets covered.** 8 European and Anglo markets with per-region trend authorities — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, Les Echos), IT (CNR, AGCOM), PL (UKE, POLSA), NL (TNO, ACM), ES (CNMC, INTA), plus US and UK — DE/EN bilingual research against regional authorities — no generic US-centric datasets.
+> **Markets covered.** 8 European and Anglo markets with per-region trend authorities — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, ARCEP, Les Echos), IT (CNR, AGCOM, ASI), PL (UKE, POLSA, GUS), NL (TNO, ACM), ES (CNMC, INTA, CDTI), plus US and UK — DE/EN bilingual research against regional authorities — no generic US-centric datasets.
 
 A [Claude Cowork](https://claude.ai/cowork) plugin for scouting, selecting, and reporting on strategic industry trends — **rooted in the German Mittelstand, covering European markets (DE/FR/IT/PL/NL/ES) and US/UK**. Combines the [Smarter Service Trendradar](https://www.smarter-service.com/2023/01/31/trendradar-fuer-die-multikrise-und-neue-geooekonomie/) (4-dimension structure by Bernhard Steimel) with the TIPS content framework (Trends, Implications, Possibilities, Solutions — a B2B consulting methodology widely used since the early 2000s; see [WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) for a detailed treatment, filed by Siemens 2017, ceased 2019).
 

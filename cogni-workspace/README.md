@@ -128,6 +128,7 @@ cogni-workspace/
 │   └── on-session-start.sh
 ├── scripts/                      Utility scripts
 │   ├── check-dependencies.sh
+│   ├── check-region-catalogs.sh  Cross-plugin drift checker for portfolio, trends, research region catalogs
 │   ├── check-skill-names.sh
 │   ├── discover-plugins.sh
 │   ├── generate-settings.sh
