@@ -186,7 +186,7 @@ cogni-portfolio/
 ├── hooks/                        1 guardrail hook (Excalidraw canvas auto-start)
 ├── references/
 │   └── data-model.md             Full entity schema and project structure reference
-└── scripts/                      12 utility scripts
+└── scripts/                      13 utility scripts
 ```
 
 ## Dependencies
