@@ -39,6 +39,27 @@ Do NOT read the enriched-trends or claims JSON files at this step. Investment th
 1. Extract `portfolio_slug` → resolve to display name (e.g., `"t-systems"` → `"T-Systems"`). This becomes `PORTFOLIO_PROVIDER`.
 2. Build a `product_slug → { product_name, product_url }` lookup from `products[]`. This is used in Step 2.2 to resolve `PORTFOLIO_PRODUCTS` for each investment theme agent. `product_url` comes from `products[].url` if available (may be null).
 
+**Study mode + example reference resolution:**
+
+1. Read `{PROJECT_PATH}/tips-project.json → study_mode`. Default `"open"` when absent.
+   This becomes `STUDY_MODE` for every dispatched investment-theme agent.
+
+2. For each ST in `tips-value-model.json → solution_templates[]`, read the active
+   example array based on `STUDY_MODE`:
+   - `vendor` → `vendor_references[]` (each entry includes `source_ref` that resolves inside `cogni-portfolio/{vendor_source.portfolio_ref}/`)
+   - `open` → `published_cases[]` (each entry has a public `source_url` and tiered `source_authority`)
+
+3. Build a `st_id → { mode, entries[] }` lookup. Empty arrays and missing keys both
+   mean "no examples for this ST" — the agent falls back to plain capability prose.
+
+4. In Step 2.2, filter this lookup per theme (only include STs whose
+   `investment_theme_ref == theme.investment_theme_id`) and pass the filtered object
+   as `EXAMPLE_REFERENCES` to that theme's agent.
+
+When `study_mode` is missing on older projects, both `vendor_references[]` and
+`published_cases[]` will also be absent on all STs — `EXAMPLE_REFERENCES` will be an
+empty object, and the agent will render the pre-change output (backward compatible).
+
 ---
 
 ## Step 2.2: Dispatch Investment Theme Agents
@@ -89,6 +110,14 @@ Per agent:
       May be empty [] if no portfolio grounding or solution files not found.
       The orchestrator resolves the portfolio project path from portfolio-context.json →
       portfolio_slug → workspace discovery.}
+    STUDY_MODE: {"vendor" | "open" — read from tips-project.json → study_mode.
+      Default "open" when absent. Drives the Why You example-rendering rule.}
+    EXAMPLE_REFERENCES: {JSON object keyed by st_id for STs in this theme.
+      Shape depends on STUDY_MODE:
+      - vendor: { st_id: { mode: "vendor", entries: [{ customer_name, outcome_claim, roi_claim?, source, source_ref, publication_date? }, ...] } }
+      - open:   { st_id: { mode: "open",   entries: [{ vendor_or_customer, outcome, source_url, source_authority, publication_date? }, ...] } }
+      STs with no examples are omitted from the object. May be {} if no STs
+      in this theme have example arrays populated.}
     LABELS: {JSON object with relevant i18n labels:
       EXECUTIVE_SPONSOR, INVESTMENT_THESIS, VALUE_CHAINS, TREND,
       IMPLICATION, POSSIBILITY, FOUNDATION, SOLUTION_TEMPLATES,

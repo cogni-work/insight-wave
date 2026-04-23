@@ -40,6 +40,11 @@ You receive these from trend-report Phase 2:
 - **SOLUTION_TEMPLATES** — JSON array of this theme's solution templates: `[{ st_id, name, category, enabler_type }]` (may be empty)
 - **PORTFOLIO_PROVIDER** — Display name of the portfolio provider (e.g., "T-Systems", "Telekom MMS"). Sourced from `portfolio-context.json` → `portfolio_slug` resolved to a display name. Used in the portfolio close sentence. Empty string if no portfolio context.
 - **PORTFOLIO_PRODUCTS** — JSON array of distinct portfolio products grounding this theme's solution templates: `[{ product_name, product_url }]` (may be empty). Derived from `portfolio_grounding` on each solution template. `product_url` may be null if no URL is available.
+- **STUDY_MODE** — Either `"vendor"` or `"open"` (default `"open"` when absent). Read from `tips-project.json → study_mode` by the orchestrator. Drives the Why You example-rendering rule — vendor mode weaves portfolio-internal references per ST; open mode renders a `Referenzbeispiele` block of published cases. See the "Practical examples per mode" subsection under Why You for the full rule.
+- **EXAMPLE_REFERENCES** — JSON object keyed by `st_id`, containing per-ST example data aggregated from `tips-value-model.json`. Shape depends on `STUDY_MODE`:
+  - `STUDY_MODE == "vendor"`: each ST entry has `{ mode: "vendor", entries: [{ customer_name, outcome_claim, roi_claim?, source, source_ref, publication_date? }, ...] }`. All entries have `source_origin == "vendor"`. Each `source_ref` resolves inside the connected cogni-portfolio project — the agent does NOT need to resolve absolute paths; it cites the `source_ref` verbatim in markdown links as `[{customer_name}](portfolio://{source_ref})` so the `portfolio://` scheme marks the citation as portfolio-internal for downstream verification.
+  - `STUDY_MODE == "open"`: each ST entry has `{ mode: "open", entries: [{ vendor_or_customer, outcome, source_url, source_authority, publication_date? }, ...] }`. All entries have `source_origin == "third_party"`.
+  - When a ST has no examples (empty array or missing key), fall back to plain capability prose for that ST with no example citations.
 - **SOLUTION_PRICING** — JSON array of solution pricing data for this theme's grounded features: `[{ feature_slug, market_slug, solution_type, pricing, cost_model, implementation }]` (may be empty). Extracted from portfolio solution files by the orchestrator. Used in Why Pay for proactive investment figures. See "Solution costing data" in Why Pay section.
 - **MARKET_REGION** — Target market region code (e.g., "dach", "de", "us", "uk"). Default: "dach". Used to load region-specific currency and organization size references from `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-sources.json`.
 - **LABELS** — JSON object with i18n labels for section headings
@@ -222,10 +227,44 @@ must never see internal portfolio taxonomy. All capabilities are presented as
 flowing prose only. If you find yourself writing a markdown table inside Why You,
 stop and convert it to prose paragraphs instead.
 
-**Portfolio close:** After all capability descriptions, close the Why You section
-with 2-3 sentences that link the portfolio products to a provider-specific
-differentiator the reader cannot get elsewhere. The first sentence names the
-products. The second sentence names one concrete asset that creates exclusivity.
+**Practical examples per mode.** Each solution template's prose block must be
+grounded with concrete proof when `EXAMPLE_REFERENCES` carries entries for that ST.
+The rendering shape depends on `STUDY_MODE`:
+
+- **Vendor mode** (`STUDY_MODE == "vendor"`). Weave at least one reference **per ST
+  mentioned** directly into that ST's closing prose. Use vendor-authored phrasing
+  that treats the reference as proof the vendor has already delivered this
+  capability. Pattern (de): `"{PORTFOLIO_PROVIDER} hat dies bereits bei {customer_name} umgesetzt — {outcome_claim}"`.
+  Pattern (en): `"{PORTFOLIO_PROVIDER} has already implemented this for {customer_name} — {outcome_claim}"`.
+  Cite the source as a markdown link using the `portfolio://` scheme from
+  `EXAMPLE_REFERENCES` (e.g., `[Stadtwerke München](portfolio://customers/energy-utilities-dach.json#named_customers[2])`). This scheme is NOT a
+  public URL — it marks the citation as portfolio-internal for downstream
+  verification, and it replaces any generic "case-study recommended" placeholder
+  that prior report generations may have produced. Do NOT include a separate
+  `Referenzbeispiele` block in vendor mode — references belong inline with each ST.
+
+- **Open mode** (`STUDY_MODE == "open"` or absent). After all capability
+  descriptions and before the portfolio close, insert a mini-block labeled
+  `**{REFERENZBEISPIELE_LABEL}**` (label key `REFERENCES_BLOCK_LABEL` — e.g.
+  `"Referenzbeispiele"` in German, `"Industry reference cases"` in English).
+  The block is 2–3 short bullets, each citing one `published_cases[]` entry
+  from the theme's aggregated `EXAMPLE_REFERENCES` across all mentioned STs
+  (pick the highest-authority, most diverse set). Pattern:
+  `- **{vendor_or_customer}** ({publication_date}): {outcome} — [Quelle]({source_url})`.
+  Preserve citation diversity: do not repeat the same second-level domain more
+  than once in the block. When fewer than 2 entries exist across all STs in this
+  theme, omit the block entirely and rely on plain capability prose.
+
+- **No examples available** (empty `EXAMPLE_REFERENCES` for this theme). Fall
+  back to the pre-change behavior — render capability prose and the portfolio
+  close (vendor only) without example weaving. This is the backward-compatible
+  path for projects that predate the `study_mode` field.
+
+**Portfolio close:** After all capability descriptions (and, in open mode, after
+the `Referenzbeispiele` block), close the Why You section with 2-3 sentences
+that link the portfolio products to a provider-specific differentiator the reader
+cannot get elsewhere. The first sentence names the products. The second sentence
+names one concrete asset that creates exclusivity.
 
 Format examples (German):
 - "{PORTFOLIO_PROVIDER} kann Sie auf diesem Weg mit [Product A](url),
@@ -426,7 +465,7 @@ Now replace the placeholder heading markers in the written file with the actual 
 - Each element meets its proportional word target (+/-10%)
 - **Why Change:** PSB structure applied, Contrast Structure used, ends with competitive implication
 - **Why Now:** ≥2 forcing functions with specific timelines, before/after contrast, window closing statement. FF1 should be a regulatory deadline if evidence contains one. Each forcing function should be specific to this theme — reusing the same deadline (e.g., EU AI Act August 2026) as the primary forcing function in multiple themes makes the report feel repetitive and weakens urgency. If the same deadline applies across themes, reference it briefly ("alongside the EU AI Act deadline") but lead with a theme-specific forcing function.
-- **Why You:** IS-DOES-MEANS logic applied (invisibly) to ≥1 solution template or P-candidate. You-Phrasing for outcomes. No ST-IDs, no "Power Position", no visible IS/DOES/MEANS labels — flowing prose only. No solution table. Portfolio close present (if PORTFOLIO_PRODUCTS non-empty). Heading uses "Lösungen"/"solutions" and ties back to urgency.
+- **Why You:** IS-DOES-MEANS logic applied (invisibly) to ≥1 solution template or P-candidate. You-Phrasing for outcomes. No ST-IDs, no "Power Position", no visible IS/DOES/MEANS labels — flowing prose only. No solution table. Portfolio close present (if PORTFOLIO_PRODUCTS non-empty). Heading uses "Lösungen"/"solutions" and ties back to urgency. **Examples gate:** when `EXAMPLE_REFERENCES` carries at least one entry for any ST in this theme, the Why You section MUST cite at least one example — inline per ST in vendor mode, or via the `Referenzbeispiele` block in open mode. Vendor-mode citations use the `portfolio://` scheme; open-mode citations use public HTTPS URLs with no more than one entry per second-level domain. If `EXAMPLE_REFERENCES` is empty/absent for this theme, skip the examples gate (backward compatibility).
 - **Why Pay:** ≥2 cost dimensions with specific localized ranges in the region's currency (not global averages), 3-year horizon, closing ratio comparison. Every cost dimension should contain monetary amounts in the region's currency and reference a specific organization size (from `org_size_reference` in region config) — CDO and CFO readers immediately distrust global averages or unsized figures because they can't present them to their board. The proactive investment figure should be realistic for the scope of capabilities described — understating to inflate the ratio destroys credibility when readers do their own math.
 - Hook opens with quantified surprise from theme evidence
 - **Headings:** H2 is thesis statement (not topic label), all H3s are message-driven (not arc element names), each contains a number/date/entity

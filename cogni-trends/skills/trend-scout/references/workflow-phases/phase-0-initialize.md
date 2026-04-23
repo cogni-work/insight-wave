@@ -571,6 +571,85 @@ fi
 
 ---
 
+### Step 0.8c: Capture study_mode (only when a portfolio is connected)
+
+**Skip condition.** If `PORTFOLIO_SOURCE_SLUG` is empty (no portfolio was selected in Step 0.1c),
+skip this step entirely. The project implicitly operates in open-study mode — `study_mode` and
+`vendor_source` are omitted from `tips-project.json` and downstream skills treat the absence as
+`"open"`.
+
+When a portfolio **is** connected, ask the user explicitly which mode applies. The answer drives
+whether `value-modeler` Step 2.6 Example Enrichment sources references from inside the portfolio
+corpus (vendor mode) or dispatches a dedicated industry case-study research pass (open mode),
+and whether the investment-theme writer's "Why You" section weaves portfolio references or a
+`Referenzbeispiele` block of published cases.
+
+```yaml
+# Only when PORTFOLIO_SOURCE_SLUG is non-empty:
+AskUserQuestion:
+  question: |
+    {STUDY_MODE_PROMPT_TITLE}
+
+    {STUDY_MODE_PROMPT_INTRO}
+  options:
+    - label: "{STUDY_MODE_VENDOR_LABEL}"      # e.g. "Vendor study — use my portfolio references only"
+      description: "{STUDY_MODE_VENDOR_DESC}"
+    - label: "{STUDY_MODE_OPEN_LABEL}"        # e.g. "Neutral study — include any published industry cases"
+      description: "{STUDY_MODE_OPEN_DESC}"
+```
+
+Parse the selection into the `STUDY_MODE` variable (`vendor` | `open`). Then write it into
+`tips-project.json`, and for vendor mode also populate `vendor_source` from the connected
+portfolio's company record:
+
+```bash
+if [[ -n "$PORTFOLIO_SOURCE_SLUG" ]]; then
+  # STUDY_MODE captured above from AskUserQuestion: "vendor" or "open"
+  if [[ "$STUDY_MODE" == "vendor" ]]; then
+    # Resolve vendor display name from the portfolio's manifest (portfolio.json → company.name).
+    PORTFOLIO_MANIFEST="${PROJECT_AGENTS_OPS_ROOT:-$PWD}/cogni-portfolio/${PORTFOLIO_SOURCE_SLUG}/portfolio.json"
+    VENDOR_DISPLAY_NAME="${PORTFOLIO_SOURCE_SLUG}"
+    if [[ -f "$PORTFOLIO_MANIFEST" ]]; then
+      VENDOR_DISPLAY_NAME=$(jq -r '.company.name // .company_name // empty' "$PORTFOLIO_MANIFEST")
+      [[ -z "$VENDOR_DISPLAY_NAME" ]] && VENDOR_DISPLAY_NAME="$PORTFOLIO_SOURCE_SLUG"
+    fi
+
+    jq \
+      --arg portfolio_ref "$PORTFOLIO_SOURCE_SLUG" \
+      --arg vendor_slug "$PORTFOLIO_SOURCE_SLUG" \
+      --arg vendor_display_name "$VENDOR_DISPLAY_NAME" \
+      '.study_mode = "vendor"
+       | .vendor_source = {
+           portfolio_ref: $portfolio_ref,
+           vendor_slug: $vendor_slug,
+           vendor_display_name: $vendor_display_name
+         }' \
+      "$TIPS_PROJECT_FILE" > "${TIPS_PROJECT_FILE}.tmp" \
+      && mv "${TIPS_PROJECT_FILE}.tmp" "$TIPS_PROJECT_FILE"
+
+    log_conditional INFO "study_mode=vendor, vendor_display_name=${VENDOR_DISPLAY_NAME}"
+  else
+    jq '.study_mode = "open"' \
+      "$TIPS_PROJECT_FILE" > "${TIPS_PROJECT_FILE}.tmp" \
+      && mv "${TIPS_PROJECT_FILE}.tmp" "$TIPS_PROJECT_FILE"
+
+    log_conditional INFO "study_mode=open (portfolio connected but user chose neutral study)"
+  fi
+fi
+```
+
+**Optional wiki / uploads pointers.** `vendor_source.case_study_wiki` and
+`vendor_source.case_study_uploads` are not prompted here. They are advanced configuration that
+power users add by editing `tips-project.json` directly before running value-modeler. When
+absent, Step 2.6 falls back to reading the portfolio's default `uploads/` directory and skips
+wiki dispatch. See `$CLAUDE_PLUGIN_ROOT/references/data-model.md` for the full `vendor_source`
+schema.
+
+**Backward compatibility.** Projects created before this step landed have no `study_mode` field.
+Downstream skills treat the absence as `"open"` and render the report exactly as before.
+
+---
+
 ## Step 0.9: Initialize Logging
 
 ```bash
@@ -622,6 +701,7 @@ SKIP_TO_PHASE=1  # Proceed to web research
 - [ ] PROJECT_LANGUAGE confirmed by user (de/en)
 - [ ] Portfolio discovery attempted (scan result logged)
 - [ ] If portfolio selected: PORTFOLIO_SOURCE_SLUG and PORTFOLIO_MARKET_SLUG set
+- [ ] If portfolio selected: study_mode captured (vendor | open) and written to tips-project.json
 - [ ] Industry and subsector selected and validated (from portfolio or manual taxonomy)
 - [ ] RESEARCH_TOPIC captured
 - [ ] PROJECT_SLUG generated

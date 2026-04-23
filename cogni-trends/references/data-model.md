@@ -53,7 +53,7 @@ Lightweight root manifest for project discovery and resume. Created during Phase
 ```
 
 Required fields: `slug`, `name`, `language`, `industry`, `research_topic`, `created`
-Optional fields: `updated`, `portfolio_source`
+Optional fields: `updated`, `portfolio_source`, `study_mode`, `vendor_source`
 
 The `portfolio_source` field is set when the project was initialized from a cogni-portfolio market (via Step 0.1c portfolio discovery). It links the TIPS project to a specific portfolio market for later bridge operations:
 
@@ -69,6 +69,46 @@ The `portfolio_source` field is set when the project was initialized from a cogn
 The `language` field is a lowercase ISO 639-1 code (`"de"` or `"en"`). Controls the language of all generated user-facing content. JSON field names and slugs remain in English.
 
 The `industry` object uses bilingual names for web research queries. The `primary` and `subsector` fields are slug-format identifiers; `_en` and `_de` variants are display names.
+
+#### study_mode (optional)
+
+Declares whether practical examples in the report should come from the connected portfolio's
+own references ("vendor") or from any published industry case studies ("open"). Set at
+`trend-scout` Phase 0 via an explicit prompt **only when a portfolio is connected**. When no
+portfolio is connected, the field is omitted and treated as `"open"`. Projects created before
+this field existed continue to behave as `"open"` (fully backward compatible).
+
+```json
+{
+  "study_mode": "vendor"
+}
+```
+
+Valid values: `"vendor"`, `"open"`. Default when absent: `"open"`.
+
+#### vendor_source (optional — required iff study_mode == "vendor")
+
+Identifies the portfolio project whose internal corpus supplies vendor references. When
+`study_mode` is `"vendor"`, `vendor_source` must be present and must point at a cogni-portfolio
+project in the workspace. When `study_mode` is `"open"`, this field is omitted.
+
+```json
+{
+  "vendor_source": {
+    "portfolio_ref": "t-systems-corp",
+    "vendor_slug": "t-systems",
+    "vendor_display_name": "T-Systems",
+    "case_study_wiki": "cogni-wiki/t-systems-cases",
+    "case_study_uploads": "uploads/case-studies/"
+  }
+}
+```
+
+- `portfolio_ref` (string, required): cogni-portfolio project slug (same as `portfolio_source.portfolio_slug`).
+- `vendor_slug` (string, required): kebab-case vendor identifier for display resolution.
+- `vendor_display_name` (string, required): Human-readable provider name for prose weaving (e.g., `"T-Systems"`).
+- `case_study_wiki` (string, optional): Path relative to workspace root pointing at a cogni-wiki instance to query for reference evidence.
+- `case_study_uploads` (string, optional): Path (relative to the portfolio project) to a directory of uploaded case study documents (PDF, DOCX, MD) for `local-researcher` dispatch. Defaults to the portfolio project's `uploads/` directory when omitted.
 
 ### trend-scout-output.json (Scout Output)
 
@@ -325,6 +365,8 @@ erDiagram
         string research_topic
         string created
         object portfolio_source "optional"
+        string study_mode "optional — vendor|open (default open)"
+        object vendor_source "optional — required iff study_mode=vendor"
     }
     ScoutOutput {
         string version "1.0.0"
@@ -410,6 +452,8 @@ erDiagram
         string generation_mode "portfolio-anchored|abstract"
         object portfolio_anchor "optional"
         array portfolio_grounding "optional"
+        array vendor_references "optional — study_mode=vendor"
+        array published_cases "optional — study_mode=open"
         string quality_flag "null|quality_investment_needed"
         float business_relevance "1-5 scale"
         float ranking_value
@@ -625,6 +669,28 @@ Groups 1-4 value chains into a CxO-level strategic investment area. German custo
       "evidence_available": true
     }
   ],
+  "vendor_references": [
+    {
+      "customer_name": "Stadtwerke München",
+      "outcome_claim": "Cut unplanned outages 38% after six-month rollout",
+      "roi_claim": "€4.2M avoided OPEX in year one",
+      "source": "customers",
+      "source_ref": "customers/energy-utilities-dach.json#named_customers[2]",
+      "portfolio_grounding_entry_ref": "predictive-analytics--energy-utilities-dach",
+      "source_origin": "vendor",
+      "publication_date": "2024-06"
+    }
+  ],
+  "published_cases": [
+    {
+      "vendor_or_customer": "Enel — Cisco Smart Grid deployment",
+      "outcome": "10M smart meters rolled out across Italy; 5% peak load reduction reported",
+      "source_url": "https://example.com/enel-smart-grid-case",
+      "source_authority": "tier-1",
+      "publication_date": "2024-03",
+      "source_origin": "third_party"
+    }
+  ],
   "quality_flag": null,
   "business_relevance": null,
   "business_relevance_calculated": null,
@@ -696,6 +762,34 @@ New fields (all optional, backward compatible — existing STs without these fie
 - **`quality_flag`** (string or null, optional): Set when the anchor feature's proposition has quality assessment failures.
   - `null` — No quality issues (or no quality data available)
   - `"quality_investment_needed"` — The matched proposition scored "fail" on one or more quality dimensions; the proposition should be improved before using this ST in customer-facing materials
+- **`vendor_references`** (array, optional — populated only when `tips-project.json → study_mode == "vendor"`):
+  Concrete reference engagements sourced from **inside** the connected cogni-portfolio project. Keyed to the
+  ST's existing `portfolio_grounding[]` (feature×market). Zero open-web URLs — every entry resolves under
+  `cogni-portfolio/{vendor_source.portfolio_ref}/`.
+  - `customer_name` (string, required): Named customer or project reference (e.g., `"Stadtwerke München"`).
+  - `outcome_claim` (string, required): Short outcome statement suitable for CxO prose (1–2 sentences).
+  - `roi_claim` (string, optional): Quantified ROI when available from portfolio evidence (e.g., `"€4.2M avoided OPEX"`).
+  - `source` (string, required): Where the reference came from inside the portfolio — `"customers"` (a `named_customers[]` entry),
+    `"propositions"` (an `evidence[]` entry tagged vendor-authored), `"uploads"` (document corpus via `cogni-research:local-researcher`),
+    or `"wiki"` (a `cogni-wiki:wiki-query` result).
+  - `source_ref` (string, required): Portfolio-relative path or entity ref with optional JSON Pointer. Must resolve inside `cogni-portfolio/{portfolio_ref}/`.
+  - `portfolio_grounding_entry_ref` (string, required): `{feature_slug}--{market_slug}` key linking this reference back to one of the ST's `portfolio_grounding[]` entries.
+  - `source_origin` (string, required): Always `"vendor"` for this array.
+  - `publication_date` (string, optional): ISO-8601 date (YYYY-MM) for recency sorting.
+- **`published_cases`** (array, optional — populated only when `tips-project.json → study_mode == "open"` or absent):
+  Published industry case studies sourced via a dedicated `cogni-research:section-researcher` dispatch in
+  value-modeler Step 2.6. Complements the trend-signal research with concrete implementation proof.
+  - `vendor_or_customer` (string, required): Who implemented the case (vendor or customer name).
+  - `outcome` (string, required): One-line outcome summary.
+  - `source_url` (string, required): Public URL to the case study.
+  - `source_authority` (string, required): Authority tier — `"tier-1"` (analyst, academic, regulator),
+    `"tier-2"` (trade press, major vendor site), `"tier-3"` (community, smaller vendor blog).
+  - `publication_date` (string, optional): ISO-8601 date (YYYY-MM).
+  - `source_origin` (string, required): Always `"third_party"` for this array.
+
+Mutual exclusivity: a given ST carries **either** `vendor_references[]` **or** `published_cases[]`, never both —
+the active array is determined by `tips-project.json → study_mode`. Both arrays are optional and absent on
+projects created before this feature landed (backward compatible).
 
 ### Re-Anchor Log
 

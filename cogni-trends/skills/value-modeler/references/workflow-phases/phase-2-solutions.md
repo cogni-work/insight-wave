@@ -572,6 +572,155 @@ SPIs are the *how* (organizational and process changes needed to realize value f
 - Consider training, governance, workflow integration, and organizational alignment
 - SPIs are lightweight — they flag what needs to change, not how to change it
 
+## Step 2.6: Example Enrichment (vendor references or published cases)
+
+Enrich each Solution Template with concrete **practical examples**. The rendered trend report
+needs proof points — "who has done this, what happened, here is the source". Today's trend
+research surfaces quantitative claims from web signals, but not case-study evidence tied to a
+specific ST. Step 2.6 closes that gap.
+
+The enrichment source depends on `tips-project.json → study_mode` (captured in trend-scout
+Phase 0 Step 0.8c). The field is optional; when absent, treat as `"open"`.
+
+```bash
+STUDY_MODE=$(jq -r '.study_mode // "open"' "${PROJECT_PATH}/tips-project.json")
+```
+
+**Skip condition.** If `study_mode == "vendor"` but no `vendor_source.portfolio_ref` resolves to
+a readable portfolio project, log a WARNING and fall back to open-mode behavior for this run —
+do not HALT. A misconfigured vendor project should still produce a report.
+
+**Dispatch caps** (to bound latency and cost — enforce per ST):
+
+| Mode | Dispatch budget per ST |
+|------|-----------------------|
+| vendor | max 2 `cogni-research:local-researcher` calls + max 2 `cogni-wiki:wiki-query` calls + plain JSON reads (unbounded) |
+| open | max 1 `cogni-research:section-researcher` call with ≤ 4 sub-queries |
+
+### 2.6.A: Vendor Mode — Source References from the Portfolio Corpus
+
+Applies when `study_mode == "vendor"`. Zero open-web URLs are written — every `source_ref`
+resolves inside `cogni-portfolio/{vendor_source.portfolio_ref}/`.
+
+For each ST where the `solution_blueprint.building_blocks[]` contains any block with
+`coverage ∈ {"covered", "partial"}`:
+
+1. **Read `portfolio_grounding[]`.** Each entry is `{feature_slug, market_slug, does_echo, evidence_available}` — this
+   is the feature×market mapping to search against. STs with empty `portfolio_grounding[]` (pure
+   gap blueprints) receive an empty `vendor_references[]` and move on.
+
+2. **Named customers** — for each `market_slug` in `portfolio_grounding[]`, read
+   `cogni-portfolio/{portfolio_ref}/customers/{market_slug}.json`. Select `named_customers[]`
+   entries whose industry or pain_points resonate with the ST's lead building-block capability.
+   Prefer entries with higher `fit_score`. Emit one `vendor_references[]` entry per qualifying
+   customer:
+
+   ```json
+   {
+     "customer_name": "{named_customer.company_name}",
+     "outcome_claim": "{derived 1-2 sentence outcome from named_customer.key_pain_points + ST.name}",
+     "source": "customers",
+     "source_ref": "customers/{market_slug}.json#named_customers[{index}]",
+     "portfolio_grounding_entry_ref": "{feature_slug}--{market_slug}",
+     "source_origin": "vendor",
+     "publication_date": null
+   }
+   ```
+
+3. **Proposition evidence** — for each `(feature_slug, market_slug)` pair, read
+   `cogni-portfolio/{portfolio_ref}/propositions/{feature_slug}--{market_slug}.json` and scan
+   `evidence[]`. Include entries tagged `source_origin == "vendor"` (vendor-authored proof
+   points). When the tag is absent on older projects, include only entries whose `source_url`
+   is empty (portfolio-internal only) — never web-sourced evidence.
+
+4. **Uploaded collateral** — dispatch `cogni-research:local-researcher` once per ST against
+   `cogni-portfolio/{portfolio_ref}/{vendor_source.case_study_uploads || "uploads/"}`. Build
+   sub-questions from the ST name + lead building-block capability + investment theme name, e.g.:
+   *"Which uploaded case studies describe an implementation of {ST.name} in {industry.subsector_en} and what outcome was reported?"*.
+   Limit to max 4 sub-questions per dispatch. Each matching file becomes a `vendor_references[]`
+   entry with `source: "uploads"` and `source_ref: "uploads/{filename}"`.
+
+5. **Vendor wiki (optional)** — when `vendor_source.case_study_wiki` is set, dispatch
+   `cogni-wiki:wiki-query` once per ST against that wiki path with the same sub-question style.
+   Each hit becomes a `vendor_references[]` entry with `source: "wiki"` and
+   `source_ref: "{wiki_path}#{page_slug}"`.
+
+6. **Dedupe.** If the same underlying customer appears across sources (e.g., a customer entry
+   plus an uploaded case study describing the same engagement), keep the richest entry —
+   prefer `uploads` > `wiki` > `propositions` > `customers` when the engagement is confirmed by
+   an actual case-study artifact; otherwise keep the `customers` entry for the structured metadata.
+
+7. **Write `vendor_references[]` to the ST.** When no portfolio evidence matched, leave the
+   array empty — the writer downstream will fall back to the plain capability prose for that ST
+   (backward-compatible behavior).
+
+### 2.6.B: Open Mode — Research Published Industry Case Studies
+
+Applies when `study_mode == "open"` (explicitly set at Phase 0 or absent). This is the
+dedicated case-study research pass that complements today's trend-signal research — the report's
+"Why You" gains a `Referenzbeispiele` block of concrete industry implementations.
+
+For each ST, dispatch **one** `cogni-research:section-researcher` call with ≤ 4 sub-queries
+drawn from the templates below. The agent already handles market localization and parallel
+search — do not reinvent that here.
+
+**Query templates** (substitute `{st.name}`, `{lead_block.capability}`, `{industry.primary_en}`,
+`{industry.subsector_en}`, localized variants from `tips-project.json → industry.*_de`, and
+`{year_range}` = last 3 calendar years):
+
+- `"{st.name}" "case study" {industry.subsector_en} {year_range}`
+- `"{lead_block.capability}" implementation reference {industry.subsector_en} {year_range}`
+- `"{st.name}" pilot results OR rollout OR deployment {industry.primary_en}`
+- DACH localization (when `language == "de"` or `MARKET_REGION ∈ {"dach","de"}`): `"{st.name}" Referenz OR Kundenprojekt OR Umsetzung {industry.subsector_de}`
+
+**Authority classification.** For each returned hit, classify `source_authority` by domain:
+
+| Tier | Examples |
+|------|----------|
+| `tier-1` | Analyst firms (Gartner, Forrester, IDC), academic (.edu, Fraunhofer, arxiv), regulator (EUR-Lex, BSI, ENISA) |
+| `tier-2` | Trade press (Handelsblatt, FT, Computerwoche), major vendor reference pages |
+| `tier-3` | Community blogs, smaller vendor case pages |
+
+**Citation diversity cap.** No more than 1 entry may share the same second-level domain — e.g.,
+two hits from `cisco.com` collapse to the single strongest one. This prevents a single vendor's
+reference library from dominating the ST's evidence.
+
+**Target output.** 2–3 `published_cases[]` entries per ST when feasible. When the agent returns
+fewer than 2 usable hits, keep what was found and emit an empty array if nothing usable was
+returned — the writer downstream falls back to plain capability prose for that ST.
+
+```json
+{
+  "vendor_or_customer": "{implementer_name}",
+  "outcome": "{1-line outcome summary}",
+  "source_url": "{url}",
+  "source_authority": "tier-1|tier-2|tier-3",
+  "publication_date": "{YYYY-MM if available, else null}",
+  "source_origin": "third_party"
+}
+```
+
+### 2.6.C: Write Results
+
+After per-ST dispatch, update the in-memory `solution_templates[]` array and write
+`tips-value-model.json`. The two arrays are mutually exclusive per ST — emit **either**
+`vendor_references[]` (vendor mode) **or** `published_cases[]` (open mode), never both.
+
+Skipped STs (no blueprint, no grounding) keep both arrays absent — downstream consumers treat
+absence identically to empty.
+
+### 2.6.D: Quality Gate
+
+Log a WARNING (do not HALT) when:
+
+- **Vendor mode**: > 30% of STs with a `covered` or `partial` lead block ended up with empty
+  `vendor_references[]`. This usually means `customers/{market}.json` is thin or no case-study
+  uploads exist — surface the gap so the user can enrich the portfolio before re-running.
+- **Open mode**: > 30% of STs ended up with fewer than 2 `published_cases[]` entries.
+- **Any mode**: a `source_ref` points outside the allowed corpus (vendor mode: outside
+  `cogni-portfolio/{portfolio_ref}/`; open mode: not a URL). Acceptance criterion #2 depends on
+  this invariant.
+
 ## Step 2.7: Re-Anchor Existing Solution Templates
 
 Re-anchoring rebuilds solution blueprints on existing STs using **LLM solutioning intelligence**.

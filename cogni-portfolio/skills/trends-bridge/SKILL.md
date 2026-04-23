@@ -721,11 +721,11 @@ product descriptions when differentiators are empty or absent.
 
 **Step 3: Build Context File**
 
-Assemble `portfolio-context.json` v3.1:
+Assemble `portfolio-context.json` v3.2:
 
 ```json
 {
-  "schema_version": "3.1",
+  "schema_version": "3.2",
   "source": "cogni-portfolio",
   "portfolio_slug": "{portfolio-slug}",
   "extracted_at": "{ISO-8601 timestamp}",
@@ -800,21 +800,52 @@ Assemble `portfolio-context.json` v3.1:
       "market_relevance": "direct",
       "match_reason": "vertical_codes includes 'saas' matching TIPS subsector"
     }
+  ],
+  "named_customer_references": [
+    {
+      "market_slug": "mid-market-saas-dach",
+      "customer_name": "Acme SaaS GmbH",
+      "domain": "acme-saas.example.com",
+      "outcome_summary": "Reduced incident MTTR from 45 min to 12 min within 90 days of rollout",
+      "fit_score": 0.88,
+      "feature_slugs": ["cloud-monitoring"]
+    }
   ]
 }
 ```
 
 Write to `{tips-project-dir}/portfolio-context.json`.
 
+**`named_customer_references[]`** (added in v3.2, optional): Structured customer references
+sourced from each market's `customers/{market-slug}.json → named_customers[]`. Enables
+`cogni-trends` value-modeler Step 2.6 Example Enrichment (vendor mode) to ground Solution
+Templates in concrete portfolio customers without re-reading the portfolio project directly.
+For each `named_customers[]` entry with a non-empty `company_name`, emit one reference:
+
+- `market_slug` (string, required): Market this customer belongs to.
+- `customer_name` (string, required): Company name.
+- `domain` (string, optional): Customer website root domain (if known).
+- `outcome_summary` (string, required): 1–2 sentences summarizing the engagement outcome.
+  Derive from `named_customers[].key_pain_points` + `fit_score` rationale when no explicit
+  outcome text exists. Must be portfolio-sourced — do not invent web-origin prose.
+- `fit_score` (float, optional): Copy of the named_customer fit_score (0.0–1.0).
+- `feature_slugs` (string array, optional): Features the customer is associated with inside
+  the portfolio (via propositions or solutions). Allows Step 2.6 to match references to each
+  ST's `portfolio_grounding[feature_slug, market_slug]` mapping.
+
+Consumers below v3.2 ignore this field; it's additive.
+
 **Schema version notes:**
+- v3.2 adds `named_customer_references[]` — enables vendor-mode example enrichment in cogni-trends value-modeler Step 2.6
 - v3.0 adds `variant_count` and `quality_assessment` per proposition (v2.0 consumers ignore these)
 - v2.0 had propositions without quality or variant data
 - v1.0 (no `schema_version` field) had no embedded propositions at all
 
 **Backward compatibility:** The `schema_version` field distinguishes versions. Phase 2
-checks this field: v3.0 enables quality-aware generation and variant tracking, v2.0
-enables proposition-grounded generation, v1.0 (no field) falls back to basic feature
-matching. Each version is a superset of the previous — new fields are additive.
+checks this field: v3.2 enables vendor-reference surfacing, v3.0 enables quality-aware
+generation and variant tracking, v2.0 enables proposition-grounded generation, v1.0 (no
+field) falls back to basic feature matching. Each version is a superset of the previous —
+new fields are additive.
 
 **Step 4: Advise Value Modeler**
 
