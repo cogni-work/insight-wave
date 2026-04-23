@@ -168,7 +168,7 @@ TIPS: {pursuit-slug}
   Value Model:        {exists/missing}  ✓/✗
   Solution Templates: {N}               ✓/✗
   Ranked STs:         {N} / {total}     ✓/✗
-  Portfolio Context:  {v2.0 from DATE / v1.0 / missing}
+  Portfolio Context:  {v3.2 from DATE / v3.1 / v3.0 / v2.0 / v1.0 / missing}
 ```
 
 **Step 4: Industry Alignment**
@@ -723,6 +723,38 @@ Write 3-6 entries to `differentiators[]`. Only include entries where
 compatible and the trend-report portfolio close falls back to scanning
 product descriptions when differentiators are empty or absent.
 
+**Step 2.8: Extract Named Customer References**
+
+Scan each market's customers file for concrete named customers to surface as
+vendor-mode grounding for `cogni-trends` value-modeler Step 2.6 Example
+Enrichment. This step is the v3.2 counterpart to Steps 2.5 and 2.7 — it reads
+portfolio-local data only and never invents web-origin prose.
+
+Source: `cogni-portfolio/{portfolio_ref}/customers/{market-slug}.json → named_customers[]`.
+
+For each entry with a non-empty `company_name`, emit one
+`named_customer_references[]` record:
+
+- `market_slug` (required) — the market whose customers file this entry came from
+- `customer_name` (required) — copy from `company_name` verbatim
+- `domain` (optional) — copy from the customer's website root domain if present
+- `outcome_summary` (required) — 1–2 sentences summarizing the engagement
+  outcome. Derive from `named_customers[].key_pain_points` + `fit_score`
+  rationale when no explicit outcome text exists. **Must be portfolio-sourced
+  — do not invent web-origin prose.**
+- `fit_score` (optional) — copy `named_customers[].fit_score` as-is (0.0–1.0)
+- `feature_slugs` (optional) — collect feature slugs from any proposition or
+  solution in this market that references this customer. Fall back to an empty
+  array when no linkage exists in `propositions/` or `solutions/`. Allows
+  Step 2.6 to match references to each Solution Template's
+  `portfolio_grounding[feature_slug, market_slug]` mapping.
+
+Skip `named_customers[]` entries with an empty or missing `company_name`.
+
+If no markets have `named_customers[]` populated, write `named_customer_references[]: []`
+— the field is additive and v3.1 (and earlier) consumers ignore it, so an empty
+array is the backward-compatible signal that no references are available.
+
 **Step 3: Build Context File**
 
 Assemble `portfolio-context.json` v3.2:
@@ -837,11 +869,11 @@ For each `named_customers[]` entry with a non-empty `company_name`, emit one ref
   the portfolio (via propositions or solutions). Allows Step 2.6 to match references to each
   ST's `portfolio_grounding[feature_slug, market_slug]` mapping.
 
-Consumers below v3.2 ignore this field; it's additive.
+The field is additive — see the version notes below for the backward-compatibility contract across v3.1 and earlier consumers.
 
 **Schema version notes:**
 - v3.2 adds `named_customer_references[]` — enables vendor-mode example enrichment in cogni-trends value-modeler Step 2.6
-- v3.1 adds `differentiators[]` per proposition — v3.1 consumers ignore `named_customer_references[]`, preserving backward compatibility with v3.2 producers
+- v3.1 adds top-level `differentiators[]`; v3.1 (and all pre-v3.2) consumers ignore `named_customer_references[]`, preserving backward compatibility with v3.2 producers
 - v3.0 adds `variant_count` and `quality_assessment` per proposition (v2.0 consumers ignore these)
 - v2.0 had propositions without quality or variant data
 - v1.0 (no `schema_version` field) had no embedded propositions at all

@@ -122,7 +122,10 @@ Per agent:
       EXECUTIVE_SPONSOR, INVESTMENT_THESIS, VALUE_CHAINS, TREND,
       IMPLICATION, POSSIBILITY, FOUNDATION, SOLUTION_TEMPLATES,
       SOLUTION, CATEGORY, ENABLER_TYPE, STRATEGIC_ACTIONS,
-      WHY_CHANGE, WHY_NOW, WHY_YOU, WHY_PAY}
+      WHY_CHANGE, WHY_NOW, WHY_YOU, WHY_PAY,
+      REFERENCES_BLOCK_LABEL (de: "Referenzbeispiele", en: "Industry reference cases")
+        — used by the investment-theme writer to label the open-mode
+        references block.}
     NARRATIVE_ARC_PATH: {path to cogni-narrative theme-thesis arc-definition.md, or omit if not available}
     NARRATIVE_TECHNIQUES_PATH: {path to cogni-narrative techniques-overview.md, or omit if not available}
 ```

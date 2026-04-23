@@ -245,15 +245,20 @@ The rendering shape depends on `STUDY_MODE`:
 
 - **Open mode** (`STUDY_MODE == "open"` or absent). After all capability
   descriptions and before the portfolio close, insert a mini-block labeled
-  `**{REFERENZBEISPIELE_LABEL}**` (label key `REFERENCES_BLOCK_LABEL` — e.g.
-  `"Referenzbeispiele"` in German, `"Industry reference cases"` in English).
-  The block is 2–3 short bullets, each citing one `published_cases[]` entry
+  `**{REFERENCES_BLOCK_LABEL}**` (e.g. `"Referenzbeispiele"` in German,
+  `"Industry reference cases"` in English — populated by the orchestrator
+  from the LABELS payload in `skills/trend-report/references/phase-2-strategic-themes.md` Step 2.2).
+  The block is 1–3 short bullets, each citing one `published_cases[]` entry
   from the theme's aggregated `EXAMPLE_REFERENCES` across all mentioned STs
-  (pick the highest-authority, most diverse set). Pattern:
+  (pick the highest-authority, most diverse set when more than one is
+  available). Pattern:
   `- **{vendor_or_customer}** ({publication_date}): {outcome} — [Quelle]({source_url})`.
   Preserve citation diversity: do not repeat the same second-level domain more
-  than once in the block. When fewer than 2 entries exist across all STs in this
-  theme, omit the block entirely and rely on plain capability prose.
+  than once in the block. When the theme has exactly one aggregated entry,
+  render a single-bullet block (the arc quality gate on line 468 requires a
+  citation whenever `EXAMPLE_REFERENCES` has ≥1 entry). Omit the block
+  entirely only when `EXAMPLE_REFERENCES` is empty for all STs in this
+  theme — this is the `No examples available` fallback below.
 
 - **No examples available** (empty `EXAMPLE_REFERENCES` for this theme). Fall
   back to the pre-change behavior — render capability prose and the portfolio

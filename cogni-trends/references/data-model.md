@@ -105,7 +105,7 @@ project in the workspace. When `study_mode` is `"open"`, this field is omitted.
 ```
 
 - `portfolio_ref` (string, required): cogni-portfolio project slug (same as `portfolio_source.portfolio_slug`).
-- `vendor_slug` (string, required): kebab-case vendor identifier for display resolution.
+- `vendor_slug` (string, required): kebab-case vendor identifier for display resolution. When `trend-scout` Step 0.8c auto-populates `vendor_source`, this defaults to the same value as `portfolio_ref` (both reflect the connected portfolio's slug). Power users can manually override `vendor_slug` in `tips-project.json` when the published vendor brand differs from the portfolio slug (e.g., `portfolio_ref: "t-systems-corp"` with `vendor_slug: "t-systems"`).
 - `vendor_display_name` (string, required): Human-readable provider name for prose weaving (e.g., `"T-Systems"`).
 - `case_study_wiki` (string, optional): Path relative to workspace root pointing at a cogni-wiki instance to query for reference evidence.
 - `case_study_uploads` (string, optional): Path (relative to the portfolio project) to a directory of uploaded case study documents (PDF, DOCX, MD) for `local-researcher` dispatch. Defaults to the portfolio project's `uploads/` directory when omitted.
@@ -790,6 +790,14 @@ New fields (all optional, backward compatible — existing STs without these fie
 Mutual exclusivity: a given ST carries **either** `vendor_references[]` **or** `published_cases[]`, never both —
 the active array is determined by `tips-project.json → study_mode`. Both arrays are optional and absent on
 projects created before this feature landed (backward compatible).
+
+**Optional date fields — `null` vs field absence.** For optional date fields across TIPS schemas
+(`publication_date` in `vendor_references[]` and `published_cases[]`, and any similarly-shaped field added later),
+the canonical convention is: emit `null` when the field is semantically "unknown" for an entry that the pipeline
+did populate (e.g., a `named_customers[]`-sourced vendor reference with no engagement date recorded), and omit
+the field entirely only when the emitting pipeline has no concept of the field at all. Consumers should treat
+`null` and absence interchangeably — both mean "no date available" — but producers that emit explicit `null`
+signal the distinction to downstream readers that the entry passed through a date-aware producer.
 
 ### Re-Anchor Log
 
