@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-> **Markets covered.** 24 pluggable regions — single-country (DE, FR, IT, ES, NL, PL, AT, CZ, SK, HU, RO, HR, GR, MK), composite (DACH, EU, Nordics, US/NA, APAC, LATAM, MEA), extended (CN, JP), and global (UK, Global) — market-segmented propositions, competitors, and customer personas — not one-size-fits-all.
+> **Markets covered.** 25 pluggable regions — single-country (DE, FR, IT, ES, NL, PL, AT, CZ, SK, HU, RO, HR, GR, MK), composite (DACH, EU, Nordics, US/NA, APAC, LATAM, MEA), extended (CN, JP), and global (UK, Global) — market-segmented propositions, competitors, and customer personas — not one-size-fits-all.
 
 A [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis and customer profiling to export-ready deliverables, across eight pluggable industry taxonomies (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source).
 

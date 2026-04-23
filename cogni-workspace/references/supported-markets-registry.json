@@ -28,10 +28,10 @@
       "tail_clause": "DE/EN bilingual research against regional authorities — no generic US-centric datasets"
     },
     "cogni-portfolio": {
-      "emphasis": "market segmentation and TAM/SAM/SOM sizing across 24 regions",
+      "emphasis": "market segmentation and TAM/SAM/SOM sizing across 25 regions",
       "mechanism": "region-segmentation",
-      "market_count_claim": 24,
-      "callout_lede": "24 pluggable regions — single-country, composite, and global",
+      "market_count_claim": 25,
+      "callout_lede": "25 pluggable regions — single-country, composite, extended, and global",
       "primary_regions_shown_in_callout": ["DACH", "EU", "Nordics", "UK", "US/NA", "APAC", "LATAM", "MEA", "CN", "JP"],
       "tail_clause": "market-segmented propositions, competitors, and customer personas — not one-size-fits-all"
     }
