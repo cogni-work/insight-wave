@@ -257,8 +257,8 @@ The rendering shape depends on `STUDY_MODE`:
 
 - **No examples available** (empty `EXAMPLE_REFERENCES` for this theme). Fall
   back to the pre-change behavior — render capability prose and the portfolio
-  close (vendor only) without example weaving. This is the backward-compatible
-  path for projects that predate the `study_mode` field.
+  close (when `PORTFOLIO_PRODUCTS` is non-empty) without example weaving. This
+  is the backward-compatible path for projects that predate the `study_mode` field.
 
 **Portfolio close:** After all capability descriptions (and, in open mode, after
 the `Referenzbeispiele` block), close the Why You section with 2-3 sentences

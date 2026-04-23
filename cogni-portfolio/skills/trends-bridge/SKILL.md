@@ -9,6 +9,10 @@ description: >
   user has completed value-modeler ranking and asks "how does this connect to my portfolio" or
   "what features should I add based on the trends". Trigger on "bridge status", "is my portfolio
   ready for tips", "check bridge readiness", or "can I bridge yet" for the pre-flight check.
+  Also trigger on "push customer references to tips", "vendor-mode examples",
+  "ground solution templates in my customers", "customer examples in trends", or
+  "named customer references" — the v3.2 `named_customer_references[]` field powers
+  vendor-mode example enrichment in value-modeler Step 2.6.
 allowed-tools: Read, Write, Edit, Glob, Grep, Agent
 ---
 
@@ -612,7 +616,7 @@ Loads the portfolio's products, features, propositions, and solutions into the T
 model context so that Phase 2 (Solution Template generation) is grounded in what you
 actually sell and how you position it per market.
 
-**This operation is informational** — it writes a `portfolio-context.json` (v3.0) file into
+**This operation is informational** — it writes a `portfolio-context.json` (v3.2) file into
 the TIPS project directory that value-modeler Phase 2 can read. The enriched context gives
 Phase 2 access to proposition language (IS/DOES/MEANS), quality assessments, variant counts,
 and solution summaries so that Solution Templates are grounded in real portfolio capabilities
@@ -837,15 +841,16 @@ Consumers below v3.2 ignore this field; it's additive.
 
 **Schema version notes:**
 - v3.2 adds `named_customer_references[]` — enables vendor-mode example enrichment in cogni-trends value-modeler Step 2.6
+- v3.1 adds `differentiators[]` per proposition — v3.1 consumers ignore `named_customer_references[]`, preserving backward compatibility with v3.2 producers
 - v3.0 adds `variant_count` and `quality_assessment` per proposition (v2.0 consumers ignore these)
 - v2.0 had propositions without quality or variant data
 - v1.0 (no `schema_version` field) had no embedded propositions at all
 
 **Backward compatibility:** The `schema_version` field distinguishes versions. Phase 2
-checks this field: v3.2 enables vendor-reference surfacing, v3.0 enables quality-aware
-generation and variant tracking, v2.0 enables proposition-grounded generation, v1.0 (no
-field) falls back to basic feature matching. Each version is a superset of the previous —
-new fields are additive.
+checks this field: v3.2 enables vendor-reference surfacing, v3.1 enables differentiator
+surfacing, v3.0 enables quality-aware generation and variant tracking, v2.0 enables
+proposition-grounded generation, v1.0 (no field) falls back to basic feature matching.
+Each version is a superset of the previous — new fields are additive.
 
 **Step 4: Advise Value Modeler**
 
@@ -863,9 +868,9 @@ Report a summary to the user:
   the TIPS industry context. The exported context will have limited utility for
   Phase 2 grounding."
 
-Tell the user: "Portfolio context (v3.0) saved. When you run value-modeler Phase 2, it
-will use proposition language, quality assessments, and solution data to ground Solution
-Templates in your portfolio's actual capabilities and pricing."
+Tell the user: "Portfolio context (v3.2) saved. When you run value-modeler Phase 2, it
+will use proposition language, quality assessments, solution data, and named customer
+references to ground Solution Templates in your portfolio's actual capabilities and pricing."
 
 ### sync — Reconcile Both Directions
 
@@ -886,7 +891,7 @@ prevents running portfolio-to-tips successfully only to fail on tips-to-portfoli
 
 **Step 1: Run portfolio-to-tips**
 
-Execute the full `portfolio-to-tips` operation (enriched v2.0 context export).
+Execute the full `portfolio-to-tips` operation (enriched v3.2 context export).
 
 **Step 2: Run tips-to-portfolio**
 
