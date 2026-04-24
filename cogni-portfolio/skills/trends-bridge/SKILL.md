@@ -1,133 +1,51 @@
 ---
 name: trends-bridge
 description: >
-  Bidirectional integration between cogni-trends TIPS analysis and cogni-portfolio product portfolio.
-  Use whenever the user mentions "bridge", "connect tips to portfolio", "import from tips",
-  "tips to portfolio", "portfolio to tips", "sync portfolio with tips", "convert solutions to features",
-  "map trends to products", "enrich propositions from trends", "what did tips find for my portfolio",
-  or wants to flow data between a TIPS value model and a portfolio project. Also trigger when the
-  user has completed value-modeler ranking and asks "how does this connect to my portfolio" or
-  "what features should I add based on the trends". Trigger on "bridge status", "is my portfolio
-  ready for tips", "check bridge readiness", or "can I bridge yet" for the pre-flight check.
-  Also trigger on "push customer references to tips", "vendor-mode examples",
-  "ground solution templates in my customers", "customer examples in trends", or
-  "named customer references" — the v3.2 `named_customer_references[]` field powers
-  vendor-mode example enrichment in value-modeler Step 2.6.
+  Bidirectional integration between cogni-trends TIPS analysis and cogni-portfolio
+  product portfolio. Trigger on "bridge", "tips to portfolio", "portfolio to tips",
+  "sync portfolio with tips", "import from tips", "convert solutions to features",
+  "map trends to products", "enrich propositions from trends", or "what did tips
+  find for my portfolio". Trigger pre-flight on "bridge status", "is my portfolio
+  ready for tips", "check bridge readiness". Trigger v3.2 vendor-reference flow
+  on "push customer references to tips", "vendor-mode examples", "ground solution
+  templates in my customers", "customer examples in trends", or "named customer
+  references".
 allowed-tools: Read, Write, Edit, Glob, Grep, Agent
 ---
 
 # TIPS-Portfolio Bridge
 
-Bidirectional flow between cogni-trends trend analysis and cogni-portfolio product messaging.
-This is the operational link between the "Value/Sales" side (TIPS) and the "Services/Best Practices"
-side (Portfolio) — connecting trend-driven insights to concrete product positioning and go-to-market.
+Bidirectional flow between cogni-trends trend analysis and cogni-portfolio product
+messaging. This is the operational link between the "Value/Sales" side (TIPS) and
+the "Services/Best Practices" side (Portfolio) — connecting trend-driven insights
+to concrete product positioning and go-to-market.
 
 ## Why This Matters
 
 Without the bridge, TIPS and Portfolio are two separate worlds:
-- TIPS identifies what matters (trends, implications, ranked solutions) but doesn't touch products
-- Portfolio structures what you sell (features, propositions, pricing) but doesn't know why it matters
 
-The bridge connects them: trends inform which features to prioritize, ranked solutions become
-new features or enrich existing ones, and portfolio constraints guide solution generation.
+- TIPS identifies what matters (trends, implications, ranked solutions) but
+  doesn't touch products.
+- Portfolio structures what you sell (features, propositions, pricing) but
+  doesn't know why it matters.
+
+The bridge connects them: trends inform which features to prioritize, ranked
+solutions become new features or enrich existing ones, and portfolio constraints
+guide solution generation.
 
 ## Prerequisites & Validation
 
-Every bridge operation runs a pre-flight check before doing any work. This catches
-data gaps and industry mismatches early — before wasting time on exports or imports
-that will produce poor results.
+Every bridge operation runs a pre-flight check before doing any work. The goal is
+to catch data gaps and industry mismatches early — before wasting time on an
+export or import that will produce poor results.
 
-### Shared Pre-flight (all operations)
+The pre-flight has two parts: a shared check (project discovery + industry
+alignment) that runs for every operation, and operation-specific validation
+gates (hard gates block, soft warnings continue). Industry alignment uses a
+4-tier heuristic (exact / vertical / broad / none) so cross-industry intent
+can still be confirmed explicitly when needed.
 
-1. **Discover projects** — Find the TIPS project (`*/tips-project.json`) and the
-   portfolio project (`*/portfolio.json`). If either is missing, stop and report
-   which one with a fix suggestion.
-2. **Industry alignment** — Compare TIPS and portfolio industries (see below).
-   The result is stored for use during market-relevance matching and reported
-   in the summary.
-
-### Industry Alignment
-
-The TIPS project targets a specific industry (e.g., manufacturing/automotive) while
-the portfolio describes what you sell. Bridging across unrelated industries is unusual
-and likely a mistake — but sometimes intentional (e.g., cross-selling into a new vertical).
-
-**How it works:**
-
-1. Read TIPS `industry.primary` and `industry.subsector` from `tips-project.json`
-2. Read portfolio `company.industry` from `portfolio.json` (free text)
-3. Collect all `segmentation.vertical_codes` from `portfolio/markets/*.json`
-4. Slugify `company.industry` (lowercase, replace non-alphanumeric with hyphens)
-
-Match using a 4-tier heuristic:
-
-- **exact** — Slugified `company.industry` matches `industry.primary` or
-  `industry.subsector`. Example: company.industry "Automotive OEM" → slug
-  "automotive-oem" contains "automotive" matching subsector. Proceed silently.
-- **vertical** — Any market `vertical_code` matches `industry.subsector`.
-  Example: market has `vertical_codes: ["automotive"]`, TIPS subsector is
-  "automotive". Proceed silently.
-- **broad** — Any market `vertical_code` is a known subsector of `industry.primary`
-  (use the same parent-child logic as market-relevance matching). Example: market
-  has `vertical_codes: ["autonomous-vehicles"]`, TIPS primary is "manufacturing".
-  Proceed with note: "Portfolio markets have related verticals ({codes}) but no
-  direct match to TIPS subsector '{subsector}'. Bridge results may need manual review."
-- **none** — No match found. Warn and require explicit user confirmation:
-  "Industry mismatch: TIPS analyzes {primary_en}/{subsector_en} but portfolio
-  company.industry is '{company.industry}' with market verticals [{codes}].
-  Cross-industry bridging is unusual — continue anyway?"
-
-### portfolio-to-tips Validation Gates
-
-Run these after shared pre-flight when executing `portfolio-to-tips` or `sync`.
-
-**Hard gates (block execution):**
-- `portfolio.json` must exist and be valid JSON
-- At least 1 product in `portfolio/products/`
-- At least 1 feature in `portfolio/features/` with a valid `product_slug` reference
-
-If any hard gate fails, stop and report the fix:
-- "No products found. Create at least one product first: `/portfolio-setup`"
-- "No features found. Add features to your products: `/features create`"
-
-**Soft warnings (report and continue):**
-- No propositions: "No propositions found. The exported context will lack
-  IS/DOES/MEANS messaging — value-modeler Phase 2 will generate STs without
-  portfolio grounding. Consider running `/propositions create` first."
-- No markets: "No markets defined. The context file will have no market-relevance
-  tagging. Define markets with `/portfolio-setup`."
-- Features with descriptions under 15 words: "{N} features have thin descriptions
-  (under 15 words). Richer descriptions improve ST-to-feature matching accuracy.
-  Consider running `/features enrich` first."
-- No solutions: "No solutions found. The exported context will lack pricing and
-  delivery data."
-
-### tips-to-portfolio Validation Gates
-
-Run these after shared pre-flight when executing `tips-to-portfolio` or `sync`.
-
-**Hard gates (block execution):**
-- `tips-value-model.json` must exist in the TIPS project directory
-- `solution_templates` array must be non-empty
-- At least 1 ST must have `ranking_value` populated (not null) — confirms that
-  value-modeler Phase 4 (ranking) has completed
-
-If any hard gate fails, stop and report the fix:
-- "Value model not found. Run the value modeler first: `/value-model`"
-- "No solution templates in value model. Complete value-modeler Phase 2:
-  `/value-model solutions`"
-- "Solution templates have no ranking values. Complete Phase 4 to calculate
-  rankings: `/value-model rank`"
-
-**Soft warnings (report and continue):**
-- No features in portfolio: "Portfolio has no features. All Solution Templates
-  will produce 'Create' actions (no enrichment possible). Consider adding features
-  first with `/features create`."
-- No propositions: "Portfolio has features but no propositions. Enrichment will
-  create new propositions rather than refining existing ones."
-- All STs have `business_relevance` = null: "No user-scored business relevance
-  found. Rankings use formula-only scores. Consider running `/value-model score`
-  for customer-specific prioritization."
+See `references/validation-gates.md` for the full heuristic and gate lists.
 
 ## Operations
 
@@ -168,8 +86,13 @@ TIPS: {pursuit-slug}
   Value Model:        {exists/missing}  ✓/✗
   Solution Templates: {N}               ✓/✗
   Ranked STs:         {N} / {total}     ✓/✗
-  Portfolio Context:  {v3.2 from DATE / v3.1 / v3.0 / v2.0 / v1.0 / missing}
+  Portfolio Context:  {v3.2 from DATE / v3.1 / v3.0 / missing}
 ```
+
+The Portfolio Context line reports the most recent `schema_version` written by
+`portfolio-to-tips`. Older v1.0/v2.0 exports are effectively equivalent to
+`missing` for Phase 2 consumers — they're listed as `missing` rather than
+cluttering the line.
 
 **Step 4: Industry Alignment**
 
@@ -190,6 +113,7 @@ Bridge Readiness:
 ```
 
 If NOT READY, list fix actions:
+
 - "Add at least 1 feature to a product: `/features create`"
 - "Complete value-modeler ranking: `/value-model rank`"
 - "Resolve industry mismatch: update portfolio.json company.industry or confirm
@@ -201,7 +125,8 @@ If NOT READY, list fix actions:
 /bridge tips-to-portfolio
 ```
 
-Takes ranked Solution Templates from the value model and creates or enriches portfolio entities.
+Takes ranked Solution Templates from the value model and creates or enriches
+portfolio entities.
 
 **Step 1: Discover Projects**
 
@@ -212,10 +137,11 @@ Takes ranked Solution Templates from the value model and creates or enriches por
 
 **Step 1b: Validate Readiness**
 
-Run the shared pre-flight (industry alignment) and tips-to-portfolio validation
-gates. If any hard gate fails — missing value model, empty solution templates,
-or no ranked STs — stop and report the fix suggestion. If soft warnings exist
-(no features, no propositions, no BR scores), report them and continue.
+Run the shared pre-flight (industry alignment) and the `tips-to-portfolio` gate
+set (see `references/validation-gates.md`). If any hard gate fails — missing
+value model, empty solution templates, or no ranked STs — stop and report the
+fix suggestion. If soft warnings exist (no features, no propositions, no BR
+scores), report them and continue.
 
 **Step 2: Match Solution Templates to Features**
 
@@ -344,7 +270,7 @@ evidence's origin without needing to open the TIPS project.
 These become candidate evidence entries on the relevant proposition. Mark them as
 unverified — the user can later run `/portfolio-verify` to check sourced claims.
 
-**Step 5.3: Generate Path Narrative Evidence**
+**Step 5.1: Generate Path Narrative Evidence**
 
 For each matched ST, construct evidence entries from its value chain narratives. These
 transform the abstract T→I→P causal story into concrete, sales-ready content that tells
@@ -413,7 +339,7 @@ the buyer *why this matters now* and *how the pieces connect*.
 5. **Deduplication**: If the same value chain feeds multiple STs matched to the same
    proposition, generate the narrative evidence only once (keyed by chain_id).
 
-**Step 5.5: Propose Solution Stubs**
+**Step 5.2: Propose Solution Stubs**
 
 When an ST maps to a feature that has a proposition but **no solution** for the target
 market, propose creating a solution stub:
@@ -437,7 +363,7 @@ market, propose creating a solution stub:
 
 Only create solution stubs after explicit user approval for each row.
 
-**Step 5.7: Add Provenance Tracking**
+**Step 5.3: Add Provenance Tracking**
 
 For all propositions enriched in Step 4 and evidence added in Step 5, attach
 `tips_enrichment` metadata:
@@ -457,122 +383,35 @@ Valid `enrichment_type` values:
 - `does_refined` — DOES statement was enriched with trend-driven advantage framing
 - `means_refined` — MEANS statement was enriched with business outcome context
 - `evidence_added` — New evidence entries were suggested from TIPS metrics
-- `narrative_evidence_added` — Path narrative evidence (why_now, sales_guide, proposal_justification) was generated from value chains (Step 5.3)
-- `variant_created` — One or more proposition variants were created from TIPS value chains (Step 4)
-- `solution_proposed` — A solution stub was proposed (from Step 5.5)
+- `narrative_evidence_added` — Path narrative evidence (why_now, sales_guide,
+  proposal_justification) was generated from value chains (Step 5.1)
+- `variant_created` — One or more proposition variants were created from TIPS
+  value chains (Step 4)
+- `solution_proposed` — A solution stub was proposed (from Step 5.2)
 
 This metadata is appended to the proposition JSON. Portfolio skills that don't understand
 it will ignore it. It enables future auditing of which TIPS pursuit influenced which
 portfolio positioning.
 
-**Step 5.8: Generate Blueprint-Aware Opportunity Pipeline**
+**Step 5.4: Generate Blueprint-Aware Opportunity Pipeline**
 
-With solution blueprints, the opportunity pipeline becomes more granular and actionable.
-Instead of generating one opportunity per unmatched ST, analyze individual building blocks
-across all STs to surface taxonomy-level gaps. This answers the strategic question: "Which
-portfolio dimensions do we need to invest in to deliver our solution portfolio?"
+For each Solution Template with no strong portfolio match (`match_confidence: "none"`
+or `"low"`), generate a structured opportunity assessment. Aggregate building blocks
+across all STs to produce a taxonomy-level gap report — this answers the strategic
+question "which portfolio dimensions do we need to invest in to deliver our solution
+portfolio?" The taxonomy gap report is typically the most strategically valuable
+output of the bridge.
 
-See `references/opportunity-schema.md` for the full schema definition.
-
-**Two levels of opportunity generation:**
-
-#### Level 1: Per-ST Opportunities (existing behavior, enhanced)
-
-For each Solution Template with `match_confidence: "none"` or `"low"`, generate a
-structured opportunity assessment:
-
-1. **Calculate opportunity score** (0-10):
-   ```
-   opportunity_score = (
-       (ranking_value / 5) × 0.4 +
-       tam_alignment × 0.3 +
-       competitive_whitespace × 0.3
-   ) × 10
-   ```
-   - `ranking_value`: The ST's ranking_value from the TIPS value model (0-5)
-   - `tam_alignment`: Fraction of portfolio markets with `market_relevance` = `"direct"`
-     or `"industry"` for this pursuit (0-1). Read from the market entries in
-     `portfolio-context.json`.
-   - `competitive_whitespace`: If competitive analysis exists for related propositions,
-     estimate whitespace from competitor coverage gaps. Otherwise default to 0.7
-     (moderate whitespace assumption).
-
-2. **Classify the opportunity**:
-   - **build**: The company has adjacent expertise (existing features in the same taxonomy
-     dimension), the opportunity is core to differentiation, and no adequate turnkey
-     solution exists. Requires development investment.
-   - **buy**: A commercial solution exists that covers 80%+ of the need. Faster
-     time-to-market through acquisition or licensing.
-   - **partner**: Requires specialized domain expertise the company lacks. Best addressed
-     through co-development, white-label, or referral partnership.
-
-   Use the ST's `category`, its **blueprint building blocks** (taxonomy dimensions),
-   and the portfolio's existing feature landscape to guide classification. A gap in
-   a consulting dimension (7.x) naturally suggests "partner"; a gap in a core technical
-   dimension (4.x, 6.x) may suggest "build" or "buy".
-
-3. **Estimate revenue** from market TAM data:
-   - Read portfolio markets and filter to those with `market_relevance` = `"direct"`
-   - Use TAM values with conservative penetration assumptions (0.05-0.2%)
-   - Set confidence: `"high"` (validated TAM + comparable pricing), `"medium"` (TAM
-     with assumptions), `"low"` (rough estimate)
-
-4. **Generate feature spec** (roadmap-ready):
-   - `proposed_slug`: Derived from ST name (kebab-case)
-   - `name` and `description`: Adapted from ST for feature language
-   - `category`: Derived from ST category
-   - `readiness`: Always `"planned"`
-   - `unmet_needs`: From blueprint building blocks with `coverage: "gap"` — each gap
-     block's `gaps` array provides specific unmet capabilities. Falls back to
-     `portfolio_anchor.theme_needs_undelivered` or ST description extraction.
-   - `taxonomy_refs`: Array of taxonomy categories from the ST's blueprint gap blocks
-     (e.g., `["1.4", "7.2"]`) — shows which portfolio dimensions this opportunity spans
-   - `source_themes` and `source_sts`: Traceability to TIPS value model
-
-5. **Assign priority**: `"high"` (score ≥ 7.0 AND ranking_value ≥ 4.0), `"medium"`
-   (score ≥ 4.0 OR ranking_value ≥ 3.0), `"low"` (everything else)
-
-#### Level 2: Taxonomy Gap Analysis (new)
-
-After generating per-ST opportunities, aggregate all blueprint building blocks across
-ALL Solution Templates (not just unmatched ones) to produce a taxonomy-level gap report:
-
-1. **Collect all building blocks** from all STs' `solution_blueprint.building_blocks`
-2. **Group by taxonomy dimension** (0-7) and then by category (e.g., "6.6")
-3. **Count coverage status** per category:
-   - How many STs need this category?
-   - How many have it covered vs. partial vs. gap?
-
-4. **Generate Taxonomy Gap Report**:
-
-```
-Taxonomy Gap Analysis — Portfolio Investment Priorities
-
-| Dim | Taxonomy Category | STs Needing | Covered | Partial | Gap | Priority |
-|-----|-------------------|-------------|---------|---------|-----|----------|
-| 7   | Digital Transformation (7.2) | 5 | 0 | 1 | 4 | HIGH |
-| 1   | 5G & IoT Connectivity (1.4) | 4 | 1 | 2 | 1 | MEDIUM |
-| 2   | Cloud Security (2.4) | 3 | 0 | 0 | 3 | HIGH |
-| 7   | Program Management (7.4) | 2 | 0 | 0 | 2 | MEDIUM |
-
-Strategic Insight:
-- Consulting (Dim 7) is the #1 portfolio gap: 7 building blocks across 5 STs need
-  consulting capabilities that don't exist in the portfolio. Consider a consulting
-  partnership or practice build.
-- Security (Dim 2) gaps affect 3 high-ranked STs. Investing here would improve
-  readiness scores across the solution portfolio.
-```
-
-Priority for taxonomy gaps: `HIGH` = ≥3 STs affected AND majority are gap (not partial),
-`MEDIUM` = 2+ STs affected, `LOW` = 1 ST affected.
-
-This taxonomy gap report is the most strategically valuable output of the bridge — it
-transforms individual solution gaps into portfolio-level investment priorities.
+See `references/opportunity-pipeline.md` for the scoring formula, classification
+rules (build/buy/partner), revenue estimation, and taxonomy aggregation algorithm.
+The output file schema lives in `references/opportunity-schema.md`.
 
 **Write** `portfolio-opportunities.json` to the TIPS project directory (alongside
-`tips-value-model.json`). Include both per-ST opportunities and the taxonomy gap summary.
+`tips-value-model.json`). Include both per-ST opportunities and the taxonomy gap
+summary.
 
-**Present** the opportunities table sorted by score, followed by the taxonomy gap report:
+**Present** the opportunities table sorted by score, followed by the taxonomy gap
+report:
 
 ```
 Innovation Pipeline ({N} opportunities)
@@ -616,11 +455,12 @@ Loads the portfolio's products, features, propositions, and solutions into the T
 model context so that Phase 2 (Solution Template generation) is grounded in what you
 actually sell and how you position it per market.
 
-**This operation is informational** — it writes a `portfolio-context.json` (v3.2) file into
-the TIPS project directory that value-modeler Phase 2 can read. The enriched context gives
-Phase 2 access to proposition language (IS/DOES/MEANS), quality assessments, variant counts,
-and solution summaries so that Solution Templates are grounded in real portfolio capabilities
-with quality awareness.
+**This operation is informational** — it writes a `portfolio-context.json` (v3.2) file
+into the TIPS project directory that value-modeler Phase 2 can read. The enriched
+context gives Phase 2 access to proposition language (IS/DOES/MEANS), quality
+assessments, variant counts, solution summaries, provider differentiators, and named
+customer references so that Solution Templates are grounded in real portfolio
+capabilities with quality awareness.
 
 **Step 1: Discover Projects**
 
@@ -628,10 +468,10 @@ Same discovery as `tips-to-portfolio`.
 
 **Step 1b: Validate Readiness**
 
-Run the shared pre-flight (industry alignment) and portfolio-to-tips validation
-gates. If any hard gate fails — no products or no features — stop and report
-the fix suggestion. If soft warnings exist (no propositions, no markets, thin
-descriptions, no solutions), report them and continue.
+Run the shared pre-flight (industry alignment) and the `portfolio-to-tips` gate set
+(see `references/validation-gates.md`). If any hard gate fails — no products or no
+features — stop and report the fix suggestion. If soft warnings exist (no
+propositions, no markets, thin descriptions, no solutions), report them and continue.
 
 **Step 2: Extract Products & Features**
 
@@ -651,29 +491,8 @@ For each feature, check for matching proposition and solution files:
    and `price_range` (min, max, currency)
 5. **Assess proposition quality**: For each proposition, run the `proposition-quality-assessor`
    agent (or read cached assessment if `updated` date hasn't changed since last assessment).
-   Compact the result into a `quality_assessment` object:
-   ```json
-   {
-     "quality_assessment": {
-       "overall": "pass|warn|fail",
-       "does_score": {
-         "buyer_centricity": "pass|warn|fail",
-         "market_specificity": "pass|warn|fail",
-         "differentiation": "pass|warn|fail",
-         "status_quo_contrast": "pass|warn|fail",
-         "conciseness": "pass|warn|fail"
-       },
-       "means_score": {
-         "outcome_specificity": "pass|warn|fail",
-         "escalation": "pass|warn|fail",
-         "quantification": "pass|warn|fail",
-         "emotional_resonance": "pass|warn|fail",
-         "conciseness": "pass|warn|fail"
-       },
-       "assessed_at": "2026-03-13"
-     }
-   }
-   ```
+   Compact the result into a `quality_assessment` object (see
+   `references/portfolio-context-schema.md` for the field shape).
    Quality assessment is cached — only re-run if the proposition's `updated` date is newer
    than `assessed_at`. If no prior assessment exists, run the assessor. If running assessments
    would slow down the export significantly (>10 propositions), warn the user and offer to
@@ -708,18 +527,14 @@ Sources to scan:
    base size, data center locations)
 4. **Market-level segmentation** — geographic presence, industry depth
 
-For each differentiator found, classify by domain:
-- `sovereign-infrastructure`: Data residency, cloud sovereignty, regulatory certifications
-- `network`: Telco/ISP network footprint, edge computing, IoT connectivity
-- `security`: Security certifications, SOC operations, KRITIS expertise
-- `scale`: Revenue, employee count, geographic presence
-- `industry-expertise`: Vertical-specific reference customers, domain knowledge
-- `platform`: Named proprietary platforms, unique technology
-- `regulatory`: Compliance certifications, audit attestations
+Classify each differentiator by `domain` using the enum in
+`references/portfolio-context-schema.md § differentiators[]`
+(`sovereign-infrastructure`, `network`, `security`, `scale`, `industry-expertise`,
+`platform`, `regulatory`).
 
-Write 3-6 entries to `differentiators[]`. Only include entries where
+Write 3–6 entries to `differentiators[]`. Only include entries where
 `swap_test_fails` is true. If the portfolio has no provably unique assets
-(e.g., a generic reseller), write an empty array — v3.1 is backward
+(e.g., a generic reseller), write an empty array — the schema is backward
 compatible and the trend-report portfolio close falls back to scanning
 product descriptions when differentiators are empty or absent.
 
@@ -730,156 +545,45 @@ vendor-mode grounding for `cogni-trends` value-modeler Step 2.6 Example
 Enrichment. This step is the v3.2 counterpart to Steps 2.5 and 2.7 — it reads
 portfolio-local data only and never invents web-origin prose.
 
-Source: `portfolio/customers/{market-slug}.json → named_customers[]`.
+**Source:** `portfolio/customers/{market-slug}.json → named_customers[]` (canonical
+schema in `cogni-portfolio/references/data-model.md § customers/{market-slug}.json`).
 
-For each entry with a non-empty `name`, emit one `named_customer_references[]`
-record. Map `customer_name` from `named_customers[].name` and `domain` from
-`named_customers[].domain`. Derive `outcome_summary` from
-`named_customers[].pain_points` combined with `named_customers[].fit_rationale`
-when no explicit outcome text exists — **must be portfolio-sourced; do not
-invent web-origin prose.** Copy `fit_score` as-is. Emit `feature_slugs` as `[]`
-(v3.2 reserved — see Step 3 for the forward-compatibility rationale).
+**Procedure:**
 
-See Step 3 below for the full `named_customer_references[]` field contract
-(types, required/optional flags, canonical enums).
+1. For each market, attempt to read `portfolio/customers/{market-slug}.json`.
+2. If the file is missing entirely, emit `[]` for that market and continue — the
+   field is additive and an empty array is the backward-compatible "no references"
+   signal.
+3. If the file exists, iterate `named_customers[]` and emit one
+   `named_customer_references[]` record per entry with a **non-empty `name`**.
+   Skip entries with empty or missing `name`.
+4. Apply the field mapping from
+   `references/portfolio-context-schema.md § named_customer_references[]`:
+   - `customer_name` ← `named_customers[].name`
+   - `domain` ← copy `named_customers[].domain` as-is (optional)
+   - `outcome_summary` ← derive from `named_customers[].pain_points` combined
+     with `named_customers[].fit_rationale` when no explicit outcome text
+     exists. **Must be portfolio-sourced — do not invent web-origin prose.**
+   - `fit_score` ← copy `named_customers[].fit_score` (canonical enum
+     `high | medium | low`; never a float, never a percentage)
+   - `feature_slugs` ← always `[]` (v3.2 reserved; no proposition or solution
+     schema currently stores customer linkages, so there is no source to derive
+     slugs from. Kept on the contract so a future v3.3 that adds
+     `named_customer_refs[]` to propositions/solutions can populate it without
+     a schema-version bump)
 
-Skip `named_customers[]` entries with an empty or missing `name`.
-
-If no markets have `named_customers[]` populated, write `named_customer_references[]: []`
-— the field is additive and v3.1 (and earlier) consumers ignore it, so an empty
-array is the backward-compatible signal that no references are available.
+If no markets have `named_customers[]` populated, write
+`named_customer_references[]: []` at the top level and move on. Pre-v3.2
+consumers ignore this field.
 
 **Step 3: Build Context File**
 
-Assemble `portfolio-context.json` v3.2:
-
-```json
-{
-  "schema_version": "3.2",
-  "source": "cogni-portfolio",
-  "portfolio_slug": "{portfolio-slug}",
-  "extracted_at": "{ISO-8601 timestamp}",
-  "differentiators": [
-    {
-      "domain": "sovereign-infrastructure",
-      "claim": "European sovereign cloud with BSI-C5 attestation and German-only data residency",
-      "evidence": "BSI-C5 attestation certificate, data center locations",
-      "swap_test_fails": true
-    }
-  ],
-  "products": [
-    {
-      "slug": "cloud-platform",
-      "name": "Cloud Platform",
-      "revenue_model": "subscription",
-      "maturity": "growth",
-      "features": [
-        {
-          "slug": "cloud-monitoring",
-          "name": "Cloud Infrastructure Monitoring",
-          "description": "Real-time monitoring...",
-          "category": "observability",
-          "readiness": "ga",
-          "propositions": [
-            {
-              "market_slug": "mid-market-saas-dach",
-              "is_statement": "Cloud monitoring for SaaS operations teams",
-              "does_statement": "Reduces MTTR by 60% through AI-correlated alerting",
-              "means_statement": "Protects SaaS uptime SLAs in a market where churn from downtime costs 5-8% ARR",
-              "evidence_count": 3,
-              "variant_count": 2,
-              "quality_assessment": {
-                "overall": "pass",
-                "does_score": {
-                  "buyer_centricity": "pass",
-                  "market_specificity": "pass",
-                  "differentiation": "pass",
-                  "status_quo_contrast": "warn",
-                  "conciseness": "pass"
-                },
-                "means_score": {
-                  "outcome_specificity": "pass",
-                  "escalation": "pass",
-                  "quantification": "pass",
-                  "emotional_resonance": "warn",
-                  "conciseness": "pass"
-                },
-                "assessed_at": "2026-03-12"
-              },
-              "solution_summary": {
-                "solution_type": "project",
-                "pricing_tiers": ["proof_of_value", "small", "medium", "large"],
-                "price_range": { "min": 15000, "max": 250000, "currency": "EUR" }
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "markets": [
-    {
-      "slug": "mid-market-saas-dach",
-      "name": "Mid-Market SaaS (DACH)",
-      "region": "dach",
-      "priority": "beachhead",
-      "segmentation_summary": "SaaS companies, 50-500 employees",
-      "vertical_codes": ["saas"],
-      "tam_value": 5000000000,
-      "currency": "EUR",
-      "market_relevance": "direct",
-      "match_reason": "vertical_codes includes 'saas' matching TIPS subsector"
-    }
-  ],
-  "named_customer_references": [
-    {
-      "market_slug": "mid-market-saas-dach",
-      "customer_name": "Acme SaaS GmbH",
-      "domain": "acme-saas.example.com",
-      "outcome_summary": "Reduced incident MTTR from 45 min to 12 min within 90 days of rollout",
-      "fit_score": "high",
-      "feature_slugs": []
-    }
-  ]
-}
-```
-
-Write to `{tips-project-dir}/portfolio-context.json`.
-
-**`named_customer_references[]`** (added in v3.2, optional): Structured customer references
-sourced from each market's `customers/{market-slug}.json → named_customers[]`. Enables
-`cogni-trends` value-modeler Step 2.6 Example Enrichment (vendor mode) to ground Solution
-Templates in concrete portfolio customers without re-reading the portfolio project directly.
-For each `named_customers[]` entry with a non-empty `name`, emit one reference:
-
-- `market_slug` (string, required): Market this customer belongs to.
-- `customer_name` (string, required): Copy of `named_customers[].name`.
-- `domain` (string, optional): Copy of `named_customers[].domain` if present.
-- `outcome_summary` (string, required): 1–2 sentences summarizing the engagement outcome.
-  Derive from `named_customers[].pain_points` combined with `named_customers[].fit_rationale`
-  when no explicit outcome text exists. Must be portfolio-sourced — do not invent web-origin prose.
-- `fit_score` (string, optional): Copy of `named_customers[].fit_score` — canonical enum
-  `high` | `medium` | `low` (per `cogni-portfolio/references/data-model.md` §
-  `customers/{market-slug}.json`).
-- `feature_slugs` (string array, optional): **v3.2 reserved; always `[]`.** No proposition
-  or solution schema currently stores named-customer linkages, so there is no source to
-  derive feature slugs from. Field is kept on the contract so future schemas that add
-  `named_customer_refs[]` to propositions/solutions can populate it without a v3.3 bump.
-
-See the Schema version notes below for the backward-compatibility contract.
-
-**Schema version notes:**
-- v3.2 adds `named_customer_references[]` — enables vendor-mode example enrichment in cogni-trends value-modeler Step 2.6
-- v3.1 adds top-level `differentiators[]`; v3.1 (and all pre-v3.2) consumers ignore `named_customer_references[]`, preserving backward compatibility with v3.2 producers
-- v3.0 adds `variant_count` and `quality_assessment` per proposition (v2.0 consumers ignore these)
-- v2.0 had propositions without quality or variant data
-- v1.0 (no `schema_version` field) had no embedded propositions at all
-
-**Backward compatibility:** The `schema_version` field distinguishes versions. Phase 2
-checks this field: v3.2 enables vendor-reference surfacing, v3.1 enables differentiator
-surfacing, v3.0 enables quality-aware generation and variant tracking, v2.0 enables
-proposition-grounded generation, v1.0 (no field) falls back to basic feature matching.
-Each version is a superset of the previous — new fields are additive.
+Assemble `portfolio-context.json` v3.2 and write it to
+`{tips-project-dir}/portfolio-context.json`. The full JSON example, per-field
+contract, schema version ladder, and backward-compatibility rules all live in
+`references/portfolio-context-schema.md` — that file is the **single source of
+truth** for the export contract. If the upstream `named_customers[]` schema in
+`data-model.md` changes, update the bridge reference in the same commit.
 
 **Step 4: Advise Value Modeler**
 
@@ -887,6 +591,7 @@ Report a summary to the user:
 - N products, M features, P propositions across K markets (R with direct/industry relevance)
 - Any features without propositions (messaging gaps)
 - Any markets with no TIPS relevance (may not contribute to ST generation)
+- N provider differentiators exported (or 0 if none)
 - N named customer references exported across M markets (or 0 if none)
 
 **Industry alignment summary** — aggregate the per-market relevance tags:
@@ -899,8 +604,9 @@ Report a summary to the user:
   Phase 2 grounding."
 
 Tell the user: "Portfolio context (v3.2) saved. When you run value-modeler Phase 2, it
-will use proposition language, quality assessments, solution data, and named customer
-references to ground Solution Templates in your portfolio's actual capabilities and pricing."
+will use proposition language, quality assessments, solution data, provider
+differentiators, and named customer references to ground Solution Templates in your
+portfolio's actual capabilities and pricing."
 
 ### sync — Reconcile Both Directions
 
@@ -921,7 +627,7 @@ prevents running portfolio-to-tips successfully only to fail on tips-to-portfoli
 
 **Step 1: Run portfolio-to-tips**
 
-Execute the full `portfolio-to-tips` operation (enriched v3.2 context export).
+Execute the full `portfolio-to-tips` operation (v3.2 context export).
 
 **Step 2: Run tips-to-portfolio**
 
@@ -945,14 +651,14 @@ Present a unified reconciliation table that shows the full picture across both d
 **Status values:**
 - **Aligned** — Feature has proposition, solution, and matching ST(s). Full bidirectional coverage.
 - **Aligned (quality review)** — Aligned, but the proposition has quality assessment failures. The matched ST has `ranking_value` ≥ 4.0, making quality investment worthwhile.
-- **Needs solution** — Proposition exists but no solution for this market. Step 5.5 should have proposed a stub.
+- **Needs solution** — Proposition exists but no solution for this market. Step 5.2 should have proposed a stub.
 - **Needs enrichment** — Feature matches an ST but lacks a proposition for this market.
 - **Portfolio gap** — ST has no matching feature at all. Innovation opportunity — see Innovation Pipeline below.
 - **TIPS gap** — Feature with proposition/solution has no TIPS relevance signal. Validate market need independently.
 
 **Innovation Pipeline** (from `portfolio-opportunities.json`):
 
-If the `tips-to-portfolio` step generated opportunities (Step 5.8), embed the
+If the `tips-to-portfolio` step generated opportunities (Step 5.4), embed the
 innovation pipeline summary in the reconciliation:
 
 ```
@@ -999,3 +705,15 @@ No shared database, no tight coupling — just slug-based references resolved at
 Use the portfolio project's language for all generated content (features, propositions,
 evidence). Use the TIPS project's language when reading TIPS data. If they differ,
 translate ST descriptions to the portfolio language when creating features.
+
+## References
+
+- `references/portfolio-context-schema.md` — canonical v3.2 schema for the
+  `portfolio-context.json` export (single source of truth for field names,
+  types, enums, and the version ladder).
+- `references/opportunity-pipeline.md` — Step 5.4 deep dive: per-ST scoring,
+  classification rules (build/buy/partner), and taxonomy gap aggregation.
+- `references/opportunity-schema.md` — output schema for
+  `portfolio-opportunities.json`.
+- `references/validation-gates.md` — shared pre-flight, industry alignment
+  4-tier heuristic, and hard/soft gate lists per operation.

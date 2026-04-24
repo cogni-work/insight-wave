@@ -1,0 +1,88 @@
+{
+  "skill_name": "trends-bridge",
+  "evals": [
+    {
+      "id": 1,
+      "name": "status-happy-path",
+      "prompt": "Check bridge readiness for this project.",
+      "expected_output": "Status report with Portfolio Readiness, TIPS Readiness, Industry Alignment, and Bridge Readiness sections. Portfolio Context line shows v3.2 from the exported context file.",
+      "files": ["fixtures/status-ready/"],
+      "assertions": [
+        {
+          "name": "reports-v3.2-context",
+          "text": "Output's Portfolio Context line reports 'v3.2' (not v3.1, not missing)."
+        },
+        {
+          "name": "readiness-ladder-pruned",
+          "text": "Output does NOT enumerate v1.0 or v2.0 in the Portfolio Context readiness line (pruned to v3.2/v3.1/v3.0/missing)."
+        },
+        {
+          "name": "industry-alignment-reported",
+          "text": "Output includes an Industry Alignment section with one of EXACT/VERTICAL/BROAD/NONE."
+        },
+        {
+          "name": "both-directions-ready",
+          "text": "Bridge Readiness reports both portfolio-to-tips AND tips-to-portfolio as READY given the fixture has products, features, propositions, value model with ranked STs."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "portfolio-to-tips-with-named-customers",
+      "prompt": "Push my portfolio to TIPS.",
+      "expected_output": "portfolio-context.json written into the TIPS project directory with schema_version 3.2 and a non-empty named_customer_references[] populated from named_customers[].",
+      "files": ["fixtures/with-customers/"],
+      "assertions": [
+        {
+          "name": "schema-version-3.2",
+          "text": "Written portfolio-context.json has \"schema_version\": \"3.2\"."
+        },
+        {
+          "name": "named-customer-refs-non-empty",
+          "text": "named_customer_references[] array has at least one entry."
+        },
+        {
+          "name": "fit-score-canonical-enum",
+          "text": "Every named_customer_references[].fit_score is a string from the set {\"high\", \"medium\", \"low\"} — never a float, never a percentage."
+        },
+        {
+          "name": "feature-slugs-empty",
+          "text": "Every named_customer_references[].feature_slugs is an empty array [] (v3.2 reserved)."
+        },
+        {
+          "name": "customer-name-from-name-field",
+          "text": "Every named_customer_references[].customer_name matches the canonical named_customers[].name field (not company_name, not key_pain_points-derived)."
+        },
+        {
+          "name": "no-web-origin-prose",
+          "text": "Every outcome_summary is traceable to pain_points or fit_rationale in the fixture named_customers[] — no invented company history, no web-sourced claims."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "portfolio-to-tips-missing-customers",
+      "prompt": "Push my portfolio to TIPS.",
+      "expected_output": "Bridge runs successfully despite the fixture having no customers/ directory at all. portfolio-context.json v3.2 is written with named_customer_references: [] and Step 4 summary reports 0 references.",
+      "files": ["fixtures/without-customers/"],
+      "assertions": [
+        {
+          "name": "no-crash",
+          "text": "Bridge completes without raising an error, returning a written portfolio-context.json."
+        },
+        {
+          "name": "named-customer-refs-empty-array",
+          "text": "Written portfolio-context.json has \"named_customer_references\": [] at the top level (empty array, not missing, not null)."
+        },
+        {
+          "name": "schema-still-v3.2",
+          "text": "schema_version is still \"3.2\" even when no customers source exists — the empty array is the backward-compatible signal."
+        },
+        {
+          "name": "step-4-reports-zero",
+          "text": "Step 4 summary reports '0 named customer references' (or equivalent zero-count line)."
+        }
+      ]
+    }
+  ]
+}

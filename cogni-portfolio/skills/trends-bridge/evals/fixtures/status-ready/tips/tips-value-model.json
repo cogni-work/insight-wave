@@ -1,0 +1,17 @@
+{
+  "pursuit_slug": "saas-observability-2026",
+  "solution_templates": [
+    {
+      "id": "st-001",
+      "name": "AI-Correlated Incident Response",
+      "description": "Machine-learning alert correlation reduces MTTR for SaaS ops teams.",
+      "ranking_value": 4.2,
+      "portfolio_mapping": {
+        "is_generic": false,
+        "product_slug": "cloud-platform",
+        "feature_slug": "cloud-monitoring",
+        "match_confidence": "high"
+      }
+    }
+  ]
+}

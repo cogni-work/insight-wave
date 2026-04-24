@@ -1,0 +1,8 @@
+{
+  "slug": "with-customers-portfolio",
+  "company": {
+    "name": "Acme Cloud",
+    "industry": "Cloud Services"
+  },
+  "taxonomy_template": "b2b-ict"
+}

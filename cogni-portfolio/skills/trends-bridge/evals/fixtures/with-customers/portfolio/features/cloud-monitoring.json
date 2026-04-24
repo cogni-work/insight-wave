@@ -1,0 +1,8 @@
+{
+  "slug": "cloud-monitoring",
+  "product_slug": "cloud-platform",
+  "name": "Cloud Infrastructure Monitoring",
+  "description": "Real-time monitoring with AI-correlated alerting reduces MTTR by 60 percent.",
+  "category": "observability",
+  "readiness": "ga"
+}

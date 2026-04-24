@@ -1,0 +1,9 @@
+{
+  "slug": "mid-market-saas-dach",
+  "name": "Mid-Market SaaS (DACH)",
+  "region": "dach",
+  "priority": "beachhead",
+  "segmentation": { "vertical_codes": ["saas"] },
+  "tam_value": 5000000000,
+  "currency": "EUR"
+}

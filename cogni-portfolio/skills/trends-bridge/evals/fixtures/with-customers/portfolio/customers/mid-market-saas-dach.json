@@ -1,0 +1,19 @@
+{
+  "market_slug": "mid-market-saas-dach",
+  "named_customers": [
+    {
+      "name": "Acme SaaS GmbH",
+      "domain": "acme-saas.example.com",
+      "fit_score": "high",
+      "pain_points": ["incident backlog exceeding SLA", "ops team burnout from after-hours alerts"],
+      "fit_rationale": "Reduced incident MTTR from 45 min to 12 min within 90 days of rollout"
+    },
+    {
+      "name": "Beta Cloud OG",
+      "domain": "beta-cloud.example.com",
+      "fit_score": "medium",
+      "pain_points": ["alert fatigue", "false positives during batch jobs"],
+      "fit_rationale": "Cut false-positive alerts by 80 percent after correlation rules went live"
+    }
+  ]
+}

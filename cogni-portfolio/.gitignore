@@ -8,4 +8,11 @@ __pycache__/
 
 # Local workspace data (skill eval artifacts)
 *-workspace/
-skills/*/evals/
+
+# Skill-creator iteration / run artifacts inside evals/ — but NOT eval definitions
+# or fixture inputs. evals.json and evals/fixtures/ are tracked smoke-test harnesses.
+skills/*/evals/iteration-*/
+skills/*/evals/workspace/
+skills/*/evals/outputs/
+skills/*/evals/benchmark.json
+skills/*/evals/feedback.json
