@@ -1,0 +1,7 @@
+{
+  "easing-deceleration": "cubic-bezier(0.2, 0, 0, 1)",
+  "easing-linear": "linear",
+  "duration-fast": "150ms",
+  "duration-medium": "250ms",
+  "duration-slow": "400ms"
+}

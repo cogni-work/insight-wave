@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "name": "Cogni Work",
+  "slug": "cogni-work",
+  "tiers": {
+    "tokens": "tokens/"
+  },
+  "showcase": "cogni-work-theme-showcase.jsx",
+  "voice_ref": "theme.md#voice--copy-guidelines"
+}

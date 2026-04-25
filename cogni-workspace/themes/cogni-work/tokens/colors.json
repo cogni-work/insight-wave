@@ -1,0 +1,19 @@
+{
+  "primary": "#111111",
+  "secondary": "#333333",
+  "accent": "#C8E62E",
+  "accent-muted": "#A8C424",
+  "accent-dark": "#8BA31E",
+  "background": "#FAFAF8",
+  "surface": "#F2F2EE",
+  "surface-2": "#E8E8E4",
+  "surface-dark": "#111111",
+  "text": "#111111",
+  "text-light": "#FFFFFF",
+  "text-muted": "#6B7280",
+  "border": "#E0E0DC",
+  "success": "#2E7D32",
+  "warning": "#E5A100",
+  "danger": "#D32F2F",
+  "info": "#1565C0"
+}
