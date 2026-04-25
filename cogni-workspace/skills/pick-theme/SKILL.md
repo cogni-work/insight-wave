@@ -13,7 +13,7 @@ description: >-
   Also triggers on "apply a theme", "use this theme", or "theme my output".
   This is the single standard entry point for theme selection across both
   insight-wave and insight-wave-pro marketplaces.
-version: 0.1.0
+version: 0.2.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
@@ -59,11 +59,26 @@ The script outputs a JSON array sorted by relevance: workspace themes first (new
   "font": "DM Sans Bold",
   "path": "/absolute/path/to/themes/cogni-work/theme.md",
   "source": "standard",
-  "mtime": 1741564800.0
+  "mtime": 1741564800.0,
+  "tiers": {
+    "tokens": "/absolute/path/to/themes/cogni-work/tokens",
+    "components": {"web": "/absolute/path/to/themes/cogni-work/components/web"}
+  }
 }
 ```
 
 The `mtime` field is the file modification timestamp (Unix epoch). The script pre-sorts results so the first entry is always the best default candidate — no additional sorting needed.
+
+#### Optional fields (Theme System v2)
+
+Two fields are optional and only appear when a theme ships a `manifest.json` (see `references/theme-manifest.md`):
+
+| Field | When present | Shape |
+|-------|--------------|-------|
+| `tiers` | manifest.json exists and validates | object with absolute resolved paths for each declared tier (`tokens`, `assets`, `components.{web,deck,dashboard}`, `templates.{deck,report,landing,dashboard}`, `showcase`) — keys mirror what the manifest declared, no more |
+| `manifest_error` | manifest.json exists but failed validation | string with the validator's error message; the theme still appears in the output as a tier-0 fallback so a broken manifest never makes a theme disappear |
+
+Tier-0 themes (no `manifest.json`) emit byte-identical output to the legacy script — neither field is present. Pass `--no-include-tiers` to suppress both fields globally regardless of manifest state.
 
 ### Step 2: Present the Picker
 

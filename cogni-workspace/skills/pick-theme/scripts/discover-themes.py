@@ -15,6 +15,7 @@ Skips the _template directory. Deduplicates by slug (workspace overrides standar
 
 import argparse
 import glob as globmod
+import importlib.util
 import json
 import os
 import re
@@ -69,8 +70,122 @@ def extract_color(content, pattern):
     return match.group(1) if match else None
 
 
-def scan_themes_dir(themes_dir, source_label):
-    """Scan a themes directory and return a dict of slug -> theme info."""
+_TIER_VALIDATOR_CACHE = None
+
+
+def _load_tier_validator():
+    """Dynamically load cogni-workspace/scripts/validate-theme-manifest.py.
+
+    The validator filename uses hyphens, so it can't be imported normally.
+    Cached after first load. Returns None when the validator can't be located
+    (callers fall back to tier-0 behaviour silently).
+    """
+    global _TIER_VALIDATOR_CACHE
+    if _TIER_VALIDATOR_CACHE is not None:
+        return _TIER_VALIDATOR_CACHE
+
+    candidates = []
+    plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
+    if plugin_root:
+        candidates.append(os.path.join(plugin_root, "scripts", "validate-theme-manifest.py"))
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    walk = here
+    for _ in range(6):
+        candidate = os.path.join(walk, "scripts", "validate-theme-manifest.py")
+        if os.path.isfile(candidate):
+            candidates.append(candidate)
+            break
+        parent = os.path.dirname(walk)
+        if parent == walk:
+            break
+        walk = parent
+
+    for path in candidates:
+        if not os.path.isfile(path):
+            continue
+        try:
+            spec = importlib.util.spec_from_file_location("_theme_manifest_validator", path)
+            if spec is None or spec.loader is None:
+                continue
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _TIER_VALIDATOR_CACHE = module
+            return module
+        except Exception:
+            continue
+
+    return None
+
+
+def resolve_tiers(theme_dir):
+    """Read manifest.json next to theme.md and return resolved tier paths.
+
+    Returns one of:
+      - ``None`` when the theme is tier-0 (no manifest.json) — caller omits
+        both ``tiers`` and ``manifest_error`` from the output dict.
+      - ``("tiers", {...})`` on success — keys mirror the manifest's declared
+        tiers with absolute resolved paths.
+      - ``("error", "<message>")`` when manifest.json is present but invalid.
+        The caller surfaces this as ``manifest_error`` and falls back to tier-0.
+    """
+    manifest_path = os.path.join(theme_dir, "manifest.json")
+    if not os.path.isfile(manifest_path):
+        return None
+
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        return ("error", "cannot read manifest.json: {}".format(e))
+
+    validator = _load_tier_validator()
+    if validator is None:
+        return ("error", "validate-theme-manifest.py not found; cannot validate manifest")
+
+    schema_file = validator.find_schema()
+    if not os.path.isfile(str(schema_file)):
+        return ("error", "schema not found at {}".format(schema_file))
+    try:
+        with open(schema_file, "r", encoding="utf-8") as f:
+            schema = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        return ("error", "cannot read schema: {}".format(e))
+
+    try:
+        from pathlib import Path
+        validator.validate(manifest, schema)
+        validator.check_reserved_keys(manifest)
+        validator.check_paths_exist(Path(theme_dir), manifest)
+    except validator.ValidationError as e:
+        return ("error", str(e))
+
+    tiers_decl = manifest.get("tiers", {})
+    resolved = {}
+    for key in ("tokens", "assets"):
+        if key in tiers_decl:
+            resolved[key] = os.path.abspath(os.path.join(theme_dir, tiers_decl[key]))
+    for group in ("components", "templates"):
+        if group in tiers_decl:
+            resolved[group] = {
+                name: os.path.abspath(os.path.join(theme_dir, sub))
+                for name, sub in tiers_decl[group].items()
+            }
+    if "showcase" in manifest:
+        resolved["showcase"] = os.path.abspath(os.path.join(theme_dir, manifest["showcase"]))
+    return ("tiers", resolved)
+
+
+def scan_themes_dir(themes_dir, source_label, include_tiers=True):
+    """Scan a themes directory and return a dict of slug -> theme info.
+
+    When ``include_tiers`` is True (default) and a theme directory contains a
+    valid ``manifest.json``, the per-theme dict gains a ``tiers`` field with
+    resolved absolute paths. Invalid manifests fall back to tier-0 with a
+    ``manifest_error`` field. Tier-0 themes (no manifest.json) emit
+    byte-identical output to the legacy (pre-#126) script — no ``tiers``,
+    no ``manifest_error``.
+    """
     themes = {}
     if not themes_dir or not os.path.isdir(themes_dir):
         return themes
@@ -78,7 +193,8 @@ def scan_themes_dir(themes_dir, source_label):
     for entry in sorted(os.listdir(themes_dir)):
         if entry.startswith("_") or entry.startswith("."):
             continue
-        theme_md = os.path.join(themes_dir, entry, "theme.md")
+        theme_dir = os.path.join(themes_dir, entry)
+        theme_md = os.path.join(theme_dir, "theme.md")
         if not os.path.isfile(theme_md):
             continue
 
@@ -90,6 +206,16 @@ def scan_themes_dir(themes_dir, source_label):
         info["path"] = os.path.abspath(theme_md)
         info["source"] = source_label
         info["mtime"] = os.path.getmtime(theme_md)
+
+        if include_tiers:
+            tier_result = resolve_tiers(theme_dir)
+            if tier_result is not None:
+                kind, payload = tier_result
+                if kind == "tiers":
+                    info["tiers"] = payload
+                else:
+                    info["manifest_error"] = payload
+
         themes[entry] = info
 
     return themes
@@ -148,14 +274,18 @@ def main():
     parser.add_argument("--no-discover", action="store_true",
                         help="Disable auto-discovery when workspace root is missing/stale")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
+    parser.add_argument("--no-include-tiers", action="store_true",
+                        help="Suppress the optional 'tiers' and 'manifest_error' fields. "
+                             "Output is byte-identical to legacy (pre-#126) tier-0 form.")
     args = parser.parse_args()
+    include_tiers = not args.no_include_tiers
 
     plugin_root = args.plugin_root or os.environ.get("CLAUDE_PLUGIN_ROOT", "")
     workspace_root = args.workspace_root or os.environ.get("COGNI_WORKSPACE_ROOT", "")
 
     # 1. Standard themes (from the plugin itself)
     standard_dir = os.path.join(plugin_root, "themes") if plugin_root else ""
-    standard_themes = scan_themes_dir(standard_dir, "standard")
+    standard_themes = scan_themes_dir(standard_dir, "standard", include_tiers=include_tiers)
 
     # 2. Workspace themes (user-created)
     # Auto-discover workspace root when the configured path is empty or stale
@@ -200,7 +330,7 @@ def main():
             print(f"WARNING: workspace themes dir not found: {workspace_dir}", file=sys.stderr)
             print(f"HINT: COGNI_WORKSPACE_ROOT may be stale. Run /manage-workspace to regenerate.", file=sys.stderr)
 
-    workspace_themes = scan_themes_dir(workspace_dir, "workspace")
+    workspace_themes = scan_themes_dir(workspace_dir, "workspace", include_tiers=include_tiers)
 
     # Merge: workspace themes override standard themes with same slug,
     # standard themes that aren't overridden are kept automatically
