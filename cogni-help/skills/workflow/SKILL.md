@@ -33,7 +33,7 @@ Keep in English regardless of language setting:
 
 ## Available Workflows
 
-Six bundled templates covering the most common plugin chains:
+Four bundled user-facing templates covering the most common plugin chains (two additional internal/operational templates are documented in the next section):
 
 | Canonical ID | Template file | Pipeline | Use case |
 |--------------|---------------|----------|----------|
@@ -41,15 +41,29 @@ Six bundled templates covering the most common plugin chains:
 | `trends-to-solutions` | `trends-to-solutions` | tips → portfolio → marketing | GTM team turning trends into campaigns |
 | `portfolio-to-pitch` | `portfolio-to-pitch` | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
 | `consulting-engagement` | `consulting-engagement` | consulting setup → 4 phases | Consultant starting a structured engagement |
-| — (operational-only) | `docs-pipeline` | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo |
-| — (operational-only) | `full-onboarding` | workspace → help courses 1-11 | New user learning the full ecosystem |
 
-The first column is the canonical workflow ID from `docs/workflows/`; the
-second is the corresponding filename in `references/workflows/`. The 4
-user-facing canonical workflows share the same ID as their template
-filename — reference them by canonical ID from any surface (`teach`,
-`guide`, `cheatsheet`, `docs/`). Operational-only rows have no canonical
-ID — see `references/canonical-workflows.md` Table B for the policy.
+These are the canonical user-facing workflows — every entry has a one-to-one
+backing guide at `docs/workflows/<canonical-id>.md`. Reference them by
+canonical ID from any surface (`teach`, `guide`, `cheatsheet`, `docs/`).
+The reconciliation table at `references/canonical-workflows.md` is the
+source of truth.
+
+## Internal / Operational Workflows
+
+Two templates live alongside the user-facing set but are operational rather
+than user-facing — they describe maintainer pipelines, not analyst /
+sales / consultant workflows. They live in `references/internal-workflows/`
+and `/workflow` surfaces them only when the user explicitly asks for them by
+ID.
+
+| Internal ID | Pipeline | Use case |
+|-------------|----------|----------|
+| `docs-pipeline` | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo |
+| `full-onboarding` | workspace → help courses 1-11 | New user learning the full ecosystem |
+
+These do not appear in the default `/workflow` listing (no-args invocation),
+do not carry canonical IDs, and are not part of the docs/workflows 1:1 set —
+see `references/canonical-workflows.md` Table B for the policy.
 
 ## Canonical Workflow IDs
 
@@ -66,7 +80,9 @@ are user-facing vs operational-only and for any pending alignment work.
 
 ## How to Present Workflows
 
-1. **Read the matching template** from `references/workflows/`.
+1. **Read the matching template** from `references/workflows/` (user-facing)
+   or `references/internal-workflows/` (operational, only when the user names
+   the ID directly).
 
 2. **Present the pipeline visually** — use the Mermaid diagram or ASCII flow from
    the template so the user can see the full chain at a glance.
@@ -82,8 +98,13 @@ are user-facing vs operational-only and for any pending alignment work.
 
 ## Listing Workflows
 
-When `/workflow` is invoked with no argument, present the table above and ask
-which workflow the user wants to explore.
+When `/workflow` is invoked with no argument, present **only** the
+user-facing "Available Workflows" table above and ask which one the user
+wants to explore. Do not list `docs-pipeline` or `full-onboarding` in the
+default listing — they are operational and surface only when the user names
+the ID explicitly (e.g., `/workflow docs-pipeline`). When that happens, open
+the template and prepend an "Internal / operational workflow" banner so the
+user sees the framing.
 
 ## docs/ Workflow Guides
 
