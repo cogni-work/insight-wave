@@ -32,17 +32,17 @@
       "assertions": [
         {"text": "responds-in-german", "description": "Consultation questions and issue draft body are written in German"},
         {"text": "title-prefix-english", "description": "Issue title uses [Bug] prefix in English per convention"},
-        {"text": "uses-browser-not-gh", "description": "References browser automation tools (navigate, form_input) rather than gh CLI commands"}
+        {"text": "uses-gh-cli", "description": "References gh-issues-helper.sh subcommands (or `gh issue create`) rather than browser automation"}
       ]
     },
     {
       "id": 3,
       "prompt": "Can you check if there are any updates on issue #12 for cogni-portfolio?",
-      "expected_output": "Triggers status mode, attempts to read local issue store for issue #12, attempts to navigate to GitHub issue page via browser to check current state",
+      "expected_output": "Triggers status mode, attempts to read local issue store for issue #12, fetches the live issue state via gh-issues-helper.sh view (or gh issue view) to report current state",
       "files": [],
       "assertions": [
         {"text": "reads-local-state", "description": "Attempts to read from the local issue store to find issue #12"},
-        {"text": "navigates-to-github", "description": "Attempts to use browser tools to navigate to the GitHub issue URL"},
+        {"text": "fetches-via-gh", "description": "Calls gh-issues-helper.sh view (or gh issue view) to fetch live state, not browser tools"},
         {"text": "reports-status", "description": "Provides issue state information or a clear error if issue not found locally"}
       ]
     },

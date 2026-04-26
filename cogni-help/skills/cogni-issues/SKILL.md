@@ -1,36 +1,34 @@
 ---
 name: cogni-issues
-version: 0.3.0
+version: 0.4.0
 description: |
-  File and track GitHub issues (bugs, feature requests, change requests, questions) against
-  insight-wave ecosystem plugins using browser automation (claude-in-chrome). Guides users
-  through a short consultation to capture the right details, resolves the target plugin's
-  repository automatically, drafts issues from templates, creates them via browser automation on
-  github.com, and tracks them locally.
-  Use this skill whenever the user wants to report a bug, request a feature, file a change
-  request, ask a question about a plugin, list filed issues, or check issue status.
-  Also trigger when the user says things like "this plugin is broken", "I found a problem
-  with {plugin}", "can we get X added to {plugin}", "{plugin} doesn't work", "open an issue",
-  "something is wrong with {plugin}", "das Plugin funktioniert nicht", "Fehler in {plugin}",
-  "set up GitHub issues", "configure issue filing", "ich kann kein Issue erstellen",
-  or any complaint/suggestion about a specific plugin — even if they don't use the word "issue".
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__form_input, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__get_page_text
+  File and track GitHub issues (bugs, features, change requests, questions) against
+  insight-wave plugins via the GitHub CLI (`gh`). Consults the user, resolves the
+  plugin repository, drafts from templates, creates atomically with labels, and
+  tracks locally.
+  Use whenever the user wants to report a bug, request a feature, file a change
+  request, ask a plugin question, list filed issues, or check issue status. Also
+  trigger on "this plugin is broken", "open an issue", "set up GitHub issues",
+  "das Plugin funktioniert nicht", "Fehler in {plugin}", "ich kann kein Issue
+  erstellen", or any complaint about a specific plugin — even without the word
+  "issue".
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
 # Cogni Issues
 
 Manage the lifecycle of GitHub issues for insight-wave ecosystem plugins: consult with the
 user to understand the problem clearly, resolve which repository the plugin belongs to,
-draft issues from templates, create them via browser cobrowsing on github.com, and track
-them locally.
+draft issues from templates, create them via `gh issue create`, and track them locally.
 
-All GitHub operations use **browser automation via claude-in-chrome** — navigating to
-github.com, reading pages, and filling forms directly in the user's Chrome browser.
-The user must have the Claude-in-Chrome extension installed and be logged into GitHub
-in Chrome. No Personal Access Tokens or `gh` CLI needed.
+All GitHub operations use the **`gh` CLI** — atomic, scriptable, and the same transport
+the rest of the cogni-service pipeline uses. The user must have `gh` installed and
+authenticated (`gh auth login`) before this skill runs.
 
-**Important:** Do NOT use `gh` CLI commands — all GitHub operations go through
-browser automation. The `gh` CLI is not required and should not be invoked.
+The reliability win over a browser-automation transport is concrete: labels are applied
+in the same API call that creates the issue (no "best-effort fallback" that silently
+drops type signals), the flow runs equally well from a remote routine, and the skill has
+no MCP-server dependency.
 
 ## Language
 
@@ -57,109 +55,126 @@ The skill scripts live at `${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/`.
 `CLAUDE_PLUGIN_ROOT` points to the cogni-help plugin directory. If you can't
 find the scripts, tell the user — don't guess paths.
 
-## Browser Tools for GitHub
+## gh CLI commands
 
-All GitHub operations use claude-in-chrome tools:
+All GitHub operations route through `scripts/gh-issues-helper.sh`. JSON on stdout,
+errors on stderr.
 
-| Operation | Tools | URL Pattern |
-|-----------|-------|-------------|
-| Create issue | `tabs_create_mcp`, `navigate`, `read_page`, `computer`, `form_input` | `github.com/{owner}/{repo}/issues/new` |
-| List issues | `tabs_create_mcp`, `navigate`, `read_page` | `github.com/{owner}/{repo}/issues` |
-| Search issues | `tabs_create_mcp`, `navigate`, `read_page` | `github.com/{owner}/{repo}/issues?q={keywords}` |
-| Get issue | `tabs_create_mcp`, `navigate`, `read_page` | `github.com/{owner}/{repo}/issues/{number}` |
+> **Canonical command list.** This table and the `usage()` function in
+> `scripts/gh-issues-helper.sh` describe the same surface. Update both together
+> when adding or renaming a subcommand.
 
-The claude-in-chrome tools are declared in the skill's `allowed-tools`. Always open a
-new tab via `tabs_create_mcp` before navigating — never hijack the user's active tab.
+| Operation | Command |
+|-----------|---------|
+| Readiness check | `bash gh-issues-helper.sh check` |
+| Create issue | `bash gh-issues-helper.sh create <repo> --title T --body-file F [--labels L1,L2]` |
+| List issues | `bash gh-issues-helper.sh list <repo> [--state open\|closed\|all] [--limit N] [--label L] [--search Q]` |
+| Search issues (dedup) | `bash gh-issues-helper.sh search <repo> "keywords" [--state open\|all]` |
+| View issue | `bash gh-issues-helper.sh view <repo> <number>` |
+| Browse URL | `bash gh-issues-helper.sh browse-url <repo> <number>` |
+
+The helper validates that requested labels exist on the target repo before invoking
+`gh issue create`, so a missing label fails fast with a structured error instead of
+half-creating an issue without its type label.
 
 ## Modes
 
 | Mode | Triggers | Action |
 |------|----------|--------|
-| **setup** | claude-in-chrome not available or user not logged into GitHub, "set up issues", "ich kann kein Issue erstellen" | Verify claude-in-chrome, guide user to log into GitHub in Chrome |
+| **setup** | `gh` not installed, `gh auth status` not authenticated, "set up issues", "ich kann kein Issue erstellen" | Probe gh + auth, guide through `gh auth login` |
 | **create** | reporting bugs, requesting features, filing change requests, asking plugin questions | Consult, resolve, draft, confirm, create, log |
 | **list** | "my issues", "show issues", "what have I filed" | Read local state, display grouped by plugin |
-| **status** | "check issue #N", "any updates on my issue" | Fetch from GitHub via browser, update local record |
-| **browse** | "open issue", "show in browser" | Navigate to the GitHub issue in the browser |
+| **status** | "check issue #N", "any updates on my issue" | Fetch from GitHub via `gh`, update local record |
+| **browse** | "open issue", "show in browser" | Print the GitHub issue URL (the user opens it) |
 
 Default to **list** when intent is unclear.
 
 ## Prerequisites
 
-Before any GitHub operation, verify claude-in-chrome availability and GitHub login:
+Before any GitHub operation, verify `gh` readiness:
 
-1. Try `mcp__claude-in-chrome__tabs_context_mcp` to check browser availability
-2. If the tool fails or is not found, tell the user: "This skill requires the
-   Claude-in-Chrome extension. Please install it in Chrome and ensure it's active."
-3. Open a new tab with `mcp__claude-in-chrome__tabs_create_mcp`
-4. Navigate to `https://github.com` with `mcp__claude-in-chrome__navigate`
-5. Use `mcp__claude-in-chrome__read_page` to check the page
-6. Check for a logged-in indicator (profile menu, avatar, or username).
-   If the page shows a "Sign in" link instead, switch to **setup mode**
-7. If the user is logged in — proceed
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/gh-issues-helper.sh" check
+```
+
+The probe returns JSON like:
+
+```json
+{ "platform": "macos", "gh_installed": true, "gh_version": "2.89.0",
+  "authenticated": true, "gh_user": "sdh07",
+  "install_hint": "brew install gh", "login_hint": "gh auth login" }
+```
+
+Branch on `gh_installed` and `authenticated`:
+
+- both `true` → proceed.
+- `gh_installed: false` → switch to **setup mode** (install path).
+- `gh_installed: true`, `authenticated: false` → switch to **setup mode** (login path).
 
 ## Setup mode
 
-claude-in-chrome uses the user's Chrome browser directly — the user can see all
-actions and is already authenticated via their Chrome session.
+`gh` is a single binary with a one-time `gh auth login`. The setup is short and the user
+keeps full control of their credentials — `gh` walks them through the OAuth flow in their
+default browser.
 
-### 1. Check claude-in-chrome availability
-
-Try `mcp__claude-in-chrome__tabs_context_mcp`. If the tool is not available,
-inform the user that the Claude-in-Chrome extension is required:
-
-> This skill requires the Claude-in-Chrome browser extension. Please install it
-> in Chrome and make sure it's active, then try again.
-
-### 2. Check GitHub login
-
-Open a new tab with `tabs_create_mcp`, navigate to `https://github.com`, and use
-`read_page` to check the page. Look for signs of a logged-in session (profile
-avatar, user menu) vs "Sign in" link.
-
-If the page shows the user is already logged in, tell them they're all set
-and offer to file an issue.
-
-### 3. If not logged in
-
-Ask the user to log into GitHub in their Chrome browser:
-
-> You're not logged into GitHub in Chrome. Please sign in at github.com in your
-> browser, then let me know when you're ready.
-
-Since claude-in-chrome uses the user's actual Chrome session, they handle
-authentication directly — including 2FA and SSO. No credential handling needed.
-
-### 4. After login
-
-Re-check with `read_page` on `https://github.com`. If the page shows a
-logged-in state, confirm success.
-
-### 5. Setup complete
-
-If the user came here because they were trying to file an issue, continue with
-the **create** flow.
-
-## Workspace init
-
-Run once before any operation (idempotent):
+### 1. Probe readiness
 
 ```bash
-bash "${SKILL_DIR}/scripts/issue-store.sh" init "${working_dir}"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/gh-issues-helper.sh" check
 ```
 
-`working_dir` defaults to the current working directory. State lives in `{working_dir}/cogni-issues/`.
+### 2. If `gh` is missing
+
+Read `install_hint` from the probe output and tell the user how to install for their
+platform:
+
+> **macOS:** `brew install gh` (or download from https://cli.github.com/)
+>
+> **Linux:** see https://github.com/cli/cli/blob/trunk/docs/install_linux.md
+>
+> Once installed, run `gh auth login` and let me know when you're ready.
+
+After the user installs, re-run the probe.
+
+### 3. If `gh` is installed but not authenticated
+
+Tell the user:
+
+> Run `gh auth login` in your terminal. Choose **GitHub.com**, then **HTTPS**, and
+> authenticate with your browser (recommended) or a personal access token. When the
+> CLI confirms login, let me know and I'll continue.
+
+`gh auth login` handles 2FA and SSO transparently — the user authenticates in their
+own browser using the github.com flow, no credential handling on our side.
+
+After login, re-run the probe and confirm `authenticated: true` before proceeding.
+
+### 4. Setup complete
+
+If the user came here because they were trying to file an issue, continue with the
+**create** flow.
 
 ## Create mode
 
-### 1. Check readiness and resolve the plugin
+### 1. Initialize workspace, check readiness, resolve the plugin
 
-First, verify browser access and GitHub login (see Prerequisites). If not ready,
-enter **setup mode** and return here once the user is logged in.
+Initialize local issue state once per working directory (idempotent — safe to re-run
+on every create):
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" init "${working_dir}"
+```
+
+`working_dir` defaults to the current working directory. State lives in
+`{working_dir}/cogni-issues/`.
+
+Then verify `gh` readiness (see Prerequisites). If not ready, enter **setup mode** and
+return here once `authenticated: true`.
 
 If the user hasn't named a specific plugin, ask which plugin this is about. Then resolve it:
 
 ```bash
-bash "${SKILL_DIR}/scripts/resolve-plugin.sh" "<plugin_name>"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/resolve-plugin.sh" "<plugin_name>"
 ```
 
 Handle: `"ambiguous": true` -> present matches and ask; `"error"` -> list available plugins
@@ -167,13 +182,14 @@ and ask; success -> extract `owner_repo`, `version`, `marketplace`.
 
 ### 2. Check for duplicates
 
-Before investing in consultation and drafting, search for existing issues via the browser:
+Before investing in consultation and drafting, search for existing issues:
 
-1. Navigate to `https://github.com/{owner}/{repo}/issues?q=is%3Aopen+{url_encoded_keywords}`
-   using 2-3 keywords from the user's complaint
-2. Use `read_page` to read the search results page
-3. Look for issue titles and links in the page content
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/gh-issues-helper.sh" \
+  search "<owner_repo>" "<2-3 keywords from the user's complaint>" --limit 5
+```
 
+The output is a JSON array of `{number, title, labels, state, url, ...}` objects.
 If you find a likely match, show it to the user and ask: "This looks similar — is it
 the same problem, or something different?" If it's the same, link them to the existing
 issue instead of creating a duplicate.
@@ -265,40 +281,60 @@ Show the complete draft (title + body) and ask for approval in the user's langua
 Never create without explicit confirmation. If the user wants changes, apply them and
 show the updated draft.
 
-### 7. Create on GitHub via browser
+### 7. Create on GitHub via `gh`
 
-Open a new tab with `tabs_create_mcp` and navigate to `https://github.com/{owner}/{repo}/issues/new`:
+Write the drafted body to a temp file, then invoke the helper. Labels come from the
+type → label mapping in `references/issue-templates.md` and are applied atomically —
+the helper fails fast if any label is missing on the repo, so the issue never lands
+half-labelled.
 
-1. Use `read_page` to verify the "New Issue" form has loaded — look for the
-   title input field and body textarea
-2. Use `form_input` to enter the title in the title field
-3. Use `form_input` to enter the full drafted body in the body textarea
-4. **Labels** (optional): Use `computer` to click the "Labels" gear icon in the sidebar,
-   then use `form_input` to type the label name and `computer` to click the matching
-   label. Label mapping is in `references/issue-templates.md`.
-   If the interaction fails, skip it — the issue can be created without labels.
-5. Use `computer` to click the **"Submit new issue"** button
-6. Use `read_page` to read the new issue page. Extract `github_number` (from the
-   URL or heading) and `github_url`
+```bash
+BODY_FILE=$(mktemp -t cogni-issue.XXXXXX.md)
+cat > "$BODY_FILE" <<'EOF'
+<the drafted markdown body>
+EOF
 
-If creation fails entirely, show the error and suggest next steps — don't retry blindly.
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/gh-issues-helper.sh" \
+  create "<owner_repo>" \
+  --title "<title>" \
+  --body-file "$BODY_FILE" \
+  --labels "<csv of labels from the mapping>"
+
+rm -f "$BODY_FILE"
+```
+
+The helper returns:
+
+```json
+{ "status": "created", "number": 142, "url": "https://github.com/.../issues/142",
+  "title": "...", "labels": ["bug"] }
+```
+
+Capture `number` and `url` for the next step. If the helper exits non-zero, surface the
+JSON error to the user and stop — never retry blindly. Common errors:
+
+- `label(s) missing from repo` → tell the user which labels are missing and ask whether
+  to file without them or to create the labels first.
+- `gh issue create failed` → surface the `detail` field; usually a network or auth issue.
 
 ### 8. Log locally
 
 ```bash
-ID_JSON=$(bash "${SKILL_DIR}/scripts/issue-store.sh" gen-id)
+ID_JSON=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" gen-id)
 ```
 
 Then pipe the issue record as JSON via stdin:
 
 ```bash
-echo '<json_record>' | bash "${SKILL_DIR}/scripts/issue-store.sh" add "${working_dir}"
+echo '<json_record>' | bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" \
+  add "${working_dir}"
 ```
 
 The record includes: `id`, `plugin`, `marketplace`, `repository`, `github_number`,
 `github_url`, `type`, `title`, `status` ("open"), `created_at`, `updated_at`.
 
-Parse `github_number` and `github_url` from the browser redirect URL after submission.
+`github_number` and `github_url` come straight from the helper's create response — no
+URL parsing required.
 
 ### 9. Confirm
 
@@ -307,7 +343,7 @@ Return the GitHub issue URL and local issue ID.
 ## List mode
 
 ```bash
-bash "${SKILL_DIR}/scripts/issue-store.sh" read "${working_dir}"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" read "${working_dir}"
 ```
 
 Display issues grouped by plugin: title, type badge, GitHub number + URL, status, date.
@@ -315,38 +351,62 @@ If empty, suggest the create flow.
 
 ## Status mode
 
-1. Look up the issue in local state to get `owner`, `repo`, and `github_number`
-2. Open a new tab with `tabs_create_mcp` and navigate to `https://github.com/{owner}/{repo}/issues/{github_number}`
-3. Use `read_page` to read the issue page — extract state (open/closed), labels,
-   latest comments, and last update timestamp
-4. Update local record via `update-status`
-5. Show: state, latest comments summary, labels, last update
+1. Look up the issue in local state to get `repository` and `github_number`.
+2. Fetch the live state via `gh`:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/gh-issues-helper.sh" \
+     view "<repository>" "<github_number>"
+   ```
+
+3. Parse the JSON response: `state` (OPEN/CLOSED), `labels[].name`, `comments[]` (the
+   most recent few), `updatedAt`.
+4. Update the local record via `update-status`.
+5. Show the user: state, latest comments summary, labels, last update.
 
 ## Browse mode
 
-Open a new tab with `tabs_create_mcp` and navigate to the GitHub issue URL using
-`navigate`. The URL follows the pattern: `https://github.com/<owner>/<repo>/issues/<number>`
+Get the canonical URL and print it for the user — the SKILL doesn't open browsers
+itself.
 
-If claude-in-chrome is unavailable, provide the URL as text instead.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/gh-issues-helper.sh" \
+  browse-url "<repository>" "<github_number>"
+```
+
+If the user wants the URL opened directly, suggest `open <url>` (macOS) or
+`xdg-open <url>` (Linux) — those are the user's default-browser commands and don't
+require any extra dependencies.
 
 ## Edge cases
 
-- **2FA / SSO prompts**: If navigating to github.com triggers additional authentication,
-  the user will see the prompts directly in their Chrome browser. Ask them to complete
-  authentication, then retry.
-- **Private repos**: claude-in-chrome uses the user's Chrome session, so private repos
-  work as long as the user is logged into GitHub with appropriate access.
-- **GitHub HTML changes**: If expected form fields don't appear in the page, use
-  `read_page` to inspect the current structure and adapt element references.
-- **Rate limiting**: If GitHub returns a rate-limit page, inform the user to wait a few
-  minutes before retrying.
+- **Rate limiting**: `gh` surfaces GitHub's `X-RateLimit-Remaining: 0` as a clear
+  error message. Inform the user to wait a few minutes; secondary rate limits clear
+  in 1–2 minutes, primary limits in up to an hour.
+- **Private repos**: `gh auth login` scopes determine access. If a user can't view a
+  private repo, ask them to re-run `gh auth login` and grant the `repo` scope.
+- **SSO-enforced orgs**: GitHub may require a one-time SSO authorization for the
+  CLI's token. The error message names the URL the user must visit; pass it through
+  verbatim.
+- **Network failure**: surface the `gh` error and ask the user to retry. Local state
+  is unaffected — the issue is created or it isn't.
+- **Repo not found**: usually a typo in the resolver output. Re-run `resolve-plugin.sh`
+  and verify the `owner_repo` field.
 
 ## Scripts
 
-- **`scripts/setup-gh.sh`** — Platform info script. Returns JSON with OS detection. The primary readiness check is done via claude-in-chrome tools (tabs_context_mcp + read_page).
-- **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning marketplace.json files. All insight-wave plugins resolve to the monorepo `cogni-work/insight-wave`.
-- **`scripts/issue-store.sh`** — Local JSON state management (init, gen-id, add, read, update-status). The `add` command reads JSON from stdin for safety.
+- **`scripts/gh-issues-helper.sh`** — gh CLI wrapper. Subcommands: `check`, `create`,
+  `list`, `view`, `search`, `browse-url`. JSON on stdout, errors on stderr. Validates
+  labels exist on the target repo before invoking `gh issue create`.
+  - `list` accepts `--search Q` for inline keyword filtering on top of `--state` and
+    `--label` (no need to switch to the `search` subcommand for simple substring filters).
+- **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning
+  marketplace.json files. All insight-wave plugins resolve to the monorepo
+  `cogni-work/insight-wave`.
+- **`scripts/issue-store.sh`** — Local JSON state management (init, gen-id, add, read,
+  update-status). The `add` command reads JSON from stdin for safety.
 
 ## References
 
-- **`references/issue-templates.md`** — Templates for the four issue types with auto-fill placeholders and label mapping
+- **`references/issue-templates.md`** — Templates for the four issue types with auto-fill
+  placeholders and label mapping.
