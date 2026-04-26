@@ -44,6 +44,19 @@ Six bundled templates covering the most common plugin chains:
 | `new-engagement` | consulting setup → 4 phases | Consultant starting a structured engagement |
 | `full-onboarding` | workspace → help courses 1-11 | New user learning the full ecosystem |
 
+## Canonical Workflow IDs
+
+`docs/workflows/` is the canonical source for workflow IDs and pipeline shape;
+the templates in this skill are operational presentation copies that align to
+those canonical IDs. The reconciliation table — every cogni-help template ID
+and every `docs/workflows/<name>.md` filename mapped to a single canonical ID
+with a migration action — lives at `references/canonical-workflows.md`.
+
+The current template IDs above may not yet match the canonical IDs (migration
+is tracked there). When a workflow is referenced from another surface
+(`teach`, `guide`, `cheatsheet`, `docs/`), use the canonical ID — never the
+legacy template filename.
+
 ## How to Present Workflows
 
 1. **Read the matching template** from `references/workflows/`.
