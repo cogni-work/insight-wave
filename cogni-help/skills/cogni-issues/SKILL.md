@@ -2,18 +2,16 @@
 name: cogni-issues
 version: 0.4.0
 description: |
-  File and track GitHub issues (bugs, feature requests, change requests, questions) against
-  insight-wave ecosystem plugins using the GitHub CLI (`gh`). Guides users through a short
-  consultation to capture the right details, resolves the target plugin's repository
-  automatically, drafts issues from templates, creates them via `gh issue create` with atomic
-  label application, and tracks them locally.
-  Use this skill whenever the user wants to report a bug, request a feature, file a change
-  request, ask a question about a plugin, list filed issues, or check issue status.
-  Also trigger when the user says things like "this plugin is broken", "I found a problem
-  with {plugin}", "can we get X added to {plugin}", "{plugin} doesn't work", "open an issue",
-  "something is wrong with {plugin}", "das Plugin funktioniert nicht", "Fehler in {plugin}",
-  "set up GitHub issues", "configure issue filing", "ich kann kein Issue erstellen",
-  or any complaint/suggestion about a specific plugin — even if they don't use the word "issue".
+  File and track GitHub issues (bugs, features, change requests, questions) against
+  insight-wave plugins via the GitHub CLI (`gh`). Consults the user, resolves the
+  plugin repository, drafts from templates, creates atomically with labels, and
+  tracks locally.
+  Use whenever the user wants to report a bug, request a feature, file a change
+  request, ask a plugin question, list filed issues, or check issue status. Also
+  trigger on "this plugin is broken", "open an issue", "set up GitHub issues",
+  "das Plugin funktioniert nicht", "Fehler in {plugin}", "ich kann kein Issue
+  erstellen", or any complaint about a specific plugin — even without the word
+  "issue".
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
@@ -62,11 +60,15 @@ find the scripts, tell the user — don't guess paths.
 All GitHub operations route through `scripts/gh-issues-helper.sh`. JSON on stdout,
 errors on stderr.
 
+> **Canonical command list.** This table and the `usage()` function in
+> `scripts/gh-issues-helper.sh` describe the same surface. Update both together
+> when adding or renaming a subcommand.
+
 | Operation | Command |
 |-----------|---------|
 | Readiness check | `bash gh-issues-helper.sh check` |
 | Create issue | `bash gh-issues-helper.sh create <repo> --title T --body-file F [--labels L1,L2]` |
-| List issues | `bash gh-issues-helper.sh list <repo> [--state open\|closed\|all] [--limit N] [--label L]` |
+| List issues | `bash gh-issues-helper.sh list <repo> [--state open\|closed\|all] [--limit N] [--label L] [--search Q]` |
 | Search issues (dedup) | `bash gh-issues-helper.sh search <repo> "keywords" [--state open\|all]` |
 | View issue | `bash gh-issues-helper.sh view <repo> <number>` |
 | Browse URL | `bash gh-issues-helper.sh browse-url <repo> <number>` |
@@ -152,21 +154,21 @@ After login, re-run the probe and confirm `authenticated: true` before proceedin
 If the user came here because they were trying to file an issue, continue with the
 **create** flow.
 
-## Workspace init
+## Create mode
 
-Run once before any operation (idempotent):
+### 1. Initialize workspace, check readiness, resolve the plugin
+
+Initialize local issue state once per working directory (idempotent — safe to re-run
+on every create):
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" init "${working_dir}"
 ```
 
-`working_dir` defaults to the current working directory. State lives in `{working_dir}/cogni-issues/`.
+`working_dir` defaults to the current working directory. State lives in
+`{working_dir}/cogni-issues/`.
 
-## Create mode
-
-### 1. Check readiness and resolve the plugin
-
-First, verify `gh` readiness (see Prerequisites). If not ready, enter **setup mode** and
+Then verify `gh` readiness (see Prerequisites). If not ready, enter **setup mode** and
 return here once `authenticated: true`.
 
 If the user hasn't named a specific plugin, ask which plugin this is about. Then resolve it:
@@ -396,8 +398,8 @@ require any extra dependencies.
 - **`scripts/gh-issues-helper.sh`** — gh CLI wrapper. Subcommands: `check`, `create`,
   `list`, `view`, `search`, `browse-url`. JSON on stdout, errors on stderr. Validates
   labels exist on the target repo before invoking `gh issue create`.
-- **`scripts/setup-gh.sh`** — Thin alias for `gh-issues-helper.sh check`. Returns the
-  same readiness JSON. Kept for callers that reference the older name.
+  - `list` accepts `--search Q` for inline keyword filtering on top of `--state` and
+    `--label` (no need to switch to the `search` subcommand for simple substring filters).
 - **`scripts/resolve-plugin.sh`** — Resolves a plugin name to its GitHub repo by scanning
   marketplace.json files. All insight-wave plugins resolve to the monorepo
   `cogni-work/insight-wave`.

@@ -24,6 +24,8 @@ set -euo pipefail
 
 COMMAND="${1:-}"
 
+# NOTE: The canonical command list lives in the `gh CLI commands` table in
+# ../SKILL.md. Update both together when adding or renaming a subcommand.
 usage() {
   echo "Usage: bash $0 <command> [args...]" >&2
   echo "Commands: check, create, list, view, search, browse-url" >&2
@@ -210,7 +212,9 @@ print(json.dumps({
     check_gh
     REPO="${2:-}"
     NUMBER="${3:-}"
-    [ -z "$REPO" ] || [ -z "$NUMBER" ] && usage
+    if [ -z "$REPO" ] || [ -z "$NUMBER" ]; then
+      usage
+    fi
     gh issue view "$NUMBER" --repo "$REPO" --json number,title,body,labels,state,comments,createdAt,updatedAt,author,assignees,url
     ;;
 
@@ -221,7 +225,9 @@ print(json.dumps({
     check_gh
     REPO="${2:-}"
     QUERY="${3:-}"
-    [ -z "$REPO" ] || [ -z "$QUERY" ] && usage
+    if [ -z "$REPO" ] || [ -z "$QUERY" ]; then
+      usage
+    fi
     shift 3
     STATE="open"
     LIMIT="20"
@@ -242,7 +248,9 @@ print(json.dumps({
     # `open <url>` / `xdg-open <url>`.
     REPO="${2:-}"
     NUMBER="${3:-}"
-    [ -z "$REPO" ] || [ -z "$NUMBER" ] && usage
+    if [ -z "$REPO" ] || [ -z "$NUMBER" ]; then
+      usage
+    fi
     if ! echo "$REPO" | grep -qE '^[^/]+/[^/]+$'; then
       emit_error "browse-url: repo must be in owner/name form" repo "$REPO"
       exit 1
