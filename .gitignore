@@ -41,4 +41,4 @@ cogni-research/test-diagram-pipeline/
 **/.cogni-wiki/.lock
 
 # cogni-help local issue queue (per-user draft issues, not shared state)
-cogni-issues/
+/cogni-issues/
