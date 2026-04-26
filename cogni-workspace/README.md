@@ -28,7 +28,7 @@ In the Claude Cowork plugin model, workspace-level state (paths, env vars, insta
 ## What it does
 
 1. **Manage workspace** — initialize or update a workspace with auto-detection, dependency checks, plugin discovery, preference gathering, settings generation, backup and rollback → `references/supported-markets-registry.json` → doc-generate, doc-power, doc-hub, doc-readme-root, doc-audit
-2. **Manage themes** — extract from websites (via Chrome), PPTX files, or presets; audit for contrast and harmony; apply to downstream skills
+2. **Manage themes** — extract from websites (via Chrome), PPTX files, or presets; audit for contrast and harmony; author tiered theme systems (tokens → assets → components → templates) per Theme System v2; apply to downstream skills
 3. **Pick themes** — centralized theme picker used by all visual plugins
 4. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
 5. **Diagnose** workspace health — five-tier report (foundation, env vars, plugin registry, themes, dependencies)
@@ -87,7 +87,7 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `manage-workspace` | skill | Initialize or update workspace — auto-detects mode, dependencies, discovery, preferences, settings, themes, backup and rollback |
-| `manage-themes` | skill | 8 theme operations: recommend, list, grab from website, grab from PPTX, create from preset, audit, generate showcase, apply |
+| `manage-themes` | skill | 9 theme operations: recommend, list, grab from website, grab from PPTX, create from preset, audit, author deep theme system, generate showcase, apply |
 | `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
 | `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
 | `install-mcp` | skill | End-to-end MCP server installation — clone and build git-based MCPs, configure native app MCPs, and patch Claude Desktop config |

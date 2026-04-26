@@ -14,8 +14,10 @@ description: >-
   theme", "I need a visual identity for my startup". Even if the user just says
   "make it match our brand", "use our company colors", or "grab the style from
   that site", this skill applies. Also triggers on "brand guidelines", "design
-  system", "brand identity", or "visual standards".
-version: 0.3.0
+  system", "brand identity", or "visual standards", or when the user wants to
+  "author tokens", "build a tiered theme system", "deepen a theme", or "match
+  the cogni-work pattern".
+version: 0.4.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Skill, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__get_page_text
 ---
 
@@ -71,7 +73,7 @@ When the user asks for theme advice — e.g., "what theme for my brand?", "help 
 | Nothing concrete, just a description | → **Operation #5** (Create from Preset) — recommend 2-3 theme-factory presets that match their mood/industry, let them pick or blend |
 | An existing workspace theme that's close | → **Operation #6** (Audit/Improve) — review it and suggest targeted tweaks |
 
-After creating or selecting a theme, always run a quick audit (Operation #6) on the result before finalizing — this catches contrast issues and missing sections early. Then offer to generate a theme showcase (Operation #7) so the user can see all tokens in action.
+After creating or selecting a theme, always run a quick audit (Operation #6) on the result before finalizing — this catches contrast issues and missing sections early. Then offer to generate a theme showcase (Operation #8) so the user can see all tokens in action.
 
 ### 2. List Themes
 
@@ -102,11 +104,13 @@ Extract a visual theme from a live website using claude-in-chrome (the user's Ch
    - Font families from headings and body text
    - Background colors and surface patterns
    - Border radius, spacing patterns
-5. Research the brand via WebSearch for design philosophy context and official brand colors
-6. Calculate WCAG contrast ratios for extracted color pairs
-7. Generate theme.md following the template (see Theme File Format below)
-8. Save to `{themes-dir}/{theme-slug}/theme.md`
-9. Offer to generate a theme showcase (Operation #7)
+6. Research the brand via WebSearch for design philosophy context and official brand colors
+7. Calculate WCAG contrast ratios for extracted color pairs
+8. Generate theme.md following the template (see Theme File Format below)
+9. Save to `{themes-dir}/{theme-slug}/theme.md`
+10. Emit a starter `manifest.json` next to `theme.md` (see [Starter Manifest](#starter-manifest) below) and validate with `validate-theme-manifest.py` before completing
+11. Offer to deepen this into a tiered theme system (Operation #7)
+12. Offer to generate a theme showcase (Operation #8)
 
 **Tips for accurate extraction**: Take multiple screenshots (hero section, navigation,
 footer) to capture the full palette. Use WebSearch to find the brand's official style
@@ -133,7 +137,9 @@ Extract theme from a PowerPoint template file. PPTX files embed theme XML in the
    - `a:minorFont` → Body font family
 4. Generate theme.md following the template (see Theme File Format below)
 5. Save to `{themes-dir}/{theme-slug}/theme.md`
-6. Offer to generate a theme showcase (Operation #7)
+6. Emit a starter `manifest.json` next to `theme.md` (see [Starter Manifest](#starter-manifest) below) and validate with `validate-theme-manifest.py` before completing
+7. Offer to deepen this into a tiered theme system (Operation #7)
+8. Offer to generate a theme showcase (Operation #8)
 
 ### 5. Create Theme from Preset
 
@@ -143,7 +149,9 @@ Delegate to `document-skills:theme-factory` for preset theme creation:
 2. Once user selects/creates a theme, capture the color palette and typography
 3. Generate a theme.md following the template (see Theme File Format below)
 4. Save to `{themes-dir}/{theme-slug}/theme.md`
-5. Offer to generate a theme showcase (Operation #7)
+5. Emit a starter `manifest.json` next to `theme.md` (see [Starter Manifest](#starter-manifest) below) and validate with `validate-theme-manifest.py` before completing
+6. Offer to deepen this into a tiered theme system (Operation #7)
+7. Offer to generate a theme showcase (Operation #8)
 
 This bridges theme-factory's preset system with the workspace's theme storage.
 
@@ -175,13 +183,73 @@ When the user wants feedback on an existing theme — e.g., "my theme feels off"
 - Check whether the stated principles are actionable and specific enough for a downstream skill to follow
 - Flag vague principles (e.g., "make it look good") and suggest concrete rewrites
 
-**Output format**: Present findings as a checklist grouped by dimension, with pass/fail/warning per item and concrete suggestions for anything that fails. If the user agrees with suggestions, apply the fixes directly to the theme.md. After applying fixes, offer to regenerate the theme showcase (Operation #7) so the user can verify the changes visually.
+**Output format**: Present findings as a checklist grouped by dimension, with pass/fail/warning per item and concrete suggestions for anything that fails. If the user agrees with suggestions, apply the fixes directly to the theme.md. After applying fixes, offer to regenerate the theme showcase (Operation #8) so the user can verify the changes visually.
 
-### 7. Generate Theme Showcase
+**Manifest handling**: If the theme already has a `manifest.json`, leave it untouched (the audit fixes go in `theme.md`). If the theme is tier-0 and the audit surfaces structural needs that tokens would solve — e.g., the same hex repeats across many surfaces, downstream skills hard-code values that should swap by theme — offer to promote the theme via Operation #7 (Author a Deep Theme System) rather than expanding `theme.md` further. If the theme has neither a `theme.md` nor a `manifest.json` (rare — Op 6 mostly acts on existing themes), emit a starter `manifest.json` (see [Starter Manifest](#starter-manifest) below) so the next operation has an entry point.
+
+### 7. Author a Deep Theme System
+
+When a theme outgrows the single-file `theme.md` and the user wants structured authoring — variable swap-out by downstream skills, component primitives, voice/copy templates — promote the theme to a **tiered** layout per Theme System v2 (RFC #124). This operation is opt-in: tier-0 themes (`theme.md` only, no manifest) remain valid forever.
+
+**When to offer**: After a successful Operation 3, 4, or 5 (ask: *"Want to deepen this into a tiered theme system?"*), or when the user explicitly asks to "build a deep theme", "author tokens", "make this brand a system", or "match the cogni-work pattern". A migration guide that walks an existing tier-0 theme through the upgrade end-to-end is tracked in [#130](https://github.com/cogni-work/insight-wave/issues/130) — once that lands, the file will be available at `references/theme-migration-guide.md`.
+
+**Reference implementation**: `themes/cogni-work/` is the canonical Phase-2 pilot. Read its `manifest.json` and `tokens/` layout before authoring any new tiered theme — that file shape is the contract every downstream consumer expects.
+
+**The four tiers** — populate in this order; each tier is independently optional, but tokens is the foundation:
+
+1. **Tier 1 — Tokens** (`tokens/`). Canonical design variables as flat JSON maps. Six canonical files: `colors.json`, `typography.json`, `spacing.json`, `radii.json`, `shadows.json`, `motion.json`. Each is a `{key: value}` map with primitive values (string, integer, or float — nested values are silently skipped in v1.0). Generate `tokens/tokens.css` deterministically from these JSON sources — never hand-edit the CSS:
+   ```bash
+   python3 cogni-workspace/scripts/generate-tokens-css.py \
+       --tokens-dir <themes-dir>/<slug>/tokens --write
+   ```
+   The generator emits a single `:root { ... }` block with `--<stem>-<key>` custom properties in canonical-file then alphabetical-key order. Re-running it must produce a byte-identical file (idempotency check via `git diff --exit-code`).
+
+2. **Tier 2 — Assets** (`assets/`). Brand-bound static files — logos (SVG preferred), reference fonts, sample documents, hero imagery. Flat layout is fine; nested directories are allowed where the asset family naturally groups (e.g., `assets/logos/`).
+
+3. **Tier 3 — Components** (`components/`). Portable HTML primitives that downstream skills can copy-on-use (per RFC open question 2 resolution: copy-on-use is the default, opt-in live-theme is reserved). JSX is allowed but optional; HTML is the contract per RFC open question 3 resolution. Each component is one file; reference the theme's tokens via CSS custom properties (e.g., `var(--colors-primary)`) so consumers inherit the active palette without rewriting markup.
+
+4. **Tier 4 — Templates** (`templates/`). Voice-and-copy scaffolds — IS/DOES/MEANS messaging templates, headline patterns, CTA wording. Out of scope for Phase 2 (deferred to Phase 3 per RFC open question 5); the directory is reserved but most themes will not populate it yet.
+
+**Manifest update**: Each tier you populate gets a corresponding entry in `manifest.json`. The `tiers` map is the contract — `discover-themes` and downstream consumers route exclusively through it:
+
+```json
+{
+  "schema_version": "1.0",
+  "name": "<Theme Name>",
+  "slug": "<theme-slug>",
+  "tiers": {
+    "tokens": "tokens/",
+    "assets": "assets/",
+    "components": "components/"
+  }
+}
+```
+
+Reserved keys `live`, `live_within_session`, and `copy` must never appear at any nesting depth (the validator hard-fails on them).
+
+**Validate before completing**: Always run the validator after touching a tiered theme — it checks schema conformance, that declared tier paths exist, and (when `tokens.css` is present) that it matches `generate()` byte-for-byte:
+
+```bash
+python3 cogni-workspace/scripts/validate-theme-manifest.py <themes-dir>/<slug>
+```
+
+A non-zero exit means the theme is not shippable; fix the failure before declaring the operation complete.
+
+**Workflow** (typical promotion of an existing tier-0 theme):
+
+1. Read the existing `theme.md` to extract palette, typography, and design principles.
+2. Create `tokens/`; split the palette into `colors.json`, fonts into `typography.json`, and any spacing/radii/shadow/motion values into the corresponding canonical files.
+3. Run `generate-tokens-css.py --write` to emit `tokens.css`; verify the diff is what you expect.
+4. Update `manifest.json` to declare `tiers.tokens: "tokens/"`.
+5. Optionally populate `assets/` and `components/` — only what the user actually needs.
+6. Run `validate-theme-manifest.py` and confirm `success: true`.
+7. Offer to regenerate the theme showcase (Operation #8) so the tokens render against the canonical primitives.
+
+### 8. Generate Theme Showcase
 
 After creating, extracting, or improving a theme, offer to generate an interactive React showcase component that demonstrates every design token in context — colors, typography, buttons, cards, tables, forms, status badges, KPI panels, pricing layouts, and navigation patterns.
 
-**When to offer**: After any successful theme creation or update (Operations 3–6), ask the user: *"Want me to generate a theme showcase component so you can see all the tokens in action?"*
+**When to offer**: After any successful theme creation, deepening, or update (Operations 3–7), ask the user: *"Want me to generate a theme showcase component so you can see all the tokens in action?"*
 
 **Workflow**:
 
@@ -201,7 +269,7 @@ After creating, extracting, or improving a theme, offer to generate an interacti
 
 **Reference**: See `themes/cogni-work/cogni-work-theme-showcase.jsx` as the canonical example of quality, structure, and completeness.
 
-### 8. Apply Theme
+### 9. Apply Theme
 
 When the user asks to apply a theme, read the theme.md and feed its contents into the downstream skill that produces the output.
 
@@ -225,6 +293,28 @@ Follow the template at `{themes-dir}/_template/theme.md`. Key sections:
 - **Design Principles**: 3-8 rules for visual consistency
 - **Best Used For**: Target contexts
 - **Source**: Origin (URL, PPTX file, preset name) and extraction date
+
+## Starter Manifest
+
+Operations 3, 4, 5, and (conditionally) 6 emit a minimal `manifest.json` next to `theme.md` for every newly-created theme. The file is the entry point that lets a tier-0 theme opt in to Theme System v2 later (via Operation #7) without renaming or restructuring anything that already shipped:
+
+```json
+{
+  "schema_version": "1.0",
+  "name": "<Theme Name>",
+  "slug": "<theme-slug>",
+  "tiers": {}
+}
+```
+
+- `schema_version` is always `"1.0"` for now — it pins the file to the current `references/theme-manifest.schema.json`.
+- `name` is the human-readable theme name (e.g., `"Cogni Work"`).
+- `slug` matches the directory name (kebab-case, see [Naming Convention](#naming-convention) below).
+- `tiers` starts empty (`{}`); tiers are added by Operation #7 only when the user explicitly populates them.
+
+Operations 3–5 finish by running `python3 cogni-workspace/scripts/validate-theme-manifest.py <themes-dir>/<slug>` to confirm the manifest is schema-valid before the operation reports success.
+
+**Backwards-compat:** `_template/` and any pre-existing tier-0 theme without a manifest stay valid forever — Operation 6 (Audit/Improve) preserves the manifestless layout unless the user explicitly asks to promote via Operation #7.
 
 ## Naming Convention
 
