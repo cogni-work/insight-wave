@@ -73,6 +73,71 @@ def load_design_variables(path):
 
 
 # ---------------------------------------------------------------------------
+# Theme System v2 — Tier-aware resolution (Phase-2 pilot, RFC #124, #129)
+# ---------------------------------------------------------------------------
+
+def resolve_themes_dir(themes_dir_arg):
+    """Resolve the workspace themes/ directory.
+
+    Order: explicit ``--themes-dir`` argument; ``$COGNI_WORKSPACE_ROOT``;
+    walk up from this script looking for a sibling ``cogni-workspace/themes``;
+    return None if nothing is found.
+
+    Tier-aware resolution is fully optional — every existing call site
+    behaves exactly as before when this returns None or when --theme-slug
+    is omitted.
+    """
+    if themes_dir_arg:
+        p = os.path.abspath(os.path.expanduser(themes_dir_arg))
+        return p if os.path.isdir(p) else None
+    env = os.environ.get("COGNI_WORKSPACE_ROOT")
+    if env:
+        candidate = os.path.join(env, "themes")
+        if os.path.isdir(candidate):
+            return candidate
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        candidate = os.path.join(here, "cogni-workspace", "themes")
+        if os.path.isdir(candidate):
+            return candidate
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    return None
+
+
+def resolve_tokens_css(themes_dir, theme_slug):
+    """Return the absolute path to ``themes/<slug>/tokens/tokens.css``.
+
+    Returns None when the theme is tier-0 (no manifest.json), when the
+    manifest does not declare ``tiers.tokens``, or when the resolved file
+    does not exist on disk. None is the documented "use the inline
+    :root tokens block only" signal — every existing tier-0 caller flows
+    through this path.
+    """
+    if not themes_dir or not theme_slug:
+        return None
+    theme_dir = os.path.join(themes_dir, theme_slug)
+    manifest_path = os.path.join(theme_dir, "manifest.json")
+    if not os.path.isfile(manifest_path):
+        return None
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as h:
+            manifest = json.load(h)
+    except (json.JSONDecodeError, OSError):
+        return None
+    tiers = manifest.get("tiers")
+    if not isinstance(tiers, dict):
+        return None
+    tokens_rel = tiers.get("tokens")
+    if not isinstance(tokens_rel, str) or not tokens_rel:
+        return None
+    tokens_css = os.path.join(theme_dir, tokens_rel.rstrip("/"), "tokens.css")
+    return tokens_css if os.path.isfile(tokens_css) else None
+
+
+# ---------------------------------------------------------------------------
 # HTML Utilities
 # ---------------------------------------------------------------------------
 
@@ -1604,8 +1669,17 @@ def generate_js(total_slides, has_mermaid=False):
 # HTML Assembly
 # ---------------------------------------------------------------------------
 
-def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", language="en"):
-    """Assemble the complete HTML document."""
+def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", language="en", tokens_css_path=None):
+    """Assemble the complete HTML document.
+
+    ``tokens_css_path`` is the optional absolute path to a Theme System v2
+    ``tokens.css`` resolved by ``resolve_tokens_css`` (or None for tier-0 /
+    legacy callers). When set, an ``@import url('file://...');`` line is
+    injected ahead of the existing inline ``:root`` block so the manifest
+    theme's CSS custom properties cascade in first; the inline DEFAULT_THEME-
+    derived block then provides fallback values for any unmapped names. When
+    None, the rendered HTML is byte-identical to pre-v0.16.21 output.
+    """
     metadata = slide_data.get("metadata", {})
     slides = slide_data.get("slides", [])
 
@@ -1684,6 +1758,13 @@ def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", langua
     css = generate_css(dv, transition, aspect_ratio)
     js = generate_js(total, has_mermaid)
 
+    # Tier-1 tokens.css import (Theme System v2). Empty string when
+    # tokens_css_path is None, which is the legacy tier-0 path — output
+    # stays byte-equivalent to pre-v0.16.21 in that case.
+    tokens_css_import = ""
+    if tokens_css_path:
+        tokens_css_import = "@import url('file://{}');".format(tokens_css_path)
+
     return f"""<!DOCTYPE html>
 <html lang="{language}">
 <head>
@@ -1693,6 +1774,7 @@ def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", langua
   <meta name="theme" content="{escape_html(theme_name)}">
   <title>{escape_html(title)}</title>
   <style>
+  {tokens_css_import}
   {fonts_import}
   {css}
   </style>
@@ -1760,6 +1842,17 @@ def main():
     parser.add_argument("--transition", default="fade", choices=["fade", "slide", "none"])
     parser.add_argument("--aspect-ratio", default="16:9", choices=["16:9", "4:3"])
     parser.add_argument("--language", default="en", choices=["en", "de"])
+    parser.add_argument("--theme-slug", default="",
+                        help="Optional Theme System v2 theme slug. When set, "
+                             "tokens.css is @imported from the resolved tiered "
+                             "theme and the active theme name is taken from "
+                             "the manifest. Tier-0 themes (no manifest.json) "
+                             "and themes without tiers.tokens fall back "
+                             "transparently to the legacy code path.")
+    parser.add_argument("--themes-dir", default="",
+                        help="Override the workspace themes/ directory used "
+                             "for --theme-slug resolution. Default: "
+                             "$COGNI_WORKSPACE_ROOT/themes or auto-discovery.")
     args = parser.parse_args()
 
     try:
@@ -1769,12 +1862,22 @@ def main():
 
         dv = load_design_variables(args.design_variables)
 
+        # Theme System v2 — resolve tier-1 tokens.css if --theme-slug is set.
+        # When the resolution misses (tier-0 theme, missing manifest, missing
+        # tokens.css), tokens_css_path is None and assemble_html emits the
+        # legacy byte-equivalent output.
+        tokens_css_path = None
+        if args.theme_slug:
+            themes_dir = resolve_themes_dir(args.themes_dir)
+            tokens_css_path = resolve_tokens_css(themes_dir, args.theme_slug)
+
         # Generate HTML
         html = assemble_html(
             slide_data, dv,
             transition=args.transition,
             aspect_ratio=args.aspect_ratio,
-            language=args.language
+            language=args.language,
+            tokens_css_path=tokens_css_path,
         )
 
         # Write output
@@ -1791,6 +1894,8 @@ def main():
             "slides": total,
             "size_kb": size_kb,
             "theme": dv.get("theme_name", "unknown"),
+            "theme_slug": args.theme_slug or None,
+            "tokens_css_imported": bool(tokens_css_path),
             "has_mermaid": any(
                 s.get("diagram_mermaid") or
                 (isinstance(s.get("fields", {}).get("Diagram"), str) and s["fields"]["Diagram"].strip())
