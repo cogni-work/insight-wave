@@ -28,7 +28,7 @@ In the Claude Cowork plugin model, workspace-level state (paths, env vars, insta
 ## What it does
 
 1. **Manage workspace** — initialize or update a workspace with auto-detection, dependency checks, plugin discovery, preference gathering, settings generation, backup and rollback → `references/supported-markets-registry.json` → doc-generate, doc-power, doc-hub, doc-readme-root, doc-audit
-2. **Manage themes** — extract from websites (via Chrome), PPTX files, or presets; audit for contrast and harmony; author tiered theme systems (tokens → assets → components → templates) per Theme System v2; apply to downstream skills
+2. **Manage themes** — extract from websites (via Chrome), PPTX files, or presets; audit for contrast and harmony; author tiered theme systems (tokens → assets → components → templates) per Theme System v2 (see [migration guide](docs/theme-system-v2-migration.md)); apply to downstream skills
 3. **Pick themes** — centralized theme picker used by all visual plugins
 4. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
 5. **Diagnose** workspace health — five-tier report (foundation, env vars, plugin registry, themes, dependencies)

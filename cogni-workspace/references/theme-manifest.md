@@ -12,6 +12,10 @@ no-op.
 The schema is `references/theme-manifest.schema.json` (JSON Schema draft-07).
 The validator is `scripts/validate-theme-manifest.py` (Python stdlib only).
 
+For the end-to-end tier-0 → tiered walkthrough (when to migrate, tier-by-tier
+authoring, validation, rollback, common pitfalls), see
+[`docs/theme-system-v2-migration.md`](../docs/theme-system-v2-migration.md).
+
 ## Locked design decisions (epic #132 resolutions)
 
 | Question | Decision |
