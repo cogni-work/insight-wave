@@ -40,7 +40,11 @@ material but deliver the teaching in the workspace language.
 
 ## Curriculum
 
-Twelve courses, designed to build on each other:
+Two parallel tracks. The plugin track teaches one plugin at a time
+(foundational); the workflow-tour track walks a single end-to-end pipeline
+across plugins (integrative). See "Course Index" below for which to pick.
+
+### Plugin track — Twelve courses, one per plugin or plugin pair
 
 | # | Course ID | Title | Plugins Covered |
 |---|-----------|-------|-----------------|
@@ -57,16 +61,63 @@ Twelve courses, designed to build on each other:
 | 11 | `consulting` | Consulting Orchestration | cogni-consulting |
 | 12 | `documentation` | Documentation Pipeline | cogni-docs |
 
+### Workflow-tour track — Seven tours, one per canonical user-facing workflow
+
+Every canonical workflow in `docs/workflows/` (and the corresponding template
+in the `workflow` skill's `references/workflows/`) has a teach companion.
+Tour courses are *integrative*: they assume the learner has seen the
+relevant plugins (or is comfortable enough to skim) and walk a single
+end-to-end pipeline rather than a single plugin's surface.
+
+| Tour ID | Title | Pipeline | Plugin-track prerequisites |
+|---------|-------|----------|----------------------------|
+| `tour-research-to-report` | Research-to-Report Tour | research → narrative → visual | Course 8 (Research), Course 7 (Visual); Course 3 helpful |
+| `tour-trends-to-solutions` | Trends-to-Solutions Tour | tips → portfolio → marketing | Courses 4-5 (TIPS), Course 6 (Portfolio), Course 9 (Marketing) |
+| `tour-portfolio-to-pitch` | Portfolio-to-Pitch Tour | portfolio → narrative → sales → visual | Course 6 (Portfolio), Course 10 (Sales); Course 7 helpful |
+| `tour-portfolio-to-website` | Portfolio-to-Website Tour | portfolio → workspace → website | Course 6 (Portfolio), Course 2 (Workspace) |
+| `tour-consulting-engagement` | Consulting-Engagement Tour | consulting setup → 4 phases | Course 11 (Consulting); Courses 4-8 deepen each phase |
+| `tour-content-pipeline` | Content-Pipeline Tour | marketing → narrative → copywriting → visual | Course 9 (Marketing), Course 3 (Basic Tools), Course 7 (Visual) |
+| `tour-install-to-infographic` | Install-to-Infographic Tour | workspace → themes → visual | Course 2 (Workspace), Course 7 (Visual) |
+
+Tour course IDs match the canonical workflow IDs in `cogni-help/skills/workflow/references/canonical-workflows.md`. When a learner has finished
+the relevant plugin-track prerequisites, the tour skips re-explaining the
+basics and focuses on the cross-plugin handoffs and end-to-end shape.
+
+## Course Index
+
+Two tracks, two question shapes — pick by what the learner is asking.
+
+| Question shape | Recommended track | Example |
+|----------------|-------------------|---------|
+| "Teach me plugin X" / "How do I use cogni-Y?" | Plugin track (Courses 1-12) | "Teach me cogni-research" → Course 8 |
+| "How do I get from A to B?" / "Walk me through workflow X" | Workflow-tour track | "How do I go from research to a report?" → `tour-research-to-report` |
+| "I'm new to insight-wave, where do I start?" | Plugin track Course 1, then 2, then ad-hoc | Plugin courses build the mental model |
+| "Show me how to ship a pitch deck end-to-end" | Workflow-tour track | The tour assumes pieces, walks the chain |
+| "I know plugins, but I haven't put them together" | Workflow-tour track | This is exactly the gap tours fill |
+
+Both tracks cite each other. Plugin courses point at the relevant tours
+("now that you've learned cogni-research, try `tour-research-to-report` to
+see it in a full pipeline"); tour courses point at the plugin courses they
+build on as prerequisite reading. The user can move between tracks freely —
+they are additive, not exclusive.
+
 ## How to Teach
 
 Each course has ~5 modules. Each module follows: **Theory → Demo → Exercise → Quiz → Recap**.
 
-Courses 8-10 cover advanced plugins that build on earlier foundations:
+Plugin-track courses 8-10 cover advanced plugins that build on earlier
+foundations:
 - Course 8 (Research) requires Course 3 (claims verification is used throughout)
 - Course 9 (Marketing) requires Courses 4-5 (TIPS) + Course 6 (Portfolio)
 - Course 10 (Sales) requires Course 6 (Portfolio) + Course 3 (narrative arcs)
 - Course 11 (Diamond) requires all earlier courses (capstone — dispatches to most plugins)
 - Course 12 (Documentation) requires Course 2 (workspace basics)
+
+Workflow-tour courses have prerequisite plugin courses listed in the
+Curriculum table above. If the learner has completed the prerequisites, the
+tour skips foundational re-explanation. If a prerequisite is missing, the
+tour offers two options: pause to do the plugin course, or proceed with
+brief inline coverage of just-enough plugin context to follow the tour.
 
 ### Your Teaching Voice
 
@@ -145,7 +196,9 @@ courses:
 
 ## Course Content
 
-Load the relevant course file when delivering a specific course:
+Load the relevant course file when delivering a specific course.
+
+### Plugin-track courses (`references/courses/`)
 
 - `references/courses/01-cowork-fundamentals.md`
 - `references/courses/02-workspace-obsidian.md`
@@ -159,6 +212,21 @@ Load the relevant course file when delivering a specific course:
 - `references/courses/10-sales.md`
 - `references/courses/11-consulting.md`
 - `references/courses/12-documentation.md`
+
+### Workflow-tour courses (`references/courses/tours/`)
+
+- `references/courses/tours/tour-research-to-report.md`
+- `references/courses/tours/tour-trends-to-solutions.md`
+- `references/courses/tours/tour-portfolio-to-pitch.md`
+- `references/courses/tours/tour-portfolio-to-website.md`
+- `references/courses/tours/tour-consulting-engagement.md`
+- `references/courses/tours/tour-content-pipeline.md`
+- `references/courses/tours/tour-install-to-infographic.md`
+
+The tour course files are filed by a follow-up issue (#150) — until that
+ships, the tours appear in the Curriculum table but `/teach <tour-id>`
+points at the corresponding plugin-track courses with a one-line note that
+the integrated tour is forthcoming.
 
 Each file contains all modules with theory, demos, exercises, quizzes, and recaps.
 Read only the course file the user is taking — no need to load them all.
