@@ -8,6 +8,40 @@ Workspace-level infrastructure for the cogni plugin ecosystem: theme management,
 - Themes live in `themes/` as markdown files describing visual identity
 - See `references/design-variables-pattern.md` for the shared convention on producing themed HTML dashboards — any skill generating visual HTML output should follow this pattern
 
+### Pre-PR checks for theme-touching changes
+
+Run the umbrella backwards-compat harness before submitting any PR that
+touches `themes/`, `skills/pick-theme/`, `skills/manage-themes/`, or any
+consumer plugin's theme-reading surface:
+
+```bash
+bash cogni-workspace/scripts/verify-theme-backcompat.sh
+```
+
+The harness verifies the Theme System v2 contract end-to-end:
+
+- **Tier-0 invariant.** `discover-themes.py` output for the bundled
+  `_template/` theme (via a non-underscore fixture) must match the
+  committed snapshot at `scripts/baselines/_template-tier0-output.json`.
+  The contract from RFC #124 is "themes without manifest.json must keep
+  working exactly as today" — this is the regression test.
+- **Tiered invariant.** The `cogni-work` theme must surface
+  `tiers.tokens` resolving to a `tokens/` directory containing
+  `tokens.css`.
+- **Consumer contracts.** Each known visual consumer (cogni-visual:
+  render-html-slides + story-to-* siblings, cogni-portfolio:
+  portfolio-dashboard, cogni-website:website-build) and voice consumer
+  (cogni-narrative, cogni-sales, cogni-research, cogni-copywriting) must
+  still reference the theme contract in its SKILL.md.
+
+The harness complements the per-skill validators
+(`validate-theme-manifest.py`, `check-skill-names.sh`) — those catch
+local violations; this catches integration drift across plugins.
+
+`--help` prints a failure-mode triage table mapping each failure to the
+likely upstream child issue (#126–#130). CI integration is intentionally
+out of scope; manual invocation before PRs is the contract.
+
 ## MCP Server Installation
 
 - The `install-mcp` skill is the primary entry point for end-to-end MCP setup

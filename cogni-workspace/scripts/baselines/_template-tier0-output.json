@@ -1,0 +1,14 @@
+[
+  {
+    "name": "{Theme Name}",
+    "description": "{1-2 sentence description of the visual identity and mood.}",
+    "primary": null,
+    "accent": null,
+    "background": null,
+    "font": "{Font Bold}",
+    "slug": "<NORMALIZED_SLUG>",
+    "path": "<THEME_PATH>",
+    "source": "standard",
+    "mtime": 0
+  }
+]
