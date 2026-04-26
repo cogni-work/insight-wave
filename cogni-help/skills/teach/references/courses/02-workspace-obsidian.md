@@ -343,17 +343,24 @@ always sees the full draft before it goes to GitHub.
 
 ### Exercise
 
-Before starting, check if claude-in-chrome is available and the user is logged into GitHub:
+Before starting, check that the GitHub CLI (`gh`) is installed and authenticated:
 
-1. Try `mcp__claude-in-chrome__tabs_context_mcp` — if the tool is not available,
-   the Claude-in-Chrome extension may not be installed or active.
-   Guide the user to install the extension in Chrome.
-2. Open a new tab with `mcp__claude-in-chrome__tabs_create_mcp`, navigate to
-   `https://github.com`, and use `mcp__claude-in-chrome__read_page` to check
-   login state — look for a logged-in indicator (profile menu, avatar) vs a "Sign in" link.
-3. If not logged in, ask the user to sign into GitHub in their Chrome browser.
+1. Run `command -v gh`. If nothing is returned, install it: `brew install gh`
+   on macOS, or follow the platform install at https://cli.github.com/.
+2. Run `gh auth status`. If the user isn't authenticated, run
+   `gh auth login` and walk them through the prompts (GitHub.com, HTTPS,
+   browser-based login).
 
-Once the browser is connected and logged in, ask the user to file their first issue:
+If anything is still missing, the cogni-issues skill's setup mode will catch
+it on first run and walk the user through the rest — no need to verify every
+edge case here.
+
+> **Migrating from the old browser flow?** Earlier versions of this course
+> used the Claude-in-Chrome MCP extension to file issues. That path is gone —
+> if you still have the extension installed, you can uninstall it; nothing
+> in cogni-help uses it anymore.
+
+Once `gh` is ready, ask the user to file their first issue:
 
 > "Tell Claude: **I have a question about insight-wave — which course should I
 > take after finishing Course 2?**"
