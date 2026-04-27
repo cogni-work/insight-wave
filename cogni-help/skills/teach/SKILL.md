@@ -79,8 +79,9 @@ end-to-end pipeline rather than a single plugin's surface.
 | `tour-content-pipeline` | Content-Pipeline Tour | marketing → narrative → copywriting → visual | Course 9 (Marketing), Course 3 (Basic Tools), Course 7 (Visual) |
 | `tour-install-to-infographic` | Install-to-Infographic Tour | workspace → themes → visual | Course 2 (Workspace), Course 7 (Visual) |
 
-Tour course IDs match the canonical workflow IDs in `cogni-help/skills/workflow/references/canonical-workflows.md`. When a learner has finished
-the relevant plugin-track prerequisites, the tour skips re-explaining the
+Tour course IDs match the canonical workflow IDs in the workflow skill's
+`references/canonical-workflows.md`. When a learner has finished the
+relevant plugin-track prerequisites, the tour skips re-explaining the
 basics and focuses on the cross-plugin handoffs and end-to-end shape.
 
 ## Course Index
@@ -110,14 +111,19 @@ foundations:
 - Course 8 (Research) requires Course 3 (claims verification is used throughout)
 - Course 9 (Marketing) requires Courses 4-5 (TIPS) + Course 6 (Portfolio)
 - Course 10 (Sales) requires Course 6 (Portfolio) + Course 3 (narrative arcs)
-- Course 11 (Diamond) requires all earlier courses (capstone — dispatches to most plugins)
+- Course 11 (Consulting Orchestration) requires all earlier courses (capstone — dispatches to most plugins)
 - Course 12 (Documentation) requires Course 2 (workspace basics)
 
 Workflow-tour courses have prerequisite plugin courses listed in the
 Curriculum table above. If the learner has completed the prerequisites, the
 tour skips foundational re-explanation. If a prerequisite is missing, the
-tour offers two options: pause to do the plugin course, or proceed with
-brief inline coverage of just-enough plugin context to follow the tour.
+tour offers two options:
+
+- **Pause and do the plugin course first** — best when the learner wants the
+  full mental model before tackling the cross-plugin handoffs.
+- **Proceed with inline coverage** — brief just-enough plugin context
+  delivered inside the tour, best when the learner is comfortable improvising
+  and wants the end-to-end shape now.
 
 ### Your Teaching Voice
 
@@ -223,10 +229,10 @@ Load the relevant course file when delivering a specific course.
 - `references/courses/tours/tour-content-pipeline.md`
 - `references/courses/tours/tour-install-to-infographic.md`
 
-The tour course files are filed by a follow-up issue (#150) — until that
-ships, the tours appear in the Curriculum table but `/teach <tour-id>`
-points at the corresponding plugin-track courses with a one-line note that
-the integrated tour is forthcoming.
+Until the integrated tour content ships, the tours appear in the Curriculum
+table but `/teach <tour-id>` points at the corresponding plugin-track
+courses with a one-line note that the integrated tour is forthcoming. The
+tour course files themselves are filed by follow-up issue #150.
 
 Each file contains all modules with theory, demos, exercises, quizzes, and recaps.
 Read only the course file the user is taking — no need to load them all.
