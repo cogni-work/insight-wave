@@ -149,7 +149,7 @@ For each discovered offering, populate the full entity schema:
 | Field | Description | How to Extract |
 |-------|-------------|----------------|
 | Name | Service/product name | From result title |
-| Description | 1-2 sentence summary | From result snippet |
+| Description | 1-2 sentence summary | From result snippet IF it contains a `category_name` keyword; else from `usp` (see Description Selection) |
 | Domain | Source domain | `{{DOMAIN}}` (fixed) |
 | Link | Direct URL | From search result URL |
 | USP | Unique selling proposition | Key differentiator from snippet |
@@ -202,6 +202,49 @@ rarely exist in the first place:
 These rules are additive and prompt-level only — no schema change. The
 fallback if any rule is ambiguous (multiple synonyms on one page, no clear
 sub-brand) is the dedupe agent, which still runs.
+
+#### Description Selection
+
+The downstream `portfolio-scan` Step 7.1 maps an offering's `description` 1:1
+to `feature.description`. When the search-result snippet drifts from the
+canonical capability (the snippet is anchored to the search query, not to
+the offering's `name` or category), the feature ends up with a description
+that contradicts its name and `taxonomy_mapping`. Apply this gate at
+extraction time so the wrong text never enters the pipeline:
+
+1. **Build the category keyword set.** Tokenize `taxonomy_mapping.category_name`
+   (the category the offering is being filed under): lowercase, kebab-split,
+   then strip the **same stop-word set the dedupe agent uses** —
+   `services`, `platform`, `solution`, `software`, `tools`, `management`.
+   Both ends of the pipeline must agree on this list, so do not extend or
+   shorten it locally. Add the offering's own `name` tokens (after the same
+   stop-word strip) as bonus keywords — the marketing label is itself
+   category evidence.
+
+2. **Test the snippet.** If the candidate description (1-2 sentences from
+   the result snippet) contains **at least one** keyword from the category
+   keyword set, adopt it as `description` and tag the offering with
+   `description_confidence: "high"`.
+
+3. **Fallback when no keyword overlaps.** Set `description = usp` (the
+   offering's USP is anchored to the offering, not to the search query) and
+   tag `description_confidence: "low"`. This is the safer default —
+   downstream Step 7.1 has its own two-pass rule and can re-synthesize from
+   `feature_name + usp + category_name` if the USP is also weak.
+
+4. **Preserve the audit trail.** When falling back, record the rejected raw
+   snippet in the agent's research log file (Step 4 output) under a
+   `rejected_descriptions: [{ "snippet": "...", "reason": "no_category_overlap" }]`
+   array per offering. Reviewers must be able to see what was discarded.
+
+`description_confidence` is a **prompt-level flag only** — do NOT add it as
+a persisted field in the offering or feature schema. Step 7.1 reads the flag
+from the in-flight scan output and decides whether to keep, synthesize, or
+re-evaluate; it is not surfaced in `features/*.json`.
+
+See `portfolio-scan` SKILL.md Step 7.1 (the authoritative two-pass rule)
+and `skills/portfolio-scan/references/scan-entity-schema.md` (Description
+selection contract) for the downstream contract this gate feeds into.
 
 #### Dual-Category Assignment Rules
 

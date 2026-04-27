@@ -39,7 +39,7 @@ When importing offerings as portfolio features (Phase 7), map fields as follows:
 |---|---|---|
 | Name | `name` + `slug` (kebab-case) | Slug derived from name |
 | — | `purpose` | Derived: 5-12 word customer-readable statement of what the feature is FOR (from web copy context) |
-| Description | `description` | Direct mapping |
+| Description | `description` | Two-pass selection: keep snippet if it contains a `taxonomy_mapping.category_name` keyword (stop-word set shared with `feature-deduplication-detector`); otherwise synthesize from `feature_name + usp + category_name`. See SKILL.md Step 7.1 (authoritative) and `portfolio-web-researcher.md` Step 3 (Description Selection). |
 | Category ID | `taxonomy_mapping.category_id` | From taxonomy classification |
 | Dimension | `taxonomy_mapping.dimension` | First digit of category ID |
 | Dimension Name | `taxonomy_mapping.dimension_name` | From taxonomy |
@@ -53,6 +53,35 @@ When importing offerings as portfolio features (Phase 7), map fields as follows:
 | Delivery Model | — | Research artifact, not persisted in feature |
 | Technology Partners | — | Captured in provider profile (Dimension 0.6) |
 | Industry Verticals | — | Captured in market definitions downstream |
+
+### Description selection contract
+
+The Offering → Feature `description` mapping is **not** a direct field copy.
+Two stages cooperate to keep feature descriptions aligned with the canonical
+capability they were filed under:
+
+1. **Extraction-time gate (`portfolio-web-researcher` Step 3 Description
+   Selection).** The agent tokenizes `taxonomy_mapping.category_name` using
+   the same stop-word set as `feature-deduplication-detector` (`services`,
+   `platform`, `solution`, `software`, `tools`, `management`) and only adopts
+   the search-result snippet as the offering's `description` when it contains
+   at least one matching keyword. When no keyword overlaps, the agent falls
+   back to the offering's `usp` text and tags `description_confidence: "low"`
+   (a prompt-level flag, not persisted).
+
+2. **Mapping-time gate (`portfolio-scan` SKILL.md Step 7.1, authoritative).**
+   The two-pass rule there reads the candidate description and either keeps
+   it (Pass A — has a category_name keyword) or synthesizes a fresh
+   IS-layer description from `feature_name + usp + category_name` (Pass B —
+   no overlap). Pass B always produces canonical-by-construction text, so
+   the feature record cannot drift from its name and taxonomy.
+
+Under `category-aggregation` mode, an additional gate runs at Step 7.6
+Branch F: when N candidates collapse into one feature per category, the
+survivor is the candidate whose description has the highest category_name
+keyword overlap (ties broken by longest within the 20-35 word budget). The
+non-winning candidates' descriptions are preserved in `source_lineage` with
+`entity_role: "aggregated_from"` so per-stack evidence is not lost.
 
 ## Null-Safe Field Access
 
