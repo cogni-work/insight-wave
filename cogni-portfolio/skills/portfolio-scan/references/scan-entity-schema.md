@@ -76,13 +76,6 @@ capability they were filed under:
    no overlap). Pass B always produces canonical-by-construction text, so
    the feature record cannot drift from its name and taxonomy.
 
-Under `category-aggregation` mode, an additional gate runs at Step 7.6
-Branch F: when N candidates collapse into one feature per category, the
-survivor is the candidate whose description has the highest category_name
-keyword overlap (ties broken by longest within the 20-35 word budget). The
-non-winning candidates' descriptions are preserved in `source_lineage` with
-`entity_role: "aggregated_from"` so per-stack evidence is not lost.
-
 3. **LANGUAGE contract (both stages).** When `portfolio.json.language` is
    set and is not `en`, both the extraction-time gate
    (`portfolio-web-researcher` Step 3) and the mapping-time gate
@@ -91,13 +84,20 @@ non-winning candidates' descriptions are preserved in `source_lineage` with
    translated rather than adopted verbatim — Pass A keeps the candidate's
    *content*, not its source language. Product names, provider sub-brands,
    technology partner names, technical abbreviations (e.g. `API`, `SD-WAN`,
-   `IaaS`, `PaaS`, `SaaS`, `5G`, `NOC`, `SOC`, `IAM`), compliance
-   frameworks (`BSI C5`, `ISO 27001`, `SOC 2`, `GDPR`/`DSGVO`),
-   standards-org names, domain names, and URLs are preserved verbatim. The
-   `description_confidence` flag and the audit trail
-   (`rejected_descriptions[]`) are language-agnostic — log entries record
-   the original snippet wording so reviewers can see what was actually on
-   the page, not a translation.
+   `IaaS`, `PaaS`, `SaaS`, `SASE`, `5G`, `NOC`, `SOC`, `IAM`), compliance
+   frameworks (`BSI C5`, `ISO 27001`, `SOC 2`, `GDPR`/`DSGVO`, `HIPAA`),
+   standards-org names (e.g. `IEEE`, `IETF`, `OASIS`), domain names, and
+   URLs are preserved verbatim. The `description_confidence` flag and the
+   audit trail (`rejected_descriptions[]`) are language-agnostic — log
+   entries record the original snippet wording so reviewers can see what
+   was actually on the page, not a translation.
+
+Under `category-aggregation` mode, an additional gate runs at Step 7.6
+Branch F: when N candidates collapse into one feature per category, the
+survivor is the candidate whose description has the highest category_name
+keyword overlap (ties broken by longest within the 20-35 word budget). The
+non-winning candidates' descriptions are preserved in `source_lineage` with
+`entity_role: "aggregated_from"` so per-stack evidence is not lost.
 
 ## Null-Safe Field Access
 
