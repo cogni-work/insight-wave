@@ -118,4 +118,4 @@ they point to stable paths (`docs/plugin-guide/<plugin>.md`), not specific conte
 - Course progress is per-user (stored in user's `.claude/` directory)
 - Exercises create temporary artifacts in `_teacher-exercises/` (gitignored)
 - Plugin catalog in guide/references/plugin-catalog.md must be updated when plugins are added
-- Workflow definitions are standalone markdown files in workflow/references/workflows/
+- Workflow definitions are standalone markdown files in workflow/references/workflows/ (user-facing) and workflow/references/internal-workflows/ (operational/maintainer pipelines)

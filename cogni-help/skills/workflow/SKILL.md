@@ -33,9 +33,7 @@ Keep in English regardless of language setting:
 
 ## Available Workflows
 
-Four bundled user-facing templates cover the most common plugin chains.
-Two additional internal/operational templates are documented in the next
-section.
+Four bundled user-facing templates cover the most common plugin chains. See §Internal / Operational Workflows below for maintainer pipelines.
 
 | Canonical ID | Reference file | Pipeline | Use case |
 |--------------|----------------|----------|----------|
@@ -69,16 +67,7 @@ see `references/canonical-workflows.md` Table B for the policy.
 
 ## Canonical Workflow IDs
 
-`docs/workflows/` is the canonical source for workflow IDs and pipeline shape;
-the templates in this skill are operational presentation copies that align to
-those canonical IDs. The reconciliation table — every cogni-help template ID
-and every `docs/workflows/<name>.md` filename mapped to a single canonical ID
-with a migration action — lives at `references/canonical-workflows.md`.
-
-When a workflow is referenced from another surface (`teach`, `guide`,
-`cheatsheet`, `docs/`), use the canonical ID. The reconciliation table in
-`references/canonical-workflows.md` is the source of truth for which IDs
-are user-facing vs operational-only and for any pending alignment work.
+Canonical IDs come from `docs/workflows/`; the templates in this skill are operational copies aligned to them. `references/canonical-workflows.md` is the source of truth for the reconciliation table and the user-facing-vs-internal classification.
 
 ## How to Present Workflows
 
