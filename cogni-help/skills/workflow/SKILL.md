@@ -4,9 +4,11 @@ description: >-
   Cross-plugin workflow templates for common multi-plugin pipelines. Use this skill
   whenever the user asks about workflows, pipelines, end-to-end processes, "how do I
   go from X to Y", "what's the process for", "show me the steps", "workflow for",
-  "pipeline from research to a report", "how do these plugins work together", or wants
-  guidance on chaining multiple insight-wave plugins. Also trigger when a user describes
-  a multi-step task that spans plugins — even if they don't say "workflow" explicitly.
+  "pipeline from research to a report", "install to first infographic", "portfolio to
+  website", "marketing content pipeline", "multi-channel content production", "how do
+  these plugins work together", or wants guidance on chaining multiple insight-wave
+  plugins. Also trigger when a user describes a multi-step task that spans plugins —
+  even if they don't say "workflow" explicitly.
 version: 0.1.0
 allowed-tools: Read, Glob
 ---
@@ -33,13 +35,16 @@ Keep in English regardless of language setting:
 
 ## Available Workflows
 
-Four bundled user-facing templates cover the most common plugin chains. See §Internal / Operational Workflows below for maintainer pipelines.
+Seven bundled user-facing templates cover the most common plugin chains. See §Internal / Operational Workflows below for maintainer pipelines.
 
 | Canonical ID | Reference file | Pipeline | Use case |
 |--------------|----------------|----------|----------|
+| `install-to-infographic` | `references/workflows/install-to-infographic.md` | cogni-workspace → cogni-workspace (themes) → cogni-visual | First-run capstone — install, theme, render an infographic |
 | `research-to-report` | `references/workflows/research-to-report.md` | research → narrative → visual | Analyst producing a report-and-presentation deliverable from research |
 | `trends-to-solutions` | `references/workflows/trends-to-solutions.md` | tips → portfolio → marketing | GTM team turning trends into campaigns |
 | `portfolio-to-pitch` | `references/workflows/portfolio-to-pitch.md` | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
+| `portfolio-to-website` | `references/workflows/portfolio-to-website.md` | portfolio → workspace → website | Generate a deployable static site from the portfolio model |
+| `content-pipeline` | `references/workflows/content-pipeline.md` | marketing → narrative (long-form) → copywriting → visual | Multi-channel marketing content production |
 | `consulting-engagement` | `references/workflows/consulting-engagement.md` | consulting setup → 4 phases | Consultant starting a structured engagement |
 
 These are the canonical user-facing workflows — every entry has a one-to-one
@@ -111,13 +116,13 @@ with context and variations.
 
 | Canonical workflow (`docs/workflows/<id>.md`) | cogni-help template | Notes |
 |-----------------------------------------------|---------------------|-------|
+| `install-to-infographic` | `install-to-infographic` | Same first-run pipeline, docs version covers platform-specific Claude Code setup |
 | `research-to-report` | `research-to-report` | Same pipeline, docs version focuses on the report |
 | `trends-to-solutions` | `trends-to-solutions` | Same starting point, different end goal |
 | `portfolio-to-pitch` | `portfolio-to-pitch` | Same pipeline |
+| `portfolio-to-website` | `portfolio-to-website` | Same pipeline, docs version includes deployment hints and prerequisite matrix |
+| `content-pipeline` | `content-pipeline` | Same pipeline, docs version covers campaign orchestration and content-calendar scheduling |
 | `consulting-engagement` | `consulting-engagement` | Same pipeline |
-| `content-pipeline` | — (no template yet) | Marketing pipeline from trends to campaign assets — refer the user to `docs/workflows/content-pipeline.md` |
-| `install-to-infographic` | — (no template yet) | Install-to-deliverable pipeline — refer the user to `docs/workflows/install-to-infographic.md` |
-| `portfolio-to-website` | — (no template yet) | Portfolio rendered as a static website — refer the user to `docs/workflows/portfolio-to-website.md` |
 
 When presenting a workflow, mention the corresponding docs/ guide if it exists:
 "For a narrative walkthrough with more context, see `docs/workflows/<name>.md`."
