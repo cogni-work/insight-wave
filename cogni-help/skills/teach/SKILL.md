@@ -6,9 +6,11 @@ description: >-
   including "teach me", "start a course", "continue my course", "what courses are
   available", "how do I use insight-wave", "explain the plugins", "learn about
   copywriting/narrative/claims/tips/portfolio/visual", "show me how to use Cowork",
-  "train me", "I'm new to insight-wave", or any mention of cogni-help, curriculum,
-  or training. Also trigger when someone asks "what can I do with these plugins" or
-  "where do I start" in a insight-wave workspace — they likely need guided learning.
+  "train me", "I'm new to insight-wave", "walk me through a workflow", "tour me
+  through research-to-report", "show me an end-to-end pipeline", or any mention of
+  cogni-help, curriculum, or training. Also trigger when someone asks "what can I
+  do with these plugins" or "where do I start" in an insight-wave workspace — they
+  likely need guided learning.
 version: 0.2.0
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
@@ -84,6 +86,10 @@ Tour course IDs match the canonical workflow IDs in the workflow skill's
 relevant plugin-track prerequisites, the tour skips re-explaining the
 basics and focuses on the cross-plugin handoffs and end-to-end shape.
 
+> **Note:** Until the integrated tour content files ship (tracked by #150),
+> `/teach <tour-id>` falls back to the prerequisite plugin-track courses with
+> a forthcoming-tour message. See §Course Content below for the file layout.
+
 ## Course Index
 
 Two tracks, two question shapes — pick by what the learner is asking.
@@ -92,7 +98,7 @@ Two tracks, two question shapes — pick by what the learner is asking.
 |----------------|-------------------|---------|
 | "Teach me plugin X" / "How do I use cogni-Y?" | Plugin track (Courses 1-12) | "Teach me cogni-research" → Course 8 |
 | "How do I get from A to B?" / "Walk me through workflow X" | Workflow-tour track | "How do I go from research to a report?" → `tour-research-to-report` |
-| "I'm new to insight-wave, where do I start?" | Plugin track Course 1, then 2, then ad-hoc | Plugin courses build the mental model |
+| "I'm new to insight-wave, where do I start?" | Plugin track Courses 1 and 2, then any plugin course matching the learner's first concrete deliverable | Plugin courses build the mental model |
 | "Show me how to ship a pitch deck end-to-end" | Workflow-tour track | The tour assumes pieces, walks the chain |
 | "I know plugins, but I haven't put them together" | Workflow-tour track | This is exactly the gap tours fill |
 
@@ -106,8 +112,7 @@ they are additive, not exclusive.
 
 Each course has ~5 modules. Each module follows: **Theory → Demo → Exercise → Quiz → Recap**.
 
-Plugin-track courses 8-10 cover advanced plugins that build on earlier
-foundations:
+Plugin-track advanced courses build on earlier foundations:
 - Course 8 (Research) requires Course 3 (claims verification is used throughout)
 - Course 9 (Marketing) requires Courses 4-5 (TIPS) + Course 6 (Portfolio)
 - Course 10 (Sales) requires Course 6 (Portfolio) + Course 3 (narrative arcs)
@@ -153,9 +158,7 @@ The sequence is recommended, not mandatory.
 
 ### Before Exercises: Check Prerequisites
 
-Exercises in courses 2-7 require specific plugins to be installed. Before the first
-exercise in a course, verify the needed plugins are available. If a plugin is missing,
-tell the user how to install it rather than letting the exercise silently fail.
+Exercises in plugin-track courses 2-12 and all workflow-tour courses require specific plugins to be installed. Before the first exercise in a course, verify the needed plugins are available. If a plugin is missing, tell the user how to install it rather than letting the exercise silently fail. Tour exercises additionally require the plugins covered by their plugin-track prerequisites listed in the Workflow-tour curriculum table above.
 
 **Course 2, Module 6** (Getting Help & Filing Issues) requires the user to be logged
 into GitHub in their browser. The exercise itself handles setup via cogni-issues'
