@@ -236,6 +236,34 @@ extraction time so the wrong text never enters the pipeline:
    snippet in the agent's research log file (Step 4 output) under a
    `rejected_descriptions: [{ "snippet": "...", "reason": "no_category_overlap" }]`
    array per offering. Reviewers must be able to see what was discarded.
+   The audit trail is **language-agnostic** — log the snippet in its original
+   wording so reviewers can see what was actually on the page, not a
+   translation.
+
+5. **Apply LANGUAGE before adopting.** When the resolved offering description
+   (from the Pass A keep, the USP fallback, or any other path that produces
+   the final `description` text) is to be written, check `{{LANGUAGE}}`. When
+   it is set and is not `en`, translate the text into `{{LANGUAGE}}` before
+   assigning it to `description`. This step runs **after** the
+   category-keyword gate above (so rejected snippets still go to the audit
+   trail in their original wording) and **before** `description_confidence`
+   is tagged. The following stay in their **original form** regardless of
+   `{{LANGUAGE}}`:
+   - **Product names and provider sub-brands** (e.g. `Open Telekom Cloud`,
+     `T-Systems Sovereign Cloud`, `Future Cloud Infrastructure`)
+   - **Technology partner names** (e.g. `AWS`, `Azure`, `GCP`, `Cisco`,
+     `Microsoft`, `VMware`)
+   - **Technical abbreviations and protocols** (e.g. `API`, `SD-WAN`,
+     `IaaS`, `PaaS`, `SaaS`, `SASE`, `5G`, `NOC`, `SOC`, `IAM`)
+   - **Compliance frameworks and certifications** (e.g. `BSI C5`,
+     `ISO 27001`, `SOC 2`, `GDPR`, `DSGVO`, `HIPAA`)
+   - **Standards organisations and registered marks** (e.g. `IEEE`, `IETF`,
+     `OASIS`)
+   - **Domain names and URLs** (verbatim)
+
+   The mapping-time twin of this rule lives in `portfolio-scan` SKILL.md
+   Step 7.1 (Output language paragraph). Both ends must produce text in the
+   project language for the contract to hold end-to-end.
 
 `description_confidence` is a **prompt-level flag only** — do NOT add it as
 a persisted field in the offering or feature schema. Step 7.1 reads the flag
