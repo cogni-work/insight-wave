@@ -4,9 +4,11 @@ description: >-
   Cross-plugin workflow templates for common multi-plugin pipelines. Use this skill
   whenever the user asks about workflows, pipelines, end-to-end processes, "how do I
   go from X to Y", "what's the process for", "show me the steps", "workflow for",
-  "pipeline from research to a report", "how do these plugins work together", or wants
-  guidance on chaining multiple insight-wave plugins. Also trigger when a user describes
-  a multi-step task that spans plugins — even if they don't say "workflow" explicitly.
+  "pipeline from research to a report", "install to first infographic", "portfolio to
+  website", "marketing content pipeline", "multi-channel content production", "how do
+  these plugins work together", or wants guidance on chaining multiple insight-wave
+  plugins. Also trigger when a user describes a multi-step task that spans plugins —
+  even if they don't say "workflow" explicitly.
 version: 0.1.0
 allowed-tools: Read, Glob
 ---
@@ -35,24 +37,26 @@ Keep in English regardless of language setting:
 
 Nine bundled templates covering the most common plugin chains:
 
-| Canonical ID | Template file | Pipeline | Use case |
-|--------------|---------------|----------|----------|
-| `install-to-infographic` | `install-to-infographic` | workspace → themes → visual | First-run capstone — install, theme, render an infographic |
-| `research-to-report` | `research-to-report` | research → narrative → visual | Analyst producing a report-and-presentation deliverable from research |
-| `trends-to-solutions` | `trends-to-solutions` | tips → portfolio → marketing | GTM team turning trends into campaigns |
-| `portfolio-to-pitch` | `portfolio-to-pitch` | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
-| `portfolio-to-website` | `portfolio-to-website` | portfolio → workspace → website | Generate a deployable static site from the portfolio model |
-| `content-pipeline` | `content-pipeline` | marketing → narrative → copywriting → visual | Multi-channel marketing content production |
-| `consulting-engagement` | `consulting-engagement` | consulting setup → 4 phases | Consultant starting a structured engagement |
-| — (operational-only) | `docs-pipeline` | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo |
-| — (operational-only) | `full-onboarding` | workspace → help courses 1-11 | New user learning the full ecosystem |
+| Canonical ID | Primary plugins | Pipeline | Use case |
+|--------------|-----------------|----------|----------|
+| `install-to-infographic` | cogni-workspace, cogni-visual | cogni-workspace → cogni-workspace (themes) → cogni-visual | First-run capstone — install, theme, render an infographic |
+| `research-to-report` | cogni-research, cogni-narrative, cogni-visual | research → narrative → visual | Analyst producing a report-and-presentation deliverable from research |
+| `trends-to-solutions` | cogni-trends, cogni-portfolio, cogni-marketing | tips → portfolio → marketing | GTM team turning trends into campaigns |
+| `portfolio-to-pitch` | cogni-portfolio, cogni-narrative, cogni-sales, cogni-visual | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
+| `portfolio-to-website` | cogni-portfolio, cogni-workspace, cogni-website | portfolio → workspace → website | Generate a deployable static site from the portfolio model |
+| `content-pipeline` | cogni-marketing, cogni-narrative, cogni-copywriting, cogni-visual | marketing → narrative → copywriting → visual | Multi-channel marketing content production |
+| `consulting-engagement` | cogni-consulting | consulting setup → 4 phases | Consultant starting a structured engagement |
+| — (operational-only, docs) | cogni-docs | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo (`docs-pipeline` template) |
+| — (operational-only, onboarding) | cogni-workspace, cogni-help | workspace → help courses 1-12 | New user learning the full ecosystem (`full-onboarding` template) |
 
 The first column is the canonical workflow ID from `docs/workflows/`; the
-second is the corresponding filename in `references/workflows/`. The 7
-user-facing canonical workflows share the same ID as their template
-filename — reference them by canonical ID from any surface (`teach`,
-`guide`, `cheatsheet`, `docs/`). Operational-only rows have no canonical
-ID — see `references/canonical-workflows.md` Table B for the policy.
+second lists the primary plugins involved (template files in
+`references/workflows/` share the canonical ID's filename). The 7
+user-facing canonical workflows are referenced by canonical ID from any
+surface (`teach`, `guide`, `cheatsheet`, `docs/`). Operational-only rows
+have no canonical ID and are suffixed with their context (docs vs
+onboarding) — see `references/canonical-workflows.md` Table B for the
+policy.
 
 ## Canonical Workflow IDs
 
