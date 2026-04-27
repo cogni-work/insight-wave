@@ -92,4 +92,4 @@ graph LR
 
 ---
 
-For the narrative tutorial — including the full content-type-to-skill table, parallel generation patterns, campaign orchestration, content-calendar scheduling, and variations matrix — see [`docs/workflows/content-pipeline.md`](../../../../docs/workflows/content-pipeline.md).
+For the narrative tutorial — including the full content-type-to-skill table, parallel generation patterns, campaign orchestration, content-calendar scheduling, and variations matrix — see [`docs/workflows/content-pipeline.md`](../../../../../docs/workflows/content-pipeline.md).

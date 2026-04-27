@@ -35,7 +35,7 @@ Keep in English regardless of language setting:
 
 ## Available Workflows
 
-Nine bundled templates covering the most common plugin chains:
+Nine bundled templates covering the most common plugin chains: seven user-facing (canonical IDs) plus two operational-only (no canonical ID, marked with —).
 
 | Canonical ID | Primary plugins | Pipeline | Use case |
 |--------------|-----------------|----------|----------|
@@ -44,19 +44,18 @@ Nine bundled templates covering the most common plugin chains:
 | `trends-to-solutions` | cogni-trends, cogni-portfolio, cogni-marketing | tips → portfolio → marketing | GTM team turning trends into campaigns |
 | `portfolio-to-pitch` | cogni-portfolio, cogni-narrative, cogni-sales, cogni-visual | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
 | `portfolio-to-website` | cogni-portfolio, cogni-workspace, cogni-website | portfolio → workspace → website | Generate a deployable static site from the portfolio model |
-| `content-pipeline` | cogni-marketing, cogni-narrative, cogni-copywriting, cogni-visual | marketing → narrative → copywriting → visual | Multi-channel marketing content production |
+| `content-pipeline` | cogni-marketing, cogni-narrative, cogni-copywriting, cogni-visual | marketing → narrative (long-form) → copywriting → visual | Multi-channel marketing content production |
 | `consulting-engagement` | cogni-consulting | consulting setup → 4 phases | Consultant starting a structured engagement |
 | — (operational-only, docs) | cogni-docs | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo (`docs-pipeline` template) |
 | — (operational-only, onboarding) | cogni-workspace, cogni-help | workspace → help courses 1-12 | New user learning the full ecosystem (`full-onboarding` template) |
 
 The first column is the canonical workflow ID from `docs/workflows/`; the
-second lists the primary plugins involved (template files in
-`references/workflows/` share the canonical ID's filename). The 7
-user-facing canonical workflows are referenced by canonical ID from any
-surface (`teach`, `guide`, `cheatsheet`, `docs/`). Operational-only rows
-have no canonical ID and are suffixed with their context (docs vs
-onboarding) — see `references/canonical-workflows.md` Table B for the
-policy.
+second lists the primary plugins involved. Template files live at
+`references/workflows/<canonical-id>.md`. The 7 user-facing canonical
+workflows are referenced by canonical ID from any surface (`teach`,
+`guide`, `cheatsheet`, `docs/`). Operational-only rows have no canonical
+ID and are suffixed with their context (docs vs onboarding) — see
+`references/canonical-workflows.md` Table B for the policy.
 
 ## Canonical Workflow IDs
 

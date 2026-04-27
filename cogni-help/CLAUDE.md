@@ -114,3 +114,4 @@ they point to stable paths (`docs/plugin-guide/<plugin>.md`), not specific conte
 - Exercises create temporary artifacts in `_teacher-exercises/` (gitignored)
 - Plugin catalog in guide/references/plugin-catalog.md must be updated when plugins are added
 - Workflow definitions are standalone markdown files in workflow/references/workflows/
+- Skill-level `version` fields in `SKILL.md` frontmatter track sibling-skill convention (often staying at `0.1.0` while the plugin version moves) — `cogni-help/.claude-plugin/plugin.json` and the matching `.claude-plugin/marketplace.json` entry are the single source of truth for the plugin version

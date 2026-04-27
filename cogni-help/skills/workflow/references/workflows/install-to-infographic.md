@@ -79,4 +79,4 @@ The first-run workflow is complete — you have a working workspace, a branded t
 
 ---
 
-For the narrative tutorial — including platform-specific Claude Code setup links, screenshots, and per-error troubleshooting tables — see [`docs/workflows/install-to-infographic.md`](../../../../docs/workflows/install-to-infographic.md).
+For the narrative tutorial — including platform-specific Claude Code setup links, screenshots, and per-error troubleshooting tables — see [`docs/workflows/install-to-infographic.md`](../../../../../docs/workflows/install-to-infographic.md).

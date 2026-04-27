@@ -94,4 +94,4 @@ graph LR
 
 ---
 
-For the narrative tutorial — including the full prerequisite matrix, deployable artifact list, and related-guide cross-references — see [`docs/workflows/portfolio-to-website.md`](../../../../docs/workflows/portfolio-to-website.md).
+For the narrative tutorial — including the full prerequisite matrix, deployable artifact list, and related-guide cross-references — see [`docs/workflows/portfolio-to-website.md`](../../../../../docs/workflows/portfolio-to-website.md).
