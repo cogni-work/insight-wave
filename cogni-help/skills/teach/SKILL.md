@@ -69,7 +69,7 @@ handoffs and end-to-end shape; if a learner is unfamiliar with one of the
 plugins in the pipeline, the tour offers brief just-enough plugin context
 inline before moving on.
 
-## Course Index
+## Tour Index
 
 Match the learner's question to the right tour entry point.
 
@@ -194,7 +194,11 @@ courses:
 ---
 ```
 
-## Course Content
+The top-level YAML key is intentionally kept as `courses:` for backward
+compatibility with existing user progress files (the schema predates the
+12-course → 7-tour convergence). Treat its entries as tour records.
+
+## Tour Content
 
 Load the relevant tour file when delivering a specific tour.
 

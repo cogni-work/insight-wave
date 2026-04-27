@@ -1,6 +1,6 @@
 # cogni-help
 
-> **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
+> **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
@@ -26,7 +26,7 @@ A meta-plugin for the insight-wave ecosystem. While other plugins produce conten
 3. **Chain** plugins into pipelines — 7 cross-plugin workflow templates from install-to-infographic through full consulting engagements
 4. **Diagnose** plugin problems — check integrity, dependencies, workspace health, and known issues before they surface as runtime failures
 5. **Summarize** any plugin — generate one-screen quick-reference cheatsheets with commands, capabilities, and tips
-6. **Generate** training decks — PPTX slide decks for curriculum overview or per-course introductions
+6. **Generate** training decks — PPTX slide decks for curriculum overview or per-tour introductions
 7. **File** GitHub issues — guided consultation to capture bugs, feature requests, and change requests against any ecosystem plugin
 
 ## What it means for you
@@ -70,22 +70,22 @@ Or describe what you want:
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `teach` | skill | Interactive workflow-tour delivery — 7 tours, adaptive pacing, progress tracking |
-| `course-deck` | skill | Generate PPTX slide decks for curriculum overview or per-course introductions |
+| `course-deck` | skill | Generate PPTX slide decks for curriculum overview or per-tour introductions |
 | `guide` | skill | Help users find the right insight-wave plugin or skill for their task |
 | `troubleshoot` | skill | Diagnose and fix common issues with insight-wave plugins |
 | `workflow` | skill | Cross-plugin workflow templates for common multi-plugin pipelines |
 | `cheatsheet` | skill | Generate quick-reference cards for any insight-wave plugin |
 | `cogni-issues` | skill | File and track GitHub issues against insight-wave ecosystem plugins |
 | `course-deck-generator` | agent (sonnet) | PPTX generation as delegated subprocess |
-| `/teach` | command | Start or resume an interactive cogni-help course |
-| `/courses` | command | List all available cogni-help courses with completion status |
-| `/course-deck` | command | Generate a PPTX slide deck for course curriculum or course introduction |
+| `/teach` | command | Start or resume an interactive cogni-help workflow tour |
+| `/courses` | command | List all cogni-help workflow tours with completion status |
+| `/course-deck` | command | Generate a PPTX slide deck for the tour curriculum or a tour introduction |
 | `/guide` | command | Find the right insight-wave plugin or skill for your task |
 | `/troubleshoot` | command | Diagnose and fix issues with insight-wave plugins |
 | `/workflow` | command | Show cross-plugin workflow templates for common multi-plugin pipelines |
 | `/cheatsheet` | command | Generate a quick-reference card for any insight-wave plugin |
-| `course-status.sh` | script | JSON progress check |
-| `reset-progress.sh` | script | Reset course progress |
+| `course-status.sh` | script | JSON tour progress check |
+| `reset-progress.sh` | script | Reset tour progress |
 | `health-check.sh` | script | JSON diagnostic output |
 
 ## Curriculum (teach skill)
@@ -115,7 +115,7 @@ Each tour is ~45–60 minutes with ~5 modules: Theory → Demo → Exercise → 
 
 ## Data model
 
-Course progress is stored in `.claude/cogni-help.local.md` (YAML frontmatter).
+Tour progress is stored in `.claude/cogni-help.local.md` (YAML frontmatter).
 Issue state is stored in `cogni-issues/issues.json` in the working directory.
 Exercise artifacts are written to `_teacher-exercises/`.
 
@@ -123,11 +123,11 @@ Exercise artifacts are written to `_teacher-exercises/`.
 
 ```
 cogni-help/
-├── .claude-plugin/plugin.json    Plugin manifest (v0.0.5)
+├── .claude-plugin/plugin.json    Plugin manifest (v0.1.9)
 ├── agents/                       1 delegation agent
 │   └── course-deck-generator.md
 ├── skills/                       7 skills
-│   ├── teach/                    Interactive course delivery
+│   ├── teach/                    Interactive workflow-tour delivery
 │   ├── course-deck/              PPTX generation
 │   ├── guide/                    Plugin discovery
 │   ├── troubleshoot/             Diagnostics
@@ -153,11 +153,11 @@ cogni-help/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-workspace | No | troubleshoot delegates to workspace-status for infrastructure health checks |
-| All ecosystem plugins | No | Required for their respective courses but not for guide, troubleshoot, workflow, cheatsheet, or issues |
+| All ecosystem plugins | No | Required for their respective tours but not for guide, troubleshoot, workflow, cheatsheet, or issues |
 
 ## Contributing
 
-Contributions welcome — course content, workflow templates, diagnostic checks, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome — tour content, workflow templates, diagnostic checks, and documentation. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Known Limitations
 
@@ -169,7 +169,7 @@ Contributions welcome — course content, workflow templates, diagnostic checks,
 
 ## Custom development
 
-Need custom training courses or a new plugin? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need custom training tours or a new plugin? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

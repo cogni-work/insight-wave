@@ -2,16 +2,16 @@
 
 **Duration**: 75 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-marketing → cogni-narrative (long-form only) → cogni-copywriting → cogni-visual
-**Prerequisites**: Course 9 (B2B Marketing), Course 3 (Basic Tools), Course 7 (Visual Deliverables)
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-marketing`, `/cogni-help:cheatsheet cogni-narrative`, `/cogni-help:cheatsheet cogni-copywriting`, `/cogni-help:cheatsheet cogni-visual`; see also the matching `docs/plugin-guide/<plugin>.md` files.
 **Audience**: Marketing teams producing multi-channel content sourced from portfolio + trends data
 
 ---
 
 This tour walks the content-pipeline workflow as one continuous chain. You set up
 a marketing project, build a content strategy, generate raw content, polish it,
-and optionally render it visually. Plugin-track prerequisites cover each plugin
-in depth; this tour focuses on the chain — especially the narrative-bridge
-decision (skip for short-form, run for long-form).
+and optionally render it visually. The cheatsheets and `docs/plugin-guide/<plugin>.md`
+files cover each plugin in depth; this tour focuses on the chain — especially the
+narrative-bridge decision (skip for short-form, run for long-form).
 
 ## Module 1: Set Up the Marketing Project (cogni-marketing)
 

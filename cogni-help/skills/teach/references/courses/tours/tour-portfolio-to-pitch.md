@@ -2,15 +2,16 @@
 
 **Duration**: 60 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual
-**Prerequisites**: Course 6 (Portfolio Messaging), Course 10 (Sales Pitches); Course 7 (Visual) helpful
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-portfolio`, `/cogni-help:cheatsheet cogni-narrative`, `/cogni-help:cheatsheet cogni-sales`, `/cogni-help:cheatsheet cogni-visual`; see also the matching `docs/plugin-guide/<plugin>.md` files.
 **Audience**: Sales creating customer-specific or segment-specific pitch presentations
 
 ---
 
 This tour walks the portfolio-to-pitch pipeline as one workflow. You start from
 portfolio propositions, optionally shape a narrative arc, run the Why Change
-methodology, and render an executive pitch deck. Plugin-track prerequisites
-cover each plugin in depth; this tour focuses on the chain.
+methodology, and render an executive pitch deck. The cheatsheets and
+`docs/plugin-guide/<plugin>.md` files cover each plugin in depth; this tour focuses
+on the chain.
 
 ## Module 1: Pipeline Overview & Customer Setup
 

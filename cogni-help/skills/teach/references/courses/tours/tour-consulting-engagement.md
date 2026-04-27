@@ -2,16 +2,16 @@
 
 **Duration**: 75 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-consulting setup → Discover → Define → Develop → Deliver
-**Prerequisites**: Course 11 (Consulting Orchestration); Courses 4-8 deepen each phase
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-consulting`, `/cogni-help:cheatsheet cogni-research`, `/cogni-help:cheatsheet cogni-trends`, `/cogni-help:cheatsheet cogni-portfolio`; see also `docs/plugin-guide/cogni-consulting.md`.
 **Audience**: Consultants running structured Double Diamond engagements
 
 ---
 
 This tour walks the cogni-consulting Double Diamond engagement as one workflow.
 You set up an engagement, run the four phases (Discover → Define → Develop →
-Deliver) with their dispatched plugins, and produce final deliverables. Plugin-track
-prerequisites cover the dispatched plugins in depth; this tour focuses on the
-phase orchestration.
+Deliver) with their dispatched plugins, and produce final deliverables. The
+cheatsheets and `docs/plugin-guide/<plugin>.md` files cover the dispatched plugins
+in depth; this tour focuses on the phase orchestration.
 
 ## Module 1: Setup & Vision Framing
 

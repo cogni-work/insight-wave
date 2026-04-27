@@ -2,7 +2,7 @@
 
 **Duration**: 60 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-portfolio → cogni-workspace → cogni-website
-**Prerequisites**: Course 6 (Portfolio Messaging), Course 2 (Workspace & Obsidian)
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-portfolio`, `/cogni-help:cheatsheet cogni-workspace`, `/cogni-help:cheatsheet cogni-website`; see also the matching `docs/plugin-guide/<plugin>.md` files.
 **Audience**: Teams generating a deployable static site directly from portfolio data
 
 ---

@@ -72,6 +72,10 @@ new learners.
 
 ### 2. Tour Introduction (`<tour-id-or-short-name>`)
 
+The deck-type token accepts any value listed in the Tour Mapping table below
+— full tour IDs (e.g. `tour-research-to-report`) and short aliases (e.g.
+`research`, `report`) all resolve to the same tour.
+
 A tour-level deck introducing a specific workflow tour. Use when the organizer
 wants to set expectations before learners dive into a particular tour.
 

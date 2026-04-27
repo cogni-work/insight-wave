@@ -2,7 +2,7 @@
 
 **Duration**: 45 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-workspace → cogni-workspace (themes) → cogni-visual
-**Prerequisites**: Course 2 (Workspace & Obsidian), Course 7 (Visual Deliverables)
+**Prerequisites**: None — this is the first-run capstone. For deeper plugin context use `/cogni-help:cheatsheet cogni-workspace` or `/cogni-help:cheatsheet cogni-visual`, or read `docs/plugin-guide/cogni-workspace.md` and `docs/plugin-guide/cogni-visual.md`.
 **Audience**: First-time installers — verify the toolchain end-to-end by rendering an infographic
 
 ---
