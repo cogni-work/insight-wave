@@ -84,7 +84,7 @@ surfaces them only when the user names the ID directly.
 | cogni-help template | Migration action | Notes |
 |---|---|---|
 | `docs-pipeline` | `internal` (completed by #148) | cogni-docs maintenance pipeline (audit → generate → sync → power → claude → hub → bridge). Lives in `references/internal-workflows/docs-pipeline.md`. Not a user-facing workflow. |
-| `full-onboarding` | `internal` (completed by #148) | New-user meta-pipeline (workspace setup → courses 1-12). Lives in `references/internal-workflows/full-onboarding.md`. Not a workflow in the cross-plugin pipeline sense; it is a learning track that cogni-help already exposes via the `teach` and `courses` skills. |
+| `full-onboarding` | `internal` (completed by #148) | New-user meta-pipeline (workspace setup → 7 workflow tours). Lives in `references/internal-workflows/full-onboarding.md`. Not a workflow in the cross-plugin pipeline sense; it is a learning track that cogni-help already exposes via the `teach` and `courses` skills. |
 
 Either of these graduates to the canonical set if and only if a matching
 `docs/workflows/<id>.md` file lands in a future PR. At that point the row

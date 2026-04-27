@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem into a single entry point — teaching users through a 12-course curriculum, routing tasks to the right plugin, chaining multi-plugin workflows, diagnosing problems, generating one-screen cheatsheets, and filing GitHub issues straight from the session — so 12 plugins with 70+ skills behave like one coherent system.
+cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem into a single entry point — teaching users through a workflow-tour curriculum, routing tasks to the right plugin, chaining multi-plugin workflows, diagnosing problems, generating one-screen cheatsheets, and filing GitHub issues straight from the session — so 12 plugins with 70+ skills behave like one coherent system.
 
 ## Why this exists
 
@@ -17,13 +17,13 @@ cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave
 
 ## What it is
 
-A meta-plugin for the insight-wave ecosystem. While other plugins produce content — research, narratives, portfolios, visuals — cogni-help teaches you how to use them together. A 12-course curriculum covers every plugin from fundamentals through advanced workflows. Six cross-plugin workflow templates chain plugins into end-to-end pipelines. Diagnostics catch configuration issues before they surface as skill failures.
+A meta-plugin for the insight-wave ecosystem. While other plugins produce content — research, narratives, portfolios, visuals — cogni-help teaches you how to use them together. A 7-tour curriculum walks the canonical end-to-end pipelines, from first-run install through a full consulting engagement. Seven cross-plugin workflow templates chain plugins into end-to-end pipelines. Diagnostics catch configuration issues before they surface as skill failures.
 
 ## What it does
 
-1. **Teach** through 12 interactive courses — adaptive pacing, hands-on exercises, quizzes, and progress tracking across the full plugin ecosystem
+1. **Teach** through 7 interactive workflow tours — adaptive pacing, hands-on exercises, quizzes, and progress tracking across the canonical end-to-end pipelines
 2. **Guide** users to the right plugin — match natural-language task descriptions to capabilities across 12 plugins and 70+ skills
-3. **Chain** plugins into pipelines — 6 cross-plugin workflow templates from research-to-report through full consulting engagements
+3. **Chain** plugins into pipelines — 7 cross-plugin workflow templates from install-to-infographic through full consulting engagements
 4. **Diagnose** plugin problems — check integrity, dependencies, workspace health, and known issues before they surface as runtime failures
 5. **Summarize** any plugin — generate one-screen quick-reference cheatsheets with commands, capabilities, and tips
 6. **Generate** training decks — PPTX slide decks for curriculum overview or per-course introductions
@@ -32,8 +32,8 @@ A meta-plugin for the insight-wave ecosystem. While other plugins produce conten
 ## What it means for you
 
 - **Skip the memorization.** Describe your task in plain language and the guide skill routes it to the exact plugin and skill across 12 plugins and 70+ skills — first productive result in under 5 minutes.
-- **Build real skills in 9 hours.** Complete all 12 courses (~45 minutes each) with hands-on exercises that produce real output. Resume any course mid-module — progress is tracked to the lesson.
-- **Collapse multi-plugin work into 3–4 steps.** Run any of 6 workflow templates to chain plugins into repeatable pipelines — research-to-report in 3 steps, portfolio-to-pitch in 4.
+- **Build real skills in 5–6 hours.** Complete all 7 workflow tours (~45–60 minutes each) with hands-on exercises that produce real output. Resume any tour mid-module — progress is tracked to the lesson.
+- **Collapse multi-plugin work into 3–4 steps.** Run any of 7 workflow templates to chain plugins into repeatable pipelines — research-to-report in 3 steps, portfolio-to-pitch in 4.
 - **Catch failures before they surface.** Run the 5-tier health check to surface missing dependencies, stale configs, and integrity issues before they become cryptic runtime errors.
 
 ## Install
@@ -50,7 +50,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 
 ```
 /guide "I need to create a sales pitch"   # find the right plugin
-/teach 1                                   # start Course 1: Cowork Fundamentals
+/teach tour-install-to-infographic         # start the first-run capstone tour
 /workflow research-to-report               # see a cross-plugin pipeline
 /cheatsheet cogni-trends                   # quick reference for a plugin
 /troubleshoot                              # run diagnostics
@@ -69,7 +69,7 @@ Or describe what you want:
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `teach` | skill | Interactive course delivery — 12 courses, adaptive pacing, progress tracking |
+| `teach` | skill | Interactive workflow-tour delivery — 7 tours, adaptive pacing, progress tracking |
 | `course-deck` | skill | Generate PPTX slide decks for curriculum overview or per-course introductions |
 | `guide` | skill | Help users find the right insight-wave plugin or skill for their task |
 | `troubleshoot` | skill | Diagnose and fix common issues with insight-wave plugins |
@@ -90,22 +90,17 @@ Or describe what you want:
 
 ## Curriculum (teach skill)
 
-| # | Course | Plugins covered |
-|---|--------|-----------------|
-| 1 | Cowork Fundamentals | cogni-help (meta) |
-| 2 | Workspace & Obsidian | cogni-workspace, cogni-help:cogni-issues |
-| 3 | Basic Tools | cogni-copywriting, cogni-narrative, cogni-claims |
-| 4 | Trend Scouting | cogni-trends (Part 1) |
-| 5 | Trend Reporting | cogni-trends (Part 2) |
-| 6 | Portfolio Messaging | cogni-consulting, cogni-portfolio |
-| 7 | Visual Deliverables | cogni-visual |
-| 8 | Research Reports | cogni-research |
-| 9 | B2B Marketing | cogni-marketing |
-| 10 | Sales Pitches | cogni-sales |
-| 11 | Consulting Orchestration | cogni-consulting |
-| 12 | Documentation Pipeline | cogni-docs |
+| Tour ID | Title | Pipeline |
+|---------|-------|----------|
+| `tour-install-to-infographic` | Install-to-Infographic | cogni-workspace → themes → cogni-visual |
+| `tour-research-to-report` | Research-to-Report | cogni-research → cogni-narrative → cogni-visual |
+| `tour-trends-to-solutions` | Trends-to-Solutions | cogni-trends → cogni-portfolio → cogni-marketing |
+| `tour-content-pipeline` | Content-Pipeline | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
+| `tour-portfolio-to-pitch` | Portfolio-to-Pitch | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
+| `tour-portfolio-to-website` | Portfolio-to-Website | cogni-portfolio → cogni-workspace → cogni-website |
+| `tour-consulting-engagement` | Consulting-Engagement | cogni-consulting (Discover → Define → Develop → Deliver) |
 
-Each course is ~45 minutes with ~5 modules: Theory → Demo → Exercise → Quiz → Recap.
+Each tour is ~45–60 minutes with ~5 modules: Theory → Demo → Exercise → Quiz → Recap.
 
 ## Workflow Templates
 
@@ -116,7 +111,7 @@ Each course is ~45 minutes with ~5 modules: Theory → Demo → Exercise → Qui
 | `portfolio-to-pitch` | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | `consulting-engagement` | cogni-consulting phases (Discover → Define → Develop → Deliver) |
 | `docs-pipeline` | cogni-docs: doc-start → audit → generate → sync → power → claude → hub → bridge |
-| `full-onboarding` | cogni-workspace → cogni-help courses 1-12 |
+| `full-onboarding` | cogni-workspace → cogni-help workflow tours |
 
 ## Data model
 

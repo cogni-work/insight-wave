@@ -16,7 +16,7 @@ fi
 
 PROGRESS_FILE="$PROJECT_DIR/.claude/cogni-help.local.md"
 
-ALL_COURSES="cowork-fundamentals workspace-obsidian basic-tools trends-scouting trends-reporting portfolio visual research marketing sales consulting"
+ALL_COURSES="tour-research-to-report tour-trends-to-solutions tour-portfolio-to-pitch tour-portfolio-to-website tour-consulting-engagement tour-content-pipeline tour-install-to-infographic"
 
 if [ "$TARGET" = "--all" ]; then
   if [ -f "$PROGRESS_FILE" ]; then

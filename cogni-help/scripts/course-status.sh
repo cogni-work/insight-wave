@@ -21,9 +21,10 @@ import json, sys
 
 progress_file = sys.argv[1]
 all_courses = [
-    'cowork-fundamentals', 'workspace-obsidian', 'basic-tools',
-    'trends-scouting', 'trends-reporting', 'portfolio', 'visual',
-    'research', 'marketing', 'sales', 'consulting'
+    'tour-research-to-report', 'tour-trends-to-solutions',
+    'tour-portfolio-to-pitch', 'tour-portfolio-to-website',
+    'tour-consulting-engagement', 'tour-content-pipeline',
+    'tour-install-to-infographic'
 ]
 result = {
     'student': None,
@@ -44,9 +45,10 @@ import json, re, sys
 
 progress_file = sys.argv[1]
 all_courses = [
-    'cowork-fundamentals', 'workspace-obsidian', 'basic-tools',
-    'trends-scouting', 'trends-reporting', 'portfolio', 'visual',
-    'research', 'marketing', 'sales', 'consulting'
+    'tour-research-to-report', 'tour-trends-to-solutions',
+    'tour-portfolio-to-pitch', 'tour-portfolio-to-website',
+    'tour-consulting-engagement', 'tour-content-pipeline',
+    'tour-install-to-infographic'
 ]
 
 # Read the progress file

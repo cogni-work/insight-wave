@@ -1,13 +1,13 @@
 ---
 name: course-deck
 description: >-
-  Generate professional PPTX slide decks for cogni-help courses. Two modes:
-  (1) curriculum overview deck showing all 12 courses at a glance, or (2) per-course
-  intro deck with learning objectives, module breakdown, and prerequisites.
-  Use this skill whenever the user asks to "create course slides", "generate a
-  curriculum deck", "make an intro presentation", "course overview pptx",
-  "training deck", "course introduction slides", or mentions creating presentation
-  materials for cogni-help courses. Also trigger when someone says "prepare
+  Generate professional PPTX slide decks for cogni-help workflow tours. Two modes:
+  (1) curriculum overview deck showing the 7 workflow tours at a glance, or
+  (2) per-tour intro deck with learning objectives, module breakdown, and
+  prerequisites. Use this skill whenever the user asks to "create tour slides",
+  "generate a curriculum deck", "make an intro presentation", "tour overview pptx",
+  "training deck", "tour introduction slides", or mentions creating presentation
+  materials for cogni-help workflow tours. Also trigger when someone says "prepare
   materials for a training session" or "I need slides for onboarding new learners".
 version: 0.1.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
@@ -51,89 +51,84 @@ new learners.
    insight-wave (faster deliverables, consistent quality, AI-augmented research).
    Use 3 key benefit statements with icons.
 
-3. **How it works** — Explain the learning format: 45-minute self-paced courses,
+3. **How it works** — Explain the learning format: integrative workflow tours,
    mentor-guided by Claude, theory + hands-on exercises + quizzes. Visual showing
    the module cycle: Theory > Demo > Exercise > Quiz > Recap.
 
-4. **Learning journey** — Visual roadmap of all 12 courses as a numbered path or
-   timeline. Show course progression from fundamentals to advanced.
+4. **Learning journey** — Visual roadmap of the 7 workflow tours as a path or
+   timeline. Show the cross-plugin pipelines each tour walks through.
 
-5-6. **Course spotlight slides** — Two slides, each covering 3-4 courses with:
-   course number, title, what you'll learn (2-3 bullets), plugins covered.
-   Courses 1-6 on one slide, 7-12 on the next.
+5-6. **Tour spotlight slides** — Two slides, each covering 3-4 tours with:
+   tour ID, title, pipeline (cross-plugin chain), what you'll learn (2-3 bullets).
+   Tours 1-4 on one slide, 5-7 on the next.
 
 7. **What you'll build** — Showcase the deliverables learners create during
-   exercises (memos, narratives, trend reports, portfolios, presentations).
+   tour exercises (a first-run infographic, a research report, a sales pitch deck,
+   a deployable website, a consulting engagement plan).
 
-8. **Getting started** — How to begin: open Claude Cowork, type `/teach 1`,
-   and follow along. Include the `/courses` command to check progress.
+8. **Getting started** — How to begin: open Claude Cowork, type
+   `/teach tour-install-to-infographic`, and follow along. Include the
+   `/courses` command to check progress.
 
-### 2. Course Introduction (`<course-number>`)
+### 2. Tour Introduction (`<tour-id-or-short-name>`)
 
-A course-level deck introducing a specific course. Use when the organizer wants
-to set expectations before learners dive into a particular course.
+A tour-level deck introducing a specific workflow tour. Use when the organizer
+wants to set expectations before learners dive into a particular tour.
 
 **Slides to generate (~6-8 slides):**
 
-1. **Title slide** — Course number and title. Subtitle with duration (45 min)
+1. **Title slide** — Tour ID and title. Subtitle with duration (~45–60 min)
    and module count.
 
-2. **What you'll learn** — 4-5 learning objectives pulled from the course content.
-   Use checkmark icons with chartreuse accent.
+2. **What you'll learn** — 4-5 learning objectives pulled from the tour content,
+   anchored on the cross-plugin handoffs the tour walks through. Use checkmark
+   icons with chartreuse accent.
 
-3. **Module overview** — All 5 modules listed with brief description of each.
-   Visual timeline or numbered cards layout.
+3. **Pipeline overview** — The cross-plugin chain (e.g., research → narrative
+   → visual) as a horizontal flow diagram, plus the modules listed with brief
+   description of each.
 
-4. **Prerequisites** — What the learner needs before starting: prior courses,
+4. **Prerequisites** — What the learner needs before starting: prior tours,
    plugins that must be installed, any workspace setup.
 
-5. **Key concepts preview** — 3-4 core concepts from the course with one-line
+5. **Key concepts preview** — 3-4 core concepts from the tour with one-line
    explanations. Gives learners mental hooks before they start.
 
-6. **What you'll build** — The hands-on deliverable(s) from the exercises.
-   Concrete output they'll walk away with.
+6. **What you'll build** — The hands-on deliverable from the exercises (every
+   tour ends with a real artifact the learner can keep and reuse).
 
-7. **Ready to start** — CTA slide: "Open Claude Cowork and type `/teach <N>`
-   to begin. Your AI mentor will guide you through each module."
+7. **Ready to start** — CTA slide: "Open Claude Cowork and type
+   `/teach <tour-id>` to begin. Your AI mentor will guide you through each
+   module."
 
 ## Content Source
 
-Pull all course content from the reference files in this plugin:
+Pull all tour content from the reference files in this plugin:
 
-- `references/courses/01-cowork-fundamentals.md`
-- `references/courses/02-workspace-obsidian.md`
-- `references/courses/03-basic-tools.md`
-- `references/courses/04-trends-scouting.md`
-- `references/courses/05-trends-reporting.md`
-- `references/courses/06-portfolio.md`
-- `references/courses/07-visual.md`
-- `references/courses/08-research.md`
-- `references/courses/09-marketing.md`
-- `references/courses/10-sales.md`
-- `references/courses/11-consulting.md`
-- `references/courses/12-documentation.md`
+- `references/courses/tours/tour-research-to-report.md`
+- `references/courses/tours/tour-trends-to-solutions.md`
+- `references/courses/tours/tour-portfolio-to-pitch.md`
+- `references/courses/tours/tour-portfolio-to-website.md`
+- `references/courses/tours/tour-consulting-engagement.md`
+- `references/courses/tours/tour-content-pipeline.md`
+- `references/courses/tours/tour-install-to-infographic.md`
 
-Read only the course file(s) needed for the requested deck. For curriculum overview,
-skim all 12 files for titles, objectives, and module names — don't load full content.
+Read only the tour file(s) needed for the requested deck. For curriculum overview,
+skim all 7 files for titles, objectives, and module names — don't load full content.
 
-## Course Mapping
+## Tour Mapping
 
-Map user input to course files:
+Map user input to tour files:
 
-| Input | Course |
-|-------|--------|
-| 1, cowork, fundamentals | 01-cowork-fundamentals |
-| 2, workspace, obsidian | 02-workspace-obsidian |
-| 3, basic, tools, copywriting | 03-basic-tools |
-| 4, scouting, trends-scouting | 04-trends-scouting |
-| 5, reporting, trends-reporting | 05-trends-reporting |
-| 6, portfolio | 06-portfolio |
-| 7, visual | 07-visual |
-| 8, research | 08-research |
-| 9, marketing | 09-marketing |
-| 10, sales | 10-sales |
-| 11, consulting, diamond | 11-consulting |
-| 12, documentation, docs, pipeline | 12-documentation |
+| Input | Tour |
+|-------|------|
+| research, research-to-report, report, tour-research-to-report | tour-research-to-report |
+| trends, trend, scouting, trends-to-solutions, solutions, tour-trends-to-solutions | tour-trends-to-solutions |
+| pitch, portfolio-to-pitch, sales-deck, tour-portfolio-to-pitch | tour-portfolio-to-pitch |
+| website, portfolio-to-website, site, tour-portfolio-to-website | tour-portfolio-to-website |
+| consulting, diamond, double-diamond, engagement, tour-consulting-engagement | tour-consulting-engagement |
+| content, content-pipeline, marketing, tour-content-pipeline | tour-content-pipeline |
+| install, infographic, install-to-infographic, first-run, tour-install-to-infographic | tour-install-to-infographic |
 
 ## Visual Design: cogni-work Theme
 
@@ -194,6 +189,6 @@ and icon+text combinations. A deck where every slide looks the same is boring.
 
 Save the generated PPTX to the user's working directory with a descriptive filename:
 - Curriculum: `insight-wave-training-program.pptx`
-- Course intro: `course-<N>-<name>-intro.pptx` (e.g., `course-3-basic-tools-intro.pptx`)
+- Tour intro: `tour-<id>-intro.pptx` (e.g., `tour-research-to-report-intro.pptx`)
 
 After generating, tell the user where the file is saved and suggest they review it.
