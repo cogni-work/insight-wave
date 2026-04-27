@@ -35,6 +35,8 @@ to verify research output before publishing.
 
 **Works with**: cogni-research (verifies research claims), cogni-narrative (checks narrative accuracy)
 
+**Related workflows**: research-to-report
+
 ---
 
 ## cogni-consulting
@@ -50,6 +52,8 @@ Lean Canvas authoring and refinement via the business-model-hypothesis vision cl
 orchestration that calls the right plugins at the right time.
 
 **Requires**: Most other plugins (it orchestrates them)
+
+**Related workflows**: consulting-engagement, portfolio-to-pitch
 
 ---
 
@@ -83,6 +87,8 @@ perspective simulation, or needs readability scoring.
 
 **Works with**: cogni-narrative (narrative → polish), cogni-sales (pitch polish)
 
+**Related workflows**: content-pipeline, portfolio-to-pitch
+
 ---
 
 ## cogni-help (this plugin)
@@ -110,6 +116,8 @@ propositions. Supports 16 content formats. Bilingual DE/EN.
 
 **Requires**: cogni-trends (themes), cogni-portfolio (propositions)
 
+**Related workflows**: trends-to-solutions, content-pipeline
+
 ---
 
 ## cogni-narrative
@@ -123,6 +131,8 @@ TIPS-native trend panorama. Executive synthesis and citation bridging.
 into a compelling executive narrative or story.
 
 **Feeds into**: cogni-visual (narrative → slides), cogni-copywriting (narrative → polish)
+
+**Related workflows**: research-to-report, portfolio-to-pitch, content-pipeline
 
 ---
 
@@ -139,6 +149,8 @@ size the opportunity, or analyze competitors.
 **Requires**: cogni-consulting (optional, for Lean Canvas hypothesis input)
 **Feeds into**: cogni-marketing (propositions → content), cogni-sales (propositions → pitch)
 
+**Related workflows**: trends-to-solutions, portfolio-to-pitch, portfolio-to-website
+
 ---
 
 ## cogni-research
@@ -152,6 +164,8 @@ with parallel web research, claims-verified review loops. Three depth levels.
 deep-dive analyses with verified claims and citations.
 
 **Works with**: cogni-claims (verification), cogni-narrative (report → story)
+
+**Related workflows**: research-to-report
 
 ---
 
@@ -167,6 +181,8 @@ market segment, built on portfolio data with optional trend enrichment.
 
 **Requires**: cogni-portfolio (propositions), optionally cogni-trends (strategic trends)
 
+**Related workflows**: portfolio-to-pitch
+
 ---
 
 ## cogni-trends
@@ -180,6 +196,8 @@ market segment, built on portfolio data with optional trend enrichment.
 produce trend reports for strategic decision-making. DACH-focused. Bilingual EN/DE.
 
 **Feeds into**: cogni-portfolio (trends → investment themes), cogni-marketing (themes → content)
+
+**Related workflows**: trends-to-solutions
 
 ---
 
@@ -195,6 +213,8 @@ Excalidraw, Pencil MCP, and PPTX rendering.
 
 **Requires**: Content from cogni-narrative or cogni-copywriting as input
 
+**Related workflows**: research-to-report, portfolio-to-pitch, content-pipeline, install-to-infographic
+
 ---
 
 ## cogni-workspace
@@ -208,3 +228,5 @@ theme management, plugin discovery, and workspace health diagnostics.
 themes, or diagnose workspace configuration issues.
 
 **Foundation for**: All other plugins (provides shared env vars and settings)
+
+**Related workflows**: portfolio-to-website, install-to-infographic
