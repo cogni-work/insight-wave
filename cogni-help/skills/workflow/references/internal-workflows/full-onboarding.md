@@ -1,7 +1,7 @@
 # Workflow: Full Onboarding
 
-**Pipeline**: cogni-workspace → cogni-help courses 1-11
-**Duration**: ~8-10 hours total (spread across sessions)
+**Pipeline**: cogni-workspace → cogni-help courses 1-12
+**Duration**: ~9-11 hours total (spread across sessions)
 **Use case**: New user learning the complete insight-wave ecosystem
 
 ```mermaid
@@ -11,6 +11,7 @@ graph LR
     C --> D[Courses 3-7: Core]
     D --> E[Courses 8-10: Advanced]
     E --> F[Course 11: Capstone]
+    F --> G[Course 12: Documentation]
 ```
 
 ## Step 1: Initialize Workspace
@@ -49,6 +50,7 @@ Work through courses in order. Each builds on the previous:
 | 7 | Visual deliverables | ~45 min |
 | 8-10 | Advanced (Research + Marketing + Sales) | ~2.5 hr |
 | 11 | Capstone (Consulting orchestration) | ~45 min |
+| 12 | Documentation pipeline (cogni-docs) | ~45 min |
 
 **Tips**:
 - Each course has exercises that create real artifacts in `_teacher-exercises/`

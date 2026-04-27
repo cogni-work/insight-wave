@@ -70,28 +70,34 @@ Migration action vocabulary:
 - `add` — no cogni-help template exists yet; create one that walks through the canonical pipeline.
 - `unchanged` — the template filename already matches the canonical ID; no migration action needed.
 - `completed by #N` — the migration shipped in PR/issue N; row preserved as historical record.
-- `prune-or-keep-internal` — the cogni-help template is operational-only and not part of the canonical user-facing set (see Table B).
+- `internal` — the cogni-help template is operational-only and lives in `references/internal-workflows/`; it is not part of the canonical user-facing set and does not appear in the default `/workflow` listing (see Table B).
 
 ## Table B — Operational-only templates (out of canonical user-facing set)
 
 Two cogni-help templates do not have a `docs/workflows/` companion and are
 flagged as operational-only: they describe plugin-maintenance or onboarding
-meta-pipelines, not user-facing analyst/sales/consultant workflows.
+meta-pipelines, not user-facing analyst/sales/consultant workflows. They
+live in `cogni-help/skills/workflow/references/internal-workflows/` (separate
+from the user-facing `references/workflows/` directory) and `/workflow`
+surfaces them only when the user names the ID directly.
 
 | cogni-help template | Migration action | Notes |
 |---|---|---|
-| `docs-pipeline` | `prune-or-keep-internal` | cogni-docs maintenance pipeline (audit → generate → sync → power → claude → hub → bridge). Not a user-facing workflow. **Default decision: keep internal** as a cogni-help-only operational template until `docs/workflows/` adds a public companion guide. Tracked by #148. |
-| `full-onboarding` | `prune-or-keep-internal` | New-user meta-pipeline (workspace setup → courses 1-12). Not a workflow in the cross-plugin pipeline sense; it is a learning track that cogni-help already exposes via the `teach` and `courses` skills. **Default decision: keep internal** as the orchestration entry point for the onboarding track. Tracked by #148. |
+| `docs-pipeline` | `internal` (completed by #148) | cogni-docs maintenance pipeline (audit → generate → sync → power → claude → hub → bridge). Lives in `references/internal-workflows/docs-pipeline.md`. Not a user-facing workflow. |
+| `full-onboarding` | `internal` (completed by #148) | New-user meta-pipeline (workspace setup → courses 1-12). Lives in `references/internal-workflows/full-onboarding.md`. Not a workflow in the cross-plugin pipeline sense; it is a learning track that cogni-help already exposes via the `teach` and `courses` skills. |
 
 Either of these graduates to the canonical set if and only if a matching
 `docs/workflows/<id>.md` file lands in a future PR. At that point the row
-moves from Table B to Table A and the template (if kept) is renamed to
-match the canonical ID.
+moves from Table B to Table A, the template moves from
+`references/internal-workflows/` to `references/workflows/`, and (if kept)
+is renamed to match the canonical ID.
 
 ## Coverage check
 
-- **cogni-help templates** (current contents of `cogni-help/skills/workflow/references/workflows/`):
-  `consulting-engagement`, `content-pipeline`, `docs-pipeline`, `full-onboarding`, `install-to-infographic`, `portfolio-to-pitch`, `portfolio-to-website`, `research-to-report`, `trends-to-solutions` — **9 templates, each appears in exactly one row** (7 in Table A, 2 in Table B).
+- **cogni-help user-facing templates** (current contents of `cogni-help/skills/workflow/references/workflows/`):
+  `consulting-engagement`, `content-pipeline`, `install-to-infographic`, `portfolio-to-pitch`, `portfolio-to-website`, `research-to-report`, `trends-to-solutions` — **7 templates, each appears in exactly one row of Table A**.
+- **cogni-help internal templates** (current contents of `cogni-help/skills/workflow/references/internal-workflows/`):
+  `docs-pipeline`, `full-onboarding` — **2 templates, each appears in exactly one row of Table B**.
 - **docs/workflows/ guides** (current contents):
   `consulting-engagement`, `content-pipeline`, `install-to-infographic`, `portfolio-to-pitch`, `portfolio-to-website`, `research-to-report`, `trends-to-solutions` — **7 guides, each appears in exactly one row** (all in Table A).
 

@@ -17,9 +17,10 @@ skills/                         7 help skills
   troubleshoot/                   Diagnostics — plugin integrity, dependencies, stale state
     references/
       known-issues.md             Known issues and resolution patterns
-  workflow/                       Pipeline templates — 9 cross-plugin workflow playbooks (7 user-facing + 2 operational-only)
+  workflow/                       Pipeline templates — 9 cross-plugin workflow playbooks (7 user-facing + 2 internal/operational)
     references/
-      workflows/                  9 workflow definitions (research-to-report, trends-to-solutions, install-to-infographic, portfolio-to-website, content-pipeline, etc.)
+      workflows/                  7 user-facing workflow definitions (research-to-report, trends-to-solutions, portfolio-to-pitch, portfolio-to-website, content-pipeline, install-to-infographic, consulting-engagement)
+      internal-workflows/         2 internal/operational definitions (docs-pipeline, full-onboarding)
   cheatsheet/                     Quick reference — one-screen cards for any plugin
   cogni-issues/                   Issue lifecycle — create, list, status via GitHub browser automation
 
@@ -65,6 +66,8 @@ Each course ~45 minutes with ~5 modules: Theory → Demo → Exercise → Quiz �
 
 ## Workflow Templates
 
+User-facing (canonical, 1:1 with `docs/workflows/`):
+
 | Workflow | Pipeline |
 |----------|----------|
 | install-to-infographic | cogni-workspace → cogni-workspace (themes) → cogni-visual |
@@ -74,6 +77,11 @@ Each course ~45 minutes with ~5 modules: Theory → Demo → Exercise → Quiz �
 | portfolio-to-website | cogni-portfolio → cogni-workspace → cogni-website |
 | content-pipeline | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
 | consulting-engagement | cogni-consulting phases (Discover → Define → Develop → Deliver) |
+
+Internal / operational (maintainer pipelines, no canonical docs companion):
+
+| Workflow | Pipeline |
+|----------|----------|
 | docs-pipeline | cogni-docs: doc-start → audit → generate → sync → power → claude → hub → bridge |
 | full-onboarding | cogni-workspace → cogni-help courses 1-12 |
 
@@ -113,5 +121,5 @@ they point to stable paths (`docs/plugin-guide/<plugin>.md`), not specific conte
 - Course progress is per-user (stored in user's `.claude/` directory)
 - Exercises create temporary artifacts in `_teacher-exercises/` (gitignored)
 - Plugin catalog in guide/references/plugin-catalog.md must be updated when plugins are added
-- Workflow definitions are standalone markdown files in workflow/references/workflows/
+- Workflow definitions are standalone markdown files in workflow/references/workflows/ (user-facing) and workflow/references/internal-workflows/ (operational/maintainer pipelines)
 - Skill-level `version` fields in `SKILL.md` frontmatter track sibling-skill convention (often staying at `0.1.0` while the plugin version moves) — `cogni-help/.claude-plugin/plugin.json` and the matching `.claude-plugin/marketplace.json` entry are the single source of truth for the plugin version
