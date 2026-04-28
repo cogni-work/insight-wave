@@ -638,6 +638,9 @@ fi
 
 # Inject re-anchor action when stale blueprints detected (prepend before existing actions)
 if $HEALTH_CHECK; then
+  # Defensive default: guard against unbound $stale_warnings if a future edit
+  # decouples the staleness-detection block above from this injection block.
+  stale_warnings="${stale_warnings:-[]}"
   HAS_STALE_BLUEPRINTS=$(echo "$stale_warnings" | python3 -c "
 import json, sys
 try:
