@@ -110,6 +110,7 @@ UI_LABELS = {
         "taxonomy_coverage": "Taxonomy Coverage",
         "entity_counts": "Entity Counts",
         "not_available": "Not yet available",
+        "pending_br": "Pending BR scoring",
         "run_skill": "Run",
         "to_generate": "to generate this data",
         "top_trends": "Top Trends",
@@ -157,6 +158,7 @@ UI_LABELS = {
         "taxonomy_coverage": "Taxonomie-Abdeckung",
         "entity_counts": "Entity-Zählung",
         "not_available": "Noch nicht verfügbar",
+        "pending_br": "BR-Scoring ausstehend",
         "run_skill": "Führe",
         "to_generate": "aus, um diese Daten zu generieren",
         "top_trends": "Top Trends",
@@ -425,6 +427,18 @@ def esc_js(text):
     if not isinstance(text, str):
         text = str(text) if text is not None else ""
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "").replace("'", "\\'")
+
+
+def fmt_score(value, spec=".1f", placeholder="—"):
+    """Format a numeric score with the given spec, returning placeholder when value is None.
+
+    Distinguishes "not yet scored" (null) from "scored 0" — the former renders as the
+    em-dash placeholder, the latter renders numerically. Only None routes to the
+    placeholder; 0 and 0.0 still format normally.
+    """
+    if value is None:
+        return placeholder
+    return f"{float(value):{spec}}"
 
 
 # ---------------------------------------------------------------------------
@@ -959,7 +973,13 @@ def generate_html(data, status, project_dir, theme):
                     st_copy["_theme_name"] = theme_obj.get("name", "")
                     all_sts.append(st_copy)
 
-        all_sts.sort(key=lambda x: x.get("ranking_value", x.get("business_relevance", 0)), reverse=True)
+        # `dict.get(key, default)` only falls back to default when key is absent;
+        # explicit null values (Phase 2 before BR-scoring) return None, which can't
+        # be ordered. `or` chain coerces None → 0 so unscored STs sort to the bottom.
+        all_sts.sort(
+            key=lambda x: (x.get("ranking_value") or x.get("business_relevance") or 0),
+            reverse=True,
+        )
 
     # Portfolio anchor stats
     anchored_sts = [st for st in all_sts if st.get("generation_mode") in ("portfolio-anchored", "re-anchored")]
@@ -1973,19 +1993,24 @@ body::after {{
             theme_name = theme_obj.get("name", f"Theme {ti+1}")
             strategic_q = theme_obj.get("strategic_question", "")
             narrative = theme_obj.get("narrative", "")
-            br_avg = theme_obj.get("business_relevance_avg", 0)
-            ranking_val = theme_obj.get("ranking_value", 0)
+            # None-safe: `dict.get(key, default)` returns the literal None when the key
+            # exists with a null JSON value. Keep it None here and let fmt_score render
+            # an em-dash (Phase 2 before BR-scoring) — 0 ≠ unscored semantically.
+            br_avg = theme_obj.get("business_relevance_avg")
+            ranking_val = theme_obj.get("ranking_value")
             # Use resolved chains (handles both inline objects and string references)
             chains = theme_obj.get("_resolved_chains", theme_obj.get("value_chains", []))
             # Filter out any remaining string references
             chains = [ch for ch in chains if isinstance(ch, dict)]
+            br_avg_title = L["pending_br"] if br_avg is None else ""
+            ranking_title = L["pending_br"] if ranking_val is None else ""
 
             html += f"""        <div class="theme-card reveal" id="sec-model-theme-{ti}">
           <h3>{esc(theme_name)}</h3>
           <div class="strategic-q">{esc(strategic_q)}</div>
           <div class="theme-meta">
-            <span class="badge badge-score">BR {br_avg:.1f}</span>
-            <span class="badge" style="background:var(--surface2);color:var(--text2)">Rank {ranking_val:.2f}</span>
+            <span class="badge badge-score" title="{esc(br_avg_title)}">BR {fmt_score(br_avg, '.1f')}</span>
+            <span class="badge" style="background:var(--surface2);color:var(--text2)" title="{esc(ranking_title)}">Rank {fmt_score(ranking_val, '.2f')}</span>
             <span class="badge" style="background:var(--surface2);color:var(--text2)">{len(chains)} chains</span>
           </div>
           <div class="theme-narrative">{esc(narrative[:300])}{'...' if len(narrative) > 300 else ''}</div>
@@ -2047,9 +2072,15 @@ body::after {{
           <tbody>
 """
             for ri, st in enumerate(all_sts):
-                br = st.get("business_relevance", st.get("business_relevance_calculated", 0)) or 0
-                rv = st.get("ranking_value", 0) or 0
-                bar_w = int(float(br) / 5.0 * 100) if br else 0
+                # Preserve None when the JSON field is null (Phase 2 before BR-scoring).
+                # `or` falls back through null/falsy to the next candidate, with the final
+                # `None` keeping the unscored semantic for fmt_score.
+                br_raw = st.get("business_relevance")
+                if br_raw is None:
+                    br_raw = st.get("business_relevance_calculated")
+                rv_raw = st.get("ranking_value")
+                # Bar width remains numeric — width 0 is meaningful (collapsed bar).
+                bar_w = int(float(br_raw) / 5.0 * 100) if br_raw else 0
                 st_id = st.get("st_id", st.get("id", ""))
                 st_graph_id = f"st-{st_id}"
                 anchor_badge = ""
@@ -2058,13 +2089,15 @@ body::after {{
                     feat = pa.get("feature_slug", "")
                     qf_icon = ' <span class="quality-flag">!</span>' if st.get("quality_flag") else ""
                     anchor_badge = f'<span class="anchor-badge">&#9875; {esc(feat[:18])}{qf_icon}</span>'
+                br_title = L["pending_br"] if br_raw is None else ""
+                rv_title = L["pending_br"] if rv_raw is None else ""
                 html += f"""            <tr style="cursor:pointer" onclick="focusGraphNode('{esc_js(st_graph_id)}')">
               <td class="rank-num">{ri+1}</td>
               <td class="st-name">{esc(st.get('name', ''))}</td>
               <td>{esc(st.get('_theme_name', ''))}</td>
               <td><span class="badge" style="background:var(--surface2);color:var(--text2)">{esc(st.get('category', ''))}</span></td>
-              <td><span class="br-bar" style="width:{bar_w}px"></span> {float(br):.1f}</td>
-              <td class="mono">{float(rv):.2f}</td>
+              <td title="{esc(br_title)}"><span class="br-bar" style="width:{bar_w}px"></span> {fmt_score(br_raw, '.1f')}</td>
+              <td class="mono" title="{esc(rv_title)}">{fmt_score(rv_raw, '.2f')}</td>
               <td>{anchor_badge}</td>
             </tr>
 """
