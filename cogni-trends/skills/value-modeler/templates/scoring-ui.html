@@ -70,6 +70,34 @@
   .br-btn.s3.selected { background: var(--mid); border-color: var(--mid); color: #000; }
   .br-btn.s4.selected { background: #84cc16; border-color: #84cc16; color: #000; }
   .br-btn.s5.selected { background: var(--high); border-color: var(--high); color: #000; }
+  .br-btn.suggested { box-shadow: 0 0 0 1px var(--accent) inset; }
+
+  .br-suggestion { display: flex; align-items: center; gap: 0.5rem;
+    margin-left: 40px; margin-top: 0.4rem; font-size: 0.78rem; color: var(--muted);
+    flex-wrap: wrap; }
+  .br-suggestion-badge { display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.15rem 0.55rem; border-radius: 999px;
+    background: rgba(59,130,246,0.12); color: var(--accent);
+    border: 1px solid rgba(59,130,246,0.35); font-weight: 600; font-size: 0.75rem;
+    white-space: nowrap; }
+  .br-suggestion-badge.low-confidence { background: rgba(234,179,8,0.10);
+    color: var(--mid); border-color: rgba(234,179,8,0.35); }
+  .br-suggestion-rationale { color: var(--muted); font-style: italic;
+    line-height: 1.4; }
+  .br-suggestion-overridden { color: var(--mid); font-weight: 500;
+    font-style: normal; }
+
+  .tip-rationale { margin-top: 0.5rem; }
+  .tip-rationale-label { display: block; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+    margin-bottom: 0.3rem; font-weight: 600; }
+  .tip-rationale textarea { width: 100%; min-height: 2.6rem; padding: 0.5rem 0.6rem;
+    background: rgba(15,23,42,0.6); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; font-family: inherit; font-size: 0.85rem;
+    line-height: 1.45; resize: vertical; box-sizing: border-box; }
+  .tip-rationale textarea:focus { outline: none; border-color: var(--accent);
+    background: rgba(15,23,42,0.85); }
+  .tip-rationale textarea::placeholder { color: var(--muted); font-style: italic; }
 
   .tip-details { margin-top: 0.6rem; margin-left: 40px; font-size: 0.85rem;
     color: var(--muted); }
@@ -139,6 +167,8 @@
 const MODEL_DATA = __MODEL_DATA_PLACEHOLDER__;
 
 const scores = {};
+const rationales = {};
+const suggestions = {};  // ref → {score, rationale, confidence}
 let totalTips = 0;
 const themeTipCounts = {};
 const themeScoredCounts = {};
@@ -168,15 +198,44 @@ function esc(s) {
     .replace(/'/g, '&#39;');
 }
 
+function renderSuggestion(tip) {
+  const ref = tip.candidate_ref;
+  const sug = suggestions[ref];
+  if (!sug || sug.score == null) return '';
+  const lowConf = sug.confidence === 'low' ? ' low-confidence' : '';
+  const lowNote = sug.confidence === 'low' ? ' <span title="Niedriges Vertrauen — bitte pr&uuml;fen">(?)</span>' : '';
+  const rationale = sug.rationale ? `<span class="br-suggestion-rationale">&mdash; ${esc(sug.rationale)}</span>` : '';
+  return `<div class="br-suggestion" data-suggestion-for="${esc(ref)}">
+    <span class="br-suggestion-badge${lowConf}">LLM-Vorschlag: ${sug.score}${lowNote}</span>
+    ${rationale}
+  </div>`;
+}
+
 function renderTipDetails(tip) {
   const description = tip.description;
   const rationale = tip.rationale;
   const evidence = Array.isArray(tip.evidence) ? tip.evidence.filter(Boolean) : [];
   const sources = Array.isArray(tip.sources) ? tip.sources.filter(Boolean) : [];
-  if (!description && !rationale && !evidence.length && !sources.length) return '';
+  const ref = tip.candidate_ref;
+  const sug = suggestions[ref] || {};
+  const rationalePrefill = rationales[ref] != null ? rationales[ref] : (sug.rationale || '');
+  const placeholder = sug.rationale
+    ? 'LLM-Vorschlag &uuml;bernehmen oder &uuml;berschreiben&hellip;'
+    : 'Begr&uuml;ndung des Scores eingeben&hellip;';
+
   const parts = [];
+  parts.push(`<div class="tip-rationale">
+    <label class="tip-rationale-label" for="rat-${esc(ref)}">Begr&uuml;ndung</label>
+    <textarea id="rat-${esc(ref)}" data-rationale-ref="${esc(ref)}"
+      placeholder="${placeholder}"
+      oninput="setRationale('${esc(ref)}', this.value)">${esc(rationalePrefill)}</textarea>
+  </div>`);
+
+  if (!description && !rationale && !evidence.length && !sources.length) {
+    return `<details class="tip-details" open><summary>Details</summary><div class="tip-details-body">${parts.join('')}</div></details>`;
+  }
   if (description) parts.push(`<h4>Beschreibung</h4><p>${esc(description)}</p>`);
-  if (rationale)   parts.push(`<h4>Begr&uuml;ndung</h4><p>${esc(rationale)}</p>`);
+  if (rationale)   parts.push(`<h4>Hintergrund</h4><p>${esc(rationale)}</p>`);
   if (evidence.length) {
     const items = evidence.map(e => `<li>${esc(e)}</li>`).join('');
     parts.push(`<h4>Evidenz</h4><ul>${items}</ul>`);
@@ -247,6 +306,15 @@ function init() {
           totalTips++;
           themeTipCounts[itId]++;
         }
+        // Capture the LLM suggestion (if present) — first occurrence wins.
+        if (!suggestions[ref] && tip.business_relevance_suggested != null) {
+          suggestions[ref] = {
+            score: tip.business_relevance_suggested,
+            rationale: tip.business_relevance_rationale || '',
+            confidence: tip.business_relevance_suggested_confidence || 'high'
+          };
+        }
+        const sug = suggestions[ref];
         const row = document.createElement('div');
         row.className = 'tip-row';
         row.dataset.themeId = itId;
@@ -259,12 +327,14 @@ function init() {
               <div class="tip-meta">${esc(ref)}</div>
             </div>
             <div class="br-buttons">
-              ${[1,2,3,4,5].map(n =>
-                `<button class="br-btn s${n}" data-ref="${esc(ref)}" data-score="${n}" data-theme="${itId}"
-                  onclick="setScore('${esc(ref)}', ${n}, '${itId}')">${n}</button>`
-              ).join('')}
+              ${[1,2,3,4,5].map(n => {
+                const isSug = sug && sug.score === n ? ' suggested' : '';
+                return `<button class="br-btn s${n}${isSug}" data-ref="${esc(ref)}" data-score="${n}" data-theme="${itId}"
+                  onclick="setScore('${esc(ref)}', ${n}, '${itId}')">${n}</button>`;
+              }).join('')}
             </div>
           </div>
+          ${renderSuggestion(tip)}
           ${renderTipDetails(tip)}
         `;
         card.appendChild(row);
@@ -296,7 +366,30 @@ function setScore(ref, value, themeId) {
     // (first theme encountered — sync means it only counts once globally)
     themeScoredCounts[themeId] = (themeScoredCounts[themeId] || 0) + 1;
   }
+  // If the user picks a different score than the LLM suggestion, surface
+  // that mismatch on every suggestion line keyed to this candidate so the
+  // audit trail is visible at a glance.
+  const sug = suggestions[ref];
+  document.querySelectorAll(`[data-suggestion-for="${ref}"]`).forEach(line => {
+    let note = line.querySelector('.br-suggestion-overridden');
+    if (sug && sug.score != null && value !== sug.score) {
+      if (!note) {
+        note = document.createElement('span');
+        note.className = 'br-suggestion-overridden';
+        line.appendChild(note);
+      }
+      note.textContent = `· übersteuert: ${value}`;
+    } else if (note) {
+      note.remove();
+    }
+  });
   updateProgress();
+}
+
+function setRationale(ref, value) {
+  // Persist whatever the user types — including the empty string, so an
+  // explicit clear isn't silently re-filled by the LLM draft on export.
+  rationales[ref] = value;
 }
 
 function updateProgress() {
@@ -319,10 +412,22 @@ function updateProgress() {
 }
 
 function submitScores() {
+  // Build rationales map: prefer the user's typed value; fall back to the
+  // LLM draft only for candidates the user actually scored. Empty strings
+  // are honored as explicit "no rationale" rather than being replaced.
+  const exportedRationales = {};
+  Object.keys(scores).forEach(ref => {
+    if (rationales[ref] !== undefined) {
+      if (rationales[ref] !== '') exportedRationales[ref] = rationales[ref];
+    } else if (suggestions[ref] && suggestions[ref].rationale) {
+      exportedRationales[ref] = suggestions[ref].rationale;
+    }
+  });
   const output = {
     project_id: MODEL_DATA.project_id || 'unknown',
     timestamp: new Date().toISOString(),
     scores: scores,
+    rationales: exportedRationales,
     total_scored: Object.keys(scores).length,
     total_candidates: totalTips
   };

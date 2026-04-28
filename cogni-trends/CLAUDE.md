@@ -138,3 +138,5 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 - Catalogs accumulate knowledge across engagements — each pursuit enriches the next
 - Design-variables pattern from cogni-workspace used for dashboard theming
 - Claims auto-registered with source URLs during report generation
+- Agent frontmatter — `tools:` is written in YAML array form (`tools: ["Read", "Write"]`); existing bare comma-separated entries are tolerated, but new agents follow the array form
+- Scoring UI (`skills/value-modeler/templates/scoring-ui.html`) is intentionally DE-only — user-visible strings are German regardless of project `LANG`. Multilingual UI via `__LABEL_*__` placeholders is deferred until separately scoped

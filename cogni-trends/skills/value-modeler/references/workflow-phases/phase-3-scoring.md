@@ -28,6 +28,63 @@ board is clearly mission-critical.
 | 4 | High | Impacts multiple business areas and key processes, substantial benefits expected |
 | 5 | Very High | Mission critical with the possibility to massively impact company KPIs |
 
+## Step 0.5: LLM Pre-Score with Rationale
+
+Before generating the scoring UI, dispatch the `br-pre-scorer` agent to draft a
+suggested score (1–5) and one-line rationale per candidate. The user sees the
+suggestion in the UI as the prefilled score plus an editable rationale, and
+becomes an editor instead of an author. This eliminates the cold-start problem
+and produces an audit-trail rationale alongside every score (issue #176).
+
+This step is **best-effort**: a missing or failed pre-score does not block
+scoring — the UI still renders, just without suggestions or pre-filled
+rationales.
+
+### Step 0.5.1: Dispatch the agent
+
+Run `br-pre-scorer` with the project path and language. The agent reads
+`tips-project.json`, walks `tips-value-model.json` for unique candidate_refs,
+enriches each with description/rationale/evidence/sources from
+`.metadata/trend-scout-output.json` if present, and writes
+`.metadata/br-pre-scores.json` per its output schema.
+
+```text
+Agent: br-pre-scorer
+  PROJECT_PATH: <project_path>
+  LANG: <project_language>  # de or en, from tips-project.json
+```
+
+### Step 0.5.2: Merge suggestions into the value model
+
+Read `.metadata/br-pre-scores.json`. For each entry in `suggestions[]`, walk
+every value chain in `tips-value-model.json` and update each occurrence of
+the candidate (in `trend`, `implications[*]`, `possibilities[*]`):
+
+- `business_relevance_suggested` ← `suggested_score`
+- `business_relevance_rationale` ← `rationale`
+- `business_relevance_suggested_confidence` ← `confidence`
+
+A candidate appearing in multiple chains gets the same suggestion in every
+occurrence. Do NOT touch `business_relevance` itself — that field stays `null`
+until the user submits scores.
+
+If `br-pre-scores.json` is missing or has `scored_count == 0`, skip the merge
+silently and proceed to Step 1. The template degrades gracefully (no badge,
+no pre-filled rationale).
+
+### Step 0.5.3: Brief the user
+
+Print one line so the user sees the suggestions exist before the UI opens:
+
+```
+Pre-scored 34 candidates (distribution 1=2, 2=6, 3=8, 4=12, 5=6).
+Open the scoring UI to accept, adjust, or override.
+```
+
+If the agent produced 100% scores in `{3, 4}` (signal that calibration failed),
+add a one-line warning so the user knows the suggestions are weakly
+discriminating.
+
 ## Step 1: Generate Scoring Interface
 
 Use the HTML template at `$CLAUDE_PLUGIN_ROOT/skills/value-modeler/templates/scoring-ui.html`.
@@ -59,6 +116,9 @@ For each TIP entry in the payload, include these fields alongside the existing `
 | `rationale` | string | `tips_candidates.items[].rationale` from same |
 | `evidence` | array of strings | `tips_candidates.items[].evidence` from same (bullet points) |
 | `sources` | array of `{title, url}` objects (or plain strings) | `tips_candidates.items[].sources` from same |
+| `business_relevance_suggested` | integer 1–5 (or null) | `tips-value-model.json` candidate field, populated by Step 0.5 |
+| `business_relevance_rationale` | string (or null) | same — the LLM-drafted one-line justification |
+| `business_relevance_suggested_confidence` | `"high"`/`"low"` (or null) | same |
 
 Look up each candidate by `candidate_ref` against `tips_candidates.items[*].candidate_ref`
 (or `id`) and merge the four fields into the TIP entry before serializing. Any of the four
@@ -146,13 +206,25 @@ in `~/Downloads/`). The format is:
     "digitale-wertetreiber/act/3": 4,
     ...
   },
+  "rationales": {
+    "externe-effekte/act/1": "Rechtlicher Zwang im DACH-Markt — Compliance ist nicht verhandelbar.",
+    "digitale-wertetreiber/act/3": "Direkter Hebel auf CSAT — passt zur 2026-Roadmap.",
+    ...
+  },
   "total_scored": 30,
   "total_candidates": 38
 }
 ```
 
+`rationales` is keyed by `candidate_ref` and carries the user-edited rationale
+text from the scoring UI (initialized from `business_relevance_rationale` and
+overwritten if the user typed in the textarea). A candidate that was scored but
+has an empty rationale string omits the key.
+
 1. Read the scores (from downloaded file or inline input)
-2. Update each candidate's `business_relevance` in `tips-value-model.json`
+2. Update each candidate's `business_relevance` in `tips-value-model.json`,
+   and overwrite `business_relevance_rationale` from the `rationales` map when
+   present (the user's edit always wins over the LLM draft)
 3. Report scoring coverage:
    - How many candidates were scored vs skipped
    - Average BR across all scored candidates
