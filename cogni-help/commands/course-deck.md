@@ -1,7 +1,7 @@
 ---
 name: course-deck
-description: Generate a PPTX slide deck for course curriculum or course introduction
-argument-hint: "<curriculum | course number or name>"
+description: Generate a PPTX slide deck for the workflow-tour curriculum or a single tour introduction
+argument-hint: "<curriculum | tour ID or short name>"
 allowed-tools:
   - Read
   - Write
@@ -13,12 +13,12 @@ allowed-tools:
 Generate a professional PPTX slide deck using the course-deck skill.
 
 Accept either:
-- `curriculum` — generate a program overview deck covering all 12 courses
-- A course number (1-12) or name (e.g., "basic tools", "tips scouting", "research", "marketing", "sales", "consulting", "documentation") — generate an intro deck for that course
+- `curriculum` — generate a program overview deck covering the 7 workflow tours
+- A tour ID (e.g., `tour-research-to-report`) or short name (e.g., "research", "trends", "pitch", "website", "consulting", "content", "install") — generate an intro deck for that tour
 
 Steps:
 1. Load the course-deck skill to get deck structure, theme, and generation rules
-2. Read the relevant course content from `references/courses/`
+2. Read the relevant tour content from `references/courses/tours/`
 3. Read the cogni-work theme from `$COGNI_WORKSPACE_ROOT/themes/cogni-work/theme.md`
 4. Generate the PPTX using PptxGenJS following the skill's slide templates
 5. Save to the working directory with the correct filename

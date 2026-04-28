@@ -2,7 +2,7 @@
 
 **Duration**: 60 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-research → cogni-narrative → cogni-visual
-**Prerequisites**: Course 8 (Research Reports), Course 7 (Visual Deliverables); Course 3 (Basic Tools) helpful
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-research`, `/cogni-help:cheatsheet cogni-narrative`, or `/cogni-help:cheatsheet cogni-visual`; see also `docs/plugin-guide/cogni-research.md`, `docs/plugin-guide/cogni-narrative.md`, `docs/plugin-guide/cogni-visual.md`.
 **Audience**: Analysts producing presentations from original research
 
 ---
@@ -10,8 +10,8 @@
 This tour walks the full research-to-presentation pipeline as one continuous workflow.
 You author a research question, generate a sourced report, shape it into an executive
 narrative, and render the result as a deliverable — without re-explaining each plugin
-in isolation. If a prerequisite course is missing, run it first or accept the
-inline-summary fallback offered at the start of the tour.
+in isolation. If a plugin in the chain is unfamiliar, accept the inline-summary
+fallback offered at the start of the tour or skim the matching cheatsheet first.
 
 ## Module 1: Pipeline Overview & Question Framing
 

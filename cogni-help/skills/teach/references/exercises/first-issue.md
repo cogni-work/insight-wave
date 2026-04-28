@@ -9,7 +9,7 @@
 
 ## What I Asked
 
-Which course should I take after finishing Course 2?
+Which workflow tour should I take after finishing tour-install-to-infographic?
 
 ## Issue URL
 

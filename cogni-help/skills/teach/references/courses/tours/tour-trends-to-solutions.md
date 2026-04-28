@@ -2,7 +2,7 @@
 
 **Duration**: 75 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: cogni-trends → cogni-portfolio → cogni-marketing
-**Prerequisites**: Courses 4-5 (Trend Scouting + Trend Reporting), Course 6 (Portfolio Messaging), Course 9 (B2B Marketing)
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-trends`, `/cogni-help:cheatsheet cogni-portfolio`, `/cogni-help:cheatsheet cogni-marketing`; see also the matching `docs/plugin-guide/<plugin>.md` files.
 **Audience**: GTM teams turning strategic trends into marketing campaigns
 
 ---
@@ -10,8 +10,8 @@
 This tour walks the trends-to-solutions pipeline as a single workflow. You scout
 strategic trends, anchor them to portfolio propositions, and fan them out into
 multi-channel marketing content — all sourced from the same evidence trail.
-Plugin-track prerequisites cover each plugin in depth; this tour focuses on the
-hand-offs between them.
+The cheatsheets and `docs/plugin-guide/<plugin>.md` files cover each plugin in depth;
+this tour focuses on the hand-offs between them.
 
 ## Module 1: Pipeline Overview & TIPS Foundations
 

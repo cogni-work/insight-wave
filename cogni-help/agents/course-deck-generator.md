@@ -19,9 +19,9 @@ whenToUse: |
   </example>
 
   <example>
-  Context: Multiple course intro decks needed in parallel
-  user: "Generate intro decks for courses 3, 6, and 8"
-  assistant: "I'll launch course-deck-generator agents in parallel for each course."
+  Context: Multiple tour intro decks needed in parallel
+  user: "Generate intro decks for tour-research-to-report, tour-portfolio-to-pitch, and tour-trends-to-solutions"
+  assistant: "I'll launch course-deck-generator agents in parallel for each tour."
   <commentary>
   Each agent invokes the course-deck skill independently. Agents can run in parallel.
   </commentary>
@@ -44,7 +44,7 @@ generate deck content yourself.
 ## Parameters
 
 You will receive:
-- `deck_type` -- either `curriculum` (program overview) or a course number/name (required)
+- `deck_type` -- either `curriculum` (program overview of the 7 workflow tours) or a tour ID / short name (required)
 - `output_dir` (optional) -- where to save the generated PPTX
 
 ## Execution

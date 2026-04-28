@@ -64,7 +64,7 @@ ID.
 | Internal ID | Pipeline | Use case |
 |-------------|----------|----------|
 | `docs-pipeline` | doc-start → audit → generate → sync → power → claude → hub → bridge | Maintainer documenting the monorepo |
-| `full-onboarding` | workspace → help courses 1-12 | New user learning the full ecosystem |
+| `full-onboarding` | workspace → cogni-help workflow tours | New user learning the full ecosystem |
 
 These do not appear in the default `/workflow` listing (no-args invocation),
 do not carry canonical IDs, and are not part of the docs/workflows 1:1 set —

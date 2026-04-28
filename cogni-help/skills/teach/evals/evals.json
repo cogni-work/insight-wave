@@ -3,26 +3,26 @@
   "evals": [
     {
       "id": 0,
-      "prompt": "Teach me Course 1",
-      "expected_output": "Starts Course 1 (Cowork Fundamentals) with Module 1, shows progress bar [#-----] Module 1/5, presents theory content about Claude Cowork basics",
+      "prompt": "Teach me the install-to-infographic tour",
+      "expected_output": "Starts the tour-install-to-infographic course with Module 1, shows progress bar [#-----] Module 1/5, presents theory content about chaining cogni-workspace, theme selection, and cogni-visual into a first-run infographic",
       "files": []
     },
     {
       "id": 1,
       "prompt": "I want to learn about trend scouting",
-      "expected_output": "Maps 'trend scouting' to Course 4 (trends-scouting), begins Module 1 of TIPS framework course with theory on the Smarter Service Trendradar",
+      "expected_output": "Maps 'trend scouting' to the tour-trends-to-solutions course (the integrative tour that covers TIPS scouting, portfolio integration, and marketing activation), begins Module 1 with theory on the Smarter Service Trendradar and the upstream cogni-trends scouting flow",
       "files": []
     },
     {
       "id": 2,
       "prompt": "Show me my course progress",
-      "expected_output": "Reads .claude/cogni-help.local.md, displays all 11 courses with completion status markers: [x] completed, [>] in-progress, [ ] not-started",
+      "expected_output": "Reads .claude/cogni-help.local.md, displays all 7 workflow tours with completion status markers: [x] completed, [>] in-progress, [ ] not-started",
       "files": []
     },
     {
       "id": 3,
       "prompt": "Continue my course",
-      "expected_output": "Reads progress file, identifies the in-progress course, offers to resume from the last completed module with option to restart",
+      "expected_output": "Reads progress file, identifies the in-progress tour, offers to resume from the last completed module with option to restart",
       "files": []
     }
   ]

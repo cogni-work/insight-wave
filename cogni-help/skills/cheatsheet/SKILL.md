@@ -72,7 +72,7 @@ Keep in English regardless of language setting:
 - **cogni-Y**: How it connects
 
 ## Learn More
-Full guide: docs/plugin-guide/<plugin-name>.md | Course: /teach <course-number>
+Full guide: docs/plugin-guide/<plugin-name>.md | Tour: /teach <tour-id>
 ```
 
 ## Guidelines
@@ -87,8 +87,9 @@ Full guide: docs/plugin-guide/<plugin-name>.md | Course: /teach <course-number>
 - **Always include related plugins.** The ecosystem is interconnected — showing
   how plugins connect helps users plan their workflow.
 - **Include a Learn More footer.** If `docs/plugin-guide/<plugin>.md` exists, link to
-  it. Also include the corresponding `/teach` course number from the curriculum
-  (e.g., cogni-trends = Course 4, cogni-portfolio = Course 6).
+  it. Also include the corresponding `/teach` workflow tour from the curriculum
+  (e.g., cogni-trends → `tour-trends-to-solutions`, cogni-portfolio →
+  `tour-portfolio-to-pitch`, cogni-research → `tour-research-to-report`).
 
 ## Listing Plugins
 
