@@ -277,8 +277,9 @@ Show the follow-on tour map:
 ### Exercise
 
 Have the learner identify the deliverable they need next quarter. Pick the
-matching follow-on tour. Confirm the prerequisites (plugin-track courses) are
-either complete or the learner accepts the inline-summary fallback.
+matching follow-on tour. Read its Prerequisites line and confirm the learner is
+either comfortable with the named plugins (cheatsheets and `docs/plugin-guide/<plugin>.md`
+files cover them) or accepts the inline-summary fallback.
 
 ### Quiz
 
@@ -287,8 +288,9 @@ either complete or the learner accepts the inline-summary fallback.
    foundation. Skipping the bootstrap leads to broken renders and missing themes
    downstream.
 
-2. **Hands-on**: Pick a follow-on tour and read its prerequisites. Are the
-   plugin-track courses complete? If not, what's the path to fill them?
+2. **Hands-on**: Pick a follow-on tour and read its Prerequisites line. Is the
+   learner comfortable with the named plugins? If not, what's the path —
+   cheatsheet, plugin-guide, or inline-summary fallback?
 
 ### Recap
 
