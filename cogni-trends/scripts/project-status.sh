@@ -527,36 +527,11 @@ case "$PHASE" in
 esac
 next_actions="$next_actions]"
 
-# Inject re-anchor action when stale blueprints detected (prepend before existing actions)
-if $HEALTH_CHECK; then
-  HAS_STALE_BLUEPRINTS=$(echo "$stale_warnings" | python3 -c "
-import json, sys
-try:
-    w = json.load(sys.stdin)
-    print('true' if any(x.get('type') == 'stale_blueprints' for x in w) else 'false')
-except:
-    print('false')
-" 2>/dev/null || echo "false")
-
-  if [ "$HAS_STALE_BLUEPRINTS" = "true" ]; then
-    case "$PHASE" in
-      modeling-scoring|modeling-curating|reporting|complete)
-        next_actions=$(echo "$next_actions" | python3 -c "
-import json, sys
-try:
-    actions = json.load(sys.stdin)
-    reanchor = {'skill': 'value-modeler', 'reason': 'Portfolio has changed since blueprints were generated — run re-anchor to update solution mappings'}
-    actions.insert(0, reanchor)
-    print(json.dumps(actions))
-except:
-    sys.stdout.write(sys.stdin.read())
-" 2>/dev/null || echo "$next_actions")
-        ;;
-    esac
-  fi
-fi
-
-# Health check: detect staleness
+# Health check: detect staleness (must run before the re-anchor injection
+# below, which reads $stale_warnings — under `set -u` reading it before this
+# block initializes it raised an unbound-variable error that was silently
+# swallowed, leaving HAS_STALE_BLUEPRINTS=false and the re-anchor recommendation
+# never reaching next_actions for any gated phase).
 stale_warnings="[]"
 if $HEALTH_CHECK; then
   stale_warnings=$(python3 -c "
@@ -659,6 +634,38 @@ if os.path.exists(scout_file):
 
 print(json.dumps(warnings))
 " 2>/dev/null || echo "[]")
+fi
+
+# Inject re-anchor action when stale blueprints detected (prepend before existing actions)
+if $HEALTH_CHECK; then
+  # Defensive default: guard against unbound $stale_warnings if a future edit
+  # decouples the staleness-detection block above from this injection block.
+  stale_warnings="${stale_warnings:-[]}"
+  HAS_STALE_BLUEPRINTS=$(echo "$stale_warnings" | python3 -c "
+import json, sys
+try:
+    w = json.load(sys.stdin)
+    print('true' if any(x.get('type') == 'stale_blueprints' for x in w) else 'false')
+except:
+    print('false')
+" 2>/dev/null || echo "false")
+
+  if [ "$HAS_STALE_BLUEPRINTS" = "true" ]; then
+    case "$PHASE" in
+      modeling-scoring|modeling-curating|reporting|complete)
+        next_actions=$(echo "$next_actions" | python3 -c "
+import json, sys
+try:
+    actions = json.load(sys.stdin)
+    reanchor = {'skill': 'value-modeler', 'reason': 'Portfolio has changed since blueprints were generated — run re-anchor to update solution mappings'}
+    actions.insert(0, reanchor)
+    print(json.dumps(actions))
+except:
+    sys.stdout.write(sys.stdin.read())
+" 2>/dev/null || echo "$next_actions")
+        ;;
+    esac
+  fi
 fi
 
 cat << EOF
