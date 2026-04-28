@@ -1,6 +1,6 @@
 {
   "name": "cogni-trends",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK.",
   "author": {
     "name": "Stephan de Haas",
@@ -13,24 +13,7 @@
     "trends",
     "strategic-trends",
     "bilingual",
-    "dach",
-    "mittelstand",
-    "germany",
     "trend-report",
-    "resume",
-    "value-modeler",
-    "solution-templates",
-    "big-block",
-    "relationship-networks",
-    "industry-catalog",
-    "catalog",
-    "knowledge-base",
-    "reuse",
-    "dashboard",
-    "trends-dashboard",
-    "opportunity",
-    "portfolio-anchor",
-    "quality-feedback",
     "agent"
   ]
 }
