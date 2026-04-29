@@ -18,7 +18,7 @@ Session entry point for returning to trend scouting work. This skill orients the
 
 ## Core Concept
 
-TIPS projects span multiple sessions and skills (trend-scout → value-modeler → trend-report → verification). Without a clear re-entry point, users lose context between sessions and waste time figuring out what they already did. This skill bridges that gap: it reads the project state, surfaces progress at a glance, and recommends the most valuable next step.
+TIPS projects span multiple sessions and skills (trend-scout → value-modeler → trend-report → verify-trend-report). Without a clear re-entry point, users lose context between sessions and waste time figuring out what they already did. This skill bridges that gap: it reads the project state, surfaces progress at a glance, and recommends the most valuable next step.
 
 ## Workflow
 
@@ -173,8 +173,8 @@ Use the `phase` field returned by `project-status.sh` verbatim to look up the ro
 | `modeling-curating` | Ranked solutions complete, curation pending | Continue `value-modeler` for optional catalog curation |
 | `modeling-complete` | Value model complete with ranked solutions | Run `trend-report`, or `/trends-catalog import` |
 | `reporting` | Value model complete, report not yet generated | Run `trend-report` |
-| `verification` | Report done, claims pending verification | Run `cogni-claims:claims` |
-| `revision` | Claims verified and resolved, report revision pending | Run `trend-report` Phase 5 (revision) |
+| `verification` | Report done, claims pending verification | Run `cogni-trends:verify-trend-report` |
+| `revision` | Claims verified and resolved, report revision pending | Run `cogni-trends:verify-trend-report` (re-enters at the revisor loop) |
 | `complete` | All stages finished | Report complete — choose from downstream options below |
 
 **Stale Blueprints:** When `stale_warnings` includes `stale_blueprints`, the script has already prepended a re-anchor action to `next_actions` (portfolio context changed after blueprints were generated). Surface it as the top action — no extra LLM derivation, no separate copy block to construct.
@@ -183,10 +183,9 @@ Use the `phase` field returned by `project-status.sh` verbatim to look up the ro
 
 When `phase` is `complete`, the `next_actions` array from `project-status.sh` contains the full set of downstream options. Present them grouped by purpose:
 
-**Polish & Verify**
-- `cogni-copywriting:copywrite` — Polish report prose for executive readability (tone scope)
-- `cogni-claims:claims` — Verify extracted claims against cited sources
-- `trend-report` Phase 5 — Revise report after claims resolution (apply corrections, remove unverifiable claims)
+**Verify & Polish**
+- `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for polish + visualization
+- `cogni-copywriting:copywrite` — Direct polish-only pass (skip if already invoked through the verify-trend-report Phase 5 menu)
 
 **Visualize**
 - `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the trend report (optional, for premium Pencil-rendered visual header in enriched HTML)

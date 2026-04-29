@@ -1,7 +1,7 @@
 ---
 name: trend-report
 description: |
-  Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims. The user selects a report-level narrative arc from cogni-narrative's 7 story arcs (corporate-visions, technology-futures, competitive-intelligence, strategic-foresight, industry-transformation, trend-panorama, theme-thesis) — the arc frames the executive summary, bridge paragraphs between themes, and a synthesis closing section that bind investment themes into one cohesive narrative. Each investment theme internally uses the theme-thesis arc (Why Change → Why Now → Why You → Why Pay) backed by T→I→P→S value chain evidence. Reads agreed trend candidates, enriches each with web-sourced quantitative evidence via parallel agents, assembles the report with arc-framed executive summary, bridge paragraphs, theme sections, synthesis section, and claims registry. Invokes cogni-claims:claims for optional verification. Downstream polish, visualization, and export are steered via `/trends-resume`. Required pipeline: trend-scout → value-modeler → trend-report. Use when: (1) trend-scout and value-modeler have completed, (2) user wants a written trend report, (3) user mentions "trend report", "TIPS report", "write up trends", "summarize trends", "trend analysis document", "strategic stories", (4) preparing a deliverable from scouted trends, (5) user asks to "generate report from trends" or "create trend deliverable". Always use this skill when trend-scout output exists and the user wants any kind of written trend analysis — even if they don't use the exact phrase "trend report".
+  Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims. The user selects a report-level narrative arc from cogni-narrative's 7 story arcs (corporate-visions, technology-futures, competitive-intelligence, strategic-foresight, industry-transformation, trend-panorama, theme-thesis) — the arc frames the executive summary, bridge paragraphs between themes, and a synthesis closing section that bind investment themes into one cohesive narrative. Each investment theme internally uses the theme-thesis arc (Why Change → Why Now → Why You → Why Pay) backed by T→I→P→S value chain evidence. Reads agreed trend candidates, enriches each with web-sourced quantitative evidence via parallel agents, assembles the report with arc-framed executive summary, bridge paragraphs, theme sections, synthesis section, and claims registry. Produces a clean draft + claims registry; verification, structural review, revision, polish, and visualization are handled by the separate `verify-trend-report` skill (auto-recommended at the end of Phase 4). Required pipeline: trend-scout → value-modeler → trend-report → verify-trend-report. Use when: (1) trend-scout and value-modeler have completed, (2) user wants a written trend report, (3) user mentions "trend report", "TIPS report", "write up trends", "summarize trends", "trend analysis document", "strategic stories", (4) preparing a deliverable from scouted trends, (5) user asks to "generate report from trends" or "create trend deliverable". Always use this skill when trend-scout output exists and the user wants any kind of written trend analysis — even if they don't use the exact phrase "trend report".
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill
 ---
 
@@ -11,7 +11,7 @@ Generate a strategic TIPS trend report from agreed trend-scout candidates. Organ
 
 ## Purpose
 
-Transform agreed trend-scout candidates into a strategic, evidence-backed report:
+Transform agreed trend-scout candidates into a strategic, evidence-backed report draft:
 
 1. Load value-modeler investment themes and validate prerequisites
 2. User selects a report-level narrative arc (from cogni-narrative's 7 arcs) to frame the overall story
@@ -20,9 +20,7 @@ Transform agreed trend-scout candidates into a strategic, evidence-backed report
 5. Generate arc-framed executive summary, bridge paragraphs between themes, and synthesis closing section
 6. Generate inline citations for every quantitative claim
 7. Produce a claims registry compatible with `cogni-claims:claims`
-8. Optionally verify claims via cogni-claims:claims
-9. If claims have deviations, revise the report with corrections and removals (Phase 5)
-10. Recommend downstream polish, visualization, and export options via `/trends-resume`
+8. Hand off to `/verify-trend-report` for the extended pipeline (verification, structural review, revision, downstream menu)
 
 ## Language Support
 
@@ -41,8 +39,7 @@ Report prose, section headers, and TIPS labels all adapt to the chosen output la
 - `value-modeler` completed with `tips-value-model.json` containing investment themes
 - Web access enabled for evidence enrichment
 - Optional: `cogni-narrative` plugin for theme-thesis arc guidance (graceful fallback if absent — investment themes use flat structure)
-- Optional: `cogni-copywriting` plugin for executive polish (graceful fallback if absent)
-- Optional: `cogni-claims` plugin for claim verification
+- Downstream: `verify-trend-report` (in this plugin) handles claim verification, cross-theme structural review, post-verification revision, and the final polish/visualize menu
 
 ## Context Independence
 
@@ -85,27 +82,22 @@ Read references **only when needed** for the specific phase:
 | [references/claims-format.md](references/claims-format.md) | Extracting/merging claims (Phase 1-2) |
 | [references/i18n/labels-en.md](references/i18n/labels-en.md) | English report headings and labels |
 | [references/i18n/labels-de.md](references/i18n/labels-de.md) | German report headings and labels |
-| [references/phase-3-claim-verification.md](references/phase-3-claim-verification.md) | Running claim verification (Phase 3) |
-| [references/phase-3.5-executive-polish.md](references/phase-3.5-executive-polish.md) | Polishing report prose (Phase 3.5) |
-| [references/phase-5-revision.md](references/phase-5-revision.md) | Post-verification report revision (Phase 5) |
 
 ## Workflow Overview
 
 Track progress through these phases as you go:
 
 ```text
-Phase 0 → Phase 0.5 → Phase 1 → Phase 2 → Phase 2.5 → Phase 3 → Phase 3.5 → Phase 4 → Phase 5
-   │          │           │          │          │           │          │            │          │
-   │          │           │          │          │           │          │            │          └─ Post-verification revision
-   │          │           │          │          │           │          │            └─ Update metadata, recommend /trends-resume
-   │          │           │          │          │           │          └─ Optional executive polish
-   │          │           │          │          │           └─ Optional claims verification
-   │          │           │          │          └─ Structural review (cross-theme quality gate)
+Phase 0 → Phase 0.5 → Phase 1 → Phase 2 → Phase 4
+   │          │           │          │          │
+   │          │           │          │          └─ Update metadata, hand off to /verify-trend-report
    │          │           │          └─ Theme narratives + exec summary + bridges + synthesis
    │          │           └─ 4 parallel agents: enrich trends, write sections, extract claims
    │          └─ Optional deep research for 3-5 high-value ACT-horizon trends
    └─ Project discovery, arc selection, load inputs, validate gate
 ```
+
+Phases 2.5 (structural review), 3 (claim verification), 3.5 (executive polish), and 5 (post-verification revision) moved into the dedicated `verify-trend-report` skill — re-entrant, runs in a fresh context window, and bundles a downstream polish/visualize menu at the end.
 
 ---
 
@@ -455,55 +447,6 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 
 ---
 
-### Phase 2.5: Structural Review (Optional but Recommended)
-
-**Purpose:** Cross-theme quality check of the assembled report before claims verification. Individual agents have their own quality gates, but this phase catches issues that span themes — duplicate evidence, inconsistent forcing functions, themes with zero quantitative data, missing Handeln/Nichthandeln contrasts.
-
-**Step 2.5.1: Dispatch Reviewer Agent**
-
-```yaml
-Task:
-  subagent_type: "cogni-trends:trend-report-reviewer"
-  description: "Structural review of trend report"
-  prompt: |
-    Review the assembled trend report for structural quality.
-
-    PROJECT_PATH: {{PROJECT_PATH}}
-    REPORT_PATH: {{PROJECT_PATH}}/tips-trend-report.md
-    REVIEW_ITERATION: 1
-    OUTPUT_LANGUAGE: {{PROJECT_LANGUAGE}}
-```
-
-**Step 2.5.2: Process Verdict**
-
-If verdict is `"accept"` (score >= 0.80): proceed to Phase 3.
-
-If verdict is `"revise"`:
-1. Read `revision_priorities` from the verdict
-2. Apply targeted fixes to `tips-trend-report.md`:
-   - Add missing quantitative evidence (may require 1-2 WebSearch calls for specific data points)
-   - Add Nichthandeln contrasts where flagged
-   - Resolve forcing function inconsistencies
-   - Fix duplicate evidence citations
-3. Re-run reviewer with `REVIEW_ITERATION: 2`
-4. Accept regardless of second verdict (max 2 iterations) — log remaining issues as warnings
-
-**Skip condition:** If the user explicitly asks for a fast report or says "skip review", bypass this phase.
-
----
-
-### Phase 3: Claim Verification (Optional)
-
-Read [references/phase-3-claim-verification.md](references/phase-3-claim-verification.md) for the full workflow. Asks the user whether to verify extracted claims via `cogni-claims:claims`. If the plugin is not installed, skip with a warning.
-
----
-
-### Phase 3.5: Executive Polish (Optional)
-
-Read [references/phase-3.5-executive-polish.md](references/phase-3.5-executive-polish.md) for the full workflow. Polishes report prose via `cogni-copywriting:copywriter` with `SCOPE=tone`. Validates citations and structure are preserved; reverts on failure.
-
----
-
 ### Phase 4: Finalization
 
 #### Step 4.1: Update Metadata
@@ -529,32 +472,21 @@ Add to `{PROJECT_PATH}/.metadata/trend-scout-output.json`:
 #### Step 4.2: Display Summary
 
 ```
-Trend Report Complete (Investment Themes)
-─────────────────────────────────────────
+Trend Report Draft Complete (Investment Themes)
+───────────────────────────────────────────────
 Report:       {PROJECT_PATH}/tips-trend-report.md
 Themes:       {N} investment themes ({REPORT_ARC_ID} arc)
 Claims:       {PROJECT_PATH}/tips-trend-report-claims.json
 Trends:       60 across {N} investment themes
 Claims:       {total_claims} quantitative claims extracted
-Verification: {verdict or "skipped"}
 
-Run /trends-resume to see your full options — polish, visualize, present, export, or accumulate.
+Next step → Run /verify-trend-report to verify claims against sources, run
+cross-theme structural review, apply corrections, and pick a downstream path
+(executive polish or themed-HTML visualization).
+
+Then /trends-resume shows the full option set (slides, web, storyboard,
+catalog, dashboard).
 ```
-
----
-
-### Phase 5: Post-Verification Revision (Conditional)
-
-Read [references/phase-5-revision.md](references/phase-5-revision.md) for the full workflow. Triggers when claims verification (Phase 3) or a later `/claims` session produced resolved deviations that require report corrections or claim removals. If all claims verified clean or the user skipped verification, this phase is skipped.
-
-Dispatches the `trend-report-revisor` agent to:
-- Remove unverifiable claims from the report body and claims registry table (no strikethrough — clean removal)
-- Correct inaccurate claims with verified replacement text
-- Find replacement evidence via WebSearch when removed claims leave gaps in the argument
-- Renumber the claims registry table sequentially
-- Output a versioned revision (`tips-trend-report-v2.md`) that becomes the new canonical report
-
-This phase also handles the **deferred flow**: when the user verified and resolved claims in a separate session via `/claims` and returns via `/trends-resume`, the resume skill detects the `revision` phase and routes here.
 
 ---
 
@@ -575,9 +507,6 @@ This phase also handles the **deferred flow**: when the user verified and resolv
 | Investment theme agent quality gate fails | WARNING: continue (section written but may be thin) |
 | Investment theme references unknown candidate_ref | WARNING: agent skips that candidate in investment theme narrative |
 | `cogni-narrative` not installed | WARNING: investment-theme-writer uses flat structure (no arc guidance) |
-| `cogni-copywriting` not installed | WARNING: skip executive polish |
-| `cogni-claims` not installed | WARNING: skip verification |
-| claims verification returns FAIL | Present failed claims. Do not auto-correct. |
 
 ## Integration
 
@@ -585,11 +514,13 @@ This phase also handles the **deferred flow**: when the user verified and resolv
 - `trend-scout` produces `trend-scout-output.json` (required)
 - `value-modeler` produces `tips-value-model.json` (required)
 
-**Pipeline:** `trend-scout → value-modeler → trend-report`
+**Pipeline:** `trend-scout → value-modeler → trend-report → verify-trend-report`
 
-**Optional cross-plugin:** `cogni-narrative` theme-thesis arc (Phase 2 investment theme writer guidance), `cogni-claims:claims` (Phase 3)
+**Optional cross-plugin:** `cogni-narrative` theme-thesis arc (Phase 2 investment theme writer guidance)
 
-**Downstream (via `/trends-resume`):** `cogni-copywriting:copywrite` (prose polish), `cogni-visual:enrich-report` (themed HTML), `cogni-visual:story-to-slides` (presentation), `cogni-visual:story-to-web` (landing page), `cogni-visual:story-to-storyboard` (print posters), `trends-catalog import`, `trends-dashboard`
+**Downstream (via `/verify-trend-report`):** claim verification (`cogni-claims:claims`), cross-theme structural review, post-verification revision, executive polish (`cogni-copywriting:copywriter`), themed HTML (`cogni-visual:enrich-report`)
+
+**Further downstream (via `/trends-resume`):** `cogni-visual:story-to-slides` (presentation), `cogni-visual:story-to-web` (landing page), `cogni-visual:story-to-storyboard` (print posters), `trends-catalog import`, `trends-dashboard`
 
 ## Debugging
 

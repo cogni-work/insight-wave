@@ -5,13 +5,18 @@ Strategic trend scouting and reporting pipeline — combines the Smarter Service
 ## Plugin Architecture
 
 ```
-skills/                         6 trend intelligence skills
+skills/                         7 trend intelligence skills
   trend-scout/                    End-to-end scouting: industry selection, bilingual web research, 60 candidates
     references/
       industry-subsectors.md      Industry and subsector classification
   trend-report/                   CxO-level narrative report organized by investment themes
     references/
       report-structure.md         Theme-first report structure and evidence requirements
+  verify-trend-report/            Extended quality pipeline: claim verification + structural review + revisor + downstream menu
+    references/
+      claims-integration.md       cogni-claims submission and verification protocol
+      structural-review.md        Reviewer/revisor loop, validation rules, version output
+      downstream-options.md       Final menu (copywriter, enrich-report)
   value-modeler/                  T→I→P→S relationship networks → ranked solution templates
   trends-catalog/                 Persistent industry catalogs for cross-pursuit knowledge reuse
   trends-dashboard/               Interactive HTML dashboard of full TIPS project lifecycle
@@ -57,17 +62,17 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 6 | trend-scout, value-modeler, trend-report, trends-catalog, trends-dashboard, trends-resume |
+| Skills | 7 | trend-scout, value-modeler, trend-report, verify-trend-report, trends-catalog, trends-dashboard, trends-resume |
 | Agents | 9 | trend-web-researcher (haiku), trend-generator (opus), trend-candidate-reviewer (sonnet), trend-signal-curator (haiku), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-reviewer (sonnet), trend-report-revisor (sonnet), trend-deep-researcher (sonnet) |
 
 ## Workflow Pipeline
 
 ```
-trend-scout → value-modeler → trend-report → trends-catalog
-   (scout)      (model)         (report)      (accumulate)
+trend-scout → value-modeler → trend-report → verify-trend-report → trends-catalog
+   (scout)      (model)         (draft)       (verify+review+revise)   (accumulate)
 ```
 
-Each stage depends on the previous. `trends-resume` can re-enter at any stage. `trends-dashboard` visualizes the full lifecycle.
+`verify-trend-report` is the extended quality pipeline mirroring `cogni-research:verify-report`: claim verification via cogni-claims, cross-theme structural review, revisor loop, and a final menu surfacing executive polish (`cogni-copywriting:copywriter`) and visual enrichment (`cogni-visual:enrich-report`). Each stage depends on the previous. `trends-resume` can re-enter at any stage. `trends-dashboard` visualizes the full lifecycle.
 
 ## Data Model
 
@@ -117,7 +122,7 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 |--------|-----------|-----------|
 | cogni-portfolio | bidirectional | trends-bridge exports solution templates → portfolio features; portfolio anchors enrich solution relevance scoring |
 | cogni-narrative | downstream | trend-panorama and theme-thesis arcs consume TIPS output |
-| cogni-claims | downstream | trend-report registers claims; verify via cogni-claims:claims |
+| cogni-claims | downstream | trend-report registers claims; `verify-trend-report` Phase 2 invokes cogni-claims:claims for source verification |
 | cogni-copywriting | downstream | Executive polish on trend reports with tone scoping |
 | cogni-workspace | upstream | pick-theme for dashboard theming |
 | cogni-visual | downstream | enrich-report themed HTML from trend-report; story-to-slides for presentations |

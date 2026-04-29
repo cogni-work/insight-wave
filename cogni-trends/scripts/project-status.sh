@@ -626,7 +626,7 @@ elif b('HAS_CLAIMS') and ct > 0:
     stages.append({
         'name': 'Claim Verification',
         'status': 'pending',
-        'details': f"{ct} claims awaiting verification"
+        'details': f"{ct} claims awaiting verification — run /verify-trend-report"
     })
 else:
     stages.append({
@@ -735,10 +735,10 @@ case "$PHASE" in
     fi
     ;;
   verification)
-    add_action "cogni-claims:claims" "$CLAIMS_TOTAL claims extracted — ready for verification"
+    add_action "cogni-trends:verify-trend-report" "$CLAIMS_TOTAL claims extracted — verify, review, and apply corrections via the extended pipeline"
     ;;
   revision)
-    add_action "trend-report" "${REVISION_CHANGES:-0} claims resolved — revise report to apply corrections and removals"
+    add_action "cogni-trends:verify-trend-report" "${REVISION_CHANGES:-0} claims resolved — re-enter the verify pipeline to apply corrections and removals"
     ;;
   complete)
     # Polish
