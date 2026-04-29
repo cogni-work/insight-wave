@@ -5,9 +5,11 @@ description: |
   Use whenever the user mentions "continue tips", "resume tips", "resume trends",
   "where was I", "tips status", "what's next", "continue the project",
   "resume trend project", "check scan progress", "trend status",
+  "weiter mit trends", "trends fortsetzen", "tips fortsetzen",
+  "wo war ich", "trends status", "trendprojekt fortsetzen", "stand der trends",
   or opens a session that involves an existing cogni-trends project —
-  even if they don't say "resume" explicitly.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+  even if they don't say "resume" or "fortsetzen" explicitly.
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 # TIPS Resume
@@ -91,7 +93,7 @@ Translate the status enum for display: `done`→Done, `pending`→Pending, `read
 |-------|--------|---------|
 | {stages[i].name} | {translated stages[i].status} | {translated stages[i].details} |
 
-**Trust the script's pre-computed values.** `phase`, `next_actions`, and `stages[]` are derived from full state — never re-derive any of them from `workflow_state` or from raw counts, and never substitute your own next-action recommendation when `next_actions` is non-empty.
+**Trust the script's pre-computed values.** `phase`, `next_actions`, and `stages[]` are derived from full state — never re-derive any of them from `workflow_state` or from raw counts, and never substitute your own next-action recommendation when `next_actions` is non-empty. Render `next_actions` verbatim — do not prepend your own copy block "leading" the user toward a specific action; if a step deserves emphasis, it is already at `next_actions[0]`.
 
 **Portfolio Anchor Health** — when the `Portfolio Anchors` row in `stages[]` has status `done`, also render this per-product summary table from `portfolio_anchors.products` after the Progress Table:
 
@@ -100,8 +102,6 @@ Translate the status enum for display: `done`→Done, `pending`→Pending, `read
 | {portfolio_anchors.products[i].product_slug} | {portfolio_anchors.products[i].features} | {portfolio_anchors.products[i].solutions} | {portfolio_anchors.products[i].needs_delivered} | {portfolio_anchors.products[i].needs_undelivered} | OK or {portfolio_anchors.products[i].quality_issues} flags |
 
 Render one row per element of `portfolio_anchors.products`. Coverage above 70% (delivered / total needs) indicates healthy anchoring. Products with quality flags need attention before customer-facing use — point users to `/trends-dashboard` for per-solution detail.
-
-When the phase is `modeling` or `modeling-paths` and the Portfolio Bridge stage's status is `ready`, lead the next-action recommendation with: "Before starting the value modeler, run `/bridge portfolio-to-tips` to ground your solutions in real products." (The Portfolio Bridge details string already reflects the `(upgrade available)` annotation when context version is below 3.1; no extra LLM derivation needed.)
 
 **Scoring Summary** (if candidates exist):
 - Average score: {scoring.avg_score}
@@ -122,6 +122,34 @@ After the tables:
 - **Artifacts** — note which log files and outputs exist
 
 Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report.
+
+**Example rendered output** (English project, mid-modeling phase):
+
+```
+TIPS Project: Industrial AI for Process Manufacturing
+Industry: manufacturing / process-industries
+Language: en
+
+| Stage                | Status  | Details                              |
+|----------------------|---------|--------------------------------------|
+| Web Research         | Done    | 36 signals across 4 dimensions       |
+| Candidate Generation | Done    | 60 candidates scored                 |
+| Candidate Review     | Done    | 48 accepted, 8 revised, 4 rejected   |
+| Portfolio Anchors    | Done    | 3 products, 12/14 needs delivered    |
+| Portfolio Bridge     | Ready   | context v3.0 (upgrade available)     |
+| Value Modeler        | Pending | Run /value-modeler                   |
+| Trend Report         | N/A     | Awaiting modeling                    |
+
+Phase: modeling — value model not yet built.
+
+Next:
+  1. /bridge portfolio-to-tips — anchor solutions in current portfolio context
+  2. /value-modeler — build TIPS networks and rank solutions
+
+Welcome back — pick one and I'll proceed.
+```
+
+Use this as a calibration target: terse columns, named phase translated to plain language, numbered next-actions surfaced from the script's `next_actions`, one short closer.
 
 ### 5. Recommend Next Action
 
@@ -149,14 +177,7 @@ Use the `phase` field returned by `project-status.sh` verbatim to look up the ro
 | `revision` | Claims verified and resolved, report revision pending | Run `trend-report` Phase 5 (revision) |
 | `complete` | All stages finished | Report complete — choose from downstream options below |
 
-**Stale Blueprints:** When `stale_warnings` contains a `stale_blueprints` entry (portfolio context
-was updated after blueprints were generated), prepend a re-anchor recommendation to the next actions
-for phases `modeling-scoring`, `modeling-curating`, `modeling-complete`, `reporting`, and `complete`:
-> "Portfolio context has changed since blueprints were generated. Run 're-anchor solutions' via
-> the value-modeler to update solution mappings with current portfolio data."
-
-This is automatically handled by `project-status.sh --health-check`, which prepends the re-anchor
-action to `next_actions` when the condition is detected.
+**Stale Blueprints:** When `stale_warnings` includes `stale_blueprints`, the script has already prepended a re-anchor action to `next_actions` (portfolio context changed after blueprints were generated). Surface it as the top action — no extra LLM derivation, no separate copy block to construct.
 
 ### Downstream Options for Completed Reports
 
@@ -187,8 +208,6 @@ All visualization skills (`story-to-*`) consume `tips-trend-report.md` directly 
 ## Multi-Session Design
 
 This skill is the recommended re-entry point after heavy sessions. TIPS work naturally spans multiple sessions — web research, candidate generation, candidate review, value modeling, and report writing each consume significant context. Other TIPS skills proactively recommend `/trends-resume` when they detect a heavy session (Phase 1 web research, Phase 2 generation, or report assembly completed).
-
-When presenting the status summary, acknowledge what the user accomplished in previous sessions if recent timestamps suggest productive recent work. This continuity helps users feel their work persists and builds confidence in the multi-session workflow.
 
 ## Language Support
 
