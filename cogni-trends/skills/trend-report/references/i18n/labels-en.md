@@ -158,10 +158,12 @@ COST_OF_INACTION: "Cost of Action vs. Cost of Inaction"
 ## Report Arc Selection
 
 ```text
-PHASE_0_ARC_QUESTION: "Which narrative arc should frame the report? This determines how themes connect — not how individual themes are written."
+PHASE_0_ARC_QUESTION: "Which narrative arc should frame the report? This determines the report's H2 structure (smarter-service uses 4 dimensions; the others use themes as H2)."
 PHASE_0_ARC_HEADER: "Report Arc"
-ARC_CORPORATE_VISIONS: "Corporate Visions (Recommended)"
-ARC_CORPORATE_VISIONS_DESC: "Challenge assumptions, create urgency, quantify inaction — the B2B persuasion frame"
+ARC_SMARTER_SERVICE: "Smarter Service (Recommended for TIPS reports)"
+ARC_SMARTER_SERVICE_DESC: "Macro skeleton: Forces → Impact → Horizons → Foundations as 4 H2 sections, with investment themes nested as anchored H3 cases. Closes on a Capability Imperative synthesis."
+ARC_CORPORATE_VISIONS: "Corporate Visions"
+ARC_CORPORATE_VISIONS_DESC: "Challenge assumptions, create urgency, quantify inaction — the B2B persuasion frame. Themes as H2."
 ARC_TECHNOLOGY_FUTURES: "Technology Futures"
 ARC_TECHNOLOGY_FUTURES_DESC: "Map emerging capabilities, show convergence, quantify required investment"
 ARC_COMPETITIVE_INTELLIGENCE: "Competitive Intelligence"
@@ -170,10 +172,39 @@ ARC_STRATEGIC_FORESIGHT: "Strategic Foresight"
 ARC_STRATEGIC_FORESIGHT_DESC: "Read signals, build scenarios, frame decisions under uncertainty"
 ARC_INDUSTRY_TRANSFORMATION: "Industry Transformation"
 ARC_INDUSTRY_TRANSFORMATION_DESC: "Identify structural forces, acknowledge friction, chart evolution path"
-ARC_TREND_PANORAMA: "Trend Panorama (TIPS-native)"
-ARC_TREND_PANORAMA_DESC: "Map forces → impact → horizons → foundations across the Trendradar"
+ARC_TREND_PANORAMA: "Trend Panorama (TIPS-native, theme-less)"
+ARC_TREND_PANORAMA_DESC: "Map forces → impact → horizons → foundations as a panorama (no investment themes)"
 ARC_THEME_THESIS: "Theme Thesis"
 ARC_THEME_THESIS_DESC: "Each theme as an investment thesis with its own quantified business case"
+
+# Smarter Service macro section labels (used by trend-report-composer)
+MACRO_FORCES: "Forces — External Effects"
+MACRO_IMPACT: "Impact — Digital Value Drivers"
+MACRO_HORIZONS: "Horizons — New Horizons"
+MACRO_FOUNDATIONS: "Foundations — Digital Foundation"
+
+# Smarter Service synthesis section
+SYNTHESIS_HEADING_SMARTER_SERVICE: "The Capability Imperative"
+UNIFIED_CAPABILITY_ROADMAP_LABEL: "Unified Capability Roadmap"
+
+# Smarter Service: dimension-specific Phase-2 status messages
+PHASE_2_PRIMER_START: "Writing shared dimension primer (Smarter Service)..."
+PHASE_2_PRIMER_WRITTEN: "Shared dimension primer written."
+PHASE_2_THEME_CASE_AGENT_DISPATCH: "Dispatched theme-case writers for {N} investment themes (slim 3-beat mode)."
+PHASE_2_THEME_CASE_AGENT_COMPLETE: "Theme-case complete: {theme_name}"
+PHASE_2_THEME_CASE_AGENT_SKIP_RESUME: "Skipping theme-case (resume): {theme_name}"
+PHASE_2_COMPOSER_DISPATCH: "Dispatching dimension composer: {dimension}..."
+PHASE_2_COMPOSER_COMPLETE: "Dimension composer complete: {dimension}"
+PHASE_2_COMPOSER_SKIP_RESUME: "Skipping dimension composer (resume): {dimension}"
+
+# Secondary-pole callout pattern (slim mode)
+SECONDARY_CALLOUT_PATTERN: "→ See also Theme {N} in {macro_section} for the {topic} dependency."
+
+# Theme-case heading helper (slim mode)
+STRATEGIC_QUESTION_LABEL: "Strategic question"
+
+# Claims registry — dimension column (smarter-service mode)
+DIMENSION_LABEL: "Dimension"
 ```
 
 ## Report Length Tier Selection

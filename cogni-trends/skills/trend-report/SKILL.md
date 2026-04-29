@@ -76,7 +76,8 @@ Read references **only when needed** for the specific phase:
 | [$CLAUDE_PLUGIN_ROOT/references/language-resolution.md]($CLAUDE_PLUGIN_ROOT/references/language-resolution.md) | Language detection and resolution pattern |
 | [$CLAUDE_PLUGIN_ROOT/references/data-model.md]($CLAUDE_PLUGIN_ROOT/references/data-model.md) | Understanding entity schemas and project structure |
 | [references/report-arc-frames.md](references/report-arc-frames.md) | Arc-specific framing templates for exec summary, bridges, synthesis (Phase 0.4b + Phase 2) |
-| [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) | Assembling the investment theme report (Phase 2) |
+| [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) | Phase 2 — flat-themes flow (when `REPORT_ARC_ID` is one of `corporate-visions`, `technology-futures`, `competitive-intelligence`, `strategic-foresight`, `industry-transformation`, `trend-panorama`, `theme-thesis`) |
+| [references/phase-2-smarter-service.md](references/phase-2-smarter-service.md) | Phase 2 — macro-skeleton flow (when `REPORT_ARC_ID == "smarter-service"`): dimension primer, slim 3-beat theme-cases, sequential composer |
 | [references/report-structure.md](references/report-structure.md) | Dimension section templates (written by Phase 1 agents) |
 | [references/evidence-enrichment.md](references/evidence-enrichment.md) | Configuring agent web search strategy (Phase 1) |
 | [references/claims-format.md](references/claims-format.md) | Extracting/merging claims (Phase 1-2) |
@@ -206,9 +207,12 @@ The option matching the current default gets the arrow marker. Set `LANGUAGE` to
 
 Read [references/report-arc-frames.md](references/report-arc-frames.md) for the full arc frame definitions.
 
-The report-level arc determines how investment themes connect into one cohesive narrative — the executive summary voice, bridge paragraphs between themes, and the synthesis closing section. It does NOT change how individual theme sections are written internally (those always use the `theme-thesis` arc).
+The report-level arc determines how the report is structured. **Two skeleton families exist** and the user's choice routes Phase 2 down different paths:
 
-Present the 7 available arcs via `AskUserQuestion`. The recommended default is `corporate-visions` (the proven B2B persuasion frame). Auto-detect a different recommendation if the topic strongly signals another arc (e.g., heavily regulatory topics → `industry-transformation`).
+- **Flat-themes skeleton (arcs 1–7 in `report-arc-frames.md`):** investment themes are H2 sections sequenced left-to-right; bridges between H2s carry the arc; per-theme content uses the `theme-thesis` micro-arc internally (Why Change → Why Now → Why You → Why Pay).
+- **Macro skeleton (`smarter-service`, arc 8):** the 4 Smarter Service dimensions are H2 sections; investment themes are H3 cases nested under the macro element where their dominant TIPS pole lives; per-theme content uses a slim 3-beat micro-arc (Stake / Move / Cost-of-Inaction). Phase 2 dispatches a shared dimension primer + N parallel theme-case writers + 4 sequential dimension composers.
+
+Present 4 arcs via `AskUserQuestion`. The recommended default is **`smarter-service`** when `tips-value-model.json` exists with investment themes (the normal trend-report case) — it's the macro-skeleton variant of `trend-panorama` adapted for theme-aware reports. Auto-detect a different recommendation if the topic strongly signals another arc (e.g., sales-pitch framing → `corporate-visions`; heavily regulatory topics → `industry-transformation`).
 
 **If INTERACTION_LANGUAGE == "de":**
 ```yaml
@@ -216,14 +220,14 @@ AskUserQuestion:
   question: "{PHASE_0_ARC_QUESTION}"
   header: "{PHASE_0_ARC_HEADER}"
   options:
+    - label: "{ARC_SMARTER_SERVICE}"
+      description: "{ARC_SMARTER_SERVICE_DESC}"
     - label: "{ARC_CORPORATE_VISIONS}"
       description: "{ARC_CORPORATE_VISIONS_DESC}"
-    - label: "{ARC_TECHNOLOGY_FUTURES}"
-      description: "{ARC_TECHNOLOGY_FUTURES_DESC}"
     - label: "{ARC_INDUSTRY_TRANSFORMATION}"
       description: "{ARC_INDUSTRY_TRANSFORMATION_DESC}"
-    - label: "{ARC_STRATEGIC_FORESIGHT}"
-      description: "{ARC_STRATEGIC_FORESIGHT_DESC}"
+    - label: "{ARC_TECHNOLOGY_FUTURES}"
+      description: "{ARC_TECHNOLOGY_FUTURES_DESC}"
 ```
 
 **If INTERACTION_LANGUAGE == "en":**
@@ -232,19 +236,21 @@ AskUserQuestion:
   question: "{PHASE_0_ARC_QUESTION}"
   header: "{PHASE_0_ARC_HEADER}"
   options:
+    - label: "{ARC_SMARTER_SERVICE}"
+      description: "{ARC_SMARTER_SERVICE_DESC}"
     - label: "{ARC_CORPORATE_VISIONS}"
       description: "{ARC_CORPORATE_VISIONS_DESC}"
-    - label: "{ARC_TECHNOLOGY_FUTURES}"
-      description: "{ARC_TECHNOLOGY_FUTURES_DESC}"
     - label: "{ARC_INDUSTRY_TRANSFORMATION}"
       description: "{ARC_INDUSTRY_TRANSFORMATION_DESC}"
-    - label: "{ARC_STRATEGIC_FORESIGHT}"
-      description: "{ARC_STRATEGIC_FORESIGHT_DESC}"
+    - label: "{ARC_TECHNOLOGY_FUTURES}"
+      description: "{ARC_TECHNOLOGY_FUTURES_DESC}"
 ```
 
-> **AskUserQuestion limit:** The picker supports max 4 options. Present the 4 most relevant arcs based on the topic. The recommended arc is always first (with arrow marker). If the user selects "Other", show the remaining 3 arcs (`competitive-intelligence`, `trend-panorama`, `theme-thesis`) in a follow-up question.
+> **AskUserQuestion limit:** The picker supports max 4 options. The recommended arc is always first (with arrow marker). If the user selects "Other", show the remaining 4 arcs (`strategic-foresight`, `competitive-intelligence`, `trend-panorama`, `theme-thesis`) in a follow-up question.
 
-Set `REPORT_ARC_ID` to the user's choice (e.g., `corporate-visions`, `technology-futures`). This variable is passed to Phase 2 for arc-aware assembly.
+Set `REPORT_ARC_ID` to the user's choice. This variable routes Phase 2:
+- `REPORT_ARC_ID == "smarter-service"` → Phase 2 reads [references/phase-2-smarter-service.md](references/phase-2-smarter-service.md) (macro skeleton).
+- All other values → Phase 2 reads [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) (flat-themes skeleton).
 
 #### Step 0.4c: Propose Report Title
 
@@ -350,7 +356,9 @@ Re-runs and `verify-trend-report` will read these fields directly without re-ask
 
 #### Step 0.4e: Compute Length Budget
 
-The orchestrator now has `REPORT_TARGET_WORDS` and the investment-theme count `N` (from the value model loaded in Step 0.2). Compute the per-section budgets that will be threaded through Phase 2:
+The orchestrator now has `REPORT_TARGET_WORDS` and the investment-theme count `N` (from the value model loaded in Step 0.2). The budget formula **branches on `REPORT_ARC_ID`** because the smarter-service arc has a fundamentally different prose layout (4 dimension narratives + slim theme-cases vs. N theme sections + bridges).
+
+**If `REPORT_ARC_ID != "smarter-service"` (legacy flat-themes):**
 
 ```text
 exec_words      = clamp(REPORT_TARGET_WORDS * 0.04, 80, 250)
@@ -359,18 +367,39 @@ remaining       = REPORT_TARGET_WORDS - exec_words - synthesis_words
 per_theme_words = max(380, round(remaining / N))
 ```
 
-Where `N` is the count of investment themes from `tips-value-model.json`. The 380 floor is the sum of the writer agent's per-element minimums (Hook 30 + WhyChange 80 + WhyNow 80 + WhyYou 100 + WhyPay 90) — it protects the Why-* arc from collapsing at small budgets. When the floor binds, the agent overshoots target slightly; this is intentional.
+The 380 floor is the sum of the writer agent's per-element minimums (Hook 30 + WhyChange 80 + WhyNow 80 + WhyYou 100 + WhyPay 90) — it protects the Why-* arc from collapsing at small budgets. When the floor binds, the agent overshoots target slightly; this is intentional.
 
-The claims registry is NOT in this formula — it is data-driven and rendered separately in Phase 2 Step 2.5. It is excluded from word accounting at every stage.
-
-Set the four scalars for downstream use:
-
+Set:
 - `THEME_TARGET_WORDS = per_theme_words`
 - `SYNTHESIS_TARGET_WORDS = synthesis_words`
 - `EXEC_TARGET_WORDS = exec_words`
-- `REPORT_TARGET_WORDS` (already set above; passed to the reviewer in verify-trend-report)
 
-Display `"Budget computed: ~{REPORT_TARGET_WORDS} prose words across {N} themes (~{THEME_TARGET_WORDS} per theme)"`.
+**If `REPORT_ARC_ID == "smarter-service"` (macro skeleton):**
+
+```text
+exec_words              = clamp(REPORT_TARGET_WORDS * 0.10, 200, 350)
+synthesis_words         = clamp(REPORT_TARGET_WORDS * 0.08, 300, 800)
+dim_narrative_words     = clamp(REPORT_TARGET_WORDS * 0.12, 250, 600)   # PER dimension
+theme_cases_total       = REPORT_TARGET_WORDS - exec_words - synthesis_words - 4 * dim_narrative_words
+per_theme_case_words    = max(290, round(theme_cases_total / N))
+```
+
+The 290 floor is the sum of the slim-mode minimums (Stake 80 + Move 130 + Cost 80). The 250 dimension-narrative floor protects the macro framing.
+
+Set:
+- `THEME_CASE_TARGET_WORDS = per_theme_case_words` — passed to each theme-case writer
+- `DIMENSION_NARRATIVE_TARGET_WORDS = dim_narrative_words` — passed to each of 4 composer agents
+- `SYNTHESIS_TARGET_WORDS = synthesis_words`
+- `EXEC_TARGET_WORDS = exec_words`
+- `THEME_TARGET_WORDS = per_theme_case_words` (alias for backward compat with reporting)
+
+The claims registry is NOT in either formula — it is data-driven and rendered separately in Phase 2. It is excluded from word accounting at every stage.
+
+`REPORT_TARGET_WORDS` is passed to the reviewer in `verify-trend-report` regardless of arc.
+
+Display:
+- Legacy: `"Budget computed: ~{REPORT_TARGET_WORDS} prose words across {N} themes (~{THEME_TARGET_WORDS} per theme)"`.
+- Smarter-service: `"Budget computed: ~{REPORT_TARGET_WORDS} prose words across 4 dimensions + {N} theme-cases (~{DIMENSION_NARRATIVE_TARGET_WORDS} per dimension narrative, ~{THEME_CASE_TARGET_WORDS} per theme-case)"`.
 
 #### Step 0.5: Load i18n Labels
 
@@ -386,6 +415,10 @@ On re-runs, remove stale files to prevent mixing old and new content:
 rm -f "{PROJECT_PATH}/.logs/report-header.md" \
       "{PROJECT_PATH}/.logs/report-section-"*.md \
       "{PROJECT_PATH}/.logs/report-investment-theme-"*.md \
+      "{PROJECT_PATH}/.logs/report-theme-case-"*.md \
+      "{PROJECT_PATH}/.logs/report-macro-section-"*.md \
+      "{PROJECT_PATH}/.logs/report-shared-primer.md" \
+      "{PROJECT_PATH}/.logs/report-theme-anchors.json" \
       "{PROJECT_PATH}/.logs/report-bridge-"*.md \
       "{PROJECT_PATH}/.logs/report-synthesis.md" \
       "{PROJECT_PATH}/.logs/enriched-trends-"*.json \
@@ -396,6 +429,8 @@ rm -f "{PROJECT_PATH}/.logs/report-header.md" \
       "{PROJECT_PATH}/tips-trend-report-claims.json" \
       "{PROJECT_PATH}/tips-insight-summary.md"
 ```
+
+The cleanup glob covers both Phase-2 modes — switching `REPORT_ARC_ID` between runs (e.g., from `corporate-visions` to `smarter-service`) will purge stale artefacts from either mode so resume logic doesn't mix them.
 
 ---
 
@@ -515,29 +550,56 @@ If any `report-section-{dimension}.md` file is missing, log a WARNING. Phase 2 c
 
 ---
 
-### Phase 2: Report Assembly — THEME-FIRST (NOT BY DIMENSION)
+### Phase 2: Report Assembly — TWO FLOWS
 
-**CRITICAL:** You MUST read [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) before starting Phase 2. The report is organized by **investment themes** from `tips-value-model.json`, NOT by TIPS dimension. Do NOT simply concatenate the dimension section files from Phase 1 — those are intermediate artifacts, not the final report structure.
+Phase 2 branches on `REPORT_ARC_ID`. Read the matching reference file before starting any work.
 
-**EXECUTION — Agent-assisted investment theme writing + orchestrator assembly.** Phase 2 delegates the context-heavy investment theme section writing to parallel `trend-report-investment-theme-writer` agents (one per investment theme), then the orchestrator writes the remaining lightweight sections (executive summary, claims registry) and concatenates the final report.
+| `REPORT_ARC_ID` value | Reference to read | Skeleton |
+|---|---|---|
+| `smarter-service` | [references/phase-2-smarter-service.md](references/phase-2-smarter-service.md) | Macro skeleton: 4 H2 dimensions, themes nested as H3 cases |
+| Anything else (`corporate-visions`, `technology-futures`, `competitive-intelligence`, `strategic-foresight`, `industry-transformation`, `trend-panorama`, `theme-thesis`) | [references/phase-2-strategic-themes.md](references/phase-2-strategic-themes.md) | Flat-themes skeleton: themes as H2 sequenced left-to-right |
 
-- **Investment theme sections → agents.** Each investment-theme-writer agent self-loads enriched-trends and claims from disk, filtered to its own candidate_refs. The orchestrator passes only small scalars (investment theme definition, value chains, labels). This keeps the orchestrator's context lean.
-- **No Python scripts.** Do not write scripts to generate report sections. The agents and orchestrator write strategic prose directly.
-- **No intermediate analysis steps.** Do not generate lookup documentation or enriched statistics. Agents go straight from reading data to writing prose.
+**Both flows share** the principle that the report is organized by **investment themes** from `tips-value-model.json`, NOT by TIPS dimension. Do NOT simply concatenate the dimension section files from Phase 1 — those are intermediate enrichment artefacts, never the final report structure.
 
-**Summary of steps** (details in the reference):
+**Both flows share** the agent-assisted writing model: agents self-load evidence from disk, the orchestrator passes only small scalars and keeps its own context lean.
 
-1. **Read value model** — Read `.logs/phase2-value-model.json` for investment themes, value chains, solution templates, orphan candidates, coverage data
-2. **Dispatch investment theme agents** — For each investment theme, dispatch a `cogni-trends:trend-report-investment-theme-writer` agent with `MARKET_REGION: {MARKET_REGION}` and `REPORT_ARC_ID: {REPORT_ARC_ID}` in the prompt. All agents in a single message (parallel). Each agent self-loads evidence from disk, writes `report-investment-theme-{investment_theme_id}.md`, and returns compact JSON with word count, citation count, quality gate status, and top claims.
-3. **Collect agent results** — Validate all agents returned `ok: true` and quality gates passed. Retry once on failure.
-4. **Write executive summary** — Read ALL `report-investment-theme-{investment_theme_id}.md` files. Use `REPORT_ARC_ID` to select the arc-specific opener and closer patterns from `report-arc-frames.md`. Write `report-header.md`.
-5. **Write bridge paragraphs** — For each consecutive theme pair, generate a 2-4 sentence bridge using the arc's bridge pattern. Write `report-bridge-{N}-{N+1}.md` files.
-6. **Write synthesis section** — Generate a 300-500 word closing section using the arc's synthesis frame. Aggregates evidence across all themes. Write `report-synthesis.md`.
-7. **Write claims registry** — Read 4 `claims-{dimension}.json` files once, map claims to investment themes via value model, write `report-claims-registry.md`
-8. **Assemble** — Concatenate: header + (theme1 + bridge-1-2 + theme2 + bridge-2-3 + ... + themeN) + synthesis + claims → `tips-trend-report.md`
-9. **Merge claims** → `tips-trend-report-claims.json`
+The flows differ in: H2 layout, number and shape of agent dispatches, presence of a shared dimension primer, presence of a sequential composer, presence of inter-theme bridges, and the budget split. Read the matching reference before dispatching anything.
 
-**Resume logic:** Before dispatching an agent for an investment theme, check if `report-investment-theme-{investment_theme_id}.md` already exists and is >1000 bytes. If so, skip that agent — display `"{PHASE_2_INVESTMENT_THEME_AGENT_SKIP_RESUME}"` and continue. This means re-runs only dispatch for missing investment themes.
+#### Flow A: Flat-themes (default for non-smarter-service arcs)
+
+**Summary of steps** (details in [phase-2-strategic-themes.md](references/phase-2-strategic-themes.md)):
+
+1. **Read value model** — Read `.logs/phase2-value-model.json` for investment themes, value chains, solution templates, orphan candidates, coverage data.
+2. **Dispatch investment theme agents (parallel)** — For each investment theme, dispatch a `cogni-trends:trend-report-investment-theme-writer` agent with `MICRO_ARC: "theme-thesis"` (default), `MARKET_REGION: {MARKET_REGION}`, and `REPORT_ARC_ID: {REPORT_ARC_ID}` in the prompt. All agents in a single message (parallel). Each writes `report-investment-theme-{investment_theme_id}.md`.
+3. **Collect agent results** — Validate `ok: true`. Retry once on failure.
+4. **Write executive summary** — Read ALL `report-investment-theme-*.md` files. Use `REPORT_ARC_ID` to select arc-specific opener/closer patterns from `report-arc-frames.md`. Write `report-header.md`.
+5. **Write bridge paragraphs** — For each consecutive theme pair, generate a 2–4 sentence bridge using the arc's bridge pattern. Write `report-bridge-{N}-{N+1}.md` files.
+6. **Write synthesis section** — Generate a 300–500 word closing section using the arc's synthesis frame. Write `report-synthesis.md`.
+7. **Write claims registry** — Read 4 `claims-{dimension}.json` files, map claims to investment themes via the value model, write `report-claims-registry.md`.
+8. **Assemble** — Concatenate: header + (theme1 + bridge-1-2 + theme2 + bridge-2-3 + ... + themeN) + synthesis + claims → `tips-trend-report.md`.
+9. **Merge claims** → `tips-trend-report-claims.json`.
+
+**Resume logic (Flow A):** Before dispatching an agent for an investment theme, check if `report-investment-theme-{investment_theme_id}.md` already exists and is >1000 bytes. If so, skip — display `"{PHASE_2_INVESTMENT_THEME_AGENT_SKIP_RESUME}"`. Re-runs only dispatch for missing investment themes.
+
+#### Flow B: Smarter-service macro skeleton
+
+**Summary of steps** (details in [phase-2-smarter-service.md](references/phase-2-smarter-service.md)):
+
+1. **Read value model** — Same as Flow A.
+2. **Step 2.0a — Compute theme anchoring** — For each theme, compute `anchor_dimension` (highest `candidate_ref` count per pole; tiebreak on highest single-candidate composite score; final tiebreak T > I > P > S). Persist to `.logs/report-theme-anchors.json`. Skip if file exists with all themes mapped.
+3. **Step 2.0b — Write shared dimension primer (orchestrator)** — Read all 4 `.logs/enriched-trends-{dimension}.json` files and the value model. Write 4 paragraphs (~120 words each, ~480 total) to `.logs/report-shared-primer.md` — one per Smarter Service dimension, each ending with the anchor pivot sentence naming themes anchored there. Skip if primer file exists and is >800 bytes.
+4. **Step 2.1 — Dispatch theme-case writers (parallel)** — For each theme, dispatch a `cogni-trends:trend-report-investment-theme-writer` agent with `MICRO_ARC: "investment-case"`, `ANCHOR_DIMENSION`, `SECONDARY_POLES`, `SHARED_PRIMER_PATH`, `THEME_CASE_TARGET_WORDS`. All in a single parallel message. Each writes `report-theme-case-{theme_id}.md` (slim 3-beat). Resume: skip if file exists and is >600 bytes.
+5. **Step 2.2 — Dispatch dimension composers (sequential, 4 calls)** — For each dimension in TIPS order (`externe-effekte` → `digitale-wertetreiber` → `neue-horizonte` → `digitales-fundament`), dispatch one `cogni-trends:trend-report-composer` agent. **Sequential, NOT parallel** — voice consistency depends on this. Each composer writes `report-macro-section-{dimension}.md` (= H2 heading + dimension narrative + concatenated theme-cases anchored here + secondary callouts). Resume per dimension: skip if file exists and is >800 bytes.
+6. **Step 2.3 — Write executive summary** — Read primer and all 4 macro section files. Use `report-arc-frames.md § 8` for the smarter-service exec opener/closer. Write `report-header.md`. The exec summary's numbered list iterates over the **4 dimensions** (not over themes), naming anchored themes within each dimension entry.
+7. **Step 2.4 — Write claims registry** — Same as Flow A but with a `dimension` column added.
+8. **Step 2.5 — Write synthesis section ("The Capability Imperative")** — Foundations-anchored, aggregates *across* themes. Write `report-synthesis.md`.
+9. **Step 2.6 — Assemble** — Concatenate: header + macro-section-externe-effekte + macro-section-digitale-wertetreiber + macro-section-neue-horizonte + macro-section-digitales-fundament + synthesis + claims → `tips-trend-report.md`. **No bridge files** — bridges between macro sections live inside the dimension narratives.
+10. **Step 2.7 — Merge claims** — Same as Flow A.
+
+**Hard ordering constraints (Flow B):**
+- Step 2.0b must complete before Step 2.1 (theme writers need the primer).
+- Step 2.1 must complete (all themes) before Step 2.2 (composers concatenate theme-cases).
+- Step 2.2 must run sequentially across the 4 dimensions, not in parallel — voice consistency.
 
 ---
 
@@ -557,13 +619,16 @@ Add to `{PROJECT_PATH}/.metadata/trend-scout-output.json`:
   "trend_report_complete": true,
   "trend_report_path": "tips-trend-report.md",
   "trend_report_claims_path": "tips-trend-report-claims.json",
-  "trend_report_mode": "strategic-themes",
+  "trend_report_mode": "{strategic-themes | smarter-service-themed}",
+  "trend_report_arc_id": "{REPORT_ARC_ID}",
   "trend_report_investment_theme_count": N,
   "trend_report_generated_at": "ISO-8601",
   "report_tier": "{REPORT_TIER}",
   "report_target_words": {REPORT_TARGET_WORDS}
 }
 ```
+
+`trend_report_mode` is `"smarter-service-themed"` when `REPORT_ARC_ID == "smarter-service"`, else `"strategic-themes"` (legacy value preserved for verify-trend-report and downstream consumers that already key off this field).
 
 `report_tier` and `report_target_words` are mirrored into trend-scout-output.json so `verify-trend-report` can read the prose-word target without re-loading `tips-project.json` — the reviewer uses it for tier-aware Completeness scoring.
 

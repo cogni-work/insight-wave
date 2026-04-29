@@ -1,4 +1,6 @@
-# Phase 2: Investment Theme Assembly
+# Phase 2: Investment Theme Assembly (legacy flat-themes flow)
+
+> **When to read this file:** when `REPORT_ARC_ID` is one of the flat-themes arcs (`corporate-visions`, `technology-futures`, `competitive-intelligence`, `strategic-foresight`, `industry-transformation`, `trend-panorama`, `theme-thesis`). When `REPORT_ARC_ID == "smarter-service"`, read [phase-2-smarter-service.md](phase-2-smarter-service.md) instead — it overrides this file's flow with a macro-skeleton (dimensions as H2, themes nested as H3 cases). The two flows do not mix.
 
 Phase 2 assembles the report around investment themes from `tips-value-model.json`. The dimensional evidence gets enriched in Phase 1 — this phase restructures it into strategic narratives.
 

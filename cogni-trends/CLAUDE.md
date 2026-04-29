@@ -22,13 +22,14 @@ skills/                         7 trend intelligence skills
   trends-dashboard/               Interactive HTML dashboard of full TIPS project lifecycle
   trends-resume/                  Resume project mid-stream with full state recovery
 
-agents/                         9 research agents
+agents/                         10 research agents
   trend-web-researcher.md         Persona-shaped bilingual web research (EN/DE), grounding-aware, adaptive budget (haiku)
   trend-generator.md              Generate 60 scored candidates with persona reasoning + TIPS + Ansoff + Rogers + CRAAP (opus)
   trend-candidate-reviewer.md     3-perspective stakeholder review of candidate pool — foresight analyst, domain expert, pipeline consumer (sonnet)
   trend-signal-curator.md         Evaluate and tier-rank web signals (primary/secondary/supporting) before generation (haiku)
   trend-report-writer.md          Write one Trendradar dimension section with citations, deep-research-aware (sonnet)
-  trend-report-investment-theme-writer.md  Write one investment theme using Corporate Visions arc (sonnet)
+  trend-report-investment-theme-writer.md  Write one investment theme — two modes: theme-thesis (legacy Why-* arc) or investment-case (slim 3-beat for smarter-service) (sonnet)
+  trend-report-composer.md        Compose ONE Smarter Service macro section (dimension narrative + nested theme-cases). Used by smarter-service arc only — invoked sequentially 4× per report (sonnet)
   trend-report-reviewer.md        Cross-theme structural review with 5-dimension quality rubric (sonnet)
   trend-report-revisor.md         Post-verification report revision — apply claim corrections/removals (sonnet)
   trend-deep-researcher.md        Recursive TIPS-aligned deep research for high-value ACT-horizon trends (sonnet)
@@ -63,7 +64,7 @@ references/
 | Type | Count | Items |
 |------|-------|-------|
 | Skills | 7 | trend-scout, value-modeler, trend-report, verify-trend-report, trends-catalog, trends-dashboard, trends-resume |
-| Agents | 9 | trend-web-researcher (haiku), trend-generator (opus), trend-candidate-reviewer (sonnet), trend-signal-curator (haiku), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-reviewer (sonnet), trend-report-revisor (sonnet), trend-deep-researcher (sonnet) |
+| Agents | 10 | trend-web-researcher (haiku), trend-generator (opus), trend-candidate-reviewer (sonnet), trend-signal-curator (haiku), trend-report-writer (sonnet), trend-report-investment-theme-writer (sonnet), trend-report-composer (sonnet), trend-report-reviewer (sonnet), trend-report-revisor (sonnet), trend-deep-researcher (sonnet) |
 
 ## Workflow Pipeline
 
@@ -96,7 +97,8 @@ Each project lives in a directory with:
 - **Ansoff Weak Signals** (1979) — 5-level signal intensity scale mapped to action horizons
 - **Rogers Diffusion of Innovation** (1962) — Adoption stage classification with chasm threshold at 16%
 - **CRAAP Test** (Blakeslee, 2004) — Source quality assessment in signal extraction and curation
-- **Corporate Visions** (Riesterer) — Why Change -> Why Now -> Why You -> Why Pay arc for investment themes
+- **Corporate Visions** (Riesterer) — Why Change -> Why Now -> Why You -> Why Pay arc for investment themes (default for `theme-thesis` micro-arc inside flat-themes report skeletons)
+- **Smarter Service** (theme-aware sibling of Trend Panorama) — Macro skeleton: Forces -> Impact -> Horizons -> Foundations as 4 H2 sections, with investment themes nested as anchored H3 cases. Closes on a Foundations-anchored "Capability Imperative" synthesis. Recommended default for trend-report when a value model is present. The arc is registered upstream in `cogni-narrative/skills/narrative/references/story-arc/smarter-service/`.
 
 ### LLM Research Techniques
 

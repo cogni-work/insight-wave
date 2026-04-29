@@ -158,10 +158,12 @@ COST_OF_INACTION: "Handlungskosten vs. Untätigkeitskosten"
 ## Auswahl des Report-Erzählbogens
 
 ```text
-PHASE_0_ARC_QUESTION: "Welcher Erzählbogen soll den Bericht rahmen? Dies bestimmt, wie die Handlungsfelder zusammenhängen — nicht wie einzelne Handlungsfelder geschrieben werden."
+PHASE_0_ARC_QUESTION: "Welcher Erzählbogen soll den Bericht rahmen? Dies bestimmt die H2-Struktur (Smarter Service: 4 Dimensionen als H2; andere Bögen: Handlungsfelder als H2)."
 PHASE_0_ARC_HEADER: "Report-Erzählbogen"
-ARC_CORPORATE_VISIONS: "Corporate Visions (Empfohlen)"
-ARC_CORPORATE_VISIONS_DESC: "Annahmen hinterfragen, Dringlichkeit erzeugen, Untätigkeit beziffern — der B2B-Überzeugungsrahmen"
+ARC_SMARTER_SERVICE: "Smarter Service (Empfohlen für TIPS-Berichte)"
+ARC_SMARTER_SERVICE_DESC: "Makro-Skelett: Kräfte → Wirkung → Horizonte → Fundamente als 4 H2-Abschnitte; Handlungsfelder als verankerte H3-Cases verschachtelt. Schließt mit dem Fähigkeitsimperativ."
+ARC_CORPORATE_VISIONS: "Corporate Visions"
+ARC_CORPORATE_VISIONS_DESC: "Annahmen hinterfragen, Dringlichkeit erzeugen, Untätigkeit beziffern — der B2B-Überzeugungsrahmen. Handlungsfelder als H2."
 ARC_TECHNOLOGY_FUTURES: "Technology Futures"
 ARC_TECHNOLOGY_FUTURES_DESC: "Aufkommende Fähigkeiten kartieren, Konvergenz zeigen, erforderliche Investitionen beziffern"
 ARC_COMPETITIVE_INTELLIGENCE: "Competitive Intelligence"
@@ -170,10 +172,39 @@ ARC_STRATEGIC_FORESIGHT: "Strategic Foresight"
 ARC_STRATEGIC_FORESIGHT_DESC: "Signale lesen, Szenarien aufbauen, Entscheidungen unter Unsicherheit rahmen"
 ARC_INDUSTRY_TRANSFORMATION: "Branchentransformation"
 ARC_INDUSTRY_TRANSFORMATION_DESC: "Strukturelle Kräfte identifizieren, Reibungspunkte anerkennen, Transformationspfad aufzeigen"
-ARC_TREND_PANORAMA: "Trend-Panorama (TIPS-nativ)"
-ARC_TREND_PANORAMA_DESC: "Kräfte → Auswirkungen → Horizonte → Fundamente über den Trendradar kartieren"
+ARC_TREND_PANORAMA: "Trend-Panorama (TIPS-nativ, ohne Handlungsfelder)"
+ARC_TREND_PANORAMA_DESC: "Kräfte → Wirkung → Horizonte → Fundamente als Panorama (ohne Handlungsfelder)"
 ARC_THEME_THESIS: "Handlungsfeld-These"
 ARC_THEME_THESIS_DESC: "Jedes Handlungsfeld als Investitionsthese mit eigenem quantifiziertem Business Case"
+
+# Smarter-Service-Makroabschnitts-Beschriftungen (vom trend-report-composer verwendet)
+MACRO_FORCES: "Kräfte — Externe Effekte"
+MACRO_IMPACT: "Wirkung — Digitale Wertetreiber"
+MACRO_HORIZONS: "Horizonte — Neue Horizonte"
+MACRO_FOUNDATIONS: "Fundamente — Digitales Fundament"
+
+# Smarter-Service-Synthese
+SYNTHESIS_HEADING_SMARTER_SERVICE: "Der Fähigkeitsimperativ"
+UNIFIED_CAPABILITY_ROADMAP_LABEL: "Übergreifende Fähigkeits-Roadmap"
+
+# Smarter Service: dimensionsspezifische Phase-2-Statusmeldungen
+PHASE_2_PRIMER_START: "Schreibe gemeinsamen Dimension-Primer (Smarter Service)..."
+PHASE_2_PRIMER_WRITTEN: "Gemeinsamer Dimension-Primer geschrieben."
+PHASE_2_THEME_CASE_AGENT_DISPATCH: "Theme-Case-Writer für {N} Handlungsfelder gestartet (schlanker 3-Beat-Modus)."
+PHASE_2_THEME_CASE_AGENT_COMPLETE: "Theme-Case fertig: {theme_name}"
+PHASE_2_THEME_CASE_AGENT_SKIP_RESUME: "Theme-Case übersprungen (Resume): {theme_name}"
+PHASE_2_COMPOSER_DISPATCH: "Dimension-Composer wird gestartet: {dimension}..."
+PHASE_2_COMPOSER_COMPLETE: "Dimension-Composer fertig: {dimension}"
+PHASE_2_COMPOSER_SKIP_RESUME: "Dimension-Composer übersprungen (Resume): {dimension}"
+
+# Sekundärpol-Callout-Muster (schlanker Modus)
+SECONDARY_CALLOUT_PATTERN: "→ Siehe auch Handlungsfeld {N} unter {macro_section} für die {topic}-Abhängigkeit."
+
+# Theme-Case-Heading-Helfer (schlanker Modus)
+STRATEGIC_QUESTION_LABEL: "Strategische Frage"
+
+# Quellenregister — Dimensions-Spalte (Smarter-Service-Modus)
+DIMENSION_LABEL: "Dimension"
 ```
 
 ## Auswahl der Berichtslänge
