@@ -17,14 +17,16 @@ The reviewer in `verify-trend-report` measures prose the same way — by summing
 
 ## Tier table
 
+Per-theme, synthesis, and exec values below are computed from the formula at `N=5` themes. The formula scales for any `N`; the 380-word per-theme floor binds when `target_words / N` is small (see "Worked examples" below).
+
 | Tier | `target_words` (prose) | Per-theme (N=5) | Synthesis | Exec | ≈ Total with full registry | Use case |
 |---|---|---|---|---|---|---|
-| **standard** *(default)* | 4,000 | 670 | 500 | 150 | ~6,000 | Detailed research report — analog to cogni-research's `detailed` mode |
-| **extended** | 5,500 | 950 | 700 | 150 | ~7,500 | Strategic deep dive |
-| **comprehensive** | 7,000 | 1,200 | 850 | 150 | ~9,000 | Full-depth analysis |
-| **maximum** | 8,000 | 1,300 | 1,200 | 200 | ~10,000 | Current pre-tier behavior — exhaustive |
+| **standard** *(default)* | 4,000 | 664 | 520 | 160 | ~6,000 | Detailed research report — analog to cogni-research's `detailed` mode |
+| **extended** | 5,500 | 913 | 715 | 220 | ~7,500 | Strategic deep dive |
+| **comprehensive** | 7,000 | 1,168 | 910 | 250 | ~9,000 | Full-depth analysis |
+| **maximum** | 8,000 | 1,342 | 1,040 | 250 | ~10,000 | Current pre-tier behavior — exhaustive |
 
-The "≈ Total" column assumes a typical ~2,000-word claims registry (30–60 claims at ~50–60 words per row). Actual totals vary by claim volume.
+The "≈ Total" column assumes a typical ~2,000-word claims registry (30–60 claims at ~50–60 words per row), plus `(N-1) × ~60` words of bridge prose (see "Bridges" below). Actual totals vary by claim volume.
 
 ## Per-element minimums (theme writer)
 
@@ -43,7 +45,7 @@ When `THEME_TARGET_WORDS ≥ 380`, proportions dominate. When the budget is tigh
 
 ## Orchestrator formula
 
-In Phase 0.7 (Compute Budget) the orchestrator runs:
+In Step 0.4e (Compute Length Budget) the orchestrator runs:
 
 ```
 exec_words      = clamp(target_words * 0.04, 80, 250)
@@ -56,6 +58,10 @@ per_theme_words = max(380, round(remaining / N))   # N = number of investment th
 
 The claims registry is NOT in the formula — it is rendered separately in Step 2.5 and is excluded from word accounting.
 
+### Bridges
+
+Bridge paragraphs (one per consecutive theme pair, 2–4 sentences ≈ 50–80 words each — see Step 2.5b in `references/phase-2-strategic-themes.md`) are also NOT carved out of the formula. They contribute roughly `(N-1) × 60` words to total prose — about 240 words at `N=5`. The reviewer's 0.80–1.25 Completeness tolerance band is wider than the writer's per-section ±15% tolerance precisely to absorb this slack plus exec/synthesis clamp variance, so a report whose explicit budget sums to `target_words` will land slightly over but stay in-band. Treat the formula's output as a budget for the prose elements the orchestrator can directly steer; bridges sit on top within tolerance.
+
 ## Worked examples
 
 **Default (standard, N=5):**
@@ -64,7 +70,8 @@ The claims registry is NOT in the formula — it is rendered separately in Step 
 - synthesis = clamp(520, 350, 1300) = 520
 - remaining = 4,000 − 160 − 520 = 3,320
 - per_theme = max(380, 3,320/5) = 664
-- Resulting prose: 160 + 520 + 5 × 664 = 4,000 ✓
+- Budgeted prose: 160 + 520 + 5 × 664 = 4,000 ✓
+- + 4 bridges × ~60 = ~240 → actual prose ≈ 4,240 (ratio 1.06, within 0.80–1.25 band)
 
 **Maximum (N=5):**
 - target_words = 8,000
@@ -72,20 +79,23 @@ The claims registry is NOT in the formula — it is rendered separately in Step 
 - synthesis = clamp(1,040, 350, 1300) = 1,040
 - remaining = 8,000 − 250 − 1,040 = 6,710
 - per_theme = max(380, 6,710/5) = 1,342
-- Resulting prose: 250 + 1,040 + 5 × 1,342 ≈ 8,000 ✓
+- Budgeted prose: 250 + 1,040 + 5 × 1,342 ≈ 7,960 ✓
+- + 4 bridges × ~60 = ~240 → actual prose ≈ 8,200 (ratio 1.03, within band)
 
 **Standard with many themes (N=7):**
 - target_words = 4,000
 - exec = 160, synthesis = 520, remaining = 3,320
 - per_theme = max(380, 3,320/7) = 474
-- Resulting prose: 160 + 520 + 7 × 474 ≈ 3,998 ✓
+- Budgeted prose: 160 + 520 + 7 × 474 ≈ 3,998 ✓
+- + 6 bridges × ~60 = ~360 → actual prose ≈ 4,358 (ratio 1.09, within band)
 
 **Custom override (target_words=5,000, N=4):**
 - exec = clamp(200, 80, 250) = 200
 - synthesis = clamp(650, 350, 1300) = 650
 - remaining = 5,000 − 200 − 650 = 4,150
 - per_theme = max(380, 4,150/4) = 1,038
-- Resulting prose: 200 + 650 + 4 × 1,038 ≈ 5,000 ✓
+- Budgeted prose: 200 + 650 + 4 × 1,038 ≈ 5,002 ✓
+- + 3 bridges × ~60 = ~180 → actual prose ≈ 5,182 (ratio 1.04, within band)
 
 ## Override semantics
 

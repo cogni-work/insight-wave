@@ -332,7 +332,10 @@ Map the user's choice to `{REPORT_TIER, REPORT_TARGET_WORDS}` per `report-length
 | comprehensive | 7000 |
 | maximum | 8000 |
 
-If `report_tier == "custom"` (only reachable via pre-seeded config), validate `2500 ≤ report_target_words ≤ 12000`. Outside that range: HALT with the bounds and ask the user to correct the config — do not silently clamp.
+If `report_tier == "custom"` (only reachable via pre-seeded config):
+
+1. **Presence check** — if `report_target_words` is missing, `null`, or not an integer: HALT before any further processing. Display `LENGTH_TIER_CUSTOM_DESC` (which documents the bounds) followed by `"Set \"report_target_words\" in tips-project.json to an integer in [2500, 12000] and re-run."` Do not fall through to the formula; downstream agents would otherwise receive `NaN`.
+2. **Range check** — if present and integer, validate `2500 ≤ report_target_words ≤ 12000`. Outside that range: HALT with the bounds and ask the user to correct the config — do not silently clamp.
 
 Persist the choice by updating `{PROJECT_PATH}/tips-project.json`:
 
