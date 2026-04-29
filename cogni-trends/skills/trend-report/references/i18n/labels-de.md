@@ -177,6 +177,16 @@ ARC_TREND_PANORAMA_DESC: "Kräfte → Wirkung → Horizonte → Fundamente als P
 ARC_THEME_THESIS: "Handlungsfeld-These"
 ARC_THEME_THESIS_DESC: "Jedes Handlungsfeld als Investitionsthese mit eigenem quantifiziertem Business Case"
 
+# Arc-Wechsel-Prompt (Phase 0.4b-pre — Re-Run mit veraltet persistierter Arc)
+ARC_PROMOTE_HEADER: "Arc-Wechsel angeboten"
+ARC_PROMOTE_QUESTION: "Auf diesem Projekt ist '{persisted_arc}' gespeichert, aber Smarter Service ist die empfohlene Voreinstellung für TIPS-Berichte mit Wertmodell — wechseln?"
+ARC_PROMOTE_TO_SMARTER_SERVICE: "Auf Smarter Service wechseln (Empfohlen)"
+ARC_PROMOTE_TO_SMARTER_SERVICE_DESC: "Makro-Skelett (Kräfte → Wirkung → Horizonte → Fundamente als 4 H2; Handlungsfelder verschachtelt als H3-Cases). Bestehende Phase-2-Artefakte werden bereinigt."
+ARC_PROMOTE_KEEP_PERSISTED: "Bei '{persisted_arc}' bleiben"
+ARC_PROMOTE_KEEP_PERSISTED_DESC: "Persistierten Arc übernehmen — Flat-Themes-Skelett mit Handlungsfeldern als H2."
+ARC_PROMOTE_PICK_OTHER: "Anderen Arc wählen"
+ARC_PROMOTE_PICK_OTHER_DESC: "Standard-Picker mit 4 Optionen öffnen — Smarter Service bleibt erste Empfehlung."
+
 # Smarter-Service-Makroabschnitts-Beschriftungen (vom trend-report-composer verwendet)
 MACRO_FORCES: "Kräfte — Externe Effekte"
 MACRO_IMPACT: "Wirkung — Digitale Wertetreiber"

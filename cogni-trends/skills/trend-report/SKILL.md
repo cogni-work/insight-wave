@@ -212,6 +212,44 @@ The report-level arc determines how the report is structured. **Two skeleton fam
 - **Flat-themes skeleton (arcs 1–7 in `report-arc-frames.md`):** investment themes are H2 sections sequenced left-to-right; bridges between H2s carry the arc; per-theme content uses the `theme-thesis` micro-arc internally (Why Change → Why Now → Why You → Why Pay).
 - **Macro skeleton (`smarter-service`, arc 8):** the 4 Smarter Service dimensions are H2 sections; investment themes are H3 cases nested under the macro element where their dominant TIPS pole lives; per-theme content uses a slim 3-beat micro-arc (Stake / Move / Cost-of-Inaction). Phase 2 dispatches a shared dimension primer + N parallel theme-case writers + 4 sequential dimension composers.
 
+##### Step 0.4b-pre: Stale-Arc Promotion Check (re-runs on existing projects)
+
+Before presenting the standard 4-option picker, check whether the project has a persisted arc that pre-dates the current registry recommendation. This guards against silently re-using a flat-themes arc on a project that has since become eligible for smarter-service (e.g., value-modeler ran between report runs, or smarter-service was introduced upstream after the last report).
+
+**Predicate (all must be true):**
+
+- `tips-project.json.report_arc_id` is set
+- That arc is **not** `smarter-service`
+- That arc is a **flat-themes arc** (one of: `corporate-visions`, `technology-futures`, `competitive-intelligence`, `strategic-foresight`, `industry-transformation`). Deliberately excludes `trend-panorama` (intentional theme-less framing) and `theme-thesis` (intentional single-theme deep dive) — promoting either to smarter-service silently would be wrong.
+- `tips-value-model.json` exists with `investment_themes[].length >= 1`
+
+**Drift handling:** If `.metadata/trend-scout-output.json.trend_report_arc_id` disagrees with `tips-project.json.report_arc_id`, log a one-line warning (`"Arc-Drift: tips-project.json='{a}' vs. trend-scout-output.json='{b}' — verwende tips-project.json"`) and proceed using `tips-project.json` as the user-facing source of truth. The standard 4-option picker (or the user's choice in this step) overwrites both fields after Phase 0.4d.
+
+**If the predicate holds, present this 3-option AskUserQuestion. If not, skip directly to the standard 4-option picker below.**
+
+```yaml
+AskUserQuestion:
+  question: "{ARC_PROMOTE_QUESTION}"   # interpolates {persisted_arc}
+  header: "{ARC_PROMOTE_HEADER}"
+  options:
+    - label: "{ARC_PROMOTE_TO_SMARTER_SERVICE}"
+      description: "{ARC_PROMOTE_TO_SMARTER_SERVICE_DESC}"
+    - label: "{ARC_PROMOTE_KEEP_PERSISTED}"   # interpolates {persisted_arc}
+      description: "{ARC_PROMOTE_KEEP_PERSISTED_DESC}"
+    - label: "{ARC_PROMOTE_PICK_OTHER}"
+      description: "{ARC_PROMOTE_PICK_OTHER_DESC}"
+```
+
+Routing on user choice:
+
+- **Promote to smarter-service** → set `REPORT_ARC_ID = "smarter-service"`, skip the standard 4-option picker, continue to Step 0.4c (title).
+- **Keep persisted** → set `REPORT_ARC_ID = persisted_arc`, skip the standard 4-option picker, continue to Step 0.4c.
+- **Pick other** → fall through to the standard 4-option picker below (smarter-service stays first with the "Empfohlen" marker — the user can still pick it from there if they reconsider).
+
+This step does **not** auto-promote. The user always has final say (per [report-arc-frames.md](references/report-arc-frames.md) §"Arc Selection").
+
+##### Step 0.4b: Standard arc picker
+
 Present 4 arcs via `AskUserQuestion`. The recommended default is **`smarter-service`** when `tips-value-model.json` exists with investment themes (the normal trend-report case) — it's the macro-skeleton variant of `trend-panorama` adapted for theme-aware reports. Auto-detect a different recommendation if the topic strongly signals another arc (e.g., sales-pitch framing → `corporate-visions`; heavily regulatory topics → `industry-transformation`).
 
 **If INTERACTION_LANGUAGE == "de":**

@@ -177,6 +177,16 @@ ARC_TREND_PANORAMA_DESC: "Map forces → impact → horizons → foundations as 
 ARC_THEME_THESIS: "Theme Thesis"
 ARC_THEME_THESIS_DESC: "Each theme as an investment thesis with its own quantified business case"
 
+# Arc-promotion prompt (Phase 0.4b-pre — re-run with stale persisted arc)
+ARC_PROMOTE_HEADER: "Arc switch offered"
+ARC_PROMOTE_QUESTION: "This project has '{persisted_arc}' persisted, but Smarter Service is the recommended default for TIPS reports with a value model — switch?"
+ARC_PROMOTE_TO_SMARTER_SERVICE: "Switch to Smarter Service (Recommended)"
+ARC_PROMOTE_TO_SMARTER_SERVICE_DESC: "Macro skeleton (Forces → Impact → Horizons → Foundations as 4 H2; investment themes nested as H3 cases). Stale Phase 2 artifacts will be purged."
+ARC_PROMOTE_KEEP_PERSISTED: "Keep '{persisted_arc}'"
+ARC_PROMOTE_KEEP_PERSISTED_DESC: "Use the persisted arc — flat-themes skeleton with investment themes as H2."
+ARC_PROMOTE_PICK_OTHER: "Pick a different arc"
+ARC_PROMOTE_PICK_OTHER_DESC: "Open the standard 4-option picker — Smarter Service remains the first recommendation."
+
 # Smarter Service macro section labels (used by trend-report-composer)
 MACRO_FORCES: "Forces — External Effects"
 MACRO_IMPACT: "Impact — Digital Value Drivers"
