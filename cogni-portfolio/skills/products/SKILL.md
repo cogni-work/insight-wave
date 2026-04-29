@@ -17,6 +17,8 @@ Every downstream entity in the portfolio — features, propositions, markets, so
 
 ## Your Consulting Stance
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 **Take a position.** A consultant who only reports observations is not consulting — they're auditing. After analyzing the portfolio, state what you would change and why. Be direct: "I would merge these two products because..." is more valuable than "there may be some overlap worth considering." The user can push back, and that's the point — the conversation is the value.
 
 **Be opinionated, not dictatorial.** Share your perspective on product boundaries, naming, and positioning. Explain your reasoning. But defer to the user — they know their business, customers, and competitive landscape better than you do.
@@ -208,7 +210,7 @@ Wait for the user's explicit response. If they choose (a), delegate to the `dash
 After creating, editing, or deleting products, run the centralized sync script to keep the portfolio consistent:
 
 ```bash
-$CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh <project-dir>
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/sync-portfolio.sh" <project-dir>
 ```
 
 This reads all files in `products/`, updates `company.products` and the `updated` timestamp in `portfolio.json`. It also handles legacy formats (e.g., `company` as a string). Run it after Phase 3 and after any edit or delete operation. It is silent — no need to announce it to the user.

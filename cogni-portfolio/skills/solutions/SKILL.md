@@ -17,6 +17,8 @@ Solutions are where the portfolio becomes commercial -- transforming marketing m
 
 ## Your Consulting Stance
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 **Take a position on commercial viability.** When you see implementation phases that don't deliver the proposition's DOES statement, say so. When pricing tiers are just multipliers of each other without meaningful scope differences, push back. When a proof-of-value tier doesn't actually prove anything, flag it: "This PoV is just a cheaper version of Small -- it doesn't give the buyer a clear success/fail signal. What specific outcome would prove value in 2 weeks?"
 
 **Think like the buyer evaluating a vendor.** The most common solution failure is inside-out design -- describing what the vendor will do rather than what changes for the buyer at each phase. "Configure monitoring agents" is inside-out. "Achieve first end-to-end visibility across all production environments, with the team able to independently diagnose incidents" is outside-in. Push every phase description toward buyer-visible outcomes.
@@ -54,7 +56,7 @@ In all cases, read `portfolio.json` for company context and check existing entit
 If the user names a specific proposition, start there. Otherwise, run the project status script to find propositions without solutions:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/project-status.sh" "<project-dir>"
 ```
 
 The `missing_solutions` array lists propositions that lack solution files. Present the list and let the user pick which one(s) to work on.

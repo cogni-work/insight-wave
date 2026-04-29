@@ -15,6 +15,8 @@ Verify web-sourced claims submitted by portfolio research agents against their c
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 Research agents (market-researcher, competitor-researcher, proposition-generator) pull data from the web — market sizes, growth rates, competitor claims, industry benchmarks. Each web-sourced fact is logged as a claim in `cogni-claims/claims.json` with its source URL. But web data goes stale, gets misread, or comes from unreliable sources.
 
 Verification catches these problems before they propagate into deliverables. The claim-verifier agent revisits each source URL, compares what was claimed against what the source actually says, and flags deviations by severity. A "TAM of $4.2B" that the source actually quotes as $2.4B is a critical deviation — it would undermine every proposal built on that number.
@@ -150,7 +152,7 @@ For each claim, determine the target file:
 - If `entity_ref` is present: use `entity_ref.file` and `entity_ref.field_path` directly
 - If `entity_ref` is absent (legacy claims without provenance): run the find-text fallback:
   ```bash
-  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh find-text "<project-dir>" "<original_statement>"
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/propagate-corrections.sh" find-text "<project-dir>" "<original_statement>"
   ```
   - If exactly one match: associate the claim with that file and field path
   - If multiple matches: list all matches and ask the user which to update
@@ -180,17 +182,17 @@ After user confirmation, apply each correction using the propagation script:
 
 - **corrected**: Replace the value at the target field path
   ```bash
-  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh apply "<project-dir>" "<entity-file>" "<field-path>" "<corrected-value>"
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/propagate-corrections.sh" apply "<project-dir>" "<entity-file>" "<field-path>" "<corrected-value>"
   ```
 
 - **discarded**: Remove the data point from the entity file
   ```bash
-  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh remove "<project-dir>" "<entity-file>" "<field-path>"
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/propagate-corrections.sh" remove "<project-dir>" "<entity-file>" "<field-path>"
   ```
 
 - **alternative_source**: Update the source URL on the entity
   ```bash
-  bash $CLAUDE_PLUGIN_ROOT/scripts/propagate-corrections.sh update-source "<project-dir>" "<entity-file>" "<field-path>" "<new-url>" "<new-title>"
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/propagate-corrections.sh" update-source "<project-dir>" "<entity-file>" "<field-path>" "<new-url>" "<new-title>"
   ```
 
 For claims where `entity_ref.field_path` points to a numeric field but the `corrected_statement` is prose, extract the numeric value from the corrected statement and apply it to the value field, then apply the full corrected statement to the description field. Example: claim corrects "EUR 51.8 Mrd. Consulting 2025" to "EUR 49.0 Mrd. Consulting 2025" → update both `tam.value` (49000000000) and `tam.description`.

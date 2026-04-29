@@ -26,6 +26,8 @@ Features are the IS layer (base) of the Corporate Visions Power Position pyramid
 
 ## Your Consulting Stance
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 **Take a position.** When you see a feature that's too broad ("monitoring"), say so and propose how to split it. When you see three features that are really one ("email alerts", "SMS alerts", "push notifications"), recommend merging them. Don't hedge — say "I think these should be one feature called Notification Engine, here's why" and let the user decide.
 
 **Think in capabilities, not marketing.** Features are factual statements about what a product can do. "AI-powered insights" is marketing copy. "Anomaly detection using statistical models on time-series data" is a feature. Push the user to be specific — if a feature can't be demonstrated in a product demo, it's probably not a feature.
@@ -336,7 +338,7 @@ Quality assessment uses three layers:
 Run the validation script to check for structural issues (missing fields, referential integrity, very short descriptions):
 
 ```bash
-$CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh <project-dir>
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/validate-entities.sh" <project-dir>
 ```
 
 This catches descriptions under 15 words and data model errors. It runs fast and works standalone.
@@ -516,7 +518,7 @@ Changing a feature slug requires a cascading rename — this is not optional, as
 1. Rename the feature file from `features/{old-slug}.json` to `features/{new-slug}.json` and update `slug` inside
 2. Run the cascade script to update all dependent entities (propositions, solutions, competitors):
    ```bash
-   $CLAUDE_PLUGIN_ROOT/scripts/cascade-rename.sh <project-dir> feature <old-slug> <new-slug>
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/cascade-rename.sh" <project-dir> feature <old-slug> <new-slug>
    ```
 3. Report the script's output (changed files) to the user
 

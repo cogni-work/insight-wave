@@ -14,6 +14,8 @@ Initialize a cogni-portfolio project by capturing company context and creating t
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 A portfolio project is the container for all downstream work — products, features, markets, propositions, competitors, and customers all live inside it. Setup captures the minimum viable company context (name, description, industry, products) and scaffolds the directory structure that every other skill depends on.
 
 Getting this right matters because the company context in `portfolio.json` informs every downstream skill. A clear description and accurate industry help the products, markets, and propositions skills generate relevant, on-target output instead of generic filler. A few minutes of care here saves hours of correction later.
@@ -79,7 +81,7 @@ Iterate until the user confirms. They know their business best.
 Run the init script to create the directory structure:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/project-init.sh "<workspace-dir>" "<project-slug>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/project-init.sh" "<workspace-dir>" "<project-slug>"
 ```
 
 The workspace directory is the user's current working directory. The script creates:

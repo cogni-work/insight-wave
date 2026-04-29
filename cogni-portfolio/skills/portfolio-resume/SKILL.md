@@ -15,6 +15,8 @@ Session entry point for returning to portfolio work. This skill orients the user
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 Portfolio projects span multiple sessions and skills. Without a clear re-entry point, users lose context between sessions and waste time figuring out what they already did. This skill bridges that gap: it reads the project state, surfaces progress at a glance, and recommends the most valuable next step. The goal is to get the user back into productive flow within seconds.
 
 ## Workflow
@@ -41,7 +43,7 @@ This makes `portfolio-resume` a safe single entry point: returning users get the
 ### 3. Run Project Status with Health Check
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>" --health-check
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/project-status.sh" "<project-dir>" --health-check
 ```
 
 The script returns JSON with `counts`, `phase`, `next_actions`, `completion`, `claims`, and `stale_entities`. The `--health-check` flag enables staleness detection — it compares upstream `updated` dates (or file mtimes as fallback) against downstream entities and flags propositions/solutions that may need refresh.

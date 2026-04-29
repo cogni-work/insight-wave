@@ -16,6 +16,8 @@ Seed a cogni-portfolio project from a Lean Canvas (or Business Model Canvas). Th
 
 ## Why This Exists
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 A lean canvas is a hypothesis document — it captures what you *think* the business is. The portfolio pipeline is a messaging system — it captures what you *sell*. For a founding-stage company these are the same thing, but the data shapes are different. This skill does the translation so that downstream skills (propositions, solutions, packages, export) work without modification.
 
 The key insight: a canvas already contains products, markets, and pricing buried in its sections — they just need to be extracted, properly typed, and marked as early-stage (`maturity: "concept"`, `readiness: "planned"`, `priority: "beachhead"`).
@@ -73,7 +75,7 @@ If no portfolio project exists, extract setup fields from the canvas:
 Run the setup scaffold (same as `portfolio-setup`):
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/project-init.sh "<workspace-dir>" "<project-slug>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/project-init.sh" "<workspace-dir>" "<project-slug>"
 ```
 
 Write `portfolio.json` with company context plus the `canvas_context` object.
@@ -197,7 +199,7 @@ Add or update the `canvas_context` object in `portfolio.json`:
 Run the portfolio sync script if products were created:
 
 ```bash
-$CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh <project-dir>
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/sync-portfolio.sh" <project-dir>
 ```
 
 Present a summary:

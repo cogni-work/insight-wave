@@ -15,6 +15,8 @@ Extract portfolio entities and institutional context from user-provided document
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 Most users already have product information scattered across decks, spreadsheets, and documents. Ingestion bridges the gap between existing material and a structured portfolio in two ways:
 
 1. **Entity extraction** — turns unstructured documents into typed entities (products, features, markets) that the rest of the pipeline builds on.
@@ -61,7 +63,7 @@ Read `portfolio.json` to understand the company context.
 Before classifying content, check if any of the current upload files match previously ingested sources. If `source-registry.json` exists, run:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" check-docs
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" check-docs
 ```
 
 If the result shows **changed** documents (same filename, different hash), alert the user:
@@ -184,12 +186,12 @@ After moving files, update the source lineage registry for each processed file:
 
 1. If `source-registry.json` does not exist, initialize it:
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" init
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" init
    ```
 
 2. For each processed file, register it with its fingerprint:
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" register-doc "<project-dir>/uploads/processed/<filename>"
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" register-doc "<project-dir>/uploads/processed/<filename>"
    ```
 
 3. After registration, update the registry entry's `entities` and `context_entries` arrays to include all entities and context entries created from this file. Read `source-registry.json`, find the entry by `source_id`, and add:
@@ -218,7 +220,7 @@ After moving files, update the source lineage registry for each processed file:
 If any products were created during ingestion, run the centralized sync script:
 
 ```bash
-$CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh <project-dir>
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/sync-portfolio.sh" <project-dir>
 ```
 
 Skip this step if no products were created.

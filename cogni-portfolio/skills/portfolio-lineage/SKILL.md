@@ -18,6 +18,8 @@ Track input sources, detect changes, and guide refresh cascades through the port
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 Portfolio entities (features, propositions, solutions) are derived from input sources — uploaded documents, web research URLs, and TIPS enrichment. When those sources change (a document is re-uploaded, a URL's content changes), downstream entities become stale. This skill manages the full lineage lifecycle:
 
 1. **Register** sources with fingerprints during ingestion
@@ -44,10 +46,10 @@ Detect the user's intent and route to the appropriate mode. If ambiguous, start 
 1. Find the active project (same discovery as `portfolio-resume`).
 2. Run the source-registry script:
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" status
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" status
    ```
 3. If no registry exists, offer to create one:
-   - Run `bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" init`
+   - Run `bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" init`
    - Then scan for existing `source_file` fields on entities and offer to backfill registry entries from them
 4. Present a summary table:
 
@@ -69,7 +71,7 @@ Detect the user's intent and route to the appropriate mode. If ambiguous, start 
 1. Find the active project and verify registry exists.
 2. Run document check:
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" check-docs
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" check-docs
    ```
 3. Present findings in three groups:
 
@@ -140,7 +142,7 @@ Detect the user's intent and route to the appropriate mode. If ambiguous, start 
 2. Look up the registry entry and collect all directly linked entities.
 3. Run the staleness cascade:
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" staleness
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" staleness
    ```
 4. Filter to only entities affected by the specified source.
 5. Present as a cascade summary:
@@ -157,7 +159,7 @@ Detect the user's intent and route to the appropriate mode. If ambiguous, start 
 
 1. Find all stale entities by running:
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh "<project-dir>" staleness
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" "<project-dir>" staleness
    ```
 2. If no stale entities, report "All entities are current" and exit.
 3. Group stale entities by refresh layer (dependency order):

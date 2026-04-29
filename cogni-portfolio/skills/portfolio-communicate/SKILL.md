@@ -30,6 +30,8 @@ The single output skill for the portfolio pipeline. Transforms portfolio entitie
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 Internal portfolio data (slugs, TAM/SAM/SOM, relevance tiers, quality scores) is never what an audience sees. What they need depends on who they are and how they'll consume it:
 
 | Use Case | Audience | Output | Format |
@@ -49,8 +51,8 @@ Each use case defines its own voice, output templates, and review criteria. Both
 Verify the portfolio is sufficiently complete before generating:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh "<project-dir>"
-bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/validate-entities.sh" "<project-dir>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/project-status.sh" "<project-dir>"
 ```
 
 Minimum requirements:

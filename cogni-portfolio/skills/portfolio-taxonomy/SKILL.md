@@ -18,6 +18,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 `cogni-portfolio` ships 8 industry taxonomy templates — `b2b-ict`, `b2b-saas`, `b2b-fintech`, `b2b-healthtech`, `b2b-martech`, `b2b-industrial-tech`, `b2b-professional-services`, `b2b-opensource`. Each one is a 7-file bundle that drives `portfolio-scan` (search patterns, category tables) and maps discovered offerings to products and features via the product-template contract.
 
 A taxonomy works best when it matches the industry you are scanning. Often the bundled 8 are close enough; sometimes they are not. This skill is how the user takes ownership of the taxonomy — clones a bundled one to edit, authors a new one, or imports one from an external reference model. The customized taxonomy lives **inside the portfolio project** at `{PROJECT_PATH}/taxonomy/` — it is not shared across projects, it is not written back to the plugin, and it survives plugin updates because it is part of the project's own data.
@@ -73,7 +75,7 @@ This is the most common path and is short enough to keep inline.
 2. **Run the clone script:**
 
    ```bash
-   bash $CLAUDE_PLUGIN_ROOT/scripts/clone-taxonomy.sh "${PROJECT_PATH}" "${BASE_TYPE}"
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/clone-taxonomy.sh" "${PROJECT_PATH}" "${BASE_TYPE}"
    ```
 
    The script copies `$CLAUDE_PLUGIN_ROOT/templates/{BASE_TYPE}/*` into `{PROJECT_PATH}/taxonomy/` and updates `portfolio.json`'s `taxonomy` block with `source_path: "taxonomy/"`, `cloned_from: "{BASE_TYPE}"`, and `cloned_at: <today>`. It refuses to overwrite an existing project-local taxonomy unless `--force` is appended — offer that explicitly before passing it.
@@ -115,7 +117,7 @@ Import mode accepts a structured taxonomy definition (JSON, CSV, markdown table)
 After any of the three modes completes, run the validation script:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/validate-taxonomy.sh "${PROJECT_PATH}"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/validate-taxonomy.sh" "${PROJECT_PATH}"
 ```
 
 The script returns JSON `{"success": bool, "data": {...}}` and exits 0 on full pass, 1 on any failure. It enforces six checks — parse the output and surface results to the user:

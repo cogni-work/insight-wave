@@ -13,6 +13,10 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 
 You are a market strategy consultant. Your job is not to take orders and write JSON files — it is to help the user identify the right markets to pursue, challenge lazy segmentation, and guide them toward a market portfolio that is focused, sizable, and aligned with what they actually sell. You think in commercial terms: where is the money, where is the fit, and where can this company realistically win?
 
+## Plugin Root Resolution
+
+Bash script invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first bash call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every bash script invocation; do not strip it. This applies only to bash script invocations — agent-task `plugin_root:` arguments and prose path mentions are unaffected.
+
 ## Core Concept
 
 A target market is defined by a **region** and **segmentation criteria** (company size, vertical, etc.), sized using TAM/SAM/SOM:
@@ -269,7 +273,7 @@ Changing a market slug requires a cascading rename — this is not optional, as 
 1. Rename the market file from `markets/{old-slug}.json` to `markets/{new-slug}.json` and update `slug` inside
 2. Run the cascade script to update all dependent entities (propositions, solutions, competitors, customers):
    ```bash
-   $CLAUDE_PLUGIN_ROOT/scripts/cascade-rename.sh <project-dir> market <old-slug> <new-slug>
+   bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/cascade-rename.sh" <project-dir> market <old-slug> <new-slug>
    ```
 3. Report the script's output (changed files) to the user
 

@@ -17,6 +17,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, Task
 
 ## Core Concept
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 This skill is the **web discovery counterpart to `ingest`**. Where `ingest` populates a portfolio from uploaded documents, `scan` populates it from a company's public websites — discovering subsidiaries, scanning their domains for service offerings, classifying everything against the portfolio's taxonomy template, and importing the results as portfolio entities.
 
 The scan produces two outputs:
@@ -63,7 +65,7 @@ The `company.products` array in `portfolio.json` (if present) provides initial o
      **Pre-flight validation.** Project-local taxonomies are user-editable and can drift into scan-breaking shapes silently (malformed category ids, categories without matching search patterns, missing product skeleton). Before Phase 1 dispatches 100+ web searches, validate:
 
      ```bash
-     "$CLAUDE_PLUGIN_ROOT/scripts/validate-taxonomy.sh" "${PROJECT_PATH}"
+     bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/validate-taxonomy.sh" "${PROJECT_PATH}"
      ```
 
      The script returns `{"success": true, "data": {...}}` on pass and exits 0. On failure it prints `{"success": false, "error": "...", "data": {"checks": [...]}}` and exits 1 — when this happens, show the failed checks to the user, tell them to run `cogni-portfolio:portfolio-taxonomy` (or hand-fix the pointed-to file, then revalidate), and **stop the scan** without starting Phase 1. Bundled templates (Step 5b) skip this step — they are shape-safe by construction.
@@ -580,7 +582,7 @@ For each accepted resolution:
 
 **A. `candidate_to_existing` merges (accepted)** — update the existing feature file in place:
 1. Read `features/{surviving_slug}.json`.
-2. Union `source_refs` with a new `source_id` (register the scan report via `bash $CLAUDE_PLUGIN_ROOT/scripts/source-registry.sh register ${PROJECT_PATH} "research/{COMPANY_SLUG}-portfolio.md"` if not already registered).
+2. Union `source_refs` with a new `source_id` (register the scan report via `bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/source-registry.sh" register ${PROJECT_PATH} "research/{COMPANY_SLUG}-portfolio.md"` if not already registered).
 3. Append a new entry to `source_lineage` with `entity_role: "merged_from"`, `ingestion_date: <now>`, and the candidate's `_source_offering.link` as evidence.
 4. Take `min(sort_order)`.
 5. **Do NOT overwrite `description`, `purpose`, or `name`** — the existing feature may carry human edits. The candidate's richer copy is preserved in `source_lineage` for audit.
@@ -658,7 +660,7 @@ After all writes are complete, clean up, sync, and persist the counters into the
 
 ```bash
 rm -rf "${PROJECT_PATH}/research/.staging"
-bash $CLAUDE_PLUGIN_ROOT/scripts/sync-portfolio.sh "${PROJECT_PATH}"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/sync-portfolio.sh" "${PROJECT_PATH}"
 ```
 
 Then update `research/.metadata/scan-output.json` in place: read the file, set `dedupe_summary` to the final `counters` dict, and write it back. The Phase 6 metadata write created the block with all-zero defaults; this step replaces it with the real counts. Also persist the chosen mode — set `consolidation_mode` in the same in-place update to whatever `CONSOLIDATION_MODE` was at runtime (`consolidate` / `shadow` / `research-only` / `category-aggregation`) so downstream dashboards and follow-ups like `solutions/` seed-from-scan-draft can tell which aggregation regime produced the feature set. Verify the sum invariant before writing — `merged_into_existing + collapsed_among_candidates + written_new + soft_duplicates_deferred` must equal the candidate count staged at Step 7.3, **except under `category-aggregation`** where the invariant does not hold by design (see Branch F). If the invariant fails under any of the other three modes, log a warning to the user (do not abort the scan — the data is still useful) and write the counters anyway so the discrepancy is visible in the dashboard.

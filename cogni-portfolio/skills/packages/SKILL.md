@@ -15,6 +15,8 @@ You are a commercial packaging strategist. Your job is to transform individual f
 
 ## Why Packages Exist
 
+**Plugin root resolution.** Bash invocations below resolve the plugin root inline as `${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}` — the first call works whether or not the harness injects `$CLAUDE_PLUGIN_ROOT`. Keep the inline form in every call; do not strip it.
+
 Solutions live at the Feature x Market level — they're analytical atoms that help you understand each capability's commercial viability. But customers don't evaluate capabilities in isolation. They evaluate products. A "Cloud Platform for Mid-Market SaaS" is one purchasing decision, not five separate feature evaluations.
 
 Packages bridge this gap. They assemble solutions from one product into tiered bundles for a specific market, with pricing that reflects the value of the combination — not just the sum of individual feature prices. The bundle discount (or premium) is where commercial strategy lives.
@@ -45,7 +47,7 @@ Packages bridge this gap. They assemble solutions from one product into tiered b
 A package requires at least 2 solutions for the same product×market combination. Run status to find candidates:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/project-status.sh "<project-dir>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/project-status.sh" "<project-dir>"
 ```
 
 Check `missing_packages` for product×market pairs with solutions but no package. Also check `packageable_pairs` for pairs that have 2+ solutions.
@@ -301,7 +303,7 @@ Subscription tiers also require: `price_monthly`, `price_annual` (either can be 
 ### 8. Validate
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/validate-entities.sh "<project-dir>"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/validate-entities.sh" "<project-dir>"
 ```
 
 After validation, offer: "Would you like to: (a) open the dashboard to see the package tiers and bundle economics across all products, (b) review individual package details, or (c) proceed to the next steps?"
