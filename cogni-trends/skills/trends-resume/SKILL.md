@@ -83,7 +83,7 @@ Language: {language}
 
 **Progress Table:**
 
-All `{path.to.field}` placeholders below are dotted JSON paths into the JSON object returned by `project-status.sh --health-check`. Bind each placeholder by reading the matching key from that JSON — do not infer field names.
+All `{path.to.field}` placeholders below are dotted JSON paths into the JSON object returned by `project-status.sh --health-check`. Bind each placeholder by reading the matching key from that JSON — do not infer field names. **Trust the script's pre-computed values.** In particular, `phase` and `next_actions` are derived from full state — never re-derive `phase` from `workflow_state` and never substitute your own next-action recommendation when `next_actions` is non-empty.
 
 | Stage | Status | Details |
 |-------|--------|---------|
@@ -91,9 +91,9 @@ All `{path.to.field}` placeholders below are dotted JSON paths into the JSON obj
 | Candidate Generation | Done / Pending | 60 generated |
 | Candidate Selection | Done / Pending | {counts.candidates_total}/60 agreed |
 | Portfolio Bridge | Done / Ready / N/A | v{portfolio_bridge.context_version} context, {portfolio_bridge.features_count} features |
-| Value Chains & Themes | Done / Pending | {counts.investment_themes} strategic themes |
-| Solution Templates | Done / Pending | {counts.solutions} solutions generated |
-| BR Scoring & Ranking | Done / Pending | {counts.ranked_solutions} solutions ranked |
+| Value Chains & Themes | Done if `counts.investment_themes` > 0, else Pending | {counts.investment_themes} strategic themes |
+| Solution Templates | Done if `counts.solutions` > 0, else Pending | {counts.solutions} solutions generated |
+| BR Scoring & Ranking | Done if `counts.ranked_solutions` > 0, else Pending | {counts.ranked_solutions} solutions ranked |
 | Solution Blueprints | Done / Pending / N/A | {counts.blueprints}/{counts.solutions} blueprinted, avg readiness {counts.avg_readiness}, {counts.anchored_solutions} portfolio-anchored |
 | Portfolio Anchors | Done / N/A | {len(portfolio_anchors.products)} products, {portfolio_anchors.needs_delivered}/{portfolio_anchors.needs_undelivered} needs, {portfolio_anchors.quality_issues} quality flags |
 | Trend Report | Done / Pending | {counts.report_sections}/4 sections |
@@ -104,10 +104,10 @@ All `{path.to.field}` placeholders below are dotted JSON paths into the JSON obj
 | Visual Report | Done / Skipped | themed HTML with charts (cogni-visual:enrich-report) |
 | Dashboard | Done / Skipped | interactive HTML visualization |
 
-**Solution Blueprints row** — derived from `counts.blueprints`, `counts.anchored_solutions`, `counts.avg_readiness`:
-- **Done**: `blueprints` > 0 — show blueprint count, average readiness score, and anchored count
-- **Pending**: `solutions_count` > 0 but `blueprints` = 0 — solutions exist but no blueprints generated yet
-- **N/A**: `solutions_count` = 0 — no solutions generated yet
+**Solution Blueprints row** — derived from `counts.blueprints`, `counts.solutions`, `counts.anchored_solutions`, `counts.avg_readiness`:
+- **Done**: `counts.blueprints` > 0 — show blueprint count, average readiness score, and anchored count
+- **Pending**: `counts.solutions` > 0 but `counts.blueprints` = 0 — solutions exist but no blueprints generated yet
+- **N/A**: `counts.solutions` = 0 — no solutions generated yet
 
 **Portfolio Anchors row** — derived from `portfolio_anchors` in status JSON:
 - **Done**: `portfolio_anchors.total` > 0 — show product count, feature count, delivered/unmet needs, and quality flag count
@@ -163,6 +163,8 @@ Present each entry from `next_actions` with the skill name and reason. Offer to 
 If the phase is `complete`, congratulate the user and present the downstream options grouped by purpose (see "Downstream Options for Completed Reports" below). Highlight the top 2-3 most impactful actions based on what hasn't been done yet. Offer to proceed with the user's choice.
 
 ## Phase Reference
+
+Use the `phase` field returned by `project-status.sh` verbatim to look up the row below — never re-derive `phase` from `workflow_state` or from the count fields. The script already considers all of those when it sets `phase`.
 
 | Phase | Meaning | What to do |
 |-------|---------|------------|

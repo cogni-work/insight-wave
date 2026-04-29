@@ -341,7 +341,7 @@ if [ -f "$VM_OUTPUT" ]; then
 import json
 try:
     d = json.load(open('$VM_OUTPUT'))
-    phase = d.get('execution', {}).get('workflow_phase', '')
+    phase = d.get('execution', {}).get('workflow_state', '')
     print(f'VALUE_MODEL_PHASE={chr(39)}{phase}{chr(39)}')
 except Exception:
     pass
@@ -429,10 +429,11 @@ elif [ "$WORKFLOW_STATE" = "phase-4" ] || [ "$WORKFLOW_STATE" = "agreed" ]; then
     # Value model exists — check sub-phase or fall through to reporting
     if [ -n "$VALUE_MODEL_PHASE" ]; then
       case "$VALUE_MODEL_PHASE" in
-        modeling|paths) PHASE="modeling-paths" ;;
-        scoring) PHASE="modeling-scoring" ;;
-        curating) PHASE="modeling-curating" ;;
-        complete) PHASE="reporting" ;;
+        initialized) PHASE="modeling" ;;
+        investment-themes-built) PHASE="modeling-paths" ;;
+        solutions-generated) PHASE="modeling-scoring" ;;
+        scored) PHASE="modeling-curating" ;;
+        curated|complete) PHASE="reporting" ;;
         *) PHASE="reporting" ;;
       esac
     elif [ "$RANKED_COUNT" -gt 0 ]; then
