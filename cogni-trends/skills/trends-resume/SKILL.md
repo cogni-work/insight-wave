@@ -83,71 +83,38 @@ Language: {language}
 
 **Progress Table:**
 
-All `{path.to.field}` placeholders below are dotted JSON paths into the JSON object returned by `project-status.sh --health-check`. Bind each placeholder by reading the matching key from that JSON — do not infer field names. **Trust the script's pre-computed values.** In particular, `phase` and `next_actions` are derived from full state — never re-derive `phase` from `workflow_state` and never substitute your own next-action recommendation when `next_actions` is non-empty.
+The status JSON includes a pre-computed `stages[]` array. **Render one row per element verbatim — do not re-derive status from any other field, do not skip rows, do not invent rows.** The script has already applied every per-row decision rule against the JSON it returned, so nothing in the table requires LLM judgment.
+
+Translate the status enum for display: `done`→Done, `pending`→Pending, `ready`→Ready, `n_a`→N/A, `skipped`→Skipped. For non-English projects, translate the status word and the details phrase to the project language. Render exactly one row per array element:
 
 | Stage | Status | Details |
 |-------|--------|---------|
-| Web Research | Done / Pending | {web_research_status}, {counts.candidates_web} signals found |
-| Candidate Generation | Done / Pending | 60 generated |
-| Candidate Selection | Done / Pending | {counts.candidates_total}/60 agreed |
-| Portfolio Bridge | Done / Ready / N/A | v{portfolio_bridge.context_version} context, {portfolio_bridge.features_count} features |
-| Value Chains & Themes | Done if `counts.investment_themes` > 0, else Pending | {counts.investment_themes} strategic themes |
-| Solution Templates | Done if `counts.solutions` > 0, else Pending | {counts.solutions} solutions generated |
-| BR Scoring & Ranking | Done if `counts.ranked_solutions` > 0, else Pending | {counts.ranked_solutions} solutions ranked |
-| Solution Blueprints | Done / Pending / N/A | {counts.blueprints}/{counts.solutions} blueprinted, avg readiness {counts.avg_readiness}, {counts.anchored_solutions} portfolio-anchored |
-| Portfolio Anchors | Done / N/A | {len(portfolio_anchors.products)} products, {portfolio_anchors.needs_delivered}/{portfolio_anchors.needs_undelivered} needs, {portfolio_anchors.quality_issues} quality flags |
-| Trend Report | Done / Pending | {counts.report_sections}/4 sections |
-| Claims Registry | Done / Pending | {counts.claims_total} claims extracted |
-| Insight Summary | Done / Skipped | |
-| Claim Verification | Done / Pending / Skipped | {verification.verdict}: {verification.passed} passed, {verification.failed} failed |
-| Executive Polish | Done / Skipped | tone (cogni-copywriting) |
-| Visual Report | Done / Skipped | themed HTML with charts (cogni-visual:enrich-report) |
-| Dashboard | Done / Skipped | interactive HTML visualization |
+| {stages[i].name} | {translated stages[i].status} | {translated stages[i].details} |
 
-**Solution Blueprints row** — derived from `counts.blueprints`, `counts.solutions`, `counts.anchored_solutions`, `counts.avg_readiness`:
-- **Done**: `counts.blueprints` > 0 — show blueprint count, average readiness score, and anchored count
-- **Pending**: `counts.solutions` > 0 but `counts.blueprints` = 0 — solutions exist but no blueprints generated yet
-- **N/A**: `counts.solutions` = 0 — no solutions generated yet
+**Trust the script's pre-computed values.** `phase`, `next_actions`, and `stages[]` are derived from full state — never re-derive any of them from `workflow_state` or from raw counts, and never substitute your own next-action recommendation when `next_actions` is non-empty.
 
-**Portfolio Anchors row** — derived from `portfolio_anchors` in status JSON:
-- **Done**: `portfolio_anchors.total` > 0 — show product count, feature count, delivered/unmet needs, and quality flag count
-- **N/A**: `portfolio_anchors.total` = 0 — no portfolio-anchored solutions exist
-
-**Portfolio Anchor Health** (show when `portfolio_anchors.total` > 0, after the Progress Table):
-
-Render a per-product summary table from `portfolio_anchors.products`:
+**Portfolio Anchor Health** — when the `Portfolio Anchors` row in `stages[]` has status `done`, also render this per-product summary table from `portfolio_anchors.products` after the Progress Table:
 
 | Product | Features | Solutions | Delivered | Unmet | Quality |
 |---------|----------|-----------|-----------|-------|---------|
 | {portfolio_anchors.products[i].product_slug} | {portfolio_anchors.products[i].features} | {portfolio_anchors.products[i].solutions} | {portfolio_anchors.products[i].needs_delivered} | {portfolio_anchors.products[i].needs_undelivered} | OK or {portfolio_anchors.products[i].quality_issues} flags |
 
-Render one row per element of `portfolio_anchors.products`.
+Render one row per element of `portfolio_anchors.products`. Coverage above 70% (delivered / total needs) indicates healthy anchoring. Products with quality flags need attention before customer-facing use — point users to `/trends-dashboard` for per-solution detail.
 
-Coverage above 70% (delivered / total needs) indicates healthy anchoring. Products with quality flags need attention before customer-facing use — point users to `/trends-dashboard` for per-solution detail.
-
-**Portfolio Bridge row** — derived from `portfolio_bridge` in status JSON:
-- **Done**: `context_file` is true — show version and features count
-- **Done (upgrade available)**: `context_file` is true but `context_version` < `"3.1"` — show current version and recommend: "Run `/bridge portfolio-to-tips` to upgrade to v3.1 for provider differentiators in trend-report."
-- **Ready**: `portfolio_project_found` is true but `context_file` is false — recommend running `/bridge portfolio-to-tips` before value-modeler
-- **N/A**: `portfolio_project_found` is false — no portfolio project in workspace
-
-When the phase is `modeling` or `modeling-paths` and the Portfolio Bridge status is **Ready**, lead the next action recommendation with: "Before starting the value modeler, run `/bridge portfolio-to-tips` to ground your solutions in real products."
-
-When Portfolio Bridge status is **Done (upgrade available)** and the phase is `reporting` or later, add to recommendations: "Re-run `/bridge portfolio-to-tips` to add provider differentiators — trend-report will use them for stronger portfolio close sections."
+When the phase is `modeling` or `modeling-paths` and the Portfolio Bridge stage's status is `ready`, lead the next-action recommendation with: "Before starting the value modeler, run `/bridge portfolio-to-tips` to ground your solutions in real products." (The Portfolio Bridge details string already reflects the `(upgrade available)` annotation when context version is below 3.1; no extra LLM derivation needed.)
 
 **Scoring Summary** (if candidates exist):
 - Average score: {scoring.avg_score}
 - Leading indicators: {scoring.leading_pct}%
 - Confidence: {scoring.confidence_distribution.high} high, {scoring.confidence_distribution.medium} medium, {scoring.confidence_distribution.low} low
 
-**Dimension Balance** (if candidates exist):
+**Dimension Balance** (if candidates exist) — render one row per element of `dimension_balance[]` from the JSON:
 
 | Dimension | ACT | PLAN | OBSERVE | Total |
 |-----------|-----|------|---------|-------|
-| Externe Effekte | N | N | N | N |
-| Neue Horizonte | N | N | N | N |
-| Digitale Wertetreiber | N | N | N | N |
-| Digitales Fundament | N | N | N | N |
+| {dimension_balance[i].dimension} | {.act} | {.plan} | {.observe} | {.total} |
+
+The script always emits all four dimensions; if a dimension has no candidates yet, its row will show zeros. For non-English projects, translate the dimension labels to the project language.
 
 After the tables:
 - **Phase** — translate the `phase` value into plain language (see reference below)

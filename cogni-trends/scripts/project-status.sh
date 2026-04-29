@@ -458,6 +458,237 @@ else
   PHASE="scouting"
 fi
 
+# Pre-compute stages[] array — one entry per progress-table row with status + details.
+# Centralizes per-stage decision logic here so SKILL.md only renders the array verbatim
+# and never has to apply derivation rules in prose. This is the load-bearing fix for
+# the "value-modeler done but still rendered as Pending" class of bug: the LLM no
+# longer sees "Done if counts.X > 0, else Pending" — it just reads stage.status.
+export HAS_WEB_RESEARCH HAS_GENERATOR_LOG CANDIDATES_TOTAL CANDIDATES_WEB \
+  WORKFLOW_STATE HAS_PORTFOLIO_CONTEXT HAS_PORTFOLIO_PROJECT \
+  PORTFOLIO_CONTEXT_VERSION PORTFOLIO_FEATURES_COUNT \
+  THEMES_COUNT SOLUTIONS_COUNT RANKED_COUNT BLUEPRINT_COUNT ANCHORED_COUNT \
+  AVG_READINESS ANCHOR_NEEDS_DELIVERED ANCHOR_NEEDS_UNDELIVERED \
+  ANCHOR_QUALITY_COUNT ANCHOR_PRODUCTS_JSON \
+  HAS_REPORT REPORT_SECTIONS HAS_CLAIMS CLAIMS_TOTAL \
+  HAS_INSIGHT HAS_VERIFICATION VERIFICATION_VERDICT \
+  VERIFICATION_PASSED VERIFICATION_FAILED \
+  HAS_COPYWRITER HAS_ENRICHED_REPORT HAS_DASHBOARD DIMENSION_COUNTS
+
+STAGES_JSON=$(python3 <<'PYEOF' 2>/dev/null || echo "[]"
+import json, os
+
+def b(name):
+    return os.environ.get(name, 'false') == 'true'
+
+def i(name, default=0):
+    try: return int(os.environ.get(name, default) or default)
+    except (ValueError, TypeError): return default
+
+def fl(name, default=0.0):
+    try: return float(os.environ.get(name, default) or default)
+    except (ValueError, TypeError): return default
+
+def s(name, default=''):
+    return os.environ.get(name, default) or default
+
+stages = []
+
+# 1. Web Research
+stages.append({
+    'name': 'Web Research',
+    'status': 'done' if b('HAS_WEB_RESEARCH') else 'pending',
+    'details': f"{i('CANDIDATES_WEB')} signals found"
+})
+
+# 2. Candidate Generation
+gen_done = b('HAS_GENERATOR_LOG') or i('CANDIDATES_TOTAL') > 0
+stages.append({
+    'name': 'Candidate Generation',
+    'status': 'done' if gen_done else 'pending',
+    'details': '60 generated' if gen_done else 'pending generation'
+})
+
+# 3. Candidate Selection
+sel_done = s('WORKFLOW_STATE') in ('agreed', 'phase-4')
+stages.append({
+    'name': 'Candidate Selection',
+    'status': 'done' if sel_done else 'pending',
+    'details': f"{i('CANDIDATES_TOTAL')}/60 agreed"
+})
+
+# 4. Portfolio Bridge
+if b('HAS_PORTFOLIO_PROJECT'):
+    if b('HAS_PORTFOLIO_CONTEXT'):
+        ver = s('PORTFOLIO_CONTEXT_VERSION') or 'unknown'
+        details = f"v{ver} context, {i('PORTFOLIO_FEATURES_COUNT')} features"
+        # Mark "upgrade available" when version is below 3.1
+        if ver and ver != 'unknown' and ver < '3.1':
+            details += ' (upgrade available)'
+        stages.append({'name': 'Portfolio Bridge', 'status': 'done', 'details': details})
+    else:
+        stages.append({
+            'name': 'Portfolio Bridge',
+            'status': 'ready',
+            'details': 'portfolio project found — run /bridge portfolio-to-tips'
+        })
+else:
+    stages.append({
+        'name': 'Portfolio Bridge',
+        'status': 'n_a',
+        'details': 'no portfolio project in workspace'
+    })
+
+# 5. Value Chains & Themes
+themes = i('THEMES_COUNT')
+stages.append({
+    'name': 'Value Chains & Themes',
+    'status': 'done' if themes > 0 else 'pending',
+    'details': f"{themes} strategic themes"
+})
+
+# 6. Solution Templates
+sols = i('SOLUTIONS_COUNT')
+stages.append({
+    'name': 'Solution Templates',
+    'status': 'done' if sols > 0 else 'pending',
+    'details': f"{sols} solutions generated"
+})
+
+# 7. BR Scoring & Ranking
+ranked = i('RANKED_COUNT')
+stages.append({
+    'name': 'BR Scoring & Ranking',
+    'status': 'done' if ranked > 0 else 'pending',
+    'details': f"{ranked} solutions ranked"
+})
+
+# 8. Solution Blueprints
+bps = i('BLUEPRINT_COUNT')
+anc = i('ANCHORED_COUNT')
+avg_r = fl('AVG_READINESS')
+if bps > 0:
+    bp_status = 'done'
+    bp_details = f"{bps}/{sols} blueprinted, avg readiness {avg_r}, {anc} portfolio-anchored"
+elif sols > 0:
+    bp_status = 'pending'
+    bp_details = f"{sols} solutions but no blueprints generated yet"
+else:
+    bp_status = 'n_a'
+    bp_details = 'no solutions generated yet'
+stages.append({'name': 'Solution Blueprints', 'status': bp_status, 'details': bp_details})
+
+# 9. Portfolio Anchors
+try:
+    products = json.loads(os.environ.get('ANCHOR_PRODUCTS_JSON') or '[]')
+except Exception:
+    products = []
+if anc > 0:
+    pa_details = (f"{len(products)} products, "
+                  f"{i('ANCHOR_NEEDS_DELIVERED')}/{i('ANCHOR_NEEDS_UNDELIVERED')} delivered/unmet, "
+                  f"{i('ANCHOR_QUALITY_COUNT')} quality flags")
+    stages.append({'name': 'Portfolio Anchors', 'status': 'done', 'details': pa_details})
+else:
+    stages.append({
+        'name': 'Portfolio Anchors',
+        'status': 'n_a',
+        'details': 'no portfolio-anchored solutions'
+    })
+
+# 10. Trend Report
+stages.append({
+    'name': 'Trend Report',
+    'status': 'done' if b('HAS_REPORT') else 'pending',
+    'details': f"{i('REPORT_SECTIONS')}/4 sections"
+})
+
+# 11. Claims Registry
+ct = i('CLAIMS_TOTAL')
+stages.append({
+    'name': 'Claims Registry',
+    'status': 'done' if (b('HAS_CLAIMS') and ct > 0) else 'pending',
+    'details': f"{ct} claims extracted"
+})
+
+# 12. Insight Summary
+stages.append({
+    'name': 'Insight Summary',
+    'status': 'done' if b('HAS_INSIGHT') else 'skipped',
+    'details': 'condensed executive narrative' if b('HAS_INSIGHT') else 'optional'
+})
+
+# 13. Claim Verification
+if b('HAS_VERIFICATION'):
+    vv = s('VERIFICATION_VERDICT')
+    vd = (f"{vv}: {i('VERIFICATION_PASSED')} passed, {i('VERIFICATION_FAILED')} failed"
+          if vv else 'verified')
+    stages.append({'name': 'Claim Verification', 'status': 'done', 'details': vd})
+elif b('HAS_CLAIMS') and ct > 0:
+    stages.append({
+        'name': 'Claim Verification',
+        'status': 'pending',
+        'details': f"{ct} claims awaiting verification"
+    })
+else:
+    stages.append({
+        'name': 'Claim Verification',
+        'status': 'skipped',
+        'details': 'no claims to verify'
+    })
+
+# 14. Executive Polish
+stages.append({
+    'name': 'Executive Polish',
+    'status': 'done' if b('HAS_COPYWRITER') else 'skipped',
+    'details': 'tone (cogni-copywriting)' if b('HAS_COPYWRITER') else 'optional'
+})
+
+# 15. Visual Report
+stages.append({
+    'name': 'Visual Report',
+    'status': 'done' if b('HAS_ENRICHED_REPORT') else 'skipped',
+    'details': ('themed HTML with charts (cogni-visual:enrich-report)'
+                if b('HAS_ENRICHED_REPORT') else 'optional')
+})
+
+# 16. Dashboard
+stages.append({
+    'name': 'Dashboard',
+    'status': 'done' if b('HAS_DASHBOARD') else 'skipped',
+    'details': 'interactive HTML visualization' if b('HAS_DASHBOARD') else 'optional'
+})
+
+print(json.dumps(stages))
+PYEOF
+)
+
+# Pre-compute dimension_balance[] from dimension_counts so SKILL.md renders a
+# table by iteration instead of binding N placeholders against a nested object.
+DIMENSION_BALANCE_JSON=$(python3 <<'PYEOF' 2>/dev/null || echo "[]"
+import json, os
+DIMS = [
+    ('externe-effekte', 'Externe Effekte'),
+    ('neue-horizonte', 'Neue Horizonte'),
+    ('digitale-wertetreiber', 'Digitale Wertetreiber'),
+    ('digitales-fundament', 'Digitales Fundament'),
+]
+try:
+    dc = json.loads(os.environ.get('DIMENSION_COUNTS') or '{}')
+except Exception:
+    dc = {}
+balance = []
+for slug, label in DIMS:
+    row = dc.get(slug, {})
+    balance.append({
+        'dimension': label,
+        'act': int(row.get('act', 0)),
+        'plan': int(row.get('plan', 0)),
+        'observe': int(row.get('observe', 0)),
+        'total': int(row.get('total', 0)),
+    })
+print(json.dumps(balance))
+PYEOF
+)
+
 # Build next_actions array
 next_actions="["
 na_first=true
@@ -499,6 +730,9 @@ case "$PHASE" in
     ;;
   reporting)
     add_action "trend-report" "Value model complete — ready to generate trend report"
+    if [ "$HAS_PORTFOLIO_CONTEXT" = "true" ] && [ -n "$PORTFOLIO_CONTEXT_VERSION" ] && [ "$PORTFOLIO_CONTEXT_VERSION" \< "3.1" ]; then
+      add_action "trends-bridge" "Re-run /bridge portfolio-to-tips for v3.1 provider differentiators in trend-report"
+    fi
     ;;
   verification)
     add_action "cogni-claims:claims" "$CLAIMS_TOTAL claims extracted — ready for verification"
@@ -523,6 +757,10 @@ case "$PHASE" in
     # Dashboard
     if [ "$HAS_DASHBOARD" = "false" ]; then
       add_action "cogni-trends:trends-dashboard" "Generate interactive TIPS project dashboard"
+    fi
+    # Portfolio bridge upgrade
+    if [ "$HAS_PORTFOLIO_CONTEXT" = "true" ] && [ -n "$PORTFOLIO_CONTEXT_VERSION" ] && [ "$PORTFOLIO_CONTEXT_VERSION" \< "3.1" ]; then
+      add_action "trends-bridge" "Re-run /bridge portfolio-to-tips for v3.1 provider differentiators"
     fi
     ;;
 esac
@@ -738,6 +976,8 @@ cat << EOF
   },
   "phase": "$PHASE",
   "next_actions": $next_actions,
+  "stages": $STAGES_JSON,
+  "dimension_balance": $DIMENSION_BALANCE_JSON,
   "stale_warnings": $stale_warnings
 }
 EOF
