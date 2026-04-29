@@ -129,7 +129,7 @@ For each arc present in both upstream and downstream:
 
 Because A1 already catches missing-from-downstream as INFO, A4 specifically catches the failure mode where the downstream JSON has been *partially* updated — e.g., a developer added a new arc directory upstream and updated the registry's plumbing, but forgot to add the per-arc element block:
 
-- For each arc_id that A1 flagged as missing-from-downstream, check whether the upstream registry's "added" date or commit metadata is **newer** than the downstream `_last_synced_at` field. If it is, escalate the A1 INFO to **CRITICAL** ("Upstream arc `<id>` was added/modified after the last sync — review and decide whether to mirror it before shipping").
+- For each arc_id that A1 flagged as missing-from-downstream, determine the upstream file's last-modified date via `git log -1 --format=%cs -- "${UPSTREAM_ARC_DIR}/${arc_id}/arc-definition.md"` (committer date, ISO short form `YYYY-MM-DD`). Compare against the downstream `_last_synced_at` field (same ISO short form). If the upstream date is **newer**, escalate the A1 INFO to **CRITICAL** ("Upstream arc `<id>` was added/modified on `<upstream-date>`, after the last sync `<sync-date>` — review and decide whether to mirror it before shipping"). If `git log` fails (e.g., the file is untracked or the audit runs outside a git checkout), fall back to the file's mtime via `stat -f %Sm -t %Y-%m-%d "${UPSTREAM_ARC_DIR}/${arc_id}/arc-definition.md"` on macOS or `date -r "<file>" +%Y-%m-%d` on Linux. Same comparison rule applies.
 - Also flag any downstream arc whose entry has empty/null `elements[]` while its upstream counterpart has non-empty elements — that's a half-finished sync.
 
 ### Step 5: Generate Report
