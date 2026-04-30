@@ -1,0 +1,623 @@
+{
+  "_doc": "Agreed-intentional drift snapshot for cogni-workspace region catalogs. Captures the per-market Bucket A and Bucket B findings that today represent legitimate plugin-specific curation (cogni-trends carries global consultancies like mckinsey.com / deloitte.com for digitales-fundament; cogni-research carries the deeper regional regulator/statistics tail). check-region-catalogs.sh --baseline <this-file> emits deltas_vs_baseline; /cogni-workspace:manage-markets baseline-refresh regenerates this file after intentional curation. Do NOT auto-regenerate — humans curate this list.",
+  "bucket_a_findings": {
+    "per_market": {
+      "at": {
+        "authority_disagreement": [],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "rtr.at"
+        ],
+        "domain_only_in_research": [
+          "derstandard.at",
+          "oeaw.ac.at",
+          "wko.at"
+        ],
+        "domain_only_in_trends": [
+          "aws.at",
+          "bwb.gv.at",
+          "diepresse.com",
+          "ey.com",
+          "ffg.at",
+          "mckinsey.com",
+          "ubit.at"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "dach": {
+        "authority_disagreement": [
+          {
+            "domain": "handelsblatt.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "zukunftsinstitut.de",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "consulting",
+            "trends_dimensions": [
+              "neue-horizonte"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "handelsblatt.com",
+          "rolandberger.com",
+          "zukunftsinstitut.de",
+          "zvei.org"
+        ],
+        "domain_only_in_research": [
+          "bdew.de",
+          "bdi.eu",
+          "digitalswitzerland.com",
+          "dihk.de",
+          "economiesuisse.ch",
+          "faz.net",
+          "ffg.at",
+          "gdv.de",
+          "hde.de",
+          "iv.at",
+          "manager-magazin.de",
+          "mpg.de",
+          "publica.fraunhofer.de",
+          "staufen.ag",
+          "swissmem.ch",
+          "t3n.de",
+          "vci.de",
+          "vda.de",
+          "wiwo.de",
+          "wko.at"
+        ],
+        "domain_only_in_trends": [
+          "destatis.de",
+          "mckinsey.com"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "de": {
+        "authority_disagreement": [
+          {
+            "domain": "handelsblatt.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "bitkom.org",
+          "fraunhofer.de",
+          "handelsblatt.com",
+          "rolandberger.com",
+          "vdma.org",
+          "zvei.org"
+        ],
+        "domain_only_in_research": [
+          "bdew.de",
+          "bdi.eu",
+          "dihk.de",
+          "faz.net",
+          "publica.fraunhofer.de",
+          "t3n.de",
+          "vda.de",
+          "wiwo.de"
+        ],
+        "domain_only_in_trends": [
+          "mckinsey.com",
+          "zukunftsinstitut.de"
+        ],
+        "domain_only_in_upstream": [
+          "bmwk.de",
+          "destatis.de"
+        ]
+      },
+      "es": {
+        "authority_disagreement": [
+          {
+            "domain": "cincodias.elpais.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "expansion.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "cincodias.elpais.com",
+          "expansion.com",
+          "indracompany.com",
+          "red.es"
+        ],
+        "domain_only_in_research": [
+          "ametic.es",
+          "boe.es",
+          "ceoe.es",
+          "computing.es",
+          "csic.es",
+          "digitales.es",
+          "ine.es"
+        ],
+        "domain_only_in_trends": [
+          "mckinsey.com"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "eu": {
+        "authority_disagreement": [
+          {
+            "domain": "eurostat.ec.europa.eu",
+            "hint": "research treats as regulatory-tier; trends uses only digitales-fundament (consulting-tier)",
+            "research_category": "statistics",
+            "trends_dimensions": [
+              "digitales-fundament"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "commission.europa.eu",
+          "digitaleurope.org",
+          "enisa.europa.eu",
+          "esa.int",
+          "etno.eu",
+          "eur-lex.europa.eu",
+          "eurostat.ec.europa.eu"
+        ],
+        "domain_only_in_research": [
+          "berec.europa.eu",
+          "easa.europa.eu",
+          "eib.org"
+        ],
+        "domain_only_in_trends": [
+          "mckinsey.com"
+        ],
+        "domain_only_in_upstream": [
+          "ec.europa.eu",
+          "ec.europa.eu/eurostat"
+        ]
+      },
+      "fr": {
+        "authority_disagreement": [
+          {
+            "domain": "lesechos.fr",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "usinenouvelle.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "bpifrance.fr",
+          "legifrance.gouv.fr",
+          "usinenouvelle.com"
+        ],
+        "domain_only_in_research": [
+          "cea.fr",
+          "cnes.fr",
+          "cnrs.fr",
+          "economie.gouv.fr",
+          "fft.fr",
+          "insee.fr",
+          "journaldunet.com",
+          "latribune.fr",
+          "medef.com",
+          "numeum.fr"
+        ],
+        "domain_only_in_trends": [
+          "mckinsey.com",
+          "rolandberger.com"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "it": {
+        "authority_disagreement": [
+          {
+            "domain": "corcom.it",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "ilsole24ore.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "agcm.it",
+          "ambrosetti.eu",
+          "corcom.it",
+          "ilsole24ore.com"
+        ],
+        "domain_only_in_research": [
+          "anie.it",
+          "assintel.it",
+          "confindustriadigitale.it",
+          "gazzettaufficiale.it",
+          "istat.it",
+          "mise.gov.it",
+          "polimi.it",
+          "wired.it"
+        ],
+        "domain_only_in_trends": [
+          "mckinsey.com"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "nl": {
+        "authority_disagreement": [
+          {
+            "domain": "emerce.nl",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "fd.nl",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "berenschot.nl",
+          "emerce.nl",
+          "fd.nl",
+          "overheid.nl",
+          "spaceoffice.nl"
+        ],
+        "domain_only_in_research": [
+          "cbs.nl",
+          "computable.nl",
+          "fme.nl",
+          "nldigital.nl",
+          "nwo.nl",
+          "rvo.nl",
+          "tudelft.nl",
+          "vno-ncw.nl"
+        ],
+        "domain_only_in_trends": [
+          "mckinsey.com"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "pl": {
+        "authority_disagreement": [
+          {
+            "domain": "computerworld.pl",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "rp.pl",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "computerworld.pl",
+          "ncbir.gov.pl",
+          "rp.pl",
+          "uokik.gov.pl"
+        ],
+        "domain_only_in_research": [
+          "isap.sejm.gov.pl",
+          "kigeit.org.pl",
+          "lewiatan.org",
+          "nask.pl",
+          "pan.pl",
+          "pb.pl",
+          "piit.org.pl"
+        ],
+        "domain_only_in_trends": [
+          "deloitte.com",
+          "mckinsey.com"
+        ],
+        "domain_only_in_upstream": []
+      },
+      "uk": {
+        "authority_disagreement": [
+          {
+            "domain": "ft.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "neue-horizonte"
+            ]
+          },
+          {
+            "domain": "theregister.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "deloitte.co.uk",
+          "ft.com",
+          "gov.uk",
+          "legislation.gov.uk",
+          "mckinsey.com",
+          "techuk.org",
+          "theregister.com",
+          "ukri.org"
+        ],
+        "domain_only_in_research": [
+          "cbi.org.uk"
+        ],
+        "domain_only_in_trends": [],
+        "domain_only_in_upstream": [
+          "ofcom.org.uk"
+        ]
+      },
+      "us": {
+        "authority_disagreement": [
+          {
+            "domain": "forrester.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "consulting",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          },
+          {
+            "domain": "hbr.org",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "neue-horizonte"
+            ]
+          },
+          {
+            "domain": "wsj.com",
+            "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+            "research_category": "media",
+            "trends_dimensions": [
+              "digitale-wertetreiber"
+            ]
+          }
+        ],
+        "domain_in_research_and_trends_but_not_upstream": [
+          "congress.gov",
+          "deloitte.com",
+          "forrester.com",
+          "hbr.org",
+          "mckinsey.com",
+          "mit.edu",
+          "wsj.com"
+        ],
+        "domain_only_in_research": [
+          "bls.gov",
+          "federalregister.gov",
+          "gao.gov",
+          "stanford.edu"
+        ],
+        "domain_only_in_trends": [],
+        "domain_only_in_upstream": []
+      }
+    },
+    "summary": {
+      "markets_examined": 11,
+      "markets_with_drift": 11
+    }
+  },
+  "bucket_b_findings": {
+    "per_market": {
+      "br": {
+        "domain_only_in_research": [
+          "abes.org.br",
+          "bcb.gov.br",
+          "cade.gov.br",
+          "cni.com.br",
+          "estadao.com.br",
+          "fgv.br",
+          "gov.br"
+        ],
+        "domain_only_in_trends": [
+          "gov.br/anpd"
+        ],
+        "registry_unpopulated": "br: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "cn": {
+        "domain_only_in_research": [
+          "ccidnet.com",
+          "pbc.gov.cn",
+          "tmtpost.com",
+          "yicai.com"
+        ],
+        "domain_only_in_trends": [
+          "accenture.com",
+          "deloitte.com",
+          "forrester.com",
+          "gartner.com",
+          "hbr.org",
+          "mckinsey.com",
+          "mit.edu",
+          "wsj.com"
+        ],
+        "registry_unpopulated": "cn: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "cz": {
+        "domain_only_in_research": [
+          "aobp.cz",
+          "cci.cz",
+          "cnb.cz",
+          "czso.cz",
+          "e15.cz",
+          "ihned.cz",
+          "spcr.cz",
+          "uoou.cz"
+        ],
+        "domain_only_in_trends": [
+          "czechinvest.org",
+          "hn.cz",
+          "mckinsey.com",
+          "uohs.cz"
+        ],
+        "registry_unpopulated": "cz: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "gr": {
+        "domain_only_in_research": [
+          "academyofathens.gr",
+          "acci.gr",
+          "bankofgreece.gr",
+          "dpa.gr",
+          "kathimerini.gr",
+          "sete.gr",
+          "sev.org.gr",
+          "www.statistics.gr"
+        ],
+        "domain_only_in_trends": [
+          "deloitte.com",
+          "eie.gr",
+          "elevategreece.gov.gr",
+          "epant.gr",
+          "mckinsey.com"
+        ],
+        "registry_unpopulated": "gr: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "hr": {
+        "domain_only_in_research": [
+          "azop.hr",
+          "dzs.hr",
+          "hazu.hr",
+          "hgk.hr",
+          "hnb.hr",
+          "hup.hr",
+          "lider.media",
+          "netokracija.com"
+        ],
+        "domain_only_in_trends": [
+          "aztn.hr",
+          "bug.hr",
+          "deloitte.com",
+          "hamagbicro.hr",
+          "info.hazu.hr",
+          "mckinsey.com"
+        ],
+        "registry_unpopulated": "hr: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "hu": {
+        "domain_only_in_research": [
+          "bitport.hu",
+          "hun-ren.hu",
+          "hvg.hu",
+          "ksh.hu",
+          "mgyosz.hu",
+          "mkik.hu",
+          "mnb.hu",
+          "naih.hu"
+        ],
+        "domain_only_in_trends": [
+          "deloitte.com",
+          "gvh.hu",
+          "mckinsey.com",
+          "mta.hu",
+          "nkfih.gov.hu"
+        ],
+        "registry_unpopulated": "hu: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "mk": {
+        "domain_only_in_research": [
+          "azlp.mk",
+          "stat.gov.mk"
+        ],
+        "domain_only_in_trends": [
+          "deloitte.com",
+          "fitr.mk",
+          "kzk.gov.mk",
+          "masit.org.mk",
+          "mckinsey.com"
+        ],
+        "registry_unpopulated": "mk: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "mx": {
+        "domain_only_in_research": [
+          "amiti.org.mx",
+          "banxico.org.mx",
+          "cce.org.mx",
+          "cofece.org.mx",
+          "eleconomista.com.mx",
+          "tec.mx"
+        ],
+        "domain_only_in_trends": [],
+        "registry_unpopulated": "mx: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "ro": {
+        "domain_only_in_research": [
+          "academiaromana.ro",
+          "dataprotection.ro",
+          "insse.ro"
+        ],
+        "domain_only_in_trends": [
+          "acad.ro",
+          "adr.gov.ro",
+          "anis.ro",
+          "consiliulconcurentei.ro",
+          "deloitte.com",
+          "mckinsey.com"
+        ],
+        "registry_unpopulated": "ro: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      },
+      "sk": {
+        "domain_only_in_research": [
+          "dataprotection.gov.sk",
+          "nbs.sk",
+          "slovak.statistics.sk",
+          "sopk.sk",
+          "trend.sk",
+          "zive.sk",
+          "zpp.sk"
+        ],
+        "domain_only_in_trends": [
+          "antimon.gov.sk",
+          "deloitte.com",
+          "mckinsey.com",
+          "sbagency.sk"
+        ],
+        "registry_unpopulated": "sk: registry has no authority_sources[]; downstream files are de-facto source of truth for this market — consider backfilling the registry from the intersection of research_domains and trends_domains."
+      }
+    },
+    "summary": {
+      "markets_examined": 10,
+      "markets_with_drift": 10
+    }
+  },
+  "generated_at": "2026-04-30T05:32:00Z"
+}
