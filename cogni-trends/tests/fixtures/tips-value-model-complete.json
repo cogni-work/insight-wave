@@ -1,0 +1,811 @@
+{
+  "version": "2.0.0",
+  "project_id": "fixture-complete",
+  "project_language": "en",
+  "generated_at": "2026-04-30T00:00:00Z",
+  "phase_2_completed_at": "2026-04-30T00:00:00Z",
+  "investment_themes": [
+    {
+      "investment_theme_id": "it-001",
+      "name": "Theme 1",
+      "strategic_question": "How do we adapt?",
+      "executive_sponsor_type": "CTO",
+      "narrative": "Narrative.",
+      "value_chains": [
+        "vc-001"
+      ],
+      "solution_templates": [],
+      "business_relevance_avg": null,
+      "ranking_value": null
+    },
+    {
+      "investment_theme_id": "it-002",
+      "name": "Theme 2",
+      "strategic_question": "How do we adapt?",
+      "executive_sponsor_type": "CTO",
+      "narrative": "Narrative.",
+      "value_chains": [
+        "vc-002"
+      ],
+      "solution_templates": [],
+      "business_relevance_avg": null,
+      "ranking_value": null
+    },
+    {
+      "investment_theme_id": "it-003",
+      "name": "Theme 3",
+      "strategic_question": "How do we adapt?",
+      "executive_sponsor_type": "CTO",
+      "narrative": "Narrative.",
+      "value_chains": [
+        "vc-003"
+      ],
+      "solution_templates": [],
+      "business_relevance_avg": null,
+      "ranking_value": null
+    },
+    {
+      "investment_theme_id": "it-004",
+      "name": "Theme 4",
+      "strategic_question": "How do we adapt?",
+      "executive_sponsor_type": "CTO",
+      "narrative": "Narrative.",
+      "value_chains": [
+        "vc-004"
+      ],
+      "solution_templates": [],
+      "business_relevance_avg": null,
+      "ranking_value": null
+    },
+    {
+      "investment_theme_id": "it-005",
+      "name": "Theme 5",
+      "strategic_question": "How do we adapt?",
+      "executive_sponsor_type": "CTO",
+      "narrative": "Narrative.",
+      "value_chains": [
+        "vc-005"
+      ],
+      "solution_templates": [],
+      "business_relevance_avg": null,
+      "ranking_value": null
+    }
+  ],
+  "value_chains": [
+    {
+      "chain_id": "vc-001",
+      "name": "Chain 1",
+      "investment_theme_ref": "it-001",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-1",
+        "name": "Trend 1",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-002",
+      "name": "Chain 2",
+      "investment_theme_ref": "it-002",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-2",
+        "name": "Trend 2",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-003",
+      "name": "Chain 3",
+      "investment_theme_ref": "it-003",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-3",
+        "name": "Trend 3",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-004",
+      "name": "Chain 4",
+      "investment_theme_ref": "it-004",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-4",
+        "name": "Trend 4",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-005",
+      "name": "Chain 5",
+      "investment_theme_ref": "it-005",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-5",
+        "name": "Trend 5",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-006",
+      "name": "Chain 6",
+      "investment_theme_ref": "it-001",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-6",
+        "name": "Trend 6",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-007",
+      "name": "Chain 7",
+      "investment_theme_ref": "it-002",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-7",
+        "name": "Trend 7",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-008",
+      "name": "Chain 8",
+      "investment_theme_ref": "it-003",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-8",
+        "name": "Trend 8",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-009",
+      "name": "Chain 9",
+      "investment_theme_ref": "it-004",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-9",
+        "name": "Trend 9",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-010",
+      "name": "Chain 10",
+      "investment_theme_ref": "it-005",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-10",
+        "name": "Trend 10",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-011",
+      "name": "Chain 11",
+      "investment_theme_ref": "it-001",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-11",
+        "name": "Trend 11",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    },
+    {
+      "chain_id": "vc-012",
+      "name": "Chain 12",
+      "investment_theme_ref": "it-002",
+      "narrative": "Chain narrative.",
+      "trend": {
+        "candidate_ref": "c-12",
+        "name": "Trend 12",
+        "business_relevance": null
+      },
+      "implications": [],
+      "possibilities": [],
+      "foundation_requirements": [],
+      "solution_templates": []
+    }
+  ],
+  "solution_templates": [
+    {
+      "st_id": "st-001",
+      "name": "Solution 1",
+      "description": "Solution 1 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-001",
+      "linked_chains": [
+        "vc-001"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-1",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.51,
+      "ranking_value": 4.05,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-002",
+      "name": "Solution 2",
+      "description": "Solution 2 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-002",
+      "linked_chains": [
+        "vc-002"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-2",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.52,
+      "ranking_value": 4.1,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-003",
+      "name": "Solution 3",
+      "description": "Solution 3 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-003",
+      "linked_chains": [
+        "vc-003"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-3",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.53,
+      "ranking_value": 4.15,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-004",
+      "name": "Solution 4",
+      "description": "Solution 4 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-004",
+      "linked_chains": [
+        "vc-004"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-4",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.54,
+      "ranking_value": 4.2,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-005",
+      "name": "Solution 5",
+      "description": "Solution 5 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-005",
+      "linked_chains": [
+        "vc-005"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-5",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.55,
+      "ranking_value": 4.25,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-006",
+      "name": "Solution 6",
+      "description": "Solution 6 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-001",
+      "linked_chains": [
+        "vc-006"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-6",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.56,
+      "ranking_value": 4.3,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-007",
+      "name": "Solution 7",
+      "description": "Solution 7 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-002",
+      "linked_chains": [
+        "vc-007"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-7",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.57,
+      "ranking_value": 4.35,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-008",
+      "name": "Solution 8",
+      "description": "Solution 8 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-003",
+      "linked_chains": [
+        "vc-008"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-8",
+        "product_slug": "product-a",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.58,
+      "ranking_value": 4.4,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-009",
+      "name": "Solution 9",
+      "description": "Solution 9 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-004",
+      "linked_chains": [
+        "vc-009"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-9",
+        "product_slug": "product-b",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": []
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.59,
+      "ranking_value": 4.45,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-010",
+      "name": "Solution 10",
+      "description": "Solution 10 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-005",
+      "linked_chains": [
+        "vc-010"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-10",
+        "product_slug": "product-b",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": [
+          "need-extra"
+        ]
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.6,
+      "ranking_value": 4.5,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-011",
+      "name": "Solution 11",
+      "description": "Solution 11 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-001",
+      "linked_chains": [
+        "vc-011"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-11",
+        "product_slug": "product-b",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": [
+          "need-extra"
+        ]
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.61,
+      "ranking_value": 4.55,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    },
+    {
+      "st_id": "st-012",
+      "name": "Solution 12",
+      "description": "Solution 12 desc.",
+      "category": "growth",
+      "enabler_type": "platform",
+      "generation_mode": "portfolio-anchored",
+      "investment_theme_ref": "it-002",
+      "linked_chains": [
+        "vc-012"
+      ],
+      "foundation_dependencies": [],
+      "solution_blueprint": {
+        "building_blocks": [],
+        "readiness": {
+          "covered_count": 4,
+          "partial_count": 0,
+          "gap_count": 0,
+          "unknown_count": 0,
+          "readiness_score": 1.0,
+          "taxonomy_span": 4,
+          "taxonomy_depth": 2
+        }
+      },
+      "portfolio_mapping": {},
+      "portfolio_anchor": {
+        "feature_slug": "feat-12",
+        "product_slug": "product-c",
+        "investment_theme_needs_delivered": [
+          "need-0",
+          "need-1",
+          "need-2"
+        ],
+        "investment_theme_needs_undelivered": [
+          "need-extra"
+        ]
+      },
+      "portfolio_grounding": {},
+      "quality_flag": null,
+      "business_relevance": null,
+      "business_relevance_calculated": 4.62,
+      "ranking_value": 4.6,
+      "chain_scores": [],
+      "foundation_factor": 1.0,
+      "blueprint_factor": 1.0
+    }
+  ],
+  "solution_process_improvements": [],
+  "metrics": [],
+  "collaterals": [],
+  "portfolio_gaps": [],
+  "orphan_candidates": [],
+  "coverage": {
+    "linked": 60,
+    "orphaned": 0,
+    "total": 60,
+    "coverage_pct": 1.0
+  },
+  "mece_validation": {
+    "investment_theme_count": 5,
+    "mutual_exclusivity": "pass",
+    "collective_exhaustiveness_pct": 1.0,
+    "balance": "pass"
+  },
+  "phase_3_completed_at": "2026-04-30T00:00:00Z",
+  "phase_4_completed_at": "2026-04-30T00:00:00Z"
+}
