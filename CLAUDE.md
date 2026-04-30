@@ -69,7 +69,7 @@ Quality gates block downstream generation when upstream entities fail.
 - Supported markets: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu` (composite)
 - Proper character encoding per language — never ASCII substitutes:
   - DE: ä/ö/ü/ß, FR: é/è/ê/ç, IT: à/è/é/ì/ò/ù, PL: ą/ć/ę/ł/ń/ó/ś/ź/ż, ES: á/é/í/ó/ú/ñ
-- Authority sources curated per market in `references/market-sources.json` (cogni-research) and `references/region-authority-sources.json` (cogni-trends)
+- Authority sources canonical in `cogni-workspace/references/supported-markets-registry.json`; per-plugin overlays add only operational metadata (research: `authority_metadata{}` keyed by domain — category, authority tier, search pattern; trends: `site_searches[]` keyed by Smarter Service dimension). Read sites call `cogni-workspace/scripts/get-market-config.py` to join them.
 - DACH sources: fraunhofer.de, bitkom.org, vdma.org, destatis.de, handelsblatt.com
 - FR: inria.fr, cnes.fr, arcep.fr, insee.fr, lesechos.fr
 - IT: cnr.it, asi.it, agcom.it, istat.it, ilsole24ore.com

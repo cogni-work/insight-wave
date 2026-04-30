@@ -147,7 +147,7 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 | cogni-narrative | downstream | smarter-service arc consumed by trend-synthesis theme-case writer + dimension composer (graceful fallback when absent) |
 | cogni-claims | downstream | trend-research registers claims; `verify-trend-report` Phase 2 invokes cogni-claims:claims for source verification |
 | cogni-copywriting | downstream | Executive polish on trend reports with tone scoping |
-| cogni-workspace | upstream | pick-theme for dashboard theming; `region-authority-sources.json` is downstream of the canonical `references/supported-markets-registry.json` — per-market authority-domain drift detected via `cogni-workspace:audit-region-sources` (informational by default) |
+| cogni-workspace | upstream | pick-theme for dashboard theming; `region-authority-sources.json` is a slim **overlay** of the canonical `references/supported-markets-registry.json` (carries only `site_searches[]` keyed by Smarter Service dimension, plus trends-specific `regulatory_search` and `org_size_reference`). Read sites call `cogni-workspace/scripts/get-market-config.py --plugin trends --market <code>` to join overlay + registry. Drift on the shared market set is structurally impossible; orphan overlays surfaced by `cogni-workspace:audit-region-sources`. |
 | cogni-visual | downstream | enrich-report themed HTML from trend-report or trend-booklet; story-to-slides for presentations |
 
 ## Key Conventions
