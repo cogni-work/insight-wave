@@ -44,19 +44,12 @@ OVERLAY_PATHS = {
     "portfolio": None,
 }
 
-# Registry uses `regional_qualifiers`; plugins read `region_qualifiers`. The
-# merge output uses the plugin-side name so existing read sites keep working.
-QUALIFIERS_REGISTRY_KEY = "regional_qualifiers"
-QUALIFIERS_PLUGIN_KEY = "region_qualifiers"
-
-# Keys treated as overlay metadata only — never expected in registry.
-OVERLAY_ONLY_KEYS_RESEARCH = {
-    "local_query_tips", "vocabulary_hints", "authority_metadata",
-    "default_output_language", "local_language",
-}
-OVERLAY_ONLY_KEYS_TRENDS = {
-    "site_searches", "regulatory_search", "org_size_reference", "local_language",
-}
+# Registry's `regional_qualifiers` (narrative format, e.g. "in DACH region")
+# is intentionally distinct from plugins' `region_qualifiers` (search-query
+# format, e.g. "Germany Austria Switzerland"). They share a similar name for
+# historical reasons but carry different content. The merge utility does NOT
+# rename or substitute — read sites that want search-query qualifiers must
+# get them from the overlay.
 
 
 def _load(path):
@@ -69,40 +62,41 @@ def _envelope(success, data, error=None):
 
 
 def _registry_market(registry, code):
-    """Return a registry market entry remapped to plugin field names."""
+    """Return a registry market entry as-is (no field renaming)."""
     markets = registry.get("markets") or {}
     raw = markets.get(code)
     if not raw:
         return None
-    out = dict(raw)
-    if QUALIFIERS_REGISTRY_KEY in out:
-        out[QUALIFIERS_PLUGIN_KEY] = out.pop(QUALIFIERS_REGISTRY_KEY)
-    return out
+    return dict(raw)
+
+
+_OMIT = object()  # sentinel: caller should omit the key entirely
 
 
 def _join_authorities(registry_entry, overlay_entry):
-    """Join registry authority_sources with overlay authority_metadata.
+    """Compute merge output for authority_sources.
 
-    Post-migration shape: registry holds the canonical {name, domain} list per
-    market, overlay holds plugin-specific metadata keyed by domain. The merge
-    output reproduces today's authority_sources[] shape (one entry per curated
-    domain with metadata embedded) so read sites keep working unchanged.
-
-    A domain appears in the output ONLY if the overlay has metadata for it —
-    overlay is the "is curated by this plugin" filter. Domains in the registry
-    without overlay metadata are part of the canonical taxonomy but are not
-    used by this plugin, so they're omitted.
-
-    If overlay has its own authority_sources[] (pre-migration shape), that
-    wins outright — overlay overrides registry — preserving legacy behavior.
+    Three cases:
+      1. Overlay has authority_sources[] (pre-migration shape) — return it
+         unchanged. Overlay wins.
+      2. Overlay has authority_metadata{} (post-migration slim shape) —
+         join with registry's authority_sources[] by domain. Output one
+         entry per curated domain (metadata-bearing); domains in the
+         registry without overlay metadata are omitted (overlay is the
+         "curated by this plugin" filter).
+      3. Overlay has neither — the plugin doesn't curate authorities at
+         all. Return _OMIT so the caller drops authority_sources from the
+         merged output entirely. This preserves today's behavior where
+         e.g. cogni-trends and cogni-portfolio overlays don't expose an
+         authority_sources field.
     """
-    overlay_sources = overlay_entry.get("authority_sources") if overlay_entry else None
+    overlay_sources = (overlay_entry or {}).get("authority_sources")
     if overlay_sources is not None:
         return overlay_sources
 
-    metadata = overlay_entry.get("authority_metadata") if overlay_entry else None
+    metadata = (overlay_entry or {}).get("authority_metadata")
     if metadata is None:
-        return registry_entry.get("authority_sources") if registry_entry else None
+        return _OMIT
 
     registry_sources = (registry_entry or {}).get("authority_sources") or []
     by_domain = {entry.get("domain"): entry for entry in registry_sources if entry.get("domain")}
@@ -118,23 +112,29 @@ def _join_authorities(registry_entry, overlay_entry):
 
 
 def _merge_market(registry_entry, overlay_entry):
-    """Merge registry base + overlay. Overlay wins on field conflicts."""
+    """Merge registry base + overlay. Overlay wins on field conflicts.
+
+    authority_sources is special-cased via _join_authorities to handle the
+    three plugin shapes (legacy passthrough, post-migration join, opt-out).
+    """
     if registry_entry is None and overlay_entry is None:
         return None
     if registry_entry is None:
         return dict(overlay_entry)
     if overlay_entry is None:
-        return dict(registry_entry)
-    merged = dict(registry_entry)
-    for key, value in overlay_entry.items():
-        if key == "authority_metadata":
-            continue
-        merged[key] = value
+        merged = dict(registry_entry)
+    else:
+        merged = dict(registry_entry)
+        for key, value in overlay_entry.items():
+            if key in ("authority_metadata", "authority_sources"):
+                continue
+            merged[key] = value
+
     joined = _join_authorities(registry_entry, overlay_entry)
-    if joined is not None:
+    if joined is _OMIT:
+        merged.pop("authority_sources", None)
+    else:
         merged["authority_sources"] = joined
-    elif "authority_sources" in merged:
-        pass
     return merged
 
 

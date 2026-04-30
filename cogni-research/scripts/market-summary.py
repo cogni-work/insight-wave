@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """market-summary.py — compact per-market display for cogni-research surfaces.
 
-Reads references/market-sources.json and emits compact summaries in JSON or
-plain text. Single source of truth for what the user sees about market curation
-in the setup menu, the execution plan, the final report footer, and the resume
-dashboard. If the JSON changes, every surface changes with it — no drift.
+Reads the merged market config (canonical workspace registry + local
+research overlay) via cogni-workspace/scripts/get-market-config.py and
+emits compact summaries in JSON or plain text. Single source of truth for
+what the user sees about market curation in the setup menu, the execution
+plan, the final report footer, and the resume dashboard. If the registry
+or overlay changes, every surface changes with it — no drift.
 
 Formats:
   json      — structured record for programmatic callers
@@ -17,6 +19,8 @@ Stdlib only (python3).
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -68,11 +72,46 @@ CATEGORY_LABEL = {
 }
 
 
+def _resolve_workspace_root():
+    """Find cogni-workspace's plugin root, sibling install or monorepo source."""
+    explicit = os.environ.get("WORKSPACE_PLUGIN_ROOT")
+    if explicit and Path(explicit, "scripts/get-market-config.py").exists():
+        return Path(explicit)
+    cache = Path.home() / ".claude/plugins/cache/insight-wave/cogni-workspace"
+    if cache.exists():
+        candidates = sorted(cache.iterdir(), reverse=True)
+        for c in candidates:
+            if (c / "scripts/get-market-config.py").exists():
+                return c
+    monorepo = Path(__file__).resolve().parents[2] / "cogni-workspace"
+    if (monorepo / "scripts/get-market-config.py").exists():
+        return monorepo
+    raise FileNotFoundError("could not resolve cogni-workspace plugin root")
+
+
 def load_market_sources():
-    script_dir = Path(__file__).resolve().parent
-    data_path = script_dir.parent / "references" / "market-sources.json"
-    with data_path.open(encoding="utf-8") as f:
-        return json.load(f)
+    """Load all-markets merged config via the workspace merge utility."""
+    util = _resolve_workspace_root() / "scripts/get-market-config.py"
+    proc = subprocess.run(
+        [sys.executable, str(util), "--plugin", "research", "--all-markets"],
+        capture_output=True, text=True, check=True,
+    )
+    payload = json.loads(proc.stdout)
+    if not payload.get("success"):
+        raise RuntimeError(f"merge utility error: {payload.get('error')}")
+    data = payload["data"]
+    # Inject _default fallback for unknown markets — read directly from the
+    # research overlay so legacy callers using data.get(code) or data['_default']
+    # see the same shape they did pre-migration.
+    overlay_path = (
+        Path(__file__).resolve().parent.parent / "references/market-sources.json"
+    )
+    if overlay_path.exists():
+        with overlay_path.open(encoding="utf-8") as f:
+            raw = json.load(f)
+        if "_default" in raw:
+            data["_default"] = raw["_default"]
+    return data
 
 
 def summarize(code, data):

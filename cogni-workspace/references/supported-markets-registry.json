@@ -16,7 +16,17 @@
       "mechanism": "authority-source",
       "market_count_claim": 21,
       "callout_lede": "21 localized European, Anglo, LATAM, and APAC markets",
-      "primary_authorities_shown_in_callout": ["DACH", "FR", "IT", "PL", "NL", "ES", "MX", "BR", "CN"],
+      "primary_authorities_shown_in_callout": [
+        "DACH",
+        "FR",
+        "IT",
+        "PL",
+        "NL",
+        "ES",
+        "MX",
+        "BR",
+        "CN"
+      ],
       "tail_clause": "bilingual queries, per-market authority sources, output in your chosen language"
     },
     "cogni-trends": {
@@ -24,7 +34,14 @@
       "mechanism": "bilingual-query",
       "market_count_claim": 8,
       "callout_lede": "8 European and Anglo markets with per-region trend authorities",
-      "primary_authorities_shown_in_callout": ["DACH", "FR", "IT", "PL", "NL", "ES"],
+      "primary_authorities_shown_in_callout": [
+        "DACH",
+        "FR",
+        "IT",
+        "PL",
+        "NL",
+        "ES"
+      ],
       "tail_clause": "DE/EN bilingual research against regional authorities — no generic US-centric datasets"
     },
     "cogni-portfolio": {
@@ -32,7 +49,18 @@
       "mechanism": "region-segmentation",
       "market_count_claim": 25,
       "callout_lede": "25 pluggable regions — single-country, composite, extended, and global",
-      "primary_regions_shown_in_callout": ["DACH", "EU", "Nordics", "UK", "US/NA", "APAC", "LATAM", "MEA", "CN", "JP"],
+      "primary_regions_shown_in_callout": [
+        "DACH",
+        "EU",
+        "Nordics",
+        "UK",
+        "US/NA",
+        "APAC",
+        "LATAM",
+        "MEA",
+        "CN",
+        "JP"
+      ],
       "tail_clause": "market-segmented propositions, competitors, and customer personas — not one-size-fits-all"
     }
   },
@@ -41,420 +69,2083 @@
       "code": "dach",
       "name": "DACH",
       "tier": "primary",
-      "countries": ["DE", "AT", "CH"],
-      "composite_of": ["de", "at", "ch"],
+      "countries": [
+        "DE",
+        "AT",
+        "CH"
+      ],
+      "composite_of": [
+        "de",
+        "at",
+        "ch"
+      ],
       "currency": "EUR",
       "locale": "de_DE",
       "timezone": "Europe/Berlin",
-      "languages_supported": ["de", "en"],
-      "default_output_language": "de",
-      "regional_qualifiers": { "local": "in DACH", "en": "in DACH region" },
-      "authority_sources": [
-        { "name": "VDMA", "domain": "vdma.org" },
-        { "name": "BITKOM", "domain": "bitkom.org" },
-        { "name": "Fraunhofer", "domain": "fraunhofer.de" }
+      "languages_supported": [
+        "de",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "de",
+      "regional_qualifiers": {
+        "local": "in DACH",
+        "en": "in DACH region"
+      },
+      "authority_sources": [
+        {
+          "name": "BDEW",
+          "domain": "bdew.de"
+        },
+        {
+          "name": "BDI",
+          "domain": "bdi.eu"
+        },
+        {
+          "name": "BITKOM",
+          "domain": "bitkom.org"
+        },
+        {
+          "name": "Destatis",
+          "domain": "destatis.de"
+        },
+        {
+          "name": "Digitalswitzerland",
+          "domain": "digitalswitzerland.com"
+        },
+        {
+          "name": "DIHK",
+          "domain": "dihk.de"
+        },
+        {
+          "name": "Economiesuisse",
+          "domain": "economiesuisse.ch"
+        },
+        {
+          "name": "FAZ",
+          "domain": "faz.net"
+        },
+        {
+          "name": "FFG",
+          "domain": "ffg.at"
+        },
+        {
+          "name": "Fraunhofer",
+          "domain": "fraunhofer.de"
+        },
+        {
+          "name": "GDV",
+          "domain": "gdv.de"
+        },
+        {
+          "name": "Handelsblatt",
+          "domain": "handelsblatt.com"
+        },
+        {
+          "name": "HDE",
+          "domain": "hde.de"
+        },
+        {
+          "name": "IV",
+          "domain": "iv.at"
+        },
+        {
+          "name": "Manager Magazin",
+          "domain": "manager-magazin.de"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "MPG",
+          "domain": "mpg.de"
+        },
+        {
+          "name": "Publica",
+          "domain": "publica.fraunhofer.de"
+        },
+        {
+          "name": "Rolandberger",
+          "domain": "rolandberger.com"
+        },
+        {
+          "name": "Staufen",
+          "domain": "staufen.ag"
+        },
+        {
+          "name": "Swissmem",
+          "domain": "swissmem.ch"
+        },
+        {
+          "name": "T3N",
+          "domain": "t3n.de"
+        },
+        {
+          "name": "VCI",
+          "domain": "vci.de"
+        },
+        {
+          "name": "VDA",
+          "domain": "vda.de"
+        },
+        {
+          "name": "VDMA",
+          "domain": "vdma.org"
+        },
+        {
+          "name": "WIWO",
+          "domain": "wiwo.de"
+        },
+        {
+          "name": "WKO",
+          "domain": "wko.at"
+        },
+        {
+          "name": "Zukunftsinstitut",
+          "domain": "zukunftsinstitut.de"
+        },
+        {
+          "name": "ZVEI",
+          "domain": "zvei.org"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "de": {
       "code": "de",
       "name": "Germany",
       "tier": "primary",
-      "countries": ["DE"],
+      "countries": [
+        "DE"
+      ],
       "currency": "EUR",
       "locale": "de_DE",
       "timezone": "Europe/Berlin",
-      "languages_supported": ["de", "en"],
-      "default_output_language": "de",
-      "regional_qualifiers": { "local": "in Deutschland", "en": "in Germany" },
-      "authority_sources": [
-        { "name": "Destatis", "domain": "destatis.de" },
-        { "name": "BMWK", "domain": "bmwk.de" }
+      "languages_supported": [
+        "de",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "de",
+      "regional_qualifiers": {
+        "local": "in Deutschland",
+        "en": "in Germany"
+      },
+      "authority_sources": [
+        {
+          "name": "BDEW",
+          "domain": "bdew.de"
+        },
+        {
+          "name": "BDI",
+          "domain": "bdi.eu"
+        },
+        {
+          "name": "Bitkom",
+          "domain": "bitkom.org"
+        },
+        {
+          "name": "BMWK",
+          "domain": "bmwk.de"
+        },
+        {
+          "name": "Destatis",
+          "domain": "destatis.de"
+        },
+        {
+          "name": "DIHK",
+          "domain": "dihk.de"
+        },
+        {
+          "name": "FAZ",
+          "domain": "faz.net"
+        },
+        {
+          "name": "Fraunhofer",
+          "domain": "fraunhofer.de"
+        },
+        {
+          "name": "Handelsblatt",
+          "domain": "handelsblatt.com"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "Publica",
+          "domain": "publica.fraunhofer.de"
+        },
+        {
+          "name": "Rolandberger",
+          "domain": "rolandberger.com"
+        },
+        {
+          "name": "T3N",
+          "domain": "t3n.de"
+        },
+        {
+          "name": "VDA",
+          "domain": "vda.de"
+        },
+        {
+          "name": "VDMA",
+          "domain": "vdma.org"
+        },
+        {
+          "name": "WIWO",
+          "domain": "wiwo.de"
+        },
+        {
+          "name": "Zukunftsinstitut",
+          "domain": "zukunftsinstitut.de"
+        },
+        {
+          "name": "ZVEI",
+          "domain": "zvei.org"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "at": {
       "code": "at",
       "name": "Austria",
       "tier": "extended",
-      "countries": ["AT"],
+      "countries": [
+        "AT"
+      ],
       "currency": "EUR",
       "locale": "de_AT",
       "timezone": "Europe/Vienna",
-      "languages_supported": ["de", "en"],
-      "default_output_language": "de",
-      "regional_qualifiers": { "local": "in Österreich", "en": "in Austria" },
-      "authority_sources": [
-        { "name": "Statistik Austria", "domain": "statistik.at" }
+      "languages_supported": [
+        "de",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "default_output_language": "de",
+      "regional_qualifiers": {
+        "local": "in Österreich",
+        "en": "in Austria"
+      },
+      "authority_sources": [
+        {
+          "name": "AWS",
+          "domain": "aws.at"
+        },
+        {
+          "name": "BWB",
+          "domain": "bwb.gv.at"
+        },
+        {
+          "name": "Derstandard",
+          "domain": "derstandard.at"
+        },
+        {
+          "name": "Diepresse",
+          "domain": "diepresse.com"
+        },
+        {
+          "name": "EY",
+          "domain": "ey.com"
+        },
+        {
+          "name": "FFG",
+          "domain": "ffg.at"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "OEAW",
+          "domain": "oeaw.ac.at"
+        },
+        {
+          "name": "RTR",
+          "domain": "rtr.at"
+        },
+        {
+          "name": "Statistik Austria",
+          "domain": "statistik.at"
+        },
+        {
+          "name": "UBIT",
+          "domain": "ubit.at"
+        },
+        {
+          "name": "WKO",
+          "domain": "wko.at"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "fr": {
       "code": "fr",
       "name": "France",
       "tier": "primary",
-      "countries": ["FR"],
+      "countries": [
+        "FR"
+      ],
       "currency": "EUR",
       "locale": "fr_FR",
       "timezone": "Europe/Paris",
-      "languages_supported": ["fr", "en"],
-      "default_output_language": "fr",
-      "regional_qualifiers": { "local": "en France", "en": "in France" },
-      "authority_sources": [
-        { "name": "INRIA", "domain": "inria.fr" },
-        { "name": "ARCEP", "domain": "arcep.fr" },
-        { "name": "Les Echos", "domain": "lesechos.fr" }
+      "languages_supported": [
+        "fr",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "fr",
+      "regional_qualifiers": {
+        "local": "en France",
+        "en": "in France"
+      },
+      "authority_sources": [
+        {
+          "name": "ARCEP",
+          "domain": "arcep.fr"
+        },
+        {
+          "name": "Bpifrance",
+          "domain": "bpifrance.fr"
+        },
+        {
+          "name": "CEA",
+          "domain": "cea.fr"
+        },
+        {
+          "name": "CNES",
+          "domain": "cnes.fr"
+        },
+        {
+          "name": "CNRS",
+          "domain": "cnrs.fr"
+        },
+        {
+          "name": "Economie",
+          "domain": "economie.gouv.fr"
+        },
+        {
+          "name": "FFT",
+          "domain": "fft.fr"
+        },
+        {
+          "name": "INRIA",
+          "domain": "inria.fr"
+        },
+        {
+          "name": "INSEE",
+          "domain": "insee.fr"
+        },
+        {
+          "name": "Journaldunet",
+          "domain": "journaldunet.com"
+        },
+        {
+          "name": "Latribune",
+          "domain": "latribune.fr"
+        },
+        {
+          "name": "Legifrance",
+          "domain": "legifrance.gouv.fr"
+        },
+        {
+          "name": "Les Echos",
+          "domain": "lesechos.fr"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "MEDEF",
+          "domain": "medef.com"
+        },
+        {
+          "name": "Numeum",
+          "domain": "numeum.fr"
+        },
+        {
+          "name": "Rolandberger",
+          "domain": "rolandberger.com"
+        },
+        {
+          "name": "Usinenouvelle",
+          "domain": "usinenouvelle.com"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "it": {
       "code": "it",
       "name": "Italy",
       "tier": "primary",
-      "countries": ["IT"],
+      "countries": [
+        "IT"
+      ],
       "currency": "EUR",
       "locale": "it_IT",
       "timezone": "Europe/Rome",
-      "languages_supported": ["it", "en"],
-      "default_output_language": "it",
-      "regional_qualifiers": { "local": "in Italia", "en": "in Italy" },
-      "authority_sources": [
-        { "name": "CNR", "domain": "cnr.it" },
-        { "name": "AGCOM", "domain": "agcom.it" },
-        { "name": "ASI", "domain": "asi.it" }
+      "languages_supported": [
+        "it",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "it",
+      "regional_qualifiers": {
+        "local": "in Italia",
+        "en": "in Italy"
+      },
+      "authority_sources": [
+        {
+          "name": "AGCM",
+          "domain": "agcm.it"
+        },
+        {
+          "name": "AGCOM",
+          "domain": "agcom.it"
+        },
+        {
+          "name": "Ambrosetti",
+          "domain": "ambrosetti.eu"
+        },
+        {
+          "name": "ANIE",
+          "domain": "anie.it"
+        },
+        {
+          "name": "ASI",
+          "domain": "asi.it"
+        },
+        {
+          "name": "Assintel",
+          "domain": "assintel.it"
+        },
+        {
+          "name": "CNR",
+          "domain": "cnr.it"
+        },
+        {
+          "name": "Confindustriadigitale",
+          "domain": "confindustriadigitale.it"
+        },
+        {
+          "name": "Corcom",
+          "domain": "corcom.it"
+        },
+        {
+          "name": "Gazzettaufficiale",
+          "domain": "gazzettaufficiale.it"
+        },
+        {
+          "name": "Ilsole24Ore",
+          "domain": "ilsole24ore.com"
+        },
+        {
+          "name": "ISTAT",
+          "domain": "istat.it"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "MISE",
+          "domain": "mise.gov.it"
+        },
+        {
+          "name": "Polimi",
+          "domain": "polimi.it"
+        },
+        {
+          "name": "WIRED",
+          "domain": "wired.it"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "es": {
       "code": "es",
       "name": "Spain",
       "tier": "primary",
-      "countries": ["ES"],
+      "countries": [
+        "ES"
+      ],
       "currency": "EUR",
       "locale": "es_ES",
       "timezone": "Europe/Madrid",
-      "languages_supported": ["es", "en"],
-      "default_output_language": "es",
-      "regional_qualifiers": { "local": "en España", "en": "in Spain" },
-      "authority_sources": [
-        { "name": "CNMC", "domain": "cnmc.es" },
-        { "name": "INTA", "domain": "inta.es" },
-        { "name": "CDTI", "domain": "cdti.es" }
+      "languages_supported": [
+        "es",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "es",
+      "regional_qualifiers": {
+        "local": "en España",
+        "en": "in Spain"
+      },
+      "authority_sources": [
+        {
+          "name": "Ametic",
+          "domain": "ametic.es"
+        },
+        {
+          "name": "BOE",
+          "domain": "boe.es"
+        },
+        {
+          "name": "CDTI",
+          "domain": "cdti.es"
+        },
+        {
+          "name": "CEOE",
+          "domain": "ceoe.es"
+        },
+        {
+          "name": "Cincodias",
+          "domain": "cincodias.elpais.com"
+        },
+        {
+          "name": "CNMC",
+          "domain": "cnmc.es"
+        },
+        {
+          "name": "Computing",
+          "domain": "computing.es"
+        },
+        {
+          "name": "CSIC",
+          "domain": "csic.es"
+        },
+        {
+          "name": "Digitales",
+          "domain": "digitales.es"
+        },
+        {
+          "name": "Expansion",
+          "domain": "expansion.com"
+        },
+        {
+          "name": "Indracompany",
+          "domain": "indracompany.com"
+        },
+        {
+          "name": "INE",
+          "domain": "ine.es"
+        },
+        {
+          "name": "INTA",
+          "domain": "inta.es"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "RED",
+          "domain": "red.es"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "nl": {
       "code": "nl",
       "name": "Netherlands",
       "tier": "primary",
-      "countries": ["NL"],
+      "countries": [
+        "NL"
+      ],
       "currency": "EUR",
       "locale": "nl_NL",
       "timezone": "Europe/Amsterdam",
-      "languages_supported": ["nl", "en"],
-      "default_output_language": "nl",
-      "regional_qualifiers": { "local": "in Nederland", "en": "in the Netherlands" },
-      "authority_sources": [
-        { "name": "TNO", "domain": "tno.nl" },
-        { "name": "ACM", "domain": "acm.nl" }
+      "languages_supported": [
+        "nl",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "nl",
+      "regional_qualifiers": {
+        "local": "in Nederland",
+        "en": "in the Netherlands"
+      },
+      "authority_sources": [
+        {
+          "name": "ACM",
+          "domain": "acm.nl"
+        },
+        {
+          "name": "Berenschot",
+          "domain": "berenschot.nl"
+        },
+        {
+          "name": "CBS",
+          "domain": "cbs.nl"
+        },
+        {
+          "name": "Computable",
+          "domain": "computable.nl"
+        },
+        {
+          "name": "Emerce",
+          "domain": "emerce.nl"
+        },
+        {
+          "name": "FD",
+          "domain": "fd.nl"
+        },
+        {
+          "name": "FME",
+          "domain": "fme.nl"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "Nldigital",
+          "domain": "nldigital.nl"
+        },
+        {
+          "name": "NWO",
+          "domain": "nwo.nl"
+        },
+        {
+          "name": "Overheid",
+          "domain": "overheid.nl"
+        },
+        {
+          "name": "RVO",
+          "domain": "rvo.nl"
+        },
+        {
+          "name": "Spaceoffice",
+          "domain": "spaceoffice.nl"
+        },
+        {
+          "name": "TNO",
+          "domain": "tno.nl"
+        },
+        {
+          "name": "Tudelft",
+          "domain": "tudelft.nl"
+        },
+        {
+          "name": "Vno Ncw",
+          "domain": "vno-ncw.nl"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "pl": {
       "code": "pl",
       "name": "Poland",
       "tier": "primary",
-      "countries": ["PL"],
+      "countries": [
+        "PL"
+      ],
       "currency": "PLN",
       "locale": "pl_PL",
       "timezone": "Europe/Warsaw",
-      "languages_supported": ["pl", "en"],
-      "default_output_language": "pl",
-      "regional_qualifiers": { "local": "w Polsce", "en": "in Poland" },
-      "authority_sources": [
-        { "name": "UKE", "domain": "uke.gov.pl" },
-        { "name": "POLSA", "domain": "polsa.gov.pl" },
-        { "name": "GUS", "domain": "stat.gov.pl" }
+      "languages_supported": [
+        "pl",
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "pl",
+      "regional_qualifiers": {
+        "local": "w Polsce",
+        "en": "in Poland"
+      },
+      "authority_sources": [
+        {
+          "name": "Computerworld",
+          "domain": "computerworld.pl"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "ISAP",
+          "domain": "isap.sejm.gov.pl"
+        },
+        {
+          "name": "Kigeit",
+          "domain": "kigeit.org.pl"
+        },
+        {
+          "name": "Lewiatan",
+          "domain": "lewiatan.org"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "NASK",
+          "domain": "nask.pl"
+        },
+        {
+          "name": "NCBIR",
+          "domain": "ncbir.gov.pl"
+        },
+        {
+          "name": "PAN",
+          "domain": "pan.pl"
+        },
+        {
+          "name": "PB",
+          "domain": "pb.pl"
+        },
+        {
+          "name": "PIIT",
+          "domain": "piit.org.pl"
+        },
+        {
+          "name": "POLSA",
+          "domain": "polsa.gov.pl"
+        },
+        {
+          "name": "RP",
+          "domain": "rp.pl"
+        },
+        {
+          "name": "GUS",
+          "domain": "stat.gov.pl"
+        },
+        {
+          "name": "UKE",
+          "domain": "uke.gov.pl"
+        },
+        {
+          "name": "UOKIK",
+          "domain": "uokik.gov.pl"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "cz": {
       "code": "cz",
       "name": "Czech Republic",
       "tier": "extended",
-      "countries": ["CZ"],
+      "countries": [
+        "CZ"
+      ],
       "currency": "CZK",
       "locale": "cs_CZ",
       "timezone": "Europe/Prague",
-      "languages_supported": ["cs", "en"],
+      "languages_supported": [
+        "cs",
+        "en"
+      ],
       "default_output_language": "cs",
-      "regional_qualifiers": { "local": "v Česku", "en": "in the Czech Republic" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "v Česku",
+        "en": "in the Czech Republic"
+      },
+      "authority_sources": [
+        {
+          "name": "AOBP",
+          "domain": "aobp.cz"
+        },
+        {
+          "name": "AVCR",
+          "domain": "avcr.cz"
+        },
+        {
+          "name": "CCI",
+          "domain": "cci.cz"
+        },
+        {
+          "name": "CNB",
+          "domain": "cnb.cz"
+        },
+        {
+          "name": "CTU",
+          "domain": "ctu.cz"
+        },
+        {
+          "name": "Czechinvest",
+          "domain": "czechinvest.org"
+        },
+        {
+          "name": "CZSO",
+          "domain": "czso.cz"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "E15",
+          "domain": "e15.cz"
+        },
+        {
+          "name": "HN",
+          "domain": "hn.cz"
+        },
+        {
+          "name": "IHNED",
+          "domain": "ihned.cz"
+        },
+        {
+          "name": "LUPA",
+          "domain": "lupa.cz"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "SPCR",
+          "domain": "spcr.cz"
+        },
+        {
+          "name": "UOHS",
+          "domain": "uohs.cz"
+        },
+        {
+          "name": "UOOU",
+          "domain": "uoou.cz"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "sk": {
       "code": "sk",
       "name": "Slovakia",
       "tier": "extended",
-      "countries": ["SK"],
+      "countries": [
+        "SK"
+      ],
       "currency": "EUR",
       "locale": "sk_SK",
       "timezone": "Europe/Bratislava",
-      "languages_supported": ["sk", "en"],
+      "languages_supported": [
+        "sk",
+        "en"
+      ],
       "default_output_language": "sk",
-      "regional_qualifiers": { "local": "na Slovensku", "en": "in Slovakia" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "na Slovensku",
+        "en": "in Slovakia"
+      },
+      "authority_sources": [
+        {
+          "name": "Antimon",
+          "domain": "antimon.gov.sk"
+        },
+        {
+          "name": "Dataprotection",
+          "domain": "dataprotection.gov.sk"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "Hnonline",
+          "domain": "hnonline.sk"
+        },
+        {
+          "name": "ITAS",
+          "domain": "itas.sk"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "NBS",
+          "domain": "nbs.sk"
+        },
+        {
+          "name": "SAV",
+          "domain": "sav.sk"
+        },
+        {
+          "name": "Sbagency",
+          "domain": "sbagency.sk"
+        },
+        {
+          "name": "Slovak",
+          "domain": "slovak.statistics.sk"
+        },
+        {
+          "name": "SOPK",
+          "domain": "sopk.sk"
+        },
+        {
+          "name": "Teleoff",
+          "domain": "teleoff.gov.sk"
+        },
+        {
+          "name": "TREND",
+          "domain": "trend.sk"
+        },
+        {
+          "name": "ZIVE",
+          "domain": "zive.sk"
+        },
+        {
+          "name": "ZPP",
+          "domain": "zpp.sk"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "hu": {
       "code": "hu",
       "name": "Hungary",
       "tier": "extended",
-      "countries": ["HU"],
+      "countries": [
+        "HU"
+      ],
       "currency": "HUF",
       "locale": "hu_HU",
       "timezone": "Europe/Budapest",
-      "languages_supported": ["hu", "en"],
+      "languages_supported": [
+        "hu",
+        "en"
+      ],
       "default_output_language": "hu",
-      "regional_qualifiers": { "local": "Magyarországon", "en": "in Hungary" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "Magyarországon",
+        "en": "in Hungary"
+      },
+      "authority_sources": [
+        {
+          "name": "Bitport",
+          "domain": "bitport.hu"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "GVH",
+          "domain": "gvh.hu"
+        },
+        {
+          "name": "Hun Ren",
+          "domain": "hun-ren.hu"
+        },
+        {
+          "name": "HVG",
+          "domain": "hvg.hu"
+        },
+        {
+          "name": "IVSZ",
+          "domain": "ivsz.hu"
+        },
+        {
+          "name": "KSH",
+          "domain": "ksh.hu"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "Mgyosz",
+          "domain": "mgyosz.hu"
+        },
+        {
+          "name": "MKIK",
+          "domain": "mkik.hu"
+        },
+        {
+          "name": "MNB",
+          "domain": "mnb.hu"
+        },
+        {
+          "name": "MTA",
+          "domain": "mta.hu"
+        },
+        {
+          "name": "NAIH",
+          "domain": "naih.hu"
+        },
+        {
+          "name": "NKFIH",
+          "domain": "nkfih.gov.hu"
+        },
+        {
+          "name": "NMHH",
+          "domain": "nmhh.hu"
+        },
+        {
+          "name": "Portfolio",
+          "domain": "portfolio.hu"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "ro": {
       "code": "ro",
       "name": "Romania",
       "tier": "extended",
-      "countries": ["RO"],
+      "countries": [
+        "RO"
+      ],
       "currency": "RON",
       "locale": "ro_RO",
       "timezone": "Europe/Bucharest",
-      "languages_supported": ["ro", "en"],
+      "languages_supported": [
+        "ro",
+        "en"
+      ],
       "default_output_language": "ro",
-      "regional_qualifiers": { "local": "în România", "en": "in Romania" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "în România",
+        "en": "in Romania"
+      },
+      "authority_sources": [
+        {
+          "name": "ACAD",
+          "domain": "acad.ro"
+        },
+        {
+          "name": "Academiaromana",
+          "domain": "academiaromana.ro"
+        },
+        {
+          "name": "ADR",
+          "domain": "adr.gov.ro"
+        },
+        {
+          "name": "ANCOM",
+          "domain": "ancom.ro"
+        },
+        {
+          "name": "ANIS",
+          "domain": "anis.ro"
+        },
+        {
+          "name": "Consiliulconcurentei",
+          "domain": "consiliulconcurentei.ro"
+        },
+        {
+          "name": "Dataprotection",
+          "domain": "dataprotection.ro"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "INSSE",
+          "domain": "insse.ro"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "ZF",
+          "domain": "zf.ro"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "hr": {
       "code": "hr",
       "name": "Croatia",
       "tier": "extended",
-      "countries": ["HR"],
+      "countries": [
+        "HR"
+      ],
       "currency": "EUR",
       "locale": "hr_HR",
       "timezone": "Europe/Zagreb",
-      "languages_supported": ["hr", "en"],
+      "languages_supported": [
+        "hr",
+        "en"
+      ],
       "default_output_language": "hr",
-      "regional_qualifiers": { "local": "u Hrvatskoj", "en": "in Croatia" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "u Hrvatskoj",
+        "en": "in Croatia"
+      },
+      "authority_sources": [
+        {
+          "name": "AZOP",
+          "domain": "azop.hr"
+        },
+        {
+          "name": "AZTN",
+          "domain": "aztn.hr"
+        },
+        {
+          "name": "BUG",
+          "domain": "bug.hr"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "DZS",
+          "domain": "dzs.hr"
+        },
+        {
+          "name": "HAKOM",
+          "domain": "hakom.hr"
+        },
+        {
+          "name": "Hamagbicro",
+          "domain": "hamagbicro.hr"
+        },
+        {
+          "name": "HAZU",
+          "domain": "hazu.hr"
+        },
+        {
+          "name": "HGK",
+          "domain": "hgk.hr"
+        },
+        {
+          "name": "HNB",
+          "domain": "hnb.hr"
+        },
+        {
+          "name": "HUP",
+          "domain": "hup.hr"
+        },
+        {
+          "name": "INFO",
+          "domain": "info.hazu.hr"
+        },
+        {
+          "name": "LIDER",
+          "domain": "lider.media"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "Netokracija",
+          "domain": "netokracija.com"
+        },
+        {
+          "name": "Poslovni",
+          "domain": "poslovni.hr"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "gr": {
       "code": "gr",
       "name": "Greece",
       "tier": "extended",
-      "countries": ["GR"],
+      "countries": [
+        "GR"
+      ],
       "currency": "EUR",
       "locale": "el_GR",
       "timezone": "Europe/Athens",
-      "languages_supported": ["el", "en"],
+      "languages_supported": [
+        "el",
+        "en"
+      ],
       "default_output_language": "el",
-      "regional_qualifiers": { "local": "στην Ελλάδα", "en": "in Greece" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "στην Ελλάδα",
+        "en": "in Greece"
+      },
+      "authority_sources": [
+        {
+          "name": "Academyofathens",
+          "domain": "academyofathens.gr"
+        },
+        {
+          "name": "ACCI",
+          "domain": "acci.gr"
+        },
+        {
+          "name": "Bankofgreece",
+          "domain": "bankofgreece.gr"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "DPA",
+          "domain": "dpa.gr"
+        },
+        {
+          "name": "EETT",
+          "domain": "eett.gr"
+        },
+        {
+          "name": "EIE",
+          "domain": "eie.gr"
+        },
+        {
+          "name": "Elevategreece",
+          "domain": "elevategreece.gov.gr"
+        },
+        {
+          "name": "EPANT",
+          "domain": "epant.gr"
+        },
+        {
+          "name": "Kathimerini",
+          "domain": "kathimerini.gr"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "Naftemporiki",
+          "domain": "naftemporiki.gr"
+        },
+        {
+          "name": "SEPE",
+          "domain": "sepe.gr"
+        },
+        {
+          "name": "SETE",
+          "domain": "sete.gr"
+        },
+        {
+          "name": "SEV",
+          "domain": "sev.org.gr"
+        },
+        {
+          "name": "WWW",
+          "domain": "www.statistics.gr"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "mk": {
       "code": "mk",
       "name": "North Macedonia",
       "tier": "extended",
-      "countries": ["MK"],
+      "countries": [
+        "MK"
+      ],
       "currency": "MKD",
       "locale": "mk_MK",
       "timezone": "Europe/Skopje",
-      "languages_supported": ["mk", "en"],
+      "languages_supported": [
+        "mk",
+        "en"
+      ],
       "default_output_language": "mk",
-      "regional_qualifiers": { "local": "во Северна Македонија", "en": "in North Macedonia" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "во Северна Македонија",
+        "en": "in North Macedonia"
+      },
+      "authority_sources": [
+        {
+          "name": "AEK",
+          "domain": "aek.mk"
+        },
+        {
+          "name": "AZLP",
+          "domain": "azlp.mk"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "FITR",
+          "domain": "fitr.mk"
+        },
+        {
+          "name": "Kapital",
+          "domain": "kapital.mk"
+        },
+        {
+          "name": "KZK",
+          "domain": "kzk.gov.mk"
+        },
+        {
+          "name": "MANU",
+          "domain": "manu.edu.mk"
+        },
+        {
+          "name": "MASIT",
+          "domain": "masit.org.mk"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "STAT",
+          "domain": "stat.gov.mk"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "eu": {
       "code": "eu",
       "name": "European Union",
       "tier": "composite",
-      "countries": ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"],
-      "composite_of": ["de", "fr", "it", "es", "nl", "pl", "at", "cz", "sk", "hu", "ro", "hr", "gr"],
+      "countries": [
+        "AT",
+        "BE",
+        "BG",
+        "CY",
+        "CZ",
+        "DE",
+        "DK",
+        "EE",
+        "ES",
+        "FI",
+        "FR",
+        "GR",
+        "HR",
+        "HU",
+        "IE",
+        "IT",
+        "LT",
+        "LU",
+        "LV",
+        "MT",
+        "NL",
+        "PL",
+        "PT",
+        "RO",
+        "SE",
+        "SI",
+        "SK"
+      ],
+      "composite_of": [
+        "de",
+        "fr",
+        "it",
+        "es",
+        "nl",
+        "pl",
+        "at",
+        "cz",
+        "sk",
+        "hu",
+        "ro",
+        "hr",
+        "gr"
+      ],
       "currency": "EUR",
       "locale": "en_EU",
       "timezone": "Europe/Brussels",
-      "languages_supported": ["en", "de", "fr"],
-      "default_output_language": "en",
-      "regional_qualifiers": { "local": "in the EU", "en": "in the European Union" },
-      "authority_sources": [
-        { "name": "Eurostat", "domain": "ec.europa.eu/eurostat" },
-        { "name": "European Commission", "domain": "ec.europa.eu" }
+      "languages_supported": [
+        "en",
+        "de",
+        "fr"
       ],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "default_output_language": "en",
+      "regional_qualifiers": {
+        "local": "in the EU",
+        "en": "in the European Union"
+      },
+      "authority_sources": [
+        {
+          "name": "BEREC",
+          "domain": "berec.europa.eu"
+        },
+        {
+          "name": "Commission",
+          "domain": "commission.europa.eu"
+        },
+        {
+          "name": "Digitaleurope",
+          "domain": "digitaleurope.org"
+        },
+        {
+          "name": "EASA",
+          "domain": "easa.europa.eu"
+        },
+        {
+          "name": "European Commission",
+          "domain": "ec.europa.eu"
+        },
+        {
+          "name": "Eurostat",
+          "domain": "ec.europa.eu/eurostat"
+        },
+        {
+          "name": "EIB",
+          "domain": "eib.org"
+        },
+        {
+          "name": "ENISA",
+          "domain": "enisa.europa.eu"
+        },
+        {
+          "name": "ESA",
+          "domain": "esa.int"
+        },
+        {
+          "name": "ETNO",
+          "domain": "etno.eu"
+        },
+        {
+          "name": "Eur Lex",
+          "domain": "eur-lex.europa.eu"
+        },
+        {
+          "name": "Eurostat",
+          "domain": "eurostat.ec.europa.eu"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "uk": {
       "code": "uk",
       "name": "United Kingdom",
       "tier": "anglo",
-      "countries": ["GB"],
+      "countries": [
+        "GB"
+      ],
       "currency": "GBP",
       "locale": "en_GB",
       "timezone": "Europe/London",
-      "languages_supported": ["en"],
-      "default_output_language": "en",
-      "regional_qualifiers": { "local": "in the UK", "en": "in the United Kingdom" },
-      "authority_sources": [
-        { "name": "ONS", "domain": "ons.gov.uk" },
-        { "name": "Ofcom", "domain": "ofcom.org.uk" }
+      "languages_supported": [
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "en",
+      "regional_qualifiers": {
+        "local": "in the UK",
+        "en": "in the United Kingdom"
+      },
+      "authority_sources": [
+        {
+          "name": "CBI",
+          "domain": "cbi.org.uk"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.co.uk"
+        },
+        {
+          "name": "FT",
+          "domain": "ft.com"
+        },
+        {
+          "name": "GOV",
+          "domain": "gov.uk"
+        },
+        {
+          "name": "Legislation",
+          "domain": "legislation.gov.uk"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "Ofcom",
+          "domain": "ofcom.org.uk"
+        },
+        {
+          "name": "ONS",
+          "domain": "ons.gov.uk"
+        },
+        {
+          "name": "Techuk",
+          "domain": "techuk.org"
+        },
+        {
+          "name": "Theregister",
+          "domain": "theregister.com"
+        },
+        {
+          "name": "UKRI",
+          "domain": "ukri.org"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "us": {
       "code": "us",
       "name": "United States",
       "tier": "anglo",
-      "countries": ["US"],
+      "countries": [
+        "US"
+      ],
       "currency": "USD",
       "locale": "en_US",
       "timezone": "America/New_York",
-      "languages_supported": ["en"],
-      "default_output_language": "en",
-      "regional_qualifiers": { "local": "in the US", "en": "in the United States" },
-      "authority_sources": [
-        { "name": "NIST", "domain": "nist.gov" },
-        { "name": "Census", "domain": "census.gov" }
+      "languages_supported": [
+        "en"
       ],
-      "consumed_by": ["cogni-research", "cogni-trends", "cogni-portfolio"]
+      "default_output_language": "en",
+      "regional_qualifiers": {
+        "local": "in the US",
+        "en": "in the United States"
+      },
+      "authority_sources": [
+        {
+          "name": "BLS",
+          "domain": "bls.gov"
+        },
+        {
+          "name": "Census",
+          "domain": "census.gov"
+        },
+        {
+          "name": "Congress",
+          "domain": "congress.gov"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "Federalregister",
+          "domain": "federalregister.gov"
+        },
+        {
+          "name": "Forrester",
+          "domain": "forrester.com"
+        },
+        {
+          "name": "GAO",
+          "domain": "gao.gov"
+        },
+        {
+          "name": "HBR",
+          "domain": "hbr.org"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "MIT",
+          "domain": "mit.edu"
+        },
+        {
+          "name": "NIST",
+          "domain": "nist.gov"
+        },
+        {
+          "name": "Stanford",
+          "domain": "stanford.edu"
+        },
+        {
+          "name": "WSJ",
+          "domain": "wsj.com"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-trends",
+        "cogni-portfolio"
+      ]
     },
     "na": {
       "code": "na",
       "name": "North America",
       "tier": "composite",
-      "countries": ["US", "CA"],
-      "composite_of": ["us"],
+      "countries": [
+        "US",
+        "CA"
+      ],
+      "composite_of": [
+        "us"
+      ],
       "currency": "USD",
       "locale": "en_US",
       "timezone": "America/New_York",
-      "languages_supported": ["en", "fr"],
+      "languages_supported": [
+        "en",
+        "fr"
+      ],
       "default_output_language": "en",
-      "regional_qualifiers": { "local": "in North America", "en": "in North America" },
+      "regional_qualifiers": {
+        "local": "in North America",
+        "en": "in North America"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     },
     "nordics": {
       "code": "nordics",
       "name": "Nordics",
       "tier": "composite",
-      "countries": ["SE", "NO", "DK", "FI", "IS"],
+      "countries": [
+        "SE",
+        "NO",
+        "DK",
+        "FI",
+        "IS"
+      ],
       "currency": "MIXED",
       "locale": "en_SE",
       "timezone": "Europe/Stockholm",
-      "languages_supported": ["sv", "no", "da", "fi", "is", "en"],
+      "languages_supported": [
+        "sv",
+        "no",
+        "da",
+        "fi",
+        "is",
+        "en"
+      ],
       "default_output_language": "en",
-      "regional_qualifiers": { "local": "in the Nordics", "en": "in the Nordic region" },
+      "regional_qualifiers": {
+        "local": "in the Nordics",
+        "en": "in the Nordic region"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     },
     "mx": {
       "code": "mx",
       "name": "Mexico",
       "tier": "extended",
-      "countries": ["MX"],
+      "countries": [
+        "MX"
+      ],
       "currency": "MXN",
       "locale": "es_MX",
       "timezone": "America/Mexico_City",
-      "languages_supported": ["es", "en"],
+      "languages_supported": [
+        "es",
+        "en"
+      ],
       "default_output_language": "es",
-      "regional_qualifiers": { "local": "en México", "en": "in Mexico" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "en México",
+        "en": "in Mexico"
+      },
+      "authority_sources": [
+        {
+          "name": "AMITI",
+          "domain": "amiti.org.mx"
+        },
+        {
+          "name": "Banxico",
+          "domain": "banxico.org.mx"
+        },
+        {
+          "name": "Canieti",
+          "domain": "canieti.org.mx"
+        },
+        {
+          "name": "CCE",
+          "domain": "cce.org.mx"
+        },
+        {
+          "name": "Cofece",
+          "domain": "cofece.org.mx"
+        },
+        {
+          "name": "Conahcyt",
+          "domain": "conahcyt.mx"
+        },
+        {
+          "name": "Eleconomista",
+          "domain": "eleconomista.com.mx"
+        },
+        {
+          "name": "Elfinanciero",
+          "domain": "elfinanciero.com.mx"
+        },
+        {
+          "name": "Expansion",
+          "domain": "expansion.mx"
+        },
+        {
+          "name": "IFT",
+          "domain": "ift.org.mx"
+        },
+        {
+          "name": "INAI",
+          "domain": "inai.org.mx"
+        },
+        {
+          "name": "INEGI",
+          "domain": "inegi.org.mx"
+        },
+        {
+          "name": "TEC",
+          "domain": "tec.mx"
+        },
+        {
+          "name": "UNAM",
+          "domain": "unam.mx"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "br": {
       "code": "br",
       "name": "Brazil",
       "tier": "extended",
-      "countries": ["BR"],
+      "countries": [
+        "BR"
+      ],
       "currency": "BRL",
       "locale": "pt_BR",
       "timezone": "America/Sao_Paulo",
-      "languages_supported": ["pt", "en"],
+      "languages_supported": [
+        "pt",
+        "en"
+      ],
       "default_output_language": "pt",
-      "regional_qualifiers": { "local": "no Brasil", "en": "in Brazil" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "no Brasil",
+        "en": "in Brazil"
+      },
+      "authority_sources": [
+        {
+          "name": "ABES",
+          "domain": "abes.org.br"
+        },
+        {
+          "name": "Anatel",
+          "domain": "anatel.gov.br"
+        },
+        {
+          "name": "BCB",
+          "domain": "bcb.gov.br"
+        },
+        {
+          "name": "Brasscom",
+          "domain": "brasscom.org.br"
+        },
+        {
+          "name": "CADE",
+          "domain": "cade.gov.br"
+        },
+        {
+          "name": "CNI",
+          "domain": "cni.com.br"
+        },
+        {
+          "name": "CNPQ",
+          "domain": "cnpq.br"
+        },
+        {
+          "name": "Estadao",
+          "domain": "estadao.com.br"
+        },
+        {
+          "name": "EXAME",
+          "domain": "exame.com"
+        },
+        {
+          "name": "Fapesp",
+          "domain": "fapesp.br"
+        },
+        {
+          "name": "FGV",
+          "domain": "fgv.br"
+        },
+        {
+          "name": "GOV",
+          "domain": "gov.br"
+        },
+        {
+          "name": "IBGE",
+          "domain": "ibge.gov.br"
+        },
+        {
+          "name": "VALOR",
+          "domain": "valor.globo.com"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "cn": {
       "code": "cn",
       "name": "China",
       "tier": "extended",
-      "countries": ["CN"],
+      "countries": [
+        "CN"
+      ],
       "currency": "CNY",
       "locale": "zh_CN",
       "timezone": "Asia/Shanghai",
-      "languages_supported": ["zh", "en"],
+      "languages_supported": [
+        "zh",
+        "en"
+      ],
       "default_output_language": "zh",
-      "regional_qualifiers": { "local": "在中国", "en": "in China" },
-      "authority_sources": [],
-      "consumed_by": ["cogni-research", "cogni-portfolio"]
+      "regional_qualifiers": {
+        "local": "在中国",
+        "en": "in China"
+      },
+      "authority_sources": [
+        {
+          "name": "21Jingji",
+          "domain": "21jingji.com"
+        },
+        {
+          "name": "Accenture",
+          "domain": "accenture.com"
+        },
+        {
+          "name": "CAC",
+          "domain": "cac.gov.cn"
+        },
+        {
+          "name": "CAICT",
+          "domain": "caict.ac.cn"
+        },
+        {
+          "name": "Caixin",
+          "domain": "caixin.com"
+        },
+        {
+          "name": "CAS",
+          "domain": "cas.cn"
+        },
+        {
+          "name": "Ccidnet",
+          "domain": "ccidnet.com"
+        },
+        {
+          "name": "CESI",
+          "domain": "cesi.cn"
+        },
+        {
+          "name": "Deloitte",
+          "domain": "deloitte.com"
+        },
+        {
+          "name": "Forrester",
+          "domain": "forrester.com"
+        },
+        {
+          "name": "Gartner",
+          "domain": "gartner.com"
+        },
+        {
+          "name": "HBR",
+          "domain": "hbr.org"
+        },
+        {
+          "name": "Mckinsey",
+          "domain": "mckinsey.com"
+        },
+        {
+          "name": "MIIT",
+          "domain": "miit.gov.cn"
+        },
+        {
+          "name": "MIT",
+          "domain": "mit.edu"
+        },
+        {
+          "name": "PBC",
+          "domain": "pbc.gov.cn"
+        },
+        {
+          "name": "STATS",
+          "domain": "stats.gov.cn"
+        },
+        {
+          "name": "Tmtpost",
+          "domain": "tmtpost.com"
+        },
+        {
+          "name": "WSJ",
+          "domain": "wsj.com"
+        },
+        {
+          "name": "YICAI",
+          "domain": "yicai.com"
+        }
+      ],
+      "consumed_by": [
+        "cogni-research",
+        "cogni-portfolio"
+      ]
     },
     "jp": {
       "code": "jp",
       "name": "Japan",
       "tier": "extended",
-      "countries": ["JP"],
+      "countries": [
+        "JP"
+      ],
       "currency": "JPY",
       "locale": "ja_JP",
       "timezone": "Asia/Tokyo",
-      "languages_supported": ["ja", "en"],
+      "languages_supported": [
+        "ja",
+        "en"
+      ],
       "default_output_language": "ja",
-      "regional_qualifiers": { "local": "日本で", "en": "in Japan" },
+      "regional_qualifiers": {
+        "local": "日本で",
+        "en": "in Japan"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     },
     "apac": {
       "code": "apac",
       "name": "Asia-Pacific",
       "tier": "composite",
-      "countries": ["SG", "AU", "NZ", "KR", "TW", "HK", "IN", "ID", "MY", "PH", "TH", "VN"],
+      "countries": [
+        "SG",
+        "AU",
+        "NZ",
+        "KR",
+        "TW",
+        "HK",
+        "IN",
+        "ID",
+        "MY",
+        "PH",
+        "TH",
+        "VN"
+      ],
       "currency": "MIXED",
       "locale": "en_SG",
       "timezone": "Asia/Singapore",
-      "languages_supported": ["en"],
+      "languages_supported": [
+        "en"
+      ],
       "default_output_language": "en",
-      "regional_qualifiers": { "local": "in APAC", "en": "in Asia-Pacific" },
+      "regional_qualifiers": {
+        "local": "in APAC",
+        "en": "in Asia-Pacific"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     },
     "latam": {
       "code": "latam",
       "name": "Latin America",
       "tier": "composite",
-      "countries": ["BR", "MX", "AR", "CL", "CO", "PE"],
-      "composite_of": ["mx", "br"],
+      "countries": [
+        "BR",
+        "MX",
+        "AR",
+        "CL",
+        "CO",
+        "PE"
+      ],
+      "composite_of": [
+        "mx",
+        "br"
+      ],
       "currency": "MIXED",
       "locale": "es_MX",
       "timezone": "America/Mexico_City",
-      "languages_supported": ["es", "pt", "en"],
+      "languages_supported": [
+        "es",
+        "pt",
+        "en"
+      ],
       "default_output_language": "es",
-      "regional_qualifiers": { "local": "en Latinoamérica", "en": "in Latin America" },
+      "regional_qualifiers": {
+        "local": "en Latinoamérica",
+        "en": "in Latin America"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     },
     "mea": {
       "code": "mea",
       "name": "Middle East & Africa",
       "tier": "composite",
-      "countries": ["AE", "SA", "IL", "ZA", "EG"],
+      "countries": [
+        "AE",
+        "SA",
+        "IL",
+        "ZA",
+        "EG"
+      ],
       "currency": "MIXED",
       "locale": "en_AE",
       "timezone": "Asia/Dubai",
-      "languages_supported": ["ar", "en"],
+      "languages_supported": [
+        "ar",
+        "en"
+      ],
       "default_output_language": "en",
-      "regional_qualifiers": { "local": "in MEA", "en": "in the Middle East and Africa" },
+      "regional_qualifiers": {
+        "local": "in MEA",
+        "en": "in the Middle East and Africa"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     },
     "global": {
       "code": "global",
@@ -464,11 +2155,18 @@
       "currency": "USD",
       "locale": "en_US",
       "timezone": "UTC",
-      "languages_supported": ["en"],
+      "languages_supported": [
+        "en"
+      ],
       "default_output_language": "en",
-      "regional_qualifiers": { "local": "globally", "en": "worldwide" },
+      "regional_qualifiers": {
+        "local": "globally",
+        "en": "worldwide"
+      },
       "authority_sources": [],
-      "consumed_by": ["cogni-portfolio"]
+      "consumed_by": [
+        "cogni-portfolio"
+      ]
     }
   }
 }
