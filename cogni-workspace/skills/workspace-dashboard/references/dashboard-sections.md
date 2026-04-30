@@ -52,14 +52,15 @@ Per-section reference for `workspace-dashboard`: data source, helper(s) reused, 
 
 **Data source**:
 - Canonical: `<workspace-root>/cogni-workspace/references/supported-markets-registry.json` (rows = `markets` keys)
-- Plugin catalogs (columns):
+- Plugin overlays (columns):
   - `cogni-research/references/market-sources.json`
   - `cogni-trends/skills/trend-report/references/region-authority-sources.json`
-  - `cogni-portfolio/skills/portfolio-setup/references/regions.json`
 
-**Output**: heatmap grid. Rows = markets (sorted by `tier` then alphabetically). Columns = the three plugins. Cell = green when the market is present in that plugin's catalog, neutral when absent. Below the matrix: per-market summary chips (authority-domain counts, primary authorities).
+cogni-portfolio is intentionally not a column: under the centralized markets model it reads the registry directly via `cogni-workspace/scripts/get-market-config.py`, so its market set is structurally identical to the registry by construction.
 
-This section is **read-only** and **does not run drift detection** — that's `audit-region-sources` and `manage-markets baseline-refresh`. The matrix shows the static current state.
+**Output**: heatmap grid. Rows = markets (sorted by `tier` then alphabetically). Columns = the two consuming plugins. Cell = green when the market is present in that plugin's overlay, neutral when absent. Below the matrix: per-market summary chips (authority-domain counts, primary authorities).
+
+This section is **read-only**. `audit-region-sources` is the dedicated coverage reporter (overlay-vs-registry coverage and orphan-domain detection); `manage-markets` is the write path (`status` + `add` sub-actions). Drift on the shared market set is structurally impossible under the centralized model — the matrix shows the static current state.
 
 ## 6. Cross-Plugin Hooks
 

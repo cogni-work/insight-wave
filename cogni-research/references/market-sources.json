@@ -1,5 +1,5 @@
 {
-  "_description": "Market-specific search configuration for research agents. Keys are region codes aligned with cogni-portfolio regions.json. Agents load the entry matching the MARKET parameter; unknown codes fall back to '_default'. Each entry provides local-language vocabulary hints, authority sources with search patterns, and regulatory body lists.",
+  "_description": "Slim research-side overlay of the canonical cogni-workspace/references/supported-markets-registry.json. Keys are market codes aligned with the registry. Each entry carries only research-specific operational metadata (region_qualifiers, local_language, local_query_tips, regulatory_bodies, authority_metadata{} keyed by domain). Read sites must call cogni-workspace/scripts/get-market-config.py --plugin research --market <code> to obtain the joined config in the legacy embedded shape; never read this file directly. Unknown codes fall back to '_default' (retained in legacy shape for backward compatibility).",
   "dach": {
     "local_language": "de",
     "region_qualifiers": {

@@ -72,7 +72,6 @@ DEFAULT_THEME = {
 MARKET_PLUGINS = [
     ("cogni-research", "cogni-research/references/market-sources.json"),
     ("cogni-trends", "cogni-trends/skills/trend-report/references/region-authority-sources.json"),
-    ("cogni-portfolio", "cogni-portfolio/skills/portfolio-setup/references/regions.json"),
 ]
 
 
