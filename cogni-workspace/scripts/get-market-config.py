@@ -80,6 +80,43 @@ def _registry_market(registry, code):
     return out
 
 
+def _join_authorities(registry_entry, overlay_entry):
+    """Join registry authority_sources with overlay authority_metadata.
+
+    Post-migration shape: registry holds the canonical {name, domain} list per
+    market, overlay holds plugin-specific metadata keyed by domain. The merge
+    output reproduces today's authority_sources[] shape (one entry per curated
+    domain with metadata embedded) so read sites keep working unchanged.
+
+    A domain appears in the output ONLY if the overlay has metadata for it —
+    overlay is the "is curated by this plugin" filter. Domains in the registry
+    without overlay metadata are part of the canonical taxonomy but are not
+    used by this plugin, so they're omitted.
+
+    If overlay has its own authority_sources[] (pre-migration shape), that
+    wins outright — overlay overrides registry — preserving legacy behavior.
+    """
+    overlay_sources = overlay_entry.get("authority_sources") if overlay_entry else None
+    if overlay_sources is not None:
+        return overlay_sources
+
+    metadata = overlay_entry.get("authority_metadata") if overlay_entry else None
+    if metadata is None:
+        return registry_entry.get("authority_sources") if registry_entry else None
+
+    registry_sources = (registry_entry or {}).get("authority_sources") or []
+    by_domain = {entry.get("domain"): entry for entry in registry_sources if entry.get("domain")}
+
+    joined = []
+    for domain, plugin_meta in metadata.items():
+        base = dict(by_domain.get(domain, {"domain": domain}))
+        base.update(plugin_meta)
+        if "domain" not in base:
+            base["domain"] = domain
+        joined.append(base)
+    return joined
+
+
 def _merge_market(registry_entry, overlay_entry):
     """Merge registry base + overlay. Overlay wins on field conflicts."""
     if registry_entry is None and overlay_entry is None:
@@ -90,7 +127,14 @@ def _merge_market(registry_entry, overlay_entry):
         return dict(registry_entry)
     merged = dict(registry_entry)
     for key, value in overlay_entry.items():
+        if key == "authority_metadata":
+            continue
         merged[key] = value
+    joined = _join_authorities(registry_entry, overlay_entry)
+    if joined is not None:
+        merged["authority_sources"] = joined
+    elif "authority_sources" in merged:
+        pass
     return merged
 
 
