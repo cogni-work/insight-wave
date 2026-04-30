@@ -60,7 +60,17 @@ Persist the result to `{PROJECT_PATH}/.logs/report-theme-anchors.json`:
 }
 ```
 
-**Quality check:** if any single dimension would carry more than 3 themes, log a WARNING — the report will be unbalanced. The composer can still write it, but consider re-running value-modeler to redistribute.
+**Quality check (two-sided anchor distribution):** inspect `anchor_distribution` after computing all theme anchors. Both extremes are non-blocking but visible WARNs — surface the trade-off and let the user decide.
+
+- **WARN if `anchor_distribution[dim] > 3`** for any dimension:
+  > Dimension `{X}` carries `{N}` themes — report will feel theme-heavy here. Consider re-running value-modeler to redistribute, or proceeding with composer warning.
+- **WARN if `anchor_distribution[dim] == 0`** for any dimension:
+  > Dimension `{X}` has no anchored themes — the Forces / Impact / Horizons / Foundations section will only contain the dimension narrative + secondary callouts and will read visibly thinner than its siblings. Consider:
+  > (a) re-attributing one tied theme (where `candidate_counts[X]` is close to the winning dimension);
+  > (b) adding more `{X}`-dimension candidates to value chains in value-modeler;
+  > (c) proceeding with thinner section (acceptable but visually unbalanced).
+
+In both cases the composer can still write the report — the WARN is informational, not a halt.
 
 **Resume:** if `report-theme-anchors.json` already exists and has an `anchors[]` entry for every theme in the value model, skip Step 2.0a.
 
@@ -523,7 +533,8 @@ Same as legacy flow — merge all 4 dimension claims into `tips-trend-report-cla
 | Scenario | Action |
 |----------|--------|
 | `tips-value-model.json` has investment themes but no value chains | HALT: value-modeler Phase 1 incomplete |
-| Theme anchoring distribution gives one dimension >3 themes | WARN; composer can still write but report unbalanced |
+| Theme anchoring distribution gives one dimension >3 themes | WARN; composer can still write but report theme-heavy in that dimension |
+| Theme anchoring distribution gives one dimension 0 themes | WARN; composer can still write but the dimension section will read visibly thin (only narrative + secondary callouts). Suggest re-attributing a tied theme, adding `{dim}`-candidates in value-modeler, or proceeding thinner |
 | Theme-case agent returns `ok: false` | Retry once, then HALT with theme name |
 | Theme-case agent quality gate fails (`primer_referenced: false` or missing cost ratio) | WARN; continue (case may be thin) |
 | Composer returns `ok: false` | Retry once, then HALT with dimension name |
