@@ -322,20 +322,20 @@ for f in glob.glob('$PROJECT_DIR/features/*.json'):
 " 2>/dev/null)
 fi
 
-# Valid region codes derived from the taxonomy so the whitelist can never drift
-# from regions.json. Falls back to the canonical minimum if the file is
-# unreadable (defensive; should not occur in practice).
-PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REGIONS_JSON="$PLUGIN_ROOT/skills/portfolio-setup/references/regions.json"
-VALID_REGIONS=$(python3 -c "
-import json
-try:
-    with open('$REGIONS_JSON') as fh:
-        data = json.load(fh)
-    print(' '.join(sorted(data.get('regions', {}).keys())))
-except Exception:
-    pass
-" 2>/dev/null)
+# Valid region codes derived from the canonical workspace registry so the
+# whitelist can never drift. Resolves cogni-workspace via the standard
+# sibling-install-or-monorepo-source fallback. Falls back to the canonical
+# minimum if the registry is unreachable.
+_WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null | head -1)}"
+if [ -z "$_WORKSPACE_ROOT" ] || [ ! -f "$_WORKSPACE_ROOT/scripts/get-market-config.py" ]; then
+  _WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../cogni-workspace" 2>/dev/null && pwd)"
+fi
+_GET_MARKET="$_WORKSPACE_ROOT/scripts/get-market-config.py"
+VALID_REGIONS=""
+if [ -f "$_GET_MARKET" ]; then
+  VALID_REGIONS=$(python3 "$_GET_MARKET" --plugin portfolio --all-markets 2>/dev/null \
+    | python3 -c 'import json,sys;d=json.load(sys.stdin).get("data",{});print(" ".join(sorted(k for k in d.keys() if not k.startswith("_"))))' 2>/dev/null)
+fi
 if [ -z "$VALID_REGIONS" ]; then
   VALID_REGIONS="de dach eu uk nordics us na cn apac jp latam mea global"
 fi

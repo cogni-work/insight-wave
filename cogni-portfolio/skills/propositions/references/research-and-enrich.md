@@ -45,7 +45,7 @@ Quick Fix is reactive and tactical. Deep Dive is strategic and produces messagin
    - The project directory path
    - `plugin_root: $CLAUDE_PLUGIN_ROOT`
 
-   **Regional URL derivation:** common pattern is `{domain}/{lang}` (e.g., `t-systems.com/de`). If the company context already includes an explicit `regional_urls` map, use the entry for the portfolio language. Pass both `domain` (for English backup) and `regional_url` (for localised search). The agent also receives the market JSON (which contains `region`) — it uses this to look up the region locale from `regions.json` for market-scoped queries.
+   **Regional URL derivation:** common pattern is `{domain}/{lang}` (e.g., `t-systems.com/de`). If the company context already includes an explicit `regional_urls` map, use the entry for the portfolio language. Pass both `domain` (for English backup) and `regional_url` (for localised search). The agent also receives the market JSON (which contains `region`) — it uses this to resolve the region locale via the workspace merge utility for market-scoped queries.
 
    Launch multiple agents in parallel for different propositions.
 

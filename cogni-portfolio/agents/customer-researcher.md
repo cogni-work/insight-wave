@@ -27,7 +27,7 @@ The task prompt that spawned you includes a `plugin_root` path. Wherever these i
 
 1. Read the market file, relevant propositions, and portfolio.json from the paths provided. Check `portfolio.json` for a `language` field — if present, generate user-facing text (fit_rationale, pain_points) in that language. JSON field names remain in English. If no language field, default to English.
 
-2. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`. Look up the market's `region` to get the `locale` (e.g., `dach` → `de-DE`). Derive `regional_url` from the company domain and portfolio language (common pattern: `{domain}/{lang}`, e.g., `siemens.com/de`). If the company context includes an explicit `regional_urls` map, use the entry for the portfolio language.
+2. Resolve the market's locale via the workspace merge utility — run `python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin portfolio --market <region-code>` — it returns a flat config including `locale` (e.g., `dach` → `de_DE`). Derive `regional_url` from the company domain and portfolio language (common pattern: `{domain}/{lang}`, e.g., `siemens.com/de`). If the company context includes an explicit `regional_urls` map, use the entry for the portfolio language.
 
 3. Conduct 6-10 web searches per company using a **two-pass approach** when the portfolio `language` is not English:
 

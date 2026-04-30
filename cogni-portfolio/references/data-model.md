@@ -1199,7 +1199,7 @@ portfolio.json (root manifest)
 │   │   │   └── [TIPS variants & evidence via trends-bridge]
 │   │   └── [Quality assessment via proposition-quality-assessor]
 │   └── packages/{prod}--{mkt}.json (product_slug + market_slug, references solution slugs)
-├── markets/{slug}.json (region code FK -> regions.json)
+├── markets/{slug}.json (region code FK -> cogni-workspace/references/supported-markets-registry.json)
 │   └── customers/{slug}.json (market_slug FK)
 ├── context/{source-slug}--{seq}.json (intelligence from uploaded documents, linked to entities)
 └── [Cross-plugin: portfolio-context.json -> TIPS, portfolio-opportunities.json <- TIPS]

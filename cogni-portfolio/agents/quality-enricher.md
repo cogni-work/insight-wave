@@ -51,7 +51,7 @@ The calling skill passes `language`, `domain`, and `regional_url` in the company
    - Translate search keywords into the output language (e.g., "architecture" → "Architektur", "case study" → "Fallstudie")
    - Use `site:{regional_url}` instead of `site:{domain}` for localized content
    - Example: `site:t-systems.com/de {Produktname} Architektur`
-   - **For propositions:** Also localize market keywords using the market's region locale from `regions.json` (e.g., `locale: "de-DE"` → search in German). Translate market terms: "mid-market" → "Mittelstand", "use case" → "Anwendungsfall", "customer success" → "Kundenreferenz", "pain points" → "Herausforderungen"
+   - **For propositions:** Also localize market keywords using the market's locale resolved via the workspace merge utility (e.g., `locale: "de_DE"` → search in German). Translate market terms: "mid-market" → "Mittelstand", "use case" → "Anwendungsfall", "customer success" → "Kundenreferenz", "pain points" → "Herausforderungen"
    - Scope market searches to the region: include region names in queries (e.g., "Deutschland", "DACH", "Europa" instead of "Germany", "DACH region", "Europe")
 
 2. **English backup pass — for gaps and international sources:**
@@ -98,7 +98,7 @@ Run 6-12 WebSearch queries based on which dimensions failed. Batch searches in p
 
 Construct these queries in the output language for the primary pass, using `site:{regional_url}`. For the English backup pass, use the templates as written with `site:{domain}`.
 
-Additionally, translate `{market-keywords}` and `{market-vertical}` into the locale of the market's region (read from `regions.json` via the market's `region` field). Examples for `de-DE`:
+Additionally, translate `{market-keywords}` and `{market-vertical}` into the locale of the market's region (resolved via the workspace merge utility, see Step 2). Examples for `de_DE`:
 - `{market-vertical}` "SaaS mid-market" → "SaaS Mittelstand"
 - `{market-keywords}` "use case" → "Anwendungsfall", "deployment" → "Implementierung"
 - Region terms: "DACH" stays "DACH", "Germany" → "Deutschland"

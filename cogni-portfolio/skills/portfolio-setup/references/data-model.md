@@ -200,7 +200,7 @@ Valid `priority` values: `beachhead` (primary go-to-market target), `expansion` 
 
 `sort_order` (integer, optional): Controls display ordering across all markets. Lower numbers appear first — beachhead markets should use the lowest values to appear first in dashboards and matrices. Use increments of 10 (10, 20, 30...) to leave room for insertions. Convention: beachhead markets 10-30, expansion 40-60, aspirational 70+. Markets without `sort_order` sort after all ordered markets, then alphabetically by slug.
 
-The `region` field must be a valid region code from the standard taxonomy in `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`. Valid codes: `de`, `dach`, `eu`, `uk`, `nordics`, `us`, `na`, `cn`, `apac`, `jp`, `latam`, `mea`, `global`.
+The `region` field must be a valid region code from the canonical workspace registry at `cogni-workspace/references/supported-markets-registry.json`. Valid codes (28 today): `apac`, `at`, `br`, `cn`, `cz`, `dach`, `de`, `es`, `eu`, `fr`, `gr`, `hr`, `hu`, `it`, `jp`, `latam`, `mea`, `mk`, `mx`, `na`, `nl`, `nordics`, `pl`, `ro`, `sk`, `uk`, `us`, `global`. Resolve a market's full config via `python3 cogni-workspace/scripts/get-market-config.py --plugin portfolio --market <code>`.
 
 The `segmentation` object captures non-geographic criteria (company size, revenue, vertical, etc.). Geographic scope is expressed solely through `region` -- do not duplicate it in `segmentation.geography`.
 
@@ -1020,7 +1020,7 @@ erDiagram
 - Each proposition has exactly one competitor analysis
 - Each market has exactly one customer profile
 - Each package assembles N solutions from one product for one market (N:1 with product, N:1 with market, references N solutions via tiers)
-- Region is defined in the taxonomy (`regions.json`), not as a project entity
+- Region is defined in the canonical workspace registry (`cogni-workspace/references/supported-markets-registry.json`), not as a project entity
 - Features reference their parent product by `product_slug`
 - Markets reference their region by `region` code
 - Propositions, solutions, competitors, customers, and packages reference their parents by slug

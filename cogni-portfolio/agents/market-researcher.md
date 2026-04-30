@@ -28,7 +28,7 @@ Do NOT create intermediate files, research notes, persona files, or any other fi
 
 **Research Process:**
 1. Read the market definition file and portfolio.json from the paths provided in the task. Check `portfolio.json` for a `language` field — if present, generate all user-facing text content (market descriptions, TAM/SAM/SOM descriptions) in that language. JSON field names and slugs remain in English. If no `language` field is present, default to English.
-2. Read the region taxonomy from `$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/regions.json`. Look up the market's `region` to get the `locale` (e.g., `dach` → `de-DE`, `jp` → `ja-JP`).
+2. Resolve the market's locale via the workspace merge utility — run `python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin portfolio --market <region-code>` — it returns a flat config including `locale` (e.g., `dach` → `de_DE`, `jp` → `ja_JP`), currency, and regional qualifiers.
 3. Extract key parameters: region (and its scope countries), company size, vertical, feature categories
 4. Conduct 6-10 web searches using a **two-pass approach** when the region locale is not English:
 

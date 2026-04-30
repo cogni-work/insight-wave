@@ -139,7 +139,7 @@ Two modes of operation:
 
 **User-provided:** The user names specific companies they want researched. Proceed directly to research.
 
-**Auto-discover:** When the user wants suggestions, search the web to identify 5-10 candidate companies. Use language-aware queries based on the market's region locale (read `regions.json` for the locale). For non-English locales, search in the region language first, then supplement with English:
+**Auto-discover:** When the user wants suggestions, search the web to identify 5-10 candidate companies. Use language-aware queries based on the market's region locale (resolve via the workspace merge utility: `python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin portfolio --market <region-code>`). For non-English locales, search in the region language first, then supplement with English:
 - `de-DE`: `"Top {Segment} Unternehmen in {Region}"`, `"führende {Branche} Firmen {Region} {year}"`
 - `en-*` or absent: `"top {segment} companies in {region}"`, `"leading {vertical} companies {region} {year}"`
 
