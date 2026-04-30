@@ -707,13 +707,59 @@ Add to `{PROJECT_PATH}/.metadata/trend-scout-output.json`:
   "trend_report_investment_theme_count": N,
   "trend_report_generated_at": "ISO-8601",
   "report_tier": "{REPORT_TIER}",
-  "report_target_words": {REPORT_TARGET_WORDS}
+  "report_target_words": {REPORT_TARGET_WORDS},
+  "content_hash_at_report": "sha256:<hex>",
+  "value_model_hash_at_report": "sha256:<hex>",
+  "candidate_signature": { "<id>": "<short-hash>", ... }
 }
 ```
 
 `trend_report_mode` is `"smarter-service-themed"` when `REPORT_ARC_ID == "smarter-service"`, else `"strategic-themes"` (legacy value preserved for verify-trend-report and downstream consumers that already key off this field).
 
 `report_tier` and `report_target_words` are mirrored into trend-scout-output.json so `verify-trend-report` can read the prose-word target without re-loading `tips-project.json` — the reviewer uses it for tier-aware Completeness scoring.
+
+`content_hash_at_report`, `value_model_hash_at_report`, and `candidate_signature` are the **drift anchor** consumed by `project-status.sh --health-check` so the next `trends-resume` can tell real candidate / value-model drift apart from the metadata mirroring done by this same step (which would otherwise update mtime on every report run and trigger a false `stale_report` warning, see issue #187).
+
+Compute the anchor immediately **before** writing the metadata block (so the hash reflects pre-mirror content, not the file we are about to write):
+
+```python
+import hashlib, json
+
+# trend-scout-output.json content hash — only the candidate items, sorted.
+scout = json.load(open(scout_path))
+items = scout.get('tips_candidates', {}).get('items', []) or []
+def _key(c): return c.get('id') or c.get('title') or ''
+items_sorted = sorted(items, key=_key)
+content_hash = 'sha256:' + hashlib.sha256(
+    json.dumps(items_sorted, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+).hexdigest()
+candidate_signature = {
+    _key(c): hashlib.sha256(
+        json.dumps(c, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+    ).hexdigest()[:12]
+    for c in items_sorted if _key(c)
+}
+
+# tips-value-model.json content hash — only the substantive sections, sorted.
+vm = json.load(open(vm_path))
+def _sorted(seq, key):
+    return sorted(seq or [], key=lambda x: (x.get(key) or '') if isinstance(x, dict) else '')
+vm_payload = {
+    'investment_themes': _sorted(vm.get('investment_themes'), 'theme_id'),
+    'solutions':         _sorted(vm.get('solutions'),         'solution_id'),
+    'blueprints':        _sorted(vm.get('blueprints'),        'solution_id'),
+}
+value_model_hash = 'sha256:' + hashlib.sha256(
+    json.dumps(vm_payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+).hexdigest()
+```
+
+Hashing rules:
+
+- Always `json.dumps(..., sort_keys=True, separators=(',', ':'), ensure_ascii=False)` — deterministic across re-runs and locales.
+- Hash only candidate items (scout-output) and the three substantive value-model sections — never timestamps, mtimes, `report_*` fields, or any field this same step writes back.
+- Use `id`/`title` (scout) and `theme_id`/`solution_id` (value-model) for the canonical sort. Items missing the canonical key still hash, just under the empty-string sort bucket.
+- `candidate_signature` is `{id_or_title: short_hash[:12]}`. It lets `project-status.sh` name added/removed candidates without persisting the full snapshot.
 
 #### Step 4.2: Display Summary
 
