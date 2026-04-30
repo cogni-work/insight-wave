@@ -53,6 +53,21 @@ out of scope; manual invocation before PRs is the contract.
 - `manage-workspace` delegates to `install-mcp` during init/update (step 5)
 - Plugin `.mcp.json` files reference installed servers via `$HOME/.claude/mcp-servers/<name>/start.sh`
 
+## Region Catalog Drift Checks
+
+`scripts/check-region-catalogs.sh` is the cross-plugin region-drift checker. The canonical upstream is `references/supported-markets-registry.json` (declared `provenance: "canonical upstream"`); the script audits the three downstream consumers (`cogni-portfolio` / `cogni-research` / `cogni-trends`) against it.
+
+Four drift classes:
+
+1. **`extra_keys`** — region keys in trends/research not in portfolio (portfolio is the union-of-markets source of truth). Hard-fail.
+2. **`trends_only` / `research_only`** — region-key parity mismatch between trends and research. Hard-fail.
+3. **`dach_sources`** — cogni-trends DACH must reference all CLAUDE.md-curated DACH authorities (sourced from `references/curated-region-sources.json`). Hard-fail.
+4. **`authority_domain_drift`** *(informational by default)* — per-market authority-domain set drift between the canonical registry and each plugin's authority listing. Three-bucket triage: **A.** Curated upstream (registry has authorities + market in r+t) — three-way diff; **B.** Downstream-only (registry empty for this market) — peer diff + `registry_unpopulated` advisory; **C.** Registry-only composite (no per-plugin entry) — skipped. Run with `--strict` to escalate Bucket A/B drift to violations once the sets converge.
+
+Flags: `--fix-suggestions` emits paste-able JSON additions per file; `--market <code>` restricts Class 4 to a single market; `--strict` escalates Class 4 to hard-fail.
+
+Wrap-skill: `audit-region-sources` (markdown skill, no own scripts; invokes this script and renders a report mirroring the audit-arcs report shape).
+
 ## Obsidian Integration
 
 - Obsidian vault setup and updates are handled as sub-steps of `manage-workspace` (Init Mode step 6, Update Mode step 6)

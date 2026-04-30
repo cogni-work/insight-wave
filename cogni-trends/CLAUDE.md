@@ -126,7 +126,7 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 | cogni-narrative | downstream | trend-panorama, theme-thesis, and smarter-service arcs consume TIPS output |
 | cogni-claims | downstream | trend-report registers claims; `verify-trend-report` Phase 2 invokes cogni-claims:claims for source verification |
 | cogni-copywriting | downstream | Executive polish on trend reports with tone scoping |
-| cogni-workspace | upstream | pick-theme for dashboard theming |
+| cogni-workspace | upstream | pick-theme for dashboard theming; `region-authority-sources.json` is downstream of the canonical `references/supported-markets-registry.json` — per-market authority-domain drift detected via `cogni-workspace:audit-region-sources` (informational by default) |
 | cogni-visual | downstream | enrich-report themed HTML from trend-report; story-to-slides for presentations |
 
 ## Key Conventions

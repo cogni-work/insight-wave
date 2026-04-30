@@ -54,6 +54,7 @@ Entities are ONLY created via `scripts/create-entity.sh` (bash wrapper that dele
 - **cogni-copywriting** — arc-aware executive polish. User invokes copywriter on narrative output. Auto-activated by `arc_id` frontmatter in narrative output.
 - **cogni-visual** — enrich-report is the single output skill for all report formats: themed HTML with interactive charts and concept diagrams, plus optional PDF and DOCX export via the `formats` parameter. The deprecated export-report skill remains as a fallback but is superseded by enrich-report. Optional presentation generation via story-to-slides.
 - **cogni-wiki** — wiki-researcher agent queries user's cogni-wiki instances for sub-question answers. The wiki's compiled, cross-referenced knowledge serves as a local RAG source. Source provenance: `wiki://<slug>/<page>`, publisher: `cogni-wiki:<slug>`. Activated when `report_source` is `wiki` or `hybrid` with `wiki_paths` configured.
+- **cogni-workspace** — `references/market-sources.json` is a downstream consumer of the canonical `cogni-workspace/references/supported-markets-registry.json`. Per-market authority-domain drift detected via `cogni-workspace:audit-region-sources` (informational by default; expected asymmetry exists by design — research carries a deeper tail of regional regulators / statistics offices than the workspace registry curates).
 
 ## Model Strategy
 

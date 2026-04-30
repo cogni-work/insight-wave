@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-region-catalogs.sh — Cross-plugin drift checker for the three region catalogs.
+# check-region-catalogs.sh — Cross-plugin drift checker for the region catalogs.
 #
 # Verifies that the region/market keys are consistent across:
 #   - cogni-portfolio/skills/portfolio-setup/references/regions.json     (broadest catalog)
@@ -11,11 +11,24 @@
 # cogni-workspace/references/curated-region-sources.json — the single source of
 # truth synced with CLAUDE.md's "Multilingual European Support" section.
 #
-# Exits non-zero if any drift is detected with a per-class remediation hint.
+# Drift classes:
+#   1. extra_keys      — region keys in trends/research not in portfolio (HARD-FAIL)
+#   2. trends_only / research_only — region-key parity mismatch (HARD-FAIL)
+#   3. dach_sources    — cogni-trends DACH must reference all curated DACH authorities (HARD-FAIL)
+#   4. authority_domain_drift — per-market authority-domain set drift between the canonical
+#                                cogni-workspace/references/supported-markets-registry.json
+#                                and each plugin's authority listing (INFORMATIONAL by default;
+#                                escalates to violation only with --strict).
+#
+# Exits non-zero on Class 1–3 drift (or on Class 4 drift when --strict is set).
 # Prints a single-line JSON envelope `{success, data, error}` on the final line
 # so callers (CI, hooks, other scripts) can parse the verdict deterministically.
 #
-# Usage: bash cogni-workspace/scripts/check-region-catalogs.sh
+# Usage:
+#   bash cogni-workspace/scripts/check-region-catalogs.sh
+#   bash cogni-workspace/scripts/check-region-catalogs.sh --fix-suggestions
+#   bash cogni-workspace/scripts/check-region-catalogs.sh --strict
+#   bash cogni-workspace/scripts/check-region-catalogs.sh --market dach
 
 set -euo pipefail
 
@@ -24,10 +37,51 @@ PORTFOLIO="${REPO_ROOT}/cogni-portfolio/skills/portfolio-setup/references/region
 TRENDS="${REPO_ROOT}/cogni-trends/skills/trend-report/references/region-authority-sources.json"
 RESEARCH="${REPO_ROOT}/cogni-research/references/market-sources.json"
 CURATED="${REPO_ROOT}/cogni-workspace/references/curated-region-sources.json"
+REGISTRY="${REPO_ROOT}/cogni-workspace/references/supported-markets-registry.json"
+
+# Flag defaults (passed into python as additional argv).
+FIX_SUGGESTIONS="false"
+STRICT="false"
+MARKET_FILTER=""
+
+# Bash 3.2 compatible flag parsing — manual loop, no getopts long-option extension.
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --fix-suggestions)
+      FIX_SUGGESTIONS="true"
+      shift
+      ;;
+    --strict)
+      STRICT="true"
+      shift
+      ;;
+    --market)
+      MARKET_FILTER="${2:-}"
+      if [ -z "$MARKET_FILTER" ]; then
+        echo "ERROR: --market requires a market code (e.g., --market dach)" >&2
+        exit 2
+      fi
+      shift 2
+      ;;
+    --market=*)
+      MARKET_FILTER="${1#--market=}"
+      shift
+      ;;
+    -h|--help)
+      sed -n '2,32p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown flag: $1" >&2
+      echo "Usage: $0 [--fix-suggestions] [--strict] [--market <code>]" >&2
+      exit 2
+      ;;
+  esac
+done
 
 # Verify all catalog files exist before doing anything else.
-for f in "$PORTFOLIO" "$TRENDS" "$RESEARCH" "$CURATED"; do
-  if [[ ! -f "$f" ]]; then
+for f in "$PORTFOLIO" "$TRENDS" "$RESEARCH" "$CURATED" "$REGISTRY"; do
+  if [ ! -f "$f" ]; then
     rel="${f#"$REPO_ROOT/"}"
     echo "ERROR: catalog file not found: $rel" >&2
     printf '{"success":false,"data":{},"error":"missing catalog: %s"}\n' "$rel"
@@ -37,11 +91,18 @@ done
 
 # All comparison logic lives in python so the set arithmetic and JSON parsing
 # stay readable. The script body is just orchestration.
-python3 - "$PORTFOLIO" "$TRENDS" "$RESEARCH" "$CURATED" <<'PY'
+python3 - "$PORTFOLIO" "$TRENDS" "$RESEARCH" "$CURATED" "$REGISTRY" \
+            "$FIX_SUGGESTIONS" "$STRICT" "$MARKET_FILTER" <<'PY'
 import json
+import re
 import sys
 
-portfolio_path, trends_path, research_path, curated_path = sys.argv[1:5]
+(portfolio_path, trends_path, research_path, curated_path, registry_path,
+ fix_suggestions_arg, strict_arg, market_filter) = sys.argv[1:9]
+
+FIX_SUGGESTIONS = fix_suggestions_arg == "true"
+STRICT = strict_arg == "true"
+MARKET_FILTER = market_filter or None
 
 
 def load(path):
@@ -54,9 +115,33 @@ def real_keys(d):
     return {k for k in d.keys() if not k.startswith("_")}
 
 
+def extract_site_domains(site_searches):
+    """Pull domain strings out of cogni-trends site_searches[].query templates."""
+    out = set()
+    pat = re.compile(r"site:([^\s]+)")
+    for entry in site_searches or []:
+        m = pat.search(entry.get("query", ""))
+        if m:
+            out.add(m.group(1))
+    return out
+
+
+def trends_dimensions_for_domain(site_searches, domain):
+    """Return the set of TIPS dimensions a domain appears under in trends queries."""
+    dims = set()
+    pat = re.compile(r"site:" + re.escape(domain) + r"(?:\s|$)")
+    for entry in site_searches or []:
+        if pat.search(entry.get("query", "")):
+            dim = entry.get("dimension")
+            if dim:
+                dims.add(dim)
+    return dims
+
+
 portfolio_raw = load(portfolio_path)
 trends = load(trends_path)
 research = load(research_path)
+registry = load(registry_path).get("markets", {})
 
 # CLAUDE.md DACH authority sources — loaded from curated-region-sources.json
 # (single source of truth synced with CLAUDE.md 'Multilingual European Support').
@@ -70,6 +155,7 @@ research_keys = real_keys(research)
 
 violations = []
 
+# ---------------------------------------------------------------------------
 # Drift class 1: regions in trends or research that aren't in portfolio.
 # Portfolio is the union-of-markets source of truth (per the issue #46
 # Stage 1 option (b) recommendation), so the other two catalogs should be
@@ -123,21 +209,189 @@ if missing_dach:
                 "references/region-authority-sources.json.",
     })
 
+# ---------------------------------------------------------------------------
+# Drift class 4: per-market authority-domain set drift, audited against the
+# canonical cogni-workspace/references/supported-markets-registry.json.
+# Three-bucket market triage:
+#   A. Curated upstream  — registry has authority_sources[] AND market in r+t
+#   B. Downstream-only   — market in r+t but registry authority_sources[] empty
+#   C. Registry-only     — registry has market but it's absent from r+t
+# Bucket A: three-way diff. Bucket B: peer diff + registry_unpopulated advisory.
+# Bucket C: skip (composites/aggregates that no per-plugin file uses).
+all_market_codes = sorted(set(registry) | research_keys | trends_keys)
+if MARKET_FILTER:
+    all_market_codes = [c for c in all_market_codes if c == MARKET_FILTER]
+
+bucket_a = {}  # code -> findings dict
+bucket_b = {}  # code -> findings dict
+bucket_c_skipped = []
+fix_suggestions = {}
+
+for code in all_market_codes:
+    in_research = code in research_keys
+    in_trends = code in trends_keys
+    in_registry = code in registry
+    upstream_entries = registry.get(code, {}).get("authority_sources", []) if in_registry else []
+    upstream_doms = {a["domain"] for a in upstream_entries if a.get("domain")}
+
+    if in_registry and not in_research and not in_trends:
+        bucket_c_skipped.append(code)
+        continue
+
+    research_entries = research.get(code, {}).get("authority_sources", []) if in_research else []
+    research_doms = {a["domain"] for a in research_entries if a.get("domain")}
+    research_meta = {a["domain"]: a for a in research_entries if a.get("domain")}
+    trends_searches = trends.get(code, {}).get("site_searches", []) if in_trends else []
+    trends_doms = extract_site_domains(trends_searches)
+
+    if in_registry and upstream_doms:
+        # Bucket A: three-way diff.
+        findings = {
+            "domain_only_in_upstream": sorted(upstream_doms - research_doms - trends_doms),
+            "domain_only_in_research": sorted(research_doms - upstream_doms - trends_doms),
+            "domain_only_in_trends":   sorted(trends_doms - upstream_doms - research_doms),
+            "domain_in_research_and_trends_but_not_upstream":
+                sorted((research_doms & trends_doms) - upstream_doms),
+            "authority_disagreement": [],
+        }
+        # Best-effort authority disagreement heuristic — only domains in BOTH
+        # downstream files where research categorises as a "regulatory tier"
+        # (research/government/statistics) but trends only references the
+        # domain under digitales-fundament (consulting tier), or vice versa.
+        for dom in sorted(research_doms & trends_doms):
+            r_cat = (research_meta.get(dom) or {}).get("category")
+            t_dims = trends_dimensions_for_domain(trends_searches, dom)
+            if r_cat in {"research", "government", "statistics"} and t_dims == {"digitales-fundament"}:
+                findings["authority_disagreement"].append({
+                    "domain": dom,
+                    "research_category": r_cat,
+                    "trends_dimensions": sorted(t_dims),
+                    "hint": "research treats as regulatory-tier; trends uses only digitales-fundament (consulting-tier)",
+                })
+            elif r_cat in {"consulting", "media"} and t_dims and "digitales-fundament" not in t_dims:
+                findings["authority_disagreement"].append({
+                    "domain": dom,
+                    "research_category": r_cat,
+                    "trends_dimensions": sorted(t_dims),
+                    "hint": "research treats as consulting/media; trends uses only regulatory dimensions",
+                })
+        if any(findings.values()):
+            bucket_a[code] = findings
+        if FIX_SUGGESTIONS:
+            promote = (research_doms & trends_doms) - upstream_doms
+            additions = []
+            if promote:
+                additions.append({"registry_additions": [
+                    {"name": dom.split(".")[0].upper(), "domain": dom} for dom in sorted(promote)
+                ]})
+            r_extra = sorted(upstream_doms - research_doms)
+            t_extra = sorted(upstream_doms - trends_doms)
+            if r_extra:
+                additions.append({"research_additions": [
+                    {"domain": dom, "category": "unknown", "authority": 3,
+                     "search_pattern": f"site:{dom} {{TOPIC_LOCAL}} {{YEAR}}"}
+                    for dom in r_extra
+                ]})
+            if t_extra:
+                additions.append({"trends_additions": [
+                    {"dimension": "digitales-fundament",
+                     "query": f"site:{dom} {{SUBSECTOR_LOCAL}} {{CURRENT_YEAR}}"}
+                    for dom in t_extra
+                ]})
+            if additions:
+                fix_suggestions[code] = additions
+
+    elif in_research and in_trends:
+        # Bucket B: peer diff + registry_unpopulated advisory.
+        findings = {
+            "registry_unpopulated": (
+                f"{code}: registry has no authority_sources[]; downstream files are "
+                "de-facto source of truth for this market — consider backfilling the "
+                "registry from the intersection of research_domains and trends_domains."
+            ),
+            "domain_only_in_research": sorted(research_doms - trends_doms),
+            "domain_only_in_trends":   sorted(trends_doms - research_doms),
+        }
+        bucket_b[code] = findings
+        if FIX_SUGGESTIONS:
+            backfill = research_doms & trends_doms
+            if backfill:
+                fix_suggestions[code] = [{"registry_additions": [
+                    {"name": dom.split(".")[0].upper(), "domain": dom} for dom in sorted(backfill)
+                ]}]
+    # If in registry-only with empty authority_sources, fall through silently;
+    # caught by bucket_c_skipped above only when also absent from r+t.
+
+bucket_a_summary = {
+    "markets_with_drift": len(bucket_a),
+    "markets_examined": sum(1 for c in all_market_codes
+                             if c in registry and registry[c].get("authority_sources")
+                             and c in research_keys and c in trends_keys),
+}
+bucket_b_summary = {
+    "markets_with_drift": len(bucket_b),
+    "markets_examined": sum(1 for c in all_market_codes
+                             if c in research_keys and c in trends_keys
+                             and (c not in registry or not registry[c].get("authority_sources"))),
+}
+
+info_findings = {
+    "bucket_a_findings": {"per_market": bucket_a, "summary": bucket_a_summary},
+    "bucket_b_findings": {"per_market": bucket_b, "summary": bucket_b_summary},
+    "bucket_c_skipped":  bucket_c_skipped,
+    "summary": {
+        "registry_markets_total": len(registry),
+        "registry_markets_with_authority_sources": sum(
+            1 for v in registry.values() if v.get("authority_sources")),
+        "bucket_a_markets_with_drift": len(bucket_a),
+        "bucket_b_markets_with_drift": len(bucket_b),
+        "bucket_c_markets_skipped": len(bucket_c_skipped),
+    },
+}
+if FIX_SUGGESTIONS:
+    info_findings["fix_suggestions"] = fix_suggestions
+
+if STRICT and (bucket_a or bucket_b):
+    violations.append({
+        "class": "authority_domain_drift",
+        "detail": {
+            "bucket_a_markets": sorted(bucket_a),
+            "bucket_b_markets": sorted(bucket_b),
+        },
+        "hint": "Per-market authority-domain drift detected (--strict). "
+                "Inspect data.info_findings.bucket_a_findings / bucket_b_findings "
+                "and reconcile each plugin's authority listing with the canonical "
+                "cogni-workspace/references/supported-markets-registry.json.",
+    })
+
+# ---------------------------------------------------------------------------
 # Print human-readable summary first.
 print(f"cogni-portfolio: {len(portfolio_keys)} region keys")
 print(f"cogni-trends:    {len(trends_keys)} region keys")
 print(f"cogni-research:  {len(research_keys)} region keys")
+print(f"registry:        {len(registry)} markets "
+      f"({info_findings['summary']['registry_markets_with_authority_sources']} with authority_sources)")
 print()
+print(f"Class 4 (informational): "
+      f"bucket A drift {bucket_a_summary['markets_with_drift']}/{bucket_a_summary['markets_examined']}, "
+      f"bucket B drift {bucket_b_summary['markets_with_drift']}/{bucket_b_summary['markets_examined']}, "
+      f"bucket C skipped {len(bucket_c_skipped)}")
+print()
+
+data = {
+    "portfolio_keys": sorted(portfolio_keys),
+    "trends_keys": sorted(trends_keys),
+    "research_keys": sorted(research_keys),
+    "violations": violations,
+    "info_findings": info_findings,
+}
 
 if not violations:
     print("OK: all region catalogs agree and cogni-trends DACH references all "
           "CLAUDE.md-curated sources.")
-    print(json.dumps({"success": True, "data": {
-        "portfolio_keys": sorted(portfolio_keys),
-        "trends_keys": sorted(trends_keys),
-        "research_keys": sorted(research_keys),
-        "violations": [],
-    }, "error": ""}))
+    if bucket_a or bucket_b:
+        print("(Class 4 informational findings present — see data.info_findings.)")
+    print(json.dumps({"success": True, "data": data, "error": ""}))
     sys.exit(0)
 
 print(f"FAIL: {len(violations)} drift class(es) detected.")
@@ -147,11 +401,7 @@ for v in violations:
     print(f"    {v['hint']}")
     print()
 
-print(json.dumps({"success": False, "data": {
-    "portfolio_keys": sorted(portfolio_keys),
-    "trends_keys": sorted(trends_keys),
-    "research_keys": sorted(research_keys),
-    "violations": violations,
-}, "error": f"{len(violations)} drift class(es) detected"}))
+print(json.dumps({"success": False, "data": data,
+                  "error": f"{len(violations)} drift class(es) detected"}))
 sys.exit(1)
 PY
