@@ -774,35 +774,97 @@ next_actions="$next_actions]"
 stale_warnings="[]"
 if $HEALTH_CHECK; then
   stale_warnings=$(python3 -c "
-import json, os
+import json, os, hashlib
 from datetime import datetime
 
 warnings = []
 proj = '$PROJECT_DIR'
 
-# Check if report is stale relative to candidates
+# Hash helpers — must match cogni-trends/skills/trend-report Phase 4.1 exactly.
+# Drift is detected by content hash, not mtime, because Phase 4.1 mirrors
+# report_tier and other report metadata back into trend-scout-output.json
+# (which would otherwise bump mtime on every report run — see issue #187).
+def _key(c):
+    return c.get('id') or c.get('title') or ''
+def _candidate_items(scout_doc):
+    return sorted((scout_doc.get('tips_candidates') or {}).get('items') or [], key=_key)
+def _scout_content_hash(scout_doc):
+    items = _candidate_items(scout_doc)
+    return 'sha256:' + hashlib.sha256(
+        json.dumps(items, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+    ).hexdigest()
+def _candidate_signature(scout_doc):
+    sig = {}
+    for c in _candidate_items(scout_doc):
+        k = _key(c)
+        if not k:
+            continue
+        sig[k] = hashlib.sha256(
+            json.dumps(c, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+        ).hexdigest()[:12]
+    return sig
+def _vm_sorted(seq, key):
+    return sorted(seq or [], key=lambda x: (x.get(key) or '') if isinstance(x, dict) else '')
+def _vm_content_hash(vm_doc):
+    payload = {
+        'investment_themes': _vm_sorted(vm_doc.get('investment_themes'), 'theme_id'),
+        'solutions':         _vm_sorted(vm_doc.get('solutions'),         'solution_id'),
+        'blueprints':        _vm_sorted(vm_doc.get('blueprints'),        'solution_id'),
+    }
+    return 'sha256:' + hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+    ).hexdigest()
+
 scout_file = os.path.join(proj, '.metadata', 'trend-scout-output.json')
 report_file = os.path.join(proj, 'tips-trend-report.md')
-
-if os.path.exists(scout_file) and os.path.exists(report_file):
-    scout_mtime = os.path.getmtime(scout_file)
-    report_mtime = os.path.getmtime(report_file)
-    if scout_mtime > report_mtime:
-        warnings.append({
-            'type': 'stale_report',
-            'message': 'Trend-scout output was modified after the report was generated — report may need refresh'
-        })
-
-# Check if report is stale relative to value model
 value_model_file = os.path.join(proj, 'tips-value-model.json')
-if os.path.exists(value_model_file) and os.path.exists(report_file):
-    vm_mtime = os.path.getmtime(value_model_file)
-    report_mtime = os.path.getmtime(report_file)
-    if vm_mtime > report_mtime:
-        warnings.append({
-            'type': 'stale_report',
-            'message': 'Value model was modified after the report was generated — report may need refresh'
-        })
+
+scout_doc = None
+if os.path.exists(scout_file):
+    try:
+        scout_doc = json.load(open(scout_file))
+    except Exception:
+        scout_doc = None
+
+# Scout-output drift check — anchored on content_hash_at_report.
+# Legacy projects without an anchor stay silent (mtime was the bug; we don't
+# fall back to it). They will get a clean anchor on the next /trend-report run.
+if scout_doc is not None and os.path.exists(report_file):
+    anchor = scout_doc.get('content_hash_at_report')
+    if anchor:
+        current = _scout_content_hash(scout_doc)
+        if current != anchor:
+            old_sig = scout_doc.get('candidate_signature') or {}
+            new_sig = _candidate_signature(scout_doc)
+            old_keys, new_keys = set(old_sig), set(new_sig)
+            added   = sorted(new_keys - old_keys)
+            removed = sorted(old_keys - new_keys)
+            changed = sorted(k for k in (old_keys & new_keys) if old_sig[k] != new_sig[k])
+            warnings.append({
+                'type': 'stale_report',
+                'subtype': 'scout_drift',
+                'message': 'Trend candidates changed since the report was generated — report no longer reflects current candidate set',
+                'added':   added,
+                'removed': removed,
+                'changed': changed,
+            })
+
+# Value-model drift check — anchored on value_model_hash_at_report (stored in
+# the same scout-output metadata block, since the report is the join point).
+if scout_doc is not None and os.path.exists(value_model_file) and os.path.exists(report_file):
+    vm_anchor = scout_doc.get('value_model_hash_at_report')
+    if vm_anchor:
+        try:
+            vm_doc = json.load(open(value_model_file))
+            vm_current = _vm_content_hash(vm_doc)
+            if vm_current != vm_anchor:
+                warnings.append({
+                    'type': 'stale_report',
+                    'subtype': 'value_model_drift',
+                    'message': 'Value model changed since the report was generated — report no longer reflects current themes/solutions',
+                })
+        except Exception:
+            pass
 
 # Check if portfolio context is newer than value model (re-anchor needed)
 portfolio_ctx = os.path.join(proj, 'portfolio-context.json')
@@ -905,6 +967,49 @@ except:
         ;;
     esac
   fi
+
+  # Inject concrete trend-report action for real candidate / value-model drift.
+  # The stale_report warning carries subtype scout_drift or value_model_drift
+  # plus added/removed/changed candidate id lists — see issue #187.
+  next_actions=$(echo "$stale_warnings" | STALE_WARNINGS_JSON="$stale_warnings" PRIOR_ACTIONS_JSON="$next_actions" python3 -c "
+import json, os, sys
+try:
+    warnings = json.loads(os.environ.get('STALE_WARNINGS_JSON') or '[]')
+    actions  = json.loads(os.environ.get('PRIOR_ACTIONS_JSON')  or '[]')
+    inject = []
+    for w in warnings:
+        if w.get('type') != 'stale_report':
+            continue
+        sub = w.get('subtype')
+        if sub == 'scout_drift':
+            a = len(w.get('added')   or [])
+            r = len(w.get('removed') or [])
+            c = len(w.get('changed') or [])
+            parts = []
+            if a: parts.append(f'{a} added')
+            if r: parts.append(f'{r} removed')
+            if c: parts.append(f'{c} changed')
+            detail = ', '.join(parts) if parts else 'content changed'
+            inject.append({
+                'skill': 'cogni-trends:trend-report',
+                'reason': f'Trend candidates changed since report was generated ({detail}) — re-run /trend-report to refresh'
+            })
+        elif sub == 'value_model_drift':
+            inject.append({
+                'skill': 'cogni-trends:trend-report',
+                'reason': 'Value model changed since report was generated — re-run /trend-report to refresh'
+            })
+    # Prepend in warning order, dedupe against existing actions by skill+reason.
+    existing = {(a.get('skill'), a.get('reason')) for a in actions}
+    for new in reversed(inject):
+        key = (new.get('skill'), new.get('reason'))
+        if key not in existing:
+            actions.insert(0, new)
+            existing.add(key)
+    print(json.dumps(actions))
+except Exception:
+    sys.stdout.write(os.environ.get('PRIOR_ACTIONS_JSON') or '[]')
+" 2>/dev/null || echo "$next_actions")
 fi
 
 cat << EOF
