@@ -11,18 +11,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/check-region-catalogs-hook.sh",
-            "timeout": 20
-          }
-        ]
-      }
     ]
   }
 }

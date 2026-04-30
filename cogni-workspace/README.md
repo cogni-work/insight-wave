@@ -128,10 +128,10 @@ cogni-workspace/
 │   └── on-session-start.sh
 ├── scripts/                      Utility scripts
 │   ├── check-dependencies.sh
-│   ├── check-region-catalogs.sh  Cross-plugin drift checker for portfolio, trends, research region catalogs
 │   ├── check-skill-names.sh
 │   ├── discover-plugins.sh
 │   ├── generate-settings.sh
+│   ├── get-market-config.py      Merge canonical market registry with plugin overlays
 │   ├── install-mcp.sh            Clone, build, and wrap git-based MCP servers
 │   ├── patch-desktop-config.py   Merge MCP entries into Claude Desktop config
 │   ├── setup-obsidian.sh

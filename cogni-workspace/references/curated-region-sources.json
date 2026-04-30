@@ -1,9 +1,0 @@
-{
-  "_description": "Curated authority domains per market. Single source of truth synced with CLAUDE.md 'Multilingual European Support' section. Consumed by scripts/check-region-catalogs.sh (currently only DACH is enforced; other markets listed for future drift checks as Stage 3/4 lands).",
-  "dach": ["fraunhofer.de", "bitkom.org", "vdma.org", "destatis.de", "handelsblatt.com"],
-  "fr":   ["inria.fr", "cnes.fr", "arcep.fr", "insee.fr", "lesechos.fr"],
-  "it":   ["cnr.it", "asi.it", "agcom.it", "istat.it", "ilsole24ore.com"],
-  "pl":   ["pan.pl", "polsa.gov.pl", "uke.gov.pl", "stat.gov.pl", "rp.pl"],
-  "nl":   ["tno.nl", "spaceoffice.nl", "acm.nl", "cbs.nl", "fd.nl"],
-  "es":   ["csic.es", "inta.es", "cnmc.es", "ine.es", "expansion.com"]
-}
