@@ -58,7 +58,6 @@ consistent within each locale; reserve ASCII `"` for the JSON envelope only.
 
 You receive these from trend-synthesis Phase 2.1:
 
-- **MICRO_ARC** — Always `"investment-case"`. Vestigial enum-of-1 — the legacy `theme-thesis` branch was removed; the parameter remains in the prompt schema for backward compatibility and will be removed in a follow-up cleanup.
 - **ANCHOR_DIMENSION** — Required. The Smarter Service dimension this theme is anchored to: `"externe-effekte"`, `"digitale-wertetreiber"`, `"neue-horizonte"`, or `"digitales-fundament"`. Determines which dimension's primer paragraph you must reference in the Stake beat.
 - **SECONDARY_POLES** — Optional. JSON array of secondary TIPS poles where this theme has at least one candidate but did not win the anchor. Used to render one-line callouts at the end of the theme-case.
 - **SHARED_PRIMER_PATH** — Required. Absolute path to the shared dimension primer file written by the orchestrator at Step 2.0b. The Stake beat must quote/reference this primer's framing for `ANCHOR_DIMENSION`.
@@ -308,7 +307,6 @@ Return ONLY this JSON — nothing else:
 ```json
 {
   "ok": true,
-  "micro_arc": "investment-case",
   "investment_theme_id": "it-001",
   "investment_theme_name": "Theme Name",
   "anchor_dimension": "neue-horizonte",
