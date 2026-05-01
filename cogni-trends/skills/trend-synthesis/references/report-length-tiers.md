@@ -28,7 +28,7 @@ The reviewer in `verify-trend-report` measures prose the same way — by summing
 
 ## Per-element minimums (slim 3-beat theme case)
 
-When the writer agent runs in `MICRO_ARC = "investment-case"` mode it produces three beats with these proportions and minimums applied to `THEME_CASE_TARGET_WORDS`:
+The writer agent produces a slim 3-beat theme case (Stake / Move / Cost-of-Inaction) with these proportions and minimums applied to `THEME_CASE_TARGET_WORDS`:
 
 | Beat | Proportion | Minimum |
 |---|---|---|
