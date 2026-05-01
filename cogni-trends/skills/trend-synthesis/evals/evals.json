@@ -1,0 +1,99 @@
+{
+  "skill_name": "trend-synthesis",
+  "evals": [
+    {
+      "id": 1,
+      "name": "eval-happy-path-de",
+      "prompt": "Erstelle aus den vorhandenen Recherche-Artefakten den finalen TIPS-Trendreport für unser Fertigungsprojekt.",
+      "expected_output": "A canonical TIPS-skeleton trend report (tips-trend-report.md) plus tips-trend-report-claims.json for a German project whose trend-research phase completed successfully, with the trend-scout manifest updated to record completion.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists at the project root",
+        "tips-trend-report.md begins with a valid YAML frontmatter block",
+        "YAML frontmatter contains report_mode: smarter-service-themed and language: de",
+        "YAML frontmatter does NOT contain an arc_id field",
+        "Report has exactly 4 H2 dimension headers in T -> I -> P -> S order: Externe Effekte, Digitale Wertetreiber, Neue Horizonte, Digitales Fundament",
+        "Each dimension contains H3 theme-cases that align with the entries in report-theme-anchors.json",
+        "Each theme-case includes Stake / Move / Cost-of-Inaction beats but no visible 'Stake:' / 'Move:' / 'Cost of Inaction:' headers in the rendered prose",
+        "A closing 'Capability Imperative' synthesis section is present after the four dimension sections",
+        "A claims registry table is present and includes a 'dimension' column",
+        "tips-trend-report-claims.json exists and is valid JSON",
+        "trend-scout-output.json is updated with trend_report_complete: true and trend_report_mode: 'smarter-service-themed'",
+        "Report prose is written in German throughout"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "eval-happy-path-en",
+      "prompt": "Generate the TIPS trend report from our completed trend-research artefacts.",
+      "expected_output": "An English-language tips-trend-report.md following the canonical TIPS skeleton plus a tips-trend-report-claims.json registry, with trend-scout-output.json marked complete.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists with valid YAML frontmatter",
+        "YAML frontmatter contains report_mode: smarter-service-themed and language: en",
+        "YAML frontmatter does NOT contain an arc_id field",
+        "Report has exactly 4 H2 dimension headers in T -> I -> P -> S order using English labels: Forces, Impact, Horizons, Foundations",
+        "Each dimension has H3 theme-case sections matching report-theme-anchors.json",
+        "Each theme-case weaves Stake / Move / Cost-of-Inaction beats into prose without visible beat headers",
+        "A closing 'Capability Imperative' synthesis section is present",
+        "Claims registry table is present and contains a 'dimension' column",
+        "tips-trend-report-claims.json exists and is valid JSON",
+        "trend-scout-output.json is updated with trend_report_complete: true and trend_report_mode: 'smarter-service-themed'",
+        "Report prose is written in English throughout"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "eval-missing-manifest",
+      "prompt": "/trend-synthesis",
+      "expected_output": "The skill HALTs because no trend-research-output.json manifest exists; no report or claims file is created.",
+      "files": [],
+      "expectations": [
+        "Skill output contains a HALT message instructing the user to 'Run /trend-research first' (or equivalent prerequisite-missing wording)",
+        ".metadata/trend-research-output.json does not exist before or after the run",
+        "tips-trend-report.md is NOT created by the failed run",
+        "tips-trend-report-claims.json is NOT created by the failed run",
+        "trend-scout-output.json is not mutated (no trend_report_complete flag added)",
+        "tips-project.json is not mutated by the failed run",
+        "Skill exits before invoking any subagents or writing tools"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "eval-legacy-arc-cleanup",
+      "prompt": "Bitte erstelle den Trendreport neu — die alte Version war noch arc-basiert.",
+      "expected_output": "A freshly regenerated tips-trend-report.md built from the canonical TIPS skeleton, with all legacy arc-based artefacts and metadata fields cleaned up before regeneration.",
+      "files": [],
+      "expectations": [
+        "Phase 0 logs include a message such as 'legacy report_arc_id ignored — using canonical TIPS skeleton'",
+        "The previous tips-trend-report.md is overwritten (not appended to) — file modification timestamp updates and file size reflects a fresh build",
+        "tips-project.json no longer contains a report_arc_id field after the run",
+        "tips-trend-report.md YAML frontmatter does not contain a trend_report_arc_id key (or any arc_id key)",
+        "The literal substring 'arc' (case-insensitive, as a standalone word) does not appear anywhere in the produced tips-trend-report.md",
+        "Report has exactly 4 H2 dimension headers in T -> I -> P -> S order",
+        "Each dimension has H3 theme-cases matching report-theme-anchors.json",
+        "Closing 'Capability Imperative' synthesis section is present",
+        "tips-trend-report-claims.json is regenerated and is valid JSON",
+        "trend-scout-output.json.trend_report_mode is 'smarter-service-themed'"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "eval-stale-research",
+      "prompt": "Erstelle den Trendreport. (Hinweis: value-modeler wurde nach trend-research erneut ausgeführt.)",
+      "expected_output": "A WARNing about the stale research manifest, an opportunity to halt or proceed, and — if proceeded — a report whose theme back-references reflect only the older value-model snapshot, with the hash mismatch logged.",
+      "files": [],
+      "expectations": [
+        "Skill emits a WARN message stating that .metadata/trend-research-output.json.value_model_hash_at_research does not match the current tips-value-model.json hash",
+        "WARN message offers the user a choice to re-run /trend-research or to proceed with stale data",
+        "If the user proceeds, the produced tips-trend-report.md theme back-references only reference theme_ids present in the value-model snapshot at research time (not new themes added afterwards)",
+        "Hash mismatch is recorded in the run logs (e.g. .logs/trend-synthesis.log or equivalent)",
+        "tips-trend-report.md is still produced when the user proceeds",
+        "tips-trend-report-claims.json is produced and valid JSON when the user proceeds",
+        "YAML frontmatter records the stale-research condition (e.g. a stale_research_warning or research_value_model_hash_at_synthesis field, or a notes field flagging the mismatch)",
+        "trend-scout-output.json.trend_report_complete is set to true only if the user proceeds",
+        "If the user halts, no tips-trend-report.md is written and no flags are flipped on trend-scout-output.json"
+      ]
+    }
+  ]
+}

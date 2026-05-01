@@ -1,0 +1,106 @@
+{
+  "skill_name": "trend-research",
+  "evals": [
+    {
+      "id": 1,
+      "name": "eval-happy-path-de",
+      "prompt": "Führe die Trend-Recherche für mein Fertigungsprojekt durch — trend-scout und value-modeler sind bereits abgeschlossen.",
+      "expected_output": "Per-dimension enriched-trends, claims and section files plus optional deep-research artefacts, all summarised in .metadata/trend-research-output.json for a German manufacturing project that already has 60 agreed trend-scout candidates and at least one value-modeler investment theme.",
+      "files": [],
+      "expectations": [
+        ".metadata/trend-research-output.json exists and is valid JSON",
+        "trend-research-output.json contains all manifest keys: schema_version, completed_at, language, market_region, dimensions_enriched, value_model_hash_at_research, candidates_hash_at_research, files",
+        "trend-research-output.json.dimensions_enriched is an array of length 4 covering externe-effekte, digitale-wertetreiber, neue-horizonte and digitales-fundament",
+        "trend-research-output.json.language is 'de' and market_region is 'de', 'dach' or another German-speaking market",
+        ".logs/enriched-trends-{dimension}.json exists for all 4 TIPS dimensions and each parses as valid JSON",
+        ".logs/claims-{dimension}.json exists for all 4 dimensions and each parses as valid JSON",
+        ".logs/section-{dimension}.md exists for all 4 dimensions (consumed later by verify-trend-report's revisor)",
+        "3-5 .logs/deep-research-*.json files exist when the user opted into Phase 0.5",
+        "trend-research-output.json.value_model_hash_at_research matches the SHA of the current tips-value-model.json",
+        "trend-research-output.json.candidates_hash_at_research matches the SHA of the current trend-scout-output.json",
+        "trend-research-output.json.files maps every produced artefact to a relative path that resolves on disk",
+        "validate-enriched-trends.sh exits with status 0 against the produced enriched-trends-*.json files",
+        "Each enriched-trends-{dimension}.json preserves all 15 trend-scout candidates for that dimension (no candidates dropped)",
+        "Section markdown files are written in German prose matching the workspace language"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "eval-happy-path-en",
+      "prompt": "Run the trend-research phase for my digital-health project — trend-scout and value-modeler are both complete.",
+      "expected_output": "Enriched-trend, claims and section artefacts for all four TIPS dimensions plus a trend-research-output.json manifest, written in English for a US/UK digital-health project with completed trend-scout (60 candidates) and value-modeler outputs.",
+      "files": [],
+      "expectations": [
+        ".metadata/trend-research-output.json exists and is valid JSON",
+        "trend-research-output.json.language is 'en' and market_region is 'us', 'uk' or another English-speaking market",
+        "trend-research-output.json.dimensions_enriched has length 4 and covers all TIPS dimensions",
+        ".logs/enriched-trends-{dimension}.json exists and is valid JSON for all 4 dimensions",
+        ".logs/claims-{dimension}.json exists and is valid JSON for all 4 dimensions",
+        ".logs/section-{dimension}.md exists for all 4 dimensions and is written in English",
+        "Optional deep-research-*.json files exist when the user opted into Phase 0.5; otherwise the manifest's deep_research_trends array is empty",
+        "trend-research-output.json.value_model_hash_at_research and candidates_hash_at_research match the current value-model and scout output hashes",
+        "validate-enriched-trends.sh exits with status 0 against the produced files",
+        "All 60 trend-scout candidates appear across the 4 enriched-trends files (15 per dimension)",
+        "Web-research citations in claims files use English-language sources predominantly",
+        "trend-research-output.json.files paths all resolve to existing files on disk"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "eval-skip-deep-research",
+      "prompt": "Starte trend-research, aber überspringe bitte die Deep-Research-Phase.",
+      "expected_output": "Full enriched-trends, claims and section artefacts plus a trend-research-output.json manifest, but with no deep-research log files produced because the user declined Phase 0.5.",
+      "files": [],
+      "expectations": [
+        ".metadata/trend-research-output.json exists and is valid JSON",
+        "No files matching .logs/deep-research-*.json exist in the project",
+        "trend-research-output.json.deep_research_trends is an empty array",
+        "trend-research-output.json.files map contains no key whose path starts with '.logs/deep-research-'",
+        ".logs/enriched-trends-{dimension}.json is present and valid JSON for all 4 dimensions",
+        ".logs/claims-{dimension}.json is present and valid JSON for all 4 dimensions",
+        ".logs/section-{dimension}.md is present for all 4 dimensions",
+        "trend-research-output.json.dimensions_enriched has length 4",
+        "validate-enriched-trends.sh exits with status 0",
+        "trend-research-output.json.completed_at is an ISO-8601 timestamp"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "eval-missing-value-model",
+      "prompt": "/trend-research",
+      "expected_output": "The skill HALTs immediately with a clear error explaining that value-modeler must run first; no manifest or enriched-trends artefacts are produced.",
+      "files": [],
+      "expectations": [
+        "Skill output contains a HALT or hard-stop message naming value-modeler / tips-value-model.json as the missing prerequisite",
+        ".metadata/trend-research-output.json does NOT exist after the failed run",
+        "No new files matching .logs/enriched-trends-*.json are produced",
+        "No new files matching .logs/claims-*.json are produced",
+        "No new files matching .logs/section-*.md are produced",
+        "No .logs/deep-research-*.json files are produced",
+        "tips-project.json is not mutated by the failed run (modification timestamp unchanged)",
+        "Error message points the user to run /value-modeler before retrying",
+        "Skill exits without invoking any web-search tool calls"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "eval-mixed-language",
+      "prompt": "Bitte führe die Trend-Recherche durch, aber gib die Ergebnisse auf Englisch aus — das Projekt selbst ist auf Deutsch.",
+      "expected_output": "German-language AskUserQuestion prompts during interaction, but enriched-trends, claims and section artefacts written in English with manifest.language='en', and web research that mixes German and English source queries.",
+      "files": [],
+      "expectations": [
+        "AskUserQuestion prompts shown to the user during the run are in German (INTERACTION_LANGUAGE = workspace language)",
+        ".metadata/trend-research-output.json exists and is valid JSON",
+        "trend-research-output.json.language is 'en'",
+        ".logs/section-{dimension}.md files for all 4 dimensions are written in English prose",
+        ".logs/enriched-trends-{dimension}.json narrative fields (descriptions, rationale) are in English",
+        ".logs/claims-{dimension}.json claim text is in English",
+        "Web-research log entries include at least one German-language query AND at least one English-language query",
+        "trend-research-output.json.value_model_hash_at_research and candidates_hash_at_research match the German project's existing value-model and scout outputs",
+        "All 4 dimensions appear in trend-research-output.json.dimensions_enriched",
+        "validate-enriched-trends.sh exits with status 0",
+        "tips-project.json language field remains 'de' (workspace language unchanged)"
+      ]
+    }
+  ]
+}

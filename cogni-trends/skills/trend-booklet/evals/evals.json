@@ -1,0 +1,101 @@
+{
+  "skill_name": "trend-booklet",
+  "evals": [
+    {
+      "id": 1,
+      "name": "eval-happy-path-de",
+      "prompt": "Erzeuge das Trend-Booklet für unser Fertigungsprojekt — die Trend-Recherche ist abgeschlossen.",
+      "expected_output": "A German-language tips-trend-booklet.md grouped by dimension/subcategory/horizon plus a tips-trend-booklet-index.json listing all 60 candidates, with tips-project.json marked complete and the build-booklet-index.sh gate passing.",
+      "files": [],
+      "expectations": [
+        "tips-trend-booklet.md exists at the project root",
+        "tips-trend-booklet-index.json exists and is valid JSON",
+        "tips-trend-booklet-index.json lists exactly 60 candidate entries",
+        "Booklet contains 4 H2 dimension sections in T -> I -> P -> S order: Externe Effekte, Digitale Wertetreiber, Neue Horizonte, Digitales Fundament",
+        "Within each dimension, candidates are grouped first by subcategory and then by horizon bucket (ACT / PLAN / OBSERVE)",
+        "Each candidate entry includes Summary, Key citations, Supports investment themes and Keywords blocks",
+        "Every theme back-reference in the booklet resolves to an existing theme_id in tips-value-model.json (round-trip check passes)",
+        "Orphan candidates (no theme back-reference) render in a per-dimension or end-of-document appendix",
+        "build-booklet-index.sh exits 0 and prints a JSON object with success: true",
+        "tips-project.json is updated with trend_booklet_complete: true",
+        "tips-project.json records booklet_density (e.g. 'standard', 'compact', 'rich')",
+        "Booklet prose is written in German throughout"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "eval-happy-path-en",
+      "prompt": "Build the trend booklet — trend-research is already complete.",
+      "expected_output": "An English-language tips-trend-booklet.md and tips-trend-booklet-index.json covering all 60 candidates with English dimension and horizon labels, with project metadata marked complete.",
+      "files": [],
+      "expectations": [
+        "tips-trend-booklet.md exists at the project root",
+        "tips-trend-booklet-index.json exists and is valid JSON with 60 candidate entries",
+        "Booklet contains 4 H2 dimension sections in T -> I -> P -> S order using English labels: Forces, Impact, Horizons, Foundations",
+        "Horizon buckets within each subcategory use English labels: Act, Plan, Observe",
+        "Each candidate entry includes Summary, Key citations, Supports investment themes and Keywords blocks (English headings)",
+        "Every theme back-reference resolves to a theme_id present in tips-value-model.json",
+        "Orphan candidates render in a per-dimension or end-of-document appendix",
+        "build-booklet-index.sh exits 0 with a success: true JSON payload",
+        "tips-project.json is updated with trend_booklet_complete: true and booklet_density set",
+        "Booklet prose is written in English throughout"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "eval-density-compact",
+      "prompt": "Erzeuge das Trend-Booklet in der kompakten Variante.",
+      "expected_output": "A compact-density tips-trend-booklet.md with shorter per-entry summaries and at most two citations per entry, plus the matching index file and a project flag recording the density tier chosen.",
+      "files": [],
+      "expectations": [
+        "tips-trend-booklet.md exists and renders all 60 candidates",
+        "tips-trend-booklet-index.json exists and is valid JSON with 60 entries",
+        "Each candidate's Summary block is approximately 80 words (within +/- 25%)",
+        "Each candidate entry has at most 2 entries in its Key citations block",
+        "tips-project.json contains booklet_density: 'compact'",
+        "Booklet still contains 4 H2 dimension sections in T -> I -> P -> S order",
+        "Subcategory -> horizon grouping (ACT/PLAN/OBSERVE) is preserved",
+        "build-booklet-index.sh exits 0",
+        "Theme back-references still round-trip through tips-value-model.json",
+        "Total booklet word count is meaningfully smaller than a standard-density build (the file is shorter than a standard-density booklet for the same project)"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "eval-zero-act-dimension",
+      "prompt": "Erzeuge das Booklet — eine Dimension hat in dieser Runde keine ACT-Kandidaten.",
+      "expected_output": "A booklet that renders the affected dimension with an empty Act bucket plus an explanatory note, while Plan and Observe buckets and the other three dimensions render normally.",
+      "files": [],
+      "expectations": [
+        "tips-trend-booklet.md is produced successfully (skill does not halt)",
+        "The dimension with zero ACT candidates contains an ACT bucket header followed by a note such as 'no Act-horizon candidates this round' (or equivalent localised wording)",
+        "That dimension's PLAN bucket renders its candidates normally",
+        "That dimension's OBSERVE bucket renders its candidates normally",
+        "The other three dimensions render full ACT/PLAN/OBSERVE buckets as usual",
+        "tips-trend-booklet-index.json still lists 60 candidate entries (no candidates dropped)",
+        "build-booklet-index.sh exits 0 with success: true",
+        "Theme back-references still round-trip through tips-value-model.json",
+        "tips-project.json is updated with trend_booklet_complete: true"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "eval-fewer-than-60-candidates",
+      "prompt": "Build the booklet for the legacy energy project — note it only has 47 trend-scout candidates.",
+      "expected_output": "A WARN about the pre-60-quota project, followed by a successful booklet that renders all 47 available candidates, with the index and project metadata reflecting the actual count.",
+      "files": [],
+      "expectations": [
+        "Skill emits a WARN message stating that trend-scout-output.json.tips_candidates.total is below the current 60-candidate quota",
+        "Skill proceeds to produce tips-trend-booklet.md after the WARN",
+        "tips-trend-booklet.md renders all 47 candidates",
+        "tips-trend-booklet-index.json is valid JSON and lists exactly 47 entries",
+        "Booklet still contains 4 H2 dimension sections in T -> I -> P -> S order (even if some buckets are sparse)",
+        "Sparse or empty dimension/horizon buckets render with an explanatory note rather than missing headers",
+        "Orphan candidates (no theme back-reference) appear in a per-dimension or end-of-document appendix",
+        "Theme back-references still round-trip through tips-value-model.json",
+        "build-booklet-index.sh exits 0 with success: true",
+        "tips-project.json is updated with trend_booklet_complete: true and records the actual candidate count (47) somewhere in the booklet metadata or project flags"
+      ]
+    }
+  ]
+}
