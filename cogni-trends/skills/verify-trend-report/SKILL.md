@@ -8,8 +8,8 @@ description: |
   trend report", "verify claims", "fact-check the trend report", "improve the
   trend report", "enrich the trend report", "review the trend report", "extend
   the trend report", "trend report verification", or runs `/trends-resume` after
-  trend-report finished and picks the verify path. Also trigger when a
-  trend-report Phase 4 summary recommends it. Mirror of cogni-research:verify-report,
+  trend-synthesis finished and picks the verify path. Also trigger when a
+  trend-synthesis Phase 3 summary recommends it. Mirror of cogni-research:verify-report,
   scoped to the cogni-trends data model (`tips-trend-report.md` and
   `tips-trend-report-claims.json`).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, Skill, AskUserQuestion
@@ -17,11 +17,11 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, Skill, AskUserQuestion
 
 # Verify Trend Report Skill
 
-Quality gate for a generated trend report. Verifies every quantitative claim against its cited source via `cogni-claims`, runs a cross-theme structural review, applies corrections through the revisor when deviations or structural issues are found, and surfaces downstream polish and visualization options at the end. Runs in a **fresh context window** — separate from the trend-report pipeline — so claims verification, the review loop, and revision get the full attention they deserve without competing for context with research data.
+Quality gate for a generated trend report. Verifies every quantitative claim against its cited source via `cogni-claims`, runs a cross-theme structural review, applies corrections through the revisor when deviations or structural issues are found, and surfaces downstream polish and visualization options at the end. Runs in a **fresh context window** — separate from the trend-synthesis pipeline — so claims verification, the review loop, and revision get the full attention they deserve without competing for context with research data.
 
 ## Purpose
 
-`trend-report` produces a draft (`tips-trend-report.md`) plus a claims registry (`tips-trend-report-claims.json`). This skill is the dedicated re-entry point that lifts that draft to a deliverable:
+`trend-synthesis` produces a draft (`tips-trend-report.md`) plus a claims registry (`tips-trend-report-claims.json`). This skill is the dedicated re-entry point that lifts that draft to a deliverable:
 
 1. Verifies claims against source URLs via `cogni-claims:claims`
 2. Lets the user steer corrections (proceed / fix specific deviations / drop claims / accept)
@@ -31,7 +31,7 @@ Quality gate for a generated trend report. Verifies every quantitative claim aga
 
 ## Prerequisites
 
-- `trend-report` has produced both `{PROJECT_PATH}/tips-trend-report.md` and `{PROJECT_PATH}/tips-trend-report-claims.json`
+- `trend-synthesis` has produced both `{PROJECT_PATH}/tips-trend-report.md` and `{PROJECT_PATH}/tips-trend-report-claims.json`
 - `cogni-claims` plugin installed (recommended — graceful degradation when absent: structural review only, see Error Handling)
 - Optional: `cogni-copywriting` and `cogni-visual` plugins for downstream menu options
 
@@ -87,7 +87,7 @@ bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/
 
 3. Filter the returned `projects[]` to those where `has_report == true` (i.e. `tips-trend-report.md` exists).
 4. Branch on the result:
-   - 0 eligible: HALT — "No cogni-trends project with a generated report found. Run `/trend-report` first."
+   - 0 eligible: HALT — "No cogni-trends project with a generated report found. Run `/trend-synthesis` first."
    - 1 eligible: auto-select.
    - 2+ eligible: present via `AskUserQuestion` and ask the user to choose.
 
@@ -95,16 +95,16 @@ bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/
 
 | Check | Condition | On Failure |
 |-------|-----------|------------|
-| Report exists | `{PROJECT_PATH}/tips-trend-report.md` | HALT: Run `/trend-report` first |
-| Claims registry exists | `{PROJECT_PATH}/tips-trend-report-claims.json` | HALT: Claims registry missing — re-run `/trend-report` |
+| Report exists | `{PROJECT_PATH}/tips-trend-report.md` | HALT: Run `/trend-synthesis` first |
+| Claims registry exists | `{PROJECT_PATH}/tips-trend-report-claims.json` | HALT: Claims registry missing — re-run `/trend-synthesis` |
 | Project config exists | `{PROJECT_PATH}/tips-project.json` | HALT: Not a valid cogni-trends project |
 
 Read `tips-project.json` for `language` (set as `OUTPUT_LANGUAGE`) and `market_region` (set as `MARKET`, default `dach` for legacy projects).
 
 Resolve the **prose word target** the reviewer needs for tier-aware Completeness scoring. Try in order:
 
-1. `.metadata/trend-scout-output.json → report_target_words` (mirrored there by `trend-report` Phase 4.1).
-2. `tips-project.json → report_target_words` (the source of truth, written by `trend-report` Phase 0.4d).
+1. `.metadata/trend-scout-output.json → report_target_words` (mirrored there by `trend-synthesis` Phase 3.1).
+2. `tips-project.json → report_target_words` (the source of truth, written by `trend-synthesis` Phase 1).
 3. Default `4000` (standard tier) — apply when both fields are absent on legacy projects that pre-date the length-tier feature.
 
 Set `REPORT_TARGET_WORDS` for downstream use in Phase 4.
@@ -146,7 +146,7 @@ Handle the user's choice accordingly.
 
 ### Phase 1: Surface Claims Registry
 
-`trend-report` Phase 1 agents already extracted claims into `{PROJECT_PATH}/tips-trend-report-claims.json` during report generation. The registry is canonical — this skill does not re-extract. (If the user manually edited `tips-trend-report.md` after generation, claims may be stale; a future `--re-extract` flag can rebuild the registry. Out of scope for v1.)
+`trend-synthesis` Step 2.7 already merged claims into `{PROJECT_PATH}/tips-trend-report-claims.json` during report assembly (the per-dimension `claims-{dimension}.json` files were extracted upstream by `trend-research` Phase 1 agents). The registry is canonical — this skill does not re-extract. (If the user manually edited `tips-trend-report.md` after generation, claims may be stale; a future `--re-extract` flag can rebuild the registry. Out of scope for v1.)
 
 1. Read `{PROJECT_PATH}/tips-trend-report-claims.json`.
 2. Summarize to the user:
@@ -156,7 +156,7 @@ Handle the user's choice accordingly.
 > - By dimension: externe-effekte ({N}), neue-horizonte ({N}), digitale-wertetreiber ({N}), digitales-fundament ({N})
 > - Sources cited: {unique URL count}
 
-3. If `total_claims == 0`: HALT — "No claims to verify. The report has no quantitative claims with source URLs. Re-run `/trend-report` with web access enabled."
+3. If `total_claims == 0`: HALT — "No claims to verify. The report has no quantitative claims with source URLs. Re-run `/trend-research` with web access enabled, then `/trend-synthesis`."
 
 ---
 
@@ -176,7 +176,7 @@ Skill:
   args: "--file-path {PROJECT_PATH}/tips-trend-report.md --claims-file {PROJECT_PATH}/tips-trend-report-claims.json --verdict-mode --language {OUTPUT_LANGUAGE}"
 ```
 
-This is the same invocation that the legacy `trend-report` Phase 3 used — preserved verbatim for compatibility.
+This is the same invocation the legacy single-skill `trend-report` Phase 3 used — preserved verbatim for compatibility.
 
 #### Step 2.3: Persist results
 
@@ -269,7 +269,7 @@ Task:
     REPORT_TARGET_WORDS: {REPORT_TARGET_WORDS}
 ```
 
-`REPORT_TARGET_WORDS` is the **prose** target (executive summary + theme sections + bridges + synthesis — claims registry excluded). It anchors the reviewer's tier-aware Completeness scoring. Reviews of legacy reports without a recorded target fall back to `4000` (standard tier).
+`REPORT_TARGET_WORDS` is the **prose** target (executive summary + macro sections + synthesis — claims registry excluded). It anchors the reviewer's tier-aware Completeness scoring. Reviews of legacy reports without a recorded target fall back to `4000` (standard tier).
 
 The reviewer scores 5 dimensions (completeness, evidence density, source diversity, narrative coherence, actionability) and returns a verdict:
 
@@ -381,8 +381,8 @@ The user can re-enter this skill later to pick a different path; downstream skil
 
 | Scenario | Action |
 |----------|--------|
-| `tips-trend-report.md` missing | HALT: Run `/trend-report` first |
-| `tips-trend-report-claims.json` missing | HALT: Re-run `/trend-report` to regenerate claims registry |
+| `tips-trend-report.md` missing | HALT: Run `/trend-synthesis` first |
+| `tips-trend-report-claims.json` missing | HALT: Re-run `/trend-synthesis` to regenerate claims registry |
 | `tips-project.json` missing | HALT: Not a valid cogni-trends project |
 | `cogni-claims` not installed | WARNING: Skip Phase 2 + 3, run Phase 4 in structural-review-only mode (max 1 iteration), skip Phase 3 of `references/claims-integration.md` |
 | Verification returns FAIL | Present failed claims interactively in Phase 3. Do not auto-correct. |
@@ -394,9 +394,10 @@ The user can re-enter this skill later to pick a different path; downstream skil
 ## Integration
 
 **Upstream:**
-- `trend-report` produces `tips-trend-report.md` and `tips-trend-report-claims.json` (required)
+- `trend-research` produces the per-dimension enriched evidence and the research manifest
+- `trend-synthesis` produces `tips-trend-report.md` and `tips-trend-report-claims.json` (required)
 
-**Pipeline:** `trend-scout → value-modeler → trend-report → verify-trend-report`
+**Pipeline:** `trend-scout → value-modeler → trend-research → trend-synthesis → verify-trend-report`
 
 **Plugin dependencies:**
 - `cogni-claims:claims` (recommended) — claim verification
@@ -410,7 +411,7 @@ The user can re-enter this skill later to pick a different path; downstream skil
 Log files in `{PROJECT_PATH}/.metadata/`:
 - `trend-report-verification.json` — verdict and counts
 - `user-claims-review.json` — interactive Phase 3 decisions
-- `review-verdicts/v{N}.json` — per-iteration reviewer verdicts (existing format from Phase 2.5 of legacy trend-report)
+- `review-verdicts/v{N}.json` — per-iteration reviewer verdicts (existing format from prior trend-report pipeline)
 
 Output files in `{PROJECT_PATH}/`:
 - `tips-trend-report.md` — final canonical report (post-revision when revisions ran)

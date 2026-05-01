@@ -1,7 +1,7 @@
 {
   "name": "cogni-trends",
-  "version": "0.5.9",
-  "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Trend reports support two narrative skeletons: flat-themes (themes as H2) and the new theme-aware smarter-service macro skeleton (4 dimensions as H2 with anchored theme-cases as H3, closes on a Capability Imperative synthesis). Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK.",
+  "version": "0.6.0",
+  "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Pipeline: trend-scout → value-modeler → trend-research → (trend-synthesis and/or trend-booklet) → verify-trend-report. trend-research enriches every candidate with web-sourced quantitative evidence; trend-synthesis composes the canonical TIPS report (4 H2 dimensions × anchored H3 theme-cases, closing on a Capability Imperative); trend-booklet produces the comprehensive catalog of all candidates by dimension → subcategory → horizon. Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
@@ -10,11 +10,13 @@
   "keywords": [
     "tips",
     "trend-scout",
+    "trend-research",
+    "trend-synthesis",
+    "trend-booklet",
     "trends",
     "strategic-trends",
     "smarter-service",
     "bilingual",
-    "trend-report",
     "agent"
   ]
 }

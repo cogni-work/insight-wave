@@ -152,7 +152,9 @@ HAS_WEB_RESEARCH="false"
 HAS_GENERATOR_LOG="false"
 HAS_CANDIDATES_MD="false"
 HAS_SELECTOR_APP="false"
+HAS_RESEARCH_MANIFEST="false"
 HAS_REPORT="false"
+HAS_BOOKLET="false"
 HAS_CLAIMS="false"
 HAS_INSIGHT="false"
 HAS_VERIFICATION="false"
@@ -172,13 +174,18 @@ ANCHOR_NEEDS_DELIVERED=0
 ANCHOR_NEEDS_UNDELIVERED=0
 ANCHOR_PRODUCTS_JSON='[]'
 CLAIMS_TOTAL=0
+RESEARCH_DIMS_ENRICHED=0
+BOOKLET_CANDIDATES_TOTAL=0
+BOOKLET_DENSITY=""
 
 [ -f "$PROJECT_DIR/.logs/web-research-raw.json" ] && HAS_WEB_RESEARCH="true"
 [ -f "$PROJECT_DIR/.logs/trend-generator-candidates.json" ] && HAS_GENERATOR_LOG="true"
 [ -f "$PROJECT_DIR/trend-candidates.md" ] && HAS_CANDIDATES_MD="true"
 [ -f "$PROJECT_DIR/trend-selector-app.html" ] && HAS_SELECTOR_APP="true"
 [ -f "$PROJECT_DIR/tips-value-model.json" ] && HAS_VALUE_MODEL="true"
+[ -f "$PROJECT_DIR/.metadata/trend-research-output.json" ] && HAS_RESEARCH_MANIFEST="true"
 [ -f "$PROJECT_DIR/tips-trend-report.md" ] && HAS_REPORT="true"
+[ -f "$PROJECT_DIR/tips-trend-booklet.md" ] && HAS_BOOKLET="true"
 [ -f "$PROJECT_DIR/tips-trend-report-claims.json" ] && HAS_CLAIMS="true"
 [ -f "$PROJECT_DIR/tips-insight-summary.md" ] && HAS_INSIGHT="true"
 [ -f "$PROJECT_DIR/.metadata/trend-report-verification.json" ] && HAS_VERIFICATION="true"
@@ -242,6 +249,33 @@ try:
 except Exception:
     print(0)
 " 2>/dev/null || echo "0")
+fi
+
+# Research manifest counts
+if [ "$HAS_RESEARCH_MANIFEST" = "true" ]; then
+  eval "$(python3 -c "
+import json
+try:
+    d = json.load(open('$PROJECT_DIR/.metadata/trend-research-output.json'))
+    dims = d.get('dimensions_enriched') or []
+    print(f'RESEARCH_DIMS_ENRICHED={len(dims)}')
+except Exception:
+    pass
+" 2>/dev/null)"
+fi
+
+# Booklet counts
+if [ "$HAS_BOOKLET" = "true" ] && [ -f "$PROJECT_DIR/tips-trend-booklet-index.json" ]; then
+  eval "$(python3 -c "
+import json
+try:
+    d = json.load(open('$PROJECT_DIR/tips-trend-booklet-index.json'))
+    print(f'BOOKLET_CANDIDATES_TOTAL={d.get(\"total_candidates\", 0)}')
+    bd = d.get('booklet_density') or ''
+    print(f'BOOKLET_DENSITY={chr(39)}{bd}{chr(39)}')
+except Exception:
+    pass
+" 2>/dev/null)"
 fi
 
 # Verification status — only set defaults if not already populated by cogni-claims fallback
@@ -388,7 +422,7 @@ for search_dir in "$WORKSPACE_ROOT" "$WORKSPACE_PARENT"; do
   fi
 done
 
-# Count report section files
+# Count enriched-trends section files (proxy for research progress)
 REPORT_SECTIONS=0
 if [ -d "$PROJECT_DIR/.logs" ]; then
   for dim in externe-effekte digitale-wertetreiber neue-horizonte digitales-fundament; do
@@ -396,8 +430,10 @@ if [ -d "$PROJECT_DIR/.logs" ]; then
   done
 fi
 
-# Determine workflow phase (evaluated in priority order)
-# Maps workflow_state to a simplified phase name for resume-tips
+# Determine workflow phase. The split pipeline introduces two new states:
+#   research-complete  — trend-research manifest exists, trend-synthesis not yet run
+#   booklet            — trend-booklet was the last skill to write; report not yet present
+# These slot between modeling-complete and reporting/complete.
 if [ "$WORKFLOW_STATE" = "unknown" ] || [ "$WORKFLOW_STATE" = "initialized" ]; then
   if [ "$CANDIDATES_TOTAL" -eq 0 ] && [ "$HAS_WEB_RESEARCH" = "false" ]; then
     PHASE="scouting"
@@ -425,8 +461,11 @@ elif [ "$WORKFLOW_STATE" = "phase-4" ] || [ "$WORKFLOW_STATE" = "agreed" ]; then
     else
       PHASE="complete"
     fi
+  elif [ "$HAS_BOOKLET" = "true" ] && [ "$HAS_RESEARCH_MANIFEST" = "true" ]; then
+    PHASE="booklet"
+  elif [ "$HAS_RESEARCH_MANIFEST" = "true" ]; then
+    PHASE="research-complete"
   elif [ "$HAS_VALUE_MODEL" = "true" ]; then
-    # Value model exists — check sub-phase or fall through to reporting
     if [ -n "$VALUE_MODEL_PHASE" ]; then
       case "$VALUE_MODEL_PHASE" in
         initialized) PHASE="modeling" ;;
@@ -459,17 +498,15 @@ else
 fi
 
 # Pre-compute stages[] array — one entry per progress-table row with status + details.
-# Centralizes per-stage decision logic here so SKILL.md only renders the array verbatim
-# and never has to apply derivation rules in prose. This is the load-bearing fix for
-# the "value-modeler done but still rendered as Pending" class of bug: the LLM no
-# longer sees "Done if counts.X > 0, else Pending" — it just reads stage.status.
 export HAS_WEB_RESEARCH HAS_GENERATOR_LOG CANDIDATES_TOTAL CANDIDATES_WEB \
   WORKFLOW_STATE HAS_PORTFOLIO_CONTEXT HAS_PORTFOLIO_PROJECT \
   PORTFOLIO_CONTEXT_VERSION PORTFOLIO_FEATURES_COUNT \
   THEMES_COUNT SOLUTIONS_COUNT RANKED_COUNT BLUEPRINT_COUNT ANCHORED_COUNT \
   AVG_READINESS ANCHOR_NEEDS_DELIVERED ANCHOR_NEEDS_UNDELIVERED \
   ANCHOR_QUALITY_COUNT ANCHOR_PRODUCTS_JSON \
-  HAS_REPORT REPORT_SECTIONS HAS_CLAIMS CLAIMS_TOTAL \
+  HAS_RESEARCH_MANIFEST RESEARCH_DIMS_ENRICHED REPORT_SECTIONS \
+  HAS_REPORT HAS_BOOKLET BOOKLET_CANDIDATES_TOTAL BOOKLET_DENSITY \
+  HAS_CLAIMS CLAIMS_TOTAL \
   HAS_INSIGHT HAS_VERIFICATION VERIFICATION_VERDICT \
   VERIFICATION_PASSED VERIFICATION_FAILED \
   HAS_COPYWRITER HAS_ENRICHED_REPORT HAS_DASHBOARD DIMENSION_COUNTS
@@ -521,7 +558,6 @@ if b('HAS_PORTFOLIO_PROJECT'):
     if b('HAS_PORTFOLIO_CONTEXT'):
         ver = s('PORTFOLIO_CONTEXT_VERSION') or 'unknown'
         details = f"v{ver} context, {i('PORTFOLIO_FEATURES_COUNT')} features"
-        # Mark "upgrade available" when version is below 3.1
         if ver and ver != 'unknown' and ver < '3.1':
             details += ' (upgrade available)'
         stages.append({'name': 'Portfolio Bridge', 'status': 'done', 'details': details})
@@ -594,14 +630,71 @@ else:
         'details': 'no portfolio-anchored solutions'
     })
 
-# 10. Trend Report
-stages.append({
-    'name': 'Trend Report',
-    'status': 'done' if b('HAS_REPORT') else 'pending',
-    'details': f"{i('REPORT_SECTIONS')}/4 sections"
-})
+# 10. Trend Research (NEW — replaces the legacy single Trend Report stage)
+research_dims = i('RESEARCH_DIMS_ENRICHED')
+sections = i('REPORT_SECTIONS')
+if b('HAS_RESEARCH_MANIFEST'):
+    stages.append({
+        'name': 'Trend Research',
+        'status': 'done',
+        'details': f"{research_dims}/4 dimensions enriched, manifest written"
+    })
+elif sections > 0:
+    stages.append({
+        'name': 'Trend Research',
+        'status': 'pending',
+        'details': f"{sections}/4 sections enriched (manifest not yet written)"
+    })
+else:
+    stages.append({
+        'name': 'Trend Research',
+        'status': 'pending',
+        'details': '0/4 dimensions enriched'
+    })
 
-# 11. Claims Registry
+# 11. Trend Synthesis (NEW — canonical TIPS report)
+if b('HAS_REPORT'):
+    stages.append({
+        'name': 'Trend Synthesis',
+        'status': 'done',
+        'details': 'tips-trend-report.md written'
+    })
+elif b('HAS_RESEARCH_MANIFEST'):
+    stages.append({
+        'name': 'Trend Synthesis',
+        'status': 'ready',
+        'details': 'research complete — run /trend-synthesis'
+    })
+else:
+    stages.append({
+        'name': 'Trend Synthesis',
+        'status': 'pending',
+        'details': 'awaiting trend-research'
+    })
+
+# 12. Trend Booklet (NEW — comprehensive TIPS catalog of all candidates)
+if b('HAS_BOOKLET'):
+    bcount = i('BOOKLET_CANDIDATES_TOTAL')
+    bdens = s('BOOKLET_DENSITY') or 'standard'
+    stages.append({
+        'name': 'Trend Booklet',
+        'status': 'done',
+        'details': f"{bcount} candidates cataloged ({bdens} density)"
+    })
+elif b('HAS_RESEARCH_MANIFEST'):
+    stages.append({
+        'name': 'Trend Booklet',
+        'status': 'skipped',
+        'details': 'optional — run /trend-booklet for the comprehensive catalog'
+    })
+else:
+    stages.append({
+        'name': 'Trend Booklet',
+        'status': 'skipped',
+        'details': 'optional'
+    })
+
+# 13. Claims Registry
 ct = i('CLAIMS_TOTAL')
 stages.append({
     'name': 'Claims Registry',
@@ -609,14 +702,14 @@ stages.append({
     'details': f"{ct} claims extracted"
 })
 
-# 12. Insight Summary
+# 14. Insight Summary
 stages.append({
     'name': 'Insight Summary',
     'status': 'done' if b('HAS_INSIGHT') else 'skipped',
     'details': 'condensed executive narrative' if b('HAS_INSIGHT') else 'optional'
 })
 
-# 13. Claim Verification
+# 15. Claim Verification
 if b('HAS_VERIFICATION'):
     vv = s('VERIFICATION_VERDICT')
     vd = (f"{vv}: {i('VERIFICATION_PASSED')} passed, {i('VERIFICATION_FAILED')} failed"
@@ -635,14 +728,14 @@ else:
         'details': 'no claims to verify'
     })
 
-# 14. Executive Polish
+# 16. Executive Polish
 stages.append({
     'name': 'Executive Polish',
     'status': 'done' if b('HAS_COPYWRITER') else 'skipped',
     'details': 'tone (cogni-copywriting)' if b('HAS_COPYWRITER') else 'optional'
 })
 
-# 15. Visual Report
+# 17. Visual Report
 stages.append({
     'name': 'Visual Report',
     'status': 'done' if b('HAS_ENRICHED_REPORT') else 'skipped',
@@ -650,7 +743,7 @@ stages.append({
                 if b('HAS_ENRICHED_REPORT') else 'optional')
 })
 
-# 16. Dashboard
+# 18. Dashboard
 stages.append({
     'name': 'Dashboard',
     'status': 'done' if b('HAS_DASHBOARD') else 'skipped',
@@ -729,10 +822,17 @@ case "$PHASE" in
     add_action "value-modeler" "Ranked solutions complete — continue for optional catalog curation"
     ;;
   reporting)
-    add_action "trend-report" "Value model complete — ready to generate trend report"
+    add_action "cogni-trends:trend-research" "Value model complete — run /trend-research to enrich evidence for the report"
     if [ "$HAS_PORTFOLIO_CONTEXT" = "true" ] && [ -n "$PORTFOLIO_CONTEXT_VERSION" ] && [ "$PORTFOLIO_CONTEXT_VERSION" \< "3.1" ]; then
-      add_action "trends-bridge" "Re-run /bridge portfolio-to-tips for v3.1 provider differentiators in trend-report"
+      add_action "trends-bridge" "Re-run /bridge portfolio-to-tips for v3.1 provider differentiators"
     fi
+    ;;
+  research-complete)
+    add_action "cogni-trends:trend-synthesis" "Research complete — compose the canonical TIPS report"
+    add_action "cogni-trends:trend-booklet" "Optional — produce the comprehensive TIPS catalog of all candidates"
+    ;;
+  booklet)
+    add_action "cogni-trends:trend-synthesis" "Booklet ready — compose the canonical TIPS report next"
     ;;
   verification)
     add_action "cogni-trends:verify-trend-report" "$CLAIMS_TOTAL claims extracted — verify, review, and apply corrections via the extended pipeline"
@@ -741,24 +841,22 @@ case "$PHASE" in
     add_action "cogni-trends:verify-trend-report" "${REVISION_CHANGES:-0} claims resolved — re-enter the verify pipeline to apply corrections and removals"
     ;;
   complete)
-    # Polish
+    if [ "$HAS_BOOKLET" = "false" ]; then
+      add_action "cogni-trends:trend-booklet" "Build the comprehensive TIPS catalog of all candidates as a companion to the report"
+    fi
     if [ "$HAS_COPYWRITER" = "false" ]; then
       add_action "cogni-copywriting:copywrite" "Polish report prose for executive readability"
     fi
-    # Visualize
     if [ "$HAS_ENRICHED_REPORT" = "false" ]; then
       add_action "cogni-visual:enrich-report" "Generate themed HTML with charts and diagrams"
     fi
     add_action "cogni-visual:story-to-slides" "Create a PowerPoint presentation from the report"
     add_action "cogni-visual:story-to-web" "Create a scrollable landing page from the report"
     add_action "cogni-visual:story-to-storyboard" "Create a multi-poster print storyboard"
-    # Accumulate
     add_action "cogni-trends:trends-catalog" "Import to industry catalog for cross-pursuit reuse"
-    # Dashboard
     if [ "$HAS_DASHBOARD" = "false" ]; then
       add_action "cogni-trends:trends-dashboard" "Generate interactive TIPS project dashboard"
     fi
-    # Portfolio bridge upgrade
     if [ "$HAS_PORTFOLIO_CONTEXT" = "true" ] && [ -n "$PORTFOLIO_CONTEXT_VERSION" ] && [ "$PORTFOLIO_CONTEXT_VERSION" \< "3.1" ]; then
       add_action "trends-bridge" "Re-run /bridge portfolio-to-tips for v3.1 provider differentiators"
     fi
@@ -780,10 +878,6 @@ from datetime import datetime
 warnings = []
 proj = '$PROJECT_DIR'
 
-# Hash helpers — must match cogni-trends/skills/trend-report Phase 4.1 exactly.
-# Drift is detected by content hash, not mtime, because Phase 4.1 mirrors
-# report_tier and other report metadata back into trend-scout-output.json
-# (which would otherwise bump mtime on every report run — see issue #187).
 def _key(c):
     return c.get('id') or c.get('title') or ''
 def _candidate_items(scout_doc):
@@ -826,9 +920,6 @@ if os.path.exists(scout_file):
     except Exception:
         scout_doc = None
 
-# Scout-output drift check — anchored on content_hash_at_report.
-# Legacy projects without an anchor stay silent (mtime was the bug; we don't
-# fall back to it). They will get a clean anchor on the next /trend-report run.
 if scout_doc is not None and os.path.exists(report_file):
     anchor = scout_doc.get('content_hash_at_report')
     if anchor:
@@ -849,8 +940,6 @@ if scout_doc is not None and os.path.exists(report_file):
                 'changed': changed,
             })
 
-# Value-model drift check — anchored on value_model_hash_at_report (stored in
-# the same scout-output metadata block, since the report is the join point).
 if scout_doc is not None and os.path.exists(value_model_file) and os.path.exists(report_file):
     vm_anchor = scout_doc.get('value_model_hash_at_report')
     if vm_anchor:
@@ -912,7 +1001,6 @@ if os.path.exists(scout_file):
                             'message': f'{dim}/{hor}: expected {exp} candidates, found {actual}'
                         })
 
-            # Check low-confidence candidates (missing confidence_tier counts as uncertain)
             low_conf = sum(1 for i in items if i.get('confidence_tier', 'uncertain') in ('low', 'uncertain'))
             if low_conf > len(items) * 0.3:
                 warnings.append({
@@ -920,8 +1008,6 @@ if os.path.exists(scout_file):
                     'message': f'{low_conf} of {len(items)} candidates have low or uncertain confidence'
                 })
 
-            # Check evidence coverage — only web-signal candidates should have URLs
-            # Training-sourced candidates legitimately have no source_url
             web_candidates = [i for i in items if i.get('source') == 'web-signal']
             if web_candidates:
                 web_no_url = sum(1 for i in web_candidates if not i.get('source_url'))
@@ -939,8 +1025,6 @@ fi
 
 # Inject re-anchor action when stale blueprints detected (prepend before existing actions)
 if $HEALTH_CHECK; then
-  # Defensive default: guard against unbound $stale_warnings if a future edit
-  # decouples the staleness-detection block above from this injection block.
   stale_warnings="${stale_warnings:-[]}"
   HAS_STALE_BLUEPRINTS=$(echo "$stale_warnings" | python3 -c "
 import json, sys
@@ -953,7 +1037,7 @@ except:
 
   if [ "$HAS_STALE_BLUEPRINTS" = "true" ]; then
     case "$PHASE" in
-      modeling-scoring|modeling-curating|reporting|complete)
+      modeling-scoring|modeling-curating|reporting|research-complete|booklet|complete)
         next_actions=$(echo "$next_actions" | python3 -c "
 import json, sys
 try:
@@ -968,9 +1052,6 @@ except:
     esac
   fi
 
-  # Inject concrete trend-report action for real candidate / value-model drift.
-  # The stale_report warning carries subtype scout_drift or value_model_drift
-  # plus added/removed/changed candidate id lists — see issue #187.
   next_actions=$(echo "$stale_warnings" | STALE_WARNINGS_JSON="$stale_warnings" PRIOR_ACTIONS_JSON="$next_actions" python3 -c "
 import json, os, sys
 try:
@@ -991,15 +1072,14 @@ try:
             if c: parts.append(f'{c} changed')
             detail = ', '.join(parts) if parts else 'content changed'
             inject.append({
-                'skill': 'cogni-trends:trend-report',
-                'reason': f'Trend candidates changed since report was generated ({detail}) — re-run /trend-report to refresh'
+                'skill': 'cogni-trends:trend-research',
+                'reason': f'Trend candidates changed since report was generated ({detail}) — re-run /trend-research, then /trend-synthesis to refresh'
             })
         elif sub == 'value_model_drift':
             inject.append({
-                'skill': 'cogni-trends:trend-report',
-                'reason': 'Value model changed since report was generated — re-run /trend-report to refresh'
+                'skill': 'cogni-trends:trend-research',
+                'reason': 'Value model changed since report was generated — re-run /trend-research, then /trend-synthesis to refresh'
             })
-    # Prepend in warning order, dedupe against existing actions by skill+reason.
     existing = {(a.get('skill'), a.get('reason')) for a in actions}
     for new in reversed(inject):
         key = (new.get('skill'), new.get('reason'))
@@ -1028,6 +1108,8 @@ cat << EOF
     "candidates_user": $CANDIDATES_USER,
     "claims_total": $CLAIMS_TOTAL,
     "report_sections": $REPORT_SECTIONS,
+    "research_dims_enriched": $RESEARCH_DIMS_ENRICHED,
+    "booklet_candidates_total": $BOOKLET_CANDIDATES_TOTAL,
     "investment_themes": $THEMES_COUNT,
     "solutions": $SOLUTIONS_COUNT,
     "ranked_solutions": $RANKED_COUNT,
@@ -1047,7 +1129,9 @@ cat << EOF
     "candidates_md": $HAS_CANDIDATES_MD,
     "selector_app": $HAS_SELECTOR_APP,
     "value_model": $HAS_VALUE_MODEL,
+    "research_manifest": $HAS_RESEARCH_MANIFEST,
     "report": $HAS_REPORT,
+    "booklet": $HAS_BOOKLET,
     "claims": $HAS_CLAIMS,
     "insight_summary": $HAS_INSIGHT,
     "verification": $HAS_VERIFICATION,

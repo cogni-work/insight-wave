@@ -1,6 +1,6 @@
 # Report Structure Template
 
-Reference for dimension section templates written by Phase 1 agents. The overall report assembly is handled by [phase-2-strategic-themes.md](phase-2-strategic-themes.md).
+Reference for dimension section templates written by trend-research Phase 1 agents. The overall report assembly is handled by [synthesis-skeleton.md](synthesis-skeleton.md).
 
 ---
 
@@ -44,7 +44,7 @@ a Z% increase year-over-year [Another Source](url).}
 Every `.logs/` file MUST end with exactly two trailing newlines (`\n\n`). This ensures clean section boundaries after concatenation — no missing blank lines between sections and no extra whitespace accumulation.
 
 - Agent-written files: enforced by `trend-report-writer` agent (Step 4)
-- Orchestrator-written files: enforced by Steps 2.4, 2.4a, 2.4b
+- Orchestrator-written files: enforced by trend-synthesis Phase 2 steps
 
 ---
 

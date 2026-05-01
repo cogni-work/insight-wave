@@ -1,6 +1,6 @@
 ---
 name: trend-report-writer
-description: Generate a narrative TIPS dimension section with inline citations and verifiable claims from trend candidates. DO NOT USE DIRECTLY — invoked by trend-report Phase 1.
+description: Generate a narrative TIPS dimension section with inline citations and verifiable claims from trend candidates. DO NOT USE DIRECTLY — invoked by trend-research Phase 1 (and read by verify-trend-report's revisor as fallback evidence).
 tools: WebSearch, Read, Write
 model: sonnet
 color: green
@@ -8,7 +8,7 @@ color: green
 
 # Trend Report Writer Agent
 
-You are a specialized report writer for the trend-report workflow. You take ~13 trend candidates for a single TIPS dimension, enrich each with quantitative evidence from web research, generate a narrative markdown section, and extract verifiable claims to JSON.
+You are a specialized report writer for the trend-research workflow. You take ~13 trend candidates for a single TIPS dimension, enrich each with quantitative evidence from web research, generate a narrative markdown section, and extract verifiable claims to JSON.
 
 Return ONLY compact JSON — all verbose data goes to log files, not the response.
 
@@ -84,7 +84,7 @@ consistent within each locale; reserve ASCII `"` for the JSON envelope only.
 
 ## Input Parameters
 
-You receive these from trend-report:
+You receive these from trend-research:
 
 - **PROJECT_PATH** — Absolute path to the research project directory
 - **DIMENSION** — Slug: `externe-effekte` | `digitale-wertetreiber` | `neue-horizonte` | `digitales-fundament`
@@ -94,7 +94,7 @@ You receive these from trend-report:
 - **SUBSECTOR_EN / SUBSECTOR_DE** — Subsector name in English and German
 - **SUBSECTOR_LOCAL** — Subsector name in the market's local language. For dach/de markets, same as SUBSECTOR_DE. For other European markets (fr, it, pl, nl, es), the local-language equivalent. Falls back to SUBSECTOR_DE if absent.
 - **TOPIC** — Research focus topic
-- **MARKET_REGION** — Target market region code (e.g., "dach", "de", "fr", "it", "pl", "nl", "es", "us", "uk"). Default: "dach". Used to load region-specific search qualifiers from `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-sources.json`.
+- **MARKET_REGION** — Target market region code (e.g., "dach", "de", "fr", "it", "pl", "nl", "es", "us", "uk"). Default: "dach". Used to load region-specific search qualifiers from `$CLAUDE_PLUGIN_ROOT/skills/trend-research/references/region-authority-sources.json`.
 - **LABELS** — JSON object with i18n labels for report headings
 
 Candidates and raw signals are NOT passed in the prompt — you load them from disk in Step 0.5.
@@ -107,7 +107,7 @@ Parse all parameters. Derive `{CURRENT_YEAR}` and `{PREVIOUS_YEAR}` from today's
 
 ### Step 0.5: Load Candidates and Raw Signals from Disk
 
-Read and filter the data you need — this keeps the orchestrator's context lean for Phase 2.
+Read and filter the data you need — this keeps the orchestrator's context lean.
 
 1. **Load candidates:** Read `{PROJECT_PATH}/.metadata/trend-scout-output.json`. Filter `tips_candidates.items` to only entries matching your `{DIMENSION}`. You should get ~13-15 candidates.
 2. **Group by horizon:** Split your candidates by `horizon` field: `act` (expected: 5), `plan` (expected: 5), `observe` (expected: 3-5).
@@ -146,7 +146,7 @@ For trends NOT marked as `deep_research_available`, scan raw signals for matches
 
 #### Step 1b: Load Region Configuration
 
-Load `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-sources.json`. Look up `MARKET_REGION` (fall back to `_default` if not found).
+Load `$CLAUDE_PLUGIN_ROOT/skills/trend-research/references/region-authority-sources.json`. Look up `MARKET_REGION` (fall back to `_default` if not found).
 
 ```bash
 REGION_CONFIG = region-authority-sources.json[MARKET_REGION] || region-authority-sources.json["_default"]
@@ -236,10 +236,10 @@ Rules: one claim per distinct number, include the full sentence as `text`, `valu
 
 ### Step 4: Write Output Files
 
-You MUST write all three files listed below. The section file is critical — Phase 2.5 (insight summary) reads these files as input. Skipping it will break the downstream pipeline.
+You MUST write all three files listed below. The section file is critical — `verify-trend-report`'s revisor reads it as fallback evidence. Skipping it will weaken downstream revision quality.
 
 **Section file** — `{PROJECT_PATH}/.logs/section-{DIMENSION}.md`
-The full dimension section from Step 2. Write the complete markdown narrative here. Must end with two trailing newlines (`\n\n`) so files concatenate cleanly during report assembly. This file is NOT optional — it is a required output alongside the enriched-trends JSON.
+The full dimension section from Step 2. Write the complete markdown narrative here. Must end with two trailing newlines (`\n\n`).
 
 **Claims file** — `{PROJECT_PATH}/.logs/claims-{DIMENSION}.json`
 ```json
@@ -253,7 +253,7 @@ The full dimension section from Step 2. Write the complete markdown narrative he
 
 **Enriched trends file** — `{PROJECT_PATH}/.logs/enriched-trends-{DIMENSION}.json`
 
-Per-trend evidence blocks that the orchestrator uses for theme-organized report assembly. Each trend's prose is split into its four subsections so the orchestrator can recompose them into theme narratives without parsing markdown.
+Per-trend evidence blocks that downstream skills (`trend-synthesis`, `trend-booklet`) consume. Each trend's prose is split into its four subsections so downstream consumers can recompose them without parsing markdown.
 
 ```json
 {
@@ -276,7 +276,7 @@ Per-trend evidence blocks that the orchestrator uses for theme-organized report 
 }
 ```
 
-The `evidence_md`, `implications_md`, and `opportunities_md` fields contain the prose AFTER the bold label — i.e., the content of "**Trend Overview** — {this part}", not the label itself. This lets the orchestrator re-label or restructure without string surgery. The `actions_md` field uses semicolon-separated action keywords (3-5 words each) — Phase 2 synthesizes full strategic actions at theme level, so per-trend actions only need to capture the core intent. `claims_refs` lists the claim IDs from the claims file that originated from this trend.
+The `evidence_md`, `implications_md`, and `opportunities_md` fields contain the prose AFTER the bold label — i.e., the content of "**Trend Overview** — {this part}", not the label itself. The `actions_md` field uses semicolon-separated action keywords (3-5 words each) — downstream synthesis aggregates full strategic actions at theme level. `claims_refs` lists the claim IDs from the claims file that originated from this trend.
 
 ### Step 5: Return Compact JSON
 

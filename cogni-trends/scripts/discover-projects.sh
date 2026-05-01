@@ -26,17 +26,13 @@ done
 # --- Project Registry ---
 REGISTRY_FILE="${HOME}/.claude/cogni-trends-projects.json"
 
-# Ensure registry directory exists
 mkdir -p "$(dirname "$REGISTRY_FILE")"
 
-# Initialize registry if missing
 if [ ! -f "$REGISTRY_FILE" ]; then
   echo '{"projects":[]}' > "$REGISTRY_FILE"
 fi
 
-# Handle --register: add a project path to the registry
 if [ -n "$REGISTER_PATH" ]; then
-  # Resolve to absolute path
   REGISTER_PATH="$(cd "$REGISTER_PATH" 2>/dev/null && pwd || echo "$REGISTER_PATH")"
   python3 -c "
 import json, sys, os
@@ -58,7 +54,6 @@ else:
   exit 0
 fi
 
-# Handle --unregister: remove a project path from the registry
 if [ -n "$UNREGISTER_PATH" ]; then
   UNREGISTER_PATH="$(cd "$UNREGISTER_PATH" 2>/dev/null && pwd || echo "$UNREGISTER_PATH")"
   python3 -c "
@@ -80,7 +75,6 @@ print(f'Unregistered: {rm_path}' if before > after else f'Not found: {rm_path}')
 fi
 
 # --- Discovery ---
-# Priority: --root flag > PROJECT_AGENTS_OPS_ROOT env var > current directory
 if [ -n "$ROOT_OVERRIDE" ]; then
   SEARCH_ROOT="$ROOT_OVERRIDE"
 elif [ -n "${PROJECT_AGENTS_OPS_ROOT:-}" ]; then
@@ -89,7 +83,6 @@ else
   SEARCH_ROOT="$(pwd)"
 fi
 
-# Helper: add a directory to PROJECT_DIRS if not already present
 add_project_dir() {
   local dir="$1"
   for existing in "${PROJECT_DIRS[@]+"${PROJECT_DIRS[@]}"}"; do
@@ -102,22 +95,18 @@ add_project_dir() {
 
 declare -a PROJECT_DIRS=()
 
-# Method 1: tips-project.json in cogni-trends/*/ (local workspace)
 while IFS= read -r f; do
   dir="$(dirname "$f")"
   add_project_dir "$dir"
 done < <(find "$SEARCH_ROOT" -maxdepth 4 -name "tips-project.json" -path "*/cogni-trends/*" 2>/dev/null || true)
 
-# Method 2: trend-scout-output.json fallback (local workspace)
 while IFS= read -r f; do
-  dir="$(dirname "$(dirname "$f")")"  # go up from .metadata/
+  dir="$(dirname "$(dirname "$f")")"
   add_project_dir "$dir"
 done < <(find "$SEARCH_ROOT" -maxdepth 5 -name "trend-scout-output.json" -path "*/cogni-trends/*/.metadata/*" 2>/dev/null || true)
 
-# Method 3: Project registry — include projects from other workspaces
 if [ -f "$REGISTRY_FILE" ]; then
   while IFS= read -r reg_path; do
-    # Only include if the directory still exists and contains a valid project
     if [ -d "$reg_path" ] && { [ -f "$reg_path/tips-project.json" ] || [ -f "$reg_path/.metadata/trend-scout-output.json" ]; }; then
       add_project_dir "$reg_path"
     fi
@@ -142,7 +131,6 @@ projects = []
 for d in dirs:
     project = {'path': d, 'slug': os.path.basename(d)}
 
-    # Try tips-project.json first
     pf = os.path.join(d, 'tips-project.json')
     if os.path.exists(pf):
         try:
@@ -157,7 +145,6 @@ for d in dirs:
         except Exception:
             pass
 
-    # Enrich with workflow state from trend-scout-output.json
     sf = os.path.join(d, '.metadata', 'trend-scout-output.json')
     if os.path.exists(sf):
         try:
@@ -165,7 +152,6 @@ for d in dirs:
             exe = data.get('execution', {})
             project['workflow_state'] = exe.get('workflow_state', 'unknown')
             project['candidates_total'] = data.get('tips_candidates', {}).get('total', 0)
-            # Fill gaps from scout output if tips-project.json was sparse
             if not project.get('industry'):
                 ind = data.get('config', {}).get('industry', {})
                 project['industry'] = ind.get('primary_en') or ind.get('primary') or ''
@@ -178,8 +164,12 @@ for d in dirs:
             project.setdefault('workflow_state', 'unknown')
             project.setdefault('candidates_total', 0)
 
-    # Check for report
+    # Pipeline-stage flags. has_report stays as the canonical TIPS report
+    # (tips-trend-report.md, owned by trend-synthesis); has_research and
+    # has_booklet are siblings introduced in cogni-trends 0.6.0.
+    project['has_research'] = os.path.exists(os.path.join(d, '.metadata', 'trend-research-output.json'))
     project['has_report'] = os.path.exists(os.path.join(d, 'tips-trend-report.md'))
+    project['has_booklet'] = os.path.exists(os.path.join(d, 'tips-trend-booklet.md'))
 
     projects.append(project)
 

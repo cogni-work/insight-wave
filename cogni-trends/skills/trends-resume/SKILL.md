@@ -18,7 +18,7 @@ Session entry point for returning to trend scouting work. This skill orients the
 
 ## Core Concept
 
-TIPS projects span multiple sessions and skills (trend-scout → value-modeler → trend-report → verify-trend-report). Without a clear re-entry point, users lose context between sessions and waste time figuring out what they already did. This skill bridges that gap: it reads the project state, surfaces progress at a glance, and recommends the most valuable next step.
+TIPS projects span multiple sessions and skills (trend-scout → value-modeler → trend-research → trend-synthesis [± trend-booklet] → verify-trend-report). Without a clear re-entry point, users lose context between sessions and waste time figuring out what they already did. This skill bridges that gap: it reads the project state, surfaces progress at a glance, and recommends the most valuable next step.
 
 ## Workflow
 
@@ -45,7 +45,7 @@ If you cannot determine a specific root, omit `--root` and the script falls back
 bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-trends/*/ | head -1)}/scripts/discover-projects.sh" --json
 ```
 
-Returns JSON with `count` and `projects` array. Each project includes `path`, `slug`, `industry`, `subsector`, `research_topic`, `workflow_state`, `candidates_total`, and `has_report`.
+Returns JSON with `count` and `projects` array. Each project includes `path`, `slug`, `industry`, `subsector`, `research_topic`, `workflow_state`, `candidates_total`, `has_research`, `has_report`, and `has_booklet`.
 
 The script searches:
 1. The workspace root (from `--root`, `$PROJECT_AGENTS_OPS_ROOT`, or `$PWD`) for `cogni-trends/*/tips-project.json`
@@ -70,7 +70,7 @@ If `count` is 0:
 bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-trends/*/ | head -1)}/scripts/project-status.sh" "<project-dir>" --health-check
 ```
 
-The script returns JSON with `project`, `counts` (including `blueprints`, `anchored_solutions`, `avg_readiness`), `portfolio_anchors` (per-product breakdown with needs coverage and quality flags), `scoring`, `artifacts`, `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
+The script returns JSON with `project`, `counts` (including `blueprints`, `anchored_solutions`, `avg_readiness`, `research_dims_enriched`, `booklet_candidates_total`), `portfolio_anchors` (per-product breakdown with needs coverage and quality flags), `scoring`, `artifacts` (including `research_manifest`, `report`, `booklet`), `portfolio_bridge`, `phase`, `next_actions`, and `stale_warnings`.
 
 ### 4. Present Status Summary
 
@@ -123,7 +123,7 @@ After the tables:
 
 Keep the tone warm and oriented toward action — this is a welcome-back moment, not a status report.
 
-**Example rendered output** (German project, post-modeling state — value model complete, report pending):
+**Example rendered output** (German project, post-research state — research manifest written, synthesis pending):
 
 ```
 TIPS-Projekt: Vom Chat-Assistenten zum agentischen Wissensarbeiter
@@ -141,7 +141,9 @@ Sprache: de
 | BR-Bewertung & Ranking  | Erledigt     | 12 Lösungen bewertet                     |
 | Lösungs-Blueprints      | Erledigt     | 12/12 ausgearbeitet, avg readiness 0.99  |
 | Portfolio-Anker         | Erledigt     | 3 Produkte, 33/3 abgedeckt/ungedeckt     |
-| Trendbericht            | Ausstehend   | 0/4 Sektionen                            |
+| Trend-Recherche         | Erledigt     | 4/4 Dimensionen angereichert, Manifest   |
+| Trend-Synthese          | Bereit       | Recherche fertig — /trend-synthesis      |
+| Trend-Booklet           | Übersprungen | optional — /trend-booklet für Vollkatalog|
 | Claims-Register         | Erledigt     | 84 Claims extrahiert                     |
 | Insight-Zusammenfassung | Übersprungen | optional                                 |
 | Claim-Verifikation      | Ausstehend   | 84 Claims warten auf Verifikation        |
@@ -149,21 +151,23 @@ Sprache: de
 | Visueller Bericht       | Übersprungen | optional                                 |
 | Dashboard               | Erledigt     | interaktive HTML-Visualisierung          |
 
-Phase: reporting — Wertemodell vollständig, Bericht muss noch generiert werden.
+Phase: research-complete — Recherche abgeschlossen, Bericht muss noch komponiert werden.
 
 Nächster Schritt:
-  1. /trend-report — Wertemodell vollständig, Bericht aus den Investment-Themen aufbauen
+  1. cogni-trends:trend-synthesis — Research complete — compose the canonical TIPS report
+  2. cogni-trends:trend-booklet — Optional — produce the comprehensive TIPS catalog of all candidates
 
-Willkommen zurück — soll ich direkt /trend-report starten?
+Willkommen zurück — soll ich direkt /trend-synthesis starten?
 ```
 
-Use this as the calibration target: 16 rows in the exact order the script emits them in `stages[]`, status enum translated per the table above, details rendered verbatim from `stages[i].details`, phase label matches the `phase` enum, next step renders verbatim from `next_actions[0]`.
+Use this as the calibration target: 18 rows in the exact order the script emits them in `stages[]`, status enum translated per the table above, details rendered verbatim from `stages[i].details`, phase label matches the `phase` enum, next step renders verbatim from `next_actions[0]`.
 
 **Critical anti-patterns** — do **not** do any of these, even if the rendered output looks "cleaner":
 
 - Do not collapse the five value-modeler stages (rows 5–9: Value Chains & Themes, Solution Templates, BR Scoring & Ranking, Solution Blueprints, Portfolio Anchors) into a single "Value Modeler" row. The script emits five separate entries and they must render as five separate rows.
+- Do not collapse the three reporting stages (rows 10–12: Trend Research, Trend Synthesis, Trend Booklet) into a single "Trend Report" row. They are independent skills and the script emits them as separate rows.
 - Do not invent stages that aren't in `stages[]` (e.g., there is no "Candidate Review" or "Value Modeler" stage — they don't exist in the array).
-- Do not substitute prose details ("Run /value-modeler") for the script's quantified details ("5 strategic themes"). If `stages[i].details` says "5 strategic themes", render "5 strategic themes" — even if the row's status is `pending` and a CTA might feel more helpful.
+- Do not substitute prose details ("Run /trend-synthesis") for the script's quantified details ("4/4 dimensions enriched, manifest"). If `stages[i].details` says "4/4 dimensions enriched, manifest", render it verbatim — even if the row's status is `pending` and a CTA might feel more helpful.
 - Do not flip a `done` row to `pending` (or vice versa) by re-deriving status from `workflow_state` or count fields. The script has already considered everything when it built `stages[]`.
 
 The example is rendered in German because the project's language is `de`; for non-DE projects, translate the status word and the details phrase, but never deviate from the row count, row order, or row names emitted by the script.
@@ -188,8 +192,10 @@ Use the `phase` field returned by `project-status.sh` verbatim to look up the ro
 | `modeling-paths` | Relationship networks built, solutions pending | Continue `value-modeler` |
 | `modeling-scoring` | Solutions generated, BR scoring pending | Continue `value-modeler` |
 | `modeling-curating` | Ranked solutions complete, curation pending | Continue `value-modeler` for optional catalog curation |
-| `modeling-complete` | Value model complete with ranked solutions | Run `trend-report`, or `/trends-catalog import` |
-| `reporting` | Value model complete, report not yet generated | Run `trend-report` |
+| `modeling-complete` | Value model complete with ranked solutions | Run `/trend-research`, then `/trend-synthesis` (and optionally `/trend-booklet`) |
+| `reporting` | Value model complete, research not yet run | Run `/trend-research` first, then `/trend-synthesis` (and optionally `/trend-booklet`) |
+| `research-complete` | Research manifest written, report not yet composed | Run `/trend-synthesis` (and optionally `/trend-booklet`) |
+| `booklet` | Booklet exists but the canonical report has not been composed | Run `/trend-synthesis` to produce the canonical report |
 | `verification` | Report done, claims pending verification | Run `cogni-trends:verify-trend-report` |
 | `revision` | Claims verified and resolved, report revision pending | Run `cogni-trends:verify-trend-report` (re-enters at the revisor loop) |
 | `complete` | All stages finished | Report complete — choose from downstream options below |
@@ -203,6 +209,9 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 **Verify & Polish**
 - `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for polish + visualization
 - `cogni-copywriting:copywrite` — Direct polish-only pass (skip if already invoked through the verify-trend-report Phase 5 menu)
+
+**Companion Catalog**
+- `cogni-trends:trend-booklet` — Comprehensive catalog of all ~60 candidates organized by dimension → subcategory → horizon (companion to the curated investment-themes report)
 
 **Visualize**
 - `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the trend report (optional, for premium Pencil-rendered visual header in enriched HTML)
@@ -219,11 +228,11 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 
 Only show actions that appear in `next_actions` (e.g., skip copywriting if already applied, skip enrich-report if already done, skip dashboard if already generated). Present the top 2-3 as recommended and the rest as "also available". Offer to proceed with the user's choice immediately.
 
-All visualization skills (`story-to-*`) consume `tips-trend-report.md` directly — no intermediary step (like cogni-narrative) is needed. Pass the report path as `source_path` and extract `arc_id` from the report's YAML frontmatter to pass as the `arc_id` parameter — this ensures correct arc propagation even if frontmatter parsing is inconsistent.
+All visualization skills (`story-to-*`) consume `tips-trend-report.md` directly — no intermediary step (like cogni-narrative) is needed. Pass the report path as `source_path`.
 
 ## Multi-Session Design
 
-This skill is the recommended re-entry point after heavy sessions. TIPS work naturally spans multiple sessions — web research, candidate generation, candidate review, value modeling, and report writing each consume significant context. Other TIPS skills proactively recommend `/trends-resume` when they detect a heavy session (Phase 1 web research, Phase 2 generation, or report assembly completed).
+This skill is the recommended re-entry point after heavy sessions. TIPS work naturally spans multiple sessions — web research, candidate generation, candidate review, value modeling, evidence enrichment, and report writing each consume significant context. Other TIPS skills proactively recommend `/trends-resume` when they detect a heavy session (Phase 1 web research, Phase 2 generation, or research/synthesis assembly completed).
 
 ## Language Support
 

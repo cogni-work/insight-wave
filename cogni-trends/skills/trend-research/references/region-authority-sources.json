@@ -1,0 +1,222 @@
+{
+  "_description": "Region-to-sources mapping for trend-research search regionalization. Keys match region codes from cogni-portfolio regions.json. Trend-scout extracts MARKET_REGION from portfolio context; trend-report-writer uses this to localize searches and currency. Solution costing comes from portfolio solution entities, not this file.",
+  "_fallback": "Regions not listed here fall back to '_default' (= dach). Add new regions as needed.",
+
+  "dach": {
+    "region_qualifiers": {
+      "en": "Germany Austria Switzerland",
+      "local": "Deutschland Österreich Schweiz"
+    },
+    "local_language": "de",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:vdma.org {SUBSECTOR_LOCAL} Trends Regulierung {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:bitkom.org {SUBSECTOR_LOCAL} Digitalisierung Politik {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:fraunhofer.de {SUBSECTOR_LOCAL} Innovation Studie {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:zukunftsinstitut.de Megatrend {RESEARCH_TOPIC} {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:handelsblatt.com {SUBSECTOR_LOCAL} Trend Digitalisierung {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:zvei.org {SUBSECTOR_LOCAL} Innovation Industrie {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:rolandberger.com {SUBSECTOR_EN} trends Germany {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Germany digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:destatis.de {SUBSECTOR_LOCAL} Statistik {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "BaFin", "Bundesnetzagentur", "BSI"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance deadline {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "de": {
+    "region_qualifiers": {
+      "en": "Germany",
+      "local": "Deutschland"
+    },
+    "local_language": "de",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:vdma.org {SUBSECTOR_LOCAL} Trends Regulierung {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:bitkom.org {SUBSECTOR_LOCAL} Digitalisierung Politik {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:fraunhofer.de {SUBSECTOR_LOCAL} Innovation Studie {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:zukunftsinstitut.de Megatrend {RESEARCH_TOPIC} {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:handelsblatt.com {SUBSECTOR_LOCAL} Trend Digitalisierung {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:zvei.org {SUBSECTOR_LOCAL} Innovation Industrie {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:rolandberger.com {SUBSECTOR_EN} trends Germany {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Germany digital {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "BaFin", "Bundesnetzagentur", "BSI"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance deadline {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "fr": {
+    "region_qualifiers": {
+      "en": "France",
+      "local": "France"
+    },
+    "local_language": "fr",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:legifrance.gouv.fr {SUBSECTOR_LOCAL} réglementation numérique {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:arcep.fr {SUBSECTOR_LOCAL} télécommunications régulation {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:inria.fr {SUBSECTOR_LOCAL} innovation recherche {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:bpifrance.fr {SUBSECTOR_LOCAL} innovation startup {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:lesechos.fr {SUBSECTOR_LOCAL} transformation numérique {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:usinenouvelle.com {SUBSECTOR_LOCAL} industrie numérique {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends France {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:rolandberger.com {SUBSECTOR_EN} digital France {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "CNIL", "ARCEP", "ANSSI", "AMF"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance France {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "it": {
+    "region_qualifiers": {
+      "en": "Italy",
+      "local": "Italia"
+    },
+    "local_language": "it",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:agcom.it {SUBSECTOR_LOCAL} telecomunicazioni regolamentazione {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:agcm.it {SUBSECTOR_LOCAL} concorrenza digitale {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:cnr.it {SUBSECTOR_LOCAL} innovazione ricerca {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:asi.it {SUBSECTOR_LOCAL} spazio satellite innovazione {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:ilsole24ore.com {SUBSECTOR_LOCAL} trasformazione digitale {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:corcom.it {SUBSECTOR_LOCAL} telecomunicazioni digitale {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends Italy {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:ambrosetti.eu {SUBSECTOR_EN} digital Italy {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "AGCOM", "AGCM", "Garante Privacy", "CONSOB"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Italy {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "pl": {
+    "region_qualifiers": {
+      "en": "Poland",
+      "local": "Polska"
+    },
+    "local_language": "pl",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:uke.gov.pl {SUBSECTOR_LOCAL} telekomunikacja regulacja {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:uokik.gov.pl {SUBSECTOR_LOCAL} konkurencja cyfryzacja {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:ncbir.gov.pl {SUBSECTOR_LOCAL} innowacje badania {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:polsa.gov.pl {SUBSECTOR_LOCAL} kosmos satelity {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:rp.pl {SUBSECTOR_LOCAL} transformacja cyfrowa {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:computerworld.pl {SUBSECTOR_LOCAL} technologia cyfryzacja {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends Poland {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} digital Poland {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "UKE", "UOKiK", "UODO", "KNF"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Poland {CURRENT_YEAR}",
+    "currency": "PLN",
+    "org_size_reference": "mid-size organization with 500M PLN revenue"
+  },
+
+  "nl": {
+    "region_qualifiers": {
+      "en": "Netherlands",
+      "local": "Nederland"
+    },
+    "local_language": "nl",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:acm.nl {SUBSECTOR_LOCAL} telecommunicatie mededinging {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:overheid.nl {SUBSECTOR_LOCAL} digitaal beleid {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:tno.nl {SUBSECTOR_LOCAL} innovatie onderzoek {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:spaceoffice.nl {SUBSECTOR_LOCAL} ruimtevaart satellieten {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:fd.nl {SUBSECTOR_LOCAL} digitale transformatie {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:emerce.nl {SUBSECTOR_LOCAL} digitaal innovatie {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends Netherlands {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:berenschot.nl {SUBSECTOR_EN} digital strategie {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "ACM", "Autoriteit Persoonsgegevens", "AFM", "DNB"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Netherlands {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "es": {
+    "region_qualifiers": {
+      "en": "Spain",
+      "local": "España"
+    },
+    "local_language": "es",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:cnmc.es {SUBSECTOR_LOCAL} telecomunicaciones regulación {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:red.es {SUBSECTOR_LOCAL} digitalización conectividad {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:cdti.es {SUBSECTOR_LOCAL} innovación investigación {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:inta.es {SUBSECTOR_LOCAL} espacio satélites {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:expansion.com {SUBSECTOR_LOCAL} transformación digital {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:cincodias.elpais.com {SUBSECTOR_LOCAL} tecnología digital {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends Spain {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:indracompany.com {SUBSECTOR_EN} digital Spain {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "CNMC", "AEPD", "CNMV", "Banco de España"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance Spain {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  },
+
+  "us": {
+    "region_qualifiers": {
+      "en": "United States"
+    },
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:nist.gov {SUBSECTOR_EN} standards regulation {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:congress.gov {SUBSECTOR_EN} legislation {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:mit.edu {SUBSECTOR_EN} innovation research {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:hbr.org {SUBSECTOR_EN} strategy trends {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:wsj.com {SUBSECTOR_EN} digital transformation {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:forrester.com {SUBSECTOR_EN} digital trends {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends United States {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.com {SUBSECTOR_EN} technology trends {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["Federal Register", "FTC", "SEC", "NIST"],
+    "regulatory_search": "\"federal regulation\" \"{SUBSECTOR_EN}\" compliance {CURRENT_YEAR} site:federalregister.gov",
+    "currency": "USD",
+    "org_size_reference": "mid-size organization with $500M revenue"
+  },
+
+  "uk": {
+    "region_qualifiers": {
+      "en": "United Kingdom"
+    },
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:gov.uk {SUBSECTOR_EN} regulation policy {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:legislation.gov.uk {SUBSECTOR_EN} {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:ukri.org {SUBSECTOR_EN} innovation research {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:ft.com {SUBSECTOR_EN} strategy trends UK {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:theregister.com {SUBSECTOR_EN} digital UK {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:techuk.org {SUBSECTOR_EN} digital innovation {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} trends United Kingdom {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:deloitte.co.uk {SUBSECTOR_EN} technology trends {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["UK Parliament", "FCA", "Ofcom", "ICO"],
+    "regulatory_search": "\"UK regulation\" \"{SUBSECTOR_EN}\" compliance {CURRENT_YEAR} site:gov.uk",
+    "currency": "GBP",
+    "org_size_reference": "mid-size organization with £400M revenue"
+  },
+
+  "_default": {
+    "_note": "Fallback entry — identical to dach. Used when MARKET_REGION is not found in this file.",
+    "region_qualifiers": {
+      "en": "Germany Austria Switzerland",
+      "local": "Deutschland Österreich Schweiz"
+    },
+    "local_language": "de",
+    "site_searches": [
+      { "dimension": "externe-effekte", "query": "site:vdma.org {SUBSECTOR_LOCAL} Trends Regulierung {CURRENT_YEAR}" },
+      { "dimension": "externe-effekte", "query": "site:bitkom.org {SUBSECTOR_LOCAL} Digitalisierung Politik {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:fraunhofer.de {SUBSECTOR_LOCAL} Innovation Studie {CURRENT_YEAR}" },
+      { "dimension": "neue-horizonte", "query": "site:zukunftsinstitut.de Megatrend {RESEARCH_TOPIC} {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:handelsblatt.com {SUBSECTOR_LOCAL} Trend Digitalisierung {CURRENT_YEAR}" },
+      { "dimension": "digitale-wertetreiber", "query": "site:zvei.org {SUBSECTOR_LOCAL} Innovation Industrie {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:rolandberger.com {SUBSECTOR_EN} trends Germany {CURRENT_YEAR}" },
+      { "dimension": "digitales-fundament", "query": "site:mckinsey.com {SUBSECTOR_EN} Germany digital {CURRENT_YEAR}" }
+    ],
+    "regulatory_bodies": ["EUR-Lex (EU)", "BaFin", "Bundesnetzagentur", "BSI"],
+    "regulatory_search": "\"EU regulation\" \"{SUBSECTOR_EN}\" compliance deadline {CURRENT_YEAR}",
+    "currency": "EUR",
+    "org_size_reference": "mid-size organization with €500M revenue"
+  }
+}

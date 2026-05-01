@@ -1,10 +1,10 @@
-# Phase 2: Smarter-Service Macro-Skeleton Assembly
+# Synthesis Skeleton: Smarter-Service Macro Layout
 
-> **When to read this file:** when `REPORT_ARC_ID == "smarter-service"`. When the user picked any other arc, read [phase-2-strategic-themes.md](phase-2-strategic-themes.md) instead. The two flows do not mix — this one rewrites the H2 layout; the legacy flow keeps themes as H2.
+This is the canonical TIPS report skeleton produced by `trend-synthesis`. It defines the H2 spine (the four Smarter Service dimensions — Forces / Impact / Horizons / Foundations), the H3 theme-case anchoring, the shared dimension primer, and the sequential composer pass that binds everything into a single voice.
 
-Phase 2 in smarter-service mode produces a report whose H2 spine is the four Smarter Service dimensions (Forces / Impact / Horizons / Foundations), each opening with a 250–400 word dimension narrative composed from cross-theme evidence, followed by 1–3 anchored theme-cases as H3 (slim 3-beat: Stake / Move / Cost-of-Inaction). The architecture is described in [report-arc-frames.md § 8](report-arc-frames.md).
+Phase 2 produces a report whose H2 spine is the four Smarter Service dimensions, each opening with a 250–400 word dimension narrative composed from cross-theme evidence, followed by 1–3 anchored theme-cases as H3 (slim 3-beat: Stake / Move / Cost-of-Inaction).
 
-**Three structural fixes vs. legacy:**
+**Three structural pillars:**
 
 1. **A shared dimension primer (Step 2.0)** — written once by the orchestrator before any theme-case dispatch — gives theme writers the macro framing they must reference instead of re-establishing.
 2. **Slim 3-beat theme-cases (Step 2.1)** — `trend-report-investment-theme-writer` runs in `MICRO_ARC=investment-case` mode, producing Stake / Move / Cost-of-Inaction. Themes do not own macro framing.
@@ -48,8 +48,7 @@ Persist the result to `{PROJECT_PATH}/.logs/report-theme-anchors.json`:
       "candidate_counts": { "externe-effekte": 1, "digitale-wertetreiber": 2, "neue-horizonte": 4, "digitales-fundament": 2 },
       "secondary_poles": ["digitale-wertetreiber", "digitales-fundament", "externe-effekte"],
       "rationale": "Highest candidate count in neue-horizonte (4)"
-    },
-    ...
+    }
   ],
   "anchor_distribution": {
     "externe-effekte": 1,
@@ -84,10 +83,9 @@ The orchestrator writes a single short document — `{PROJECT_PATH}/.logs/report
 
 **Process:**
 
-1. Read all four `{PROJECT_PATH}/.logs/enriched-trends-{dimension}.json` from Phase 1.
+1. Read all four `{PROJECT_PATH}/.logs/enriched-trends-{dimension}.json` from research.
 2. Read the value model + theme anchors from Step 2.0a.
-3. Read `report-arc-frames.md § 8` for the smarter-service exec opener and macro bridge patterns.
-4. Write `report-shared-primer.md` in a single pass, four sections:
+3. Write `report-shared-primer.md` in a single pass, four sections:
 
 ```markdown
 # Shared Dimension Primer (smarter-service)
@@ -136,13 +134,11 @@ Display `"{PHASE_2_PRIMER_WRITTEN}"`.
 
 ## Step 2.1: Dispatch Theme-Case Writers (slim mode, parallel)
 
-For each investment theme, dispatch a `trend-report-investment-theme-writer` agent with `MICRO_ARC = "investment-case"`. Dispatch all agents in a single message (parallel tool calls).
+For each investment theme, dispatch a `cogni-trends:trend-report-investment-theme-writer` agent with `MICRO_ARC = "investment-case"`. Dispatch all agents in a single message (parallel tool calls).
 
 ### Resume Check
 
 Before dispatching for a theme, check if `{PROJECT_PATH}/.logs/theme-case-{theme_id}.md` exists and is >600 bytes. If so, skip — display `"{PHASE_2_THEME_CASE_AGENT_SKIP_RESUME}"`.
-
-> Note the file naming differs from the legacy flow: smarter-service uses `theme-case-{theme_id}.md` (slim 3-beat output) instead of `investment-theme-{theme_id}.md` (full Why-* output). Resume across modes is intentionally not supported — switching `REPORT_ARC_ID` requires regenerating Phase 2.
 
 ### Agent Prompt Template
 
@@ -163,23 +159,19 @@ Per agent:
     SHARED_PRIMER_PATH: "{PROJECT_PATH}/.logs/report-shared-primer.md"
     SHARED_PRIMER_DIGEST: {200-char summary of the primer paragraph for ANCHOR_DIMENSION}
     INVESTMENT_THEME_INDEX: {1-based index in investment_themes array}
-    VALUE_CHAINS: {JSON array of this theme's value chains — same shape as legacy flow}
+    VALUE_CHAINS: {JSON array of this theme's value chains}
     SOLUTION_TEMPLATES: {JSON array of STs where investment_theme_ref == investment_theme_id}
     PORTFOLIO_PROVIDER: {Display name from portfolio-context.json, empty string if absent}
     MARKET_REGION: {MARKET_REGION from config, default "dach"}
-    PORTFOLIO_PRODUCTS: {JSON array — same shape as legacy flow}
-    SOLUTION_PRICING: {JSON array — same shape as legacy flow}
+    PORTFOLIO_PRODUCTS: {JSON array}
+    SOLUTION_PRICING: {JSON array}
     STUDY_MODE: {"vendor" | "open"}
-    EXAMPLE_REFERENCES: {JSON object keyed by st_id — same shape as legacy flow}
-    THEME_CASE_TARGET_WORDS: {Integer per-theme-case target computed by Phase 0.4e.
+    EXAMPLE_REFERENCES: {JSON object keyed by st_id}
+    THEME_CASE_TARGET_WORDS: {Integer per-theme-case target computed by Phase 1.
       Default split: Stake 25% / Move 50% / Cost-of-Inaction 25%.
       Per-element minimums: Stake 80, Move 130, Cost-of-Inaction 80 (sum 290).
       Tolerance ±15% for the total case section.}
-    LABELS: {JSON object with relevant i18n labels:
-      EXECUTIVE_SPONSOR, STRATEGIC_QUESTION_LABEL,
-      STAKE, MOVE, COST_OF_INACTION (these may be silent — see beat rules below),
-      THEME_CASE_REFERENCE_PATTERN (de: "→ Siehe auch Handlungsfeld {N} unter {Macro Section}",
-        en: "→ See also Theme {N} in {Macro Section}")}
+    LABELS: {JSON object with relevant i18n labels}
     NARRATIVE_ARC_PATH: {path to cogni-narrative smarter-service arc-definition.md}
     NARRATIVE_TECHNIQUES_PATH: {path to cogni-narrative techniques-overview.md}
 ```
@@ -212,32 +204,6 @@ Closes with a specific ratio anchored to a date or event. ~120 words at extended
 - The Move beat must NOT restate the macro disruption / opportunity framing — those live in the dimension narrative (composed in Step 2.2). The Move beat opens with the bet, not the context.
 - The Cost-of-Inaction beat must close with a specific ratio (e.g., "3.4x") tied to a specific window (date or event). Generic phrases ("inaction is costly", "delaying compounds risk") fail the gate.
 
-### Agent Return Schema
-
-```json
-{
-  "ok": true,
-  "investment_theme_id": "it-001",
-  "investment_theme_name": "Intelligent Grid & Asset Optimization",
-  "anchor_dimension": "neue-horizonte",
-  "stake_word_count": 118,
-  "move_word_count": 248,
-  "cost_word_count": 122,
-  "total_word_count": 488,
-  "cost_ratio": "3.4x",
-  "cost_window": "EU AI Act enforcement deadline (August 2026)",
-  "primer_referenced": true,
-  "secondary_pole_callouts": ["digitale-wertetreiber", "digitales-fundament"],
-  "citations_count": 6,
-  "quality_gate_pass": true,
-  "candidates_covered": ["neue-horizonte/act/2", "digitale-wertetreiber/act/3", ...],
-  "top_claims": [
-    {"claim_id": "claim_nh_002", "short_text": "...", "value": "...", "unit": "USD", "source_url": "..."}
-  ],
-  "theme_case_file": ".logs/theme-case-it-001.md"
-}
-```
-
 ### Validation
 
 - `ok == true` — retry once on failure; HALT if retry also fails.
@@ -251,9 +217,9 @@ Display `"{PHASE_2_THEME_CASE_AGENT_DISPATCH}"` after dispatching, `"{PHASE_2_TH
 
 ## Step 2.2: Dispatch Dimension Composer Agents (sequential, 4 calls)
 
-Once all theme-case agents complete (or were skipped via resume), dispatch the `trend-report-composer` agent **sequentially** — once per macro dimension, in TIPS order: T → I → P → S (`externe-effekte` first, `digitales-fundament` last).
+Once all theme-case agents complete (or were skipped via resume), dispatch the `cogni-trends:trend-report-composer` agent **sequentially** — once per macro dimension, in TIPS order: T → I → P → S (`externe-effekte` first, `digitales-fundament` last).
 
-> **Why sequential:** the composer carries the arc voice through the report. Running them in parallel produces voice drift between macro sections. The composer is dimension-scoped, so each call sees only its own evidence — context stays manageable even at maximum tier.
+> **Why sequential:** the composer carries the voice through the report. Running them in parallel produces voice drift between macro sections. The composer is dimension-scoped, so each call sees only its own evidence — context stays manageable even at maximum tier.
 
 ### Resume Check (per dimension)
 
@@ -271,12 +237,12 @@ Per dimension (4 sequential calls):
     DIMENSION_INDEX: {1 | 2 | 3 | 4 — TIPS order}
     DIMENSION_NAME_EN: {English dimension name from labels}
     DIMENSION_NAME_LOCAL: {language-localized dimension name}
-    MACRO_HEADING_LABEL: {label for this macro element from report-arc-frames.md § 8 — e.g., "Forces — Externe Effekte"}
+    MACRO_HEADING_LABEL: {label for this macro element — e.g., "Forces — Externe Effekte"}
     LANGUAGE: {LANGUAGE}
     SHARED_PRIMER_PATH: "{PROJECT_PATH}/.logs/report-shared-primer.md"
     THEME_CASE_PATHS: {JSON array of theme-case-{theme_id}.md paths for themes anchored to this dimension, ordered by composite-score of anchor pole (highest first). May be empty.}
-    SECONDARY_CALLOUTS: {JSON array of one-line callouts to render at end of dimension narrative for themes anchored elsewhere but with secondary pole here. Format: "→ See also Theme {N} in {Macro Section}"}
-    DIMENSION_NARRATIVE_TARGET_WORDS: {Integer from Phase 0.4e — typically 250 at standard tier, 400 at maximum tier. Floor 250.}
+    SECONDARY_CALLOUTS: {JSON array of one-line callouts to render at end of dimension narrative for themes anchored elsewhere but with secondary pole here}
+    DIMENSION_NARRATIVE_TARGET_WORDS: {Integer from Phase 1 — typically 250 at standard tier, 400 at maximum tier. Floor 250.}
     LABELS: {JSON object with relevant i18n labels for headings, transitions, and section markers}
     NARRATIVE_ARC_PATH: {path to cogni-narrative smarter-service arc-definition.md}
     DIMENSION_PATTERN_PATH: {path to {dimension}-patterns.md inside smarter-service arc directory}
@@ -309,23 +275,6 @@ The composer's only writing is the dimension narrative + the H2 heading + second
 3. Concatenate: H2 heading + dimension narrative + theme-case files + secondary callout block.
 4. Return JSON metadata.
 
-### Composer Return Schema
-
-```json
-{
-  "ok": true,
-  "dimension": "externe-effekte",
-  "dimension_index": 1,
-  "dimension_narrative_word_count": 312,
-  "theme_cases_concatenated": ["theme-case-it-001.md", "theme-case-it-003.md"],
-  "secondary_callout_count": 2,
-  "horizon_cascade_present": true,
-  "anchor_pivot_sentence_present": true,
-  "primer_referenced": true,
-  "macro_section_file": ".logs/macro-section-externe-effekte.md"
-}
-```
-
 ### Validation
 
 - `ok == true` — retry once on failure; HALT on second failure.
@@ -345,8 +294,7 @@ After all 4 macro sections are composed, write the executive summary in a single
 
 1. Read the primer (`report-shared-primer.md`) — it contains the macro framings.
 2. Read all 4 macro section files — pull the strongest evidence and theme anchor pivots.
-3. Read `report-arc-frames.md § 8` for the smarter-service exec opener / closer patterns.
-4. Write `{PROJECT_PATH}/.logs/report-header.md`.
+3. Write `{PROJECT_PATH}/.logs/report-header.md`.
 
 ### Frontmatter
 
@@ -357,11 +305,11 @@ subtitle: "{SUBTITLE}"
 industry: {INDUSTRY_EN}
 subsector: {SUBSECTOR_EN}
 language: {LANGUAGE}
-arc_id: smarter-service
-generated_by: trend-report
+generated_by: trend-synthesis
 source_skills:
   - trend-scout
   - value-modeler
+  - trend-research
 report_mode: smarter-service-themed
 total_trends: {N}
 total_investment_themes: {N}
@@ -371,7 +319,6 @@ themes:
   - theme_id: it-001
     name: "..."
     anchor_dimension: "neue-horizonte"
-  - ...
 generated_at: "{ISO-8601}"
 ---
 ```
@@ -387,11 +334,11 @@ Smarter-service exec summary structure:
 
 ## {EXEC_SUMMARY_LABEL}
 
-{ARC OPENER — 2-3 sentences. Cross-dimensional panorama opener from
-report-arc-frames.md § 8: Pattern: "[N] converging forces across [industry]
-reshape [external pressure] and [value-chain shift], opening [strategic window]
-— but only for organizations that build [foundation requirement]. Across [N]
-investment themes, the report names where to bet and what to build first."}
+{Cross-dimensional panorama opener — 2-3 sentences. Pattern: "[N] converging
+forces across [industry] reshape [external pressure] and [value-chain shift],
+opening [strategic window] — but only for organizations that build [foundation
+requirement]. Across [N] investment themes, the report names where to bet and
+what to build first."}
 
 {BRIDGE SENTENCE: One sentence that frames the structure of what follows.
 Pattern: "Vier Smarter-Service-Dimensionen tragen [N] Handlungsfelder — von
@@ -408,11 +355,11 @@ carry [N] investment themes — from Forces to Foundations:"}
 4. **{Foundations / Digitales Fundament}**: {one-sentence summary}.
    Anchored: {theme names}.
 
-{ARC CLOSER — 2-3 sentences. Pattern from report-arc-frames.md § 8:
-"Identifying the right trends is necessary but insufficient. These [N] investment
-themes share [M] foundation requirements. Without these foundations, opportunities
-remain theoretical. The trend panorama shows what's changing; the investment
-themes show where to bet; the capability imperative shows what to build first."}
+{Capability-imperative closer — 2-3 sentences. Pattern: "Identifying the right
+trends is necessary but insufficient. These [N] investment themes share [M]
+foundation requirements. Without these foundations, opportunities remain
+theoretical. The trend panorama shows what's changing; the investment themes
+show where to bet; the capability imperative shows what to build first."}
 ```
 
 **Rules:**
@@ -421,7 +368,7 @@ themes show where to bet; the capability imperative shows what to build first."}
 - Each dimension entry names the anchored themes; theme names are NOT bolded a second time at the dimension level.
 - NO `###` subsections inside the exec summary.
 - NO standalone evidence section — all numbers are woven into opener / closer / dimension entries.
-- Length: target `EXEC_TARGET_WORDS` ±20% (computed in Phase 0.4e — typically 200 at standard tier, 280 at maximum).
+- Length: target `EXEC_TARGET_WORDS` ±20% (computed in Phase 1 — typically 200 at standard tier, 280 at maximum).
 
 Must end with two trailing newlines.
 
@@ -429,7 +376,7 @@ Must end with two trailing newlines.
 
 ## Step 2.4: Generate Claims Registry
 
-Same as legacy flow, with one column relabeled. Claims registry includes a `dimension` column (instead of `investment_theme`):
+Claims registry includes a `dimension` column.
 
 | # | {CLAIM_LABEL} | {VALUE_LABEL} | {SOURCE_LABEL} | {DIMENSION_LABEL} | {INVESTMENT_THEME_LABEL} |
 
@@ -438,7 +385,7 @@ For each claim:
 2. Determine the investment theme by walking the value model: find which candidate's `claims_refs` contains the claim, then the theme that contains that candidate.
 3. Render: dimension column = "Forces" / "Impact" / "Horizons" / "Foundations" (i18n localized); theme column = theme name or "—".
 
-Write `{PROJECT_PATH}/.logs/report-claims-registry.md`. Same trailing newline rule.
+Write `{PROJECT_PATH}/.logs/report-claims-registry.md`. See [claims-registry-format.md](claims-registry-format.md) for the full table specification.
 
 ---
 
@@ -446,7 +393,7 @@ Write `{PROJECT_PATH}/.logs/report-claims-registry.md`. Same trailing newline ru
 
 Display `"{PHASE_2_SYNTHESIS_START}"`.
 
-The synthesis section in smarter-service mode is **Foundations-anchored** — it aggregates capability requirements across themes. See [report-arc-frames.md § 8 → Synthesis Frame](report-arc-frames.md) and the Foundations element pattern in cogni-narrative (`smarter-service/foundations-patterns.md`).
+The synthesis section is **Foundations-anchored** — it aggregates capability requirements across themes. See [capability-imperative.md](capability-imperative.md) for the detailed pattern.
 
 **Process:**
 
@@ -524,7 +471,7 @@ Read first 3 + last 3 lines of the assembled report:
 
 ## Step 2.7: Merge Claims
 
-Same as legacy flow — merge all 4 dimension claims into `tips-trend-report-claims.json`. Claims data does not change between modes.
+Merge all 4 dimension claims into `tips-trend-report-claims.json`. Claims data does not change during synthesis.
 
 ---
 
@@ -534,7 +481,7 @@ Same as legacy flow — merge all 4 dimension claims into `tips-trend-report-cla
 |----------|--------|
 | `tips-value-model.json` has investment themes but no value chains | HALT: value-modeler Phase 1 incomplete |
 | Theme anchoring distribution gives one dimension >3 themes | WARN; composer can still write but report theme-heavy in that dimension |
-| Theme anchoring distribution gives one dimension 0 themes | WARN; composer can still write but the dimension section will read visibly thin (only narrative + secondary callouts). Suggest re-attributing a tied theme, adding `{dim}`-candidates in value-modeler, or proceeding thinner |
+| Theme anchoring distribution gives one dimension 0 themes | WARN; composer can still write but the dimension section will read visibly thin |
 | Theme-case agent returns `ok: false` | Retry once, then HALT with theme name |
 | Theme-case agent quality gate fails (`primer_referenced: false` or missing cost ratio) | WARN; continue (case may be thin) |
 | Composer returns `ok: false` | Retry once, then HALT with dimension name |
@@ -542,17 +489,3 @@ Same as legacy flow — merge all 4 dimension claims into `tips-trend-report-cla
 | `report-shared-primer.md` missing when theme-case agent dispatches | HALT: Step 2.0b must complete before Step 2.1 |
 | `theme-case-{theme_id}.md` missing when composer dispatches for that anchor | HALT: Step 2.1 must complete before Step 2.2 |
 | Resume file exists but is corrupt (smaller than threshold) | Re-dispatch the relevant agent |
-
----
-
-## Comparison with Legacy Flow (for reference only)
-
-| Aspect | Legacy (`phase-2-strategic-themes.md`) | Smarter-service (this file) |
-|--------|----------------------------------------|------------------------------|
-| H2 layout | One H2 per investment theme (3–7) | 4 H2s — one per Smarter Service dimension |
-| Per-theme arc | Why Change → Why Now → Why You → Why Pay (`theme-thesis`) | Stake / Move / Cost-of-Inaction (slim 3-beat) |
-| Per-theme word target | ~660 at extended tier | ~490 at extended tier |
-| Bridges | `report-bridge-*.md` between consecutive themes | No theme-case bridges; macro bridges live in dimension narratives |
-| Composer agent | None — orchestrator stitches | New `trend-report-composer` (4 sequential calls) |
-| Shared primer | None — each theme writes its own macro framing | 1 primer (~480 words) shared by all theme-case agents |
-| Synthesis | Arc-specific frame from `report-arc-frames.md` | "The Capability Imperative" — Foundations-anchored, fixed |

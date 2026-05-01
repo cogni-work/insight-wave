@@ -1,6 +1,6 @@
 # cogni-trends
 
-> **Preview** (v0.4) — core skills defined but may change. Feedback welcome.
+> **Preview** (v0.6) — core skills defined but may change. Feedback welcome.
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
@@ -47,17 +47,19 @@ This plugin automates the research-heavy parts while keeping strategic judgment 
 
 ## What it is
 
-A four-stage trend intelligence pipeline for the insight-wave ecosystem that scouts, models, reports, and catalogs industry signals. The Smarter Service Trendradar provides the 4-dimension scoring structure; the TIPS framework (Trends → Implications → Possibilities → Solutions) drives the value chain from scouted signals to portfolio-grounded solution blueprints. Upstream of cogni-portfolio (which consumes solution templates via trends-bridge) and cogni-narrative (which transforms trend output into arc-driven reports). Reusable industry catalogs accumulate knowledge across engagements.
+A four-stage trend intelligence pipeline for the insight-wave ecosystem that scouts, models, researches, reports, and catalogs industry signals. The Smarter Service Trendradar provides the 4-dimension scoring structure; the TIPS framework (Trends → Implications → Possibilities → Solutions) drives the value chain from scouted signals to portfolio-grounded solution blueprints. Upstream of cogni-portfolio (which consumes solution templates via trends-bridge) and cogni-narrative (which transforms trend output into arc-driven reports). Reusable industry catalogs accumulate knowledge across engagements.
 
 ## What it does
 
-Connects industry trends to portfolio solutions for DACH markets. A four-stage pipeline that scouts trends, bridges them to investment themes and solution blueprints via T→I→P→S value paths, generates CxO-level reports, and curates reusable industry catalogs. Bilingual research (EN/DE) with curated German institutional sources.
+Connects industry trends to portfolio solutions for European markets. The pipeline scouts trends, bridges them to investment themes and solution blueprints via T→I→P→S value paths, enriches every candidate with web-sourced quantitative evidence, generates the canonical CxO-level TIPS report (and an optional companion catalog of all candidates), and curates reusable industry catalogs. Bilingual research (EN/DE) with curated regional institutional sources.
 
-1. **Scout** trends across 4 Trendradar dimensions using persona-shaped bilingual web research with preliminary grounding (RAG-Fusion), adaptive query budgets (FLARE-inspired), and source quality tiering — scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality) → `trend-candidates.md` → value-modeler, trend-report
-2. **Model** investment themes (Handlungsfelder) by consolidating trends into T→I→P→S value chains, generating solution blueprints with portfolio composition and readiness scoring — optionally anchored to real products via cogni-portfolio → `tips-value-model.json` → trend-report
-3. **Report** CxO-level narratives structured around investment themes — written in either the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) under flat-themes report skeletons or a slim 3-beat investment-case (Stake / Move / Cost-of-Inaction) under the smarter-service macro skeleton — optionally enriched with recursive deep research (STORM-inspired) for high-value trends, structural review with cross-theme quality gates, and a verifiable claims registry → `tips-trend-report.md` → themed HTML with interactive charts and diagrams via enrich-report
-4. **Visualize** the full TIPS project lifecycle as an interactive HTML dashboard → `tips-dashboard.html`
-5. **Catalog** curated solutions, SPIs, metrics, and collaterals into persistent industry catalogs for cross-pursuit reuse — each engagement improves the base catalog
+1. **Scout** trends across 4 Trendradar dimensions using persona-shaped bilingual web research with preliminary grounding (RAG-Fusion), adaptive query budgets (FLARE-inspired), and source quality tiering — scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality) → `trend-candidates.md` → value-modeler, trend-research
+2. **Model** investment themes (Handlungsfelder) by consolidating trends into T→I→P→S value chains, generating solution blueprints with portfolio composition and readiness scoring — optionally anchored to real products via cogni-portfolio → `tips-value-model.json` → trend-research
+3. **Research** every candidate with 4 parallel writer agents — optionally augmented by recursive deep research (STORM-inspired) on 3–5 high-value Act-horizon trends — and emit per-dimension enriched evidence + claims plus a single research manifest → `.metadata/trend-research-output.json` → trend-synthesis, trend-booklet
+4. **Synthesize** the canonical CxO-level TIPS report — 4 H2 dimensions (Forces / Impact / Horizons / Foundations) with investment themes nested as anchored H3 theme-cases (Stake / Move / Cost-of-Inaction), closing on a Foundations-anchored "Capability Imperative" — with a verifiable claims registry → `tips-trend-report.md` → verify-trend-report → themed HTML via enrich-report
+5. **Catalog** every candidate as a comprehensive companion booklet organized by dimension → subcategory → horizon, with summary, citations, theme back-references, and keywords; orphans go in a per-dimension appendix → `tips-trend-booklet.md` → optional catalog companion to the curated report
+6. **Visualize** the full TIPS project lifecycle as an interactive HTML dashboard → `tips-dashboard.html`
+7. **Catalog** curated solutions, SPIs, metrics, and collaterals into persistent industry catalogs for cross-pursuit reuse — each engagement improves the base catalog
 
 ## What it means for you
 
@@ -67,6 +69,7 @@ If you need to stay ahead of industry trends for strategy, advisory, or portfoli
 - **Score every candidate, not gut-feel.** Every candidate scored on impact, probability, strategic fit, source quality (CRAAP), and signal strength using Ansoff and Rogers frameworks.
 - **From trends to solutions.** T→I→P→S value paths bridge scouted trends into 3-7 investment themes per run, each with portfolio-grounded solution blueprints — not just trend narratives.
 - **Evidence-backed output.** Optional deep research (STORM-inspired) for high-value trends, structural review with cross-theme quality gates, and every quantitative claim has an inline citation you can verify.
+- **Curated argument plus full catalog.** Pick `/trend-synthesis` for the curated investment-themes report, `/trend-booklet` for the comprehensive catalog of all 60 candidates, or both — they share the same enriched evidence.
 - **Polished visual output in one step.** Reports finish as themed, interactive HTML with 5+ Chart.js visualizations and concept diagrams — share-ready, not a raw markdown file you have to format yourself.
 - **Cross-pursuit learning.** Industry catalogs accumulate curated solutions, SPIs, and metrics across engagements — each pursuit gets +20-40% richer context from prior work.
 - **Multi-session workflow.** Resume any project mid-stream with full state recovery via `/trends-resume` — zero context loss between sessions.
@@ -88,20 +91,25 @@ Describe what you want in natural language:
 
 - "scout trends for the automotive industry"
 - "model investment themes from the scouted trends"
-- "generate solution blueprints"
-- "generate a trend report"
+- "enrich the trend evidence" or "run the trend research stage"
+- "generate a trend report" or "compose the TIPS report"
+- "build a trend booklet" or "produce the full trend catalog"
+- "verify the trend report"
 - "export curated solutions to the industry catalog"
 - "where was I?" or "resume my TIPS project"
 
 Or invoke skills directly:
 
 ```
-/trend-scout      → interactive industry selection + bilingual trend scouting
-/value-modeler    → investment themes, solution blueprints, portfolio anchoring
-/trend-report     → CxO-level narrative report from modeled themes
-/trends-catalog   → curate and export solutions for cross-pursuit reuse
-/trends-dashboard → interactive HTML visualization of the full pipeline
-/trends-resume    → resume a project mid-stream with status and next actions
+/trend-scout         → interactive industry selection + bilingual trend scouting
+/value-modeler       → investment themes, solution blueprints, portfolio anchoring
+/trend-research      → enrich every candidate with quantitative evidence; emit research manifest
+/trend-synthesis     → canonical TIPS report (4 H2 dimensions × anchored H3 theme-cases)
+/trend-booklet       → comprehensive TIPS catalog of all candidates by dimension → subcategory → horizon
+/verify-trend-report → claim verification + structural review + revision pipeline
+/trends-catalog      → curate and export solutions for cross-pursuit reuse
+/trends-dashboard    → interactive HTML visualization of the full pipeline
+/trends-resume       → resume a project mid-stream with status and next actions
 ```
 
 ## How it works
@@ -110,7 +118,13 @@ Or invoke skills directly:
 
 **value-modeler** reads scouted candidates and builds T→I→P→S relationship networks, consolidates them into 3-7 MECE investment themes (Handlungsfelder), and generates solution templates with portfolio blueprints. When cogni-portfolio is available, solutions are anchored to real products and features. Includes interactive Business Relevance scoring and multi-framework solution ranking.
 
-**trend-report** reads modeled investment themes, optionally dispatches 3-5 parallel **trend-deep-researcher** agents for recursive TIPS-aligned deep research on high-value ACT-horizon trends (STORM-inspired tree exploration), then dispatches 4 parallel **trend-report-writer** agents (one per Trendradar dimension) for evidence enrichment. Assembles 3-7 **trend-report-investment-theme-writer** agents (one per theme), each running in the structural mode the report arc dictates — full Corporate Visions arc (Why Change -> Why Now -> Why You -> Why Pay) for flat-themes arcs, or slim 3-beat investment-case (Stake / Move / Cost-of-Inaction) when the user picks smarter-service, where dimension narratives are composed sequentially by **trend-report-composer**. A **trend-report-reviewer** agent applies a structural quality gate with cross-theme analysis before optional claims verification via cogni-claims.
+**trend-research** reads modeled investment themes and the agreed candidate set, optionally dispatches 3–5 parallel **trend-deep-researcher** agents for recursive TIPS-aligned deep research on high-value ACT-horizon trends (STORM-inspired tree exploration), then dispatches 4 parallel **trend-report-writer** agents (one per Trendradar dimension) for evidence enrichment. Validates the resulting `enriched-trends-{dimension}.json` files via a JSON-validity gate, then writes `.metadata/trend-research-output.json` — the single manifest that downstream skills consume.
+
+**trend-synthesis** reads the research manifest, anchors each investment theme to its dominant Smarter Service dimension, writes a shared dimension primer, and dispatches N parallel **trend-report-investment-theme-writer** agents (slim 3-beat investment-case mode: Stake / Move / Cost-of-Inaction). Then dispatches 4 sequential **trend-report-composer** agents to compose the dimension narratives (T → I → P → S order, voice consistency). Closes on a Foundations-anchored "Capability Imperative" synthesis. Writes `tips-trend-report.md` plus `tips-trend-report-claims.json`.
+
+**trend-booklet** reads the same research manifest, walks the value model to compute candidate → theme back-references, and dispatches 4 parallel **trend-booklet-formatter** agents (no web research) to render every candidate as a per-entry block (summary, citations, themes, keywords) organized by subcategory → horizon. Orphan candidates (no theme back-reference) land in per-dimension appendices. Writes `tips-trend-booklet.md` plus a structured sidecar `tips-trend-booklet-index.json` for downstream visualizers.
+
+**verify-trend-report** runs the extended quality pipeline on `tips-trend-report.md`: claim verification via cogni-claims, cross-theme structural review by **trend-report-reviewer**, optional revision via **trend-report-revisor**, and a final menu offering executive polish (cogni-copywriting) or themed HTML enrichment (cogni-visual).
 
 **trends-catalog** curates solutions, SPIs, metrics, and collaterals from completed projects into persistent industry catalogs. Each engagement improves the base catalog for future pursuits in the same industry.
 
@@ -121,19 +135,22 @@ Or invoke skills directly:
 | `trends-resume` | skill | Resume, continue, or check status of a TIPS trend scouting project |
 | `trend-scout` | skill | Interactive trend scouting workflow with industry selection, bilingual support (DE/EN), and downstream pipeline integration |
 | `value-modeler` | skill | Build TIPS relationship networks and generate ranked Solution Templates from agreed trend candidates |
-| `trend-report` | skill | Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims |
-| `verify-trend-report` | skill | Run the extended quality pipeline on a generated cogni-trends report — verify claims against their cited sources via cogni-claims, structural review, revision |
+| `trend-research` | skill | Research groundwork: deep research + 4 parallel writer agents enrich every candidate with web-sourced quantitative evidence; emits the research manifest |
+| `trend-synthesis` | skill | Compose the canonical TIPS report — 4 H2 dimensions × anchored H3 theme-cases, closing on a Capability Imperative synthesis |
+| `trend-booklet` | skill | Comprehensive TIPS catalog of all ~60 candidates organized by dimension → subcategory → horizon, with summary, citations, theme back-references |
+| `verify-trend-report` | skill | Extended quality pipeline on the canonical report — claim verification via cogni-claims, structural review, revision, downstream menu |
 | `trends-catalog` | skill | Manage persistent industry catalogs that accumulate TIPS knowledge across pursuits |
 | `trends-dashboard` | skill | Generate an interactive HTML dashboard showing the full TIPS project lifecycle |
 | `trend-web-researcher` | agent | Execute bilingual web research (EN/DE) for trend scouting and return aggregated signals as compact JSON (haiku) |
 | `trend-generator` | agent | Generate 60 scored trend candidates using multi-framework analysis (TIPS, Ansoff, Rogers, CRAAP) (opus) |
-| `trend-candidate-reviewer` | agent | Assess 60 trend candidates from three stakeholder perspectives (foresight analyst, domain expert, pipeline consumer) (sonnet) |
+| `trend-candidate-reviewer` | agent | Assess 60 trend candidates from three stakeholder perspectives (sonnet) |
 | `trend-signal-curator` | agent | Evaluate and rank web research signals by quality, relevance, and diversity before candidate generation (haiku) |
-| `trend-deep-researcher` | agent | Recursive deep research on a single high-value trend candidate to enrich evidence before report writing (sonnet) |
+| `trend-deep-researcher` | agent | Recursive deep research on a single high-value trend candidate to enrich evidence (sonnet) |
 | `br-pre-scorer` | agent | Generate LLM-suggested Business Relevance scores (1-5) plus a one-line rationale per TIP candidate in a value-modeler project (haiku) |
-| `trend-report-writer` | agent | Generate a narrative TIPS dimension section with inline citations and verifiable claims from trend candidates (sonnet) |
-| `trend-report-investment-theme-writer` | agent | Write a single investment theme section in theme-thesis (Why Change → Why Now → Why You → Why Pay) or investment-case (Stake / Move / Cost-of-Inaction) mode (sonnet) |
-| `trend-report-composer` | agent | Compose ONE Smarter Service macro section (Forces / Impact / Horizons / Foundations) — dimension narrative + nested theme-cases (sonnet) |
+| `trend-report-writer` | agent | Generate a narrative TIPS dimension section with inline citations and verifiable claims from trend candidates (sonnet) — invoked by trend-research |
+| `trend-report-investment-theme-writer` | agent | Write a single investment theme as a slim 3-beat case (Stake / Move / Cost-of-Inaction) anchored to its dominant Smarter Service dimension (sonnet) — invoked by trend-synthesis |
+| `trend-report-composer` | agent | Compose ONE Smarter Service macro section (Forces / Impact / Horizons / Foundations) — dimension narrative + nested theme-cases (sonnet) — invoked by trend-synthesis |
+| `trend-booklet-formatter` | agent | Format ONE Smarter Service dimension's section of the TIPS trend booklet — pure formatter, no web research (sonnet) — invoked by trend-booklet |
 | `trend-report-reviewer` | agent | Evaluate a trend report against structural quality criteria across investment themes (sonnet) |
 | `trend-report-revisor` | agent | Revise a trend report after claims verification — apply corrections and find replacement evidence (sonnet) |
 
@@ -150,7 +167,6 @@ cogni-trends combines established strategic foresight frameworks with state-of-t
 | **Ansoff Weak Signals** | H. Igor Ansoff, *Strategic Management* (1979) | 5-level signal intensity scale (Turbulence -> Foreseeable) maps to action horizons. ACT requires intensity 4-5; OBSERVE requires 1-2 |
 | **Rogers Diffusion of Innovation** | Everett Rogers, *Diffusion of Innovations* (1962) | Adoption stage classification (Innovators -> Laggards) with chasm threshold at 16%. Validates horizon-diffusion alignment |
 | **CRAAP Test** | Sarah Blakeslee, Meriam Library CSU Chico (2004) | Source quality assessment (Currency, Relevance, Authority, Accuracy, Purpose) applied in both signal extraction and curation |
-| **Corporate Visions** | Tim Riesterer / Corporate Visions Inc. | Why Change -> Why Now -> Why You -> Why Pay narrative arc for investment theme sections in trend reports |
 
 ### LLM Research Techniques
 
@@ -183,14 +199,16 @@ This scoring model ensures web-grounded candidates with institutional sources co
 ```
 cogni-trends/
 ├── .claude-plugin/      Plugin manifest
-├── skills/              7 trend intelligence skills
-│   ├── trends-resume/   Multi-session state recovery (entry point)
-│   ├── trend-scout/     Grounding, persona research, signal curation, candidate generation
-│   ├── value-modeler/   T→I→P→S relationship networks, solution templates
-│   ├── trend-report/    Deep research, evidence enrichment, theme writing, claims
+├── skills/              9 trend intelligence skills
+│   ├── trends-resume/      Multi-session state recovery (entry point)
+│   ├── trend-scout/        Grounding, persona research, signal curation, candidate generation
+│   ├── value-modeler/      T→I→P→S relationship networks, solution templates
+│   ├── trend-research/     Deep research, evidence enrichment, research manifest
+│   ├── trend-synthesis/    Canonical TIPS report (4 H2 dimensions × H3 theme-cases)
+│   ├── trend-booklet/      Comprehensive TIPS catalog of all candidates
 │   ├── verify-trend-report/  Claim verification + structural review + revision pipeline
-│   ├── trends-catalog/  Persistent industry knowledge base
-│   └── trends-dashboard/  Interactive HTML visualization
+│   ├── trends-catalog/     Persistent industry knowledge base
+│   └── trends-dashboard/   Interactive HTML visualization
 ├── agents/              11 research agents
 │   ├── trend-web-researcher.md          Persona-shaped bilingual research (haiku)
 │   ├── trend-generator.md               60 scored candidates with persona reasoning (opus)
@@ -199,8 +217,9 @@ cogni-trends/
 │   ├── trend-deep-researcher.md         Recursive TIPS-aligned deep research (sonnet)
 │   ├── br-pre-scorer.md                 LLM-suggested Business Relevance scores (haiku)
 │   ├── trend-report-writer.md           Dimension sections, deep-research-aware (sonnet)
-│   ├── trend-report-investment-theme-writer.md  Theme-thesis or investment-case mode (sonnet)
+│   ├── trend-report-investment-theme-writer.md  Slim 3-beat theme-case writer (sonnet)
 │   ├── trend-report-composer.md         Smarter Service macro section composer (sonnet)
+│   ├── trend-booklet-formatter.md       Booklet per-dimension formatter (sonnet)
 │   ├── trend-report-reviewer.md         Cross-theme structural quality gate (sonnet)
 │   └── trend-report-revisor.md          Post-verification revision (sonnet)
 ├── catalogs/            Industry catalog (cross-pursuit reuse)
@@ -217,7 +236,7 @@ cogni-trends/
 |--------|----------|---------|
 | cogni-claims | No | Verify citations in trend reports against source URLs |
 | cogni-copywriting | No | Executive polish on trend reports with tone scoping |
-| cogni-narrative | No | Arc-driven transformation of trend report output; theme-thesis and smarter-service arcs drive investment theme writers and the macro-skeleton composer |
+| cogni-narrative | No | Arc-driven transformation of trend report output; the smarter-service arc drives the canonical report's theme-case writer and macro composer |
 | cogni-portfolio | No | Bidirectional integration via trends-bridge (portfolio context export, opportunity import) |
 | cogni-visual | No | Themed HTML report via enrich-report; Big Block diagrams from value-modeler solution networks |
 | cogni-workspace | No | Theme selection for trends-dashboard via pick-theme skill |

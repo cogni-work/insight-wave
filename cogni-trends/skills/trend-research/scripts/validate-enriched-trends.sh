@@ -3,7 +3,7 @@ set -euo pipefail
 # validate-enriched-trends.sh
 # Version: 1.0.0
 # Purpose: Validate (and repair, if safe) the four enriched-trends JSON files
-#          produced by trend-report Phase 1 before Phase 2 reads them.
+#          produced by trend-research Phase 1 before downstream skills read them.
 # Category: utilities
 #
 # Usage: validate-enriched-trends.sh <PROJECT_PATH>
