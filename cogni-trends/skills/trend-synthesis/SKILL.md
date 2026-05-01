@@ -34,7 +34,7 @@ Transform the research manifest plus enriched per-trend evidence into a CxO-grad
 3. Pick a length tier and compute per-section word budgets (smarter-service formula only)
 4. Anchor each investment theme to its dominant TIPS dimension
 5. Write the shared dimension primer (orchestrator)
-6. Dispatch N parallel theme-case writers (`MICRO_ARC: "investment-case"`)
+6. Dispatch N parallel theme-case writers
 7. Dispatch 4 sequential dimension composers (T → I → P → S, voice consistency)
 8. Compose the executive summary (over the 4 dimensions, naming anchored themes)
 9. Build the claims registry with a dimension column
@@ -291,7 +291,6 @@ Task:
   model: sonnet
   prompt: |
     PROJECT_PATH: {PROJECT_PATH}
-    MICRO_ARC: "investment-case"
     INVESTMENT_THEME_ID: {theme.investment_theme_id}
     INVESTMENT_THEME_NAME: {theme.name}
     STRATEGIC_QUESTION: {theme.strategic_question}
@@ -315,8 +314,6 @@ Task:
     NARRATIVE_ARC_PATH: {path to cogni-narrative smarter-service arc-definition.md, optional}
     NARRATIVE_TECHNIQUES_PATH: {path to cogni-narrative techniques-overview.md, optional}
 ```
-
-> `MICRO_ARC: "investment-case"` is currently a vestigial enum-of-1 (the `theme-thesis` branch was removed in this same PR — see C5). Pass it literally for now; full removal of the parameter is queued as a follow-up cleanup.
 
 Resume: skip if `.logs/theme-case-{theme_id}.md` exists and is >600 bytes. Validation per agent: `ok == true`, `primer_referenced == true`, `cost_ratio` and `cost_window` non-empty, `quality_gate_pass == true`. Retry once on failure.
 
