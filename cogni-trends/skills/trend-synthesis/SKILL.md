@@ -6,9 +6,11 @@ description: |
   Service dimensions (Forces → Impact → Horizons → Foundations) as H2 sections,
   with investment themes nested as anchored H3 cases written in a slim 3-beat
   structure (Stake / Move / Cost-of-Inaction). Closes on a "Capability
-  Imperative" synthesis. Produces `tips-trend-report.md` plus
-  `tips-trend-report-claims.json` — the same canonical filenames the legacy
-  `trend-report` skill produced, so `/verify-trend-report` keeps working
+  Imperative" synthesis. The four dimensions form a single CxO story arc — see
+  the Storytelling Spine — and the writer agents thread protagonist-shaped
+  micro-stories under the structural beats. Produces `tips-trend-report.md`
+  plus `tips-trend-report-claims.json` — the same canonical filenames the
+  legacy `trend-report` skill produced, so `/verify-trend-report` keeps working
   unchanged. Required pipeline: trend-scout → value-modeler → trend-research
   → trend-synthesis → verify-trend-report. Use when: (1) `/trend-research`
   has completed and written `.metadata/trend-research-output.json`, (2) the
@@ -23,7 +25,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion, Skill
 
 # Trend Synthesis
 
-Compose the canonical TIPS trend report from `/trend-research` output. The report's H2 spine is the 4 Smarter Service dimensions (T → I → P → S); investment themes nest under their anchor dimension as H3 theme-cases (Stake / Move / Cost-of-Inaction). Closes on a Foundations-anchored "Capability Imperative" synthesis.
+Compose the canonical TIPS trend report from `/trend-research` output. The report's H2 spine is the 4 Smarter Service dimensions (T → I → P → S); investment themes nest under their anchor dimension as H3 theme-cases (Stake / Move / Cost-of-Inaction). Closes on a Foundations-anchored "Capability Imperative" synthesis. The four dimensions are not parallel essays — they trace a single rising-tension arc. The Storytelling Spine section below is the load-bearing reference for that arc.
 
 ## Purpose
 
@@ -34,11 +36,11 @@ Transform the research manifest plus enriched per-trend evidence into a CxO-grad
 3. Pick a length tier and compute per-section word budgets (smarter-service formula only)
 4. Anchor each investment theme to its dominant TIPS dimension
 5. Write the shared dimension primer (orchestrator)
-6. Dispatch N parallel theme-case writers
-7. Dispatch 4 sequential dimension composers (T → I → P → S, voice consistency)
-8. Compose the executive summary (over the 4 dimensions, naming anchored themes)
+6. Dispatch N parallel theme-case writers — each writes a micro-story (Storytelling Spine)
+7. Dispatch 4 sequential dimension composers (T → I → P → S, voice consistency, with bridge sentences)
+8. Compose the executive summary — opens on the Why-Now hook
 9. Build the claims registry with a dimension column
-10. Write the "Capability Imperative" synthesis section
+10. Write the "Capability Imperative" synthesis section — closes with a callback to the Why-Now hook
 11. Assemble + merge claims → `tips-trend-report.md` + `tips-trend-report-claims.json`
 12. Update finalization metadata; auto-recommend `/verify-trend-report`
 
@@ -92,6 +94,7 @@ Read references **only when needed** for the specific phase:
 | [references/report-length-tiers.md](references/report-length-tiers.md) | Phase 1 — length tier definitions and budget formula |
 | [references/capability-imperative.md](references/capability-imperative.md) | Phase 2.5 — "The Capability Imperative" synthesis pattern |
 | [references/claims-registry-format.md](references/claims-registry-format.md) | Phase 2.4 — claims registry table format |
+| [references/story-arc-loop.md](references/story-arc-loop.md) | Authoring-time only — methodology audit of how the storytelling guidance in this SKILL.md was derived (closed-loop reviews with `cogni-narrative:narrative-reviewer`). Read when extending storytelling guidance. |
 | [references/i18n/labels-en.md](references/i18n/labels-en.md) | English headings and labels |
 | [references/i18n/labels-de.md](references/i18n/labels-de.md) | German headings and labels |
 
@@ -101,11 +104,63 @@ Read references **only when needed** for the specific phase:
 Phase 0 → Phase 0.5 → Phase 1 → Phase 2 → Phase 3
    │         │           │         │         │
    │         │           │         │         └ Finalize metadata, auto-recommend /verify-trend-report
-   │         │           │         └ Anchor → primer → theme-cases (parallel) → composers (4 sequential) → exec → claims registry → synthesis → assemble
+   │         │           │         └ Anchor → primer → theme-cases (parallel) → composers (4 sequential, with bridges) → exec (Why-Now hook) → claims registry → synthesis (callback) → assemble
    │         │           └ Length tier + budgets (smarter-service formula)
    │         └ Title proposal
    └ Locate research output, drift check, value-model subset, language, cleanup
 ```
+
+## Storytelling Spine
+
+The 4 dimensions are not 4 parallel essays. They trace a single CxO arc:
+the report opens on an inciting incident, climbs through rising tension and a
+decision threshold, and lands on a capability test the reader must answer.
+Writer and composer agents must trace this arc — `references/story-arc-loop.md`
+records how this guidance was derived through closed-loop reviews with
+`cogni-narrative:narrative-reviewer` as the storytelling expert.
+
+| Dimension | Story role | Reader question this section answers |
+|-----------|------------|---------------------------------------|
+| Forces (T) | Inciting incident | "Why now?" |
+| Impact (I) | Rising tension | "What changes for the business?" |
+| Horizons (P) | Decision threshold | "What new ground opens up?" |
+| Foundations (S) | Capability test | "Can we afford to wait?" |
+
+**Opener (executive summary).** Opens on the inciting incident — the most
+acute Forces theme — *not* on a topic recap. The first sentence is a Why-Now
+hook the closer can call back to. The protagonist is named by role and
+decision context ("the head of after-sales watching warranty cost ratios
+drift"), never as the abstract "CxO".
+
+**Theme-cases.** Each theme-case is a *micro-story* with five elements:
+
+- **Protagonist** — the operating leader, named by role + decision context.
+- **Obstacle** — a specific market force from enriched evidence, named.
+  Never abstract ("competition", "disruption").
+- **Stakes** — cost ratio + window, drawn from the value model.
+- **Move** — the capability investment.
+- **Payoff** — one phrase the synthesis can pick up as a recurring motif.
+
+The Stake / Move / Cost-of-Inaction beats remain the load-bearing *structure*
+underneath the micro-story. They must not surface as visible headers in the
+rendered prose.
+
+**Bridges.** Each dimension narrative ends with a one-sentence bridge that
+names the tension carried forward. Composers pick one of three patterns,
+*varying* across the four dimensions so the report doesn't read as a
+checklist:
+
+- **Causal:** "...which is why X must change."
+- **Contrastive:** "...but the move that follows isn't Y, it's Z."
+- **Escalating:** "...and the bill arrives faster than the planning cycle."
+
+The Foundations bridge specifically hands the reader to the Capability
+Imperative by naming the single capability the synthesis will frame.
+
+**Closer (Capability Imperative).** Closes with a callback to the Why-Now
+hook from the opener — the report ends where it started, but with stakes now
+specified and the load-bearing capability named. This is what makes the
+report read as one story instead of four essays plus a wrap-up.
 
 ---
 
@@ -264,7 +319,7 @@ The claims registry is excluded from word accounting at every stage.
 
 ### Phase 2: Report Assembly
 
-Read [references/synthesis-skeleton.md](references/synthesis-skeleton.md) for the full step-by-step protocol. The skeleton file is the canonical reference for how to write each section; this SKILL.md only orchestrates the dispatch order.
+Read [references/synthesis-skeleton.md](references/synthesis-skeleton.md) for the full step-by-step protocol. The skeleton file is the canonical reference for how to write each section; this SKILL.md only orchestrates the dispatch order. The Storytelling Spine section above is the authoritative reference for narrative shape — writers and composers must follow it.
 
 **Hard ordering constraints:**
 - Step 2.0b must complete before Step 2.1 (theme writers need the primer)
@@ -279,7 +334,7 @@ Quality check on `anchor_distribution`: WARN if any dimension carries >3 themes 
 
 #### Step 2.0b: Write Shared Dimension Primer (orchestrator)
 
-Read all 4 `enriched-trends-{dimension}.json` files (paths from manifest) and the value model. Write 4 paragraphs (~120 words each, ~480 total) to `.logs/report-shared-primer.md` — one per Smarter Service dimension, each ending with the anchor pivot sentence naming themes anchored there. Skip if primer file exists and is >800 bytes. Full template in `synthesis-skeleton.md § Step 2.0b`.
+Read all 4 `enriched-trends-{dimension}.json` files (paths from manifest) and the value model. Write 4 paragraphs (~120 words each, ~480 total) to `.logs/report-shared-primer.md` — one per Smarter Service dimension, each ending with the anchor pivot sentence naming themes anchored there. The four primer paragraphs should already foreshadow the dimension's story role from the Storytelling Spine — Forces sets up "why now", Impact frames the rising tension, Horizons names the decision, Foundations frames the capability test. Skip if primer file exists and is >800 bytes. Full template in `synthesis-skeleton.md § Step 2.0b`.
 
 #### Step 2.1: Dispatch Theme-Case Writers (parallel)
 
@@ -313,19 +368,29 @@ Task:
     LABELS: {JSON object with relevant i18n labels}
     NARRATIVE_ARC_PATH: {path to cogni-narrative smarter-service arc-definition.md, optional}
     NARRATIVE_TECHNIQUES_PATH: {path to cogni-narrative techniques-overview.md, optional}
+    STORY_PROTAGONIST: {role + decision context derived from EXECUTIVE_SPONSOR_TYPE and the dominant evidence pattern; e.g. "the head of after-sales watching warranty cost ratios drift" — never abstract like "the CxO"}
+    STORY_OBSTACLE: {a specific named market force drawn from the enriched-trend evidence — never abstract like "competition" or "disruption"}
+    STORY_MOMENT: {one sensory or behavioural detail anchored in a specific evidence_ref from EXAMPLE_REFERENCES; used once in the case to ground the abstract capability in lived reality. MUST cite the evidence_ref it derives from — never invent}
+    STORY_PAYOFF_HANDOFF: {one phrase the synthesis section will pick up as a recurring motif — keep terse, specific, and reusable}
 ```
 
-Resume: skip if `.logs/theme-case-{theme_id}.md` exists and is >600 bytes. Validation per agent: `ok == true`, `primer_referenced == true`, `cost_ratio` and `cost_window` non-empty, `quality_gate_pass == true`. Retry once on failure.
+The writer agent threads the Stake / Move / Cost-of-Inaction beats *underneath* the protagonist → obstacle → stakes → move → payoff micro-story arc from the Storytelling Spine. The beats are load-bearing but invisible: never surface them as headers. If the prose reads as a feature list, the protagonist or obstacle has gone abstract — re-anchor on evidence.
+
+Resume: skip if `.logs/theme-case-{theme_id}.md` exists and is >600 bytes. Validation per agent: `ok == true`, `primer_referenced == true`, `cost_ratio` and `cost_window` non-empty, `quality_gate_pass == true`, `story_moment_evidence_ref` non-empty (the evidence_ref the STORY_MOMENT is bound to). Retry once on failure.
 
 #### Step 2.2: Dispatch Dimension Composers (sequential, 4 calls)
 
 For each dimension in TIPS order (`externe-effekte` → `digitale-wertetreiber` → `neue-horizonte` → `digitales-fundament`), dispatch one `cogni-trends:trend-report-composer` agent. **Sequential, NOT parallel** — voice consistency depends on this. Each composer writes `macro-section-{dimension}.md` (= H2 heading + dimension narrative + concatenated theme-cases anchored here + secondary callouts). Resume per dimension: skip if file exists and is >800 bytes.
+
+Each composer's dimension narrative MUST end with a one-sentence **bridge** that names the tension carried forward into the next dimension. Composers *choose* one of the three patterns from the Storytelling Spine (causal / contrastive / escalating), and across the four dimensions the patterns must vary — the report should not use the same template four times. The Foundations (S) bridge specifically hands the reader to the Capability Imperative by naming the single capability the synthesis will frame.
 
 Full prompt template and validation in `synthesis-skeleton.md § Step 2.2`.
 
 #### Step 2.3: Write Executive Summary
 
 Read the primer and all 4 macro section files. Write `report-header.md` with YAML frontmatter + cross-dimensional opener + numbered list over the 4 dimensions (naming anchored themes within each entry) + capability-imperative closer. Length: target `EXEC_TARGET_WORDS ± 20%`. Two trailing newlines. Full template in `synthesis-skeleton.md § Step 2.3`.
+
+The opener MUST start with a single-sentence **Why-Now hook** tied to the most acute Forces theme — not a topic recap. The hook names the protagonist by role and decision context (per the Storytelling Spine), and introduces the tension the rest of the report resolves. Treat this sentence as load-bearing: the Capability Imperative closer will call back to it verbatim or in a close paraphrase, so make it memorable and self-contained.
 
 The frontmatter omits `arc_id` (the canonical TIPS skeleton has no arc selector; `report_mode` is the constant `"smarter-service-themed"`).
 
@@ -336,6 +401,8 @@ Read the 4 `claims-{dimension}.json` files (paths from manifest). Build the `cla
 #### Step 2.5: Write Synthesis Section ("The Capability Imperative")
 
 Read [references/capability-imperative.md](references/capability-imperative.md) for the full pattern. Foundations-anchored, aggregates capability requirements across themes. Write `.logs/report-synthesis.md`. Length: target `SYNTHESIS_TARGET_WORDS ± 15%`. Two trailing newlines.
+
+The synthesis MUST close with a **callback** to the Why-Now hook from Step 2.3 — the report ends where it started, but with stakes now specified and the single load-bearing capability named. The callback can be verbatim or a close paraphrase; it must not be a generic restatement. Pull at least two STORY_PAYOFF_HANDOFF phrases from the theme-cases as recurring motifs in the synthesis prose, so the reader feels the cases converging on one capability rather than enumerating four.
 
 #### Step 2.6: Assemble Final Report
 
@@ -454,9 +521,12 @@ catalog, dashboard).
 | Theme anchoring distribution gives one dimension >3 themes | WARN; composer can still write but report theme-heavy in that dimension |
 | Theme anchoring distribution gives one dimension 0 themes | WARN; composer can still write but the dimension section will read visibly thin |
 | Theme-case agent returns `ok: false` | Retry once, then HALT with theme name |
-| Theme-case quality gate fails (`primer_referenced: false` or missing cost ratio) | WARN; continue (case may be thin) |
+| Theme-case quality gate fails (`primer_referenced: false`, missing cost ratio, or empty `story_moment_evidence_ref`) | WARN; continue (case may be thin or the story-moment may have gone abstract — flag for human review) |
 | Composer returns `ok: false` | Retry once, then HALT with dimension name |
 | Composer dimension narrative <250 words | WARN; macro section may feel thin |
+| Composer dimension narrative does not end on a bridge sentence | WARN; voice will land flat into the next dimension |
+| All four composer bridges use the same template | WARN; report will read as a checklist — surface to human before publishing |
+| Capability Imperative does not contain a callback to the Why-Now hook | WARN; report will land as four parallel essays plus a closer |
 | `report-shared-primer.md` missing when theme-case agent dispatches | HALT: Step 2.0b must complete before Step 2.1 |
 | `theme-case-{theme_id}.md` missing when composer dispatches for that anchor | HALT: Step 2.1 must complete before Step 2.2 |
 | Resume file exists but is corrupt (smaller than threshold) | Re-dispatch the relevant agent |
@@ -471,7 +541,7 @@ catalog, dashboard).
 
 **Pipeline:** `trend-scout → value-modeler → trend-research → trend-synthesis → verify-trend-report`
 
-**Optional cross-plugin:** `cogni-narrative` smarter-service arc — theme-case writer + dimension composer guidance (graceful fallback if absent)
+**Optional cross-plugin:** `cogni-narrative` smarter-service arc — theme-case writer + dimension composer guidance (graceful fallback if absent). The Storytelling Spine in this SKILL.md is self-contained; the cogni-narrative arc-definition is supplementary, not required.
 
 **Downstream (via `/verify-trend-report`):** claim verification (`cogni-claims:claims`), cross-theme structural review, post-verification revision, executive polish (`cogni-copywriting:copywriter`), themed HTML (`cogni-visual:enrich-report`)
 
@@ -480,13 +550,13 @@ catalog, dashboard).
 ## Debugging
 
 Log files in `{PROJECT_PATH}/.logs/`:
-- `report-header.md` — frontmatter + exec summary
+- `report-header.md` — frontmatter + exec summary (must contain Why-Now hook)
 - `phase2-value-model.json` — pruned value-model subset for Phase 2
 - `report-theme-anchors.json` — per-theme anchor + secondary poles + distribution
 - `report-shared-primer.md` — 4-paragraph macro framing (internal artefact)
-- `theme-case-{theme_id}.md` — slim 3-beat investment cases (N files)
-- `macro-section-{dimension}.md` — dimension narrative + concatenated theme-cases (4 files)
-- `report-synthesis.md` — "Capability Imperative" closing
+- `theme-case-{theme_id}.md` — slim 3-beat investment cases threading the micro-story arc (N files)
+- `macro-section-{dimension}.md` — dimension narrative (ending in a bridge) + concatenated theme-cases (4 files)
+- `report-synthesis.md` — "Capability Imperative" closing with callback to Why-Now hook
 - `report-claims-registry.md` — claims table
 
 Output files in `{PROJECT_PATH}/`:
@@ -500,3 +570,6 @@ Output files in `{PROJECT_PATH}/`:
 | Wrong language | Verify `language` in `.metadata/trend-research-output.json` |
 | Missing macro sections | Check `.logs/` for partial composer output; resume gates skip files >800 bytes |
 | Per-theme-case word counts overshooting | Check whether `LENGTH_BUDGET_FLOOR_WARNING` fired in Phase 1 |
+| Report reads as a feature list, not a story | Check `theme-case-*.md` for abstract protagonist ("the CxO") or abstract obstacle ("competition") — the writer skipped the Storytelling Spine micro-story. Re-dispatch the affected theme(s). |
+| Report reads as four parallel essays | Check that each `macro-section-*.md` ends on a bridge sentence and that the four bridges use varied templates (Storytelling Spine § Bridges). Check the synthesis for a callback to the executive-summary Why-Now hook. |
+| Story-moment cites no evidence_ref | The writer invented a sensory detail. Halt the case, surface for human review — the rest of the case is likely sound but the moment must re-anchor on `EXAMPLE_REFERENCES`. |

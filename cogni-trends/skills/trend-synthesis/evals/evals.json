@@ -94,6 +94,53 @@
         "trend-scout-output.json.trend_report_complete is set to true only if the user proceeds",
         "If the user halts, no tips-trend-report.md is written and no flags are flipped on trend-scout-output.json"
       ]
+    },
+    {
+      "id": 6,
+      "name": "eval-storytelling-why-now-hook",
+      "prompt": "Erstelle den TIPS-Trendreport.",
+      "expected_output": "The executive summary opens with a single-sentence Why-Now hook tied to the most acute Forces theme, names the operating-leader protagonist by role and decision context, and is recognisable as a story opener rather than a topic recap.",
+      "files": [],
+      "expectations": [
+        "tips-trend-report.md exists with valid YAML frontmatter",
+        "The first non-frontmatter prose paragraph (the executive summary opener) starts with a single sentence that names a specific market force or evidence-anchored event from the Forces (T) dimension — not a restatement of the research topic",
+        "That opening sentence names a protagonist by role and decision context (e.g. 'der Leiter After-Sales' / 'the head of after-sales') — never the abstract 'the CxO' / 'der CxO'",
+        "The opener does NOT begin with a phrase like 'This report covers...', 'In dieser Studie...', or any topic-recap formula",
+        "The Why-Now hook sentence appears verbatim or as a close paraphrase in the closing 'Capability Imperative' synthesis section (callback test)",
+        "The protagonist named in the opener is consistent with EXECUTIVE_SPONSOR_TYPE for the most heavily anchored Forces theme",
+        "Validation log records story_opener_hook: true for the report-header agent invocation"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "eval-storytelling-bridges-vary",
+      "prompt": "Erstelle den TIPS-Trendreport.",
+      "expected_output": "Each of the four dimension narratives ends with a one-sentence bridge naming the tension carried into the next dimension; across the four dimensions the bridge patterns vary (causal / contrastive / escalating) — they do not all use the same template.",
+      "files": [],
+      "expectations": [
+        "Each macro-section-{dimension}.md file has a final prose sentence (last sentence of the dimension narrative, before any H3 theme-case) that explicitly references the next dimension by topic or by named tension",
+        "Across the four bridge sentences, at least two of the three Storytelling-Spine patterns appear (causal / contrastive / escalating) — they are NOT all the same template",
+        "The Foundations (S) bridge specifically names the single capability the synthesis will frame — it hands the reader to the Capability Imperative",
+        "No bridge sentence is a generic transition like 'Next, we look at...' / 'Im Folgenden...' — each names a tension or move, not a section pointer",
+        "Composer agent return values record bridge_pattern (one of causal/contrastive/escalating) per dimension",
+        "If all four bridge_pattern values match, the skill emits the WARN registered in the Error Handling table"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "eval-storytelling-theme-case-microstory",
+      "prompt": "Erstelle den TIPS-Trendreport.",
+      "expected_output": "Every theme-case threads a protagonist → obstacle → stakes → move → payoff micro-story under the Stake / Move / Cost-of-Inaction beats, with a STORY_MOMENT bound to a specific evidence_ref. Beats remain invisible (no headers); the prose does not read as a feature list.",
+      "files": [],
+      "expectations": [
+        "Each theme-case-{theme_id}.md names a concrete operating-leader protagonist (role + decision context) within its first 2 sentences — not 'the CxO' / 'der CxO' / 'the company'",
+        "Each theme-case names a specific market force as the obstacle, drawn from the enriched-trend evidence — not abstract terms like 'competition', 'disruption', 'Wandel', or 'Wettbewerb' on their own",
+        "Each theme-case contains exactly one sensory or behavioural detail (a 'story moment') that is anchored in a specific evidence_ref present in EXAMPLE_REFERENCES — the writer agent's return value carries non-empty story_moment_evidence_ref",
+        "Each theme-case contains a STORY_PAYOFF_HANDOFF phrase that is reused at least once in report-synthesis.md as a recurring motif (synthesis convergence test)",
+        "No theme-case prose contains the visible literal headers 'Stake:', 'Move:', 'Cost of Inaction:' (case-insensitive) — beats are load-bearing but invisible",
+        "At least two STORY_PAYOFF_HANDOFF phrases from distinct theme-cases reappear in the Capability Imperative synthesis section",
+        "If a theme-case agent returns story_moment_evidence_ref empty, the skill emits the WARN registered in the Error Handling table and surfaces the case for human review without halting"
+      ]
     }
   ]
 }
