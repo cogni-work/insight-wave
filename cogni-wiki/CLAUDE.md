@@ -7,7 +7,7 @@ Compile-time knowledge engine for personal and small-team knowledge work — a b
 ```
 agents/                         1 agent (fan-out worker)
   ingest-worker.md                Per-source subagent for wiki-ingest batch mode (Steps 1–8)
-skills/                         7 wiki skills
+skills/                         8 wiki skills
   wiki-setup/                     Bootstrap a new wiki at a user-chosen root
     references/
       SCHEMA.md.template          Copied into the wiki at setup time
@@ -38,6 +38,7 @@ skills/                         7 wiki skills
   wiki-dashboard/                 Self-contained HTML overview (pages, tags, backlink graph)
     scripts/
       render_dashboard.py         Reads wiki/ → writes wiki-dashboard.html (stdlib only)
+  wiki-from-research/             Cold-start: chains research-setup → research-report → wiki-setup → wiki-ingest --discover research:<slug>. Mode A (--topic) or Mode B (--research-slug).
 
 references/
   karpathy-pattern.md             Shared Karpathy-pattern reference, cited by all skills
@@ -47,7 +48,7 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 7 | wiki-setup, wiki-ingest, wiki-query, wiki-lint, wiki-update, wiki-resume, wiki-dashboard |
+| Skills | 8 | wiki-setup, wiki-ingest, wiki-query, wiki-lint, wiki-update, wiki-resume, wiki-dashboard, wiki-from-research |
 | Agents | 1 | ingest-worker (per-source fan-out worker for wiki-ingest batch mode; not directly dispatchable) |
 | Commands | 0 | — (skills serve as slash commands per plugin-dev guidance) |
 | Hooks | 0 | — (all bookkeeping lives inside skills) |
@@ -127,6 +128,7 @@ insight-wave already uses Claude Code's auto-memory system at `~/.claude/project
 ## Cross-Plugin Integration
 
 - **cogni-research → cogni-wiki** (v0.0.17, sub-question-centric — Option B). `wiki-ingest --discover research:<project-slug>` enumerates one batch entry per sub-question of a completed cogni-research project, materialises per-sub-question synthesis files under `<wiki-root>/raw/research-<slug>/sq-NN-<short>.md`, and feeds them through the standard batch-mode pipeline (Steps 1–8 per source). The synthesis bundles findings (from contexts), verified claims (filtered to `verification_status: verified`), and source URLs. Materialisation is the one deviation from the discovery-is-read-only rule and is unavoidable: cogni-research spreads each sub-question's evidence across four entity types, and the per-source ingest-worker reads one file. Materialisation is deterministic and idempotent. See `skills/wiki-ingest/references/batch-mode.md` §"Discovery → research" for the full contract. The reverse path (`wiki-researcher` agent reading a wiki as a RAG source for a research project) is owned by cogni-research and pre-dates this integration.
+- **wiki-from-research cold-start** (v0.0.18). The `wiki-from-research` skill chains `cogni-research:research-setup` → `cogni-research:research-report` (auto-chained internally) → `cogni-wiki:wiki-setup` → `cogni-wiki:wiki-ingest --discover research:<slug>` in one dispatch. Mode A starts from a free-text `--topic`; Mode B starts from an existing `--research-slug`. The skill is a pure orchestrator — it writes nothing directly; every artefact comes from its sub-skills' contracts. Pre-flight is fail-fast: wiki-target collisions are detected before any cogni-research dispatch (so an unusable target never burns research budget). Mode B verifies `output/report.md` exists, refuses `report_source ∈ {wiki, hybrid}` projects (circular-evidence risk), and nudges the user to run `verify-report` first if zero claims are verified.
 
 ## Future Integration Points
 
