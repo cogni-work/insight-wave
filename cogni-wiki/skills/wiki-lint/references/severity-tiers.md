@@ -34,6 +34,7 @@ A warning means the wiki works but is accumulating debt. Warnings should be revi
 | **Tag typo** | Tag differs from another tag by edit distance ≤ 2, one used ≥3× more than the other | `wiki-update` to normalize |
 | **Contradiction** | Two pages make opposing claims about the same entity or concept (semantic pass) | `wiki-update` to reconcile, or add explicit contradiction note |
 | **Type drift** | Page body's structure doesn't match declared `type` (e.g. a `concept` page that is actually a `summary`) | `wiki-update` to retype or rewrite |
+| **Claim drift** | A `wiki-claims-resweep` finding (`deviated` or `source_unavailable`) is recorded for the page in `.cogni-wiki/last-resweep.json` | Consult the sweep report; consider `wiki-update` to mark the affected claims stale, or re-run `wiki-claims-resweep` after sources are recovered |
 
 ## 🔵 Info — observations
 
@@ -49,6 +50,7 @@ Info is not a finding — it's descriptive statistics that help the user underst
 - **Least-linked pages** — pages with exactly 0 or 1 inbound links, excluding orphans (already in warnings)
 - **Log activity** — ingests, queries, lints in the last 30 days
 - **Age histogram** — buckets for pages by age: <7d, <30d, <90d, <365d, >365d
+- **Last resweep** — date and age (in days) of the most recent `wiki-claims-resweep` run, surfaced when `.cogni-wiki/last-resweep.json` exists
 
 ## Thresholds
 

@@ -115,6 +115,22 @@ def edit_distance(a: str, b: str) -> int:
     return prev[-1]
 
 
+def _load_last_resweep(wiki_root: Path) -> dict | None:
+    """Best-effort read of the wiki-claims-resweep lint-bridge JSON.
+
+    Returns None when the file is absent or malformed — a wiki that was never
+    swept produces no claim_drift findings, exactly like before this hook
+    existed.
+    """
+    p = wiki_root / ".cogni-wiki" / "last-resweep.json"
+    if not p.is_file():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Mechanical lint pass for a cogni-wiki")
     parser.add_argument("--wiki-root", required=True)
@@ -284,6 +300,47 @@ def main() -> None:
                         "message": f"'{tag_b}' ({count_b}x) likely typo of '{tag_a}' ({count_a}x)",
                     }
                 )
+
+    # claim_drift bridge — read the last wiki-claims-resweep summary if present.
+    # Pages flagged there get a warning each. Sweep itself gets one info line.
+    resweep = _load_last_resweep(wiki_root)
+    if resweep:
+        sweep_date = str(resweep.get("sweep_date", "")).strip()
+        mode = str(resweep.get("mode", "")).strip() or "?"
+        report_path = str(resweep.get("report_path", "")).strip()
+        deviated = resweep.get("deviated_pages") or []
+        unavailable = resweep.get("unavailable_pages") or []
+        sweep_dt = parse_date(sweep_date) if sweep_date else None
+        age_str = (
+            f"({(today - sweep_dt).days}d ago)" if sweep_dt else "(date unknown)"
+        )
+        info.append(
+            {
+                "class": "last_resweep",
+                "message": f"{sweep_date or 'unknown'} {age_str} — mode: {mode}",
+            }
+        )
+        suffix = f"; see {report_path}" if report_path else ""
+        for slug in deviated:
+            if slug not in existing_slugs:
+                continue
+            warnings.append(
+                {
+                    "class": "claim_drift",
+                    "page": slug,
+                    "message": f"deviated claim(s) from sweep {sweep_date or 'unknown'}{suffix}",
+                }
+            )
+        for slug in unavailable:
+            if slug not in existing_slugs:
+                continue
+            warnings.append(
+                {
+                    "class": "claim_drift",
+                    "page": slug,
+                    "message": f"source_unavailable claim(s) from sweep {sweep_date or 'unknown'}{suffix}",
+                }
+            )
 
     # info stats
     non_lint_pages = [s for s in all_pages if not s.startswith("lint-")]
