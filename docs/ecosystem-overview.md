@@ -313,7 +313,7 @@ For a detailed walkthrough of plugin structure, see [plugin-anatomy](architectur
 
 ## Workflow Guides
 
-Six end-to-end workflow guides document the cross-plugin pipelines:
+Seven end-to-end workflow guides document the cross-plugin pipelines:
 
 | Workflow | Pipeline | End deliverable |
 |----------|----------|-----------------|
@@ -323,6 +323,7 @@ Six end-to-end workflow guides document the cross-plugin pipelines:
 | [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-visual | Ranked solutions with visual deliverables |
 | [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consulting → (orchestrates all others) | Full consulting deliverable package |
 | [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-narrative → cogni-visual | Multi-channel marketing content |
+| [Wiki ↔ Research Cycle](workflows/wiki-research-cycle.md) | cogni-research ↔ cogni-wiki ↔ cogni-claims (bidirectional) | Compounding wiki with periodic citation re-verification |
 
 ---
 
