@@ -106,6 +106,7 @@ fi
 ingest_count_30d=0
 query_count_30d=0
 update_count_30d=0
+synthesis_count_30d=0
 if [ -f "$LOG_FILE" ]; then
   # Compute cutoff date (30 days ago) in YYYY-MM-DD.
   if date -d "30 days ago" +%Y-%m-%d >/dev/null 2>&1; then
@@ -128,15 +129,17 @@ if [ -f "$LOG_FILE" ]; then
           if (op == "ingest") ingest++
           else if (op == "query") query++
           else if (op == "update") update++
+          else if (op == "synthesis") synthesis++
         }
       }
       END {
-        printf "%d %d %d", (ingest+0), (query+0), (update+0)
+        printf "%d %d %d %d", (ingest+0), (query+0), (update+0), (synthesis+0)
       }
     ' "$LOG_FILE")
     ingest_count_30d=$(printf '%s' "$counts" | awk '{print $1}')
     query_count_30d=$(printf '%s' "$counts" | awk '{print $2}')
     update_count_30d=$(printf '%s' "$counts" | awk '{print $3}')
+    synthesis_count_30d=$(printf '%s' "$counts" | awk '{print $4}')
   fi
 fi
 
@@ -172,6 +175,7 @@ export WS_DAYS_SINCE_LINT="$days_since_lint"
 export WS_INGEST_30="$ingest_count_30d"
 export WS_QUERY_30="$query_count_30d"
 export WS_UPDATE_30="$update_count_30d"
+export WS_SYNTHESIS_30="$synthesis_count_30d"
 export WS_RECENT_LOG="$recent_log"
 export WS_CONFIG_FILE="$CONFIG_FILE"
 
@@ -214,6 +218,7 @@ data = {
     "ingest_count_30d": int(os.environ.get("WS_INGEST_30", "0") or 0),
     "query_count_30d": int(os.environ.get("WS_QUERY_30", "0") or 0),
     "update_count_30d": int(os.environ.get("WS_UPDATE_30", "0") or 0),
+    "synthesis_count_30d": int(os.environ.get("WS_SYNTHESIS_30", "0") or 0),
     "recent_log": recent_log_lines,
     "schema_version": cfg.get("schema_version"),
 }
