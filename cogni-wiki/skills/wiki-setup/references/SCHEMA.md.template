@@ -61,13 +61,13 @@ Wikilinks are bidirectional. Every forward `[[link]]` from page A to page B impl
 |---------|------------------------|---------------------------------|------------|
 | `R1_bidirectional_wikilink` | A's body contains `[[B]]` | B's body should contain `[[A]]` somewhere — typically as a one-line natural-language reference, not a dump | `backlink_audit.py` proposes; `wiki-lint reverse_link_missing` validates |
 | `R2_synthesis_wiki_source` | A is `type: synthesis` and lists `wiki://B` in `sources:` | **No reverse link required** — synthesis pages are leaves on the citation graph; forcing every cited page to link back would flood high-traffic concepts with synthesis backlinks | `wiki-lint synthesis_no_wiki_source` (forward direction only) |
-| `R3_lint_report` | Any page contains `[[lint-YYYY-MM-DD]]` | **No reverse link required** — lint reports are terminal, append-only, and never edited | n/a (lint reports are exempt from `reverse_link_missing`) |
+| `R3_audit_report` | Any page contains `[[lint-YYYY-MM-DD]]` or `[[health-YYYY-MM-DD]]` | **No reverse link required** — lint and health reports are terminal, append-only, and never edited | n/a (audit reports are exempt from `reverse_link_missing` on both ends) |
 
 Notes:
 
 - All current `type:` values (concept, entity, summary, decision, interview, meeting, learning, note) participate in `R1` symmetrically. There are no per-type asymmetries today; if per-type page directories land later (see the cogni-wiki Karpathy-pattern parity tracking issue), this table will gain per-relationship rows.
 - A backlink should read like prose, not a dumped list. The reverse `[[A]]` typically lives next to a sentence that earns its presence on B — see `wiki-update`'s diff-before-write discipline.
-- `R1` exempts pages whose filename starts with `lint-` (terminal lint reports) on both ends.
+- `R3` exempts pages whose filename starts with `lint-` or `health-` on both ends. As of v0.0.27, `wiki-health` only writes a log line and does not yet create `health-*.md` page files; the exemption is forward-compatible plumbing for a future health-report-as-page feature.
 - `wiki-lint reverse_link_missing` is a warning, not an error: it surfaces missing reverses but never auto-fixes them, mirroring the "lint reports, never auto-fixes" rule. Apply via `wiki-update` or, for fresh ingests, via `wiki-ingest`'s backlink-audit step.
 
 ## Log format
@@ -75,10 +75,10 @@ Notes:
 Append only. Format:
 
 ```
-## [YYYY-MM-DD] {ingest|query|lint|update|setup} | one-line note
+## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup} | one-line note
 ```
 
-Never rewrite or reorder log entries.
+The `synthesis` prefix (v0.0.23+) marks filed-back query answers — distinct from un-filed `query` reads. The `health` prefix (v0.0.27+) marks zero-LLM structural pre-flights — distinct from tokenful `lint` runs. Both are surfaced separately by `wiki-resume` and `wiki-dashboard`. Never rewrite or reorder log entries.
 
 ## Index format
 

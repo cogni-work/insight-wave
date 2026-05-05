@@ -255,7 +255,7 @@ def main() -> None:
             )
 
         for target in WIKILINK_RE.findall(text):
-                inbound_links.setdefault(target, set()).add(slug)
+            inbound_links.setdefault(target, set()).add(slug)
 
     existing_slugs = set(all_pages.keys())
     for slug, sources in sorted(inbound_links.items()):

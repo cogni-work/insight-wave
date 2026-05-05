@@ -54,7 +54,7 @@ The script emits JSON with:
 - `health_count_30d` — number of `health` lines (introduced in v0.0.27); a healthy session-start cadence puts this at one or more per active day
 - `raw_file_count` — files in `raw/`
 - `orphan_raw_count` — files in `raw/` not referenced by any page frontmatter (quick heuristic)
-- `schema_version` — value of `schema_version` in `.cogni-wiki/config.json`, or `null` if absent. Used by Step 3's Schema section to surface a migration nudge when the wiki predates a SCHEMA.md addition.
+- `schema_version` — value of `schema_version` in `.cogni-wiki/config.json`, or `null` if absent. Used by Step 3's Schema section to surface a migration nudge when the wiki predates the most recent SCHEMA.md additions.
 - `health` — a sub-object with `available`, `errors`, `warnings`, `entries_count_drift`, `claim_drift_count`, `claim_drift_date`. `available: false` when the health.py invocation failed; the rest of the status block still works.
 
 ### 3. Compose the status view
@@ -86,8 +86,10 @@ else:
 
 ## Schema
 - schema_version: {schema_version}
-{if schema_version is null OR schema_version < "0.0.3":
-- "Older than v0.0.3 — the SCHEMA.md "Forward → reverse link contract" section is missing. To migrate, append the contract section from `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template` to your `<wiki-root>/SCHEMA.md`, then bump `schema_version` to `"0.0.3"` in `.cogni-wiki/config.json`. `wiki-lint`'s `reverse_link_missing` check works either way; the migration only ensures the contract is auditable when reading the wiki on its own."
+{if schema_version is null OR schema_version < "0.0.4":
+- "Older than v0.0.4 — the SCHEMA.md shipped with this wiki is missing one or both of the following sections, depending on how old the wiki is. Apply the missing pieces from `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template`, then bump `schema_version` to `"0.0.4"` in `.cogni-wiki/config.json`. The migration is offline-safe and idempotent — lint and health work either way; the SCHEMA changes only ensure the contract is auditable when reading the wiki on its own.
+  - If schema_version < 0.0.3: append the `## Forward → reverse link contract` section between the existing `## Linking` and `## Log format` sections.
+  - If schema_version < 0.0.4: broaden the `## Log format` operation enum to `{ingest|query|synthesis|lint|health|update|setup}`, and rename the `R3_lint_report` row in the forward→reverse contract table to `R3_audit_report` covering both `[[lint-YYYY-MM-DD]]` and `[[health-YYYY-MM-DD]]` filenames. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/SKILL.md` §"Migration for existing wikis" for the full step-by-step."
 }
 
 ## Recent log (last 10 lines)

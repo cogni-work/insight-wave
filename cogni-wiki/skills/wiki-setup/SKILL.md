@@ -102,14 +102,19 @@ Write `<wiki-root>/.cogni-wiki/config.json` with JSON:
   "created": "{{YYYY-MM-DD}}",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.3",
+  "schema_version": "0.0.4",
   "publisher_base_url": "{{publisher_base_url_or_empty}}"
 }
 ```
 
-Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.3"` marks the addition of the SCHEMA "Forward → reverse link contract" table; `"0.0.2"` (which added `publisher_base_url`) and `"0.0.1"` configs remain valid on read.
+Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.4"` marks the addition of the `synthesis` and `health` log prefixes plus the `R3_audit_report` exemption broadening; `"0.0.3"` (which added the SCHEMA "Forward → reverse link contract" table), `"0.0.2"` (which added `publisher_base_url`), and `"0.0.1"` configs remain valid on read.
 
-**Migration for existing wikis (schema_version < 0.0.3).** When `wiki-resume` or any wiki-* skill encounters a wiki at `schema_version < 0.0.3`, append the `## Forward → reverse link contract` section from `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template` to the wiki's existing `SCHEMA.md` (between the existing `## Linking` and `## Log format` sections), then bump `.cogni-wiki/config.json` `schema_version` to `"0.0.3"`. The migration is idempotent — `wiki-lint` `reverse_link_missing` reports the same findings whether or not the SCHEMA section is present, so the user is never blocked on the migration; it only ensures the contract is auditable when reading the wiki on its own.
+**Migration for existing wikis (schema_version < 0.0.4).** When `wiki-resume` or any wiki-* skill encounters a wiki at `schema_version < 0.0.4`, the `SCHEMA.md` shipped inside that wiki is missing one or both of the following sections — apply the missing pieces by reading the differences against `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template`, then bump `.cogni-wiki/config.json` `schema_version` to `"0.0.4"`:
+
+- **`< 0.0.3`:** append the `## Forward → reverse link contract` section between the existing `## Linking` and `## Log format` sections.
+- **`< 0.0.4`:** in the `## Log format` block, broaden the operation enum to `{ingest|query|synthesis|lint|health|update|setup}`. In the forward→reverse contract table, rename row `R3_lint_report` to `R3_audit_report` and broaden its exemption text to cover both `[[lint-YYYY-MM-DD]]` and `[[health-YYYY-MM-DD]]` filenames (the `wiki-health` skill, added in v0.0.27, only writes a log line today; the `health-*` filename exemption is forward-compatible plumbing for a future health-report-as-page feature).
+
+The migration is idempotent and offline-safe. `wiki-lint`'s `reverse_link_missing` check works whether or not the SCHEMA section is present, and the new `health` log prefix is parsed by `wiki_status.sh` regardless of what SCHEMA.md says — the migration only ensures the contract is auditable when reading the wiki on its own.
 
 ### 5. Confirm to the user
 
