@@ -50,6 +50,7 @@ Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-resume/scripts/wiki_status.sh --wiki-r
 - `update_count_30d` — same for updates
 - `raw_file_count` — files in `raw/`
 - `orphan_raw_count` — files in `raw/` not referenced by any page frontmatter (quick heuristic)
+- `schema_version` — value of `schema_version` in `.cogni-wiki/config.json`, or `null` if absent. Used by Step 3's Schema section to surface a migration nudge when the wiki predates a SCHEMA.md addition.
 
 ### 3. Compose the status view
 
@@ -68,6 +69,12 @@ _Description_: {description}
 - {entries_count} pages
 - {raw_file_count} raw sources ({orphan_raw_count} unused)
 - {lint_count} lint reports ({days_since_lint} days since last)
+
+## Schema
+- schema_version: {schema_version}
+{if schema_version is null OR schema_version < "0.0.3":
+- "Older than v0.0.3 — the SCHEMA.md "Forward → reverse link contract" section is missing. To migrate, append the contract section from `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template` to your `<wiki-root>/SCHEMA.md`, then bump `schema_version` to `"0.0.3"` in `.cogni-wiki/config.json`. `wiki-lint`'s `reverse_link_missing` check works either way; the migration only ensures the contract is auditable when reading the wiki on its own."
+}
 
 ## Recent log (last 10 lines)
 {if --verbose, print them; otherwise print the most recent 3}
