@@ -15,6 +15,7 @@ updated: YYYY-MM-DD                   # REQUIRED. Set at every edit
 sources:                              # Optional but strongly encouraged
   - ../raw/<filename>                 # Relative path from wiki/pages/ to raw/ file
   - https://<url>                     # Or a stable external URL
+  - wiki://<other-page-slug>          # Or a wiki-internal reference (synthesis pages)
 publisher_url: https://<url>          # Optional. Canonical URL at the publisher
 related:                              # Optional. Curated cross-reference list
   - <other-page-slug>
@@ -45,7 +46,8 @@ One of:
 | `entity` | Specific person, organization, product, project, place |
 | `summary` | A condensed version of one raw source, paper, or article |
 | `decision` | A choice made and the reasoning — includes the alternatives considered |
-| `learning` | A generalized takeaway drawn from multiple sources or experience |
+| `learning` | A generalized takeaway drawn from multiple sources or experience (typically authored by hand or filed during ingest) |
+| `synthesis` | An LLM-synthesised answer derived from other wiki pages — filed back by `wiki-query --file-back yes`. Sources are `wiki://<slug>` references to the pages it draws from, not raw files. Distinguishes wiki→wiki derivation from raw-source learnings |
 | `note` | A loose observation that hasn't crystallized — often promoted later to `concept` or `learning` |
 
 Pick the most specific type. `wiki-lint` will warn when a page's body has drifted far from its declared type.
@@ -65,7 +67,8 @@ Pick the most specific type. `wiki-lint` will warn when a page's body has drifte
 
 - Relative paths to files under `<wiki-root>/raw/` — always `../raw/filename` from the page's location in `wiki/pages/`
 - Or stable URLs
-- A page with no sources is flagged `warn` by `wiki-lint` unless its `type` is `decision` or `note`
+- Or `wiki://<slug>` for wiki-internal references — used by `type: synthesis` pages to cite the wiki pages they were derived from. `wiki-lint` validates that each `wiki://<slug>` target page exists (a missing target is a `broken_wiki_source` error).
+- A page with no sources is flagged `warn` by `wiki-lint` unless its `type` is `decision` or `note`. A `type: synthesis` page with no `wiki://` source is flagged `synthesis_no_wiki_source` (warn) — synthesis pages must cite their wiki provenance.
 
 ### `publisher_url` (optional)
 
@@ -103,5 +106,24 @@ related:
   - compounding-knowledge
   - wiki-vs-rag
 status: stable
+---
+```
+
+## Synthesis page example
+
+A `type: synthesis` page filed back by `wiki-query` looks like this — note `wiki://`-prefixed sources rather than `../raw/` paths:
+
+```yaml
+---
+id: rlhf-vs-cai-comparison
+title: RLHF vs Constitutional AI — wiki view
+type: synthesis
+tags: [llms, alignment, comparison]
+created: 2026-05-05
+updated: 2026-05-05
+sources:
+  - wiki://constitutional-ai
+  - wiki://rlhf-overview
+  - wiki://rlhf-limitations
 ---
 ```

@@ -33,13 +33,14 @@ from pathlib import Path
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
 
-VALID_TYPES = ["concept", "entity", "summary", "decision", "learning", "note"]
+VALID_TYPES = ["concept", "entity", "summary", "decision", "learning", "synthesis", "note"]
 TYPE_COLORS = {
     "concept": "#2563eb",
     "entity": "#059669",
     "summary": "#d97706",
     "decision": "#dc2626",
     "learning": "#7c3aed",
+    "synthesis": "#0891b2",
     "note": "#64748b",
 }
 

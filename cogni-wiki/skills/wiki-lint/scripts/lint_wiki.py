@@ -18,6 +18,8 @@ Detects:
     - Missing required frontmatter fields
     - Invalid type values
     - Missing source files under raw/
+    - Broken wiki:// sources (target page does not exist)
+    - Synthesis pages missing wiki:// sources
     - Orphan pages (no inbound wikilinks)
     - Stale drafts / stale pages
     - Tag typos (edit distance ≤ TAG_TYPO_MAX_DIST with ≥ TAG_TYPO_RATIO usage ratio)
@@ -44,8 +46,8 @@ STALE_DRAFT_DAYS = 180
 STALE_PAGE_DAYS = 365
 TAG_TYPO_MAX_DIST = 2
 TAG_TYPO_RATIO = 3
-VALID_TYPES = {"concept", "entity", "summary", "decision", "learning", "note"}
-TYPES_REQUIRING_SOURCES = {"concept", "entity", "summary", "learning"}
+VALID_TYPES = {"concept", "entity", "summary", "decision", "learning", "synthesis", "note"}
+TYPES_REQUIRING_SOURCES = {"concept", "entity", "summary", "learning", "synthesis"}
 REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -215,7 +217,9 @@ def main() -> None:
                         "message": f"type '{ptype}' but no sources field",
                     }
                 )
-            # Missing source files
+            # Validate per-source: missing raw files, broken wiki:// targets,
+            # and remember whether any wiki:// source was seen (for synthesis).
+            has_wiki_source = False
             for src in sources:
                 if isinstance(src, str) and src.startswith("../raw/"):
                     rel = src[len("../raw/") :]
@@ -227,6 +231,34 @@ def main() -> None:
                                 "message": f"source file not found: raw/{rel}",
                             }
                         )
+                elif isinstance(src, str) and src.startswith("wiki://"):
+                    has_wiki_source = True
+                    target = src[len("wiki://") :].strip()
+                    if not target or not (pages_dir / f"{target}.md").is_file():
+                        errors.append(
+                            {
+                                "class": "broken_wiki_source",
+                                "page": slug,
+                                "message": f"wiki:// source not found: wiki://{target}",
+                            }
+                        )
+
+            # Synthesis pages must cite at least one wiki:// source. Empty
+            # sources is already covered by the no_sources warning above; this
+            # catches the case where sources are present but only ../raw/ or URL
+            # entries — a synthesis without wiki provenance is suspicious.
+            if (
+                ptype == "synthesis"
+                and len(sources) > 0
+                and not has_wiki_source
+            ):
+                warnings.append(
+                    {
+                        "class": "synthesis_no_wiki_source",
+                        "page": slug,
+                        "message": "type 'synthesis' but no wiki:// source — synthesis pages must cite the wiki pages they derive from",
+                    }
+                )
 
         # tag counts
         tags = fm.get("tags", [])

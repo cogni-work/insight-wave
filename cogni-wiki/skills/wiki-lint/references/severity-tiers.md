@@ -15,6 +15,7 @@ An error means the wiki's contract is broken and a reader (human or LLM) might m
 | **Missing required frontmatter** | `id`, `title`, `type`, `created`, or `updated` missing | `wiki-update` to add the field |
 | **Invalid type** | `type:` value is not one of the allowed values | `wiki-update` to pick a valid type |
 | **Missing source file** | `sources: [../raw/foo.pdf]` where `raw/foo.pdf` doesn't exist | Either restore the source or remove the reference |
+| **Broken wiki source** | `sources: [wiki://other-slug]` where `wiki/pages/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
 | **Duplicate slug** | Two pages with the same `id` frontmatter (shouldn't be possible if filenames are unique, but check) | Rename one |
 
 Errors are reported with a file path and line number so the user can jump directly.
@@ -31,6 +32,7 @@ A warning means the wiki works but is accumulating debt. Warnings should be revi
 | **Stale draft** | `status: draft` and `updated` > 180 days ago | `wiki-update` to promote or retire |
 | **Stale page** | `updated` > 365 days ago, regardless of status | Review and refresh or mark `status: stale` |
 | **No sources** | `sources:` empty or missing, and `type` is not `decision` or `note` | `wiki-update` to add citations |
+| **Synthesis without wiki source** | `type: synthesis` but no `wiki://`-prefixed entry in `sources:`. Synthesis pages must cite the wiki pages they derived from. | `wiki-update` to add `wiki://<slug>` references, or re-file via `wiki-query --file-back yes` |
 | **Tag typo** | Tag differs from another tag by edit distance ≤ 2, one used ≥3× more than the other | `wiki-update` to normalize |
 | **Contradiction** | Two pages make opposing claims about the same entity or concept (semantic pass) | `wiki-update` to reconcile, or add explicit contradiction note |
 | **Type drift** | Page body's structure doesn't match declared `type` (e.g. a `concept` page that is actually a `summary`) | `wiki-update` to retype or rewrite |
@@ -48,7 +50,7 @@ Info is not a finding — it's descriptive statistics that help the user underst
 - **Average sources per page**
 - **Most-linked pages** — top 10 pages by inbound `[[wikilink]]` count
 - **Least-linked pages** — pages with exactly 0 or 1 inbound links, excluding orphans (already in warnings)
-- **Log activity** — ingests, queries, lints in the last 30 days
+- **Log activity** — ingests, queries, syntheses, lints in the last 30 days
 - **Age histogram** — buckets for pages by age: <7d, <30d, <90d, <365d, >365d
 - **Last resweep** — date and age (in days) of the most recent `wiki-claims-resweep` run, surfaced when `.cogni-wiki/last-resweep.json` exists
 
