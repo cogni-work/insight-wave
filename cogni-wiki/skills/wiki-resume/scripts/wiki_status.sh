@@ -2,7 +2,7 @@
 # wiki_status.sh — collect status facts for a cogni-wiki and emit JSON.
 #
 # Usage:
-#   wiki_status.sh --wiki-root <path>
+#   wiki_status.sh --wiki-root <path> [--skip-health]
 #
 # Output contract:
 #   {"success": true|false, "data": { ... }, "error": "string"}
@@ -12,6 +12,12 @@
 # Rationale: a shell script is the right tool here because everything we need
 # is file counting, date arithmetic, and grep over log.md. Delegating to python3
 # only for JSON assembly keeps the shell portion trivial and portable.
+#
+# v0.0.27: also dispatches wiki-health/scripts/health.py once and folds the
+# resulting errors / warnings / entries_count_drift / claim_drift_count into
+# the JSON output under the `health` sub-object. Failures are non-fatal —
+# `health.available` flips to false and the rest of the status block still
+# works.
 
 set -u
 
@@ -21,7 +27,7 @@ usage() {
 wiki_status.sh — collect status facts for a cogni-wiki and emit JSON.
 
 Usage:
-  wiki_status.sh --wiki-root <path>
+  wiki_status.sh --wiki-root <path> [--skip-health]
   wiki_status.sh -h | --help
 
 Output contract:
@@ -30,6 +36,7 @@ USAGE
 }
 
 WIKI_ROOT=""
+SKIP_HEALTH=0
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help)
@@ -39,6 +46,10 @@ while [ $# -gt 0 ]; do
     --wiki-root)
       WIKI_ROOT="${2:-}"
       shift 2
+      ;;
+    --skip-health)
+      SKIP_HEALTH=1
+      shift
       ;;
     *)
       printf '{"success": false, "data": {}, "error": "unknown arg: %s"}\n' "$1"
@@ -68,11 +79,15 @@ LOG_FILE="$WIKI_ROOT/wiki/log.md"
 RAW_DIR="$WIKI_ROOT/raw"
 CONFIG_FILE="$WIKI_ROOT/.cogni-wiki/config.json"
 
+# Resolve script dir so we can find ../../wiki-health/scripts/health.py.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+HEALTH_SCRIPT="$SCRIPT_DIR/../../wiki-health/scripts/health.py"
+
 # ---------- counts ----------
 entries_count=0
 lint_count=0
 if [ -d "$PAGES_DIR" ]; then
-  entries_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name '*.md' ! -name 'lint-*.md' 2>/dev/null | wc -l | tr -d ' ')
+  entries_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name '*.md' ! -name 'lint-*.md' ! -name 'health-*.md' 2>/dev/null | wc -l | tr -d ' ')
   lint_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name 'lint-*.md' 2>/dev/null | wc -l | tr -d ' ')
 fi
 
@@ -107,6 +122,7 @@ ingest_count_30d=0
 query_count_30d=0
 update_count_30d=0
 synthesis_count_30d=0
+health_count_30d=0
 if [ -f "$LOG_FILE" ]; then
   # Compute cutoff date (30 days ago) in YYYY-MM-DD.
   if date -d "30 days ago" +%Y-%m-%d >/dev/null 2>&1; then
@@ -130,16 +146,18 @@ if [ -f "$LOG_FILE" ]; then
           else if (op == "query") query++
           else if (op == "update") update++
           else if (op == "synthesis") synthesis++
+          else if (op == "health") health++
         }
       }
       END {
-        printf "%d %d %d %d", (ingest+0), (query+0), (update+0), (synthesis+0)
+        printf "%d %d %d %d %d", (ingest+0), (query+0), (update+0), (synthesis+0), (health+0)
       }
     ' "$LOG_FILE")
     ingest_count_30d=$(printf '%s' "$counts" | awk '{print $1}')
     query_count_30d=$(printf '%s' "$counts" | awk '{print $2}')
     update_count_30d=$(printf '%s' "$counts" | awk '{print $3}')
     synthesis_count_30d=$(printf '%s' "$counts" | awk '{print $4}')
+    health_count_30d=$(printf '%s' "$counts" | awk '{print $5}')
   fi
 fi
 
@@ -164,6 +182,15 @@ $(find "$RAW_DIR" -maxdepth 1 -type f 2>/dev/null)
 EOF
 fi
 
+# ---------- health preflight (v0.0.27) ----------
+health_json=""
+if [ "$SKIP_HEALTH" -eq 0 ] && [ -f "$HEALTH_SCRIPT" ]; then
+  # health.py is stdlib-only and fast; capture its stdout. Failures are
+  # non-fatal — we just leave health_json empty and the python assembler
+  # below will set health.available=false.
+  health_json=$(python3 "$HEALTH_SCRIPT" --wiki-root "$WIKI_ROOT" 2>/dev/null || true)
+fi
+
 # ---------- assemble JSON via python3 ----------
 # Pass values via env to avoid shell-escape hell.
 export WS_ENTRIES_COUNT="$entries_count"
@@ -176,8 +203,10 @@ export WS_INGEST_30="$ingest_count_30d"
 export WS_QUERY_30="$query_count_30d"
 export WS_UPDATE_30="$update_count_30d"
 export WS_SYNTHESIS_30="$synthesis_count_30d"
+export WS_HEALTH_30="$health_count_30d"
 export WS_RECENT_LOG="$recent_log"
 export WS_CONFIG_FILE="$CONFIG_FILE"
+export WS_HEALTH_JSON="$health_json"
 
 python3 - <<'PY'
 import json
@@ -204,6 +233,33 @@ recent_log_lines = [line for line in recent_log_raw.splitlines() if line.strip()
 
 last_lint = os.environ.get("WS_LAST_LINT", "").strip() or None
 
+# Parse the embedded health.py JSON if present.
+health_block = {
+    "available": False,
+    "errors": None,
+    "warnings": None,
+    "entries_count_drift": None,
+    "claim_drift_count": None,
+    "claim_drift_date": None,
+}
+health_raw = os.environ.get("WS_HEALTH_JSON", "").strip()
+if health_raw:
+    try:
+        parsed = json.loads(health_raw)
+        if parsed.get("success"):
+            stats = (parsed.get("data") or {}).get("stats") or {}
+            health_block = {
+                "available": True,
+                "errors": int(stats.get("errors", 0) or 0),
+                "warnings": int(stats.get("warnings", 0) or 0),
+                "entries_count_drift": int(stats.get("entries_count_drift", 0) or 0),
+                "claim_drift_count": int(stats.get("claim_drift_count", 0) or 0),
+                "claim_drift_date": stats.get("claim_drift_date"),
+            }
+    except (json.JSONDecodeError, ValueError, TypeError):
+        # Leave health_block in its "unavailable" state.
+        pass
+
 data = {
     "name": cfg.get("name"),
     "slug": cfg.get("slug"),
@@ -219,8 +275,10 @@ data = {
     "query_count_30d": int(os.environ.get("WS_QUERY_30", "0") or 0),
     "update_count_30d": int(os.environ.get("WS_UPDATE_30", "0") or 0),
     "synthesis_count_30d": int(os.environ.get("WS_SYNTHESIS_30", "0") or 0),
+    "health_count_30d": int(os.environ.get("WS_HEALTH_30", "0") or 0),
     "recent_log": recent_log_lines,
     "schema_version": cfg.get("schema_version"),
+    "health": health_block,
 }
 
 print(json.dumps({"success": True, "data": data, "error": ""}))
