@@ -19,12 +19,12 @@ skills/                         10 wiki skills
       page-frontmatter.md         YAML schema (id, title, tags, type, sources, ...)
       ingest-workflow.md          Step-by-step ingest behavior
       batch-mode.md               --batch-file + --discover schema, execution model, error policy, examples
-  wiki-query/                     Ask questions; answer from wiki, never from memory
+  wiki-query/                     Ask questions; answer from wiki, never from memory; optionally file the answer back as `type: synthesis`
     references/
-      query-patterns.md           Read-before-answer, citation discipline
+      query-patterns.md           Read-before-answer, citation discipline, synthesis file-back walkthrough
   wiki-lint/                      Severity-tiered health audit
     scripts/
-      lint_wiki.py                Orphans, broken links, stale dates, frontmatter check
+      lint_wiki.py                Orphans, broken links, stale dates, frontmatter check, wiki:// source validation
     references/
       severity-tiers.md           Error / warn / info classification
   wiki-update/                    Diff-gated page revisions with stale-sweep
@@ -32,7 +32,7 @@ skills/                         10 wiki skills
       update-discipline.md        Citation-required, diff-before-write rules
   wiki-resume/                    Status dashboard — entry count, last-lint age, next action
     scripts/
-      wiki_status.sh              Emits {success, data, error} JSON
+      wiki_status.sh              Emits {success, data, error} JSON (incl. synthesis_count_30d)
   wiki-dashboard/                 Self-contained HTML overview (pages, tags, backlink graph)
     scripts/
       render_dashboard.py         Reads wiki/ → writes wiki-dashboard.html (stdlib only)
@@ -77,26 +77,31 @@ Created by `wiki-setup` at the user-chosen root (default `cogni-wiki/{slug}/` re
     └── config.json            { "name", "slug", "created", "entries_count", "last_lint" }
 ```
 
+Pages stay flat under `wiki/pages/`; the `type:` frontmatter field carries the semantic distinction (concept / entity / summary / decision / learning / synthesis / note). Per-type directories are explicitly deferred — see the parent tracking issue for the Karpathy-pattern parity work.
+
 ## Page Frontmatter
 
 ```yaml
 ---
 id: <slug>
 title: <human-readable>
-type: concept | entity | summary | decision | learning | note
+type: concept | entity | summary | decision | learning | synthesis | note
 tags: [tag1, tag2]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-sources: [../raw/paper-xyz.pdf, https://...]
+sources: [../raw/paper-xyz.pdf, https://..., wiki://other-slug]
 ---
 ```
+
+The `synthesis` type (introduced in v0.0.23) is reserved for LLM-derived answers that `wiki-query --file-back yes` files back into the wiki. Synthesis pages cite their wiki provenance via `wiki://<slug>` entries in `sources:` rather than `../raw/` paths; `wiki-lint` enforces this contract. See `skills/wiki-ingest/references/page-frontmatter.md` for the full schema.
 
 ## Key Conventions
 
 - **Wiki is LLM-maintained, human-curated sources.** The user drops documents in `raw/`; Claude does all the summarising, linking, and bookkeeping.
 - **Always read the wiki for queries — never answer from memory.** Skills enforce this discipline in every SKILL.md.
-- **Append-only log.** Every ingest, query, lint, and update writes a line to `wiki/log.md` with an ISO date prefix.
+- **Append-only log.** Every ingest, query, synthesis, lint, and update writes a line to `wiki/log.md` with an ISO date prefix. The `synthesis` operation prefix (v0.0.23+) distinguishes filed-back query answers from un-filed `query` reads — both are surfaced separately in `wiki-resume` and `wiki-dashboard`.
 - **Bidirectional links.** `[[wikilinks]]` are audited after every ingest; related pages get backlink updates.
+- **Queries can compound.** `wiki-query --file-back yes` writes the answer to `wiki/pages/<slug>.md` as `type: synthesis` with `wiki://<source-slug>` references in `sources:`, so explorations enrich the wiki rather than evaporate. `wiki-lint` validates each `wiki://` target slug exists (`broken_wiki_source` error) and warns when a synthesis page lacks any `wiki://` source (`synthesis_no_wiki_source` warn).
 - **Diff before write.** `wiki-update` shows the planned change before modifying a page and requires a source citation for any new claim.
 - **Stdlib-only scripts.** bash 3.2 + python3 stdlib, no pip or npm dependencies. JSON output format `{success, data, error}`.
 - **No hooks.** All index/log maintenance lives inside the skills for debuggability.
@@ -124,6 +129,8 @@ The advisory lock at `<wiki-root>/.cogni-wiki/.lock` is **retained as defence-in
 2. Wrap every read-modify-write call site in `with _wiki_lock(wiki_root): ...`.
 3. Prefer routing the mutation through an existing locked script (e.g. `config_bump.py`) rather than inlining the write in a new code path — each inlined write is a new place the invariant can be missed.
 4. Never edit any file in the table by hand from a SKILL.md workflow step; always go through the locked script. Hand-edits bypass the lock.
+
+**Note for `wiki-query` file-back (v0.0.23):** the synthesis file-back path writes `wiki/pages/<new-slug>.md` (unique by construction — no lock needed), and routes its `entries_count` bump through `config_bump.py` (locked). It does not need to add a new shared file to the table.
 
 **Known tech debt.** `_wiki_lock` is currently duplicated across three scripts (`backlink_audit.py`, `wiki_index_update.py`, `config_bump.py`). A future consolidation into a shared `cogni-wiki/skills/wiki-ingest/scripts/_wikilock.py` helper would remove the drift risk, but is a non-urgent refactor — the three copies are byte-identical today.
 

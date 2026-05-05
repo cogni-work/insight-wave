@@ -22,7 +22,7 @@ Karpathy's insight: what if knowledge was **compiled once at ingestion** instead
 | Stale claims | Still retrievable, silently | Flagged and reconciled |
 | Debugging wrong answers | Reverse-engineer vector math | Read the markdown file |
 | Token efficiency | 2K–5K chunks re-retrieved per query | Pre-synthesized; up to 95% reduction vs full-doc loading |
-| Compounding over time | No — same effort per query | Yes — wiki gets denser each ingest |
+| Compounding over time | No — same effort per query | Yes — wiki gets denser each ingest, and queries themselves can be filed back as `type: synthesis` pages |
 
 **Where RAG still wins:** Scale beyond ~50K–100K tokens of compiled content; rapidly changing data (daily feeds, inventory); strict source-level attribution for legal/compliance; multi-domain enterprise with role-based access. For those cases, use RAG — or combine both (the hybrid approach [never lost a single round](references/claude-research-karparthy.md) in head-to-head benchmarks).
 
@@ -61,25 +61,27 @@ sources: [../raw/bai-et-al-2022.pdf]
 ---
 ```
 
+Page types: `concept`, `entity`, `summary`, `decision`, `learning`, `synthesis`, `note`. The `synthesis` type (introduced in v0.0.23) is reserved for LLM-derived answers that `wiki-query --file-back yes` files back into the wiki; sources for these pages are `wiki://<slug>` references rather than raw files.
+
 ## What it does
 
 1. **Bootstrap** a new wiki with directory layout, SCHEMA.md contract, and seed files → `.cogni-wiki/config.json` + `wiki/index.md` + `wiki/log.md` + `wiki/overview.md` → wiki-ingest, wiki-query, wiki-lint, wiki-update, wiki-resume, wiki-dashboard
 2. **Ingest** source documents into structured wiki pages with YAML frontmatter, backlink audit, and index updates → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-update, wiki-dashboard
-3. **Query** the wiki to answer questions — reads pages directly, never from model memory, with `[[wikilink]]` citations → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-update, wiki-dashboard
-4. **Lint** the wiki for health problems — broken wikilinks, orphan pages, stale dates, frontmatter gaps, contradictions, plus `claim_drift` from the latest re-verify sweep → `wiki/pages/lint-*.md` → wiki-update, wiki-query, wiki-claims-resweep
+3. **Query** the wiki to answer questions — reads pages directly, never from model memory, with `[[wikilink]]` citations; optionally files the answer back as a `type: synthesis` page (introduced in v0.0.23) so explorations compound rather than evaporating into chat history → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-update, wiki-dashboard
+4. **Lint** the wiki for health problems — broken wikilinks, orphan pages, stale dates, frontmatter gaps, contradictions, broken `wiki://` sources, synthesis pages without wiki provenance, plus `claim_drift` from the latest re-verify sweep → `wiki/pages/lint-*.md` → wiki-update, wiki-query, wiki-claims-resweep
 5. **Update** existing pages with diff-before-write discipline, source citation requirements, and stale-sweep of related pages → `wiki/pages/*.md` → wiki-query, wiki-lint, wiki-dashboard
-6. **Resume** with status, activity summary, and recommended next action
-7. **Dashboard** as a self-contained HTML overview — pages by type, tag cloud, backlink graph, and activity histograms → `wiki-dashboard.html` (self-contained HTML dashboard)
+6. **Resume** with status, activity summary, and recommended next action (now surfaces `synthesis_count_30d` distinctly from `query_count_30d`)
+7. **Dashboard** as a self-contained HTML overview — pages by type (incl. synthesis), tag cloud, backlink graph, and activity histograms → `wiki-dashboard.html` (self-contained HTML dashboard)
 8. **Cold-start from research** — chains `cogni-research:research-setup` → `research-report` → `wiki-setup` → `wiki-ingest --discover research:<slug>` in one dispatch (Mode A from a topic, Mode B from an existing research slug) → populated wiki seeded with sub-question-sized pages → wiki-query, wiki-lint, wiki-refresh
 9. **Refresh stale pages from research** — matches lint-flagged stale pages to sub-questions of an existing cogni-research project via Jaccard token overlap, materialises one synthesis per match, and dispatches wiki-update sequentially → updated `wiki/pages/*.md` with bumped `updated:` and refreshed sources → wiki-query, wiki-lint
 10. **Re-verify wiki citations** — extracts inline-cited statements from existing pages deterministically, dispatches them through cogni-claims for source re-verification, and writes a sweep report plus a lint-bridge JSON; report-only, never mutates `wiki/pages/` → `<wiki-root>/raw/claims-resweep-<date>/report.md` + `.cogni-wiki/last-resweep.json` → wiki-lint (`claim_drift` warning), wiki-update (manual stale-marker)
 
 ## What it means for you
 
-- **Compound your knowledge, not your effort.** Each ingest aims to leave the wiki denser and more interconnected than before — up to 95% token reduction vs re-loading full documents per query, with every source compiled once rather than re-synthesized on demand.
+- **Compound your knowledge, not your effort.** Each ingest aims to leave the wiki denser and more interconnected than before — up to 95% token reduction vs re-loading full documents per query, with every source compiled once rather than re-synthesized on demand. As of v0.0.23, **queries themselves compound** too: `wiki-query --file-back yes` files the answer as a `type: synthesis` page that future queries read directly.
 - **Ground every answer in curated sources.** `wiki-query` reads the wiki before answering — never from model memory. If the wiki has no page on a topic, the answer says so rather than filling the gap with hallucinated filler.
 - **Keep your knowledge portable across any tool, indefinitely.** `SCHEMA.md` ships inside every wiki directory, so the wiki aims to remain fully readable even if cogni-wiki is uninstalled or replaced — plain markdown, plain backlinks, zero lock-in. Open it in Obsidian, VS Code, or `grep` today; hand it off in 5 years.
-- **Keep every wiki page trustworthy.** `wiki-update` shows the diff before modifying any page and requires a source citation for every new claim — zero silent writes across all 10 skills, so the wiki stays citable.
+- **Keep every wiki page trustworthy.** `wiki-update` shows the diff before modifying any page and requires a source citation for every new claim — zero silent writes across all 10 skills, so the wiki stays citable. Synthesis pages additionally cite `wiki://` provenance, validated by `wiki-lint`.
 
 ## Install
 
@@ -96,24 +98,24 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
-/cogni-wiki:wiki-setup                    # Bootstrap a new wiki
+/cogni-wiki:wiki-setup                                         # Bootstrap a new wiki
 # (drop a paper in cogni-wiki/primary/raw/)
-/cogni-wiki:wiki-ingest                   # Summarise + cross-link
-/cogni-wiki:wiki-query "what did I learn about X?"
-/cogni-wiki:wiki-lint                     # After every 5–10 ingests
-/cogni-wiki:wiki-update --page <slug>     # Revise a page with new evidence
-/cogni-wiki:wiki-dashboard                # Visual HTML overview
-/cogni-wiki:wiki-resume                   # "Where was I?"
-/cogni-wiki:wiki-from-research            # Cold-start: research → wiki in one dispatch
-/cogni-wiki:wiki-refresh --from-research <slug>   # Refresh stale pages from a research project
-/cogni-wiki:wiki-claims-resweep           # Re-verify cited URLs against current source content
+/cogni-wiki:wiki-ingest                                        # Summarise + cross-link
+/cogni-wiki:wiki-query "what did I learn about X?" --file-back yes  # Answer + file as type: synthesis
+/cogni-wiki:wiki-lint                                          # After every 5–10 ingests
+/cogni-wiki:wiki-update --page <slug>                          # Revise a page with new evidence
+/cogni-wiki:wiki-dashboard                                     # Visual HTML overview (incl. synthesis bucket)
+/cogni-wiki:wiki-resume                                        # "Where was I?" (with synthesis_count_30d)
+/cogni-wiki:wiki-from-research                                 # Cold-start: research → wiki in one dispatch
+/cogni-wiki:wiki-refresh --from-research <slug>                # Refresh stale pages from a research project
+/cogni-wiki:wiki-claims-resweep                                # Re-verify cited URLs against current source content
 ```
 
 Or just describe what you want in natural language:
 
 - "Set up a wiki for my AI safety research"
 - "Ingest this paper into the wiki"
-- "What does my wiki say about constitutional AI?"
+- "What does my wiki say about constitutional AI? Save the answer as a synthesis."
 - "Is my wiki healthy?"
 - "Show me the wiki as a dashboard"
 - "Cold-start a wiki from research on agent economy"
@@ -130,11 +132,11 @@ Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/
 |-----------|------|-------------|
 | wiki-setup | Skill | Bootstrap a new Karpathy-style LLM wiki at a user-chosen directory |
 | wiki-ingest | Skill | Ingest a source document into the wiki with summary, frontmatter, and backlink audit |
-| wiki-query | Skill | Answer a question by reading the wiki — never from memory |
-| wiki-lint | Skill | Audit the wiki for broken wikilinks, orphan pages, stale dates, contradictions, and `claim_drift` from the latest re-verify sweep |
+| wiki-query | Skill | Answer a question by reading the wiki — never from memory; optionally files the answer back as a `type: synthesis` page |
+| wiki-lint | Skill | Audit the wiki for broken wikilinks, orphan pages, stale dates, contradictions, broken `wiki://` sources, synthesis pages without wiki provenance, and `claim_drift` from the latest re-verify sweep |
 | wiki-update | Skill | Revise an existing wiki page with diff-before-write discipline and source citations |
-| wiki-resume | Skill | Show status, activity, and recommended next action for the wiki |
-| wiki-dashboard | Skill | Generate a self-contained HTML dashboard with tag cloud, backlink graph, and histograms |
+| wiki-resume | Skill | Show status, activity (incl. synthesis count), and recommended next action for the wiki |
+| wiki-dashboard | Skill | Generate a self-contained HTML dashboard with tag cloud, backlink graph, type bars (incl. synthesis), and histograms |
 | wiki-from-research | Skill | Cold-start orchestrator: chains cogni-research's setup + report into wiki-setup + wiki-ingest in one dispatch (Mode A from a topic, Mode B from an existing research slug) |
 | wiki-refresh | Skill | Refresh stale wiki pages with fresh evidence from a completed cogni-research project; Jaccard match, batch-confirmed, sequential wiki-update dispatch |
 | wiki-claims-resweep | Skill | Re-verify inline-cited URLs in existing wiki pages against current source content via cogni-claims; report-only, writes a sweep report and a lint-bridge JSON |
@@ -153,8 +155,8 @@ cogni-wiki/
 └── skills/                          10 wiki skills
     ├── wiki-setup/                  Bootstrap a new wiki
     ├── wiki-ingest/                 Ingest sources into wiki pages
-    ├── wiki-query/                  Answer questions from wiki content
-    ├── wiki-lint/                   Health audit with severity tiers (incl. claim_drift)
+    ├── wiki-query/                  Answer questions from wiki content; file back as type: synthesis
+    ├── wiki-lint/                   Health audit with severity tiers (incl. claim_drift, broken_wiki_source, synthesis_no_wiki_source)
     ├── wiki-update/                 Diff-gated page revisions
     ├── wiki-resume/                 Status and next-action dashboard
     ├── wiki-dashboard/              Self-contained HTML overview
@@ -179,6 +181,7 @@ Integrations with `cogni-narrative` and `cogni-consulting` remain planned for v0
 
 - **Andrej Karpathy** — [LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). The pattern this plugin implements.
 - **kfchou/wiki-skills** — [reference Claude Code implementation](https://github.com/kfchou/wiki-skills). The five-skill shape (`wiki-init`, `wiki-ingest`, `wiki-query`, `wiki-lint`, `wiki-update`) that inspired this plugin's layout. cogni-wiki adds `wiki-resume`, `wiki-dashboard`, `wiki-from-research`, `wiki-refresh`, and `wiki-claims-resweep` to match cogni-* ecosystem conventions and to close the research → wiki and citation re-verify loops.
+- **sdh07/llm-wiki-agent** and **sdh07/omegawiki** — reference implementations of the Karpathy pattern that informed the v0.0.23 audit (see tracking issue #212): the synthesis page type, `wiki://` source convention, and split lint/health vocabulary all draw on patterns these projects pioneered.
 
 ## License
 
