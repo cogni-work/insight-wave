@@ -5,7 +5,7 @@ Compile-time knowledge engine for personal and small-team knowledge work — a b
 ## Plugin Architecture
 
 ```
-skills/                         10 wiki skills
+skills/                         11 wiki skills
   wiki-setup/                     Bootstrap a new wiki at a user-chosen root
     references/
       SCHEMA.md.template          Copied into the wiki at setup time
@@ -22,17 +22,22 @@ skills/                         10 wiki skills
   wiki-query/                     Ask questions; answer from wiki, never from memory; optionally file the answer back as `type: synthesis`
     references/
       query-patterns.md           Read-before-answer, citation discipline, synthesis file-back walkthrough
-  wiki-lint/                      Severity-tiered health audit
+  wiki-health/                    Zero-LLM structural integrity preflight; runs every session via wiki-resume (v0.0.27)
     scripts/
-      lint_wiki.py                Orphans, broken links, stale dates, frontmatter check, wiki:// source validation
+      health.py                   Broken wikilinks, missing frontmatter, broken raw/wiki:// sources, id mismatch, invalid type, stub pages, entries_count drift, index/filesystem drift, claim_drift count
     references/
-      severity-tiers.md           Error / warn / info classification
+      checks.md                   Canonical list of structural checks with detection logic and the lint boundary
+  wiki-lint/                      Semantic, LLM-powered audit; runs wiki-health first as preflight (v0.0.27)
+    scripts/
+      lint_wiki.py                Deterministic warnings (orphans, stale, tag typos, reverse links, claim_drift narrative); the LLM-powered semantic checks (contradictions, type drift, undercited claims, missing concept pages) run from the SKILL.md workflow
+    references/
+      severity-tiers.md           Health vs Lint coverage matrix + error/warn/info classification
   wiki-update/                    Diff-gated page revisions with stale-sweep
     references/
       update-discipline.md        Citation-required, diff-before-write rules
-  wiki-resume/                    Status dashboard — entry count, last-lint age, next action
+  wiki-resume/                    Status dashboard — entry count, last-lint age, health snapshot, next action; runs wiki-health automatically (v0.0.27)
     scripts/
-      wiki_status.sh              Emits {success, data, error} JSON (incl. synthesis_count_30d)
+      wiki_status.sh              Emits {success, data, error} JSON (incl. synthesis_count_30d, health_count_30d, embedded health.errors/warnings/drifts)
   wiki-dashboard/                 Self-contained HTML overview (pages, tags, backlink graph)
     scripts/
       render_dashboard.py         Reads wiki/ → writes wiki-dashboard.html (stdlib only)
@@ -53,11 +58,11 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 10 | wiki-setup, wiki-ingest, wiki-query, wiki-lint, wiki-update, wiki-resume, wiki-dashboard, wiki-from-research, wiki-refresh, wiki-claims-resweep |
+| Skills | 11 | wiki-setup, wiki-ingest, wiki-query, wiki-health, wiki-lint, wiki-update, wiki-resume, wiki-dashboard, wiki-from-research, wiki-refresh, wiki-claims-resweep |
 | Agents | 0 | — (wiki-ingest batch mode runs sequentially in the orchestrator's own context as of v0.0.22; the previous `ingest-worker` per-source subagent was removed because parallel fan-out broke the Karpathy-pattern invariant that source N+1 must see source N's page) |
 | Commands | 0 | — (skills serve as slash commands per plugin-dev guidance) |
 | Hooks | 0 | — (all bookkeeping lives inside skills) |
-| Scripts | 10 | backlink_audit.py, wiki_index_update.py, batch_builder.py, lint_wiki.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, convert_to_md.py |
+| Scripts | 11 | backlink_audit.py, wiki_index_update.py, batch_builder.py, health.py, lint_wiki.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, convert_to_md.py |
 
 ## Wiki Data Layout (outside the plugin)
 
@@ -101,9 +106,10 @@ The `interview` and `meeting` types (introduced in v0.0.24) carry the consulting
 
 - **Wiki is LLM-maintained, human-curated sources.** The user drops documents in `raw/`; Claude does all the summarising, linking, and bookkeeping.
 - **Always read the wiki for queries — never answer from memory.** Skills enforce this discipline in every SKILL.md.
-- **Append-only log.** Every ingest, query, synthesis, lint, and update writes a line to `wiki/log.md` with an ISO date prefix. The `synthesis` operation prefix (v0.0.23+) distinguishes filed-back query answers from un-filed `query` reads — both are surfaced separately in `wiki-resume` and `wiki-dashboard`.
+- **Append-only log.** Every ingest, query, synthesis, lint, update, and (as of v0.0.27) health run writes a line to `wiki/log.md` with an ISO date prefix. The `synthesis` operation prefix (v0.0.23+) distinguishes filed-back query answers from un-filed `query` reads; the `health` operation prefix (v0.0.27+) distinguishes free zero-LLM preflights from tokenful `lint` runs. All five are surfaced separately in `wiki-resume` and `wiki-dashboard`.
 - **Bidirectional links.** `[[wikilinks]]` are audited after every ingest; related pages get backlink updates. The forward → reverse contract is codified in each wiki's `SCHEMA.md` (added in v0.0.26) under "Forward → reverse link contract" — every audit candidate carries a stable `rule_id` (today: `R1_bidirectional_wikilink`), and `wiki-lint`'s `reverse_link_missing` warning enforces it for hand-edited or imported pages. Existing wikis with `schema_version < "0.0.3"` get a migration nudge from `wiki-resume`'s status block; the lint check works either way, so the migration is offline-safe.
-- **Queries can compound.** `wiki-query --file-back yes` writes the answer to `wiki/pages/<slug>.md` as `type: synthesis` with `wiki://<source-slug>` references in `sources:`, so explorations enrich the wiki rather than evaporate. `wiki-lint` validates each `wiki://` target slug exists (`broken_wiki_source` error) and warns when a synthesis page lacks any `wiki://` source (`synthesis_no_wiki_source` warn).
+- **Queries can compound.** `wiki-query --file-back yes` writes the answer to `wiki/pages/<slug>.md` as `type: synthesis` with `wiki://<source-slug>` references in `sources:`, so explorations enrich the wiki rather than evaporate. `wiki-health` validates each `wiki://` target slug exists (`broken_wiki_source` error) and `wiki-lint` warns when a synthesis page lacks any `wiki://` source (`synthesis_no_wiki_source` warn).
+- **Health vs lint split.** `wiki-health` (v0.0.27+) is the zero-LLM, every-session structural preflight (broken links, missing frontmatter, broken sources, stub pages, drift counts). `wiki-lint` is the periodic, tokenful semantic pass (contradictions, type drift, undercited claims, missing concept pages, plus the deterministic warnings that need narrative — orphans, stale dates, tag typos, reverse-link gaps, claim-drift severity). `wiki-resume` runs health automatically; lint refuses to run while health reports errors > 0 (override with `--ignore-health`). The full per-check ownership matrix lives in `skills/wiki-lint/references/severity-tiers.md`.
 - **Diff before write.** `wiki-update` shows the planned change before modifying a page and requires a source citation for any new claim.
 - **Stdlib-only scripts.** bash 3.2 + python3 stdlib, no pip or npm dependencies. JSON output format `{success, data, error}`.
 - **No hooks.** All index/log maintenance lives inside the skills for debuggability.
@@ -134,6 +140,8 @@ The advisory lock at `<wiki-root>/.cogni-wiki/.lock` is **retained as defence-in
 
 **Note for `wiki-query` file-back (v0.0.23):** the synthesis file-back path writes `wiki/pages/<new-slug>.md` (unique by construction — no lock needed), and routes its `entries_count` bump through `config_bump.py` (locked). It does not need to add a new shared file to the table.
 
+**Note for `wiki-health` (v0.0.27):** `health.py` is read-only against `wiki/pages/`, `wiki/index.md`, and `.cogni-wiki/`. It writes nothing directly — the `## [YYYY-MM-DD] health | ...` log line is appended by the SKILL workflow via the same path every other operation log line uses, and `wiki/log.md` is treated as append-only (no read-modify-write), so it does not need a lock entry.
+
 **Known tech debt.** `_wiki_lock` is currently duplicated across three scripts (`backlink_audit.py`, `wiki_index_update.py`, `config_bump.py`). A future consolidation into a shared `cogni-wiki/skills/wiki-ingest/scripts/_wikilock.py` helper would remove the drift risk, but is a non-urgent refactor — the three copies are byte-identical today.
 
 **Do NOT rely on:** `os.replace` atomicity alone (it guarantees atomic file replacement, not correctness of the read-modify-write), or Python's GIL (cross-process invocations from separate sessions are not protected by it). The `batch_size` config key referenced in `wiki-ingest` versions ≤0.0.21 is no longer read; legacy wikis with the key are harmless.
@@ -147,7 +155,8 @@ insight-wave already uses Claude Code's auto-memory system at `~/.claude/project
 - **cogni-research → cogni-wiki** (v0.0.17, sub-question-centric — Option B). `wiki-ingest --discover research:<project-slug>` enumerates one batch entry per sub-question of a completed cogni-research project, materialises per-sub-question synthesis files under `<wiki-root>/raw/research-<slug>/sq-NN-<short>.md`, and feeds them through the standard batch-mode pipeline (Steps 1–8 per source). The synthesis bundles findings (from contexts), verified claims (filtered to `verification_status: verified`), and source URLs. Materialisation is the one deviation from the discovery-is-read-only rule and is unavoidable: cogni-research spreads each sub-question's evidence across four entity types, and the per-source ingest-worker reads one file. Materialisation is deterministic and idempotent. See `skills/wiki-ingest/references/batch-mode.md` §"Discovery → research" for the full contract. The reverse path (`wiki-researcher` agent reading a wiki as a RAG source for a research project) is owned by cogni-research and pre-dates this integration.
 - **wiki-from-research cold-start** (v0.0.18). The `wiki-from-research` skill chains `cogni-research:research-setup` → `cogni-research:research-report` (auto-chained internally) → `cogni-wiki:wiki-setup` → `cogni-wiki:wiki-ingest --discover research:<slug>` in one dispatch. Mode A starts from a free-text `--topic`; Mode B starts from an existing `--research-slug`. The skill is a pure orchestrator — it writes nothing directly; every artefact comes from its sub-skills' contracts. Pre-flight is fail-fast: wiki-target collisions are detected before any cogni-research dispatch (so an unusable target never burns research budget). Mode B verifies `output/report.md` exists, refuses `report_source ∈ {wiki, hybrid}` projects (circular-evidence risk), and nudges the user to run `verify-report` first if zero claims are verified.
 - **wiki-refresh stale-page loop** (v0.0.19, pull-mode only). The `wiki-refresh` skill closes the *update* loop — stale wiki pages get fresh evidence from a completed cogni-research project. Calls `lint_wiki.py` directly to enumerate `stale_page` (>365d) and `stale_draft` (>180d) findings, runs `refresh_planner.py` to match each stale page to the highest-scoring sub-question via Jaccard token overlap on `(title + tags + type)` vs `(query + parent_topic)`, prints a batch plan for one user confirmation, then materialises one synthesis file per match under `<wiki-root>/raw/refresh-<research-slug>-<YYYY-MM-DD>/<page-slug>.md` and dispatches `wiki-update` sequentially per page. Default match threshold `0.30`, tunable via `--match-threshold` or interactively via the `refine` action in the plan-review prompt. Push-mode auto-research per stale page is deferred (cost-prohibitive at scale). The entity-loading helpers in `refresh_planner.py` mirror those in `batch_builder.py` — known tech debt, parallel to the `_wiki_lock` duplication noted in §"Concurrency Invariant".
-- **wiki-claims-resweep citation re-verify** (v0.0.20, pull-mode only). The `wiki-claims-resweep` skill closes the *citation-drift* loop — existing wiki pages have their cited source URLs re-checked against current content. `extract_page_claims.py` walks `wiki/pages/` and yields one claim candidate per sentence containing an inline `[text](http(s)://...)` link or bare URL (deterministic, no LLM, no network). The orchestrator runs `resweep_planner.py --phase plan` to materialise per-page claim manifests under `<wiki-root>/raw/claims-resweep-<YYYY-MM-DD>/`, batch-confirms with the user, then dispatches `cogni-claims:claims` (`submit` then `verify`) sequentially per page. The cogni-claims source-cache (`cogni-claims/sources/{url-hash}.json`) keeps repeat WebFetches free across pages within one sweep. After verification, `resweep_planner.py --phase aggregate` writes `report.md` to the workspace and `last-resweep.json` (lock-wrapped) to `.cogni-wiki/`. **Report-only**: this skill never modifies `wiki/pages/`. Stale-marker decisions go through `wiki-update` manually. Circular sources (URLs pointing back into the wiki tree) are skipped per claim and counted, mirroring the `report_source ∈ {wiki, hybrid}` refusal pattern from `wiki-from-research`/`wiki-refresh`. As of v0.0.21, `wiki-lint` reads `last-resweep.json` and surfaces flagged pages via the `claim_drift` warning class plus a `last_resweep` info line — the bridge is closed without making lint network-dependent (all WebFetch stays in the opt-in sweep skill).
+- **wiki-claims-resweep citation re-verify** (v0.0.20, pull-mode only). The `wiki-claims-resweep` skill closes the *citation-drift* loop — existing wiki pages have their cited source URLs re-checked against current content. `extract_page_claims.py` walks `wiki/pages/` and yields one claim candidate per sentence containing an inline `[text](http(s)://...)` link or bare URL (deterministic, no LLM, no network). The orchestrator runs `resweep_planner.py --phase plan` to materialise per-page claim manifests under `<wiki-root>/raw/claims-resweep-<YYYY-MM-DD>/`, batch-confirms with the user, then dispatches `cogni-claims:claims` (`submit` then `verify`) sequentially per page. The cogni-claims source-cache (`cogni-claims/sources/{url-hash}.json`) keeps repeat WebFetches free across pages within one sweep. After verification, `resweep_planner.py --phase aggregate` writes `report.md` to the workspace and `last-resweep.json` (lock-wrapped) to `.cogni-wiki/`. **Report-only**: this skill never modifies `wiki/pages/`. Stale-marker decisions go through `wiki-update` manually. Circular sources (URLs pointing back into the wiki tree) are skipped per claim and counted, mirroring the `report_source ∈ {wiki, hybrid}` refusal pattern from `wiki-from-research`/`wiki-refresh`. As of v0.0.21, `wiki-lint` reads `last-resweep.json` and surfaces flagged pages via the `claim_drift` warning class plus a `last_resweep` info line; as of v0.0.27, `wiki-health` additionally exposes the *count* of flagged pages so it surfaces in `wiki-resume`'s status block without needing a tokenful lint run.
+- **wiki-health ↔ wiki-lint boundary** (v0.0.27, intra-plugin). The split formalises the llm-wiki-agent "Health vs Lint Boundary": `wiki-health` owns deterministic structural integrity (zero LLM, every session, sub-second on 100-page wikis); `wiki-lint` owns semantic content quality (LLM-powered, periodic, refuses to run while health is broken). `wiki-resume` invokes `health.py` automatically as part of its session-start status, so the user gets a structural preflight without thinking about it. The full per-check ownership matrix is in `skills/wiki-lint/references/severity-tiers.md`. The two skills share the `{success, data, error}` JSON contract and the same severity vocabulary so the lint report can include health's findings verbatim. **No new shared-state files** — `health.py` is read-only against `wiki/pages/`, `wiki/index.md`, and `.cogni-wiki/`; the only side effect is the `## [YYYY-MM-DD] health | ...` log line, which is append-only and needs no lock.
 
 ## Future Integration Points
 
