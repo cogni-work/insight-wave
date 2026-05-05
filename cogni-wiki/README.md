@@ -177,6 +177,16 @@ cogni-wiki runs standalone for the core ingest/query/lint/update loop. Three ski
 
 Integrations with `cogni-narrative` and `cogni-consulting` remain planned for v0.1.x; see [CLAUDE.md](CLAUDE.md) "Cross-Plugin Integration" and "Future Integration Points".
 
+## Optional dependencies
+
+cogni-wiki is stdlib-only by default. One skill step lights up additional capabilities when an optional CLI is present; absence is never a hard error for the formats stdlib already covers.
+
+| Tool | Skill / step | What it enables | Install |
+|---|---|---|---|
+| `markitdown` | `wiki-ingest` Step 2a (`scripts/convert_to_md.py`) | Auto-conversion of binary office formats (`.docx`, `.pptx`, `.xlsx`, `.epub`) and richer extraction for `.html` / `.txt` / `.csv` / `.json` / `.ipynb` so consulting sources (interviews, decks, financial models) ingest without manual pre-conversion | `pip install markitdown` (or `pipx install markitdown` for a sandboxed install) |
+
+When `markitdown` is not installed, `wiki-ingest` still handles `.md`, `.pdf` (via the Read tool's `pages` parameter), `.html` (stdlib `html.parser` fallback), `.txt` (verbatim), URL ingest (via WebFetch), and pasted text. Binary office formats short-circuit with a clear error pointing back at this section, so the failure mode is never silent half-extraction. See `skills/wiki-ingest/SKILL.md` §2a for the full backend table and the `--no-convert` opt-out.
+
 ## Credits
 
 - **Andrej Karpathy** — [LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). The pattern this plugin implements.
