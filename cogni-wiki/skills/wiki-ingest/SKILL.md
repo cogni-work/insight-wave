@@ -38,6 +38,7 @@ Exactly one of `--source`, `--batch-file`, or `--discover` must be provided.
 | `--title` | No | Override the page title; otherwise derive from the source (first heading, URL title, filename). Single-source mode only — in batch/discovery mode, titles are per-entry |
 | `--type` | No | Page type: `concept | entity | summary | decision | interview | meeting | learning | note`. Defaults to `summary` for full-source ingests, `note` for short pastes. Also selects the body template Step 4 uses — see Step 4 for the type→template map. In discovery mode, applied as a default to every discovered entry |
 | `--tags` | No | Comma-separated tags. In discovery mode, applied as a default to every discovered entry |
+| `--no-convert` | No | Skip Step 2's auto-conversion branch even if the source is a non-markdown format (`.docx`, `.pptx`, `.html`, …). Use this when you have already pre-converted the source to markdown and want the existing path to be read verbatim. Single-source mode and per-entry in batch/discovery mode (set `no_convert: true` on the entry); ignored when the source is `.md`, `.pdf`, or a URL because Step 2 already short-circuits those. |
 | `--auto-backlinks <K>` | No | Skip Step 6 hand-curation: auto-apply the top-K `confidence != low` candidates from `backlink_audit.py`. Mutually exclusive with `--review`. Default for batch/discover mode is `--auto-backlinks 5`; default for single-source mode is hand-curation. Pass explicitly (e.g. `--auto-backlinks 3` or `--auto-backlinks 8`) to tune the cap. |
 | `--review` | No | Force Step 6 hand-curation, even in batch/discover mode. Mutually exclusive with `--auto-backlinks`. Default (and no-op) in single-source mode; the opt-out against the new batch/discover default. |
 
@@ -105,11 +106,46 @@ See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/ingest-workflow.md` §"
 
 ### 2. Read the source
 
-- **File in `raw/`**: Read it directly. For PDFs, extract text with the Read tool's pages parameter.
-- **URL**: Fetch via WebFetch, then write a local copy under `raw/` with a slug-named filename so the source is preserved even if the URL rots.
-- **Pasted text**: Write the paste to `raw/paste-{YYYYMMDD-HHMMSS}.md` first, then proceed as a file ingest. Never ingest pasted content without persisting the raw.
+The source-reading branch picks one of four paths and, for non-markdown files, can chain through an auto-conversion sub-step before the rest of the pipeline runs. The original under `raw/` always remains the ground-truth artefact — frontmatter `sources:` points at it, never at the converted markdown — so re-ingest can re-convert if a future tooling release improves extraction.
+
+- **File in `raw/`**:
+  - `.md` / `.markdown` → read directly.
+  - `.pdf` → extract text with the Read tool's `pages` parameter, exactly as before.
+  - **Any other extension** (`.docx`, `.pptx`, `.xlsx`, `.html`, `.epub`, `.txt`, …) → run the auto-conversion sub-step below, then read the converted markdown the script returned. Skip the sub-step entirely when the user passed `--no-convert` (or set `no_convert: true` on the batch entry); in that case, treat the source as opaque and only the orchestrator's own reading discipline applies.
+- **URL**: Fetch via WebFetch, then write a local copy under `raw/` with a slug-named filename so the source is preserved even if the URL rots. WebFetch already returns markdown-ish content, so there is no auto-conversion sub-step here; `--no-convert` is a no-op.
+- **Pasted text**: Write the paste to `raw/paste-{YYYYMMDD-HHMMSS}.md` first, then proceed as a markdown file ingest. Never ingest pasted content without persisting the raw.
 
 Every wiki page must cite a file in `raw/` or a stable URL. This link to raw/ is what makes the wiki trustworthy — every claim traces through a page to its original source, and that chain breaks if any page floats without a raw anchor.
+
+#### 2a. Auto-conversion sub-step (non-markdown `raw/` files only)
+
+Invoke the helper, parse the JSON, branch on `data.backend`:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/convert_to_md.py --source <source-path>
+```
+
+The script preserves the original under `raw/` and writes converted markdown alongside as `<source>.converted.md`. Conversion is idempotent: a `.converted.md` whose mtime is newer than (or equal to) the source's mtime is re-used unchanged (`backend: cache-hit`); pass `--force` to override when deliberately re-converting.
+
+| `data.backend` | What it means | What to do |
+|---|---|---|
+| `noop-markdown` | Source was `.md` / `.markdown` | Read `data.converted_path` (== source); no surfacing needed |
+| `noop-pdf` | Source was `.pdf` | Use the existing Read-tool pages flow; ignore `data.converted_path` |
+| `stdlib-passthrough` | `.txt` copied verbatim by stdlib | Read `data.converted_path`; surface `[backend: stdlib-passthrough]` |
+| `stdlib-html` | `.html` / `.htm` stripped via stdlib `html.parser` | Read `data.converted_path`; surface `[backend: stdlib-html]` |
+| `markitdown` | Shelled out to the optional `markitdown` CLI | Read `data.converted_path`; surface `[backend: markitdown]` |
+| `cache-hit` | `<source>.converted.md` was up-to-date and re-used | Read `data.converted_path`; surface `[backend: cache-hit]` |
+
+Surface the backend in the user transcript next to the source line so the operator can see which conversion path ran (e.g. `Source: raw/q1-customer-call.docx [backend: markitdown]`). This makes pre-conversion failures and quality drift visible without forcing a separate diagnostic.
+
+If the script returns `success: false`, surface the error verbatim and offer two paths to the user:
+
+- For `backend: unsupported` (a binary office format with no markitdown installed): point them at the README's "Optional dependencies" section so they can install `markitdown`, or ask them to convert to `.md` manually and re-invoke. Do not invent a fallback — half-extracted text from a `.docx` is worse than no ingest.
+- For `backend: markitdown-error` (markitdown is installed but failed on this file): surface the stderr and ask whether to retry with `--no-convert` (skip the helper entirely and pass the binary path through unchanged) or hand-convert.
+
+In batch / discovery mode, treat a non-zero `convert_to_md.py` exit as the entry's Step 2 failure and let the fail-fast policy in §0 halt the loop. Sources processed before the failure are already consistent on disk; nothing about the converted-file caching changes that — `.converted.md` writes go through `tempfile + os.replace` so a crash mid-script cannot leave a half-written cache.
+
+`--no-convert` (or `no_convert: true` on a batch entry) skips this entire sub-step. Use it when the user has already pre-converted the source and dropped both the original and the markdown copy in `raw/`, or when investigating a markitdown extraction bug and you want the orchestrator to read the binary path directly. The script is idempotent enough that re-enabling auto-conversion on a later run still produces the right state.
 
 ### 3. Surface key takeaways BEFORE writing the page
 
@@ -177,6 +213,8 @@ publisher_url: https://{publisher canonical URL, only if observable}
 ```
 
 **On `publisher_url`**: populate it only when the canonical URL is observable — do not fabricate. URL ingest → set it to the source URL (same one passed to WebFetch). File ingest with a URL printed on the PDF cover / in PDF metadata / in source text → use that URL. File ingest with no observable URL → omit the `publisher_url` key entirely (the field is optional). A guessed URL that 404s costs more credibility than an unlinked citation downstream; cogni-research will fall back to the wiki's `publisher_base_url` if set.
+
+**On `sources:` after auto-conversion.** When Step 2a converted the source, point `sources:` at the **original** (`../raw/{source-filename.docx}`), not the `.converted.md` cache file. The cache is a derived artefact — re-ingest can rebuild it from the original if a markitdown release improves extraction, and a pinned cache path would silently rot the citation chain.
 
 Body structure (the template selected in Step 4a sets the per-type heading shape inside `Details`; the four top-level sections below are constant):
 
@@ -293,6 +331,7 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 - N existing pages in `wiki/pages/` edited with new backlinks (where N ≥ 0)
 - One appended line in `wiki/log.md`
 - Updated `config.json`
+- Optionally, one `<source>.converted.md` cache file in `raw/` next to a non-markdown source (Step 2a). Re-used on idempotent re-ingest; safe to delete to force re-conversion.
 
 ## Failure modes and rules
 
@@ -300,14 +339,16 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 - **Never invent backlinks.** Only link to pages that actually exist in `wiki/pages/`.
 - **Never overwrite a page silently.** Overwrites are only allowed through the explicit re-ingest path: Step 1 must detect the existing slug, set `mode: re-ingest`, and emit the re-ingest warning before any page write. Silent overwrites (writing to an existing slug without surfacing `mode: re-ingest` to the user) remain forbidden. For content-only edits that preserve the existing synthesis, use `wiki-update` rather than a re-ingest.
 - **Raw first, page second.** Pasted content is persisted to `raw/` before any page work begins.
+- **Original source is the citation, not the cache.** When Step 2a writes a `.converted.md`, frontmatter `sources:` still points at the original. The cache is a derived artefact — re-ingest may rebuild it; nothing in the wiki should depend on its path.
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` — the pattern
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/page-frontmatter.md` — full frontmatter schema, type enum, type→template map
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/templates/` — body scaffolds per type (`default`, `interview`, `customer-call`, `meeting`, `decision`, `retro`, `learning`); see `templates/README.md` for selection rules
-- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/ingest-workflow.md` — worked example
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/ingest-workflow.md` — worked example, including a `.docx` ingest end-to-end (Step 2a auto-conversion)
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` — `--batch-file` input schema, per-source mode rules, error policy, and worked example
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/backlink_audit.py` — candidate backlink finder
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_index_update.py` — deterministic `wiki/index.md` insert/update helper
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/batch_builder.py` — discovery helper; enumerates candidates for `--discover` and emits the batch-mode payload on stdout
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/convert_to_md.py` — multi-format auto-conversion helper used by Step 2a (`.docx`, `.pptx`, `.xlsx`, `.html`, `.epub`, …); stdlib-first with optional `markitdown` shell-out
