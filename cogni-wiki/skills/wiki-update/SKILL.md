@@ -71,6 +71,8 @@ Use the Edit tool (not Write) to preserve unchanged content byte-for-byte. For e
 
 ### 5. Sweep related pages (when `--related-sweep yes`)
 
+When the update adds, removes, or reshapes `[[wikilinks]]`, honour the SCHEMA `R1_bidirectional_wikilink` rule — every new forward `[[B]]` added on this page should be matched by a reverse `[[A]]` on B. The sweep step is the natural place to apply that: when updating page A introduces `[[B]]`, the candidate page B is included in the sweep below, and the diff-before-write pass adds the reverse sentence on B in the same session. `wiki-lint`'s `reverse_link_missing` check is the safety net for omissions; the in-skill sweep is the primary path. See `<wiki-root>/SCHEMA.md` §"Forward → reverse link contract".
+
 For every page that contains a `[[wikilink]]` to the page being updated, plus every page in the updated page's `related:` frontmatter field, plus every page that shares ≥2 tags with the updated page:
 
 1. Read the candidate page

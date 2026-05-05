@@ -30,6 +30,10 @@ Humans abandon personal wikis because maintenance is tedious — rewriting summa
 - **`wiki/index.md`** — the content-oriented catalog. One line per page: `- [[page-slug]] — one-sentence summary.` Organized by category. Claude consults this **before** drilling into specific pages so it knows what's already known.
 - **`wiki/log.md`** — append-only chronological record. Format: `## [YYYY-MM-DD] {ingest|query|lint|update} | short note`. Never rewritten. Gives Claude (and the user) a temporal trail of what the wiki has learned.
 
+## Forward → Reverse Link Contract
+
+The bidirectional `[[wikilink]]` invariant is codified in each wiki's `SCHEMA.md` under "Forward → reverse link contract". Every rule there carries a stable `rule_id` (`R1_bidirectional_wikilink`, `R2_synthesis_wiki_source`, `R3_lint_report`) that `backlink_audit.py` propagates onto every candidate it proposes and `wiki-lint`'s `reverse_link_missing` check enforces. This is what makes the wiki portable: a human editing the wiki without Claude can follow the contract by hand, and the script and the schema can never silently drift apart because each candidate is tagged with the rule it claims to satisfy.
+
 ## Why This Beats RAG
 
 Karpathy's argument: RAG rediscovers the same information every query. A wiki **accumulates**. Each ingest distills raw material into reusable form; each query reinforces or extends that form. After N ingests the wiki is a dense, structured artifact that costs pennies to read end-to-end — no vector store, no embeddings, no chunking heuristics. Plain markdown, plain backlinks, plain Unix tools.

@@ -24,6 +24,8 @@ Detects:
     - Stale drafts / stale pages
     - Tag typos (edit distance ≤ TAG_TYPO_MAX_DIST with ≥ TAG_TYPO_RATIO usage ratio)
     - Pages missing sources when type requires them
+    - Reverse link missing (forward [[B]] in A but no [[A]] in B —
+      SCHEMA.md rule R1_bidirectional_wikilink)
 
 Semantic checks (contradictions, type drift) are NOT handled here — they
 are performed by the calling Claude skill with this script's output as a
@@ -313,6 +315,45 @@ def main() -> None:
             warnings.append(
                 {"class": "orphan_page", "page": slug, "message": "no inbound wikilinks"}
             )
+
+    # reverse_link_missing — SCHEMA.md rule R1_bidirectional_wikilink.
+    # For every forward edge A → B (A's body contains `[[B]]`), the reverse
+    # edge B → A should also exist. Lint reports (slug starts with `lint-`)
+    # are exempt on both ends per rule R3.
+    #
+    # `inbound_links[t]` is the set of source slugs S such that S contains
+    # `[[t]]`. To test "does A reverse-link B?" we ask "is A in
+    # inbound_links[B]?". If A links to B but A is *not* in inbound_links[B]'s
+    # reverse direction (i.e., B does not link back to A), that's a violation.
+    for target_slug, source_slugs in sorted(inbound_links.items()):
+        if target_slug not in existing_slugs:
+            continue  # broken_wikilink already reported
+        if target_slug.startswith("lint-"):
+            continue
+        target_inbound = inbound_links.get(target_slug, set())
+        for source_slug in sorted(source_slugs):
+            if source_slug == target_slug:
+                continue  # self-link is its own reverse
+            if source_slug.startswith("lint-"):
+                continue
+            # Does source_slug appear in target's outbound? Equivalent to:
+            # is source_slug a target of inbound_links keyed at source_slug
+            # whose source is target_slug?
+            target_outbound_to_source = source_slug in inbound_links and (
+                target_slug in inbound_links[source_slug]
+            )
+            if not target_outbound_to_source:
+                warnings.append(
+                    {
+                        "class": "reverse_link_missing",
+                        "page": target_slug,
+                        "message": (
+                            f"[[{source_slug}]] links here but this page does "
+                            f"not link back to [[{source_slug}]] "
+                            f"(SCHEMA.md R1_bidirectional_wikilink)"
+                        ),
+                    }
+                )
 
     # tag typos
     tag_items = sorted(tag_counts.items(), key=lambda kv: -kv[1])

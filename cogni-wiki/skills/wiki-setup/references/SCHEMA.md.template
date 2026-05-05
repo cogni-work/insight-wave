@@ -53,6 +53,23 @@ sources:                         # Optional — relative paths or URLs
 - Use standard markdown links for external URLs and raw sources: `[label](../raw/file.pdf)`
 - Every `[[link]]` should be backed by an actual file in `wiki/pages/`; the `wiki-lint` skill reports broken links
 
+## Forward → reverse link contract
+
+Wikilinks are bidirectional. Every forward `[[link]]` from page A to page B implies a documented reverse action on page B. The contract below is the single source of truth — `wiki-ingest`'s `backlink_audit.py` proposes candidates against it, `wiki-lint`'s `reverse_link_missing` check validates it, and a human editing the wiki without Claude (the "5-year hand-off" promise) follows it by hand.
+
+| Rule ID | Forward action (page A) | Required reverse action (page B) | Audited by |
+|---------|------------------------|---------------------------------|------------|
+| `R1_bidirectional_wikilink` | A's body contains `[[B]]` | B's body should contain `[[A]]` somewhere — typically as a one-line natural-language reference, not a dump | `backlink_audit.py` proposes; `wiki-lint reverse_link_missing` validates |
+| `R2_synthesis_wiki_source` | A is `type: synthesis` and lists `wiki://B` in `sources:` | **No reverse link required** — synthesis pages are leaves on the citation graph; forcing every cited page to link back would flood high-traffic concepts with synthesis backlinks | `wiki-lint synthesis_no_wiki_source` (forward direction only) |
+| `R3_lint_report` | Any page contains `[[lint-YYYY-MM-DD]]` | **No reverse link required** — lint reports are terminal, append-only, and never edited | n/a (lint reports are exempt from `reverse_link_missing`) |
+
+Notes:
+
+- All current `type:` values (concept, entity, summary, decision, interview, meeting, learning, note) participate in `R1` symmetrically. There are no per-type asymmetries today; if per-type page directories land later (see the cogni-wiki Karpathy-pattern parity tracking issue), this table will gain per-relationship rows.
+- A backlink should read like prose, not a dumped list. The reverse `[[A]]` typically lives next to a sentence that earns its presence on B — see `wiki-update`'s diff-before-write discipline.
+- `R1` exempts pages whose filename starts with `lint-` (terminal lint reports) on both ends.
+- `wiki-lint reverse_link_missing` is a warning, not an error: it surfaces missing reverses but never auto-fixes them, mirroring the "lint reports, never auto-fixes" rule. Apply via `wiki-update` or, for fresh ingests, via `wiki-ingest`'s backlink-audit step.
+
 ## Log format
 
 Append only. Format:

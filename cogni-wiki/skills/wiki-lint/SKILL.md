@@ -41,7 +41,9 @@ Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root 
 
 ### 3. Read the script output
 
-The script categorizes findings into three severity tiers — see `./references/severity-tiers.md` for the full classification. In brief: **Errors** (broken structural contracts like dead wikilinks or missing frontmatter), **Warnings** (accumulating debt like orphan pages, stale drafts, tag typos), **Info** (descriptive statistics like page counts and tag distribution).
+The script categorizes findings into three severity tiers — see `./references/severity-tiers.md` for the full classification. In brief: **Errors** (broken structural contracts like dead wikilinks or missing frontmatter), **Warnings** (accumulating debt like orphan pages, stale drafts, tag typos, missing reverse links per the SCHEMA forward→reverse contract), **Info** (descriptive statistics like page counts and tag distribution).
+
+The `reverse_link_missing` warning class enforces the wiki's SCHEMA `R1_bidirectional_wikilink` rule (page A contains `[[B]]` ⇒ page B should contain `[[A]]`). Surface these grouped by target page so the user can address them via a single `wiki-update` per page.
 
 ### 4. Read contradicted pages (semantic pass)
 

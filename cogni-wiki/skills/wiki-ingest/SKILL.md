@@ -252,6 +252,8 @@ If the script exits non-zero or returns malformed JSON, report the error to the 
 
 ### 6. Run the backlink audit, then apply backlinks atomically
 
+The audit enforces the wiki's SCHEMA `R1_bidirectional_wikilink` rule (forward `[[B]]` from A ⇒ reverse `[[A]]` in B). Each candidate `backlink_audit.py` returns carries a `rule_id` field — today always `R1_bidirectional_wikilink` — so the contract row in `<wiki-root>/SCHEMA.md` is auditable against the script. See `<wiki-root>/SCHEMA.md` §"Forward → reverse link contract" for the table.
+
 Two paths — hand-curation (`auto_backlinks = null`) or auto-mode (`auto_backlinks = K`) — resolved at Step 0 and branched here. Both paths end with the same `--apply-plan -` atomic-write call, so downstream reporting (Step 9) is uniform.
 
 #### Path A — Hand-curation (when `auto_backlinks = null`)

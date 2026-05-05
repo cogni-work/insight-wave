@@ -54,8 +54,15 @@ Candidate object:
       "matched_terms": ["term1", "term2"],
       "matched_score": 1.73,            # IDF-weighted sum of matched terms
       "confidence": "low" | "medium" | "high",
-      "existing_backlink": true | false
+      "existing_backlink": true | false,
+      "rule_id": "R1_bidirectional_wikilink"  # SCHEMA.md forward→reverse rule
     }
+
+Rule IDs map every candidate to a row in the wiki's SCHEMA.md "Forward → reverse
+link contract" table. Today every audit candidate is `R1_bidirectional_wikilink`
+(forward `[[B]]` from A implies reverse `[[A]]` in B). Future per-type rules
+(e.g. `R4_paper_concept_keypaper`) will set different ids without changing this
+script's interface.
 
 Plan schema (consumed by --apply-plan):
     {
@@ -536,6 +543,7 @@ def main() -> None:
                 "matched_score": round(matched_score, 3),
                 "confidence": score_match(matched_score, len(matched), body_len),
                 "existing_backlink": existing_backlink,
+                "rule_id": "R1_bidirectional_wikilink",
             }
         )
 

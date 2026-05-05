@@ -33,6 +33,7 @@ A warning means the wiki works but is accumulating debt. Warnings should be revi
 | **Stale page** | `updated` > 365 days ago, regardless of status | Review and refresh or mark `status: stale` |
 | **No sources** | `sources:` empty or missing, and `type` is not `decision` or `note` | `wiki-update` to add citations |
 | **Synthesis without wiki source** | `type: synthesis` but no `wiki://`-prefixed entry in `sources:`. Synthesis pages must cite the wiki pages they derived from. | `wiki-update` to add `wiki://<slug>` references, or re-file via `wiki-query --file-back yes` |
+| **Reverse link missing** | Page A contains `[[B]]` but page B does not contain `[[A]]` — violates SCHEMA.md `R1_bidirectional_wikilink`. Lint reports (filename `lint-*`) are exempt on both ends per `R3`. | `wiki-update` page B to add a natural-language sentence containing `[[A]]`, or re-run `wiki-ingest` against B to refresh the backlink-audit pass. Auto-fix via `--fix` is not available today; the discipline is "lint reports, never auto-fixes" |
 | **Tag typo** | Tag differs from another tag by edit distance ≤ 2, one used ≥3× more than the other | `wiki-update` to normalize |
 | **Contradiction** | Two pages make opposing claims about the same entity or concept (semantic pass) | `wiki-update` to reconcile, or add explicit contradiction note |
 | **Type drift** | Page body's structure doesn't match declared `type` (e.g. a `concept` page that is actually a `summary`) | `wiki-update` to retype or rewrite |
