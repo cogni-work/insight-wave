@@ -69,7 +69,7 @@ Output structure:
 
 ## File-back heuristics
 
-File the answer back as a new page when:
+File the answer back as a new `type: synthesis` page when:
 
 - The synthesis combined ≥2 pages into a novel claim
 - The user is likely to ask this question again
@@ -80,6 +80,50 @@ Do NOT file back when:
 - The answer is a direct restatement of a single page (already in the wiki)
 - The answer is a one-off navigation question ("which page mentions X?")
 - The answer explicitly reports an absence ("the wiki is silent on Y")
+
+## Worked example: filing a Shape-2 synthesis back
+
+**User:** `/cogni-wiki:wiki-query --question "how do RLHF and Constitutional AI differ?" --file-back yes`
+
+**Step 1–4** — Claude reads `wiki/index.md`, picks `[[rlhf-overview]]`, `[[rlhf-limitations]]`, and `[[constitutional-ai]]`, reads them, and writes the synthesis with `[[citations]]` on every claim.
+
+**Step 6 file-back** — because `--file-back yes` is set, Claude derives the slug `rlhf-vs-cai-comparison` from the question and writes:
+
+```yaml
+---
+id: rlhf-vs-cai-comparison
+title: RLHF vs Constitutional AI — wiki view
+type: synthesis
+tags: [llms, alignment, comparison]
+created: 2026-05-05
+updated: 2026-05-05
+sources:
+  - wiki://rlhf-overview
+  - wiki://rlhf-limitations
+  - wiki://constitutional-ai
+---
+
+## Headline
+
+RLHF uses human-labelled harm preferences as the supervision signal; Constitutional AI replaces those labels with AI-generated critiques against a written constitution [[constitutional-ai]] [[rlhf-overview]].
+
+## Comparison
+
+| Dimension | RLHF | Constitutional AI |
+|-----------|------|-------------------|
+| Supervision source | Human raters [[rlhf-overview]] | Written constitution + critic LLM [[constitutional-ai]] |
+| Scaling pressure | Hires/throughput of human labellers [[rlhf-limitations]] | Critic-model capability [[constitutional-ai]] |
+
+## Sources in the wiki
+
+- [[rlhf-overview]]
+- [[rlhf-limitations]]
+- [[constitutional-ai]]
+```
+
+**Steps 5–7** — the page is added to `wiki/index.md` under a Syntheses section, two log lines are appended (`synthesis | rlhf-vs-cai-comparison — ...` and `query | "how do RLHF and CAI differ?" → read 3 pages`), and `entries_count` is bumped via `config_bump.py`.
+
+Next time the user asks the same question, `wiki-query` will hit `[[rlhf-vs-cai-comparison]]` directly via the index instead of re-reading the three source pages — the exploration has compounded.
 
 ## What the answer must always contain
 

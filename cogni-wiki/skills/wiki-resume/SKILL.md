@@ -45,7 +45,8 @@ Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-resume/scripts/wiki_status.sh --wiki-r
 - `days_since_lint` — integer or `null`
 - `recent_log` — last 10 lines of `wiki/log.md`
 - `ingest_count_30d` — number of `## [YYYY-MM-DD] ingest` lines in the last 30 days
-- `query_count_30d` — number of query lines in the last 30 days
+- `query_count_30d` — number of `query` lines in the last 30 days (un-filed reads)
+- `synthesis_count_30d` — number of `synthesis` lines (filed-back query answers) in the last 30 days; introduced in v0.0.23
 - `update_count_30d` — same for updates
 - `raw_file_count` — files in `raw/`
 - `orphan_raw_count` — files in `raw/` not referenced by any page frontmatter (quick heuristic)
@@ -61,7 +62,7 @@ _Created_: {created}
 _Description_: {description}
 
 ## Activity (last 30 days)
-- {N} ingests · {N} queries · {N} updates
+- {N} ingests · {N} queries · {N} syntheses · {N} updates
 
 ## Inventory
 - {entries_count} pages
@@ -75,6 +76,8 @@ _Description_: {description}
 {see decision tree below}
 ```
 
+The `syntheses` count surfaces filed-back query answers — a non-zero number is a signal that the wiki is compounding, not just accumulating raw sources. A wiki with high ingest count but zero syntheses suggests the user isn't asking the wiki questions yet; rule 5 below nudges toward `wiki-query` in that case.
+
 ### 4. Recommend next action (decision tree)
 
 Apply the first rule that matches:
@@ -82,10 +85,13 @@ Apply the first rule that matches:
 1. **`entries_count == 0`** → "Drop a source in `raw/` and run `/cogni-wiki:wiki-ingest`."
 2. **`orphan_raw_count > 0`** → "You have {N} raw sources that aren't yet in the wiki. Run `/cogni-wiki:wiki-ingest --discover orphans --discover-dry-run` to review them, then drop `--discover-dry-run` to ingest. No need to hand-craft a batch file — the skill enumerates the orphans for you."
 3. **`days_since_lint == null` OR `days_since_lint > 14`** → "It's been {N} days (or never) since the last lint. Run `/cogni-wiki:wiki-lint`."
-4. **`ingest_count_30d == 0 AND query_count_30d == 0 AND update_count_30d == 0`** → "The wiki hasn't been touched in 30 days. Either ingest something new or run `/cogni-wiki:wiki-query` to reactivate it."
-5. **Else** → "The wiki looks healthy. Continue with whatever you were doing, or run `/cogni-wiki:wiki-dashboard` for a visual overview."
+4. **`ingest_count_30d == 0 AND query_count_30d == 0 AND synthesis_count_30d == 0 AND update_count_30d == 0`** → "The wiki hasn't been touched in 30 days. Either ingest something new or run `/cogni-wiki:wiki-query` to reactivate it."
+5. **`entries_count >= 5 AND query_count_30d == 0 AND synthesis_count_30d == 0`** → "You have {entries_count} pages but haven't asked the wiki anything in 30 days. Run `/cogni-wiki:wiki-query --question '...' --file-back yes` to compound a synthesis page."
+6. **Else** → "The wiki looks healthy. Continue with whatever you were doing, or run `/cogni-wiki:wiki-dashboard` for a visual overview."
 
 Rule 2's concrete `--discover` command is deliberate: the older prose-only recommendation ("run wiki-ingest on them") left Claude (and by extension the user) to figure out how to enumerate the orphans, which in practice meant asking the user to type them out. Emitting the exact command closes that loop — the skill knows it has the `--discover orphans` mode, so `wiki-resume` should hand that over directly.
+
+Rule 5 is new in v0.0.23 — it surfaces the "the wiki is a vault, but you haven't asked it anything" anti-pattern that file-back synthesis pages were built to fix.
 
 ### 5. Do not write anything
 
