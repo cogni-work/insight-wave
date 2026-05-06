@@ -17,6 +17,7 @@ skills/                         11 wiki skills
       backlink_audit.py           Scans pages/, proposes bidirectional [[links]]
       wiki_index_update.py        Deterministic index.md insert/update (atomic)
       batch_builder.py            Enumerates candidates for --discover (orphans, stubs, glob, research:<slug>); emits batch JSON. Materialises per-sub-question synthesis files for research mode.
+      rebuild_context_brief.py    Rebuilds wiki/context_brief.md (≤8 KiB; auto-invoked by Step 8.5 of every dispatch as of v0.0.29)
     references/
       page-frontmatter.md         YAML schema (id, title, tags, type, sources, ...)
       ingest-workflow.md          Step-by-step ingest behavior
@@ -37,7 +38,7 @@ skills/                         11 wiki skills
   wiki-update/                    Diff-gated page revisions with stale-sweep
     references/
       update-discipline.md        Citation-required, diff-before-write rules
-  wiki-resume/                    Status dashboard — entry count, last-lint age, health snapshot, next action; runs wiki-health automatically (v0.0.27)
+  wiki-resume/                    Status dashboard — entry count, last-lint age, health snapshot, next action; runs wiki-health automatically (v0.0.27); reads wiki/context_brief.md first (v0.0.29)
     scripts/
       wiki_status.sh              Emits {success, data, error} JSON (incl. synthesis_count_30d, health_count_30d, embedded health.errors/warnings/drifts)
   wiki-dashboard/                 Self-contained HTML overview (pages, tags, backlink graph)
@@ -64,7 +65,7 @@ references/
 | Agents | 0 | — (wiki-ingest batch mode runs sequentially in the orchestrator's own context as of v0.0.22; the previous `ingest-worker` per-source subagent was removed because parallel fan-out broke the Karpathy-pattern invariant that source N+1 must see source N's page) |
 | Commands | 0 | — (skills serve as slash commands per plugin-dev guidance) |
 | Hooks | 0 | — (all bookkeeping lives inside skills) |
-| Scripts | 13 | backlink_audit.py, wiki_index_update.py, batch_builder.py, config_bump.py, _wikilib.py, convert_to_md.py, health.py, lint_wiki.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, migrate_layout.py |
+| Scripts | 14 | backlink_audit.py, wiki_index_update.py, batch_builder.py, config_bump.py, _wikilib.py, convert_to_md.py, rebuild_context_brief.py, health.py, lint_wiki.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, migrate_layout.py |
 
 ## Wiki Data Layout (outside the plugin)
 
@@ -79,6 +80,7 @@ Created by `wiki-setup` at the user-chosen root (default `cogni-wiki/{slug}/` re
 │   ├── index.md               LLM-maintained catalog, one-line summary per page
 │   ├── log.md                 Append-only operation log
 │   ├── overview.md            Evolving synthesis / "state of the wiki"
+│   ├── context_brief.md       ≤8 KiB auto-rebuilt "first read" for fresh sessions (v0.0.29)
 │   ├── concepts/              type: concept
 │   ├── entities/              type: entity
 │   ├── summaries/             type: summary
@@ -153,7 +155,9 @@ The advisory lock at `<wiki-root>/.cogni-wiki/.lock` is **retained as defence-in
 
 **Note for `wiki-health` (v0.0.27):** `health.py` is read-only against the per-type page dirs, `wiki/index.md`, and `.cogni-wiki/`. It writes nothing directly — the `## [YYYY-MM-DD] health | ...` log line is appended by the SKILL workflow via the same path every other operation log line uses, and `wiki/log.md` is treated as append-only (no read-modify-write), so it does not need a lock entry.
 
-**Lock helper consolidated (v0.0.28).** `_wiki_lock` lives in `skills/wiki-ingest/scripts/_wikilib.py` alongside the per-type-directory traversal helpers (`PAGE_TYPE_DIRS`, `iter_pages`, `build_slug_index`, `fail_if_pre_migration`). The previously duplicated copies in `backlink_audit.py`, `wiki_index_update.py`, and `config_bump.py` have been removed and replaced with `from _wikilib import _wiki_lock`. New shared-state writers MUST import from `_wikilib` rather than re-inline the lock context manager.
+**Note for `rebuild_context_brief.py` (v0.0.29):** the script writes `wiki/context_brief.md` (unique-by-construction; single writer) and runs `health.py` as a read-only subprocess. The atomic `tempfile + os.replace` write goes through `_wikilib.atomic_write`. Reads of `wiki/log.md`, `wiki/index.md`, and per-type page bodies are snapshot-only — no read-modify-write. **No new shared-state file** added to the table; concurrent `wiki-ingest` invocations from separate sessions are still serialised because every other Step 1–8 mutation goes through the existing locked scripts before Step 8.5 runs.
+
+**Lock helper consolidated (v0.0.28).** `_wiki_lock` lives in `skills/wiki-ingest/scripts/_wikilib.py` alongside the per-type-directory traversal helpers (`PAGE_TYPE_DIRS`, `iter_pages`, `build_slug_index`, `fail_if_pre_migration`). The previously duplicated copies in `backlink_audit.py`, `wiki_index_update.py`, and `config_bump.py` have been removed and replaced with `from _wikilib import _wiki_lock`. New shared-state writers MUST import from `_wikilib` rather than re-inline the lock context manager. As of v0.0.29, `_wikilib` also exports `atomic_write` and `emit_json` — extracted from the byte-for-byte-duplicated patterns in every wiki script. New writers consume them from `_wikilib`; existing inlines stay (lift-and-shift in a follow-up PR if desired).
 
 **Do NOT rely on:** `os.replace` atomicity alone (it guarantees atomic file replacement, not correctness of the read-modify-write), or Python's GIL (cross-process invocations from separate sessions are not protected by it). The `batch_size` config key referenced in `wiki-ingest` versions ≤0.0.21 is no longer read; legacy wikis with the key are harmless.
 
@@ -169,6 +173,7 @@ insight-wave already uses Claude Code's auto-memory system at `~/.claude/project
 - **wiki-claims-resweep citation re-verify** (v0.0.20, pull-mode only). The `wiki-claims-resweep` skill closes the *citation-drift* loop — existing wiki pages have their cited source URLs re-checked against current content. `extract_page_claims.py` walks every per-type page dir and yields one claim candidate per sentence containing an inline `[text](http(s)://...)` link or bare URL (deterministic, no LLM, no network). The orchestrator runs `resweep_planner.py --phase plan` to materialise per-page claim manifests under `<wiki-root>/raw/claims-resweep-<YYYY-MM-DD>/`, batch-confirms with the user, then dispatches `cogni-claims:claims` (`submit` then `verify`) sequentially per page. The cogni-claims source-cache (`cogni-claims/sources/{url-hash}.json`) keeps repeat WebFetches free across pages within one sweep. After verification, `resweep_planner.py --phase aggregate` writes `report.md` to the workspace and `last-resweep.json` (lock-wrapped) to `.cogni-wiki/`. **Report-only**: this skill never modifies any per-type page dir. Stale-marker decisions go through `wiki-update` manually. Circular sources (URLs pointing back into the wiki tree) are skipped per claim and counted, mirroring the `report_source ∈ {wiki, hybrid}` refusal pattern from `wiki-from-research`/`wiki-refresh`. As of v0.0.21, `wiki-lint` reads `last-resweep.json` and surfaces flagged pages via the `claim_drift` warning class plus a `last_resweep` info line; as of v0.0.27, `wiki-health` additionally exposes the *count* of flagged pages so it surfaces in `wiki-resume`'s status block without needing a tokenful lint run.
 - **wiki-health ↔ wiki-lint boundary** (v0.0.27, intra-plugin). The split formalises the llm-wiki-agent "Health vs Lint Boundary": `wiki-health` owns deterministic structural integrity (zero LLM, every session, sub-second on 100-page wikis); `wiki-lint` owns semantic content quality (LLM-powered, periodic, refuses to run while health is broken). `wiki-resume` invokes `health.py` automatically as part of its session-start status, so the user gets a structural preflight without thinking about it. The full per-check ownership matrix is in `skills/wiki-lint/references/severity-tiers.md`. The two skills share the `{success, data, error}` JSON contract and the same severity vocabulary so the lint report can include health's findings verbatim. **No new shared-state files** — `health.py` is read-only against the per-type page dirs, `wiki/index.md`, and `.cogni-wiki/`; the only side effect is the `## [YYYY-MM-DD] health | ...` log line, which is append-only and needs no lock.
 - **per-type page directories** (v0.0.28, intra-plugin, schema_version `0.0.5`). Pages are now stored under per-type subdirectories (`wiki/concepts/`, `wiki/decisions/`, `wiki/syntheses/`, …) instead of flat `wiki/pages/`. Audit reports (`lint-*.md`, `health-*.md`) live under `wiki/audits/`. The traversal contract is owned by `_wikilib.iter_pages()` / `build_slug_index()` so consumers no longer hard-code paths. Existing wikis must run `wiki-setup/scripts/migrate_layout.py --apply` once; every other skill hard-fails on the legacy flat layout via `_wikilib.fail_if_pre_migration`, and `wiki-resume`'s `wiki_status.sh` surfaces `schema_migration_pending: true` to nudge the user (without hard-failing — the resume path is exactly where the user reads the nudge from). `[[wikilink]]` syntax is unchanged — slugs remain globally unique and address pages without paths. Closes #212 Tier 2 item #1.
+- **context brief** (v0.0.29, intra-plugin). Every `wiki-ingest` dispatch ends with `rebuild_context_brief.py` (Step 8.5), which writes `wiki/context_brief.md` — a deterministic ≤ 8 KiB file summarising type counts, top entities by inbound backlinks, the last 30 days of activity, cached open lints (read from `.cogni-wiki/last_lint.json` if present and ≤ 24 h old), and a fresh `health.py` snapshot. `wiki-resume`'s Step 1 reads the brief before any other status work, so a fresh Claude Code session orients from one file instead of a 3+ file scan. Failure to rebuild the brief never rolls back the ingest — the brief is a derived artefact, regenerated on the next dispatch. The lint section degrades gracefully when no cache is present; the lint-cache writer hook is a deliberate follow-up. Closes #212 Tier 2 item #2 (#219).
 
 ## Future Integration Points
 
