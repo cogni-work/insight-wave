@@ -60,7 +60,7 @@ Direct script call:
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root <wiki_root>
 ```
 
-Parse stdout JSON. From `data.warnings[]`, collect entries where `class == "stale_page"` or `class == "stale_draft"`. Extract the `page` field of each as the slug list.
+Parse stdout JSON. From `data.warnings[]`, collect entries where `class == "stale_page"` or `class == "stale_draft"`. Extract the `page` field of each as the slug list. Both classes survive the v0.0.31 (#223) lint refactor — they are explicitly retained in `lint_wiki.py` because `wiki-refresh` depends on them. `data.errors` is now always an empty list (structural integrity moved to `health.py`); only `data.warnings` matters for refresh-planning purposes.
 
 If `--days N` was set, post-filter the lint output: walk pages across the per-type page dirs under `<wiki_root>/wiki/` (excluding `audits/`), parse frontmatter, keep only those whose `(today - updated).days > N`.
 

@@ -1,35 +1,39 @@
 #!/usr/bin/env python3
 """
-lint_wiki.py — mechanical health audit for a Karpathy-style wiki.
+lint_wiki.py — semantic / narrative deterministic warnings for a Karpathy-style wiki.
 
 Emits JSON on stdout with three severity tiers:
     {"success": true,
      "data": {
-       "errors":   [{"class": "...", "page": "...", "message": "..."}, ...],
-       "warnings": [...],
+       "errors":   [],                          # always empty as of v0.0.31
+       "warnings": [{"class": "...", "page": "...", "message": "..."}, ...],
        "info":     [...],
        "stats":    { ... }
      },
      "error": ""}
 
 Detects:
-    - Broken [[wikilinks]]
-    - Filename / id mismatches
-    - Missing required frontmatter fields
-    - Invalid type values
-    - Missing source files under raw/
-    - Broken wiki:// sources (target page does not exist)
-    - Synthesis pages missing wiki:// sources
-    - Orphan pages (no inbound wikilinks)
-    - Stale drafts / stale pages
-    - Tag typos (edit distance ≤ TAG_TYPO_MAX_DIST with ≥ TAG_TYPO_RATIO usage ratio)
-    - Pages missing sources when type requires them
-    - Reverse link missing (forward [[B]] in A but no [[A]] in B —
-      SCHEMA.md rule R1_bidirectional_wikilink)
+    - Synthesis pages missing wiki:// sources       (synthesis_no_wiki_source)
+    - Pages missing sources when type requires them (no_sources)
+    - Orphan pages (no inbound wikilinks)            (orphan_page)
+    - Stale drafts / stale pages                     (stale_draft, stale_page)
+    - Tag typos (edit distance ≤ TAG_TYPO_MAX_DIST)  (tag_typo)
+    - Reverse link missing — SCHEMA R1               (reverse_link_missing)
+    - Claim-drift bridge from wiki-claims-resweep   (claim_drift)
 
-Semantic checks (contradictions, type drift) are NOT handled here — they
-are performed by the calling Claude skill with this script's output as a
-starting point.
+Semantic checks (contradictions, type drift, missing concept pages,
+undercited claims) are NOT handled here — they run from the calling Claude
+skill with this script's output as a starting point.
+
+**Structural integrity is owned by `wiki-health` (v0.0.27+).** As of
+v0.0.31, the deterministic structural checks that pre-dated the split
+(`broken_wikilink`, `missing_frontmatter`, `id_mismatch`, `invalid_type`,
+`missing_source`, `broken_wiki_source`, `read_error`) have been removed
+from this script. Run `health.py` for those — both scripts use the same
+`{success, data, error}` JSON contract and the same severity vocabulary,
+so consumers (lint reports, `wiki-refresh`, `rebuild_open_questions.py`)
+that need a unified picture can read both. Closes #212 Tier 2 item #6
+(#223); deferred from #217 to give `wiki-refresh` time to settle.
 
 Layout: as of v0.0.28 pages live under per-type subdirectories
 (`wiki/concepts/`, `wiki/decisions/`, …) plus `wiki/audits/` for `lint-*.md`
@@ -49,7 +53,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
-    VALID_TYPES,
     build_slug_index,
     fail_if_pre_migration,
     is_audit_slug,
@@ -62,7 +65,6 @@ STALE_PAGE_DAYS = 365
 TAG_TYPO_MAX_DIST = 2
 TAG_TYPO_RATIO = 3
 TYPES_REQUIRING_SOURCES = {"concept", "entity", "summary", "learning", "synthesis"}
-REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
@@ -153,12 +155,15 @@ def main() -> None:
     args = parser.parse_args()
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
-    raw_dir = wiki_root / "raw"
 
     if not (wiki_root / ".cogni-wiki" / "config.json").is_file():
         fail(f"not a cogni-wiki (no .cogni-wiki/config.json under {wiki_root})")
     fail_if_pre_migration(wiki_root)
 
+    # `errors` is retained as an empty list in the JSON output for backwards
+    # compatibility with consumers (`wiki-refresh`, `rebuild_open_questions.py`,
+    # the lint-report composer) that key on `data.errors`. As of v0.0.31 lint
+    # itself never appends to it — structural errors are owned by `health.py`.
     errors: list = []
     warnings: list = []
     info: list = []
@@ -174,51 +179,23 @@ def main() -> None:
     for slug, page_path, ptype_dir in iter_pages(wiki_root, include_audit=True):
         try:
             text = page_path.read_text(encoding="utf-8")
-        except OSError as e:
-            errors.append({"class": "read_error", "page": slug, "message": str(e)})
+        except OSError:
+            # health.py owns read-error reporting (`read_error` class).
+            # Skip silently here so a single unreadable page doesn't suppress
+            # lint findings on the other pages.
             continue
         fm = parse_frontmatter(text)
         all_pages[slug] = {"fm": fm, "text": text, "type_dir": ptype_dir}
 
         # Audit reports get scanned for outbound wikilinks (so reverse-link
         # checks can ignore them on both ends per R3) but skip every other
-        # frontmatter / sources / staleness check.
+        # sources / staleness check.
         if ptype_dir == "audit" or is_audit_slug(slug):
             for target in WIKILINK_RE.findall(text):
                 inbound_links.setdefault(target, set()).add(slug)
             continue
 
-        # Required frontmatter
-        for field in REQUIRED_FRONTMATTER:
-            if field not in fm or fm[field] in (None, "", []):
-                errors.append(
-                    {
-                        "class": "missing_frontmatter",
-                        "page": slug,
-                        "message": f"missing required field '{field}'",
-                    }
-                )
-
-        # id matches filename
-        if fm.get("id") and fm["id"] != slug:
-            errors.append(
-                {
-                    "class": "id_mismatch",
-                    "page": slug,
-                    "message": f"frontmatter id '{fm['id']}' != filename '{slug}'",
-                }
-            )
-
-        # valid type
         ptype = fm.get("type")
-        if ptype and ptype not in VALID_TYPES:
-            errors.append(
-                {
-                    "class": "invalid_type",
-                    "page": slug,
-                    "message": f"type '{ptype}' not in {sorted(VALID_TYPES)}",
-                }
-            )
         if ptype:
             type_counts[ptype] = type_counts.get(ptype, 0) + 1
 
@@ -234,36 +211,16 @@ def main() -> None:
                         "message": f"type '{ptype}' but no sources field",
                     }
                 )
-            # Validate per-source: missing raw files, broken wiki:// targets,
-            # and remember whether any wiki:// source was seen (for synthesis).
-            has_wiki_source = False
-            for src in sources:
-                if isinstance(src, str) and src.startswith("../raw/"):
-                    rel = src[len("../raw/") :]
-                    if not (raw_dir / rel).exists():
-                        errors.append(
-                            {
-                                "class": "missing_source",
-                                "page": slug,
-                                "message": f"source file not found: raw/{rel}",
-                            }
-                        )
-                elif isinstance(src, str) and src.startswith("wiki://"):
-                    has_wiki_source = True
-                    target = src[len("wiki://") :].strip()
-                    if not target or target not in slug_index:
-                        errors.append(
-                            {
-                                "class": "broken_wiki_source",
-                                "page": slug,
-                                "message": f"wiki:// source not found: wiki://{target}",
-                            }
-                        )
-
             # Synthesis pages must cite at least one wiki:// source. Empty
             # sources is already covered by the no_sources warning above; this
             # catches the case where sources are present but only ../raw/ or URL
             # entries — a synthesis without wiki provenance is suspicious.
+            # Per-source target validation (missing raw file, broken wiki://
+            # target) is owned by health.py as of v0.0.31.
+            has_wiki_source = any(
+                isinstance(src, str) and src.startswith("wiki://")
+                for src in sources
+            )
             if (
                 ptype == "synthesis"
                 and len(sources) > 0
@@ -310,18 +267,8 @@ def main() -> None:
         for target in WIKILINK_RE.findall(text):
             inbound_links.setdefault(target, set()).add(slug)
 
-    # broken links + orphans pass 2
+    # orphans pass 2 — broken_wikilink reporting moved to health.py in v0.0.31.
     existing_slugs = set(all_pages.keys())
-    for slug, bag in inbound_links.items():
-        if slug not in existing_slugs:
-            for source_slug in sorted(bag):
-                errors.append(
-                    {
-                        "class": "broken_wikilink",
-                        "page": source_slug,
-                        "message": f"[[{slug}]] target does not exist",
-                    }
-                )
 
     for slug in existing_slugs:
         if is_audit_slug(slug):
@@ -340,9 +287,11 @@ def main() -> None:
     # `[[t]]`. To test "does A reverse-link B?" we ask "is A in
     # inbound_links[B]?". If A links to B but A is *not* in inbound_links[B]'s
     # reverse direction (i.e., B does not link back to A), that's a violation.
+    # Targets that don't exist are quietly skipped — health.py owns
+    # `broken_wikilink` reporting as of v0.0.31.
     for target_slug, source_slugs in sorted(inbound_links.items()):
         if target_slug not in existing_slugs:
-            continue  # broken_wikilink already reported
+            continue
         if is_audit_slug(target_slug):
             continue
         for source_slug in sorted(source_slugs):

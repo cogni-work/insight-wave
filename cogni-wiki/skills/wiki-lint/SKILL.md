@@ -54,7 +54,7 @@ Log a `lint | refused (health failed)` line to `wiki/log.md` and stop. Otherwise
 
 ### 3. Run the deterministic warning pass (lint_wiki.py)
 
-Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root <path>`. The script emits JSON with the warnings/info that need narrative — orphans, stale drafts, tag typos, reverse-link gaps, synthesis-without-wiki-source, claim_drift per page. The structural errors that lint_wiki.py also emits are redundant with health (same engine semantics) and should be deduplicated against the health output when composing the report.
+Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root <path>`. The script emits JSON with the warnings/info that need narrative — `orphan_page`, `stale_draft`, `stale_page`, `tag_typo`, `reverse_link_missing`, `no_sources`, `synthesis_no_wiki_source`, `claim_drift`, plus the `info` block (page totals, by-type counts, last-resweep summary). As of v0.0.31 (#223) `data.errors` is always an empty list — every structural integrity check has been moved to `health.py`, which Step 2 already ran. No deduplication step is needed when composing the report; lint and health are now strict partitions.
 
 ### 4. Run the LLM-powered semantic pass
 

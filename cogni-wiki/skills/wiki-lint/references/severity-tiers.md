@@ -4,7 +4,7 @@ The lint report uses three tiers. Each finding belongs to exactly one tier. The 
 
 ## Health vs Lint coverage matrix
 
-As of v0.0.27, structural integrity checks live in `wiki-health` (zero LLM, every session) and content-quality checks live in `wiki-lint` (LLM-powered, periodic). The two skills share the same severity vocabulary; they differ in what they own.
+As of v0.0.27, structural integrity checks live in `wiki-health` (zero LLM, every session) and content-quality checks live in `wiki-lint` (LLM-powered, periodic). The two skills share the same severity vocabulary; they differ in what they own. As of v0.0.31 (#223) the partition is also enforced in code: `lint_wiki.py` no longer emits any class in the "owner = wiki-health" rows below — those checks were dropped from the script entirely (the deferral originally noted in #217 has now landed). `data.errors` from `lint_wiki.py` is now always an empty list; consumers read structural errors from `health.py` only.
 
 | Class | Tier | Owner | LLM? |
 |-------|------|-------|------|
