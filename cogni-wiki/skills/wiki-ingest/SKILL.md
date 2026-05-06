@@ -48,7 +48,7 @@ Exactly one of `--source`, `--batch-file`, or `--discover` must be provided.
 
 The three input modes are mutually exclusive. Pick the one that matches the caller's inputs and follow the corresponding rule; everything from Step 1 onwards is identical across modes.
 
-**Sequential by design.** Batch and discovery modes execute Steps 1–8 as a strict sequential loop in the orchestrator's own context — one source at a time, in input order, with every page write, index update, backlink apply, log line, and config bump committed to disk before the next iteration begins. This is load-bearing: source N+1's Step 3 ("which existing pages does this source touch") and Step 6 (backlink audit) must see the page that source N just created, otherwise the wiki fragments instead of compounds. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Execution model" for the rationale and the history of why an earlier per-source subagent fan-out was removed.
+**Sequential by design.** Batch and discovery modes execute Steps 1–8 as a strict sequential loop in the orchestrator's own context — one source at a time, in input order, with every page write, index update, backlink apply, log line, and config bump committed to disk before the next iteration begins. This is load-bearing: source N+1's Step 3 ("which existing pages does this source touch") and Step 6 (backlink audit) must see the page that source N just created, otherwise the wiki fragments instead of compounds. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Execution model" for the rationale and the history of why an earlier per-source subagent fan-out was removed. Step 8.5 (context brief rebuild, v0.0.29+) runs **once per dispatch** after the loop completes, not per source.
 
 **Backlink-curation decision (once, at dispatch).** Resolve `auto_backlinks` before any Step 1 work so every iteration applies the same rule:
 
@@ -83,7 +83,7 @@ Slug collisions in discovery mode are already handled by Step 1's `mode: fresh |
 - Otherwise, execute `sources[]` as a **strict sequential loop**. For each `source_entry` in input order, run Steps 1–8 inline in this orchestrator's context (read source → Step 3 takeaway synthesis → write page → update index → backlink audit + apply → log → config bump), passing `auto_backlinks` resolved above into Step 6. Only after all per-source scripts have returned and their writes committed do you advance to the next entry.
 - **Fail-fast.** If any iteration's step (1–8) fails, halt the loop immediately. Sources processed before the failure are atomically consistent on disk (per-page writes use `tempfile + os.replace`; shared-state writes go through the locked scripts). Record the failed entry's error and the list of un-attempted entries for the Step 9 report.
 - **Step 3 in batch mode.** Surface the takeaway synthesis to the user transcript exactly as in single-source mode. Batch mode is autonomous-run by construction (the user said "ingest all of them"), so emit the synthesis and proceed to Step 4 without waiting for confirmation — the discipline is "synthesis is visible", not "the user must approve every page".
-- In Step 9, emit one aggregated report covering every entry that completed, the entry that failed (if any), and any entries skipped by the fail-fast halt.
+- Once the loop completes (or fail-fast halts it), run Step 8.5 once for the dispatch, then emit the aggregated Step 9 report.
 
 **If neither `--batch-file` nor `--discover` is present**, run Steps 1–9 on the single `--source`. This is the existing path; nothing about it changes.
 
@@ -317,14 +317,29 @@ Never rewrite existing log lines.
 
 If `config_bump.py` exits non-zero or returns malformed JSON, report the error but do not abort — the page, index, backlinks, and log are already consistent on disk. The script is idempotent-safe to re-run with a compensating `--delta` to reconcile drift.
 
+### 8.5. Rebuild `wiki/context_brief.md` (v0.0.29+)
+
+Run **once per dispatch**, after the per-source loop has completed (single-source mode: after Step 8 of the only source; batch / discovery mode: after the last entry's Step 8 has committed). The brief is the canonical "first read" for a fresh Claude Code session — it summarises the wiki's current shape (type counts, top entities by inbound backlinks, last 30 days of activity, cached open lints, fresh `health.py` snapshot) in ≤ 8 KiB so a new session can orient without opening `index.md`, every per-type page directory, and `log.md`.
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/rebuild_context_brief.py --wiki-root <wiki-root>
+```
+
+The script is read-only against pages, runs `health.py` once internally, and atomically replaces `wiki/context_brief.md` via `tempfile + os.replace` (through `_wikilib.atomic_write`). No lock is needed — the brief has a single writer, and reads are snapshot-only. A hard 8000-byte cap is enforced; if the assembled body exceeds it, the script truncates the "recent activity" section first (constant-bounded sections like type counts, top entities, lints, and health are never truncated).
+
+**Failure isolation.** A non-zero exit or malformed JSON from `rebuild_context_brief.py` MUST NOT roll back the ingest. The page write, index update, backlinks, log line, and `entries_count` bump from Steps 4–8 are already on disk. Surface the error to the user as part of the Step 9 report and continue — the brief is a derived artefact that the next ingest will rebuild.
+
+**Out of scope, deliberately.** The "Open lints" section reads `.cogni-wiki/last_lint.json` if present and ≤ 24 h old; otherwise it renders an inline "not yet cached" note. This step does not invoke `lint_wiki.py` — keeping the ingest path token-free is the entire point of the brief. The lint-cache writer hook (so a `wiki-lint` run populates `last_lint.json`) is a deliberate follow-up; until it lands, the lints section degrades gracefully and the rest of the brief is unaffected.
+
 ### 9. Report to the user
 
 **Single-source mode.** Tell the user, in ≤5 sentences:
 - The new page slug and path
 - How many existing pages got backlinks
+- Whether the context brief was rebuilt cleanly (one line: "context_brief.md: {bytes}B" or the failure mode)
 - What to do next (usually: drop another source or run `wiki-query`)
 
-**Batch mode.** Emit one aggregated block instead of a per-source report. For every entry that reached this step, print the slug, its resolved mode (`fresh` or `re-ingest`), and its backlink count. Report `entries_count` delta (fresh sources only; re-ingests never increment). On a fail-fast halt, also list the source that failed with its error and any sources that were skipped. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Step 9 in batch mode" for the exact format.
+**Batch mode.** Emit one aggregated block instead of a per-source report. For every entry that reached this step, print the slug, its resolved mode (`fresh` or `re-ingest`), and its backlink count. Report `entries_count` delta (fresh sources only; re-ingests never increment) and the Step 8.5 brief-rebuild result. On a fail-fast halt, also list the source that failed with its error and any sources that were skipped. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Step 9 in batch mode" for the exact format.
 
 ## Output
 
@@ -333,6 +348,7 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 - N existing pages (across the per-type dirs under `wiki/`) edited with new backlinks (where N ≥ 0)
 - One appended line in `wiki/log.md`
 - Updated `config.json`
+- `wiki/context_brief.md` rebuilt once per dispatch (≤ 8 KiB; deterministic; never blocks the ingest on failure) — v0.0.29+
 - Optionally, one `<source>.converted.md` cache file in `raw/` next to a non-markdown source (Step 2a). Re-used on idempotent re-ingest; safe to delete to force re-conversion.
 
 ## Failure modes and rules
@@ -342,6 +358,7 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 - **Never overwrite a page silently.** Overwrites are only allowed through the explicit re-ingest path: Step 1 must detect the existing slug, set `mode: re-ingest`, and emit the re-ingest warning before any page write. Silent overwrites (writing to an existing slug without surfacing `mode: re-ingest` to the user) remain forbidden. For content-only edits that preserve the existing synthesis, use `wiki-update` rather than a re-ingest.
 - **Raw first, page second.** Pasted content is persisted to `raw/` before any page work begins.
 - **Original source is the citation, not the cache.** When Step 2a writes a `.converted.md`, frontmatter `sources:` still points at the original. The cache is a derived artefact — re-ingest may rebuild it; nothing in the wiki should depend on its path.
+- **Brief failures never roll back the ingest.** Step 8.5 is fail-soft by contract — the rest of the dispatch is committed before it runs.
 
 ## References
 
@@ -354,3 +371,4 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_index_update.py` — deterministic `wiki/index.md` insert/update helper
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/batch_builder.py` — discovery helper; enumerates candidates for `--discover` and emits the batch-mode payload on stdout
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/convert_to_md.py` — multi-format auto-conversion helper used by Step 2a (`.docx`, `.pptx`, `.xlsx`, `.html`, `.epub`, …); stdlib-first with optional `markitdown` shell-out
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/rebuild_context_brief.py` — Step 8.5: writes `wiki/context_brief.md` (≤ 8 KiB; auto-rebuilt once per dispatch as of v0.0.29)
