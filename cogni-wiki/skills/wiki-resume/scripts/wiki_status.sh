@@ -189,6 +189,14 @@ if [ -f "$LOG_FILE" ]; then
   recent_log=$(grep -E '^## \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]' "$LOG_FILE" 2>/dev/null | tail -n 10 || true)
 fi
 
+# ---------- open questions count (v0.0.30) ----------
+# Count "- [ ]" checklist items in wiki/open_questions.md; 0 if absent.
+open_questions_count=0
+OPEN_QUESTIONS_FILE="$WIKI_DIR/open_questions.md"
+if [ -f "$OPEN_QUESTIONS_FILE" ]; then
+  open_questions_count=$(grep -cE '^- \[ \] ' "$OPEN_QUESTIONS_FILE" 2>/dev/null || echo 0)
+fi
+
 # ---------- orphan raw files (quick heuristic) ----------
 orphan_raw_count=0
 if [ -d "$RAW_DIR" ] && [ -d "$WIKI_DIR" ]; then
@@ -234,6 +242,7 @@ export WS_RECENT_LOG="$recent_log"
 export WS_CONFIG_FILE="$CONFIG_FILE"
 export WS_HEALTH_JSON="$health_json"
 export WS_SCHEMA_MIGRATION_PENDING="$schema_migration_pending"
+export WS_OPEN_QUESTIONS_COUNT="$open_questions_count"
 
 python3 - <<'PY'
 import json
@@ -306,6 +315,7 @@ data = {
     "recent_log": recent_log_lines,
     "schema_version": cfg.get("schema_version"),
     "schema_migration_pending": os.environ.get("WS_SCHEMA_MIGRATION_PENDING", "false") == "true",
+    "open_questions_count": int(os.environ.get("WS_OPEN_QUESTIONS_COUNT", "0") or 0),
     "health": health_block,
 }
 

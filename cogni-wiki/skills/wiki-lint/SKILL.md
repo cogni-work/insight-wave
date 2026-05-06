@@ -34,6 +34,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 | `--skip-semantic` | No | Skip the LLM-driven contradiction/type-drift/missing-concept pass. Equivalent to running `wiki-health` plus the deterministic warnings (orphans, stale, tag typos, reverse links). Use when you want a tokenless full deterministic pass. |
 | `--ignore-health` | No | Run the semantic pass even when `wiki-health` reports errors. Discouraged — fix structural errors first. |
 | `--semantic-page-cap` | No | Maximum number of pages sampled for the semantic pass. Default: 20. |
+| `--skip-rebuild-open-questions` | No | Skip Step 8.5 (`rebuild_open_questions.py`). Use when investigating a rebuild bug or running a literal no-side-effect lint pass. v0.0.30+. |
 
 ## Workflow
 
@@ -185,13 +186,30 @@ Even when the wiki is clean (zero findings), log the lint run. The log is the au
 
 Set `last_lint` to today's ISO date. Leave `entries_count` untouched (the lint report itself is a page, so increment accordingly — it counts as one page).
 
+### 8.5. Rebuild `wiki/open_questions.md` (v0.0.30+)
+
+Run **once per dispatch** after Step 8. The file is the persistent backlog that compounds across sessions: lint findings that point at "data gaps" (`no_sources`, `synthesis_no_wiki_source`, `claim_drift`, `orphan_page`, `stale_page`, `stale_draft`, `reverse_link_missing`) become `- [ ]` checklist items; items that disappear from a subsequent lint flip to `- [x]` with today's date and a best-effort "closed by" attribution from `wiki/log.md`. Closed items are trimmed after 90 days. The `## [YYYY-MM-DD] lint | …` line written in Step 7 is what makes the close-attribution work — Step 8.5 must run after Step 7.
+
+Skip this step when `--skip-rebuild-open-questions` is set.
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/rebuild_open_questions.py --wiki-root <wiki-root>
+```
+
+The script invokes `lint_wiki.py` itself as a subprocess (read-only, mirrors the deterministic Step 3 output) and reconciles against the existing `wiki/open_questions.md`. The read-modify-write is wrapped in `_wikilib._wiki_lock` because two concurrent `wiki-lint` dispatches from separate sessions would otherwise trample each other's reconciliation.
+
+**LLM-emitted findings (Step 4d's `missing_concept_page` items) are not yet wired in** — v0.0.30 ships deterministic-only. The script accepts `--findings -` (JSON on stdin) for the follow-up that will pipe a merged finding set in from this step. Until then the "Missing concept pages" section is omitted.
+
+**Failure isolation.** A non-zero exit or malformed JSON from `rebuild_open_questions.py` MUST NOT roll back the lint run. The audit report (Step 5), index update (Step 6), log line (Step 7), and `last_lint` bump (Step 8) are already on disk. Surface the error in the Step 9 report and continue — the next lint run will reconcile.
+
 ### 9. Report to the user
 
-Print a ≤5-line summary:
+Print a ≤6-line summary:
 - Health snapshot from preflight (N errors, N warnings)
 - Lint counts (deterministic + semantic)
 - Top 3 findings across all tiers
 - Token cost
+- Open-questions delta from Step 8.5 (`opened`, `closed`, `trimmed`) or the failure mode if the rebuild errored — v0.0.30+
 - Path to the full report
 
 ## Output
@@ -200,6 +218,7 @@ Print a ≤5-line summary:
 - `wiki/index.md` updated with the report entry
 - `wiki/log.md` appended with the lint line
 - `.cogni-wiki/config.json` `last_lint` updated
+- `wiki/open_questions.md` rebuilt (v0.0.30+; persistent backlog of data-gap items, ≤90-day closed retention; never blocks the lint on failure)
 
 ## Rules
 
@@ -215,5 +234,6 @@ Print a ≤5-line summary:
 - `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` — the pattern
 - `./references/severity-tiers.md` — tier definitions and the full health-vs-lint coverage matrix
 - `./scripts/lint_wiki.py` — deterministic warning pass (orphans, stale, tag typos, reverse links, claim_drift narrative)
+- `./scripts/rebuild_open_questions.py` — Step 8.5: writes `wiki/open_questions.md` (persistent data-gap backlog as of v0.0.30; reconciles against prior state; locked RMW; 90-day closed retention)
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-health/SKILL.md` — the structural counterpart, run as preflight
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-health/scripts/health.py` — the structural integrity engine

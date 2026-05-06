@@ -30,17 +30,18 @@ skills/                         11 wiki skills
       health.py                   Broken wikilinks, missing frontmatter, broken raw/wiki:// sources, id mismatch, invalid type, stub pages, entries_count drift, index/filesystem drift, claim_drift count
     references/
       checks.md                   Canonical list of structural checks with detection logic and the lint boundary
-  wiki-lint/                      Semantic, LLM-powered audit; runs wiki-health first as preflight (v0.0.27)
+  wiki-lint/                      Semantic, LLM-powered audit; runs wiki-health first as preflight (v0.0.27); rebuilds wiki/open_questions.md at end of every run (v0.0.30)
     scripts/
       lint_wiki.py                Deterministic warnings (orphans, stale, tag typos, reverse links, claim_drift narrative); the LLM-powered semantic checks (contradictions, type drift, undercited claims, missing concept pages) run from the SKILL.md workflow
+      rebuild_open_questions.py   Rebuilds wiki/open_questions.md from data-gap warnings — locked RMW, reconciles vs prior state, 90-day closed retention (auto-invoked by Step 8.5 of every dispatch as of v0.0.30)
     references/
       severity-tiers.md           Health vs Lint coverage matrix + error/warn/info classification
   wiki-update/                    Diff-gated page revisions with stale-sweep
     references/
       update-discipline.md        Citation-required, diff-before-write rules
-  wiki-resume/                    Status dashboard — entry count, last-lint age, health snapshot, next action; runs wiki-health automatically (v0.0.27); reads wiki/context_brief.md first (v0.0.29)
+  wiki-resume/                    Status dashboard — entry count, last-lint age, health snapshot, next action; runs wiki-health automatically (v0.0.27); reads wiki/context_brief.md first (v0.0.29); surfaces open_questions_count (v0.0.30)
     scripts/
-      wiki_status.sh              Emits {success, data, error} JSON (incl. synthesis_count_30d, health_count_30d, embedded health.errors/warnings/drifts)
+      wiki_status.sh              Emits {success, data, error} JSON (incl. synthesis_count_30d, health_count_30d, open_questions_count, embedded health.errors/warnings/drifts)
   wiki-dashboard/                 Self-contained HTML overview (pages, tags, backlink graph)
     scripts/
       render_dashboard.py         Reads wiki/ → writes wiki-dashboard.html (stdlib only)
@@ -65,7 +66,7 @@ references/
 | Agents | 0 | — (wiki-ingest batch mode runs sequentially in the orchestrator's own context as of v0.0.22; the previous `ingest-worker` per-source subagent was removed because parallel fan-out broke the Karpathy-pattern invariant that source N+1 must see source N's page) |
 | Commands | 0 | — (skills serve as slash commands per plugin-dev guidance) |
 | Hooks | 0 | — (all bookkeeping lives inside skills) |
-| Scripts | 14 | backlink_audit.py, wiki_index_update.py, batch_builder.py, config_bump.py, _wikilib.py, convert_to_md.py, rebuild_context_brief.py, health.py, lint_wiki.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, migrate_layout.py |
+| Scripts | 16 | backlink_audit.py, wiki_index_update.py, batch_builder.py, config_bump.py, _wikilib.py, convert_to_md.py, rebuild_context_brief.py, health.py, lint_wiki.py, rebuild_open_questions.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, migrate_layout.py |
 
 ## Wiki Data Layout (outside the plugin)
 
@@ -81,6 +82,7 @@ Created by `wiki-setup` at the user-chosen root (default `cogni-wiki/{slug}/` re
 │   ├── log.md                 Append-only operation log
 │   ├── overview.md            Evolving synthesis / "state of the wiki"
 │   ├── context_brief.md       ≤8 KiB auto-rebuilt "first read" for fresh sessions (v0.0.29)
+│   ├── open_questions.md      Persistent backlog of lint-derived data gaps (v0.0.30; locked RMW; 90-day closed retention)
 │   ├── concepts/              type: concept
 │   ├── entities/              type: entity
 │   ├── summaries/             type: summary
@@ -143,6 +145,7 @@ The advisory lock at `<wiki-root>/.cogni-wiki/.lock` is **retained as defence-in
 | `wiki/<type>/<target>.md` | Backlink append into an *existing* page (slug → path resolved via `_wikilib.build_slug_index`) | `backlink_audit.py::apply_plan` |
 | `.cogni-wiki/config.json` | `entries_count` bump (and any future counters) | `config_bump.py::main` (line 105) |
 | `.cogni-wiki/last-resweep.json` | Sweep summary write at end of `wiki-claims-resweep` aggregate phase | `resweep_planner.py::phase_aggregate` |
+| `wiki/open_questions.md` | Reconcile checklist (parse → flip closed/open → trim → atomic replace) | `rebuild_open_questions.py::main` (v0.0.30) |
 
 **When adding a new shared-state file**, the author MUST:
 
@@ -156,6 +159,8 @@ The advisory lock at `<wiki-root>/.cogni-wiki/.lock` is **retained as defence-in
 **Note for `wiki-health` (v0.0.27):** `health.py` is read-only against the per-type page dirs, `wiki/index.md`, and `.cogni-wiki/`. It writes nothing directly — the `## [YYYY-MM-DD] health | ...` log line is appended by the SKILL workflow via the same path every other operation log line uses, and `wiki/log.md` is treated as append-only (no read-modify-write), so it does not need a lock entry.
 
 **Note for `rebuild_context_brief.py` (v0.0.29):** the script writes `wiki/context_brief.md` (unique-by-construction; single writer) and runs `health.py` as a read-only subprocess. The atomic `tempfile + os.replace` write goes through `_wikilib.atomic_write`. Reads of `wiki/log.md`, `wiki/index.md`, and per-type page bodies are snapshot-only — no read-modify-write. **No new shared-state file** added to the table; concurrent `wiki-ingest` invocations from separate sessions are still serialised because every other Step 1–8 mutation goes through the existing locked scripts before Step 8.5 runs.
+
+**Note for `rebuild_open_questions.py` (v0.0.30):** the script writes `wiki/open_questions.md` and IS a true read-modify-write — it parses the existing checklist, reconciles items against the current `lint_wiki.py` finding set, flips newly-resolved items to `- [x]`, and trims closed items older than 90 days. Wraps the parse + reconcile + render + write in `with _wikilib._wiki_lock(wiki_root):` so concurrent `wiki-lint` dispatches from separate sessions can't trample each other's reconciliation. The `lint_wiki.py` subprocess invocation runs **outside** the lock to keep the critical section small. Final write goes through `_wikilib.atomic_write`. Adds one new shared-state row to the table above.
 
 **Lock helper consolidated (v0.0.28).** `_wiki_lock` lives in `skills/wiki-ingest/scripts/_wikilib.py` alongside the per-type-directory traversal helpers (`PAGE_TYPE_DIRS`, `iter_pages`, `build_slug_index`, `fail_if_pre_migration`). The previously duplicated copies in `backlink_audit.py`, `wiki_index_update.py`, and `config_bump.py` have been removed and replaced with `from _wikilib import _wiki_lock`. New shared-state writers MUST import from `_wikilib` rather than re-inline the lock context manager. As of v0.0.29, `_wikilib` also exports `atomic_write` and `emit_json` — extracted from the byte-for-byte-duplicated patterns in every wiki script. New writers consume them from `_wikilib`; existing inlines stay (lift-and-shift in a follow-up PR if desired).
 
@@ -174,6 +179,7 @@ insight-wave already uses Claude Code's auto-memory system at `~/.claude/project
 - **wiki-health ↔ wiki-lint boundary** (v0.0.27, intra-plugin). The split formalises the llm-wiki-agent "Health vs Lint Boundary": `wiki-health` owns deterministic structural integrity (zero LLM, every session, sub-second on 100-page wikis); `wiki-lint` owns semantic content quality (LLM-powered, periodic, refuses to run while health is broken). `wiki-resume` invokes `health.py` automatically as part of its session-start status, so the user gets a structural preflight without thinking about it. The full per-check ownership matrix is in `skills/wiki-lint/references/severity-tiers.md`. The two skills share the `{success, data, error}` JSON contract and the same severity vocabulary so the lint report can include health's findings verbatim. **No new shared-state files** — `health.py` is read-only against the per-type page dirs, `wiki/index.md`, and `.cogni-wiki/`; the only side effect is the `## [YYYY-MM-DD] health | ...` log line, which is append-only and needs no lock.
 - **per-type page directories** (v0.0.28, intra-plugin, schema_version `0.0.5`). Pages are now stored under per-type subdirectories (`wiki/concepts/`, `wiki/decisions/`, `wiki/syntheses/`, …) instead of flat `wiki/pages/`. Audit reports (`lint-*.md`, `health-*.md`) live under `wiki/audits/`. The traversal contract is owned by `_wikilib.iter_pages()` / `build_slug_index()` so consumers no longer hard-code paths. Existing wikis must run `wiki-setup/scripts/migrate_layout.py --apply` once; every other skill hard-fails on the legacy flat layout via `_wikilib.fail_if_pre_migration`, and `wiki-resume`'s `wiki_status.sh` surfaces `schema_migration_pending: true` to nudge the user (without hard-failing — the resume path is exactly where the user reads the nudge from). `[[wikilink]]` syntax is unchanged — slugs remain globally unique and address pages without paths. Closes #212 Tier 2 item #1.
 - **context brief** (v0.0.29, intra-plugin). Every `wiki-ingest` dispatch ends with `rebuild_context_brief.py` (Step 8.5), which writes `wiki/context_brief.md` — a deterministic ≤ 8 KiB file summarising type counts, top entities by inbound backlinks, the last 30 days of activity, cached open lints (read from `.cogni-wiki/last_lint.json` if present and ≤ 24 h old), and a fresh `health.py` snapshot. `wiki-resume`'s Step 1 reads the brief before any other status work, so a fresh Claude Code session orients from one file instead of a 3+ file scan. Failure to rebuild the brief never rolls back the ingest — the brief is a derived artefact, regenerated on the next dispatch. The lint section degrades gracefully when no cache is present; the lint-cache writer hook is a deliberate follow-up. Closes #212 Tier 2 item #2 (#219).
+- **open questions** (v0.0.30, intra-plugin). Every `wiki-lint` dispatch ends with `rebuild_open_questions.py` (Step 8.5), which maintains `wiki/open_questions.md` as a persistent checklist of data-gap warnings (`no_sources`, `synthesis_no_wiki_source`, `claim_drift`, `orphan_page`, `stale_page`, `stale_draft`, `reverse_link_missing`). Unlike the context brief, this is a **read-modify-write**: items disappearing from the current lint output flip to `- [x]` with a best-effort "closed by" attribution from `wiki/log.md`; new findings append as `- [ ]`; closed items >90 days old are trimmed. `wiki-resume` adds a `{N} open questions` Inventory line plus a new decision-tree rule that fires when the count is non-zero and lint is fresh. Failure to rebuild never rolls back the lint — the audit report and `last_lint` bump are already on disk. v0.0.30 ships deterministic-only; the `--findings -` stdin contract is in place from day 1 for the LLM-feed follow-up that pipes Step 4d's `missing_concept_page` items in. Closes #212 Tier 2 item #3 (#220).
 
 ## Future Integration Points
 

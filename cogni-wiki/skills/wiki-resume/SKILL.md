@@ -85,6 +85,7 @@ else:
 - {entries_count} pages
 - {raw_file_count} raw sources ({orphan_raw_count} unused)
 - {lint_count} lint reports ({days_since_lint} days since last)
+- {open_questions_count} open questions{if open_questions_count > 0: " (see wiki/open_questions.md)"}
 
 ## Schema
 - schema_version: {schema_version}
@@ -112,12 +113,13 @@ Apply the first rule that matches:
 3. **`health.available AND health.claim_drift_count > 0 AND days_since_lint > 14`** → "{N} pages flagged by the last resweep ({date}) and lint hasn't run in {days} days. Run `/cogni-wiki:wiki-lint` for the semantic narrative."
 4. **`entries_count == 0`** → "Drop a source in `raw/` and run `/cogni-wiki:wiki-ingest`."
 5. **`orphan_raw_count > 0`** → "You have {N} raw sources that aren't yet in the wiki. Run `/cogni-wiki:wiki-ingest --discover orphans --discover-dry-run` to review them, then drop `--discover-dry-run` to ingest. No need to hand-craft a batch file — the skill enumerates the orphans for you."
-6. **`days_since_lint == null` OR `days_since_lint > 14`** → "It's been {N} days (or never) since the last lint. Run `/cogni-wiki:wiki-lint`."
-7. **`ingest_count_30d == 0 AND query_count_30d == 0 AND synthesis_count_30d == 0 AND update_count_30d == 0`** → "The wiki hasn't been touched in 30 days. Either ingest something new or run `/cogni-wiki:wiki-query` to reactivate it."
-8. **`entries_count >= 5 AND query_count_30d == 0 AND synthesis_count_30d == 0`** → "You have {entries_count} pages but haven't asked the wiki anything in 30 days. Run `/cogni-wiki:wiki-query --question '...' --file-back yes` to compound a synthesis page."
-9. **Else** → "The wiki looks healthy. Continue with whatever you were doing, or run `/cogni-wiki:wiki-dashboard` for a visual overview."
+6. **`open_questions_count > 0 AND (days_since_lint != null AND days_since_lint <= 14)`** → "{N} open questions in the wiki — see `wiki/open_questions.md` for the next ingest target. Items flip to `- [x]` automatically on the next lint after the gap is closed." (v0.0.30+)
+7. **`days_since_lint == null` OR `days_since_lint > 14`** → "It's been {N} days (or never) since the last lint. Run `/cogni-wiki:wiki-lint`."
+8. **`ingest_count_30d == 0 AND query_count_30d == 0 AND synthesis_count_30d == 0 AND update_count_30d == 0`** → "The wiki hasn't been touched in 30 days. Either ingest something new or run `/cogni-wiki:wiki-query` to reactivate it."
+9. **`entries_count >= 5 AND query_count_30d == 0 AND synthesis_count_30d == 0`** → "You have {entries_count} pages but haven't asked the wiki anything in 30 days. Run `/cogni-wiki:wiki-query --question '...' --file-back yes` to compound a synthesis page."
+10. **Else** → "The wiki looks healthy. Continue with whatever you were doing, or run `/cogni-wiki:wiki-dashboard` for a visual overview."
 
-Rules 1–3 are new in v0.0.27 — they fire on the freshly-collected health snapshot so structural problems surface before any other recommendation. The deterministic split lets resume make a confident statement about what is broken without burning lint tokens. Rule 5's concrete `--discover` command is deliberate: the older prose-only recommendation ("run wiki-ingest on them") left Claude (and by extension the user) to figure out how to enumerate the orphans, which in practice meant asking the user to type them out. Rule 8 surfaces the "the wiki is a vault, but you haven't asked it anything" anti-pattern that file-back synthesis pages were built to fix.
+Rules 1–3 are new in v0.0.27 — they fire on the freshly-collected health snapshot so structural problems surface before any other recommendation. The deterministic split lets resume make a confident statement about what is broken without burning lint tokens. Rule 5's concrete `--discover` command is deliberate: the older prose-only recommendation ("run wiki-ingest on them") left Claude (and by extension the user) to figure out how to enumerate the orphans, which in practice meant asking the user to type them out. Rule 6 (new in v0.0.30) surfaces the persistent open-questions backlog only when lint is fresh — a stale lint would mean stale gaps. Rule 9 surfaces the "the wiki is a vault, but you haven't asked it anything" anti-pattern that file-back synthesis pages were built to fix.
 
 ### 5. Side effects
 
