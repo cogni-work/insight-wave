@@ -29,6 +29,13 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
+from _wikilib import (  # noqa: E402
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
+
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
@@ -291,12 +298,12 @@ def main() -> None:
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
     config_path = wiki_root / ".cogni-wiki" / "config.json"
-    pages_dir = wiki_root / "wiki" / "pages"
     raw_dir = wiki_root / "raw"
     log_path = wiki_root / "wiki" / "log.md"
 
     if not config_path.is_file():
         fail(f"not a cogni-wiki: {config_path} missing")
+    fail_if_pre_migration(wiki_root)
 
     try:
         with config_path.open(encoding="utf-8") as f:
@@ -311,28 +318,26 @@ def main() -> None:
     inbound_counts: Counter = Counter()
     total_links = 0
 
-    if pages_dir.is_dir():
-        for path in sorted(pages_dir.glob("*.md")):
-            if path.name.startswith("lint-"):
-                continue
-            try:
-                text = path.read_text(encoding="utf-8")
-            except OSError:
-                continue
-            fm = parse_frontmatter(text)
-            slug = path.stem
-            title = fm.get("title", slug) or slug
-            ptype = fm.get("type", "") or ""
-            tags = fm.get("tags", []) if isinstance(fm.get("tags", []), list) else []
-            type_counts[ptype] += 1
-            for t in tags:
-                if isinstance(t, str):
-                    tag_counts[t] += 1
-            links = WIKILINK_RE.findall(text)
-            total_links += len(links)
-            for target in links:
-                inbound_counts[target] += 1
-            pages.append({"slug": slug, "title": title, "type": ptype, "tags": tags})
+    for slug, path, ptype_dir in iter_pages(wiki_root):
+        if is_audit_slug(slug):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        fm = parse_frontmatter(text)
+        title = fm.get("title", slug) or slug
+        ptype = fm.get("type", "") or ptype_dir
+        tags = fm.get("tags", []) if isinstance(fm.get("tags", []), list) else []
+        type_counts[ptype] += 1
+        for t in tags:
+            if isinstance(t, str):
+                tag_counts[t] += 1
+        links = WIKILINK_RE.findall(text)
+        total_links += len(links)
+        for target in links:
+            inbound_counts[target] += 1
+        pages.append({"slug": slug, "title": title, "type": ptype, "tags": tags})
 
     existing_slugs = {p["slug"] for p in pages}
     orphans = sorted(

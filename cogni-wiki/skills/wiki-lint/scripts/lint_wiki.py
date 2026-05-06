@@ -31,6 +31,10 @@ Semantic checks (contradictions, type drift) are NOT handled here — they
 are performed by the calling Claude skill with this script's output as a
 starting point.
 
+Layout: as of v0.0.28 pages live under per-type subdirectories
+(`wiki/concepts/`, `wiki/decisions/`, …) plus `wiki/audits/` for `lint-*.md`
+and `health-*.md` reports. The traversal is owned by `_wikilib.iter_pages()`.
+
 stdlib-only. Python 3.8+.
 """
 
@@ -43,12 +47,20 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
+from _wikilib import (  # noqa: E402
+    VALID_TYPES,
+    build_slug_index,
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
+
 
 STALE_DRAFT_DAYS = 180
 STALE_PAGE_DAYS = 365
 TAG_TYPO_MAX_DIST = 2
 TAG_TYPO_RATIO = 3
-VALID_TYPES = {"concept", "entity", "summary", "decision", "learning", "synthesis", "note"}
 TYPES_REQUIRING_SOURCES = {"concept", "entity", "summary", "learning", "synthesis"}
 REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
 
@@ -141,18 +153,17 @@ def main() -> None:
     args = parser.parse_args()
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
-    pages_dir = wiki_root / "wiki" / "pages"
     raw_dir = wiki_root / "raw"
 
     if not (wiki_root / ".cogni-wiki" / "config.json").is_file():
         fail(f"not a cogni-wiki (no .cogni-wiki/config.json under {wiki_root})")
-    if not pages_dir.is_dir():
-        fail(f"wiki/pages/ not found under {wiki_root}")
+    fail_if_pre_migration(wiki_root)
 
     errors: list = []
     warnings: list = []
     info: list = []
 
+    slug_index = build_slug_index(wiki_root, include_audit=True)
     all_pages: dict = {}
     tag_counts: dict = {}
     type_counts: dict = {}
@@ -160,17 +171,21 @@ def main() -> None:
     sources_per_page: list = []
     today = dt.date.today()
 
-    for page in sorted(pages_dir.glob("*.md")):
-        slug = page.stem
+    for slug, page_path, ptype_dir in iter_pages(wiki_root, include_audit=True):
         try:
-            text = page.read_text(encoding="utf-8")
+            text = page_path.read_text(encoding="utf-8")
         except OSError as e:
             errors.append({"class": "read_error", "page": slug, "message": str(e)})
             continue
         fm = parse_frontmatter(text)
-        all_pages[slug] = {"fm": fm, "text": text}
+        all_pages[slug] = {"fm": fm, "text": text, "type_dir": ptype_dir}
 
-        if slug.startswith("lint-"):
+        # Audit reports get scanned for outbound wikilinks (so reverse-link
+        # checks can ignore them on both ends per R3) but skip every other
+        # frontmatter / sources / staleness check.
+        if ptype_dir == "audit" or is_audit_slug(slug):
+            for target in WIKILINK_RE.findall(text):
+                inbound_links.setdefault(target, set()).add(slug)
             continue
 
         # Required frontmatter
@@ -236,7 +251,7 @@ def main() -> None:
                 elif isinstance(src, str) and src.startswith("wiki://"):
                     has_wiki_source = True
                     target = src[len("wiki://") :].strip()
-                    if not target or not (pages_dir / f"{target}.md").is_file():
+                    if not target or target not in slug_index:
                         errors.append(
                             {
                                 "class": "broken_wiki_source",
@@ -309,7 +324,7 @@ def main() -> None:
                 )
 
     for slug in existing_slugs:
-        if slug.startswith("lint-"):
+        if is_audit_slug(slug):
             continue
         if slug not in inbound_links or not inbound_links[slug]:
             warnings.append(
@@ -318,7 +333,7 @@ def main() -> None:
 
     # reverse_link_missing — SCHEMA.md rule R1_bidirectional_wikilink.
     # For every forward edge A → B (A's body contains `[[B]]`), the reverse
-    # edge B → A should also exist. Lint reports (slug starts with `lint-`)
+    # edge B → A should also exist. Audit reports (`lint-*` / `health-*`)
     # are exempt on both ends per rule R3.
     #
     # `inbound_links[t]` is the set of source slugs S such that S contains
@@ -328,13 +343,12 @@ def main() -> None:
     for target_slug, source_slugs in sorted(inbound_links.items()):
         if target_slug not in existing_slugs:
             continue  # broken_wikilink already reported
-        if target_slug.startswith("lint-"):
+        if is_audit_slug(target_slug):
             continue
-        target_inbound = inbound_links.get(target_slug, set())
         for source_slug in sorted(source_slugs):
             if source_slug == target_slug:
                 continue  # self-link is its own reverse
-            if source_slug.startswith("lint-"):
+            if is_audit_slug(source_slug):
                 continue
             # Does source_slug appear in target's outbound? Equivalent to:
             # is source_slug a target of inbound_links keyed at source_slug
@@ -416,7 +430,7 @@ def main() -> None:
             )
 
     # info stats
-    non_lint_pages = [s for s in all_pages if not s.startswith("lint-")]
+    knowledge_pages = [s for s, info_d in all_pages.items() if not is_audit_slug(s) and info_d.get("type_dir") != "audit"]
     avg_sources = (
         round(sum(sources_per_page) / len(sources_per_page), 2) if sources_per_page else 0
     )
@@ -424,7 +438,7 @@ def main() -> None:
         ((slug, len(bag)) for slug, bag in inbound_links.items() if slug in existing_slugs),
         key=lambda kv: (-kv[1], kv[0]),
     )[:10]
-    info.append({"class": "total_pages", "message": f"{len(non_lint_pages)} pages (excluding lint reports)"})
+    info.append({"class": "total_pages", "message": f"{len(knowledge_pages)} pages (excluding audit reports)"})
     info.append({"class": "by_type", "message": json.dumps(type_counts, sort_keys=True)})
     info.append({"class": "avg_sources", "message": f"{avg_sources} sources per page"})
     info.append({"class": "top_tags", "message": json.dumps(dict(tag_items[:10]))})
@@ -436,7 +450,7 @@ def main() -> None:
             "warnings": warnings,
             "info": info,
             "stats": {
-                "pages_audited": len(non_lint_pages),
+                "pages_audited": len(knowledge_pages),
                 "errors": len(errors),
                 "warnings": len(warnings),
                 "info": len(info),

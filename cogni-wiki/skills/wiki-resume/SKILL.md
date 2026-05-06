@@ -42,7 +42,7 @@ Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-resume/scripts/wiki_status.sh --wiki-r
 The script emits JSON with:
 
 - `name`, `slug`, `created`, `description` — from `config.json`
-- `entries_count` — actual file count in `wiki/pages/` excluding `lint-*.md` and `health-*.md`
+- `entries_count` — actual file count in the per-type page dirs excluding `lint-*.md` and `health-*.md`
 - `lint_count` — number of `lint-*.md` reports
 - `last_lint` — ISO date of most recent lint report file
 - `days_since_lint` — integer or `null`
@@ -119,7 +119,7 @@ Rules 1–3 are new in v0.0.27 — they fire on the freshly-collected health sna
 
 ### 5. Side effects
 
-This skill is read-only against `wiki/pages/` and `.cogni-wiki/config.json` — it never edits them. The one side effect introduced in v0.0.27 is that the dispatched `wiki-health` invocation appends a `## [YYYY-MM-DD] health | N errors, N warnings` line to `wiki/log.md`. That's intentional: every health pre-flight should be on the audit trail, and resume is the canonical session-start trigger. Use `--skip-health` if you genuinely want zero side effects.
+This skill is read-only against `wiki/<type>/` and `.cogni-wiki/config.json` — it never edits them. The one side effect introduced in v0.0.27 is that the dispatched `wiki-health` invocation appends a `## [YYYY-MM-DD] health | N errors, N warnings` line to `wiki/log.md`. That's intentional: every health pre-flight should be on the audit trail, and resume is the canonical session-start trigger. Use `--skip-health` if you genuinely want zero side effects.
 
 ## Output
 
@@ -128,7 +128,7 @@ This skill is read-only against `wiki/pages/` and `.cogni-wiki/config.json` — 
 
 ## Golden rules
 
-1. **Read-only against wiki pages.** Resume never modifies `wiki/pages/`, `wiki/index.md`, or `.cogni-wiki/config.json`.
+1. **Read-only against wiki pages.** Resume never modifies `wiki/<type>/`, `wiki/index.md`, or `.cogni-wiki/config.json`.
 2. **Health is automatic.** The user shouldn't have to remember to preflight — resume does it for them.
 3. **Always recommend an action.** The user should leave this skill knowing what to do next.
 4. **Ground the numbers in the filesystem**, not in cached config values — the script counts files directly so a stale `entries_count` in `config.json` doesn't mislead.

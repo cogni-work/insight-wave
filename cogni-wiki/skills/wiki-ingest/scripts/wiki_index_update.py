@@ -51,38 +51,15 @@ stdlib-only. Python 3.8+.
 from __future__ import annotations
 
 import argparse
-import fcntl
 import json
 import os
 import re
 import sys
 import tempfile
-from contextlib import contextmanager
 from pathlib import Path
 
-
-@contextmanager
-def _wiki_lock(wiki_root: Path):
-    """Serialise shared-state writes across concurrent batch-mode workers.
-
-    Issue #84: batch-mode workers each run read-modify-write on index.md.
-    Without serialisation, two workers can both read, both compute a new
-    body, and the later `os.replace` silently overwrites the earlier insert.
-    The `.cogni-wiki/.lock` file is a single advisory lock scoped per-wiki
-    so cross-wiki runs don't block each other.
-    """
-    lock_dir = wiki_root / ".cogni-wiki"
-    lock_dir.mkdir(parents=True, exist_ok=True)
-    lock_path = lock_dir / ".lock"
-    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        yield
-    finally:
-        try:
-            fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            os.close(fd)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _wikilib import _wiki_lock  # noqa: E402
 
 
 HEADING_RE = re.compile(r"^(#{2,3})\s+(.*?)\s*$")

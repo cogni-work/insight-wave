@@ -1,6 +1,6 @@
 ---
 name: wiki-lint
-description: "Run a semantic, LLM-powered audit of a Karpathy-style wiki — contradictions across pages, type drift (a 'concept' page that's actually a 'summary'), undercited claims, missing concept pages (entities mentioned in 3+ pages but lacking their own page), plus the deterministic-but-narrative warnings (orphans, stale drafts, tag typos, reverse-link gaps, claim-drift severity from the latest resweep). Calls wiki-health first as a free preflight; refuses to run while structural errors are pending. Writes a severity-tiered report to wiki/pages/lint-YYYY-MM-DD.md and always appends to wiki/log.md. Use this skill whenever the user says 'lint the wiki', 'audit my wiki', 'check the wiki for contradictions', 'wiki lint', 'find stale claims', or as a periodic maintenance pass after every ~10–15 ingests. For a fast structural-only check, use wiki-health instead."
+description: "Run a semantic, LLM-powered audit of a Karpathy-style wiki — contradictions across pages, type drift (a 'concept' page that's actually a 'summary'), undercited claims, missing concept pages (entities mentioned in 3+ pages but lacking their own page), plus the deterministic-but-narrative warnings (orphans, stale drafts, tag typos, reverse-link gaps, claim-drift severity from the latest resweep). Calls wiki-health first as a free preflight; refuses to run while structural errors are pending. Writes a severity-tiered report to wiki/audits/lint-YYYY-MM-DD.md and always appends to wiki/log.md. Use this skill whenever the user says 'lint the wiki', 'audit my wiki', 'check the wiki for contradictions', 'wiki lint', 'find stale claims', or as a periodic maintenance pass after every ~10–15 ingests. For a fast structural-only check, use wiki-health instead."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -82,11 +82,11 @@ Scan page bodies for strong factual claims (numbers, named entities, dated event
 
 #### 4d. Missing concept pages
 
-Scan all pages for entity/concept names that recur across **3 or more** pages but have no page of their own under `wiki/pages/`. Flag as `missing_concept_page` info items with the recurring name and the pages that mention it.
+Scan all pages for entity/concept names that recur across **3 or more** pages but have no page of their own under `wiki/<type>/`. Flag as `missing_concept_page` info items with the recurring name and the pages that mention it.
 
 ### 5. Write the lint report
 
-Path: `<wiki-root>/wiki/pages/lint-{YYYY-MM-DD}.md`
+Path: `<wiki-root>/wiki/audits/lint-{YYYY-MM-DD}.md`
 
 The lint report is itself a wiki page with frontmatter:
 
@@ -196,7 +196,7 @@ Print a ≤5-line summary:
 
 ## Output
 
-- `wiki/pages/lint-YYYY-MM-DD.md` — the lint report
+- `wiki/audits/lint-YYYY-MM-DD.md` — the lint report
 - `wiki/index.md` updated with the report entry
 - `wiki/log.md` appended with the lint line
 - `.cogni-wiki/config.json` `last_lint` updated

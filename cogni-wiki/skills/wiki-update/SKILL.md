@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 # Wiki Update
 
-Revise a page in `wiki/pages/` because knowledge has changed, because a contradiction was reported, or because a new source refines a claim. This is the other half of the compounding loop — ingests add, updates refine. Together they keep the wiki live.
+Revise a page in the per-type page dirs because knowledge has changed, because a contradiction was reported, or because a new source refines a claim. This is the other half of the compounding loop — ingests add, updates refine. Together they keep the wiki live.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once per session to re-anchor on the diff-before-write and citation discipline.
 
@@ -36,7 +36,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once per session to 
 
 ### 1. Locate the wiki and the page
 
-Walk upward to find `.cogni-wiki/config.json`. Resolve `--page` to an actual file in `wiki/pages/`. If the slug doesn't exist, attempt a title match against frontmatter `title:` fields across all pages. If still no match, stop.
+Walk upward to find `.cogni-wiki/config.json`. Resolve `--page` to an actual file in the per-type page dirs. If the slug doesn't exist, attempt a title match against frontmatter `title:` fields across all pages. If still no match, stop.
 
 ### 2. Read the current page and the source
 
@@ -105,7 +105,7 @@ Tell the user, in ≤5 sentences:
 
 ## Output
 
-- One edited file in `wiki/pages/` (the target page)
+- One edited file in the per-type page dirs (the target page)
 - Possibly N additional edited files (from the related sweep)
 - One appended line in `wiki/log.md`
 - `.cogni-wiki/config.json` date fields updated if applicable

@@ -73,6 +73,14 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
+from _wikilib import (  # noqa: E402
+    build_slug_index,
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
+
 
 STALE_DRAFT_DAYS = 180
 STALE_PAGE_DAYS = 365
@@ -235,15 +243,20 @@ def find_wiki_root(start: Path) -> Path:
         current = current.parent
 
 
-def select_pages(pages_dir: Path, mode: str, page_arg: str | None,
+def select_pages(wiki_root: Path, mode: str, page_arg: str | None,
                  days_override: int | None) -> list[Path]:
     today = dt.date.today()
-    all_paths = sorted(p for p in pages_dir.glob("*.md") if not p.name.startswith("lint-"))
+    all_paths = sorted(
+        path for slug, path, _ptype in iter_pages(wiki_root)
+        if not is_audit_slug(slug)
+    )
 
     if mode == "page":
-        target = pages_dir / f"{page_arg}.md"
-        if not target.is_file():
-            fail(f"page not found: {target}")
+        slug_index = build_slug_index(wiki_root)
+        entry = slug_index.get(page_arg)
+        if entry is None:
+            fail(f"page not found: {page_arg}")
+        target = entry[0]
         return [target]
 
     if mode == "stale-only":
@@ -287,10 +300,7 @@ def main() -> None:
     wiki_root = Path(args.wiki_root).resolve() if args.wiki_root else find_wiki_root(Path.cwd())
     if not (wiki_root / ".cogni-wiki" / "config.json").is_file():
         fail(f"not a cogni-wiki: {wiki_root}/.cogni-wiki/config.json not found")
-
-    pages_dir = wiki_root / "wiki" / "pages"
-    if not pages_dir.is_dir():
-        fail(f"wiki/pages/ missing under {wiki_root}")
+    fail_if_pre_migration(wiki_root)
 
     if args.page:
         mode = "page"
@@ -302,7 +312,7 @@ def main() -> None:
     if args.days is not None and mode != "stale-only":
         fail("--days requires --stale-only")
 
-    selected = select_pages(pages_dir, mode, args.page, args.days)
+    selected = select_pages(wiki_root, mode, args.page, args.days)
 
     today = dt.date.today()
     pages_out: list[dict] = []

@@ -56,7 +56,7 @@ Mirror process on the other page. Tighten its RLHF reference to match the scoped
 
 ### Step 6: Related sweep
 
-`grep -l "RLHF" wiki/pages/` returns 8 pages. For each, read the paragraph containing "RLHF" and check whether the narrower definition breaks anything. Usually it doesn't — most mentions are informal. Note any pages that now have mild ambiguity by adding `## Stale (2026-04-12)` at the top with a one-liner.
+`grep -rl "RLHF" wiki/` returns 8 pages. For each, read the paragraph containing "RLHF" and check whether the narrower definition breaks anything. Usually it doesn't — most mentions are informal. Note any pages that now have mild ambiguity by adding `## Stale (2026-04-12)` at the top with a one-liner.
 
 ### Step 7: Log
 

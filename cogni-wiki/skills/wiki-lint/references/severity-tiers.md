@@ -46,12 +46,12 @@ An error means the wiki's contract is broken and a reader (human or LLM) might m
 
 | Class | Detection | Fix path |
 |-------|-----------|----------|
-| **Broken wikilink** | `[[slug]]` where `wiki/pages/{slug}.md` does not exist | `wiki-update` the referring page — either remove the link or create the target |
+| **Broken wikilink** | `[[slug]]` where `wiki/<type>/{slug}.md` does not exist | `wiki-update` the referring page — either remove the link or create the target |
 | **Filename–id mismatch** | Frontmatter `id: x` but filename is `y.md` | Rename the file or fix the frontmatter |
 | **Missing required frontmatter** | `id`, `title`, `type`, `created`, or `updated` missing | `wiki-update` to add the field |
 | **Invalid type** | `type:` value is not one of the allowed values | `wiki-update` to pick a valid type |
 | **Missing source file** | `sources: [../raw/foo.pdf]` where `raw/foo.pdf` doesn't exist | Either restore the source or remove the reference |
-| **Broken wiki source** | `sources: [wiki://other-slug]` where `wiki/pages/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
+| **Broken wiki source** | `sources: [wiki://other-slug]` where `wiki/<type>/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
 | **Duplicate slug** | Two pages with the same `id` frontmatter (shouldn't be possible if filenames are unique, but check) | Rename one |
 
 Errors are reported with a file path and line number so the user can jump directly. `wiki-lint` refuses to run its semantic pass when `wiki-health` reports errors > 0 (override with `--ignore-health`) — reasoning over a broken graph wastes tokens and produces noisy findings.
@@ -65,9 +65,9 @@ A warning means the wiki works but is accumulating debt. Warnings should be revi
 | Class | Detection | Owner | Fix path |
 |-------|-----------|-------|----------|
 | **Stub page** | Body shorter than 50 chars after frontmatter | `wiki-health` | `wiki-update` to expand, or delete |
-| **entries_count drift** | `.cogni-wiki/config.json` `entries_count` ≠ actual file count under `wiki/pages/` (excluding `lint-*` and `health-*`) | `wiki-health` | Run `wiki-ingest` to bump the counter, or hand-edit `config.json` |
+| **entries_count drift** | `.cogni-wiki/config.json` `entries_count` ≠ actual file count under `wiki/<type>/` (excluding `lint-*` and `health-*`) | `wiki-health` | Run `wiki-ingest` to bump the counter, or hand-edit `config.json` |
 | **Index/filesystem drift** | A slug appears in `wiki/index.md` as a `[[wikilink]]` but no page file exists, or a page exists but is not in the index | `wiki-health` | `wiki-update` to add the missing entry, or delete the stale index line |
-| **Orphan page** | No other page in `wiki/pages/` contains a `[[slug]]` link to this page, AND the page is not listed in `wiki/index.md` as a top-level entry | `wiki-lint` | Add inbound links via `wiki-ingest` backlink audit or `wiki-update`; or confirm top-level status |
+| **Orphan page** | No other page in the per-type page dirs contains a `[[slug]]` link to this page, AND the page is not listed in `wiki/index.md` as a top-level entry | `wiki-lint` | Add inbound links via `wiki-ingest` backlink audit or `wiki-update`; or confirm top-level status |
 | **Stale draft** | `status: draft` and `updated` > 180 days ago | `wiki-lint` | `wiki-update` to promote or retire |
 | **Stale page** | `updated` > 365 days ago, regardless of status | `wiki-lint` | Review and refresh or mark `status: stale` |
 | **No sources** | `sources:` empty or missing, and `type` is not `decision` or `note` | `wiki-lint` | `wiki-update` to add citations |

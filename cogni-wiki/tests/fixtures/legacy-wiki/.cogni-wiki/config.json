@@ -1,0 +1,9 @@
+{
+  "name": "Test Wiki",
+  "slug": "test-wiki",
+  "description": "Pre-migration fixture for migrate_layout.py and the per-type-dir smoke test",
+  "created": "2026-04-01",
+  "entries_count": 3,
+  "last_lint": null,
+  "schema_version": "0.0.4"
+}

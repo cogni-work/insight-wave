@@ -31,7 +31,7 @@ Discovery modes (exactly one required):
                         the orphan_raw_count logic in wiki_status.sh but
                         returns the filenames themselves.
 
-    --stubs             Pages under <wiki-root>/wiki/pages/ whose frontmatter
+    --stubs             Pages under <wiki-root>/wiki/<type>/ whose frontmatter
                         has `status: draft`. With --older-than-days N, restrict
                         to drafts whose `updated:` date is more than N days
                         old. Stubs re-enter the wiki via the mode: re-ingest
@@ -56,10 +56,11 @@ Discovery modes (exactly one required):
 
 Filters (compose freely with any discovery mode):
 
-    --exclude-ingested  Drop any source whose derived slug already exists as
-                        <wiki-root>/wiki/pages/{slug}.md. Key dedupe for the
-                        "ingest everything not yet in the wiki" use case —
-                        safe to rerun after partial progress.
+    --exclude-ingested  Drop any source whose derived slug already exists in
+                        the wiki's per-type directories (any of
+                        wiki/concepts/, wiki/decisions/, …). Key dedupe for
+                        the "ingest everything not yet in the wiki" use case
+                        — safe to rerun after partial progress.
 
     --type TYPE         Apply as the per-entry `type` default (one of:
                         concept, entity, summary, decision, interview,
@@ -126,6 +127,13 @@ import re
 import sys
 from pathlib import Path
 from typing import Iterable
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _wikilib import (  # noqa: E402
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
 
 
 VALID_TYPES = {"concept", "entity", "summary", "decision", "interview", "meeting", "learning", "note"}
@@ -209,13 +217,7 @@ def find_wiki_root(start: Path) -> Path:
 
 
 def existing_slugs(wiki_root: Path) -> set:
-    pages = wiki_root / "wiki" / "pages"
-    if not pages.is_dir():
-        return set()
-    return {
-        p.stem for p in pages.iterdir()
-        if p.is_file() and p.suffix == ".md" and not p.name.startswith("lint-")
-    }
+    return {slug for slug, _path, _ptype in iter_pages(wiki_root) if not is_audit_slug(slug)}
 
 
 def discover_glob(pattern: str, root: Path) -> list:
@@ -235,25 +237,21 @@ def discover_orphans(wiki_root: Path) -> list:
     raw_dir = wiki_root / "raw"
     if not raw_dir.is_dir():
         return []
-    pages_dir = wiki_root / "wiki" / "pages"
     cited: set = set()
-    if pages_dir.is_dir():
-        for page in pages_dir.iterdir():
-            if not (page.is_file() and page.suffix == ".md"):
-                continue
-            try:
-                text = page.read_text(encoding="utf-8")
-            except OSError:
-                continue
-            fm = parse_frontmatter(text)
-            sources = fm.get("sources", [])
-            if isinstance(sources, list):
-                for s in sources:
-                    if not isinstance(s, str):
-                        continue
-                    # Paths in sources are typically ../raw/foo.pdf — we only
-                    # care about the filename tail for orphan detection.
-                    cited.add(s.rstrip("/").split("/")[-1])
+    for _slug, page, _ptype in iter_pages(wiki_root):
+        try:
+            text = page.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        fm = parse_frontmatter(text)
+        sources = fm.get("sources", [])
+        if isinstance(sources, list):
+            for s in sources:
+                if not isinstance(s, str):
+                    continue
+                # Paths in sources are typically ../raw/foo.pdf — we only
+                # care about the filename tail for orphan detection.
+                cited.add(s.rstrip("/").split("/")[-1])
     orphans = []
     for item in sorted(raw_dir.iterdir()):
         if not item.is_file():
@@ -267,15 +265,10 @@ def discover_orphans(wiki_root: Path) -> list:
 
 def discover_stubs(wiki_root: Path, older_than_days: int | None) -> list:
     """Pages with status: draft (optionally filtered by age)."""
-    pages_dir = wiki_root / "wiki" / "pages"
-    if not pages_dir.is_dir():
-        return []
     today = dt.date.today()
     stubs = []
-    for page in sorted(pages_dir.iterdir()):
-        if not (page.is_file() and page.suffix == ".md"):
-            continue
-        if page.name.startswith("lint-"):
+    for slug, page, _ptype in iter_pages(wiki_root):
+        if is_audit_slug(slug):
             continue
         try:
             text = page.read_text(encoding="utf-8")
@@ -305,7 +298,7 @@ def discover_stubs(wiki_root: Path, older_than_days: int | None) -> list:
         if isinstance(sources, list) and sources:
             if isinstance(sources[0], str):
                 first_source = sources[0]
-        stubs.append({"page": str(page), "source": first_source or str(page), "slug": page.stem})
+        stubs.append({"page": str(page), "source": first_source or str(page), "slug": slug})
     return stubs
 
 
@@ -780,6 +773,7 @@ def main() -> None:
             fail(f"not a cogni-wiki: {wiki_root}/.cogni-wiki/config.json not found")
     else:
         wiki_root = find_wiki_root(Path.cwd())
+    fail_if_pre_migration(wiki_root)
 
     default_tags = None
     if args.tags:

@@ -1,6 +1,6 @@
 # Page Frontmatter Schema
 
-Every file in `wiki/pages/` (except `lint-YYYY-MM-DD.md` reports) begins with this YAML frontmatter block.
+Every file in the per-type page dirs (except `lint-YYYY-MM-DD.md` reports) begins with this YAML frontmatter block.
 
 ## Full schema
 
@@ -13,7 +13,7 @@ tags: [<tag1>, <tag2>, ...]           # Optional. Short, lowercase, kebab-case
 created: YYYY-MM-DD                   # REQUIRED. Set at page creation, never changed
 updated: YYYY-MM-DD                   # REQUIRED. Set at every edit
 sources:                              # Optional but strongly encouraged
-  - ../raw/<filename>                 # Relative path from wiki/pages/ to raw/ file
+  - ../raw/<filename>                 # Relative path from wiki/<type>/ to raw/ file (the same `../raw/` form works from every per-type dir)
   - https://<url>                     # Or a stable external URL
   - wiki://<other-page-slug>          # Or a wiki-internal reference (synthesis pages)
 publisher_url: https://<url>          # Optional. Canonical URL at the publisher
@@ -27,7 +27,7 @@ status: <optional>                    # Optional. e.g. "draft", "stable", "stale
 
 ### `id` (required)
 
-- Must match the filename stem exactly: a page at `wiki/pages/llm-wiki-pattern.md` has `id: llm-wiki-pattern`
+- Must match the filename stem exactly: a page at `wiki/<type>/llm-wiki-pattern.md` has `id: llm-wiki-pattern`
 - Lowercase, alphanumeric, hyphens only
 - Never change after creation — `wiki-update` and `wiki-lint` both treat `id` as the immutable handle for cross-references
 
@@ -85,7 +85,7 @@ See `./templates/README.md` for authoring conventions and per-template required 
 
 ### `sources` (optional but strongly encouraged)
 
-- Relative paths to files under `<wiki-root>/raw/` — always `../raw/filename` from the page's location in `wiki/pages/`
+- Relative paths to files under `<wiki-root>/raw/` — always `../raw/filename` from the page's location in the per-type page dirs
 - Or stable URLs
 - Or `wiki://<slug>` for wiki-internal references — used by `type: synthesis` pages to cite the wiki pages they were derived from. `wiki-lint` validates that each `wiki://<slug>` target page exists (a missing target is a `broken_wiki_source` error).
 - A page with no sources is flagged `warn` by `wiki-lint` unless its `type` is `decision` or `note`. A `type: synthesis` page with no `wiki://` source is flagged `synthesis_no_wiki_source` (warn) — synthesis pages must cite their wiki provenance.

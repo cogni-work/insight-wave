@@ -12,7 +12,7 @@ This is a **pull-mode** primitive — the user provides the fresh research proje
 
 The skill is a pure orchestrator. It calls `lint_wiki.py` directly for staleness data (cheaper than dispatching `wiki-lint`, which would write a noise line to `wiki/log.md`), runs `refresh_planner.py` for the match plan, materialises per-page refresh files under `<wiki-root>/raw/refresh-<research-slug>-<YYYY-MM-DD>/`, and then dispatches `wiki-update` sequentially per matched page. Every wiki write goes through existing locked code paths.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceeding to re-anchor on the three-layer model (raw / wiki / schema) — refresh content lands in `raw/`, not directly in `wiki/pages/`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceeding to re-anchor on the three-layer model (raw / wiki / schema) — refresh content lands in `raw/`, not directly in the per-type page dirs.
 
 ## When to run
 
@@ -62,7 +62,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root 
 
 Parse stdout JSON. From `data.warnings[]`, collect entries where `class == "stale_page"` or `class == "stale_draft"`. Extract the `page` field of each as the slug list.
 
-If `--days N` was set, post-filter the lint output: walk pages in `<wiki_root>/wiki/pages/`, parse frontmatter, keep only those whose `(today - updated).days > N`.
+If `--days N` was set, post-filter the lint output: walk pages across the per-type page dirs under `<wiki_root>/wiki/` (excluding `audits/`), parse frontmatter, keep only those whose `(today - updated).days > N`.
 
 If the resolved stale list is empty, emit "wiki is up to date — no stale pages to refresh" and exit 0.
 

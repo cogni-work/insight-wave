@@ -1,6 +1,6 @@
 ---
 name: wiki-claims-resweep
-description: "Re-verify claims embedded in existing wiki pages against their cited source URLs. Extracts inline-cited statements deterministically (sentences containing http(s) URLs or markdown links — no LLM extraction), submits them as a batch to cogni-claims for re-verification (WebFetch + LLM compare per source), and writes a sweep report under <wiki-root>/raw/claims-resweep-<date>/ plus a machine-readable .cogni-wiki/last-resweep.json bridge for future lint integration. Report-only — never mutates wiki/pages/. Trigger when the user says 're-verify wiki claims', 'check if wiki sources still hold up', 'sweep wiki for stale citations', 'run a claims re-check on the wiki', 'audit wiki citations against sources', or 'wiki-claims-resweep'. Pull-mode only; the user picks scope (--all, --page <slug>, or --stale-only)."
+description: "Re-verify claims embedded in existing wiki pages against their cited source URLs. Extracts inline-cited statements deterministically (sentences containing http(s) URLs or markdown links — no LLM extraction), submits them as a batch to cogni-claims for re-verification (WebFetch + LLM compare per source), and writes a sweep report under <wiki-root>/raw/claims-resweep-<date>/ plus a machine-readable .cogni-wiki/last-resweep.json bridge for future lint integration. Report-only — never mutates the per-type page dirs. Trigger when the user says 're-verify wiki claims', 'check if wiki sources still hold up', 'sweep wiki for stale citations', 'run a claims re-check on the wiki', 'audit wiki citations against sources', or 'wiki-claims-resweep'. Pull-mode only; the user picks scope (--all, --page <slug>, or --stale-only)."
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion, Skill
 ---
 
@@ -8,11 +8,11 @@ allowed-tools: Read, Write, Bash, Glob, AskUserQuestion, Skill
 
 Wiki pages cite sources but no mechanism re-checks those citations after ingest. URLs 404, paywalls appear, content gets rewritten. This skill closes that loop: it extracts cited statements from existing wiki pages, dispatches them through cogni-claims for verification (which already does the WebFetch + LLM compare against the live source), and writes a sweep report so the user can see drift at a glance.
 
-This is a **report-only** skill. It does not edit wiki/pages/. The report tells the user which pages have deviated or unavailable claims; the user decides whether to run `wiki-update` to mark them stale. This keeps diff-before-write inside `wiki-update` where it belongs.
+This is a **report-only** skill. It does not edit the per-type page dirs. The report tells the user which pages have deviated or unavailable claims; the user decides whether to run `wiki-update` to mark them stale. This keeps diff-before-write inside `wiki-update` where it belongs.
 
 This is a **pull-mode** primitive — the user invokes it on a schedule that fits their workflow. There is no auto-trigger.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceeding to re-anchor on the three-layer model — sweep artefacts land in `raw/`, never in `wiki/pages/`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceeding to re-anchor on the three-layer model — sweep artefacts land in `raw/`, never in the per-type page dirs.
 
 ## When to run
 
@@ -24,7 +24,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceedi
 ## Never run when
 
 - The wiki has no pages with `sources:` populated — there's nothing to re-verify
-- The user wants to mutate page bodies (set `## Stale` markers etc.) — that's `wiki-update`'s job; this skill is report-only and never touches `wiki/pages/`
+- The user wants to mutate page bodies (set `## Stale` markers etc.) — that's `wiki-update`'s job; this skill is report-only and never touches `wiki/<type>/`
 - The user wants to create new claims from scratch — that's `wiki-ingest`'s job
 
 ## Parameters
@@ -210,7 +210,7 @@ The skill produces:
 - `<wiki-root>/.cogni-wiki/last-resweep.json` — lint-bridge JSON, lock-wrapped write
 - New / updated entries in `<wiki-root>/cogni-claims/claims.json` (managed by cogni-claims, not this skill)
 
-No file outside `<wiki-root>/` is created. No `wiki/pages/` file is modified.
+No file outside `<wiki-root>/` is created. No `wiki/<type>/` file is modified.
 
 ## References
 

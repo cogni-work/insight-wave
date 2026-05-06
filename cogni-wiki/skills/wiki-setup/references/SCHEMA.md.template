@@ -15,20 +15,29 @@ This file is the contract for how this wiki is structured. It lives inside the w
 │   ├── index.md              One-line summary catalog of every page
 │   ├── log.md                Append-only operation log
 │   ├── overview.md           Evolving "state of the wiki" synthesis
-│   └── pages/                Flat directory of slug-named markdown pages
+│   ├── concepts/             type: concept
+│   ├── entities/             type: entity
+│   ├── summaries/            type: summary
+│   ├── decisions/            type: decision
+│   ├── interviews/           type: interview (incl. tag:customer-call)
+│   ├── meetings/             type: meeting
+│   ├── learnings/            type: learning (incl. tag:retro)
+│   ├── syntheses/            type: synthesis (filed-back query answers)
+│   ├── notes/                type: note
+│   └── audits/               lint-YYYY-MM-DD.md / health-YYYY-MM-DD.md (R3-exempt)
 └── .cogni-wiki/
     └── config.json           Plugin metadata
 ```
 
 ## Page frontmatter
 
-Every file in `wiki/pages/` begins with YAML frontmatter:
+Every page file begins with YAML frontmatter:
 
 ```yaml
 ---
 id: <slug>                       # Must match filename without .md
 title: <human-readable title>
-type: concept | entity | summary | decision | learning | note
+type: concept | entity | summary | decision | interview | meeting | learning | synthesis | note
 tags: [tag1, tag2]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -38,20 +47,25 @@ sources:                         # Optional — relative paths or URLs
 ---
 ```
 
+The `type:` value MUST match the directory the page lives in (e.g. `type: concept` lives at `wiki/concepts/<slug>.md`). `wiki-health` reports `type_directory_mismatch` when a hand-edit drifts the two apart.
+
 ### Types
 
 - **concept** — an idea, framework, or model
 - **entity** — a person, organization, product, or place
 - **summary** — a condensed version of a raw source
 - **decision** — a choice made and the reasoning behind it
-- **learning** — a generalized takeaway
+- **interview** — captured conversation (set `tag:customer-call` for a sales/CS variant)
+- **meeting** — meeting notes
+- **learning** — a generalized takeaway (set `tag:retro` for a retrospective variant)
+- **synthesis** — an LLM-derived answer filed back into the wiki by `wiki-query --file-back yes`; cites its wiki provenance via `wiki://<slug>` entries in `sources:`
 - **note** — a loose observation that hasn't crystallized into a concept yet
 
 ## Linking
 
-- Use `[[page-slug]]` for links to other wiki pages
+- Use `[[page-slug]]` for links to other wiki pages — slug-only, no path. The script layer resolves the slug to its per-type directory.
 - Use standard markdown links for external URLs and raw sources: `[label](../raw/file.pdf)`
-- Every `[[link]]` should be backed by an actual file in `wiki/pages/`; the `wiki-lint` skill reports broken links
+- Every `[[link]]` should be backed by an actual file under one of the per-type directories or `wiki/audits/`; the `wiki-lint` skill reports broken links
 
 ## Forward → reverse link contract
 
@@ -65,9 +79,9 @@ Wikilinks are bidirectional. Every forward `[[link]]` from page A to page B impl
 
 Notes:
 
-- All current `type:` values (concept, entity, summary, decision, interview, meeting, learning, note) participate in `R1` symmetrically. There are no per-type asymmetries today; if per-type page directories land later (see the cogni-wiki Karpathy-pattern parity tracking issue), this table will gain per-relationship rows.
+- All current `type:` values (concept, entity, summary, decision, interview, meeting, learning, synthesis, note) participate in `R1` symmetrically. There are no per-type asymmetries today; the per-type page directory layout (v0.0.28+, schema_version `0.0.5`) is purely a filesystem reorganisation — every slug remains globally unique and every `[[wikilink]]` continues to address pages by slug alone.
 - A backlink should read like prose, not a dumped list. The reverse `[[A]]` typically lives next to a sentence that earns its presence on B — see `wiki-update`'s diff-before-write discipline.
-- `R3` exempts pages whose filename starts with `lint-` or `health-` on both ends. As of v0.0.27, `wiki-health` only writes a log line and does not yet create `health-*.md` page files; the exemption is forward-compatible plumbing for a future health-report-as-page feature.
+- `R3` exempts pages whose filename starts with `lint-` or `health-` on both ends. Such reports live under `wiki/audits/` (v0.0.28+). As of v0.0.27, `wiki-health` only writes a log line and does not yet create `health-*.md` page files; the exemption + directory are forward-compatible plumbing for a future health-report-as-page feature.
 - `wiki-lint reverse_link_missing` is a warning, not an error: it surfaces missing reverses but never auto-fixes them, mirroring the "lint reports, never auto-fixes" rule. Apply via `wiki-update` or, for fresh ingests, via `wiki-ingest`'s backlink-audit step.
 
 ## Log format
@@ -75,10 +89,10 @@ Notes:
 Append only. Format:
 
 ```
-## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup} | one-line note
+## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup|migrate} | one-line note
 ```
 
-The `synthesis` prefix (v0.0.23+) marks filed-back query answers — distinct from un-filed `query` reads. The `health` prefix (v0.0.27+) marks zero-LLM structural pre-flights — distinct from tokenful `lint` runs. Both are surfaced separately by `wiki-resume` and `wiki-dashboard`. Never rewrite or reorder log entries.
+The `synthesis` prefix (v0.0.23+) marks filed-back query answers — distinct from un-filed `query` reads. The `health` prefix (v0.0.27+) marks zero-LLM structural pre-flights — distinct from tokenful `lint` runs. The `migrate` prefix (v0.0.28+) marks one-shot layout migrations (e.g. flat `wiki/pages/` → per-type dirs). All three are surfaced separately by `wiki-resume` and `wiki-dashboard`. Never rewrite or reorder log entries.
 
 ## Index format
 

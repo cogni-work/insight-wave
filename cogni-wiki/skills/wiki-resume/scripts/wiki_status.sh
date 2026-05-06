@@ -74,21 +74,43 @@ if [ ! -f "$WIKI_ROOT/.cogni-wiki/config.json" ]; then
   fail "not a cogni-wiki: $WIKI_ROOT/.cogni-wiki/config.json not found"
 fi
 
-PAGES_DIR="$WIKI_ROOT/wiki/pages"
-LOG_FILE="$WIKI_ROOT/wiki/log.md"
+WIKI_DIR="$WIKI_ROOT/wiki"
+LEGACY_PAGES_DIR="$WIKI_DIR/pages"
+AUDITS_DIR="$WIKI_DIR/audits"
+LOG_FILE="$WIKI_DIR/log.md"
 RAW_DIR="$WIKI_ROOT/raw"
 CONFIG_FILE="$WIKI_ROOT/.cogni-wiki/config.json"
+
+# Per-type page directories (v0.0.28+). Order matches _wikilib.PAGE_TYPE_DIRS.
+TYPE_DIRS="concepts entities summaries decisions interviews meetings learnings syntheses notes"
 
 # Resolve script dir so we can find ../../wiki-health/scripts/health.py.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HEALTH_SCRIPT="$SCRIPT_DIR/../../wiki-health/scripts/health.py"
 
+# ---------- pre-migration probe ----------
+# Surface the migration nudge as a status field. Hard-failing in a SKILL that
+# wraps this script would block the very session that is supposed to *fix* the
+# problem, so we report instead. Every other consumer hard-fails via _wikilib.
+schema_migration_pending=false
+if [ -d "$LEGACY_PAGES_DIR" ]; then
+  legacy_md_count=$(find "$LEGACY_PAGES_DIR" -maxdepth 1 -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "${legacy_md_count:-0}" -gt 0 ]; then
+    schema_migration_pending=true
+  fi
+fi
+
 # ---------- counts ----------
 entries_count=0
 lint_count=0
-if [ -d "$PAGES_DIR" ]; then
-  entries_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name '*.md' ! -name 'lint-*.md' ! -name 'health-*.md' 2>/dev/null | wc -l | tr -d ' ')
-  lint_count=$(find "$PAGES_DIR" -maxdepth 1 -type f -name 'lint-*.md' 2>/dev/null | wc -l | tr -d ' ')
+for type_dir in $TYPE_DIRS; do
+  if [ -d "$WIKI_DIR/$type_dir" ]; then
+    n=$(find "$WIKI_DIR/$type_dir" -maxdepth 1 -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+    entries_count=$((entries_count + ${n:-0}))
+  fi
+done
+if [ -d "$AUDITS_DIR" ]; then
+  lint_count=$(find "$AUDITS_DIR" -maxdepth 1 -type f -name 'lint-*.md' 2>/dev/null | wc -l | tr -d ' ')
 fi
 
 raw_file_count=0
@@ -99,9 +121,9 @@ fi
 # ---------- last lint date ----------
 last_lint=""
 days_since_lint=""
-if [ -d "$PAGES_DIR" ]; then
+if [ -d "$AUDITS_DIR" ]; then
   # Latest lint filename by sort (YYYY-MM-DD sorts lexicographically).
-  last_lint_file=$(ls -1 "$PAGES_DIR"/lint-*.md 2>/dev/null | sort | tail -n 1)
+  last_lint_file=$(ls -1 "$AUDITS_DIR"/lint-*.md 2>/dev/null | sort | tail -n 1)
   if [ -n "$last_lint_file" ]; then
     last_lint=$(basename "$last_lint_file" .md | sed 's/^lint-//')
     # Date arithmetic: macOS vs GNU. Try GNU first, fall back to BSD.
@@ -169,12 +191,13 @@ fi
 
 # ---------- orphan raw files (quick heuristic) ----------
 orphan_raw_count=0
-if [ -d "$RAW_DIR" ] && [ -d "$PAGES_DIR" ]; then
-  # For every file in raw/, check whether any page's frontmatter mentions its basename.
+if [ -d "$RAW_DIR" ] && [ -d "$WIKI_DIR" ]; then
+  # For every file in raw/, check whether any page's frontmatter or body
+  # mentions its basename. Recurses across all per-type page directories.
   while IFS= read -r rawfile; do
     [ -z "$rawfile" ] && continue
     base=$(basename "$rawfile")
-    if ! grep -rqF "$base" "$PAGES_DIR" 2>/dev/null; then
+    if ! grep -rqF "$base" "$WIKI_DIR" 2>/dev/null; then
       orphan_raw_count=$((orphan_raw_count + 1))
     fi
   done <<EOF
@@ -184,7 +207,10 @@ fi
 
 # ---------- health preflight (v0.0.27) ----------
 health_json=""
-if [ "$SKIP_HEALTH" -eq 0 ] && [ -f "$HEALTH_SCRIPT" ]; then
+# Skip the health probe when a layout migration is pending — health.py would
+# hard-fail with the migration error and we'd have nothing useful to show.
+# The schema_migration_pending field tells the user what to do instead.
+if [ "$SKIP_HEALTH" -eq 0 ] && [ -f "$HEALTH_SCRIPT" ] && [ "$schema_migration_pending" = "false" ]; then
   # health.py is stdlib-only and fast; capture its stdout. Failures are
   # non-fatal — we just leave health_json empty and the python assembler
   # below will set health.available=false.
@@ -207,6 +233,7 @@ export WS_HEALTH_30="$health_count_30d"
 export WS_RECENT_LOG="$recent_log"
 export WS_CONFIG_FILE="$CONFIG_FILE"
 export WS_HEALTH_JSON="$health_json"
+export WS_SCHEMA_MIGRATION_PENDING="$schema_migration_pending"
 
 python3 - <<'PY'
 import json
@@ -278,6 +305,7 @@ data = {
     "health_count_30d": int(os.environ.get("WS_HEALTH_30", "0") or 0),
     "recent_log": recent_log_lines,
     "schema_version": cfg.get("schema_version"),
+    "schema_migration_pending": os.environ.get("WS_SCHEMA_MIGRATION_PENDING", "false") == "true",
     "health": health_block,
 }
 

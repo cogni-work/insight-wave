@@ -35,7 +35,7 @@ Output structure: comparison table or prose, with `[[links]]` on every row or se
 
 > "What do I know about jailbreaking?"
 
-Workflow: read index → `grep` `wiki/pages/` for "jailbreak" → read all matching pages → summarize the wiki's overall position, noting gaps.
+Workflow: read index → `grep` `wiki/<type>/` for "jailbreak" → read all matching pages → summarize the wiki's overall position, noting gaps.
 
 Output structure: 3-5 bullet claims with `[[citations]]`, then an explicit "Gaps" section naming what the wiki does not cover.
 

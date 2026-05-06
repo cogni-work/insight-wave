@@ -6,9 +6,9 @@ A concrete walkthrough of the ingest workflow using a realistic source. Read thi
 
 The user has a fresh wiki at `cogni-wiki/ai-research/` with three pages already:
 
-- `wiki/pages/rlhf-limitations.md`
-- `wiki/pages/anthropic-safety-team.md`
-- `wiki/pages/constitutional-ai.md`
+- `wiki/<type>/rlhf-limitations.md`
+- `wiki/<type>/anthropic-safety-team.md`
+- `wiki/<type>/constitutional-ai.md`
 
 They drop a new paper at `raw/bai-et-al-2022-constitutional-ai.pdf` and ask Claude to ingest it.
 
@@ -52,7 +52,7 @@ Suppose instead the source was Bai et al. 2024 on *Many-Shot Jailbreaking* — a
 
 ### Step 4: Write the new page
 
-Path: `<wiki-root>/wiki/pages/many-shot-jailbreaking.md`
+Path: `<wiki-root>/wiki/<type>/many-shot-jailbreaking.md`
 
 ```markdown
 ---
@@ -201,7 +201,7 @@ The user has three new AI-safety papers staged in `raw/` and wants them all inge
 }
 ```
 
-Assume the wiki already has a stub at `wiki/pages/constitutional-ai.md`; the other two slugs don't exist yet. They invoke `wiki-ingest --batch-file batch.json`.
+Assume the wiki already has a stub at `wiki/<type>/constitutional-ai.md`; the other two slugs don't exist yet. They invoke `wiki-ingest --batch-file batch.json`.
 
 ### Step 0: dispatch
 
@@ -322,7 +322,7 @@ Follow-up to the Q1 churn analysis. We picked Priya because her team owns the da
 - [Interview transcript — Acme PM onboarding](../raw/interview-pm-onboarding-2026-04-22.md)
 ```
 
-The interviewee link to `[[priya-rao]]` is required per the template; if the page doesn't exist, Step 4a's stub-first rule files `wiki/pages/priya-rao.md` (frontmatter only, one-line summary) before writing this page.
+The interviewee link to `[[priya-rao]]` is required per the template; if the page doesn't exist, Step 4a's stub-first rule files `wiki/<type>/priya-rao.md` (frontmatter only, one-line summary) before writing this page.
 
 ### `customer-call.md` — sales / CS variant
 

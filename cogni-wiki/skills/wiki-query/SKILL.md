@@ -1,6 +1,6 @@
 ---
 name: wiki-query
-description: "Answer a question by reading the Karpathy-style wiki — never from memory. Claude consults wiki/index.md first, then reads the relevant wiki/pages/*.md files, synthesizes an answer with [[wikilink]] citations, and optionally files the answer back as a `type: synthesis` page so the knowledge compounds. Use this skill whenever the user says 'query the wiki', 'ask the wiki', 'what do I know about X', 'what does my wiki say about Y', 'wiki query', 'search the wiki for Z', or asks any question after setting up a wiki and expects Claude to reason from it. Also trigger when the user asks 'look up X in the wiki', 'check the wiki for X', or asks a question that clearly lives inside their wiki's domain (e.g. they have an AI-safety wiki and ask about CAI) — offer the wiki as the source of truth."
+description: "Answer a question by reading the Karpathy-style wiki — never from memory. Claude consults wiki/index.md first, then reads the relevant wiki/<type>/*.md files, synthesizes an answer with [[wikilink]] citations, and optionally files the answer back as a `type: synthesis` page so the knowledge compounds. Use this skill whenever the user says 'query the wiki', 'ask the wiki', 'what do I know about X', 'what does my wiki say about Y', 'wiki query', 'search the wiki for Z', or asks any question after setting up a wiki and expects Claude to reason from it. Also trigger when the user asks 'look up X in the wiki', 'check the wiki for X', or asks a question that clearly lives inside their wiki's domain (e.g. they have an AI-safety wiki and ask about CAI) — offer the wiki as the source of truth."
 allowed-tools: Read, Write, Glob, Grep, Bash, AskUserQuestion
 ---
 
@@ -40,7 +40,7 @@ Walk upward to find `.cogni-wiki/config.json`. Read `wiki/index.md` top to botto
 
 From the index, select pages whose one-line summary is relevant to the question. If fewer than 2 clear matches, also:
 
-- Run `grep -l -i` over `wiki/pages/` for the question's key nouns
+- Run `grep -l -i` over `wiki/<type>/` for the question's key nouns
 - Cap the total set at `--max-pages`
 
 If zero candidate pages emerge after both passes, stop and report: "The wiki has no pages on this topic. Run `wiki-ingest` on a source first, or rephrase the question." Do not answer from memory.
@@ -72,7 +72,7 @@ If `--file-back auto`, ask the user: "File this answer as a new `type: synthesis
 If filing the answer back:
 
 1. Choose a slug derived from the question or the synthesized claim
-2. Write a new page at `wiki/pages/{slug}.md` with `type: synthesis` — the page type for LLM-derived answers built from other wiki pages, introduced in cogni-wiki v0.0.23. (Use `--type learning` only if the user explicitly asks to file the answer as a human-curated takeaway, or `--type summary` if the result is essentially a near-restatement of one source-derived page.)
+2. Write a new page at `wiki/<type>/{slug}.md` with `type: synthesis` — the page type for LLM-derived answers built from other wiki pages, introduced in cogni-wiki v0.0.23. (Use `--type learning` only if the user explicitly asks to file the answer as a human-curated takeaway, or `--type summary` if the result is essentially a near-restatement of one source-derived page.)
 3. Frontmatter `sources:` field lists the wiki pages used, prefixed with `wiki://` to distinguish from raw sources:
    ```yaml
    sources:
@@ -103,7 +103,7 @@ The log records every query so the user can see what the wiki has been asked. Wh
 ## Output
 
 - An answer with inline `[[citations]]`
-- Optionally: a new `wiki/pages/{slug}.md` with `type: synthesis`
+- Optionally: a new `wiki/<type>/{slug}.md` with `type: synthesis`
 - An appended `query` line in `wiki/log.md` (always)
 - Optionally: a `synthesis` line in `wiki/log.md`, updated index, bumped config, and applied backlinks (if file-back was yes)
 

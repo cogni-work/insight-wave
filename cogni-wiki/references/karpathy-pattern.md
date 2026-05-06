@@ -21,8 +21,8 @@ Humans abandon personal wikis because maintenance is tedious — rewriting summa
 | Operation | Skill | What Claude does |
 |-----------|-------|-----------------|
 | Ingest | `wiki-ingest` | Read a source → surface key takeaways → write a new page with frontmatter → update `index.md` → append to `log.md` → scan existing pages for relevant cross-references → add bidirectional `[[links]]` |
-| Query | `wiki-query` | Always read `wiki/index.md` first, then relevant `wiki/pages/*.md`, **never answer from memory** → synthesize with `[[citations]]` → offer to file the answer back as a new page |
-| Lint | `wiki-lint` | Audit for contradictions, stale dates, orphaned pages (no inbound links), broken `[[links]]`, missing frontmatter → write a severity-tiered report to `wiki/pages/lint-YYYY-MM-DD.md` → append to `log.md` |
+| Query | `wiki-query` | Always read `wiki/index.md` first, then relevant `wiki/<type>/*.md`, **never answer from memory** → synthesize with `[[citations]]` → offer to file the answer back as a new page |
+| Lint | `wiki-lint` | Audit for contradictions, stale dates, orphaned pages (no inbound links), broken `[[links]]`, missing frontmatter → write a severity-tiered report to `wiki/audits/lint-YYYY-MM-DD.md` → append to `log.md` |
 | Update | `wiki-update` | Revise a page when knowledge changes → show diff before writing → require a source citation for new claims → sweep related pages for now-stale statements → append to `log.md` |
 
 ## Two Control Files

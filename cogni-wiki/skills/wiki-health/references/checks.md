@@ -6,12 +6,12 @@ This file is the canonical list of what `health.py` checks. Every check here is 
 
 | Class | Detection | Fix path |
 |-------|-----------|----------|
-| `broken_wikilink` | `[[slug]]` in any page where `wiki/pages/{slug}.md` does not exist | `wiki-update` the referring page — remove the link or create the target |
+| `broken_wikilink` | `[[slug]]` in any page where `wiki/<type>/{slug}.md` does not exist | `wiki-update` the referring page — remove the link or create the target |
 | `missing_frontmatter` | One of `id`, `title`, `type`, `created`, `updated` is missing or empty | `wiki-update` to add the field |
 | `id_mismatch` | Frontmatter `id: x` but filename is `y.md` | Rename the file or fix the frontmatter |
 | `invalid_type` | Frontmatter `type:` value not in `{concept, entity, summary, decision, interview, meeting, learning, synthesis, note}` | `wiki-update` to pick a valid type |
 | `missing_source` | `sources: [../raw/foo.pdf]` where `raw/foo.pdf` does not exist | Restore the source or remove the reference |
-| `broken_wiki_source` | `sources: [wiki://other-slug]` where `wiki/pages/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
+| `broken_wiki_source` | `sources: [wiki://other-slug]` where `wiki/<type>/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
 | `read_error` | Page file unreadable (permission, encoding, IO) | OS-level — investigate filesystem |
 
 ## Warnings — structural debt that is still mechanical
@@ -21,14 +21,14 @@ These are warnings, not errors, because they don't block reads — but they are 
 | Class | Detection | Fix path |
 |-------|-----------|----------|
 | `stub_page` | Page body (after frontmatter) is shorter than `STUB_PAGE_MIN_CHARS` (50) | `wiki-update` to expand, or delete if abandoned |
-| `entries_count_drift` | `.cogni-wiki/config.json` `entries_count` differs from actual file count under `wiki/pages/` (excluding `lint-*` and `health-*`) | Run `wiki-ingest` to bump the counter, or hand-edit `config.json` to match |
-| `index_filesystem_drift` | A slug appears in `wiki/index.md` as a `[[wikilink]]` but no `wiki/pages/{slug}.md` exists, or vice versa | `wiki-update` to add the missing entry, or delete the stale index line |
+| `entries_count_drift` | `.cogni-wiki/config.json` `entries_count` differs from actual file count under `wiki/<type>/` (excluding `lint-*` and `health-*`) | Run `wiki-ingest` to bump the counter, or hand-edit `config.json` to match |
+| `index_filesystem_drift` | A slug appears in `wiki/index.md` as a `[[wikilink]]` but no `wiki/<type>/{slug}.md` exists, or vice versa | `wiki-update` to add the missing entry, or delete the stale index line |
 
 ## Stats — descriptive only
 
 | Stat | Meaning |
 |------|---------|
-| `pages_audited` | Count of `*.md` under `wiki/pages/` excluding `lint-*` and `health-*` |
+| `pages_audited` | Count of `*.md` under `wiki/<type>/` excluding `lint-*` and `health-*` |
 | `errors` / `warnings` | Total count of each tier |
 | `entries_count_config` | Value from `.cogni-wiki/config.json` |
 | `entries_count_actual` | Filesystem count |

@@ -211,7 +211,7 @@ Failures look like one of:
 - **Script non-zero exit or malformed JSON** from `wiki_index_update.py`, `backlink_audit.py`, or `config_bump.py`.
 - **Missing source file** at the path in `source_entry.source` (after the dispatch-time validation; e.g., the file existed when the batch was built but was moved before its iteration).
 - **WebFetch failure** for URL sources.
-- **Write error** (disk full, permission denied) on `wiki/pages/{slug}.md` or `wiki/log.md`.
+- **Write error** (disk full, permission denied) on `wiki/<type>/{slug}.md` or `wiki/log.md`.
 
 Step 9 reports:
 
@@ -219,7 +219,7 @@ Step 9 reports:
 2. Which source failed and the error.
 3. Which sources were skipped (the tail of `sources[]` after the failure).
 
-The wiki is never left half-written: every per-source step writes atomically (`wiki/pages/{slug}.md` is one write; `wiki_index_update.py` uses `tempfile + os.replace`; `backlink_audit.py --apply-plan` writes each target atomically; `wiki/log.md` append is one append; `.cogni-wiki/config.json` update is one locked write). A mid-batch failure leaves the wiki consistent for every source that had completed before it.
+The wiki is never left half-written: every per-source step writes atomically (`wiki/<type>/{slug}.md` is one write; `wiki_index_update.py` uses `tempfile + os.replace`; `backlink_audit.py --apply-plan` writes each target atomically; `wiki/log.md` append is one append; `.cogni-wiki/config.json` update is one locked write). A mid-batch failure leaves the wiki consistent for every source that had completed before it.
 
 **To resume** after a failure: re-run the same `--discover` command with `--exclude-ingested` and the script will drop every source that already has a page (every completed entry from the previous run). Or, if you used `--batch-file`, re-invoke with a trimmed batch containing only the failed source plus the ones that were skipped. Completed sources already in the wiki will re-route through the `mode: re-ingest` branch if re-submitted (harmless — they update in place).
 

@@ -21,7 +21,7 @@ Two phases, selected via --phase:
 
 Boundary: this script writes only to (a) the per-day sweep workspace under
 `raw/claims-resweep-<date>/` (isolated, no lock needed) and (b) the lock-wrapped
-`.cogni-wiki/last-resweep.json`. It never touches `wiki/pages/`, `wiki/index.md`,
+`.cogni-wiki/last-resweep.json`. It never touches the per-type page dirs, `wiki/index.md`,
 or `.cogni-wiki/config.json` — page mutations are out of scope (report-only by
 design; user runs wiki-update manually if they want stale markers).
 
@@ -129,7 +129,7 @@ def render_manifest(page: dict, sweep_date: str) -> str:
         "",
         f"# Claims to re-verify — {page.get('title', page['slug'])}",
         "",
-        f"Page: `{page.get('page_path') or 'wiki/pages/' + page['slug'] + '.md'}`",
+        f"Page: `{page.get('page_path') or page['slug']}`",
         f"Sweep: {sweep_date}",
         "",
         "## Claims",
@@ -186,7 +186,7 @@ def phase_plan(args) -> None:
             "manifest_abs": str(manifest_path),
             "claim_count": len(page["claims"]),
             "source_count": len({c["source_url"] for c in page["claims"]}),
-            "page_path": page.get("page_path", f"wiki/pages/{page['slug']}.md"),
+            "page_path": page.get("page_path") or page["slug"],
             "age_days": page.get("age_days"),
         })
 

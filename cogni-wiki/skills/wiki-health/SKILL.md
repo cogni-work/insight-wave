@@ -69,7 +69,7 @@ The script's `data` payload contains:
     "errors":                <int>,
     "warnings":              <int>,
     "entries_count_config":  <int>,    // value from .cogni-wiki/config.json
-    "entries_count_actual":  <int>,    // file count under wiki/pages/ excl. lint-*
+    "entries_count_actual":  <int>,    // file count under the per-type page dirs (wiki/concepts/, wiki/decisions/, ...) excl. lint-*
     "entries_count_drift":   <int>,    // actual - config
     "claim_drift_count":     <int>,    // 0 when no last-resweep.json present
     "claim_drift_date":      <ISO>     // null when no last-resweep.json present
@@ -121,7 +121,7 @@ This skill is **report-only**. It writes the log line and nothing else. Auto-fix
 
 - Stdout: prose summary (omitted if `--quiet`)
 - `wiki/log.md` appended with the `health` line
-- Nothing written to `wiki/pages/` or `.cogni-wiki/config.json`
+- Nothing written to `wiki/<type>/` or `.cogni-wiki/config.json`
 
 ## Golden rules
 

@@ -64,6 +64,13 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
+from _wikilib import (  # noqa: E402
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
+
 
 # Staleness thresholds — must match cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py
 STALE_DRAFT_DAYS = 180
@@ -164,22 +171,16 @@ def find_wiki_root(start: Path) -> Path:
 
 def load_wiki_pages(wiki_root: Path) -> list[dict]:
     """Return all wiki pages with parsed frontmatter and computed age."""
-    pages_dir = wiki_root / "wiki" / "pages"
-    if not pages_dir.is_dir():
-        return []
     today = dt.date.today()
     pages: list[dict] = []
-    for path in sorted(pages_dir.iterdir()):
-        if not (path.is_file() and path.suffix == ".md"):
-            continue
-        if path.name.startswith("lint-"):
+    for slug, path, _ptype_dir in iter_pages(wiki_root):
+        if is_audit_slug(slug):
             continue
         try:
             text = path.read_text(encoding="utf-8")
         except OSError:
             continue
         fm = parse_frontmatter(text)
-        slug = path.stem
         title = _unquote(fm.get("title", "")) or slug
         page_type = _unquote(fm.get("type", "")) or "summary"
         tags = fm.get("tags", []) if isinstance(fm.get("tags"), list) else []
@@ -458,6 +459,7 @@ def main() -> None:
     wiki_root = Path(args.wiki_root).resolve() if args.wiki_root else find_wiki_root(Path.cwd())
     if not (wiki_root / ".cogni-wiki" / "config.json").is_file():
         fail(f"not a cogni-wiki: {wiki_root}/.cogni-wiki/config.json not found")
+    fail_if_pre_migration(wiki_root)
 
     project = locate_research_project(args.research_slug, wiki_root, args.research_root)
     if not (project / "project-config.json").is_file():

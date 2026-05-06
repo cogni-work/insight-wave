@@ -50,9 +50,25 @@ Create (with `mkdir -p`):
 ├── raw/
 ├── assets/
 ├── wiki/
-│   └── pages/
+│   ├── concepts/
+│   ├── entities/
+│   ├── summaries/
+│   ├── decisions/
+│   ├── interviews/
+│   ├── meetings/
+│   ├── learnings/
+│   ├── syntheses/
+│   ├── notes/
+│   └── audits/
 └── .cogni-wiki/
 ```
+
+The nine type directories mirror the `type:` frontmatter enum (concept,
+entity, summary, decision, interview, meeting, learning, synthesis, note).
+`audits/` holds the `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` reports
+that are exempt from the forward→reverse link contract (SCHEMA.md R3). Each
+type dir is created empty; `wiki-ingest` writes new pages directly into the
+matching dir based on the page's `type:`.
 
 ### 3. Seed the top-level files
 
@@ -102,21 +118,41 @@ Write `<wiki-root>/.cogni-wiki/config.json` with JSON:
   "created": "{{YYYY-MM-DD}}",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.4",
+  "schema_version": "0.0.5",
   "publisher_base_url": "{{publisher_base_url_or_empty}}"
 }
 ```
 
-Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.4"` marks the addition of the `synthesis` and `health` log prefixes plus the `R3_audit_report` exemption broadening; `"0.0.3"` (which added the SCHEMA "Forward → reverse link contract" table), `"0.0.2"` (which added `publisher_base_url`), and `"0.0.1"` configs remain valid on read.
+Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.5"` marks the per-type-page-directory layout (v0.0.28+); `"0.0.4"` (which added the `synthesis` and `health` log prefixes plus the `R3_audit_report` exemption broadening), `"0.0.3"` (which added the SCHEMA "Forward → reverse link contract" table), `"0.0.2"` (which added `publisher_base_url`), and `"0.0.1"` configs are read by the migrator but every other skill hard-fails on `< 0.0.5` until migration runs.
 
-**Migration for existing wikis (schema_version < 0.0.4).** When `wiki-resume` or any wiki-* skill encounters a wiki at `schema_version < 0.0.4`, the `SCHEMA.md` shipped inside that wiki is missing one or both of the following sections — apply the missing pieces by reading the differences against `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template`, then bump `.cogni-wiki/config.json` `schema_version` to `"0.0.4"`:
+### 5. Migrate an existing wiki (schema_version < 0.0.5)
+
+cogni-wiki v0.0.28 promoted page types from a `type:` frontmatter field into per-type subdirectories (`wiki/concepts/`, `wiki/decisions/`, …). Existing wikis still on the flat `wiki/pages/<slug>.md` layout are surfaced by `wiki-resume`'s `schema_migration_pending: true` field; every other `wiki-*` skill hard-fails with the migration nudge until the layout is upgraded.
+
+Run the migrator once per wiki:
+
+```
+python ${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/scripts/migrate_layout.py \
+    --wiki-root <wiki-root> --apply
+```
+
+The migrator is locked, idempotent, and fails fast on missing/invalid frontmatter `type:` values. Default invocation without `--apply` is a dry-run that lists the planned moves. After a successful run:
+
+- Pages live under `wiki/<type>/<slug>.md` (per-type dirs).
+- `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` audit reports live under `wiki/audits/`.
+- `.cogni-wiki/config.json::schema_version` is bumped to `"0.0.5"` via `config_bump.py --set-string` (locked).
+- A summary log line `## [YYYY-MM-DD] migrate | moved N pages to per-type dirs` is appended to `wiki/log.md`.
+- The empty `wiki/pages/` shell is removed if no junk remains.
+
+For wikis at `schema_version < 0.0.4`, the `SCHEMA.md` body inside the wiki is also missing one or both pre-v0.0.4 sections — apply the missing pieces by reading the differences against `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template`, then re-run the migrator (which only bumps `schema_version` once it sees `< 0.0.5`):
 
 - **`< 0.0.3`:** append the `## Forward → reverse link contract` section between the existing `## Linking` and `## Log format` sections.
-- **`< 0.0.4`:** in the `## Log format` block, broaden the operation enum to `{ingest|query|synthesis|lint|health|update|setup}`. In the forward→reverse contract table, rename row `R3_lint_report` to `R3_audit_report` and broaden its exemption text to cover both `[[lint-YYYY-MM-DD]]` and `[[health-YYYY-MM-DD]]` filenames (the `wiki-health` skill, added in v0.0.27, only writes a log line today; the `health-*` filename exemption is forward-compatible plumbing for a future health-report-as-page feature).
+- **`< 0.0.4`:** in the `## Log format` block, broaden the operation enum to `{ingest|query|synthesis|lint|health|update|setup|migrate}`. In the forward→reverse contract table, rename row `R3_lint_report` to `R3_audit_report` and broaden its exemption text to cover both `[[lint-YYYY-MM-DD]]` and `[[health-YYYY-MM-DD]]` filenames.
+- **`< 0.0.5`:** update the directory-layout block to show the per-type directories (concepts/, entities/, summaries/, decisions/, interviews/, meetings/, learnings/, syntheses/, notes/, audits/) in place of the single `wiki/pages/` line.
 
-The migration is idempotent and offline-safe. `wiki-lint`'s `reverse_link_missing` check works whether or not the SCHEMA section is present, and the new `health` log prefix is parsed by `wiki_status.sh` regardless of what SCHEMA.md says — the migration only ensures the contract is auditable when reading the wiki on its own.
+The SCHEMA.md edits are idempotent and offline-safe. `wiki-lint`'s deterministic checks work whether or not the SCHEMA sections match the in-plugin template — the edits only ensure the contract is auditable when reading the wiki on its own.
 
-### 5. Confirm to the user
+### 6. Confirm to the user
 
 Report in plain prose:
 - Where the wiki was created (absolute path)

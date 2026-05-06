@@ -37,7 +37,7 @@ Walk upward to find `.cogni-wiki/config.json`. If none, stop.
 
 ### 2. Run the renderer script
 
-Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-dashboard/scripts/render_dashboard.py --wiki-root <path> --output <output>`. The script reads every page in `wiki/pages/`, parses frontmatter, counts inbound `[[wikilinks]]`, and writes a single HTML file containing:
+Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-dashboard/scripts/render_dashboard.py --wiki-root <path> --output <output>`. The script reads every page in the per-type page dirs, parses frontmatter, counts inbound `[[wikilinks]]`, and writes a single HTML file containing:
 
 - Header with wiki name, slug, description, created date
 - Stats strip (page count, raw sources, last lint, 30-day activity)

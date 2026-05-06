@@ -35,6 +35,10 @@ Non-goals:
     - Auto-fix — health reports only; fixes go through wiki-update.
     - LLM calls — health is deterministic by design.
 
+Layout: as of v0.0.28 pages live under per-type subdirectories
+(`wiki/concepts/`, `wiki/decisions/`, …) plus `wiki/audits/` for `lint-*.md`
+and `health-*.md` reports. The traversal is owned by `_wikilib.iter_pages()`.
+
 stdlib-only. Python 3.8+. Performance contract: under 1 second on a 100-page
 wiki.
 """
@@ -48,19 +52,18 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
+from _wikilib import (  # noqa: E402
+    AUDIT_DIR,
+    VALID_TYPES,
+    build_slug_index,
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
+
 
 STUB_PAGE_MIN_CHARS = 50
-VALID_TYPES = {
-    "concept",
-    "entity",
-    "summary",
-    "decision",
-    "interview",
-    "meeting",
-    "learning",
-    "synthesis",
-    "note",
-}
 REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -156,35 +159,38 @@ def main() -> None:
     args = parser.parse_args()
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
-    pages_dir = wiki_root / "wiki" / "pages"
     raw_dir = wiki_root / "raw"
 
     if not (wiki_root / ".cogni-wiki" / "config.json").is_file():
         fail(f"not a cogni-wiki (no .cogni-wiki/config.json under {wiki_root})")
-    if not pages_dir.is_dir():
-        fail(f"wiki/pages/ not found under {wiki_root}")
+    fail_if_pre_migration(wiki_root)
 
     errors: list = []
     warnings: list = []
 
+    # Build the in-memory slug index once. Includes audit reports because
+    # `wiki://` and `[[wikilink]]` targets may legitimately point at lint-/
+    # health-prefixed pages and must resolve.
+    slug_index = build_slug_index(wiki_root, include_audit=True)
     all_pages: dict = {}
     inbound_links: dict = {}
 
-    for page in sorted(pages_dir.glob("*.md")):
-        slug = page.stem
+    for slug, page_path, ptype in iter_pages(wiki_root, include_audit=True):
         try:
-            text = page.read_text(encoding="utf-8")
+            text = page_path.read_text(encoding="utf-8")
         except OSError as e:
             errors.append(
                 {"class": "read_error", "page": slug, "message": str(e)}
             )
             continue
         fm, body = parse_frontmatter(text)
-        all_pages[slug] = {"fm": fm, "body": body}
+        all_pages[slug] = {"fm": fm, "body": body, "type": ptype}
 
-        # Lint reports and prior health reports are exempt from frontmatter
-        # and source schema; they're audit artefacts, not knowledge pages.
-        if slug.startswith("lint-") or slug.startswith("health-"):
+        # Audit reports (lint-*, health-*) are exempt from frontmatter and
+        # source schema; they're audit artefacts, not knowledge pages. We
+        # still scan them for outbound wikilinks so broken-target detection
+        # picks up audit-report references.
+        if ptype == "audit" or is_audit_slug(slug):
             for target in WIKILINK_RE.findall(text):
                 inbound_links.setdefault(target, set()).add(slug)
             continue
@@ -208,13 +214,24 @@ def main() -> None:
                 }
             )
 
-        ptype = fm.get("type")
-        if ptype and ptype not in VALID_TYPES:
+        fm_type = fm.get("type")
+        if fm_type and fm_type not in VALID_TYPES:
             errors.append(
                 {
                     "class": "invalid_type",
                     "page": slug,
-                    "message": f"type '{ptype}' not in {sorted(VALID_TYPES)}",
+                    "message": f"type '{fm_type}' not in {sorted(VALID_TYPES)}",
+                }
+            )
+        # Cross-check: frontmatter type must match the directory the page
+        # was found in. Catches a hand-edited frontmatter that drifts away
+        # from the on-disk routing.
+        if fm_type and fm_type in VALID_TYPES and fm_type != ptype:
+            errors.append(
+                {
+                    "class": "type_directory_mismatch",
+                    "page": slug,
+                    "message": f"frontmatter type '{fm_type}' but page lives under wiki/{ptype}/",
                 }
             )
 
@@ -233,7 +250,7 @@ def main() -> None:
                         )
                 elif isinstance(src, str) and src.startswith("wiki://"):
                     target = src[len("wiki://") :].strip()
-                    if not target or not (pages_dir / f"{target}.md").is_file():
+                    if not target or target not in slug_index:
                         errors.append(
                             {
                                 "class": "broken_wiki_source",
@@ -270,8 +287,8 @@ def main() -> None:
                 )
 
     non_audit_pages = {
-        s for s in all_pages
-        if not s.startswith("lint-") and not s.startswith("health-")
+        s for s, info in all_pages.items()
+        if info["type"] != "audit" and not is_audit_slug(s)
     }
     cfg = _load_config(wiki_root)
     entries_count_config = (

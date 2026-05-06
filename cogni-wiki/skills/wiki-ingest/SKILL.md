@@ -93,7 +93,7 @@ In all three cases, the skill instructions and shared references load exactly on
 
 Walk upward from the current working directory to find the nearest `.cogni-wiki/config.json`. If none found, stop and offer to run `wiki-setup`.
 
-Derive the target slug from `--title` (or from the source filename / URL title / first heading if `--title` is absent). Then check whether `<wiki-root>/wiki/pages/{slug}.md` already exists:
+Derive the target slug from `--title` (or from the source filename / URL title / first heading if `--title` is absent). Then check whether `{slug}` is already present in any of the per-type page directories under `<wiki-root>/wiki/` (search across `concepts/`, `entities/`, `summaries/`, `decisions/`, `interviews/`, `meetings/`, `learnings/`, `syntheses/`, `notes/` — the slug is globally unique, so the page lives in at most one of them):
 
 - **Fresh ingest** (`mode: fresh`) — no page at that slug. Proceed normally.
 - **Re-ingest** (`mode: re-ingest`) — a page at that slug exists. This is an explicit, allowed path (used by pilot rebuilds where the page is being re-synthesised from an updated source), but it is a different operation than a fresh ingest. Emit this warning verbatim to the user before proceeding:
@@ -153,14 +153,14 @@ This is the most important step. Surface takeaways before writing — it prevent
 
 1. **What the source is** — type, author, date, length
 2. **Three to seven key takeaways** — the claims a future reader of the wiki would actually want
-3. **Which existing wiki pages this source touches** — run `grep` / Glob over `wiki/pages/` for entity names, concept slugs, and tags that appear in the source
+3. **Which existing wiki pages this source touches** — run `grep -r` / Glob over `wiki/` (recursing through every per-type page dir) for entity names, concept slugs, and tags that appear in the source
 4. **Proposed page type and title**
 
 Show this synthesis to the user before proceeding to write. For autonomous runs (when the user said "just ingest it"), still emit the synthesis in the response — but proceed to step 4 without waiting.
 
 ### 4. Write the new page
 
-Path: `<wiki-root>/wiki/pages/{slug}.md` where `slug` is derived from the title.
+Path: `<wiki-root>/wiki/{type}/{slug}.md` where `slug` is derived from the title and `{type}` is the directory matching the resolved `type:` frontmatter value (`concepts/` for `type: concept`, `decisions/` for `type: decision`, etc. — see `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/directory-layout.md` for the full map).
 
 #### 4a. Select the body template
 
@@ -192,7 +192,7 @@ Resolution order:
 3. **Re-ingest mode.** Read the existing page's `type` (and any variant-defining tag like `customer-call` or `retro`) from frontmatter and pick the matching template. Do **not** silently switch templates on re-ingest — if the source has shifted shape, surface it in Step 3's takeaway synthesis and ask the user to confirm a type change before writing.
 4. **Surface the choice.** Step 3's takeaway block already names "Proposed page type and title"; extend that line to include the resolved template (e.g. `Proposed: type=interview, template=customer-call.md`). Autonomous runs proceed without confirmation; otherwise wait for the user.
 
-If a required `[[wikilink]]` declared in the template's header comment is unresolvable (the entity / concept / engagement page does not exist yet), file a stub at `wiki/pages/{stub-slug}.md` (frontmatter only, body is the one-line summary) before linking — never link to a page that doesn't exist (`SKILL.md` Failure modes: "Never invent backlinks").
+If a required `[[wikilink]]` declared in the template's header comment is unresolvable (the entity / concept / engagement page does not exist yet), file a stub at `wiki/{stub-type}/{stub-slug}.md` (frontmatter only, body is the one-line summary) before linking — never link to a page that doesn't exist (`SKILL.md` Failure modes: "Never invent backlinks").
 
 #### 4b. Compose the page
 
@@ -313,7 +313,7 @@ Never rewrite existing log lines.
 ### 8. Update `.cogni-wiki/config.json`
 
 - `mode: fresh` — invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/config_bump.py --wiki-root <wiki-root> --key entries_count --delta 1`. The script grabs the shared `.cogni-wiki/.lock` before read-modify-write — defence-in-depth for users who run two `wiki-ingest` invocations against the same wiki from separate sessions (the original concurrency hazard fixed by issue #84 in v0.0.12). Never edit `config.json` inline — the inline read-modify-write race produced silent under-counts before v0.0.12 and the lock contract is the established way to keep `entries_count` correct.
-- `mode: re-ingest` — leave `entries_count` untouched. The field reflects distinct pages in `wiki/pages/`, not ingest invocations; `wiki-resume`, `wiki-dashboard`, and `wiki-lint` all treat it as a page count, so re-ingests must not inflate it.
+- `mode: re-ingest` — leave `entries_count` untouched. The field reflects distinct knowledge pages across the per-type directories, not ingest invocations; `wiki-resume`, `wiki-dashboard`, and `wiki-lint` all treat it as a page count, so re-ingests must not inflate it.
 
 If `config_bump.py` exits non-zero or returns malformed JSON, report the error but do not abort — the page, index, backlinks, and log are already consistent on disk. The script is idempotent-safe to re-run with a compensating `--delta` to reconcile drift.
 
@@ -328,9 +328,9 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 
 ## Output
 
-- One new file in `wiki/pages/`
+- One new file under the matching `wiki/{type}/` directory
 - `wiki/index.md` updated
-- N existing pages in `wiki/pages/` edited with new backlinks (where N ≥ 0)
+- N existing pages (across the per-type dirs under `wiki/`) edited with new backlinks (where N ≥ 0)
 - One appended line in `wiki/log.md`
 - Updated `config.json`
 - Optionally, one `<source>.converted.md` cache file in `raw/` next to a non-markdown source (Step 2a). Re-used on idempotent re-ingest; safe to delete to force re-conversion.
@@ -338,7 +338,7 @@ If `config_bump.py` exits non-zero or returns malformed JSON, report the error b
 ## Failure modes and rules
 
 - **Never summarise from memory.** The page's claims must all trace back to the source text. If the source is silent on a topic, the page is silent on it.
-- **Never invent backlinks.** Only link to pages that actually exist in `wiki/pages/`.
+- **Never invent backlinks.** Only link to pages that actually exist under one of the per-type page dirs.
 - **Never overwrite a page silently.** Overwrites are only allowed through the explicit re-ingest path: Step 1 must detect the existing slug, set `mode: re-ingest`, and emit the re-ingest warning before any page write. Silent overwrites (writing to an existing slug without surfacing `mode: re-ingest` to the user) remain forbidden. For content-only edits that preserve the existing synthesis, use `wiki-update` rather than a re-ingest.
 - **Raw first, page second.** Pasted content is persisted to `raw/` before any page work begins.
 - **Original source is the citation, not the cache.** When Step 2a writes a `.converted.md`, frontmatter `sources:` still points at the original. The cache is a derived artefact — re-ingest may rebuild it; nothing in the wiki should depend on its path.

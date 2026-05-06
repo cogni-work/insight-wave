@@ -68,7 +68,7 @@ Plan schema (consumed by --apply-plan):
     {
       "targets": [
         {
-          "slug": "target-page-slug",         # required; must exist under wiki/pages/
+          "slug": "target-page-slug",         # required; must exist under any wiki/<type>/
           "sentence": "... [[new-page]] ...", # required; MUST contain [[new-slug]]
           "insert_after_heading": "## Foo"    # optional; exact heading line to insert after
         },
@@ -81,6 +81,11 @@ Plan schema (consumed by --apply-plan):
     If absent (or the heading is not found), the sentence is appended at the end
     of the body. In every case the frontmatter `updated:` field is rewritten to
     today's ISO date in the same atomic write.
+
+Layout: as of v0.0.28 pages live under per-type subdirectories
+(`wiki/concepts/`, `wiki/decisions/`, …). Slug → path resolution goes through
+`_wikilib.build_slug_index()` so this script no longer cares which dir a slug
+lives in.
 
 Flags:
     --top <K>             Audit mode: compact output — keep only the top K
@@ -109,7 +114,7 @@ Summary counters (only emitted when --top is set):
 Ranking is stable: candidates are sorted by confidence bucket (high > medium >
 low), then by matched_score descending, then by page slug alphabetically. Terms
 derived from the page title always have weight 1.0; tag-derived terms are
-weighted by inverse document frequency across wiki/pages/ so common tags like
+weighted by inverse document frequency across the wiki so common tags like
 `agent` (present on most pages) contribute near-zero signal while rare tags
 like `claim-verification` dominate the score.
 
@@ -120,38 +125,21 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
-import fcntl
 import json
 import os
 import re
 import sys
 import tempfile
-from contextlib import contextmanager
 from pathlib import Path
 
-
-@contextmanager
-def _wiki_lock(wiki_root: Path):
-    """Serialise shared-state writes across concurrent batch-mode workers.
-
-    Issue #84: two batch-mode workers can both apply-plan into the same target
-    page (e.g., the popular `plugin-cogni-*` pages), each read-modify-writing
-    without knowing about the other. The later `os.replace` silently
-    overwrites the earlier backlink insert. This lock serialises apply_plan
-    across workers sharing a wiki root; separate wikis do not block each other.
-    """
-    lock_dir = wiki_root / ".cogni-wiki"
-    lock_dir.mkdir(parents=True, exist_ok=True)
-    lock_path = lock_dir / ".lock"
-    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        yield
-    finally:
-        try:
-            fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            os.close(fd)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _wikilib import (  # noqa: E402
+    _wiki_lock,
+    build_slug_index,
+    fail_if_pre_migration,
+    is_audit_slug,
+    iter_pages,
+)
 
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -219,7 +207,7 @@ def extract_terms(page_text: str, fm: dict) -> tuple:
     return title_terms, tag_terms
 
 
-def compute_tag_document_frequency(pages_dir: Path) -> tuple:
+def compute_tag_document_frequency(wiki_root: Path) -> tuple:
     """Scan all wiki pages to count how many pages carry each tag.
 
     Returns (tag_df, total_pages). Callers turn this into an inverse-document-
@@ -230,11 +218,11 @@ def compute_tag_document_frequency(pages_dir: Path) -> tuple:
     """
     tag_df: dict = {}
     total = 0
-    for page in pages_dir.glob("*.md"):
-        if page.name.startswith("lint-"):
+    for slug, path, ptype in iter_pages(wiki_root):
+        if is_audit_slug(slug):
             continue
         try:
-            text = page.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8")
         except OSError:
             continue
         fm = parse_frontmatter(text)
@@ -391,8 +379,8 @@ def _atomic_write(path: Path, content: str) -> None:
         raise
 
 
-def apply_plan(plan: dict, pages_dir: Path, new_slug: str) -> tuple:
-    """Execute an apply-plan over `pages_dir`.
+def apply_plan(plan: dict, slug_index: dict, new_slug: str) -> tuple:
+    """Execute an apply-plan over the slug index.
 
     Returns (applied, skipped_existing, failed) lists for the output JSON.
     Each list entry is a small dict the caller embeds under data.*.
@@ -419,9 +407,13 @@ def apply_plan(plan: dict, pages_dir: Path, new_slug: str) -> tuple:
         if err:
             failed.append({"slug": slug, "error": err})
             continue
-        target_path = pages_dir / f"{slug}.md"
+        entry = slug_index.get(slug)
+        if entry is None:
+            failed.append({"slug": slug, "error": f"target page not found in slug index"})
+            continue
+        target_path, _ptype = entry
         if not target_path.is_file():
-            failed.append({"slug": slug, "error": f"target page not found: {target_path.name}"})
+            failed.append({"slug": slug, "error": f"target page not found: {target_path}"})
             continue
         try:
             text = target_path.read_text(encoding="utf-8")
@@ -471,15 +463,16 @@ def main() -> None:
     args = parser.parse_args()
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
-    pages_dir = wiki_root / "wiki" / "pages"
+    fail_if_pre_migration(wiki_root)
+
     new_slug = args.new_page.strip().lower()
 
-    if not pages_dir.is_dir():
-        fail(f"wiki/pages/ not found under {wiki_root}")
-
-    new_page_path = pages_dir / f"{new_slug}.md"
-    if not new_page_path.is_file():
-        fail(f"new page not found: {new_page_path}")
+    slug_index = build_slug_index(wiki_root)
+    new_entry = slug_index.get(new_slug)
+    if new_entry is None:
+        fail(f"new page not found in slug index: {new_slug}")
+        return
+    new_page_path, _new_ptype = new_entry
 
     try:
         new_text = new_page_path.read_text(encoding="utf-8")
@@ -494,7 +487,9 @@ def main() -> None:
         if args.apply_plan:
             plan = _load_apply_plan(args.apply_plan)
             with _wiki_lock(wiki_root):
-                applied, skipped, failed = apply_plan(plan, pages_dir, new_slug)
+                # Refresh slug index inside the lock so reverse lookups see
+                # the latest filesystem state.
+                applied, skipped, failed = apply_plan(plan, build_slug_index(wiki_root), new_slug)
             out_empty["applied"] = applied
             out_empty["skipped_existing_backlink"] = skipped
             out_empty["failed"] = failed
@@ -506,7 +501,7 @@ def main() -> None:
 
     # Compute tag-IDF once across the whole wiki so common tags like `agent`
     # contribute near-zero weight and rare tags like `claim-verification` dominate.
-    tag_df, total_pages = compute_tag_document_frequency(pages_dir)
+    tag_df, total_pages = compute_tag_document_frequency(wiki_root)
 
     # Any term that also appears as a tag in the corpus gets IDF-weighted —
     # even if it came from the title. This catches the failure mode where a
@@ -520,13 +515,13 @@ def main() -> None:
             term_weights[t] = 1.0
 
     candidates = []
-    for page in sorted(pages_dir.glob("*.md")):
-        if page.name == f"{new_slug}.md":
+    for slug, path, ptype in iter_pages(wiki_root):
+        if slug == new_slug:
             continue
-        if page.name.startswith("lint-"):
+        if is_audit_slug(slug):
             continue
         try:
-            text = page.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8")
         except OSError:
             continue
         body_lower = text.lower()
@@ -538,7 +533,7 @@ def main() -> None:
         existing_backlink = f"[[{new_slug}]]" in body_lower
         candidates.append(
             {
-                "page": page.stem,
+                "page": slug,
                 "matched_terms": matched,
                 "matched_score": round(matched_score, 3),
                 "confidence": score_match(matched_score, len(matched), body_len),
@@ -596,7 +591,7 @@ def main() -> None:
     if args.apply_plan:
         plan = _load_apply_plan(args.apply_plan)
         with _wiki_lock(wiki_root):
-            applied, skipped, failed = apply_plan(plan, pages_dir, new_slug)
+            applied, skipped, failed = apply_plan(plan, build_slug_index(wiki_root), new_slug)
         out["applied"] = applied
         out["skipped_existing_backlink"] = skipped
         out["failed"] = failed
