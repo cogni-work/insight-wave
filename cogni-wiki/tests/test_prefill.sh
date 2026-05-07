@@ -207,4 +207,79 @@ for f in "$FOUNDATIONS_DIR"/*.md; do
 done
 green "all foundation files declare 'foundation: true'"
 
+# ---------- 8) SKILL.md-contract sentinel assertions ----------
+# Acceptance criterion 6 ("assert ingest dedupe; assert wiki-update
+# refusal") covers behaviours that are LLM-orchestrated SKILL.md
+# instructions, so we cannot drive them from a shell test. The closest
+# deterministic safety net is grep-based contract sentinels: if a
+# regression silently deletes the instruction, these assertions catch
+# it at CI time.
+
+WIKI_UPDATE_SKILL="$PLUGIN_ROOT/skills/wiki-update/SKILL.md"
+WIKI_INGEST_SKILL="$PLUGIN_ROOT/skills/wiki-ingest/SKILL.md"
+WIKI_FROM_RESEARCH_SKILL="$PLUGIN_ROOT/skills/wiki-from-research/SKILL.md"
+SCHEMA_TEMPLATE="$PLUGIN_ROOT/skills/wiki-setup/references/SCHEMA.md.template"
+
+# 8a. wiki-update refusal contract
+grep -q 'foundation: true' "$WIKI_UPDATE_SKILL" || \
+  fail "wiki-update SKILL.md missing 'foundation: true' refusal contract"
+grep -q '\-\-force' "$WIKI_UPDATE_SKILL" || \
+  fail "wiki-update SKILL.md missing '--force' override mention"
+green "wiki-update SKILL.md sentinel: foundation refusal + --force present"
+
+# 8b. wiki-ingest foundation-collision branch
+grep -q 'foundation: true' "$WIKI_INGEST_SKILL" || \
+  fail "wiki-ingest SKILL.md missing 'foundation: true' detection"
+grep -qiE 'foundation collision|foundation.*refus' "$WIKI_INGEST_SKILL" || \
+  fail "wiki-ingest SKILL.md missing 'Foundation collision' branch"
+green "wiki-ingest SKILL.md sentinel: foundation collision branch present"
+
+# 8c. SCHEMA.md.template log enum includes prefill
+grep -q '|prefill}' "$SCHEMA_TEMPLATE" || \
+  fail "SCHEMA.md.template log-format enum missing 'prefill' verb"
+green "SCHEMA.md.template sentinel: 'prefill' in log-format enum"
+
+# 8d. wiki-from-research dispatches wiki-setup with --skip-prefill-prompt
+grep -q '\-\-skip-prefill-prompt' "$WIKI_FROM_RESEARCH_SKILL" || \
+  fail "wiki-from-research SKILL.md missing '--skip-prefill-prompt' on the wiki-setup dispatch"
+green "wiki-from-research SKILL.md sentinel: --skip-prefill-prompt wired"
+
+# ---------- 9) _wikilib.is_foundation_page helper sanity ----------
+# The detection contract is owned by `_wikilib.is_foundation_page` so
+# every consumer (lint today, wiki-update / wiki-ingest LLM-side
+# tomorrow) reads the same source of truth.
+HELPER_PROBE=$(python3 - <<'PY'
+import sys
+sys.path.insert(0, "skills/wiki-ingest/scripts")
+from _wikilib import is_foundation_page
+ok = (
+    is_foundation_page({"foundation": "true"}) is True and
+    is_foundation_page({"foundation": "True"}) is True and
+    is_foundation_page({"foundation": True}) is True and
+    is_foundation_page({"foundation": "false"}) is False and
+    is_foundation_page({"foundation": ""}) is False and
+    is_foundation_page({}) is False
+)
+print("ok" if ok else "bad")
+PY
+)
+[ "$HELPER_PROBE" = "ok" ] || fail "is_foundation_page helper sanity check failed: $HELPER_PROBE"
+green "_wikilib.is_foundation_page handles bool / 'true' / 'True' / missing"
+
+# Live page check: read a copied foundation page's frontmatter and confirm
+# the helper returns True against it. This proves the lint pipeline's
+# detection is consistent with what wiki-prefill writes to disk.
+LIVE_PROBE=$(WIKI="$WIKI" python3 - <<'PY'
+import os, sys
+sys.path.insert(0, "skills/wiki-ingest/scripts")
+sys.path.insert(0, "skills/wiki-lint/scripts")
+from _wikilib import is_foundation_page
+from lint_wiki import parse_frontmatter
+text = open(os.path.join(os.environ["WIKI"], "wiki/concepts/porters-five-forces.md"), encoding="utf-8").read()
+print("ok" if is_foundation_page(parse_frontmatter(text)) else "bad")
+PY
+)
+[ "$LIVE_PROBE" = "ok" ] || fail "is_foundation_page returned False on copied porters-five-forces.md"
+green "_wikilib.is_foundation_page detects a copied foundation page"
+
 green "ALL PASS — wiki-prefill smoke test"

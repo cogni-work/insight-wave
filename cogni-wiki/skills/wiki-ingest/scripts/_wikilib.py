@@ -247,6 +247,30 @@ def atomic_write(path: Path, text: str) -> None:
         raise
 
 
+def is_foundation_page(fm: dict) -> bool:
+    """Return True iff `fm` (a parsed-frontmatter dict) marks a foundation
+    page — i.e. a curated concept seeded by `wiki-prefill` from the plugin's
+    `foundations/` library.
+
+    Single source of truth for the v0.0.33 contract. `lint_wiki.py` uses
+    it to skip orphan / no-sources / staleness warnings; `wiki-update`'s
+    refusal contract (SKILL.md `Never run when`) and `wiki-ingest`'s
+    Step 1 foundation-collision branch reference the same predicate
+    in their LLM-side instructions.
+
+    Accepts the YAML-subset shapes the in-house frontmatter parsers
+    return: a bare string ("true" / "True" / "false"), a Python bool
+    (True / False), or anything else (treated as not-a-foundation). Case
+    and surrounding whitespace are normalised.
+    """
+    v = fm.get("foundation")
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):
+        return v.strip().lower() == "true"
+    return False
+
+
 def emit_json(success: bool, data=None, error: str = "") -> None:
     """Print the standard `{success, data, error}` JSON line on stdout.
 

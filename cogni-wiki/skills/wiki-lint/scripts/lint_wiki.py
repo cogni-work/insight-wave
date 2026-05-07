@@ -87,6 +87,7 @@ from _wikilib import (  # noqa: E402
     build_slug_index,
     fail_if_pre_migration,
     is_audit_slug,
+    is_foundation_page,
     iter_pages,
 )
 
@@ -305,7 +306,9 @@ def main() -> None:
         # `foundation: true` pages (seeded by wiki-prefill) are terminal —
         # they don't trigger orphan / no-sources / staleness warnings because
         # they are canonical textbook concepts, not per-wiki synthesis.
-        is_foundation = str(fm.get("foundation", "")).strip().lower() == "true"
+        # Detection lives in `_wikilib.is_foundation_page` so wiki-update
+        # and wiki-ingest reference the same predicate. Issue #224.
+        is_foundation = is_foundation_page(fm)
         if is_foundation:
             foundation_slugs.add(slug)
 
