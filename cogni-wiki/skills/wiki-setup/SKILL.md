@@ -152,7 +152,42 @@ For wikis at `schema_version < 0.0.4`, the `SCHEMA.md` body inside the wiki is a
 
 The SCHEMA.md edits are idempotent and offline-safe. `wiki-lint`'s deterministic checks work whether or not the SCHEMA sections match the in-plugin template — the edits only ensure the contract is auditable when reading the wiki on its own.
 
-### 6. Confirm to the user
+### 6. Offer to prefill foundations
+
+After the wiki layout is on disk and `config.json` is written, ask the
+user once whether to seed the wiki with the curated set of foundation
+concept pages (Porter's Five Forces, Jobs-to-be-Done, MECE, OODA, SWOT,
+BCG Matrix, Value Chain, Lean Canvas, Wardley Mapping, Pyramid Principle,
+Double Diamond — see `${CLAUDE_PLUGIN_ROOT}/foundations/README.md`).
+
+Use `AskUserQuestion` with three options:
+- **Yes — consulting set (recommended)**: dispatch the `wiki-prefill`
+  skill with `--filter consulting`. The most generally useful subset
+  for a new wiki.
+- **Yes — all foundations**: dispatch with `--filter all`.
+- **No — skip prefill**: continue to Step 7 without prefilling. The user
+  can run `wiki-prefill` later if they change their mind.
+
+When the user says "set up a wiki, just do it" / "no need to ask
+questions" / autonomous-run phrasing in the original prompt, default to
+**Yes — consulting set** without asking.
+
+When the user runs `wiki-from-research`, **default to No — skip prefill**
+without asking. Cold-start from a research project is already a
+domain-specific seeding path; layering canonical foundations on top
+would duplicate the user's intent.
+
+Foundations carry `foundation: true` in frontmatter; `wiki-update`
+refuses to edit them without `--force`, `wiki-lint` skips orphan /
+no-sources / staleness warnings on them, and `wiki-ingest` routes
+slug-collisions on a foundation to "ingest as a related page" rather
+than overwriting. The skill is idempotent — re-running it never copies
+the same slug twice.
+
+If the user opted in, dispatch `wiki-prefill` and surface its
+`data.copied[]` count to the user before proceeding to Step 7.
+
+### 7. Confirm to the user
 
 Report in plain prose:
 - Where the wiki was created (absolute path)

@@ -145,6 +145,7 @@ Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/
 | wiki-from-research | Skill | Cold-start orchestrator: chains cogni-research's setup + report into wiki-setup + wiki-ingest in one dispatch (Mode A from a topic, Mode B from an existing research slug) |
 | wiki-refresh | Skill | Refresh stale wiki pages with fresh evidence from a completed cogni-research project; Jaccard match, batch-confirmed, sequential wiki-update dispatch |
 | wiki-claims-resweep | Skill | Re-verify inline-cited URLs in existing wiki pages against current source content via cogni-claims; report-only, writes a sweep report and a lint-bridge JSON |
+| wiki-prefill | Skill | Seed `wiki/concepts/` with curated `foundation: true` pages (Porter's Five Forces, Jobs-to-be-Done, MECE, …); idempotent, locked, supports `--filter consulting/product/strategy/all` and `--list/--dry-run` |
 
 ## Architecture
 
@@ -157,7 +158,8 @@ cogni-wiki/
 ├── references/                      Shared reference material
 │   ├── karpathy-pattern.md          Karpathy LLM Wiki pattern
 │   └── claude-research-karparthy.md RAG vs wiki benchmark research
-└── skills/                          11 wiki skills
+├── foundations/                    Curated terminal concept pages (foundation: true)
+└── skills/                          12 wiki skills
     ├── wiki-setup/                  Bootstrap a new wiki
     ├── wiki-ingest/                 Ingest sources into wiki pages
     ├── wiki-query/                  Answer questions from wiki content; file back as type: synthesis
@@ -168,7 +170,8 @@ cogni-wiki/
     ├── wiki-dashboard/              Self-contained HTML overview
     ├── wiki-from-research/          Cold-start: research → wiki orchestrator
     ├── wiki-refresh/                Stale-page refresh from a research project
-    └── wiki-claims-resweep/         Re-verify inline-cited URLs against current source content
+    ├── wiki-claims-resweep/         Re-verify inline-cited URLs against current source content
+    └── wiki-prefill/                Seed wiki/concepts/ with curated foundation pages
 ```
 
 ## Dependencies

@@ -5,7 +5,7 @@ Compile-time knowledge engine for personal and small-team knowledge work — a b
 ## Plugin Architecture
 
 ```
-skills/                         11 wiki skills
+skills/                         12 wiki skills
   wiki-setup/                     Bootstrap a new wiki at a user-chosen root
     references/
       SCHEMA.md.template          Copied into the wiki at setup time
@@ -53,6 +53,16 @@ skills/                         11 wiki skills
     scripts/
       extract_page_claims.py        Deterministic claim-candidate extractor (sentences near URLs); never network-touches
       resweep_planner.py            Two-phase: materialises sweep workspace (plan), aggregates verification results (aggregate); writes lint-bridge under lock
+  wiki-prefill/                   Seed a wiki with curated `foundation: true` concept pages (Porter's Five Forces, Jobs-to-be-Done, MECE, …); idempotent, locked, supports --filter consulting|product|strategy|all and --list/--dry-run. v0.0.33+.
+    scripts/
+      prefill_foundations.py        Locked, atomic copy of plugin-side foundations into wiki/concepts/; substitutes {{PREFILL_DATE}} and bumps entries_count via config_bump.py
+
+foundations/                    Curated terminal concept pages (v0.0.33+)
+  README.md                       Foundation contract, filter sets, contribution procedure
+  *.md                            ~11 starter foundations across consulting/product/strategy
+                                  (porters-five-forces, jobs-to-be-done, double-diamond, mece,
+                                  pyramid-principle, ooda-loop, swot, bcg-matrix, value-chain,
+                                  lean-canvas, wardley-mapping)
 
 references/
   karpathy-pattern.md             Shared Karpathy-pattern reference, cited by all skills
@@ -62,11 +72,11 @@ references/
 
 | Type | Count | Items |
 |------|-------|-------|
-| Skills | 11 | wiki-setup, wiki-ingest, wiki-query, wiki-health, wiki-lint, wiki-update, wiki-resume, wiki-dashboard, wiki-from-research, wiki-refresh, wiki-claims-resweep |
+| Skills | 12 | wiki-setup, wiki-ingest, wiki-query, wiki-health, wiki-lint, wiki-update, wiki-resume, wiki-dashboard, wiki-from-research, wiki-refresh, wiki-claims-resweep, wiki-prefill |
 | Agents | 0 | — (wiki-ingest batch mode runs sequentially in the orchestrator's own context as of v0.0.22; the previous `ingest-worker` per-source subagent was removed because parallel fan-out broke the Karpathy-pattern invariant that source N+1 must see source N's page) |
 | Commands | 0 | — (skills serve as slash commands per plugin-dev guidance) |
 | Hooks | 0 | — (all bookkeeping lives inside skills) |
-| Scripts | 16 | backlink_audit.py, wiki_index_update.py, batch_builder.py, config_bump.py, _wikilib.py, convert_to_md.py, rebuild_context_brief.py, health.py, lint_wiki.py, rebuild_open_questions.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, migrate_layout.py |
+| Scripts | 17 | backlink_audit.py, wiki_index_update.py, batch_builder.py, config_bump.py, _wikilib.py, convert_to_md.py, rebuild_context_brief.py, health.py, lint_wiki.py, rebuild_open_questions.py, wiki_status.sh, render_dashboard.py, refresh_planner.py, extract_page_claims.py, resweep_planner.py, migrate_layout.py, prefill_foundations.py |
 
 ## Wiki Data Layout (outside the plugin)
 
@@ -182,6 +192,7 @@ insight-wave already uses Claude Code's auto-memory system at `~/.claude/project
 - **open questions** (v0.0.30, intra-plugin). Every `wiki-lint` dispatch ends with `rebuild_open_questions.py` (Step 8.5), which maintains `wiki/open_questions.md` as a persistent checklist of data-gap warnings (`no_sources`, `synthesis_no_wiki_source`, `claim_drift`, `orphan_page`, `stale_page`, `stale_draft`, `reverse_link_missing`). Unlike the context brief, this is a **read-modify-write**: items disappearing from the current lint output flip to `- [x]` with a best-effort "closed by" attribution from `wiki/log.md`; new findings append as `- [ ]`; closed items >90 days old are trimmed. `wiki-resume` adds a `{N} open questions` Inventory line plus a new decision-tree rule that fires when the count is non-zero and lint is fresh. Failure to rebuild never rolls back the lint — the audit report and `last_lint` bump are already on disk. v0.0.30 ships deterministic-only; the `--findings -` stdin contract is in place from day 1 for the LLM-feed follow-up that pipes Step 4d's `missing_concept_page` items in. Closes #212 Tier 2 item #3 (#220).
 - **lint–health code partition** (v0.0.31, intra-plugin). The Health-vs-Lint contract from v0.0.27 (`severity-tiers.md`) is now enforced in code: `lint_wiki.py` no longer runs `broken_wikilink`, `missing_frontmatter`, `id_mismatch`, `invalid_type`, `missing_source`, `broken_wiki_source`, or `read_error` — every structural-integrity check has been moved to `health.py`. `data.errors` from `lint_wiki.py` is now always an empty list (preserved for consumer compatibility). The `wiki-lint` SKILL.md drops its old "deduplicate against health" step. `wiki-refresh` is unaffected — `stale_page`/`stale_draft` are explicitly retained in the lint surface and `refresh_planner.py` consumes them unchanged. New `tests/test_lint_health_partition.sh` plants two structural defects and asserts lint emits no health-owned class while health catches both. Closes #212 Tier 2 item #6 (#223); deferred from #217.
 - **lint auto-fix and suggestion modes** (v0.0.32, intra-plugin). `lint_wiki.py` gains three opt-in flags: `--fix=<class>` (apply deterministic auto-fixers), `--suggest` (emit structured proposals for prose-shaped findings), and `--dry-run` (plan without writing). Five `--fix` classes ship: `reverse_link_missing` (backfill the missing reverse `[[link]]` per SCHEMA `R1_bidirectional_wikilink`), `synthesis_no_wiki_source` (add `wiki://<slug>` source entries when the body cites in-wiki slugs), `entries_count_drift` (reconcile `.cogni-wiki/config.json::entries_count` to the filesystem-counted truth via `config_bump.py --set-int`), `frontmatter_defaults` (backfill missing `id:` and normalise non-ISO `updated:` dates), and `alphabetisation` (re-sort `wiki/index.md` bullets within each category via `wiki_index_update.py --reflow-only`). The three in-process page-body fixers run inside one `_wiki_lock(wiki_root)` block; the two scripted fixers acquire their own locks via the underlying scripts after the in-process lock is released. Each fixer is fail-soft per item — exceptions land in `data.failed[]` instead of aborting the fix phase. The `--suggest` schema is fixed in this PR (`{class, page, proposed_action, candidates?, wiki_update_args?, from_tag?, to_tag?, justification}`); no consumer wires it yet, the schema ships first so `wiki-update` can adopt it on its own schedule. LLM-driven and semantic fixes remain `wiki-update`'s responsibility. Two locked-write helpers gain new modes: `config_bump.py --set-int N` (symmetric to `--set-string`, used by `entries_count_drift`) and `wiki_index_update.py --reflow-only` (re-sort categories, no insert/update; pure function `reflow_categories(text) -> (text, changed)` for in-process callers). New `tests/test_lint_fix.sh` plants one defect per fixable class and asserts plan-vs-write semantics, idempotency, and `--suggest` schema. Closes #212 Tier 2 item #7 (#222); deferred fixers from #213, #216, and #217 finally land.
+- **foundations + wiki-prefill** (v0.0.33, intra-plugin). New plugin-side `foundations/` library of curated `type: concept` pages with `foundation: true` frontmatter (Porter's Five Forces, Jobs-to-be-Done, MECE, Pyramid Principle, OODA, SWOT, BCG Matrix, Value Chain, Lean Canvas, Wardley Mapping, Double Diamond — 11 starter entries; community can extend via PR). New `wiki-prefill` skill copies a tag-filtered subset (`consulting` / `product` / `strategy` / `all`) into `wiki/concepts/`, idempotently and under `_wiki_lock`; `{{PREFILL_DATE}}` placeholders substitute to today's ISO date so the staleness clock starts at prefill time and never thereafter. `entries_count` bump goes through the locked `config_bump.py --delta N` (no new shared-state file added — pages are unique-by-construction). `wiki-update` refuses to edit `foundation: true` pages without `--force`, `wiki-lint` skips `orphan_page` / `no_sources` / `stale_page` / `stale_draft` warnings on them and surfaces `stats.foundation_count`, and `wiki-ingest`'s Step 1 detects foundation slug-collisions and routes the user to "ingest as a related page (different slug)" rather than overwriting (analogous to the re-ingest warning, but stricter). `wiki-setup` Step 6 prompts the user to prefill the consulting subset by default; `wiki-from-research` skips the prompt because cold-start from a research project is already a domain-specific seeding path. New `tests/test_prefill.sh` exercises `--list`, `--dry-run`, wet apply with `entries_count` correctness, idempotent re-run, lint skip-foundations, and the pre-migration probe. Closes #212 Tier 2 item #4 (#224); 6 of 7 Tier 2 items now landed (graph layer #221 remains).
 
 ## Future Integration Points
 
