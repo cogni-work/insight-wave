@@ -1,6 +1,6 @@
 ---
 name: wiki-lint
-description: "Run a semantic, LLM-powered audit of a Karpathy-style wiki — contradictions across pages, type drift (a 'concept' page that's actually a 'summary'), undercited claims, missing concept pages (entities mentioned in 3+ pages but lacking their own page), plus the deterministic-but-narrative warnings (orphans, stale drafts, tag typos, reverse-link gaps, claim-drift severity from the latest resweep). Calls wiki-health first as a free preflight; refuses to run while structural errors are pending. Writes a severity-tiered report to wiki/audits/lint-YYYY-MM-DD.md and always appends to wiki/log.md. Use this skill whenever the user says 'lint the wiki', 'audit my wiki', 'check the wiki for contradictions', 'wiki lint', 'find stale claims', or as a periodic maintenance pass after every ~10–15 ingests. For a fast structural-only check, use wiki-health instead."
+description: "Run a semantic, LLM-powered audit of a Karpathy-style wiki — contradictions across pages, type drift (a 'concept' page that's actually a 'summary'), undercited claims, missing concept pages (entities mentioned in 3+ pages but lacking their own page), plus the deterministic-but-narrative warnings (orphans, stale drafts, tag typos, reverse-link gaps, claim-drift severity from the latest resweep). As of v0.0.32, ships deterministic auto-fixers behind opt-in flags (--fix=reverse_link_missing, --fix=synthesis_no_wiki_source, --fix=entries_count_drift, --fix=frontmatter_defaults, --fix=alphabetisation, --fix=all) plus --suggest for structured proposals on prose-shaped findings, and --dry-run for plan-without-write. Calls wiki-health first as a free preflight; refuses to run while structural errors are pending. Writes a severity-tiered report to wiki/audits/lint-YYYY-MM-DD.md and always appends to wiki/log.md. Use this skill whenever the user says 'lint the wiki', 'audit my wiki', 'check the wiki for contradictions', 'wiki lint', 'find stale claims', or as a periodic maintenance pass after every ~10–15 ingests. For a fast structural-only check, use wiki-health instead."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -35,6 +35,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 | `--ignore-health` | No | Run the semantic pass even when `wiki-health` reports errors. Discouraged — fix structural errors first. |
 | `--semantic-page-cap` | No | Maximum number of pages sampled for the semantic pass. Default: 20. |
 | `--skip-rebuild-open-questions` | No | Skip Step 8.5 (`rebuild_open_questions.py`). Use when investigating a rebuild bug or running a literal no-side-effect lint pass. v0.0.30+. |
+| `--fix=<class>` | No | Apply the deterministic auto-fix for one or more lint classes (repeatable; `--fix=all` enables every safe class). Supported: `reverse_link_missing`, `synthesis_no_wiki_source`, `entries_count_drift`, `frontmatter_defaults`, `alphabetisation`. v0.0.32+ (#222). See §"Auto-fix mode" below. |
+| `--suggest` | No | Emit `data.suggestions[]` — structured proposals for prose-shaped findings (`orphan_page`, `stale_*`, `claim_drift`, `tag_typo`). Schema documented in §"Suggestion schema". v0.0.32+ (#222). |
+| `--dry-run` | No | Pair with `--fix` and/or `--suggest` to compute the plan without writing. Every `data.fixed[]` entry has `applied: false`; on-disk SHA is unchanged. v0.0.32+ (#222). |
 
 ## Workflow
 
@@ -220,9 +223,59 @@ Print a ≤6-line summary:
 - `.cogni-wiki/config.json` `last_lint` updated
 - `wiki/open_questions.md` rebuilt (v0.0.30+; persistent backlog of data-gap items, ≤90-day closed retention; never blocks the lint on failure)
 
+## Auto-fix mode (v0.0.32+, #222)
+
+`lint_wiki.py --fix=<class>` applies the deterministic auto-fix for the named class. Composes across flags; `--fix=all` enables every supported class. Pair with `--dry-run` to preview the plan without writing — `data.fixed[]` is populated with `applied: false`, on-disk state is unchanged.
+
+The five supported classes:
+
+| Class | What the fixer does | Locked write target |
+|---|---|---|
+| `reverse_link_missing` | Backfills the missing reverse `[[link]]` per SCHEMA `R1_bidirectional_wikilink`. Appends a `## See also` section (or extends an existing one) with `- [[source-slug]]` lines. Idempotent: a re-run is a no-op once the link is present. | per-type page body via `_wikilib.atomic_write` |
+| `synthesis_no_wiki_source` | For each synthesis page: scans the body for `[[slug]]` mentions whose target exists in the wiki, then adds `wiki://<slug>` entries to the frontmatter `sources:` block. Skips pages whose existing sources already cover every body slug. | per-type page body via `_wikilib.atomic_write` |
+| `frontmatter_defaults` | Backfills missing `id:` (= filename stem) and normalises non-ISO `updated:` dates to `YYYY-MM-DD`. Recognised input formats: `YYYY/MM/DD`, `DD-MM-YYYY`, `DD/MM/YYYY`, `MM/DD/YYYY`, `Month DD, YYYY` (full and abbreviated), `DD Month YYYY`. Pages without frontmatter at all are left to `health.py`'s `missing_frontmatter` error. | per-type page body via `_wikilib.atomic_write` |
+| `entries_count_drift` | Counts non-audit pages via `iter_pages()` and reconciles `.cogni-wiki/config.json::entries_count` to that count. Routes the write through `config_bump.py --set-int` so the locked-script convention holds. No-op when the count already matches. | `config.json` via `config_bump.py` |
+| `alphabetisation` | Re-sorts every category's contiguous bullet block in `wiki/index.md` alphabetically by slug. Non-bullet content (prose, blank lines outside the bullet block) is preserved in place. Routes through `wiki_index_update.py --reflow-only`. | `wiki/index.md` via `wiki_index_update.py` |
+
+**Locking.** The three in-process page-body fixers (`reverse_link_missing`, `synthesis_no_wiki_source`, `frontmatter_defaults`) run inside one `_wiki_lock(wiki_root)` block so they serialise against concurrent `wiki-ingest` runs. The two scripted fixers (`entries_count_drift`, `alphabetisation`) acquire their own locks via the underlying scripts, after the in-process lock is released — no recursion, no deadlock.
+
+**Fail-soft per item.** Each fixer wraps its per-page body in `try/except`; failures land in `data.failed[]` with `{class, page, error}` instead of aborting the whole fix phase. The `data.stats` block surfaces `fixes_applied`, `fixes_planned` (dry-run), `fixes_failed`, and `suggestions_emitted` so consumers can tell wet from dry without parsing entries.
+
+**LLM-driven fixes are explicitly out of scope.** `--fix` only applies to the deterministic classes listed above; semantic fixes (contradictions, type drift, undercited claims, missing concept pages) remain `wiki-update`'s responsibility — they require human or LLM judgement.
+
+## Suggestion schema (v0.0.32+, #222)
+
+`--suggest` emits `data.suggestions[]` — one structured entry per qualifying warning. The schema is fixed in this PR so `wiki-update` (or any other consumer) can adopt it on its own schedule. No consumer wires it yet.
+
+```jsonc
+{
+  "class": "orphan_page",                  // mirrors data.warnings[].class
+  "page": "concept-foo",                   // wiki page slug, or "*" for tag_typo (cross-page)
+  "proposed_action": "link_from",          // see vocabulary table below
+  "candidates": ["concept-bar", "..."],    // when proposed_action implies a target page set
+  "wiki_update_args": {                    // for invoke_wiki_update; ready for direct dispatch
+    "reason": "refinement",
+    "slug": "concept-foo"
+  },
+  "from_tag": "...", "to_tag": "...",       // for rename_tag only
+  "justification": "shares 3 tags with these candidates"
+}
+```
+
+`proposed_action` vocabulary, by warning class:
+
+| Warning class | `proposed_action` | Extra fields |
+|---|---|---|
+| `orphan_page` | `link_from` (when there's at least one tag-overlap candidate) or `tag_for_audit` (no overlap) | `candidates`: top-3 tag-overlap slugs |
+| `stale_draft`, `stale_page` | `review_or_retire` | — |
+| `claim_drift` | `invoke_wiki_update` | `wiki_update_args: {reason, slug}` |
+| `tag_typo` | `rename_tag` | `from_tag`, `to_tag` (parsed from the warning message) |
+
+Suggestions never write to disk. `--suggest` is purely additive on top of the existing report and does not interact with `--fix` (you can pass both in one invocation; the fix phase runs first, then suggestions are emitted from the post-fix warning set).
+
 ## Rules
 
-1. **Never auto-fix findings.** Lint only reports because auto-fixing bypasses the diff-before-write review that catches unintended changes. Fixes happen via `wiki-update`.
+1. **Auto-fix is opt-in.** Lint reports findings by default. The deterministic fixers (`--fix=*`, v0.0.32+) only run when explicitly requested; LLM-driven and semantic fixes still happen via `wiki-update` because they require diff-before-write review and judgement.
 2. **Log even on clean runs.** The absence of findings is itself useful signal.
 3. **Contradictions are surfaced, not resolved.** Only `wiki-update` reconciles them.
 4. **Health gates lint.** A wiki with structural errors does not get a tokenful semantic pass unless the user explicitly overrides — otherwise the LLM reasons over a broken graph and produces noisy findings.

@@ -27,6 +27,14 @@ Two operations:
     in `migrate_layout.py` would re-introduce the duplicate-lock tech debt
     we just removed.
 
+    Integer set (v0.0.32+):
+        config_bump.py --wiki-root <path> --key entries_count --set-int 47
+
+    The int-set form exists for `wiki-lint --fix=entries_count_drift`
+    (#222), which reconciles `entries_count` to the filesystem-counted truth
+    rather than nudging it by a known delta. Same locked code path as
+    `--delta` and `--set-string`.
+
 Output contract:
     {
       "success": true,
@@ -100,11 +108,24 @@ def main() -> None:
             "Used by the layout migrator to bump schema_version."
         ),
     )
+    parser.add_argument(
+        "--set-int",
+        type=int,
+        default=None,
+        help=(
+            "Replace the field with this integer value. Mutually exclusive with --delta "
+            "and --set-string. Used by wiki-lint --fix=entries_count_drift (#222) to "
+            "reconcile entries_count to the filesystem-counted truth."
+        ),
+    )
     args = parser.parse_args()
 
-    if args.delta is not None and args.set_string is not None:
-        fail("--delta and --set-string are mutually exclusive")
-    if args.delta is None and args.set_string is None:
+    set_modes = sum(
+        1 for v in (args.delta, args.set_string, args.set_int) if v is not None
+    )
+    if set_modes > 1:
+        fail("--delta, --set-string, --set-int are mutually exclusive")
+    if set_modes == 0:
         # Preserve legacy default: entries_count semantics implied --delta=1.
         args.delta = 1
 
@@ -131,6 +152,14 @@ def main() -> None:
             old = cfg.get(args.key)
             cfg[args.key] = args.set_string
             new_value = args.set_string
+            current = old
+        elif args.set_int is not None:
+            old = cfg.get(args.key)
+            if old is not None and not isinstance(old, int):
+                fail(f"key {args.key!r} is not an integer (got {type(old).__name__})")
+                return
+            cfg[args.key] = args.set_int
+            new_value = args.set_int
             current = old
         else:
             if args.key not in cfg:

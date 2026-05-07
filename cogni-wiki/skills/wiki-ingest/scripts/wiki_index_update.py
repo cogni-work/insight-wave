@@ -17,7 +17,16 @@ Usage:
                          --summary "<one-sentence summary>" \\
                          --category "<heading-text>"
 
-Behaviour:
+    wiki_index_update.py --wiki-root <path> --reflow-only \\
+                         [--dry-run]
+
+Reflow-only mode (v0.0.32+, #222) re-sorts every category's bullet block
+alphabetically by slug without inserting or updating any line. Used by
+`wiki-lint --fix=alphabetisation`. Idempotent: a clean index produces
+`{"action": "noop", ...}`. Pure function in `reflow_categories(text)` so
+in-process callers can avoid the subprocess hop.
+
+Behaviour (slug mode):
     1. Insert the line `- [[{slug}]] — {summary}` under the heading matching
        `--category` (matches either `##` or `###` exactly).
     2. If the category heading does not exist, create it as a `##` heading
@@ -223,6 +232,47 @@ def _create_category(sections: list, category: str, new_line: str) -> list:
     return sections
 
 
+def reflow_categories(text: str) -> tuple:
+    """Re-sort every category's contiguous bullet block alphabetically by slug.
+
+    Returns ``(new_text, changed)`` where ``changed`` is True iff any section's
+    bullet ordering was modified. Pure function; safe to call inside a
+    `_wiki_lock` block without subprocess overhead. Non-bullet lines (prose,
+    blank lines outside the bullet block) are preserved in place. Sections
+    without any `- [[slug]]` lines are passed through unchanged.
+
+    The contiguous-block strategy mirrors ``_insert_alphabetised`` so reflow
+    and insert agree on what counts as a sortable bullet block.
+    """
+    sections = _split_sections(text)
+    changed = False
+    for sec_idx, (heading, body) in enumerate(sections):
+        body = list(body)
+        body, trailing = _strip_trailing_blanks(body)
+        first_bullet = -1
+        last_bullet = -1
+        for i, line in enumerate(body):
+            if _extract_slug_from_line(line):
+                if first_bullet == -1:
+                    first_bullet = i
+                last_bullet = i
+        if first_bullet == -1:
+            # Re-attach trailing blanks unchanged.
+            sections[sec_idx] = (heading, body + trailing)
+            continue
+        bullets = body[first_bullet:last_bullet + 1]
+        bullet_lines = [b for b in bullets if _extract_slug_from_line(b)]
+        sorted_lines = sorted(bullet_lines, key=lambda ln: _extract_slug_from_line(ln))
+        if sorted_lines != bullet_lines:
+            changed = True
+        new_body = body[:first_bullet] + sorted_lines + body[last_bullet + 1:]
+        new_body.extend(trailing)
+        sections[sec_idx] = (heading, new_body)
+    if not changed:
+        return text, False
+    return _join_sections(sections), True
+
+
 def update_index(index_path: Path, slug: str, summary: str, category: str) -> dict:
     """Do the actual edit. Pure function of (file contents, args)."""
     if not index_path.is_file():
@@ -286,10 +336,54 @@ def main() -> None:
         description="Insert/update a page's entry in wiki/index.md, preserving alphabetical order."
     )
     parser.add_argument("--wiki-root", required=True, help="Absolute path to the wiki root")
-    parser.add_argument("--slug", required=True, help="Slug of the page whose line we're adding/updating")
-    parser.add_argument("--summary", required=True, help="One-sentence summary shown after the slug wikilink")
-    parser.add_argument("--category", required=True, help="Category heading text (without the leading ##/###)")
+    parser.add_argument("--slug", help="Slug of the page whose line we're adding/updating (slug mode)")
+    parser.add_argument("--summary", help="One-sentence summary shown after the slug wikilink (slug mode)")
+    parser.add_argument("--category", help="Category heading text without the leading ##/### (slug mode)")
+    parser.add_argument(
+        "--reflow-only",
+        action="store_true",
+        help=(
+            "Re-sort every category's bullet block alphabetically by slug. "
+            "No insert/update. Used by wiki-lint --fix=alphabetisation."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="With --reflow-only: report whether reordering would happen, without writing.",
+    )
     args = parser.parse_args()
+
+    wiki_root = Path(args.wiki_root).expanduser().resolve()
+    index_path = wiki_root / "wiki" / "index.md"
+
+    if not (wiki_root / "wiki").is_dir():
+        fail(f"wiki/ not found under {wiki_root}")
+
+    if args.reflow_only:
+        if not index_path.is_file():
+            fail(f"index.md not found at {index_path}")
+        with _wiki_lock(wiki_root):
+            try:
+                text = index_path.read_text(encoding="utf-8")
+            except OSError as e:
+                fail(f"could not read index.md: {e}")
+                return
+            new_text, changed = reflow_categories(text)
+            if changed and not args.dry_run:
+                _atomic_write(index_path, new_text)
+        ok({
+            "action": "reflowed" if changed else "noop",
+            "changed": changed,
+            "applied": bool(changed and not args.dry_run),
+            "dry_run": bool(args.dry_run),
+            "index_path": str(index_path),
+        })
+        return
+
+    # Slug mode requires --slug, --summary, --category.
+    if not (args.slug and args.summary and args.category):
+        fail("--slug, --summary, --category are required (or pass --reflow-only)")
 
     slug = args.slug.strip().lower()
     if not re.match(r"^[a-z0-9][a-z0-9\-]*$", slug):
@@ -302,12 +396,6 @@ def main() -> None:
     category = args.category.strip()
     if not category:
         fail("--category must be a non-empty string")
-
-    wiki_root = Path(args.wiki_root).expanduser().resolve()
-    index_path = wiki_root / "wiki" / "index.md"
-
-    if not (wiki_root / "wiki").is_dir():
-        fail(f"wiki/ not found under {wiki_root}")
 
     with _wiki_lock(wiki_root):
         result = update_index(index_path, slug, summary, category)
