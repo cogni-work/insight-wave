@@ -96,7 +96,15 @@ Walk upward from the current working directory to find the nearest `.cogni-wiki/
 Derive the target slug from `--title` (or from the source filename / URL title / first heading if `--title` is absent). Then check whether `{slug}` is already present in any of the per-type page directories under `<wiki-root>/wiki/` (search across `concepts/`, `entities/`, `summaries/`, `decisions/`, `interviews/`, `meetings/`, `learnings/`, `syntheses/`, `notes/` — the slug is globally unique, so the page lives in at most one of them):
 
 - **Fresh ingest** (`mode: fresh`) — no page at that slug. Proceed normally.
-- **Re-ingest** (`mode: re-ingest`) — a page at that slug exists. This is an explicit, allowed path (used by pilot rebuilds where the page is being re-synthesised from an updated source), but it is a different operation than a fresh ingest. Emit this warning verbatim to the user before proceeding:
+- **Foundation collision** (existing page at that slug has `foundation: true` in frontmatter, seeded by `wiki-prefill`) — **stop**. Foundations are terminal pages for canonical textbook concepts (Porter's Five Forces, Jobs-to-be-Done, MECE, …). Re-ingesting onto a foundation slug would overwrite the canonical summary with wiki-specific synthesis, breaking the terminal-page contract that `wiki-update` enforces with its `--force` refusal. Surface the collision verbatim and offer two paths to the user:
+  > Source maps to existing foundation slug `{slug}` (canonical concept). Foundations are terminal — re-ingest is refused. Two recommended paths:
+  > 1. **Ingest as a related page** with a different slug (e.g. `{slug}-at-acme`, `{slug}-case-study`) so the source's domain-specific synthesis links into [[{slug}]] without overwriting it. Re-invoke `wiki-ingest` with `--title "<new title>"` (or pass an explicit slug via the discovered batch entry) to choose the new slug.
+  > 2. **Override** with `--force-foundation-overwrite` (single-source mode) if the upstream canonical source has genuinely shifted and the foundation needs revising. This is the equivalent of `wiki-update --force` for a foundation; very rare in practice.
+  >
+  > Otherwise, re-run with a different `--title` so the slug derives away from the foundation.
+  
+  Stop. Do not write the page. The user re-invokes with the chosen path.
+- **Re-ingest** (`mode: re-ingest`) — a non-foundation page at that slug exists. This is an explicit, allowed path (used by pilot rebuilds where the page is being re-synthesised from an updated source), but it is a different operation than a fresh ingest. Emit this warning verbatim to the user before proceeding:
 
   > Re-ingesting an existing slug (`{slug}`). For content-only tweaks, prefer `wiki-update`; this ingest will overwrite the page, log a `re-ingest` entry, and leave `entries_count` unchanged.
 

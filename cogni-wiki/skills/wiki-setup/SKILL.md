@@ -29,6 +29,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once before proceedi
 | `--name` | Yes (prompted) | Human-readable wiki name, e.g. `"Primary Knowledge Base"` or `"AI-Safety Research Wiki"`. Used for the slug and for `.cogni-wiki/config.json`. |
 | `--description` | No | One-sentence description of the wiki's scope and purpose. Seeded into `overview.md`. |
 | `--publisher-base-url` | No | Canonical landing URL for the publisher this wiki represents, e.g. `https://www.smarter-service.com/studien/`. Recorded in `.cogni-wiki/config.json` as `publisher_base_url`. Used by downstream readers (notably cogni-research wiki-researcher) as a last-resort fallback URL when a page was ingested from a local file and has no per-page `publisher_url`. Leave unset for general-purpose wikis that span many publishers. |
+| `--skip-prefill-prompt` | No | Skip Step 6's "prefill foundations?" prompt entirely. Pass when the calling skill is itself a domain-specific seeding path that would duplicate user intent — `wiki-from-research` sets it for that reason (Mode A and Mode B both already chain into a research-driven `wiki-ingest --discover research:<slug>`, so layering canonical foundations on top would clutter the user's wiki). Has no effect on Step 6's defaults for direct `wiki-setup` invocations. |
 
 If parameters are missing, ask the user once with AskUserQuestion. Do not invent a wiki name silently.
 
@@ -152,7 +153,46 @@ For wikis at `schema_version < 0.0.4`, the `SCHEMA.md` body inside the wiki is a
 
 The SCHEMA.md edits are idempotent and offline-safe. `wiki-lint`'s deterministic checks work whether or not the SCHEMA sections match the in-plugin template — the edits only ensure the contract is auditable when reading the wiki on its own.
 
-### 6. Confirm to the user
+### 6. Offer to prefill foundations
+
+**If `--skip-prefill-prompt` was passed, skip this step entirely** and
+continue to Step 7. The flag is the deterministic opt-out used by
+`wiki-from-research` whose Mode A / Mode B paths already chain into a
+domain-specific `wiki-ingest --discover research:<slug>` and would
+duplicate user intent if foundations were layered on top.
+
+Otherwise, after the wiki layout is on disk and `config.json` is
+written, ask the user once whether to seed the wiki with the curated
+set of foundation concept pages (Porter's Five Forces, Jobs-to-be-Done,
+MECE, OODA, SWOT, BCG Matrix, Value Chain, Lean Canvas, Wardley Mapping,
+Pyramid Principle, Double Diamond — see
+`${CLAUDE_PLUGIN_ROOT}/foundations/README.md`).
+
+Use `AskUserQuestion` with three options:
+- **Yes — consulting set (recommended)**: dispatch the `wiki-prefill`
+  skill with `--filter consulting`. The most generally useful subset
+  for a new wiki.
+- **Yes — all foundations**: dispatch with `--filter all`.
+- **No — skip prefill**: continue to Step 7 without prefilling. The user
+  can run `wiki-prefill` later if they change their mind.
+
+When the user says "set up a wiki, just do it" / "no need to ask
+questions" / autonomous-run phrasing in the original prompt, default to
+**Yes — consulting set** without asking.
+
+Foundations carry `foundation: true` in frontmatter; `wiki-update`
+refuses to edit them without `--force`, `wiki-lint` skips orphan /
+no-sources / staleness warnings on them, and `wiki-ingest` routes
+slug-collisions on a foundation to "ingest as a related page" rather
+than overwriting. The skill is idempotent — re-running it never copies
+the same slug twice. The detection contract is owned by
+`_wikilib.is_foundation_page(fm)` (v0.0.33+) — every consumer references
+the same predicate.
+
+If the user opted in, dispatch `wiki-prefill` and surface its
+`data.copied[]` count to the user before proceeding to Step 7.
+
+### 7. Confirm to the user
 
 Report in plain prose:
 - Where the wiki was created (absolute path)

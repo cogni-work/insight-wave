@@ -87,6 +87,7 @@ from _wikilib import (  # noqa: E402
     build_slug_index,
     fail_if_pre_migration,
     is_audit_slug,
+    is_foundation_page,
     iter_pages,
 )
 
@@ -272,6 +273,11 @@ def main() -> None:
     type_counts: dict = {}
     inbound_links: dict = {}
     sources_per_page: list = []
+    # Foundation pages (`foundation: true` in frontmatter, seeded by
+    # `wiki-prefill`) are terminal — orphan / no-sources / staleness
+    # warnings do not apply to canonical textbook concepts. Track the slugs
+    # so the orphan pass can skip them too. Issue #224.
+    foundation_slugs: set = set()
     today = dt.date.today()
 
     for slug, page_path, ptype_dir in iter_pages(wiki_root, include_audit=True):
@@ -297,11 +303,24 @@ def main() -> None:
         if ptype:
             type_counts[ptype] = type_counts.get(ptype, 0) + 1
 
+        # `foundation: true` pages (seeded by wiki-prefill) are terminal —
+        # they don't trigger orphan / no-sources / staleness warnings because
+        # they are canonical textbook concepts, not per-wiki synthesis.
+        # Detection lives in `_wikilib.is_foundation_page` so wiki-update
+        # and wiki-ingest reference the same predicate. Issue #224.
+        is_foundation = is_foundation_page(fm)
+        if is_foundation:
+            foundation_slugs.add(slug)
+
         # sources required for some types
         sources = fm.get("sources", [])
         if isinstance(sources, list):
             sources_per_page.append(len(sources))
-            if ptype in TYPES_REQUIRING_SOURCES and len(sources) == 0:
+            if (
+                ptype in TYPES_REQUIRING_SOURCES
+                and len(sources) == 0
+                and not is_foundation
+            ):
                 warnings.append(
                     {
                         "class": "no_sources",
@@ -339,10 +358,10 @@ def main() -> None:
                 if isinstance(t, str):
                     tag_counts[t] = tag_counts.get(t, 0) + 1
 
-        # stale checks
+        # stale checks (foundations are terminal — staleness does not apply)
         updated = parse_date(fm.get("updated", ""))
         status = fm.get("status", "").strip().lower() if isinstance(fm.get("status"), str) else ""
-        if updated:
+        if updated and not is_foundation:
             age = (today - updated).days
             if status == "draft" and age > STALE_DRAFT_DAYS:
                 warnings.append(
@@ -370,6 +389,11 @@ def main() -> None:
 
     for slug in existing_slugs:
         if is_audit_slug(slug):
+            continue
+        if slug in foundation_slugs:
+            # Foundations are terminal: they ship without inbound links and
+            # gain them only as downstream pages cite them. An orphan
+            # foundation is the expected day-1 state, not a defect. #224.
             continue
         if slug not in inbound_links or not inbound_links[slug]:
             warnings.append(
@@ -551,6 +575,7 @@ def main() -> None:
             "warnings": len(warnings),
             "info": len(info),
             "type_counts": type_counts,
+            "foundation_count": len(foundation_slugs),
             "avg_sources_per_page": avg_sources,
             "fixes_applied": sum(1 for x in fixed if x.get("applied")),
             "fixes_planned": sum(1 for x in fixed if not x.get("applied")),

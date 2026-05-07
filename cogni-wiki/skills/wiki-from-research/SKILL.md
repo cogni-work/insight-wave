@@ -96,10 +96,12 @@ Skipped iff Step 0 (2) returned `wiki_action = resume`.
 
 ```
 Skill("cogni-wiki:wiki-setup",
-      args="--name \"<name>\" --wiki-root <wiki_root> [--description \"...\"] [--publisher-base-url ...]")
+      args="--name \"<name>\" --wiki-root <wiki_root> --skip-prefill-prompt [--description \"...\"] [--publisher-base-url ...]")
 ```
 
 Pass `--description` and `--publisher-base-url` only if the user provided them. The wiki slug is implicitly `wiki_slug` because `wiki-setup` derives it from `--name` (kebab-case); ensure `kebab-case(name) == wiki_slug` to keep the slugs aligned, or the resolved `cogni-wiki/{slug}/` will not match `wiki_root`. If the user-provided `--name` would derive a different slug, override `--wiki-root` explicitly so `wiki-setup` uses our path verbatim.
+
+`--skip-prefill-prompt` is required (not optional) on this dispatch: cold-start from a research project is itself a domain-specific seeding path via Step 3's `wiki-ingest --discover research:<slug>`, so layering the foundations prefill on top would clutter the user's wiki with canonical concepts they did not ask for. The flag is the deterministic deferral; the user can still run `cogni-wiki:wiki-prefill` on the resulting wiki later if they decide they want the foundations after all. See `wiki-setup/SKILL.md` Step 6 for the contract.
 
 ### 3. Run wiki-ingest --discover research:<slug>
 

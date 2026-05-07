@@ -22,6 +22,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once per session to 
 - The target page does not exist — offer `wiki-ingest` instead
 - The user wants to append a new claim with no source — stop and ask for the source first
 - The change is cosmetic only (typo fix) — just Edit the page directly without going through this skill, and note the edit in the page's `updated:` field
+- The target page has `foundation: true` in frontmatter (seeded by `wiki-prefill`) and the user did **not** pass `--force`. Foundations are terminal pages — canonical textbook concepts (Porter's Five Forces, Jobs-to-be-Done, MECE, …) that derive their authority from the upstream source URL, not from per-wiki synthesis. Editing a foundation usually means the user is adding wiki-specific context to a canonical concept, in which case the right move is `wiki-ingest` a new domain-specific page that links into the foundation rather than overwriting it. If the user does want to override (e.g., the upstream source itself has updated and the canonical summary genuinely needs revising), they pass `--force` and the rest of this workflow runs unchanged. Stop and surface the refusal verbatim:
+  > Page `{slug}` is a foundation (canonical concept seeded from `${CLAUDE_PLUGIN_ROOT}/foundations/`). Updates require `--force` to preserve the terminal-page contract. Consider `wiki-ingest` for a wiki-specific page that links into [[{slug}]] instead.
 
 ## Parameters
 
@@ -31,6 +33,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once per session to 
 | `--reason` | Yes | Why the update is happening: `new-source`, `contradiction`, `refinement`, `retype`, `retire` |
 | `--source` | Conditional | Required when `--reason new-source` — path to a file in `raw/` or URL |
 | `--related-sweep` | No | `yes` (default) / `no` — whether to check related pages for stale statements the update contradicts |
+| `--force` | No | Override the `foundation: true` refusal in "Never run when". Required when the target page is a foundation (seeded by `wiki-prefill`) and the upstream canonical source has genuinely shifted. Has no effect on non-foundation pages. |
 
 ## Workflow
 

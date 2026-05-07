@@ -89,10 +89,10 @@ Notes:
 Append only. Format:
 
 ```
-## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup|migrate} | one-line note
+## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup|migrate|prefill} | one-line note
 ```
 
-The `synthesis` prefix (v0.0.23+) marks filed-back query answers — distinct from un-filed `query` reads. The `health` prefix (v0.0.27+) marks zero-LLM structural pre-flights — distinct from tokenful `lint` runs. The `migrate` prefix (v0.0.28+) marks one-shot layout migrations (e.g. flat `wiki/pages/` → per-type dirs). All three are surfaced separately by `wiki-resume` and `wiki-dashboard`. Never rewrite or reorder log entries.
+The `synthesis` prefix (v0.0.23+) marks filed-back query answers — distinct from un-filed `query` reads. The `health` prefix (v0.0.27+) marks zero-LLM structural pre-flights — distinct from tokenful `lint` runs. The `migrate` prefix (v0.0.28+) marks one-shot layout migrations (e.g. flat `wiki/pages/` → per-type dirs). The `prefill` prefix (v0.0.33+) marks foundation-page seeding from the plugin's curated `foundations/` library — distinct from regular `ingest` because the source is a plugin-shipped concept stub, not a user-supplied raw file. All four are surfaced separately by `wiki-resume` and `wiki-dashboard`. Never rewrite or reorder log entries.
 
 ## Index format
 
