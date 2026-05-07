@@ -1,0 +1,9 @@
+{
+  "name": "Graph Test Wiki",
+  "slug": "graph-test-wiki",
+  "description": "Post-migration fixture for build_graph.py tests (#221)",
+  "created": "2026-05-01",
+  "entries_count": 9,
+  "last_lint": null,
+  "schema_version": "0.0.5"
+}
