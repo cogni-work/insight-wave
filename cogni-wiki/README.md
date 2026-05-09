@@ -76,6 +76,7 @@ Page types: `concept`, `entity`, `summary`, `decision`, `interview`, `meeting`, 
 9. **Cold-start from research** — chains `cogni-research:research-setup` → `research-report` → `wiki-setup` → `wiki-ingest --discover research:<slug>` in one dispatch (Mode A from a topic, Mode B from an existing research slug) → populated wiki seeded with sub-question-sized pages → wiki-query, wiki-health, wiki-lint, wiki-refresh
 10. **Refresh stale pages from research** — matches lint-flagged stale pages to sub-questions of an existing cogni-research project via Jaccard token overlap, materialises one synthesis per match, and dispatches wiki-update sequentially → updated `wiki/<type>/*.md` with bumped `updated:` and refreshed sources → wiki-query, wiki-lint
 11. **Re-verify wiki citations** — extracts inline-cited statements from existing pages deterministically, dispatches them through cogni-claims for source re-verification, and writes a sweep report plus a lint-bridge JSON; report-only, never mutates the per-type page dirs → `<wiki-root>/raw/claims-resweep-<date>/report.md` + `.cogni-wiki/last-resweep.json` → wiki-health (claim_drift count), wiki-lint (`claim_drift` warning), wiki-update (manual stale-marker)
+12. **Persistent ingest queue (Mode D, v0.0.35+, T3.1 from issue #212)** — decouples *when* an ingest fires from *who* is at the keyboard. Four `wiki-ingest` flags drive a file-based queue under `.cogni-wiki/queue/{pending,running,done,failed}/`: `--enqueue <source>` writes a job, `--next` atomically picks one and runs Steps 1–8 + 8.5, `--queue-status` reports counts and recent failures, `--queue-retry <id>` recycles a failed job. Single-worker semantics by construction (refuses while `running/` is non-empty), so the Karpathy invariant — source N+1 must see source N's just-written page — holds across queue invocations from separate sessions. Pairs with the future T3.2 scheduled drainer (cron / GitHub Actions / `/loop`) → `wiki/log.md` `## [date] queue \| …` lines + `wiki-resume` surfacing pending/running/failed counts and decision-tree nudges
 
 ## What it means for you
 
@@ -112,6 +113,9 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 /cogni-wiki:wiki-from-research                                 # Cold-start: research → wiki in one dispatch
 /cogni-wiki:wiki-refresh --from-research <slug>                # Refresh stale pages from a research project
 /cogni-wiki:wiki-claims-resweep                                # Re-verify cited URLs against current source content
+/cogni-wiki:wiki-ingest --enqueue raw/q1-call.docx --type interview  # Mode D: queue a source for later draining
+/cogni-wiki:wiki-ingest --next                                 # Drain the next queued job (one ingest, sequential)
+/cogni-wiki:wiki-ingest --queue-status                         # Inspect the queue (pending/running/failed counts)
 ```
 
 Or just describe what you want in natural language:

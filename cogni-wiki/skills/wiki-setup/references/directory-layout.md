@@ -23,6 +23,10 @@ Detailed semantics for every file and directory created by `wiki-setup`. Skills 
 | `<wiki-root>/wiki/notes/*.md` | Pages with `type: note` — loose observations | `wiki-ingest`, `wiki-update` |
 | `<wiki-root>/wiki/audits/*.md` | Audit reports — `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` (R3-exempt from forward→reverse links) | `wiki-lint` (writes `lint-*.md`); `wiki-health` log line only today |
 | `<wiki-root>/.cogni-wiki/config.json` | Plugin-managed metadata | `wiki-setup` (create), every other skill (update counts) |
+| `<wiki-root>/.cogni-wiki/queue/pending/<id>.json` | Persistent ingest-queue job awaiting `--next` (v0.0.35+, T3.1) | `wiki-ingest --enqueue` writes; `--next` atomically moves to `running/` |
+| `<wiki-root>/.cogni-wiki/queue/running/<id>.json` | The single in-flight queue job (v0.0.35+, T3.1) | `wiki-ingest --next` writes; `--complete` atomically moves to `done/` or `failed/` |
+| `<wiki-root>/.cogni-wiki/queue/done/<id>.json` | Successfully completed queue jobs (v0.0.35+, T3.1) | `wiki-ingest --complete --success` writes; nothing removes (operator may prune) |
+| `<wiki-root>/.cogni-wiki/queue/failed/<id>.json` | Queue jobs that failed mid-ingest (v0.0.35+, T3.1) | `wiki-ingest --complete --failure` writes; `--queue-retry` atomically moves back to `pending/` |
 
 ## `.cogni-wiki/config.json` schema
 

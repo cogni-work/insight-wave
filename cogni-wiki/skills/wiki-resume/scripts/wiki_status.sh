@@ -18,6 +18,11 @@
 # the JSON output under the `health` sub-object. Failures are non-fatal —
 # `health.available` flips to false and the rest of the status block still
 # works.
+#
+# v0.0.35: also folds `<wiki-root>/.cogni-wiki/queue/{pending,running,done,
+# failed}/` counts into a `queue` sub-object (T3.1 from issue #212). The
+# block degrades gracefully when the queue dir is absent (`available: false`)
+# so wikis that never run wiki-ingest --enqueue see a no-op.
 
 set -u
 
@@ -213,6 +218,57 @@ $(find "$RAW_DIR" -maxdepth 1 -type f 2>/dev/null)
 EOF
 fi
 
+# ---------- queue snapshot (v0.0.35, T3.1) ----------
+# Counts under <wiki-root>/.cogni-wiki/queue/{pending,running,done,failed}/.
+# Degrades to "available: false" when the queue dir is absent — every wiki
+# that has never run `wiki-ingest --enqueue` falls into that branch and gets
+# a no-op block. We do NOT shell out to wiki_queue.py --status here; the
+# counts are file-listing only, no JSON parsing, and we want this script to
+# stay fast even on wikis that have queued thousands of jobs over time.
+QUEUE_DIR="$WIKI_ROOT/.cogni-wiki/queue"
+queue_available=false
+queue_pending=0
+queue_running=0
+queue_done=0
+queue_failed=0
+queue_running_started_at=""
+queue_oldest_pending_id=""
+if [ -d "$QUEUE_DIR" ]; then
+  queue_available=true
+  for state in pending running done failed; do
+    d="$QUEUE_DIR/$state"
+    if [ -d "$d" ]; then
+      n=$(find "$d" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+      case "$state" in
+        pending) queue_pending="${n:-0}" ;;
+        running) queue_running="${n:-0}" ;;
+        done)    queue_done="${n:-0}" ;;
+        failed)  queue_failed="${n:-0}" ;;
+      esac
+    fi
+  done
+  # Oldest pending id (lex-sort = chronological because the id prefix is the
+  # Unix-second enqueue timestamp).
+  oldest_pending_file=$(ls -1 "$QUEUE_DIR/pending"/*.json 2>/dev/null | sort | head -n 1)
+  if [ -n "$oldest_pending_file" ]; then
+    queue_oldest_pending_id=$(basename "$oldest_pending_file" .json)
+  fi
+  # started_at of the oldest job currently in running/ (gives operators a
+  # "is it stuck?" hint without the v0.0.35 lock surface adding lease/PID).
+  oldest_running_file=$(ls -1 "$QUEUE_DIR/running"/*.json 2>/dev/null | sort | head -n 1)
+  if [ -n "$oldest_running_file" ]; then
+    queue_running_started_at=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+    v = d.get('started_at') or ''
+    print(v)
+except Exception:
+    pass
+" "$oldest_running_file" 2>/dev/null)
+  fi
+fi
+
 # ---------- health preflight (v0.0.27) ----------
 health_json=""
 # Skip the health probe when a layout migration is pending — health.py would
@@ -243,6 +299,13 @@ export WS_CONFIG_FILE="$CONFIG_FILE"
 export WS_HEALTH_JSON="$health_json"
 export WS_SCHEMA_MIGRATION_PENDING="$schema_migration_pending"
 export WS_OPEN_QUESTIONS_COUNT="$open_questions_count"
+export WS_QUEUE_AVAILABLE="$queue_available"
+export WS_QUEUE_PENDING="$queue_pending"
+export WS_QUEUE_RUNNING="$queue_running"
+export WS_QUEUE_DONE="$queue_done"
+export WS_QUEUE_FAILED="$queue_failed"
+export WS_QUEUE_OLDEST_PENDING_ID="$queue_oldest_pending_id"
+export WS_QUEUE_RUNNING_STARTED_AT="$queue_running_started_at"
 
 python3 - <<'PY'
 import json
@@ -317,6 +380,15 @@ data = {
     "schema_migration_pending": os.environ.get("WS_SCHEMA_MIGRATION_PENDING", "false") == "true",
     "open_questions_count": int(os.environ.get("WS_OPEN_QUESTIONS_COUNT", "0") or 0),
     "health": health_block,
+    "queue": {
+        "available": os.environ.get("WS_QUEUE_AVAILABLE", "false") == "true",
+        "pending": int(os.environ.get("WS_QUEUE_PENDING", "0") or 0),
+        "running": int(os.environ.get("WS_QUEUE_RUNNING", "0") or 0),
+        "done": int(os.environ.get("WS_QUEUE_DONE", "0") or 0),
+        "failed": int(os.environ.get("WS_QUEUE_FAILED", "0") or 0),
+        "oldest_pending_id": os.environ.get("WS_QUEUE_OLDEST_PENDING_ID", "") or None,
+        "running_started_at": os.environ.get("WS_QUEUE_RUNNING_STARTED_AT", "") or None,
+    },
 }
 
 print(json.dumps({"success": True, "data": data, "error": ""}))

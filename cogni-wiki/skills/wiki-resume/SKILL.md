@@ -58,6 +58,7 @@ The script emits JSON with:
 - `orphan_raw_count` — files in `raw/` not referenced by any page frontmatter (quick heuristic)
 - `schema_version` — value of `schema_version` in `.cogni-wiki/config.json`, or `null` if absent. Used by Step 3's Schema section to surface a migration nudge when the wiki predates the most recent SCHEMA.md additions.
 - `health` — a sub-object with `available`, `errors`, `warnings`, `entries_count_drift`, `claim_drift_count`, `claim_drift_date`. `available: false` when the health.py invocation failed; the rest of the status block still works.
+- `queue` (v0.0.35+) — a sub-object with `available`, `pending`, `running`, `done`, `failed`, `oldest_pending_id`, `running_started_at`. `available: false` when `<wiki-root>/.cogni-wiki/queue/` is absent (every wiki that has never run `wiki-ingest --enqueue` falls into that branch). `running_started_at` is the `started_at` ISO timestamp of the oldest job currently in `running/` — operators read it as a "is the running job stuck?" hint without the v0.0.35 surface needing lease/PID-file machinery (T3.2 owns true auto-recovery). Surfaced separately by Step 3 and used by Step 4's queue rules 3a / 5a.
 
 ### 3. Compose the status view
 
@@ -86,6 +87,7 @@ else:
 - {raw_file_count} raw sources ({orphan_raw_count} unused)
 - {lint_count} lint reports ({days_since_lint} days since last)
 - {open_questions_count} open questions{if open_questions_count > 0: " (see wiki/open_questions.md)"}
+- {if queue.available AND (queue.pending > 0 OR queue.running > 0 OR queue.failed > 0): "{queue.pending} queued, {queue.running} running, {queue.failed} failed"} (v0.0.35+; line elided when all three are zero or queue.available is false)
 
 ## Schema
 - schema_version: {schema_version}
@@ -111,15 +113,18 @@ Apply the first rule that matches:
 1. **`health.available AND health.errors > 0`** → "wiki-health flagged {N} structural errors. Fix them via `/cogni-wiki:wiki-update` before anything else — errors block reliable reads. The errors are listed above."
 2. **`health.available AND health.entries_count_drift != 0`** → "`entries_count` is out of sync with the filesystem (drift={drift:+d}). Run `/cogni-wiki:wiki-ingest` to bump the counter, or hand-edit `.cogni-wiki/config.json` to match."
 3. **`health.available AND health.claim_drift_count > 0 AND days_since_lint > 14`** → "{N} pages flagged by the last resweep ({date}) and lint hasn't run in {days} days. Run `/cogni-wiki:wiki-lint` for the semantic narrative."
+3a. **`queue.available AND queue.failed > 0`** → "{N} jobs in `.cogni-wiki/queue/failed/`. Inspect with `/cogni-wiki:wiki-ingest --queue-status`; retry with `/cogni-wiki:wiki-ingest --queue-retry <id>`. Failed jobs are operator-attention but don't block reads."
+   - When the rule fires AND `queue.running_started_at` is non-null and older than 6 h, append: " (also: a job has been in `running/` since {timestamp} — likely stuck mid-ingest from a prior crashed dispatch; consider `--queue-retry` once you've inspected it)." (v0.0.35+, T3.1)
 4. **`entries_count == 0`** → "Drop a source in `raw/` and run `/cogni-wiki:wiki-ingest`."
 5. **`orphan_raw_count > 0`** → "You have {N} raw sources that aren't yet in the wiki. Run `/cogni-wiki:wiki-ingest --discover orphans --discover-dry-run` to review them, then drop `--discover-dry-run` to ingest. No need to hand-craft a batch file — the skill enumerates the orphans for you."
+5a. **`queue.available AND queue.pending > 0 AND queue.running == 0`** → "{N} sources queued for ingest. Drain one with `/cogni-wiki:wiki-ingest --next`, or set up a scheduled drainer (T3.2 — see issue #212)." (v0.0.35+, T3.1)
 6. **`open_questions_count > 0 AND (days_since_lint != null AND days_since_lint <= 14)`** → "{N} open questions in the wiki — see `wiki/open_questions.md` for the next ingest target. Items flip to `- [x]` automatically on the next lint after the gap is closed." (v0.0.30+)
 7. **`days_since_lint == null` OR `days_since_lint > 14`** → "It's been {N} days (or never) since the last lint. Run `/cogni-wiki:wiki-lint`."
 8. **`ingest_count_30d == 0 AND query_count_30d == 0 AND synthesis_count_30d == 0 AND update_count_30d == 0`** → "The wiki hasn't been touched in 30 days. Either ingest something new or run `/cogni-wiki:wiki-query` to reactivate it."
 9. **`entries_count >= 5 AND query_count_30d == 0 AND synthesis_count_30d == 0`** → "You have {entries_count} pages but haven't asked the wiki anything in 30 days. Run `/cogni-wiki:wiki-query --question '...' --file-back yes` to compound a synthesis page."
 10. **Else** → "The wiki looks healthy. Continue with whatever you were doing, or run `/cogni-wiki:wiki-dashboard` for a visual overview."
 
-Rules 1–3 are new in v0.0.27 — they fire on the freshly-collected health snapshot so structural problems surface before any other recommendation. The deterministic split lets resume make a confident statement about what is broken without burning lint tokens. Rule 5's concrete `--discover` command is deliberate: the older prose-only recommendation ("run wiki-ingest on them") left Claude (and by extension the user) to figure out how to enumerate the orphans, which in practice meant asking the user to type them out. Rule 6 (new in v0.0.30) surfaces the persistent open-questions backlog only when lint is fresh — a stale lint would mean stale gaps. Rule 9 surfaces the "the wiki is a vault, but you haven't asked it anything" anti-pattern that file-back synthesis pages were built to fix.
+Rules 1–3 are new in v0.0.27 — they fire on the freshly-collected health snapshot so structural problems surface before any other recommendation. The deterministic split lets resume make a confident statement about what is broken without burning lint tokens. Rules 3a and 5a are new in v0.0.35 (T3.1) — they're placed by the same "what blocks reliable reads first" ranking the existing rules follow. `queue.failed` (3a) comes after `claim_drift_count` because failed-queue jobs are an operator-attention signal, not a structural-correctness one — they don't outrank `entries_count_drift`. `queue.pending` (5a) sits next to `orphan_raw_count` because both are "you have work queued up" prompts. Rule 5's concrete `--discover` command is deliberate: the older prose-only recommendation ("run wiki-ingest on them") left Claude (and by extension the user) to figure out how to enumerate the orphans, which in practice meant asking the user to type them out. Rule 6 (new in v0.0.30) surfaces the persistent open-questions backlog only when lint is fresh — a stale lint would mean stale gaps. Rule 9 surfaces the "the wiki is a vault, but you haven't asked it anything" anti-pattern that file-back synthesis pages were built to fix.
 
 ### 5. Side effects
 
@@ -145,3 +150,4 @@ This skill is read-only against `wiki/<type>/` and `.cogni-wiki/config.json` —
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-health/SKILL.md` — the structural pre-flight skill
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-health/scripts/health.py` — the deterministic check engine
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/rebuild_context_brief.py` — produces `wiki/context_brief.md` (v0.0.29+) at the end of every ingest dispatch
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_queue.py` — persistent ingest queue (T3.1, v0.0.35+); the `queue` sub-object in this script's output is a snapshot of the on-disk queue dirs

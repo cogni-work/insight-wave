@@ -24,13 +24,19 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 
 ## Parameters
 
-Exactly one of `--source`, `--batch-file`, or `--discover` must be provided.
+Exactly one of `--source`, `--batch-file`, `--discover`, or one of the queue flags (`--enqueue`, `--next`, `--queue-status`, `--queue-retry`) must be provided. Queue flags drive **Mode D** (v0.0.35+) — see Step 0.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--source` | Yes (single-source mode) | Path to a file in `raw/`, a URL, or the literal string `--stdin` when the user pasted content. Mutually exclusive with `--batch-file` and `--discover` |
-| `--batch-file` | Yes (batch mode) | Path to a JSON file listing multiple sources to ingest in one dispatch. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` for schema. Mutually exclusive with `--source` and `--discover` |
-| `--discover` | Yes (discovery mode) | Produce the batch from the filesystem instead of a hand-written JSON file. Accepts `orphans` (raw/ files not yet cited by any page), `stubs` (pages with `status: draft`), `glob:<pattern>` (any files matching the pattern), or `research:<project-slug>` (one batch entry per sub-question of a cogni-research project, with synthesised raw files materialised under `raw/research-<slug>/`). See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Discovery" for the full grammar. Mutually exclusive with `--source` and `--batch-file` |
+| `--source` | Yes (single-source mode) | Path to a file in `raw/`, a URL, or the literal string `--stdin` when the user pasted content. Mutually exclusive with `--batch-file`, `--discover`, and queue flags |
+| `--batch-file` | Yes (batch mode) | Path to a JSON file listing multiple sources to ingest in one dispatch. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` for schema. Mutually exclusive with `--source`, `--discover`, and queue flags |
+| `--discover` | Yes (discovery mode) | Produce the batch from the filesystem instead of a hand-written JSON file. Accepts `orphans` (raw/ files not yet cited by any page), `stubs` (pages with `status: draft`), `glob:<pattern>` (any files matching the pattern), or `research:<project-slug>` (one batch entry per sub-question of a cogni-research project, with synthesised raw files materialised under `raw/research-<slug>/`). See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Discovery" for the full grammar. Mutually exclusive with `--source`, `--batch-file`, and queue flags |
+| `--enqueue <source>` | Yes (queue mode, v0.0.35+) | Add a source to the persistent ingest queue under `<wiki-root>/.cogni-wiki/queue/pending/` instead of ingesting immediately. Pure pass-through to `wiki_queue.py --enqueue`; no LLM. Combine with `--type`, `--tags`, `--title`, `--auto-backlinks`, `--no-convert`, `--priority`, and `--scheduled-at` to seed the job's per-entry fields. Mutually exclusive with `--source`, `--batch-file`, `--discover`, and the other queue flags. |
+| `--next` | Yes (queue mode, v0.0.35+) | Drain the queue: atomically move the next eligible job from `pending/` to `running/`, then run Steps 1–8 + 8.5 on the job. The only LLM-driven queue mode. Refuses to advance while any job sits in `running/`. Mutually exclusive with all other dispatch flags. |
+| `--queue-status` | Yes (queue mode, v0.0.35+) | Pass-through to `wiki_queue.py --status`. Emits the `{success, data, error}` JSON; no LLM. Optional `--limit N` controls the recent-failures slice (default 5). |
+| `--queue-retry <id>` | Yes (queue mode, v0.0.35+) | Pass-through to `wiki_queue.py --retry --job-id <id>`: move the failed job back to `pending/` and increment `attempts`. Optional `--scheduled-at` reshapes when it'll fire. No LLM. |
+| `--priority <N>` | No (queue mode) | 0–100 priority for `--enqueue` (default 50; higher fires first). Pass-through to `wiki_queue.py --priority`. Ignored outside Mode D. |
+| `--scheduled-at <ISO>` | No (queue mode) | UTC ISO 8601 (`YYYY-MM-DDTHH:MM:SSZ`) for `--enqueue` / `--queue-retry`. Jobs whose `scheduled_at > now` are skipped by `--next`. Ignored outside Mode D. |
 | `--discover-dry-run` | No (discovery mode) | Print the resolved batch JSON and exit without ingesting. Use this to review the batch before committing to the writes. |
 | `--title-template` | No (discovery mode) | Format string for per-entry titles so the discovered batch matches the wiki's existing slug convention (e.g., `skill-{parent3}-{parent}` turns `../cogni-claims/skills/claims/SKILL.md` into `skill-cogni-claims-claims`). Passed through to `batch_builder.py`; see its `--title-template` help for placeholders. Required with `--discover glob:` whenever the wiki uses anything other than plain filename slugs |
 | `--older-than-days` | No (discovery mode) | For `--discover stubs`: restrict to drafts whose `updated:` date is older than N days |
@@ -44,11 +50,11 @@ Exactly one of `--source`, `--batch-file`, or `--discover` must be provided.
 
 ## Workflow
 
-### 0. Dispatch: single-source vs batch vs discovery
+### 0. Dispatch: single-source vs batch vs discovery vs queue
 
-The three input modes are mutually exclusive. Pick the one that matches the caller's inputs and follow the corresponding rule; everything from Step 1 onwards is identical across modes.
+The four input modes are mutually exclusive. Pick the one that matches the caller's inputs and follow the corresponding rule; everything from Step 1 onwards is identical across modes.
 
-**Sequential by design.** Batch and discovery modes execute Steps 1–8 as a strict sequential loop in the orchestrator's own context — one source at a time, in input order, with every page write, index update, backlink apply, log line, and config bump committed to disk before the next iteration begins. This is load-bearing: source N+1's Step 3 ("which existing pages does this source touch") and Step 6 (backlink audit) must see the page that source N just created, otherwise the wiki fragments instead of compounds. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Execution model" for the rationale and the history of why an earlier per-source subagent fan-out was removed. Step 8.5 (context brief rebuild, v0.0.29+) runs **once per dispatch** after the loop completes, not per source.
+**Sequential by design.** Batch, discovery, and queue (`--next`) modes all execute Steps 1–8 as a strict sequential loop in the orchestrator's own context — one source at a time, in input order, with every page write, index update, backlink apply, log line, and config bump committed to disk before the next iteration begins. This is load-bearing: source N+1's Step 3 ("which existing pages does this source touch") and Step 6 (backlink audit) must see the page that source N just created, otherwise the wiki fragments instead of compounds. See `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` §"Execution model" for the rationale and the history of why an earlier per-source subagent fan-out was removed. Step 8.5 (context brief rebuild, v0.0.29+) runs **once per dispatch** after the loop completes, not per source. Queue mode (`--next`) preserves this invariant by construction — only one job leaves `pending/` per call, and the queue refuses to advance while any job sits in `running/`. The decoupling is in **when** the next ingest fires, not **whether** it stays strictly sequential.
 
 **Backlink-curation decision (once, at dispatch).** Resolve `auto_backlinks` before any Step 1 work so every iteration applies the same rule:
 
@@ -58,6 +64,24 @@ The three input modes are mutually exclusive. Pick the one that matches the call
 - Neither set: `auto_backlinks = null` in all modes — single-source, batch, and discovery alike. Hand-curation is the Karpathy-aligned default; auto-mode is an explicit opt-in via `--auto-backlinks K`.
 
 The resolved value travels into Step 6.
+
+**If a queue flag is present** (Mode D — queue, v0.0.35+):
+
+The persistent ingest queue lives under `<wiki-root>/.cogni-wiki/queue/{pending,running,done,failed}/` as one JSON job file per entry (schema version 1). Mode D decouples *when* the next ingest fires from *who* is at the keyboard — useful for scheduled-drainer deployments (T3.2; see issue #212) and for one-shot enqueue-now-drain-later workflows. Single-worker semantics: `--next` refuses to pick a job while any other job sits in `running/`, so the Karpathy invariant holds across queue invocations from separate sessions just as it does within a single batch dispatch.
+
+The four queue flags route through `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_queue.py`:
+
+1. **`--enqueue <source>`** — pure pass-through. Run `wiki_queue.py --enqueue --source <s> [--type T --tags ... --title ... --auto-backlinks K --no-convert --priority N --scheduled-at ISO]` and surface its JSON. No LLM, no Steps 1–8. The job file appears under `pending/`; `wiki/log.md` gains a `## [date] queue | enqueued <id> source=<s>` line.
+2. **`--next`** — the LLM-driven queue mode. Workflow:
+   1. Run `wiki_queue.py --next`. If `data.action == "noop"`, surface the reason (`queue_empty`, `running_busy`, or `all_scheduled_future`) verbatim and stop. Exit 0; this is the normal scheduled-drainer outcome and must not page operators.
+   2. Else extract the `data.job` payload. Treat it as a single-source dispatch — no batch surrounding. Map its fields onto the per-source pipeline: `source` → the file/URL passed to Step 2; `type`, `tags`, `title`, `auto_backlinks`, `no_convert` → the same per-entry semantics as a `--batch-file` row.
+   3. Run Steps 1–8 + 8.5 inline in the orchestrator's context, exactly as a single-source dispatch would.
+   4. On every-step success: run `wiki_queue.py --complete --job-id <id> --success`. The job file moves `running/` → `done/` and `finished_at` is stamped.
+   5. On any step failure: capture the failing step's error message, run `wiki_queue.py --complete --job-id <id> --failure --error "<msg>"`, surface to the user, and exit non-zero. The job file moves `running/` → `failed/`; an operator can re-enqueue it via `--queue-retry <id>` once the underlying issue is fixed.
+3. **`--queue-status`** — pass-through to `wiki_queue.py --status`. Surface counts (`pending`, `running`, `failed`, `done_recent`), `oldest_pending_id`, `running_started_at` (the "is the running job stuck?" hint), and the most recent failures. No LLM. Use this to inspect the queue before draining or after a failure.
+4. **`--queue-retry <id>`** — pass-through to `wiki_queue.py --retry --job-id <id> [--scheduled-at ISO]`. Move the failed job back to `pending/`, increment `attempts`, clear `last_error`. No LLM.
+
+**Concurrent non-queue ingest hazard (pre-existing).** Mode D does not guard against a separate-session `wiki-ingest --source X` running while a `--next`-driven ingest is in flight against the same wiki. This is a v0.0.22-era hazard, not introduced by T3.1: `_wiki_lock` serialises *shared-state writes* (the index, backlink-apply, `entries_count`), but the two orchestrators can each compute the same fresh slug and one's `wiki_index_update.py` write will lose. Users running both should converge on queue mode — which by design is a single drainer — rather than mixing modes against the same wiki.
 
 **If `--discover` is present** (discovery mode):
 
@@ -380,3 +404,4 @@ The script is read-only against pages, runs `health.py` once internally, and ato
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/batch_builder.py` — discovery helper; enumerates candidates for `--discover` and emits the batch-mode payload on stdout
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/convert_to_md.py` — multi-format auto-conversion helper used by Step 2a (`.docx`, `.pptx`, `.xlsx`, `.html`, `.epub`, …); stdlib-first with optional `markitdown` shell-out
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/rebuild_context_brief.py` — Step 8.5: writes `wiki/context_brief.md` (≤ 8 KiB; auto-rebuilt once per dispatch as of v0.0.29)
+- `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_queue.py` — persistent ingest queue (Mode D, v0.0.35+); five operations (`--enqueue`, `--next`, `--complete`, `--retry`, `--status`); locked atomic state-dir transitions under `<wiki-root>/.cogni-wiki/queue/`
