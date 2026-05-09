@@ -102,6 +102,10 @@ job_id_1=$(printf '%s' "$out" | jget data.job.id)
   && ok "--enqueue creates pending/$job_id_1.json" \
   || fail "--enqueue did not create pending file; got: $out"
 
+grep -q "queue | enqueued $job_id_1 source=raw/src1.md" "$WIKI_ROOT/wiki/log.md" \
+  && ok "log.md gained 'queue | enqueued' line for $job_id_1" \
+  || fail "log.md missing queue|enqueued line; tail: $(tail -3 "$WIKI_ROOT/wiki/log.md")"
+
 job=$(cat "$WIKI_ROOT/.cogni-wiki/queue/pending/$job_id_1.json")
 v=$(printf '%s' "$job" | jget version)
 src=$(printf '%s' "$job" | jget source)
@@ -197,6 +201,10 @@ attempts=$(printf '%s' "$out" | jget data.job.attempts)
   && [ ! -f "$WIKI_ROOT/.cogni-wiki/queue/failed/$next_id.json" ] \
   && ok "--retry moved $next_id back to pending/, attempts=1" \
   || fail "--retry: attempts=$attempts; file=$([ -f "$WIKI_ROOT/.cogni-wiki/queue/pending/$next_id.json" ] && echo pending || echo missing)"
+
+grep -q "queue | retried $next_id from=failed attempts=1" "$WIKI_ROOT/wiki/log.md" \
+  && ok "log.md gained 'queue | retried' line for $next_id" \
+  || fail "log.md missing queue|retried line; tail: $(tail -3 "$WIKI_ROOT/wiki/log.md")"
 
 # Drain the queue so subsequent priority test starts clean.
 out=$(q --next); pid=$(printf '%s' "$out" | jget data.job.id)

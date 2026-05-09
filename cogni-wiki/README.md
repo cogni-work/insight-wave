@@ -28,7 +28,7 @@ Karpathy's insight: what if knowledge was **compiled once at ingestion** instead
 
 ## What it is
 
-**IS:** A compile-time knowledge engine based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Where other insight-wave plugins *generate* knowledge artifacts (research reports, trend analyses, portfolio propositions), cogni-wiki *preserves* them — compiling sources into interlinked markdown pages that Claude reads directly instead of re-deriving from scratch. Eleven skills cover the full lifecycle: setup, ingest, query, health, lint, update, resume, dashboard, plus three integration skills (cold-start from research, refresh stale pages, re-verify cited URLs).
+**IS:** A compile-time knowledge engine based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Where other insight-wave plugins *generate* knowledge artifacts (research reports, trend analyses, portfolio propositions), cogni-wiki *preserves* them — compiling sources into interlinked markdown pages that Claude reads directly instead of re-deriving from scratch. Twelve skills cover the full lifecycle: setup, ingest (incl. Mode D queue, v0.0.35+), query, health, lint, update, resume, dashboard, prefill (foundation seeding), plus three integration skills (cold-start from research, refresh stale pages, re-verify cited URLs).
 
 ## Data model
 
@@ -139,7 +139,7 @@ Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/
 | Component | Type | Description |
 |-----------|------|-------------|
 | wiki-setup | Skill | Bootstrap a new Karpathy-style LLM wiki at a user-chosen directory |
-| wiki-ingest | Skill | Ingest a source document into the wiki with summary, frontmatter, and backlink audit |
+| wiki-ingest | Skill | Ingest a source document into the wiki with summary, frontmatter, and backlink audit; also operates the persistent ingest queue (Mode D, v0.0.35+) for deferred draining via `--enqueue` / `--next` / `--queue-status` / `--queue-retry` |
 | wiki-query | Skill | Answer a question by reading the wiki — never from memory; optionally files the answer back as a `type: synthesis` page |
 | wiki-health | Skill | Zero-LLM structural integrity preflight — broken wikilinks, missing frontmatter, broken raw/`wiki://` sources, id mismatch, invalid type, stub pages, `entries_count` drift, index/filesystem drift, claim_drift count. Runs automatically every session via wiki-resume (v0.0.27) |
 | wiki-lint | Skill | Tokenful semantic audit — contradictions, type drift, undercited claims, missing concept pages, plus deterministic warnings that need narrative (orphans, stale, tag typos, reverse links, claim_drift severity). Refuses to run while wiki-health reports errors |
