@@ -248,6 +248,59 @@ entries_count: 42 → 44 (2 fresh, 1 re-ingest unchanged)
 
 For the full schema, error policy, and the Phase 2 follow-ups deferred from this iteration (continue-on-error, parallel dispatch), read `./batch-mode.md`.
 
+## Mode D: Queue (v0.0.35+)
+
+Batch mode handles "I have N sources, ingest them all now". The persistent ingest queue (Mode D, T3.1 from issue #212) handles the orthogonal case: "I have N sources, fire one ingest at a time, but I'm not the one timing them." The queue lives under `<wiki-root>/.cogni-wiki/queue/{pending,running,done,failed}/` as one JSON job file per entry, and is driven by four `wiki-ingest` flags:
+
+- `--enqueue <source> [--type T --tags ... --priority N --scheduled-at ISO ...]` — write a `pending/<id>.json` job. No LLM, no Steps 1–8 yet. Pure pass-through to `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/scripts/wiki_queue.py --enqueue`.
+- `--next` — atomically move the next eligible pending job to `running/`, then run Steps 1–8 + 8.5 on it. Refuses to advance while any job is in `running/`. On success: `wiki_queue.py --complete --success` moves the file to `done/`. On failure: `--complete --failure --error <msg>` moves it to `failed/` and the orchestrator exits non-zero.
+- `--queue-status` — read-only counts (pending, running, done_recent, failed) plus `oldest_pending_id`, `running_started_at`, and the most recent failures. No LLM.
+- `--queue-retry <id>` — move a `failed/<id>.json` job back to `pending/`, increment `attempts`, clear `last_error`. Optional `--scheduled-at` to defer.
+
+### Why the queue exists
+
+The Karpathy gist's only practical complaint is *attendance*, not throughput. A wiki compounds best when ingests fire frequently, but every `wiki-ingest` requires a human at the keyboard. A persistent file-based queue with single-worker drainer semantics decouples *when* an ingest fires from *who* is in the room — without breaking the invariant that source N+1 must see source N's just-written page. `--next` is strict sequential single-source ingest by construction; the queue refuses to advance while any job is in `running/`. The decoupling is in scheduling, not in concurrency.
+
+### Walkthrough
+
+A user has three customer-call transcripts in `raw/`. They want them ingested across the day, not all at once.
+
+```bash
+wiki-ingest --enqueue raw/q1-acme.docx        --type interview --tags customer-call,acme --priority 60
+wiki-ingest --enqueue raw/q1-betacorp.docx    --type interview --tags customer-call,betacorp
+wiki-ingest --enqueue raw/q1-gammaco.docx     --type interview --tags customer-call,gammaco --scheduled-at 2026-05-09T18:00:00Z
+```
+
+Three jobs land in `pending/`. The first has priority 60 (>50 default), the second is default priority, the third is deferred until 18:00 UTC.
+
+```bash
+wiki-ingest --queue-status
+# pending=3, running=0, done_recent=0, failed=0
+# oldest_pending_id=…-acme, next_scheduled_at=immediate
+```
+
+A scheduled drainer (T3.2: cron / GitHub Actions / `/loop`) — or the user — fires `wiki-ingest --next`. The dispatcher picks `acme` (priority 60), moves it to `running/`, runs Steps 1–8 + 8.5, completes the job to `done/`. A subsequent `--next` picks `betacorp`. The third job stays put until 18:00 UTC.
+
+If `betacorp` fails at Step 6 because backlink_audit can't reach a stub page, the orchestrator runs `wiki_queue.py --complete --failure --error "step 6: stub page not yet filed"`. The job lands in `failed/`. After the operator fixes the underlying issue, `wiki-ingest --queue-retry <id>` puts it back at the front of `pending/`.
+
+### What Mode D does NOT change
+
+- Every per-job step is identical to single-source mode. Steps 1–8 + 8.5 run inline in the orchestrator's context against the job's `source`/`type`/`tags`/etc., exactly as if a human had typed `wiki-ingest --source raw/q1-acme.docx --type interview --tags customer-call,acme`.
+- The Karpathy invariant holds across queue invocations from separate sessions just as it does within a single batch dispatch — `--next` refuses while `running/` is non-empty. Two cron drainers racing the same `--next` lock; one wins and picks; the other reports `running_busy` and exits 0 (the JSON `data.action == "noop"` carries the signal so wrappers don't need special-casing).
+- Step 8.5 (context brief rebuild) still runs once per dispatch. A queue dispatch is one job, so the brief rebuilds after each `--next`.
+- Failure isolation: a failed `wiki_queue.py --complete` never rolls back the page write (Step 4 already committed); a failed Step 8.5 never rolls back the queue completion. The order is: ingest first, complete-success second, brief-rebuild third — each safe-to-retry on its own.
+
+### When to use Mode D vs batch
+
+| You have | Use |
+|---|---|
+| N sources, ingest them all now, in one orchestrator session | `--batch-file` or `--discover` |
+| N sources, ingest one per cron tick / GitHub Actions run / `/loop` interval | `--enqueue` × N, then schedule `--next` |
+| One source dropped via gh-issue-template (T3.2 follow-up) | `--enqueue` from the label-triggered Action |
+| One source, right now, you're at the keyboard | `--source` (the existing single-source path; queue is overkill) |
+
+The deployment-shape options for the scheduled drainer (Cloud Routine vs GitHub Actions vs `/loop`) are deferred to T3.2 — see issue #212 §"Tier 3" for the recommended path. Mode D itself is deployment-agnostic: the queue dir is just files; any drainer that can call `wiki-ingest --next` works.
+
 ## Worked examples by template
 
 The two preceding examples (`many-shot-jailbreaking.md`, `constitutional-ai.md`) illustrate the `default.md` scaffold — `type: summary`, generic key-takeaways/details/sources shape. The remaining body templates each cover a domain-specific shape; one short example per template follows so Step 4a's selection rules can be checked against a concrete page.
