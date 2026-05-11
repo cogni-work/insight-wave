@@ -414,10 +414,14 @@ output JSON's `warnings` field.
 
 ### Step 5: Export, Save, and Return
 
-1. Export PNG via `export_nodes({format: "png", filePath: "{brief_dir}/infographic-preview.png"})`.
+1. Export PNG via `export_nodes({format: "png", scale: 4, filePath: "{brief_dir}/infographic-preview.png"})`.
    The canonical filename is `infographic-preview.png` — this is the name that enrich-report
-   and other downstream consumers search for.
-1b. Export WebP via `export_nodes({format: "webp", quality: 90, filePath: "{brief_dir}/infographic-preview.webp"})`.
+   and other downstream consumers search for. **Scale 4** (≈ 4320 × 6100 px for a 1080 × 1525
+   design page, well under Pencil's 8192-px cap) is the right fidelity bar for the PNG fallback
+   path: when the HTML fragment (Tier 1) is unavailable, the PNG is what gets shrunk into a
+   ~700-px content column, and 2× was visibly soft at that compression ratio. 4× holds up under
+   the magazine peek/lightbox UI and the flipbook print path.
+1b. Export WebP via `export_nodes({format: "webp", scale: 4, quality: 90, filePath: "{brief_dir}/infographic-preview.webp"})`.
    WebP is typically 25-35% smaller than PNG at equivalent visual quality — significant for
    base64 embedding in HTML. The downstream `enrich-report` pipeline prefers WebP over PNG
    when both exist. If this export fails, continue — the PNG is the minimum viable output.
