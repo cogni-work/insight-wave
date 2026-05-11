@@ -234,8 +234,11 @@ grep -qiE 'foundation collision|foundation.*refus' "$WIKI_INGEST_SKILL" || \
   fail "wiki-ingest SKILL.md missing 'Foundation collision' branch"
 green "wiki-ingest SKILL.md sentinel: foundation collision branch present"
 
-# 8c. SCHEMA.md.template log enum includes prefill
-grep -q '|prefill}' "$SCHEMA_TEMPLATE" || \
+# 8c. SCHEMA.md.template log enum includes prefill.
+# Match `|prefill|` (with closing pipe, not closing brace) so the test stays
+# robust as later versions extend the enum to the right (v0.0.34 added
+# `graph`, v0.0.35 added `queue`).
+grep -q '|prefill|' "$SCHEMA_TEMPLATE" || \
   fail "SCHEMA.md.template log-format enum missing 'prefill' verb"
 green "SCHEMA.md.template sentinel: 'prefill' in log-format enum"
 
@@ -248,9 +251,9 @@ green "wiki-from-research SKILL.md sentinel: --skip-prefill-prompt wired"
 # The detection contract is owned by `_wikilib.is_foundation_page` so
 # every consumer (lint today, wiki-update / wiki-ingest LLM-side
 # tomorrow) reads the same source of truth.
-HELPER_PROBE=$(python3 - <<'PY'
-import sys
-sys.path.insert(0, "skills/wiki-ingest/scripts")
+HELPER_PROBE=$(PLUGIN_ROOT="$PLUGIN_ROOT" python3 - <<'PY'
+import os, sys
+sys.path.insert(0, os.path.join(os.environ["PLUGIN_ROOT"], "skills", "wiki-ingest", "scripts"))
 from _wikilib import is_foundation_page
 ok = (
     is_foundation_page({"foundation": "true"}) is True and
@@ -269,10 +272,10 @@ green "_wikilib.is_foundation_page handles bool / 'true' / 'True' / missing"
 # Live page check: read a copied foundation page's frontmatter and confirm
 # the helper returns True against it. This proves the lint pipeline's
 # detection is consistent with what wiki-prefill writes to disk.
-LIVE_PROBE=$(WIKI="$WIKI" python3 - <<'PY'
+LIVE_PROBE=$(WIKI="$WIKI" PLUGIN_ROOT="$PLUGIN_ROOT" python3 - <<'PY'
 import os, sys
-sys.path.insert(0, "skills/wiki-ingest/scripts")
-sys.path.insert(0, "skills/wiki-lint/scripts")
+sys.path.insert(0, os.path.join(os.environ["PLUGIN_ROOT"], "skills", "wiki-ingest", "scripts"))
+sys.path.insert(0, os.path.join(os.environ["PLUGIN_ROOT"], "skills", "wiki-lint", "scripts"))
 from _wikilib import is_foundation_page
 from lint_wiki import parse_frontmatter
 text = open(os.path.join(os.environ["WIKI"], "wiki/concepts/porters-five-forces.md"), encoding="utf-8").read()
