@@ -76,7 +76,7 @@ Page types: `concept`, `entity`, `summary`, `decision`, `interview`, `meeting`, 
 9. **Cold-start from research** — chains `cogni-research:research-setup` → `research-report` → `wiki-setup` → `wiki-ingest --discover research:<slug>` in one dispatch (Mode A from a topic, Mode B from an existing research slug) → populated wiki seeded with sub-question-sized pages → wiki-query, wiki-health, wiki-lint, wiki-refresh
 10. **Refresh stale pages from research** — matches lint-flagged stale pages to sub-questions of an existing cogni-research project via Jaccard token overlap, materialises one synthesis per match, and dispatches wiki-update sequentially → updated `wiki/<type>/*.md` with bumped `updated:` and refreshed sources → wiki-query, wiki-lint
 11. **Re-verify wiki citations** — extracts inline-cited statements from existing pages deterministically, dispatches them through cogni-claims for source re-verification, and writes a sweep report plus a lint-bridge JSON; report-only, never mutates the per-type page dirs → `<wiki-root>/raw/claims-resweep-<date>/report.md` + `.cogni-wiki/last-resweep.json` → wiki-health (claim_drift count), wiki-lint (`claim_drift` warning), wiki-update (manual stale-marker)
-12. **Persistent ingest queue (Mode D, v0.0.35+, T3.1 from issue #212)** — decouples *when* an ingest fires from *who* is at the keyboard. Four `wiki-ingest` flags drive a file-based queue under `.cogni-wiki/queue/{pending,running,done,failed}/`: `--enqueue <source>` writes a job, `--next` atomically picks one and runs Steps 1–8 + 8.5, `--queue-status` reports counts and recent failures, `--queue-retry <id>` recycles a failed job. Single-worker semantics by construction (refuses while `running/` is non-empty), so the Karpathy invariant — source N+1 must see source N's just-written page — holds across queue invocations from separate sessions. Pairs with the future T3.2 scheduled drainer (cron / GitHub Actions / `/loop`) → `wiki/log.md` `## [date] queue \| …` lines + `wiki-resume` surfacing pending/running/failed counts and decision-tree nudges
+12. **Persistent ingest queue (Mode D, v0.0.35+, T3.1 from issue #212)** — decouples *when* an ingest fires from *who* is at the keyboard. Four `wiki-ingest` flags drive a file-based queue under `.cogni-wiki/queue/{pending,running,done,failed}/`: `--enqueue <source>` writes a job, `--next` atomically picks one and runs Steps 1–8 + 8.5, `--queue-status` reports counts and recent failures, `--queue-retry <id>` recycles a failed job. Single-worker semantics by construction (refuses while `running/` is non-empty), so the Karpathy invariant — source N+1 must see source N's just-written page — holds across queue invocations from separate sessions. Pairs with the v0.0.39 scheduled drainer (GitHub Actions / Cloud Routine / local cron / `/loop`; see `references/scheduled-drainer/`) → `wiki/log.md` `## [date] queue \| …` lines + `wiki-resume` surfacing pending/running/failed counts and decision-tree nudges
 
 ## What it means for you
 
@@ -151,6 +151,10 @@ Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/
 | wiki-claims-resweep | Skill | Re-verify inline-cited URLs in existing wiki pages against current source content via cogni-claims; report-only, writes a sweep report and a lint-bridge JSON |
 | wiki-prefill | Skill | Seed `wiki/concepts/` with curated `foundation: true` pages (Porter's Five Forces, Jobs-to-be-Done, MECE, …); idempotent, locked, supports `--filter consulting/product/strategy/all` and `--list/--dry-run` |
 
+## Scheduling & automation
+
+The persistent ingest queue (Mode D, v0.0.35+) decouples *when* an ingest fires from *who* is at the keyboard. As of v0.0.39 (T3.2), four reference deployment shapes ship under [`references/scheduled-drainer/`](references/scheduled-drainer/README.md) for running `wiki-ingest --next` on a cadence: **GitHub Actions** (recommended for git-hosted wikis — multi-runner safe via `git push`, free audit trail), **Cloud Routine** (alternative for remote-but-no-GH), **local cron / launchd / systemd-timer** (alternative for on-box-only / air-gapped / GitHub-banned), and **`/loop`** (dev-only in-session shape). Pick one based on where the wiki lives and what scheduler you have access to; the queue itself doesn't change, so migration between shapes is just swapping the runner. `wiki-resume` surfaces a drainer-hint nudge (rule 5a) when the queue has been stalled for longer than a configurable threshold (`drainer_hint_threshold_hours` in `.cogni-wiki/config.json`, default 24) and no `--next` has completed recently — so the prompt only fires when the queue is genuinely stalled, not when you're actively draining manually.
+
 ## Architecture
 
 ```
@@ -161,7 +165,8 @@ cogni-wiki/
 ├── LICENSE                          AGPL-3.0
 ├── references/                      Shared reference material
 │   ├── karpathy-pattern.md          Karpathy LLM Wiki pattern
-│   └── claude-research-karparthy.md RAG vs wiki benchmark research
+│   ├── claude-research-karparthy.md RAG vs wiki benchmark research
+│   └── scheduled-drainer/           T3.2 scheduled-runner deployment shapes (v0.0.39+)
 ├── foundations/                    Curated terminal concept pages (foundation: true)
 └── skills/                          12 wiki skills
     ├── wiki-setup/                  Bootstrap a new wiki

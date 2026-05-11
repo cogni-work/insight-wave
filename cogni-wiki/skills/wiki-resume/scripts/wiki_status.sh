@@ -23,6 +23,15 @@
 # failed}/` counts into a `queue` sub-object (T3.1 from issue #212). The
 # block degrades gracefully when the queue dir is absent (`available: false`)
 # so wikis that never run wiki-ingest --enqueue see a no-op.
+#
+# v0.0.39: extends the `queue` sub-object with three drainer-hint fields
+# (T3.2 from issue #232) — `oldest_pending_age_hours`, `last_next_at`,
+# `last_next_age_hours` — plus the `drainer_hint_threshold_hours` config
+# value (default 24, read from .cogni-wiki/config.json). Rule 5a in
+# wiki-resume's decision tree consumes these to fire the "set up a
+# scheduled drainer" nudge only when the queue is genuinely stalled
+# (pending older than threshold, no recent --next within threshold) rather
+# than the v0.0.35 unconditional pending>0 trigger.
 
 set -u
 
@@ -237,6 +246,11 @@ queue_done=0
 queue_failed=0
 queue_running_started_at=""
 queue_oldest_pending_id=""
+# v0.0.39 (T3.2): three drainer-hint fields. All emit as "" when undefined
+# and the python assembler converts "" → null.
+queue_oldest_pending_age_hours=""
+queue_last_next_at=""
+queue_last_next_age_hours=""
 if [ -d "$QUEUE_DIR" ]; then
   queue_available=true
   for state in pending running done failed; do
@@ -256,6 +270,20 @@ if [ -d "$QUEUE_DIR" ]; then
   oldest_pending_file=$(ls -1 "$QUEUE_DIR/pending"/*.json 2>/dev/null | sort | head -n 1)
   if [ -n "$oldest_pending_file" ]; then
     queue_oldest_pending_id=$(basename "$oldest_pending_file" .json)
+    # v0.0.39 (T3.2): derive oldest_pending_age_hours from the id prefix. The
+    # id format is `{unix_timestamp:010d}-{sha1[:8]}` (see wiki_queue.py); the
+    # leading 10-digit decimal is unix seconds. Convert to hours via float
+    # arithmetic in python (bash 3.2 has no float division).
+    queue_oldest_pending_age_hours=$(python3 -c "
+import time, sys
+try:
+    id_prefix = sys.argv[1].split('-', 1)[0]
+    ts = int(id_prefix)
+    age_s = max(0, time.time() - ts)
+    print(f'{age_s / 3600.0:.4f}')
+except Exception:
+    pass
+" "$queue_oldest_pending_id" 2>/dev/null)
   fi
   # started_at of the oldest job currently in running/ (gives operators a
   # "is it stuck?" hint without the v0.0.35 lock surface adding lease/PID).
@@ -271,7 +299,88 @@ except Exception:
     pass
 " "$oldest_running_file" 2>/dev/null)
   fi
+  # v0.0.39 (T3.2): last_next_at — the ISO timestamp of the newest finished
+  # job across done/ ∪ failed/. Heuristic: the newest finished_at on any job
+  # in either bucket is the last time --next reached a terminal state. We
+  # parse `finished_at` from the job JSON (canonical) and fall back to the
+  # file mtime when the field is missing (older job files predating T3.2's
+  # finished_at stamping). Bounded scan: 200 newest files per bucket — plenty
+  # for the "is the drainer recent?" question, cheap on wikis with thousands
+  # of historical jobs.
+  if [ -d "$QUEUE_DIR/done" ] || [ -d "$QUEUE_DIR/failed" ]; then
+    queue_last_next_at=$(python3 -c "
+import os, json, sys
+from datetime import datetime, timezone
+
+best_ts = None  # epoch seconds
+best_iso = ''
+for bucket in ('done', 'failed'):
+    d = os.path.join(sys.argv[1], bucket)
+    if not os.path.isdir(d):
+        continue
+    try:
+        names = sorted(
+            (n for n in os.listdir(d) if n.endswith('.json')),
+            reverse=True,
+        )[:200]
+    except OSError:
+        continue
+    for name in names:
+        path = os.path.join(d, name)
+        try:
+            with open(path, 'r', encoding='utf-8') as fh:
+                job = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            job = {}
+        iso = (job.get('finished_at') or '').strip()
+        if iso:
+            try:
+                # Tolerate both '...Z' and '+00:00' shapes.
+                ts = datetime.fromisoformat(iso.replace('Z', '+00:00')).timestamp()
+            except ValueError:
+                ts = None
+        else:
+            ts = None
+        if ts is None:
+            try:
+                ts = os.path.getmtime(path)
+                # Convert mtime to ISO for display.
+                iso = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
+            except OSError:
+                continue
+        if best_ts is None or ts > best_ts:
+            best_ts = ts
+            best_iso = iso
+print(best_iso)
+" "$QUEUE_DIR" 2>/dev/null)
+    if [ -n "$queue_last_next_at" ]; then
+      queue_last_next_age_hours=$(python3 -c "
+import sys
+from datetime import datetime, timezone
+iso = sys.argv[1].replace('Z', '+00:00')
+try:
+    ts = datetime.fromisoformat(iso).timestamp()
+    age_s = max(0, datetime.now(tz=timezone.utc).timestamp() - ts)
+    print(f'{age_s / 3600.0:.4f}')
+except Exception:
+    pass
+" "$queue_last_next_at" 2>/dev/null)
+    fi
+  fi
 fi
+
+# v0.0.39 (T3.2): drainer_hint_threshold_hours — config-driven, default 24.
+# Read once from .cogni-wiki/config.json; integer or float both acceptable.
+queue_drainer_hint_threshold_hours=$(python3 -c "
+import json, sys
+try:
+    cfg = json.load(open(sys.argv[1]))
+    v = cfg.get('drainer_hint_threshold_hours', 24)
+    print(float(v))
+except Exception:
+    print(24.0)
+" "$CONFIG_FILE" 2>/dev/null)
+[ -z "$queue_drainer_hint_threshold_hours" ] && queue_drainer_hint_threshold_hours="24.0"
 
 # ---------- health preflight (v0.0.27) ----------
 health_json=""
@@ -310,6 +419,11 @@ export WS_QUEUE_DONE="$queue_done"
 export WS_QUEUE_FAILED="$queue_failed"
 export WS_QUEUE_OLDEST_PENDING_ID="$queue_oldest_pending_id"
 export WS_QUEUE_RUNNING_STARTED_AT="$queue_running_started_at"
+# v0.0.39 (T3.2)
+export WS_QUEUE_OLDEST_PENDING_AGE_HOURS="$queue_oldest_pending_age_hours"
+export WS_QUEUE_LAST_NEXT_AT="$queue_last_next_at"
+export WS_QUEUE_LAST_NEXT_AGE_HOURS="$queue_last_next_age_hours"
+export WS_QUEUE_DRAINER_HINT_THRESHOLD_HOURS="$queue_drainer_hint_threshold_hours"
 
 python3 - <<'PY'
 import json
@@ -392,6 +506,21 @@ data = {
         "failed": int(os.environ.get("WS_QUEUE_FAILED", "0") or 0),
         "oldest_pending_id": os.environ.get("WS_QUEUE_OLDEST_PENDING_ID", "") or None,
         "running_started_at": os.environ.get("WS_QUEUE_RUNNING_STARTED_AT", "") or None,
+        # v0.0.39 (T3.2): drainer-hint fields. Floats or null.
+        "oldest_pending_age_hours": (
+            float(os.environ["WS_QUEUE_OLDEST_PENDING_AGE_HOURS"])
+            if os.environ.get("WS_QUEUE_OLDEST_PENDING_AGE_HOURS", "").strip()
+            else None
+        ),
+        "last_next_at": os.environ.get("WS_QUEUE_LAST_NEXT_AT", "") or None,
+        "last_next_age_hours": (
+            float(os.environ["WS_QUEUE_LAST_NEXT_AGE_HOURS"])
+            if os.environ.get("WS_QUEUE_LAST_NEXT_AGE_HOURS", "").strip()
+            else None
+        ),
+        "drainer_hint_threshold_hours": float(
+            os.environ.get("WS_QUEUE_DRAINER_HINT_THRESHOLD_HOURS", "24") or 24
+        ),
     },
 }
 
