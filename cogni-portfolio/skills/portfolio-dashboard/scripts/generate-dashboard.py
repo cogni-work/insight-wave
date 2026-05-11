@@ -413,6 +413,22 @@ def load_all_entities(project_dir):
     if os.path.isfile(claims_path):
         data["claims"] = load_json(claims_path)
 
+    # Source lineage registry — see references/data-model.md §source-registry.json
+    data["source_registry"] = load_json(os.path.join(project_dir, "source-registry.json"))
+
+    # Context entries — institutional intelligence extracted from uploaded docs
+    ctx_dir = os.path.join(project_dir, "context")
+    ctx_index = load_json(os.path.join(ctx_dir, "context-index.json"))
+    data["context_index"] = ctx_index
+    data["context_entries"] = {}
+    if ctx_index and os.path.isdir(ctx_dir):
+        for fp in sorted(glob.glob(os.path.join(ctx_dir, "*.json"))):
+            if os.path.basename(fp) == "context-index.json":
+                continue
+            obj = load_json(fp)
+            if obj and obj.get("slug"):
+                data["context_entries"][obj["slug"]] = obj
+
     # Load communicate output files with frontmatter, previews, and review verdicts
     communicate_dir = os.path.join(project_dir, "output", "communicate")
     communicate_files = []
@@ -754,7 +770,22 @@ def escape_html(text):
 def escape_js_string(text):
     if not isinstance(text, str):
         text = str(text) if text is not None else ""
-    return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "")
+    return (text.replace("\\", "\\\\").replace('"', '\\"').replace("'", "\\'")
+                .replace("\n", "\\n").replace("\r", ""))
+
+
+def safe_href(url):
+    """Return the URL only when its scheme is safe to render in an anchor href.
+    Defends against javascript:/data:/vbscript: links smuggled in via curated data."""
+    if not isinstance(url, str):
+        return ""
+    u = url.strip()
+    if not u:
+        return ""
+    lower = u.lower()
+    if lower.startswith(("http://", "https://", "mailto:")):
+        return u
+    return ""
 
 
 def _numeric(val):
@@ -873,6 +904,63 @@ def _render_communicate_card(cf, level_labels):
 # ---------------------------------------------------------------------------
 # HTML generation
 # ---------------------------------------------------------------------------
+
+def _aggregate_competitors(competitors_by_prop):
+    """Deduplicate competitors across all propositions.
+
+    Input: data["competitors"] = {prop_slug: {competitors: [{name, source_url,
+    positioning, strengths[], weaknesses[], differentiation}, ...]}}.
+
+    Returns a list of dicts ordered by (appearance count desc, name asc):
+      {name, prop_slugs[], positionings[{prop_slug, text}],
+       differentiations[{prop_slug, text}], strengths[], weaknesses[], source_urls[]}
+    """
+    if not competitors_by_prop:
+        return []
+
+    by_key = {}
+    for prop_slug, comp_doc in competitors_by_prop.items():
+        if not isinstance(comp_doc, dict):
+            continue
+        for comp in comp_doc.get("competitors", []) or []:
+            if not isinstance(comp, dict):
+                continue
+            raw_name = (comp.get("name") or "").strip()
+            if not raw_name:
+                continue
+            key = raw_name.lower()
+            bucket = by_key.setdefault(key, {
+                "name": raw_name,
+                "prop_slugs": set(),
+                "positionings": [],
+                "differentiations": [],
+                "strengths": [],
+                "weaknesses": [],
+                "source_urls": [],
+            })
+            bucket["prop_slugs"].add(prop_slug)
+            pos = (comp.get("positioning") or "").strip()
+            if pos:
+                bucket["positionings"].append({"prop_slug": prop_slug, "text": pos})
+            diff = (comp.get("differentiation") or "").strip()
+            if diff:
+                bucket["differentiations"].append({"prop_slug": prop_slug, "text": diff})
+            bucket["strengths"].extend((s or "").strip() for s in comp.get("strengths") or [])
+            bucket["weaknesses"].extend((w or "").strip() for w in comp.get("weaknesses") or [])
+            url = (comp.get("source_url") or "").strip()
+            if url:
+                bucket["source_urls"].append(url)
+
+    out = []
+    for bucket in by_key.values():
+        bucket["prop_slugs"] = sorted(bucket["prop_slugs"])
+        bucket["strengths"] = [s for s in dict.fromkeys(bucket["strengths"]) if s]
+        bucket["weaknesses"] = [w for w in dict.fromkeys(bucket["weaknesses"]) if w]
+        bucket["source_urls"] = list(dict.fromkeys(bucket["source_urls"]))
+        out.append(bucket)
+    out.sort(key=lambda b: (-len(b["prop_slugs"]), b["name"].lower()))
+    return out
+
 
 def _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions):
     # Single source of truth for the four-state Feature x Market encoding
@@ -1051,6 +1139,13 @@ def generate_html(data, status, project_dir, theme):
     has_taxonomy = _tax.get("type") == "b2b-ict" and any(
         f.get("taxonomy_mapping", {}).get("category_id") for f in data["features"].values()
     )
+
+    source_registry = data.get("source_registry") or {}
+    has_source_registry = bool(source_registry.get("sources"))
+    context_index = data.get("context_index") or {}
+    has_context = bool(context_index.get("by_category")) or bool(context_index.get("entry_count"))
+    competitors_agg = _aggregate_competitors(data.get("competitors") or {})
+    has_competitive = bool(competitors_agg)
 
     entities_json = json.dumps({
         "products": data["products"],
@@ -2579,6 +2674,7 @@ body::after {{
 <nav class="topnav" id="topnav">
   <span class="nav-brand">{company_name}</span>
   <a href="#" data-section="Entity">Overview</a>
+  {'<a href="#" data-section="Source Freshness">Sources</a>' if has_source_registry else ''}
   <a href="#" data-section="Products">Products</a>
   {'<a href="#" data-section="Provider units">Provider units</a>' if scan_output else ''}
   <a href="#" data-section="Markets">Markets</a>
@@ -2586,7 +2682,9 @@ body::after {{
   {'<a href="#" data-section="Taxonomy">Taxonomy</a>' if has_taxonomy else ''}
   {'<a href="#" data-section="Anchor">Anchors</a>' if anchored_sts else ''}
   <a href="#" data-section="Customers">Customers</a>
+  {'<a href="#" data-section="Context Intelligence">Context</a>' if has_context else ''}
   <a href="#" data-section="Solutions">Solutions</a>
+  {'<a href="#" data-section="Competitive Landscape">Competitive</a>' if has_competitive else ''}
   <a href="#" data-section="Packages">Packages</a>
   <a href="#" data-section="Margin">Margins</a>
   {'<a href="#" data-section="Innovation">Pipeline</a>' if opportunities_data else ''}
@@ -2660,6 +2758,85 @@ body::after {{
 """
 
     html += """  </div>
+</div>
+"""
+
+    # --- Source Freshness ---
+    if has_source_registry:
+        sources = source_registry.get("sources", []) or []
+        total = len(sources)
+        docs = sum(1 for s in sources if s.get("type") == "document")
+        urls = sum(1 for s in sources if s.get("type") == "url")
+        by_status = {}
+        for s in sources:
+            by_status.setdefault(s.get("status") or "current", []).append(s)
+        n_current = len(by_status.get("current", []))
+        n_stale = len(by_status.get("stale", [])) + len(by_status.get("superseded", []))
+        n_unreachable = len(by_status.get("unreachable", []))
+
+        def _sids(items):
+            return ", ".join(s.get("source_id", "?") for s in items) or "—"
+
+        stale_title = escape_html(_sids(by_status.get("stale", []) + by_status.get("superseded", [])))
+        unreachable_title = escape_html(_sids(by_status.get("unreachable", [])))
+
+        pct_current = int(round((n_current / total) * 100)) if total else 0
+        cur_color = "var(--green)" if pct_current >= 80 else ("var(--yellow)" if pct_current >= 50 else "var(--red)")
+        stale_bar = int(round((n_stale / total) * 100)) if total else 0
+        unreach_bar = int(round((n_unreachable / total) * 100)) if total else 0
+
+        tracked = set()
+        for s in sources:
+            for e in s.get("entities", []) or []:
+                tracked.add(e)
+        n_tracked = len(tracked)
+
+        # Most-cited source = source with the longest entities[]
+        most_cited = max(
+            sources,
+            key=lambda s: len(s.get("entities") or []),
+            default=None,
+        )
+        most_cited_label = ""
+        if most_cited and (most_cited.get("entities") or []):
+            mc_id = escape_html(most_cited.get("source_id", ""))
+            mc_n = len(most_cited.get("entities") or [])
+            most_cited_label = f"most-cited: <code>{mc_id}</code> ({mc_n} entit{'ies' if mc_n != 1 else 'y'})"
+
+        updated = escape_html(source_registry.get("updated", ""))
+
+        html += f"""
+<!-- Source Freshness -->
+<div class="section reveal">
+  <div class="section-title">Source Freshness</div>
+  <div class="cards stagger">
+    <div class="card">
+      <div class="label">Total sources</div>
+      <div class="value">{total}</div>
+      <div class="sub">{docs} doc{'s' if docs != 1 else ''} &middot; {urls} URL{'s' if urls != 1 else ''}</div>
+    </div>
+    <div class="card">
+      <div class="label">Current</div>
+      <div class="value">{n_current}</div>
+      <div class="sub">{pct_current}% of total</div>
+      <div class="bar"><div class="fill" style="width:{pct_current}%;background:{cur_color}"></div></div>
+    </div>
+    <div class="card" title="{stale_title}">
+      <div class="label">Stale / Superseded</div>
+      <div class="value">{n_stale}</div>
+      <div class="sub">{'needs refresh' if n_stale else 'none'}</div>
+      <div class="bar"><div class="fill" style="width:{stale_bar}%;background:var(--yellow)"></div></div>
+    </div>
+    <div class="card" title="{unreachable_title}">
+      <div class="label">Unreachable</div>
+      <div class="value">{n_unreachable}</div>
+      <div class="sub">{'404 / timeout' if n_unreachable else 'none'}</div>
+      <div class="bar"><div class="fill" style="width:{unreach_bar}%;background:var(--red)"></div></div>
+    </div>
+  </div>
+  <div style="margin-top:14px;font-size:12px;color:var(--text2)">
+    {f'updated {updated} &middot; ' if updated else ''}entities tracked: {n_tracked}{f' &middot; {most_cited_label}' if most_cited_label else ''}
+  </div>
 </div>
 """
 
@@ -3271,6 +3448,86 @@ body::after {{
             html += "  </div>\n"
         html += "</div>\n"
 
+    # --- Context Intelligence ---
+    if has_context:
+        category_labels = {
+            "competitive": "Competitive",
+            "market": "Market",
+            "pricing": "Pricing",
+            "customer": "Customer",
+            "technical": "Technical",
+            "strategic": "Strategic",
+        }
+        confidence_cls = {"high": "fit-high", "medium": "fit-medium", "low": "fit-low"}
+        by_category = context_index.get("by_category", {}) or {}
+        entries = data.get("context_entries", {}) or {}
+        entry_count = context_index.get("entry_count") or len(entries)
+        updated_ctx = escape_html(context_index.get("updated", ""))
+        source_files = sorted({(e.get("source_file") or "") for e in entries.values() if e.get("source_file")})
+
+        # Canonical categories first, then any non-canonical extras
+        ordered_cats = [c for c in category_labels if by_category.get(c)]
+        ordered_cats += [c for c in by_category if c not in category_labels and by_category.get(c)]
+
+        html += f"""
+<!-- Context Intelligence -->
+<div class="section reveal">
+  <div class="section-title">Context Intelligence</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px;max-width:820px">
+    Institutional intelligence extracted from uploaded documents — competitive briefs,
+    pricing notes, customer interviews, strategy decks. Categorized for downstream skills.
+  </div>
+"""
+        for i, cat in enumerate(ordered_cats):
+            slugs = by_category.get(cat, []) or []
+            cat_entries = [entries[s] for s in slugs if s in entries]
+            if not cat_entries:
+                continue
+            label = category_labels.get(cat, cat.title())
+            initial_display = "block" if i == 0 else "none"
+            cat_id = "ctx-cat-" + re.sub(r"[^a-z0-9-]", "-", cat.lower())
+            html += f"""  <div class="product-group">
+    <div class="product-header" onclick="var d=document.getElementById('{cat_id}');d.style.display=d.style.display==='none'?'block':'none'">
+      <h4>{escape_html(label)}</h4>
+      <span class="badge">{len(cat_entries)} entr{'ies' if len(cat_entries) != 1 else 'y'}</span>
+    </div>
+    <div class="product-features" id="{cat_id}" style="display:{initial_display}">
+"""
+            for entry in cat_entries:
+                summary = extract_preview(entry.get("summary") or "", max_chars=240)
+                source_file = escape_html(entry.get("source_file", ""))
+                conf = (entry.get("confidence") or "").lower()
+                conf_cls = confidence_cls.get(conf, "")
+                conf_badge = (
+                    f'<span class="fit-badge {conf_cls}" style="margin-left:8px">{escape_html(conf)}</span>'
+                    if conf else ""
+                )
+                ent_links = entry.get("entities") or {}
+                chip_html = ""
+                for kind in ("products", "features", "markets"):
+                    for slug in ent_links.get(kind, []) or []:
+                        if slug:
+                            chip_html += f'<span class="stack-pill">{escape_html(kind[:-1])}: {escape_html(slug)}</span>'
+                chips_block = f'<div style="margin-top:6px">{chip_html}</div>' if chip_html else ''
+                html += f"""      <div class="profile-card">
+        <h5>{escape_html(summary or entry.get("slug", ""))}{conf_badge}</h5>
+        <div class="profile-meta">{source_file}</div>
+        {chips_block}
+      </div>
+"""
+            html += "    </div>\n  </div>\n"
+
+        # Footer
+        footer_bits = [f"entries: {entry_count}", f"sources: {len(source_files)}"]
+        if updated_ctx:
+            footer_bits.append(f"updated: {updated_ctx}")
+        html += (
+            '  <div style="margin-top:14px;font-size:12px;color:var(--text2)">'
+            + ' &middot; '.join(footer_bits)
+            + '</div>\n'
+        )
+        html += "</div>\n"
+
     # --- Solutions & Pricing ---
     if data["solutions"]:
         # Build blueprint version lookup from products
@@ -3437,6 +3694,76 @@ body::after {{
 """
             html += "      </tbody>\n    </table>\n  </div>\n"
 
+        html += "</div>\n"
+
+    # --- Competitive Landscape ---
+    if has_competitive:
+        html += f"""
+<!-- Competitive Landscape -->
+<div class="section reveal">
+  <div class="section-title">Competitive Landscape</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px;max-width:820px">
+    Deduplicated across {len(competitors_agg)} competitor{'s' if len(competitors_agg) != 1 else ''} drawn from per-proposition <code>competitors/*.json</code>.
+    Click a proposition chip to drill into that proposition.
+  </div>
+"""
+        for comp in competitors_agg:
+            name = escape_html(comp["name"])
+            prop_slugs = comp["prop_slugs"]
+            count = len(prop_slugs)
+            count_badge = f'<span class="badge" style="margin-left:8px">{count} proposition{"s" if count != 1 else ""}</span>'
+
+            prop_chips = "".join(
+                f'<span class="stack-pill" style="cursor:pointer" '
+                f'onclick="openProposition(\'{escape_js_string(ps)}\')" '
+                f'title="Open proposition">{escape_html(ps)}</span>'
+                for ps in prop_slugs
+            )
+
+            positioning_html = ""
+            if comp["positionings"]:
+                # Show the first (longest-ish) positioning to keep the card compact
+                first = comp["positionings"][0]
+                positioning_html = f'<div class="comp-detail">{escape_html(first["text"])}</div>'
+
+            differentiation_html = ""
+            if comp["differentiations"]:
+                first_diff = comp["differentiations"][0]
+                differentiation_html = (
+                    f'<div class="comp-detail" style="color:var(--accent-dark);margin-top:4px">'
+                    f'{escape_html(first_diff["text"])}</div>'
+                )
+
+            pills = ""
+            for s in comp["strengths"]:
+                pills += f'<span class="comp-pill strength">{escape_html(s)}</span>'
+            for w in comp["weaknesses"]:
+                pills += f'<span class="comp-pill weakness">{escape_html(w)}</span>'
+            pills_html = f'<div class="comp-pills">{pills}</div>' if pills else ""
+
+            source_links = ""
+            for url in comp["source_urls"]:
+                safe = safe_href(url)
+                if not safe:
+                    continue
+                source_links += (
+                    f' <a href="{escape_html(safe)}" target="_blank" rel="noopener" '
+                    f'style="color:var(--accent-dark);font-size:11px;margin-right:8px">[source]</a>'
+                )
+            sources_html = (
+                f'<div style="margin-top:6px;font-size:11px;color:var(--text2)">Sources:{source_links}</div>'
+                if source_links else ""
+            )
+
+            html += f"""  <div class="competitor-card">
+    <h5>{name}{count_badge}</h5>
+    {positioning_html}
+    {differentiation_html}
+    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">{prop_chips}</div>
+    {pills_html}
+    {sources_html}
+  </div>
+"""
         html += "</div>\n"
 
     # --- Packages ---
