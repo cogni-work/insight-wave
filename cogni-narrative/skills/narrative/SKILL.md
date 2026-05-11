@@ -28,7 +28,7 @@ Transform input markdown files into a structured executive narrative using one o
 | `--arc-id` | No | Explicit arc selection; overrides auto-detection |
 | `--language` | No | Output language: `en` (default) or `de`. Fallback chain: explicit parameter > project metadata > workspace preference (`.workspace-config.json`) > content detection > `en` |
 | `--output-path` | No | Output file path; defaults to `insight-summary.md` in source directory |
-| `--project-path` | No | Research project directory; enables loading entity data beyond source path |
+| `--project-path` | No | Research project root; enables arc inheritance from `.metadata/project-config.json` (Phase 1 step 8) and loading entity data beyond source path. When omitted, Phase 1 step 8 probes `<source-path>/..` and `<source-path>/../..` to auto-detect a cogni-research project root |
 | `--research-question` | No | Original research question for narrative hook framing |
 | `--target-length` | No | Target total word count as a single number (e.g., `2500`). System applies +/-15% band to derive the acceptable range. Default: `1675` (yields ~1,424-1,926 words). Recommended: 800-4,000 — outside this range, arc rhetorical structure may not scale well |
 | `--content-map` | No | YAML map of content category keys to file/directory paths for additional context |
@@ -149,6 +149,17 @@ After running the bridge, redirect `--source-path` to the `narrative-input/` dir
 5. If `--research-question` provided, store it for hook construction.
 6. Parse `--target-length` if provided (single integer). Compute the acceptable range: `total_lower = target * 0.85`, `total_upper = target * 1.15`. If omitted, default to `target = 1675` (range 1424-1926). Store `target_length`, `total_lower`, `total_upper`.
 7. Build a mental CONTENT_REGISTRY: list of loaded files with titles, word counts, key sections, category tags.
+8. **Resolve arc inheritance from a source cogni-research project.** Probe up to three candidate roots in order — `--project-path` (when provided), then `<source-path>/..` (handles `--source-path <project>/output/`), then `<source-path>/../..` (handles `--source-path <project>/output/report.md`). First candidate with a readable `.metadata/project-config.json` wins; the jq call returns empty on missing file, so no separate existence check:
+
+   ```bash
+   for CANDIDATE in "${PROJECT_PATH:+$PROJECT_PATH}" "${SOURCE_PATH}/.." "${SOURCE_PATH}/../.."; do
+     [[ -z "$CANDIDATE" ]] && continue
+     ARC=$(jq -r '.story_arc_id // empty' "$CANDIDATE/.metadata/project-config.json" 2>/dev/null)
+     [[ -n "$ARC" ]] && { PROJECT_ROOT="$CANDIDATE"; INHERITED_ARC="$ARC"; break; }
+   done
+   ```
+
+   If `INHERITED_ARC` is set AND not `standard-research`, store as `inherited_arc_id` for Phase 2 and log: `Inheriting story_arc_id="<INHERITED_ARC>" from <PROJECT_ROOT>`. Otherwise skip silently. Mirrors `cogni-visual:enrich-report` Phase 0's parent-of-source-path detection with a narrower scope (only `.metadata/project-config.json` is checked).
 
 **Before moving on,** make sure you can answer: How many files loaded? What are the 2-3 dominant themes? What is the approximate total word count? If you can't answer these, you haven't internalized the source material yet.
 
@@ -161,12 +172,13 @@ After running the bridge, redirect `--source-path` to the `narrative-input/` dir
 The arc registry contains the detection algorithm, keyword sets, and content-type mappings. Read it before selecting an arc -- the detection logic lives there, not here.
 
 **Selection priority:**
-1. If `--arc-id` provided, use it directly
-2. If `narrative-config.json` contains `content_type`, apply detection algorithm from arc-registry
-3. If neither, analyze loaded content for keyword density using detection algorithm
-4. Fallback: `corporate-visions`
+1. If `--arc-id` provided, use it directly. `detection_reason = "explicit --arc-id parameter"`.
+2. If `inherited_arc_id` was resolved in Phase 1 step 8, use it. `detection_reason = "inherited from source research project: <PROJECT_ROOT>"`.
+3. If `narrative-config.json` contains `content_type`, apply detection algorithm from arc-registry. `detection_reason = "content_type mapping from narrative-config.json"`.
+4. If none of the above, analyze loaded content for keyword density using detection algorithm. `detection_reason = "keyword density analysis"`.
+5. Fallback: `corporate-visions`. `detection_reason = "default fallback"`.
 
-Present selected arc to user for confirmation using AskUserQuestion. Show the detected arc with detection reason and offer alternatives. Accept user confirmation or override.
+Present selected arc to user for confirmation using AskUserQuestion. Show the detected arc with detection reason and offer alternatives. For priority-2 picks, label the prompt "Inherited from source research project — preserves the long-form report's arc". Accept user confirmation or override.
 
 Store: `arc_id`, `arc_display_name`, `detection_reason`
 

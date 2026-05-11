@@ -28,7 +28,7 @@
     {
       "name": "cogni-narrative",
       "source": "./cogni-narrative",
-      "version": "0.10.0",
+      "version": "0.10.1",
       "maturity": "preview",
       "description": "Story arc engine for the insight-wave ecosystem. Transforms structured research and portfolio output into executive-grade narratives using 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, Smarter Service + 6 more) and 8 narrative techniques. Sits between cogni-research and cogni-copywriting, feeding cogni-visual, cogni-sales, and cogni-marketing. Includes narrative review scoring (0-100, A-F) and derivative-format adaptation (executive brief, talking points, one-pager). Bilingual EN/DE.",
       "keywords": [
@@ -171,7 +171,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.7.26",
+      "version": "0.7.27",
       "maturity": "preview",
       "description": "Multi-agent research report generator with localized search across 21 European, Anglo, LATAM, and APAC markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR, CN) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [

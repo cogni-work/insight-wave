@@ -45,7 +45,11 @@ If no projects are found, tell the user no research project was found in this wo
 Since cogni-research has no `project-status.sh`, read the project state directly from files. Gracefully skip any file that does not exist — the project may be in an early phase.
 
 **A. Read `.metadata/project-config.json`:**
-- `topic`, `report_type`, `output_language` (fall back to `language`), `market`, `tone`, `citation_format`, `report_source`, `researcher_role`, `created_at`
+- `topic`, `report_type`, `output_language` (fall back to `language`), `market`, `tone`, `citation_format`, `report_source`, `researcher_role`, `created_at`, `story_arc_id` (defaults to `"standard-research"` when absent — matches `initialize-project.sh` behaviour)
+
+**A2. When `story_arc_id` is non-default** (the registry's default arc has `dynamic_elements: true` — currently `"standard-research"`), read `${CLAUDE_PLUGIN_ROOT}/references/story-arcs.json` and extract `arcs[<story_arc_id>].display_name` (`display_name_de` for `de`) and the ordered element headings `arcs[<story_arc_id>].elements[].heading_en` (`heading_de` for `de`), skipping elements whose heading is `null`. Same join used by `cogni-research/skills/research-report/SKILL.md` Phase 1.5a (Structure-line resolution) and `cogni-research/agents/writer.md` (heading selection) — the registry is the single source of truth.
+
+Steps 3A, 3A2 (when applicable), and 3B read independent files — issue them as a single parallel Read batch.
 
 **B. Read `.metadata/execution-log.json`** (may not exist for freshly initialized projects):
 - `phases` object — check each phase key for its `status` field:
@@ -99,8 +103,17 @@ Show a concise, scannable summary. Keep the tone warm and oriented toward action
 Research Project: {topic}
 Type: {report_type} | Source: {report_source} | Tone: {tone}
 Market: {market_headline}  |  Language: {output_language} | Citations: {citation_format}
+{arc_line — see below}
 Created: {created_at}
 ```
+
+Render `{arc_line}` only when the arc is non-default. Format:
+
+```
+Story arc: {story_arc_id} ({arc_display_name}) — report is structured around: {element_headings_joined_by_arrow}
+```
+
+Example: `Story arc: corporate-visions (Corporate Visions) — report is structured around: Why Change → Why Now → Why You → Why Pay`. Skip the row entirely when the arc is the default.
 
 Resolve `{market_headline}` by shelling out to `${CLAUDE_PLUGIN_ROOT}/scripts/market-summary.py {market} --format headline`. The helper returns a single line like `DACH (DE/AT/CH) — 27 authority domains (fraunhofer.de, bitkom.org, vdma.org +24 more); bilingual DE/EN search`. Substitute that into the Market field verbatim. Returning visitors who set up a project days ago should not have to remember what `dach` means — the dashboard names the region, shows the curation count, and previews the top domains. If the script fails for any reason, fall back to the bare `{market}` code so the dashboard still renders.
 
@@ -196,36 +209,43 @@ When the project is fully complete (report finalized + claims verified or user c
 
 For each downstream action below, check its Step 3G signal. Already-completed actions: acknowledge briefly (e.g., "Report already polished") but do not offer to re-run. Available actions: present as actionable next steps with dispatch offer.
 
-**Path A — Polish & Visualize** (keeps the research report format):
-1. `cogni-copywriting:copywrite` — Polish report for executive readability (BLUF, tighter prose, consistent tone)
-   - If `copywrite_applied` is true: show "Report already polished" instead of offering this step
-2. `cogni-visual:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the report (Pencil-rendered header with 10-step distillation, 4-layer validation, reviewer agent)
-   - Why before enrich-report: this produces the validated infographic header that enrich-report reuses. Without it, enrich-report falls back to a simplified inline distillation — fewer validation steps, no reviewer pass, hardcoded to economist preset.
-   - If `infographic_applied` is true: show "Infographic already rendered" instead of offering this step
-3. `cogni-visual:enrich-report` — Themed HTML with interactive charts and concept diagrams (reuses the infographic from step 2 as report header)
-   - If `enrich_report_applied` (from execution-log) or `enrich_report_standalone` is true: show "Enriched HTML already generated" instead
+Branch the rendered menu on `story_arc_id` (Step 3A): non-default arcs get the polish-first menu (Branch 1); the default arc gets the parallel Path A / Path B menu (Branch 2).
+
+#### Visual pipeline template (used by both branches)
+
+> **Visual pipeline:**
+> 1. `/copywrite` — Polish for executive readability (BLUF, tighter prose). Arc structure preserved when arc-shaped.
+> 2. `/story-to-infographic` + `/render-infographic` — Editorial infographic header (Pencil, 10-step validated, reviewer agent). Produces the validated header that `/enrich-report` reuses; without it, enrich-report falls back to a simplified inline distillation.
+> 3. `/enrich-report` — Themed HTML with charts and concept diagrams (reuses infographic from step 2 as report header)
+
+Done-state markers: `~~/copywrite~~ Done` etc., driven by Step 3G signals (`copywrite_applied`, `infographic_applied`, `enrich_report_applied` / `enrich_report_standalone`). Keep the full sequence visible.
+
+#### Branch 1 — Non-default arc
+
+Render the **Visual pipeline template** as the recommended next step. Open with: *"Polish the prose and visualise — don't re-transform what's already arc-shaped."*
+
+> **Optional compression** (only when you also need a tighter executive memo):
+> - `/cogni-narrative:narrative` — Compress your `{story_arc_id}`-shaped report into a ~1,700-word executive summary. The arc inherits automatically from this project (no `--arc-id` needed); the memo preserves the same arc structure as the long-form report.
+>   - If `narrative_applied`: show "Narrative already generated (output/insight-summary.md)" instead
+>   - Post-narrative polish (`narrative_polished` → `output/.insight-summary.md`) and enrichment (`narrative_enriched` → `output/insight-summary-enriched.html`) follow the same dual-track pattern
+
+#### Branch 2 — Default arc
+
+**Path A — Polish & Visualize:** render the **Visual pipeline template** above.
 
 **Path B — Narrative transformation** (converts to story-arc document):
-- `cogni-narrative:narrative` — Transform into executive narrative with story arc framework
-  - If `narrative_applied` is true: show "Narrative already generated (output/insight-summary.md)" instead
-- After narrative: optionally polish with `cogni-copywriting:copywrite`, then visualize with `cogni-visual:enrich-report`
-  - Post-narrative polish: detected via `narrative_polished` (`output/.insight-summary.md` exists)
-  - Post-narrative enrichment: detected via `narrative_enriched` (`output/insight-summary-enriched.html` exists)
+- `/cogni-narrative:narrative` — Transform into executive narrative with story arc framework
+  - If `narrative_applied`: show "Narrative already generated (output/insight-summary.md)" instead
+- After narrative: optionally polish with `/copywrite`, then visualize with `/enrich-report`
+  - `narrative_polished` → `output/.insight-summary.md`
+  - `narrative_enriched` → `output/insight-summary-enriched.html`
 
-**Other:**
+#### Other (both branches)
+
 - `verify-report` — Verify claims against cited sources (if not yet done)
 - `research-setup` — Start a new research project
 
-If all downstream actions have been completed, say so explicitly: "All downstream processing complete — report polished, narrative generated, enriched HTML produced." Offer only `research-setup` as the next action.
-
-Present all available Path A steps in pipeline order using this template:
-
-> **Visual pipeline** (recommended order):
-> 1. `/copywrite` — Polish for executive readability
-> 2. `/story-to-infographic` + `/render-infographic` — Infographic header (Pencil, 10-step validated)
-> 3. `/enrich-report` — Themed HTML with charts (reuses infographic from step 2)
-
-For already-completed steps, show them as done (e.g., "~~`/copywrite`~~ Done") but keep the full sequence visible so the user sees where they are. Offer to proceed with the next available step.
+If all downstream actions have been completed, say so explicitly ("All downstream processing complete — report polished, narrative generated, enriched HTML produced") and offer only `research-setup`.
 
 ## Phase Reference
 
