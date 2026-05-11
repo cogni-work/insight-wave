@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import sys
+from collections import namedtuple
 from pathlib import Path
 
 
@@ -39,70 +40,60 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PLUGIN_ROOT = SCRIPT_DIR.parent
 REGISTRY_PATH = PLUGIN_ROOT / "references" / "supported-markets-registry.json"
 
-SUPPORTED_PLUGINS = ("portfolio", "research", "trends")
+_SiblingPlugin = namedtuple("_SiblingPlugin", ("dir_name", "env_var", "overlay_relpath"))
 
-_SIBLING_OVERLAY_RELPATHS = {
-    "research": Path("references/market-sources.json"),
-    "trends":   Path("skills/trend-research/references/region-authority-sources.json"),
-    "portfolio": None,
+_SIBLINGS = {
+    "portfolio": _SiblingPlugin("cogni-portfolio", "PORTFOLIO_PLUGIN_ROOT", None),
+    "research":  _SiblingPlugin("cogni-research",  "RESEARCH_PLUGIN_ROOT",
+                                Path("references/market-sources.json")),
+    "trends":    _SiblingPlugin("cogni-trends",    "TRENDS_PLUGIN_ROOT",
+                                Path("skills/trend-research/references/region-authority-sources.json")),
 }
-
-_SIBLING_PLUGIN_NAMES = {
-    "research": "cogni-research",
-    "trends":   "cogni-trends",
-    "portfolio": "cogni-portfolio",
-}
-
-_SIBLING_ENV_VARS = {
-    "research": "RESEARCH_PLUGIN_ROOT",
-    "trends":   "TRENDS_PLUGIN_ROOT",
-    "portfolio": "PORTFOLIO_PLUGIN_ROOT",
-}
+SUPPORTED_PLUGINS = tuple(sorted(_SIBLINGS.keys()))
 
 
-def _resolve_sibling_plugin(name):
+def _resolve_sibling_plugin(meta):
     """Return sibling plugin root, or None if unresolvable.
 
     Three-layer fallback, mirrors cogni-research/scripts/market-summary.py:
       1. {NAME}_PLUGIN_ROOT env var (e.g. RESEARCH_PLUGIN_ROOT)
       2. Latest version dir under ~/.claude/plugins/cache/insight-wave/<name>/
       3. Monorepo sibling: PLUGIN_ROOT.parent / <name>
-    Resolution is confirmed by checking that the overlay file exists at
-    the candidate root — that way half-installed or empty dirs don't win.
+    A candidate wins only if the overlay file exists under it — that way
+    half-installed or empty dirs don't win. Caller is responsible for
+    ensuring meta.overlay_relpath is non-None (see _overlay_path).
     """
-    plugin_dir = _SIBLING_PLUGIN_NAMES[name]
-    env_var = _SIBLING_ENV_VARS[name]
-    sentinel = _SIBLING_OVERLAY_RELPATHS[name]
+    sentinel = meta.overlay_relpath
 
-    explicit = os.environ.get(env_var)
+    explicit = os.environ.get(meta.env_var)
     if explicit:
         cand = Path(explicit)
-        if sentinel is None or (cand / sentinel).exists():
+        if (cand / sentinel).exists():
             return cand
 
-    cache = Path.home() / ".claude/plugins/cache/insight-wave" / plugin_dir
-    if cache.exists():
+    cache = Path.home() / ".claude/plugins/cache/insight-wave" / meta.dir_name
+    try:
         for cand in sorted(cache.iterdir(), reverse=True):
-            if not cand.is_dir():
-                continue
-            if sentinel is None or (cand / sentinel).exists():
+            if cand.is_dir() and (cand / sentinel).exists():
                 return cand
+    except FileNotFoundError:
+        pass
 
-    monorepo = PLUGIN_ROOT.parent / plugin_dir
-    if monorepo.exists() and (sentinel is None or (monorepo / sentinel).exists()):
+    monorepo = PLUGIN_ROOT.parent / meta.dir_name
+    if (monorepo / sentinel).exists():
         return monorepo
 
     return None
 
 
 def _overlay_path(plugin):
-    relpath = _SIBLING_OVERLAY_RELPATHS.get(plugin)
-    if relpath is None:
+    meta = _SIBLINGS.get(plugin)
+    if meta is None or meta.overlay_relpath is None:
         return None
-    root = _resolve_sibling_plugin(plugin)
+    root = _resolve_sibling_plugin(meta)
     if root is None:
         return None
-    return root / relpath
+    return root / meta.overlay_relpath
 
 # Registry's `regional_qualifiers` (narrative format, e.g. "in DACH region")
 # is intentionally distinct from plugins' `region_qualifiers` (search-query
