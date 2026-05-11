@@ -930,21 +930,19 @@ def _aggregate_competitors(competitors_by_prop):
             diff = (comp.get("differentiation") or "").strip()
             if diff:
                 bucket["differentiations"].append({"prop_slug": prop_slug, "text": diff})
-            for s in comp.get("strengths") or []:
-                s_clean = (s or "").strip()
-                if s_clean and s_clean not in bucket["strengths"]:
-                    bucket["strengths"].append(s_clean)
-            for w in comp.get("weaknesses") or []:
-                w_clean = (w or "").strip()
-                if w_clean and w_clean not in bucket["weaknesses"]:
-                    bucket["weaknesses"].append(w_clean)
+            bucket["strengths"].extend((s or "").strip() for s in comp.get("strengths") or [])
+            bucket["weaknesses"].extend((w or "").strip() for w in comp.get("weaknesses") or [])
             url = (comp.get("source_url") or "").strip()
-            if url and url not in bucket["source_urls"]:
+            if url:
                 bucket["source_urls"].append(url)
 
     out = []
     for bucket in by_key.values():
         bucket["prop_slugs"] = sorted(bucket["prop_slugs"])
+        # Dedup while preserving first-occurrence order (drop empty strings)
+        bucket["strengths"] = [s for s in dict.fromkeys(bucket["strengths"]) if s]
+        bucket["weaknesses"] = [w for w in dict.fromkeys(bucket["weaknesses"]) if w]
+        bucket["source_urls"] = list(dict.fromkeys(bucket["source_urls"]))
         out.append(bucket)
     out.sort(key=lambda b: (-len(b["prop_slugs"]), b["name"].lower()))
     return out
@@ -2755,10 +2753,9 @@ body::after {{
         total = len(sources)
         docs = sum(1 for s in sources if s.get("type") == "document")
         urls = sum(1 for s in sources if s.get("type") == "url")
-        by_status = {"current": [], "superseded": [], "stale": [], "unreachable": []}
+        by_status = {}
         for s in sources:
-            st = s.get("status") or "current"
-            by_status.setdefault(st, []).append(s)
+            by_status.setdefault(s.get("status") or "current", []).append(s)
         n_current = len(by_status.get("current", []))
         n_stale = len(by_status.get("stale", [])) + len(by_status.get("superseded", []))
         n_unreachable = len(by_status.get("unreachable", []))
@@ -3454,12 +3451,9 @@ body::after {{
         updated_ctx = escape_html(context_index.get("updated", ""))
         source_files = sorted({(e.get("source_file") or "") for e in entries.values() if e.get("source_file")})
 
-        # Ordered categories: standard categories first (in canonical order),
-        # then any non-canonical ones
-        ordered_cats = [c for c in category_labels.keys() if by_category.get(c)]
-        for c in by_category.keys():
-            if c not in ordered_cats and by_category.get(c):
-                ordered_cats.append(c)
+        # Canonical categories first, then any non-canonical extras
+        ordered_cats = [c for c in category_labels if by_category.get(c)]
+        ordered_cats += [c for c in by_category if c not in category_labels and by_category.get(c)]
 
         html += f"""
 <!-- Context Intelligence -->
@@ -3486,9 +3480,7 @@ body::after {{
     <div class="product-features" id="{cat_id}" style="display:{initial_display}">
 """
             for entry in cat_entries:
-                summary = (entry.get("summary") or "").strip()
-                if len(summary) > 240:
-                    summary = summary[:237].rstrip() + "…"
+                summary = extract_preview(entry.get("summary") or "", max_chars=240)
                 source_file = escape_html(entry.get("source_file", ""))
                 conf = (entry.get("confidence") or "").lower()
                 conf_cls = confidence_cls.get(conf, "")
