@@ -905,6 +905,15 @@ def _render_communicate_card(cf, level_labels):
 # HTML generation
 # ---------------------------------------------------------------------------
 
+def _split_pair(slug):
+    # Proposition slugs are canonical "{feature-slug}--{market-slug}".
+    # rsplit handles features whose slug contains "--" defensively.
+    if "--" not in slug:
+        return slug, ""
+    f, m = slug.rsplit("--", 1)
+    return f, m
+
+
 def _aggregate_competitors(competitors_by_prop):
     """Deduplicate competitors across all propositions.
 
@@ -979,11 +988,12 @@ def _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions,
     # competitors_by_prop is data["competitors"] keyed by proposition slug;
     # the cell is the F x M pair, which IS the proposition slug for non-excluded
     # cells, so a per-cell competitor count is just a dict lookup + len().
-    comp_doc = (competitors_by_prop or {}).get(pair) if competitors_by_prop else None
     comp_n = 0
-    if isinstance(comp_doc, dict):
-        comps = comp_doc.get("competitors") or []
-        comp_n = sum(1 for c in comps if isinstance(c, dict) and (c.get("name") or "").strip())
+    if competitors_by_prop:
+        comp_doc = competitors_by_prop.get(pair)
+        if isinstance(comp_doc, dict):
+            comps = comp_doc.get("competitors") or []
+            comp_n = sum(1 for c in comps if isinstance(c, dict) and (c.get("name") or "").strip())
 
     if pair in excluded_set:
         return {
@@ -1062,14 +1072,14 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
                 # Compressed cells are too small for a number; mark presence with a corner dot.
                 comp_marker = '<span class="coverage-cell-comp-dot" aria-hidden="true"></span>' if comp_n else ''
                 comp_suffix = f' &middot; {comp_n} competitor{"s" if comp_n != 1 else ""}' if comp_n else ''
+                mslug = _split_pair(pair)[1]
                 if st["kind"] == "excluded":
                     cells.append(
                         f'<button type="button" class="coverage-cell excluded" '
-                        f'title="{escape_html(fname)} &times; {escape_html(pair.split("--", 1)[1])} &mdash; {escape_html(st["title"])}{comp_suffix}" '
+                        f'title="{escape_html(fname)} &times; {escape_html(mslug)} &mdash; {escape_html(st["title"])}{comp_suffix}" '
                         f'aria-label="Excluded">{comp_marker}</button>'
                     )
                 else:
-                    mslug = pair.split("--", 1)[1]
                     mname = escape_html(data["markets"].get(mslug, {}).get("name", mslug))
                     state_label = st["kind"]
                     cells.append(
@@ -1103,7 +1113,7 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
                         f'title="{escape_html(st["title"])}{comp_suffix}">{comp_badge}</button></td>'
                     )
                 else:
-                    mslug = pair.split("--", 1)[1]
+                    mslug = _split_pair(pair)[1]
                     mname = escape_html(data["markets"].get(mslug, {}).get("name", mslug))
                     cells.append(
                         f'<td><button type="button" class="coverage-cell-inline {st["cls"]}" '
@@ -3265,40 +3275,71 @@ body::after {{
   </div>
 """
 
-        def _split_pair(slug):
-            # Proposition slugs are canonical "{feature-slug}--{market-slug}".
-            # rsplit handles features whose slug contains "--" defensively.
-            if "--" not in slug:
-                return slug, ""
-            f, m = slug.rsplit("--", 1)
-            return f, m
-
-        def _fm_chips(slug, prefix_label=False):
+        def _fm_chips(slug):
             fs, ms = _split_pair(slug)
             fname = data["features"].get(fs, {}).get("name", fs) if fs else ""
             mname = data["markets"].get(ms, {}).get("name", ms) if ms else ""
-            f_label = (f'feature: {fname}' if prefix_label else fname) if fname else ""
-            m_label = (f'market: {mname}' if prefix_label else mname) if mname else ""
             chips = ""
-            if f_label:
-                chips += f'<span class="stack-pill">{escape_html(f_label)}</span>'
-            if m_label:
-                chips += f'<span class="stack-pill">{escape_html(m_label)}</span>'
+            if fname:
+                chips += f'<span class="stack-pill">{escape_html(fname)}</span>'
+            if mname:
+                chips += f'<span class="stack-pill">{escape_html(mname)}</span>'
             return chips
+
+        def _per_cell_details(entries, label, css_class, summary_color, detail_style=""):
+            # Render a <details>/<summary> block listing one <li> per F x M cell
+            # the competitor appears in. Used by both positioning and differentiation
+            # which differ only in label, color, and an optional detail-text style.
+            if not entries:
+                return ""
+            preview = entries[0]["text"]
+            if len(preview) > 220:
+                preview = preview[:217].rstrip() + "…"
+            n = len(entries)
+            items = "".join(
+                f'<li style="margin-bottom:8px">'
+                f'<div style="margin-bottom:4px">{_fm_chips(p["prop_slug"])}</div>'
+                f'<div class="comp-detail"{detail_style}>{escape_html(p["text"])}</div>'
+                f'</li>'
+                for p in entries
+            )
+            return (
+                f'<details class="{css_class}" style="margin-top:6px">'
+                f'<summary style="cursor:pointer;color:{summary_color};font-size:12px">'
+                f'{label} across {n} cell{"s" if n != 1 else ""} &mdash; '
+                f'<span style="color:var(--text)">{escape_html(preview)}</span>'
+                f'</summary>'
+                f'<ul style="margin:8px 0 0 0;padding:0;list-style:none">{items}</ul>'
+                f'</details>'
+            )
+
+        def _origin_pill(text, sources, cls):
+            origin = ", ".join(sources) if sources else ""
+            title_attr = f' title="appears in: {escape_html(origin)}"' if origin else ""
+            return f'<span class="comp-pill {cls}"{title_attr}>{escape_html(text)}</span>'
 
         for comp in competitors_agg:
             name = escape_html(comp["name"])
             prop_slugs = comp["prop_slugs"]
             count = len(prop_slugs)
 
-            # F x M footprint summary: distinct features and markets this competitor touches.
+            # Single pass over prop_slugs: compute the F x M footprint and build
+            # the drill-down chips that open the per-proposition drawer.
             feature_set, market_set = set(), set()
+            prop_chips_parts = []
             for ps in prop_slugs:
                 fs, ms = _split_pair(ps)
                 if fs:
                     feature_set.add(fs)
                 if ms:
                     market_set.add(ms)
+                prop_chips_parts.append(
+                    f'<span class="stack-pill" style="cursor:pointer" '
+                    f'onclick="openProposition(\'{escape_js_string(ps)}\')" '
+                    f'title="Open proposition for {escape_html(ps)}">{escape_html(ps)}</span>'
+                )
+            prop_chips = "".join(prop_chips_parts)
+
             footprint_summary = (
                 f'<span class="badge" style="margin-left:8px">'
                 f'{count} cell{"s" if count != 1 else ""} '
@@ -3307,73 +3348,15 @@ body::after {{
                 f'</span>'
             )
 
-            # Drill-down proposition chips (click opens existing per-proposition drawer).
-            prop_chips = "".join(
-                f'<span class="stack-pill" style="cursor:pointer" '
-                f'onclick="openProposition(\'{escape_js_string(ps)}\')" '
-                f'title="Open proposition for {escape_html(ps)}">{escape_html(ps)}</span>'
-                for ps in prop_slugs
+            positioning_html = _per_cell_details(
+                comp["positionings"], "Positioning",
+                "comp-positionings", "var(--text2)",
             )
-
-            # Positioning per cell (F2). Use a <details> so the card stays compact
-            # by default but the per-cell variation is one click away.
-            positionings = comp["positionings"]
-            positioning_html = ""
-            if positionings:
-                preview = positionings[0]["text"]
-                if len(preview) > 220:
-                    preview = preview[:217].rstrip() + "…"
-                items = "".join(
-                    f'<li style="margin-bottom:8px">'
-                    f'<div style="margin-bottom:4px">{_fm_chips(p["prop_slug"])}</div>'
-                    f'<div class="comp-detail">{escape_html(p["text"])}</div>'
-                    f'</li>'
-                    for p in positionings
-                )
-                positioning_html = (
-                    f'<details class="comp-positionings" style="margin-top:6px">'
-                    f'<summary style="cursor:pointer;color:var(--text2);font-size:12px">'
-                    f'Positioning across {len(positionings)} cell{"s" if len(positionings) != 1 else ""} &mdash; '
-                    f'<span style="color:var(--text)">{escape_html(preview)}</span>'
-                    f'</summary>'
-                    f'<ul style="margin:8px 0 0 0;padding:0;list-style:none">{items}</ul>'
-                    f'</details>'
-                )
-
-            # Differentiation per cell — same treatment.
-            diffs = comp["differentiations"]
-            differentiation_html = ""
-            if diffs:
-                preview = diffs[0]["text"]
-                if len(preview) > 220:
-                    preview = preview[:217].rstrip() + "…"
-                items = "".join(
-                    f'<li style="margin-bottom:8px">'
-                    f'<div style="margin-bottom:4px">{_fm_chips(p["prop_slug"])}</div>'
-                    f'<div class="comp-detail" style="color:var(--accent-dark)">{escape_html(p["text"])}</div>'
-                    f'</li>'
-                    for p in diffs
-                )
-                differentiation_html = (
-                    f'<details class="comp-differentiations" style="margin-top:4px">'
-                    f'<summary style="cursor:pointer;color:var(--accent-dark);font-size:12px">'
-                    f'Differentiation across {len(diffs)} cell{"s" if len(diffs) != 1 else ""} &mdash; '
-                    f'<span style="color:var(--text)">{escape_html(preview)}</span>'
-                    f'</summary>'
-                    f'<ul style="margin:8px 0 0 0;padding:0;list-style:none">{items}</ul>'
-                    f'</details>'
-                )
-
-            # Strength/weakness pills with prop_slug origin tooltips (F3).
-            def _origin_pill(text, sources, cls):
-                origin = ", ".join(sources) if sources else ""
-                title_attr = (
-                    f' title="appears in: {escape_html(origin)}"'
-                    if origin else ""
-                )
-                return (
-                    f'<span class="comp-pill {cls}"{title_attr}>{escape_html(text)}</span>'
-                )
+            differentiation_html = _per_cell_details(
+                comp["differentiations"], "Differentiation",
+                "comp-differentiations", "var(--accent-dark)",
+                detail_style=' style="color:var(--accent-dark)"',
+            )
 
             pills = "".join(_origin_pill(t, srcs, "strength")
                             for t, srcs in comp["strengths"].items())
