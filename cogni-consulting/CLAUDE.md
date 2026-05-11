@@ -75,6 +75,7 @@ Each phase skill has a section describing the HMW-specific workflow scaled to co
 | `engagement-init.sh` | Create engagement directory structure |
 | `engagement-status.sh` | Read consulting-project.json + plugin states → JSON |
 | `update-phase.sh` | Transition phase state with validation |
+| `discover-projects.sh` | Find engagements via workspace walk-up + global registry (`--json`, `--root`, `--register`, `--unregister`) |
 
 All scripts use JSON output: `{"success": bool, "data": {...}, "error": "string"}`.
 All scripts are stdlib-only (bash + python3, no pip dependencies).

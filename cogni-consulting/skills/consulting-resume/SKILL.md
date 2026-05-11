@@ -33,22 +33,25 @@ Diamond engagements span multiple sessions and phases. Without a clear re-entry 
 
 ### 1. Find Diamond Engagements
 
-**Determine the workspace root** before scanning. The workspace root is the directory that contains the `cogni-consulting/` engagement folder (which holds one or more `{slug}/consulting-project.json` engagements). Check in this order:
-
-1. `$PROJECT_AGENTS_OPS_ROOT` — if set (via `settings.local.json` env block), use it.
-2. If `$PWD` contains a `cogni-consulting/` subdirectory, use `$PWD`.
-3. Otherwise, walk up the directory tree from `$PWD` looking for an ancestor that contains a `cogni-consulting/` subdirectory. This handles the common case where the consultant invoked the skill from inside a specific engagement (e.g. `<workspace>/cogni-consulting/<engagement-slug>/`) — including workspaces hosted outside the insight-wave repo (OneDrive, Dropbox, client folders).
-4. If none of the above resolve, fall back to `$PWD` and warn the consultant that no `cogni-consulting/` directory was detected nearby.
-
-Then scan from the resolved workspace root:
+Discover engagements in the workspace using the discovery script. The script resolves the workspace root automatically (priority: `--root` > `$PROJECT_AGENTS_OPS_ROOT` > walk-up from `$PWD` to find a `cogni-consulting/` ancestor > `$PWD`) and also returns engagements from the global registry (`~/.claude/cogni-consulting-projects.json`) so workspaces hosted outside the insight-wave repo (OneDrive, Dropbox, client folders) surface even when cwd is unrelated.
 
 ```bash
-find "<workspace-root>" -maxdepth 3 -name "consulting-project.json" -path "*/cogni-consulting/*"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-consulting/*/ | head -1)}/scripts/discover-projects.sh" --json
 ```
 
-Each match represents an engagement (extract the slug from the directory name). Subsequent script invocations in this skill must pass the **absolute** engagement directory (e.g. `<workspace-root>/cogni-consulting/<slug>`) — never a relative path against `$PWD`, since the consultant may be running this skill from inside the engagement directory itself.
+Returns JSON with `count`, `search_root`, and a `projects` array. Each engagement entry includes `path` (absolute), `slug`, `name`, `client`, `vision_class`, `industry`, `language`, `current_phase`, `phase_status` (object keyed by phase), and `updated`. Pass `path` verbatim — absolute — to `engagement-status.sh` and any other downstream script; never reconstruct it from `$PWD`.
 
-If no engagements are found, surface the detected workspace root so the consultant can correct it: "No diamond engagement found under `<workspace-root>`. If your engagement lives elsewhere, `cd` to that workspace and re-run, or set `$PROJECT_AGENTS_OPS_ROOT`." If they confirm no engagement exists yet, suggest the `consulting-setup` skill.
+The script searches:
+1. The resolved workspace root for `cogni-consulting/*/consulting-project.json`
+2. The global engagement registry (`~/.claude/cogni-consulting-projects.json`) for engagements created in other workspaces
+
+If `count` is 0:
+- First, ask the consultant if the engagement lives in a different directory (e.g., OneDrive, external workspace). If they provide a path, register it once and re-run discovery:
+  ```bash
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-consulting/*/ | head -1)}/scripts/discover-projects.sh" --register "<path>"
+  ```
+  Surface the detected `search_root` in your prompt: "I checked `<search_root>` and didn't find an engagement. Is it somewhere else?"
+- If they confirm no engagement exists yet, suggest the `consulting-setup` skill.
 
 ### 2. Select Engagement
 

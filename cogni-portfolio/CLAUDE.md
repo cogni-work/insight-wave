@@ -74,7 +74,7 @@ templates/                      8 pluggable industry taxonomies
   b2b-professional-services/      Professional Services (8 dims, 44 categories)
   b2b-opensource/                  Commercial Open Source (8 dims, 50 categories)
 
-scripts/                        12 utility scripts
+scripts/                        13 utility scripts
   project-init.sh                 Initialize project directory structure
   project-status.sh               Show status with entity counts and gap analysis
   quality-audit.sh                Structural quality checks on portfolio entities
@@ -87,6 +87,7 @@ scripts/                        12 utility scripts
   source-registry.sh              Source lineage registry management (init, register, check, staleness)
   clone-taxonomy.sh               Copy a bundled taxonomy into the project for local customization
   validate-taxonomy.sh            Validate the project-local taxonomy (canonical files, frontmatter, category/search coverage)
+  discover-projects.sh            Find portfolio projects via workspace walk-up + global registry (--json, --root, --register, --unregister)
 
 references/
   data-model.md                   Full entity schema and project structure reference

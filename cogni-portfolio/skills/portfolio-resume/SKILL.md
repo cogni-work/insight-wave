@@ -23,22 +23,25 @@ Portfolio projects span multiple sessions and skills. Without a clear re-entry p
 
 ### 1. Find Portfolio Projects
 
-**Determine the workspace root** before scanning. The workspace root is the directory that contains the `cogni-portfolio/` project folder (which holds one or more `{slug}/portfolio.json` projects). Check in this order:
-
-1. `$PROJECT_AGENTS_OPS_ROOT` — if set (via `settings.local.json` env block), use it.
-2. If `$PWD` contains a `cogni-portfolio/` subdirectory, use `$PWD`.
-3. Otherwise, walk up the directory tree from `$PWD` looking for an ancestor that contains a `cogni-portfolio/` subdirectory. This handles the common case where the user invoked the skill from inside a specific project (e.g. `<workspace>/cogni-portfolio/<project-slug>/`) — including workspaces hosted outside the insight-wave repo (OneDrive, Dropbox, client folders).
-4. If none of the above resolve, fall back to `$PWD` and warn the user that no `cogni-portfolio/` directory was detected nearby.
-
-Then scan from the resolved workspace root:
+Discover portfolio projects in the workspace using the discovery script. The script resolves the workspace root automatically (priority: `--root` > `$PROJECT_AGENTS_OPS_ROOT` > walk-up from `$PWD` to find a `cogni-portfolio/` ancestor > `$PWD`) and also returns projects from the global registry (`~/.claude/cogni-portfolio-projects.json`) so workspaces hosted outside the insight-wave repo (OneDrive, Dropbox, client folders) surface even when cwd is unrelated.
 
 ```bash
-find "<workspace-root>" -maxdepth 3 -name "portfolio.json" -path "*/cogni-portfolio/*"
+bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/discover-projects.sh" --json
 ```
 
-Each match represents a project (extract the slug from the directory name). Subsequent script invocations in this skill must pass the **absolute** project directory (e.g. `<workspace-root>/cogni-portfolio/<slug>`) — never a relative path against `$PWD`, since the user may be running this skill from inside the project directory itself.
+Returns JSON with `count`, `search_root`, and a `projects` array. Each project entry includes `path` (absolute), `slug`, `company_name`, `company_industry`, `language`, `updated`, and pipeline-stage flags (`has_products`, `has_features`, `has_markets`, `has_propositions`, `has_solutions`, `has_dashboard`). Pass `path` verbatim — absolute — to every subsequent script call; never reconstruct it from `$PWD`.
 
-If no projects are found, surface the detected workspace root so the user can see where discovery looked: "No portfolio project found under `<workspace-root>`. If your project lives elsewhere, `cd` to that workspace and re-run, or set `$PROJECT_AGENTS_OPS_ROOT`." If the user confirms no project exists yet, briefly tell them "No portfolio project exists in this workspace yet — let's set one up" (in their language if known) and **dispatch the `portfolio-setup` skill via the Skill tool** to begin initialization. Do not ask the user to re-issue a command; the handoff should be seamless. Once setup completes, control returns here naturally — the user can re-invoke `/portfolio-resume` to see the new project's status, or simply continue with the next-step recommendations setup printed.
+The script searches:
+1. The resolved workspace root for `cogni-portfolio/*/portfolio.json`
+2. The global project registry (`~/.claude/cogni-portfolio-projects.json`) for projects created in other workspaces
+
+If `count` is 0:
+- First, ask the user if they have a project in a different directory (e.g., OneDrive, external workspace). If they provide a path, register it once and re-run discovery:
+  ```bash
+  bash "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-portfolio/*/ | head -1)}/scripts/discover-projects.sh" --register "<path>"
+  ```
+  Surface the detected `search_root` in your prompt so the user can see where discovery looked: "I checked `<search_root>` and didn't find a portfolio. Is the project somewhere else?"
+- If the user confirms no project exists yet, briefly tell them "No portfolio project exists in this workspace yet — let's set one up" (in their language if known) and **dispatch the `portfolio-setup` skill via the Skill tool** to begin initialization. Do not ask the user to re-issue a command; the handoff should be seamless. Once setup completes, control returns here naturally — the user can re-invoke `/portfolio-resume` to see the new project's status, or simply continue with the next-step recommendations setup printed.
 
 This makes `portfolio-resume` a safe single entry point: returning users get the dashboard, new users get walked into setup, and nobody has to know which lifecycle stage they're in.
 
