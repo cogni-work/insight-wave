@@ -162,7 +162,7 @@ Scan the user's request and extract any options they already specified. These be
   - If `output_language` is not in `supported_languages`, emit a similar note naming the supported languages (e.g., `> "corporate-visions currently supports EN and DE output only. Keep corporate-visions in EN/DE, or switch to standard-research in FR?"`) and drop the named arc the same way.
   - If `target_words` was explicitly set by the prompt and falls outside `[min_target_words, max_target_words]`, emit a note naming the range (e.g., `> "corporate-visions needs 3000–8000 words for its element proportions to land — your target of 2500 is outside that range. Pick a value in range or switch to standard-research."`) and drop the named arc.
 
-  Only when all three checks pass does the named arc carry through to Step 2. This is the prompt-time counterpart of the menu-render suppression rule documented in Step 2 — both gates run, at different turn boundaries.
+  Only when all three checks pass does the named arc carry through to Step 2. This is the prompt-time counterpart of the menu-render suppression rule documented in Step 2 — both gates run at different turn boundaries against the same registry, so keep the parsed JSON in working context for Step 2's Suppression rule rather than re-reading the file.
 
 ### Step 2: Configuration Menu (text output, turn ends)
 
