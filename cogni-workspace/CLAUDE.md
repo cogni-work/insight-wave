@@ -55,7 +55,7 @@ out of scope; manual invocation before PRs is the contract.
 
 ## Markets
 
-`references/supported-markets-registry.json` is the canonical taxonomy — codes, names, locales, currencies, languages, regional qualifiers, regulatory bodies, and the canonical authority-domain set per market. `scripts/get-market-config.py` is the merge utility plugins call: it joins the registry with a plugin overlay (`cogni-research/references/market-sources.json` for research-side authority metadata, `cogni-trends/skills/trend-report/references/region-authority-sources.json` for trends-side dimension queries) and returns the merged config in the shape each plugin expects.
+`references/supported-markets-registry.json` is the canonical taxonomy — codes, names, locales, currencies, languages, regional qualifiers, regulatory bodies, and the canonical authority-domain set per market. `scripts/get-market-config.py` is the merge utility plugins call: it joins the registry with a plugin overlay (`cogni-research/references/market-sources.json` for research-side authority metadata, `cogni-trends/skills/trend-research/references/region-authority-sources.json` for trends-side dimension queries) and returns the merged config in the shape each plugin expects.
 
 Plugins do not duplicate shared market fields. The `manage-markets` skill is the write path for the registry (status + add); `audit-region-sources` is the read-only sibling. Drift between registry and overlays is structurally impossible by design — overlays carry only plugin-specific metadata keyed against registry domains.
 

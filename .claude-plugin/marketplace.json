@@ -62,7 +62,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "version": "0.6.25",
+      "version": "0.6.26",
       "maturity": "preview",
       "description": "Foundation-layer plugin for insight-wave marketplace plugins. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, an interactive workspace-configuration dashboard, Obsidian vault integration, and a bundled vendor-curated insight-wave reference wiki queryable via the ask skill.",
       "keywords": [
@@ -77,7 +77,7 @@
     {
       "name": "cogni-trends",
       "source": "./cogni-trends",
-      "version": "0.6.2",
+      "version": "0.6.3",
       "maturity": "preview",
       "description": "Strategic trend scouting and reporting pipeline. Combines the Smarter Service Trendradar (4-dimension structure) with the TIPS content framework (Trends, Implications, Possibilities, Solutions). Pipeline: trend-scout → value-modeler → trend-research → (trend-synthesis and/or trend-booklet) → verify-trend-report. trend-research enriches every candidate with web-sourced quantitative evidence; trend-synthesis composes the canonical TIPS report (4 H2 dimensions × anchored H3 theme-cases, closing on a Capability Imperative); trend-booklet produces the comprehensive catalog of all candidates by dimension → subcategory → horizon. Multilingual trend scouting, investment theme modeling, evidence-backed CxO reports, and reusable industry catalogs. European markets (DE/FR/IT/PL/NL/ES) + US/UK.",
       "keywords": [
@@ -171,7 +171,7 @@
     {
       "name": "cogni-research",
       "source": "./cogni-research",
-      "version": "0.7.24",
+      "version": "0.7.25",
       "maturity": "preview",
       "description": "Multi-agent research report generator with localized search across 21 European, Anglo, LATAM, and APAC markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR, CN) — intent-based bilingual search, per-market authority sources, and configurable output language. STORM-inspired editorial workflow: parallel section research, claims-verified review loops, and five report types (basic, detailed, deep, outline, resource). Supports web, local, wiki, and hybrid source modes. Integrates with cogni-claims for source verification and cogni-wiki for compiled knowledge querying.",
       "keywords": [

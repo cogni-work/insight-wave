@@ -117,7 +117,7 @@ After writing, suggest:
 >   `cogni-research/references/market-sources.json` — add an entry under
 >   `<code>.authority_metadata`.
 > - Trends dimension queries (site_searches per Smarter Service dimension):
->   `cogni-trends/skills/trend-report/references/region-authority-sources.json`
+>   `cogni-trends/skills/trend-research/references/region-authority-sources.json`
 >   — add an entry under `<code>.site_searches`."
 
 The skill writes only to the registry. It does not touch plugin overlays —
@@ -135,5 +135,5 @@ only; use this skill when the goal is to add a market.
 - `cogni-workspace/references/supported-markets-registry.json` — canonical registry
 - `cogni-workspace/scripts/get-market-config.py` — merge utility (read entry point for plugins)
 - `cogni-research/references/market-sources.json` — research overlay (`authority_metadata` keyed by domain)
-- `cogni-trends/skills/trend-report/references/region-authority-sources.json` — trends overlay (`site_searches[]` keyed by dimension)
+- `cogni-trends/skills/trend-research/references/region-authority-sources.json` — trends overlay (`site_searches[]` keyed by dimension)
 - `cogni-workspace/skills/audit-region-sources/SKILL.md` — read-only sibling skill

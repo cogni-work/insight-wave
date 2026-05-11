@@ -207,7 +207,7 @@ _GET_MARKET="$_WORKSPACE_ROOT/scripts/get-market-config.py"
 VALID_MARKETS=""
 if [[ -f "$_GET_MARKET" ]]; then
   VALID_MARKETS=$(python3 "$_GET_MARKET" --plugin research --all-markets 2>/dev/null \
-    | python3 -c 'import json,sys;d=json.load(sys.stdin).get("data",{});print(" ".join(k for k in d.keys() if not k.startswith("_")))' 2>/dev/null)
+    | python3 -c 'import json,sys;d=json.load(sys.stdin).get("data") or {};print(" ".join(k for k in d.keys() if not k.startswith("_")))' 2>/dev/null)
 fi
 
 if [[ -n "$MARKET" ]] && [[ -n "$VALID_MARKETS" ]] && ! echo "$VALID_MARKETS" | grep -qw "$MARKET"; then

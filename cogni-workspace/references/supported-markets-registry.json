@@ -5,7 +5,7 @@
   "upstream_path": "cogni-workspace/references/supported-markets-registry.json",
   "consolidates": [
     "cogni-research/references/market-sources.json",
-    "cogni-trends/skills/trend-report/references/region-authority-sources.json"
+    "cogni-trends/skills/trend-research/references/region-authority-sources.json"
   ],
   "schema_version": "1.1.0",
   "last_updated": "2026-04-30",
