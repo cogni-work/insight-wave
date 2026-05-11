@@ -59,6 +59,12 @@ SCHEMA_VERSION_PER_TYPE_DIRS = "0.0.5"
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
+# Canonical wikilink pattern: lowercase slugs (a-z, 0-9, dash), starting with
+# alnum. Every script that walks the wiki for `[[slug]]` references should
+# match the same grammar — divergence here drifts what counts as a "broken
+# wikilink" vs "linked page" between health, lint, and the dashboard graph.
+WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
+
 
 @contextmanager
 def _wiki_lock(wiki_root: Path):
@@ -212,13 +218,12 @@ def build_slug_index(wiki_root: Path, include_audit: bool = False) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# v0.0.29 additions: shared write + JSON-emit helpers.
+# Shared write + JSON-emit helpers.
 #
-# These two patterns were inlined byte-for-byte in every script under
-# `cogni-wiki/skills/*/scripts/`. New writers (starting with
-# rebuild_context_brief.py for #219) consume them from here so the contract
-# is owned in exactly one place. Existing inlines are NOT refactored in
-# v0.0.29 — keep the diff additive; lift them in a follow-up PR if desired.
+# These patterns used to be inlined byte-for-byte in every script under
+# `cogni-wiki/skills/*/scripts/`. They are now owned here as the single source
+# of truth for the {success, data, error} JSON contract and the atomic-write
+# crash-safety guarantee.
 # ---------------------------------------------------------------------------
 
 
@@ -279,3 +284,82 @@ def emit_json(success: bool, data=None, error: str = "") -> None:
     `from _wikilib import emit_json` instead of re-deriving the contract.
     """
     print(json.dumps({"success": bool(success), "data": data or {}, "error": error or ""}))
+
+
+def ok(data=None) -> None:
+    """Emit a success JSON line and exit 0."""
+    emit_json(True, data=data)
+    sys.exit(0)
+
+
+def fail(error: str, code: int = 1) -> None:
+    """Emit a failure JSON line and exit `code` (default 1)."""
+    emit_json(False, error=error)
+    sys.exit(code)
+
+
+# ---------------------------------------------------------------------------
+# Frontmatter parsing — single source of truth for the YAML subset wikis use.
+#
+# Lifted from the byte-for-byte-duplicated copies that lived in eight scripts
+# (build_graph, health, backlink_audit, batch_builder, lint_wiki,
+# extract_page_claims, refresh_planner, render_dashboard). The grammar covers
+# what page-frontmatter.md documents:
+#   key: scalar
+#   key: [a, b, c]
+#   key:
+#     - a
+#     - b
+# Quoted strings are returned with their surrounding quotes intact (callers
+# strip on a case-by-case basis — health.py's existing contract).
+# ---------------------------------------------------------------------------
+
+
+def parse_frontmatter(text: str) -> dict:
+    """Parse the YAML-subset frontmatter at the top of a page; return `{}`
+    when no frontmatter is found.
+
+    Supports scalars, inline lists (`[a, b]`), and block lists (`  - item`).
+    """
+    m = FRONTMATTER_RE.match(text)
+    if not m:
+        return {}
+    out: dict = {}
+    current_key = None
+    for line in m.group(1).splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line.startswith("  - ") and current_key:
+            out.setdefault(current_key, []).append(line[4:].strip())
+            continue
+        if ":" in line and not line.startswith(" "):
+            k, _, v = line.partition(":")
+            k = k.strip()
+            v = v.strip()
+            current_key = k
+            if v.startswith("[") and v.endswith("]"):
+                inside = v[1:-1].strip()
+                out[k] = [x.strip() for x in inside.split(",") if x.strip()] if inside else []
+            elif v:
+                out[k] = v
+            else:
+                out[k] = []
+    return out
+
+
+def split_frontmatter(text: str) -> "tuple[dict, str]":
+    """Return `(frontmatter_dict, body_text)`. When no frontmatter is found,
+    returns `({}, text)`."""
+    m = FRONTMATTER_RE.match(text)
+    if not m:
+        return {}, text
+    return parse_frontmatter(text), text[m.end():]
+
+
+def extract_wikilinks(text: str) -> "set[str]":
+    """Return the set of slugs referenced via `[[slug]]` in `text`.
+
+    Uses the canonical `WIKILINK_RE` so health, lint, dashboard, and ingest
+    agree on what counts as a wikilink reference.
+    """
+    return set(WIKILINK_RE.findall(text))

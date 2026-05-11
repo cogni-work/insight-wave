@@ -73,6 +73,7 @@ from _wikilib import (  # noqa: E402
     _wiki_lock,
     atomic_write,
     emit_json,
+    fail,
     fail_if_pre_migration,
 )
 
@@ -83,11 +84,6 @@ DEFAULT_PRIORITY = 50
 DEFAULT_FAILURES_LIMIT = 5
 ID_RE = re.compile(r"^\d{10}-[0-9a-f]{8}$")
 ISO_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
-
-
-def fail(msg: str) -> None:
-    emit_json(False, {}, msg)
-    sys.exit(1)
 
 
 def now_iso() -> str:

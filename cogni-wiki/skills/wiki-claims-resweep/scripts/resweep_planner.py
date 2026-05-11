@@ -58,56 +58,17 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import fcntl
 import json
-import os
 import sys
-import tempfile
-from contextlib import contextmanager
 from pathlib import Path
 
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-@contextmanager
-def _wiki_lock(wiki_root: Path):
-    """Mirror of wiki_index_update.py::_wiki_lock — same advisory lock so this
-    script participates in the existing concurrency contract for shared state."""
-    lock_dir = wiki_root / ".cogni-wiki"
-    lock_dir.mkdir(parents=True, exist_ok=True)
-    lock_path = lock_dir / ".lock"
-    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        yield
-    finally:
-        try:
-            fcntl.flock(fd, fcntl.LOCK_UN)
-        finally:
-            os.close(fd)
-
-
-def atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
+from _wikilib import (  # noqa: E402
+    _wiki_lock,
+    atomic_write,
+    fail,
+    ok,
+)
 
 
 def _yaml_escape(s: str) -> str:

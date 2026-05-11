@@ -59,38 +59,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _wikilib import _wiki_lock  # noqa: E402
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def _atomic_write(path: Path, content: str) -> None:
-    parent = path.parent
-    fd, tmp = tempfile.mkstemp(prefix=".config-bump-", dir=str(parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+from _wikilib import _wiki_lock, atomic_write, fail, ok  # noqa: E402
 
 
 def main() -> None:
@@ -173,7 +146,7 @@ def main() -> None:
             cfg[args.key] = new_value
 
         new_text = json.dumps(cfg, ensure_ascii=False, indent=2) + "\n"
-        _atomic_write(config_path, new_text)
+        atomic_write(config_path, new_text)
 
     ok({
         "key": args.key,

@@ -61,44 +61,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _wikilib import _wiki_lock  # noqa: E402
+from _wikilib import _wiki_lock, atomic_write, fail, ok  # noqa: E402
 
 
 HEADING_RE = re.compile(r"^(#{2,3})\s+(.*?)\s*$")
 SLUG_LINE_RE_TEMPLATE = r"^(\s*-\s*\[\[){slug}(\]\])"
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def _atomic_write(path: Path, content: str) -> None:
-    """Write `content` to `path` atomically."""
-    parent = path.parent
-    fd, tmp = tempfile.mkstemp(prefix=".index-update-", dir=str(parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
 
 
 def _split_sections(text: str) -> list:
@@ -294,7 +266,7 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
         new_body = _replace_line_in_place(body, line_idx, new_line)
         sections[sec_idx] = (heading, new_body)
         new_text = _join_sections(sections)
-        _atomic_write(index_path, new_text)
+        atomic_write(index_path, new_text)
         return {
             "action": "updated",
             "category": None if heading is None else HEADING_RE.match(heading).group(2).strip(),
@@ -309,7 +281,7 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
             new_body = _insert_alphabetised(body, new_line, slug)
             sections[sec_idx] = (heading, new_body)
             new_text = _join_sections(sections)
-            _atomic_write(index_path, new_text)
+            atomic_write(index_path, new_text)
             return {
                 "action": "inserted",
                 "category": HEADING_RE.match(heading).group(2).strip(),
@@ -321,7 +293,7 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
     # Case C: category doesn't exist — create it with this line.
     sections = _create_category(sections, category, new_line)
     new_text = _join_sections(sections)
-    _atomic_write(index_path, new_text)
+    atomic_write(index_path, new_text)
     return {
         "action": "inserted",
         "category": category.strip(),
@@ -371,7 +343,7 @@ def main() -> None:
                 return
             new_text, changed = reflow_categories(text)
             if changed and not args.dry_run:
-                _atomic_write(index_path, new_text)
+                atomic_write(index_path, new_text)
         ok({
             "action": "reflowed" if changed else "noop",
             "changed": changed,

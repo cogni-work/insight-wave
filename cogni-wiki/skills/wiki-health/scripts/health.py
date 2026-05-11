@@ -48,7 +48,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -56,64 +55,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ing
 from _wikilib import (  # noqa: E402
     AUDIT_DIR,
     VALID_TYPES,
+    WIKILINK_RE,
     build_slug_index,
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     iter_pages,
+    ok,
+    split_frontmatter,
 )
 
 
 STUB_PAGE_MIN_CHARS = 50
 REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
-
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def parse_frontmatter(text: str) -> tuple[dict, str]:
-    """Return (frontmatter_dict, body_text).
-
-    body_text is the page content after the closing `---`. When no frontmatter
-    is found, returns ({}, text).
-    """
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}, text
-    body = text[m.end() :]
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                if not inside:
-                    out[k] = []
-                else:
-                    out[k] = [x.strip() for x in inside.split(",") if x.strip()]
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out, body
 
 
 def _load_last_resweep(wiki_root: Path) -> dict | None:
@@ -183,7 +137,7 @@ def main() -> None:
                 {"class": "read_error", "page": slug, "message": str(e)}
             )
             continue
-        fm, body = parse_frontmatter(text)
+        fm, body = split_frontmatter(text)
         all_pages[slug] = {"fm": fm, "body": body, "type": ptype}
 
         # Audit reports (lint-*, health-*) are exempt from frontmatter and

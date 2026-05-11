@@ -34,6 +34,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
+    FRONTMATTER_RE,
+    WIKILINK_RE,
     atomic_write,
     build_slug_index,
     emit_json,
@@ -41,11 +43,10 @@ from _wikilib import (  # noqa: E402
     is_audit_slug,
     is_foundation_page,
     iter_pages,
+    parse_frontmatter,
+    split_frontmatter,
 )
 
-
-WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 EDGE_COLORS = {
     "EXTRACTED": "#555555",
@@ -67,36 +68,8 @@ interview meeting learning synthesis note
 TOKEN_RE = re.compile(r"[a-z][a-z0-9\-]+")
 
 
-def parse_frontmatter(text: str) -> dict:
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                out[k] = [x.strip() for x in inside.split(",") if x.strip()] if inside else []
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
-
-
 def page_body(text: str) -> str:
-    m = FRONTMATTER_RE.match(text)
-    return text[m.end():] if m else text
+    return split_frontmatter(text)[1]
 
 
 def tokenise(body: str) -> set:

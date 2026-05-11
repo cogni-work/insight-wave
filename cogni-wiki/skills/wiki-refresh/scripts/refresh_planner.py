@@ -66,9 +66,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     iter_pages,
+    ok,
+    parse_frontmatter,
+)
+from _wiki_research import (  # noqa: E402
+    find_wiki_root,
+    load_sub_questions,
+    locate_research_project,
+    parse_date,
+    unquote as _unquote,
 )
 
 
@@ -78,7 +88,6 @@ STALE_PAGE_DAYS = 365
 
 DEFAULT_THRESHOLD = 0.30
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 SLUG_CLEAN_RE = re.compile(r"[^a-z0-9]+")
 TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
 
@@ -89,84 +98,6 @@ STOPWORDS = frozenset({
     "this", "that", "these", "those", "it", "its", "their", "they", "them", "we", "us", "our",
     "vs", "into", "from", "about", "as", "by", "if", "any", "all", "some", "more", "most",
 })
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-# ---------------------------------------------------------------------------
-# Frontmatter / wikilink helpers (mirror batch_builder.py)
-# ---------------------------------------------------------------------------
-
-
-def parse_frontmatter(text: str) -> dict:
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                out[k] = [x.strip() for x in inside.split(",") if x.strip()] if inside else []
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
-
-
-def _unquote(s: str) -> str:
-    s = s.strip()
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
-        return s[1:-1]
-    return s
-
-
-def _strip_wikilink(ref: str) -> str:
-    inner = _unquote(ref)
-    if inner.startswith("[[") and inner.endswith("]]"):
-        inner = inner[2:-2]
-    return inner.rsplit("/", 1)[-1]
-
-
-def parse_date(s: str):
-    try:
-        return dt.datetime.strptime(s.strip(), "%Y-%m-%d").date()
-    except (ValueError, AttributeError):
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Wiki side: stale page enumeration
-# ---------------------------------------------------------------------------
-
-
-def find_wiki_root(start: Path) -> Path:
-    current = start.resolve()
-    while True:
-        if (current / ".cogni-wiki" / "config.json").is_file():
-            return current
-        if current.parent == current:
-            fail(f"not inside a cogni-wiki (no .cogni-wiki/config.json at or above {start})")
-        current = current.parent
 
 
 def load_wiki_pages(wiki_root: Path) -> list[dict]:
@@ -223,62 +154,6 @@ def filter_stale(pages: list[dict], days_override: int | None) -> list[dict]:
             elif age > STALE_PAGE_DAYS:
                 out.append(p)
     return out
-
-
-# ---------------------------------------------------------------------------
-# Research side: entity loaders (mirrors batch_builder.py)
-# ---------------------------------------------------------------------------
-
-
-def locate_research_project(slug_or_path: str, wiki_root: Path, override: str | None) -> Path:
-    if override:
-        project = Path(override).resolve()
-        if not project.is_dir():
-            fail(f"--research-root not a directory: {project}")
-        return project
-    if "/" in slug_or_path or slug_or_path.startswith("."):
-        candidate = Path(slug_or_path).resolve()
-        if candidate.is_dir():
-            return candidate
-        fail(f"--research path not found: {candidate}")
-    candidates = [
-        wiki_root.parent / f"cogni-research-{slug_or_path}",
-        wiki_root / f"cogni-research-{slug_or_path}",
-    ]
-    for c in candidates:
-        if c.is_dir():
-            return c.resolve()
-    fail(
-        "cogni-research project not found. Tried: "
-        + ", ".join(str(c) for c in candidates)
-        + ". Pass --research-root to override."
-    )
-    return Path()  # unreachable
-
-
-def load_sub_questions(project: Path) -> list[dict]:
-    sq_dir = project / "00-sub-questions" / "data"
-    if not sq_dir.is_dir():
-        fail(f"sub-questions dir missing: {sq_dir}")
-    items: list[dict] = []
-    for path in sorted(sq_dir.glob("sq-*.md")):
-        text = path.read_text(encoding="utf-8")
-        fm = parse_frontmatter(text)
-        if not fm.get("query"):
-            continue
-        try:
-            section_index = int(fm.get("section_index", 0))
-        except (TypeError, ValueError):
-            section_index = 0
-        items.append({
-            "id": _unquote(fm.get("dc:identifier") or path.stem),
-            "query": _unquote(fm["query"]),
-            "parent_topic": _unquote(fm.get("parent_topic", "")),
-            "section_index": section_index,
-            "status": _unquote(fm.get("status", "")),
-        })
-    items.sort(key=lambda x: (x["section_index"], x["id"]))
-    return items
 
 
 # ---------------------------------------------------------------------------

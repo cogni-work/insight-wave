@@ -126,61 +126,28 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
-import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _wikilib import (  # noqa: E402
+    FRONTMATTER_RE,
+    WIKILINK_RE,
     _wiki_lock,
+    atomic_write,
     build_slug_index,
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     iter_pages,
+    ok,
+    parse_frontmatter,
+    split_frontmatter,
 )
 
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
 UPDATED_FIELD_RE = re.compile(r"^(updated:\s*).*$", re.MULTILINE)
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def parse_frontmatter(text: str) -> dict:
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                out[k] = [x.strip() for x in v[1:-1].split(",") if x.strip()]
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
 
 
 def extract_terms(page_text: str, fm: dict) -> tuple:
@@ -330,7 +297,12 @@ def _bump_updated_frontmatter(text: str, today: str) -> str:
 
 
 def _split_frontmatter_body(text: str) -> tuple:
-    """Return (frontmatter_including_trailing_newline, body)."""
+    """Return (frontmatter_including_trailing_newline, body).
+
+    Differs from `_wikilib.split_frontmatter` by returning the FM as a raw text
+    block (with closing `---\\n`) rather than a parsed dict — callers here need
+    to preserve byte-for-byte ordering when re-emitting the page.
+    """
     m = FRONTMATTER_RE.match(text)
     if not m:
         return "", text
@@ -361,22 +333,6 @@ def _insert_sentence(body: str, sentence: str, heading: str) -> str:
     if not body.endswith("\n"):
         body = body + "\n"
     return body + "\n" + stripped_sentence + "\n"
-
-
-def _atomic_write(path: Path, content: str) -> None:
-    """Write `content` to `path` atomically (write to temp file then os.replace)."""
-    parent = path.parent
-    fd, tmp = tempfile.mkstemp(prefix=".backlink-", dir=str(parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
 
 
 def apply_plan(plan: dict, slug_index: dict, new_slug: str) -> tuple:
@@ -430,7 +386,7 @@ def apply_plan(plan: dict, slug_index: dict, new_slug: str) -> tuple:
         new_fm = _bump_updated_frontmatter(fm, today) if fm else fm
         new_text = new_fm + new_body
         try:
-            _atomic_write(target_path, new_text)
+            atomic_write(target_path, new_text)
         except OSError as e:
             failed.append({"slug": slug, "error": f"atomic write failed: {e}"})
             continue

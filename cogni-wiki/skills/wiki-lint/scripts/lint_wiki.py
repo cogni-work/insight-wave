@@ -82,13 +82,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
+    FRONTMATTER_RE,
+    WIKILINK_RE,
     _wiki_lock,
     atomic_write,
     build_slug_index,
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     is_foundation_page,
     iter_pages,
+    ok,
+    parse_frontmatter,
 )
 
 
@@ -134,50 +139,6 @@ STALE_PAGE_DAYS = 365
 TAG_TYPO_MAX_DIST = 2
 TAG_TYPO_RATIO = 3
 TYPES_REQUIRING_SOURCES = {"concept", "entity", "summary", "learning", "synthesis"}
-
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def parse_frontmatter(text: str) -> dict:
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                if not inside:
-                    out[k] = []
-                else:
-                    out[k] = [x.strip() for x in inside.split(",") if x.strip()]
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
-
 
 def parse_date(s: str):
     try:

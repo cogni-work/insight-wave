@@ -76,9 +76,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
     build_slug_index,
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     iter_pages,
+    ok,
+    parse_frontmatter,
+    split_frontmatter,
 )
 
 
@@ -88,51 +92,16 @@ STALE_PAGE_DAYS = 365
 MIN_CLAIM_CHARS = 30
 MAX_CLAIMS_PER_PAGE = 50
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 INLINE_LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 BARE_URL_RE = re.compile(r"(?<![\(\[\"'])\bhttps?://[^\s)\]<>\"']+")
 SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z\[(])|\n\s*\n")
-WIKILINK_RE = re.compile(r"\[\[[^\]]+\]\]")
+# Permissive: strips ANY [[…]] syntax from claim text, not just valid slugs.
+# Intentionally different from `_wikilib.WIKILINK_RE` which only matches valid
+# slugs — the strict regex would miss hand-edited brackets, leaving litter in
+# the extracted claim sentence.
+WIKILINK_STRIP_RE = re.compile(r"\[\[[^\]]+\]\]")
 MD_LINK_STRIP_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 WHITESPACE_RE = re.compile(r"\s+")
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def parse_frontmatter(text: str) -> dict:
-    """Lightweight YAML subset parser, mirrors lint_wiki.py for consistency."""
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                out[k] = [x.strip() for x in inside.split(",") if x.strip()] if inside else []
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
 
 
 def _unquote(s: str) -> str:
@@ -150,15 +119,14 @@ def parse_date(s: str):
 
 
 def split_body(text: str) -> str:
-    m = FRONTMATTER_RE.match(text)
-    return text[m.end():] if m else text
+    return split_frontmatter(text)[1]
 
 
 def strip_markdown(s: str) -> str:
     """Render claim text as plain prose: drop markdown link syntax, wikilinks,
     code-fences, and squash whitespace. Keep the link's anchor text."""
     s = MD_LINK_STRIP_RE.sub(r"\1", s)
-    s = WIKILINK_RE.sub("", s)
+    s = WIKILINK_STRIP_RE.sub("", s)
     s = s.replace("`", "")
     s = s.lstrip("-*> \t").strip()
     s = WHITESPACE_RE.sub(" ", s)

@@ -84,19 +84,11 @@ from _wikilib import (  # noqa: E402
     VALID_TYPES,
     _parse_frontmatter_minimal,
     _read_schema_version,
+    fail,
+    ok,
 )
 
 CONFIG_BUMP = _INGEST_SCRIPTS / "config_bump.py"
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
 
 
 def _route_target(wiki_root: Path, slug: str, ptype: str) -> Path:

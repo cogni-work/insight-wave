@@ -24,23 +24,25 @@ import argparse
 import datetime as dt
 import html
 import json
-import re
 import sys
 from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
+    PAGE_TYPE_DIRS,
+    VALID_TYPES,
+    WIKILINK_RE,
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     iter_pages,
+    ok,
+    parse_frontmatter,
 )
 
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-WIKILINK_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\]")
-
-VALID_TYPES = ["concept", "entity", "summary", "decision", "interview", "meeting", "learning", "synthesis", "note"]
+VALID_TYPES_ORDERED = list(PAGE_TYPE_DIRS.keys())
 TYPE_COLORS = {
     "concept": "#2563eb",
     "entity": "#059669",
@@ -52,43 +54,6 @@ TYPE_COLORS = {
     "synthesis": "#0891b2",
     "note": "#64748b",
 }
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
-
-
-def parse_frontmatter(text: str) -> dict:
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                out[k] = [x.strip() for x in inside.split(",") if x.strip()] if inside else []
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
 
 
 def e(s) -> str:
@@ -145,7 +110,7 @@ def build_html(ctx: dict) -> str:
     # Type bars
     max_type = max(type_counts.values()) if type_counts else 1
     bars = []
-    for t in VALID_TYPES:
+    for t in VALID_TYPES_ORDERED:
         n = type_counts.get(t, 0)
         pct = (n / max_type * 100) if max_type else 0
         color = TYPE_COLORS.get(t, "#9ca3af")
@@ -193,14 +158,14 @@ def build_html(ctx: dict) -> str:
         orph_html = '<div class="meta">No orphan pages — every page has at least one inbound link. ✓</div>'
 
     # Full index grouped by type
-    grouped: dict = {t: [] for t in VALID_TYPES}
+    grouped: dict = {t: [] for t in VALID_TYPES_ORDERED}
     grouped["_other"] = []
     for p in pages:
         t = p["type"] if p["type"] in VALID_TYPES else "_other"
         grouped[t].append(p)
 
     sections = []
-    for t in VALID_TYPES + ["_other"]:
+    for t in VALID_TYPES_ORDERED + ["_other"]:
         items = grouped[t]
         if not items:
             continue

@@ -41,6 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _wikilib import (  # noqa: E402
     PAGE_TYPE_DIRS,
+    WIKILINK_RE,
     atomic_write,
     build_slug_index,
     emit_json,
@@ -54,7 +55,6 @@ RECENT_DAYS = 30
 TOP_N_ENTITIES = 10
 LINT_CACHE_TTL_HOURS = 24
 
-WIKILINK_RE = re.compile(r"\[\[([a-zA-Z0-9][a-zA-Z0-9._-]*)\]\]")
 LOG_DATE_RE = re.compile(r"^## \[(\d{4}-\d{2}-\d{2})\]")
 
 

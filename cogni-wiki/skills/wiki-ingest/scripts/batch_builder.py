@@ -130,25 +130,27 @@ from typing import Iterable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _wikilib import (  # noqa: E402
+    VALID_TYPES,
+    atomic_write,
+    fail,
     fail_if_pre_migration,
     is_audit_slug,
     iter_pages,
+    ok,
+    parse_frontmatter,
+)
+from _wiki_research import (  # noqa: E402
+    find_wiki_root,
+    load_sub_questions as _load_sub_questions,
+    locate_research_project as _locate_research_project,
+    parse_date,
+    read_research_entity as _read_research_entity,
+    strip_wikilink as _strip_wikilink,
+    unquote as _unquote,
 )
 
 
-VALID_TYPES = {"concept", "entity", "summary", "decision", "interview", "meeting", "learning", "note"}
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 SLUG_CLEAN_RE = re.compile(r"[^a-z0-9]+")
-
-
-def fail(msg: str) -> None:
-    print(json.dumps({"success": False, "data": {}, "error": msg}))
-    sys.exit(1)
-
-
-def ok(data: dict) -> None:
-    print(json.dumps({"success": True, "data": data, "error": ""}))
-    sys.exit(0)
 
 
 def derive_slug(source: str) -> str:
@@ -165,55 +167,6 @@ def derive_slug(source: str) -> str:
     base = tail.rsplit(".", 1)[0] if "." in tail else tail
     slug = SLUG_CLEAN_RE.sub("-", base.lower()).strip("-")
     return slug
-
-
-def parse_frontmatter(text: str) -> dict:
-    """Same shape as lint_wiki.py's parser — keep them structurally aligned."""
-    m = FRONTMATTER_RE.match(text)
-    if not m:
-        return {}
-    out: dict = {}
-    current_key = None
-    for line in m.group(1).splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        if line.startswith("  - ") and current_key:
-            out.setdefault(current_key, []).append(line[4:].strip())
-            continue
-        if ":" in line:
-            k, _, v = line.partition(":")
-            k = k.strip()
-            v = v.strip()
-            current_key = k
-            if v.startswith("[") and v.endswith("]"):
-                inside = v[1:-1].strip()
-                if not inside:
-                    out[k] = []
-                else:
-                    out[k] = [x.strip() for x in inside.split(",") if x.strip()]
-            elif v:
-                out[k] = v
-            else:
-                out[k] = []
-    return out
-
-
-def parse_date(s: str):
-    try:
-        return dt.datetime.strptime(s.strip(), "%Y-%m-%d").date()
-    except (ValueError, AttributeError):
-        return None
-
-
-def find_wiki_root(start: Path) -> Path:
-    """Walk up looking for .cogni-wiki/config.json."""
-    current = start.resolve()
-    while True:
-        if (current / ".cogni-wiki" / "config.json").is_file():
-            return current
-        if current.parent == current:
-            fail(f"not inside a cogni-wiki (no .cogni-wiki/config.json at or above {start})")
-        current = current.parent
 
 
 def existing_slugs(wiki_root: Path) -> set:
@@ -314,104 +267,6 @@ def _truncate_title(text: str, limit: int = 80) -> str:
         return one_line.rstrip(" .?!,;:")
     cut = one_line[: limit].rsplit(" ", 1)[0]
     return cut.rstrip(" .?!,;:")
-
-
-def _read_research_entity(path: Path) -> tuple[dict, str]:
-    """Read a cogni-research .md entity → (frontmatter dict, body text).
-
-    Re-uses the script's own frontmatter parser; cogni-research entities use
-    the same YAML-subset shape as wiki pages (top-level scalars + `- ` list
-    items), so the parser already handles the shapes that matter here.
-    """
-    text = path.read_text(encoding="utf-8")
-    fm = parse_frontmatter(text)
-    body = FRONTMATTER_RE.sub("", text, count=1).lstrip("\n")
-    return fm, body
-
-
-def _unquote(s: str) -> str:
-    """Strip surrounding single or double quotes from a YAML scalar."""
-    s = s.strip()
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
-        return s[1:-1]
-    return s
-
-
-def _strip_wikilink(ref: str) -> str:
-    """`[[01-contexts/data/ctx-foo-12345678]]` → `ctx-foo-12345678`.
-
-    Tolerant of surrounding quotes — cogni-research's create-entity.py emits
-    quoted wikilinks because YAML treats `[[…]]` as a flow-sequence start
-    otherwise. The script's parse_frontmatter keeps the quotes verbatim.
-    """
-    inner = _unquote(ref)
-    if inner.startswith("[[") and inner.endswith("]]"):
-        inner = inner[2:-2]
-    return inner.rsplit("/", 1)[-1]
-
-
-def _locate_research_project(slug_or_path: str, wiki_root: Path, override: str | None) -> Path:
-    """Resolve --research SLUG to a project directory.
-
-    Lookup order:
-      1. --research-root if given (must point at the project dir directly).
-      2. The slug itself if it contains a path separator (relative to cwd, then absolute).
-      3. `<workspace>/cogni-research-<slug>/` where workspace = wiki_root.parent.
-      4. `<wiki_root>/cogni-research-<slug>/` (e.g. wiki sits at workspace root).
-    Fail with the candidates checked so the user can correct the layout.
-    """
-    if override:
-        project = Path(override).resolve()
-        if not project.is_dir():
-            fail(f"--research-root not a directory: {project}")
-        return project
-
-    if "/" in slug_or_path or slug_or_path.startswith("."):
-        candidate = Path(slug_or_path).resolve()
-        if candidate.is_dir():
-            return candidate
-        fail(f"--research path not found: {candidate}")
-
-    slug = slug_or_path
-    candidates = [
-        wiki_root.parent / f"cogni-research-{slug}",
-        wiki_root / f"cogni-research-{slug}",
-    ]
-    for c in candidates:
-        if c.is_dir():
-            return c.resolve()
-    fail(
-        "cogni-research project not found. Tried: "
-        + ", ".join(str(c) for c in candidates)
-        + ". Pass --research-root to override."
-    )
-    return Path()  # unreachable
-
-
-def _load_sub_questions(project: Path) -> list[dict]:
-    """Read all sq-*.md and return entity dicts ordered by section_index."""
-    sq_dir = project / "00-sub-questions" / "data"
-    if not sq_dir.is_dir():
-        fail(f"sub-questions dir missing: {sq_dir}")
-    items: list[dict] = []
-    for path in sorted(sq_dir.glob("sq-*.md")):
-        fm, _ = _read_research_entity(path)
-        if not fm.get("query"):
-            continue
-        try:
-            section_index = int(fm.get("section_index", 0))
-        except (TypeError, ValueError):
-            section_index = 0
-        items.append({
-            "id": _unquote(fm.get("dc:identifier") or path.stem),
-            "query": _unquote(fm["query"]),
-            "parent_topic": _unquote(fm.get("parent_topic", "")),
-            "section_index": section_index,
-            "status": _unquote(fm.get("status", "")),
-            "path": path,
-        })
-    items.sort(key=lambda x: (x["section_index"], x["id"]))
-    return items
 
 
 def _index_research_entities(project: Path) -> tuple[dict, dict, list[dict]]:
@@ -619,9 +474,7 @@ def discover_research(
         out_path = raw_subdir / filename
 
         if materialize:
-            tmp = out_path.with_suffix(".md.tmp")
-            tmp.write_text(body, encoding="utf-8")
-            os.replace(tmp, out_path)
+            atomic_write(out_path, body)
             materialised += 1
 
         # Source path is wiki-root-relative so it slots into the existing

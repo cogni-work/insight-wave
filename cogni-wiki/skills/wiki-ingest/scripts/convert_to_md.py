@@ -58,14 +58,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import List
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _wikilib import atomic_write  # noqa: E402
 
 
 MARKDOWN_EXTS = {".md", ".markdown"}
@@ -156,22 +157,6 @@ class _HTMLToText(HTMLParser):
                 if blank_run == 1:
                     out_lines.append("")
         return "\n".join(out_lines).strip() + "\n"
-
-
-def _atomic_write_text(path: Path, content: str) -> None:
-    parent = path.parent
-    parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".convert-to-md-", dir=str(parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
 
 
 def _converted_path_for(source: Path) -> Path:
@@ -305,7 +290,7 @@ def main() -> None:
         fail(f"could not read source: {e}", source_path=str(source))
         return
 
-    _atomic_write_text(converted, content)
+    atomic_write(converted, content)
 
     ok(
         source_path=str(source),

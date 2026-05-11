@@ -50,9 +50,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
+    FRONTMATTER_RE,
     _wiki_lock,
     atomic_write,
     emit_json,
+    fail,
     fail_if_pre_migration,
 )
 
@@ -72,12 +74,6 @@ FILTER_TAGS = {
 }
 
 DATE_PLACEHOLDER = "{{PREFILL_DATE}}"
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
-
-
-def fail(msg: str) -> None:
-    emit_json(False, {}, msg)
-    sys.exit(1)
 
 
 def parse_minimal_frontmatter(text: str) -> dict:
