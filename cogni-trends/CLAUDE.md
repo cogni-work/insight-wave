@@ -62,10 +62,11 @@ catalogs/                       Industry knowledge base
     metrics.json                  Industry metrics
     collaterals.json              Marketing collaterals
 
-scripts/                        5 utility scripts
+scripts/                        6 utility scripts
   initialize-trend-project.sh     Initialize project directory structure
   project-status.sh               Show status with phase detection and candidate counts
-  discover-projects.sh            Discover cogni-trends projects in workspace
+  discover-projects.sh            Thin wrapper delegating to cogni-workspace/scripts/discover-plugin-projects.sh
+  _discover_extractor.py          Per-project JSON field extractor consumed by the discovery wrapper
   discover-portfolio-markets.sh   Find portfolio markets for TIPS-portfolio bridging
   repair-candidates.sh            Repair candidate integrity/structure issues
 
