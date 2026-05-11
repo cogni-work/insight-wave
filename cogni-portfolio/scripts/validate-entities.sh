@@ -326,7 +326,11 @@ fi
 # whitelist can never drift. Resolves cogni-workspace via the standard
 # sibling-install-or-monorepo-source fallback. Falls back to the canonical
 # minimum if the registry is unreachable.
-_WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null | head -1)}"
+# Trailing `|| true` neutralizes pipefail on the inner substitutions so that
+# missing cache dirs or a failing get-market-config.py never silently kill
+# the parent script under `set -euo pipefail`. The empty-string outcome is
+# handled by the existence/length checks that follow.
+_WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null | head -1 || true)}"
 if [ -z "$_WORKSPACE_ROOT" ] || [ ! -f "$_WORKSPACE_ROOT/scripts/get-market-config.py" ]; then
   _WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../cogni-workspace" 2>/dev/null && pwd)"
 fi
@@ -334,7 +338,7 @@ _GET_MARKET="$_WORKSPACE_ROOT/scripts/get-market-config.py"
 VALID_REGIONS=""
 if [ -f "$_GET_MARKET" ]; then
   VALID_REGIONS=$(python3 "$_GET_MARKET" --plugin portfolio --all-markets 2>/dev/null \
-    | python3 -c 'import json,sys;d=json.load(sys.stdin).get("data",{});print(" ".join(sorted(k for k in d.keys() if not k.startswith("_"))))' 2>/dev/null)
+    | python3 -c 'import json,sys;d=json.load(sys.stdin).get("data") or {};print(" ".join(sorted(k for k in d.keys() if not k.startswith("_"))))' 2>/dev/null || true)
 fi
 if [ -z "$VALID_REGIONS" ]; then
   VALID_REGIONS="de dach eu uk nordics us na cn apac jp latam mea global"

@@ -78,11 +78,15 @@ def _resolve_workspace_root():
     if explicit and Path(explicit, "scripts/get-market-config.py").exists():
         return Path(explicit)
     cache = Path.home() / ".claude/plugins/cache/insight-wave/cogni-workspace"
-    if cache.exists():
-        candidates = sorted(cache.iterdir(), reverse=True)
-        for c in candidates:
-            if (c / "scripts/get-market-config.py").exists():
-                return c
+    # Sort by mtime, not name: lex-sort would rank "0.6.9" above "0.6.10".
+    # mtime correlates with install/update time, so newest mtime = latest install.
+    try:
+        candidates = sorted(cache.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+    except FileNotFoundError:
+        candidates = []
+    for c in candidates:
+        if (c / "scripts/get-market-config.py").exists():
+            return c
     monorepo = Path(__file__).resolve().parents[2] / "cogni-workspace"
     if (monorepo / "scripts/get-market-config.py").exists():
         return monorepo

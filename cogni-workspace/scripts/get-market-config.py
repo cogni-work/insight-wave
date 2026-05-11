@@ -72,8 +72,10 @@ def _resolve_sibling_plugin(meta):
             return cand
 
     cache = Path.home() / ".claude/plugins/cache/insight-wave" / meta.dir_name
+    # Sort by mtime, not name: lex-sort would rank "0.6.9" above "0.6.10".
+    # mtime correlates with install/update time, so newest mtime = latest install.
     try:
-        for cand in sorted(cache.iterdir(), reverse=True):
+        for cand in sorted(cache.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
             if cand.is_dir() and (cand / sentinel).exists():
                 return cand
     except FileNotFoundError:
