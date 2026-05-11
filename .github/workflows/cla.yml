@@ -18,6 +18,32 @@ jobs:
       (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA')
       || github.event_name == 'pull_request_target'
     steps:
+      - name: Block spoofable claude-author identity from untrusted PR openers
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          # Trusted maintainers whose PRs may contain claude.ai cloud-session commits.
+          # The `claude` GitHub user (noreply@anthropic.com) is verified for Anthropic's
+          # automation account, but the email itself can be set in any local git commit,
+          # so commit-author=claude alone is not a strong identity signal. This guard
+          # only honors that identity when the PR opener is also a trusted maintainer.
+          TRUSTED: sdh07
+        run: |
+          set -euo pipefail
+          DATA=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json author,commits)
+          PR_OPENER=$(echo "$DATA" | jq -r '.author.login')
+          HAS_CLAUDE=$(echo "$DATA" | jq -r '[.commits[].authors[].login] | any(. == "claude")')
+
+          echo "PR opener: $PR_OPENER"
+          echo "Commits include 'claude'-authored: $HAS_CLAUDE"
+
+          if [ "$HAS_CLAUDE" = "true" ] && ! echo "$TRUSTED" | tr ',' '\n' | grep -qx "$PR_OPENER"; then
+            echo "::error::PR #$PR_NUMBER contains commits attributed to the 'claude' GitHub user, but the PR opener ($PR_OPENER) is not a trusted maintainer."
+            echo "::error::The claude.ai commit-author identity is spoofable (noreply@anthropic.com can be set in any local commit), so it is only honored on PRs opened by trusted maintainers ($TRUSTED)."
+            exit 1
+          fi
+
       - name: CLA Assistant
         uses: contributor-assistant/github-action@v2.6.1
         env:
