@@ -1,6 +1,6 @@
 {
   "_schema_version": "1.0",
-  "_last_synced_at": "2026-04-29",
+  "_last_synced_at": "2026-05-11",
   "_upstream_path": "cogni-narrative/skills/narrative/references/story-arc/",
   "_notes": "Local registry of story arcs the cogni-research writer can apply as section structure. Mirrors a subset of cogni-narrative's arc-definition.md files. Audited by the audit-arcs skill against the upstream source of truth. v1 ships two arcs: standard-research (today's default, dynamic structure) and corporate-visions (executive narrative arc, EN+DE, detailed report_type only).",
   "arcs": {
