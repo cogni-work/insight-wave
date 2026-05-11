@@ -203,19 +203,23 @@ if [ -f "$OPEN_QUESTIONS_FILE" ]; then
 fi
 
 # ---------- orphan raw files (quick heuristic) ----------
+# One pass over the wiki tree into a temp file, then per-raw fixed-string
+# checks against that. Replaces the previous O(raw_files × wiki_pages × bytes)
+# recursive grep that re-walked $WIKI_DIR for every raw file.
 orphan_raw_count=0
 if [ -d "$RAW_DIR" ] && [ -d "$WIKI_DIR" ]; then
-  # For every file in raw/, check whether any page's frontmatter or body
-  # mentions its basename. Recurses across all per-type page directories.
+  WIKI_BLOB=$(mktemp)
+  find "$WIKI_DIR" -type f -name '*.md' -exec cat {} + > "$WIKI_BLOB" 2>/dev/null
   while IFS= read -r rawfile; do
     [ -z "$rawfile" ] && continue
     base=$(basename "$rawfile")
-    if ! grep -rqF "$base" "$WIKI_DIR" 2>/dev/null; then
+    if ! grep -qF -- "$base" "$WIKI_BLOB" 2>/dev/null; then
       orphan_raw_count=$((orphan_raw_count + 1))
     fi
   done <<EOF
 $(find "$RAW_DIR" -maxdepth 1 -type f 2>/dev/null)
 EOF
+  rm -f "$WIKI_BLOB"
 fi
 
 # ---------- queue snapshot (v0.0.35, T3.1) ----------
