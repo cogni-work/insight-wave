@@ -770,7 +770,22 @@ def escape_html(text):
 def escape_js_string(text):
     if not isinstance(text, str):
         text = str(text) if text is not None else ""
-    return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "")
+    return (text.replace("\\", "\\\\").replace('"', '\\"').replace("'", "\\'")
+                .replace("\n", "\\n").replace("\r", ""))
+
+
+def safe_href(url):
+    """Return the URL only when its scheme is safe to render in an anchor href.
+    Defends against javascript:/data:/vbscript: links smuggled in via curated data."""
+    if not isinstance(url, str):
+        return ""
+    u = url.strip()
+    if not u:
+        return ""
+    lower = u.lower()
+    if lower.startswith(("http://", "https://", "mailto:")):
+        return u
+    return ""
 
 
 def _numeric(val):
@@ -3470,7 +3485,7 @@ body::after {{
                 continue
             label = category_labels.get(cat, cat.title())
             initial_display = "block" if i == 0 else "none"
-            cat_id = f"ctx-cat-{escape_html(cat)}"
+            cat_id = "ctx-cat-" + re.sub(r"[^a-z0-9-]", "-", cat.lower())
             html += f"""  <div class="product-group">
     <div class="product-header" onclick="var d=document.getElementById('{cat_id}');d.style.display=d.style.display==='none'?'block':'none'">
       <h4>{escape_html(label)}</h4>
@@ -3728,8 +3743,11 @@ body::after {{
 
             source_links = ""
             for url in comp["source_urls"]:
+                safe = safe_href(url)
+                if not safe:
+                    continue
                 source_links += (
-                    f' <a href="{escape_html(url)}" target="_blank" rel="noopener" '
+                    f' <a href="{escape_html(safe)}" target="_blank" rel="noopener" '
                     f'style="color:var(--accent-dark);font-size:11px;margin-right:8px">[source]</a>'
                 )
             sources_html = (
