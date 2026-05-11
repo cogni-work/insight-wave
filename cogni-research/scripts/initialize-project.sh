@@ -198,37 +198,29 @@ fi
 # in cogni-workspace/references/supported-markets-registry.json and merged
 # with the local research overlay at read time. Keys starting with "_" are
 # internal (e.g., _default) and not user-selectable.
-_INIT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Three-layer resolver mirroring cogni-workspace/scripts/get-market-config.py
-# (_resolve_sibling_plugin) and cogni-research/scripts/market-summary.py
-# (_resolve_workspace_root):
-#   1. $WORKSPACE_PLUGIN_ROOT — accepted only if the sentinel file exists
-#      (rejects bad overrides like `WORKSPACE_PLUGIN_ROOT=/nonexistent`).
-#   2. Latest cache version dir under
-#      ~/.claude/plugins/cache/insight-wave/cogni-workspace/ — iterated by
-#      mtime-desc, candidate wins only if sentinel exists (skips stray
-#      non-version dirs like .orphaned_at markers or workaround symlinks
-#      from issue #235's interim guidance).
-#   3. Monorepo sibling — non-fatal under `set -e` via `|| true`, re-validated.
-# On terminal failure (no layer wins), emit a JSON envelope to stderr — same
-# UX contract --market validation already follows below. Closes #237.
+# Three-layer workspace resolver mirroring cogni-workspace/scripts/get-market-config.py
+# (_resolve_sibling_plugin): env var → cache walk → monorepo sibling. Each layer
+# wins only if the sentinel exists under it. Terminal failure emits a JSON
+# envelope on stderr (same UX contract --market validation follows below).
+# Closes #237 — prior one-liner silently exited 1 on bad overrides or stray
+# non-version dirs in the cache root.
 _WORKSPACE_ROOT=""
 _WS_SENTINEL="scripts/get-market-config.py"
-if [[ -n "${WORKSPACE_PLUGIN_ROOT:-}" && -f "${WORKSPACE_PLUGIN_ROOT}/${_WS_SENTINEL}" ]]; then
-  _WORKSPACE_ROOT="$WORKSPACE_PLUGIN_ROOT"
+if [[ -n "${WORKSPACE_PLUGIN_ROOT:-}" && -f "${WORKSPACE_PLUGIN_ROOT%/}/${_WS_SENTINEL}" ]]; then
+  _WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT%/}"
 fi
 if [[ -z "$_WORKSPACE_ROOT" ]]; then
-  for _cand in $(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null || true); do
+  while IFS= read -r _cand; do
     if [[ -f "${_cand}${_WS_SENTINEL}" ]]; then
       _WORKSPACE_ROOT="${_cand%/}"
       break
     fi
-  done
+  done < <(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null || true)
 fi
 if [[ -z "$_WORKSPACE_ROOT" ]]; then
   _monorepo_cand="$(cd "$_INIT_SCRIPT_DIR/../../cogni-workspace" 2>/dev/null && pwd || true)"
-  if [[ -n "$_monorepo_cand" && -f "${_monorepo_cand}/${_WS_SENTINEL}" ]]; then
-    _WORKSPACE_ROOT="$_monorepo_cand"
+  if [[ -n "$_monorepo_cand" && -f "${_monorepo_cand%/}/${_WS_SENTINEL}" ]]; then
+    _WORKSPACE_ROOT="${_monorepo_cand%/}"
   fi
 fi
 if [[ -z "$_WORKSPACE_ROOT" ]]; then
