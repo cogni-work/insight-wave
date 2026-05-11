@@ -913,7 +913,13 @@ def _aggregate_competitors(competitors_by_prop):
 
     Returns a list of dicts ordered by (appearance count desc, name asc):
       {name, prop_slugs[], positionings[{prop_slug, text}],
-       differentiations[{prop_slug, text}], strengths[], weaknesses[], source_urls[]}
+       differentiations[{prop_slug, text}],
+       strengths{text: [prop_slugs]}, weaknesses{text: [prop_slugs]},
+       source_urls[]}
+
+    strengths/weaknesses are kept as dicts (text -> contributing prop_slugs)
+    so the render layer can show union pills with per-proposition provenance
+    tooltips. Insertion order is preserved (relies on dict ordering, Py 3.7+).
     """
     if not competitors_by_prop:
         return []
@@ -934,8 +940,8 @@ def _aggregate_competitors(competitors_by_prop):
                 "prop_slugs": set(),
                 "positionings": [],
                 "differentiations": [],
-                "strengths": [],
-                "weaknesses": [],
+                "strengths": {},
+                "weaknesses": {},
                 "source_urls": [],
             })
             bucket["prop_slugs"].add(prop_slug)
@@ -945,8 +951,14 @@ def _aggregate_competitors(competitors_by_prop):
             diff = (comp.get("differentiation") or "").strip()
             if diff:
                 bucket["differentiations"].append({"prop_slug": prop_slug, "text": diff})
-            bucket["strengths"].extend((s or "").strip() for s in comp.get("strengths") or [])
-            bucket["weaknesses"].extend((w or "").strip() for w in comp.get("weaknesses") or [])
+            for raw in comp.get("strengths") or []:
+                t = (raw or "").strip()
+                if t and prop_slug not in bucket["strengths"].setdefault(t, []):
+                    bucket["strengths"][t].append(prop_slug)
+            for raw in comp.get("weaknesses") or []:
+                t = (raw or "").strip()
+                if t and prop_slug not in bucket["weaknesses"].setdefault(t, []):
+                    bucket["weaknesses"][t].append(prop_slug)
             url = (comp.get("source_url") or "").strip()
             if url:
                 bucket["source_urls"].append(url)
@@ -954,31 +966,43 @@ def _aggregate_competitors(competitors_by_prop):
     out = []
     for bucket in by_key.values():
         bucket["prop_slugs"] = sorted(bucket["prop_slugs"])
-        bucket["strengths"] = [s for s in dict.fromkeys(bucket["strengths"]) if s]
-        bucket["weaknesses"] = [w for w in dict.fromkeys(bucket["weaknesses"]) if w]
         bucket["source_urls"] = list(dict.fromkeys(bucket["source_urls"]))
         out.append(bucket)
     out.sort(key=lambda b: (-len(b["prop_slugs"]), b["name"].lower()))
     return out
 
 
-def _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions):
+def _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions,
+                competitors_by_prop=None):
     # Single source of truth for the four-state Feature x Market encoding
     # shared by the full matrix and the compact coverage heatmap.
+    # competitors_by_prop is data["competitors"] keyed by proposition slug;
+    # the cell is the F x M pair, which IS the proposition slug for non-excluded
+    # cells, so a per-cell competitor count is just a dict lookup + len().
+    comp_doc = (competitors_by_prop or {}).get(pair) if competitors_by_prop else None
+    comp_n = 0
+    if isinstance(comp_doc, dict):
+        comps = comp_doc.get("competitors") or []
+        comp_n = sum(1 for c in comps if isinstance(c, dict) and (c.get("name") or "").strip())
+
     if pair in excluded_set:
         return {
             "kind": "excluded",
             "cls": "excluded",
             "icon": "&#8709;",
             "title": excluded_reasons.get(pair, "Excluded"),
+            "competitor_count": comp_n,
         }
     has_prop = pair in propositions
     has_sol = pair in solutions
     if has_prop and has_sol:
-        return {"kind": "full", "cls": "full", "icon": "&#10003;", "title": pair}
+        return {"kind": "full", "cls": "full", "icon": "&#10003;", "title": pair,
+                "competitor_count": comp_n}
     if has_prop:
-        return {"kind": "partial", "cls": "partial", "icon": "&#9679;", "title": pair}
-    return {"kind": "missing", "cls": "missing", "icon": "&#10005;", "title": pair}
+        return {"kind": "partial", "cls": "partial", "icon": "&#9679;", "title": pair,
+                "competitor_count": comp_n}
+    return {"kind": "missing", "cls": "missing", "icon": "&#10005;", "title": pair,
+            "competitor_count": comp_n}
 
 
 def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, excluded_reasons):
@@ -990,6 +1014,7 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
 
     propositions = data["propositions"]
     solutions = data["solutions"]
+    competitors_by_prop = data.get("competitors") or {}
 
     counts = {"full": 0, "partial": 0, "missing": 0, "excluded": 0}
     cell_matrix = []  # list of (feature_slug, [state_dict per market])
@@ -997,7 +1022,8 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
         row = []
         for ms in market_slugs:
             pair = f"{fs}--{ms}"
-            st = _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions)
+            st = _cell_state(pair, excluded_set, excluded_reasons, propositions, solutions,
+                             competitors_by_prop)
             counts[st["kind"]] += 1
             row.append((pair, st))
         cell_matrix.append((fs, row))
@@ -1032,11 +1058,15 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
             fname = escape_html(data["features"][fs].get("name", fs))
             cells = []
             for pair, st in row:
+                comp_n = st.get("competitor_count", 0)
+                # Compressed cells are too small for a number; mark presence with a corner dot.
+                comp_marker = '<span class="coverage-cell-comp-dot" aria-hidden="true"></span>' if comp_n else ''
+                comp_suffix = f' &middot; {comp_n} competitor{"s" if comp_n != 1 else ""}' if comp_n else ''
                 if st["kind"] == "excluded":
                     cells.append(
                         f'<button type="button" class="coverage-cell excluded" '
-                        f'title="{escape_html(fname)} &times; {escape_html(pair.split("--", 1)[1])} &mdash; {escape_html(st["title"])}" '
-                        f'aria-label="Excluded"></button>'
+                        f'title="{escape_html(fname)} &times; {escape_html(pair.split("--", 1)[1])} &mdash; {escape_html(st["title"])}{comp_suffix}" '
+                        f'aria-label="Excluded">{comp_marker}</button>'
                     )
                 else:
                     mslug = pair.split("--", 1)[1]
@@ -1045,8 +1075,8 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
                     cells.append(
                         f'<button type="button" class="coverage-cell {st["cls"]}" '
                         f'onclick="openCoverageCell(\'{escape_js_string(pair)}\')" '
-                        f'title="{escape_html(fname)} &times; {mname} &mdash; {state_label}" '
-                        f'aria-label="{escape_html(fname)} times {mname}, {state_label}"></button>'
+                        f'title="{escape_html(fname)} &times; {mname} &mdash; {state_label}{comp_suffix}" '
+                        f'aria-label="{escape_html(fname)} times {mname}, {state_label}">{comp_marker}</button>'
                     )
             rows_html.append('<div class="coverage-heatmap-row">' + ''.join(cells) + '</div>')
         body = '<div class="coverage-heatmap">' + ''.join(rows_html) + '</div>'
@@ -1061,10 +1091,16 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
             fname = escape_html(data["features"][fs].get("name", fs))
             cells = [f'<td class="feat-label" title="{fname}">{fname}</td>']
             for pair, st in row:
+                comp_n = st.get("competitor_count", 0)
+                comp_badge = (
+                    f'<span class="coverage-cell-comp-badge" aria-label="{comp_n} competitors">{comp_n}</span>'
+                    if comp_n else ''
+                )
+                comp_suffix = f' &middot; {comp_n} competitor{"s" if comp_n != 1 else ""}' if comp_n else ''
                 if st["kind"] == "excluded":
                     cells.append(
                         f'<td><button type="button" class="coverage-cell-inline excluded" '
-                        f'title="{escape_html(st["title"])}"></button></td>'
+                        f'title="{escape_html(st["title"])}{comp_suffix}">{comp_badge}</button></td>'
                     )
                 else:
                     mslug = pair.split("--", 1)[1]
@@ -1072,7 +1108,7 @@ def _build_coverage_heatmap(feature_slugs, market_slugs, data, excluded_set, exc
                     cells.append(
                         f'<td><button type="button" class="coverage-cell-inline {st["cls"]}" '
                         f'onclick="openCoverageCell(\'{escape_js_string(pair)}\')" '
-                        f'title="{escape_html(fname)} &times; {mname} &mdash; {st["kind"]}"></button></td>'
+                        f'title="{escape_html(fname)} &times; {mname} &mdash; {st["kind"]}{comp_suffix}">{comp_badge}</button></td>'
                     )
             body_rows.append('<tr>' + ''.join(cells) + '</tr>')
         body = (
@@ -1528,6 +1564,53 @@ body::after {{
   cursor: default;
 }}
 .cell.excluded:hover {{ opacity: 0.4; }}
+.matrix .cell {{ position: relative; }}
+.cell-comp-badge {{
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 9px;
+  line-height: 14px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+  pointer-events: none;
+}}
+.coverage-cell-comp-badge {{
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 8px;
+  line-height: 12px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+  pointer-events: none;
+}}
+.coverage-cell, .coverage-cell-inline {{ position: relative; }}
+.coverage-cell-comp-dot {{
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text);
+  opacity: 0.7;
+  pointer-events: none;
+}}
 .matrix .feature-label {{
   font-size: 13px;
   color: var(--text);
@@ -2679,12 +2762,12 @@ body::after {{
   {'<a href="#" data-section="Provider units">Provider units</a>' if scan_output else ''}
   <a href="#" data-section="Markets">Markets</a>
   <a href="#" data-section="Matrix">Feature &times; Market</a>
+  {'<a href="#" data-section="Competitive Landscape">Competitive</a>' if has_competitive else ''}
   {'<a href="#" data-section="Taxonomy">Taxonomy</a>' if has_taxonomy else ''}
   {'<a href="#" data-section="Anchor">Anchors</a>' if anchored_sts else ''}
   <a href="#" data-section="Customers">Customers</a>
   {'<a href="#" data-section="Context Intelligence">Context</a>' if has_context else ''}
   <a href="#" data-section="Solutions">Solutions</a>
-  {'<a href="#" data-section="Competitive Landscape">Competitive</a>' if has_competitive else ''}
   <a href="#" data-section="Packages">Packages</a>
   <a href="#" data-section="Margin">Margins</a>
   {'<a href="#" data-section="Innovation">Pipeline</a>' if opportunities_data else ''}
@@ -3133,11 +3216,18 @@ body::after {{
                 for ms in market_slugs:
                     pair = f"{fs}--{ms}"
                     st = _cell_state(pair, _excluded_set, _excluded_reasons,
-                                     data["propositions"], data["solutions"])
+                                     data["propositions"], data["solutions"],
+                                     data.get("competitors") or {})
+                    comp_n = st.get("competitor_count", 0)
+                    comp_badge = (
+                        f'<span class="cell-comp-badge" aria-label="{comp_n} competitors">{comp_n}</span>'
+                        if comp_n else ''
+                    )
+                    comp_suffix = f' &middot; {comp_n} competitor{"s" if comp_n != 1 else ""}' if comp_n else ''
                     if st["kind"] == "excluded":
-                        html += f'        <td><button class="cell excluded" title="{escape_html(st["title"])}">{st["icon"]}</button></td>\n'
+                        html += f'        <td><button class="cell excluded" title="{escape_html(st["title"])}{comp_suffix}">{st["icon"]}{comp_badge}</button></td>\n'
                     else:
-                        html += f'        <td><button class="cell {st["cls"]}" onclick="openProposition(\'{escape_js_string(pair)}\')" title="{escape_html(st["title"])}">{st["icon"]}</button></td>\n'
+                        html += f'        <td><button class="cell {st["cls"]}" onclick="openProposition(\'{escape_js_string(pair)}\')" title="{escape_html(st["title"])}{comp_suffix}">{st["icon"]}{comp_badge}</button></td>\n'
                 html += "      </tr>\n"
 
         for ps in sorted(product_groups.keys()):
@@ -3155,7 +3245,166 @@ body::after {{
         html += '<span><span class="legend-dot" style="background:var(--yellow)"></span> Proposition only</span>'
         html += '<span><span class="legend-dot" style="background:var(--red);opacity:0.4"></span> Missing</span>'
         html += '<span><span class="legend-dot" style="background:var(--muted);opacity:0.3"></span> Excluded (N/A)</span>'
+        if has_competitive:
+            html += '<span><span class="cell-comp-badge" style="position:static;display:inline-block;vertical-align:middle">N</span> Competitors analyzed</span>'
         html += '</div>\n</div>\n'
+
+    # --- Competitive Landscape ---
+    # Sits directly under the F x M matrix because competitor data is per-proposition,
+    # i.e. per F x M cell. Each card surfaces the F x M footprint the matrix above
+    # encodes only as small badges, with positioning/differentiation per cell.
+    if has_competitive:
+        html += f"""
+<!-- Competitive Landscape -->
+<div class="section reveal">
+  <div class="section-title">Competitive Landscape</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px;max-width:820px">
+    Competitive pressure on the matrix above &mdash; deduplicated across {len(competitors_agg)} competitor{'s' if len(competitors_agg) != 1 else ''} drawn from per-proposition <code>competitors/*.json</code>.
+    Each card shows the Feature &times; Market cells the competitor appears in;
+    expand the positioning block for per-cell detail.
+  </div>
+"""
+
+        def _split_pair(slug):
+            # Proposition slugs are canonical "{feature-slug}--{market-slug}".
+            # rsplit handles features whose slug contains "--" defensively.
+            if "--" not in slug:
+                return slug, ""
+            f, m = slug.rsplit("--", 1)
+            return f, m
+
+        def _fm_chips(slug, prefix_label=False):
+            fs, ms = _split_pair(slug)
+            fname = data["features"].get(fs, {}).get("name", fs) if fs else ""
+            mname = data["markets"].get(ms, {}).get("name", ms) if ms else ""
+            f_label = (f'feature: {fname}' if prefix_label else fname) if fname else ""
+            m_label = (f'market: {mname}' if prefix_label else mname) if mname else ""
+            chips = ""
+            if f_label:
+                chips += f'<span class="stack-pill">{escape_html(f_label)}</span>'
+            if m_label:
+                chips += f'<span class="stack-pill">{escape_html(m_label)}</span>'
+            return chips
+
+        for comp in competitors_agg:
+            name = escape_html(comp["name"])
+            prop_slugs = comp["prop_slugs"]
+            count = len(prop_slugs)
+
+            # F x M footprint summary: distinct features and markets this competitor touches.
+            feature_set, market_set = set(), set()
+            for ps in prop_slugs:
+                fs, ms = _split_pair(ps)
+                if fs:
+                    feature_set.add(fs)
+                if ms:
+                    market_set.add(ms)
+            footprint_summary = (
+                f'<span class="badge" style="margin-left:8px">'
+                f'{count} cell{"s" if count != 1 else ""} '
+                f'&middot; {len(feature_set)} feature{"s" if len(feature_set) != 1 else ""} '
+                f'&times; {len(market_set)} market{"s" if len(market_set) != 1 else ""}'
+                f'</span>'
+            )
+
+            # Drill-down proposition chips (click opens existing per-proposition drawer).
+            prop_chips = "".join(
+                f'<span class="stack-pill" style="cursor:pointer" '
+                f'onclick="openProposition(\'{escape_js_string(ps)}\')" '
+                f'title="Open proposition for {escape_html(ps)}">{escape_html(ps)}</span>'
+                for ps in prop_slugs
+            )
+
+            # Positioning per cell (F2). Use a <details> so the card stays compact
+            # by default but the per-cell variation is one click away.
+            positionings = comp["positionings"]
+            positioning_html = ""
+            if positionings:
+                preview = positionings[0]["text"]
+                if len(preview) > 220:
+                    preview = preview[:217].rstrip() + "…"
+                items = "".join(
+                    f'<li style="margin-bottom:8px">'
+                    f'<div style="margin-bottom:4px">{_fm_chips(p["prop_slug"])}</div>'
+                    f'<div class="comp-detail">{escape_html(p["text"])}</div>'
+                    f'</li>'
+                    for p in positionings
+                )
+                positioning_html = (
+                    f'<details class="comp-positionings" style="margin-top:6px">'
+                    f'<summary style="cursor:pointer;color:var(--text2);font-size:12px">'
+                    f'Positioning across {len(positionings)} cell{"s" if len(positionings) != 1 else ""} &mdash; '
+                    f'<span style="color:var(--text)">{escape_html(preview)}</span>'
+                    f'</summary>'
+                    f'<ul style="margin:8px 0 0 0;padding:0;list-style:none">{items}</ul>'
+                    f'</details>'
+                )
+
+            # Differentiation per cell — same treatment.
+            diffs = comp["differentiations"]
+            differentiation_html = ""
+            if diffs:
+                preview = diffs[0]["text"]
+                if len(preview) > 220:
+                    preview = preview[:217].rstrip() + "…"
+                items = "".join(
+                    f'<li style="margin-bottom:8px">'
+                    f'<div style="margin-bottom:4px">{_fm_chips(p["prop_slug"])}</div>'
+                    f'<div class="comp-detail" style="color:var(--accent-dark)">{escape_html(p["text"])}</div>'
+                    f'</li>'
+                    for p in diffs
+                )
+                differentiation_html = (
+                    f'<details class="comp-differentiations" style="margin-top:4px">'
+                    f'<summary style="cursor:pointer;color:var(--accent-dark);font-size:12px">'
+                    f'Differentiation across {len(diffs)} cell{"s" if len(diffs) != 1 else ""} &mdash; '
+                    f'<span style="color:var(--text)">{escape_html(preview)}</span>'
+                    f'</summary>'
+                    f'<ul style="margin:8px 0 0 0;padding:0;list-style:none">{items}</ul>'
+                    f'</details>'
+                )
+
+            # Strength/weakness pills with prop_slug origin tooltips (F3).
+            def _origin_pill(text, sources, cls):
+                origin = ", ".join(sources) if sources else ""
+                title_attr = (
+                    f' title="appears in: {escape_html(origin)}"'
+                    if origin else ""
+                )
+                return (
+                    f'<span class="comp-pill {cls}"{title_attr}>{escape_html(text)}</span>'
+                )
+
+            pills = "".join(_origin_pill(t, srcs, "strength")
+                            for t, srcs in comp["strengths"].items())
+            pills += "".join(_origin_pill(t, srcs, "weakness")
+                             for t, srcs in comp["weaknesses"].items())
+            pills_html = f'<div class="comp-pills">{pills}</div>' if pills else ""
+
+            source_links = ""
+            for url in comp["source_urls"]:
+                safe = safe_href(url)
+                if not safe:
+                    continue
+                source_links += (
+                    f' <a href="{escape_html(safe)}" target="_blank" rel="noopener" '
+                    f'style="color:var(--accent-dark);font-size:11px;margin-right:8px">[source]</a>'
+                )
+            sources_html = (
+                f'<div style="margin-top:6px;font-size:11px;color:var(--text2)">Sources:{source_links}</div>'
+                if source_links else ""
+            )
+
+            html += f"""  <div class="competitor-card">
+    <h5>{name}{footprint_summary}</h5>
+    {positioning_html}
+    {differentiation_html}
+    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">{prop_chips}</div>
+    {pills_html}
+    {sources_html}
+  </div>
+"""
+        html += "</div>\n"
 
     # --- Taxonomy Coverage Heatmap & Gap Analysis ---
     taxonomy = portfolio.get("taxonomy")
@@ -3694,76 +3943,6 @@ body::after {{
 """
             html += "      </tbody>\n    </table>\n  </div>\n"
 
-        html += "</div>\n"
-
-    # --- Competitive Landscape ---
-    if has_competitive:
-        html += f"""
-<!-- Competitive Landscape -->
-<div class="section reveal">
-  <div class="section-title">Competitive Landscape</div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:12px;max-width:820px">
-    Deduplicated across {len(competitors_agg)} competitor{'s' if len(competitors_agg) != 1 else ''} drawn from per-proposition <code>competitors/*.json</code>.
-    Click a proposition chip to drill into that proposition.
-  </div>
-"""
-        for comp in competitors_agg:
-            name = escape_html(comp["name"])
-            prop_slugs = comp["prop_slugs"]
-            count = len(prop_slugs)
-            count_badge = f'<span class="badge" style="margin-left:8px">{count} proposition{"s" if count != 1 else ""}</span>'
-
-            prop_chips = "".join(
-                f'<span class="stack-pill" style="cursor:pointer" '
-                f'onclick="openProposition(\'{escape_js_string(ps)}\')" '
-                f'title="Open proposition">{escape_html(ps)}</span>'
-                for ps in prop_slugs
-            )
-
-            positioning_html = ""
-            if comp["positionings"]:
-                # Show the first (longest-ish) positioning to keep the card compact
-                first = comp["positionings"][0]
-                positioning_html = f'<div class="comp-detail">{escape_html(first["text"])}</div>'
-
-            differentiation_html = ""
-            if comp["differentiations"]:
-                first_diff = comp["differentiations"][0]
-                differentiation_html = (
-                    f'<div class="comp-detail" style="color:var(--accent-dark);margin-top:4px">'
-                    f'{escape_html(first_diff["text"])}</div>'
-                )
-
-            pills = ""
-            for s in comp["strengths"]:
-                pills += f'<span class="comp-pill strength">{escape_html(s)}</span>'
-            for w in comp["weaknesses"]:
-                pills += f'<span class="comp-pill weakness">{escape_html(w)}</span>'
-            pills_html = f'<div class="comp-pills">{pills}</div>' if pills else ""
-
-            source_links = ""
-            for url in comp["source_urls"]:
-                safe = safe_href(url)
-                if not safe:
-                    continue
-                source_links += (
-                    f' <a href="{escape_html(safe)}" target="_blank" rel="noopener" '
-                    f'style="color:var(--accent-dark);font-size:11px;margin-right:8px">[source]</a>'
-                )
-            sources_html = (
-                f'<div style="margin-top:6px;font-size:11px;color:var(--text2)">Sources:{source_links}</div>'
-                if source_links else ""
-            )
-
-            html += f"""  <div class="competitor-card">
-    <h5>{name}{count_badge}</h5>
-    {positioning_html}
-    {differentiation_html}
-    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">{prop_chips}</div>
-    {pills_html}
-    {sources_html}
-  </div>
-"""
         html += "</div>\n"
 
     # --- Packages ---
