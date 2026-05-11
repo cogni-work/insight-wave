@@ -33,13 +33,22 @@ Diamond engagements span multiple sessions and phases. Without a clear re-entry 
 
 ### 1. Find Diamond Engagements
 
-Scan the workspace for diamond engagements:
+**Determine the workspace root** before scanning. The workspace root is the directory that contains the `cogni-consulting/` engagement folder (which holds one or more `{slug}/consulting-project.json` engagements). Check in this order:
+
+1. `$PROJECT_AGENTS_OPS_ROOT` — if set (via `settings.local.json` env block), use it.
+2. If `$PWD` contains a `cogni-consulting/` subdirectory, use `$PWD`.
+3. Otherwise, walk up the directory tree from `$PWD` looking for an ancestor that contains a `cogni-consulting/` subdirectory. This handles the common case where the consultant invoked the skill from inside a specific engagement (e.g. `<workspace>/cogni-consulting/<engagement-slug>/`) — including workspaces hosted outside the insight-wave repo (OneDrive, Dropbox, client folders).
+4. If none of the above resolve, fall back to `$PWD` and warn the consultant that no `cogni-consulting/` directory was detected nearby.
+
+Then scan from the resolved workspace root:
 
 ```bash
-find . -maxdepth 3 -name "consulting-project.json" -path "*/cogni-consulting/*"
+find "<workspace-root>" -maxdepth 3 -name "consulting-project.json" -path "*/cogni-consulting/*"
 ```
 
-Each match represents an engagement (extract the slug from the directory name). If no engagements are found, say so and suggest the `consulting-setup` skill.
+Each match represents an engagement (extract the slug from the directory name). Subsequent script invocations in this skill must pass the **absolute** engagement directory (e.g. `<workspace-root>/cogni-consulting/<slug>`) — never a relative path against `$PWD`, since the consultant may be running this skill from inside the engagement directory itself.
+
+If no engagements are found, surface the detected workspace root so the consultant can correct it: "No diamond engagement found under `<workspace-root>`. If your engagement lives elsewhere, `cd` to that workspace and re-run, or set `$PROJECT_AGENTS_OPS_ROOT`." If they confirm no engagement exists yet, suggest the `consulting-setup` skill.
 
 ### 2. Select Engagement
 
