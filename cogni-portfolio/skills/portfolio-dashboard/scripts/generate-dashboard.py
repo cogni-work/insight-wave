@@ -939,7 +939,6 @@ def _aggregate_competitors(competitors_by_prop):
     out = []
     for bucket in by_key.values():
         bucket["prop_slugs"] = sorted(bucket["prop_slugs"])
-        # Dedup while preserving first-occurrence order (drop empty strings)
         bucket["strengths"] = [s for s in dict.fromkeys(bucket["strengths"]) if s]
         bucket["weaknesses"] = [w for w in dict.fromkeys(bucket["weaknesses"]) if w]
         bucket["source_urls"] = list(dict.fromkeys(bucket["source_urls"]))
