@@ -199,13 +199,41 @@ fi
 # with the local research overlay at read time. Keys starting with "_" are
 # internal (e.g., _default) and not user-selectable.
 _INIT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Trailing `|| true` neutralizes pipefail on the inner substitutions so that
-# missing cache dirs or a failing get-market-config.py never silently kill
-# the parent script under `set -euo pipefail`. The empty-string outcome is
-# handled by the existence/length checks that follow.
-_WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null | head -1 || true)}"
-if [[ -z "$_WORKSPACE_ROOT" || ! -f "$_WORKSPACE_ROOT/scripts/get-market-config.py" ]]; then
-  _WORKSPACE_ROOT="$(cd "$_INIT_SCRIPT_DIR/../../cogni-workspace" 2>/dev/null && pwd)"
+# Three-layer resolver mirroring cogni-workspace/scripts/get-market-config.py
+# (_resolve_sibling_plugin) and cogni-research/scripts/market-summary.py
+# (_resolve_workspace_root):
+#   1. $WORKSPACE_PLUGIN_ROOT — accepted only if the sentinel file exists
+#      (rejects bad overrides like `WORKSPACE_PLUGIN_ROOT=/nonexistent`).
+#   2. Latest cache version dir under
+#      ~/.claude/plugins/cache/insight-wave/cogni-workspace/ — iterated by
+#      mtime-desc, candidate wins only if sentinel exists (skips stray
+#      non-version dirs like .orphaned_at markers or workaround symlinks
+#      from issue #235's interim guidance).
+#   3. Monorepo sibling — non-fatal under `set -e` via `|| true`, re-validated.
+# On terminal failure (no layer wins), emit a JSON envelope to stderr — same
+# UX contract --market validation already follows below. Closes #237.
+_WORKSPACE_ROOT=""
+_WS_SENTINEL="scripts/get-market-config.py"
+if [[ -n "${WORKSPACE_PLUGIN_ROOT:-}" && -f "${WORKSPACE_PLUGIN_ROOT}/${_WS_SENTINEL}" ]]; then
+  _WORKSPACE_ROOT="$WORKSPACE_PLUGIN_ROOT"
+fi
+if [[ -z "$_WORKSPACE_ROOT" ]]; then
+  for _cand in $(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null || true); do
+    if [[ -f "${_cand}${_WS_SENTINEL}" ]]; then
+      _WORKSPACE_ROOT="${_cand%/}"
+      break
+    fi
+  done
+fi
+if [[ -z "$_WORKSPACE_ROOT" ]]; then
+  _monorepo_cand="$(cd "$_INIT_SCRIPT_DIR/../../cogni-workspace" 2>/dev/null && pwd || true)"
+  if [[ -n "$_monorepo_cand" && -f "${_monorepo_cand}/${_WS_SENTINEL}" ]]; then
+    _WORKSPACE_ROOT="$_monorepo_cand"
+  fi
+fi
+if [[ -z "$_WORKSPACE_ROOT" ]]; then
+  echo "{\"success\": false, \"error\": \"Could not resolve cogni-workspace plugin root. Set WORKSPACE_PLUGIN_ROOT to the workspace plugin directory (must contain ${_WS_SENTINEL}).\"}" >&2
+  exit 2
 fi
 _GET_MARKET="$_WORKSPACE_ROOT/scripts/get-market-config.py"
 # Single subprocess call: capture the full merged config for all markets
