@@ -23,26 +23,79 @@ Usage:
 
 Plugins: research | trends | portfolio
   - research:  overlays cogni-research/references/market-sources.json
-  - trends:    overlays cogni-trends/skills/trend-report/references/region-authority-sources.json
+  - trends:    overlays cogni-trends/skills/trend-research/references/region-authority-sources.json
   - portfolio: no overlay — returns registry data as-is
 
 Output: JSON envelope on stdout — {"success": bool, "data": {...}, "error": str|null}
 """
 import argparse
 import json
+import os
 import sys
+from collections import namedtuple
 from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parents[1]
-REGISTRY_PATH = REPO_ROOT / "cogni-workspace/references/supported-markets-registry.json"
+PLUGIN_ROOT = SCRIPT_DIR.parent
+REGISTRY_PATH = PLUGIN_ROOT / "references" / "supported-markets-registry.json"
 
-OVERLAY_PATHS = {
-    "research": REPO_ROOT / "cogni-research/references/market-sources.json",
-    "trends":   REPO_ROOT / "cogni-trends/skills/trend-report/references/region-authority-sources.json",
-    "portfolio": None,
+_SiblingPlugin = namedtuple("_SiblingPlugin", ("dir_name", "env_var", "overlay_relpath"))
+
+_SIBLINGS = {
+    "portfolio": _SiblingPlugin("cogni-portfolio", "PORTFOLIO_PLUGIN_ROOT", None),
+    "research":  _SiblingPlugin("cogni-research",  "RESEARCH_PLUGIN_ROOT",
+                                Path("references/market-sources.json")),
+    "trends":    _SiblingPlugin("cogni-trends",    "TRENDS_PLUGIN_ROOT",
+                                Path("skills/trend-research/references/region-authority-sources.json")),
 }
+SUPPORTED_PLUGINS = tuple(sorted(_SIBLINGS.keys()))
+
+
+def _resolve_sibling_plugin(meta):
+    """Return sibling plugin root, or None if unresolvable.
+
+    Three-layer fallback, mirrors cogni-research/scripts/market-summary.py:
+      1. {NAME}_PLUGIN_ROOT env var (e.g. RESEARCH_PLUGIN_ROOT)
+      2. Latest version dir under ~/.claude/plugins/cache/insight-wave/<name>/
+      3. Monorepo sibling: PLUGIN_ROOT.parent / <name>
+    A candidate wins only if the overlay file exists under it — that way
+    half-installed or empty dirs don't win. Caller is responsible for
+    ensuring meta.overlay_relpath is non-None (see _overlay_path).
+    """
+    sentinel = meta.overlay_relpath
+
+    explicit = os.environ.get(meta.env_var)
+    if explicit:
+        cand = Path(explicit)
+        if (cand / sentinel).exists():
+            return cand
+
+    cache = Path.home() / ".claude/plugins/cache/insight-wave" / meta.dir_name
+    # Sort by mtime, not name: lex-sort would rank "0.6.9" above "0.6.10".
+    # mtime correlates with install/update time, so newest mtime = latest install.
+    try:
+        for cand in sorted(cache.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if cand.is_dir() and (cand / sentinel).exists():
+                return cand
+    except FileNotFoundError:
+        pass
+
+    monorepo = PLUGIN_ROOT.parent / meta.dir_name
+    if (monorepo / sentinel).exists():
+        return monorepo
+
+    return None
+
+
+def _overlay_path(plugin):
+    meta = _SIBLINGS.get(plugin)
+    if meta is None or meta.overlay_relpath is None:
+        return None
+    root = _resolve_sibling_plugin(meta)
+    if root is None:
+        return None
+    return root / meta.overlay_relpath
 
 # Registry's `regional_qualifiers` (narrative format, e.g. "in DACH region")
 # is intentionally distinct from plugins' `region_qualifiers` (search-query
@@ -172,7 +225,7 @@ def get_all_markets(plugin, registry, overlay):
 
 def main():
     parser = argparse.ArgumentParser(description="Merge canonical market registry with a plugin overlay.")
-    parser.add_argument("--plugin", required=True, choices=sorted(OVERLAY_PATHS.keys()),
+    parser.add_argument("--plugin", required=True, choices=list(SUPPORTED_PLUGINS),
                         help="Plugin whose overlay to apply.")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--market", help="Market code (e.g. dach, fr).")
@@ -188,7 +241,7 @@ def main():
         sys.exit(1)
 
     overlay = None
-    overlay_path = OVERLAY_PATHS[args.plugin]
+    overlay_path = _overlay_path(args.plugin)
     if overlay_path is not None:
         try:
             overlay = _load(overlay_path)

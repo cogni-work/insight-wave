@@ -29,7 +29,7 @@ overlays:
   `vocabulary_hints`, `local_query_tips`, `region_qualifiers` (search-query
   format), `local_language`, plus `authority_metadata{}` keyed by domain
   (category, authority tier, search pattern).
-- `cogni-trends/skills/trend-report/references/region-authority-sources.json`
+- `cogni-trends/skills/trend-research/references/region-authority-sources.json`
   — per-market `site_searches[]` keyed by Smarter Service dimension,
   `regulatory_search`, `org_size_reference`, plus `region_qualifiers`,
   `local_language`, `regulatory_bodies`.

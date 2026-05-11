@@ -123,7 +123,7 @@ Replace all year placeholders in the search templates below with these derived v
 
 ### Step 0.5: Load Region Configuration
 
-Load region-specific search parameters from `$CLAUDE_PLUGIN_ROOT/skills/trend-report/references/region-authority-sources.json`.
+Load region-specific search parameters from `$CLAUDE_PLUGIN_ROOT/skills/trend-research/references/region-authority-sources.json`.
 
 ```bash
 REGION_CONFIG = region-authority-sources.json[MARKET_REGION]

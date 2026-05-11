@@ -54,7 +54,7 @@ Per-section reference for `workspace-dashboard`: data source, helper(s) reused, 
 - Canonical: `<workspace-root>/cogni-workspace/references/supported-markets-registry.json` (rows = `markets` keys)
 - Plugin overlays (columns):
   - `cogni-research/references/market-sources.json`
-  - `cogni-trends/skills/trend-report/references/region-authority-sources.json`
+  - `cogni-trends/skills/trend-research/references/region-authority-sources.json`
 
 cogni-portfolio is intentionally not a column: under the centralized markets model it reads the registry directly via `cogni-workspace/scripts/get-market-config.py`, so its market set is structurally identical to the registry by construction.
 
