@@ -41,41 +41,25 @@ Author, A.A. Year. Title of article. *Publisher*. Available at: url [Accessed Da
 
 ### IEEE
 
-**Inline**: Numbered brackets: `[[1](url)]`
-**Reference list** (numbered):
+**Inline**: Superscript number linking directly to the source URL: `<sup>[N](url)</sup>`
+**Reference list** (numbered, in citation order, bold visible `**[N]**` for prominence):
 ```
-[1] A. Author, "Title," *Publisher*, Month Year. [Online]. Available: url
-```
-
-### Wikilink
-
-**Inline**: Superscript number linking to an anchored reference entry: `<sup>[[N]](#ref-N)</sup>`
-**Reference list** (numbered, anchored):
-```
-<a id="ref-1"></a>[1] A. Author, "Title," *Publisher*, Month Year. https://example.com/article
+**[1]** A. Author, "Title," *Publisher*, Month Year. [https://example.com/article](https://example.com/article)
 ```
 
-Number sources sequentially by order of first appearance in the report. Each reference entry starts with an `<a id="ref-N"></a>` HTML anchor so the inline superscript links directly to it. Every reference entry must end with the full clickable URL.
+Number sources sequentially by order of first appearance in the report. Use the same number when citing the same source again. The inline superscript renders as a clickable `¹` in Obsidian / GitHub / Pandoc and opens the source URL directly — no anchor resolution, no footnote reuse counters.
 
-**Variant — Wikilink with URL**: The writer agent may produce `[[N]](url)` — a hybrid where the number uses double-bracket wikilink notation but links directly to the source URL instead of an anchor. This is functionally equivalent to the anchored form above but embeds the URL inline. The export skill normalizes both variants identically.
+### Wikilink (deprecated alias for IEEE)
 
-Example: `AI adoption reached 65% [[3]](https://example.com/report)` — the export skill converts this to a superscript `[3]` linking to the URL.
+`wikilink` was the v0.7.x–v0.8.2 name for a numbered-citation format that used Obsidian-style anchored references (`<sup>[[N]](#ref-N)</sup>` inline + `<a id="ref-N"></a>` anchors in the references section). In v0.8.3 the format is **deprecated and normalised to `ieee` on read** because:
 
-**Full paragraph example**:
+1. `[[N]]` is parsed by Obsidian as a wikilink to a note named "N"; the trailing `(#ref-N)` falls through as plain text and the citation appears clickable but jumps to a missing note.
+2. `[text](#anchor)` linking to `<a id="anchor">` is unreliable in Obsidian — its `#anchor` resolution targets heading slugs, not inline HTML ids.
+3. Native markdown footnotes `[^N]` work but Obsidian appends reuse counters (`[4-1]`, `[4-2]`, `[4-3]`) for sources cited multiple times — visually noisy for high-reuse reports.
 
-> Cloud adoption grew 25% year-over-year in 2025<sup>[[1]](#ref-1)</sup>, driven primarily by AI workload
-> migration. Gartner projects that by 2028, over 70% of enterprise AI workloads will run on
-> hyperscaler infrastructure<sup>[[2]](#ref-2)</sup>. However, cost optimization remains a challenge —
-> a recent Flexera survey found that 32% of cloud spend is wasted<sup>[[3]](#ref-3)</sup>, suggesting
-> that governance has not kept pace with adoption.
->
-> ## References
->
-> <a id="ref-1"></a>[1] Gartner, "Cloud Infrastructure Report 2025," *Gartner Research*, March 2025. https://gartner.com/cloud-report-2025
->
-> <a id="ref-2"></a>[2] Gartner, "Top Strategic Technology Trends 2028," *Gartner*, October 2025. https://gartner.com/strategic-trends-2028
->
-> <a id="ref-3"></a>[3] Flexera, "2025 State of the Cloud Report," *Flexera*, February 2025. https://flexera.com/state-of-cloud-2025
+Both `wikilink` and `ieee` resolve to the same inline shape — superscript number linking directly to the source URL: `<sup>[N](url)</sup>`. The reference list is identical: numbered, in citation order, with the visible `[N]` bolded for prominence (`**[N]** Publisher, "Title", Year. [URL](URL)`). `initialize-project.sh` normalises `wikilink` → `ieee` so downstream consumers see one canonical value.
+
+**Anti-pattern — double brackets `[[N]]`**: Never emit `[[N]]` (double square brackets) anywhere in inline citations. The bug shipped in v0.8.x deep-mode reports — `cogni-research/scripts/fix-citations.py` retroactively normalises legacy reports to `<sup>[N](url)</sup>`. Single-bracket superscripts only.
 
 ### Local-Wikilink
 
@@ -91,7 +75,7 @@ Example: `AI adoption reached 65% [[3]](https://example.com/report)` — the exp
 
 ## Hard rule: inline citations must be clickable
 
-**For all link-based formats (apa, mla, harvard, ieee, local-wikilink), plain-text inline citations like `(Publisher, 2026)` are a format violation, not a stylistic choice.** The writer and revisor agents must render every inline citation as a clickable markdown link matching the format's pattern. The `chicago` (footnote superscripts) and `wikilink` (anchored numbered references) formats have their own link forms and are exempt from the `([...](...))` shape but still require clickable links.
+**For all link-based formats (apa, mla, harvard, ieee, chicago, local-wikilink), plain-text inline citations like `(Publisher, 2026)` are a format violation, not a stylistic choice.** The writer and revisor agents must render every inline citation as a clickable markdown link matching the format's pattern. The only exception is a source with no URL at all (rare — internal portfolio reference, proprietary document) — in that case render `<sup>[N]</sup>` as a plain superscript without a link, and the appendix entry carries the source identifier without a clickable URL.
 
 This rule exists because cogni-research v0.7.9 (issue #48) found that the writer was silently drifting to plain-text citations under deep-mode length pressure, and the revisor preserved the drift across two expansion iterations because its Citation density parity rule only measured density, not linking. See `cogni-research/agents/writer.md` Phase 2 Writing Guidelines and `cogni-research/agents/revisor.md` Phase 2 Preserve markdown citation syntax rule for the enforcement points.
 
@@ -108,4 +92,4 @@ The writer agent should:
 4. Always render inline citations as clickable markdown links for link-based formats — plain-text cites are a format violation
 5. Every reference list entry must also be clickable — the publisher/title is the link target, not a trailing plain-text URL
 6. Maintain consistent formatting across all sections
-7. **Before writing the draft to disk**, scan the drafted prose for any inline citation that does not match the selected format's link pattern (`\(\[.*\]\(.*\)\)` for apa/mla/harvard/ieee/local-wikilink; `<sup>\[\[[0-9]+\]\]\(#ref-[0-9]+\)</sup>` for wikilink; `<sup>\[[0-9]+\]\(.*\)</sup>` for chicago) and rewrite any that don't match. This is a self-check, not a hard gate — but if the writer ships plain-text cites, the orchestrator's Phase 5 review will bounce the draft back.
+7. **Before writing the draft to disk**, scan the drafted prose for any inline citation that does not match the selected format's link pattern (`\(\[.*\]\(.*\)\)` for apa/mla/harvard/local-wikilink; `<sup>\[[0-9]+\]\(.*\)</sup>` for chicago/ieee/wikilink-alias) and rewrite any that don't match. Also fail-fast on the legacy anti-pattern `\[\[[0-9]+\]\]` (double-bracket) anywhere in the draft — this was the v0.8.x drift that broke in Obsidian. This is a self-check, not a hard gate — but if the writer ships plain-text or `[[N]]` cites, the orchestrator's Phase 5 review will bounce the draft back.

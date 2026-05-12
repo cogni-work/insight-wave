@@ -7,15 +7,25 @@ description: |
   output language, and source mode (web / local / wiki / hybrid). Creates the project
   directory and project-config.json. Mandatory first step before research-report can
   run; research-report routes here automatically when no project is initialized.
+  Also handles **topic framing** when the user's intent is fuzzy: turns a rough idea
+  into a sharp, scope-tested research prompt (Step 0) before the configuration menu
+  opens — framework-agnostic, context-open, skippable when the topic is already sharp.
   Use when the user says "set up research project", "configure research", "new research
   project", "initialize research", "research settings", "change research options",
   "research preferences", or wants to start a research project before any report is generated.
-allowed-tools: Read, Bash, Glob, ToolSearch, AskUserQuestion, Skill
+  Also triggers on framing entry points: "frame a research topic", "sharpen this question",
+  "help me write a research prompt", "scope a research project", "frame for Why Change",
+  "Recherchefrage schärfen", "Forschungsthema rahmen", "Forschungsprompt schreiben".
+allowed-tools: Read, Bash, Glob, Grep, ToolSearch, AskUserQuestion, Skill, Write
 ---
 
 # Research Setup
 
 This skill configures and initializes a research project. It collects user preferences through an interactive text menu and creates the project directory. It does not perform any research — that is handled by the research-report skill after setup completes.
+
+## When framing is offered
+
+Most invocations arrive with a topic already in mind — those flow straight into the Configuration Menu (Step 1 → Step 2). When the topic is fuzzy (no audience, no thesis, no scope cue) or the user explicitly asks to "frame", "sharpen", "scope", or "rahmen / schärfen" a topic, **Step 0 — Topic Framing** engages: four short questions, optional context loading from any file/path the user supplies, deterministic scope right-sizing, and a sharpened research prompt (≤ 400 words) written to `research-prompt.md` plus suggested config hints pre-filled into the Step 2 menu. Framework-agnostic and context-open by design — files are files, no portfolio schema assumed. Full playbook: `${CLAUDE_PLUGIN_ROOT}/references/topic-framing.md`.
 
 ## Interaction Model
 
@@ -29,8 +39,9 @@ Never combine both modes in the same turn. Each turn is either pure text or a si
 
 ### Turn Structure
 
-- **Turn 1** (no topic provided): Text output — "What topic should I research?"
-- **Turn 1 or 2** (topic known): Text output — extract options (Step 1), render the Configuration Menu (Step 2)
+- **Turn 1 (framing engaged)**: Text output — short announcement ("Let me help frame this before we configure..."), then ask for grounding context (Step 0.2). Step 0.3 — Step 0.5 follow over the next 2–3 turns before Step 1 begins. Use this branch only when the Step 0.1 sharpness test fires; skip otherwise.
+- **Turn 1** (no topic provided, framing not engaged): Text output — "What topic should I research?"
+- **Turn 1 or 2** (topic known, sharp): Text output — extract options (Step 1), render the Configuration Menu (Step 2)
 - **Next turn** (user replied to config menu): Process choices. If source mode needs paths, text output asking for paths. Otherwise, AskUserQuestion for project location (Step 3).
 - **Next turn** (location answered): Run initialize-project.sh (Step 4). Text output with the project path. Setup is complete.
 
@@ -48,7 +59,7 @@ Never combine both modes in the same turn. Each turn is either pure text or a si
 > **Length:** brief (1.5K) | standard (3K) | deep-dive (5K) *(default for deep)* | comprehensive (8K) | whitepaper (12K) — or specify e.g. "~6500 words"
 > **Density:** standard *(default — Cite aggressively, target_words as floor)* | executive *(Pyramid Principle + BLUF, one citation per claim, target_words as ceiling)*
 > **Tone:** objective *(default)* | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive
-> **Citations:** APA *(default)* | MLA | Chicago | Harvard | IEEE | Wikilink | Local-Wikilink
+> **Citations:** APA *(default)* | MLA | Chicago | Harvard | IEEE *(URL-direct superscripts — also `wikilink`, normalised to `ieee` for back-compat)* | Local-Wikilink
 > **Market** *(required — curated authority sources per region)*:
 > ```
 >   dach   DACH (DE/AT/CH) — 27 authority domains (fraunhofer.de, bitkom.org, vdma.org +24); bilingual DE/EN
@@ -91,6 +102,49 @@ The user replies naturally: "go", "deep, analytical", "detailed with IEEE citati
 
 ## Workflow
 
+### Step 0: Topic Framing (optional — engages when the topic is fuzzy)
+
+Step 0 turns a fuzzy intent into a sharp, scope-tested research prompt before Step 1 opens the configuration menu. It is **framework-agnostic** and **context-open** — files are files, no portfolio schema assumed. Skip it when the topic is already sharp.
+
+Full playbook (load into working context on first invocation; carries the EN+DE question bank, right-sizing rules, the emitted-prompt template, and a worked example):
+
+`${CLAUDE_PLUGIN_ROOT}/references/topic-framing.md`
+
+**Step 0.1 — Decide whether to engage.** Apply the three-of-four sharpness test: explicit **audience**, named **status-quo belief / thesis**, defined **scope** (geography / segment / horizon), and clear **deliverable shape**. Two or more missing → engage. Explicit verbs anywhere in the invocation ("frame", "sharpen", "scope", "frame for Why Change", "rahmen", "schärfen", "Forschungsfrage zuspitzen", "Forschungsprompt schreiben") → engage regardless of length. A pasted prompt block already matching the playbook's template, or invocations ending in "go" / "defaults" / "just start" + a one-line topic → skip Step 0 and proceed to Step 1.
+
+When engaging, announce in one sentence before asking anything (text output, turn ends): *"Let me help frame this before we configure. Four quick questions, then I'll draft a prompt you can edit."* / *"Lass uns das Thema zuerst rahmen. Vier kurze Fragen, dann schlage ich einen Prompt vor."*
+
+**Step 0.2 — Ground in context (text output, turn ends).** Ask for any grounding material the user wants honoured: a directory path, a pasted text blob, a URL, "no context" (always valid). On a path: `Glob` the top level, `Read` the manifest / README, sample 2–3 representative entity files; cap the total read at ~50 KB. On a pasted blob: treat as opaque background and quote at most one sentence back to confirm receipt. No portfolio-specific schema — files are files.
+
+**Step 0.3 — Surface the load-bearing variables.** Use one `AskUserQuestion` turn with ≤ 4 questions (all skippable; "I'll decide later" / "weiß noch nicht" always falls back to safe defaults). Fetch the AskUserQuestion schema via ToolSearch on first use if not yet loaded. The four questions:
+
+1. **Audience** for the report.
+2. **Status-quo belief or thesis** the research must challenge, confirm, or quantify.
+3. **Framework preference.** Surface today's options: `corporate-visions` (Why Change → Why Now → Why You → Why Pay), `neutral / standard-research`, `other / I'll decide later`. Only `corporate-visions` is implemented in `references/story-arcs.json`; any other named framework (SCQA, Pyramid, BLUF, etc.) is acknowledged and falls back to `standard-research` for `story_arc_id`, with the user's stated preference kept in the framing notes so the writer can honour it in prose.
+4. **Deliverable horizon**: quick scan / decision brief / deep report / outline only / annotated bibliography — maps to `report_type` + `target_words` suggestions for Step 1.
+
+Use the EN or DE question phrasing from the playbook's question bank, matched to the language of the user's invocation.
+
+**Step 0.4 — Right-size scope.** Apply the playbook's three rules before drafting the prompt:
+
+- **Leaf-dimension aggregation.** ≥ 8 leaf items under one pillar → propose aggregation to a higher level and name the level (e.g., *"39 features → 8 offerings"*, *"21 sub-segments → 3–5 segments"*, *"15 competitors → top 5–7 + category line"*).
+- **Artefact budget against `target_words`.** ≤ 5 first-class artefacts per pillar; total budget scales 3–4 (1.5K) / 5–7 (3K) / 8–10 (5K) / 12–15 (8K) / 16–20 (12K). When scope exceeds budget, propose two cuts: **preferred** (drop or aggregate one whole pillar of secondary value) and **minimum** (keep all pillars, cap each to its share).
+- **Arc compatibility preflight.** If `corporate-visions` is implied, surface its existing constraint here (`report_type ∈ {detailed, deep}`, `output_language ∈ {en, de}`, `target_words ∈ [3000, 8000]`) so Step 1's prompt-time pre-validation block (the second gate against the same `story-arcs.json` registry) doesn't need to re-litigate. If the user's deliverable-horizon or detected language conflicts, name the conflict and offer the two paths.
+
+**Step 0.5 — Emit the sharpened research prompt + config hints.** Produce **one** concise prompt block, **≤ 400 words**, no narrative prose, ≤ 5 sub-questions per pillar. Use the playbook's template (Topic / Audience / Status-quo belief / Thesis / Scope / Working level / Pillars / Deliverables / Constraints). Use `Write` to save the prompt to `./research-prompt.md` (current working directory) — or to `<slug>/research-prompt.md` when the user already named a project slug in their original prompt and Step 1's detection has captured it.
+
+Below the prompt block, list a `## Suggested configuration` section with the values Step 0 inferred — `story_arc_id`, `report_type`, `target_words`, `market`, `output_language`, `tone`. These are **suggestions**; Step 1 carries them as pre-filled values the user can override at Step 2. No silent decisions.
+
+**Handoff to Step 1.** With the sharpened prompt and suggested config in working context, proceed to Step 1's existing extract-options logic — the prompt's `Topic.` line becomes the `topic` field, and the suggested-config values pre-fill the menu Step 2 renders. The rest of the workflow (Step 3 location, Step 4 init) is unchanged. The Step 1 pre-validation blocks for `story_arc_id` and `prose_density` still run — Step 0's preflight is an *upstream* gate, not a replacement.
+
+**Anti-patterns** (fail closed when these appear; consult the playbook for the full list):
+
+- Producing a narrative when a prompt is asked for. Step 0 emits a prompt — the pillar narrative belongs in the report.
+- Leaving ≥ 8 dimensions in one pillar because "the user didn't ask to cut it" — right-sizing is the value Step 0 adds.
+- Loading every file in a supplied directory — sample the manifest + 2–3 entity files, cap at ~50 KB.
+- Silently picking `corporate-visions` because the topic feels strategic — always ask.
+- Skipping Step 0 on a topic that *looks* sharp without applying the three-of-four test.
+
 ### Step 1: Extract Options from User's Prompt
 
 Scan the user's request and extract any options they already specified. These become "detected" settings that will not be re-asked in the configuration menu.
@@ -107,7 +161,7 @@ Scan the user's request and extract any options they already specified. These be
   - English: "slug X", "project slug X", "called X", "named X", "project name X"
   - German: "Projektname X", "Projekt-Slug X"
   Validate the captured value against `^[a-z0-9][a-z0-9-]{0,39}$`. On match, carry forward as `--slug X` to Step 4 — `initialize-project.sh` will use this directly as the project directory name with no date suffix (matches `cogni-trends` and `cogni-portfolio` conventions). On collision, the script returns `next_available_slug` and the skill offers the resume/new/different-location prompt (see Step 4 collision handling). On format mismatch, do NOT silently fix — surface a one-line menu note ("`X` is not a valid slug — must be lowercase kebab-case, max 40 chars. Falling back to auto-derived from topic.") and drop the user value. Default: not set (slug derived from topic + date appended, legacy behaviour).
-- **Citation format**: "IEEE", "APA format", "Chicago style", "wikilink", "local wikilink" / "local-wikilink" -> capture. Default: "apa"
+- **Citation format**: "IEEE", "APA format", "Chicago style", "wikilink" *(deprecated v0.7.x–v0.8.2 alias for ieee — accepted and normalised by `initialize-project.sh`)*, "local wikilink" / "local-wikilink" -> capture. Default: "apa"
 - **Market**: must resolve to one of the 18 canonical codes defined in `references/market-sources.json`: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `cz`, `sk`, `hu`, `hr`, `gr`, `mx`, `br`, `cn`, `us`, `uk`, `eu`. There is no "global" option — downstream researchers use these codes to pick authority-source profiles, and an unknown code silently falls back to the DACH `_default` profile, masking user intent.
 
   Resolve the market in three tiers, stopping at the first confident match:
@@ -188,7 +242,7 @@ Assemble the menu dynamically and render it as text output:
    - **Depth** (only if report type not yet detected): list all 5 types with one-line descriptions **without** word counts — length is decoupled from depth and has its own row. Example: "basic = standard report, 5 sub-questions | detailed = multi-section with outline, 5-10 sub-questions | deep = recursive tree, 10-20 leaf sub-questions | outline = structured framework, no prose | resource = annotated bibliography".
    - **Length** (only if target_words not detected): show the 5 named presets with their word counts and mark the default derived from the detected or selected depth: `brief (1.5K) | standard (3K) | deep-dive (5K, deep default in v0.7.7) | comprehensive (8K) | whitepaper (12K)`. Add a one-line note: "Length is optional — defaults to 3K/5K/5K/1K/1.5K for basic/detailed/deep/outline/resource. Override with a preset above or an explicit integer (e.g., `target_words: 6500`)."
    - **Tone** (only if not detected): show these options: objective *(default)* | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive
-   - **Citations** (only if not detected): list all 7 formats (`apa`, `mla`, `chicago`, `harvard`, `ieee`, `wikilink`, `local-wikilink`), mark `apa` as default. Keep this list in sync with `VALID_CITATION_FORMATS` in `scripts/initialize-project.sh` — if a new format is added there, add it here.
+   - **Citations** (only if not detected): list all 6 canonical formats (`apa`, `mla`, `chicago`, `harvard`, `ieee`, `local-wikilink`), mark `apa` as default. `wikilink` is accepted as a deprecated alias for `ieee` (the v0.7.x–v0.8.2 anchor-based shape that broke in Obsidian; normalised on write) — do not surface it in the menu. Keep this list in sync with `VALID_CITATION_FORMATS` in `scripts/initialize-project.sh` — if a new format is added there, add it here.
    - **Market** (only if not detected with confidence, or ambiguous): render the full headline table by shelling out to `${CLAUDE_PLUGIN_ROOT}/scripts/market-summary.py --format table --all` and embedding the output under a `**Market** *(required — curated authority sources per region)*:` heading. Each row shows the code, the region name, the count of curated authority domains, the top 3 example domains, and whether queries run bilingually or English-only. The table is data-derived so it never drifts from `references/market-sources.json` — if a new market is added there, the menu picks it up automatically. If Step 1 flagged the market as ambiguous (tier 3), prefix the table with the one-line note `> I couldn't tell which market you mean from the topic — please pick one.`. Surfacing the curation upfront is the point: the user should see *what* DACH actually means (Fraunhofer, BITKOM, VDMA, +24 more) before picking it, so the quality signal registers at the moment of choice rather than staying hidden in a reference file.
    - **Sources** (only if report_source not detected): show all 4 modes with a one-line "when to pick this" description. The local/wiki options are a differentiator users routinely miss — name the *value* not just the mechanism:
      - `web` *(default)* = search the internet with market-boosted authority domains (the table above)
@@ -272,7 +326,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--market "<region-code>"] \
   [--output-language "<lang>"] \
   [--tone "<tone>"] \
-  [--citation-format "<apa|mla|chicago|harvard|ieee|wikilink|local-wikilink>"] \
+  [--citation-format "<apa|mla|chicago|harvard|ieee|local-wikilink>"] \
   [--source-urls "<url1,url2,...>"] \
   [--query-domains "<domain1,domain2,...>"] \
   [--max-subtopics <N>] \

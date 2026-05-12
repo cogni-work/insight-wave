@@ -133,6 +133,12 @@ if [[ -n "$CITATION_FORMAT" ]] && ! echo "$VALID_CITATION_FORMATS" | grep -qw "$
   echo "{\"success\": false, \"error\": \"Invalid --citation-format: $CITATION_FORMAT. Valid formats: $VALID_CITATION_FORMATS\"}" >&2
   exit 2
 fi
+# Backwards-compat alias: `wikilink` is the deprecated v0.7.x–v0.8.2 name for
+# the URL-direct superscript shape, which is structurally identical to `ieee`.
+# Normalise to `ieee` so downstream agents see one canonical value.
+if [[ "$CITATION_FORMAT" == "wikilink" ]]; then
+  CITATION_FORMAT="ieee"
+fi
 
 if [[ -n "$REPORT_SOURCE" ]] && [[ ! "$REPORT_SOURCE" =~ ^(web|local|wiki|hybrid)$ ]]; then
   echo "{\"success\": false, \"error\": \"Invalid --report-source: $REPORT_SOURCE. Must be web, local, wiki, or hybrid.\"}" >&2

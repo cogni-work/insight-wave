@@ -81,9 +81,13 @@ Scan the draft for H2 section boundaries, **excluding** a trailing `## Reference
 
 - **Body words**: the full word count of the section, excluding the heading itself.
 - **Inline citations**: any of these forms, summed —
-  - Linked author-year: `([Author, 2025](https://...))` — regex approximately `\(\[[^\]]+,\s*\d{4}\]\([^)]+\)\)` — this is the APA/markdown form the writer emits.
+  - Linked author-year (apa / mla / harvard / local-wikilink): `([Author, 2025](https://...))` — regex approximately `\(\[[^\]]+,\s*\d{4}\]\([^)]+\)\)`.
+  - Superscript-wrapped numeric link (chicago / ieee / wikilink-alias): `<sup>[N](url)</sup>` — regex approximately `<sup>\[\d+\]\([^)]+\)</sup>`.
+  - Superscript-only (no URL — for sources with empty URL field): `<sup>[N]</sup>` — regex approximately `<sup>\[\d+\]</sup>`. Counts toward density.
   - Unlinked author-year: `(Author, 2025)` — regex approximately `\([A-Z][\w\s&\.\-]+,\s*\d{4}\)` — catches bibliography-format citations.
   - Wiki-style unlinked publisher: `(Publisher)` inline reference (per `writer.md` Phase 2 step 5 for wiki citations without `original_url`) — regex approximately `\([A-Z][\w\s&\.\-]{2,}\)` when immediately preceded by a prose sentence, not a numeric range. The regex is deliberately language-agnostic because the bracket shape is identical across DE/FR/IT/PL/NL/ES — German `([Autor, 2025](url))` matches exactly the same pattern as English.
+
+**Anti-pattern detection — double-bracket numeric citations.** Independently of the density count above, scan for `\[\[\d+\]\]` anywhere in the body (not inside a fenced code block). Each match is a **high-severity citation format violation**: emit an issue with the exact prefix `Citation format violation` and message "Double-bracket numbered citation `[[N]]` will break in Obsidian — convert to single-bracket superscript-URL `<sup>[N](url)</sup>`." This was the v0.8.x drift mode (the writer mixed IEEE and wikilink specs and produced `[[N]](#ref-N)` hybrids that rendered as broken wikilinks in Obsidian). One or more occurrences caps the Quality dimension at 0.60 — same cap as a high-severity citation density deficit. The `scripts/fix-citations.py` script is available for retroactive cleanup of legacy reports.
 
 Compute `density = cites / words × 1000` for each section. Apply the tiered thresholds:
 
