@@ -2,7 +2,7 @@
   "_schema_version": "1.1",
   "_last_synced_at": "2026-05-12",
   "_upstream_path": "cogni-narrative/skills/narrative/references/story-arc/",
-  "_notes": "Local registry of story arcs the cogni-research writer can apply as section structure. Mirrors a subset of cogni-narrative's arc-definition.md files. Audited by the audit-arcs skill against the upstream source of truth. v1 ships two arcs: standard-research (today's default, dynamic structure) and corporate-visions (executive narrative arc, EN+DE, detailed report_type only). Schema v1.1 (v0.8.0) adds a research-local compatible_densities field per arc — declares which prose_density values the arc supports. Missing field defaults to [\"standard\"] in the validator so any future arc that genuinely can't survive compression stays opt-in. This field has no upstream counterpart in cogni-narrative; the audit-arcs skill treats it as a research-only annotation, not a drift signal.",
+  "_notes": "Local registry of story arcs the cogni-research writer can apply as section structure. Mirrors a subset of cogni-narrative's arc-definition.md files. Audited by the audit-arcs skill against the upstream source of truth. v1 ships two arcs: standard-research (today's default, dynamic structure) and corporate-visions (executive narrative arc, EN+DE, detailed report_type only). The compatible_densities field is research-local (no cogni-narrative counterpart) — missing field defaults to [\"standard\"] in the validator.",
   "arcs": {
     "standard-research": {
       "display_name": "Standard Research",

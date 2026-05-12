@@ -21,17 +21,10 @@ set -euo pipefail
 # 5000 in v0.7.7 (issue #35). Set --target-words 8000 explicitly for the old
 # 8K-deep behaviour.
 #
-# --prose-density selects how the writer spends the word budget. Defaults to
-# "standard" (today's behaviour: target_words is a floor, "Cite aggressively"
-# 2-3 citations per paragraph, Phase 4.5 expansion re-dispatch active). Set to
-# "executive" for Pyramid Principle + BLUF, one citation per claim, and
-# target_words treated as a ceiling — Phase 4.5 inverts to a ceiling check and
-# the Phase 5 word-deficit loop is suppressed because the reviewer emits
-# "Word excess" instead of "Word deficit". Orthogonal to --type (depth) and
-# --target-words (length). Per-arc compatibility is declared in
-# references/story-arcs.json arcs[<arc>].compatible_densities; missing field
-# defaults to ["standard"] so future arcs that can't survive compression stay
-# opt-in. Added in v0.8.0.
+# --prose-density (v0.8.0+) selects how the writer spends the word budget.
+# "standard" (default) keeps today's behaviour; "executive" inverts target_words
+# from floor to ceiling and suppresses the Phase 5 expansion loop. Per-arc
+# compatibility lives in references/story-arcs.json compatible_densities.
 #
 # Creates:
 #   {workspace}/{slug}-{date}/
@@ -155,9 +148,6 @@ if [[ -n "$TARGET_WORDS" ]] && ! [[ "$TARGET_WORDS" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 
-# Validate --prose-density against the enum. Default to "standard" when unset.
-# The cross-validation against the resolved story arc's compatible_densities
-# happens after STORY_ARC is resolved below.
 if [[ -z "$PROSE_DENSITY" ]]; then
   PROSE_DENSITY="standard"
 fi
@@ -217,10 +207,8 @@ if [[ "$TARGET_WORDS" -gt "$ARC_MAX_WORDS" ]]; then
   echo "{\"success\": false, \"error\": \"Story arc '$STORY_ARC' requires --target-words <= $ARC_MAX_WORDS (got $TARGET_WORDS).\"}" >&2
   exit 2
 fi
-# Cross-validate --prose-density against the arc's compatible_densities. Missing
-# field defaults to ["standard"] so future arcs that can't survive compression
-# stay opt-in. This is a research-local annotation with no upstream counterpart
-# in cogni-narrative — the audit-arcs skill treats it as a research-only field.
+# Missing compatible_densities defaults to ["standard"] so future arcs that
+# can't survive compression stay opt-in.
 ARC_DENSITIES=$(jq -r --arg a "$STORY_ARC" '(.arcs[$a].compatible_densities // ["standard"]) | join(" ")' "$STORY_ARCS_FILE")
 if ! echo "$ARC_DENSITIES" | grep -qw "$PROSE_DENSITY"; then
   echo "{\"success\": false, \"error\": \"Story arc '$STORY_ARC' does not support --prose-density $PROSE_DENSITY. Compatible densities: $ARC_DENSITIES\"}" >&2
@@ -425,10 +413,6 @@ CONFIG=$(echo "$CONFIG" | jq --argjson v "$TARGET_WORDS" '. + {target_words: $v}
 if [[ -n "$STORY_ARC" ]] && [[ "$STORY_ARC" != "standard-research" ]]; then
   CONFIG=$(echo "$CONFIG" | jq --arg v "$STORY_ARC" '. + {story_arc_id: $v}')
 fi
-# Persist prose_density only when non-default. Same pattern as story_arc_id —
-# "no field set" is semantically equivalent to "prose_density: standard"
-# downstream, which keeps legacy projects (pre-v0.8.0) flowing through the
-# standard-density code path with no migration.
 if [[ "$PROSE_DENSITY" != "standard" ]]; then
   CONFIG=$(echo "$CONFIG" | jq --arg v "$PROSE_DENSITY" '. + {prose_density: $v}')
 fi

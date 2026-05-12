@@ -26,7 +26,7 @@ You compile aggregated research context into a cohesive, well-structured report.
 | `TARGET_MIN_WORDS` | No | Integer. Minimum word count the draft must reach. Since v0.7.7 (issue #35) the orchestrator resolves this from `project-config.json target_words` on **every** dispatch (not just expansion re-dispatches), so in practice this parameter is always set when the writer is invoked through `research-report`. The per-report-type fallback table below is retained only as a last-resort safety net for agent-level testing where the orchestrator is absent. When set, overrides the per-type default. |
 | `EXPANSION_NOTES` | No | Free-text guidance from the orchestrator on an expansion re-run — names under-budget sections, cites the shortfall, and points to untapped context entities |
 | `STORY_ARC_ID` | No | Arc ID from `${CLAUDE_PLUGIN_ROOT}/references/story-arcs.json`. Default: `standard-research` (today's behaviour — sections derived from sub-questions per the report-type template). When set to a named arc (e.g., `corporate-visions`), the Phase 1 outline produces the arc's fixed elements as H2 sections at fixed proportions of `TARGET_MIN_WORDS`, and the per-section `arc_element` field is populated on each outline entry. The arc's element headings are language-aware (EN or DE per `OUTPUT_LANGUAGE`). The orchestrator resolves this from `project-config.json story_arc_id` (default `standard-research` when unset). Named arcs are rejected when `REPORT_TYPE in {outline, resource}` because those modes produce structural skeletons / annotated bibliographies, not narrative prose. |
-| `PROSE_DENSITY` | No | `standard` (default) or `executive`. Composable orthogonal knob, added in v0.8.0 — independent of depth (`REPORT_TYPE`) and length (`TARGET_MIN_WORDS`). Under `standard` (the default), today's behaviour applies unchanged: `TARGET_MIN_WORDS` is a hard floor, the outline carries `~5%` headroom upward, "Cite aggressively" (2–3 citations per paragraph) is in force, and Phase 3 self-check expands under-budget sections. Under `executive`, the writer switches discipline: `TARGET_MIN_WORDS` is treated as a **ceiling** (no headroom), the outline biases toward fewer denser sections, Phase 2 drafting applies Pyramid Principle + BLUF + **one citation per claim**, and Phase 3 self-check trims redundancy if the draft is over ceiling. The orchestrator resolves this from `project-config.json prose_density` (default `standard` when unset) via the Phase 1.5a plan. Design source: `cogni-copywriting/skills/copywriter/references/04-deliverable-types/executive-summaries.md` (Pyramid + BLUF structures). Distinct from `TONE`: tone controls rhetorical register, density controls structural ceiling and citation cadence; they compose orthogonally. |
+| `PROSE_DENSITY` | No | `standard` (default) or `executive`. Composable orthogonal knob (v0.8.0+), independent of `REPORT_TYPE` and `TARGET_MIN_WORDS`. Under `standard`, `TARGET_MIN_WORDS` is a hard floor with `~5%` upward headroom on the outline; under `executive`, it is a ceiling (no headroom), Phase 2 drafting applies Pyramid Principle + BLUF with **one citation per claim**, and Phase 3 trims redundancy if over ceiling. Design source: `cogni-copywriting/skills/copywriter/references/04-deliverable-types/executive-summaries.md`. Distinct from `TONE`: tone is rhetorical register, density is structural ceiling + citation cadence. |
 
 ## Core Workflow
 
@@ -88,7 +88,6 @@ Before writing a single paragraph, commit to an explicit section plan with a per
      "planned_total": 8400,
      "story_arc_id": "standard-research",
      "prose_density": "standard",
-     "density_ceiling": null,
      "sections": [
        {"index": "00", "heading": "Executive Summary", "budget": 400, "covers_sub_questions": ["sq-001", "sq-002", "sq-003"], "arc_element": null, "drafted_words": null},
        {"index": "01", "heading": "Introduction", "budget": 600, "covers_sub_questions": ["sq-001", "sq-002", "sq-003"], "arc_element": null, "drafted_words": null},
@@ -96,7 +95,7 @@ Before writing a single paragraph, commit to an explicit section plan with a per
      ]
    }
    ```
-   The `prose_density` top-level field is `"standard"` here (today's default — `planned_total` includes the 5% headroom, `target_min_words` is a floor). The `density_ceiling` field is `null` in standard mode — it exists for shape uniformity with executive mode and is read by the reviewer's Word Count Gate to confirm the gate should run in its deficit-cap configuration. Under `prose_density: "executive"`, `planned_total ≤ target_min_words`, `density_ceiling` carries the same integer as `target_min_words`, and the reviewer's gate inverts to the excess-cap configuration.
+   `prose_density` is `"standard"` here: `planned_total ≥ target_min_words × 1.05` and `target_min_words` is a floor. Under `prose_density: "executive"`, `planned_total ≤ target_min_words` and the reviewer's gate inverts to its excess-cap configuration — the same `target_min_words` integer serves as the ceiling reference, no separate field is needed.
    Note the Executive Summary and Introduction entries: both are synthesis sections, so both list **all** distinct sub-question refs from `.metadata/aggregated-context.json`, not `[]`. The topical section at index 02 lists only the specific sub-questions it covers. Each section entry carries a zero-padded `index` string and a `drafted_words` placeholder that you fill with the final word count on your last pass through the draft. The `arc_element` field is `null` for every section in standard mode — the field exists for shape uniformity with the arc-driven mode and is read by the reviewer to confirm the gate should be skipped.
 
    **Arc-driven shape** (used when `STORY_ARC_ID` names a non-default arc, e.g. `"corporate-visions"`):
@@ -108,7 +107,6 @@ Before writing a single paragraph, commit to an explicit section plan with a per
      "planned_total": 5200,
      "story_arc_id": "corporate-visions",
      "prose_density": "standard",
-     "density_ceiling": null,
      "sections": [
        {"index": "00", "heading": "Why Change: The Unconsidered Need", "budget": 1850, "covers_sub_questions": ["sq-001", "sq-002", "sq-003"], "arc_element": "why_change", "drafted_words": null},
        {"index": "01", "heading": "Why Now: The Closing Window", "budget": 1050, "covers_sub_questions": ["sq-002", "sq-004"], "arc_element": "why_now", "drafted_words": null},

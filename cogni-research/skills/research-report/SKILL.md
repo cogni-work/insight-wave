@@ -239,24 +239,11 @@ plan = {
                          the registry happened at initialize-project.sh time —
                          do not re-validate here.>,
   "prose_density":      <prose_density from project-config.json; default
-                         "standard" when the field is missing. Added in
-                         v0.8.0. Phase 1.5a is the single resolution site —
-                         Phase 4 writer dispatch, Phase 4.5 gate (which branches
-                         floor-trigger vs ceiling-check on this field), Phase
-                         5 word-deficit loop (which is suppressed under
-                         "executive"), Phase 5 reviewer dispatch, and Phase 6
-                         summary all consume this pinned value rather than
-                         re-reading project-config.json. The two values that
-                         ship in v1 are "standard" (today's behaviour —
-                         target_words is a floor, "Cite aggressively" cadence,
-                         Phase 4.5/5 expansion active) and "executive" (target
-                         _words is a ceiling, Pyramid Principle + BLUF, one
-                         citation per claim, Phase 4.5 inverts to ceiling
-                         check, Phase 5 word-deficit loop suppressed because
-                         the reviewer emits "Word excess" not "Word deficit").
-                         Validation against the arc's compatible_densities
-                         happened at initialize-project.sh time — do not
-                         re-validate here.>
+                         "standard" when missing (v0.8.0+). Pinned here and
+                         consumed by Phase 4 dispatch, Phase 4.5 gate, Phase 5
+                         loop guard, and Phase 6 summary. See CLAUDE.md and
+                         agents/writer.md for the full standard-vs-executive
+                         semantics.>
 }
 ```
 

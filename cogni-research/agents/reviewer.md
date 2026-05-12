@@ -116,10 +116,7 @@ Before scoring dimensions, count the draft's words (use `wc -w` via Bash on the 
 - **`standard`** (default): `target_words` is a **floor**. The gate caps completeness on shortfall and emits `Word deficit` issues.
 - **`executive`** (v0.8.0+): `target_words` is a **ceiling**. The gate caps completeness on overshoot and emits `Word excess` issues. The shape of the cap is mirror-symmetric around 1.0 to the standard gate — same severity tiers, same low-band rounding-noise carve-out, just on the other side of the ratio.
 
-Resolve the gate's reference word count:
-
-- If the orchestrator passed `PROSE_DENSITY` and the writer-outline JSON (`.metadata/writer-outline-v{N}.json`) carries `density_ceiling` (executive mode) or the project-config carries `target_words` (always pinned at project creation since v0.7.7), use `target_words` as the reference.
-- Fall back to the report-type minimum table when `target_words` is absent: **Basic** 3000, **Detailed** 5000, **Deep** 8000 (the historical minimum — *not* the v0.7.7 5K default; the gate's hardcoded fallback bar is intentionally stricter than the project default so a misconfigured project still gets caught), **Outline** 1000, **Resource** 1500.
+Resolve the gate's reference word count from the writer-outline JSON: read `target_min_words` from `.metadata/writer-outline-v{N}.json`. The writer commits this in Phase 1 before drafting, so it's reliably present for every dispatched review pass and carries the same value the orchestrator's Phase 1.5a plan pinned. Fall back to the report-type minimum table only when the outline file is unreadable: **Basic** 3000, **Detailed** 5000, **Deep** 8000 (historical minimum — *not* the v0.7.7 5K default; the fallback bar is intentionally stricter than the project default so a misconfigured project still gets caught), **Outline** 1000, **Resource** 1500.
 
 Compute the delivered-to-target ratio: `ratio = actual_words / target_words`.
 
@@ -161,9 +158,9 @@ When any deeper cap (`(1.02, 1.10]`, `(1.10, 1.25]`, `> 1.25`) applies, add a **
 Word excess: delivered N words, ceiling M for {report_type} mode under prose_density=executive (ratio: R). Trim redundancy in the longest-running sections — cut restatements, qualifier stacks, and 'as discussed above' references, not citations or concrete numbers.
 ```
 
-**The prefix is `Word excess`, not `Word deficit`.** This rename is load-bearing: the Phase 5 word-deficit expansion loop's predicate (`severity == "high" && issue.startswith("Word deficit")`) cannot match a `Word excess` issue, which is exactly what suppresses the expansion loop under executive density. The orchestrator's Phase 4.5 ceiling check is defence-in-depth around this rename, but the rename itself is the structural fix. **Do not** revert the prefix to `Word deficit` even if a future revisor adds a `Word excess` handler — the predicates and prefixes are coupled by name on purpose.
+**The prefix is `Word excess`, not `Word deficit`.** This rename is load-bearing: the Phase 5 word-deficit expansion loop's predicate (`severity == "high" && issue.startswith("Word deficit")`) cannot match a `Word excess` issue, which is exactly what suppresses the expansion loop under executive density. Do not revert the prefix.
 
-A report that overshoots its declared ceiling under executive density has failed the BLUF + Pyramid contract by definition — the stepped cap encodes this judgment numerically. The revisor does not currently have a `Word excess` trim handler (the Phase 5 loop is skipped under executive, so the revisor never sees these issues); a future `Word excess` revisor handler would key on this exact prefix to switch into trim mode. The field is declared here so the contract is documented even before the revisor implements it.
+A report that overshoots its declared ceiling under executive density has failed the BLUF + Pyramid contract by definition — the stepped cap encodes this judgment numerically. Under v0.8.0 the revisor doesn't yet handle `Word excess` (the Phase 5 loop is skipped under executive, so it never sees these issues); when one is added it will key on this exact prefix.
 
 #### Arc-Structural Gate
 
