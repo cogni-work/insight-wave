@@ -237,7 +237,26 @@ plan = {
                          target_words, restricted to report_type == "detailed"
                          and output_language ∈ {en, de}). Validation against
                          the registry happened at initialize-project.sh time —
-                         do not re-validate here.>
+                         do not re-validate here.>,
+  "prose_density":      <prose_density from project-config.json; default
+                         "standard" when the field is missing. Added in
+                         v0.8.0. Phase 1.5a is the single resolution site —
+                         Phase 4 writer dispatch, Phase 4.5 gate (which branches
+                         floor-trigger vs ceiling-check on this field), Phase
+                         5 word-deficit loop (which is suppressed under
+                         "executive"), Phase 5 reviewer dispatch, and Phase 6
+                         summary all consume this pinned value rather than
+                         re-reading project-config.json. The two values that
+                         ship in v1 are "standard" (today's behaviour —
+                         target_words is a floor, "Cite aggressively" cadence,
+                         Phase 4.5/5 expansion active) and "executive" (target
+                         _words is a ceiling, Pyramid Principle + BLUF, one
+                         citation per claim, Phase 4.5 inverts to ceiling
+                         check, Phase 5 word-deficit loop suppressed because
+                         the reviewer emits "Word excess" not "Word deficit").
+                         Validation against the arc's compatible_densities
+                         happened at initialize-project.sh time — do not
+                         re-validate here.>
 }
 ```
 
@@ -295,6 +314,7 @@ Produce a compact text summary for the user. Use this exact shape (fill in the c
 Topic: <topic from project-config.json>
 Report type: <type> → <sub_question_count> sub-questions generated
 Length: <target_words> words (<"user-set" if field was present in project-config.json, else "default for <type>">)
+Density: <plan.prose_density>  ← only print this line when plan.prose_density != "standard"; print "executive (Pyramid Principle + BLUF, one citation per claim, target_words as ceiling)" so the user sees the implication, not just the value. Omitting the line under standard density keeps the plan echo unchanged for legacy projects.
 Structure: <plan.story_arc_id_label — see structure block resolution below>
 Source mode: <mode> (channels: <comma-separated channels>)
 
@@ -589,10 +609,11 @@ Task(writer,
   CITATION_FORMAT=<citation_format from project-config.json, default "apa">,
   OUTPUT_LANGUAGE=<output_language>,
   TARGET_MIN_WORDS=<target_words resolved on the Phase 1.5a plan object — Phase 1.5a is the single resolution site; it reads project-config.json target_words with the default-by-depth fallback when the field is missing, then pins the value onto the plan at .logs/phase-1.5-plan.json for every downstream phase to consume>,
-  STORY_ARC_ID=<story_arc_id resolved on the Phase 1.5a plan object; default "standard-research" when project-config.json has no story_arc_id field. Phase 1.5a is the single resolution site for this field too — Phase 4 is a consumer that reads .logs/phase-1.5-plan.json story_arc_id, never project-config.json directly.>)
+  STORY_ARC_ID=<story_arc_id resolved on the Phase 1.5a plan object; default "standard-research" when project-config.json has no story_arc_id field. Phase 1.5a is the single resolution site for this field too — Phase 4 is a consumer that reads .logs/phase-1.5-plan.json story_arc_id, never project-config.json directly.>,
+  PROSE_DENSITY=<prose_density resolved on the Phase 1.5a plan object; default "standard" when project-config.json has no prose_density field. Phase 1.5a is the single resolution site for this field too — Phase 4 is a consumer that reads .logs/phase-1.5-plan.json prose_density, never project-config.json directly.>)
 ```
 
-**Always pass `TARGET_MIN_WORDS` and `STORY_ARC_ID` on every writer dispatch**, not just expansion re-dispatches. Since length is decoupled from depth in v0.7.7 (issue #35), the writer no longer has a safe fallback to a per-type constant — it needs the orchestrator-resolved `target_words` value on the first pass so its Phase 1 outline budgets match the project's actual length floor. Phase 4 reads the value from the Phase 1.5a plan object (it does not re-resolve from project-config.json); this keeps Phase 1.5a as the single source of truth and prevents three-site drift. The writer's documented per-type fallback table is retained only as a last-resort safety net for agent-level testing where the orchestrator is absent.
+**Always pass `TARGET_MIN_WORDS`, `STORY_ARC_ID`, and `PROSE_DENSITY` on every writer dispatch**, not just expansion re-dispatches. Since length is decoupled from depth in v0.7.7 (issue #35) and density is decoupled from both in v0.8.0, the writer no longer has a safe fallback to a per-type constant or to a default density — it needs the orchestrator-resolved `target_words` and `prose_density` values on the first pass so its Phase 1 outline budgets land on the right side of the floor/ceiling distinction and its Phase 2 drafting picks the right citation cadence. Phase 4 reads these values from the Phase 1.5a plan object (it does not re-resolve from project-config.json); this keeps Phase 1.5a as the single source of truth and prevents drift across the writer / reviewer / Phase 4.5 / Phase 5 call sites. The writer's documented per-type fallback table is retained only as a last-resort safety net for agent-level testing where the orchestrator is absent.
 
 Note: no `WRITER_MODE` parameter — the writer defaults to `full` mode for every report type including deep.
 
@@ -621,6 +642,7 @@ The writer's self-reported `words` in return JSON has historically drifted (obse
     OUTPUT_LANGUAGE=<output_language>,
     TARGET_MIN_WORDS=<target_words>,
     STORY_ARC_ID=<story_arc_id from the plan object>,
+    PROSE_DENSITY=<prose_density from the plan object>,
     EXPANSION_NOTES="Your previous run returned draft text in the response body instead of writing output/draft-v{N}.md to disk. Call the Write tool with the full drafted markdown as content. After Write returns, call Read on the same path to verify persistence. Return only the compact status JSON — never the drafted prose itself. See agents/writer.md Phase 3 for the read-back contract.")
   ```
 - **0d. Re-check and decide.** After the retry, re-run the existence check. If the file is still missing or empty, **halt Phase 4**: print a user-visible error block containing the topic, the project path, and a pointer to `.metadata/execution-log.json phases.phase_4_writer.write_failure`, then stop. Do not fall through to the `wc -w` measurement or Phase 5 — a phantom draft would corrupt every downstream phase (reviewer, revisor, verify-report). If the retry succeeds, set `phases.phase_4_writer.write_failure.recovered: true` in the execution log so the Phase 6 summary can surface the recovery, then continue to the word-count measurement with the recovered file.
@@ -640,7 +662,12 @@ Only once Step 0 confirms the file is present do the remaining gate steps apply:
    Phase 1.5a is the single resolution site — it reads `target_words` from `project-config.json` with the default-by-depth fallback (basic 3000, detailed 5000, deep 5000, outline 1000, resource 1500) when the field is missing, and pins the resolved value onto the plan object at plan-confirmation time. Phase 4.5 is a **consumer**: do not re-read `project-config.json` here and do not re-apply the fallback table. Three resolution sites invite drift; one resolution site and two consumers (Phase 4.5, Phase 6) is the contract. If you need to inspect the fallback logic or the v0.7.7 8K→5K deep-default change, read Phase 1.5a — the restore notice and the fallback table live there, not here.
 
 3. Compute `gate_floor = floor × 0.9` uniformly across all report types (10% tolerance band). Deep mode uses the same tolerance as every other type — the ~5.6–6.1K single-call output ceiling means a first-pass deep draft targeting `target_words >= 8000` is expected to land under floor, and the expansion re-dispatch + Phase 5 word-deficit loop compound it back up. A hard wall at `1.0 × floor` would uselessly bounce drafts that are one paragraph short of the target, which is exactly what the new `[0.98, 1.00) = 0.75 cap` reviewer band also exists to prevent. At the new default `target_words: 5000` for deep, a single writer pass reaches the floor without expansion in most cases — the expansion chain becomes an opt-in for explicit 8K+ runs rather than the common path.
-4. Decision:
+
+   Under `plan.prose_density == "executive"`, also compute `gate_ceiling = floor × 1.10` — the executive gate is symmetric to the floor band: 10% headroom above the ceiling is the same rounding-noise tolerance the reviewer applies. The reviewer's stepped excess cap still tightens at ratio 1.02, but the orchestrator-level re-dispatch trigger fires only past `gate_ceiling = 1.10 × target_words`.
+
+4. Decision **branches on `plan.prose_density`**:
+
+   **Standard density** (`plan.prose_density == "standard"`, default — today's behaviour unchanged):
    - **`ACTUAL_WORDS >= gate_floor`** → gate passes. Continue to Phase 5.
    - **`ACTUAL_WORDS < gate_floor` AND `project-config.json` has `allow_short: true`** → log the deficit but skip the re-dispatch. Record `phase_4_word_deficit: {actual, floor, action: "allow_short_opt_out"}` in `.metadata/execution-log.json`. Continue to Phase 5.
    - **`ACTUAL_WORDS < gate_floor` AND no `allow_short` opt-out** → re-dispatch the writer **once** with:
@@ -655,8 +682,17 @@ Only once Step 0 confirms the file is present do the remaining gate steps apply:
        OUTPUT_LANGUAGE=<output_language>,
        TARGET_MIN_WORDS=<floor>,
        STORY_ARC_ID=<story_arc_id from the plan object>,
+       PROSE_DENSITY=<prose_density from the plan object>,
        EXPANSION_NOTES="Previous draft ({actual_words} words) fell below the {floor}-word {type}-mode minimum by {floor - actual_words} words. Read .metadata/writer-outline-v1.json and identify sections whose drafted length fell below their planned budget — expand those first. Add evidence density (cross-source comparison, implications, methodological context, concrete examples from untapped context entities). Do not add new top-level sections. Do not pad with filler or 'in conclusion' restatements.")
      ```
+
+   **Executive density** (`plan.prose_density == "executive"`, v0.8.0+) — gate inverts to a ceiling check:
+   - **Suspected-truncation guard first.** If `ACTUAL_WORDS < floor × 0.5` (i.e., the draft is less than half the executive ceiling), do **not** treat this as a legitimate concise delivery — route to the write-failure recovery path. Re-spawn the writer with the same parameters used in Step 0c (same `DRAFT_VERSION`, `EXPANSION_NOTES` naming the suspected truncation: `"Your previous draft delivered only {actual_words} words on a {floor}-word executive-density ceiling — that is below the 50% guard rail and likely indicates a silent truncation, not a successful BLUF-tight delivery. Re-produce the full draft following the Phase 1 outline you committed to."`). Log `phase_4_suspected_truncation: {actual, ceiling, action: "recovery_redispatch"}` in `.metadata/execution-log.json`. After the retry, re-run the gate against the new file.
+   - **`ACTUAL_WORDS <= gate_ceiling`** (i.e., `actual <= floor × 1.10`) → gate passes. Continue to Phase 5 — even a draft a few percent under ceiling is the correct executive-density outcome. The reviewer's stepped excess cap will still apply if `ratio > 1.02`, but the orchestrator does not re-dispatch.
+   - **`ACTUAL_WORDS > gate_ceiling`** → log the excess but do **not** re-dispatch. Record `phase_4_word_excess: {actual, ceiling, ratio: actual/floor, action: "log_and_continue"}` in `.metadata/execution-log.json`. Continue to Phase 5 — the reviewer will apply the stepped excess cap (`0.75` / `0.60` / `0.45` per the gate tiers) and that completeness penalty propagates into the overall verdict; that is the right enforcement layer for executive overshoot, not an expansion re-dispatch.
+   - **`allow_short: true`** under executive density is a no-op (there is no shortfall to allow short — the gate's reference is a ceiling). Log nothing extra; the flag is preserved for the legacy semantic but does not change the executive gate's flow.
+
+   Note: the Phase 5 word-deficit expansion loop is suppressed under executive density (see Phase 5 below) because the reviewer emits `Word excess` rather than `Word deficit` — the loop's `startswith("Word deficit")` predicate cannot match. The Phase 4.5 ceiling check above is defence-in-depth around that structural fix; both must remain consistent.
 5. After the re-dispatch, measure `wc -w output/draft-v2.md`. If still below `gate_floor`, do NOT re-dispatch a third time — cap at one expansion attempt to bound Phase 4 cost. Instead:
    - Log `phase_4_word_deficit: {actual_v1, actual_v2, floor, action: "writer_cap_reached"}` in `.metadata/execution-log.json`
    - Continue to Phase 5 with `draft-v2.md` as the input — the reviewer's stepped completeness cap will downgrade the verdict, and the Phase 5 expansion-review loop (see Phase 5 below — raised to 3 iterations for deep mode) gives the revisor up to two more chances to close the gap
@@ -696,7 +732,8 @@ Task(reviewer,
   DRAFT_PATH="output/draft-v{N}.md",
   REVIEW_ITERATION=1,
   OUTPUT_LANGUAGE=<output_language>,
-  STORY_ARC_ID=<story_arc_id from the plan object>)
+  STORY_ARC_ID=<story_arc_id from the plan object>,
+  PROSE_DENSITY=<prose_density from the plan object>)
 ```
 
 Note: no `CLAIMS_DASHBOARD` parameter — the reviewer runs structural criteria only (completeness, coherence, source diversity, depth, clarity, plus the Arc-Structural Gate when `STORY_ARC_ID != standard-research`). The higher accept threshold (0.82) for structural-only review applies automatically.
@@ -713,11 +750,15 @@ Task(revisor,
   STORY_ARC_ID=<story_arc_id from the plan object>)
 ```
 
+The revisor does not currently consume `PROSE_DENSITY` — under `executive` the Phase 5 word-deficit loop is skipped, so the revisor never runs in an expansion sweep that would need density-aware behaviour. A future revisor update may add a `Word excess` trim-mode handler keyed on the reviewer's new prefix; when that lands, add `PROSE_DENSITY=<prose_density from the plan object>` to this dispatch and to every dispatch in the loop below. The reviewer-side prefix rename (`Word excess`) is already in place so the contract is documented.
+
 **Iteration cap** — conditional on the verdict's issue profile and report type:
 
 - **Default: 1 structural review iteration.** After revision, or if the first review accepts and its issues list contains no high-severity `Word deficit` entry, proceed to Phase 5.5. This is the common case and costs no more than today.
   - **Word-deficit carve-out on accept.** The reviewer's Word Count Gate can emit a high-severity `Word deficit` issue alongside an `accept` verdict when the draft lands at the accept threshold with a completeness cap applied (score e.g. `0.820`, ratio e.g. `0.970`). In that edge case the default short-circuit does **not** fire — the word-deficit expansion loop below does, because the Phase 6 promotion gate would otherwise block promotion in deep mode (and emit `⚠ Below target` warnings in other modes) on a draft Phase 5 just let through.
-- **Word-deficit expansion loop**, triggered when **any iteration's** verdict JSON contains an entry in `issues[]` where `severity == "high"` AND `issue.startswith("Word deficit")` — regardless of the top-level `verdict` field. This is the predicate that resolves the documented orchestration contradiction "accept verdict says ship, word-deficit issue says expand". When this issue is present, the revisor runs in expansion mode (see `agents/revisor.md` — the +20% cap is lifted for expansion). Without follow-up review passes, the expansion cannot be verified and the word-count gate would be a dead letter.
+- **Density guard (executive mode):** Under `plan.prose_density == "executive"`, **skip the word-deficit expansion loop entirely** — the reviewer emits `Word excess` (not `Word deficit`) under executive density, so the loop's predicate (`severity == "high" && issue.startswith("Word deficit")`) cannot match. This guard is defence-in-depth around the reviewer-side prefix rename; both must stay consistent. Continue to Phase 5.5 after the single 5a/5b iteration. Log `phase_5_review.word_deficit_loop_suppressed: "prose_density=executive"` in `.metadata/execution-log.json` so the audit trail records the suppression. The completeness cap the reviewer applied under the excess gate already propagates into the overall score; no further orchestrator action is needed.
+
+- **Word-deficit expansion loop** (`plan.prose_density == "standard"` only), triggered when **any iteration's** verdict JSON contains an entry in `issues[]` where `severity == "high"` AND `issue.startswith("Word deficit")` — regardless of the top-level `verdict` field. This is the predicate that resolves the documented orchestration contradiction "accept verdict says ship, word-deficit issue says expand". When this issue is present, the revisor runs in expansion mode (see `agents/revisor.md` — the +20% cap is lifted for expansion). Without follow-up review passes, the expansion cannot be verified and the word-count gate would be a dead letter.
 
   The iteration cap in this branch depends on report type:
 
@@ -728,7 +769,7 @@ Task(revisor,
 
   The loop:
   - After the revisor produces `draft-v{N+1}.md`, re-run the reviewer with `REVIEW_ITERATION=N+1`, generating `.metadata/review-verdicts/v{N+1}.json`.
-  - **Pass `STORY_ARC_ID` on every dispatch in this loop**, both reviewer and revisor — read it from the Phase 1.5a plan object the same way Phase 5a above does. Without it, an arc-driven project's follow-up reviewer pass would silently skip the Arc-Structural Gate and the revisor would lose the arc-preservation discipline, allowing a Word-deficit expansion to rename or reorder element headings without anyone noticing until the user reads the final report.
+  - **Pass `STORY_ARC_ID` and `PROSE_DENSITY` on every reviewer dispatch in this loop** (the revisor doesn't yet consume `PROSE_DENSITY` — see the Phase 5b note above) — read both from the Phase 1.5a plan object the same way Phase 5a above does. Without `STORY_ARC_ID`, an arc-driven project's follow-up reviewer pass would silently skip the Arc-Structural Gate and the revisor would lose the arc-preservation discipline. Without `PROSE_DENSITY`, the reviewer's Word Count Gate would default to standard-mode deficit caps and might re-emit `Word deficit` for an already-expanded draft, restarting the loop. The density guard above prevents executive-density projects from entering this loop at all, but the explicit dispatch parameter is still load-bearing for projects whose density was changed mid-flight (an unsupported but graceful path).
   - **Iteration persistence is mandatory.** After each follow-up reviewer dispatch returns, verify the verdict file exists and is non-empty via `[ -s "${PROJECT_PATH}/.metadata/review-verdicts/v${N+1}.json" ]`. If missing, the reviewer failed to persist its verdict — log `phase_5_review.iteration_{N+1}_missing: true` in `.metadata/execution-log.json` and halt Phase 5 with a user-visible error. Do not fall through to Phase 5.5 or Phase 6 with an unverified post-revisor draft — the whole point of the follow-up iteration is to confirm whether the expansion closed the gap.
   - If the verdict is `accept`, exit the loop and proceed to Phase 5.5.
   - If the verdict is still `revise` with another `Word deficit` issue AND the cap for the current report type has not been reached, dispatch another revisor expansion pass and then another reviewer pass. Non-deep modes stop after iteration 2; deep mode stops after iteration 3.
@@ -802,14 +843,22 @@ Once the promotion gate passes (or the user selects Option A), continue with the
    - Topic and report type
    - **Word count**: always formatted as `Delivered: N words (target: {target_words} words)`. Read `{target_words}` from the Phase 1.5a plan object at `.logs/phase-1.5-plan.json` — the single resolution site that Phase 4 dispatch, Phase 4.5 Step 2, and the Phase 6 promotion gate all consume. Do not re-resolve from `project-config.json` here. Length is decoupled from depth in v0.7.7 — there is no per-type range; the user committed to a specific target in setup (or via the default-by-depth fallback Phase 1.5a applied), and the summary reports against that target. If `phases.phase_4_writer.re_dispatches >= 1`, also show `(expanded from {v1_words} via expansion chain)` so the user sees when the gate earned its cost.
    - **Story arc summary** (only when `plan.story_arc_id != "standard-research"`): print one line of element distribution — `Arc: <arc_id> — <element1> <a1>% (target <e1>%), <element2> <a2>% (target <e2>%), …`. Read the per-element actual proportion from the latest reviewer verdict's `arc_structural.checks[]` block (look for entries with `"check": "element_proportion"` and use the `actual` and `expected` fields, formatted as percentages). Print this line whenever the verdict carries `arc_structural` data with `gate_status` of `pass` or `fail` — on pass it is positive confirmation that the arc shape landed (cheap reassurance, one line), on fail it surfaces the drift the user should know about before reading the draft. When `gate_status == "skipped"` (the `standard-research` default path), omit the line — there is no arc to summarize.
-   - **Word-count gate status** — read `.metadata/execution-log.json phases.phase_4_writer`:
-     - If `phases.phase_4_writer.write_failure` exists and `write_failure.recovered == true`: print `✓ Phase 4.5 write-failure recovery: writer persisted the draft on retry after a first-run silent-persist failure.` Then continue to the branches below — the write-failure line is additive, not a replacement for the word-count status.
-     - If `re_dispatches == 0` and the final `actual_words >= floor`: do not print any warning
-     - If `re_dispatches == 1` and the final `actual_words >= floor`: print `✓ Word-count gate: expansion re-dispatch succeeded ({v1} → {v2} words).` — a positive signal the gate earned its cost
-     - If the final `actual_words < floor`: print `⚠ Below target by {floor - actual_words} words.` followed by one of:
-       - `allow_short: true was set — expansion skipped.` (opt-out path)
-       - `Writer re-dispatch cap reached after one attempt.` (cap-hit path)
-     - If `phase_5_review.iteration_count >= 2`: print `✓ Phase 5 expansion-review loop ran — reviewer re-verified the revised draft ({iteration_count} iterations).`
+   - **Density** (only when `plan.prose_density != "standard"`): print `Density: {prose_density}` — for `executive`, append `(Pyramid Principle + BLUF, one citation per claim, target_words as ceiling)` so the reader sees the implication, not just the value. Omit the line under `standard` density to keep the summary unchanged for legacy projects.
+   - **Word-count gate status** — read `.metadata/execution-log.json phases.phase_4_writer`. Behaviour branches on `plan.prose_density`:
+     - **Standard density** (`plan.prose_density == "standard"`, default):
+       - If `phases.phase_4_writer.write_failure` exists and `write_failure.recovered == true`: print `✓ Phase 4.5 write-failure recovery: writer persisted the draft on retry after a first-run silent-persist failure.` Then continue to the branches below — the write-failure line is additive, not a replacement for the word-count status.
+       - If `re_dispatches == 0` and the final `actual_words >= floor`: do not print any warning
+       - If `re_dispatches == 1` and the final `actual_words >= floor`: print `✓ Word-count gate: expansion re-dispatch succeeded ({v1} → {v2} words).` — a positive signal the gate earned its cost
+       - If the final `actual_words < floor`: print `⚠ Below target by {floor - actual_words} words.` followed by one of:
+         - `allow_short: true was set — expansion skipped.` (opt-out path)
+         - `Writer re-dispatch cap reached after one attempt.` (cap-hit path)
+       - If `phase_5_review.iteration_count >= 2`: print `✓ Phase 5 expansion-review loop ran — reviewer re-verified the revised draft ({iteration_count} iterations).`
+     - **Executive density** (`plan.prose_density == "executive"`):
+       - Drop the `expanded from {v1_words} via expansion chain` suffix on the Word count line — no expansion chain runs under executive density.
+       - If `phases.phase_4_writer.write_failure` exists and `write_failure.recovered == true`: print the same `✓ Phase 4.5 write-failure recovery` line as standard mode.
+       - If `phases.phase_4_writer.suspected_truncation` exists (executive-only path): print `✓ Phase 4.5 executive-density truncation guard fired — writer was re-dispatched after delivering <50% of ceiling on first pass; second pass cleared the guard.`
+       - If `phase_4_word_excess` was recorded: print `⚠ Over ceiling by {actual - ceiling} words ({ratio}× target). Reviewer applied a stepped completeness cap on excess; consider whether the user's intent was actually 'concise' or 'comprehensive'.`
+       - If neither suspected truncation nor word excess fired: print `✓ Executive-density ceiling respected ({actual_words}/{ceiling} words).` — positive confirmation the BLUF + Pyramid discipline landed.
    - Section count
    - Sources cited
    - **Citation URL coverage** — compute this from `.metadata/aggregated-context.json sources[]`:

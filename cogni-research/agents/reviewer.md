@@ -22,6 +22,7 @@ You evaluate a report draft against quality criteria, informed by claims verific
 | `REVIEW_ITERATION` | Yes | Current review iteration (1-3) |
 | `OUTPUT_LANGUAGE` | No | ISO 639-1 code (default: "en"). When non-English, evaluate clarity in the specified language |
 | `STORY_ARC_ID` | No | Arc ID from `${CLAUDE_PLUGIN_ROOT}/references/story-arcs.json`. Default: `standard-research` (no arc-structural review — gate is skipped). When set to a named arc (e.g., `corporate-visions`), the Arc-Structural Gate runs against the draft to verify element coverage, order, and per-element word proportion. Resolved by the orchestrator from `project-config.json story_arc_id`. |
+| `PROSE_DENSITY` | No | `standard` (default) or `executive`. Composable orthogonal knob, added in v0.8.0. Under `standard`, the Word Count Gate runs in its deficit-cap configuration (today's behaviour): caps completeness on shortfall and emits `Word deficit` issues. Under `executive`, the gate inverts to an excess-cap configuration: caps completeness on overshoot and emits `Word excess` issues (which the Phase 5 expansion loop's `startswith("Word deficit")` predicate cannot match — that's the structural fix that suppresses expansion under executive density). Resolved by the orchestrator from `project-config.json prose_density` (default `standard` when unset) via the Phase 1.5a plan. |
 
 ## Core Workflow
 
@@ -110,14 +111,21 @@ This gate applies in **both** claims-available and structural-only modes — it 
 
 #### Word Count Gate
 
-Before scoring dimensions, count the draft's words (use `wc -w` via Bash on the file, not your own guess) and check against report-type minimums:
-- **Basic**: 3000 words minimum
-- **Detailed**: 5000 words minimum
-- **Deep**: 8000 words minimum
-- **Outline**: 1000 words minimum
-- **Resource**: 1500 words minimum
+Before scoring dimensions, count the draft's words (use `wc -w` via Bash on the file, not your own guess). The gate's reference point and the direction of the cap depend on `PROSE_DENSITY`:
 
-Compute the delivered-to-minimum ratio: `ratio = actual_words / minimum`. Apply a stepped cap on the completeness score based on how severe the deficit is — a 50% shortfall is a categorically worse failure than a 2% shortfall, and the score must reflect that so the Phase 3 decision matrix actually forces a revise when it should, but doesn't uselessly bounce drafts that are within rounding noise of the floor:
+- **`standard`** (default): `target_words` is a **floor**. The gate caps completeness on shortfall and emits `Word deficit` issues.
+- **`executive`** (v0.8.0+): `target_words` is a **ceiling**. The gate caps completeness on overshoot and emits `Word excess` issues. The shape of the cap is mirror-symmetric around 1.0 to the standard gate — same severity tiers, same low-band rounding-noise carve-out, just on the other side of the ratio.
+
+Resolve the gate's reference word count:
+
+- If the orchestrator passed `PROSE_DENSITY` and the writer-outline JSON (`.metadata/writer-outline-v{N}.json`) carries `density_ceiling` (executive mode) or the project-config carries `target_words` (always pinned at project creation since v0.7.7), use `target_words` as the reference.
+- Fall back to the report-type minimum table when `target_words` is absent: **Basic** 3000, **Detailed** 5000, **Deep** 8000 (the historical minimum — *not* the v0.7.7 5K default; the gate's hardcoded fallback bar is intentionally stricter than the project default so a misconfigured project still gets caught), **Outline** 1000, **Resource** 1500.
+
+Compute the delivered-to-target ratio: `ratio = actual_words / target_words`.
+
+##### Standard density (`PROSE_DENSITY == "standard"`, default) — cap on shortfall
+
+Apply a stepped cap on the completeness score based on how severe the **deficit** is — a 50% shortfall is a categorically worse failure than a 2% shortfall, and the score must reflect that so the Phase 3 decision matrix actually forces a revise when it should, but doesn't uselessly bounce drafts that are within rounding noise of the floor:
 
 - `ratio ≥ 1.00` — no cap, score completeness normally
 - `0.98 ≤ ratio < 1.00` — cap completeness at **0.75** (rounding-noise band; the draft is within 2% of the floor and does not need full expansion — the stepped cap still nudges the verdict but the higher band avoids a bounce-back on a draft the user would reasonably ship as-is)
@@ -134,6 +142,28 @@ Word deficit: delivered N words, minimum M required for {report_type} mode (rati
 ```
 
 A report that addresses all sub-questions but treats them superficially due to insufficient length is incomplete by definition — the stepped cap encodes this judgment numerically.
+
+##### Executive density (`PROSE_DENSITY == "executive"`) — cap on excess
+
+Apply a stepped cap on the completeness score based on how severe the **overshoot** is — same severity logic as the standard gate, mirror-symmetric around 1.0. A 50% overshoot is a categorically worse failure than a 2% overshoot, and the score must reflect that; a draft within 2% of ceiling should not bounce on rounding noise:
+
+- `ratio ≤ 1.00` — no cap, score completeness normally (under-ceiling drafts are the *correct* executive-density outcome — the writer was instructed to stop when the argument is made)
+- `1.00 < ratio ≤ 1.02` — no cap (rounding-noise band; the draft is within 2% of the ceiling and the BLUF + Pyramid discipline is intact — flag low-severity only, do not penalize)
+- `1.02 < ratio ≤ 1.10` — cap completeness at **0.75** (mild-to-moderate overshoot; the writer leaked some redundancy past the ceiling)
+- `1.10 < ratio ≤ 1.25` — cap completeness at **0.60** (significant overshoot)
+- `ratio > 1.25` — cap completeness at **0.45** (catastrophic overshoot — the executive-density discipline was effectively abandoned)
+
+When the `(1.00, 1.02]` rounding-noise band applies, add a **low-severity** issue whose text begins with `Word excess (rounding-noise)` — informational, no further action.
+
+When any deeper cap (`(1.02, 1.10]`, `(1.10, 1.25]`, `> 1.25`) applies, add a **high-severity** issue whose text begins with the exact phrase `Word excess` (no `(rounding-noise)` suffix). Recommended issue text:
+
+```
+Word excess: delivered N words, ceiling M for {report_type} mode under prose_density=executive (ratio: R). Trim redundancy in the longest-running sections — cut restatements, qualifier stacks, and 'as discussed above' references, not citations or concrete numbers.
+```
+
+**The prefix is `Word excess`, not `Word deficit`.** This rename is load-bearing: the Phase 5 word-deficit expansion loop's predicate (`severity == "high" && issue.startswith("Word deficit")`) cannot match a `Word excess` issue, which is exactly what suppresses the expansion loop under executive density. The orchestrator's Phase 4.5 ceiling check is defence-in-depth around this rename, but the rename itself is the structural fix. **Do not** revert the prefix to `Word deficit` even if a future revisor adds a `Word excess` handler — the predicates and prefixes are coupled by name on purpose.
+
+A report that overshoots its declared ceiling under executive density has failed the BLUF + Pyramid contract by definition — the stepped cap encodes this judgment numerically. The revisor does not currently have a `Word excess` trim handler (the Phase 5 loop is skipped under executive, so the revisor never sees these issues); a future `Word excess` revisor handler would key on this exact prefix to switch into trim mode. The field is declared here so the contract is documented even before the revisor implements it.
 
 #### Arc-Structural Gate
 
