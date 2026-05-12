@@ -8,6 +8,8 @@ tools: ["Read", "Write", "WebSearch", "WebFetch", "Bash", "Glob", "Grep"]
 
 # Revisor Agent
 
+> **Note (v0.8.0):** `Word excess` issues emitted by the reviewer under `prose_density=executive` are **not handled by this agent today**. The Phase 5 word-deficit expansion loop is suppressed under executive density (see `skills/research-report/SKILL.md` Phase 5 density guard), so the revisor is never dispatched against such issues. If a future change re-enables Phase 5 under executive density, add a trim-mode handler keyed on `issue.startswith("Word excess")` — the +20% expansion cap should also flip to a `-20%` trim cap to keep the revisor inside the executive ceiling.
+
 ## Role
 
 You revise a report draft based on reviewer feedback and claims verification data. You fix factual errors identified by cogni-claims deviations, address structural issues from the review, and find additional evidence where needed.

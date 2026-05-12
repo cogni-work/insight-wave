@@ -1,8 +1,8 @@
 {
-  "_schema_version": "1.0",
-  "_last_synced_at": "2026-05-11",
+  "_schema_version": "1.1",
+  "_last_synced_at": "2026-05-12",
   "_upstream_path": "cogni-narrative/skills/narrative/references/story-arc/",
-  "_notes": "Local registry of story arcs the cogni-research writer can apply as section structure. Mirrors a subset of cogni-narrative's arc-definition.md files. Audited by the audit-arcs skill against the upstream source of truth. v1 ships two arcs: standard-research (today's default, dynamic structure) and corporate-visions (executive narrative arc, EN+DE, detailed report_type only).",
+  "_notes": "Local registry of story arcs the cogni-research writer can apply as section structure. Mirrors a subset of cogni-narrative's arc-definition.md files. Audited by the audit-arcs skill against the upstream source of truth. v1 ships two arcs: standard-research (today's default, dynamic structure) and corporate-visions (executive narrative arc, EN+DE, detailed report_type only). The compatible_densities field is research-local (no cogni-narrative counterpart) — missing field defaults to [\"standard\"] in the validator.",
   "arcs": {
     "standard-research": {
       "display_name": "Standard Research",
@@ -10,9 +10,10 @@
       "dynamic_elements": true,
       "compatible_report_types": ["basic", "detailed", "deep", "outline", "resource"],
       "supported_languages": ["en", "de", "fr", "it", "pl", "nl", "es", "cs", "sk", "hu", "ro", "hr", "el", "pt", "zh"],
+      "compatible_densities": ["standard", "executive"],
       "min_target_words": 1000,
       "max_target_words": 20000,
-      "notes": "Default structure. Sections are generated dynamically from sub-questions per the report-type template baked into the writer agent (Introduction → topical sections per sub-question → optional Cross-Cutting Analysis → Conclusion → References). No fixed elements or proportions. The writer falls through to its existing per-report-type template logic when this arc is selected. The reviewer's Arc-Structural Gate is skipped. This arc is functionally equivalent to leaving story_arc_id unset — it's surfaced as an explicit menu option so the configuration model is uniform (every project has an arc, even if it's the default one)."
+      "notes": "Default structure. Sections are generated dynamically from sub-questions per the report-type template baked into the writer agent (Introduction → topical sections per sub-question → optional Cross-Cutting Analysis → Conclusion → References). No fixed elements or proportions. The writer falls through to its existing per-report-type template logic when this arc is selected. The reviewer's Arc-Structural Gate is skipped. This arc is functionally equivalent to leaving story_arc_id unset — it's surfaced as an explicit menu option so the configuration model is uniform (every project has an arc, even if it's the default one). compatible_densities lists the prose_density values this arc supports — the dynamic structure compresses cleanly under executive density, so both standard (today's default) and executive (Pyramid Principle + BLUF, target_words as ceiling) are valid."
     },
     "corporate-visions": {
       "display_name": "Corporate Visions",
@@ -75,6 +76,7 @@
       "max_target_words": 8000,
       "compatible_report_types": ["detailed"],
       "supported_languages": ["en", "de"],
+      "compatible_densities": ["standard", "executive"],
       "transitions": {
         "hook_to_why_change": "This gap between [observation] and [reality] defines the challenge.",
         "why_change_to_why_now": "Three converging forces make action urgent.",

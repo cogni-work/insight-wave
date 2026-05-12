@@ -46,6 +46,7 @@ Never combine both modes in the same turn. Each turn is either pure text or a si
 >
 > **Depth:** basic (5 sub-questions) | detailed (up to 10) | deep (recursive tree) | outline | resource
 > **Length:** brief (1.5K) | standard (3K) | deep-dive (5K) *(default for deep)* | comprehensive (8K) | whitepaper (12K) — or specify e.g. "~6500 words"
+> **Density:** standard *(default — Cite aggressively, target_words as floor)* | executive *(Pyramid Principle + BLUF, one citation per claim, target_words as ceiling)*
 > **Tone:** objective *(default)* | formal | analytical | persuasive | informative | explanatory | descriptive | critical | comparative | speculative | narrative | optimistic | simple | casual | executive
 > **Citations:** APA *(default)* | MLA | Chicago | Harvard | IEEE | Wikilink | Local-Wikilink
 > **Market** *(required — curated authority sources per region)*:
@@ -163,6 +164,13 @@ Scan the user's request and extract any options they already specified. These be
   - If `target_words` was explicitly set by the prompt and falls outside `[min_target_words, max_target_words]`, emit a note naming the range (e.g., `> "corporate-visions needs 3000–8000 words for its element proportions to land — your target of 2500 is outside that range. Pick a value in range or switch to standard-research."`) and drop the named arc.
 
   Only when all three checks pass does the named arc carry through to Step 2. This is the prompt-time counterpart of the menu-render suppression rule documented in Step 2 — both gates run at different turn boundaries against the same registry, so keep the parsed JSON in working context for Step 2's Suppression rule rather than re-reading the file.
+- **Prose density**: phrases that signal the user wants a concise, scannable, executive-shaped deliverable rather than the default evidence-rich prose → `prose_density: executive`. The two valid values in v1 are `standard` (default — `target_words` is a floor, "Cite aggressively" cadence, Phase 4.5/5 expansion active) and `executive` (`target_words` is a ceiling, Pyramid Principle + BLUF, one citation per claim, Phase 4.5 inverts to ceiling check, Phase 5 word-deficit loop suppressed).
+
+  Detection signals — EN: `concise`, `tight`, `executive density`, `TL;DR-free`, `no TL;DR`, `Pyramid Principle`, `BLUF`, `bottom-line-up-front`, `bottom line up front`, `scannable`, `decision-ready`, `not verbose`. DE: `knapp`, `verdichtet`, `kein TL;DR`, `auf den Punkt`. The canonical phrasing — `"deep research that's broad on sources but concise on prose"` or any variant of "deep + short" — should reliably resolve to `report_type=deep, prose_density=executive` (which is the orthogonal combination the v0.8.0 knob was added to enable).
+
+  Distinct from `tone=executive` (which is a rhetorical register): if the user says "executive tone, concise" → `tone=executive, prose_density=executive`; if the user says "narrative tone, but concise" → `tone=narrative, prose_density=executive`. The two are orthogonal — never silently fold one into the other.
+
+  **Pre-validation (prompt-time gate).** When `prose_density: executive` is detected, cross-check against the resolved arc's `compatible_densities` from `${CLAUDE_PLUGIN_ROOT}/references/story-arcs.json` (same registry the story-arc pre-validation block above reads — keep the parsed JSON in working context). Both v1 arcs (`standard-research` and `corporate-visions`) declare `["standard", "executive"]` so the check passes by default. Missing field defaults to `["standard"]` in the validator so any future arc that genuinely can't survive compression stays opt-in. If the cross-check fails (arc declares `compatible_densities: ["standard"]` only), emit a menu-time note (e.g., `> "the <arc> arc supports standard density only — drop executive, or switch arcs?"`) and drop the detected density from the carry-forward. Do NOT pass `--prose-density executive` to `initialize-project.sh` until the user resolves the conflict.
 
 ### Step 2: Configuration Menu (text output, turn ends)
 
@@ -186,6 +194,11 @@ Assemble the menu dynamically and render it as text output:
    - **Story arc** (only if not detected, and only when relevant — see suppression rule below): always include `standard-research` *(default)* — today's structure, sections derived from sub-questions, suitable for any report type. Then list every named arc from `references/story-arcs.json` that is compatible with the user's current `report_type` and `output_language` choices (see registry-driven suppression rule below). For example, today's `corporate-visions` arc surfaces only when `report_type == "detailed"` AND `output_language ∈ {"en","de"}`, and reads as: `corporate-visions` = Why Change → Why Now → Why You → Why Pay at fixed proportions of `target_words` (for executive narratives, sales enablement, market-positioning arguments).
 
      **Suppression rule (registry-driven)**: for each arc in `references/story-arcs.json` with `dynamic_elements != true`, check whether the currently-selected `report_type` is in `arc.compatible_report_types` AND `output_language` is in `arc.supported_languages`. Render the row when at least one named arc passes both checks (the row lists `standard-research` plus every passing named arc). Omit the row when no named arc passes — the default is the only valid choice and a one-option menu adds noise. The constraint logic lives in the registry, not in this skill, so when new arcs are added (or existing arcs widen their compatibility) they surface here without further code changes. This menu-render filter complements the prompt-time pre-validation in Step 1; both gates feed the same goal of catching incompatible arc combinations before `initialize-project.sh` rejects them.
+   - **Density** (only if not detected, and only when the resolved arc supports more than one density — see suppression rule below): the orthogonal third knob added in v0.8.0. Read as:
+     > `standard` *(default)* — "Cite aggressively" cadence (2–3 citations per paragraph), `target_words` treated as a floor, Phase 4.5/5 expansion active. Best for evidence-rich research deliverables where length is part of the value.
+     > `executive` — Pyramid Principle + BLUF, one citation per claim, `target_words` treated as a ceiling. Best for "deep research, concise output" — the broadest curated sources distilled into a scannable, decision-ready deliverable. Use when the reader is a decision-maker who'll likely read nothing else.
+
+     **Suppression rule (registry-driven)**: for the resolved `story_arc_id`, read `arc.compatible_densities` from `references/story-arcs.json` (missing field defaults to `["standard"]`). Render the row when the list contains more than one density. Omit the row when the list is `["standard"]` only — the default is the only valid choice and a one-option menu adds noise. This mirrors the Story arc row's suppression — same registry, same pattern, same complement to the Step 1 prompt-time pre-validation. Both v1 arcs (`standard-research` and `corporate-visions`) declare `["standard", "executive"]`, so the Density row renders for every project under today's arc set.
 4. Always include one line for advanced options: "Advanced: output language, sub-question count, domain filter, researcher role, diagram generation, allow short (skip word-count expansion gates) — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
@@ -265,7 +278,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--recursive-depth <0|2>] \
   [--batch-size <2|4|6>] \
   [--target-words <N>] \
-  [--story-arc "<standard-research|corporate-visions>"]
+  [--story-arc "<standard-research|corporate-visions>"] \
+  [--prose-density "<standard|executive>"]
 ```
 
 Pass `--confirm-plan`, `--recursive-depth`, `--batch-size` only if the user explicitly picked a non-default value in the Execution defaults block. Omit them otherwise — `research-report` applies the documented defaults (confirm: on, recursion: off, batch size: 4) when the keys are missing from `project-config.json`.
@@ -273,6 +287,8 @@ Pass `--confirm-plan`, `--recursive-depth`, `--batch-size` only if the user expl
 Pass `--target-words` only if the user explicitly picked a length preset or integer in Step 1 (from a named preset like "whitepaper" or an integer like "~5000 words"). Omit it when the user accepted depth-default length — `initialize-project.sh` applies the default-by-depth table (basic 3000, detailed 5000, **deep 5000**, outline 1000, resource 1500) and writes `target_words` into project-config.json at creation so the value is pinned for the project's lifetime. In v0.7.7 the deep default was reduced from 8000 to 5000 (issue #35); users who want the old 8K-deep floor set `target_words: 8000` explicitly (via a length preset choice, an integer in the prompt, or hand-editing project-config.json).
 
 Pass `--story-arc` only when the user explicitly chose a named arc in Step 1 or Step 2 (e.g., `corporate-visions`). Omit the flag when the user accepted the default `standard-research` — `initialize-project.sh` does not persist the field for the default, keeping configs minimal. `initialize-project.sh` validates per-arc compatibility (`compatible_report_types`, `min_target_words`, `max_target_words`, `supported_languages`) against `references/story-arcs.json` and rejects with a clear error if the combination is invalid; this skill should also surface the constraint at menu time so the user doesn't see a script error after answering.
+
+Pass `--prose-density` only when the user explicitly chose `executive` in Step 1 or Step 2. Omit the flag when the user accepted the default `standard` — `initialize-project.sh` does not persist the field for the default, keeping configs minimal (the same pattern `--story-arc` follows). `initialize-project.sh` cross-validates against the resolved arc's `compatible_densities` from `references/story-arcs.json`; this skill's Step 1 pre-validation and Step 2 menu suppression surface the constraint at conversation time so the user doesn't see a script error after answering. Added in v0.8.0.
 
 Check the `already_exists` field in the JSON output.
 

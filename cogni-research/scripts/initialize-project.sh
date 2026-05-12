@@ -3,7 +3,7 @@ set -euo pipefail
 # initialize-project.sh - Create project directory structure for a research report
 # Version: 1.0.0
 #
-# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--allow-short <true|false>] [--target-words <N>] [--story-arc <arc-id>] [--suffix <N>]
+# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--allow-short <true|false>] [--target-words <N>] [--story-arc <arc-id>] [--prose-density <standard|executive>] [--suffix <N>]
 #
 # --story-arc selects the section structure of the report. Defaults to
 # "standard-research" (today's behaviour: sections derived from sub-questions
@@ -20,6 +20,11 @@ set -euo pipefail
 # deep 5000, outline 1000, resource 1500. Deep-mode default reduced from 8000 to
 # 5000 in v0.7.7 (issue #35). Set --target-words 8000 explicitly for the old
 # 8K-deep behaviour.
+#
+# --prose-density (v0.8.0+) selects how the writer spends the word budget.
+# "standard" (default) keeps today's behaviour; "executive" inverts target_words
+# from floor to ceiling and suppresses the Phase 5 expansion loop. Per-arc
+# compatibility lives in references/story-arcs.json compatible_densities.
 #
 # Creates:
 #   {workspace}/{slug}-{date}/
@@ -56,6 +61,7 @@ BATCH_SIZE=""
 ALLOW_SHORT=""
 TARGET_WORDS=""
 STORY_ARC=""
+PROSE_DENSITY=""
 SUFFIX=""
 
 while [[ $# -gt 0 ]]; do
@@ -82,6 +88,7 @@ while [[ $# -gt 0 ]]; do
     --allow-short) ALLOW_SHORT="$2"; shift 2;;
     --target-words) TARGET_WORDS="$2"; shift 2;;
     --story-arc) STORY_ARC="$2"; shift 2;;
+    --prose-density) PROSE_DENSITY="$2"; shift 2;;
     --suffix) SUFFIX="$2"; shift 2;;
     *) echo "{\"success\": false, \"error\": \"Unknown argument: $1\"}" >&2; exit 2;;
   esac
@@ -141,6 +148,14 @@ if [[ -n "$TARGET_WORDS" ]] && ! [[ "$TARGET_WORDS" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 
+if [[ -z "$PROSE_DENSITY" ]]; then
+  PROSE_DENSITY="standard"
+fi
+if [[ ! "$PROSE_DENSITY" =~ ^(standard|executive)$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --prose-density: $PROSE_DENSITY. Must be standard or executive.\"}" >&2
+  exit 2
+fi
+
 # Resolve target_words from default-by-depth when not explicitly supplied.
 # Keeps length decoupled from depth: the user can override per project, and
 # depth-only runs still get a sensible default. Deep reduced from 8000 to
@@ -190,6 +205,13 @@ if [[ "$TARGET_WORDS" -lt "$ARC_MIN_WORDS" ]]; then
 fi
 if [[ "$TARGET_WORDS" -gt "$ARC_MAX_WORDS" ]]; then
   echo "{\"success\": false, \"error\": \"Story arc '$STORY_ARC' requires --target-words <= $ARC_MAX_WORDS (got $TARGET_WORDS).\"}" >&2
+  exit 2
+fi
+# Missing compatible_densities defaults to ["standard"] so future arcs that
+# can't survive compression stay opt-in.
+ARC_DENSITIES=$(jq -r --arg a "$STORY_ARC" '(.arcs[$a].compatible_densities // ["standard"]) | join(" ")' "$STORY_ARCS_FILE")
+if ! echo "$ARC_DENSITIES" | grep -qw "$PROSE_DENSITY"; then
+  echo "{\"success\": false, \"error\": \"Story arc '$STORY_ARC' does not support --prose-density $PROSE_DENSITY. Compatible densities: $ARC_DENSITIES\"}" >&2
   exit 2
 fi
 
@@ -390,6 +412,9 @@ CONFIG=$(echo "$CONFIG" | jq --argjson v "$TARGET_WORDS" '. + {target_words: $v}
 # semantically equivalent to "story_arc_id: standard-research" downstream.
 if [[ -n "$STORY_ARC" ]] && [[ "$STORY_ARC" != "standard-research" ]]; then
   CONFIG=$(echo "$CONFIG" | jq --arg v "$STORY_ARC" '. + {story_arc_id: $v}')
+fi
+if [[ "$PROSE_DENSITY" != "standard" ]]; then
+  CONFIG=$(echo "$CONFIG" | jq --arg v "$PROSE_DENSITY" '. + {prose_density: $v}')
 fi
 echo "$CONFIG" > "$PROJECT_DIR/.metadata/project-config.json"
 

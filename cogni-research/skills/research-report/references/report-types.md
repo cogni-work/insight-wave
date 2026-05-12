@@ -8,6 +8,19 @@ The word counts listed under each type below are **defaults for `target_words` w
 
 In v0.7.7 (issue #35) the deep-mode default was reduced from 8000 to 5000 words to align with professional deep-research norms and the single-voice writer's sweet spot. Set `target_words: 8000` explicitly to restore the old floor. `allow_short: true` semantics are unchanged — still the escape hatch that disables all expansion gates.
 
+## Density is the third knob
+
+`prose_density` controls how the writer spends the word budget, independent of depth and length. Added in v0.8.0.
+
+- **`standard`** (default) — maximizes citation density (2–3 citations per paragraph, "Cite aggressively") and treats `target_words` as a **floor**. Phase 4.5 / Phase 5 will expand short drafts via the orchestrator's whole-draft re-dispatch chain.
+- **`executive`** — switches the writer to Pyramid Principle + BLUF (Bottom Line Up Front), one citation per claim, and treats `target_words` as a **ceiling**. The reviewer's Word Count Gate inverts to cap completeness on excess and emits `Word excess` issues; the Phase 4.5 floor-trigger becomes a ceiling check; the Phase 5 word-deficit expansion loop is suppressed.
+
+The canonical use case for the executive density: **deep research + 4,000 words + executive** = the broadest curated sources (deep tree, 10–20 leaf sub-questions, 45K input cap) distilled into a concise, scannable deliverable. Before v0.8.0 the user had to choose between breadth and brevity — pick deep and accept a long output, or shorten the report and lose curated breadth. The orthogonal density knob makes "deep + concise" a first-class combination.
+
+Per-arc compatibility is declared in `references/story-arcs.json arcs[<arc>].compatible_densities` (missing field defaults to `["standard"]` so future arcs that can't survive compression stay opt-in). Both v1 arcs (`standard-research` and `corporate-visions`) declare `["standard", "executive"]` — their per-element proportions scale cleanly against any `target_words` in the arc's band, and executive density tightens prose **inside** each element's budget while preserving arc structure.
+
+Density is also distinct from `tone: executive` — tone is rhetorical register (concise, decision-oriented language), density is structural ceiling + Pyramid Principle outline + one-citation-per-claim discipline. They compose orthogonally: `tone=narrative, prose_density=executive` produces a story-driven argument with BLUF + Pyramid; `tone=executive, prose_density=standard` produces a long executive-toned report.
+
 Default-by-depth table:
 
 | Depth (`report_type`) | Default `target_words` |
