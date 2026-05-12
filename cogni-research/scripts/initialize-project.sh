@@ -3,7 +3,16 @@ set -euo pipefail
 # initialize-project.sh - Create project directory structure for a research report
 # Version: 1.0.0
 #
-# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--allow-short <true|false>] [--target-words <N>] [--story-arc <arc-id>] [--prose-density <standard|executive>] [--suffix <N>]
+# Usage: initialize-project.sh --topic <topic> --type <basic|detailed|deep|outline|resource> --workspace <path> [--market <region-code>] [--output-language <lang>] [--language <en|de>] [--tone <tone>] [--researcher-role <role>] [--source-urls <url1,url2,...>] [--query-domains <domain1,domain2,...>] [--max-subtopics <N>] [--citation-format <apa|mla|chicago|harvard|ieee>] [--report-source <web|local|wiki|hybrid>] [--document-paths <path1,path2,...>] [--wiki-paths <wiki-root1,wiki-root2,...>] [--confirm-plan <true|false>] [--recursive-depth <N>] [--batch-size <N>] [--allow-short <true|false>] [--target-words <N>] [--story-arc <arc-id>] [--prose-density <standard|executive>] [--suffix <N>] [--slug <kebab-case>]
+#
+# --slug (v0.8.1+) accepts an explicit kebab-case project name. When supplied,
+# the project directory is "{workspace}/{slug}" with no date suffix (matches
+# cogni-trends and cogni-portfolio conventions). When omitted, the slug is
+# derived from --topic and the run date is appended (legacy behaviour).
+# Format: ^[a-z0-9][a-z0-9-]{0,39}$. On collision, the script returns
+# already_exists=true plus next_available_slug (the first free counter
+# variant: <slug>-2, <slug>-3, ...), letting the caller's resume-vs-new flow
+# decide. --suffix is ignored when --slug is set.
 #
 # --story-arc selects the section structure of the report. Defaults to
 # "standard-research" (today's behaviour: sections derived from sub-questions
@@ -63,6 +72,7 @@ TARGET_WORDS=""
 STORY_ARC=""
 PROSE_DENSITY=""
 SUFFIX=""
+USER_SLUG=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -90,6 +100,7 @@ while [[ $# -gt 0 ]]; do
     --story-arc) STORY_ARC="$2"; shift 2;;
     --prose-density) PROSE_DENSITY="$2"; shift 2;;
     --suffix) SUFFIX="$2"; shift 2;;
+    --slug) USER_SLUG="$2"; shift 2;;
     *) echo "{\"success\": false, \"error\": \"Unknown argument: $1\"}" >&2; exit 2;;
   esac
 done
@@ -145,6 +156,25 @@ fi
 
 if [[ -n "$TARGET_WORDS" ]] && ! [[ "$TARGET_WORDS" =~ ^[1-9][0-9]*$ ]]; then
   echo "{\"success\": false, \"error\": \"Invalid --target-words: $TARGET_WORDS. Must be a positive integer.\"}" >&2
+  exit 2
+fi
+
+# --slug (v0.8.1+) gives the caller an explicit project name and bypasses
+# topic-derived slugging + date-suffixing. Format mirrors the derived slug:
+# lowercase, kebab-case, digits allowed, max 40 chars. We reject silently
+# rather than auto-correcting so a typo never lands a project at an
+# unexpected path.
+if [[ -n "$USER_SLUG" ]] && ! [[ "$USER_SLUG" =~ ^[a-z0-9][a-z0-9-]{0,39}$ ]]; then
+  echo "{\"success\": false, \"error\": \"Invalid --slug: $USER_SLUG. Must be kebab-case (lowercase letters, digits, hyphens), max 40 chars, starting with a letter or digit.\"}" >&2
+  exit 2
+fi
+
+# Refuse the combination instead of silently dropping --suffix — the caller
+# (typically research-setup carrying flags forward across a collision retry)
+# has no way to learn that --suffix was ignored, and a stale --suffix would
+# otherwise land the project at an unexpected path.
+if [[ -n "$USER_SLUG" && -n "$SUFFIX" ]]; then
+  echo "{\"success\": false, \"error\": \"--slug and --suffix are mutually exclusive. --slug names a stable project directory; --suffix disambiguates derived-slug collisions. Drop one.\"}" >&2
   exit 2
 fi
 
@@ -303,20 +333,52 @@ if ! echo "$ARC_LANGS" | grep -qw "$OUTPUT_LANGUAGE"; then
   exit 2
 fi
 
-# Generate slug
-SLUG=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 ]//g' | tr ' ' '-' | sed 's/-\+/-/g' | head -c 40 | sed 's/-$//')
+# Generate slug. When --slug is supplied, use it verbatim and skip the date
+# suffix (caller asked for a stable, named project directory — matches the
+# cogni-trends / cogni-portfolio conventions). --suffix is ignored in this
+# path because the counter-style disambiguator is reapplied via --slug on
+# collision (see next_available_slug below).
 DATE=$(date -u +%Y-%m-%d)
-if [[ -n "$SUFFIX" ]]; then
-  PROJECT_DIR="$WORKSPACE/${SLUG}-${SUFFIX}-${DATE}"
+if [[ -n "$USER_SLUG" ]]; then
+  SLUG="$USER_SLUG"
+  PROJECT_DIR="$WORKSPACE/${SLUG}"
 else
-  PROJECT_DIR="$WORKSPACE/${SLUG}-${DATE}"
+  SLUG=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 ]//g' | tr ' ' '-' | sed 's/-\+/-/g' | head -c 40 | sed 's/-$//')
+  if [[ -n "$SUFFIX" ]]; then
+    PROJECT_DIR="$WORKSPACE/${SLUG}-${SUFFIX}-${DATE}"
+  else
+    PROJECT_DIR="$WORKSPACE/${SLUG}-${DATE}"
+  fi
 fi
 
 # Check if project already exists
 if [[ -d "$PROJECT_DIR" ]]; then
   EXISTING_TOPIC=$(jq -r '.topic // "unknown"' "$PROJECT_DIR/.metadata/project-config.json" 2>/dev/null || echo "unknown")
   EXISTING_PHASES=$(jq -r '[.phases | to_entries[] | select(.value.status == "completed") | .key] | join(", ")' "$PROJECT_DIR/.metadata/execution-log.json" 2>/dev/null || echo "none")
-  echo "{\"success\": true, \"project_path\": \"$PROJECT_DIR\", \"already_exists\": true, \"existing_topic\": \"$EXISTING_TOPIC\", \"completed_phases\": \"$EXISTING_PHASES\"}"
+  # Walk slug-2, slug-3, ... up to slug-99 to find the first free counter
+  # variant, so the caller's resume-vs-new prompt can offer a concrete
+  # new-project slug without a second round-trip. Empty result (all 98
+  # taken) signals the caller to pick a different base name.
+  NEXT_AVAILABLE_SLUG=""
+  if [[ -n "$USER_SLUG" ]]; then
+    for _i in $(seq 2 99); do
+      _candidate="${USER_SLUG}-${_i}"
+      if [[ ! -d "$WORKSPACE/$_candidate" ]]; then
+        NEXT_AVAILABLE_SLUG="$_candidate"
+        break
+      fi
+    done
+  fi
+  EXISTS_PAYLOAD=$(jq -n \
+    --arg project_path "$PROJECT_DIR" \
+    --arg slug "$SLUG" \
+    --arg existing_topic "$EXISTING_TOPIC" \
+    --arg completed_phases "$EXISTING_PHASES" \
+    '{success: true, project_path: $project_path, slug: $slug, already_exists: true, existing_topic: $existing_topic, completed_phases: $completed_phases}')
+  if [[ -n "$USER_SLUG" ]]; then
+    EXISTS_PAYLOAD=$(echo "$EXISTS_PAYLOAD" | jq --arg v "$NEXT_AVAILABLE_SLUG" '. + {next_available_slug: $v}')
+  fi
+  echo "$EXISTS_PAYLOAD"
   exit 0
 fi
 
@@ -432,4 +494,4 @@ jq -n \
     phases: {}
   }' > "$PROJECT_DIR/.metadata/execution-log.json"
 
-echo "{\"success\": true, \"project_path\": \"$PROJECT_DIR\", \"already_exists\": false}"
+echo "{\"success\": true, \"project_path\": \"$PROJECT_DIR\", \"slug\": \"$SLUG\", \"already_exists\": false}"

@@ -103,6 +103,10 @@ Scan the user's request and extract any options they already specified. These be
   - **Default resolution**: if no length cue was detected, do NOT pass `--target-words` to `initialize-project.sh`; let the script apply its default-by-depth table. If a length cue was detected, pass `--target-words <N>` with the resolved integer.
   - **Ambiguity guard**: if the user only said "long" or "short" without a scale anchor, ask a clarifying follow-up ("about 3K words, 5K, or closer to 10K?") — don't guess.
 - **Tone**: style keywords like "analytical", "persuasive", "formal" -> map to tone. Default: "objective"
+- **Project slug** (v0.8.1+): explicit kebab-case project name supplied by the user. Detect:
+  - English: "slug X", "project slug X", "called X", "named X", "project name X"
+  - German: "Projektname X", "Projekt-Slug X"
+  Validate the captured value against `^[a-z0-9][a-z0-9-]{0,39}$`. On match, carry forward as `--slug X` to Step 4 — `initialize-project.sh` will use this directly as the project directory name with no date suffix (matches `cogni-trends` and `cogni-portfolio` conventions). On collision, the script returns `next_available_slug` and the skill offers the resume/new/different-location prompt (see Step 4 collision handling). On format mismatch, do NOT silently fix — surface a one-line menu note ("`X` is not a valid slug — must be lowercase kebab-case, max 40 chars. Falling back to auto-derived from topic.") and drop the user value. Default: not set (slug derived from topic + date appended, legacy behaviour).
 - **Citation format**: "IEEE", "APA format", "Chicago style", "wikilink", "local wikilink" / "local-wikilink" -> capture. Default: "apa"
 - **Market**: must resolve to one of the 18 canonical codes defined in `references/market-sources.json`: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `cz`, `sk`, `hu`, `hr`, `gr`, `mx`, `br`, `cn`, `us`, `uk`, `eu`. There is no "global" option — downstream researchers use these codes to pick authority-source profiles, and an unknown code silently falls back to the DACH `_default` profile, masking user intent.
 
@@ -199,7 +203,7 @@ Assemble the menu dynamically and render it as text output:
      > `executive` — Pyramid Principle + BLUF, one citation per claim, `target_words` treated as a ceiling. Best for "deep research, concise output" — the broadest curated sources distilled into a scannable, decision-ready deliverable. Use when the reader is a decision-maker who'll likely read nothing else.
 
      **Suppression rule (registry-driven)**: for the resolved `story_arc_id`, read `arc.compatible_densities` from `references/story-arcs.json` (missing field defaults to `["standard"]`). Render the row when the list contains more than one density. Omit the row when the list is `["standard"]` only — the default is the only valid choice and a one-option menu adds noise. This mirrors the Story arc row's suppression — same registry, same pattern, same complement to the Step 1 prompt-time pre-validation. Both v1 arcs (`standard-research` and `corporate-visions`) declare `["standard", "executive"]`, so the Density row renders for every project under today's arc set.
-4. Always include one line for advanced options: "Advanced: output language, sub-question count, domain filter, researcher role, diagram generation, allow short (skip word-count expansion gates) — ask about any of these"
+4. Always include one line for advanced options: "Advanced: output language, sub-question count, domain filter, researcher role, diagram generation, allow short (skip word-count expansion gates), project slug (stable named project directory, no date suffix) — ask about any of these"
 5. End with: `Reply with your choices, or "go" for defaults.`
 
 **Menu variations** (both as text output — auto-starting research without confirmation wastes compute if the user wanted to tweak something):
@@ -264,6 +268,7 @@ Resolve the workspace path, then run:
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   --topic "<user topic>" --type <basic|detailed|deep|outline|resource> \
   --workspace "<workspace path>" \
+  [--slug "<kebab-case-slug>"] \
   [--market "<region-code>"] \
   [--output-language "<lang>"] \
   [--tone "<tone>"] \
@@ -282,6 +287,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/initialize-project.sh" \
   [--prose-density "<standard|executive>"]
 ```
 
+Pass `--slug` only when the user explicitly named the project in Step 1 (e.g., "Project slug tmpl-pl"). Omit it otherwise — `initialize-project.sh` derives the slug from the topic and appends the run date (legacy behaviour). `--slug` is mutually exclusive with `--suffix`; the script rejects the combination.
+
 Pass `--confirm-plan`, `--recursive-depth`, `--batch-size` only if the user explicitly picked a non-default value in the Execution defaults block. Omit them otherwise — `research-report` applies the documented defaults (confirm: on, recursion: off, batch size: 4) when the keys are missing from `project-config.json`.
 
 Pass `--target-words` only if the user explicitly picked a length preset or integer in Step 1 (from a named preset like "whitepaper" or an integer like "~5000 words"). Omit it when the user accepted depth-default length — `initialize-project.sh` applies the default-by-depth table (basic 3000, detailed 5000, **deep 5000**, outline 1000, resource 1500) and writes `target_words` into project-config.json at creation so the value is pinned for the project's lifetime. In v0.7.7 the deep default was reduced from 8000 to 5000 (issue #35); users who want the old 8K-deep floor set `target_words: 8000` explicitly (via a length preset choice, an integer in the prompt, or hand-editing project-config.json).
@@ -296,11 +303,17 @@ Check the `already_exists` field in the JSON output.
 
 **If `already_exists` is `true`**: A project with the same slug already exists. This is a discrete three-option choice — use `AskUserQuestion`:
 
-"A research project already exists at {project_path}\n- Topic: {existing_topic}\n- Completed phases: {completed_phases}\n\nWhat would you like to do?\n1. Resume — continue this existing project\n2. New project — create a separate project alongside\n3. Different location — save elsewhere"
+"A research project already exists at {project_path}\n- Topic: {existing_topic}\n- Completed phases: {completed_phases}\n\nWhat would you like to do?\n1. Resume — continue this existing project\n2. New project — create a separate project alongside (will land at {disambiguated_path})\n3. Different location — save elsewhere"
+
+Where `{disambiguated_path}` previews the actual path option 2 will produce:
+- When the original call passed `--slug` AND the JSON returned `next_available_slug`: `{workspace}/{next_available_slug}` (e.g., `cogni-research/tmpl-pl-2`).
+- Otherwise (derived legacy path): `{workspace}/{existing-slug}-2-{run-date}` (e.g., `cogni-research/dt-security-poland-2-2026-05-12`).
 
 Handle the response:
 - **Resume**: Print the existing project path with a note to resume
-- **New project**: Re-run `initialize-project.sh` with `--suffix 2` (increment if needed)
+- **New project**: Re-run `initialize-project.sh` — the re-run argument depends on which path produced the collision:
+  - User-slug runs: pass `--slug <next_available_slug>` (e.g., `--slug tmpl-pl-2`). Re-use every other flag from the original call.
+  - Derived legacy runs: pass `--suffix 2` (increment if `--suffix 2` also collides, repeat with `3`, `4`, … as today).
 - **Different location**: Call `AskUserQuestion` for a new path, then re-run
 
 ## Output
