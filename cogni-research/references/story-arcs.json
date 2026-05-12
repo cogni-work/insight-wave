@@ -74,7 +74,7 @@
       "tolerance": 0.10,
       "min_target_words": 3000,
       "max_target_words": 8000,
-      "compatible_report_types": ["detailed"],
+      "compatible_report_types": ["detailed", "deep"],
       "supported_languages": ["en", "de"],
       "compatible_densities": ["standard", "executive"],
       "transitions": {
