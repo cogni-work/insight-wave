@@ -125,7 +125,7 @@ KNOWN_SKIPS = {
     "components-fields.html",
     "components-toggle-slider.html",
 }
-KNOWN_SKIP_PREFIXES = ("colors-", "type-", "spacing-", "brand-")
+KNOWN_SKIP_PREFIXES = ("colors-", "type-", "spacing-", "brand-", "voice-")
 
 
 # ---------------------------------------------------------------------------
@@ -310,7 +310,11 @@ def materialise_theme_md(bundle_theme_md: Path, target_theme_md: Path) -> str:
 
 _ROOT_BLOCK = re.compile(r":root\s*\{(.*?)\}", re.DOTALL)
 _COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
-_DECL = re.compile(r"^\s*(--[A-Za-z0-9-]+)\s*:\s*([^;]+?)\s*;\s*$", re.MULTILINE)
+# Match every ``--name: value;`` declaration inside the body, including those
+# packed multiple-per-line (e.g. ``--fs-h1: 42px; --lh-h1: 1.1; --ls-h1: -0.03em;``).
+# No line anchors — Claude Design's bundles use compact multi-decl layout for
+# the typography scale, and the old ``^...$`` form silently dropped all of them.
+_DECL = re.compile(r"(--[A-Za-z0-9-]+)\s*:\s*([^;]+?)\s*;")
 
 
 def parse_root_declarations(css_text: str) -> list:

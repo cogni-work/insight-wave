@@ -169,6 +169,7 @@ when computing the target filename):
 | `type-*.html`                 | Type specimen                                          |
 | `spacing-*.html`              | Spacing / radii / shadow specimen                      |
 | `brand-*.html`                | Brand-asset reference (logo, icons, dark anchor band)  |
+| `voice-*.html`                | Voice & copy specimen pages (numbered VOICE · N — anatomy, do/don't, frameworks, microcopy, principles, registers, vocabulary, etc.); reference material, not runtime primitives |
 | `components-fields.html`      | Form fields — deferred to a later phase (interactivity)|
 | `components-toggle-slider.html`| Toggle/slider — deferred (interactivity)              |
 

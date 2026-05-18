@@ -154,6 +154,10 @@ Voice is direct.
 ## Source
 - **Origin**: synthetic fixture
 EOF
+  # NB: --fs-h2/--lh-h2/--ls-h2 are packed on one line on purpose — this is
+  # the multi-decl-per-line shape real Claude Design bundles use for the
+  # typography scale, and the importer's regex must capture every decl on
+  # such lines (regression test for the bug fixed alongside this harness).
   cat > "$dir/${slug}-design-system/project/colors_and_type.css" <<'EOF'
 :root {
   --cw-primary: #000000;
@@ -161,6 +165,7 @@ EOF
   --cw-bg: #FFFFFF;
   --fs-h1: 42px;
   --lh-h1: 1.1;
+  --fs-h2:      32px;   --lh-h2:      1.15;  --ls-h2:      -0.02em;
   --font-sans: 'DM Sans', system-ui, sans-serif;
   --sp-3: 12px;
   --r-md: 8px;
@@ -251,6 +256,16 @@ for field in url sha256 imported_at bundle_root importer_version; do
   fi
 done
 c_pass "sidecar contains all required fields"
+
+# Multi-decl-per-line regression: the fixture's CSS packs --fs-h2, --lh-h2,
+# and --ls-h2 onto a single line. All three must land in typography.json.
+# If any are missing, the regex anchor regression has come back.
+for key in size-h2 line-height-h2 tracking-h2; do
+  if ! grep -q "\"$key\"" "$COMPLIANT_TARGET/tokens/typography.json"; then
+    fail "success path: multi-decl typography key dropped" "typography.json is missing '$key' — the importer's _DECL regex is anchoring on line start/end again, silently dropping every multi-decl line. Real bundles pack the typography scale this way, so the regression breaks every materialised theme."
+  fi
+done
+c_pass "multi-decl-per-line CSS declarations all captured"
 
 # --------------------------------------------------------------------------
 # Phase C — auto-inject on missing voice section
