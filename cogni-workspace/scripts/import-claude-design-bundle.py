@@ -48,6 +48,20 @@ SIDECAR_FILENAME = ".claude-design-source"
 VOICE_HEADER = "## Voice & Copy Guidelines"
 MANIFEST_SCHEMA_VERSION = "1.0"
 
+# Auto-inserted when the bundle theme.md omits the voice header. Satisfies
+# Phase D of verify-theme-backcompat.sh (which checks the header exists) and
+# leaves a self-documenting marker so future maintainers know the section is
+# machine-generated and can replace it by adding real voice content upstream.
+VOICE_STUB = (
+    "## Voice & Copy Guidelines\n"
+    "\n"
+    "_(No voice & copy guidelines provided in the Claude Design bundle. "
+    "This stub was auto-inserted by `import-claude-design-bundle.py` to "
+    "satisfy the Theme System v2 Phase D structural contract. To replace it, "
+    "author a real voice section in the bundle's theme.md upstream and "
+    "re-import with `--allow-overwrite`.)_\n"
+)
+
 # Cap the URL fetch to defend against a misbehaving server or proxy that
 # might return an unbounded response. Real bundles are ~1–2 MB compressed;
 # 50 MB is a generous ceiling that still bounds memory use.
@@ -257,18 +271,36 @@ def assert_bundle_shape(bundle_root: Path, slug: str) -> dict:
     }
 
 
-def assert_voice_header(theme_md: Path) -> None:
-    """Phase D backcompat contract: theme.md must contain the voice header."""
-    text = theme_md.read_text(encoding="utf-8")
-    if VOICE_HEADER not in text:
-        raise RuntimeError(
-            "bundle theme.md missing required header '{}'. "
-            "Phase D of verify-theme-backcompat.sh requires this section for "
-            "voice consumers (cogni-narrative, cogni-sales, cogni-research, "
-            "cogni-copywriting). Add the section in the Claude Design session "
-            "and re-export the bundle. See "
-            "references/claude-design-bundle-mapping.md for guidance.".format(VOICE_HEADER)
-        )
+def materialise_theme_md(bundle_theme_md: Path, target_theme_md: Path) -> str:
+    """Copy the bundle theme.md to ``target_theme_md``, auto-injecting a
+    ``## Voice & Copy Guidelines`` stub if the bundle omits the section.
+
+    The injected stub satisfies Phase D of verify-theme-backcompat.sh (which
+    checks the header exists) without forcing the bundle author to supply
+    voice content the importer cannot derive from a design system. Real
+    voice content authored in Claude Design always wins; the stub only
+    fills the gap when nothing was provided.
+
+    Returns ``"bundled"`` if the section was present in the bundle and
+    ``"auto-injected-stub"`` if the importer inserted the placeholder.
+    """
+    text = bundle_theme_md.read_text(encoding="utf-8")
+    if VOICE_HEADER in text:
+        target_theme_md.write_text(text, encoding="utf-8")
+        return "bundled"
+
+    # Insert before the first '## Source' heading so the materialised file
+    # keeps the canonical section order (...Best Used For → Voice → Source).
+    # Fall back to append-at-end when no Source section exists.
+    source_marker = "\n## Source"
+    if source_marker in text:
+        text = text.replace(source_marker, "\n" + VOICE_STUB + source_marker, 1)
+    else:
+        if not text.endswith("\n"):
+            text += "\n"
+        text += "\n" + VOICE_STUB
+    target_theme_md.write_text(text, encoding="utf-8")
+    return "auto-injected-stub"
 
 
 # ---------------------------------------------------------------------------
@@ -548,7 +580,6 @@ def run(args: argparse.Namespace) -> int:
             bundle_root = extract_archive(blob, tmp)
             slug = derive_slug_from_root(bundle_root)
             paths = assert_bundle_shape(bundle_root, slug)
-            assert_voice_header(paths["theme_md"])
         except RuntimeError as e:
             return err(str(e))
 
@@ -583,9 +614,9 @@ def run(args: argparse.Namespace) -> int:
 
         target.mkdir(parents=True, exist_ok=True)
 
-        # theme.md (already passed voice-header check).
+        # theme.md — auto-inject voice stub if the bundle omits the section.
         try:
-            shutil.copy2(paths["theme_md"], target / "theme.md")
+            voice_section = materialise_theme_md(paths["theme_md"], target / "theme.md")
         except OSError as e:
             return err("cannot write theme.md: {}".format(e))
 
@@ -642,6 +673,7 @@ def run(args: argparse.Namespace) -> int:
                 "slug": slug,
                 "sha256": sha256,
                 "manifest": manifest,
+                "voice_section": voice_section,
                 "tokens_written": populated_stems,
                 "tokens_css_bytes": css_bytes,
                 "components_web": components_report["web"],

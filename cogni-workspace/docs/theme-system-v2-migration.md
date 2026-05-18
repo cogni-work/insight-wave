@@ -154,15 +154,15 @@ Skip Steps 1–5 entirely when you have a Claude Design bundle URL. Use them whe
 **Author flow** (one round trip):
 
 1. Open Claude Design at `claude.ai/design`. Mock the design system through chat — colors, typography, spacing, components. Author or paste the theme.md prose alongside; the bundle copies whatever you put in `project/{slug}-theme.md` verbatim, so the prose you ship to the bundle is the prose your downstream consumers will read.
-2. Include a `## Voice & Copy Guidelines` section in the theme.md. The importer aborts cleanly if this header is missing — Phase D of `verify-theme-backcompat.sh` requires it for voice consumers (`cogni-narrative`, `cogni-sales`, `cogni-research`, `cogni-copywriting`).
+2. Optionally include a `## Voice & Copy Guidelines` section in the theme.md. The importer auto-injects a clearly-tagged stub when the section is absent (so the Phase D structural contract still passes), but real voice content is always preferred — it overwrites the stub on every re-import.
 3. Export the bundle. Claude Design produces a URL of the form `https://api.anthropic.com/v1/design/h/<hash>`. Copy it.
 4. Run the importer:
    ```bash
    python3 cogni-workspace/scripts/import-claude-design-bundle.py \
        --url <bundle-url> --target cogni-workspace/themes/<slug> [--allow-overwrite]
    ```
-5. The importer fetches the bundle, verifies the gzip + sha256, untars, runs the voice-header check, projects `colors_and_type.css` into the six canonical token JSON files, regenerates `tokens.css` via `scripts/generate-tokens-css.py`, copies allowlisted component primitives, copies deck primitives and assets, regenerates `manifest.json`, runs `validate-theme-manifest.py`, and writes a `.claude-design-source` sidecar last with the bundle URL + sha256 + timestamp.
-6. Run `bash cogni-workspace/scripts/verify-theme-backcompat.sh` to confirm the broader integration contract still holds (Phase A discover, Phase B consumer references, Phase D voice section).
+5. The importer fetches the bundle, verifies the gzip + sha256, untars, projects `colors_and_type.css` into the six canonical token JSON files, regenerates `tokens.css` via `scripts/generate-tokens-css.py`, copies allowlisted component primitives, copies deck primitives and assets, materialises `theme.md` (auto-injecting the voice stub if the bundle omits it; success envelope reports `voice_section: "bundled"` or `"auto-injected-stub"`), regenerates `manifest.json`, runs `validate-theme-manifest.py`, and writes a `.claude-design-source` sidecar last with the bundle URL + sha256 + timestamp.
+6. Run `bash cogni-workspace/scripts/verify-theme-backcompat.sh` to confirm the broader integration contract still holds (Phase A discover, Phase B consumer references, Phase D voice header).
 
 The full mapping table — which bundle paths become which theme paths, the CSS-variable → JSON-token projection, the component allowlist, the strict-abort conditions — lives at [`cogni-workspace/references/claude-design-bundle-mapping.md`](../references/claude-design-bundle-mapping.md). Read it before extending or constraining the importer.
 
@@ -180,7 +180,7 @@ The bundle is the single source of truth. Re-running the importer with the same 
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| `bundle theme.md missing required header '## Voice & Copy Guidelines'` | Author session predates the strict voice contract | Open Claude Design, add the section to theme.md, re-export, re-run with `--allow-overwrite` |
+| Materialised theme.md contains the auto-inject voice stub (importer reports `voice_section: "auto-injected-stub"`) | Bundle's theme.md omitted `## Voice & Copy Guidelines` | Not an error — the stub satisfies Phase D. For real voice content, author a structured section in the Claude Design session, re-export, and re-import with `--allow-overwrite` (the stub gets overwritten by upstream content) |
 | `target ... is not empty; pass --allow-overwrite` | Re-syncing a theme directory that already has content | Pass `--allow-overwrite` (the contract is re-syncable upstream — local hand-edits to imported files are not part of the workflow) |
 | `bundle root '...' does not end in '-design-system'` | Bundle shape drift or wrong archive | Confirm the URL is a Claude Design export, not some other tar; if Claude Design changed its naming convention, update `derive_slug_from_root` in the importer |
 | `expected single top-level directory in archive` | macOS Finder re-tarred the bundle and added `._*` AppleDouble files at the root | The importer already filters `._*` and `.DS_Store`; if you still hit this, re-download the original bundle rather than the Finder-roundtripped copy |
@@ -191,7 +191,7 @@ The bundle is the single source of truth. Re-running the importer with the same 
 
 **Cogni-work canary**:
 
-The first cogni-work bundle export (2026-04-25, URL `https://api.anthropic.com/v1/design/h/RSfNvYTiyDECwo4MqTaEFA`) predates the strict voice-header requirement and triggers the abort cleanly. The existing `themes/cogni-work/` stays authoritative until a regenerated bundle with the voice section lands; then the migration completes in one `--allow-overwrite` run.
+The first cogni-work bundle export (2026-04-25, URL `https://api.anthropic.com/v1/design/h/RSfNvYTiyDECwo4MqTaEFA`) omits a structured voice section. Under the auto-inject policy the importer materialises it successfully with the stub in place; Phase D of `verify-theme-backcompat.sh` still passes. To replace the stub with real voice prose, re-author the bundle in Claude Design with a structured `## Voice & Copy Guidelines` section and re-import with `--allow-overwrite`.
 
 ## Validation
 

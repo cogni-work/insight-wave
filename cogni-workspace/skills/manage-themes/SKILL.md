@@ -308,7 +308,7 @@ The recommended authoring path for tiered themes (Theme System v2, RFC #132 Phas
 
 **Prerequisites**:
 - A Claude Design bundle URL (the user gets one from claude.ai/design at the end of an authoring session). The URL is a stable handle for that bundle version — re-exporting produces a new URL.
-- The bundle's `project/{slug}-theme.md` must contain a `## Voice & Copy Guidelines` header. Phase D of `verify-theme-backcompat.sh` requires this section; the importer aborts cleanly if it is missing. If the user's bundle does not include it, ask them to add the section in Claude Design and re-export.
+- The bundle's `project/{slug}-theme.md` ideally contains a `## Voice & Copy Guidelines` section (the Theme System v2 Phase D structural contract checks the header exists). If the section is missing, the importer auto-injects a clearly-tagged stub so the import still succeeds and the backcompat harness still passes. Real voice content always beats the stub — re-author the bundle with a structured voice section and re-import with `--allow-overwrite` to replace the stub.
 
 **Workflow**:
 
@@ -328,7 +328,7 @@ The recommended authoring path for tiered themes (Theme System v2, RFC #132 Phas
 
 **Mapping details**: The bundle → theme materialisation rules (which preview files become components, how `colors_and_type.css` projects into the six canonical token JSON files, which bundle directories are ignored) live in `cogni-workspace/references/claude-design-bundle-mapping.md`. Edits to that mapping doc are the right place to extend or constrain importer behaviour; the script reads its rules from there as the source of truth.
 
-**Cogni-work canary status**: The first cogni-work bundle export (2026-04-25) predates the strict voice-header requirement. Running the importer against it aborts at the voice-header check. To complete the cogni-work migration to bundle-sourced authoring, regenerate the bundle in Claude Design with a `## Voice & Copy Guidelines` section in theme.md, then run Op 10 with `--allow-overwrite`. Until then the existing `themes/cogni-work/` stays authoritative.
+**Cogni-work canary status**: The first cogni-work bundle export (2026-04-25) omits a structured `## Voice & Copy Guidelines` section. Under the auto-inject policy the importer materialises the bundle successfully, inserting a clearly-tagged stub before `## Source`; the result passes Phase D of `verify-theme-backcompat.sh`. To replace the stub with real voice content, re-author the bundle in Claude Design with a structured voice section and re-import with `--allow-overwrite`.
 
 ## Theme File Format
 

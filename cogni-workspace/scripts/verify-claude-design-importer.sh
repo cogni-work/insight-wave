@@ -53,8 +53,8 @@ verify-claude-design-importer.sh — Harness for import-claude-design-bundle.py.
 
 Phases:
   A. Pre-flight (importer present, python3 available)
-  B. Success path — synthetic compliant bundle materialises cleanly
-  C. Strict-abort — bundle missing ## Voice & Copy Guidelines aborts pre-write
+  B. Success path — synthetic compliant bundle materialises cleanly (voice section from bundle)
+  C. Auto-inject — bundle missing ## Voice & Copy Guidelines still succeeds with stub
   D. Idempotency — re-running with same input is a sha256-matched no-op
   E. Overwrite gate — non-empty target refused without --allow-overwrite
   F. Dry-run — extracts and reports but writes nothing
@@ -71,14 +71,19 @@ Failure-mode triage
       caught up with.
 
   - "success path: voice section copied incorrectly":
-      The strict voice-header check passed but the materialised theme.md
-      does not contain the section. Likely a copy bug in run() — theme.md
-      copy step skipped or wrong source path.
+      The bundle's voice section did not survive the copy. Likely a copy
+      bug in run() — theme.md materialisation step skipped or wrong source
+      path; or materialise_theme_md() lost upstream content.
 
-  - "strict-abort: importer did not abort on missing voice header":
-      The Phase D backcompat contract is broken. Either the voice-header
-      check was removed or VOICE_HEADER no longer matches what Phase D
-      enforces (see verify-theme-backcompat.sh line ~372).
+  - "auto-inject: importer did not stub the voice section":
+      The importer regressed the auto-inject policy. Either materialise_theme_md()
+      stopped detecting the missing header or the VOICE_STUB constant is empty.
+      Without the stub, Phase D of verify-theme-backcompat.sh will fail.
+
+  - "auto-inject: voice_section flag wrong":
+      The success envelope's voice_section field disagrees with what
+      ended up in the file. Verify materialise_theme_md() returns the
+      same string it materialised.
 
   - "idempotency: re-run was not a no-op":
       The sha256 short-circuit in run() regressed. Re-imports will churn
@@ -89,8 +94,8 @@ Failure-mode triage
       destroy local hand-edits.
 
   - "dry-run: --dry-run still wrote files":
-      Side-effect leak in run(). Verify the dry_run guard at line ~542
-      returns before mkdir/copy.
+      Side-effect leak in run(). Verify the dry_run guard returns before
+      mkdir/copy.
 EOF
 }
 
@@ -214,6 +219,11 @@ SUCCESS="$(json_field "$SUCCESS_OUTPUT" "d['success']")"
   || fail "success path: importer reported failure" "Compliant fixture should produce success:true. Output: $SUCCESS_OUTPUT"
 c_pass "compliant fixture imports successfully"
 
+VOICE_FLAG="$(json_field "$SUCCESS_OUTPUT" "d['data'].get('voice_section')")"
+[[ "$VOICE_FLAG" == "bundled" ]] \
+  || fail "success path: voice_section flag wrong" "Compliant fixture ships voice section in bundle; expected voice_section='bundled', got '$VOICE_FLAG'."
+c_pass "voice_section reports 'bundled' when section is in the bundle"
+
 # Materialised structure assertions.
 for required in theme.md manifest.json tokens/tokens.css tokens/colors.json .claude-design-source components/web/cards.html; do
   if [[ ! -e "$COMPLIANT_TARGET/$required" ]]; then
@@ -243,30 +253,45 @@ done
 c_pass "sidecar contains all required fields"
 
 # --------------------------------------------------------------------------
-# Phase C — strict-abort path
+# Phase C — auto-inject on missing voice section
 # --------------------------------------------------------------------------
 
-phase "Phase C — strict-abort on missing voice header"
+phase "Phase C — auto-inject voice stub when bundle omits the section"
 
 NOVOICE_BUNDLE="$TMPDIR/novoice.tar.gz"
 NOVOICE_TARGET="$TMPDIR/novoice-target"
-build_novoice_bundle "harness-bad" "$NOVOICE_BUNDLE"
+build_novoice_bundle "harness-novoice" "$NOVOICE_BUNDLE"
 
 NOVOICE_OUTPUT="$(python3 "$IMPORTER" --bundle "$NOVOICE_BUNDLE" --target "$NOVOICE_TARGET" 2>/dev/null)"
 NOVOICE_SUCCESS="$(json_field "$NOVOICE_OUTPUT" "d['success']")"
-[[ "$NOVOICE_SUCCESS" == "False" ]] \
-  || fail "strict-abort: importer did not abort on missing voice header" "Importer should refuse a bundle lacking '## Voice & Copy Guidelines'. Output: $NOVOICE_OUTPUT"
-c_pass "missing-voice bundle is rejected"
+[[ "$NOVOICE_SUCCESS" == "True" ]] \
+  || fail "auto-inject: importer did not stub the voice section" "No-voice bundle should import successfully with stub. Output: $NOVOICE_OUTPUT"
+c_pass "no-voice bundle imports successfully"
 
-if [[ -d "$NOVOICE_TARGET" ]]; then
-  fail "strict-abort: target directory created despite abort" "$NOVOICE_TARGET should not exist — the abort fires pre-write."
-fi
-c_pass "no target directory created"
+NOVOICE_FLAG="$(json_field "$NOVOICE_OUTPUT" "d['data'].get('voice_section')")"
+[[ "$NOVOICE_FLAG" == "auto-injected-stub" ]] \
+  || fail "auto-inject: voice_section flag wrong" "Expected voice_section='auto-injected-stub', got '$NOVOICE_FLAG'."
+c_pass "voice_section reports 'auto-injected-stub' when bundle omits the section"
 
-if ! json_field "$NOVOICE_OUTPUT" "d.get('error','')" | grep -qF "Voice & Copy Guidelines"; then
-  fail "strict-abort: error message unclear" "Error should name the missing voice header so the user knows what to fix."
+# The materialised theme.md must contain the canonical header.
+if ! grep -qF "## Voice & Copy Guidelines" "$NOVOICE_TARGET/theme.md"; then
+  fail "auto-inject: header missing from materialised theme.md" "verify-theme-backcompat.sh Phase D would fail — the stub did not land."
 fi
-c_pass "error message names the missing voice section"
+c_pass "materialised theme.md contains the voice header"
+
+# Stub text must self-identify so future readers can tell it apart from real content.
+if ! grep -qF "auto-inserted" "$NOVOICE_TARGET/theme.md"; then
+  fail "auto-inject: stub not self-identifying" "Stub should call itself out (e.g. 'auto-inserted by import-claude-design-bundle.py') so it doesn't masquerade as authored voice content."
+fi
+c_pass "stub self-identifies as machine-generated"
+
+# Order must be preserved: voice section before Source.
+VOICE_LINE="$(grep -n '^## Voice & Copy Guidelines' "$NOVOICE_TARGET/theme.md" | head -1 | cut -d: -f1)"
+SOURCE_LINE="$(grep -n '^## Source' "$NOVOICE_TARGET/theme.md" | head -1 | cut -d: -f1)"
+if [[ -n "$VOICE_LINE" && -n "$SOURCE_LINE" && "$VOICE_LINE" -ge "$SOURCE_LINE" ]]; then
+  fail "auto-inject: section order wrong" "Voice section (line $VOICE_LINE) must precede Source section (line $SOURCE_LINE) to preserve canonical order."
+fi
+c_pass "voice section inserted before Source section"
 
 # --------------------------------------------------------------------------
 # Phase D — idempotency

@@ -50,29 +50,48 @@ records it in the sidecar.
 | (derived)                              | `manifest.json`                            | Regenerated — declares only tiers the import actually populated                                 |
 | (derived)                              | `.claude-design-source`                    | Sidecar JSON: `{url, sha256, imported_at, bundle_root, importer_version}`                       |
 
-## Voice-header pre-check (strict abort)
+## Voice-section handling (auto-inject when absent)
 
 Before writing the materialised `theme.md`, the importer reads the bundle's
-`project/{slug}-theme.md` and asserts the presence of the literal header:
+`project/{slug}-theme.md` and looks for the literal header:
 
 ```
 ## Voice & Copy Guidelines
 ```
 
-This is the contract Phase D of `scripts/verify-theme-backcompat.sh` enforces
-(lines 372–381). Voice consumers — `cogni-narrative`, `cogni-sales`,
-`cogni-research`, `cogni-copywriting` — include this section in prompts;
-without it copy generation drifts.
+This header is the contract Phase D of `scripts/verify-theme-backcompat.sh`
+enforces (lines 372–381) — it is a **structural marker**, not a content
+check.
 
-If the header is absent, the importer **aborts** with exit 1 and a clear
-message naming the missing section. The fix is **upstream**: open the
-Claude Design session, add a `## Voice & Copy Guidelines` section to the
-theme.md authored there, re-export the bundle, and re-run the importer.
+- **If the section is present** in the bundle, the importer copies the
+  theme.md verbatim. Upstream voice content always wins.
+- **If the section is absent**, the importer auto-injects a stub section
+  before the `## Source` heading (or appends it at the end of the file
+  when no Source section exists). The stub is clearly tagged as
+  machine-generated and instructs the maintainer how to replace it by
+  adding real voice content upstream and re-importing with
+  `--allow-overwrite`.
 
-The importer does not auto-compose a voice section from the bundle's
-`project/README.md` "Content fundamentals". That section is intent
-documentation for the bundle's coding agent, not theme content. Composing
-it would silently relax the upstream contract.
+The importer reports `voice_section: "bundled"` or
+`voice_section: "auto-injected-stub"` in the success envelope so callers
+can tell which path was taken.
+
+The stub satisfies Phase D's structural invariant without burdening the
+bundle author with voice prose the design tool cannot derive. The
+importer does not synthesise voice content from the bundle's
+`project/README.md` "Content fundamentals" — that section is intent
+documentation for the bundle's coding agent, and conflating intent with
+voice rules would mislead voice consumers. Real voice content is always
+authored deliberately and beats the stub on every re-import.
+
+The Explore audit that informed this design (search across
+`cogni-narrative`, `cogni-sales`, `cogni-research`, `cogni-copywriting`,
+and the visual consumers) found that **no consumer today parses the
+voice section's content from `theme.md`** — the header is load-bearing
+only in the backcompat harness and (now) in the importer's auto-inject
+decision. The stub is therefore safe from a consumption standpoint; the
+fidelity loss is purely informational for human readers of the theme
+directory.
 
 ## CSS → JSON token projection
 
@@ -228,7 +247,7 @@ The importer exits 1 with a clear message for any of:
 | URL fetch fails or returns non-gzip                                    | Bundle URL invalid / expired — re-export from Claude Design                           |
 | Archive contains no `{slug}-design-system/` top-level directory        | Bundle shape drift — file an issue if Claude Design output format changed             |
 | `project/{slug}-theme.md` missing                                      | Bundle is incomplete — re-export                                                       |
-| Bundle theme.md missing `## Voice & Copy Guidelines` header            | Add the section in the Claude Design session; re-export                                |
+| Bundle theme.md missing `## Voice & Copy Guidelines` header            | Not an abort condition — importer auto-injects a stub. See "Voice-section handling" above for the rationale and how to replace the stub with real content |
 | `project/colors_and_type.css` missing                                  | Bundle is incomplete — re-export                                                       |
 | `validate-theme-manifest.py` rejects the generated manifest             | Mapping bug — file an issue with the bundle URL and the validator error               |
 | Target directory exists and `--allow-overwrite` not passed             | Pass `--allow-overwrite` (re-syncable upstream model)                                  |
@@ -237,23 +256,25 @@ The importer exits 1 with a clear message for any of:
 
 The user-provided cogni-work bundle
 (`https://api.anthropic.com/v1/design/h/RSfNvYTiyDECwo4MqTaEFA`, exported
-2026-04-25) **predates the strict voice-header requirement** — its
-`project/cogni-work-theme.md` does not contain
-`## Voice & Copy Guidelines`. Running the importer against this URL is
-expected to abort cleanly at the voice-header check. To complete the
-cogni-work migration to bundle-sourced authoring:
+2026-04-25) does not contain `## Voice & Copy Guidelines` in its
+`project/cogni-work-theme.md`. Under the auto-inject policy the importer
+materialises the bundle successfully, inserting the voice stub before
+the `## Source` section. The result passes Phase D of
+`verify-theme-backcompat.sh` and is shippable as-is.
 
-1. Open the Claude Design session for cogni-work.
-2. Add a `## Voice & Copy Guidelines` section to theme.md, mirroring the
-   content currently in `themes/cogni-work/theme.md` (or the bundle's own
-   `project/README.md` "Content fundamentals").
-3. Re-export the bundle; copy the new URL.
-4. Run
-   `python3 cogni-workspace/scripts/import-claude-design-bundle.py --url <new-url> --target cogni-workspace/themes/cogni-work --allow-overwrite`.
-5. Run `bash cogni-workspace/scripts/verify-theme-backcompat.sh` to confirm.
+To complete the cogni-work migration to bundle-sourced authoring, run:
 
-Until step 4 completes, the existing local `themes/cogni-work/` stays
-authoritative and unaffected by the importer.
+```bash
+python3 cogni-workspace/scripts/import-claude-design-bundle.py \
+    --url https://api.anthropic.com/v1/design/h/RSfNvYTiyDECwo4MqTaEFA \
+    --target cogni-workspace/themes/cogni-work --allow-overwrite
+bash cogni-workspace/scripts/verify-theme-backcompat.sh
+```
+
+For higher-fidelity voice content (real prose instead of the stub),
+re-author the bundle in Claude Design with a structured
+`## Voice & Copy Guidelines` section, re-export, and re-import — the
+stub gets overwritten by the real content on the next run.
 
 ## Open items (deferred past v1.0)
 
