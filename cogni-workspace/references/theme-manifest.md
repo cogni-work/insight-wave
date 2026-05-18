@@ -146,6 +146,23 @@ themes/full-example/
 }
 ```
 
+## Sidecar files
+
+A theme directory may contain files alongside `manifest.json` that are **not
+part of the manifest contract**. The validator ignores them; they are not
+rejected as unknown root files because the validator only inspects
+`manifest.json` itself.
+
+The currently-recognised sidecars:
+
+| File | Owner | Purpose |
+|------|-------|---------|
+| `.claude-design-source` | `scripts/import-claude-design-bundle.py` | Records the Claude Design bundle URL + sha256 + import timestamp that produced the theme; drives re-import idempotency. Hand-edit is unsupported. See `docs/theme-system-v2-migration.md` Step 6 and `references/claude-design-bundle-mapping.md`. |
+
+Sidecar files are an extension point for tooling that owns specific theme
+flows. They never relax the manifest contract; the validator's view of the
+theme is the manifest plus the on-disk paths it declares, and nothing else.
+
 ## Reserved keys
 
 The keys `live`, `live_within_session`, and `copy` MUST NOT appear anywhere

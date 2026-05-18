@@ -1,23 +1,25 @@
 ---
 name: manage-themes
 description: >-
-  Manage visual design themes for the workspace — extract themes from live
-  websites (via claude-in-chrome), PowerPoint templates, or presets, then store and apply
-  them to all visual outputs (slides, documents, diagrams, reports). Also audits
-  and improves existing themes: contrast/accessibility checks, palette harmony,
-  typography pairing, and completeness review. Use this skill whenever the user
-  mentions themes, brand colors, visual identity, extracting styles, or wants
-  consistent look-and-feel across outputs. Also triggers when the user wants to
-  review, audit, fix, or improve a theme — e.g., "my theme feels off", "check
-  contrast", "improve my colors". Also triggers when the user needs help choosing
-  or building a theme — e.g., "what theme for my brand?", "help me pick a
-  theme", "I need a visual identity for my startup". Even if the user just says
-  "make it match our brand", "use our company colors", or "grab the style from
-  that site", this skill applies. Also triggers on "brand guidelines", "design
-  system", "brand identity", or "visual standards", or when the user wants to
-  "author tokens", "build a tiered theme system", "deepen a theme", or "match
-  the cogni-work pattern".
-version: 0.4.0
+  Manage visual design themes for the workspace — import themes from Claude
+  Design handoff bundles (the recommended authoring path), or extract from live
+  websites (via claude-in-chrome), PowerPoint templates, or presets, then store
+  and apply them to all visual outputs (slides, documents, diagrams, reports).
+  Also audits and improves existing themes: contrast/accessibility checks,
+  palette harmony, typography pairing, and completeness review. Use this skill
+  whenever the user mentions themes, brand colors, visual identity, extracting
+  styles, or wants consistent look-and-feel across outputs. Also triggers when
+  the user wants to review, audit, fix, or improve a theme — e.g., "my theme
+  feels off", "check contrast", "improve my colors". Also triggers when the
+  user needs help choosing or building a theme — e.g., "what theme for my
+  brand?", "help me pick a theme", "I need a visual identity for my startup".
+  Even if the user just says "make it match our brand", "use our company
+  colors", or "grab the style from that site", this skill applies. Also
+  triggers on "brand guidelines", "design system", "brand identity", or
+  "visual standards", or when the user wants to "author tokens", "build a
+  tiered theme system", "deepen a theme", "match the cogni-work pattern", or
+  has a Claude Design bundle URL (api.anthropic.com/v1/design/h/...) to import.
+version: 0.5.0
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, Skill, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__computer, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__get_page_text
 ---
 
@@ -67,8 +69,9 @@ When the user asks for theme advice — e.g., "what theme for my brand?", "help 
 
 | User has... | Action |
 |---|---|
-| A website URL | → **Operation #3** (Grab from Website) — extract the real brand |
-| A PPTX template | → **Operation #4** (Grab from PPTX) — extract from the template |
+| A Claude Design bundle URL (`api.anthropic.com/v1/design/h/<hash>`) | → **Operation #10** (Import from Claude Design Bundle) — the recommended authoring path; ships tokens, components, and assets in one re-syncable step |
+| A website URL | → **Operation #10** is preferred (mock the site in Claude Design and import the bundle). Falls back to **Operation #3** (Grab from Website) if the user explicitly wants live browser extraction |
+| A PPTX template | → **Operation #10** is preferred (recreate the template in Claude Design, import the bundle). Falls back to **Operation #4** (Grab from PPTX) for legacy in-place extraction |
 | Specific colors/fonts but no file | → Create a custom theme.md directly from their inputs, following the template |
 | Nothing concrete, just a description | → **Operation #5** (Create from Preset) — recommend 2-3 theme-factory presets that match their mood/industry, let them pick or blend |
 | An existing workspace theme that's close | → **Operation #6** (Audit/Improve) — review it and suggest targeted tweaks |
@@ -88,6 +91,13 @@ path: "${COGNI_WORKSPACE_ROOT}/themes"
 Present each theme with its name (directory name) and first line description from the theme.md file.
 
 ### 3. Grab Theme from Website
+
+> **Deprecated** (since v0.5.0). Use **Operation #10** (Import from Claude
+> Design Bundle) instead: mock the site in Claude Design, export the bundle,
+> import it. Claude Design produces a complete tiered theme (tokens,
+> components, assets) in one re-syncable step; this operation only produces
+> a tier-0 `theme.md` that must be promoted manually via Operation #7. The
+> operation remains available for users without access to Claude Design.
 
 Extract a visual theme from a live website using claude-in-chrome (the user's Chrome browser). This produces a brand-accurate theme.md from visual inspection and page analysis.
 
@@ -118,6 +128,13 @@ guide or press kit — these often list exact hex codes. Cross-reference visual 
 with any brand documentation found online.
 
 ### 4. Grab Theme from PPTX
+
+> **Deprecated** (since v0.5.0). Use **Operation #10** (Import from Claude
+> Design Bundle) instead: recreate the template in Claude Design, export the
+> bundle, import it. Claude Design produces a complete tiered theme in one
+> re-syncable step; PPTX extraction produces only a tier-0 `theme.md` that
+> must be promoted manually via Operation #7. The operation remains
+> available for users without access to Claude Design.
 
 Extract theme from a PowerPoint template file. PPTX files embed theme XML in their ZIP structure — the key data lives in `ppt/theme/theme1.xml`.
 
@@ -282,6 +299,36 @@ When the user asks to apply a theme, read the theme.md and feed its contents int
    - **Web/HTML outputs**: pass full palette and typography for CSS variable mapping
 
 The theme.md content is the single source of truth — always read it fresh rather than relying on cached or partial values.
+
+### 10. Import from Claude Design Bundle
+
+The recommended authoring path for tiered themes (Theme System v2, RFC #132 Phase 3). The user authors a complete design system in Claude Design (claude.ai/design) — tokens, components, assets, and theme.md prose — then exports a handoff bundle at `https://api.anthropic.com/v1/design/h/<hash>`. This operation materialises the bundle into a Theme System v2 theme directory in one re-syncable step.
+
+**Why this supersedes Operations 3 and 4**: Claude Design is the authoring tool; this operation is the importer. The bundle ships a complete tiered theme — tokens (canonical JSON + generated CSS), HTML component primitives, deck primitives, and brand assets — that older operations could only produce piecemeal at tier-0. Re-running the importer is idempotent: the bundle is the upstream truth, the local theme directory is the materialised mirror.
+
+**Prerequisites**:
+- A Claude Design bundle URL (the user gets one from claude.ai/design at the end of an authoring session). The URL is a stable handle for that bundle version — re-exporting produces a new URL.
+- The bundle's `project/{slug}-theme.md` ideally contains a `## Voice & Copy Guidelines` section (the Theme System v2 Phase D structural contract checks the header exists). If the section is missing, the importer auto-injects a clearly-tagged stub so the import still succeeds and the backcompat harness still passes. Real voice content always beats the stub — re-author the bundle with a structured voice section and re-import with `--allow-overwrite` to replace the stub.
+
+**Workflow**:
+
+1. Ask for the Claude Design bundle URL (or path to a local `.tar.gz` for testing). Confirm the target theme slug — typically derived from the bundle's root directory `{slug}-design-system/`.
+2. Resolve the target theme directory: `{themes-dir}/{slug}/`. If the directory already exists and is non-empty, ask the user to confirm overwrite (the operation passes `--allow-overwrite` to the importer).
+3. Run the importer:
+   ```bash
+   python3 cogni-workspace/scripts/import-claude-design-bundle.py \
+       --url <bundle-url> --target <themes-dir>/<slug> [--allow-overwrite]
+   ```
+   For testing or air-gapped flows, swap `--url` for `--bundle <path>` against a local `.tar.gz`. Use `--dry-run` to preview what would be written without touching the target.
+4. Inspect the JSON envelope. The importer reports the materialised slug, sha256 of the bundle, populated tiers, allowlisted components written, specimens skipped, components warned-about (preview files matching no rule — review and either extend the allowlist in `references/claude-design-bundle-mapping.md` or accept the skip), assets, and the validator payload.
+5. The importer runs `validate-theme-manifest.py` itself before writing the `.claude-design-source` sidecar — a successful import means the theme is already schema-valid. Then run `bash cogni-workspace/scripts/verify-theme-backcompat.sh` to confirm the broader integration contract (Phase A discover, Phase B consumer references, Phase D voice section).
+6. Offer to regenerate the theme showcase (Operation #8) so the new tokens render against the canonical primitives. Operation #7 (deep theme authoring) is unnecessary after Op 10 — the bundle ships tiered already.
+
+**Re-syncability**: When the user re-exports the bundle from Claude Design (e.g., after iterating on the design), they get a new URL. Re-run the importer with the new URL and `--allow-overwrite`; the materialised theme refreshes from upstream. Idempotency is preserved at the sha256 level — running the importer against an unchanged URL is a no-op.
+
+**Mapping details**: The bundle → theme materialisation rules (which preview files become components, how `colors_and_type.css` projects into the six canonical token JSON files, which bundle directories are ignored) live in `cogni-workspace/references/claude-design-bundle-mapping.md`. Edits to that mapping doc are the right place to extend or constrain importer behaviour; the script reads its rules from there as the source of truth.
+
+**Cogni-work canary status**: The first cogni-work bundle export (2026-04-25) omits a structured `## Voice & Copy Guidelines` section. Under the auto-inject policy the importer materialises the bundle successfully, inserting a clearly-tagged stub before `## Source`; the result passes Phase D of `verify-theme-backcompat.sh`. To replace the stub with real voice content, re-author the bundle in Claude Design with a structured voice section and re-import with `--allow-overwrite`.
 
 ## Theme File Format
 

@@ -145,6 +145,54 @@ Land the manifest after the tier directories exist. Each tier you populated gets
 
 The full schema is `cogni-workspace/references/theme-manifest.schema.json` (JSON Schema draft-07). The reference doc is `cogni-workspace/references/theme-manifest.md`.
 
+### Step 6. Phase 3 — Importing from a Claude Design bundle (alternative path)
+
+Steps 1–5 are the **manual** authoring path: hand-populate each tier, write the manifest by hand, run the validator. For themes authored end-to-end in Claude Design (claude.ai/design), Phase 3 of RFC #132 collapses the whole sequence into a single import. The bundle is the upstream truth; the local theme directory is the materialised mirror.
+
+Skip Steps 1–5 entirely when you have a Claude Design bundle URL. Use them when you do not.
+
+**Author flow** (one round trip):
+
+1. Open Claude Design at `claude.ai/design`. Mock the design system through chat — colors, typography, spacing, components. Author or paste the theme.md prose alongside; the bundle copies whatever you put in `project/{slug}-theme.md` verbatim, so the prose you ship to the bundle is the prose your downstream consumers will read.
+2. Optionally include a `## Voice & Copy Guidelines` section in the theme.md. The importer auto-injects a clearly-tagged stub when the section is absent (so the Phase D structural contract still passes), but real voice content is always preferred — it overwrites the stub on every re-import.
+3. Export the bundle. Claude Design produces a URL of the form `https://api.anthropic.com/v1/design/h/<hash>`. Copy it.
+4. Run the importer:
+   ```bash
+   python3 cogni-workspace/scripts/import-claude-design-bundle.py \
+       --url <bundle-url> --target cogni-workspace/themes/<slug> [--allow-overwrite]
+   ```
+5. The importer fetches the bundle, verifies the gzip + sha256, untars, projects `colors_and_type.css` into the six canonical token JSON files, regenerates `tokens.css` via `scripts/generate-tokens-css.py`, copies allowlisted component primitives, copies deck primitives and assets, materialises `theme.md` (auto-injecting the voice stub if the bundle omits it; success envelope reports `voice_section: "bundled"` or `"auto-injected-stub"`), regenerates `manifest.json`, runs `validate-theme-manifest.py`, and writes a `.claude-design-source` sidecar last with the bundle URL + sha256 + timestamp.
+6. Run `bash cogni-workspace/scripts/verify-theme-backcompat.sh` to confirm the broader integration contract still holds (Phase A discover, Phase B consumer references, Phase D voice header).
+
+The full mapping table — which bundle paths become which theme paths, the CSS-variable → JSON-token projection, the component allowlist, the strict-abort conditions — lives at [`cogni-workspace/references/claude-design-bundle-mapping.md`](../references/claude-design-bundle-mapping.md). Read it before extending or constraining the importer.
+
+**Ownership boundary**:
+
+- **Owned by the bundle** (overwritten on re-import): `theme.md`, every file under `tokens/`, `components/web/`, `components/deck/`, `assets/`, and `manifest.json`.
+- **Owned by the workspace** (preserved across re-imports): the directory itself, anything outside the tiers the importer writes (e.g., legacy `*-theme-showcase.jsx` adjacent to the new tiered files — Op 8 can regenerate the showcase against the new tokens whenever you want).
+- **Sidecar**: `.claude-design-source` is written by the importer; never hand-edit. It is the re-sync handle.
+
+**Re-sync contract**:
+
+The bundle is the single source of truth. Re-running the importer with the same URL is a no-op (sha256 matches). Re-running with a new URL refreshes the local tiers from upstream. Hand-edits to imported files survive only until the next re-import — if a hand-edit is genuinely needed (e.g., a token override the bundle does not yet support), encode it upstream by re-authoring in Claude Design and re-exporting.
+
+**Troubleshooting**:
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Materialised theme.md contains the auto-inject voice stub (importer reports `voice_section: "auto-injected-stub"`) | Bundle's theme.md omitted `## Voice & Copy Guidelines` | Not an error — the stub satisfies Phase D. For real voice content, author a structured section in the Claude Design session, re-export, and re-import with `--allow-overwrite` (the stub gets overwritten by upstream content) |
+| `target ... is not empty; pass --allow-overwrite` | Re-syncing a theme directory that already has content | Pass `--allow-overwrite` (the contract is re-syncable upstream — local hand-edits to imported files are not part of the workflow) |
+| `bundle root '...' does not end in '-design-system'` | Bundle shape drift or wrong archive | Confirm the URL is a Claude Design export, not some other tar; if Claude Design changed its naming convention, update `derive_slug_from_root` in the importer |
+| `expected single top-level directory in archive` | macOS Finder re-tarred the bundle and added `._*` AppleDouble files at the root | The importer already filters `._*` and `.DS_Store`; if you still hit this, re-download the original bundle rather than the Finder-roundtripped copy |
+| `no canonical tokens projected from bundle CSS` | The bundle's CSS uses a non-standard naming scheme | Inspect `project/colors_and_type.css`; if Claude Design's variable prefix changed, extend `TOKEN_PROJECTION` in the importer and the mapping doc together |
+| `validate-theme-manifest.py rejected the materialised theme` | A mapping rule bug or the bundle includes a reserved key | Inspect the validator error in the importer's JSON envelope; file the bundle URL alongside the error |
+| `components_web_warnings: [...]` (non-empty) | Bundle ships a preview file matching neither the allowlist nor the known-skip patterns | Decide per warning: extend the allowlist in `references/claude-design-bundle-mapping.md` (and re-import) or accept the skip |
+| Semantic CSS variables (`--fg-1`, `--bg-canvas`, etc.) disappear from `tokens.css` | v1.0 drops the semantic layer because it cannot project into the JSON tier (the values reference other CSS vars) | Expected behaviour; the deferred-feature note in the mapping doc covers a future `tokens/semantic.json` 7th canonical file |
+
+**Cogni-work canary**:
+
+The first cogni-work bundle export (2026-04-25, URL `https://api.anthropic.com/v1/design/h/RSfNvYTiyDECwo4MqTaEFA`) omits a structured voice section. Under the auto-inject policy the importer materialises it successfully with the stub in place; Phase D of `verify-theme-backcompat.sh` still passes. To replace the stub with real voice prose, re-author the bundle in Claude Design with a structured `## Voice & Copy Guidelines` section and re-import with `--allow-overwrite`.
+
 ## Validation
 
 Always run the validator after touching a tiered theme:
