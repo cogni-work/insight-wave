@@ -36,8 +36,6 @@ def sha256_file(path):
 
 def parse_design_source(path):
     """Parse a .claude-design-source sidecar. Returns {url, sha256} or None."""
-    if not os.path.isfile(path):
-        return None
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -55,22 +53,17 @@ def signature(theme_dir):
 
     Returns ``None`` if ``theme.md`` is missing (the theme is ineligible).
     """
-    theme_md = os.path.join(theme_dir, "theme.md")
-    if not os.path.isfile(theme_md):
+    theme_md_sha = sha256_file(os.path.join(theme_dir, "theme.md"))
+    if theme_md_sha is None:
         return None
-    manifest_path = os.path.join(theme_dir, "manifest.json")
-    tokens_css_path = os.path.join(theme_dir, "tokens", "tokens.css")
-    sidecar_path = os.path.join(theme_dir, ".claude-design-source")
-
-    manifest_sha = sha256_file(manifest_path) if os.path.isfile(manifest_path) else None
-    tokens_css_sha = sha256_file(tokens_css_path) if os.path.isfile(tokens_css_path) else None
-
+    manifest_sha = sha256_file(os.path.join(theme_dir, "manifest.json"))
+    tokens_css_sha = sha256_file(os.path.join(theme_dir, "tokens", "tokens.css"))
     return {
         "tier": "tiered" if manifest_sha else "tier-0",
-        "theme_md_sha256": sha256_file(theme_md),
+        "theme_md_sha256": theme_md_sha,
         "manifest_sha256": manifest_sha,
         "tokens_css_sha256": tokens_css_sha,
-        "design_source": parse_design_source(sidecar_path),
+        "design_source": parse_design_source(os.path.join(theme_dir, ".claude-design-source")),
     }
 
 
@@ -181,9 +174,10 @@ def classify(std, ws):
     return ("identical", "identical")
 
 
-def emit(success, data=None, error=""):
-    print(json.dumps({"success": success, "data": data or {}, "error": error}))
-    return 0 if success else 1
+def emit(data, pretty=False):
+    indent = 2 if pretty else None
+    print(json.dumps({"success": True, "data": data, "error": ""}, indent=indent, ensure_ascii=False))
+    return 0
 
 
 def main():
@@ -209,24 +203,19 @@ def main():
 
     if not standard_dir or not os.path.isdir(standard_dir):
         data["note"] = "standard themes dir not found; no drift to report"
-        output = json.dumps({"success": True, "data": data, "error": ""}, indent=2 if args.pretty else None, ensure_ascii=False)
-        print(output)
-        return 0
+        return emit(data, args.pretty)
 
     if is_stale_path(workspace_root) or not workspace_dir or not os.path.isdir(workspace_dir):
         data["note"] = "workspace themes dir not found; no drift to report"
-        output = json.dumps({"success": True, "data": data, "error": ""}, indent=2 if args.pretty else None, ensure_ascii=False)
-        print(output)
-        return 0
+        return emit(data, args.pretty)
 
     standard = scan_dir(standard_dir)
     workspace = scan_dir(workspace_dir)
 
-    shadowed = sorted(set(standard.keys()) & set(workspace.keys()))
     rows = []
     drift_count = 0
     identical_count = 0
-    for slug in shadowed:
+    for slug in sorted(set(standard.keys()) & set(workspace.keys())):
         std = standard[slug]
         ws = workspace[slug]
         status, advisory = classify(std, ws)
@@ -245,10 +234,7 @@ def main():
     data["shadowed_slugs"] = rows
     data["drift_count"] = drift_count
     data["identical_count"] = identical_count
-
-    output = json.dumps({"success": True, "data": data, "error": ""}, indent=2 if args.pretty else None, ensure_ascii=False)
-    print(output)
-    return 0
+    return emit(data, args.pretty)
 
 
 if __name__ == "__main__":
