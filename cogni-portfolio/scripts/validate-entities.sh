@@ -579,6 +579,12 @@ with open('$s') as fh:
     if 'proposition_slug' not in d: sys.exit(1)
     sol_type = d.get('solution_type', 'project')
 
+    # Overlay short-circuit: when messaging_overlay is true, commercial fields
+    # live on the shared reference, not on the overlay. Envelope checks
+    # (ref resolves, type matches) run in the shared_solution_ref block below.
+    if d.get('messaging_overlay'):
+        sys.exit(0)
+
     if sol_type in ('project', ''):
         # Project solutions require implementation + pricing
         impl = d.get('implementation')
@@ -663,36 +669,58 @@ if overlay and ref is None:
     sys.exit(1)  # messaging_overlay=true but no shared_solution_ref
 if ref is not None and not overlay:
     sys.exit(2)  # shared_solution_ref present but messaging_overlay not set
-# Check referenced shared solution exists
-shared_path = os.path.join('$PROJECT_DIR', 'solutions', ref + '.json')
+# Check referenced shared solution exists. Ref is project-root-relative
+# (e.g. solutions/_shared/<product>--<market>).
+shared_path = os.path.join('$PROJECT_DIR', ref + '.json')
 if not os.path.isfile(shared_path):
     sys.exit(3)  # shared reference not found
 # Verify commercial fields match the reference
 with open(shared_path) as sfh:
     shared = json.load(sfh)
-# Compare pricing fields based on solution type
 sol_type = d.get('solution_type', 'project')
+ref_type = shared.get('solution_type', 'project')
+if sol_type != ref_type:
+    sys.exit(5)  # solution_type mismatch
 if sol_type in ('subscription', 'hybrid'):
     s_tiers = d.get('subscription', {}).get('tiers', {})
-    r_tiers = shared.get('subscription', {}).get('tiers', {})
-    for tier_name in r_tiers:
-        st = s_tiers.get(tier_name, {})
-        rt = r_tiers[tier_name]
-        if st.get('price_monthly') != rt.get('price_monthly') or st.get('price_annual') != rt.get('price_annual'):
-            sys.exit(4)  # pricing drift
+    # Strict overlays carry no inline pricing — nothing to drift.
+    if s_tiers:
+        r_tiers = shared.get('subscription', {}).get('tiers', {})
+        for tier_name in r_tiers:
+            st = s_tiers.get(tier_name, {})
+            rt = r_tiers[tier_name]
+            if st.get('price_monthly') != rt.get('price_monthly') or st.get('price_annual') != rt.get('price_annual'):
+                sys.exit(4)  # pricing drift
 elif sol_type == 'project':
     s_pricing = d.get('pricing', {})
-    r_pricing = shared.get('pricing', {})
-    for tier_name in r_pricing:
-        if s_pricing.get(tier_name, {}).get('price') != r_pricing[tier_name].get('price'):
-            sys.exit(4)  # pricing drift
+    if s_pricing:
+        r_pricing = shared.get('pricing', {})
+        for tier_name in r_pricing:
+            if s_pricing.get(tier_name, {}).get('price') != r_pricing[tier_name].get('price'):
+                sys.exit(4)  # pricing drift
 " 2>/dev/null && shared_rc=0 || shared_rc=$?
     case $shared_rc in
       0) ;; # valid or not a shared solution
       1) add_warning "solution" "$slug" "messaging_overlay is true but shared_solution_ref is missing" ;;
       2) add_warning "solution" "$slug" "shared_solution_ref present but messaging_overlay not set to true" ;;
-      3) add_error "solution" "$slug" "shared_solution_ref references non-existent file" ;;
+      3)
+        ref_path=$(python3 -c "import json; print(json.load(open('$s')).get('shared_solution_ref',''))" 2>/dev/null)
+        add_error "solution" "$slug" "shared_solution_ref references non-existent file: $ref_path"
+        ;;
       4) add_warning "solution" "$slug" "Pricing drift detected — commercial fields differ from shared reference" ;;
+      5)
+        types=$(python3 -c "
+import json, os
+d = json.load(open('$s'))
+ref = d.get('shared_solution_ref', '')
+sp = os.path.join('$PROJECT_DIR', ref + '.json')
+s = json.load(open(sp)) if os.path.isfile(sp) else {}
+print(d.get('solution_type','project') + '|' + s.get('solution_type','project'))
+" 2>/dev/null)
+        sol_t="${types%%|*}"
+        ref_t="${types##*|}"
+        add_error "solution" "$slug" "solution_type ($sol_t) does not match shared reference type ($ref_t)"
+        ;;
     esac
   done
 fi
@@ -719,6 +747,34 @@ with open(prod_path) as pfh:
     prod = json.load(pfh)
 if not prod.get('shared_solution'):
     sys.exit(4)  # product not marked as shared_solution
+
+# Per-solution_type field checks: reference files must carry the
+# commercial structure that overlays inherit. Mirrors the non-overlay
+# branches of the main solutions structural check above.
+sol_type = d.get('solution_type', 'project')
+if sol_type in ('project', ''):
+    impl = d.get('implementation')
+    if not isinstance(impl, list) or len(impl) == 0: sys.exit(5)
+    for phase in impl:
+        if 'phase' not in phase or 'duration_weeks' not in phase: sys.exit(5)
+        dw = phase.get('duration_weeks')
+        if not isinstance(dw, (int, float)) and not (isinstance(dw, str) and dw.isdigit()):
+            sys.exit(10)  # non-numeric duration — warning, mirrors exit 6 above
+    pricing = d.get('pricing')
+    if not isinstance(pricing, dict): sys.exit(6)
+    for tier in ['proof_of_value', 'small', 'medium', 'large']:
+        t = pricing.get(tier)
+        if not isinstance(t, dict) or 'price' not in t or 'currency' not in t: sys.exit(6)
+elif sol_type in ('subscription', 'hybrid'):
+    sub = d.get('subscription')
+    if not isinstance(sub, dict): sys.exit(7)
+    if 'tiers' not in sub or 'currency' not in sub: sys.exit(7)
+elif sol_type == 'partnership':
+    prog = d.get('program')
+    if not isinstance(prog, dict): sys.exit(8)
+    if 'stages' not in prog or 'revenue_share' not in prog: sys.exit(8)
+else:
+    sys.exit(9)
 " 2>/dev/null && shared_ref_rc=0 || shared_ref_rc=$?
     case $shared_ref_rc in
       0) ;; # valid
@@ -726,6 +782,12 @@ if not prod.get('shared_solution'):
       2) add_error "solution" "$slug" "Shared reference missing product_slug or market_slug" ;;
       3) add_error "solution" "$slug" "Shared reference product_slug references non-existent product" ;;
       4) add_warning "solution" "$slug" "Shared reference product not marked with shared_solution: true" ;;
+      5) add_error "solution" "$slug" "Shared reference (project) missing implementation phases or phase fields" ;;
+      6) add_error "solution" "$slug" "Shared reference (project) missing pricing tiers (proof_of_value, small, medium, large with price + currency)" ;;
+      7) add_error "solution" "$slug" "Shared reference (subscription/hybrid) missing required subscription object (needs tiers, currency)" ;;
+      8) add_error "solution" "$slug" "Shared reference (partnership) missing required program object (needs stages, revenue_share)" ;;
+      9) add_error "solution" "$slug" "Shared reference has invalid solution_type — must be project, subscription, partnership, or hybrid" ;;
+      10) add_warning "solution" "$slug" "Shared reference has non-numeric duration_weeks value (e.g. 'ongoing') — accepted but may affect duration totals" ;;
     esac
   done
 fi
