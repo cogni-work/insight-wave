@@ -75,10 +75,24 @@ If `discover-plugins.sh` returns `"success": false`, report the error from `data
 
 Themes let visual plugins (slides, big pictures, web narratives) share a consistent look. Missing themes don't break anything, but they limit visual output options.
 
-Scan `${COGNI_WORKSPACE_ROOT}/themes/` (skip `_template`):
-- Count available themes
-- For each theme, check that `theme.md` contains "Color Palette" and "Typography" sections (these are the minimum viable sections visual plugins look for)
-- Check that `_template/` exists (needed to create new themes)
+Run:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/inspect-themes.py --pretty
+```
+
+The script walks the merged theme set (`${CLAUDE_PLUGIN_ROOT}/themes/` and `${COGNI_WORKSPACE_ROOT}/themes/`, workspace shadowing standard) and returns one row per user-visible theme — `_template` and dot-prefixed entries are filtered. For each row, render:
+
+- `tier` — `tier-0` or `tiered (<schema_version>)`
+- `tiers_populated` — comma-joined dotted keys (`tokens, assets, components.web, components.deck`) or `(none)`
+- `origin` — `claude-design @ <imported_at> (sha256 <prefix>…)` or `local-authored`
+- The legacy `Color Palette ✓ / Typography ✓` line (the tier-0 floor — preserve verbatim, including when both signals are absent)
+
+Then check that `${COGNI_WORKSPACE_ROOT}/themes/_template/` exists (needed to create new themes — render `_template/ ✓ present` on a single line under the per-theme rows).
+
+**Strict mode.** When the user request mentions "strict", "deep", "before-PR", or "validate", append `--strict` to the `inspect-themes.py` call. Each tiered theme row then carries `validator: pass` or `validator: FAIL — <first error>` from `validate-theme-manifest.py`. Default invocation must not pass `--strict` (no subprocess fan-out across N themes).
+
+Canonical tier vocabulary: `${CLAUDE_PLUGIN_ROOT}/references/theme-manifest.md`.
 
 #### Theme drift (shadowed slugs)
 
@@ -166,7 +180,7 @@ Workspace Status: /path/to/workspace
 Foundation:   OK       | 4/4 files present
 Environment:  OK       | 12 vars set, 0 missing
 Plugins:      OK       | 5 registered, 5 installed
-Themes:       OK       | 3 themes available
+Themes:       OK       | 3 themes available, 1 tiered, 0 drift advisories
 Dependencies: OK       | 2/2 required, 3/3 optional
 MCP Servers:  OK       | 3/3 loaded (1 manual)
 
@@ -185,8 +199,13 @@ Environment:  WARNING  | 12 vars set, 2 broken
   Broken: COGNI_NARRATIVE_PLUGIN -> /path/does/not/exist
   -> Run manage-workspace to refresh environment variables
 
-Themes:       WARNING  | 3 themes available, 1 drift advisory
-  cogni-work: upgrade available — workspace copy is tier-0, standard is tiered
+Themes:       WARNING  | 2 themes available, 1 tiered, 1 drift advisory
+  cogni-work   workspace  tiered (1.0) | tokens, assets, components.web, components.deck
+                          origin: claude-design @ 2026-05-18T09:35:13Z (sha256 b23aec46…)
+                          Color Palette ✓ | Typography ✓
+  _template/ ✓ present
+
+  Drift: cogni-work — upgrade available — workspace copy is tier-0, standard is tiered
     standard imported from bundle https://api.anthropic.com/v1/design/h/X9LG…
   -> Run `manage-themes` to refresh the workspace copy (overwrites local edits)
 ```
