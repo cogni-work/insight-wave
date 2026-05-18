@@ -1,9 +1,9 @@
 {
-  "xs": "4px",
-  "sm": "6px",
-  "md": "8px",
-  "lg": "10px",
-  "xl": "12px",
   "2xl": "16px",
-  "pill": "999px"
+  "lg": "10px",
+  "md": "8px",
+  "pill": "999px",
+  "sm": "6px",
+  "xl": "12px",
+  "xs": "4px"
 }

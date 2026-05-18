@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Cogni Work — Deck Templates</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; background:#000; }
+  deck-stage section { background: var(--bg-canvas); color: var(--fg-1); }
+
+  /* ── shared slide utilities ───────────────────────────────── */
+  .slide { width:1920px; height:1080px; padding: 96px 120px; box-sizing:border-box; position:relative; font-family: var(--font-sans); display:flex; flex-direction:column; }
+  .slide.dark { background:#111; color:#fff; }
+  .slide.dark .eyebrow { color:#C8E62E; }
+
+  .eyebrow { font-family: var(--font-mono); font-size:22px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:#6B7280; margin:0; }
+  .h1 { font-size:96px; font-weight:700; letter-spacing:-.035em; line-height:1.02; margin:32px 0 0; }
+  .h2 { font-size:72px; font-weight:700; letter-spacing:-.03em; line-height:1.05; margin:28px 0 0; }
+  .lede { font-size:30px; line-height:1.45; color:#333; margin:32px 0 0; max-width:1200px; font-weight:400; }
+  .slide.dark .lede { color: rgba(255,255,255,.72); }
+  .rule { width:120px; height:6px; background:#C8E62E; margin-top: 48px; }
+
+  .footer { position:absolute; left:120px; right:120px; bottom:56px; display:flex; justify-content:space-between; align-items:center; font-family: var(--font-mono); font-size:18px; color:#6B7280; letter-spacing:.08em; text-transform:uppercase; }
+  .slide.dark .footer { color: rgba(255,255,255,.45); }
+  .footer .brand { display:flex; align-items:center; gap:14px; font-family:var(--font-sans); font-weight:700; font-size:22px; letter-spacing:-.02em; text-transform:none; color:#111; }
+  .slide.dark .footer .brand { color:#fff; }
+  .footer .brand .mark { width:36px; height:36px; color:#111; --mark-off:#FAFAF8; }
+  .slide.dark .footer .brand .mark { color:#fff; --mark-off:#111; }
+  .footer .brand .hy { color:#C8E62E; }
+
+  /* grid accent for dark band */
+  .grid-bg { position:absolute; inset:0; opacity:.06; pointer-events:none; }
+  .grid-bg span { position:absolute; top:0; bottom:0; width:1px; background:#C8E62E; }
+
+  /* title slide */
+  .title-wrap { margin-top:auto; margin-bottom:auto; }
+  .motto { font-family: var(--font-mono); font-size:20px; letter-spacing:.18em; color:#C8E62E; text-transform:uppercase; font-weight:600; }
+
+  /* challenge slide — 2 col */
+  .two-col { display:grid; grid-template-columns: 1.1fr 1fr; gap:80px; margin-top: 64px; align-items:start; }
+  .challenge-list { list-style:none; padding:0; margin:0; }
+  .challenge-list li { padding: 28px 0; border-top: 1px solid #E0E0DC; font-size:28px; line-height:1.4; color:#333; display:flex; gap:24px; align-items:baseline;}
+  .challenge-list li:last-child { border-bottom: 1px solid #E0E0DC; }
+  .challenge-list .num { font-family: var(--font-mono); font-size:18px; color:#6B7280; font-weight:600; min-width:40px; }
+  .pull-card { background:#111; color:#fff; border-radius:20px; padding: 56px; }
+  .pull-card .big { font-size:140px; font-weight:700; letter-spacing:-.04em; line-height:.95; }
+  .pull-card .big .u { color:#C8E62E; }
+  .pull-card .lab { font-family: var(--font-mono); font-size:20px; color:#C8E62E; text-transform:uppercase; letter-spacing:.12em; margin-top:32px; font-weight:600; }
+  .pull-card .note { font-size:22px; color: rgba(255,255,255,.7); margin-top: 18px; line-height:1.5; max-width:440px; }
+
+  /* metrics slide */
+  .metric-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:32px; margin-top:80px; }
+  .metric { padding: 40px 8px; border-top: 4px solid #111; }
+  .metric .num { font-size:144px; font-weight:700; letter-spacing:-.035em; line-height:.9; }
+  .metric .num .u { color:#C8E62E; }
+  .metric .lab { font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:#333; margin-top:28px; }
+  .metric .note { font-size:20px; color:#6B7280; margin-top:14px; line-height:1.5; max-width:480px; }
+
+  /* comparison slide */
+  .compare { display:grid; grid-template-columns: 1fr 1fr; gap:32px; margin-top:72px; }
+  .compare .col { padding: 48px; border-radius: 20px; }
+  .compare .before { background:#F2F2EE; color:#333; }
+  .compare .after { background:#111; color:#fff; }
+  .compare .hdr { font-family: var(--font-mono); font-size:18px; text-transform:uppercase; letter-spacing:.14em; margin:0; font-weight:600; }
+  .compare .before .hdr { color:#6B7280; }
+  .compare .after .hdr { color:#C8E62E; }
+  .compare h3 { font-size:40px; font-weight:700; letter-spacing:-.02em; margin:16px 0 36px; }
+  .compare ul { list-style:none; padding:0; margin:0; }
+  .compare li { padding:18px 0; border-top:1px solid rgba(0,0,0,.08); font-size:22px; line-height:1.45; }
+  .compare .after li { border-top-color: rgba(255,255,255,.1); }
+  .compare li .ic { font-family: var(--font-mono); margin-right:14px; }
+  .compare .before li .ic { color:#D32F2F; }
+  .compare .after li .ic { color:#C8E62E; }
+
+  /* quote slide */
+  .quote { font-size:96px; font-weight:700; line-height:1.08; letter-spacing:-.025em; max-width:1600px; margin:0; color:#fff; }
+  .quote .qmark { color:#C8E62E; font-family: var(--font-sans); }
+  .quote-attr { font-family: var(--font-mono); font-size:20px; letter-spacing:.12em; text-transform:uppercase; color: rgba(255,255,255,.55); margin-top:48px; font-weight:600; }
+
+  /* cta */
+  .cta-wrap { margin-top:auto; margin-bottom:auto; }
+  .cta-actions { display:flex; gap:24px; margin-top:64px; align-items:center; }
+  .cta-primary { background:#C8E62E; color:#111; padding: 28px 48px; border-radius: 14px; font-size:28px; font-weight:700; letter-spacing:-.01em; }
+  .cta-ghost { color:#fff; font-size:24px; font-weight:500; letter-spacing:.02em; opacity:.72; }
+  .cta-arrow { display:inline-block; margin-left:12px; }
+
+  /* agenda — tightened to clear the footer at 1080 */
+  .agenda-grid { display:grid; grid-template-columns: 60px 1fr; column-gap:48px; row-gap:0; margin-top:56px; }
+  .agenda-grid .n { font-family:var(--font-mono); font-size:22px; color:#C8E62E; padding:28px 0; font-weight:600; }
+  .agenda-grid .t { padding: 28px 0; border-top: 1px solid rgba(255,255,255,.08); font-size:38px; font-weight:600; letter-spacing:-.015em; line-height:1.15; }
+  .agenda-grid .t .sub { display:block; font-weight:400; color:rgba(255,255,255,.55); font-size:20px; margin-top:8px; letter-spacing:0;}
+</style>
+</head>
+<body>
+
+<deck-stage width="1920" height="1080">
+
+  <!-- 1 · Title -->
+  <section class="slide dark" data-label="Title">
+    <div class="grid-bg">
+      <span style="left:10%"></span><span style="left:20%"></span><span style="left:30%"></span>
+      <span style="left:40%"></span><span style="left:50%"></span><span style="left:60%"></span>
+      <span style="left:70%"></span><span style="left:80%"></span><span style="left:90%"></span>
+    </div>
+    <p class="motto">Firmitas · Utilitas · Venustas</p>
+    <div class="title-wrap">
+      <p class="eyebrow">Cogni Work</p>
+      <h1 class="h1">Smarter <span style="color:#C8E62E">knowledge</span><br/>work.</h1>
+      <p class="lede">An open-source platform for consulting, sales, and marketing teams — built on Claude Code, grounded in methodology, cited by design.</p>
+      <div class="rule"></div>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>Q2 2026 · Investor Brief</div>
+    </div>
+  </section>
+
+  <!-- 2 · Agenda -->
+  <section class="slide dark" data-label="Agenda">
+    <p class="eyebrow">Agenda</p>
+    <h2 class="h2">What we'll cover</h2>
+    <div class="agenda-grid">
+      <div class="n">01</div><div class="t">The challenge<span class="sub">Why knowledge work is broken for professional teams</span></div>
+      <div class="n">02</div><div class="t">The opportunity<span class="sub">What methodology-first automation unlocks</span></div>
+      <div class="n">03</div><div class="t">Our approach<span class="sub">14 plugins, four capability areas, one foundation</span></div>
+      <div class="n">04</div><div class="t">What's next<span class="sub">Getting started and the partner program</span></div>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>02 / 07</div>
+    </div>
+  </section>
+
+  <!-- 3 · Challenge -->
+  <section class="slide" data-label="Challenge">
+    <p class="eyebrow">The Challenge</p>
+    <h2 class="h2">Knowledge workers deserve<br/>better tools.</h2>
+    <div class="two-col">
+      <ol class="challenge-list">
+        <li><span class="num">01</span><span>Scattered information across siloed tools and inboxes.</span></li>
+        <li><span class="num">02</span><span>Methodology depth depends on individual partners, not the system.</span></li>
+        <li><span class="num">03</span><span>Every pitch, report, and proposal starts from a blank page.</span></li>
+        <li><span class="num">04</span><span>Quality assurance happens at review time — too late, too expensive.</span></li>
+      </ol>
+      <aside class="pull-card">
+        <div class="big">60<span class="u">%</span></div>
+        <div class="lab">of the day lost</div>
+        <p class="note">to low-value coordination — emails, status updates, searching for what already exists.</p>
+      </aside>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>03 / 07</div>
+    </div>
+  </section>
+
+  <!-- 4 · Opportunity / Metrics -->
+  <section class="slide" data-label="Opportunity">
+    <p class="eyebrow" style="color:#C8E62E">The Opportunity</p>
+    <h2 class="h2">What smarter knowledge<br/>work unlocks.</h2>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="num">3.2<span class="u">×</span></div>
+        <div class="lab">Faster insight discovery</div>
+        <p class="note">From scattered search to structured, cited retrieval.</p>
+      </div>
+      <div class="metric">
+        <div class="num">47<span class="u">%</span></div>
+        <div class="lab">Less coordination time</div>
+        <p class="note">Automated workflows replace status chasing and handoffs.</p>
+      </div>
+      <div class="metric">
+        <div class="num">5<span class="u">h</span></div>
+        <div class="lab">Saved / consultant / week</div>
+        <p class="note">Reclaimed for high-value analysis and client work.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>04 / 07</div>
+    </div>
+  </section>
+
+  <!-- 5 · Comparison -->
+  <section class="slide" data-label="Comparison">
+    <p class="eyebrow">Before · After</p>
+    <h2 class="h2">Methodology depth,<br/>without the overhead.</h2>
+    <div class="compare">
+      <div class="col before">
+        <p class="hdr">Today</p>
+        <h3>A generic AI wrapper</h3>
+        <ul>
+          <li><span class="ic">✕</span>Text generation without an underlying framework</li>
+          <li><span class="ic">✕</span>No inline citations, no source verification</li>
+          <li><span class="ic">✕</span>Quality varies by prompt author</li>
+          <li><span class="ic">✕</span>Outputs can't be inspected or overridden</li>
+        </ul>
+      </div>
+      <div class="col after">
+        <p class="hdr">With cogni-work</p>
+        <h3>Methodology you can inspect</h3>
+        <ul>
+          <li><span class="ic">→</span>Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS</li>
+          <li><span class="ic">→</span>Inline citations and structured data models</li>
+          <li><span class="ic">→</span>Reproducible, versioned deliverables</li>
+          <li><span class="ic">→</span>Every step is inspectable and overridable</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>05 / 07</div>
+    </div>
+  </section>
+
+  <!-- 6 · Big quote -->
+  <section class="slide dark" data-label="Quote">
+    <p class="eyebrow">Principle</p>
+    <div style="margin-top:auto;margin-bottom:auto">
+      <p class="quote"><span class="qmark">“</span>Every deliverable follows a reproducible methodology you can inspect and override.<span class="qmark">”</span></p>
+      <p class="quote-attr">Design principle · cogni-work platform</p>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>06 / 07</div>
+    </div>
+  </section>
+
+  <!-- 7 · CTA -->
+  <section class="slide dark" data-label="CTA">
+    <div class="grid-bg">
+      <span style="left:10%"></span><span style="left:20%"></span><span style="left:30%"></span>
+      <span style="left:40%"></span><span style="left:50%"></span><span style="left:60%"></span>
+      <span style="left:70%"></span><span style="left:80%"></span><span style="left:90%"></span>
+    </div>
+    <p class="eyebrow">Next steps</p>
+    <div class="cta-wrap">
+      <h1 class="h1">Ready to work<br/><span style="color:#C8E62E">smarter?</span></h1>
+      <p class="lede">Install the marketplace, run your first infographic in 15 minutes.<br/>No cloud — everything runs on your laptop, GDPR-compliant by design.</p>
+      <div class="cta-actions">
+        <div class="cta-primary">Get started<span class="cta-arrow">→</span></div>
+        <div class="cta-ghost">cogni-work.ai</div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="brand"><svg class="mark" viewBox="0 0 60 60" width="36" height="36" aria-hidden="true"><polygon points="30,6 56,52 4,52" fill="#C8E62E"/></svg>cogni<span class="hy">-</span>work</div>
+      <div>Firmitas · Utilitas · Venustas</div>
+    </div>
+  </section>
+
+</deck-stage>
+
+<script src="deck-stage.js"></script>
+</body>
+</html>

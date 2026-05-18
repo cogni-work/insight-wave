@@ -1,0 +1,7 @@
+{
+  "url": "https://api.anthropic.com/v1/design/h/X9LGVqgyfuIksYs9_yOtaA",
+  "sha256": "b23aec469f87fdd41d751f10ed34d783e4b8a60dbea9a61f8b5a4711c4ca2eaa",
+  "imported_at": "2026-05-18T09:35:13Z",
+  "bundle_root": "cogni-work-design-system",
+  "importer_version": "1.0"
+}

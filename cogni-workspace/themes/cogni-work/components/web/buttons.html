@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>body{margin:0;padding:28px;background:#fff;font-family:var(--font-sans)}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}button{font-family:inherit;cursor:pointer}
+.primary{background:#C8E62E;color:#111;border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:600}
+.primary.hover{background:#A8C424}
+.primary.pressed{background:#8BA31E}
+.secondary{background:transparent;color:#111;border:1.5px solid #111;border-radius:8px;padding:10.5px 22px;font-size:14px;font-weight:600}
+.ghost{background:transparent;color:#6B7280;border:1.5px solid #E0E0DC;border-radius:8px;padding:10.5px 22px;font-size:14px;font-weight:500}
+.dark{background:#111;color:#fff;border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:600}
+.sm{border-radius:6px;padding:7px 14px;font-size:12px}
+.lab{font-family:var(--font-mono);font-size:10px;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-right:6px;font-weight:600}
+</style></head><body>
+<div class="row"><span class="lab">Primary</span>
+<button class="primary">Primary CTA →</button>
+<button class="primary hover">Hover</button>
+<button class="primary pressed">Pressed</button>
+</div>
+<div class="row"><span class="lab">Secondary</span>
+<button class="secondary">Secondary</button>
+<button class="ghost">Ghost</button>
+<button class="dark">Dark</button>
+<button class="primary sm">Small</button>
+</div>
+</body></html>

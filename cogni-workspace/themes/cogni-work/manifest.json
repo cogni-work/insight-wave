@@ -3,8 +3,12 @@
   "name": "Cogni Work",
   "slug": "cogni-work",
   "tiers": {
-    "tokens": "tokens/"
+    "tokens": "tokens/",
+    "assets": "assets/",
+    "components": {
+      "web": "components/web/",
+      "deck": "components/deck/"
+    }
   },
-  "showcase": "cogni-work-theme-showcase.jsx",
   "voice_ref": "theme.md#voice--copy-guidelines"
 }

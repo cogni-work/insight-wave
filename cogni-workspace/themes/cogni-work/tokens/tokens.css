@@ -4,7 +4,7 @@
   --colors-accent: #C8E62E;
   --colors-accent-dark: #8BA31E;
   --colors-accent-muted: #A8C424;
-  --colors-background: #FAFAF8;
+  --colors-bg: #FAFAF8;
   --colors-border: #E0E0DC;
   --colors-danger: #D32F2F;
   --colors-info: #1565C0;
@@ -19,33 +19,30 @@
   --colors-text-muted: #6B7280;
   --colors-warning: #E5A100;
   /* typography */
-  --typography-font-family-body: DM Sans, Inter, Calibri, system-ui, sans-serif;
-  --typography-font-family-headers: DM Sans, Inter, Calibri, system-ui, sans-serif;
-  --typography-font-family-mono: JetBrains Mono, Fira Code, Consolas, monospace;
-  --typography-font-weight-bold: 700;
-  --typography-font-weight-regular: 400;
-  --typography-font-weight-semibold: 600;
+  --typography-font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --typography-font-sans: 'DM Sans', 'Inter', 'Calibri', system-ui, sans-serif;
   --typography-line-height-body: 1.6;
   --typography-line-height-display: 1.05;
-  --typography-line-height-eyebrow: 1.4;
   --typography-line-height-h1: 1.1;
   --typography-line-height-h2: 1.15;
   --typography-line-height-h3: 1.25;
   --typography-line-height-h4: 1.3;
+  --typography-line-height-micro: 1.4;
   --typography-line-height-small: 1.55;
   --typography-size-body: 15px;
   --typography-size-display: 56px;
-  --typography-size-eyebrow: 11px;
   --typography-size-h1: 42px;
   --typography-size-h2: 32px;
   --typography-size-h3: 24px;
   --typography-size-h4: 18px;
+  --typography-size-micro: 11px;
   --typography-size-small: 13px;
   --typography-tracking-display: -0.035em;
-  --typography-tracking-eyebrow: 0.12em;
   --typography-tracking-h1: -0.03em;
   --typography-tracking-h2: -0.02em;
   --typography-tracking-h3: -0.01em;
+  --typography-tracking-h4: 0;
+  --typography-tracking-micro: 0.12em;
   /* spacing */
   --spacing-0: 0;
   --spacing-1: 4px;
@@ -57,10 +54,6 @@
   --spacing-7: 48px;
   --spacing-8: 64px;
   --spacing-9: 96px;
-  --spacing-content-max-width: 960px;
-  --spacing-dashboard-max-width: 1280px;
-  --spacing-desktop-gutter: 40px;
-  --spacing-grid-gutter: 24px;
   /* radii */
   --radii-2xl: 16px;
   --radii-lg: 10px;
@@ -76,9 +69,8 @@
   --shadows-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
   --shadows-xl: 0 24px 64px rgba(0,0,0,0.14), 0 8px 20px rgba(0,0,0,0.06);
   /* motion */
-  --motion-duration-fast: 150ms;
-  --motion-duration-medium: 250ms;
-  --motion-duration-slow: 400ms;
-  --motion-easing-deceleration: cubic-bezier(0.2, 0, 0, 1);
-  --motion-easing-linear: linear;
+  --motion-dur-fast: 150ms;
+  --motion-dur-med: 250ms;
+  --motion-dur-slow: 400ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
