@@ -80,6 +80,32 @@ Scan `${COGNI_WORKSPACE_ROOT}/themes/` (skip `_template`):
 - For each theme, check that `theme.md` contains "Color Palette" and "Typography" sections (these are the minimum viable sections visual plugins look for)
 - Check that `_template/` exists (needed to create new themes)
 
+#### Theme drift (shadowed slugs)
+
+The picker merges `${CLAUDE_PLUGIN_ROOT}/themes/` (standard, ships with the plugin) with `${COGNI_WORKSPACE_ROOT}/themes/` (user-owned), and workspace copies shadow standard copies when slugs collide. This shadowing is **intentional** — it enables user customisation. The drift advisories below are **informational, not errors**: the picker still resolves a valid theme either way.
+
+The motivating example is `cogni-work`: after the Phase 3 upgrade (RFC #132), the standard copy ships a tiered layout (manifest.json, tokens/, components/, `.claude-design-source` sidecar). A pre-Phase 3 workspace copy silently downgrades the experience because the picker resolves the workspace copy first.
+
+Run:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check-theme-drift.py
+```
+
+The script compares the two locations and emits one row per shadowed slug. Slugs that exist on only one side are not reported (that's the normal case, not drift). Statuses:
+
+| Standard | Workspace | Status | Surface text |
+|---|---|---|---|
+| tier-0 | tier-0, theme.md equal | `identical` | `identical` |
+| tier-0 | tier-0, theme.md differs | `workspace_customised` | `workspace customised` |
+| tiered | tier-0 | `upgrade_available` | `upgrade available — workspace copy is tier-0, standard is tiered` |
+| tiered | tiered, manifest or tokens.css differs | `tier_drift` | `tier drift — standard manifest sha X, workspace sha Y` |
+| tier-0 | tiered | `workspace_ahead` | `workspace ahead` |
+
+When `.claude-design-source` sidecars differ in URL or sha256, the advisory appends `standard imported from bundle X; workspace imported from bundle Y`. A sidecar mismatch on otherwise-identical files promotes the row to `workspace_customised` so the divergence surfaces.
+
+`identical` rows are not surfaced in the default report (they're not a problem). Detailed mode shows them.
+
 ### 5. Dependencies
 
 External tools that scripts rely on. Required dependencies block core functionality; optional ones limit specific features.
@@ -158,6 +184,11 @@ Environment:  WARNING  | 12 vars set, 2 broken
   Broken: COGNI_NARRATIVE_ROOT -> /path/does/not/exist
   Broken: COGNI_NARRATIVE_PLUGIN -> /path/does/not/exist
   -> Run manage-workspace to refresh environment variables
+
+Themes:       WARNING  | 3 themes available, 1 drift advisory
+  cogni-work: upgrade available — workspace copy is tier-0, standard is tiered
+    standard imported from bundle https://api.anthropic.com/v1/design/h/X9LG…
+  -> Run `manage-themes` to refresh the workspace copy (overwrites local edits)
 ```
 
 Every issue should end with a concrete next step — either a skill to run (`manage-workspace`, `manage-themes`) or a command to execute.
