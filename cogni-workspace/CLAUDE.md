@@ -7,6 +7,7 @@ Workspace-level infrastructure for the cogni plugin ecosystem: theme management,
 - `pick-theme` is the entry point for theme selection across all plugins
 - Themes live in `themes/` as markdown files describing visual identity
 - See `references/design-variables-pattern.md` for the shared convention on producing themed HTML dashboards — any skill generating visual HTML output should follow this pattern
+- **Claude Design bundles are the recommended authoring path for tiered themes** (RFC #132 Phase 3): the user mocks the design system at `claude.ai/design`, exports a bundle URL, and `manage-themes` Operation 10 materialises it into the local `themes/<slug>/` directory in one re-syncable step. `scripts/import-claude-design-bundle.py` is the importer; `references/claude-design-bundle-mapping.md` is the mapping contract. The runtime contract through `pick-theme` is unchanged — consumers keep reading the local tier files.
 
 ### Pre-PR checks for theme-touching changes
 
