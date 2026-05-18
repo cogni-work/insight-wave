@@ -17,6 +17,7 @@ consumer plugin's theme-reading surface:
 
 ```bash
 bash cogni-workspace/scripts/verify-theme-backcompat.sh
+bash cogni-workspace/scripts/verify-claude-design-importer.sh  # if the change touches the importer or its mapping doc
 ```
 
 The harness verifies the Theme System v2 contract end-to-end:

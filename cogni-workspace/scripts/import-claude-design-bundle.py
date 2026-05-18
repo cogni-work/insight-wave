@@ -48,6 +48,11 @@ SIDECAR_FILENAME = ".claude-design-source"
 VOICE_HEADER = "## Voice & Copy Guidelines"
 MANIFEST_SCHEMA_VERSION = "1.0"
 
+# Cap the URL fetch to defend against a misbehaving server or proxy that
+# might return an unbounded response. Real bundles are ~1–2 MB compressed;
+# 50 MB is a generous ceiling that still bounds memory use.
+MAX_BUNDLE_BYTES = 50 * 1024 * 1024
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 GENERATOR_PATH = SCRIPT_DIR / "generate-tokens-css.py"
 VALIDATOR_PATH = SCRIPT_DIR / "validate-theme-manifest.py"
@@ -134,11 +139,22 @@ def _list_files(d: Path) -> list:
 
 
 def fetch_archive(url: str) -> bytes:
-    """Stream a bundle URL into memory. Raises RuntimeError on any non-2xx."""
+    """Stream a bundle URL into memory, capped at MAX_BUNDLE_BYTES. Raises
+    RuntimeError on any non-2xx, network failure, or oversize response."""
     req = urllib.request.Request(url, headers={"User-Agent": "import-claude-design-bundle/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
-            return resp.read()
+            # Read one byte past the limit so an oversize body fails loudly
+            # rather than getting silently truncated to the limit.
+            blob = resp.read(MAX_BUNDLE_BYTES + 1)
+            if len(blob) > MAX_BUNDLE_BYTES:
+                raise RuntimeError(
+                    "bundle exceeds {} bytes (read {}+); refusing to load. "
+                    "Raise MAX_BUNDLE_BYTES if this is a legitimate large bundle.".format(
+                        MAX_BUNDLE_BYTES, len(blob)
+                    )
+                )
+            return blob
     except urllib.error.HTTPError as e:
         raise RuntimeError("HTTP {} fetching {}: {}".format(e.code, url, e.reason))
     except urllib.error.URLError as e:
@@ -187,7 +203,17 @@ def extract_archive(blob: bytes, target_dir: Path) -> Path:
             raise RuntimeError(
                 "expected single top-level directory in archive, got {}".format(sorted(top_dirs))
             )
-        tar.extractall(target_dir, members=members)
+        # filter='data' rejects absolute paths, parent-relative paths, device
+        # files, and symlinks pointing outside the extraction root — matches
+        # the importer's existing path-traversal stance and silences the
+        # Python 3.12+ deprecation that becomes a hard error in 3.14.
+        try:
+            tar.extractall(target_dir, members=members, filter="data")
+        except TypeError:
+            # Python < 3.12 — older tarfile has no filter kwarg, fall back to
+            # the legacy extractall (still protected by our pre-extract path
+            # checks above).
+            tar.extractall(target_dir, members=members)
     return target_dir / next(iter(top_dirs))
 
 
