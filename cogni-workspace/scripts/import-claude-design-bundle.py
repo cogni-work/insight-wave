@@ -48,10 +48,25 @@ SIDECAR_FILENAME = ".claude-design-source"
 VOICE_HEADER = "## Voice & Copy Guidelines"
 MANIFEST_SCHEMA_VERSION = "1.0"
 
-# Canonical token JSON files emitted by the importer. Order matters only
-# for the order in which empty files are pruned; generate-tokens-css.py
-# defines its own canonical iteration order.
-CANONICAL_TOKEN_STEMS = ("colors", "typography", "spacing", "radii", "shadows", "motion")
+SCRIPT_DIR = Path(__file__).resolve().parent
+GENERATOR_PATH = SCRIPT_DIR / "generate-tokens-css.py"
+VALIDATOR_PATH = SCRIPT_DIR / "validate-theme-manifest.py"
+
+
+def _load_module(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot locate {}".format(path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# Load the generator once at module init so we can share its CANONICAL_FILES
+# tuple — a separate copy here would silently drift if a 7th canonical stem
+# was added to the generator but forgotten here.
+_TOKEN_GEN = _load_module(GENERATOR_PATH, "_token_gen")
+CANONICAL_TOKEN_STEMS = _TOKEN_GEN.CANONICAL_FILES
 
 # CSS variable → (token stem, key) projection rules. Evaluated in order;
 # the first match wins. Variables that match none of these patterns are
@@ -93,10 +108,6 @@ KNOWN_SKIPS = {
 }
 KNOWN_SKIP_PREFIXES = ("colors-", "type-", "spacing-", "brand-")
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-GENERATOR_PATH = SCRIPT_DIR / "generate-tokens-css.py"
-VALIDATOR_PATH = SCRIPT_DIR / "validate-theme-manifest.py"
-
 
 # ---------------------------------------------------------------------------
 # Output helpers
@@ -110,6 +121,11 @@ def emit(success: bool, data=None, error: str = "") -> int:
 
 def err(msg: str, **data) -> int:
     return emit(False, data=data, error=msg)
+
+
+def _list_files(d: Path) -> list:
+    """Sorted filenames in ``d``, or [] if ``d`` is not a directory."""
+    return sorted(p.name for p in d.iterdir() if p.is_file()) if d.is_dir() else []
 
 
 # ---------------------------------------------------------------------------
@@ -130,9 +146,10 @@ def fetch_archive(url: str) -> bytes:
 
 
 def read_local_archive(path: Path) -> bytes:
-    if not path.is_file():
-        raise RuntimeError("local archive not found: {}".format(path))
-    return path.read_bytes()
+    try:
+        return path.read_bytes()
+    except (FileNotFoundError, IsADirectoryError, OSError) as e:
+        raise RuntimeError("cannot read local archive {}: {}".format(path, e))
 
 
 def assert_gzip(blob: bytes) -> None:
@@ -297,20 +314,10 @@ def write_tokens(tokens_dir: Path, projected: dict) -> list:
 # ---------------------------------------------------------------------------
 
 
-def _load_module(path: Path, name: str):
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("cannot locate {}".format(path))
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 def regenerate_tokens_css(tokens_dir: Path) -> int:
-    """Call generate-tokens-css.py's generate() and write tokens.css. Return
-    the byte count written."""
-    gen = _load_module(GENERATOR_PATH, "_token_gen")
-    css = gen.generate(tokens_dir)
+    """Call generate-tokens-css.py's generate() (loaded at module init) and
+    write tokens.css. Return the byte count written."""
+    css = _TOKEN_GEN.generate(tokens_dir)
     out = tokens_dir / "tokens.css"
     out.write_text(css, encoding="utf-8")
     return len(css)
@@ -442,13 +449,10 @@ def write_sidecar(theme_dir: Path, url: str, sha256: str, bundle_root: str) -> N
 
 
 def read_sidecar(theme_dir: Path):
-    p = theme_dir / SIDECAR_FILENAME
-    if not p.is_file():
-        return None
     try:
-        with p.open("r", encoding="utf-8") as f:
+        with (theme_dir / SIDECAR_FILENAME).open("r", encoding="utf-8") as f:
             return json.load(f)
-    except (json.JSONDecodeError, OSError):
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
         return None
 
 
@@ -545,21 +549,13 @@ def run(args: argparse.Namespace) -> int:
                     "slug": slug,
                     "sha256": sha256,
                     "tokens_to_write": populated_stems,
-                    "previews_found": sorted(p.name for p in paths["preview"].iterdir() if p.is_file())
-                    if paths["preview"].is_dir()
-                    else [],
-                    "slides_found": sorted(p.name for p in paths["slides"].iterdir() if p.is_file())
-                    if paths["slides"].is_dir()
-                    else [],
-                    "uploads_found": sorted(p.name for p in paths["uploads"].iterdir() if p.is_file())
-                    if paths["uploads"].is_dir()
-                    else [],
+                    "previews_found": _list_files(paths["preview"]),
+                    "slides_found": _list_files(paths["slides"]),
+                    "uploads_found": _list_files(paths["uploads"]),
                 },
             )
 
-        # Stage materialisation in a scratch dir alongside target, then swap.
         target.mkdir(parents=True, exist_ok=True)
-        # Materialise directly into target — caller owns ownership semantics.
 
         # theme.md (already passed voice-header check).
         try:
