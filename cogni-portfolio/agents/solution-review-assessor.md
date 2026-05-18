@@ -387,7 +387,7 @@ Return a simplified assessment JSON for overlay solutions:
 {
   "slug": "cogni-sales--b2b-sales-dach",
   "review_mode": "overlay",
-  "shared_solution_ref": "_shared/insight-wave-plugins--b2b-sales-dach",
+  "shared_solution_ref": "solutions/_shared/insight-wave-plugins--b2b-sales-dach",
   "criteria": {
     "does_traceability": {"score": "pass", "note": ""},
     "scope_clarity": {"score": "pass", "note": ""},

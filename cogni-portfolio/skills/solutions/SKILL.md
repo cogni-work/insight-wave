@@ -373,8 +373,8 @@ When the user asks to review or improve existing solutions (or when you notice i
 
    | Solution | Shared Ref | Commercial Sync | Messaging |
    |----------|-----------|----------------|-----------|
-   | cogni-sales--b2b-sales-dach | _shared/iwp--b2b-sales-dach | in sync | DOES traceable |
-   | cogni-trends--b2b-sales-dach | _shared/iwp--b2b-sales-dach | DRIFTED (pricing) | DOES traceable |
+   | cogni-sales--b2b-sales-dach | solutions/_shared/iwp--b2b-sales-dach | in sync | DOES traceable |
+   | cogni-trends--b2b-sales-dach | solutions/_shared/iwp--b2b-sales-dach | DRIFTED (pricing) | DOES traceable |
 
    When reviewing overlay solutions, focus on messaging quality and DOES traceability — skip commercial evaluation (it belongs on the shared reference). When commercial changes are needed, recommend updating the shared reference and regenerating overlays rather than fixing individual solutions.
 

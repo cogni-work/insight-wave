@@ -977,7 +977,7 @@ for sf in glob.glob(os.path.join(proj, 'solutions', '*.json')):
             overlay_solutions += 1
             ref = d.get('shared_solution_ref')
             if ref:
-                ref_path = os.path.join(proj, 'solutions', ref + '.json')
+                ref_path = os.path.join(proj, ref + '.json')
                 if os.path.isfile(ref_path):
                     shared = json.load(open(ref_path))
                     sol_type = d.get('solution_type', 'project')

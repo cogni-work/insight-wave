@@ -594,7 +594,7 @@ The reference solution defines all commercial fields — pricing, cost model, ti
 
 **Overlay solutions** are the per-Feature×Market files. They inherit commercial structure from the reference and carry feature-specific messaging:
 
-`shared_solution_ref` (string, optional): Relative path to the shared reference solution (e.g., `"_shared/insight-wave-plugins--b2b-sales-dach"`). When present, this solution was derived from a shared reference — its commercial fields (pricing, cost model, tiers, durations) are inherited, and only messaging fields (descriptions, scope text, service names) are feature-specific.
+`shared_solution_ref` (string, optional): Path to the shared reference solution, relative to the project root (the directory containing `portfolio.json`) — e.g., `"solutions/_shared/insight-wave-plugins--b2b-sales-dach"`. When present, this solution was derived from a shared reference — its commercial fields (pricing, cost model, tiers, durations) are inherited, and only messaging fields (descriptions, scope text, service names) are feature-specific.
 
 `messaging_overlay` (boolean, optional): When `true`, indicates this solution was generated in overlay mode. Commercial fields must match the referenced shared solution. Editing commercial fields on an overlay creates drift — update the shared reference and regenerate overlays instead.
 

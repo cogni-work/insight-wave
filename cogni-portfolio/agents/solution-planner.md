@@ -476,7 +476,7 @@ In overlay mode:
    - `professional_services.description`: How optional services relate to THIS feature
    - `professional_services.options[].name`: Feature-specific service names (e.g., "Pitch-Review & Optimierung" vs. "Trend-Analyse-Workshop")
    - `professional_services.options[].scope`: What each service delivers for THIS feature
-6. Write `"shared_solution_ref": "{relative-path-to-shared-ref}"` and `"messaging_overlay": true`
+6. Write `"shared_solution_ref": "{project-root-relative path, e.g. solutions/_shared/<product>--<market>}"` and `"messaging_overlay": true`
 7. Write the complete solution JSON to the specified output path
 
 **Content language**: Follow the same language rules as normal mode — check `portfolio.json` for `language` field.
