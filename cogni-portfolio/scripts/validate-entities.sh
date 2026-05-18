@@ -677,7 +677,6 @@ if not os.path.isfile(shared_path):
 # Verify commercial fields match the reference
 with open(shared_path) as sfh:
     shared = json.load(sfh)
-# solution_type must match the referenced shared solution
 sol_type = d.get('solution_type', 'project')
 ref_type = shared.get('solution_type', 'project')
 if sol_type != ref_type:
@@ -746,9 +745,9 @@ with open(prod_path) as pfh:
 if not prod.get('shared_solution'):
     sys.exit(4)  # product not marked as shared_solution
 
-# Per-solution_type field checks. Mirrors the non-overlay branches of the
-# main solutions structural check (lines 582-610) — reference files must
-# carry the commercial structure that overlays inherit.
+# Per-solution_type field checks: reference files must carry the
+# commercial structure that overlays inherit. Mirrors the non-overlay
+# branches of the main solutions structural check above.
 sol_type = d.get('solution_type', 'project')
 if sol_type in ('project', ''):
     impl = d.get('implementation')
