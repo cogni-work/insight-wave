@@ -9,6 +9,8 @@
 # Usage: bash cogni-portfolio/tests/test-validate-entities.sh
 # Exits non-zero on any assertion failure.
 
+# `set -u` only — `set -e` would abort on the first failing assertion and
+# defeat the per-fixture failure counter below.
 set -u
 
 TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -144,74 +146,90 @@ write_overlay() {
 EOF
 }
 
-# Count solution-entity errors matching a substring. Other entity errors are
-# ignored so each fixture stays focused on the contract under test.
-count_solution_errors() {
-  local pdir="$1"
+# Run the validator on $pdir once, stashing exit code (RC) and stdout
+# (VALIDATOR_OUTPUT) in globals so each fixture invokes the script exactly
+# once and downstream counters operate on the same result.
+run_validator() {
+  VALIDATOR_OUTPUT=$(bash "$SCRIPT" "$1" 2>/dev/null)
+  RC=$?
+}
+
+# Count solution-entity entries of $kind (errors|warnings) matching $substring.
+# Other entities are ignored so each fixture stays focused on the contract
+# under test.
+count_solution_entries() {
+  local kind="$1"
   local substring="${2:-}"
-  bash "$SCRIPT" "$pdir" 2>/dev/null | python3 -c "
+  printf '%s' "$VALIDATOR_OUTPUT" | python3 -c "
 import json, sys
-substring = sys.argv[1] if len(sys.argv) > 1 else ''
+kind = sys.argv[1]
+substring = sys.argv[2] if len(sys.argv) > 2 else ''
 doc = json.load(sys.stdin)
 n = 0
-for e in doc.get('errors', []):
+for e in doc.get(kind, []):
     if e.get('entity') != 'solution':
         continue
     if substring and substring not in e.get('message', ''):
         continue
     n += 1
 print(n)
-" "$substring"
+" "$kind" "$substring"
 }
 
-# Print solution errors (for diagnostic output on failure).
-dump_solution_errors() {
-  local pdir="$1"
-  bash "$SCRIPT" "$pdir" 2>/dev/null | python3 -c "
+# Print solution errors and warnings (for diagnostic output on failure).
+dump_solution_entries() {
+  printf '%s' "$VALIDATOR_OUTPUT" | python3 -c "
 import json, sys
 doc = json.load(sys.stdin)
-for e in doc.get('errors', []):
-    if e.get('entity') == 'solution':
-        print('  ' + e.get('file','') + ': ' + e.get('message',''))
+for kind in ('errors', 'warnings'):
+    for e in doc.get(kind, []):
+        if e.get('entity') == 'solution':
+            print('  ' + kind[0].upper() + ' ' + e.get('file','') + ': ' + e.get('message',''))
 "
 }
 
 # ─── Fixture 1: overlay-valid ───────────────────────────────────────────────
+# Asserts the contract surface: clean overlay over a well-formed reference
+# must produce 0 solution errors, 0 solution warnings, and validator rc 0.
 pdir="$(seed_project overlay-valid subscription)"
 write_subscription_ref "$pdir"
 write_overlay "$pdir" subscription "solutions/_shared/acme-suite--dach"
-n=$(count_solution_errors "$pdir")
-if [ "$n" = "0" ]; then
-  pass "overlay-valid: 0 solution errors"
+run_validator "$pdir"
+n_err=$(count_solution_entries errors)
+n_warn=$(count_solution_entries warnings)
+if [ "$RC" = "0" ] && [ "$n_err" = "0" ] && [ "$n_warn" = "0" ]; then
+  pass "overlay-valid: rc=0, 0 solution errors, 0 solution warnings"
 else
-  fail "overlay-valid" "expected 0 solution errors, got $n"
-  dump_solution_errors "$pdir" >&2
+  fail "overlay-valid" "expected rc=0/0/0, got rc=$RC errors=$n_err warnings=$n_warn"
+  dump_solution_entries >&2
 fi
 
 # ─── Fixture 2: overlay-missing-ref ─────────────────────────────────────────
 pdir="$(seed_project overlay-missing-ref subscription)"
 write_subscription_ref "$pdir"
 write_overlay "$pdir" subscription "solutions/_shared/does-not-exist"
-n_total=$(count_solution_errors "$pdir")
-n_match=$(count_solution_errors "$pdir" "references non-existent file")
-if [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
-  pass "overlay-missing-ref: 1 error naming the missing path"
+run_validator "$pdir"
+n_total=$(count_solution_entries errors)
+n_match=$(count_solution_entries errors "references non-existent file")
+if [ "$RC" != "0" ] && [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
+  pass "overlay-missing-ref: rc!=0, 1 error naming the missing path"
 else
-  fail "overlay-missing-ref" "expected 1 error matching 'references non-existent file', got total=$n_total match=$n_match"
-  dump_solution_errors "$pdir" >&2
+  fail "overlay-missing-ref" "expected rc!=0 and 1 error matching 'references non-existent file', got rc=$RC total=$n_total match=$n_match"
+  dump_solution_entries >&2
 fi
 
 # ─── Fixture 3: overlay-type-mismatch ───────────────────────────────────────
 pdir="$(seed_project overlay-type-mismatch subscription)"
 write_subscription_ref "$pdir"
 write_overlay "$pdir" project "solutions/_shared/acme-suite--dach"
-n_total=$(count_solution_errors "$pdir")
-n_match=$(count_solution_errors "$pdir" "does not match shared reference type")
-if [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
-  pass "overlay-type-mismatch: 1 error naming the mismatch"
+run_validator "$pdir"
+n_total=$(count_solution_entries errors)
+n_match=$(count_solution_entries errors "does not match shared reference type")
+if [ "$RC" != "0" ] && [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
+  pass "overlay-type-mismatch: rc!=0, 1 error naming the mismatch"
 else
-  fail "overlay-type-mismatch" "expected 1 error matching 'does not match shared reference type', got total=$n_total match=$n_match"
-  dump_solution_errors "$pdir" >&2
+  fail "overlay-type-mismatch" "expected rc!=0 and 1 error matching 'does not match shared reference type', got rc=$RC total=$n_total match=$n_match"
+  dump_solution_entries >&2
 fi
 
 # ─── Fixture 4: ref-incomplete-subscription ─────────────────────────────────
@@ -227,13 +245,14 @@ cat > "$pdir/solutions/_shared/acme-suite--dach.json" <<EOF
 }
 EOF
 write_overlay "$pdir" subscription "solutions/_shared/acme-suite--dach"
-n_total=$(count_solution_errors "$pdir")
-n_match=$(count_solution_errors "$pdir" "Shared reference (subscription/hybrid) missing required subscription object")
-if [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
-  pass "ref-incomplete-subscription: 1 error on the reference, not the overlay"
+run_validator "$pdir"
+n_total=$(count_solution_entries errors)
+n_match=$(count_solution_entries errors "Shared reference (subscription/hybrid) missing required subscription object")
+if [ "$RC" != "0" ] && [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
+  pass "ref-incomplete-subscription: rc!=0, 1 error on the reference, not the overlay"
 else
-  fail "ref-incomplete-subscription" "expected 1 error on the reference, got total=$n_total match=$n_match"
-  dump_solution_errors "$pdir" >&2
+  fail "ref-incomplete-subscription" "expected rc!=0 and 1 error on the reference, got rc=$RC total=$n_total match=$n_match"
+  dump_solution_entries >&2
 fi
 
 # ─── Fixture 5: ref-incomplete-project ──────────────────────────────────────
@@ -249,13 +268,14 @@ cat > "$pdir/solutions/_shared/acme-suite--dach.json" <<EOF
 }
 EOF
 write_overlay "$pdir" project "solutions/_shared/acme-suite--dach"
-n_total=$(count_solution_errors "$pdir")
-n_match=$(count_solution_errors "$pdir" "Shared reference (project) missing implementation phases")
-if [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
-  pass "ref-incomplete-project: 1 error on the reference"
+run_validator "$pdir"
+n_total=$(count_solution_entries errors)
+n_match=$(count_solution_entries errors "Shared reference (project) missing implementation phases")
+if [ "$RC" != "0" ] && [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
+  pass "ref-incomplete-project: rc!=0, 1 error on the reference"
 else
-  fail "ref-incomplete-project" "expected 1 error on the reference, got total=$n_total match=$n_match"
-  dump_solution_errors "$pdir" >&2
+  fail "ref-incomplete-project" "expected rc!=0 and 1 error on the reference, got rc=$RC total=$n_total match=$n_match"
+  dump_solution_entries >&2
 fi
 
 if [ "$failures" -gt 0 ]; then

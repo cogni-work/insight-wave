@@ -683,18 +683,21 @@ if sol_type != ref_type:
     sys.exit(5)  # solution_type mismatch
 if sol_type in ('subscription', 'hybrid'):
     s_tiers = d.get('subscription', {}).get('tiers', {})
-    r_tiers = shared.get('subscription', {}).get('tiers', {})
-    for tier_name in r_tiers:
-        st = s_tiers.get(tier_name, {})
-        rt = r_tiers[tier_name]
-        if st.get('price_monthly') != rt.get('price_monthly') or st.get('price_annual') != rt.get('price_annual'):
-            sys.exit(4)  # pricing drift
+    # Strict overlays carry no inline pricing — nothing to drift.
+    if s_tiers:
+        r_tiers = shared.get('subscription', {}).get('tiers', {})
+        for tier_name in r_tiers:
+            st = s_tiers.get(tier_name, {})
+            rt = r_tiers[tier_name]
+            if st.get('price_monthly') != rt.get('price_monthly') or st.get('price_annual') != rt.get('price_annual'):
+                sys.exit(4)  # pricing drift
 elif sol_type == 'project':
     s_pricing = d.get('pricing', {})
-    r_pricing = shared.get('pricing', {})
-    for tier_name in r_pricing:
-        if s_pricing.get(tier_name, {}).get('price') != r_pricing[tier_name].get('price'):
-            sys.exit(4)  # pricing drift
+    if s_pricing:
+        r_pricing = shared.get('pricing', {})
+        for tier_name in r_pricing:
+            if s_pricing.get(tier_name, {}).get('price') != r_pricing[tier_name].get('price'):
+                sys.exit(4)  # pricing drift
 " 2>/dev/null && shared_rc=0 || shared_rc=$?
     case $shared_rc in
       0) ;; # valid or not a shared solution
@@ -754,6 +757,9 @@ if sol_type in ('project', ''):
     if not isinstance(impl, list) or len(impl) == 0: sys.exit(5)
     for phase in impl:
         if 'phase' not in phase or 'duration_weeks' not in phase: sys.exit(5)
+        dw = phase.get('duration_weeks')
+        if not isinstance(dw, (int, float)) and not (isinstance(dw, str) and dw.isdigit()):
+            sys.exit(10)  # non-numeric duration — warning, mirrors exit 6 above
     pricing = d.get('pricing')
     if not isinstance(pricing, dict): sys.exit(6)
     for tier in ['proof_of_value', 'small', 'medium', 'large']:
@@ -781,6 +787,7 @@ else:
       7) add_error "solution" "$slug" "Shared reference (subscription/hybrid) missing required subscription object (needs tiers, currency)" ;;
       8) add_error "solution" "$slug" "Shared reference (partnership) missing required program object (needs stages, revenue_share)" ;;
       9) add_error "solution" "$slug" "Shared reference has invalid solution_type — must be project, subscription, partnership, or hybrid" ;;
+      10) add_warning "solution" "$slug" "Shared reference has non-numeric duration_weeks value (e.g. 'ongoing') — accepted but may affect duration totals" ;;
     esac
   done
 fi
