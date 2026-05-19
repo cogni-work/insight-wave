@@ -1,5 +1,26 @@
 # cogni-knowledge changelog
 
+## 0.0.13 — 2026-05-19
+
+Phase 2/3 debt cleanup, closing six items deferred from #265 and #266 before the Phase 4 alpha begins. No new user-facing surface — all changes harden existing primitives.
+
+### Added
+
+- `scripts/read-project-config.py` — factored stdlib reader for `cogni-research-<slug>/.metadata/project-config.json`. Replaces the `python3 -c "import json; …"` shellouts at `knowledge-research` Step 3 and `knowledge-report` Step 5. Same fallback semantics (missing file → default; default `web` for `report_source`); now isolated and unit-testable.
+- `scripts/cycle-guard.py` — **transitive (multi-hop) cycle detection**. The MVP at v0.0.6 caught only direct self-cycles (candidate cites a page derived from itself). v0.0.13 extends the walk into a bounded DFS over `binding.research_projects[]`: when a cited page is derived from another deposited project `P`, the guard recurses into `P`'s own `02-sources/data/src-*.md` citations (project dir derived from the binding entry's `report_path.parent.parent`). Bounded by `--max-depth` (default 5; `0` disables transitive recursion matching the v0.0.6 behaviour) and a visited-slug set. New envelope fields: `transitive_self_cycles[]`, `cycle_path[]` (slug chain that closed the loop), `max_depth`.
+- `scripts/cycle-guard.py` — **single up-front slug→path index**. Replaces the per-citation `<wiki>/wiki/**/<page-id>.md` glob in `_resolve_wiki_page` with a one-time walk that maps slug → (path, collisions). Collapses `O(citations × pages × hops)` to `O(pages)` once + `O(1)` per lookup; meaningful for large wikis under transitive recursion.
+- `skills/knowledge-setup/SKILL.md` — new **Step 0 pre-flight dependency check** probing `cogni-wiki/skills/wiki-setup/SKILL.md` and `cogni-research/skills/research-setup/SKILL.md` via `${CLAUDE_PLUGIN_ROOT}/../<plugin>/...`. Aborts cleanly with the missing plugin name(s) instead of letting downstream steps fail mid-workflow with an opaque `Skill` tool error. Closes the open top-level "Pre-flight dependency check" checkbox on epic #264. Rollout to the other five knowledge-* skills tracked as a follow-up.
+
+### Changed
+
+- `skills/knowledge-research/SKILL.md` Step 3 + `skills/knowledge-report/SKILL.md` Step 5 — replaced the inlined `python3 -c "import json; …"` `report_source` reader with a call to the new `read-project-config.py` plus a one-line envelope unwrap.
+- `scripts/cycle-guard.py` — docstring precision. The previous v0.0.6 docstring stated "MVP detects **direct** self-cycles only" with a "deferred to v0.0.7+" note; updated to describe the transitive walk + depth bound now that it ships. Rolls in the post-merge `5d273c2` patch that didn't land at v0.0.6.
+- `scripts/cycle-guard.py` — abort message refresh: cycle reports now print the cycle chain (`A → B → A`) and distinguish direct vs. transitive; drops the obsolete "wait for transitive cycle handling (v0.0.7+)" line.
+
+### Dependencies
+
+- `cogni-wiki` minimum version bumped to 0.0.42 (was 0.0.41) — contract-level regression tests for `wiki-from-research --allow-wiki-source --cycle-guard-cleared` and `wiki-query --wiki-root`.
+
 ## 0.0.12 — 2026-05-19
 
 ### Changed
