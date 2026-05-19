@@ -46,13 +46,13 @@ This split gives clean diagnostics: meaning failures land in Pass A; style failu
 
 A separate translation plugin would fight the existing grain. cogni-copywriting already has every prerequisite: bilingual EN/DE awareness, Wolf-Schneider DE style discipline, language-aware Flesch/Amstad scoring, language detection in Step 3, the three preservation invariants (German chars / citations / protected content) that translation must honour anyway, and the proven `copy-json` delegate-with-a-mode adapter pattern. Extending the copywriter skill with a parallel parameter to `AUDIENCE` is the smallest architectural surface.
 
-Closes #TBD.
+See #255 for the Phase 2 follow-up (FR/IT/PL/NL/ES + arc-mode translation).
 
 #### Migration Notes
 
 - **Non-breaking**: default `TARGET_LANG` unset preserves all existing polish behaviour exactly.
 - **Existing `--lang` parameter unchanged**: it remains the *source*-language override for the language detector. `TARGET_LANG` is the new orthogonal *target* hint.
-- **Phase 2 follow-up**: tracked as a GitHub issue covering FR/IT/PL/NL/ES translation directions and arc-mode translation (which requires heading-set substitution via `language-templates.md`).
+- **Phase 2 follow-up**: tracked as [#255](https://github.com/cogni-work/insight-wave/issues/255) covering FR/IT/PL/NL/ES translation directions and arc-mode translation (which requires heading-set substitution via `language-templates.md`).
 
 ---
 
