@@ -31,6 +31,7 @@ A professional editing toolkit for the insight-wave ecosystem. Seven messaging f
 4. **Preserve arcs** — when paired with cogni-narrative, detects story arc frontmatter and applies element-specific techniques without breaking arc structure
 5. **Polish JSON** — extract and polish text fields inside structured JSON files (plugin descriptions, propositions, category names) via the copy-json adapter
 6. **Audit** arc-preservation references against upstream cogni-narrative definitions — detect missing arcs, heading mismatches, technique inconsistencies
+7. **Translate** EN↔DE in a single pass — translates first, then applies target-language style discipline (Wolf-Schneider for DE, Flesch tuning for EN), preserving citations, frontmatter technical IDs, and protected content byte-identical
 
 ## What it means for you
 
@@ -54,6 +55,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ```
 /copywrite quarterly-report.md              # full polish
 /copywrite research-paper.md --scope=tone   # tone only
+/copywrite product-overview.md --translate=de  # translate EN→DE and polish
 /review-doc quarterly-report.md             # stakeholder review + auto-apply
 /review-doc proposal.md --no-improve        # feedback only, no changes
 ```
@@ -106,10 +108,12 @@ Detects German language automatically, loads Wolf Schneider style rules — brea
 
 ## Language support
 
-| Language | Readability | Style Rules | Target Score |
-|----------|-------------|-------------|--------------|
-| English | Flesch Reading Ease | Messaging frameworks, active voice, visual hierarchy | 50-60 |
-| German | Amstad | Wolf Schneider (7 rules: Satzklammer, Mittelfeld, Floskeln, Rhythmus, etc.) | 30-50 |
+| Language | Readability | Style Rules | Target Score | Translation |
+|----------|-------------|-------------|--------------|-------------|
+| English | Flesch Reading Ease | Messaging frameworks, active voice, visual hierarchy | 50-60 | EN ↔ DE via `--translate=en` |
+| German | Amstad | Wolf Schneider (7 rules: Satzklammer, Mittelfeld, Floskeln, Rhythmus, etc.) | 30-50 | EN ↔ DE via `--translate=de` |
+
+Translation runs as a two-pass translate-then-polish flow: Pass A transfers meaning (preserving citations, URLs, frontmatter technical IDs, and protected content byte-identical); Pass B applies the target-language style discipline above. Arc-mode translation (documents with `arc_id` frontmatter) is not supported in v1 — additional languages (FR/IT/PL/NL/ES) and arc-mode translation are tracked as Phase 2 work.
 
 ## Components
 

@@ -53,6 +53,13 @@ When polishing an existing document, scope determines which steps run:
 
 When `arc_mode` is active, arc-preservation rules override scope. See `arc-preservation.md`.
 
+**When `TARGET_LANG` is set**, scope is overridden to ensure a complete translate-and-polish cycle:
+
+- Step 2 (Structure) is **always skipped** — translation preserves the source document's structure; do not impose a framework on the translated output.
+- Step 2.5 (Translate) runs.
+- Steps 3 and 5 always run, regardless of input `--scope` value (the translated draft needs full polish to clean up literal translation artefacts and to enforce target-language style/readability).
+- Step 4 (Review) follows the normal rules (skipped for informal deliverables or `skip_review: true`).
+
 ### Baseline Formatting (all scopes)
 
 Every polished output meets these readability fundamentals, regardless of scope:
@@ -72,12 +79,26 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 - `impact_level` (optional): standard | high
 - `MODE` (optional): standard | sales (default: standard)
 - `AUDIENCE` (optional): expert | mixed | lay (default: mixed) — tunes audience-aware disciplines such as acronym expansion depth
+- `TARGET_LANG` (optional): de | en — when set, runs a translate-then-polish two-pass flow (see Step 2.5). When unset, the skill polishes in the source language only.
 
 **Audience resolution order** (used by acronym handling and any future audience-aware discipline):
 
 1. Explicit `AUDIENCE` skill arg
 2. Document frontmatter `audience:` field
 3. Default: `mixed`
+
+**Target-language resolution order** (used by Step 2.5 translate pass):
+
+1. Explicit `TARGET_LANG` skill arg
+2. Document frontmatter `target_language:` field
+3. Unset (no translation; polish in source language)
+
+**Translation pre-checks** (run only when `TARGET_LANG` resolves to a value):
+
+1. Resolve `source_lang` via the existing detector in Step 3 (`--lang` → workspace config → content analysis).
+2. If `source_lang == TARGET_LANG`, log "source language already matches target — skipping translation pass" and fall through to standard polish.
+3. If document frontmatter contains `arc_id`, abort with: "Arc-mode translation is not supported in v1 (arc heading texts require exact-match preservation; translating them would break the arc contract). Run translation on the non-arc document, or follow the Phase 2 issue for arc-mode translation support." Do not modify the file.
+4. In v1, accept only `de` and `en`. Any other value: abort with "TARGET_LANG=`{value}` is not supported in v1 (EN↔DE only). See the follow-up issue for FR/IT/PL/NL/ES."
 
 **Load the reference index first:**
 
@@ -107,6 +128,46 @@ Follow the index's decision tree to detect the operating mode (arc, sales, or st
 - Output path
 
 Then apply the framework pattern from the loaded framework reference. If the user didn't specify a framework, use the deliverable type's recommended default.
+
+### Step 2.5: Translate Pass (only when TARGET_LANG is set)
+
+Skip entirely when `TARGET_LANG` is unset. When set, this pass runs after Step 2 (which was skipped per the scope override above) and before Step 3.
+
+**Load translation references:**
+
+```text
+READ: references/01-core-principles/translation-principles.md
+```
+
+Then load the direction-specific guide:
+
+```text
+IF source_lang = en AND TARGET_LANG = de:
+  READ: references/01-core-principles/translation-en-to-de.md
+IF source_lang = de AND TARGET_LANG = en:
+  READ: references/01-core-principles/translation-de-to-en.md
+```
+
+**Perform the translation (Pass A):**
+
+Translate the entire document to `TARGET_LANG`, holding to these invariants:
+
+1. **Citation markers byte-identical** — every `[P\d+-\d+]`, `[P\d+-\d+](url)`, `<sup>[N]</sup>`, `[portfolio-validated]` stays exactly as written, URL included. Count must match the source.
+2. **URLs byte-identical** — never translate URLs, even in inline `[text](url)` links.
+3. **Protected content byte-identical** — `<diagram-placeholder>` XML blocks, `Figure N`/`Abbildung N` numeric refs, `![[assets/*.svg]]` Obsidian embeds, kanban tables with `| Dimension | Act | Plan | Observe |` headers.
+4. **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, schema keys, filenames. Update `target_language:` to the new value (add the field if absent).
+5. **Code blocks** — fenced and inline code never translated.
+6. **Power Position structure markers** — `**IS**:`, `**DOES**:`, `**MEANS**:` stay unchanged (structural, not vocabulary).
+7. **Acronyms pass through unchanged** — the audience-tuned first-mention expansion is Step 3's job, running on the translated text. Do not expand here.
+
+**Do NOT in this pass:**
+
+- Apply target-language style discipline (Wolf-Schneider clause-length rules, Flesch tuning, Floskel elimination) — that is Step 3.
+- Expand acronyms — that is Step 3.
+- Restructure paragraphs or change the heading hierarchy — preserve the source structure.
+- Apply messaging frameworks — Step 2 was already skipped.
+
+The translate pass output is an intermediate draft. Step 3 will tighten clause length, break Satzklammer (for DE output), apply acronym expansion per `AUDIENCE`, and validate against language-specific readability targets.
 
 ### Step 3: Apply Writing & Formatting
 
@@ -190,6 +251,13 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 - Baseline formatting met (paragraphs, bold anchoring, white space)
 - Acronyms expanded once on first mention (audience-tuned); subsequent mentions verbatim; proper nouns/brands/arc markers excluded
 
+**Translation-specific validation** (only when `TARGET_LANG` was set):
+
+- **Target charset matches** — when `TARGET_LANG=de`, output contains German umlauts/eszett (ä/ö/ü/ß) where the German prose requires them; never ASCII substitutes (ae/oe/ue/ss). When `TARGET_LANG=en`, output contains no ä/ö/ü/ß characters except inside preserved proper nouns or quoted German terms.
+- **Citation count exactly preserved** — the regex count of `\[P\d+-\d+\]` (and any other citation-marker patterns in the source) in the output equals the source count. URLs from all markers are byte-identical to source URLs.
+- **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, and any other technical identifier fields in the frontmatter are byte-identical to source values. The `target_language:` field is set to the new value (added if absent).
+- **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian embeds, kanban tables match the source byte-for-byte.
+
 **German-specific validation** (when detected language is German):
 - Average clause length: target 10-12 words
 - Floskel count: 0
@@ -249,7 +317,7 @@ Auto-detects language. Returns `flesch_score`, `flesch_target_min/max`, `avg_par
 
 All references are organized in progressive disclosure tiers. Start with `references/00-index.md` — it routes you to exactly the files needed for any given task.
 
-**Core Principles** (01-core-principles/) — Clarity, conciseness, active voice, German style (Wolf Schneider), German hooks, plain language, readability, acronym handling (audience-tuned first-mention expansion)
+**Core Principles** (01-core-principles/) — Clarity, conciseness, active voice, German style (Wolf Schneider), German hooks, plain language, readability, acronym handling (audience-tuned first-mention expansion), translation (EN↔DE two-pass translate-then-polish)
 
 **Messaging Frameworks** (02-messaging-frameworks/) — BLUF, Pyramid, SCQA, Inverted Pyramid, STAR, PSB, FAB
 

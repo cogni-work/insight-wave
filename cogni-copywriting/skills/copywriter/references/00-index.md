@@ -1,7 +1,7 @@
 ---
 title: Copywriting Skills Master Index
 type: index
-version: 8.1
+version: 8.2
 last_updated: 2026-05-19
 ---
 
@@ -17,6 +17,21 @@ Before loading any deliverable or framework references, check for these special 
 
 <mode_detection>
 Think through these checks in order. Stop at the FIRST match.
+
+CHECK 0 -- TRANSLATION MODE (orthogonal to mode below)
+If `TARGET_LANG` is set and resolves to a different value from the detected source language, **additionally** load the translation references on top of whatever mode CHECK 1/2/3 selects:
+
+```
+LOAD: 01-core-principles/translation-principles.md
+IF source_lang = en AND TARGET_LANG = de:
+  LOAD: 01-core-principles/translation-en-to-de.md
+IF source_lang = de AND TARGET_LANG = en:
+  LOAD: 01-core-principles/translation-de-to-en.md
+```
+
+When `TARGET_LANG` is set, CHECK 1 (Arc) must NOT trigger — arc-mode translation is blocked in v1 (the skill aborts in Step 1 with an error). Proceed only into CHECK 2 (sales) or CHECK 3 (standard).
+
+After loading the translation references, continue with normal mode detection below.
 
 CHECK 1 -- ARC PRESERVATION MODE
 Trigger conditions (any one is sufficient):
@@ -268,6 +283,9 @@ All reference files in this system, organized by directory. Use this as the sour
 - `german-hook-principles.md` -- Wolf Schneider / Reiners / Nannen: 12 opening-sentence rules, Kuechenzuruf test, arc hook strategies
 - `plain-language-principles.md` -- Technical content accessibility
 - `readability-principles.md` -- Visual hierarchy and scannability
+- `translation-principles.md` -- Two-pass translate-then-polish philosophy; what to translate vs preserve; citation-anchored translation
+- `translation-en-to-de.md` -- EN→DE: Satzklammer formation, compound nouns, gender resolution, Sie-form, umlaut correctness
+- `translation-de-to-en.md` -- DE→EN: compound decomposition, sentence splitting, nominal→verbal style, number/date formatting
 
 ### 02-messaging-frameworks/
 - `bluf-framework.md` -- Bottom Line Up Front

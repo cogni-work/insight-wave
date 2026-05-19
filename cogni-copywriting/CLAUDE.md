@@ -119,15 +119,26 @@ commands/                                 2 slash commands
 
 ### Copywriter Polish Flow
 
-5-step sequential workflow with scope-dependent step skipping:
+5-step sequential workflow with scope-dependent step skipping (extended to a 5.5-step flow when `TARGET_LANG` is set — see Translation Flow below):
 
-1. **Parse parameters and load references** -- reads `00-index.md` decision tree to detect mode (arc/sales/standard) and load exactly the references needed
-2. **Apply structure** -- applies messaging framework pattern (Pyramid, BLUF, etc.); skipped in arc mode (arc IS the structure) or `--scope=tone|formatting`
+1. **Parse parameters and load references** -- reads `00-index.md` decision tree to detect mode (arc/sales/standard) and load exactly the references needed; resolves `AUDIENCE` (`expert`/`mixed`/`lay`) and `TARGET_LANG` (`de`/`en`/unset) each via three-tier resolution (skill arg → frontmatter → default)
+2. **Apply structure** -- applies messaging framework pattern (Pyramid, BLUF, etc.); skipped in arc mode (arc IS the structure), `--scope=tone|formatting`, or when `TARGET_LANG` is set (translation preserves source structure)
 3. **Apply writing and formatting** -- language detection (EN/DE), voice transformation, paragraph splitting, bold anchoring, visual rhythm, first-mention acronym expansion (audience-tuned via `AUDIENCE` arg → frontmatter `audience:` → `mixed`); loads impact techniques for high-impact or executive audiences
 4. **Review** -- optional stakeholder review via copy-reader skill (parallel personas) or automated checklist; never blocks delivery
 5. **Validate and write** -- German chars preserved, citations intact, readability scored, arc validation if active; backs up original before writing
 
-Scope matrix determines which steps run: `full` runs all, `structure` runs 1+2+5, `tone` runs 1+3+5, `formatting` runs 1+3+5.
+Scope matrix determines which steps run: `full` runs all, `structure` runs 1+2+5, `tone` runs 1+3+5, `formatting` runs 1+3+5. When `TARGET_LANG` is set, scope is overridden: Step 2 always skips, Steps 3 + 5 always run.
+
+### Translation Flow
+
+When `TARGET_LANG` is set on the copywriter skill, the workflow runs a translate-then-polish two-pass flow:
+
+- **Pre-checks (Step 1)**: resolve source language via the existing detector; abort if `source_lang == TARGET_LANG` (no-op); abort if `arc_id` is in frontmatter (arc-mode translation blocked in v1 — arc heading texts require exact-match preservation per `09-preservation-modes/arc-preservation.md`); abort if `TARGET_LANG` is anything other than `de` or `en` (Phase 2 scope).
+- **Pass A — Translate (new Step 2.5)**: loads `01-core-principles/translation-principles.md` plus direction-specific guide (`translation-en-to-de.md` or `translation-de-to-en.md`). Translates prose; preserves byte-identical: citations (markers + URLs), URLs in inline links, code blocks, frontmatter technical IDs (`arc_id`/`source_url`/`entity_ref`), protected content (`<diagram-placeholder>`, `Figure N`/`Abbildung N`, `![[assets/*.svg]]`, kanban tables), Power Position markers (`**IS**:`, `**DOES**:`, `**MEANS**:`), and acronyms (acronym expansion is Step 3's job, running on the translated text).
+- **Pass B — Polish (existing Step 3)**: applies target-language style discipline. For DE output: Wolf-Schneider rules (12-word clauses, Satzklammer breaking, Mittelfeld shortening, Floskel elimination). For EN output: 15–20 word sentences, 80%+ active voice, Flesch 50–60. Audience-tuned acronym expansion runs here, on the translated text.
+- **Validation (Step 5)**: existing checks plus translation-specific bullets — target charset matches (umlauts present for `de`, absent for `en`); citation count exactly preserved (not just `>=`); URLs byte-identical; frontmatter technical IDs unchanged.
+
+v1 limits: EN ↔ DE only; arc-mode blocked. Phase 2 follow-up issue tracks FR/IT/PL/NL/ES and arc-mode translation (which requires heading-set substitution via `cogni-narrative/skills/narrative/references/language-templates.md`).
 
 ### Copy-Reader Stakeholder Review Flow
 
@@ -145,8 +156,8 @@ Scope matrix determines which steps run: `full` runs all, `structure` runs 1+2+5
 4-step JSON-to-markdown-to-JSON bridge:
 
 1. **Parse and extract** -- validate `.json` file, resolve FIELDS dot-path selectors (`plugins[*].description`), collect string values >= 10 chars
-2. **Build temp MD and invoke copywriter** -- assemble extracted texts with `<!-- FIELD: ... -->` delimiters into temp markdown file, delegate to copywriter skill with scope (default: `tone`)
-3. **Parse back and validate** -- split polished MD by delimiters, validate: German chars preserved, no markdown injection (`**`, `#`, `- `), length guard (max 2x original), citations preserved
+2. **Build temp MD and invoke copywriter** -- assemble extracted texts with `<!-- FIELD: ... -->` delimiters into temp markdown file, delegate to copywriter skill with scope (default: `tone`); pass `TARGET_LANG` through when set
+3. **Parse back and validate** -- split polished MD by delimiters, validate: direction-aware German-char check (preservation when unset; umlauts required when `TARGET_LANG=de`; umlauts absent when `TARGET_LANG=en`), no markdown injection (`**`, `#`, `- `), length guard (2x original; 2.5x for translations), citations preserved (exact count match for translations)
 4. **Write and report** -- backup original, update JSON with polished values preserving indentation, show before/after diff table
 
 ### Audit-Copywriter Arc Audit Flow

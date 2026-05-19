@@ -19,6 +19,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 - `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" (default: full)
 - `MODE`: "standard" | "sales" (default: standard) - When "sales", enables Power Positions (IS-DOES-MEANS) enhancement
 - `AUDIENCE`: "expert" | "mixed" | "lay" (default: mixed) - Tunes audience-aware disciplines such as acronym expansion depth. Resolution order: this arg, then document frontmatter `audience:`, then default `mixed`.
+- `TARGET_LANG`: "de" | "en" (optional) - When set, runs a translate-then-polish two-pass flow (Pass A translates source to target language preserving citations/protected content; Pass B applies target-language style discipline). Resolution order: this arg, then document frontmatter `target_language:`, then unset. v1 supports EN↔DE only and blocks arc-mode (when `arc_id` frontmatter is present).
 - `STAKEHOLDERS`: Array of perspectives for review (default: auto-select based on audience) - Options: executive, technical, legal, marketing, end-user
 - `REVIEW_MODE`: "automated" | "manual" | "skip" (default: automated) - Controls stakeholder review process
 - `QUALITY_TARGETS`: Custom targets (optional)
@@ -47,7 +48,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 <example>
 <invoke name="Skill">
   <parameter name="skill">cogni-copywriting:copywriter</parameter>
-  <parameter name="args">FILE_PATH={{FILE_PATH}} SCOPE={{SCOPE}} MODE={{MODE}} AUDIENCE={{AUDIENCE}} STAKEHOLDERS={{STAKEHOLDERS}} REVIEW_MODE={{REVIEW_MODE}} QUALITY_TARGETS={{QUALITY_TARGETS}}</parameter>
+  <parameter name="args">FILE_PATH={{FILE_PATH}} SCOPE={{SCOPE}} MODE={{MODE}} AUDIENCE={{AUDIENCE}} TARGET_LANG={{TARGET_LANG}} STAKEHOLDERS={{STAKEHOLDERS}} REVIEW_MODE={{REVIEW_MODE}} QUALITY_TARGETS={{QUALITY_TARGETS}}</parameter>
 </invoke>
 </example>
 
@@ -84,6 +85,9 @@ The skill executes:
   "header_levels": 0,
   "improvements": [],
   "protected_content_preserved": true,
+  "source_lang": "en",
+  "target_lang": "de",
+  "translation_applied": true,
   "stakeholder_reviews": [
     {
       "perspective": "executive",
