@@ -1,5 +1,13 @@
 # cogni-knowledge changelog
 
+## 0.0.8 — 2026-05-19
+
+Phase 3 of the wiki-first research epic (#264) begins — query the bound base by slug.
+
+### Added
+
+- Skill `knowledge-query` — binding-aware wrapper of `cogni-wiki:wiki-query`. Resolves the bound wiki path from `binding.json`, dispatches the upstream query (with a prompt-prefix shim that pins the wiki context until a `--wiki-root` flag lands upstream in `wiki-query`), and appends a one-line knowledge-base footer to the answer. Read-only — never writes to the binding.
+
 ## 0.0.7 — 2026-05-19
 
 ### Fixed
