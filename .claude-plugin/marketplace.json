@@ -46,7 +46,7 @@
     {
       "name": "cogni-copywriting",
       "source": "./cogni-copywriting",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "maturity": "preview",
       "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, and arc contract audit against cogni-narrative.",
       "keywords": [
@@ -96,7 +96,7 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.48",
+      "version": "0.9.49",
       "maturity": "preview",
       "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).",
       "keywords": [

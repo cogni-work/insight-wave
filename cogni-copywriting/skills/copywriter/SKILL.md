@@ -71,6 +71,13 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 - `framework` (optional): bluf | pyramid | scqa | star | psb | fab | inverted-pyramid
 - `impact_level` (optional): standard | high
 - `MODE` (optional): standard | sales (default: standard)
+- `AUDIENCE` (optional): expert | mixed | lay (default: mixed) — tunes audience-aware disciplines such as acronym expansion depth
+
+**Audience resolution order** (used by acronym handling and any future audience-aware discipline):
+
+1. Explicit `AUDIENCE` skill arg
+2. Document frontmatter `audience:` field
+3. Default: `mixed`
 
 **Load the reference index first:**
 
@@ -122,6 +129,7 @@ Key targets: max 12 words per clause, Satzklammer breaking, Mittelfeld shortenin
 3. **Heading levels**: Max 3 (H1, H2, H3). Restructure if H4 is needed.
 4. **Visual element rhythm**: Insert a visual element (table, list, callout) every 2-3 consecutive prose paragraphs.
 5. **White space**: Blank line between every paragraph, around every heading, list, table, and block quote.
+6. **Acronym handling on first mention**: expand acronyms once at first occurrence per document; depth tuned to AUDIENCE (expert / mixed / lay). See `references/01-core-principles/acronym-handling-principles.md`. Subsequent mentions verbatim; proper nouns, brand names, and arc/sales discipline markers (`**IS**:`, `**DOES**:`, `**MEANS**:`) excluded.
 
 **Impact techniques** (when `impact_level: high` or executive audience):
 
@@ -180,6 +188,7 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 - Active voice: 80%+
 - Framework pattern applied (standard mode)
 - Baseline formatting met (paragraphs, bold anchoring, white space)
+- Acronyms expanded once on first mention (audience-tuned); subsequent mentions verbatim; proper nouns/brands/arc markers excluded
 
 **German-specific validation** (when detected language is German):
 - Average clause length: target 10-12 words
@@ -240,7 +249,7 @@ Auto-detects language. Returns `flesch_score`, `flesch_target_min/max`, `avg_par
 
 All references are organized in progressive disclosure tiers. Start with `references/00-index.md` — it routes you to exactly the files needed for any given task.
 
-**Core Principles** (01-core-principles/) — Clarity, conciseness, active voice, German style (Wolf Schneider), German hooks, plain language, readability
+**Core Principles** (01-core-principles/) — Clarity, conciseness, active voice, German style (Wolf Schneider), German hooks, plain language, readability, acronym handling (audience-tuned first-mention expansion)
 
 **Messaging Frameworks** (02-messaging-frameworks/) — BLUF, Pyramid, SCQA, Inverted Pyramid, STAR, PSB, FAB
 

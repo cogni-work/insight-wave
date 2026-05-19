@@ -1,8 +1,8 @@
 ---
 title: Copywriting Skills Master Index
 type: index
-version: 8.0
-last_updated: 2026-02-25
+version: 8.1
+last_updated: 2026-05-19
 ---
 
 # Reference Loading Index
@@ -51,6 +51,7 @@ LOAD: 09-preservation-modes/arc-technique-map.md
 LOAD: 01-core-principles/clarity-principles.md
 LOAD: 01-core-principles/conciseness-principles.md
 LOAD: 01-core-principles/active-voice-principles.md
+LOAD: 01-core-principles/acronym-handling-principles.md
 LOAD: 07-impact-techniques/number-plays.md
 LOAD: 07-impact-techniques/power-words.md
 
@@ -81,12 +82,13 @@ Then continue to the Standard Loading Block for deliverable + framework selectio
 
 This is the normal path for all non-arc tasks (including sales mode, which adds to this).
 
-#### 2a. Core Principles (always load these three)
+#### 2a. Core Principles (always load these four)
 
 ```
 LOAD: 01-core-principles/clarity-principles.md
 LOAD: 01-core-principles/conciseness-principles.md
 LOAD: 01-core-principles/active-voice-principles.md
+LOAD: 01-core-principles/acronym-handling-principles.md
 ```
 
 #### 2b. Language-Conditional Principles
@@ -261,6 +263,7 @@ All reference files in this system, organized by directory. Use this as the sour
 - `clarity-principles.md` -- 15-20 word sentences, concrete language, simple words
 - `conciseness-principles.md` -- 3-5 sentence paragraphs, eliminate filler, strong verbs
 - `active-voice-principles.md` -- 80%+ active voice, clear subjects, transformation patterns
+- `acronym-handling-principles.md` -- First-mention acronym expansion, audience-tuned (expert/mixed/lay); proper-noun and structure-marker exclusions
 - `german-style-principles.md` -- Wolf Schneider rules: 12-word clauses, Satzklammer, Mittelfeld, Floskeln
 - `german-hook-principles.md` -- Wolf Schneider / Reiners / Nannen: 12 opening-sentence rules, Kuechenzuruf test, arc hook strategies
 - `plain-language-principles.md` -- Technical content accessibility

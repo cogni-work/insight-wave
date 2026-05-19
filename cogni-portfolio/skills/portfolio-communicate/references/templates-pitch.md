@@ -67,6 +67,9 @@ source_file_count: {count of portfolio entity files referenced}
 type: portfolio-pitch
 market: "{market-slug}"
 provider: "{company_name from portfolio.json}"
+audience: "{expert|mixed|lay — derived from market-slug heuristic; see below}"
+personas:
+  - "{role from customers/{market-slug}.json profiles[].role}"
 ---
 ```
 
@@ -80,6 +83,31 @@ provider: "{company_name from portfolio.json}"
 - `title` + `subtitle` — extracted for the title slide
 - `language` — controls localized headers and IS/DOES/MEANS labels
 - `word_count` + `target_length` — used for slide count estimation
+- `audience` — consumed by `cogni-copywriting:copywriter` (0.2.3+) to tune acronym expansion depth and any future audience-aware polish discipline. Without this field the polisher falls back to `mixed`, losing the per-market signal.
+- `personas` — buyer roles surfaced for downstream visual / review tooling. Sourced from `customers/{market-slug}.json` `profiles[].role`. If `customers/{market-slug}.json` does not exist (or has no `profiles[]`), omit `personas:` entirely — do not emit an empty array.
+
+### Audience and personas derivation
+
+Emit `audience:` using the market-slug heuristic below. The mapping reflects realistic buyer profiles for B2B portfolio pitches; override only when the user gives explicit instruction.
+
+| Market slug pattern | Default `audience:` | Rationale |
+|---|---|---|
+| `portfolio-overview` (cross-market) | `mixed` | Investor / board / cross-functional mix |
+| `enterprise-large-*` | `expert` | KRITIS-CISO, GRC-Head — avoid belehrender Ton, do not expand `NIS2` / `DSGVO` / `BSI` |
+| `enterprise-mid-*` | `expert` | CISO function with small team — same expert register |
+| `smb-midmarket-*` | `mixed` | Geschäftsführer plus IT-Leiter — explain regulation acronyms once |
+| `smb-small-*` | `lay` | Inhaber without security background + MSP channel — full plain-language glosses |
+| anything else | `mixed` | Safe default |
+
+For `personas:`, read `customers/{market-slug}.json` and lift the value of each `profiles[].role` verbatim into the YAML list — for example:
+
+```yaml
+personas:
+  - "Geschäftsführer / Inhaber"
+  - "External IT-Dienstleister / MSP"
+```
+
+Do not paraphrase or translate the role string — downstream tooling matches on the exact label written by the customers skill.
 
 ---
 
@@ -325,6 +353,8 @@ Only count citations that have external URLs. Internal estimates don't count tow
 | **Invitation** | Market-specific entry point | Portfolio-level engagement path — total addressable value |
 
 **Title**: Portfolio-wide, not market-specific. "How {Company} Addresses the {Cross-Market Theme}" or "{Company}: {Portfolio-Level Value Statement}"
+
+**Frontmatter**: Use the same frontmatter shape as a per-market pitch with `market: "portfolio-overview"`. The audience/personas derivation rules apply — for this scope set `audience: mixed` (heterogeneous investor / board / cross-functional audience) and omit `personas:` unless a cross-market customer profile file (`customers/portfolio-overview.json`) exists.
 
 ---
 
