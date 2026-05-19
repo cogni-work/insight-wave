@@ -47,7 +47,7 @@ Translate the prose. Preserve the scaffolding. The list below is exhaustive — 
 - **Code blocks** — fenced (```` ``` ````) and inline (`` ` ``) — never translated, even if they contain natural-language strings (those are likely identifiers).
 - **Technical IDs** — `arc_id`, `entity_ref`, `source_url`, schema keys, filenames, paths.
 - **Frontmatter** — the entire YAML block. Add `target_language:` if not already set, but do not translate existing values.
-- **Protected content** (per `SKILL.md` lines 25–31):
+- **Protected content** (the four categories listed under `SKILL.md` § "Protected Content"):
   - `<diagram-placeholder>` XML blocks (full structure including child elements)
   - `Figure N` / `Abbildung N` numeric references — but `Figure` ↔ `Abbildung` itself stays in the source-language form if it appears in inline prose; the numeric identifier never changes
   - `![[assets/*.svg]]` Obsidian embeds

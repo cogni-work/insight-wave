@@ -31,16 +31,18 @@ If the source document is a B2C blog or social copy and clearly addresses indivi
 
 ## Umlaut and Eszett Correctness
 
-German characters are mandatory. Never substitute ASCII equivalents:
+The general rule lives in `SKILL.md` § "German Character Preservation" — never substitute ASCII equivalents (ae/oe/ue/ss). In a translate pass, this means the *output* must already contain the correct German characters; relying on a post-translation fixup is fragile. Translator must produce them at write time.
 
-| Wrong | Right | Why |
+Common translation traps:
+
+| Source EN | Wrong DE output | Right DE output |
 |---|---|---|
-| `Massnahme` | `Maßnahme` | "ss" loses the meaning distinction (Masse vs Maße) |
-| `Geschaeftsfuehrung` | `Geschäftsführung` | "ae"/"ue" mark the text as machine-processed |
-| `Strasse` | `Straße` | Eszett is required outside Switzerland |
-| `fuer` | `für` | ASCII substitutes signal a broken pipeline |
+| `the measure` | `Massnahme` | `Maßnahme` |
+| `the executive board` | `Geschaeftsfuehrung` | `Geschäftsführung` |
+| `the street` | `Strasse` | `Straße` |
+| `for the team` | `fuer das Team` | `für das Team` |
 
-This reinforces the preservation rule in `SKILL.md` (lines 13–15). Step 5 validation will reject any output that contains ASCII substitutes where umlauts/eszett are required.
+Step 5 validation rejects any output that contains ASCII substitutes where the German lexicon requires umlauts/eszett.
 
 ## Satzklammer Formation (Pass A vs Pass B)
 

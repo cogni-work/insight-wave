@@ -36,18 +36,9 @@ This split gives clean diagnostics: meaning failures land in Pass A; style failu
 
 #### Changed Files
 
-- **NEW `references/01-core-principles/translation-principles.md`**: Two-pass philosophy, translate-vs-preserve list, citation-anchored translation rules, compound-noun strategies per direction, audience-expansion deferred to Step 3.
-- **NEW `references/01-core-principles/translation-en-to-de.md`**: Sie-form default, umlaut/eszett correctness (reinforces SKILL.md preservation), Satzklammer formation guidance, compound-vs-preposition heuristic, gender resolution table for technical loan-words, worked example from `english-memo.md`.
-- **NEW `references/01-core-principles/translation-de-to-en.md`**: Compound decomposition table, long-sentence splitting, nominal→verbal style conversion, citation marker preservation, number/date formatting, proper-noun handling for German institutions, worked example from `german-with-citations.md`.
-- **`SKILL.md`**: Step 1 adds `TARGET_LANG` parameter, three-tier resolution, translation pre-checks (arc-mode block, source==target no-op, EN↔DE-only). Scope-handling note added: when `TARGET_LANG` is set, Step 2 always skips and Steps 3/5 always run regardless of input `--scope`. New Step 2.5 (Translate Pass) documents the seven preservation invariants and what Pass A does NOT do (style, acronyms, restructure). Step 5 adds four translation-specific validation bullets (target charset, citation-count-exact, frontmatter IDs, protected content). Bundled Resources extended.
-- **`references/00-index.md`**: Bumped to version 8.2. New CHECK 0 in mode detection: when `TARGET_LANG` is set, load translation references on top of standard/sales mode and forbid arc-mode trigger. File Inventory updated with three new references.
-- **`agents/copywriter.md`**: New optional `TARGET_LANG` input with resolution-order paragraph; passed through in Skill invocation example; three new success-JSON fields (`source_lang`, `target_lang`, `translation_applied`).
-- **`commands/copywrite.md`**: New `--translate=de|en` flag documented in Usage and Optional Flags; new Example 9; parse-args block extended.
-- **`skills/copy-json/SKILL.md`**: Pass-through `TARGET_LANG` parameter to copywriter delegation; per-field validation flips German-char check direction based on target.
-- **`CLAUDE.md`**: New "Translation Flow" subsection under Key Workflows; Step 1 description extended with `TARGET_LANG`.
-- **`README.md`**: Translation example added to Quick Start; "What it does" extended; Language support table notes EN↔DE translation.
-- **`copywriter-workspace/eval_set.json`**: Translation query flipped from `should_trigger: false` to `should_trigger: true`.
-- **`.claude-plugin/plugin.json`**: Plugin version 0.2.3 → 0.3.0; new keywords `translation`, `en-de`; description extended.
+- **NEW** under `references/01-core-principles/`: `translation-principles.md` (two-pass philosophy, preserve-vs-translate list, citation anchoring), `translation-en-to-de.md` (Sie-form, umlaut traps, Satzklammer, compound nouns, gender resolution), `translation-de-to-en.md` (compound decomposition, sentence splitting, nominal→verbal style, number/date formatting).
+- **Workflow surface**: `SKILL.md` (Step 1 `TARGET_LANG` + pre-checks, new Step 2.5 Translate Pass, Step 5 translation validation), `references/00-index.md` (CHECK 0 conditional load, v8.2), `agents/copywriter.md` (input + JSON output), `commands/copywrite.md` (`--translate=de|en`), `skills/copy-json/SKILL.md` (pass-through + direction-aware charset check).
+- **Docs and version**: `CLAUDE.md`, `README.md`, `.claude-plugin/plugin.json` (0.2.3 → 0.3.0), marketplace mirror, `copywriter-workspace/eval_set.json` (translation query flipped to `should_trigger: true`).
 
 #### Rationale
 
