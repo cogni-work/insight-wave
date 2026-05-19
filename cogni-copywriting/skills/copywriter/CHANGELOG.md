@@ -5,6 +5,45 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.3.2] - 2026-05-19
+
+> The skill internal bump 7.3.1 → 7.3.2 ships in plugin release 0.3.2.
+
+### Fixed — EN syllable counter under-counted German umlauts in cross-language mode
+
+`count_syllables_en` in `scripts/calculate_readability.py` used the vowel set `"aeiouy"`, while its DE sibling `count_syllables_de` used `"aeiouyäöü"`. PR #257 (the relative-to-source readability rule, v0.3.1) introduced a *cross-language* invocation pattern in Step 5: when `TARGET_LANG` is set, both source and output are scored on the target-language scale via `--lang $TARGET_LANG`. For a DE→EN translation that means `count_syllables_en` runs over **German** prose — silently under-counting syllables in any word containing `ä/ö/ü` (e.g., `über` → 1 syllable instead of 2). The EN Flesch formula penalises syllables-per-word at `−84.6·ASW`, so under-counted syllables artificially **inflate** the EN-scaled Flesch score and make the relative rule `output_score ≥ source_score − 5` easier to clear — masking faithful-but-degraded translations.
+
+Fix: align the EN vowel set with the DE counter (`"aeiouy"` → `"aeiouyäöü"`). Single-character-set extension; the existing `previous_was_vowel` loop and silent-`e` adjustment are untouched. Pure-English callers see no change (no umlauts to count); EN-only test doc `test-docs/english-memo.md` returns a byte-identical score post-fix.
+
+Empirical impact on the anchor case from #256: scoring `test-docs/german-with-citations.md` with `--lang en` moves from `-6.7` to `-13.6` post-fix — a 6.9-point downward correction that more accurately reflects German syllable density and tightens the relative-rule threshold for DE→EN translations.
+
+### Added — Standing test fixtures for the relative-to-source readability rule
+
+New directory `copywriter-workspace/test-fixtures/readability-rule/` anchors both directions of the Step 5 translation validator with two fixtures:
+
+- **Fixture 1 (`de-dense`, expect PASS):** canonical DE source `test-docs/german-with-citations.md` paired with a faithful EN translation `de-dense-source.en.md`. Demonstrates that the relative rule clears dense Mittelstand prose translations even when both scores sit far below the absolute EN 50–60 band.
+- **Fixture 2 (`degraded`, expect FAIL):** synthesised clean EN (`en-clean-source.md`, Flesch 69.6) vs. synthesised degraded EN (`en-degraded-translation.md`, Flesch 48.1). Sanity-checks that real style degradation is caught by the rule.
+
+The runner `run.sh` is bash 3.2 + Python stdlib only (no `jq`), scores each pair via `calculate_readability.py --lang en`, applies the rule, and exits 0 iff every fixture's actual verdict matches the expected verdict. Fixture 1 references the canonical DE source by path (no copy, no symlink — single source of truth). Any future regression in the syllable counter, the Flesch formula, paragraph segmentation, the Step 5 invocation, or the soft-floor threshold flips at least one verdict and exits non-zero.
+
+#### Changed Files
+
+- `skills/copywriter/scripts/calculate_readability.py` — `vowels = "aeiouy"` → `vowels = "aeiouyäöü"` on line 105 (EN syllable counter).
+- `copywriter-workspace/test-fixtures/readability-rule/README.md` — fixture documentation, lineage to #258/#259, run instructions.
+- `copywriter-workspace/test-fixtures/readability-rule/run.sh` — fixture runner (bash + Python stdlib).
+- `copywriter-workspace/test-fixtures/readability-rule/de-dense-source.en.md` — faithful EN translation of the canonical DE source, all 6 citation markers + URLs preserved byte-identical.
+- `copywriter-workspace/test-fixtures/readability-rule/en-clean-source.md` — synthesised EN at Flesch 69.6.
+- `copywriter-workspace/test-fixtures/readability-rule/en-degraded-translation.md` — synthesised EN at Flesch 48.1 (same propositional content as the clean source, but nominalised + lengthened).
+- `.claude-plugin/plugin.json` — `0.3.1` → `0.3.2`.
+- `.claude-plugin/marketplace.json` (repo root) — cogni-copywriting entry `0.3.1` → `0.3.2`.
+- `CHANGELOG.md` — this entry.
+
+#### Migration Notes
+
+Non-breaking. Single-language callers (the entire pre-0.3.1 calling pattern) see byte-identical scores because pure English text contains no umlauts. The only callers whose scores shift are DE-in-EN-mode (or future Phase-2 cross-language) invocations — which is the entire point of the fix. The shift is downward (more accurate), making the relative rule slightly stricter for dense DE→EN translations. No downstream consumers to coordinate.
+
+Closes #258. Closes #259.
+
 ## [7.3.1] - 2026-05-19
 
 > The skill internal bump 7.3.0 → 7.3.1 ships in plugin release 0.3.1.

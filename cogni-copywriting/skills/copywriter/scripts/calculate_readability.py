@@ -102,7 +102,7 @@ def count_syllables_en(word):
     """Estimate syllable count for an English word."""
     word = word.lower()
     count = 0
-    vowels = "aeiouy"
+    vowels = "aeiouyäöü"
     previous_was_vowel = False
 
     for char in word:
