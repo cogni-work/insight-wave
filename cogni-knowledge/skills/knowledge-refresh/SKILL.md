@@ -121,6 +121,7 @@ If `--mode` is missing, ask the user once via `AskUserQuestion`. Do not infer.
 - **All selected topics fail to research in push-mode.** Step 5 captures every failure; step 6 reports honestly with `<N> = 0`.
 - **Stale pages exist but `wiki-lint` returns no `stale_page`/`stale_draft` warnings.** Step 2 treats the audit as empty and exits cleanly.
 - **User selects zero stale topics in step 3.** Exit 0 cleanly — the multi-select prompt is genuinely opt-in.
+- **Inherited interactive menu mid-batch.** Each per-topic `knowledge-research` dispatch transitively invokes `cogni-research:research-setup`, which surfaces its own interactive menu (market, language, report type, source mode). The batch confirmation in step 4 gates the *count* of runs, not their per-run scope decisions — the user should expect `K` interactive prompts after answering "proceed".
 
 ## Out of scope
 

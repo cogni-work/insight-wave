@@ -107,6 +107,3 @@ Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wik
 
 Phase-2 follow-up debt (deliberately deferred, tracked under #264):
 - Transitive (multi-hop) cycle detection — MVP catches direct self-cycles only.
-
-Phase-3 follow-up debt (deliberately deferred):
-- Push a `--wiki-root` flag into `cogni-wiki:wiki-query` (mirroring `wiki-resume` / `wiki-lint` / `wiki-dashboard`) so `knowledge-query` can drop its prompt-prefix shim.

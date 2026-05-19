@@ -27,6 +27,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--question` | Yes | The user's question, as a plain string |
+| `--wiki-root` | No | Override the auto-detected wiki root. When set, skip the upward cwd walk and use this path as `<wiki-root>` directly. Mirrors the same flag on `wiki-resume`, `wiki-lint`, `wiki-dashboard`. Useful for orchestrators (e.g. `cogni-knowledge:knowledge-query`) that resolve the wiki path from a manifest rather than cwd. |
 | `--file-back` | No | `auto` (default — ask the user) / `yes` / `no` — whether to save the answer as a new wiki page |
 | `--max-pages` | No | Cap on how many pages to read (default 12). Prevents runaway reads on large wikis. |
 
@@ -34,7 +35,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 
 ### 1. Locate the wiki and read the index
 
-Walk upward to find `.cogni-wiki/config.json`. Read `wiki/index.md` top to bottom. The index is the map — do not skip it.
+If `--wiki-root` was passed, set `<wiki-root>` to that path and verify `<wiki-root>/.cogni-wiki/config.json` exists (abort with a clear error if not). Otherwise, walk upward from cwd to find `.cogni-wiki/config.json`. Read `wiki/index.md` top to bottom. The index is the map — do not skip it.
 
 ### 2. Select candidate pages
 

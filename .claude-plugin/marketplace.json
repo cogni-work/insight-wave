@@ -256,7 +256,7 @@
     {
       "name": "cogni-wiki",
       "source": "./cogni-wiki",
-      "version": "0.0.40",
+      "version": "0.0.41",
       "maturity": "incubating",
       "description": "A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions are surfaced at ingest (not missed at retrieval), and knowledge compounds instead of starting from zero. Based on Andrej Karpathy's LLM Wiki pattern.",
       "keywords": [
@@ -277,7 +277,7 @@
     {
       "name": "cogni-knowledge",
       "source": "./cogni-knowledge",
-      "version": "0.0.11",
+      "version": "0.0.12",
       "maturity": "incubating",
       "description": "Wiki-first research that compounds. Binds a cogni-research project to a cogni-wiki knowledge base so every research run deposits into the same persistent, queryable, interlinked markdown wiki — and so future runs read what previous runs filed instead of starting from zero. Thin orchestrator over cogni-research and cogni-wiki; no forked agents, no duplicated scripts. The differentiator vs. one-shot deep-research tools (OpenAI Deep Research, Perplexity Spaces, GPT Researcher) is the binding: knowledge accumulates across projects instead of dying in chat history.",
       "keywords": [

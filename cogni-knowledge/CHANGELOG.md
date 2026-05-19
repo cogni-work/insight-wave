@@ -1,5 +1,16 @@
 # cogni-knowledge changelog
 
+## 0.0.12 — 2026-05-19
+
+### Changed
+
+- `knowledge-query` now dispatches `cogni-wiki:wiki-query` with `--wiki-root <wiki_path>` directly (requires cogni-wiki ≥ 0.0.41, which added the flag). Drops the prompt-prefix shim from v0.0.8 — the shim relied on a `prompt=` Skill kwarg that does not exist, so wiki-query would silently fall back to cwd-walking and could resolve to the wrong wiki.
+- `knowledge-refresh` push-mode §"Edge cases": new bullet documenting that each per-topic `knowledge-research` dispatch surfaces the upstream `cogni-research:research-setup` interactive menu, so the batch confirmation gates the *count* of runs (not their per-run scope decisions).
+
+### Dependencies
+
+- `cogni-wiki` minimum version bumped to 0.0.41 (was 0.0.40).
+
 ## 0.0.11 — 2026-05-19
 
 Phase 3 of the wiki-first research epic (#264) is now shipped. Documentation closeout — no new code in this version.

@@ -59,15 +59,12 @@ If `--question` is missing, ask the user once via `AskUserQuestion` (single free
 
 ### 1. Dispatch `cogni-wiki:wiki-query`
 
-`cogni-wiki:wiki-query` does NOT accept a `--wiki-root` flag today (Step 1 of its workflow walks upward from cwd to find `.cogni-wiki/config.json` — see `cogni-wiki/skills/wiki-query/SKILL.md` Step 1). Until a follow-up cogni-wiki patch lands a `--wiki-root` flag, we pin the wiki context via a prompt-prefix:
-
 ```
 Skill("cogni-wiki:wiki-query",
-      prompt="Operate against the wiki rooted at <wiki_path>. Use cwd <wiki_path> for path-relative reads. Question: <question>",
-      args="--question '<question>' [--file-back <val>] [--max-pages <N>]")
+      args="--wiki-root <wiki_path> --question '<question>' [--file-back <val>] [--max-pages <N>]")
 ```
 
-Forward `--file-back` and `--max-pages` only if the caller passed them.
+`--wiki-root` was added in cogni-wiki v0.0.41 — it pins the upstream skill to the bound wiki, bypassing the cwd-walk fallback. Forward `--file-back` and `--max-pages` only if the caller passed them.
 
 ### 2. Print the answer + footer
 
@@ -91,7 +88,6 @@ This skill never modifies the binding. `cogni-wiki:wiki-query` may file the answ
 
 ## Out of scope
 
-- **Pushing `--wiki-root` upstream into `cogni-wiki:wiki-query`** — the right long-term answer per the delegation contract (mirrors `wiki-resume`, `wiki-lint`, `wiki-dashboard` which all accept `--wiki-root`). Deferred to a follow-up cogni-wiki patch so Phase 3 is not blocked on a cross-plugin change. The prompt-prefix is a thin shim until then.
 - **Multi-question scoping.** Phase 3 takes one question per run; chaining is a future enhancement.
 - **Modifying the binding.** Read-only by design.
 

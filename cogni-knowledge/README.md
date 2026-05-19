@@ -125,7 +125,7 @@ user ──> cogni-knowledge ──> cogni-wiki:wiki-from-research ──> cogni
 
 ## Dependencies
 
-- `cogni-wiki` ≥ 0.0.40 (Phase 2 needs the `--allow-wiki-source --cycle-guard-cleared` flag pair on `wiki-from-research`)
+- `cogni-wiki` ≥ 0.0.41 (Phase 2 needs the `--allow-wiki-source --cycle-guard-cleared` flag pair on `wiki-from-research`; Phase 3 `knowledge-query` needs the `--wiki-root` flag added to `wiki-query` in 0.0.41)
 - `cogni-research` ≥ 0.8.3
 
 ## Custom development
