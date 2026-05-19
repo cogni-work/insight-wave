@@ -24,8 +24,11 @@ Output (insight-wave envelope):
   {"success": bool, "data": {"status": ..., ...}, "error": "..."}
 
 Exit codes:
-  0   status ∈ {clear, not_applicable}, or --dry-run regardless
-  1   status == cycle_detected (and not --dry-run)
+  0   status ∈ {clear, not_applicable}, or --dry-run on a detected cycle
+  1   status == cycle_detected (without --dry-run), or any script-level
+      error (bad args, missing project, unreadable binding) regardless of
+      --dry-run — --dry-run only suppresses the cycle-detection gate, not
+      preflight failures
 
 Stdlib only. No pip dependencies.
 """
