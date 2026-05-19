@@ -99,7 +99,7 @@ Latest lint audit (<audit-filename>): <N> claim_drift findings.
 No lint audits yet — run `cogni-wiki:wiki-lint` to populate.
 ```
 
-Counting `claim_drift` findings: glob `<wiki_path>/wiki/audits/lint-*.md`, sort by filename (ISO-date suffix), take the last one. Use a small bash + python one-liner to count lines matching the `claim_drift` warning marker — exact format depends on `lint_wiki.py`'s output, which is documented at `cogni-wiki/skills/wiki-lint/SKILL.md` (the warning class is the literal string `claim_drift`). A six-line python via `python3 -c` is sufficient — count `claim_drift` substring matches in the audit body. Section is never absent; the empty-state line is informative.
+Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wiki/audits/lint-*.md | tail -1`), then `grep -c claim_drift <audit>`. Line-count, not body-read — audits can run long and the count is all the overlay needs. The warning-class literal is documented at `cogni-wiki/skills/wiki-lint/SKILL.md`. Section is never absent; the empty-state line is informative.
 
 ### 3. Print a short summary
 

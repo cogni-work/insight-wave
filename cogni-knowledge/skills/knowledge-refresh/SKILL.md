@@ -93,21 +93,23 @@ If `--mode` is missing, ask the user once via `AskUserQuestion`. Do not infer.
 
 4. **Batch confirmation.** `AskUserQuestion` (single-select) with the question: "Launch `<K>` sequential research runs against the `<knowledge_slug>` knowledge base? Each run costs roughly $1–$5." Options: `proceed`, `abort`. On `abort`, exit 0.
 
-5. **Sequential `knowledge-research` per selected topic.** Sequential, not parallel — `knowledge-binding.py append-project` writes via a temp-file `os.replace` without an external lock, so two concurrent appends could race on the same `binding.json`. Sequential keeps the failure surface single-threaded too. For each selected stale page:
+5. **Per-topic loop — research, then refresh.** For each selected stale page, sequentially:
    ```
    Skill("cogni-knowledge:knowledge-research",
          args="--knowledge-slug <knowledge_slug> --topic '<page title>'")
    ```
-   Capture the new `<resolved_slug>` from the dispatch summary (parse `cogni-research-<slug>/` from the printed project path, same convention as `knowledge-research/SKILL.md` Step 1). On per-topic failure, capture in `failures: [{topic, error}]` and continue with the rest of the batch.
+   Capture the new `<resolved_slug>` from the dispatch summary (parse `cogni-research-<slug>/` from the printed project path, same convention as `knowledge-research/SKILL.md` Step 1). On per-topic research failure, capture in `failures: [{topic, error}]` and skip to the next topic.
 
-6. **Sequential `wiki-refresh` per new project.** For each successfully completed new research project, dispatch:
+   On research success, immediately dispatch the matching refresh:
    ```
    Skill("cogni-wiki:wiki-refresh",
-         args="--from-research <new-slug> --wiki-root <wiki_path>")
+         args="--from-research <resolved_slug> --wiki-root <wiki_path>")
    ```
    The new research's topic was the originally-stale page title, so `wiki-refresh`'s Jaccard match should score high against the original page. The upstream skill runs its own batch-confirmation per dispatch — that's a feature: the user can decline a per-run plan if the match is unexpectedly weak.
 
-7. **Final summary.** ≤ 8 lines:
+   Interleaved (research-A → refresh-A → research-B → refresh-B …) rather than two batches: a mid-loop abort leaves a consistent partial state (each completed topic is fully landed), and refreshed pages are visible to the user sooner. Sequential overall — see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour" for the contract.
+
+6. **Final summary.** ≤ 8 lines:
    - `<N>` topics re-researched (slug list)
    - `<M>` pages refreshed downstream via `wiki-refresh`
    - `<K>` per-topic failures (topic + error)
@@ -116,17 +118,17 @@ If `--mode` is missing, ask the user once via `AskUserQuestion`. Do not infer.
 ## Edge cases
 
 - **Empty `research_projects[]` + pull-mode.** Pre-flight does not block this — the user may want to pull from a project deposited via another binding or hand-created on disk. Step 1(2) emits the "not in binding" warning if applicable, and `wiki-refresh` itself fails if the project files don't exist.
-- **All selected topics fail to research in push-mode.** Step 5 captures failures; step 6 has no new projects to refresh; step 7 reports honestly.
+- **All selected topics fail to research in push-mode.** Step 5 captures every failure; step 6 reports honestly with `<N> = 0`.
 - **Stale pages exist but `wiki-lint` returns no `stale_page`/`stale_draft` warnings.** Step 2 treats the audit as empty and exits cleanly.
 - **User selects zero stale topics in step 3.** Exit 0 cleanly — the multi-select prompt is genuinely opt-in.
 
 ## Out of scope
 
 - **Cycle-detection between push-mode runs.** Phase 2's `cycle-guard.py` only fires on `report_source ∈ {wiki, hybrid}`. Push-mode invokes `knowledge-research`, which always lands at `report_source == web` (Mode A) — no circular evidence is possible by construction.
-- **Cost cap.** Deliberately deferred per user direction — the batch confirmation in step 4 is the single user gate.
-- **Parallel research runs.** Sequential by design, see §2(5).
 - **Auto-running `wiki-resume` or `knowledge-resume` after the batch.** Surfaced in the summary as a suggestion; manual decision.
 - **Modifying the binding directly.** All binding writes flow through `knowledge-research`'s own `append-project` call.
+
+For the push-mode UX contract (single batch confirmation, sequential, composition-only, no cost cap), see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour".
 
 ## Output
 
