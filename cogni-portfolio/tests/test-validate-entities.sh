@@ -389,11 +389,13 @@ cat > "$pdir/solutions/cogni-x--dach.json" <<EOF
 EOF
 run_validator "$pdir"
 n_total=$(count_solution_entries errors)
-n_match=$(count_solution_entries errors "invalid solution_type")
+# Acceptance criteria from #251: error message must surface BOTH the offending
+# value and the reference file path. Single substring covers both.
+n_match=$(count_solution_entries errors "_shared/acme-suite--dach has invalid solution_type 'consulting'")
 if [ "$RC" != "0" ] && [ "$n_total" = "1" ] && [ "$n_match" = "1" ]; then
   pass "ref-invalid-solution-type: rc!=0, 1 error naming the invalid type"
 else
-  fail "ref-invalid-solution-type" "expected rc!=0 and 1 error matching 'invalid solution_type', got rc=$RC total=$n_total match=$n_match"
+  fail "ref-invalid-solution-type" "expected rc!=0 and 1 error naming the invalid type and ref path, got rc=$RC total=$n_total match=$n_match"
   dump_solution_entries >&2
 fi
 
