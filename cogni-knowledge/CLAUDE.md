@@ -36,7 +36,7 @@ They live as siblings. The wiki is the substrate; the binding records which rese
 | `knowledge-binding.py` | `--init` / `--append-project` / `--read` against `.cogni-knowledge/binding.json` | No (stdlib only) |
 | `lineage-stamp.py` | Stamps `derived_from_research: <slug>` into the YAML frontmatter of deposited wiki pages | No (stdlib only) |
 
-All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the insight-wave convention (`/home/user/insight-wave/CLAUDE.md` §"Script Output Format"). Stdlib only — no pip dependencies.
+All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the insight-wave convention (`../CLAUDE.md` §"Script Output Format"). Stdlib only — no pip dependencies.
 
 ## Data model — `binding.json`
 
@@ -88,11 +88,11 @@ Only the frontmatter changes — page bodies are never touched.
 
 ## Conventions
 
-- Skill names: `knowledge-*` (generic skill names like `setup`, `research`, `resume` MUST be prefixed per `/home/user/insight-wave/CLAUDE.md` §"Contributing").
+- Skill names: `knowledge-*` (generic skill names like `setup`, `research`, `resume` MUST be prefixed per `../CLAUDE.md` §"Contributing").
 - Skill frontmatter: `name`, `description`, `allowed-tools` — same shape as cogni-wiki/cogni-research skills.
 - Script CLI: `python3 scripts/<name>.py --action ...`, JSON envelope output.
 - Path conventions: knowledge bases default to `<cwd>/<knowledge-slug>/` (matching `cogni-wiki/{slug}/`).
-- Versioning: bump patch on any skill/script change; mirror in `marketplace.json` (`/home/user/insight-wave/CLAUDE.md` §"Version Management").
+- Versioning: bump patch on any skill/script change; mirror in `marketplace.json` (`../CLAUDE.md` §"Version Management").
 
 ## Future phases
 

@@ -59,3 +59,7 @@ When Phase 6 absorbs cogni-research, these agents move into `cogni-knowledge/age
 ## What about Phase 2's `--allow-wiki-source` flag on `wiki-from-research`?
 
 Phase 2 modifies `cogni-wiki:wiki-from-research` to lift its current abort on `report_source ∈ {wiki, hybrid}` projects, gated behind a new `--allow-wiki-source --cycle-guard-cleared` opt-in. This is the right pattern: the cycle-guard logic lives in cogni-knowledge (it is cogni-knowledge-specific — there is no general-purpose meaning to "research lineage" in `cogni-wiki`), but the deposit pathway lives in `cogni-wiki`. We add an opt-in flag instead of forking the deposit pathway.
+
+## Wiring `report_source` into `binding.json` (Phase 2 guardrail)
+
+`knowledge-research` (Phase 1) hard-codes `--report-source web` when calling `knowledge-binding.py append-project`. That is correct *only* because `cogni-wiki:wiki-from-research` Mode A refuses `report_source ∈ {wiki, hybrid}` projects today (see its Step 0(3)). Phase 2 lifts that abort, and the new `knowledge-report` skill MUST read the actual `report_source` from `<project>/.metadata/project-config.json` and pass it through — `web` for the initial run, `wiki` once `knowledge-report` lights up, `hybrid` if a user opts in. Forgetting this wiring would silently mis-label every Phase 2 deposit as `web` and break the cycle-guard's lineage reasoning. The field MUST be sourced live from the research project, never assumed.
