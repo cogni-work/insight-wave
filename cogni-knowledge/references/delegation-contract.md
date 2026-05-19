@@ -65,3 +65,12 @@ Phase 2 modifies `cogni-wiki:wiki-from-research` to lift its current abort on `r
 `knowledge-research` (v0.0.7) and `knowledge-report` (v0.0.6) both read the live `report_source` from `<project>/.metadata/project-config.json` and pass it through to `knowledge-binding.py append-project` — `wiki` for round-trip runs, `hybrid` if a user opts in, `web`/`local` for default Mode A invocations or when a user pivots away from wiki mode in the interactive menu.
 
 The guardrail rule: when a new skill or codepath calls `append-project`, the `report_source` value MUST be sourced live from `<project>/.metadata/project-config.json`, never assumed.
+
+## Phase-3 push-refresh behaviour
+
+`knowledge-refresh --mode push` (v0.0.10) is the only skill that initiates new research runs without the user supplying a topic per run. The contract:
+
+- **One batch-level confirmation, not per-run.** The user is asked twice: which stale topics to re-research (multi-select), and one yes/no on whether to launch `<K>` runs at roughly $1–$5 each. There is no per-run confirmation gate from this skill (the downstream `wiki-refresh` calls still surface their own match-plan prompts).
+- **Composition only — no new research orchestration.** Push-mode dispatches `cogni-knowledge:knowledge-research` per selected topic, which transitively reaches `cogni-research:research-setup` → `research-report` via `cogni-wiki:wiki-from-research`. Knowledge-refresh never reaches into research internals; if `knowledge-research` changes, push-mode tracks the change automatically.
+- **Sequential, not parallel.** `knowledge-binding.py append-project` writes via temp-file + `os.replace` without an external lock; concurrent appends could race. Sequential is the simple safe choice.
+- **No cost cap by design.** The single batch confirmation is the user gate. A per-run cap would either need a cost-aware orchestrator (none today) or surprise the user mid-batch.

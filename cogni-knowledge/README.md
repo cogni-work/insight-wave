@@ -20,9 +20,9 @@ This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wik
 
 **IS:** A binding orchestrator that turns `cogni-research + cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every `knowledge-research` run deposits into that wiki and is recorded in the binding; every `knowledge-report` (Phase 2) reads from it.
 
-**DOES** (Phase 1 + Phase 2): four skills — `knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume` — and three scripts (`knowledge-binding.py`, `lineage-stamp.py`, `cycle-guard.py`). Phase 2 (`knowledge-report`) closes the round-trip: reports get composed by reading the deposited wiki pages, with a deterministic cycle-guard that refuses self-citing loops.
+**DOES** (Phase 1 + Phase 2 + Phase 3): seven skills — `knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` — and three scripts (`knowledge-binding.py`, `lineage-stamp.py`, `cycle-guard.py`). Phase 2 (`knowledge-report`) closes the round-trip: reports get composed by reading the deposited wiki pages, with a deterministic cycle-guard that refuses self-citing loops. Phase 3 makes the accumulated knowledge legible and self-healing.
 
-**MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. The wiki becomes the single source of truth for your topic area, queryable forever via `cogni-wiki:wiki-query` or future `knowledge-query`. No vector store, no embeddings — just markdown that compounds.
+**MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
 
 ## What it does
 
@@ -32,8 +32,11 @@ This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wik
 | `knowledge-research` | Research a topic INTO the bound wiki and record the project | `cogni-wiki:wiki-from-research` (Mode A) |
 | `knowledge-report` | Compose a report BY READING the bound wiki, with cycle-guard, then re-deposit | `cogni-wiki:wiki-from-research` (Mode B, with opt-in flags) |
 | `knowledge-resume` | Status: deposited projects, wiki health, suggested next action | `cogni-wiki:wiki-resume` |
+| `knowledge-query` | Ask a question against the bound base | `cogni-wiki:wiki-query` |
+| `knowledge-dashboard` | Render an HTML overview with a binding overlay sidecar | `cogni-wiki:wiki-dashboard` |
+| `knowledge-refresh` | Refresh stale pages — pull-mode pipes a research project in, push-mode auto-researches stale topics | `cogni-wiki:wiki-refresh`, `cogni-wiki:wiki-lint`, `cogni-knowledge:knowledge-research` |
 
-Phase 3+ skills (`knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) follow once Phase 2 proves out the round-trip. See `references/absorption-roadmap.md` for the full epic plan.
+See `references/absorption-roadmap.md` for the full epic plan — Phase 4 (internal alpha) and onward.
 
 ## Installation
 
@@ -52,9 +55,11 @@ Requires both `cogni-wiki` and `cogni-research` installed (they are the delegate
 /cogni-knowledge:knowledge-research --knowledge-slug eu-ai-act --topic "EU AI Act Article 6 high-risk systems"
 /cogni-knowledge:knowledge-research --knowledge-slug eu-ai-act --topic "EU AI Act foundation model obligations"
 /cogni-knowledge:knowledge-resume --knowledge-slug eu-ai-act
+/cogni-knowledge:knowledge-dashboard --knowledge-slug eu-ai-act --open yes
+/cogni-knowledge:knowledge-query --knowledge-slug eu-ai-act --question "what does the wiki say about foundation models?"
 ```
 
-The second `knowledge-research` reads the wiki that the first deposited — that is the compounding loop.
+The second `knowledge-research` reads the wiki that the first deposited — that is the compounding loop. The `dashboard` and `query` calls let you inspect and ask the accumulated base. Use `knowledge-refresh --mode push|pull` later to keep stale pages fresh.
 
 ## Data model
 
@@ -80,14 +85,32 @@ knowledge-research --knowledge-slug X --topic T
        → cogni-wiki:wiki-setup (skipped if wiki exists)
        → cogni-wiki:wiki-ingest --discover research:<slug>  (deposits per-sub-question pages)
   → lineage-stamp.py  (stamps derived_from_research: <slug> into deposited pages)
-  → knowledge-binding.py --append-project  (records the project in binding.json)
+  → knowledge-binding.py --append-project  (records the project in binding.json with the live report_source)
+
+knowledge-query --knowledge-slug X --question Q
+  → cogni-wiki:wiki-query --question Q  (against the bound wiki)
+  → footer: knowledge base + deposit count
+
+knowledge-dashboard --knowledge-slug X
+  → cogni-wiki:wiki-dashboard --wiki-root <bound>  (writes wiki-dashboard.html)
+  → writes knowledge-overlay.md sidecar  (binding view: deposits + lint claim_drift)
+
+knowledge-refresh --knowledge-slug X --mode pull --from-research S
+  → cogni-wiki:wiki-refresh --from-research S --wiki-root <bound>
+
+knowledge-refresh --knowledge-slug X --mode push
+  → cogni-wiki:wiki-lint --wiki-root <bound>  (find stale_page / stale_draft)
+  → multi-select + batch confirm  (which topics, then yes/no to launch)
+  → per selected topic, sequentially:
+       knowledge-research --knowledge-slug X --topic <page title>
+       cogni-wiki:wiki-refresh --from-research <new-slug>
 ```
 
 The deposited pages are now part of the wiki and visible to the next `knowledge-research` run via the upstream `wiki-researcher` agent when `report_source=wiki` is selected (Phase 2 lights this up automatically).
 
 ## Components
 
-- 4 skills (`knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume`)
+- 7 skills (`knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`)
 - 3 scripts (`knowledge-binding.py`, `lineage-stamp.py`, `cycle-guard.py`)
 - 3 references (`differentiation-thesis.md`, `delegation-contract.md`, `absorption-roadmap.md`)
 

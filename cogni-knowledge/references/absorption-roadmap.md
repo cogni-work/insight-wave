@@ -36,12 +36,17 @@ Reading order: this file, then `differentiation-thesis.md`, then `delegation-con
 
 ### Phase 3 — Query, dashboard, push-refresh (v0.0.11 → v0.0.15)
 
+**Status.** Shipped at v0.0.11, 2026-05-19.
+
 **Goal.** Make the accumulated knowledge legible and self-healing.
 
 **Deliverables.**
-- `knowledge-query` — binding-aware wrapper of `cogni-wiki:wiki-query`.
-- `knowledge-dashboard` — composes `cogni-wiki:wiki-dashboard` with a binding overlay (deposited projects, claim verification heatmap).
-- `knowledge-refresh` — push-mode (re-research stale topics) and pull-mode (delegate to `cogni-wiki:wiki-refresh`).
+- `knowledge-query` (v0.0.8) — binding-aware wrapper of `cogni-wiki:wiki-query`. Resolves the bound wiki path from `binding.json`, dispatches the upstream query, appends a one-line knowledge-base footer.
+- `knowledge-dashboard` (v0.0.9) — composes `cogni-wiki:wiki-dashboard` with a `knowledge-overlay.md` sidecar (deposited projects table, latest lint-audit `claim_drift` count).
+- `knowledge-refresh` (v0.0.10) — pull-mode delegates to `cogni-wiki:wiki-refresh`; push-mode lints the wiki, asks the user which stale topics to re-research, batch-confirms cost, sequentially dispatches `knowledge-research` per selected topic then `wiki-refresh` per new project.
+
+**Follow-up debt (tracked under #264 for v0.0.12+):**
+- Push a `--wiki-root` flag into `cogni-wiki:wiki-query` so `knowledge-query` can drop its prompt-prefix shim. Mirrors the existing `--wiki-root` flag on `wiki-resume`, `wiki-lint`, `wiki-dashboard`.
 
 ### Phase 4 — Internal alpha (v0.0.16 → v0.0.20)
 

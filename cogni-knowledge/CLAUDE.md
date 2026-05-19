@@ -26,9 +26,12 @@ They live as siblings. The wiki is the substrate; the binding records which rese
 | Skill | Role |
 |---|---|
 | `knowledge-setup` | Bootstrap a knowledge base. Dispatches `cogni-wiki:wiki-setup` if no wiki exists, then writes `binding.json`. |
-| `knowledge-research` | Research a topic INTO the bound wiki. Dispatches `cogni-wiki:wiki-from-research --topic ...` (Mode A), then stamps lineage and appends to the binding. |
+| `knowledge-research` | Research a topic INTO the bound wiki. Dispatches `cogni-wiki:wiki-from-research --topic ...` (Mode A), then stamps lineage and appends to the binding. Records the live `report_source` from `<project>/.metadata/project-config.json` (v0.0.7+). |
 | `knowledge-report` | Compose a report BY READING the bound wiki, refuse self-citing loops via `cycle-guard.py`, then re-deposit via `cogni-wiki:wiki-from-research` Mode B with `--allow-wiki-source --cycle-guard-cleared`. Records the live `report_source` (wiki/hybrid) in the binding. Phase 2 of the absorption roadmap. |
 | `knowledge-resume` | Status. Reads `binding.json` and delegates to `cogni-wiki:wiki-resume` (which itself runs `wiki-health`). |
+| `knowledge-query` | Ask a question against the bound base. Resolves the wiki path from `binding.json`, dispatches `cogni-wiki:wiki-query` against it, appends a one-line knowledge-base footer. Read-only. Phase 3, v0.0.8+. |
+| `knowledge-dashboard` | Render an HTML overview. Dispatches `cogni-wiki:wiki-dashboard` against the bound wiki, then writes a `knowledge-overlay.md` sidecar listing deposited projects + latest lint-audit `claim_drift` count. Phase 3, v0.0.9+. |
+| `knowledge-refresh` | Self-healing loop. Pull-mode delegates to `cogni-wiki:wiki-refresh`. Push-mode lints the wiki, asks which stale topics to re-research, then sequentially dispatches `knowledge-research` + `wiki-refresh` per selected topic. Phase 3, v0.0.10+. |
 
 Phase 2 closes the round-trip — `knowledge-report` reads the wiki, re-deposits via `wiki-from-research` Mode B with the opt-in flags, and `cycle-guard.py` refuses self-citing loops. The differentiation thesis (knowledge compounds across projects) holds only with this loop closed; before v0.0.6 a second research run could only deposit, never compose-and-deposit.
 
@@ -100,7 +103,10 @@ Only the frontmatter changes — page bodies are never touched.
 
 ## Future phases
 
-Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 lights up `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`. Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
+Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 (v0.0.11) shipped — `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` make the accumulated knowledge legible and self-healing. Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
 
 Phase-2 follow-up debt (deliberately deferred, tracked under #264):
 - Transitive (multi-hop) cycle detection — MVP catches direct self-cycles only.
+
+Phase-3 follow-up debt (deliberately deferred):
+- Push a `--wiki-root` flag into `cogni-wiki:wiki-query` (mirroring `wiki-resume` / `wiki-lint` / `wiki-dashboard`) so `knowledge-query` can drop its prompt-prefix shim.

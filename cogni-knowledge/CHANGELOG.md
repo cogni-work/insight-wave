@@ -1,5 +1,16 @@
 # cogni-knowledge changelog
 
+## 0.0.11 — 2026-05-19
+
+Phase 3 of the wiki-first research epic (#264) is now shipped. Documentation closeout — no new code in this version.
+
+### Docs
+
+- `CLAUDE.md` §"Skills" table: add rows for `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`. §"Future phases": flip Phase 3 to "shipped at v0.0.11" and add a Phase-3 follow-up debt bullet for the upstream `wiki-query --wiki-root` patch.
+- `references/delegation-contract.md`: add §"Phase-3 push-refresh behaviour" capturing the single batch-confirmation UX and the composition-only contract.
+- `references/absorption-roadmap.md`: Phase 3 block flipped to "Shipped at v0.0.11, 2026-05-19" with per-skill version + a follow-up debt bullet for the `wiki-query --wiki-root` upstream patch.
+- `README.md`: §"What it does" table now lists all 7 skills; §"Quick start" includes `knowledge-dashboard` and `knowledge-query` examples; §"How it works" diagram covers all Phase-3 skills; §"Components" reflects 7 skills.
+
 ## 0.0.10 — 2026-05-19
 
 ### Added
