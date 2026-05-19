@@ -87,6 +87,25 @@ Do NOT expand acronyms in the translate pass. The `AUDIENCE`-tuned first-mention
 
 The one exception is when the source already contains a parenthetical (e.g., `MDR (Managed Detection and Response)`). Translate both halves: `MDR (Managed Detection and Response — ein Dienstleister erkennt und stoppt Angriffe rund um die Uhr für Sie)` for DE-lay audiences is what Step 3 will produce, but in Pass A simply translate the existing parenthetical (`MDR (Managed Detection and Response)` stays as is since the Vollform happens to be English-only) — Step 3 will add or extend the gloss.
 
+## Readability in Translation Mode
+
+The absolute Flesch (EN 50–60) and Amstad (DE 30–50) bands are tuned for content *produced fresh* in the target language. A faithful translation inherits the source's information density — Latinate B2B vocabulary, multi-syllable compounds, regulatory terms — so rewriting to hit the absolute band crosses into paraphrase and risks unfaithful translation. The Step 5 translation validator therefore uses a **relative-to-source rule** instead of the absolute band.
+
+**The rule.** Score source and output on the *target-language* scale; require `output_score ≥ source_score − 5`.
+
+**Same scale on both sides.** Flesch (EN) and Amstad (DE) use different coefficients and cannot be compared cross-scale. Scoring the source on the target-language scale gives a like-for-like baseline. The `--lang` flag on `scripts/calculate_readability.py` already supports this — it applies the matching syllable counter + formula regardless of which language the input prose is actually in. Read the `flesch_score` field from each invocation's JSON:
+
+```bash
+python3 scripts/calculate_readability.py <source.md> --lang $TARGET_LANG   # source_score = flesch_score
+python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG   # output_score = flesch_score
+```
+
+**The 5-point soft floor.** Covers compound-length drift (EN→DE: German compounds inflate average word length, pushing Amstad down 2–4 points even for a clean rendering) and sentence-splitting drift (DE→EN: long German sentences often decompose into multiple shorter English ones with their own syllable budgets). Five points is the empirical headroom needed to absorb this without licensing genuine degradation.
+
+**Step 3 still runs.** Pass B continues to apply target-language style discipline — Wolf-Schneider for DE (12-word clauses, Satzklammer, Floskel elimination); 15–20 word sentences and 80%+ active voice for EN. The relative rule is a *floor*, not a *ceiling*: landing inside the absolute band is still preferable, just not required. If translation work *can* hit the absolute band without paraphrasing source vocabulary, do so.
+
+See `SKILL.md` § Step 5 "Translation-specific validation" → "Readability relative to source" for the validator wiring.
+
 ## Per-Direction References
 
 Load the matching direction file for source-target-specific rules:

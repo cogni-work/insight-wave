@@ -5,6 +5,35 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.3.1] - 2026-05-19
+
+> The skill internal bump 7.3.0 → 7.3.1 ships in plugin release 0.3.1.
+
+### Fixed — Readability validation in translation mode
+
+Step 5 enforced the absolute Flesch band (EN 50–60 / DE 30–50) regardless of source density, which rewarded unfaithful translation when the source already sat below band. The validator now uses a relative-to-source rule when `TARGET_LANG` is set: score source and output on the target-language scale and require `output_score ≥ source_score − 5`. The absolute band remains visible as an aspirational note (`in absolute band` / `below absolute band, faithful to source — pass`). Non-translation polish is unchanged.
+
+Surfaced during the real-document test of v0.3.0 (PR #254): source `cogni-copywriting/copywriter-workspace/test-docs/german-with-citations.md` (Amstad 8.8 — already below the DE 30–50 band) translated faithfully to EN at Flesch 8.7 — a like-for-like score that the absolute-band rule rejected. The translation was correct; the spec was wrong.
+
+#### Changed Files
+
+- `skills/copywriter/SKILL.md` — Step 5 standard readability bullet scoped to non-translation; new fifth Translation-specific validation bullet ("Readability relative to source") with invocation + pass rule + reporting convention.
+- `skills/copywriter/references/01-core-principles/translation-principles.md` — new `## Readability in Translation Mode` section between "Audience Expansion is Step 3's Job" and "Per-Direction References".
+- `.claude-plugin/plugin.json` — `0.3.0` → `0.3.1`.
+- `.claude-plugin/marketplace.json` (repo root) — cogni-copywriting entry `0.3.0` → `0.3.1`.
+- `CHANGELOG.md` — this entry.
+
+#### Reused mechanisms (no new code)
+
+- `scripts/calculate_readability.py` already accepts `--lang de|en|auto` and applies the matching syllable counter + Flesch/Amstad formula. Step 5 now calls it twice with explicit `--lang $TARGET_LANG` (once on source, once on output) — Option A from #256. No script edit.
+- `contracts/readability.yml` interface unchanged; no contract version bump.
+
+#### Migration Notes
+
+Non-breaking. Non-translation polish (no `TARGET_LANG`) keeps the absolute-band check. Faithful translations of dense B2B source that previously failed Step 5 now pass.
+
+Closes #256.
+
 ## [7.3.0] - 2026-05-19
 
 > Note: this `7.x.x` line tracks the **copywriter skill's internal versioning** (independent of the plugin's external `version` in `.claude-plugin/plugin.json`). The skill internal bump 7.2.0 → 7.3.0 ships in plugin release 0.3.0.
