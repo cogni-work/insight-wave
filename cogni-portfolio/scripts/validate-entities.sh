@@ -786,7 +786,10 @@ else:
       6) add_error "solution" "$slug" "Shared reference (project) missing pricing tiers (proof_of_value, small, medium, large with price + currency)" ;;
       7) add_error "solution" "$slug" "Shared reference (subscription/hybrid) missing required subscription object (needs tiers, currency)" ;;
       8) add_error "solution" "$slug" "Shared reference (partnership) missing required program object (needs stages, revenue_share)" ;;
-      9) add_error "solution" "$slug" "Shared reference has invalid solution_type — must be project, subscription, partnership, or hybrid" ;;
+      9)
+        bad_type=$(python3 -c "import json; print(json.load(open('$s')).get('solution_type',''))" 2>/dev/null)
+        add_error "solution" "$slug" "Shared reference $slug has invalid solution_type '$bad_type' — must be project, subscription, partnership, or hybrid"
+        ;;
       10) add_warning "solution" "$slug" "Shared reference has non-numeric duration_weeks value (e.g. 'ongoing') — accepted but may affect duration totals" ;;
     esac
   done
