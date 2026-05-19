@@ -91,16 +91,24 @@ On `success: false`, surface the error but **do not abort the workflow** — lin
 
 ### 3. Append the project to the binding
 
+Read the live `report_source` from the project's metadata (same pattern as `knowledge-report` Step 5):
+
+```
+RS=$(python3 -c "import json; print(json.load(open('cogni-research-<resolved_slug>/.metadata/project-config.json')).get('report_source','web'))")
+```
+
+Then append:
+
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --knowledge-root <knowledge_root> \
     --knowledge-slug <knowledge_slug> \
     --research-slug <resolved_slug> \
     --report-path <abs path to cogni-research-<resolved_slug>/output/report.md> \
-    --report-source web
+    --report-source $RS
 ```
 
-`report_source` is `web` for Phase 1 invocations — `wiki-from-research` Mode A always runs with `cogni-research`'s default web mode (the skill refuses `report_source ∈ {wiki, hybrid}` projects, see `cogni-wiki/skills/wiki-from-research/SKILL.md` Step 0(3)). Phase 2's `knowledge-report` is the skill that records `report_source=wiki` entries.
+`report_source` is read live from the project's config. For Mode A invocations it will normally be `web` — `wiki-from-research` runs `cogni-research`'s default web mode (the skill refuses `report_source ∈ {wiki, hybrid}` projects, see `cogni-wiki/skills/wiki-from-research/SKILL.md` Step 0(3)). If a user reaches `knowledge-research` via a path that resolves to `local` or future modes, the live value is recorded faithfully. The `web` default in the python expression is purely a safety net for a missing key.
 
 On duplicate-slug error from the script (the same `resolved_slug` is already in the binding), surface a warning — this can happen if the user re-ran a research project with the same slug. The wiki pages have been re-deposited (mode: re-ingest), but the binding entry stays as the original deposit's record. Do not abort.
 
