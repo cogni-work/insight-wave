@@ -43,6 +43,10 @@ WIKI_DIRNAME = ".cogni-wiki"
 WIKI_CONFIG_FILENAME = "config.json"
 SOURCES_GLOB = "02-sources/data/src-*.md"
 PROJECT_CONFIG_RELPATH = ".metadata/project-config.json"
+# Slug character class follows the kebab-case contract in cogni-knowledge/CLAUDE.md
+# §Conventions and cogni-wiki's slug convention. Widen if either side ever allows
+# uppercase / underscore / dot — under-matching here returns "clear" when it
+# shouldn't, so the failure mode is silent.
 WIKI_URL_RE = re.compile(r"^wiki://([a-z0-9-]+)/([a-z0-9-]+)$")
 REPORT_SOURCES_NEEDS_GUARD = {"wiki", "hybrid"}
 REPORT_SOURCES_TRIVIAL = {"web", "local"}
@@ -55,6 +59,10 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> dict:
 
 
 # Inlined (not imported from cogni-wiki) to keep cogni-knowledge decoupled.
+# Mirrors `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter`
+# — if that upstream parser grows new edge cases (multi-line scalars, quoted
+# values, nested block lists), this copy must be updated in lock-step or the
+# cycle-guard silently under-detects.
 _FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n", re.DOTALL)
 
 
@@ -91,8 +99,11 @@ def _strip_quotes(v: str) -> str:
     return v
 
 
-def _read_binding(knowledge_root: Path) -> dict | None:
-    """Shell out to knowledge-binding.py read; return the binding dict or None."""
+def _read_binding(knowledge_root: Path) -> tuple[dict | None, str]:
+    """Shell out to knowledge-binding.py read; return (binding, diagnostic).
+    `binding` is None on any failure; `diagnostic` is the underlying error
+    surface (subprocess stderr, JSON decode error, or upstream envelope's
+    error string) so the caller can include it in its own envelope."""
     script = Path(__file__).resolve().parent / "knowledge-binding.py"
     proc = subprocess.run(
         ["python3", str(script), "read", "--knowledge-root", str(knowledge_root)],
@@ -100,14 +111,14 @@ def _read_binding(knowledge_root: Path) -> dict | None:
         text=True,
     )
     if proc.returncode != 0:
-        return None
+        return None, (proc.stderr or proc.stdout).strip()
     try:
         envelope = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        return None
+    except json.JSONDecodeError as exc:
+        return None, f"binding read returned non-JSON: {exc}"
     if not envelope.get("success"):
-        return None
-    return envelope.get("data", {}).get("binding")
+        return None, envelope.get("error", "binding read returned success=false")
+    return envelope.get("data", {}).get("binding"), ""
 
 
 def _read_wiki_slug(wiki_path: Path) -> str | None:
@@ -130,12 +141,18 @@ def _read_report_source(project_path: Path) -> str:
         return "web"
 
 
-def _resolve_wiki_page(wiki_path: Path, page_id: str) -> Path | None:
+def _resolve_wiki_page(wiki_path: Path, page_id: str) -> tuple[Path | None, list[str]]:
     """Resolve a wiki:// page-id to its file. Slugs are globally unique
     across per-type subdirectories (cogni-wiki/CLAUDE.md §Bidirectional links),
-    so a single match is expected."""
-    hits = list((wiki_path / "wiki").glob(f"**/{page_id}.md"))
-    return hits[0] if hits else None
+    so exactly one match is expected. Returns (path, collisions) where
+    `collisions` is non-empty only when the slug-uniqueness invariant is
+    violated (a wiki-health bug). The caller surfaces the collision list
+    in the envelope so the human reviewer can repair the wiki."""
+    hits = sorted((wiki_path / "wiki").glob(f"**/{page_id}.md"))
+    if not hits:
+        return None, []
+    collisions = [str(p.relative_to(wiki_path).as_posix()) for p in hits[1:]]
+    return hits[0], collisions
 
 
 def main(argv: list[str]) -> int:
@@ -161,9 +178,15 @@ def main(argv: list[str]) -> int:
         _emit(False, error=f"research project path does not exist: {project_path}")
         return 1
 
-    binding = _read_binding(knowledge_root)
+    binding, binding_err = _read_binding(knowledge_root)
     if binding is None:
-        _emit(False, error=f"could not read binding at {knowledge_root}/.cogni-knowledge/binding.json")
+        _emit(
+            False,
+            error=(
+                f"could not read binding at {knowledge_root}/.cogni-knowledge/binding.json"
+                + (f": {binding_err}" if binding_err else "")
+            ),
+        )
         return 1
     wiki_path = Path(binding.get("wiki_path", "")).resolve()
     if not wiki_path.is_dir():
@@ -183,6 +206,7 @@ def main(argv: list[str]) -> int:
         "wiki_slug": wiki_slug,
         "wiki_pages_cited": [],
         "wiki_pages_cited_missing": [],
+        "wiki_slug_collisions": [],
         "direct_self_cycles": [],
         "cross_lineage_overlap": [],
     }
@@ -218,7 +242,11 @@ def main(argv: list[str]) -> int:
     base_data["wiki_pages_cited"] = cited_page_ids
 
     for page_id in cited_page_ids:
-        page_file = _resolve_wiki_page(wiki_path, page_id)
+        page_file, collisions = _resolve_wiki_page(wiki_path, page_id)
+        if collisions:
+            base_data["wiki_slug_collisions"].append(
+                {"slug": page_id, "additional_paths": collisions}
+            )
         if page_file is None:
             base_data["wiki_pages_cited_missing"].append(page_id)
             continue
