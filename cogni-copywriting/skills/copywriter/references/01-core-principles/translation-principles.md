@@ -102,6 +102,8 @@ python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG   # out
 
 **The 5-point soft floor.** Covers compound-length drift (EN→DE: German compounds inflate average word length, pushing Amstad down 2–4 points even for a clean rendering) and sentence-splitting drift (DE→EN: long German sentences often decompose into multiple shorter English ones with their own syllable budgets). Five points is the empirical headroom needed to absorb this without licensing genuine degradation.
 
+**Language-faithful syllable counting.** The Flesch *formula* runs on the target-language scale (per the rule above), but the *syllable counter* always reflects the actual source prose: the EN vowel set includes umlauts (so DE words score correctly), and the silent-`e` adjustment is skipped when source prose is detected as non-English. This keeps the score sensitive to information density rather than phonological-rule mismatches. See `scripts/calculate_readability.py` (`count_syllables_en` `source_lang` parameter).
+
 **Step 3 still runs.** Pass B continues to apply target-language style discipline — Wolf-Schneider for DE (12-word clauses, Satzklammer, Floskel elimination); 15–20 word sentences and 80%+ active voice for EN. The relative rule is a *floor*, not a *ceiling*: landing inside the absolute band is still preferable, just not required. If translation work *can* hit the absolute band without paraphrasing source vocabulary, do so.
 
 See `SKILL.md` § Step 5 "Translation-specific validation" → "Readability relative to source" for the validator wiring.

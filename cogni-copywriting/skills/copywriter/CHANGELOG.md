@@ -5,6 +5,33 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.3.3] - 2026-05-19
+
+> The skill internal bump 7.3.2 → 7.3.3 ships in plugin release 0.3.3.
+
+### Fixed — Silent-e adjustment under-counted German -e-final words in cross-language mode
+
+`count_syllables_en` in `scripts/calculate_readability.py` unconditionally subtracted 1 syllable for any word ending in `-e` (silent-`e`). That is correct English (`hope`, `time`, `gave`), but wrong on German prose where final `-e` is almost always pronounced (`Phase`, `Hilfe`, `Strategie`, `Industrie`, plus short function words like `die`, `eine` and plurals like `Pilotprojekte`). When Step 5 translation validation scores DE source text on the EN scale via `--lang en` (the cross-language pattern introduced in PR #257, v0.3.1), every `-e`-final German word lost 1 syllable. Under the EN Flesch formula's `−84.6·ASW` penalty, that **inflated** the EN-scaled source score and made the relative-to-source rule `output_score ≥ source_score − 5` artificially easier — same direction of bias as #258, different word set.
+
+Fix: gate the silent-`e` adjustment on the detected source-prose language. `count_syllables_en` gains an optional `source_lang='en'` parameter; `calculate_flesch_score` always runs `detect_language` on the cleaned prose and passes the result through. The Flesch *formula* still runs on the requested target-language scale (`lang`); only the *syllable counter* now reflects the actual source-prose phonology (`source_lang`). When the two coincide (pure-EN, pure-DE) the behaviour is byte-identical to v0.3.2; the only callers whose scores shift are cross-language ones — exactly the bug.
+
+Empirical impact on the anchor case from #261: scoring `test-docs/german-with-citations.md` with `--lang en` moves from `-13.6` (post-#258, v0.3.2) to `-32.1` post-fix — an 18.5-point downward correction. The issue estimated ~3–5 units; the measured shift is larger because the bug fires on every `-e`-final token (70 of 320 words), not only the visible content lemmas. Same direction of correction as #258, larger magnitude. Standing fixture `de-dense` margin widens from 25.8 to 44.3 (still PASS); `degraded` fixture and EN translation output are byte-identical (real-EN prose, silent-e still fires).
+
+#### Changed Files
+
+- `skills/copywriter/scripts/calculate_readability.py` — `count_syllables_en` gains `source_lang='en'` parameter; silent-`e` adjustment gated on `source_lang == 'en'`. `calculate_flesch_score` runs `detect_language` unconditionally and passes the result as `source_lang`.
+- `skills/copywriter/references/01-core-principles/translation-principles.md` — new "Language-faithful syllable counting" paragraph in the "Readability in Translation Mode" section.
+- `copywriter-workspace/test-fixtures/readability-rule/README.md` — sample-output block updated with post-fix measured values (`de-dense` `src=-32.1`, `margin=44.3`).
+- `.claude-plugin/plugin.json` — `0.3.2` → `0.3.3`.
+- `.claude-plugin/marketplace.json` (repo root) — cogni-copywriting entry `0.3.2` → `0.3.3`.
+- `CHANGELOG.md` — this entry.
+
+#### Migration Notes
+
+Non-breaking. Single-language callers (the entire pre-0.3.1 calling pattern) see byte-identical scores — pure-English prose detects as `source_lang == 'en'` and the silent-`e` adjustment still fires unchanged; pure-German prose uses `count_syllables_de`, which never had the adjustment. The only callers whose scores shift are DE-in-EN-mode (Step 5 cross-language scoring) invocations — which is the entire point of the fix. The shift is downward (more accurate), making the relative rule slightly stricter for dense DE→EN translations. No downstream consumers to coordinate.
+
+Closes #261.
+
 ## [7.3.2] - 2026-05-19
 
 > The skill internal bump 7.3.1 → 7.3.2 ships in plugin release 0.3.2.

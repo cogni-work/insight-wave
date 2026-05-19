@@ -98,8 +98,15 @@ def detect_language(text):
 
 # --- Syllable Counting ---
 
-def count_syllables_en(word):
-    """Estimate syllable count for an English word."""
+def count_syllables_en(word, source_lang='en'):
+    """Estimate syllable count for an English word.
+
+    The silent-'e' adjustment is English-specific. When scoring non-English
+    prose on the EN scale (cross-language Step 5 mode), pass the actual
+    source language so the adjustment is skipped — German final-e is almost
+    always pronounced (Hilfe, Strategie, Industrie), and the EN -84.6 ASW
+    penalty inflates the score otherwise.
+    """
     word = word.lower()
     count = 0
     vowels = "aeiouyäöü"
@@ -111,8 +118,8 @@ def count_syllables_en(word):
             count += 1
         previous_was_vowel = is_vowel
 
-    # Adjust for silent 'e'
-    if word.endswith('e'):
+    # Silent-e is English-only.
+    if word.endswith('e') and source_lang == 'en':
         count -= 1
 
     # Ensure at least 1 syllable
@@ -172,9 +179,13 @@ def calculate_flesch_score(text, lang='auto'):
     text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)  # Links
     text = re.sub(r'[*_`#>-]', '', text)  # Markdown symbols
 
-    # Detect language if auto
+    # `lang` is the Flesch FORMULA language (target). `source_lang` is the
+    # actual prose language (used for source-faithful syllable adjustments).
+    # The two differ in Step 5 cross-language scoring (e.g. DE prose on the
+    # EN scale).
+    source_lang = detect_language(text)
     if lang == 'auto':
-        lang = detect_language(text)
+        lang = source_lang
 
     # Split into sentences
     sentences = re.split(r'[.!?]+', text)
@@ -189,8 +200,12 @@ def calculate_flesch_score(text, lang='auto'):
         return 0, lang
 
     # Count syllables using language-appropriate function
-    syllable_fn = count_syllables_de if lang == 'de' else count_syllables_en
-    total_syllables = sum(syllable_fn(word) for word in words)
+    if lang == 'de':
+        total_syllables = sum(count_syllables_de(word) for word in words)
+    else:
+        total_syllables = sum(
+            count_syllables_en(word, source_lang=source_lang) for word in words
+        )
 
     total_words = len(words)
     total_sentences = len(sentences)
