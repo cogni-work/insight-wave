@@ -43,10 +43,13 @@ WIKI_DIRNAME = ".cogni-wiki"
 WIKI_CONFIG_FILENAME = "config.json"
 SOURCES_GLOB = "02-sources/data/src-*.md"
 PROJECT_CONFIG_RELPATH = ".metadata/project-config.json"
-# Slug character class follows the kebab-case contract in cogni-knowledge/CLAUDE.md
-# §Conventions and cogni-wiki's slug convention. Widen if either side ever allows
-# uppercase / underscore / dot — under-matching here returns "clear" when it
-# shouldn't, so the failure mode is silent.
+# Slug character class matches the canonical contract enforced by cogni-wiki's
+# `WIKILINK_RE` in skills/wiki-ingest/scripts/_wikilib.py (kebab-case: lowercase
+# alphanumeric + hyphens) and the slug generator `SLUG_CLEAN_RE` in
+# scripts/batch_builder.py. Verified equivalent at time of writing. If either
+# upstream regex widens (e.g. uppercase, underscore, dot), widen this too —
+# under-matching here returns "clear" when it shouldn't, which is a silent
+# correctness bug.
 WIKI_URL_RE = re.compile(r"^wiki://([a-z0-9-]+)/([a-z0-9-]+)$")
 REPORT_SOURCES_NEEDS_GUARD = {"wiki", "hybrid"}
 REPORT_SOURCES_TRIVIAL = {"web", "local"}
@@ -271,6 +274,8 @@ def main(argv: list[str]) -> int:
     if base_data["direct_self_cycles"]:
         base_data["status"] = "cycle_detected"
         if args.dry_run:
+            # Dry-run is report-don't-gate: success=true, exit 0, even on a
+            # detected cycle. Wet runs gate via success=false + exit 1.
             _emit(True, data=base_data)
             return 0
         _emit(
