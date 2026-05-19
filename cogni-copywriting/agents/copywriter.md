@@ -18,6 +18,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 - `FILE_PATH`: Absolute path to markdown file (required)
 - `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" (default: full)
 - `MODE`: "standard" | "sales" (default: standard) - When "sales", enables Power Positions (IS-DOES-MEANS) enhancement
+- `AUDIENCE`: "expert" | "mixed" | "lay" (default: mixed) - Tunes audience-aware disciplines such as acronym expansion depth. Resolution order: this arg, then document frontmatter `audience:`, then default `mixed`.
 - `STAKEHOLDERS`: Array of perspectives for review (default: auto-select based on audience) - Options: executive, technical, legal, marketing, end-user
 - `REVIEW_MODE`: "automated" | "manual" | "skip" (default: automated) - Controls stakeholder review process
 - `QUALITY_TARGETS`: Custom targets (optional)
@@ -46,7 +47,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 <example>
 <invoke name="Skill">
   <parameter name="skill">cogni-copywriting:copywriter</parameter>
-  <parameter name="args">FILE_PATH={{FILE_PATH}} SCOPE={{SCOPE}} MODE={{MODE}} STAKEHOLDERS={{STAKEHOLDERS}} REVIEW_MODE={{REVIEW_MODE}} QUALITY_TARGETS={{QUALITY_TARGETS}}</parameter>
+  <parameter name="args">FILE_PATH={{FILE_PATH}} SCOPE={{SCOPE}} MODE={{MODE}} AUDIENCE={{AUDIENCE}} STAKEHOLDERS={{STAKEHOLDERS}} REVIEW_MODE={{REVIEW_MODE}} QUALITY_TARGETS={{QUALITY_TARGETS}}</parameter>
 </invoke>
 </example>
 

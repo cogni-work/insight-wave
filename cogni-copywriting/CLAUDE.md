@@ -123,7 +123,7 @@ commands/                                 2 slash commands
 
 1. **Parse parameters and load references** -- reads `00-index.md` decision tree to detect mode (arc/sales/standard) and load exactly the references needed
 2. **Apply structure** -- applies messaging framework pattern (Pyramid, BLUF, etc.); skipped in arc mode (arc IS the structure) or `--scope=tone|formatting`
-3. **Apply writing and formatting** -- language detection (EN/DE), voice transformation, paragraph splitting, bold anchoring, visual rhythm; loads impact techniques for high-impact or executive audiences
+3. **Apply writing and formatting** -- language detection (EN/DE), voice transformation, paragraph splitting, bold anchoring, visual rhythm, first-mention acronym expansion (audience-tuned via `AUDIENCE` arg → frontmatter `audience:` → `mixed`); loads impact techniques for high-impact or executive audiences
 4. **Review** -- optional stakeholder review via copy-reader skill (parallel personas) or automated checklist; never blocks delivery
 5. **Validate and write** -- German chars preserved, citations intact, readability scored, arc validation if active; backs up original before writing
 
@@ -195,6 +195,7 @@ cogni-research --> cogni-narrative --> cogni-copywriting --> cogni-visual
 - Arc mode is triggered by `arc_id` in YAML frontmatter or arc heading patterns; when active, the arc provides structure and element-specific techniques override generic frameworks
 - Sales mode (`MODE: sales`) enables Power Positions (IS-DOES-MEANS) enhancement with number plays on DOES layer and power words on MEANS layer
 - Bilingual support: English uses Flesch Reading Ease (target 50-60), German uses Amstad formula (target 30-50) with Wolf Schneider style rules
+- Acronym handling: first-mention expansion is audience-tuned (`expert` / `mixed` / `lay`); proper nouns, brand names, and arc/sales discipline markers (`**IS**:`, `**DOES**:`, `**MEANS**:`) are excluded; subsequent mentions verbatim. See `skills/copywriter/references/01-core-principles/acronym-handling-principles.md`.
 - Readability script: `python3 scripts/calculate_readability.py <file> [--lang de|en|auto]`
 - Output backup convention: original saved as `.{filename}` (hidden file) before overwrite
 - Copy-json adapter never polishes text itself -- it only handles JSON-to-MD format conversion and delegates all polishing to the copywriter skill

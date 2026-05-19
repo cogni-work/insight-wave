@@ -5,6 +5,63 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.2.0] - 2026-05-19
+
+### Added - Audience-Tuned First-Mention Acronym Expansion
+
+Acronym/abbreviation handling becomes a default polish discipline, sitting alongside Wolf-Schneider clarity, active voice, paragraph splitting, and bold anchoring in Step 3 of the workflow. Each acronym is expanded **once** on its first mention; subsequent mentions stay verbatim. The depth of expansion is tuned to the document's audience.
+
+Before this change, the discipline had to be ordered as a second, separate polish pass — typical pain: the DACH security portfolio pitch series (5 pitches × Wolf-Schneider polish) needed 5 extra copywriter dispatches just for acronym expansion.
+
+#### New `AUDIENCE` skill arg
+
+`AUDIENCE`: `expert` | `mixed` | `lay` (default: `mixed`).
+
+Resolution hierarchy (used by acronym handling and any future audience-aware discipline):
+
+1. Explicit `AUDIENCE` skill arg
+2. Document frontmatter `audience:` field
+3. Default: `mixed`
+
+#### Audience-tuned depth
+
+| Audience | Behaviour |
+|---|---|
+| `expert` | Expand only genuinely technical/ambiguous acronyms (`SIEM`, `MTTI`, `B3S`). Regulation proper nouns like `NIS2`, `DSGVO`, `BSI`, `DORA` stay unaltered. |
+| `mixed` *(default)* | Expand technical acronyms; explain common regulation acronyms once on first mention. |
+| `lay` | Expand virtually every acronym plus a short plain-language gloss in the document language: `MDR (Managed Detection and Response — ein Dienstleister erkennt und stoppt Angriffe rund um die Uhr für Sie)`. |
+
+#### Always-excluded tokens
+
+- Proper nouns: `KRITIS-Dachgesetz`, `EU AI Act`, `B3S`, `ISO 27001`, `TISAX`, `DAX`
+- Brand names: `Magenta Security`, `Open Telekom Cloud`, `Microsoft Entra ID`, `CrowdStrike Falcon`
+- Audience-trivial tokens: `IT`/`EU`/`USD` always; `M365` for non-`lay`
+- Arc/sales structure markers: `**IS**:`, `**DOES**:`, `**MEANS**:` and standalone arc-element labels (already preservation targets in `08-sales-techniques/power-positions.md` line 318)
+
+Compound references like `§38 BSIG-NIS2` carry the explanation on the **compound**, not on the bare token.
+
+#### Changed Files
+
+- **NEW `references/01-core-principles/acronym-handling-principles.md`**: Detection heuristic, audience-tuned depth table, format convention, exclusions, compound-reference rule, arc/sales preservation cross-reference, validation criteria. DE+EN worked examples.
+- **NEW `references/05-examples/example-acronyms-audience.md`**: Same source paragraph polished three times (`expert` / `mixed` / `lay`) demonstrating exclusions, lay-audience glosses, compound references, second-mention verbatim handling.
+- **`SKILL.md`**: Step 1 adds `AUDIENCE` parameter and resolution-order paragraph. Step 3 "Both languages — formatting" adds item 6 (acronym handling). Step 5 validation checklist adds one bullet. Bundled Resources lists the new reference.
+- **`references/00-index.md`**: Always-load core block in Standard and Arc modes now loads `acronym-handling-principles.md`. File Inventory entry added. Index version bumped to 8.1.
+- **`agents/copywriter.md`**: New `AUDIENCE` input; passed through in the Step 2 skill invocation. No new JSON output field — acronym info (if surfaced) fits in existing `improvements[]`.
+- **`CLAUDE.md`**: Copywriter Polish Flow Step 3 description and Key Conventions extended.
+
+#### Rationale
+
+This discipline is editorial-universal — as foundational as active voice or the Sie-Form for mixed B2B audiences — but was missing from the default polish loop. With audience-tuning, the discipline reads neither belehrend for experts (NIS2 not expanded in front of a KRITIS-CISO) nor opaque for lay readers (MDR carries a plain-language gloss for the SMB-Inhaber audience).
+
+Closes #248.
+
+#### Migration Notes
+
+- **Non-breaking**: Default `AUDIENCE=mixed` matches the reasonable middle ground; callers and frontmatter consumers continue to work without changes.
+- **For portfolio pitches**: `cogni-portfolio:portfolio-communicate` 0.9.49+ emits `audience:` and `personas:` in pitch frontmatter automatically — no manual backfill needed.
+
+---
+
 ## [7.1.0] - 2026-02-25
 
 ### Fixed - Language-Aware Flesch Targets for German
