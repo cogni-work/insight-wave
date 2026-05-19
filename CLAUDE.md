@@ -1,6 +1,6 @@
 # insight-wave
 
-13-plugin monorepo for consulting, sales, and marketing on Claude Code. AGPL-3.0. All plugins follow the Claude Code plugin standard.
+15-plugin monorepo for consulting, sales, and marketing on Claude Code. AGPL-3.0. All plugins follow the Claude Code plugin standard.
 
 ## Repo Structure
 
