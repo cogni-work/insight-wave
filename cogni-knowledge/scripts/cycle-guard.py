@@ -54,11 +54,7 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> dict:
     return payload
 
 
-# Minimal stdlib frontmatter parser. Modeled on
-# cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter
-# (lines 318-347). Kept inline rather than imported so cogni-knowledge
-# stays decoupled from cogni-wiki's internals. If cogni-wiki's parser
-# diverges in a way that matters here, update this in lock-step.
+# Inlined (not imported from cogni-wiki) to keep cogni-knowledge decoupled.
 _FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n", re.DOTALL)
 
 
@@ -185,7 +181,6 @@ def main(argv: list[str]) -> int:
         "candidate_slug": candidate_slug,
         "report_source": report_source,
         "wiki_slug": wiki_slug,
-        "wiki_sources_examined": 0,
         "wiki_pages_cited": [],
         "wiki_pages_cited_missing": [],
         "direct_self_cycles": [],
@@ -207,7 +202,6 @@ def main(argv: list[str]) -> int:
             fm = _parse_frontmatter(src.read_text(encoding="utf-8"))
         except OSError:
             continue
-        base_data["wiki_sources_examined"] += 1
         url = _strip_quotes(str(fm.get("url", "")))
         m = WIKI_URL_RE.match(url)
         if not m:
