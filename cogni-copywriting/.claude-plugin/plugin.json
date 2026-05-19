@@ -1,6 +1,6 @@
 {
   "name": "cogni-copywriting",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, arc contract audit against cogni-narrative, and EN↔DE translation pass (translate then polish).",
   "author": {
     "name": "Stephan de Haas",
