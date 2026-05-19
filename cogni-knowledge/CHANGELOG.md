@@ -1,5 +1,11 @@
 # cogni-knowledge changelog
 
+## 0.0.9 — 2026-05-19
+
+### Added
+
+- Skill `knowledge-dashboard` — composes `cogni-wiki:wiki-dashboard` with a binding overlay sidecar (`knowledge-overlay.md`) listing deposited research projects and the latest lint-audit `claim_drift` count. Co-located with `wiki-dashboard.html` so both files travel together when the user shares the base.
+
 ## 0.0.8 — 2026-05-19
 
 Phase 3 of the wiki-first research epic (#264) begins — query the bound base by slug.
