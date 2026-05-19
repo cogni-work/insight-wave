@@ -46,7 +46,7 @@ This split gives clean diagnostics: meaning failures land in Pass A; style failu
 
 A separate translation plugin would fight the existing grain. cogni-copywriting already has every prerequisite: bilingual EN/DE awareness, Wolf-Schneider DE style discipline, language-aware Flesch/Amstad scoring, language detection in Step 3, the three preservation invariants (German chars / citations / protected content) that translation must honour anyway, and the proven `copy-json` delegate-with-a-mode adapter pattern. Extending the copywriter skill with a parallel parameter to `AUDIENCE` is the smallest architectural surface.
 
-Closes #TBD.
+See #255 for Phase 2 (FR/IT/PL/NL/ES + arc-mode translation).
 
 #### Migration Notes
 
