@@ -17,6 +17,7 @@ Adapter that bridges JSON files to the copywriter skill. Extracts text fields fr
 | `FIELDS` | yes | — | Dot-path field selector (e.g. `plugins[*].description`) |
 | `SCOPE` | no | `tone` | Passed to copywriter (`tone` is the right default for short JSON text) |
 | `MODE` | no | `standard` | `sales` for IS/DOES/MEANS fields |
+| `TARGET_LANG` | no | unset | `de` or `en` — when set, copywriter runs translate-then-polish on each field before writing back. v1 supports EN↔DE only. |
 | `DRY_RUN` | no | `false` | Show before/after without writing |
 
 ## FIELDS Selector Syntax
@@ -72,14 +73,16 @@ Simple dot-path with `[*]` for arrays:
 
    FILE_PATH = {path to temp MD}
    SCOPE = {SCOPE parameter, default: tone}
+   TARGET_LANG = {TARGET_LANG parameter, omitted when unset}
    ```
 
    Additional instructions to copywriter:
-   - Preserve all `<!-- FIELD: ... -->` comment delimiters exactly as-is
+   - Preserve all `<!-- FIELD: ... -->` comment delimiters exactly as-is (they fall under the protected-content invariant — the translate pass must also leave them byte-identical)
    - Each field is an independent text snippet — do not merge or reorder them
    - These are JSON string values — do NOT add markdown formatting (no `**bold**`, `# headings`, `- lists`)
    - Keep each field as a single paragraph unless the original has line breaks
    - If MODE=sales: apply IS/DOES/MEANS sales messaging techniques (Power Positions, FAB)
+   - If TARGET_LANG is set: each field is translated then polished into the target language in place; the field delimiter format is unchanged
 
 4. Wait for copywriter skill completion
 
@@ -88,10 +91,13 @@ Simple dot-path with `[*]` for arrays:
 1. Read the polished temp MD file
 2. Split content by `<!-- FIELD: ... -->` delimiters to recover per-field text
 3. For each extracted field, trim whitespace and validate:
-   - **German chars preserved**: ä, ö, ü, ß and uppercase forms still present if they were in original
+   - **German chars** — direction-aware:
+     - `TARGET_LANG` unset: ä/ö/ü/ß and uppercase forms still present if they were in original (preservation)
+     - `TARGET_LANG=de`: output must contain ä/ö/ü/ß where target prose requires them; never ASCII substitutes (ae/oe/ue/ss)
+     - `TARGET_LANG=en`: output must contain no ä/ö/ü/ß characters (except inside preserved proper nouns)
    - **No markdown injection**: reject if polished text contains `**`, `__`, `# `, `- ` list markers, or `| table |` syntax (these don't belong in JSON string values)
-   - **Length guard**: polished text must not exceed 2x length of original (prevents prose expansion)
-   - **Citations preserved**: if original contained `[P1-1]` or similar citation markers, they must still be present
+   - **Length guard**: polished text must not exceed 2x length of original (prevents prose expansion). For translations, allow 2.5x — German translations of English text are typically 20-30% longer.
+   - **Citations preserved**: if original contained `[P1-1]` or similar citation markers, they must still be present (translation requires exact count match; non-translation requires count >= original)
 4. If any validation fails, keep original text for that field and log a warning
 5. Delete the temp MD file
 

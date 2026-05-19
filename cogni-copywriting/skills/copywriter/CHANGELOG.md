@@ -5,6 +5,57 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.3.0] - 2026-05-19
+
+> Note: this `7.x.x` line tracks the **copywriter skill's internal versioning** (independent of the plugin's external `version` in `.claude-plugin/plugin.json`). The skill internal bump 7.2.0 → 7.3.0 ships in plugin release 0.3.0.
+
+### Added - Translation Mode (EN↔DE)
+
+The copywriter skill gains a translate-then-polish two-pass flow. Before this change, users with existing English content who needed German output (or vice versa) had no path inside the insight-wave ecosystem — every generation plugin assumes you regenerate in the target language from upstream. Regeneration is often not viable: source content was hand-edited, the originating project is closed, or teams collaborate across languages off a canonical English narrative.
+
+#### New `TARGET_LANG` skill arg
+
+`TARGET_LANG`: `de` | `en` (optional; default: unset, no translation).
+
+Resolution hierarchy (mirrors the `AUDIENCE` precedent from v7.2.0):
+
+1. Explicit `TARGET_LANG` skill arg
+2. Document frontmatter `target_language:` field
+3. Unset (no translation; skill polishes in source language only)
+
+#### Two-pass model
+
+- **Pass A — Translate (new Step 2.5)**: faithful semantic transfer from source to target language. Citations, URLs, frontmatter technical IDs, protected content, code blocks, and Power Position structure markers stay byte-identical. Acronyms pass through unchanged.
+- **Pass B — Polish (existing Step 3)**: target-language style discipline. Wolf-Schneider rules for DE output (12-word clauses, Satzklammer breaking, Mittelfeld shortening, Floskel elimination); Flesch tuning and active-voice transformation for EN output. Audience-tuned acronym expansion runs here on the translated text.
+
+This split gives clean diagnostics: meaning failures land in Pass A; style failures land in Pass B.
+
+#### v1 scope and limits
+
+- **Languages**: EN ↔ DE only. Other `TARGET_LANG` values abort with a clear message.
+- **Arc mode blocked**: when document frontmatter contains `arc_id`, translation aborts. Arc-element heading texts require exact-match preservation (see `09-preservation-modes/arc-preservation.md` lines 87–97), and the EN/DE heading mapping integration with `cogni-narrative/skills/narrative/references/language-templates.md` is non-trivial. Deferred to Phase 2.
+- **Source == target**: no-op. The skill logs a message and falls through to standard polish in the source language.
+
+#### Changed Files
+
+- **NEW** under `references/01-core-principles/`: `translation-principles.md` (two-pass philosophy, preserve-vs-translate list, citation anchoring), `translation-en-to-de.md` (Sie-form, umlaut traps, Satzklammer, compound nouns, gender resolution), `translation-de-to-en.md` (compound decomposition, sentence splitting, nominal→verbal style, number/date formatting).
+- **Workflow surface**: `SKILL.md` (Step 1 `TARGET_LANG` + pre-checks, new Step 2.5 Translate Pass, Step 5 translation validation), `references/00-index.md` (CHECK 0 conditional load, v8.2), `agents/copywriter.md` (input + JSON output), `commands/copywrite.md` (`--translate=de|en`), `skills/copy-json/SKILL.md` (pass-through + direction-aware charset check).
+- **Docs and version**: `CLAUDE.md`, `README.md`, `.claude-plugin/plugin.json` (0.2.3 → 0.3.0), marketplace mirror, `copywriter-workspace/eval_set.json` (translation query flipped to `should_trigger: true`).
+
+#### Rationale
+
+A separate translation plugin would fight the existing grain. cogni-copywriting already has every prerequisite: bilingual EN/DE awareness, Wolf-Schneider DE style discipline, language-aware Flesch/Amstad scoring, language detection in Step 3, the three preservation invariants (German chars / citations / protected content) that translation must honour anyway, and the proven `copy-json` delegate-with-a-mode adapter pattern. Extending the copywriter skill with a parallel parameter to `AUDIENCE` is the smallest architectural surface.
+
+Closes #TBD.
+
+#### Migration Notes
+
+- **Non-breaking**: default `TARGET_LANG` unset preserves all existing polish behaviour exactly.
+- **Existing `--lang` parameter unchanged**: it remains the *source*-language override for the language detector. `TARGET_LANG` is the new orthogonal *target* hint.
+- **Phase 2 follow-up**: tracked as a GitHub issue covering FR/IT/PL/NL/ES translation directions and arc-mode translation (which requires heading-set substitution via `language-templates.md`).
+
+---
+
 ## [7.2.0] - 2026-05-19
 
 ### Added - Audience-Tuned First-Mention Acronym Expansion

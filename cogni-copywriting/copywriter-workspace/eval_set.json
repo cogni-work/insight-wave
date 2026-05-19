@@ -65,7 +65,7 @@
   },
   {
     "query": "can you translate this document from English to German? It's our product description at docs/product-overview.md and we need it for the DACH market launch",
-    "should_trigger": false
+    "should_trigger": true
   },
   {
     "query": "I want to create an interactive dashboard showing our sales pipeline data. I have the data in a JSON file at api/pipeline.json and want to use React with charts",
