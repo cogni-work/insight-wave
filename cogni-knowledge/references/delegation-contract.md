@@ -60,8 +60,8 @@ When Phase 6 absorbs cogni-research, these agents move into `cogni-knowledge/age
 
 Phase 2 modifies `cogni-wiki:wiki-from-research` to lift its current abort on `report_source ∈ {wiki, hybrid}` projects, gated behind a new `--allow-wiki-source --cycle-guard-cleared` opt-in. This is the right pattern: the cycle-guard logic lives in cogni-knowledge (it is cogni-knowledge-specific — there is no general-purpose meaning to "research lineage" in `cogni-wiki`), but the deposit pathway lives in `cogni-wiki`. We add an opt-in flag instead of forking the deposit pathway.
 
-## Wiring `report_source` into `binding.json` (shipped in Phase 2, partial)
+## Wiring `report_source` into `binding.json`
 
-`knowledge-report` (Phase 2, v0.0.6) reads the live `report_source` from `<project>/.metadata/project-config.json` and passes it through to `knowledge-binding.py append-project` — `wiki` for round-trip runs, `hybrid` if a user opts in, `web`/`local` if the user pivots away from wiki mode in the interactive menu. This is the satisfaction of the Phase-2 guardrail for the new round-trip codepath.
+`knowledge-research` (v0.0.7) and `knowledge-report` (v0.0.6) both read the live `report_source` from `<project>/.metadata/project-config.json` and pass it through to `knowledge-binding.py append-project` — `wiki` for round-trip runs, `hybrid` if a user opts in, `web`/`local` for default Mode A invocations or when a user pivots away from wiki mode in the interactive menu.
 
-`knowledge-research` (Phase 1) still hard-codes `--report-source web`. That is correct *for its scope* — `wiki-from-research` Mode A's default refusal of `report_source ∈ {wiki, hybrid}` (lifted only behind the cogni-knowledge-owned opt-in flag pair) means a non-web `knowledge-research` invocation cannot reach the binding append today. A follow-up patch will lift the hard-code in `knowledge-research` once we wire the opt-in flags through it too. Until then the guardrail rule still applies: when a new skill or codepath calls `append-project`, the `report_source` value MUST be sourced live from `<project>/.metadata/project-config.json`, never assumed.
+The guardrail rule: when a new skill or codepath calls `append-project`, the `report_source` value MUST be sourced live from `<project>/.metadata/project-config.json`, never assumed.

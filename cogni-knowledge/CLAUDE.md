@@ -104,4 +104,3 @@ Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wik
 
 Phase-2 follow-up debt (deliberately deferred, tracked under #264):
 - Transitive (multi-hop) cycle detection — MVP catches direct self-cycles only.
-- Lift `knowledge-research`'s hard-coded `--report-source web` to read the live `report_source` from `<project>/.metadata/project-config.json`. The corresponding fix already ships in `knowledge-report` (Step 5); `knowledge-research`'s parallel fix is a separate small PR.

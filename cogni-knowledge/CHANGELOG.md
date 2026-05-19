@@ -1,5 +1,11 @@
 # cogni-knowledge changelog
 
+## 0.0.7 — 2026-05-19
+
+### Fixed
+
+- `knowledge-research` Step 3 now records the live `report_source` from `<project>/.metadata/project-config.json` instead of the hard-coded `web` literal. Mirrors `knowledge-report` Step 5. Closes the third Phase-2 follow-up checkbox on #264.
+
 ## 0.0.6 — 2026-05-19
 
 Phase 2 of the wiki-first research epic (#264) — the wiki-roundtrip primitive lands. Reports now get composed by reading the deposited wiki pages, not by re-fetching the same web sources.
