@@ -6,7 +6,7 @@ Reading order: this file, then `differentiation-thesis.md`, then `delegation-con
 
 ## Phases
 
-### Phase 1 — MVP: binding + accumulating research (v0.0.1 → v0.0.5) — **THIS PHASE**
+### Phase 1 — MVP: binding + accumulating research (v0.0.1 → v0.0.5)
 
 **Status.** Shipped at v0.0.1.
 
@@ -19,14 +19,20 @@ Reading order: this file, then `differentiation-thesis.md`, then `delegation-con
 
 **Out of scope.** Wiki-roundtrip composition, cycle-guard, push-refresh, dashboard, query convenience.
 
-### Phase 2 — Wiki-roundtrip reports (v0.0.6 → v0.0.10)
+### Phase 2 — Wiki-roundtrip reports (v0.0.6 → v0.0.10) — **THIS PHASE**
+
+**Status.** Shipped at v0.0.6.
 
 **Goal.** Reports get composed by reading the deposited wiki pages, not transient research contexts.
 
 **Deliverables.**
-- `scripts/cycle-guard.py` — detects circular wiki↔research evidence chains by walking the `derived_from_research:` lineage stamps.
-- Modification to `cogni-wiki/skills/wiki-from-research/SKILL.md`: lift the hard abort on `report_source ∈ {wiki, hybrid}`, gated behind `--allow-wiki-source --cycle-guard-cleared` opt-in flags. Default behavior unchanged for direct users.
-- `skills/knowledge-report/SKILL.md` — dispatches `cogni-research:research-setup` with `report_source=wiki, wiki_paths=[<bound>]`, runs `research-report`, then re-deposits via `wiki-from-research` Mode B with the cycle-guard cleared flag.
+- `scripts/cycle-guard.py` — detects direct self-cycle wiki↔research evidence chains by walking the candidate project's `02-sources/data/src-*.md` source entities for `wiki://<bound-slug>/<page-id>` citations and checking each resolved page's frontmatter for `derived_from_research: <candidate-slug>` lineage stamps. Transitive (multi-hop) cycle detection is intentionally deferred to a v0.0.7+ patch — MVP catches direct self-cycles only.
+- Modification to `cogni-wiki/skills/wiki-from-research/SKILL.md` (cogni-wiki v0.0.40): lift the hard abort on `report_source ∈ {wiki, hybrid}`, gated behind `--allow-wiki-source --cycle-guard-cleared` opt-in flags. Default behavior unchanged for direct users.
+- `skills/knowledge-report/SKILL.md` — dispatches `cogni-research:research-setup` with a wiki-mode pre-fill prompt against the bound wiki, runs `research-report` (auto-chained), runs `cycle-guard.py` to refuse self-citing loops, then re-deposits via `wiki-from-research` Mode B with the opt-in flag pair. Records the live `report_source` from `<project>/.metadata/project-config.json` in the binding — first satisfaction of the delegation-contract Phase-2 guardrail.
+
+**Follow-up debt (tracked under #264 for v0.0.7+):**
+- Transitive (multi-hop) cycle detection.
+- Lift `knowledge-research`'s hard-coded `--report-source web` to read the live `report_source` (one-line follow-up patch).
 
 ### Phase 3 — Query, dashboard, push-refresh (v0.0.11 → v0.0.15)
 

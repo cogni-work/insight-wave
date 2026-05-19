@@ -20,7 +20,7 @@ This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wik
 
 **IS:** A binding orchestrator that turns `cogni-research + cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every `knowledge-research` run deposits into that wiki and is recorded in the binding; every `knowledge-report` (Phase 2) reads from it.
 
-**DOES** (Phase 1, the MVP): three skills — `knowledge-setup`, `knowledge-research`, `knowledge-resume` — and two scripts (`knowledge-binding.py`, `lineage-stamp.py`).
+**DOES** (Phase 1 + Phase 2): four skills — `knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume` — and three scripts (`knowledge-binding.py`, `lineage-stamp.py`, `cycle-guard.py`). Phase 2 (`knowledge-report`) closes the round-trip: reports get composed by reading the deposited wiki pages, with a deterministic cycle-guard that refuses self-citing loops.
 
 **MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. The wiki becomes the single source of truth for your topic area, queryable forever via `cogni-wiki:wiki-query` or future `knowledge-query`. No vector store, no embeddings — just markdown that compounds.
 
@@ -30,9 +30,10 @@ This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wik
 |---|---|---|
 | `knowledge-setup` | Bootstrap a knowledge base (wiki + binding manifest) | `cogni-wiki:wiki-setup` |
 | `knowledge-research` | Research a topic INTO the bound wiki and record the project | `cogni-wiki:wiki-from-research` (Mode A) |
+| `knowledge-report` | Compose a report BY READING the bound wiki, with cycle-guard, then re-deposit | `cogni-wiki:wiki-from-research` (Mode B, with opt-in flags) |
 | `knowledge-resume` | Status: deposited projects, wiki health, suggested next action | `cogni-wiki:wiki-resume` |
 
-Phase 2+ skills (`knowledge-report`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) follow once Phase 1 proves out the accumulation thesis. See `references/absorption-roadmap.md` for the full epic plan.
+Phase 3+ skills (`knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) follow once Phase 2 proves out the round-trip. See `references/absorption-roadmap.md` for the full epic plan.
 
 ## Installation
 
@@ -86,8 +87,8 @@ The deposited pages are now part of the wiki and visible to the next `knowledge-
 
 ## Components
 
-- 3 skills (`knowledge-setup`, `knowledge-research`, `knowledge-resume`)
-- 2 scripts (`knowledge-binding.py`, `lineage-stamp.py`)
+- 4 skills (`knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume`)
+- 3 scripts (`knowledge-binding.py`, `lineage-stamp.py`, `cycle-guard.py`)
 - 3 references (`differentiation-thesis.md`, `delegation-contract.md`, `absorption-roadmap.md`)
 
 ## Architecture
@@ -101,7 +102,7 @@ user ──> cogni-knowledge ──> cogni-wiki:wiki-from-research ──> cogni
 
 ## Dependencies
 
-- `cogni-wiki` ≥ 0.0.39
+- `cogni-wiki` ≥ 0.0.40 (Phase 2 needs the `--allow-wiki-source --cycle-guard-cleared` flag pair on `wiki-from-research`)
 - `cogni-research` ≥ 0.8.3
 
 ## Custom development
