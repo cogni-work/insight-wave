@@ -21,7 +21,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start to
 ## Never run when
 
 - The user already has both a populated wiki *and* a finished research project and only wants to deposit — that's `wiki-ingest --discover research:<slug>` directly. This skill is for the cold-start case.
-- The cogni-research project to be deposited has `report_source ∈ {wiki, hybrid}` — see Step 0 (5).
+- The cogni-research project to be deposited has `report_source ∈ {wiki, hybrid}` AND `--allow-wiki-source --cycle-guard-cleared` are not both passed — see Step 0 (3).
 
 ## Parameters
 
@@ -38,6 +38,8 @@ Exactly one of `--topic` or `--research-slug` must be present.
 | `--publisher-base-url` | No | Pass-through to `wiki-setup`. |
 | `--research-overrides` | No | Mode A only. Comma-separated `key=value` hints forwarded to `research-setup` (e.g. `report_type=detailed,market=dach,target_words=5000`). Default: `report_type=detailed`. The user can still override every value in `research-setup`'s interactive menu — overrides are pre-fills, not pins. |
 | `--skip-verify` | No | Mode B only. Skip the warning when zero report-claims have `verification_status: verified`. |
+| `--allow-wiki-source` | No | Mode A & Mode B. Opt-in to depositing a wiki/hybrid-mode research project — lifts the default refusal at Step 0(3) (Mode B) and Step 1d (Mode A post-research-setup re-check). MUST be combined with `--cycle-guard-cleared`. Direct users should not pass this — it exists for orchestrators (e.g. `cogni-knowledge:knowledge-report`) that have verified no circular-evidence chain. |
+| `--cycle-guard-cleared` | No | Mode A & Mode B. Caller asserts that an external cycle-guard pass (e.g. `cogni-knowledge/scripts/cycle-guard.py`) returned exit 0 on this project. This skill trusts the assertion — it does NOT re-run the guard itself, because cycle semantics are caller-specific (cogni-knowledge owns `derived_from_research:` lineage; a future caller may walk a different lineage signal). MUST be combined with `--allow-wiki-source`. |
 | `--dry-run` | No | Run all pre-flight checks and print the resolved plan (slugs, paths, dispatch order). Do not invoke any sub-skill. |
 
 If neither `--topic` nor `--research-slug` is present, abort with a clear message — never guess. Disambiguation is via flag, not heuristic, because both forms can look alike (e.g. `agent-economy` is a valid topic *and* a valid slug).
@@ -62,7 +64,7 @@ The order matters: in Mode A, the **wiki-target check runs before any research d
 3. **Mode B: research project sanity.**
    - Look for `cogni-research-<research_slug>/` at `<workspace>/` (workspace = wiki_root's parent) or `<wiki_root>/`. If neither: abort.
    - If `<project>/output/report.md` is missing: abort with "research project found but not yet completed — run `cogni-research:research-resume` first".
-   - Read `<project>/project-config.json`. If `report_source ∈ {wiki, hybrid}`: abort with "this skill cannot deposit a wiki/hybrid-mode research project into a wiki — circular reads not yet handled in v1".
+   - Read `<project>/.metadata/project-config.json`. If `report_source ∈ {wiki, hybrid}` AND NOT (`--allow-wiki-source` AND `--cycle-guard-cleared` both passed): abort with "this skill cannot deposit a wiki/hybrid-mode research project into a wiki — circular reads not yet handled in v1. Callers that have verified no cycle exists may pass `--allow-wiki-source --cycle-guard-cleared` to opt in."
 
 4. **Mode B: verify-report nudge.**
    - Glob `<project>/03-report-claims/data/rc-*.md`. Count entities whose frontmatter has `verification_status: verified`.
@@ -88,7 +90,7 @@ Forward `--research-overrides` as a sentence per pair. Default override added if
 
 1c. Capture `resolved_slug` from the `research-setup` output (it prints the project path; parse `cogni-research-<slug>/` from it). Set `research_slug = resolved_slug`. If `--wiki-slug` was not set, also update `wiki_slug = resolved_slug` (and recompute `wiki_root` if `--wiki-root` was not set).
 
-1d. **Re-run Step 0 (3) and (4) against `resolved_slug`.** The user may have routed cogni-research to a different location, or the topic may have collided with an existing project. Fail-fast if `output/report.md` is absent or `report_source ∈ {wiki, hybrid}`. Run the verify-report nudge — Mode A produces a fresh report whose claims are all `pending` by default, so the nudge genuinely applies (most users will pick `run-verify-first` here).
+1d. **Re-run Step 0 (3) and (4) against `resolved_slug`.** The user may have routed cogni-research to a different location, or the topic may have collided with an existing project. Fail-fast if `output/report.md` is absent or if `report_source ∈ {wiki, hybrid}` AND NOT (`--allow-wiki-source` AND `--cycle-guard-cleared` both passed) — the same conditional refusal as Step 0(3). Run the verify-report nudge — Mode A produces a fresh report whose claims are all `pending` by default, so the nudge genuinely applies (most users will pick `run-verify-first` here).
 
 ### 2. Run wiki-setup
 
@@ -152,7 +154,7 @@ In Mode A we let `cogni-research` derive the slug from the topic. If the topic c
 - **Does not duplicate `research-setup`'s configuration menu.** Market, language, tone, citations, source mode are all decided in `research-setup` — this skill only forwards hints.
 - **Does not write wiki pages directly.** Every page passes through `wiki-ingest`'s lock-protected per-source worker, with the page-frontmatter contract and atomic index/config writes.
 - **Does not integrate with cogni-narrative or cogni-copywriting.** Those are downstream of the wiki, not part of cold-start.
-- **Does not deposit `report_source ∈ {wiki, hybrid}` projects in v1.** Reading from a wiki and writing back to the same wiki creates circular-evidence risk that needs its own design cycle.
+- **Default-refuses `report_source ∈ {wiki, hybrid}` projects.** Reading from a wiki and writing back to the same wiki creates circular-evidence risk. Lifted only behind the `--allow-wiki-source --cycle-guard-cleared` opt-in (v0.0.40+) — direct users should not pass these; the flag pair exists for orchestrators (e.g. `cogni-knowledge:knowledge-report`) that own a domain-specific cycle-guard.
 
 ## Output
 

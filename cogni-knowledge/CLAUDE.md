@@ -21,20 +21,24 @@ A "knowledge base" is one directory that contains both:
 
 They live as siblings. The wiki is the substrate; the binding records which research projects have contributed.
 
-## Skills (Phase 1)
+## Skills
 
 | Skill | Role |
 |---|---|
 | `knowledge-setup` | Bootstrap a knowledge base. Dispatches `cogni-wiki:wiki-setup` if no wiki exists, then writes `binding.json`. |
 | `knowledge-research` | Research a topic INTO the bound wiki. Dispatches `cogni-wiki:wiki-from-research --topic ...` (Mode A), then stamps lineage and appends to the binding. |
+| `knowledge-report` | Compose a report BY READING the bound wiki, refuse self-citing loops via `cycle-guard.py`, then re-deposit via `cogni-wiki:wiki-from-research` Mode B with `--allow-wiki-source --cycle-guard-cleared`. Records the live `report_source` (wiki/hybrid) in the binding. Phase 2 of the absorption roadmap. |
 | `knowledge-resume` | Status. Reads `binding.json` and delegates to `cogni-wiki:wiki-resume` (which itself runs `wiki-health`). |
+
+Phase 2 closes the round-trip — `knowledge-report` reads the wiki, re-deposits via `wiki-from-research` Mode B with the opt-in flags, and `cycle-guard.py` refuses self-citing loops. The differentiation thesis (knowledge compounds across projects) holds only with this loop closed; before v0.0.6 a second research run could only deposit, never compose-and-deposit.
 
 ## Scripts
 
 | Script | Purpose | LLM? |
 |---|---|---|
-| `knowledge-binding.py` | `--init` / `--append-project` / `--read` against `.cogni-knowledge/binding.json` | No (stdlib only) |
+| `knowledge-binding.py` | `init` / `append-project` / `read` subcommands against `.cogni-knowledge/binding.json` | No (stdlib only) |
 | `lineage-stamp.py` | Stamps `derived_from_research: <slug>` into the YAML frontmatter of deposited wiki pages | No (stdlib only) |
+| `cycle-guard.py` | Detects direct self-cycles before a wiki-mode re-deposit: walks the candidate project's `02-sources/data/src-*.md` for `wiki://<bound-slug>/<page-id>` citations and checks each resolved page's frontmatter for `derived_from_research: <candidate-slug>`. Exit 1 on `cycle_detected`, exit 0 on `clear` or `not_applicable` (web/local mode). | No (stdlib only) |
 
 All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the insight-wave convention (`../CLAUDE.md` §"Script Output Format"). Stdlib only — no pip dependencies.
 
@@ -96,6 +100,8 @@ Only the frontmatter changes — page bodies are never touched.
 
 ## Future phases
 
-Phase 2 lights up `knowledge-report` (wiki-roundtrip composition with cycle-guard). Phase 3 lights up `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`. Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
+Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 lights up `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`. Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
 
-Do not implement Phase 2+ work in Phase 1 commits. The MVP is intentionally small.
+Phase-2 follow-up debt (deliberately deferred, tracked under #264):
+- Transitive (multi-hop) cycle detection — MVP catches direct self-cycles only.
+- Lift `knowledge-research`'s hard-coded `--report-source web` to read the live `report_source` from `<project>/.metadata/project-config.json`. The corresponding fix already ships in `knowledge-report` (Step 5); `knowledge-research`'s parallel fix is a separate small PR.
