@@ -37,6 +37,24 @@ If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with 
 
 ## Workflow
 
+### 0. Pre-flight: required plugins
+
+cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; without either of them, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe both sibling plugin dirs before touching anything else:
+
+```
+WIKI_OK=$(test -f "${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/wiki-setup/SKILL.md" && echo yes || echo no)
+RESEARCH_OK=$(test -f "${CLAUDE_PLUGIN_ROOT}/../cogni-research/skills/research-setup/SKILL.md" && echo yes || echo no)
+```
+
+If either is `no`, list the missing plugin(s) and abort:
+
+> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
+> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+
+Do not attempt to install or auto-recover — surface the missing dependency and let the user install it explicitly.
+
+This check is currently only in `knowledge-setup`. Setup is the gate that creates the binding, so a clean abort here protects the user from a half-bootstrapped base; downstream skills (`knowledge-research`, `knowledge-report`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) rely on the binding's existence as a soft proxy for plugin presence. A future patch may roll the check into the other five skills.
+
 ### 1. Resolve the knowledge root
 
 1. If `--knowledge-root` was passed, use it as-is.
