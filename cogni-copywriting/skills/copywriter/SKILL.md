@@ -96,9 +96,11 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 **Translation pre-checks** (run only when `TARGET_LANG` resolves to a value):
 
 1. Resolve `source_lang` via the existing detector in Step 3 (`--lang` → workspace config → content analysis).
-2. If `source_lang == TARGET_LANG`, log "source language already matches target — skipping translation pass" and fall through to standard polish.
+2. If `source_lang == TARGET_LANG`, log "source language already matches target — skipping translation pass" and fall through to standard polish. **Also unset the translation scope override below** so the user's explicit `--scope` is honoured (a user invoking `--scope=full` on a same-language doc expects Step 2 to run normally).
 3. If document frontmatter contains `arc_id`, abort with: "Arc-mode translation is not supported in v1 (arc heading texts require exact-match preservation; translating them would break the arc contract). Run translation on the non-arc document, or follow the Phase 2 issue for arc-mode translation support." Do not modify the file.
 4. In v1, accept only `de` and `en`. Any other value: abort with "TARGET_LANG=`{value}` is not supported in v1 (EN↔DE only). See the follow-up issue for FR/IT/PL/NL/ES."
+
+The scope override and Step 2.5 below apply only when `TARGET_LANG` is set **and** the source==target no-op did not fire (i.e. translation actually runs).
 
 **Load the reference index first:**
 
@@ -254,7 +256,12 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 **Translation-specific validation** (only when `TARGET_LANG` was set):
 
 - **Target charset matches** — when `TARGET_LANG=de`, output contains German umlauts/eszett (ä/ö/ü/ß) where the German prose requires them; never ASCII substitutes (ae/oe/ue/ss). When `TARGET_LANG=en`, output contains no ä/ö/ü/ß characters except inside preserved proper nouns or quoted German terms.
-- **Citation count exactly preserved** — the regex count of `\[P\d+-\d+\]` (and any other citation-marker patterns in the source) in the output equals the source count. URLs from all markers are byte-identical to source URLs.
+- **Citation count exactly preserved** — for each of the four citation-marker patterns supported by the skill, the regex count in the output equals the source count, and every URL is byte-identical to its source URL:
+  1. Inline cite with URL: `\[P\d+-\d+\]\([^)]+\)`
+  2. Inline cite without URL: `\[P\d+-\d+\](?!\()`
+  3. Superscript footnote: `<sup>\[\d+\]</sup>`
+  4. Source tag: `\[(portfolio-validated|claim-verified|[a-z-]+-validated)\]`
+  (These mirror the four marker types enumerated in `translation-principles.md` § "Preserve byte-identical".)
 - **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, and any other technical identifier fields in the frontmatter are byte-identical to source values. The `target_language:` field is set to the new value (added if absent).
 - **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian embeds, kanban tables match the source byte-for-byte.
 

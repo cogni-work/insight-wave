@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [7.3.0] - 2026-05-19
 
+> Note: this `7.x.x` line tracks the **copywriter skill's internal versioning** (independent of the plugin's external `version` in `.claude-plugin/plugin.json`). The skill internal bump 7.2.0 → 7.3.0 ships in plugin release 0.3.0.
+
 ### Added - Translation Mode (EN↔DE)
 
 The copywriter skill gains a translate-then-polish two-pass flow. Before this change, users with existing English content who needed German output (or vice versa) had no path inside the insight-wave ecosystem — every generation plugin assumes you regenerate in the target language from upstream. Regeneration is often not viable: source content was hand-edited, the originating project is closed, or teams collaborate across languages off a canonical English narrative.
