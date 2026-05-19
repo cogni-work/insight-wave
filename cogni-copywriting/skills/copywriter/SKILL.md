@@ -264,9 +264,9 @@ Review enhances quality but never blocks delivery — if review fails, continue 
   (These mirror the four marker types enumerated in `translation-principles.md` § "Preserve byte-identical".)
 - **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, and any other technical identifier fields in the frontmatter are byte-identical to source values. The `target_language:` field is set to the new value (added if absent).
 - **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian embeds, kanban tables match the source byte-for-byte.
-- **Readability relative to source** — when `TARGET_LANG` is set, score source and output on the **target-language Flesch scale**, then compare. Invocation:
-  - `python3 scripts/calculate_readability.py <source.md> --lang $TARGET_LANG` → `source_score`
-  - `python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG` → `output_score`
+- **Readability relative to source** — when `TARGET_LANG` is set, score source and output on the **target-language Flesch scale**, then compare. Invocation (read `flesch_score` from each JSON result):
+  - `python3 scripts/calculate_readability.py <source.md> --lang $TARGET_LANG` → `source_score` (= `flesch_score`)
+  - `python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG` → `output_score` (= `flesch_score`)
   - **Pass rule**: `output_score >= source_score - 5`. The 5-point soft floor absorbs measurement noise and unavoidable cross-language structural drift (e.g., German compound length pushing Amstad down 2–4 points for a faithful EN→DE rendering).
   - **Absolute band reporting**: also print the absolute band (`EN 50-60` / `DE 30-50`) as an aspirational note. If `output_score` lands in the band, report `in absolute band`. If it lands below the band but at or above `source_score - 5`, report `below absolute band, faithful to source — pass`. Only fail when `output_score < source_score - 5`.
   - **Rationale**: see `references/01-core-principles/translation-principles.md` § "Readability in Translation Mode".

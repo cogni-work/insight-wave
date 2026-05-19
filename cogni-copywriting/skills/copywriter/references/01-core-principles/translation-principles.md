@@ -93,11 +93,11 @@ The absolute Flesch (EN 50–60) and Amstad (DE 30–50) bands are tuned for con
 
 **The rule.** Score source and output on the *target-language* scale; require `output_score ≥ source_score − 5`.
 
-**Same scale on both sides.** Flesch (EN) and Amstad (DE) use different coefficients and cannot be compared cross-scale. Scoring the source on the target-language scale gives a like-for-like baseline. The `--lang` flag on `scripts/calculate_readability.py` already supports this — it applies the matching syllable counter + formula regardless of which language the input prose is actually in:
+**Same scale on both sides.** Flesch (EN) and Amstad (DE) use different coefficients and cannot be compared cross-scale. Scoring the source on the target-language scale gives a like-for-like baseline. The `--lang` flag on `scripts/calculate_readability.py` already supports this — it applies the matching syllable counter + formula regardless of which language the input prose is actually in. Read the `flesch_score` field from each invocation's JSON:
 
 ```bash
-python3 scripts/calculate_readability.py <source.md> --lang $TARGET_LANG   # source_score
-python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG   # output_score
+python3 scripts/calculate_readability.py <source.md> --lang $TARGET_LANG   # source_score = flesch_score
+python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG   # output_score = flesch_score
 ```
 
 **The 5-point soft floor.** Covers compound-length drift (EN→DE: German compounds inflate average word length, pushing Amstad down 2–4 points even for a clean rendering) and sentence-splitting drift (DE→EN: long German sentences often decompose into multiple shorter English ones with their own syllable budgets). Five points is the empirical headroom needed to absorb this without licensing genuine degradation.
