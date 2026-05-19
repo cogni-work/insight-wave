@@ -60,7 +60,7 @@ The second `knowledge-research` reads the wiki that the first deposited — that
 One new artifact: `<knowledge-base>/.cogni-knowledge/binding.json`, sibling to the wiki's `.cogni-wiki/config.json`. It records:
 
 - `knowledge_slug`, `knowledge_title`
-- `wiki_path`, `wiki_slug` (the bound wiki)
+- `wiki_path` — absolute path to the bound cogni-wiki (the wiki's own slug is read live from `<wiki_path>/.cogni-wiki/config.json` so it cannot drift)
 - `research_projects[]` — one entry per deposited run: `slug`, `deposited_at`, `report_path`, `report_source`
 - `topic_lineage` — `covered_themes[]` and `open_themes[]` (populated as the base grows)
 

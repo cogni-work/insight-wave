@@ -54,9 +54,9 @@ If `--topic` is missing, ask the user once. Do not invent a topic.
    ```
    On `success: false` (binding missing or malformed), abort and offer `knowledge-setup`. Do not auto-create.
 
-3. Extract `wiki_path`, `wiki_slug`, `knowledge_slug` from the binding. Validate the binding's `knowledge_slug` matches `--knowledge-slug` — mismatch indicates the user is pointing at the wrong directory.
+3. Extract `wiki_path` and `knowledge_slug` from the binding. Validate the binding's `knowledge_slug` matches `--knowledge-slug` — mismatch indicates the user is pointing at the wrong directory.
 
-4. Confirm the wiki is still there: `<wiki_path>/.cogni-wiki/config.json` must exist. If not, abort with a clear "the binding points at a wiki that no longer exists" error.
+4. Confirm the wiki is still there: `<wiki_path>/.cogni-wiki/config.json` must exist. If not, abort with a clear "the binding points at a wiki that no longer exists" error. Read the live `slug` from that config file — that is the value to forward as `--wiki-slug` in Step 1 (never cache in the binding).
 
 5. If `--dry-run`, print the resolved plan (knowledge_slug, wiki_path, topic, research_overrides) and stop.
 
@@ -64,7 +64,7 @@ If `--topic` is missing, ask the user once. Do not invent a topic.
 
 ```
 Skill("cogni-wiki:wiki-from-research",
-      args="--topic '<topic>' --wiki-root <wiki_path> --wiki-slug <wiki_slug> --research-overrides <overrides>")
+      args="--topic '<topic>' --wiki-root <wiki_path> --wiki-slug <live_wiki_slug> --research-overrides <overrides>")
 ```
 
 Default `--research-overrides report_type=detailed` if the caller did not pass any.

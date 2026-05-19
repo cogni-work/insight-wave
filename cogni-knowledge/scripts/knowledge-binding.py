@@ -25,6 +25,8 @@ from pathlib import Path
 SCHEMA_VERSION = "0.0.1"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
+WIKI_DIRNAME = ".cogni-wiki"
+WIKI_CONFIG_FILENAME = "config.json"
 VALID_REPORT_SOURCES = {"web", "local", "wiki", "hybrid"}
 
 
@@ -79,7 +81,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             error="binding already exists at the target; refusing to overwrite",
         )
 
-    wiki_config = wiki_path / ".cogni-wiki" / "config.json"
+    wiki_config = wiki_path / WIKI_DIRNAME / WIKI_CONFIG_FILENAME
     if not wiki_config.is_file():
         return _emit(
             False,
@@ -88,16 +90,14 @@ def cmd_init(args: argparse.Namespace) -> int:
                 "Run cogni-wiki:wiki-setup first or fix the path."
             ),
         )
-    try:
-        wiki_slug = json.loads(wiki_config.read_text(encoding="utf-8")).get("slug", "")
-    except json.JSONDecodeError:
-        wiki_slug = ""
 
+    # wiki_slug is the live truth — resolved from .cogni-wiki/config.json
+    # at every consumer, never cached here. Single source of truth lives
+    # upstream; caching would drift if the user renames the wiki.
     payload = {
         "knowledge_slug": args.knowledge_slug,
         "knowledge_title": args.knowledge_title,
         "wiki_path": str(wiki_path),
-        "wiki_slug": wiki_slug,
         "research_projects": [],
         "topic_lineage": {"covered_themes": [], "open_themes": []},
         "created": _today(),

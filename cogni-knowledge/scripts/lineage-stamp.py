@@ -24,6 +24,9 @@ import sys
 from pathlib import Path
 
 FRONTMATTER_DELIM = "---"
+WIKI_DIRNAME = ".cogni-wiki"
+WIKI_CONFIG_FILENAME = "config.json"
+RESEARCH_RAW_PREFIX = "raw/research-"
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -84,14 +87,14 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     wiki_root = Path(args.wiki_root).resolve()
-    if not (wiki_root / ".cogni-wiki" / "config.json").is_file():
+    if not (wiki_root / WIKI_DIRNAME / WIKI_CONFIG_FILENAME).is_file():
         return _emit(False, error=f"not a cogni-wiki root: {wiki_root}")
 
     research_slug = args.research_slug.strip()
     if not research_slug:
         return _emit(False, error="--research-slug must be non-empty")
 
-    research_dir_token = f"raw/research-{research_slug}/"
+    research_dir_token = f"{RESEARCH_RAW_PREFIX}{research_slug}/"
     wiki_dir = wiki_root / "wiki"
     if not wiki_dir.is_dir():
         return _emit(False, error=f"wiki/ subdir missing under {wiki_root}")

@@ -44,7 +44,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
    ```
    On `success: false`, abort and offer `knowledge-setup`. Do not auto-create.
 
-3. Extract from the binding: `knowledge_slug`, `knowledge_title`, `wiki_path`, `wiki_slug`, `research_projects[]`, `created`, `topic_lineage`.
+3. Extract from the binding: `knowledge_slug`, `knowledge_title`, `wiki_path`, `research_projects[]`, `created`, `topic_lineage`. (The bound wiki's own slug, if needed for display, comes live from `<wiki_path>/.cogni-wiki/config.json` — never cached in the binding.)
 
 4. Validate the binding's `knowledge_slug` matches `--knowledge-slug`. Mismatch → abort.
 

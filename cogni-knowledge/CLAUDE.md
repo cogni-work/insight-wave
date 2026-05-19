@@ -45,7 +45,6 @@ All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the in
   "knowledge_slug": "<kebab-case>",
   "knowledge_title": "<human readable>",
   "wiki_path": "<absolute path to wiki root>",
-  "wiki_slug": "<wiki slug from wiki-setup>",
   "research_projects": [
     {
       "slug": "<research-project-slug>",

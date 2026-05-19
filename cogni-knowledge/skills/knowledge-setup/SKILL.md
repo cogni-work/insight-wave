@@ -89,7 +89,7 @@ Do not print the full binding JSON in the summary — point at the file path and
 
 ## Edge cases
 
-- **Wiki exists but is for a different domain.** Step 2 detects the existing wiki and re-uses it. This is intentional — a user may want to layer a knowledge base onto an existing wiki. The binding records the wiki_slug from `.cogni-wiki/config.json` so the asymmetry is visible.
+- **Wiki exists but is for a different domain.** Step 2 detects the existing wiki and re-uses it. This is intentional — a user may want to layer a knowledge base onto an existing wiki. The binding records only `wiki_path`; the wiki's own slug is read live from `<wiki_path>/.cogni-wiki/config.json` whenever a consumer needs it, so a wiki rename never causes the binding to drift.
 - **`--knowledge-slug` collides with a sibling directory.** Step 1's binding-existence check protects against double-init; if the sibling is a non-wiki directory, Step 2's foreign-files check fires.
 - **`wiki-setup` crashes mid-run.** No binding has been written. Surface the wiki-setup error; the user can re-run after fixing whatever wiki-setup complained about.
 
