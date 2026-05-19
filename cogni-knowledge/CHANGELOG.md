@@ -1,5 +1,11 @@
 # cogni-knowledge changelog
 
+## 0.0.10 — 2026-05-19
+
+### Added
+
+- Skill `knowledge-refresh` — closes the self-healing loop on a bound knowledge base. Pull-mode delegates to `cogni-wiki:wiki-refresh`. Push-mode lints the bound wiki, asks the user (multi-select) which stale topics to re-research, single batch-confirmation gate, sequentially dispatches `knowledge-research` per selected topic, then dispatches `wiki-refresh` per new project so originally-stale pages refresh against the fresh evidence.
+
 ## 0.0.9 — 2026-05-19
 
 ### Added
