@@ -37,7 +37,7 @@ bash cogni-copywriting/copywriter-workspace/test-fixtures/readability-rule/run.s
 Output is one line per fixture plus a summary, e.g.:
 
 ```
-[de-dense] src=-13.6 out=7.2 margin=25.8 actual=PASS expect=PASS
+[de-dense] src=-32.1 out=7.2 margin=44.3 actual=PASS expect=PASS
 [degraded] src=69.6 out=48.1 margin=-16.5 actual=FAIL expect=FAIL
 Summary: 2 matched, 0 mismatched
 ```
