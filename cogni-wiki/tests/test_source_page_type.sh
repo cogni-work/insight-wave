@@ -11,6 +11,11 @@
 # cogni-knowledge-specific fields, per the issue requirement that the
 # test carries no cogni-knowledge dependency.
 #
+# This test covers the NEGATIVE case (no false positive on `type: source`).
+# The POSITIVE case (`invalid_type` still fires on a bogus type after the
+# allowlist extension) is covered by `test_lint_health_partition.sh`, which
+# plants `type: bogus-type` and asserts health reports it.
+#
 # bash 3.2 + python3 stdlib only. Exits non-zero on any failure.
 
 set -eu
@@ -87,7 +92,8 @@ print("\n".join(sorted(seen)))
 for c in invalid_type type_directory_mismatch; do
   if printf '%s\n' "$HEALTH_CLASSES" | grep -qx "$c"; then
     red "FAIL: health.py raised '$c' on the planted type:source page"
-    red "Health classes for example-source: $HEALTH_CLASSES"
+    red "Health classes for example-source:"
+    printf '%s\n' "$HEALTH_CLASSES"
     exit 1
   fi
 done
@@ -114,7 +120,8 @@ print("\n".join(sorted(seen)))
 for c in invalid_type type_directory_mismatch; do
   if printf '%s\n' "$LINT_CLASSES" | grep -qx "$c"; then
     red "FAIL: lint_wiki.py raised '$c' on the planted type:source page"
-    red "Lint classes for example-source: $LINT_CLASSES"
+    red "Lint classes for example-source:"
+    printf '%s\n' "$LINT_CLASSES"
     exit 1
   fi
 done
