@@ -475,8 +475,8 @@ def main(argv: list[str]) -> int:
             error=(
                 f"{kind} self-cycle ({chain_str}): the candidate would read its own past deposit "
                 "as new evidence. Refusing to deposit. Rename the project, scope the topic "
-                "narrower, or raise --max-depth only if you have separately confirmed the chain "
-                "is safe."
+                "narrower, or lower --max-depth (set 0 to disable transitive recursion entirely) "
+                "only if you have separately confirmed the chain is safe."
             ),
         )
         return 1

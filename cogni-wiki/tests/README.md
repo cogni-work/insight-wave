@@ -57,3 +57,5 @@ bash tests/test_wiki_query_wiki_root.sh
 ```
 
 These do not assert anything about LLM-driven behaviour — only that the contract surface that orchestrators (`cogni-knowledge:knowledge-report` / `cogni-knowledge:knowledge-query`) depend on remains intact in SKILL.md.
+
+**Maintenance note.** The grep patterns assert exact parameter-table layout (`| `--flag-name` | No | Mode A & Mode B…`). Cosmetic reformats — column swap, extra column, switching from `|`-pipe tables to a different structure — will trip these tests even when the underlying contract is unchanged. When reformatting a parameter table in any covered SKILL.md, update the patterns in the matching test script.
