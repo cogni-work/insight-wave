@@ -436,9 +436,18 @@ def discover_research(
     if project_slug.startswith("cogni-research-"):
         project_slug = project_slug[len("cogni-research-"):]
 
-    config_path = project / "project-config.json"
+    # cogni-research v0.7.x+ uses .metadata/project-config.json; pre-v0.7
+    # used <project>/project-config.json. Try modern first, fall back to
+    # legacy. Matches the same fallback pattern in cogni-knowledge's
+    # scripts/read-project-config.py and wiki-from-research's Step 0(3).
+    config_path = project / ".metadata" / "project-config.json"
     if not config_path.is_file():
-        fail(f"not a cogni-research project (missing project-config.json): {project}")
+        config_path = project / "project-config.json"
+    if not config_path.is_file():
+        fail(
+            "not a cogni-research project (missing project-config.json "
+            f"under .metadata/ or root): {project}"
+        )
 
     sub_questions = _load_sub_questions(project)
     if not sub_questions:
