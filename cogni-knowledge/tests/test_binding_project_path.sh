@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# test_binding_project_path.sh - regression test for A2.
+# test_binding_project_path.sh - regression test for A2 + v0.1.0 schema bump.
 #
 # Asserts:
-#   - knowledge-binding.py init writes schema_version 0.0.2.
+#   - knowledge-binding.py init writes schema_version 0.1.0 with the new
+#     fields (fetch_cache_dir, curator_defaults, last_fetch_refresh) and
+#     bootstraps the fetch-cache directory.
 #   - append-project --project-path writes the project_path field on the
 #     entry (absolute, resolved).
 #   - append-project without --project-path writes project_path: "" (legacy
 #     compat - cycle-guard falls back to .parent.parent derivation).
 #   - cmd_read on a hand-crafted legacy 0.0.1 binding (no project_path
 #     field, schema_version 0.0.1) does not error.
+#   - cmd_read on a hand-crafted legacy 0.0.2 binding (project_path
+#     present, no new v0.1.0 fields) does not error.
 #
 # bash 3.2 + stdlib python3 only.
 
@@ -43,7 +47,7 @@ mkdir -p "$PROJ/.metadata" "$PROJ/output"
 echo '{"slug": "test", "report_source": "web"}' > "$PROJ/.metadata/project-config.json"
 touch "$PROJ/output/report.md"
 
-# 1. init - schema_version should be 0.0.2.
+# 1. init - schema_version should be 0.1.0, new v0.1.0 fields present, fetch-cache dir bootstrapped.
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" \
   --knowledge-slug test-kb \
@@ -51,10 +55,33 @@ python3 "$SCRIPT" init \
   --wiki-path "$WIKI" >/dev/null
 
 SCHEMA=$(python3 -c "import json; print(json.load(open('$KB/.cogni-knowledge/binding.json'))['schema_version'])")
-if [ "$SCHEMA" = "0.0.2" ]; then
-  green "PASS: init writes schema_version 0.0.2"
+if [ "$SCHEMA" = "0.1.0" ]; then
+  green "PASS: init writes schema_version 0.1.0"
 else
-  red "FAIL: schema_version expected 0.0.2, got '$SCHEMA'"
+  red "FAIL: schema_version expected 0.1.0, got '$SCHEMA'"
+  errors=$((errors + 1))
+fi
+
+if [ -d "$KB/.cogni-knowledge/fetch-cache" ]; then
+  green "PASS: init bootstraps fetch-cache/ directory"
+else
+  red "FAIL: fetch-cache/ not bootstrapped at $KB/.cogni-knowledge/fetch-cache"
+  errors=$((errors + 1))
+fi
+
+if python3 -c "
+import json
+b = json.load(open('$KB/.cogni-knowledge/binding.json'))
+assert b.get('fetch_cache_dir', '').endswith('/.cogni-knowledge/fetch-cache'), b.get('fetch_cache_dir')
+assert b.get('curator_defaults', {}).get('max_candidates_per_sq') == 12, b.get('curator_defaults')
+assert b.get('curator_defaults', {}).get('score_threshold') == 0.5, b.get('curator_defaults')
+assert b.get('curator_defaults', {}).get('fetch_cache_max_age_days') == 30, b.get('curator_defaults')
+assert 'last_fetch_refresh' in b, list(b.keys())
+print('OK')
+" | grep -q OK; then
+  green "PASS: init writes new v0.1.0 fields (fetch_cache_dir, curator_defaults, last_fetch_refresh)"
+else
+  red "FAIL: new v0.1.0 fields missing or wrong on init output"
   errors=$((errors + 1))
 fi
 
@@ -151,10 +178,56 @@ else
   errors=$((errors + 1))
 fi
 
+# 5. Read on a hand-crafted legacy 0.0.2 binding (project_path present, no v0.1.0 fields).
+LEGACY02_KB="$WORK/legacy02-kb"
+WIKI3="$LEGACY02_KB"
+mkdir -p "$WIKI3/.cogni-wiki"
+echo '{"name": "Test", "slug": "test", "schema_version": "0.0.5"}' > "$WIKI3/.cogni-wiki/config.json"
+mkdir -p "$LEGACY02_KB/.cogni-knowledge"
+cat > "$LEGACY02_KB/.cogni-knowledge/binding.json" <<'JSON'
+{
+  "knowledge_slug": "legacy02-kb",
+  "knowledge_title": "Legacy 0.0.2 KB",
+  "wiki_path": "WIKI3_PLACEHOLDER",
+  "research_projects": [
+    {
+      "slug": "old-project-2",
+      "deposited_at": "2026-04-15",
+      "report_path": "/tmp/old-project-2/output/report.md",
+      "report_source": "wiki",
+      "project_path": "/tmp/old-project-2"
+    }
+  ],
+  "topic_lineage": {"covered_themes": [], "open_themes": []},
+  "created": "2026-04-15",
+  "schema_version": "0.0.2"
+}
+JSON
+sed -i.bak "s|WIKI3_PLACEHOLDER|$WIKI3|" "$LEGACY02_KB/.cogni-knowledge/binding.json"
+rm -f "$LEGACY02_KB/.cogni-knowledge/binding.json.bak"
+
+READ_OUT2=$(python3 "$SCRIPT" read --knowledge-root "$LEGACY02_KB")
+if echo "$READ_OUT2" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+b = d['data']['binding']
+assert b['schema_version'] == '0.0.2', b['schema_version']
+assert b['research_projects'][0]['project_path'] == '/tmp/old-project-2', b['research_projects'][0]
+assert 'fetch_cache_dir' not in b, list(b.keys())
+print('OK')
+" | grep -q OK; then
+  green "PASS: legacy 0.0.2 binding reads back without error and preserves project_path"
+else
+  red "FAIL: legacy 0.0.2 binding read failed"
+  red "  got: $READ_OUT2"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
   exit 1
 fi
 
 green ""
-green "All A2 binding project_path cases pass."
+green "All binding cases pass (A2 + v0.1.0 schema bump)."

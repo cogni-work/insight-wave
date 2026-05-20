@@ -22,12 +22,18 @@ import os
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION = "0.0.2"
+SCHEMA_VERSION = "0.1.0"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
+FETCH_CACHE_DIRNAME = "fetch-cache"
 WIKI_DIRNAME = ".cogni-wiki"
 WIKI_CONFIG_FILENAME = "config.json"
 VALID_REPORT_SOURCES = {"web", "local", "wiki", "hybrid"}
+DEFAULT_CURATOR_DEFAULTS = {
+    "max_candidates_per_sq": 12,
+    "score_threshold": 0.5,
+    "fetch_cache_max_age_days": 30,
+}
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -94,12 +100,17 @@ def cmd_init(args: argparse.Namespace) -> int:
     # wiki_slug is the live truth — resolved from .cogni-wiki/config.json
     # at every consumer, never cached here. Single source of truth lives
     # upstream; caching would drift if the user renames the wiki.
+    fetch_cache_dir = knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME
+    fetch_cache_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "knowledge_slug": args.knowledge_slug,
         "knowledge_title": args.knowledge_title,
         "wiki_path": str(wiki_path),
         "research_projects": [],
         "topic_lineage": {"covered_themes": [], "open_themes": []},
+        "fetch_cache_dir": str(fetch_cache_dir),
+        "curator_defaults": dict(DEFAULT_CURATOR_DEFAULTS),
+        "last_fetch_refresh": "",
         "created": _today(),
         "schema_version": SCHEMA_VERSION,
     }
