@@ -20,14 +20,25 @@ import datetime as _dt
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
-SCHEMA_VERSION = "0.0.2"
+# Schema bumps mirror the data shape, not the plugin tag. v0.0.3 is the
+# additive bump that adds curator_defaults on top of v0.0.2's project_path.
+# The next bump to 0.1.0 happens at v0.1.0 M12 alongside plugin.json so the
+# two version surfaces re-align there.
+SCHEMA_VERSION = "0.0.3"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
+FETCH_CACHE_DIRNAME = "fetch-cache"
 WIKI_DIRNAME = ".cogni-wiki"
 WIKI_CONFIG_FILENAME = "config.json"
 VALID_REPORT_SOURCES = {"web", "local", "wiki", "hybrid"}
+DEFAULT_CURATOR_DEFAULTS = {
+    "max_candidates_per_sq": 12,
+    "score_threshold": 0.5,
+    "fetch_cache_max_age_days": 30,
+}
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -53,13 +64,23 @@ def _read_binding(knowledge_root: Path) -> dict:
 
 
 def _write_binding(knowledge_root: Path, payload: dict) -> Path:
+    # Mirrors cogni-wiki/_wikilib.atomic_write semantics — tempfile.mkstemp
+    # so concurrent writers cannot collide on a predictable `.tmp` suffix,
+    # and the temp file is unlinked on exception.
     bp = _binding_path(knowledge_root)
     bp.parent.mkdir(parents=True, exist_ok=True)
-    tmp = bp.with_suffix(".json.tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
-    os.replace(tmp, bp)
+    fd, tmp = tempfile.mkstemp(prefix=f".{bp.name}.", suffix=".tmp", dir=str(bp.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        os.replace(tmp, bp)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
     return bp
 
 
@@ -94,12 +115,19 @@ def cmd_init(args: argparse.Namespace) -> int:
     # wiki_slug is the live truth — resolved from .cogni-wiki/config.json
     # at every consumer, never cached here. Single source of truth lives
     # upstream; caching would drift if the user renames the wiki.
+    #
+    # The fetch-cache lives at <knowledge_root>/.cogni-knowledge/fetch-cache/
+    # by convention (documented in references/fetch-cache-design.md). The path
+    # is fully derivable from knowledge_root so it is not echoed into the
+    # binding — consumers compute it the same way fetch-cache.py does.
+    (knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME).mkdir(parents=True, exist_ok=True)
     payload = {
         "knowledge_slug": args.knowledge_slug,
         "knowledge_title": args.knowledge_title,
         "wiki_path": str(wiki_path),
         "research_projects": [],
         "topic_lineage": {"covered_themes": [], "open_themes": []},
+        "curator_defaults": dict(DEFAULT_CURATOR_DEFAULTS),
         "created": _today(),
         "schema_version": SCHEMA_VERSION,
     }
