@@ -36,12 +36,17 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 SCHEMA_VERSION = "0.1.0"
 FETCH_CACHE_DIRNAME = "fetch-cache"
 BINDING_DIRNAME = ".cogni-knowledge"
-VALID_FETCH_METHODS = {"webfetch", "chrome_cobrowse", "chrome_cobrowse_interactive"}
+# Matches cogni-claims' fetch_method enum (cogni-claims/CLAUDE.md:109,
+# skills/claims/SKILL.md:317) so a future shared verifier can read either
+# cache's entries without translation. Do not add new values without
+# coordinating an additive change there.
+VALID_FETCH_METHODS = {"webfetch", "cobrowse_interactive"}
 VALID_STATUSES = {"ok", "unavailable"}
 
 
@@ -72,12 +77,22 @@ def _content_hash(body: str) -> str:
 
 
 def _atomic_write(path: Path, payload: dict) -> Path:
+    # Mirrors cogni-wiki/_wikilib.atomic_write semantics — tempfile.mkstemp
+    # so two concurrent writers to the same URL cannot collide on a
+    # predictable `.tmp` suffix, and the temp file is unlinked on exception.
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
-    os.replace(tmp, path)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
     return path
 
 
@@ -104,26 +119,12 @@ def cmd_store(args: argparse.Namespace) -> int:
     knowledge_root = Path(args.knowledge_root).resolve()
     if not knowledge_root.is_dir():
         return _emit(False, error=f"knowledge_root does not exist: {knowledge_root}")
-    if args.fetch_method not in VALID_FETCH_METHODS:
-        return _emit(
-            False,
-            error=(
-                f"invalid --fetch-method '{args.fetch_method}'; "
-                f"must be one of {sorted(VALID_FETCH_METHODS)}"
-            ),
-        )
-    if args.status not in VALID_STATUSES:
-        return _emit(
-            False,
-            error=(
-                f"invalid --status '{args.status}'; "
-                f"must be one of {sorted(VALID_STATUSES)}"
-            ),
-        )
 
-    # Body source: --body-file (preferred for non-trivial content) or --body
-    # (small inline strings). Negative-cache entries (status=unavailable)
-    # commonly have no body — accept empty.
+    if args.status == "ok" and args.reason:
+        return _emit(False, error="--reason is only valid with --status unavailable")
+    if args.status == "unavailable" and not args.reason:
+        return _emit(False, error="--reason is required when --status is unavailable")
+
     if args.body_file:
         body = Path(args.body_file).read_text(encoding="utf-8")
     else:
@@ -142,7 +143,7 @@ def cmd_store(args: argparse.Namespace) -> int:
         "etag": args.etag or "",
         "last_modified": args.last_modified or "",
     }
-    if args.status == "unavailable" and args.reason:
+    if args.status == "unavailable":
         payload["reason"] = args.reason
 
     target = _entry_path(knowledge_root, args.url)
@@ -164,15 +165,14 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         return _emit(False, error=f"knowledge_root does not exist: {knowledge_root}")
 
     target = _entry_path(knowledge_root, args.url)
-    if not target.is_file():
+    try:
+        entry = json.loads(target.read_text(encoding="utf-8"))
+    except FileNotFoundError:
         return _emit(
             False,
             data={"cache_key": _url_key(args.url), "reason": "miss"},
             error="cache miss",
         )
-
-    try:
-        entry = json.loads(target.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         return _emit(False, error=f"cache entry is not valid JSON: {exc}")
 
@@ -209,12 +209,11 @@ def cmd_evict(args: argparse.Namespace) -> int:
 
     evicted: list[dict] = []
     kept = 0
-    for entry_path in sorted(cache.glob("*.json")):
+    for entry_path in cache.glob("*.json"):
         try:
             entry = json.loads(entry_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            # Malformed entries are evicted unconditionally — they're
-            # unreadable and can't usefully serve a future hit.
+            # Malformed entries can't serve a future hit, so evict unconditionally.
             if not args.dry_run:
                 entry_path.unlink()
             evicted.append({"path": str(entry_path), "reason": "malformed"})

@@ -20,6 +20,7 @@ import datetime as _dt
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 SCHEMA_VERSION = "0.1.0"
@@ -59,13 +60,23 @@ def _read_binding(knowledge_root: Path) -> dict:
 
 
 def _write_binding(knowledge_root: Path, payload: dict) -> Path:
+    # Mirrors cogni-wiki/_wikilib.atomic_write semantics — tempfile.mkstemp
+    # so concurrent writers cannot collide on a predictable `.tmp` suffix,
+    # and the temp file is unlinked on exception.
     bp = _binding_path(knowledge_root)
     bp.parent.mkdir(parents=True, exist_ok=True)
-    tmp = bp.with_suffix(".json.tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
-    os.replace(tmp, bp)
+    fd, tmp = tempfile.mkstemp(prefix=f".{bp.name}.", suffix=".tmp", dir=str(bp.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        os.replace(tmp, bp)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
     return bp
 
 
@@ -100,17 +111,19 @@ def cmd_init(args: argparse.Namespace) -> int:
     # wiki_slug is the live truth — resolved from .cogni-wiki/config.json
     # at every consumer, never cached here. Single source of truth lives
     # upstream; caching would drift if the user renames the wiki.
-    fetch_cache_dir = knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME
-    fetch_cache_dir.mkdir(parents=True, exist_ok=True)
+    #
+    # The fetch-cache lives at <knowledge_root>/.cogni-knowledge/fetch-cache/
+    # by convention (documented in references/fetch-cache-design.md). The path
+    # is fully derivable from knowledge_root so it is not echoed into the
+    # binding — consumers compute it the same way fetch-cache.py does.
+    (knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME).mkdir(parents=True, exist_ok=True)
     payload = {
         "knowledge_slug": args.knowledge_slug,
         "knowledge_title": args.knowledge_title,
         "wiki_path": str(wiki_path),
         "research_projects": [],
         "topic_lineage": {"covered_themes": [], "open_themes": []},
-        "fetch_cache_dir": str(fetch_cache_dir),
         "curator_defaults": dict(DEFAULT_CURATOR_DEFAULTS),
-        "last_fetch_refresh": "",
         "created": _today(),
         "schema_version": SCHEMA_VERSION,
     }

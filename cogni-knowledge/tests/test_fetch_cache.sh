@@ -6,10 +6,12 @@
 #   - store + fetch round-trip preserves body, fetch_method, status,
 #     content_hash, publisher.
 #   - fetch --max-age-days short-circuits stale entries with
-#     reason="stale" and surfaces the cached entry on data.entry.
+#     reason="stale" and surfaces the cached entry on data.entry. Backdating
+#     uses the public --fetched-at flag, not inline JSON munging.
 #   - fetch on a missing URL emits success: false with reason="miss".
 #   - store with --status unavailable + --reason produces a negative-cache
 #     entry whose reason round-trips on fetch.
+#   - --status ok + --reason rejects; --status unavailable without --reason rejects.
 #   - evict --dry-run + --older-than-days reports without deleting.
 #   - evict drops the stale entry, keeps the fresh entry.
 #   - stat reports the right count after evict.
@@ -83,15 +85,16 @@ else
 fi
 
 # 3. fetch with --max-age-days backdated -> stale.
-# Backdate by directly rewriting fetched_at to an old date.
-ENTRY_PATH="$KB/.cogni-knowledge/fetch-cache/${EXPECTED_KEY}.json"
-python3 -c "
-import json
-p = '$ENTRY_PATH'
-e = json.load(open(p))
-e['fetched_at'] = '2020-01-01T00:00:00Z'
-json.dump(e, open(p, 'w'), indent=2)
-"
+# Re-store via the public --fetched-at flag instead of editing the cache file.
+python3 "$SCRIPT" store \
+  --knowledge-root "$KB" \
+  --url "$URL1" \
+  --fetch-method webfetch \
+  --status ok \
+  --body "the body of article 6" \
+  --publisher "example.org" \
+  --http-status 200 \
+  --fetched-at "2020-01-01T00:00:00Z" >/dev/null
 STALE_OUT=$(python3 "$SCRIPT" fetch --knowledge-root "$KB" --url "$URL1" --max-age-days 30 || true)
 if echo "$STALE_OUT" | python3 -c "
 import sys, json
@@ -149,6 +152,48 @@ print('OK')
 else
   red "FAIL: negative cache wrong"
   red "  got: $GONE_OUT"
+  errors=$((errors + 1))
+fi
+
+# 5b. --status ok + --reason should be rejected.
+BAD_OK_REASON=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB" \
+  --url "https://example.org/should-not-store" \
+  --fetch-method webfetch \
+  --status ok \
+  --body "x" \
+  --reason "this is meaningless for status=ok" 2>&1 || true)
+if echo "$BAD_OK_REASON" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False, d
+assert 'reason' in d['error'] and 'unavailable' in d['error'], d
+print('OK')
+" | grep -q OK; then
+  green "PASS: --status ok + --reason is rejected with a clear error"
+else
+  red "FAIL: --status ok + --reason was not rejected"
+  red "  got: $BAD_OK_REASON"
+  errors=$((errors + 1))
+fi
+
+# 5c. --status unavailable without --reason should be rejected.
+BAD_UNAVAIL_NO_REASON=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB" \
+  --url "https://example.org/should-also-not-store" \
+  --fetch-method webfetch \
+  --status unavailable 2>&1 || true)
+if echo "$BAD_UNAVAIL_NO_REASON" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False, d
+assert 'reason' in d['error'] and 'required' in d['error'], d
+print('OK')
+" | grep -q OK; then
+  green "PASS: --status unavailable without --reason is rejected with a clear error"
+else
+  red "FAIL: --status unavailable without --reason was not rejected"
+  red "  got: $BAD_UNAVAIL_NO_REASON"
   errors=$((errors + 1))
 fi
 

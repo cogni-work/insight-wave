@@ -72,16 +72,19 @@ fi
 if python3 -c "
 import json
 b = json.load(open('$KB/.cogni-knowledge/binding.json'))
-assert b.get('fetch_cache_dir', '').endswith('/.cogni-knowledge/fetch-cache'), b.get('fetch_cache_dir')
-assert b.get('curator_defaults', {}).get('max_candidates_per_sq') == 12, b.get('curator_defaults')
-assert b.get('curator_defaults', {}).get('score_threshold') == 0.5, b.get('curator_defaults')
-assert b.get('curator_defaults', {}).get('fetch_cache_max_age_days') == 30, b.get('curator_defaults')
-assert 'last_fetch_refresh' in b, list(b.keys())
+cd = b.get('curator_defaults', {})
+assert cd.get('max_candidates_per_sq') == 12, cd
+assert cd.get('score_threshold') == 0.5, cd
+assert cd.get('fetch_cache_max_age_days') == 30, cd
+# fetch_cache_dir and last_fetch_refresh deliberately omitted from binding —
+# the cache path is derivable from knowledge_root (see fetch-cache-design.md).
+assert 'fetch_cache_dir' not in b, 'fetch_cache_dir should be derived, not stored'
+assert 'last_fetch_refresh' not in b, 'last_fetch_refresh has no producer yet — add when knowledge-fetch lands'
 print('OK')
 " | grep -q OK; then
-  green "PASS: init writes new v0.1.0 fields (fetch_cache_dir, curator_defaults, last_fetch_refresh)"
+  green "PASS: init writes curator_defaults; omits derivable/unused fields"
 else
-  red "FAIL: new v0.1.0 fields missing or wrong on init output"
+  red "FAIL: curator_defaults missing or wrong on init output"
   errors=$((errors + 1))
 fi
 

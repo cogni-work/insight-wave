@@ -86,8 +86,8 @@ Output: `<project>/.metadata/candidates.json`:
 
 For each candidate, attempt fetch via:
 
-1. WebFetch (default)
-2. claude-in-chrome cobrowse fallback (only if the user is present — same gate cogni-claims uses)
+1. WebFetch (`fetch_method: webfetch`)
+2. claude-in-chrome cobrowse fallback when the user is present (`fetch_method: cobrowse_interactive`) — same enum cogni-claims uses, so a future shared verifier reads either cache's entries identically
 3. Mark `unavailable` if both fail
 
 Successful fetches go to the global cache at `.cogni-knowledge/fetch-cache/<sha256(url)>.json`. The per-project `fetch-manifest.json` records what's in the cache for this project and what was marked unavailable.

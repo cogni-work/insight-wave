@@ -65,10 +65,17 @@ All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the in
     "covered_themes": [],
     "open_themes": []
   },
+  "curator_defaults": {
+    "max_candidates_per_sq": 12,
+    "score_threshold": 0.5,
+    "fetch_cache_max_age_days": 30
+  },
   "created": "<YYYY-MM-DD>",
-  "schema_version": "0.0.2"
+  "schema_version": "0.1.0"
 }
 ```
+
+`curator_defaults` (added at schema 0.1.0) configures the inverted pipeline's `knowledge-curate` and `knowledge-fetch` phases — see `references/inverted-pipeline.md` and `references/fetch-cache-design.md`. The fetch-cache itself lives at `<knowledge-root>/.cogni-knowledge/fetch-cache/` by convention; the path is derivable from the knowledge root and is therefore not echoed into the binding.
 
 The file is small (< 4 KiB even at 20+ deposited projects). It is *not* a database — it is a narrative manifest that records what the user has chosen to bind together. Search across the wiki itself for content; consult the binding only for "what projects fed this base".
 
