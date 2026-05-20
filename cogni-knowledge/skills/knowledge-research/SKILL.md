@@ -130,9 +130,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --knowledge-root <knowledge_root> \
     --knowledge-slug <knowledge_slug> \
     --research-slug <resolved_slug> \
-    --report-path <abs path to cogni-research-<resolved_slug>/output/report.md> \
+    --report-path <abs path to project>/output/report.md \
+    --project-path <abs path to project> \
     --report-source $RS
 ```
+
+`--project-path` was added to the schema in v0.0.14 (binding `schema_version: 0.0.2`). cycle-guard reads it directly when present and falls back to deriving the dir from `report_path.parent.parent` for legacy 0.0.1 entries.
 
 `report_source` is read live from the project's config. For Mode A invocations it will normally be `web` — `wiki-from-research` runs `cogni-research`'s default web mode (the skill refuses `report_source ∈ {wiki, hybrid}` projects, see `cogni-wiki/skills/wiki-from-research/SKILL.md` Step 0(3)). If a user reaches `knowledge-research` via a path that resolves to `local` or future modes, the live value is recorded faithfully. The `web` default in the python expression is purely a safety net for a missing key.
 

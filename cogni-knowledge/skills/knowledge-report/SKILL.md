@@ -152,9 +152,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --knowledge-root <knowledge_root> \
     --knowledge-slug <knowledge_slug> \
     --research-slug <resolved_slug> \
-    --report-path <abs path to cogni-research-<resolved_slug>/output/report.md> \
+    --report-path <abs path to project>/output/report.md \
+    --project-path <abs path to project> \
     --report-source $RS
 ```
+
+`--project-path` was added to the schema in v0.0.14 (binding `schema_version: 0.0.2`). cycle-guard reads it directly when present and falls back to deriving the dir from `report_path.parent.parent` for legacy 0.0.1 entries.
 
 The value of `$RS` will be `wiki` for a clean wiki-mode run, `hybrid` if the user opted into hybrid in the menu, or `web`/`local` if they pivoted away from wiki mode (in which case Step 2 already returned `not_applicable` and Step 3 ran without the opt-in flags).
 

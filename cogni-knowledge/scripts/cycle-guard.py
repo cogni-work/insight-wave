@@ -266,15 +266,25 @@ def _walk_lineage(
 
     visited: set[str] = {candidate_slug}
 
-    # Map slug → project_path for fast recursion lookups. Derive each path
-    # directly from the binding entry's `report_path` (the binding has no
-    # explicit project_path field — see knowledge-binding.py::cmd_append_project,
-    # report_path = .../cogni-research-<slug>/output/report.md).
+    # Map slug → project_path for fast recursion lookups.
+    # Binding schema 0.0.2+ carries an explicit `project_path` field on each
+    # entry; prefer it. Fall back to deriving the dir from `report_path`'s
+    # .parent.parent for schema 0.0.1 entries or for legacy entries written
+    # without --project-path. The fallback assumes the cogni-research output
+    # layout (<project>/output/report.md), which is fragile under naming
+    # variants — see the v0.0.14 changelog entry for the sturdiness rationale.
     project_paths: dict[str, Path] = {candidate_slug: candidate_project_path}
     for entry in binding.get("research_projects", []):
         slug = entry.get("slug")
         if not slug or slug in project_paths:
             continue
+        explicit = entry.get("project_path", "") or ""
+        if explicit:
+            try:
+                project_paths[slug] = Path(explicit).resolve()
+                continue
+            except (OSError, ValueError):
+                pass  # fall through to legacy derivation
         rp = entry.get("report_path", "")
         if not rp:
             continue
