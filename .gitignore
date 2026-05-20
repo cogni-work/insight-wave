@@ -42,3 +42,6 @@ cogni-research/test-diagram-pipeline/
 
 # cogni-help local issue queue (per-user draft issues, not shared state)
 /cogni-issues/
+
+# cogni-knowledge Phase 4 alpha scratch (per-user research bases, not shared state)
+/.alpha/

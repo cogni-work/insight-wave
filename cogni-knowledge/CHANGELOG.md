@@ -1,5 +1,17 @@
 # cogni-knowledge changelog
 
+## 0.0.15 — 2026-05-20
+
+Phase 4 alpha re-run on a fresh `eu-ai-act` knowledge base completed end-to-end without chain-breaker regression. Docs-only release recording the go decision for Phase 5 graduation.
+
+### Docs
+
+- `references/alpha-findings.md` — new `## v0.0.16 alpha re-run (2026-05-20)` section. Verifies F1–F5 fixed on the re-run (marketplace probe, `<slug>-<date>/` discovery, `.metadata/project-config.json` path, `[[wikilink]]` frontmatter parsing). Documents F11 (writer mid-Phase-2 socket crash — Phase 4.5 Step 0 recovery contract worked cleanly on re-dispatch) and F12 (`initialize-project.sh` CLI doesn't accept `--wiki-paths`; interactive `research-setup` menu handles it). Captures the four go/no-go measurements: time-to-second-research 44.9 min; cross-project compounding visible at the citation layer (synthesis cited all 21 prior-deposit wiki pages); claims duplication 17 shared URLs / ~150 distinct sources; subjective value positive. **Recommendation: GO** for Phase 5.
+
+### Dependencies
+
+No new minimum version — cogni-wiki ≥ 0.0.43 from v0.0.14 still holds, no upstream bug observed during the re-run.
+
 ## 0.0.14 — 2026-05-20
 
 Phase 4 alpha findings F1–F5 + PR #267 reviewer-deferred items A1–A4. F1–F5 are the chain-breakers that prevented the `knowledge-research` + `knowledge-report` orchestrator chain from completing end-to-end without ad-hoc operator workarounds (symlinks, sed-patches, hand-written wiki pages). F5 is structurally subsumed by F4 — see `references/alpha-findings.md` for the full table.

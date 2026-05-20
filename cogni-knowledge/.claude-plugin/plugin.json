@@ -1,6 +1,6 @@
 {
   "name": "cogni-knowledge",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Wiki-first research that compounds. Binds a cogni-research project to a cogni-wiki knowledge base so every research run deposits into the same persistent, queryable, interlinked markdown wiki — and so future runs read what previous runs filed instead of starting from zero. Thin orchestrator over cogni-research and cogni-wiki; no forked agents, no duplicated scripts. The differentiator vs. one-shot deep-research tools (OpenAI Deep Research, Perplexity Spaces, GPT Researcher) is the binding: knowledge accumulates across projects instead of dying in chat history.",
   "author": {
     "name": "Stephan de Haas",
