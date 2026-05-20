@@ -71,11 +71,13 @@ All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the in
     "fetch_cache_max_age_days": 30
   },
   "created": "<YYYY-MM-DD>",
-  "schema_version": "0.1.0"
+  "schema_version": "0.0.3"
 }
 ```
 
-`curator_defaults` (added at schema 0.1.0) configures the inverted pipeline's `knowledge-curate` and `knowledge-fetch` phases — see `references/inverted-pipeline.md` and `references/fetch-cache-design.md`. The fetch-cache itself lives at `<knowledge-root>/.cogni-knowledge/fetch-cache/` by convention; the path is derivable from the knowledge root and is therefore not echoed into the binding.
+`curator_defaults` (added at schema 0.0.3) configures the inverted pipeline's `knowledge-curate` and `knowledge-fetch` phases — see `references/inverted-pipeline.md` and `references/fetch-cache-design.md`. The fetch-cache itself lives at `<knowledge-root>/.cogni-knowledge/fetch-cache/` by convention; the path is derivable from the knowledge root and is therefore not echoed into the binding.
+
+Schema bumps mirror the data shape, not the plugin tag. The schema goes `0.0.1 → 0.0.2 → 0.0.3` for additive field adds; the next jump to `0.1.0` aligns with the `plugin.json` v0.1.0 maturity-flip at M12. Consumers that need v0.0.3 fields on a pre-v0.0.3 binding MUST `.get(..., DEFAULT)` — `cmd_read` returns the binding as-is and does not auto-migrate.
 
 The file is small (< 4 KiB even at 20+ deposited projects). It is *not* a database — it is a narrative manifest that records what the user has chosen to bind together. Search across the wiki itself for content; consult the binding only for "what projects fed this base".
 

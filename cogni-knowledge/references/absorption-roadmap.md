@@ -104,7 +104,7 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 | 5 | `claim-extractor` fork + `source-ingester` agent | pending |
 | 6 | `knowledge-ingest` skill | pending — **blocked on cogni-wiki v0.0.44** (`type: source` allowlist in `wiki-lint` + `wiki-health`) |
 | 7 | `wiki-composer` agent (fork of cogni-research `writer`) + `knowledge-compose` skill | pending — must preserve F11 outline-recovery contract |
-| 8 | `wiki-verifier` agent (replaces cogni-claims verifier) + `knowledge-verify` skill | pending |
+| 8 | `wiki-verifier` agent (replaces cogni-claims verifier) + `revisor` agent (forked from cogni-research, kept local to honour the clean break) + `knowledge-verify` skill | pending |
 | 9 | `knowledge-finalize` skill | pending — reuses existing `cycle-guard.py` |
 | 10 | Rebuild `knowledge-query`, `knowledge-dashboard`, `knowledge-resume`, `knowledge-refresh` on new manifests | pending — `--pull-mode` rewritten on inverted pipeline (clean-break commitment) |
 | 11 | Archive `knowledge-research` + `knowledge-report` → `skills/_archive/`; rewrite README, CLAUDE.md, references | pending |

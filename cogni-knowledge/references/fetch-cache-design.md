@@ -60,6 +60,12 @@ Default 30 days, configurable per knowledge base in `binding.json`:
 
 `fetch-cache.py --evict --older-than-days N` removes entries older than N days. Run manually (or wired into a `knowledge-refresh --vacuum` future enhancement). v0.1.0 does not auto-evict.
 
+## Negative-cache retention
+
+Entries with `status: unavailable` age out under the same `--older-than-days` rule as `status: ok` entries. This is deliberate — a URL that was unreachable 30 days ago should be re-attempted, since transient outages, paywalled-then-opened pages, and corporate redirects often recover. The trade-off is repeated cobrowse prompts for genuinely-dead URLs (an unavailable entry inside the freshness window will short-circuit; outside it, a fresh fetch attempt fires).
+
+If a future use case wants asymmetric retention (e.g. keep `unavailable` longer than `ok`), the `--older-than-days` flag can grow a per-status variant (`--ok-older-than-days`, `--unavailable-older-than-days`). v0.1.0 keeps the single knob to match operator expectations.
+
 ## What is NOT cached
 
 - Per-project research metadata (`plan.json`, `candidates.json`, `fetch-manifest.json`) — those are project-scoped and live under `<project>/.metadata/`.

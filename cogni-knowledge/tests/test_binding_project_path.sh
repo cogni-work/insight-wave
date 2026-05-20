@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# test_binding_project_path.sh - regression test for A2 + v0.1.0 schema bump.
+# test_binding_project_path.sh - regression test for A2 + v0.0.3 schema bump.
 #
 # Asserts:
-#   - knowledge-binding.py init writes schema_version 0.1.0 with the new
-#     fields (fetch_cache_dir, curator_defaults, last_fetch_refresh) and
-#     bootstraps the fetch-cache directory.
+#   - knowledge-binding.py init writes schema_version 0.0.3 with
+#     curator_defaults and bootstraps the fetch-cache directory.
+#     (fetch_cache_dir and last_fetch_refresh are deliberately omitted —
+#     derivable / no consumer; explicit negative assertions below.)
 #   - append-project --project-path writes the project_path field on the
 #     entry (absolute, resolved).
 #   - append-project without --project-path writes project_path: "" (legacy
@@ -47,7 +48,8 @@ mkdir -p "$PROJ/.metadata" "$PROJ/output"
 echo '{"slug": "test", "report_source": "web"}' > "$PROJ/.metadata/project-config.json"
 touch "$PROJ/output/report.md"
 
-# 1. init - schema_version should be 0.1.0, new v0.1.0 fields present, fetch-cache dir bootstrapped.
+# 1. init - schema_version should be 0.0.3 (additive bump for curator_defaults
+# on the existing 0.0.x track; the 0.1.0 jump aligns with plugin.json at M12).
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" \
   --knowledge-slug test-kb \
@@ -55,10 +57,10 @@ python3 "$SCRIPT" init \
   --wiki-path "$WIKI" >/dev/null
 
 SCHEMA=$(python3 -c "import json; print(json.load(open('$KB/.cogni-knowledge/binding.json'))['schema_version'])")
-if [ "$SCHEMA" = "0.1.0" ]; then
-  green "PASS: init writes schema_version 0.1.0"
+if [ "$SCHEMA" = "0.0.3" ]; then
+  green "PASS: init writes schema_version 0.0.3"
 else
-  red "FAIL: schema_version expected 0.1.0, got '$SCHEMA'"
+  red "FAIL: schema_version expected 0.0.3, got '$SCHEMA'"
   errors=$((errors + 1))
 fi
 
@@ -233,4 +235,4 @@ if [ $errors -gt 0 ]; then
 fi
 
 green ""
-green "All binding cases pass (A2 + v0.1.0 schema bump)."
+green "All binding cases pass (A2 + v0.0.3 schema bump)."

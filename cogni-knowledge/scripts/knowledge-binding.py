@@ -23,7 +23,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-SCHEMA_VERSION = "0.1.0"
+# Schema bumps mirror the data shape, not the plugin tag. v0.0.3 is the
+# additive bump that adds curator_defaults on top of v0.0.2's project_path.
+# The next bump to 0.1.0 happens at v0.1.0 M12 alongside plugin.json so the
+# two version surfaces re-align there.
+SCHEMA_VERSION = "0.0.3"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 FETCH_CACHE_DIRNAME = "fetch-cache"

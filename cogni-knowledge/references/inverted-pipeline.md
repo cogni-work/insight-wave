@@ -136,7 +136,7 @@ Emits two files:
 
 `wiki-verifier` agent. For each cited statement in the draft, locate via `citation-manifest.json` → wiki page → pre-extracted claims. Score alignment as `verbatim / paraphrase / unsupported`. **No re-fetching** — this is the cost win versus cogni-claims.
 
-Loop with `cogni-research:revisor` (cross-plugin dispatch, not forked — revisor isn't on the bottleneck path) up to 2 iterations on `unsupported` findings.
+Loop with `revisor` (forked from cogni-research at M8, kept in `cogni-knowledge/agents/` to preserve the clean-break commitment) up to 2 iterations on `unsupported` findings.
 
 Output: `<project>/.metadata/verify-vN.json`:
 
@@ -155,7 +155,7 @@ Deposit the verified draft as `wiki/syntheses/<slug>.md`. Run `cycle-guard.py` (
 
 ## What is no longer in the runtime path
 
-- **cogni-research.** v0.1.0 dispatches zero cogni-research skills. The forked agents (source-curator, claim-extractor, writer→wiki-composer) are point-in-time copies; drift from upstream is acceptable. cogni-research stays installed only for users who want one-shot reports via its own skills, and for cross-plugin callers (cogni-trends, cogni-narrative).
+- **cogni-research.** v0.1.0 dispatches zero cogni-research skills and zero cogni-research agents. The forked agents (source-curator, claim-extractor, writer→wiki-composer, revisor) are point-in-time copies under `cogni-knowledge/agents/`; drift from upstream is acceptable. cogni-research stays installed only for users who want one-shot reports via its own skills, and for cross-plugin callers (cogni-trends, cogni-narrative).
 - **cogni-claims.** v0.1.0 dispatches zero cogni-claims skills for its own consumers. cogni-claims stays alive for cogni-trends and cogni-portfolio submitters. `wiki-verifier` replaces it for cogni-knowledge.
 - **cogni-wiki:wiki-from-research.** Replaced by the inverted pipeline. `knowledge-ingest` calls `wiki-ingest`'s low-level scripts (backlink_audit, wiki_index_update) directly instead of dispatching the orchestrator.
 

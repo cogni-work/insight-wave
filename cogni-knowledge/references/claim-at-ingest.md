@@ -54,7 +54,7 @@ pre_extracted_claims:
 [source body here, with the excerpt positions referenced above]
 ```
 
-`excerpt_position` is a character offset into the body — used by `wiki-verifier` to render context around the excerpt when surfacing a deviation to the user. Computed once at ingest and frozen.
+`excerpt_position` is a Python `str` index (Unicode code-point offset, what `str.find` returns) into the body — NOT a UTF-8 byte offset. Used by `wiki-verifier` to render context around the excerpt when surfacing a deviation. Computed once at ingest and frozen; readers in other languages that lack native Unicode-aware indexing must convert from byte to code-point before slicing.
 
 ## Verify scoring
 

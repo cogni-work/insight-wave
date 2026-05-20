@@ -197,6 +197,85 @@ else
   errors=$((errors + 1))
 fi
 
+# 5d. Empty / whitespace --url should be rejected.
+BAD_EMPTY_URL=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB" \
+  --url "  " \
+  --fetch-method webfetch \
+  --status ok \
+  --body "x" 2>&1 || true)
+if echo "$BAD_EMPTY_URL" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False, d
+assert 'url' in d['error'] and 'non-empty' in d['error'], d
+print('OK')
+" | grep -q OK; then
+  green "PASS: whitespace-only --url is rejected"
+else
+  red "FAIL: whitespace --url was not rejected"
+  red "  got: $BAD_EMPTY_URL"
+  errors=$((errors + 1))
+fi
+
+# 5e. --body and --body-file together should be rejected.
+TMP_BODY=$(mktemp)
+echo "body from file" > "$TMP_BODY"
+BAD_BOTH_BODY=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB" \
+  --url "https://example.org/both-body-flags" \
+  --fetch-method webfetch \
+  --status ok \
+  --body "inline" \
+  --body-file "$TMP_BODY" 2>&1 || true)
+rm -f "$TMP_BODY"
+if echo "$BAD_BOTH_BODY" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False, d
+assert 'mutually exclusive' in d['error'], d
+print('OK')
+" | grep -q OK; then
+  green "PASS: --body and --body-file together is rejected"
+else
+  red "FAIL: --body + --body-file together was not rejected"
+  red "  got: $BAD_BOTH_BODY"
+  errors=$((errors + 1))
+fi
+
+# 5f. Malformed cache entry: evict drops it unconditionally (real run);
+#     reports it on dry-run without unlinking.
+MALFORMED_PATH="$KB/.cogni-knowledge/fetch-cache/0000000000000000000000000000000000000000000000000000000000000000.json"
+echo '{not valid json' > "$MALFORMED_PATH"
+DRY_MAL=$(python3 "$SCRIPT" evict --knowledge-root "$KB" --older-than-days 999999 --dry-run)
+if [ -f "$MALFORMED_PATH" ] && echo "$DRY_MAL" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+mal = [e for e in d['data']['evicted'] if e.get('reason') == 'malformed']
+assert len(mal) == 1, d['data']['evicted']
+print('OK')
+" | grep -q OK; then
+  green "PASS: dry-run reports malformed entry but does not unlink"
+else
+  red "FAIL: dry-run handling of malformed entry wrong (file removed=$([ ! -f "$MALFORMED_PATH" ] && echo yes || echo no))"
+  red "  got: $DRY_MAL"
+  errors=$((errors + 1))
+fi
+REAL_MAL=$(python3 "$SCRIPT" evict --knowledge-root "$KB" --older-than-days 999999)
+if [ ! -f "$MALFORMED_PATH" ] && echo "$REAL_MAL" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+mal = [e for e in d['data']['evicted'] if e.get('reason') == 'malformed']
+assert len(mal) == 1, d['data']['evicted']
+print('OK')
+" | grep -q OK; then
+  green "PASS: real evict unlinks malformed entry"
+else
+  red "FAIL: real-evict handling of malformed entry wrong"
+  red "  got: $REAL_MAL"
+  errors=$((errors + 1))
+fi
+
 # 6. Add a fresh entry (URL2) so evict has something to keep.
 python3 "$SCRIPT" store \
   --knowledge-root "$KB" \

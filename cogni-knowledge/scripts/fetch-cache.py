@@ -120,11 +120,16 @@ def cmd_store(args: argparse.Namespace) -> int:
     if not knowledge_root.is_dir():
         return _emit(False, error=f"knowledge_root does not exist: {knowledge_root}")
 
+    if not args.url or not args.url.strip():
+        return _emit(False, error="--url must be a non-empty, non-whitespace string")
+
     if args.status == "ok" and args.reason:
         return _emit(False, error="--reason is only valid with --status unavailable")
     if args.status == "unavailable" and not args.reason:
         return _emit(False, error="--reason is required when --status is unavailable")
 
+    if args.body and args.body_file:
+        return _emit(False, error="--body and --body-file are mutually exclusive")
     if args.body_file:
         body = Path(args.body_file).read_text(encoding="utf-8")
     else:
