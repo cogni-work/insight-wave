@@ -266,13 +266,8 @@ def _walk_lineage(
 
     visited: set[str] = {candidate_slug}
 
-    # Map slug → project_path for fast recursion lookups.
-    # Binding schema 0.0.2+ carries an explicit `project_path` field on each
-    # entry; prefer it. Fall back to deriving the dir from `report_path`'s
-    # .parent.parent for schema 0.0.1 entries or for legacy entries written
-    # without --project-path. The fallback assumes the cogni-research output
-    # layout (<project>/output/report.md), which is fragile under naming
-    # variants — see the v0.0.14 changelog entry for the sturdiness rationale.
+    # Prefer entry["project_path"]; fall back to report_path.parent.parent for
+    # legacy bindings (schema 0.0.1 or entries written without --project-path).
     project_paths: dict[str, Path] = {candidate_slug: candidate_project_path}
     for entry in binding.get("research_projects", []):
         slug = entry.get("slug")
@@ -388,8 +383,7 @@ def main(argv: list[str]) -> int:
         default=DEFAULT_MAX_DEPTH,
         help=(
             f"Max recursion depth for transitive cycle detection "
-            f"(default {DEFAULT_MAX_DEPTH}; 0 disables transitive recursion, "
-            "matching the v0.0.6 behaviour)."
+            f"(default {DEFAULT_MAX_DEPTH}; 0 disables transitive recursion)."
         ),
     )
     parser.add_argument("--dry-run", action="store_true")

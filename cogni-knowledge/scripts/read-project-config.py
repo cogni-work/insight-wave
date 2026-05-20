@@ -81,8 +81,7 @@ def main(argv: list[str]) -> int:
     cfg = project_path / PROJECT_CONFIG_RELPATH
 
     if not cfg.is_file():
-        # Same semantics as the shellout: missing file falls back to the
-        # default. The caller decides whether that's a problem.
+        # Missing file → default; caller decides whether that's an error.
         return _emit(True, data={"field": args.field, "value": args.default}, bare=args.bare)
 
     try:

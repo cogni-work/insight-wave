@@ -33,10 +33,9 @@ trap 'rm -rf "$WORK"' EXIT
 #         .metadata/project-config.json
 #       baz/                                 (v0.7.x+ --slug naming, sibling)
 #         .metadata/project-config.json
-#       qux-suffix-2026-05-20/               (--suffix variant)
+#       qux-suffix-2026-05-20/               (--suffix variant, sibling)
 #         .metadata/project-config.json
-#       qux/                                 (collides with a wiki child below)
-#   $WORK/workspace/cogni-wiki/qux/          (wrong-dir trap; same name as workspace child)
+#   $WORK/workspace/cogni-wiki/inside-wiki/  (wiki-internal probe target)
 #       .metadata/project-config.json
 
 WS="$WORK/workspace"
@@ -53,74 +52,66 @@ mk_project "$WS/cogni-research-foo"
 mk_project "$WS/bar-2026-05-20"
 mk_project "$WS/baz"
 mk_project "$WS/qux-suffix-2026-05-20"
-# A wiki-internal project at the same exact name as a workspace dir, to
-# confirm workspace probes come first.
 mk_project "$WIKI/inside-wiki"
 
-errors=0
-run_case() {
-  local label="$1" slug="$2" expected_basename="$3"
-  local actual
-  actual=$(PYTHONPATH="$SCRIPT_DIR" WIKI_ROOT="$WIKI" SLUG="$slug" python3 - <<'PY'
-import os, sys
+# One python3 startup runs all cases. Each case prints PASS/FAIL with diagnostics.
+# Exit status reports aggregate failures.
+PYTHONPATH="$SCRIPT_DIR" WIKI_ROOT="$WIKI" python3 - <<'PY' || exit 1
+import os
+import sys
 from pathlib import Path
+
 sys.path.insert(0, os.environ["PYTHONPATH"])
 from _wiki_research import locate_research_project
+
+WIKI = Path(os.environ["WIKI_ROOT"])
+GREEN = "\033[32m"
+RED = "\033[31m"
+END = "\033[0m"
+
+CASES = [
+    # (label, slug, expected_basename)
+    ("legacy 'cogni-research-foo' resolves", "foo", "cogni-research-foo"),
+    ("v0.7.x+ derived 'bar-2026-05-20' resolves from slug 'bar'", "bar", "bar-2026-05-20"),
+    ("v0.7.x+ exact 'baz' resolves from slug 'baz'", "baz", "baz"),
+    ("v0.7.x+ --suffix 'qux-suffix-2026-05-20' resolves from slug 'qux'", "qux", "qux-suffix-2026-05-20"),
+]
+
+failures = 0
+for label, slug, expected in CASES:
+    try:
+        resolved = locate_research_project(slug, WIKI, None)
+        actual = resolved.name
+    except SystemExit as exc:
+        actual = f"__FAIL__:{exc}"
+    if actual == expected:
+        print(f"{GREEN}PASS: {label}{END}")
+    else:
+        print(f"{RED}FAIL: {label}{END}")
+        print(f"{RED}  expected basename: {expected}{END}")
+        print(f"{RED}  got              : {actual}{END}")
+        failures += 1
+
+# Negative case: non-existent slug must abort with the actionable error.
+# _wikilib.fail() writes the envelope to stdout, so capture stdout.
+import io, contextlib
+out_buf = io.StringIO()
 try:
-    p = locate_research_project(os.environ["SLUG"], Path(os.environ["WIKI_ROOT"]), None)
-    print(p.name)
-except SystemExit as e:
-    # `fail()` calls sys.exit; emit a marker we can grep for in the test.
-    print("__FAIL__", e, file=sys.stderr)
-    sys.exit(2)
-PY
-  ) || true
-  if [ "$actual" = "$expected_basename" ]; then
-    green "PASS: $label"
-  else
-    red "FAIL: $label"
-    red "  expected basename: $expected_basename"
-    red "  got              : $actual"
-    errors=$((errors + 1))
-  fi
-}
-
-# 1. Legacy naming - cogni-research-<slug>/ under workspace.
-run_case "legacy 'cogni-research-foo' resolves" "foo" "cogni-research-foo"
-
-# 2. v0.7.x+ derived slug under workspace - `bar-<date>/`.
-run_case "v0.7.x+ derived 'bar-2026-05-20' resolves from slug 'bar'" "bar" "bar-2026-05-20"
-
-# 3. v0.7.x+ --slug-named under workspace - `baz/`.
-run_case "v0.7.x+ exact 'baz' resolves from slug 'baz'" "baz" "baz"
-
-# 4. v0.7.x+ --suffix variant - `qux-suffix-2026-05-20/` (prefix match).
-run_case "v0.7.x+ --suffix 'qux-suffix-2026-05-20' resolves from slug 'qux'" "qux" "qux-suffix-2026-05-20"
-
-# 5. Negative path: a non-existent slug should fail. Capture stderr.
-nonexistent_out=$(PYTHONPATH="$SCRIPT_DIR" python3 - 2>&1 <<PY || true
-import sys
-sys.path.insert(0, "$SCRIPT_DIR")
-from pathlib import Path
-from _wiki_research import locate_research_project
-try:
-    locate_research_project("does-not-exist", Path("$WIKI"), None)
+    with contextlib.redirect_stdout(out_buf):
+        locate_research_project("does-not-exist", WIKI, None)
+    print(f"{RED}FAIL: non-existent slug should have aborted{END}")
+    failures += 1
 except SystemExit:
-    sys.exit(2)
-PY
-)
-if echo "$nonexistent_out" | grep -q "cogni-research project not found"; then
-  green "PASS: non-existent slug yields actionable 'not found' error"
-else
-  red "FAIL: non-existent slug did not produce 'not found' error"
-  red "  got: $nonexistent_out"
-  errors=$((errors + 1))
-fi
+    out = out_buf.getvalue()
+    if "cogni-research project not found" in out:
+        print(f"{GREEN}PASS: non-existent slug yields actionable 'not found' error{END}")
+    else:
+        print(f"{RED}FAIL: non-existent slug aborted but error text unexpected{END}")
+        print(f"{RED}  got: {out}{END}")
+        failures += 1
 
-if [ $errors -gt 0 ]; then
-  red "$errors case(s) failed."
-  exit 1
-fi
+sys.exit(0 if failures == 0 else 1)
+PY
 
 green ""
 green "All F2 locate_research_project naming cases pass."

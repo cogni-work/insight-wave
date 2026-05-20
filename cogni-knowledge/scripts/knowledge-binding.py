@@ -149,10 +149,6 @@ def cmd_append_project(args: argparse.Namespace) -> int:
         "deposited_at": args.deposited_at or _today(),
         "report_path": str(Path(args.report_path).resolve()) if args.report_path else "",
         "report_source": args.report_source,
-        # project_path is the v0.0.2 schema field. Empty string when the
-        # caller didn't pass --project-path (legacy compat). Consumers
-        # (cycle-guard.py) fall back to the .parent.parent derivation in
-        # that case, so this field is purely a sturdiness add.
         "project_path": str(Path(args.project_path).resolve()) if args.project_path else "",
     }
     projects.append(entry)
@@ -205,8 +201,8 @@ def main(argv: list[str]) -> int:
         help=(
             "Absolute path to the cogni-research project root (the dir "
             "that contains .metadata/project-config.json). Optional but "
-            "recommended in v0.0.2+ — cycle-guard prefers it over deriving "
-            "the project dir from report_path.parent.parent."
+            "recommended — cycle-guard prefers it over deriving the project "
+            "dir from report_path.parent.parent."
         ),
     )
     p_append.add_argument("--report-source", required=True, choices=sorted(VALID_REPORT_SOURCES))
