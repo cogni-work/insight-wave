@@ -32,7 +32,10 @@ from pathlib import Path
 
 
 # Ordered so iter_pages() yields a stable per-type traversal regardless of
-# filesystem listing order. The 9 valid `type:` values plus the audit dir.
+# filesystem listing order. The 10 valid `type:` values plus the audit dir.
+# `source` (v0.0.44+) is an ingested source body — typically written by
+# `cogni-knowledge:knowledge-ingest`, generic enough that any external
+# ingestor can produce them. Additive over the v0.0.28 per-type-dirs layout.
 PAGE_TYPE_DIRS = {
     "concept": "concepts",
     "entity": "entities",
@@ -43,6 +46,7 @@ PAGE_TYPE_DIRS = {
     "learning": "learnings",
     "synthesis": "syntheses",
     "note": "notes",
+    "source": "sources",
 }
 
 # `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` audit reports live here.

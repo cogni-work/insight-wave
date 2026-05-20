@@ -60,12 +60,14 @@ Create (with `mkdir -p`):
 │   ├── learnings/
 │   ├── syntheses/
 │   ├── notes/
+│   ├── sources/
 │   └── audits/
 └── .cogni-wiki/
 ```
 
-The nine type directories mirror the `type:` frontmatter enum (concept,
-entity, summary, decision, interview, meeting, learning, synthesis, note).
+The ten type directories mirror the `type:` frontmatter enum (concept,
+entity, summary, decision, interview, meeting, learning, synthesis, note,
+source).
 `audits/` holds the `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` reports
 that are exempt from the forward→reverse link contract (SCHEMA.md R3). Each
 type dir is created empty; `wiki-ingest` writes new pages directly into the
@@ -119,12 +121,12 @@ Write `<wiki-root>/.cogni-wiki/config.json` with JSON:
   "created": "{{YYYY-MM-DD}}",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.5",
+  "schema_version": "0.0.6",
   "publisher_base_url": "{{publisher_base_url_or_empty}}"
 }
 ```
 
-Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.5"` marks the per-type-page-directory layout (v0.0.28+); `"0.0.4"` (which added the `synthesis` and `health` log prefixes plus the `R3_audit_report` exemption broadening), `"0.0.3"` (which added the SCHEMA "Forward → reverse link contract" table), `"0.0.2"` (which added `publisher_base_url`), and `"0.0.1"` configs are read by the migrator but every other skill hard-fails on `< 0.0.5` until migration runs.
+Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.6"` (v0.0.44+) is the additive `type: source` extension — `wiki/sources/<slug>.md` pages with `type: source` are now a recognised page type for ingested source bodies (typically written by `cogni-knowledge:knowledge-ingest`); pre-0.0.6 wikis are read forward without filesystem migration because `iter_pages` silently skips a missing `wiki/sources/` directory. `"0.0.5"` marks the per-type-page-directory layout (v0.0.28+); `"0.0.4"` (which added the `synthesis` and `health` log prefixes plus the `R3_audit_report` exemption broadening), `"0.0.3"` (which added the SCHEMA "Forward → reverse link contract" table), `"0.0.2"` (which added `publisher_base_url`), and `"0.0.1"` configs are read by the migrator but every other skill hard-fails on `< 0.0.5` until migration runs.
 
 ### 5. Migrate an existing wiki (schema_version < 0.0.5)
 
@@ -150,6 +152,7 @@ For wikis at `schema_version < 0.0.4`, the `SCHEMA.md` body inside the wiki is a
 - **`< 0.0.3`:** append the `## Forward → reverse link contract` section between the existing `## Linking` and `## Log format` sections.
 - **`< 0.0.4`:** in the `## Log format` block, broaden the operation enum to `{ingest|query|synthesis|lint|health|update|setup|migrate}`. In the forward→reverse contract table, rename row `R3_lint_report` to `R3_audit_report` and broaden its exemption text to cover both `[[lint-YYYY-MM-DD]]` and `[[health-YYYY-MM-DD]]` filenames.
 - **`< 0.0.5`:** update the directory-layout block to show the per-type directories (concepts/, entities/, summaries/, decisions/, interviews/, meetings/, learnings/, syntheses/, notes/, audits/) in place of the single `wiki/pages/` line.
+- **`< 0.0.6`:** purely additive — `type: source` was added to the type enum and `wiki/sources/` was added to the per-type directory list. No filesystem migration is needed: `iter_pages` silently skips the missing dir, and the first ingestor that needs it (`cogni-knowledge:knowledge-ingest`) `mkdir -p`'s it on demand. Optional: hand-edit `.cogni-wiki/config.json` to bump `schema_version` to `"0.0.6"` and append `source` to the `type:` enum in the wiki's `SCHEMA.md` (mirror the in-plugin template at `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/references/SCHEMA.md.template`).
 
 The SCHEMA.md edits are idempotent and offline-safe. `wiki-lint`'s deterministic checks work whether or not the SCHEMA sections match the in-plugin template — the edits only ensure the contract is auditable when reading the wiki on its own.
 

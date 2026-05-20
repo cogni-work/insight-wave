@@ -113,6 +113,7 @@ Created by `wiki-setup` at the user-chosen root (default `cogni-wiki/{slug}/` re
 │   ├── learnings/             type: learning (incl. tag:retro)
 │   ├── syntheses/             type: synthesis (filed-back query answers)
 │   ├── notes/                 type: note
+│   ├── sources/               type: source (ingested source bodies; written by cogni-knowledge:knowledge-ingest)
 │   └── audits/                lint-YYYY-MM-DD.md / health-YYYY-MM-DD.md (R3 exempt)
 ├── wiki-dashboard.html        Self-contained dashboard (rendered by wiki-dashboard)
 ├── wiki-graph.html            Self-contained graph view (rendered by wiki-dashboard --graph; v0.0.34+)
@@ -130,7 +131,7 @@ Pages live under per-type subdirectories (v0.0.28+, schema_version `0.0.5`); the
 ---
 id: <slug>
 title: <human-readable>
-type: concept | entity | summary | decision | interview | meeting | learning | synthesis | note
+type: concept | entity | summary | decision | interview | meeting | learning | synthesis | note | source
 tags: [tag1, tag2]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -141,6 +142,8 @@ sources: [../raw/paper-xyz.pdf, https://..., wiki://other-slug]
 The `synthesis` type (introduced in v0.0.23) is reserved for LLM-derived answers that `wiki-query --file-back yes` files back into the wiki. Synthesis pages cite their wiki provenance via `wiki://<slug>` entries in `sources:` rather than `../raw/` paths; `wiki-lint` enforces this contract.
 
 The `interview` and `meeting` types (introduced in v0.0.24) carry the consulting-domain shapes that drive `wiki-ingest`'s body-template dispatch. `customer-call` and `retro` are deliberately **not** distinct types — they are scaffold variants distinguished by the `tags:` field (`tag:customer-call` swaps `interview.md` → `customer-call.md`; `tag:retro` swaps `learning.md` → `retro.md`), so the enum stays small while `wiki-query` can still slice by use case. See `skills/wiki-ingest/references/page-frontmatter.md` for the full schema and `skills/wiki-ingest/references/templates/README.md` for the type→template map.
+
+The `source` type (introduced in v0.0.44, schema_version `0.0.6`) is reserved for ingested source bodies — raw extract plus minimal frontmatter — typically written by `cogni-knowledge:knowledge-ingest` as the substrate for downstream writers. Generic enough that any external ingestor (a hand-curated paste, an external scraper) can produce them; cogni-wiki only recognises the type and routes the page to `wiki/sources/`. Per-type semantics (e.g. `pre_extracted_claims:` frontmatter) are owned by the ingestor, not by cogni-wiki's schema.
 
 ## Key Conventions
 
@@ -275,6 +278,7 @@ insight-wave already uses Claude Code's auto-memory system at `~/.claude/project
   - **Fixed (F3).** `skills/wiki-ingest/scripts/batch_builder.py::discover_research` read `<project>/project-config.json`. cogni-research v0.7.x+ writes to `<project>/.metadata/project-config.json` (matches the path that `cogni-knowledge/scripts/read-project-config.py` already canonicalised and that `wiki-from-research`'s Step 0(3) adopted at v0.0.40). Try modern first, fall back to legacy bare filename; abort message lists both.
   - **Fixed (F4).** `skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter` treated `field: [[slug]]` as a one-element flow sequence `["[slug]"]` because the inline-list branch matched any value bracketed by `[` and `]`. Downstream `isinstance(value, str)` checks silently fell through — per-sub-question ingest pages linked nowhere. New `v.startswith("[[") and v.endswith("]]")` branch precedes the inline-list branch and keeps wikilinks as strings. Quoted form `"[[slug]]"` already worked. F5 (path-prefixed wikilink resolution) closes transitively: `_wiki_research.strip_wikilink` already strips path prefixes via `rsplit("/", 1)[-1]` once it receives a string instead of a list.
   - **Tests.** Three new `tests/test_{parse_frontmatter_wikilink,locate_research_project_naming,batch_builder_metadata_config}.sh` smokes execute the actual code paths with synthetic fixtures (legacy + modern shapes, plus the quoted-wikilink and inline-list regression checks for F4). `tests/README.md` "Contract tests" section gains rows for all three.
+- **`type: source` accepted in the page-type allowlist** (v0.0.44, intra-plugin, schema_version `0.0.6`; unblocks cogni-knowledge #264 / PR #269 milestone 6 `knowledge-ingest`). Additive extension of `_wikilib.PAGE_TYPE_DIRS` adds `"source": "sources"` as the tenth recognised page type. `VALID_TYPES` (derived as `frozenset(PAGE_TYPE_DIRS.keys())`) and `iter_pages()` (per-type traversal) auto-extend from that single dict entry, so `health.py`'s `invalid_type` and `type_directory_mismatch` checks now accept `wiki/sources/<slug>.md` with `type: source` frontmatter without further code changes. The schema-version hard-fail boundary (`SCHEMA_VERSION_PER_TYPE_DIRS`) stays at `0.0.5`; only newly-created `config.json` files written by `wiki-setup` advertise `"0.0.6"`. Pre-0.0.6 wikis are read forward without filesystem migration because `iter_pages` silently skips a missing `wiki/sources/` directory — the first ingestor that needs it (`cogni-knowledge:knowledge-ingest`) `mkdir -p`'s it on demand. Recognition of the type lives here in cogni-wiki because cogni-wiki is the canonical owner of the page-type vocabulary; per-type semantics (e.g. `pre_extracted_claims:` frontmatter shape) stay in cogni-knowledge. New `tests/test_source_page_type.sh` plants a minimal `type: source` page and asserts both `health.py` and `lint_wiki.py` raise neither `invalid_type` nor `type_directory_mismatch`. Closes #270.
 
 ## Future Integration Points
 

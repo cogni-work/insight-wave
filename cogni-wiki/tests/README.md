@@ -53,6 +53,7 @@ For pure LLM skills (no scripts to execute), regression coverage is limited to *
 | `test_parse_frontmatter_wikilink.sh` | `_wikilib.parse_frontmatter` keeps `field: [[slug]]` as a string (was mis-parsed as `["[slug]"]` pre-v0.0.43, F4). Quoted form and real inline lists regression-checked. |
 | `test_locate_research_project_naming.sh` | `_wiki_research.locate_research_project` resolves both legacy `cogni-research-<slug>/` and v0.7.x+ `<slug>/` / `<slug>-<date>/` (v0.0.43, F2). |
 | `test_batch_builder_metadata_config.sh` | `batch_builder.discover_research` reads `.metadata/project-config.json` (v0.7.x+) with fallback to legacy `<project>/project-config.json` (v0.0.43, F3). |
+| `test_source_page_type.sh` | `wiki-health` and `wiki-lint` accept the additive `type: source` page type added in v0.0.44 (#270) — a planted `wiki/sources/<slug>.md` page raises neither `invalid_type` nor `type_directory_mismatch`. Unblocks cogni-knowledge PR #269 milestone 6 `knowledge-ingest`. |
 
 ```sh
 bash tests/test_wiki_from_research_flags.sh
@@ -60,6 +61,7 @@ bash tests/test_wiki_query_wiki_root.sh
 bash tests/test_parse_frontmatter_wikilink.sh
 bash tests/test_locate_research_project_naming.sh
 bash tests/test_batch_builder_metadata_config.sh
+bash tests/test_source_page_type.sh
 ```
 
 The SKILL.md tests do not assert anything about LLM-driven behaviour — only that the contract surface that orchestrators (`cogni-knowledge:knowledge-report` / `cogni-knowledge:knowledge-query`) depend on remains intact. The script-level tests execute the actual code path and assert observable behaviour.

@@ -51,6 +51,7 @@ One of:
 | `learning` | A generalized takeaway drawn from multiple sources or experience (typically authored by hand or filed during ingest). Use the `retro` tag for retrospectives |
 | `synthesis` | An LLM-synthesised answer derived from other wiki pages — filed back by `wiki-query --file-back yes`. Sources are `wiki://<slug>` references to the pages it draws from, not raw files. Distinguishes wiki→wiki derivation from raw-source learnings |
 | `note` | A loose observation that hasn't crystallized — often promoted later to `concept` or `learning` |
+| `source` | An ingested source body (raw extract + frontmatter). Typically written by `cogni-knowledge:knowledge-ingest` as the substrate for downstream writers; generic enough that any external ingestor can produce them. Per-type semantics (e.g. `pre_extracted_claims:`) are owned by the ingestor — cogni-wiki only recognises the type and routes the page to `wiki/sources/` |
 
 Pick the most specific type. `wiki-lint` will warn when a page's body has drifted far from its declared type.
 
@@ -69,6 +70,7 @@ Pick the most specific type. `wiki-lint` will warn when a page's body has drifte
 | `learning` | `learning.md` (or `retro.md` when tagged `retro`) |
 | `synthesis` | n/a — `wiki-query --file-back yes` writes the body directly |
 | `note` | n/a — pastes are short by design; default scaffold optional |
+| `source` | n/a — body written by the ingestor (cogni-knowledge:knowledge-ingest owns the convention) |
 
 See `./templates/README.md` for authoring conventions and per-template required `[[wikilinks]]`.
 
