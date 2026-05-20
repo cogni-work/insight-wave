@@ -230,25 +230,6 @@ def _walk_project_citations(
     return cited
 
 
-def _project_path_for_slug(binding: dict, slug: str) -> Path | None:
-    """Derive a deposited project's root dir from its binding entry's
-    `report_path`. The binding stores `report_path` (the absolute path to
-    `<project>/output/report.md`), not a `project_path` field — see
-    `knowledge-binding.py::cmd_append_project`. Returns None if the slug is
-    not in `research_projects[]` or its `report_path` is missing/empty."""
-    for entry in binding.get("research_projects", []):
-        if entry.get("slug") != slug:
-            continue
-        rp = entry.get("report_path", "")
-        if not rp:
-            return None
-        try:
-            return Path(rp).resolve().parent.parent
-        except (OSError, ValueError):
-            return None
-    return None
-
-
 def _walk_lineage(
     candidate_slug: str,
     candidate_project_path: Path,
@@ -285,15 +266,22 @@ def _walk_lineage(
 
     visited: set[str] = {candidate_slug}
 
-    # Map slug → project_path for fast recursion lookups.
+    # Map slug → project_path for fast recursion lookups. Derive each path
+    # directly from the binding entry's `report_path` (the binding has no
+    # explicit project_path field — see knowledge-binding.py::cmd_append_project,
+    # report_path = .../cogni-research-<slug>/output/report.md).
     project_paths: dict[str, Path] = {candidate_slug: candidate_project_path}
     for entry in binding.get("research_projects", []):
         slug = entry.get("slug")
         if not slug or slug in project_paths:
             continue
-        pp = _project_path_for_slug(binding, slug)
-        if pp is not None:
-            project_paths[slug] = pp
+        rp = entry.get("report_path", "")
+        if not rp:
+            continue
+        try:
+            project_paths[slug] = Path(rp).resolve().parent.parent
+        except (OSError, ValueError):
+            continue
 
     def dfs(project_slug: str, project_path: Path, chain: list[str], depth: int) -> bool:
         """Walk `project_path`'s citations. Returns True if the candidate
