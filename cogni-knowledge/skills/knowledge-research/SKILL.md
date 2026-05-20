@@ -43,6 +43,28 @@ If `--topic` is missing, ask the user once. Do not invent a topic.
 
 ### 0. Pre-flight
 
+**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+
+```
+probe_plugin() {
+  local plugin="$1" skill="$2"
+  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
+  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
+    [ -f "$d" ] && return 0
+  done
+  return 1
+}
+probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
+```
+
+If either is `no`, list the missing plugin(s) and abort:
+
+> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
+> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+
+Then continue with the binding-resolution checks:
+
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
    - Otherwise, `knowledge_root = <cwd>/<knowledge-slug>/`.
@@ -91,14 +113,15 @@ On `success: false`, surface the error but **do not abort the workflow** — lin
 
 ### 3. Append the project to the binding
 
-Read the live `report_source` from the project's metadata via the shared reader script (same pattern as `knowledge-report` Step 5):
+Read the live `report_source` from the project's metadata via the shared reader script's `--bare` mode (same pattern as `knowledge-report` Step 5):
 
 ```
 RS=$(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/read-project-config.py \
-       --project-path cogni-research-<resolved_slug> \
-       --field report_source --default web \
-     | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['value'])")
+       --project-path <abs path to project> \
+       --field report_source --default web --bare)
 ```
+
+`<abs path to project>` resolves to the project directory captured during Step 1 (the F2 fix in cogni-wiki v0.0.43 means this is no longer hard-coded to `cogni-research-<slug>/`; cogni-research v0.7.x+ names it `<slug>-<date>/` or `<slug>/`).
 
 Then append:
 
@@ -107,9 +130,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --knowledge-root <knowledge_root> \
     --knowledge-slug <knowledge_slug> \
     --research-slug <resolved_slug> \
-    --report-path <abs path to cogni-research-<resolved_slug>/output/report.md> \
+    --report-path <abs path to project>/output/report.md \
+    --project-path <abs path to project> \
     --report-source $RS
 ```
+
+`--project-path` was added to the schema in v0.0.14 (binding `schema_version: 0.0.2`). cycle-guard reads it directly when present and falls back to deriving the dir from `report_path.parent.parent` for legacy 0.0.1 entries.
 
 `report_source` is read live from the project's config. For Mode A invocations it will normally be `web` — `wiki-from-research` runs `cogni-research`'s default web mode (the skill refuses `report_source ∈ {wiki, hybrid}` projects, see `cogni-wiki/skills/wiki-from-research/SKILL.md` Step 0(3)). If a user reaches `knowledge-research` via a path that resolves to `local` or future modes, the live value is recorded faithfully. The `web` default in the python expression is purely a safety net for a missing key.
 

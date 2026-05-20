@@ -31,6 +31,30 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 ## Workflow
 
+### 0. Pre-flight
+
+**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+
+```
+probe_plugin() {
+  local plugin="$1" skill="$2"
+  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
+  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
+    [ -f "$d" ] && return 0
+  done
+  return 1
+}
+probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
+```
+
+If either is `no`, list the missing plugin(s) and abort:
+
+> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
+> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+
+Resume is read-only with respect to disk, but it still dispatches `cogni-wiki:wiki-resume` and would fail mid-skill if cogni-wiki were missing. The probe gives the user the same clean signal every other `knowledge-*` skill emits.
+
 ### 1. Resolve the knowledge root and read the binding
 
 1. Resolve `knowledge_root`:

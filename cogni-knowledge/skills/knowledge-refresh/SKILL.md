@@ -49,6 +49,28 @@ If `--mode` is missing, ask the user once via `AskUserQuestion`. Do not infer.
 
 ### 0. Pre-flight (both modes)
 
+**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+
+```
+probe_plugin() {
+  local plugin="$1" skill="$2"
+  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
+  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
+    [ -f "$d" ] && return 0
+  done
+  return 1
+}
+probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
+```
+
+If either is `no`, list the missing plugin(s) and abort:
+
+> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
+> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+
+Then continue with the binding-resolution checks:
+
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
    - Otherwise, `knowledge_root = <cwd>/<knowledge-slug>/`.

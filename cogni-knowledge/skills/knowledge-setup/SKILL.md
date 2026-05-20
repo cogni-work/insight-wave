@@ -39,11 +39,21 @@ If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with 
 
 ### 0. Pre-flight: required plugins
 
-cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; without either of them, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe both sibling plugin dirs before touching anything else:
+cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; without either of them, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe both sibling plugin dirs before touching anything else. The probe tries both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`) so a marketplace-installed user gets the same abort as a dev-repo user:
 
 ```
-WIKI_OK=$(test -f "${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/wiki-setup/SKILL.md" && echo yes || echo no)
-RESEARCH_OK=$(test -f "${CLAUDE_PLUGIN_ROOT}/../cogni-research/skills/research-setup/SKILL.md" && echo yes || echo no)
+probe_plugin() {
+  local plugin="$1" skill="$2"
+  # Dev-repo siblings (../<plugin>/skills/...)
+  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
+  # Marketplace cache (../../<plugin>/<version>/skills/...)
+  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
+    [ -f "$d" ] && return 0
+  done
+  return 1
+}
+probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
 ```
 
 If either is `no`, list the missing plugin(s) and abort:
@@ -53,7 +63,7 @@ If either is `no`, list the missing plugin(s) and abort:
 
 Do not attempt to install or auto-recover — surface the missing dependency and let the user install it explicitly.
 
-This check is currently only in `knowledge-setup`. Setup is the gate that creates the binding, so a clean abort here protects the user from a half-bootstrapped base; downstream skills (`knowledge-research`, `knowledge-report`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) rely on the binding's existence as a soft proxy for plugin presence. A future patch may roll the check into the other five skills.
+The same probe runs in every other `knowledge-*` skill (rolled out at v0.0.14, alpha finding A4). Setup is still the canonical gate because it creates the binding; downstream skills additionally rely on the binding's existence as a soft proxy. A user who somehow reaches a downstream skill without going through setup gets the same clean abort.
 
 ### 1. Resolve the knowledge root
 

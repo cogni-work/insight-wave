@@ -43,6 +43,28 @@ If `--topic` is missing, ask the user once via `AskUserQuestion`. Do not invent 
 
 ### 0. Pre-flight
 
+**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+
+```
+probe_plugin() {
+  local plugin="$1" skill="$2"
+  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
+  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
+    [ -f "$d" ] && return 0
+  done
+  return 1
+}
+probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
+```
+
+If either is `no`, list the missing plugin(s) and abort:
+
+> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
+> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+
+Then continue with the binding-resolution checks:
+
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
    - Otherwise, `knowledge_root = <cwd>/<knowledge-slug>/`.
@@ -113,14 +135,15 @@ Idempotent. On `success: false`, surface the warning but do NOT abort — lineag
 
 ### 5. Append the project to the binding with the *live* `report_source`
 
-This is the satisfaction of the delegation-contract Phase-2 guardrail (`${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` §"Wiring report_source"). Read the live value from `cogni-research-<resolved_slug>/.metadata/project-config.json` via the shared reader script:
+This is the satisfaction of the delegation-contract Phase-2 guardrail (`${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` §"Wiring report_source"). Read the live value from `<project>/.metadata/project-config.json` via the shared reader script's `--bare` mode:
 
 ```
 RS=$(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/read-project-config.py \
-       --project-path cogni-research-<resolved_slug> \
-       --field report_source --default web \
-     | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['value'])")
+       --project-path <abs path to project> \
+       --field report_source --default web --bare)
 ```
+
+`<abs path to project>` resolves to the project directory captured during Step 1. With the F2 fix in cogni-wiki v0.0.43, this is no longer hard-coded to `cogni-research-<slug>/`; cogni-research v0.7.x+ names it `<slug>-<date>/` or `<slug>/`.
 
 Then:
 
@@ -129,9 +152,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --knowledge-root <knowledge_root> \
     --knowledge-slug <knowledge_slug> \
     --research-slug <resolved_slug> \
-    --report-path <abs path to cogni-research-<resolved_slug>/output/report.md> \
+    --report-path <abs path to project>/output/report.md \
+    --project-path <abs path to project> \
     --report-source $RS
 ```
+
+`--project-path` was added to the schema in v0.0.14 (binding `schema_version: 0.0.2`). cycle-guard reads it directly when present and falls back to deriving the dir from `report_path.parent.parent` for legacy 0.0.1 entries.
 
 The value of `$RS` will be `wiki` for a clean wiki-mode run, `hybrid` if the user opted into hybrid in the menu, or `web`/`local` if they pivoted away from wiki mode (in which case Step 2 already returned `not_applicable` and Step 3 ran without the opt-in flags).
 

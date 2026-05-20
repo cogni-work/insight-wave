@@ -22,7 +22,7 @@ import os
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION = "0.0.1"
+SCHEMA_VERSION = "0.0.2"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 WIKI_DIRNAME = ".cogni-wiki"
@@ -149,6 +149,7 @@ def cmd_append_project(args: argparse.Namespace) -> int:
         "deposited_at": args.deposited_at or _today(),
         "report_path": str(Path(args.report_path).resolve()) if args.report_path else "",
         "report_source": args.report_source,
+        "project_path": str(Path(args.project_path).resolve()) if args.project_path else "",
     }
     projects.append(entry)
 
@@ -193,6 +194,17 @@ def main(argv: list[str]) -> int:
     p_append.add_argument("--knowledge-slug", required=False, default="")
     p_append.add_argument("--research-slug", required=True)
     p_append.add_argument("--report-path", required=False, default="")
+    p_append.add_argument(
+        "--project-path",
+        required=False,
+        default="",
+        help=(
+            "Absolute path to the cogni-research project root (the dir "
+            "that contains .metadata/project-config.json). Optional but "
+            "recommended — cycle-guard prefers it over deriving the project "
+            "dir from report_path.parent.parent."
+        ),
+    )
     p_append.add_argument("--report-source", required=True, choices=sorted(VALID_REPORT_SOURCES))
     p_append.add_argument("--deposited-at", required=False, default="")
     p_append.set_defaults(func=cmd_append_project)

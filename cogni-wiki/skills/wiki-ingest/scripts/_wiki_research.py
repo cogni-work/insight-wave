@@ -78,8 +78,14 @@ def locate_research_project(slug_or_path: str, wiki_root: Path, override: str | 
       1. `override` if given (must point at the project dir directly).
       2. `slug_or_path` itself if it contains a path separator (relative to
          cwd, then absolute).
-      3. `<workspace>/cogni-research-<slug>/` where workspace = wiki_root.parent.
-      4. `<wiki_root>/cogni-research-<slug>/` (e.g. wiki sits at workspace root).
+      3. Legacy prefixed naming (pre-v0.7 cogni-research):
+         `<workspace>/cogni-research-<slug>/` then
+         `<wiki_root>/cogni-research-<slug>/`.
+      4. v0.7.x+ naming (no `cogni-research-` prefix): `<slug>/` for
+         --slug-named projects, `<slug>-<date>/` for derived slugs. Probed
+         under both `wiki_root.parent` and `wiki_root`. Each candidate is
+         verified by the presence of `.metadata/project-config.json` so a
+         neighbour dir that happens to share a prefix isn't accepted.
     On failure: emits the candidates checked so the user can correct the
     layout, then `fail()`s (which exits — `return Path()` is unreachable).
     """
@@ -95,16 +101,36 @@ def locate_research_project(slug_or_path: str, wiki_root: Path, override: str | 
             return candidate
         fail(f"--research path not found: {candidate}")
 
-    candidates = [
+    legacy_candidates = [
         wiki_root.parent / f"cogni-research-{slug_or_path}",
         wiki_root / f"cogni-research-{slug_or_path}",
     ]
-    for c in candidates:
+    for c in legacy_candidates:
         if c.is_dir():
             return c.resolve()
+
+    # v0.7.x+ fallback. cogni-research's initialize-project.sh creates
+    # `<slug>/` (when --slug is set) or `<slug>-<date>/` (when the slug is
+    # derived). Verify each candidate carries .metadata/project-config.json.
+    for base in [wiki_root.parent, wiki_root]:
+        exact = base / slug_or_path
+        if exact.is_dir() and (exact / ".metadata" / "project-config.json").is_file():
+            return exact.resolve()
+        for cand in sorted(base.glob(f"{slug_or_path}-*")):
+            if cand.is_dir() and (cand / ".metadata" / "project-config.json").is_file():
+                return cand.resolve()
+
+    suffix_examples = [
+        f"{wiki_root.parent / slug_or_path}",
+        f"{wiki_root.parent / slug_or_path}-<date>",
+        f"{wiki_root / slug_or_path}",
+        f"{wiki_root / slug_or_path}-<date>",
+    ]
     fail(
-        "cogni-research project not found. Tried: "
-        + ", ".join(str(c) for c in candidates)
+        "cogni-research project not found. Tried legacy-prefixed: "
+        + ", ".join(str(c) for c in legacy_candidates)
+        + ". Also tried v0.7.x+ shapes: "
+        + ", ".join(suffix_examples)
         + ". Pass --research-root to override."
     )
     return Path()  # unreachable

@@ -57,7 +57,8 @@ All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the in
       "slug": "<research-project-slug>",
       "deposited_at": "<YYYY-MM-DD>",
       "report_path": "<absolute path to output/report.md>",
-      "report_source": "web | local | wiki | hybrid"
+      "report_source": "web | local | wiki | hybrid",
+      "project_path": "<absolute path to project root>"
     }
   ],
   "topic_lineage": {
@@ -65,7 +66,7 @@ All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the in
     "open_themes": []
   },
   "created": "<YYYY-MM-DD>",
-  "schema_version": "0.0.1"
+  "schema_version": "0.0.2"
 }
 ```
 
@@ -103,4 +104,4 @@ Only the frontmatter changes — page bodies are never touched.
 
 ## Future phases
 
-Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 (v0.0.11) shipped — `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` make the accumulated knowledge legible and self-healing. Phase 2/3 follow-up debt cleared at v0.0.13 (transitive cycle detection, slug→path index, factored project-config reader, pre-flight dependency check in `knowledge-setup`, cycle-guard docstring precision; cogni-wiki contract regression tests landed alongside as cogni-wiki v0.0.42). Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
+Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 (v0.0.11) shipped — `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` make the accumulated knowledge legible and self-healing. Phase 2/3 follow-up debt cleared at v0.0.13 (transitive cycle detection, slug→path index, factored project-config reader, pre-flight dependency check in `knowledge-setup`, cycle-guard docstring precision; cogni-wiki contract regression tests landed alongside as cogni-wiki v0.0.42). Phase 4 (the internal alpha) surfaced findings F1–F10 — F1–F4 fixed at v0.0.14 (F5 transitively via F4) alongside PR-#267 reviewer-deferred items A1–A4 (`read-project-config.py --bare`, binding `project_path` schema 0.0.2, `cogni-knowledge/tests/`, probe rolled to all 7 skills). cogni-wiki contract tests for F2/F3/F4 landed alongside as cogni-wiki v0.0.43. F6–F10 remain deferred — see `references/alpha-findings.md`. Phase 5 graduates to v0.1.0 (Preview) once the v0.0.16 alpha re-run completes clean end-to-end. Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.

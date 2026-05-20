@@ -266,15 +266,20 @@ def _walk_lineage(
 
     visited: set[str] = {candidate_slug}
 
-    # Map slug → project_path for fast recursion lookups. Derive each path
-    # directly from the binding entry's `report_path` (the binding has no
-    # explicit project_path field — see knowledge-binding.py::cmd_append_project,
-    # report_path = .../cogni-research-<slug>/output/report.md).
+    # Prefer entry["project_path"]; fall back to report_path.parent.parent for
+    # legacy bindings (schema 0.0.1 or entries written without --project-path).
     project_paths: dict[str, Path] = {candidate_slug: candidate_project_path}
     for entry in binding.get("research_projects", []):
         slug = entry.get("slug")
         if not slug or slug in project_paths:
             continue
+        explicit = entry.get("project_path", "") or ""
+        if explicit:
+            try:
+                project_paths[slug] = Path(explicit).resolve()
+                continue
+            except (OSError, ValueError):
+                pass  # fall through to legacy derivation
         rp = entry.get("report_path", "")
         if not rp:
             continue
@@ -378,8 +383,7 @@ def main(argv: list[str]) -> int:
         default=DEFAULT_MAX_DEPTH,
         help=(
             f"Max recursion depth for transitive cycle detection "
-            f"(default {DEFAULT_MAX_DEPTH}; 0 disables transitive recursion, "
-            "matching the v0.0.6 behaviour)."
+            f"(default {DEFAULT_MAX_DEPTH}; 0 disables transitive recursion)."
         ),
     )
     parser.add_argument("--dry-run", action="store_true")

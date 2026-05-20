@@ -320,6 +320,10 @@ def parse_frontmatter(text: str) -> dict:
     when no frontmatter is found.
 
     Supports scalars, inline lists (`[a, b]`), and block lists (`  - item`).
+    Wikilink scalars `[[slug]]` stay as strings — without the explicit
+    check the parser interpreted them as one-element flow-sequences
+    `["[slug]"]`, which broke downstream `isinstance(value, str)` tests.
+    Quoted forms `"[[slug]]"` already worked via the existing scalar branch.
     """
     m = FRONTMATTER_RE.match(text)
     if not m:
@@ -337,7 +341,12 @@ def parse_frontmatter(text: str) -> dict:
             k = k.strip()
             v = v.strip()
             current_key = k
-            if v.startswith("[") and v.endswith("]"):
+            if v.startswith("[[") and v.endswith("]]"):
+                # Wikilink — string, not flow-sequence. Must precede the
+                # inline-list test below; otherwise `[[slug]]` matches
+                # `startswith("[")` and is mis-parsed as `["[slug]"]`.
+                out[k] = v
+            elif v.startswith("[") and v.endswith("]"):
                 inside = v[1:-1].strip()
                 out[k] = [x.strip() for x in inside.split(",") if x.strip()] if inside else []
             elif v:
