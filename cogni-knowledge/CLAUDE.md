@@ -103,7 +103,4 @@ Only the frontmatter changes — page bodies are never touched.
 
 ## Future phases
 
-Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 (v0.0.11) shipped — `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` make the accumulated knowledge legible and self-healing. Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
-
-Phase-2 follow-up debt (deliberately deferred, tracked under #264):
-- Transitive (multi-hop) cycle detection — MVP catches direct self-cycles only.
+Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 (v0.0.11) shipped — `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` make the accumulated knowledge legible and self-healing. Phase 2/3 follow-up debt cleared at v0.0.13 (transitive cycle detection, slug→path index, factored project-config reader, pre-flight dependency check in `knowledge-setup`, cycle-guard docstring precision; cogni-wiki contract regression tests landed alongside as cogni-wiki v0.0.42). Phase 4 is the internal alpha. Phase 5 graduates to v0.1.0 (Preview). Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.

@@ -26,17 +26,21 @@ Reading order: this file, then `differentiation-thesis.md`, then `delegation-con
 **Goal.** Reports get composed by reading the deposited wiki pages, not transient research contexts.
 
 **Deliverables.**
-- `scripts/cycle-guard.py` — detects direct self-cycle wiki↔research evidence chains by walking the candidate project's `02-sources/data/src-*.md` source entities for `wiki://<bound-slug>/<page-id>` citations and checking each resolved page's frontmatter for `derived_from_research: <candidate-slug>` lineage stamps. Transitive (multi-hop) cycle detection is intentionally deferred to a v0.0.7+ patch — MVP catches direct self-cycles only.
+- `scripts/cycle-guard.py` — detects self-cycle wiki↔research evidence chains by walking the candidate project's `02-sources/data/src-*.md` source entities for `wiki://<bound-slug>/<page-id>` citations and checking each resolved page's frontmatter for `derived_from_research:` lineage stamps. v0.0.6 shipped direct self-cycles only; **v0.0.13 added transitive (multi-hop) detection** with a bounded DFS over `binding.research_projects[]` (default `--max-depth 5`, visited-slug set), plus a single up-front slug→path index for O(1) page lookups.
 - Modification to `cogni-wiki/skills/wiki-from-research/SKILL.md` (cogni-wiki v0.0.40): lift the hard abort on `report_source ∈ {wiki, hybrid}`, gated behind `--allow-wiki-source --cycle-guard-cleared` opt-in flags. Default behavior unchanged for direct users.
 - `skills/knowledge-report/SKILL.md` — dispatches `cogni-research:research-setup` with a wiki-mode pre-fill prompt against the bound wiki, runs `research-report` (auto-chained), runs `cycle-guard.py` to refuse self-citing loops, then re-deposits via `wiki-from-research` Mode B with the opt-in flag pair. Records the live `report_source` from `<project>/.metadata/project-config.json` in the binding — first satisfaction of the delegation-contract Phase-2 guardrail.
 
-**Follow-up debt (tracked under #264 for v0.0.7+):**
-- Transitive (multi-hop) cycle detection.
-- Lift `knowledge-research`'s hard-coded `--report-source web` to read the live `report_source` (one-line follow-up patch).
+**Follow-up debt — closed at v0.0.13:**
+- Transitive (multi-hop) cycle detection → shipped in v0.0.13 (moved into Deliverables above).
+- Lift `knowledge-research`'s hard-coded `--report-source web` to read the live `report_source` → shipped in v0.0.7.
+- Single up-front slug→path index in `cycle-guard.py` → shipped in v0.0.13.
+- Factored project-config reader (`scripts/read-project-config.py`) replacing the `python3 -c` shellouts at `knowledge-research` Step 3 and `knowledge-report` Step 5 → shipped in v0.0.13.
+- `cogni-wiki/tests/` contract regression tests for the `wiki-from-research --allow-wiki-source --cycle-guard-cleared` flag pair and `wiki-query --wiki-root` → shipped as cogni-wiki v0.0.42 alongside this slice.
+- Cycle-guard docstring precision (the `5d273c2` post-merge tweak that didn't land at v0.0.6) → shipped in v0.0.13.
 
 ### Phase 3 — Query, dashboard, push-refresh (v0.0.11 → v0.0.15)
 
-**Status.** Shipped at v0.0.11, 2026-05-19.
+**Status.** Shipped at v0.0.11, 2026-05-19. Phase 2/3 follow-up debt closed at v0.0.13 (see Phase 2's "Follow-up debt — closed at v0.0.13" subsection above).
 
 **Goal.** Make the accumulated knowledge legible and self-healing.
 

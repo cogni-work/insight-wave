@@ -91,10 +91,13 @@ On `success: false`, surface the error but **do not abort the workflow** — lin
 
 ### 3. Append the project to the binding
 
-Read the live `report_source` from the project's metadata (same pattern as `knowledge-report` Step 5):
+Read the live `report_source` from the project's metadata via the shared reader script (same pattern as `knowledge-report` Step 5):
 
 ```
-RS=$(python3 -c "import json; print(json.load(open('cogni-research-<resolved_slug>/.metadata/project-config.json')).get('report_source','web'))")
+RS=$(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/read-project-config.py \
+       --project-path cogni-research-<resolved_slug> \
+       --field report_source --default web \
+     | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['value'])")
 ```
 
 Then append:

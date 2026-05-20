@@ -113,10 +113,13 @@ Idempotent. On `success: false`, surface the warning but do NOT abort — lineag
 
 ### 5. Append the project to the binding with the *live* `report_source`
 
-This is the satisfaction of the delegation-contract Phase-2 guardrail (`${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` §"Wiring report_source"). Read the live value from `cogni-research-<resolved_slug>/.metadata/project-config.json`:
+This is the satisfaction of the delegation-contract Phase-2 guardrail (`${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` §"Wiring report_source"). Read the live value from `cogni-research-<resolved_slug>/.metadata/project-config.json` via the shared reader script:
 
 ```
-RS=$(python3 -c "import json,sys; print(json.load(open('cogni-research-<resolved_slug>/.metadata/project-config.json')).get('report_source','web'))")
+RS=$(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/read-project-config.py \
+       --project-path cogni-research-<resolved_slug> \
+       --field report_source --default web \
+     | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['value'])")
 ```
 
 Then:
