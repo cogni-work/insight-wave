@@ -50,19 +50,22 @@ Reading order: this file, then `differentiation-thesis.md`, then `delegation-con
 - `knowledge-refresh` (v0.0.10) — pull-mode delegates to `cogni-wiki:wiki-refresh`; push-mode lints the wiki, asks the user which stale topics to re-research, batch-confirms cost, sequentially dispatches `knowledge-research` per selected topic then `wiki-refresh` per new project.
 - `cogni-wiki:wiki-query` upstream patch (v0.0.41) — adds `--wiki-root` flag mirroring `wiki-resume` / `wiki-lint` / `wiki-dashboard`. Allows `knowledge-query` to pin the bound wiki without a prompt-prefix shim.
 
-### Phase 4 — Internal alpha (v0.0.16 → v0.0.20)
+### Phase 4 — Internal alpha (v0.0.14 → v0.0.20)
+
+**Status.** Findings F1–F5 (chain-breakers) shipped fixed at v0.0.14 alongside PR-#267 reviewer-deferred items A1–A4. Findings document at `references/alpha-findings.md`. F6–F10 are deferred. Next step is the v0.0.16 alpha re-run on a fresh knowledge base, which is now unblocked.
 
 **Goal.** Test on one real knowledge area for ≥ 3 research projects. Decide go/no-go on absorption.
 
 **Activities.**
-- Run ≥ 3 `knowledge-research` invocations on a real topic (EU AI Act suggested).
+- Reset a fresh knowledge base (EU AI Act suggested).
+- Run ≥ 3 `knowledge-research` invocations on a real topic end-to-end (no sed-patches, no symlinks, no manual page writes — v0.0.14 unblocks this).
 - Run ≥ 1 `knowledge-report` against the populated base (Phase 2 round-trip).
 - Compare against equivalent standalone `cogni-research` runs on:
   - Time-to-second-research.
   - Cross-project information density (`[[wikilinks]]` between projects).
   - Claims duplication.
   - User-perceived value (subjective).
-- Document findings in `references/alpha-findings.md`.
+- Update `references/alpha-findings.md` with re-run outcomes; close any F6–F10 items that resolved by side effect.
 
 **Go/no-go gate.**
 - Positive → commit to Phase 5 + Phase 6.

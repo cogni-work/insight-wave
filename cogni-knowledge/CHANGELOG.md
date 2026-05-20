@@ -1,5 +1,26 @@
 # cogni-knowledge changelog
 
+## 0.0.14 — 2026-05-20
+
+Phase 4 alpha findings F1–F5 + PR #267 reviewer-deferred items A1–A4. F1–F5 are the chain-breakers that prevented the `knowledge-research` + `knowledge-report` orchestrator chain from completing end-to-end without ad-hoc operator workarounds (symlinks, sed-patches, hand-written wiki pages). F5 is structurally subsumed by F4 — see `references/alpha-findings.md` for the full table.
+
+### Added
+
+- `references/alpha-findings.md` — captures F1–F10 from the Phase 4 internal alpha. F1–F4 are fixed in this release; F5 closes transitively via F4 (`_wiki_research.strip_wikilink` already strips path prefixes once it receives a string instead of a one-element list). F6–F10 are deferred and tracked there so they do not get lost.
+- `tests/` — new stdlib-only test directory mirroring `cogni-wiki/tests/`. Ten smoke tests cover F1 + A4 (probe contract + behaviour against dev-repo and marketplace cache layouts), A1 (`read-project-config.py --bare`), A2 (binding `project_path` field + schema 0.0.2 with legacy compat), and A3 (six fixture-driven `cycle-guard.py` scenarios: direct/transitive cycles, depth-bound disablement, clear runs, dry-run report-don't-gate semantics, web/local not-applicable shortcut).
+- `scripts/read-project-config.py` — `--bare`/`--raw` flag (A1) prints the resolved field value directly to stdout instead of the JSON envelope; errors go to stderr with exit 1. Collapses the two-process pipe at `knowledge-research` Step 3 and `knowledge-report` Step 5 to a single command. Default envelope mode is unchanged for any future structured-output consumer.
+- `scripts/knowledge-binding.py` — `--project-path` argument on `append-project` (A2). Writes a new `project_path` field on each entry in `research_projects[]` with the absolute, resolved project root. Schema bump `0.0.1` → `0.0.2`. `cycle-guard.py` prefers `entry["project_path"]` over the legacy `.parent.parent` derivation; falls back to the old derivation when the field is absent (schema 0.0.1 or callers that don't pass `--project-path`). Backwards-compatible — existing bindings keep working.
+
+### Changed
+
+- `skills/knowledge-setup/SKILL.md` Step 0 — replaces the two-line dev-repo-only probe with a `probe_plugin()` helper that handles both layouts (`../<plugin>/skills/...` AND `../../<plugin>/<version>/skills/...`). Before F1, marketplace-cache installs always aborted with deps "missing" even when they were installed. Drops the v0.0.13 "future patch may roll the check into the other five skills" footnote since A4 lands the rollout.
+- `skills/knowledge-research/SKILL.md`, `skills/knowledge-report/SKILL.md`, `skills/knowledge-query/SKILL.md`, `skills/knowledge-dashboard/SKILL.md`, `skills/knowledge-refresh/SKILL.md`, `skills/knowledge-resume/SKILL.md` — Step 0 pre-flight section gains the same `probe_plugin()` helper and abort wording (A4). Now every `knowledge-*` skill that dispatches into cogni-wiki or cogni-research aborts cleanly when either is missing, rather than failing mid-workflow with an opaque `Skill` tool error.
+- `skills/knowledge-research/SKILL.md` Step 3, `skills/knowledge-report/SKILL.md` Step 5 — collapse the `python3 -c "...['data']['value']"` envelope-unwrap shellout via `read-project-config.py --bare` (A1). Both also pass the new `--project-path` arg on `knowledge-binding.py append-project` (A2). The hard-coded `cogni-research-<slug>/` path placeholder is replaced with `<abs path to project>` to align with cogni-wiki F2 (v0.7.x+ projects have no `cogni-research-` prefix).
+
+### Dependencies
+
+- `cogni-wiki` minimum version bumped to 0.0.43 (was 0.0.42) — F2 (`locate_research_project` supports v0.7.x+ naming), F3 (`batch_builder` reads `.metadata/project-config.json`), F4 (`parse_frontmatter` keeps `[[wikilink]]` as a string). F5 closes transitively via F4.
+
 ## 0.0.13 — 2026-05-19
 
 Phase 2/3 debt cleanup, closing six items deferred from #265 and #266 before the Phase 4 alpha begins. No new user-facing surface — all changes harden existing primitives.
