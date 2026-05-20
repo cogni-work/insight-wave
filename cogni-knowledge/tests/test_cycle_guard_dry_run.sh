@@ -54,7 +54,7 @@ data = d['data']
 assert data['status'] == 'cycle_detected', data['status']
 assert len(data['direct_self_cycles']) > 0, 'direct_self_cycles empty'
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   red "FAIL: output did not match dry-run contract"
   red "  got: $OUT"
   errors=$((errors + 1))

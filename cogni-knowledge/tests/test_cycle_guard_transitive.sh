@@ -71,7 +71,7 @@ assert len(data['transitive_self_cycles']) > 0, 'transitive_self_cycles empty'
 assert data['direct_self_cycles'] == [], data['direct_self_cycles']
 assert data['cycle_path'] == ['project-a', 'project-b', 'project-a'], data['cycle_path']
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   red "FAIL: output did not match transitive-cycle contract"
   red "  got: $OUT"
   errors=$((errors + 1))

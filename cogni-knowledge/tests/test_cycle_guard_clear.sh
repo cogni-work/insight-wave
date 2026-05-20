@@ -64,7 +64,7 @@ assert data['direct_self_cycles'] == [], data['direct_self_cycles']
 assert data['transitive_self_cycles'] == [], data['transitive_self_cycles']
 assert len(data['cross_lineage_overlap']) > 0, 'cross_lineage_overlap empty'
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   red "FAIL: output did not match clear contract"
   red "  got: $OUT"
   errors=$((errors + 1))

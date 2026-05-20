@@ -68,21 +68,21 @@ fi
 BAD_PROJ="$WORK/bad-proj"
 mkdir -p "$BAD_PROJ/.metadata"
 echo 'not valid json' > "$BAD_PROJ/.metadata/project-config.json"
-OUT_STDOUT=$(python3 "$SCRIPT" --project-path "$BAD_PROJ" --field report_source --default web --bare 2>"$WORK/stderr.log" || true)
+set +e
+OUT_STDOUT=$(python3 "$SCRIPT" --project-path "$BAD_PROJ" --field report_source --default web --bare 2>"$WORK/stderr.log")
 RC=$?
+set -e
 STDERR_CONTENT=$(cat "$WORK/stderr.log")
-if [ -z "$OUT_STDOUT" ] && [ -n "$STDERR_CONTENT" ]; then
-  green "PASS: --bare malformed JSON yields empty stdout + non-empty stderr"
+if [ "$RC" -eq 1 ] && [ -z "$OUT_STDOUT" ] && [ -n "$STDERR_CONTENT" ]; then
+  green "PASS: --bare malformed JSON yields empty stdout + non-empty stderr + exit 1"
 else
-  red "FAIL: --bare malformed JSON: stdout='$OUT_STDOUT', stderr='$STDERR_CONTENT'"
+  red "FAIL: --bare malformed JSON: rc=$RC, stdout='$OUT_STDOUT', stderr='$STDERR_CONTENT'"
   errors=$((errors + 1))
 fi
-# Note: bash's `|| true` makes $? 0; we just verified stderr+stdout shape, which
-# is the contract that matters for callers.
 
 # Case 5: default envelope mode (no --bare) - the JSON envelope is intact.
 OUT=$(python3 "$SCRIPT" --project-path "$PROJ" --field report_source --default web)
-if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['value']=='hybrid'; print('OK')" 2>/dev/null | grep -q OK; then
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['value']=='hybrid'; print('OK')" | grep -q OK; then
   green "PASS: default envelope mode unchanged (regression check)"
 else
   red "FAIL: default envelope mode broken"

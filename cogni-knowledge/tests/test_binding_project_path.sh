@@ -143,7 +143,7 @@ b = d['data']['binding']
 assert b['schema_version'] == '0.0.1', b['schema_version']
 assert 'project_path' not in b['research_projects'][0], b['research_projects'][0]
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   green "PASS: legacy 0.0.1 binding reads back without error and without project_path"
 else
   red "FAIL: legacy 0.0.1 binding read failed"

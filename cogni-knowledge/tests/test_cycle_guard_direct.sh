@@ -58,7 +58,7 @@ assert data['status'] == 'cycle_detected', f\"status={data['status']}\"
 assert len(data['direct_self_cycles']) > 0, 'direct_self_cycles empty'
 assert data['cycle_path'] == ['project-a', 'project-a'], f\"cycle_path={data['cycle_path']}\"
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   red "FAIL: output did not match direct-cycle contract"
   red "  got: $OUT"
   errors=$((errors + 1))

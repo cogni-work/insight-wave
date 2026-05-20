@@ -61,7 +61,7 @@ assert data['transitive_self_cycles'] == [], data['transitive_self_cycles']
 assert data['direct_self_cycles'] == [], data['direct_self_cycles']
 assert data['max_depth'] == 0, data['max_depth']
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   red "FAIL: output did not match clear-at-depth-0 contract"
   red "  got: $OUT"
   errors=$((errors + 1))

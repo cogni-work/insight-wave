@@ -57,7 +57,7 @@ assert data['status'] == 'not_applicable', data['status']
 assert data['wiki_pages_cited'] == [], data['wiki_pages_cited']
 assert data['direct_self_cycles'] == [], data['direct_self_cycles']
 print('OK')
-" 2>/dev/null | grep -q OK; then
+" | grep -q OK; then
   red "FAIL: output did not match not_applicable contract"
   red "  got: $OUT"
   errors=$((errors + 1))
