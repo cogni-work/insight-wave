@@ -29,6 +29,16 @@ red() { printf '\033[31m%s\033[0m\n' "$1"; }
 green() { printf '\033[32m%s\033[0m\n' "$1"; }
 fail() { red "FAIL: $1"; exit 1; }
 
+assert_success_json() {
+  local label="$1" out="$2" ok
+  ok=$(printf '%s' "$out" | python3 -c 'import json, sys; d=json.loads(sys.stdin.read()); print("yes" if d.get("success") else "no")' 2>/dev/null || echo "parse-error")
+  if [ "$ok" != "yes" ]; then
+    red "FAIL ($label): expected success:true"
+    printf '%s\n' "$out"
+    exit 1
+  fi
+}
+
 # ---------- prepare a migrated 0.0.5 fixture wiki ----------
 cp -R "$FIXTURES/legacy-wiki" "$WIKI"
 python3 "$PLUGIN_ROOT/skills/wiki-setup/scripts/migrate_layout.py" \
@@ -58,8 +68,7 @@ green "planted wiki/sources/example-source.md with type: source frontmatter"
 
 # ---------- 1) health.py must NOT raise invalid_type / type_directory_mismatch ----------
 HEALTH_OUT=$(python3 "$HEALTH" --wiki-root "$WIKI")
-HEALTH_OK=$(printf '%s' "$HEALTH_OUT" | python3 -c 'import json, sys; print("yes" if json.loads(sys.stdin.read()).get("success") else "no")')
-[ "$HEALTH_OK" = "yes" ] || fail "health.py did not return success:true"
+assert_success_json "health.py" "$HEALTH_OUT"
 green "health.py: success"
 
 HEALTH_CLASSES=$(printf '%s' "$HEALTH_OUT" | python3 -c '
@@ -86,8 +95,7 @@ green "health.py emits no invalid_type / type_directory_mismatch for type:source
 
 # ---------- 2) lint_wiki.py must do the same (defensive — v0.0.31 moved structural classes to health) ----------
 LINT_OUT=$(python3 "$LINT" --wiki-root "$WIKI")
-LINT_OK=$(printf '%s' "$LINT_OUT" | python3 -c 'import json, sys; print("yes" if json.loads(sys.stdin.read()).get("success") else "no")')
-[ "$LINT_OK" = "yes" ] || fail "lint_wiki.py did not return success:true"
+assert_success_json "lint_wiki.py" "$LINT_OUT"
 green "lint_wiki.py: success"
 
 LINT_CLASSES=$(printf '%s' "$LINT_OUT" | python3 -c '
