@@ -1,5 +1,19 @@
 # cogni-knowledge changelog
 
+## 0.0.21 — 2026-05-21
+
+`source-fetcher` Step 2 PDF branch now reads PDFs past page 20. Resolves F18 from the v0.0.20 M5+M6 smoke (issue #278). Single-file behaviour change in the agent contract plus a contract-test assertion; no script or schema changes.
+
+### Changed
+
+- `agents/source-fetcher.md` — Step 2 PDF branch loops `Read` over the saved PDF in 20-page windows (`"1-20"`, `"21-40"`, `"41-60"`, …) until either an empty page range is returned (end of PDF) or a 200-page hard cap fires (cost guard — Read transcribes PDFs via vision-rendered images, scaling linearly with pages). Concatenates per-window text into one body before `fetch-cache.py store`. The per-batch `fetched[]` entry now records `pdf_pages_read: <N>` so the orchestrator and a future operator can see exactly how much of the PDF landed; `pdf_truncated: true` is reserved for the 200-page hard-cap case. Phase 2 batch-output example extended to show the PDF row shape. Pre-v0.0.21 behaviour silently lost 60%+ of EUR-Lex consolidated annexes, EP think-tank ATAGs, and 30+ page arxiv papers; `claim-extractor` could not reach claims past page 20.
+- `tests/test_ingest_contract.sh` — adds `assert_grep 'pdf_pages_read' "$FETCHER" ...` alongside the existing `pdf_truncated` assertion. Both tokens are now greppable: `pdf_pages_read` for the normal-loop case, `pdf_truncated` for the hard-cap case.
+
+### Notes
+
+- **Per-batch sink, not cache-entry schema.** Issue #278's acceptance criterion #2 originally proposed `pdf_pages_read` in the cache entry. This release surfaces the field in the agent-emitted per-batch `fetched[]` instead, keeping `fetch-cache.py`'s persisted schema frozen — strictly within the issue's "single agent file edit + test extension" scope.
+- **No re-fetch of existing cache.** The EP ATAG PDF in `.alpha/eu-ai-act-gpai/`'s cache was captured at 1-2 pages pre-fix during the M5+M6 smoke. A re-fetch under the new loop is a manual smoke step (`fetch-cache.py evict` then re-run `source-fetcher`); not part of this release.
+
 ## 0.0.20 — 2026-05-21
 
 Slice 2 of the absorption-roadmap Current sprint — Phase 5 M5 + M6. Lands the Phase-4 ingest step of the v0.1.0 inverted pipeline (`plan → curate → fetch → **ingest** → compose → verify → finalize`): claim extraction now happens at ingest time (per `references/claim-at-ingest.md`), populating each `wiki/sources/<slug>.md` page's `pre_extracted_claims:` frontmatter so future verification at draft time becomes a zero-network string match. Bundles two Slice-1 follow-up issues: #275 (PDF detection in source-fetcher, via shared `_knowledge_lib.is_pdf_response`) and #276 (`cobrowse_unavailable` reason promoted to documented vocabulary). Closes #275 Closes #276.

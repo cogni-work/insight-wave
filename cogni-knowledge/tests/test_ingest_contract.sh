@@ -117,7 +117,8 @@ FETCHER="$PLUGIN_ROOT/agents/source-fetcher.md"
 assert_grep 'is_pdf_response' "$FETCHER" "source-fetcher: uses is_pdf_response helper (#275)"
 assert_grep 'pdf_extraction_failed' "$FETCHER" "source-fetcher: closed vocab includes pdf_extraction_failed (#275)"
 assert_grep 'cobrowse_unavailable' "$FETCHER" "source-fetcher: closed vocab includes cobrowse_unavailable (#276)"
-assert_grep 'pdf_truncated' "$FETCHER" "source-fetcher: documents pdf_truncated note for PDFs >20 pages"
+assert_grep 'pdf_truncated' "$FETCHER" "source-fetcher: documents pdf_truncated for the 200-page hard-cap case (#278)"
+assert_grep 'pdf_pages_read' "$FETCHER" "source-fetcher: records pdf_pages_read in per-batch fetched[] entry (#278)"
 # Regression guard for the #277 review-blocker: the PDF branch instructs
 # the agent to `Read pages: "1-20"` the saved binary; the Read tool MUST
 # be in the frontmatter tools list or the PDF rail fails at runtime with
