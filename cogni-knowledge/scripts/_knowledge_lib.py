@@ -9,17 +9,6 @@ must agree byte-for-byte on the canonical form of any URL — otherwise the
 curator-side dedup and the fetch-cache hit/miss decision drift, and a URL
 present in `candidates.json` can silently miss in the cache (or vice versa).
 
-Before this module existed, `normalize_url` + the `_STRIP_QUERY_*` constants
-+ the `tempfile.mkstemp + os.replace` atomic-write pattern were duplicated
-across both scripts. The copies had already started style-drifting on
-`normalize_url`. The deferred extraction was originally scheduled for M5
-(`source-ingester` as a third caller); landed early at v0.0.18 to close
-the divergence before it became behavioural.
-
-`knowledge-binding.py:_write_binding` shares the same atomic-write pattern
-but a different signature (takes `knowledge_root`, resolves the binding
-path internally). Not extracted here — possible follow-up.
-
 stdlib-only. Python 3.8+.
 """
 

@@ -38,85 +38,10 @@ done
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-errors=0
-
-# 1. Three-way identity of the shared symbols.
-if python3 - "$SCRIPTS_DIR" <<'PY'
-import importlib.util
-import sys
-from pathlib import Path
-
-scripts = Path(sys.argv[1])
-
-def load(name, fname):
-    spec = importlib.util.spec_from_file_location(name, scripts / fname)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-kl = load("_knowledge_lib", "_knowledge_lib.py")
-cs = load("candidate_store", "candidate-store.py")
-fc = load("fetch_cache", "fetch-cache.py")
-
-assert cs.normalize_url is fc.normalize_url is kl.normalize_url, (
-    "normalize_url identities diverge: cs=%r fc=%r kl=%r"
-    % (cs.normalize_url, fc.normalize_url, kl.normalize_url)
-)
-assert cs.atomic_write is fc.atomic_write is kl.atomic_write, (
-    "atomic_write identities diverge: cs=%r fc=%r kl=%r"
-    % (cs.atomic_write, fc.atomic_write, kl.atomic_write)
-)
-print("OK")
-PY
-then
-  green "PASS: three-way identity — normalize_url and atomic_write are the same objects in candidate-store, fetch-cache, _knowledge_lib"
-else
-  red "FAIL: identity check broke"
-  errors=$((errors + 1))
-fi
-
-# 2. Behavioural canonicalization: a URL exercising every transformation
-#    must produce the same canonical form from all three callers.
-if python3 - "$SCRIPTS_DIR" <<'PY'
-import importlib.util
-import sys
-from pathlib import Path
-
-scripts = Path(sys.argv[1])
-
-def load(name, fname):
-    spec = importlib.util.spec_from_file_location(name, scripts / fname)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-kl = load("_knowledge_lib", "_knowledge_lib.py")
-cs = load("candidate_store", "candidate-store.py")
-fc = load("fetch_cache", "fetch-cache.py")
-
-url = "https://EXAMPLE.org/Foo/?utm_source=x&ref=y&keep=1#frag"
-expected = "https://example.org/Foo?keep=1"
-
-got_kl = kl.normalize_url(url)
-got_cs = cs.normalize_url(url)
-got_fc = fc.normalize_url(url)
-
-assert got_kl == expected, ("_knowledge_lib", got_kl, expected)
-assert got_cs == expected, ("candidate-store", got_cs, expected)
-assert got_fc == expected, ("fetch-cache", got_fc, expected)
-print("OK")
-PY
-then
-  green "PASS: canonicalization — scheme/host lowercased, trailing slash stripped, utm_+ref dropped, fragment removed, path case preserved"
-else
-  red "FAIL: canonicalization mismatch"
-  errors=$((errors + 1))
-fi
-
-# 3. atomic_write round-trip + no `.tmp` debris on success.
-if python3 - "$SCRIPTS_DIR" "$WORK" <<'PY'
+# Run all three assertions in one python3 subprocess; emit a tagged status
+# line per assertion so bash can grade each independently. Splitting into
+# three subprocesses would re-import the same three modules each time.
+OUT=$(python3 - "$SCRIPTS_DIR" "$WORK" <<'PY'
 import importlib.util
 import json
 import sys
@@ -125,31 +50,85 @@ from pathlib import Path
 scripts = Path(sys.argv[1])
 work = Path(sys.argv[2])
 
-spec = importlib.util.spec_from_file_location("_knowledge_lib", scripts / "_knowledge_lib.py")
-kl = importlib.util.module_from_spec(spec)
-sys.modules["_knowledge_lib"] = kl
-spec.loader.exec_module(kl)
 
-target = work / "out" / "payload.json"
-payload = {"schema_version": "0.1.0", "candidates": [{"url": "https://example.org/a", "score": 0.42}]}
-returned = kl.atomic_write(target, payload)
+def load(name, fname):
+    spec = importlib.util.spec_from_file_location(name, scripts / fname)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
-assert returned == target, (returned, target)
-assert target.is_file(), target
 
-readback = json.loads(target.read_text(encoding="utf-8"))
-assert readback == payload, (readback, payload)
+def check(tag, fn):
+    try:
+        fn()
+        print(f"{tag}: OK")
+    except AssertionError as exc:
+        print(f"{tag}: FAIL {exc}")
 
-leftover = [p.name for p in target.parent.iterdir() if p.name.startswith(".payload.json.") and p.name.endswith(".tmp")]
-assert leftover == [], leftover
-print("OK")
+
+kl = load("_knowledge_lib", "_knowledge_lib.py")
+cs = load("candidate_store", "candidate-store.py")
+fc = load("fetch_cache", "fetch-cache.py")
+
+
+def assert_identity():
+    assert cs.normalize_url is fc.normalize_url is kl.normalize_url, (
+        f"normalize_url identities diverge: cs={cs.normalize_url!r} "
+        f"fc={fc.normalize_url!r} kl={kl.normalize_url!r}"
+    )
+    assert cs.atomic_write is fc.atomic_write is kl.atomic_write, (
+        f"atomic_write identities diverge: cs={cs.atomic_write!r} "
+        f"fc={fc.atomic_write!r} kl={kl.atomic_write!r}"
+    )
+
+
+def assert_canonicalization():
+    url = "https://EXAMPLE.org/Foo/?utm_source=x&ref=y&keep=1#frag"
+    expected = "https://example.org/Foo?keep=1"
+    for tag, mod in (("_knowledge_lib", kl), ("candidate-store", cs), ("fetch-cache", fc)):
+        got = mod.normalize_url(url)
+        assert got == expected, f"{tag}: got={got!r} expected={expected!r}"
+
+
+def assert_atomic_write_roundtrip():
+    target = work / "out" / "payload.json"
+    payload = {"schema_version": "0.1.0", "candidates": [{"url": "https://example.org/a", "score": 0.42}]}
+    returned = kl.atomic_write(target, payload)
+    assert returned == target, (returned, target)
+    assert target.is_file(), target
+    readback = json.loads(target.read_text(encoding="utf-8"))
+    assert readback == payload, (readback, payload)
+    leftover = [
+        p.name for p in target.parent.iterdir()
+        if p.name.startswith(".payload.json.") and p.name.endswith(".tmp")
+    ]
+    assert leftover == [], leftover
+
+
+check("identity", assert_identity)
+check("canonicalization", assert_canonicalization)
+check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
 PY
-then
-  green "PASS: atomic_write round-trips payload and leaves no .tmp debris"
-else
-  red "FAIL: atomic_write round-trip"
-  errors=$((errors + 1))
-fi
+)
+
+errors=0
+
+grade() {
+  local tag="$1" description="$2"
+  local line
+  line=$(printf '%s\n' "$OUT" | grep "^${tag}:" || true)
+  case "$line" in
+    "${tag}: OK")     green "PASS: $description" ;;
+    "${tag}: FAIL "*) red   "FAIL: $description"; red "  ${line#${tag}: FAIL }"; errors=$((errors + 1)) ;;
+    *)                red   "FAIL: $description (no result line for '$tag' — python subprocess crashed?)"
+                      red   "  output: $OUT"; errors=$((errors + 1)) ;;
+  esac
+}
+
+grade identity                "three-way identity — normalize_url and atomic_write are the same objects in candidate-store, fetch-cache, _knowledge_lib"
+grade canonicalization        "canonicalization — scheme/host lowercased, trailing slash stripped, utm_+ref dropped, fragment removed, path case preserved"
+grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .tmp debris"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
