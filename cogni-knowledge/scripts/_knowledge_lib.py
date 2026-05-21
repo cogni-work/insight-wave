@@ -80,3 +80,51 @@ def atomic_write(path: Path, payload: dict) -> Path:
             pass
         raise
     return path
+
+
+def atomic_write_text(path: Path, text: str) -> Path:
+    """Atomically write `text` as a UTF-8 file to `path`.
+
+    Sibling of `atomic_write` for non-JSON payloads (markdown pages, log
+    entries written by a single writer). Same tempfile+os.replace pattern;
+    kept separate so the three-way identity invariant on `atomic_write`
+    (asserted by tests/test_knowledge_lib.sh) is undisturbed by markdown
+    consumers.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    return path
+
+
+def is_pdf_response(content_type: str | None, url: str) -> bool:
+    """True if a fetched response looks like a PDF.
+
+    Pure detection — no I/O. Two signals are accepted (either triggers
+    the PDF branch in source-fetcher Step 2):
+      - Content-Type starts with `application/pdf` (case-insensitive,
+        allows `;` parameters such as `application/pdf; charset=binary`).
+      - Normalised URL path ends with `.pdf` (case-insensitive).
+
+    The URL suffix path covers WebFetch responses that don't surface a
+    Content-Type header (the saved-binary line is the only signal in
+    that case). The MIME path covers servers that respond `200 OK` with
+    `application/pdf` against a `.html`-suffixed URL (rare but real on
+    some EU portals).
+    """
+    if content_type:
+        if content_type.strip().lower().split(";", 1)[0].strip() == "application/pdf":
+            return True
+    if not url or not url.strip():
+        return False
+    parts = urlsplit(normalize_url(url))
+    return parts.path.lower().endswith(".pdf")

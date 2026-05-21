@@ -141,20 +141,43 @@ fi
 
 # --- Clean-break invariant ------------------------------------------------
 # v0.1.0 forbids dispatching cogni-research or cogni-claims skills/agents
-# from the new runtime path. Static references to documentation files (e.g.,
-# cogni-research/references/market-sources.json) are permitted; skill/agent
-# DISPATCH is not.
-for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER"; do
-  # The forbidden patterns are 'Skill("cogni-research:' and 'Skill("cogni-claims:'.
-  # Also catch loose `cogni-research:` skill-namespace references.
+# from the new runtime path. v0.0.20 (M6 knowledge-ingest) extends the rule
+# to cogni-wiki: the ingest skill calls wiki-ingest's helper scripts
+# directly at script level (backlink_audit.py, wiki_index_update.py) rather
+# than dispatching the upstream skill. Static references to documentation
+# files (e.g., cogni-research/references/market-sources.json) are permitted;
+# skill DISPATCH is not.
+#
+# The cogni-wiki check is scoped to the v0.0.20 ingest surface only (the
+# three new files plus the orchestrator skill). knowledge-plan / knowledge-
+# curate / knowledge-fetch legitimately do not dispatch cogni-wiki either,
+# but they predate the explicit rule; the original loop already proves the
+# weaker cogni-research/cogni-claims invariant for them.
+INGEST="$PLUGIN_ROOT/skills/knowledge-ingest/SKILL.md"
+INGESTER="$PLUGIN_ROOT/agents/source-ingester.md"
+CLAIM_EXTRACTOR="$PLUGIN_ROOT/agents/claim-extractor.md"
+
+for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR"; do
+  [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-(research|claims):' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-research/cogni-claims skill"
     grep -nE 'Skill\("?cogni-(research|claims):' "$f"
     errors=$((errors + 1))
   fi
 done
+
+# cogni-wiki extension — applies to the v0.0.20 ingest surface.
+for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR"; do
+  [ -f "$f" ] || continue
+  if grep -qE 'Skill\("?cogni-wiki:' "$f" 2>/dev/null; then
+    red "FAIL: clean-break: $f dispatches a cogni-wiki skill (M6 contract: call helper scripts directly)"
+    grep -nE 'Skill\("?cogni-wiki:' "$f"
+    errors=$((errors + 1))
+  fi
+done
+
 if [ $errors -eq 0 ]; then
-  green "PASS: clean-break — no cogni-research/cogni-claims skill dispatch in new files"
+  green "PASS: clean-break — no cogni-research/cogni-claims/cogni-wiki skill dispatch in new files"
 fi
 
 if [ $errors -eq 0 ]; then
