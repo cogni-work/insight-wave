@@ -139,3 +139,58 @@ See the Findings table above for the full one-liners. Two summary points:
 - `fetch-cache.py` semantics — positive + negative cache symmetry, `from_cache` marking, freshness window honoured — work as designed. Slice 2's `source-ingester` can read cached bodies directly via `fetch-cache.py fetch` without re-fetching.
 - File-locked `candidate-store.py append-batch` (F16) is proven under contention. The same `fcntl.flock` pattern can be reused for `source-ingester` if M6 needs concurrent wiki-page emission.
 - The clean-break invariant held: zero `cogni-research:` or `cogni-claims:` dispatches anywhere in the chain (`grep` against the dispatched agents' tool calls is clean).
+
+## M5+M6 smoke (2026-05-21)
+
+End-to-end smoke of the v0.1.0 inverted-pipeline Phase-4 ingest step (cogni-knowledge milestones M5 + M6 from `absorption-roadmap.md`) extending the Slice-1 `.alpha/eu-ai-act-gpai/` base. Slice 2 of the Current sprint in `absorption-roadmap.md`. **Recommendation: GO** for Slice 3 (M7 — `wiki-composer` agent + `knowledge-compose` skill).
+
+### Constraint on this run
+
+The new `knowledge-ingest` skill + `source-ingester`/`claim-extractor` agents ship on PR #277 but the marketplace install is still at v0.0.17 in this session — the new skill is not in the Skill registry mid-session. The smoke therefore drove the ingest **manually from the parent context**, replicating what the skill would do (slug derivation via `_knowledge_lib.slugify`, atomic page writes via `_knowledge_lib.atomic_write_text`, frontmatter quoting via `json.dumps`, helper-script dispatch via Bash). The contract surfaces exercised are exactly the ones the skill exercises; the dispatch shape (per-source Task agent, per-batch atomic merge) is not exercised because there is no parallel fan-out in a manual run. That dispatch shape stays covered by the contract grep tests in `tests/test_ingest_contract.sh`.
+
+### Sample sources
+
+| # | URL | Publisher | sub_q_refs | Notes |
+|---|---|---|---|---|
+| 1 | `europarl.europa.eu/.../EPRS_ATA(2025)772906_EN.pdf` | `europa.eu` | `sq-04` | **The PDF.** Previously `webfetch_refused` in the Slice-1 manifest. Re-fetched via the new #275 PDF branch: WebFetch saved the binary, leaked the `[Binary content (application/pdf, 1.3MB) also saved to <path>]` line, `Read pages: "1-2"` returned the page content as vision-rendered images, transcribed into a 5 KB text body, stored via `fetch-cache.py store`. Manifest moved EP entry from `unavailable[]` to `fetched[]` (`fetched 41 → 42`, `unavailable 16 → 15`). |
+| 2 | `code-of-practice.ai/` | `code-of-practice.ai` | `sq-02`, `sq-05` | Canonical GPAI Code of Practice mirror. Score 0.96, the highest-ranked fetched source in the base. |
+| 3 | `ai-act-service-desk.ec.europa.eu/en/ai-act/article-55` | `ec.europa.eu` | `sq-03` | Regulator-authoritative page on Article 55 (GPAI systemic-risk obligations). Score 0.93. |
+
+### Verification matrix
+
+| Step | Contract | Outcome |
+|---|---|---|
+| 1 | #275 PDF branch: WebFetch → saved-binary path leaked → Read → transcribe → cache | **PASS** — EP PDF cache entry written (`cache_key 8532401a…`, `sha256:a3584ff6…`); `Read` returned pages 1-2 as page images the vision model transcribed into ~5 KB of text |
+| 2 | #276 closed `VALID_REASONS` vocabulary: typo `cobrowse_unavail` is rejected at `--reason` parse time | **PASS** — `fetch-cache.py store --reason cobrowse_unavail` returned `success: false` with `--reason 'cobrowse_unavail' is not in the closed vocabulary [...]; see references/fetch-cache-design.md §'Reason semantics'` |
+| 3 | `_knowledge_lib.slugify` produces `[a-z0-9][a-z0-9-]{0,79}` slugs | **PASS** — three slugs emitted, all ≤ 80 chars (two were length-capped at 80 with trailing-dash strip), all match the source-ingester sanity regex |
+| 4 | `wiki/sources/*.md` written with `type: source` + populated `pre_extracted_claims:` per `claim-at-ingest.md:37-49` | **PASS** — 3 pages, 21 claims total (7 per source, 0 dropped). Frontmatter strings quoted via `json.dumps(s, ensure_ascii=False)` per the new YAML guidance — apostrophes in `Article 78's confidentiality obligations` and similar were correctly escaped, output validates as YAML |
+| 5 | `excerpt_position` is a Python `str.find()` Unicode code-point offset, frozen at ingest (claim-at-ingest.md:57) | **PASS** — all 21 offsets re-verified via `body.find(excerpt_quote) == excerpt_position` against the cached body; zero mismatches |
+| 6 | `atomic_write_text` (new helper) writes pages atomically, no `.tmp` debris | **PASS** — 3 pages written, no `.tmp` files left in `wiki/sources/` |
+| 7 | `backlink_audit.py --top 8 --min-confidence medium` runs per slug (audit-only) | **PASS** — 3 runs, 2 high-confidence candidates each (the audit candidate list surfaces; `--apply-plan` deferred per the v0.0.20 audit-only note) |
+| 8 | `wiki_index_update.py --slug ... --summary "..." --category Sources` per slug | **PASS** — 3 inserts; `wiki/index.md` now has a `## Sources` section with the 3 entries alphabetically sorted (action: `inserted`) |
+| 9 | Single `## [YYYY-MM-DD] ingest \| …` line appended to `wiki/log.md` | **PASS** — one new line: `## [2026-05-21] ingest \| project=eu-ai-act-gpai-code-of-practice-obligations sources=3 claims=21 (Slice 2 M5+M6 manual smoke — PDF branch verified on EP URL via #275)` |
+| 10 | `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py --wiki-root .alpha/eu-ai-act-gpai/` exits 0, zero findings | **PASS** — `success: true`, `findings_count: 0`. The `type: source` allowlist from cogni-wiki v0.0.44 (`_wikilib.PAGE_TYPE_DIRS`) accepts the new pages |
+| 11 | `cogni-wiki/skills/wiki-health/scripts/health.py --wiki-root .alpha/eu-ai-act-gpai/` runs clean | **PASS** — `success: true`. One benign warning: `.cogni-wiki/config.json entries_count=0 but filesystem has 3 (drift=+3)`. This is the expected M9 hand-off — `knowledge-finalize` runs `cogni-wiki/scripts/config_bump.py` to clear the drift; not in scope for M6 |
+| 12 | `tests/test_ingest_contract.sh` ALL PASS after the smoke | **PASS** — 40 assertions including the behavioural `is_pdf_response` / `atomic_write_text` / `slugify` Python checks |
+| 13 | `tests/test_skill_contracts.sh` ALL PASS after the smoke | **PASS** — clean-break invariant holds across all three new files (no `Skill("cogni-(research\|claims\|wiki):*")` dispatch) |
+
+### New findings (F18–F19)
+
+| # | Theme | Verdict | Detail |
+|---|---|---|---|
+| F18 | Vision-model PDF transcription cost | observed | The Read tool returns PDFs as **page images** (not extracted text strings) — the actual text comes from the calling model's vision-rendered transcription into the response. For a 2-page brief the cost is small; for a 20-page consolidated annex (the EUR-Lex case where no saved-file path was leaked, recording `pdf_extraction_failed`) the cost scales linearly with pages. `source-fetcher` correctly caps at `Read pages: "1-20"` per the agent contract, but the **silent body truncation past page 20 is real** — flagged as `pdf_truncated: true` in the cache entry but the body is incomplete. F18 = the reviewer's pre-merge item 4 ("PDF page-loop to read past page 20") observed empirically. File as a follow-up issue post-merge. |
+| F19 | `wiki_health` `entries_count` drift | benign | `wiki/sources/` populated by M6 but `.cogni-wiki/config.json` `entries_count` stays 0 until M9 (`knowledge-finalize`) calls `config_bump.py`. This is the documented M9 hand-off (`inverted-pipeline.md:167`), not a bug. Documented here so a future M6-only smoke that runs `wiki-health` doesn't treat the warning as a regression. |
+
+### What this clears for Slice 3 (M7)
+
+- The `wiki/sources/<slug>.md` substrate is now real on disk. M7's `wiki-composer` will read `wiki/index.md` + the 3 source pages (in a real Slice-3 run it would read all 42 — this smoke proves the structure works) and draft a report with `[[wiki-slug]]` citations.
+- `pre_extracted_claims:` frontmatter shape verified end-to-end. M8's `wiki-verifier` will read those claims and score the draft's citations as `verbatim` / `paraphrase` / `unsupported` with zero network calls — the structural win that makes M12's `claim-verify wall-clock < 5 min` target reachable.
+- The `json.dumps`-quoted YAML emission handles regulator text containing apostrophes (`Article 78's`), parentheses, and commas without breakage — the v0.0.20 review-fix #2 holds against real source content.
+- The #275 PDF branch shipped works: a previously-dropped EP think-tank ATAG PDF is now a citable source on the wiki. `pdf_extraction_failed` will remain the right outcome for sources where WebFetch does not leak a saved-file path (the EUR-Lex consolidated-annex case observed during PR-#277 planning); F18 documents the follow-up to extend `Read` beyond page 20.
+- All clean-break invariants hold under contract grep tests after the smoke; no regressions.
+
+### Out-of-scope / acknowledged limits of this smoke
+
+- Manual driver, not the installed skill — fan-out parallelism (8 ingesters per batch) was not exercised. The marketplace clone needs to be bumped to v0.0.20 post-merge for a fully-orchestrated smoke. The contract surfaces that the skill would exercise (slug pipeline, frontmatter shape, helper-script chain, lint/health) **are** all exercised here.
+- Sample of 3 of 42 fetched sources — not the full set. The full-run smoke runs once the skill is installed; the contract assertions verified here would surface the same way at 42 sources as at 3.
+- F18 follow-up (PDF page-loop) and the reviewer's deferred items 5 (`--summary-file` cross-plugin coordination in cogni-wiki) and 6 (this run is item 6) stay open as documented in the PR comments on #277.
