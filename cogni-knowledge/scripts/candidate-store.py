@@ -45,8 +45,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
-    _STRIP_QUERY_EXACT,
-    _STRIP_QUERY_PREFIXES,
     atomic_write,
     normalize_url,
 )
