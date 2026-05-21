@@ -84,8 +84,12 @@ If either is true, WebFetch will typically have saved the binary body to a sessi
 
 This line is an **undocumented tool-output convention** — parse defensively. The acceptable patterns are the literal `also saved to ` substring followed by an absolute path ending in `.pdf` on the same line. If a saved-file path is found:
 
-1. `Read` the PDF with `pages: "1-20"` (the Read tool caps at 20 pages per call). For PDFs longer than 20 pages, read pages 1-20 only and record `pdf_truncated: true` in the cache entry's `notes` field below.
-2. Concatenate the per-page text into a single body string.
+1. Loop `Read` over the saved PDF in 20-page windows (`pages: "1-20"`, then `"21-40"`, then `"41-60"`, …) until either:
+   - the next window returns an empty page range (end of PDF — Read surfaces no further page content), **or**
+   - the cumulative page count reaches a **200-page hard cap** (cost guard — Read transcribes PDFs via vision-rendered images, so cost scales linearly with pages; #278).
+
+   Track the final `<N>` pages successfully read across all windows.
+2. Concatenate the per-window text into a single body string in window order.
 3. Write the transcribed text to a temp file (`mktemp`).
 4. Store via:
    ```
@@ -99,7 +103,7 @@ This line is an **undocumented tool-output convention** — parse defensively. T
        --http-status 200
    ```
    The body is text; `fetch_method` stays `webfetch` (the cache entry records that the original response was a PDF in spirit via the URL — `fetch_method` describes the transport, not the MIME).
-5. Emit `fetched[]` entry with the returned `cache_key` and `content_hash`.
+5. Emit `fetched[]` entry with the returned `cache_key` and `content_hash`, and include `pdf_pages_read: <N>` so the orchestrator (and a future operator) can see exactly how much of the PDF landed. Set `pdf_truncated: true` **only** when the 200-page hard cap fired before the PDF ended; otherwise omit it (`<N>` alone conveys completeness for PDFs that fit under the cap). The field lives in the per-batch `fetched[]` sink — `fetch-cache.py`'s cache-entry schema is unchanged (#278).
 
 If no saved-file path is found in the WebFetch output (the EUR-Lex case empirically observed during the M4 smoke) → proceed to Step 4 with `reason: pdf_extraction_failed`. Do NOT fall through to Step 3 — cobrowse downloads PDFs rather than rendering their text, so it is not a usable fallback for the PDF branch.
 
@@ -165,7 +169,11 @@ Write a top-level JSON object to `BATCH_OUTPUT_PATH`:
   "schema_version": "0.1.0",
   "fetched": [
     {"url": "...", "cache_key": "<sha256>", "content_hash": "sha256:...",
-     "fetch_method": "webfetch", "fetched_at": "...", "from_cache": false}
+     "fetch_method": "webfetch", "fetched_at": "...", "from_cache": false},
+    {"url": "https://www.europarl.europa.eu/.../ATAG.pdf",
+     "cache_key": "<sha256>", "content_hash": "sha256:...",
+     "fetch_method": "webfetch", "fetched_at": "...", "from_cache": false,
+     "pdf_pages_read": 13}
   ],
   "unavailable": [
     {"url": "...", "reason": "webfetch_timeout", "attempted_at": "...",
