@@ -35,7 +35,7 @@ You **never re-fetch the URL**. The body is in the cache. You **never highlight 
 | `KNOWLEDGE_ROOT` | Yes | Absolute path to the knowledge-base root (the dir containing `.cogni-knowledge/`). Forwarded to `fetch-cache.py` as `--knowledge-root`. |
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
 | `URL` | Yes | The original (un-normalized) URL of the source. Becomes the single `sources:` frontmatter entry on the page. |
-| `SLUG_HINT` | Yes | Slug suggestion from the calling orchestrator, derived from `candidates.json` title. The agent re-validates and falls back to `src-<short-hash>` if the hint is empty / unsafe. |
+| `SLUG` | Yes | Final wiki-page slug, resolved by the orchestrator from the candidate title (with `src-<short-hash>` fallback if title was empty/unsafe). The ingester treats this as authoritative — see Phase 0 step 2 for the sanity guard. |
 | `SUB_QUESTION_REFS` | Yes | Comma-separated `sq-NN` ids from `candidates.json` for this URL. Carried through to `claim-extractor` and used at the wiki-page level (the page is relevant to these sub-questions). |
 | `PUBLISHER` | No | Registered-domain publisher (no subdomain) — `europa.eu`, not `eur-lex.europa.eu`. Carried into the page frontmatter when present. |
 | `TITLE_HINT` | No | Source title from the candidate metadata. Used as the page's `title:` and as the first-line `# <title>` body header. Falls back to a derived title from the body if absent. |
@@ -47,14 +47,10 @@ You **never re-fetch the URL**. The body is in the cache. You **never highlight 
 Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 ```
 
-### Phase 0: Resolve cache + slug
+### Phase 0: Resolve cache + sanity-check slug
 
 1. Locate `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py`. All cache reads go through this script — never read `.cogni-knowledge/fetch-cache/<sha256>.json` directly.
-2. **Slug.** Validate `SLUG_HINT`:
-   - Lowercase, alphanumerics + dashes only.
-   - Collapse runs of dashes, strip leading/trailing dashes.
-   - Cap at 80 chars.
-   - If empty after normalisation, fall back to `src-<first-12-of-sha256(normalize_url(URL))>` (use `fetch-cache.py key --url <URL> --bare` for the hash and take the first 12 chars).
+2. **Slug sanity guard.** `SLUG` arrives resolved by the orchestrator (orchestrator owns both the title-derivation pass and the `src-<first-12-of-sha256(normalize_url(URL))>` hash fallback — single source of truth, see `skills/knowledge-ingest/SKILL.md` Step 1.2). Validate that the received string matches `[a-z0-9][a-z0-9-]{0,79}` (lowercase, alphanumerics + dashes, ≤80 chars, starts alnum). On mismatch, emit a `skipped` batch result with `reason: invalid_slug` and return — do not attempt to "fix" the slug, the orchestrator's pre-fan-out dedupe relies on slug stability across the round-trip.
 3. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
 
 ### Phase 1: Read cached body
@@ -119,7 +115,7 @@ pre_extracted_claims:
 
 YAML frontmatter rules:
 
-- Emit YAML by hand — stdlib only, no `yaml` import. Match the shape `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter` parses. Inline strings get double quotes; multiline strings stay scalar (no `|` blocks needed for our short claim texts).
+- Emit YAML as literal text in the page body — match the shape `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter` parses. Inline strings get double quotes; multiline strings stay scalar (no `|` blocks needed for our short claim texts). The Python that calls `atomic_write_text` must stay stdlib-only — do not import `yaml` (or any pip dependency) in the wrapper code.
 - `pre_extracted_claims:` is a block list of mappings. Indent two spaces; quote `text` and `excerpt_quote` (escape internal `"` as `\"`). Numeric `excerpt_position` stays unquoted.
 - `sub_question_refs:` inside each claim is a flow sequence: `[sq-01, sq-03]`.
 

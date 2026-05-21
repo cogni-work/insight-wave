@@ -140,20 +140,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py store \
     --reason "<webfetch_error_class>"
 ```
 
-`<webfetch_error_class>` is a short stable token from the closed vocabulary:
-
-| Token | Fires when |
-|---|---|
-| `webfetch_timeout` | WebFetch hung past its internal timeout. |
-| `webfetch_4xx` | Server returned 4xx (typically 401 / 403 / 404). |
-| `webfetch_5xx` | Server returned 5xx (e.g. the EC-portal 502s observed during the M4 smoke / F17). |
-| `webfetch_blocked` | Robots, geo-fence, or anti-bot rejection at the fetch layer. |
-| `webfetch_refused` | Connection refused / DNS failure / unsupported scheme. Catch-all for transport-level WebFetch failures the more specific tokens above don't fit. |
-| `pdf_extraction_failed` | The PDF branch in Step 2 ran but no saved-file path could be parsed from the WebFetch output — typically EUR-Lex's `application/pdf` responses that don't surface a path. **Terminal**: cobrowse is not a viable fallback for PDFs (browsers download rather than render text), so Step 3 is skipped on this reason. v0.0.20+, issue #275. |
-| `cobrowse_unavailable` | Step 3 was skipped because the `claude-in-chrome` MCP server is not installed in this environment (its tools are absent from the runtime tool list). `fallback_attempted: false`. Operator-actionable: install `claude-in-chrome` and re-run. v0.0.20+, issue #276 (F14). |
-| `cobrowse_failed` | Cobrowse was attempted (MCP available) but the page did not render — timeout, navigation error, blank text extraction. `fallback_attempted: true`. |
-
-The vocabulary is closed; downstream summarisation depends on it. The `Reason semantics` subsection of `references/fetch-cache-design.md` is the single source of truth.
+`<webfetch_error_class>` is a closed vocabulary: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `pdf_extraction_failed`, `cobrowse_unavailable`, `cobrowse_failed`. Per-token semantics (when each fires, recoverable vs terminal vs environmental) live in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Downstream summarisation depends on the closed set; do not invent new tokens here.
 
 Emit an `unavailable[]` entry:
 

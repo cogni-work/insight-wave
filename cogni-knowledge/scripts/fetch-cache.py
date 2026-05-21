@@ -52,6 +52,27 @@ BINDING_DIRNAME = ".cogni-knowledge"
 # coordinating an additive change there.
 VALID_FETCH_METHODS = {"webfetch", "cobrowse_interactive"}
 VALID_STATUSES = {"ok", "unavailable"}
+# Closed vocabulary for unavailable-entry `reason`. Single source of truth
+# for the `webfetch_error_class` enum that `source-fetcher.md` Step 4
+# documents and `references/fetch-cache-design.md` §"Reason semantics"
+# describes — keeping it as a constant here makes the constraint
+# script-enforced at `--reason` parse time rather than convention.
+# Additions require an additive coordinated change in those two files.
+VALID_REASONS = {
+    "webfetch_timeout",
+    "webfetch_4xx",
+    "webfetch_5xx",
+    "webfetch_blocked",
+    "webfetch_refused",
+    "pdf_extraction_failed",
+    "cobrowse_unavailable",
+    "cobrowse_failed",
+    # Local-error reasons emitted by source-fetcher itself when the cache
+    # write fails (disk full, permission denied) — see source-fetcher.md
+    # §"Failure-mode invariants". These never travel through WebFetch but
+    # share the negative-cache codepath, so they live in the same set.
+    "cache_write_failed",
+}
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -109,6 +130,15 @@ def cmd_store(args: argparse.Namespace) -> int:
         return _emit(False, error="--reason is only valid with --status unavailable")
     if args.status == "unavailable" and not args.reason:
         return _emit(False, error="--reason is required when --status is unavailable")
+    if args.reason and args.reason not in VALID_REASONS:
+        return _emit(
+            False,
+            error=(
+                f"--reason {args.reason!r} is not in the closed vocabulary "
+                f"{sorted(VALID_REASONS)}; see references/fetch-cache-design.md "
+                "§'Reason semantics'"
+            ),
+        )
 
     if args.body and args.body_file:
         return _emit(False, error="--body and --body-file are mutually exclusive")
@@ -313,7 +343,15 @@ def main(argv: list[str]) -> int:
     p_store.add_argument("--http-status", type=int, default=None)
     p_store.add_argument("--etag", default="")
     p_store.add_argument("--last-modified", default="")
-    p_store.add_argument("--reason", default="", help="Free-text reason for status=unavailable.")
+    p_store.add_argument(
+        "--reason",
+        default="",
+        help=(
+            "Closed-vocabulary reason for status=unavailable. Must be one of "
+            f"{sorted(VALID_REASONS)} — see references/fetch-cache-design.md "
+            "§'Reason semantics'."
+        ),
+    )
     p_store.set_defaults(func=cmd_store)
 
     p_fetch = sub.add_parser("fetch", help="Read a cache entry.")

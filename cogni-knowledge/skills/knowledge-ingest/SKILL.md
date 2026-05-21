@@ -85,11 +85,21 @@ Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --p
 ### 1. Build batch plan
 
 1. Filter `fetched[]` to entries with `cache_key` populated and a positive cache hit confirmed (skip entries whose cache file has gone missing — surface in the summary).
-2. Derive a slug per entry from the candidate title (lower-kebab, dash-collapsed, 80-char cap; fall back to `src-<first-12-of-sha256(normalize_url(URL))>` via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url <URL> --bare`).
-3. **Dedupe by slug.** If two URLs map to the same slug (rare; URL dedup should have caught it earlier), keep the first occurrence and surface the collision as a non-blocking warning. Continue.
-4. Split into batches of size `--batch-size` (default 8).
+2. **Resolve slugs (orchestrator-owned, single pass).** Per entry, derive the final slug by calling the shared helper:
+   ```
+   python3 -c "
+   import sys
+   sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts')
+   from _knowledge_lib import slugify
+   print(slugify('<candidate-title>') or '')
+   "
+   ```
+   If the result is empty (title was non-alnum / whitespace / missing), fall back to `src-<first-12-of-sha256(normalize_url(URL))>` via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url <URL> --bare` (take the first 12 hex chars). The ingester does NOT re-derive — it only sanity-checks `[a-z0-9][a-z0-9-]{0,79}`. `slugify()` lives in `_knowledge_lib.py` alongside `normalize_url` and the `atomic_write*` helpers — single source of truth.
+3. **Skip already-ingested.** Read `ingest-manifest.json` (if it exists) and drop any `fetched[]` entry whose URL appears in `ingested[]` already. This is the re-run no-op contract: a second `knowledge-ingest` run on the same project should not re-dispatch `source-ingester` / `claim-extractor` for sources already on the wiki. The agent-side slug-collision check (`agents/source-ingester.md` Phase 3) is defence-in-depth for the cross-process race; the orchestrator-side skip is what saves cost on the common re-run path.
+4. **Dedupe by slug within this run.** If two not-yet-ingested URLs map to the same slug (rare; URL dedup should have caught it upstream), keep the first occurrence and surface the collision as a non-blocking warning. Continue.
+5. Split into batches of size `--batch-size` (default 8).
 
-If `--dry-run`: print the batch count, total sources, expected new pages, and stop.
+If `--dry-run`: print the batch count, total sources after skip-filter, expected new pages, and stop.
 
 ### 2. Initialize ingest-manifest.json
 
@@ -105,7 +115,7 @@ Create `<project_path>/.metadata/ingest-manifest.json` if absent:
 
 If it exists, leave it — the orchestrator appends to the existing arrays on a re-run.
 
-### 3. Dispatch source-ingester per batch (sequential at v0.0.20)
+### 3. Dispatch source-ingester per batch (parallel within batch, sequential across batches)
 
 For each batch:
 
@@ -117,7 +127,7 @@ For each batch:
         KNOWLEDGE_ROOT=<knowledge_root>,
         WIKI_ROOT=<wiki_root>,
         URL=<url>,
-        SLUG_HINT=<derived slug>,
+        SLUG=<resolved slug from Step 1.2 — orchestrator-authoritative>,
         SUB_QUESTION_REFS=<comma-separated sq-NN list from candidates.json>,
         PUBLISHER=<from candidates.json>,
         TITLE_HINT=<from candidates.json>,
@@ -126,15 +136,27 @@ For each batch:
 
    `source-ingester` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched via `Task`, not `Skill`.
 
-3. **Sequential cadence at v0.0.20.** Each ingester writes a unique `wiki/sources/<slug>.md` page (unique-by-slug-construction; no contention there), but cogni-wiki's `wiki/index.md` is shared and the cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py --apply-plan`) are lock-wrapped at their own write sites. Parallel fan-out adds no correctness win and complicates summary aggregation. Future tuning may parallelise once the cadence is characterised.
+3. **Parallel within batch.** Issue all 8 (or `--batch-size`) `source-ingester` dispatches in a **single message with multiple tool calls** so they run concurrently. Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the merge in Step 4 below is sequential.
 
-4. After each ingester returns, read its batch JSON and merge into `ingest-manifest.json`:
-   - On `ok: true`: append to `ingested[]`.
-   - On `ok: false` / skipped: append to `skipped[]` with the `reason`.
-   - Dedup within each array by URL.
-   - Atomic write via `tempfile.mkstemp + os.replace` (inline `python3 -c`, mirroring `knowledge-fetch` Step 4). No file lock needed — sequential merge after each Task return.
+4. After all ingesters in this batch return, merge the per-source batch JSONs into `ingest-manifest.json`:
+   - For each batch JSON file: on `ok: true` append to `ingested[]`; on `ok: false` / skipped append to `skipped[]` with the `reason`.
+   - Dedup within each array by URL (covers cross-run re-merges — same URL ingested twice keeps the later entry).
+   - **Single atomic write per batch**, not per source. Use the shared helper rather than reinventing the mkstemp+os.replace dance:
+     ```
+     python3 -c "
+     import json, sys
+     sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts')
+     from pathlib import Path
+     from _knowledge_lib import atomic_write
+     manifest_path = Path('<project_path>/.metadata/ingest-manifest.json')
+     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+     # ... append batch entries to manifest['ingested'] / manifest['skipped'], dedup by URL ...
+     atomic_write(manifest_path, manifest)
+     "
+     ```
+     No file lock needed — sequential merge after each batch returns.
 
-5. On dispatcher failure (no batch file written, or summary `ok: false`), record the source URL in `failed_ingesters[]` and continue. Re-runnable by re-invoking the skill (the orchestrator skips entries already in `ingested[]`).
+5. On a per-source dispatcher failure (no batch file written, or summary `ok: false`), record the source URL in `failed_ingesters[]` and continue with the rest of the batch. Re-runnable by re-invoking the skill (Step 1.3 skips entries already in `ingested[]`).
 
 ### 4. Per-new-slug cogni-wiki integration (sequential, after all ingesters return)
 

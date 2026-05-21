@@ -113,6 +113,13 @@ assert_grep 'pdf_truncated' "$FETCHER" "source-fetcher: documents pdf_truncated 
 LIB="$PLUGIN_ROOT/scripts/_knowledge_lib.py"
 assert_grep 'def is_pdf_response' "$LIB" "_knowledge_lib: defines is_pdf_response"
 assert_grep 'def atomic_write_text' "$LIB" "_knowledge_lib: defines atomic_write_text"
+assert_grep 'def slugify' "$LIB" "_knowledge_lib: defines slugify (lifted from inline SKILL prose)"
+
+# --- fetch-cache.py VALID_REASONS constant -------------------------------
+FETCH_CACHE="$PLUGIN_ROOT/scripts/fetch-cache.py"
+assert_grep 'VALID_REASONS' "$FETCH_CACHE" "fetch-cache: VALID_REASONS constant (closes the vocabulary at the script boundary)"
+assert_grep 'pdf_extraction_failed' "$FETCH_CACHE" "fetch-cache: VALID_REASONS includes pdf_extraction_failed (#275)"
+assert_grep 'cobrowse_unavailable' "$FETCH_CACHE" "fetch-cache: VALID_REASONS includes cobrowse_unavailable (#276)"
 
 # Behavioural check: is_pdf_response + atomic_write_text actually work.
 OUT=$(python3 - "$PLUGIN_ROOT/scripts" <<'PY'
@@ -162,8 +169,25 @@ def test_atomic_write_text():
         assert leftover == [], leftover
 
 
+def test_slugify():
+    # Happy paths
+    assert kl.slugify("Article 6 — High-risk AI") == "article-6-high-risk-ai", kl.slugify("Article 6 — High-risk AI")
+    assert kl.slugify("EU AI Act, GPAI Code of Practice") == "eu-ai-act-gpai-code-of-practice"
+    assert kl.slugify("  Lots   of  spaces  ") == "lots-of-spaces"
+    # Length cap, strip trailing dash after cap
+    long_in = "a" * 200
+    assert kl.slugify(long_in, max_len=20) == "a" * 20
+    capped = kl.slugify("aa" + ("-" * 10) + "b" * 100, max_len=15)
+    assert capped == capped.rstrip("-") and len(capped) <= 15, capped
+    # Edge cases: empty / non-alnum → empty (caller applies hash fallback)
+    assert kl.slugify("") == ""
+    assert kl.slugify("---") == ""
+    assert kl.slugify("!@#$%^&*") == ""
+
+
 check("is_pdf_response", test_is_pdf_response)
 check("atomic_write_text", test_atomic_write_text)
+check("slugify", test_slugify)
 PY
 )
 
@@ -183,6 +207,7 @@ grade() {
 
 grade is_pdf_response   "is_pdf_response — Content-Type and .pdf suffix detection"
 grade atomic_write_text "atomic_write_text round-trips text and leaves no .tmp debris"
+grade slugify           "slugify — lower-kebab, dash-collapse, length cap, empty-on-non-alnum"
 
 if [ $errors -eq 0 ]; then
   green ""
