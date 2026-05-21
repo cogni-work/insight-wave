@@ -63,7 +63,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py fetch \
 ```
 
 - `success: true` → cache hit. Inspect `data.entry.status`:
-  - `ok` → emit a `fetched[]` entry referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method`. Skip to next URL.
+  - `ok` → emit a `fetched[]` entry referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method`. Skip to next URL. (Note: `pdf_pages_read` is only emitted on fresh PDF fetches in Step 2; cache-hit PDF rows omit it because the page count is not part of the cache entry's persisted schema — #278.)
   - `unavailable` → negative-cache hit. Emit an `unavailable[]` entry with `reason: <data.entry.reason>` + `fallback_attempted: false` + `attempted_at: <now>` + `from_cache: true`. Skip to next URL.
 - `success: false` with `data.reason == "miss"` or `"stale"` → proceed to Step 2.
 
@@ -85,7 +85,7 @@ If either is true, WebFetch will typically have saved the binary body to a sessi
 This line is an **undocumented tool-output convention** — parse defensively. The acceptable patterns are the literal `also saved to ` substring followed by an absolute path ending in `.pdf` on the same line. If a saved-file path is found:
 
 1. Loop `Read` over the saved PDF in 20-page windows (`pages: "1-20"`, then `"21-40"`, then `"41-60"`, …) until either:
-   - the next window returns an empty page range (end of PDF — Read surfaces no further page content), **or**
+   - the next window returns no transcribed page content **or** Read surfaces an out-of-range page indication (end of PDF), **or**
    - the cumulative page count reaches a **200-page hard cap** (cost guard — Read transcribes PDFs via vision-rendered images, so cost scales linearly with pages; #278).
 
    Track the final `<N>` pages successfully read across all windows.
