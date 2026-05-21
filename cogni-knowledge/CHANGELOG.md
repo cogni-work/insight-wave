@@ -1,5 +1,23 @@
 # cogni-knowledge changelog
 
+## 0.0.19 — 2026-05-21
+
+Slice 1 of the absorption-roadmap Current sprint — Phase 5 M4 end-to-end smoke. Docs-only release: no skill/agent/script behaviour changes; the smoke ran clean against the v0.0.17 + v0.0.18 chain. Two new findings worth scheduling (F15 — PDF handling in `source-fetcher`; F13 — assertion-clarity in the M4 smoke recipe), three findings are positive/environmental (F14 cobrowse-MCP gating, F16 file-lock under contention, F17 environmental 502s). **Recommendation: GO** for Slice 2 (M5 + M6) per `references/alpha-findings.md` §"M4 smoke (2026-05-21)".
+
+### Docs
+
+- `references/alpha-findings.md` — new `## M4 smoke (2026-05-21)` section with the seven-step verification matrix, cost+timing measurements, F13–F17 findings, and the GO recommendation. Findings table extended with F13–F17 rows.
+
+### Notes
+
+- Smoke topic: "EU AI Act GPAI Code of Practice obligations" against a fresh `.alpha/eu-ai-act-gpai/` base (continues the v0.0.16 alpha narrative; comparable measurements).
+- End-to-end: 6 sub-questions → 57 candidates curated → 41 fetched + 16 unavailable → 58 cache entries (positive + negative cache symmetric) → 100% hit rate on re-run → injected 404 handled cleanly. ~1h wall-clock, $0.155 total LLM cost.
+- F15 (PDF handling) is the only real code finding. Recommended fix path: fold into Slice 2's `source-ingester` work since claim extraction needs to read fetched bodies and will face the same PDF-detection problem.
+
+### Dependencies
+
+No new minimum-version requirements. cogni-wiki ≥ 0.0.43 from v0.0.14 still holds.
+
 ## 0.0.18 — 2026-05-21
 
 ### Changed

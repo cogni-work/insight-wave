@@ -20,6 +20,11 @@ F1–F5 are **chain-breakers** — without these fixes, the chain only completes
 | F10 | `cogni-research/scripts/initialize-project.sh` | **deferred (cogni-research issue)** | Writes empty `document_paths: []` even when project is initialised in wiki mode with `wiki_paths` set. Misleading on inspection. Fix belongs in cogni-research, not in cogni-knowledge or cogni-wiki — file separately. |
 | F11 | Resilience, cogni-research writer | **surfaced in v0.0.16 re-run** | Writer agent crashed mid-Phase-2 with `API Error: socket connection closed unexpectedly` after persisting `.metadata/writer-outline-v1.json` but before writing `output/draft-v1.md`. The Phase 4.5 Step 0 write-failure recovery contract handled it correctly on re-dispatch — but the failure mode is real and worth tracking as a sibling to F8. F11 differs from F8: F8 is mid-research-pipeline (section-researcher state lost); F11 is writer-specific (outline-only-persisted, draft missing). Recovery worked exactly as documented. |
 | F12 | Wiki-mode bootstrap, cogni-research | **surfaced in v0.0.16 re-run, related to F10** | `initialize-project.sh` does not accept `--wiki-paths` as a CLI flag — only `--document-paths`. Operators using `--report-source wiki` with a CLI dispatch (rather than going through `research-setup`'s interactive menu) must hand-patch `wiki_paths` into `project-config.json` after init. The interactive menu populates the field correctly; only the script CLI is silent. Sibling of F10 — both are cogni-research scope. |
+| F13 | `candidate-store.py append-batch` + M4 smoke recipe Step 3 | **surfaced in v0.0.19 M4 smoke** | `candidates.json` is written in insertion order, not score-sorted. `fetch_priority` correctly encodes (tier, score) so consumers sort properly — this is a test-assertion clarity issue, not a code bug. Either re-write `candidates.json` sorted on every `append-batch`, or change the M4 smoke recipe's "score-sorted" assertion to "fetch_priority dense 1..N + within-tier monotonic". Recommend the latter. |
+| F14 | `source-fetcher` cobrowse fallback gating | **surfaced in v0.0.19 M4 smoke** | When `claude-in-chrome` MCP is not installed, JavaScript-rendered pages (`eur-lex.europa.eu` full-text, certain EC portal pages) record as `webfetch_refused`/`webfetch_blocked` because the fallback path is unavailable. Not a code bug — environment dependency — but the chain currently has no signal to operators that "this URL is unreachable without the MCP". Workaround: install `claude-in-chrome` before runs that need full-text EU regulation pages. Future: have `source-fetcher` emit a distinct `cobrowse_unavailable` reason when WebFetch fails AND the MCP is missing, so operators can see "fixable by MCP install" separately from "actually dead". |
+| F15 | `source-fetcher` PDF handling | **surfaced in v0.0.19 M4 smoke** | WebFetch on a PDF URL (`europarl.europa.eu/RegData/.../EN.pdf`, `arxiv.org/pdf/N.pdf`) returns binary content treated as unreadable; the fetcher records `webfetch_refused`. Cobrowse fallback would also be brittle (browsers download PDFs, don't render text). Structural gap — `source-fetcher` should detect `Content-Type: application/pdf` (or the `.pdf` suffix) and either (a) hand off to a stdlib PDF text extractor, or (b) record a distinct `pdf_unsupported` reason. Today PDF citations from authoritative bodies (EUR-Lex, EP think tank, arxiv) silently drop. Real bug worth scheduling. |
+| F16 | `candidate-store.py append-batch` file lock | **positive — v0.0.19 M4 smoke** | Parallel `append-batch` calls from 3 concurrent curator merges (round 1 and round 2 of the smoke) completed without corruption, dedup-clean, sub_question_refs unioned correctly, fetch_priority recomputed dense 1..N. `fcntl.flock` contention path is exercised; merge-on-collision logic (higher-score wins, earliest-discovered-at wins) works. |
+| F17 | EC portal availability (environment, not code) | **environmental, v0.0.19 M4 smoke window** | `digital-strategy.ec.europa.eu/en/...` returned HTTP 502 consistently across batches 002-005 of the smoke (6 URLs affected). Not a cogni-knowledge issue — EC portal infrastructure was throwing 502s during the smoke window. Validates that the orchestrator's "record unavailable, move on" design and negative-cache semantics are the right shape: without negative caching every re-run would re-hit the 502s, burning the rate-limit budget. |
 
 ## v0.0.14 summary
 
@@ -92,3 +97,44 @@ Both are reasons to dispatch the documented `wiki-ingest --discover research:<sl
 - **Phase 5 graduation (v0.1.0)** is unblocked. The chain works, the round-trip works, and the wiki-first thesis holds at the citation level. Proceed with the Phase 5 deliverables in `absorption-roadmap.md` (comprehensive README/CLAUDE.md, `doc-audit` clean, top-level docs update, README maturity callout flipped to Preview, skill-name validator pass).
 - **Defer F6–F12 as scoped follow-up sprints.** None individually block Phase 5; all are quality-of-life and resilience improvements that benefit from real usage signal.
 - **Optional sweep before Phase 5:** wire `wiki-ingest`'s `backlink_audit.py` step into the `wiki-from-research --discover research:` execution path so cross-project body-level wikilinks form automatically — this would lift the "0 body-level wikilinks" observation above. Today the chain already provides the structural compounding signal via lineage stamps + cycle-guard cross-lineage overlap; backlinks would make it visually navigable in the wiki UI.
+
+## M4 smoke (2026-05-21)
+
+End-to-end smoke of the v0.1.0 inverted-pipeline `plan → curate → fetch` chain (cogni-knowledge milestones M1–M4 from `absorption-roadmap.md`) on a fresh `.alpha/eu-ai-act-gpai/` knowledge base. Slice 1 of the Current sprint in `absorption-roadmap.md`. **Recommendation: GO** for Slice 2 (M5 + M6 — claim-extractor fork + source-ingester agent + knowledge-ingest skill).
+
+### Verification matrix
+
+| Step | Skill / contract | Outcome |
+|---|---|---|
+| 1 | `knowledge-setup` | PASS — `binding.json` (schema 0.0.3, `curator_defaults` populated) + `fetch-cache/` + wiki layout created at `.alpha/eu-ai-act-gpai/` |
+| 2 | `knowledge-plan` | PASS — `plan.json` schema 0.1.0; 6 sub-questions (sq-01..sq-06), each with `candidate_domains[]` of 7 entries |
+| 3 | `knowledge-curate` (6 curator dispatches in 2 parallel rounds of 3) | PASS — `candidates.json` schema 0.1.0 with 57 candidates (50 primary, 7 secondary); 34 unique URLs (zero post-normalize dupes); `fetch_priority` dense 1..57, primary tier (fp 1-50) before secondary (51-57), within-tier monotonic with `score`; 11 candidates referenced by 2+ sub-questions (cross-sq compounding signal); F16 (file-lock under contention) verified |
+| 4 | `knowledge-fetch` (8 sequential batches of 8) | PASS — `fetch-manifest.json` schema 0.1.0; 41 fetched, 16 unavailable, all 57 with cache files on disk (positive + negative cache symmetric); all `reason` values inside the closed `webfetch_error_class` vocabulary; unavailable rate 28.1% (just under the 30% warning threshold) |
+| 5 | `knowledge-fetch` re-run (batch 001 only) | PASS — `cache_hits: 8/8` = 100% on the warm-cache batch, $0.000 cost, all entries marked `from_cache: true` (positive AND negative), `fetch-cache.py stat` shows zero new entries and zero byte delta — cache short-circuit is exact, not approximate |
+| 6 | Inject 404 unavailable (controlled, single-URL batch on `httpbin.org/status/404`) | PASS — recorded `webfetch_4xx` (in closed vocab), negative cache entry written, follow-up `fetch-cache.py fetch` returns `success: true` with `entry.status: unavailable` (negative-cache hit path suppresses re-attempt) |
+| 7 | Final `fetch-cache.py stat` | PASS — `entries 58 = ok 41 + unavailable 17` (post-injection); negative cache symmetric with positive cache; Step-5 hit rate 100% > 50% threshold |
+
+### Cost and timing
+
+| Phase | Wall-clock | LLM cost |
+|---|---|---|
+| Curate (6 curators, 2 rounds of 3 parallel) | ~5 min | $0.100 |
+| Fetch (8 sequential batches of 8) | ~50 min (incl. 2 anomalous slow batches — batch 007 took 20 min on the arxiv PDF, batch 008 took 30 min for 1 URL with no clear cause) | $0.055 |
+| Re-run + 404 injection | ~2 min | $0.000 |
+| **Total** | **~1h** | **$0.155** |
+
+The 6× cost ratio vs the v0.0.16 alpha re-run ($0.155 vs $2.88) reflects the scope difference: M4 covers only `plan → curate → fetch`, not the writer/researcher/reviewer/revisor stack the v0.0.16 re-run exercised. The pipeline shape that delivers M12's "claim-verify wall-clock < 5 min" win (per `absorption-roadmap.md` Phase 5 pass criteria) starts to surface here — the fetch+verify cost is concentrated in this phase precisely because Phase 6 verify no longer re-fetches.
+
+### New findings (F13–F17)
+
+See the Findings table above for the full one-liners. Two summary points:
+
+- **F15 (PDF handling) is the only real code finding worth scheduling.** WebFetch on PDF URLs silently drops them. Authoritative EU sources include PDFs (EP think-tank ATAGs, EUR-Lex consolidated annexes, arxiv papers). Recommended fix: in `source-fetcher`, detect `Content-Type: application/pdf` (or `.pdf` suffix) and either invoke a stdlib PDF text extractor or record a distinct `pdf_unsupported` reason. Schedule as a v0.0.21 patch or fold into Slice 2 (M5 + M6) since `source-ingester` will need to handle PDFs too.
+- **F13 (assertion clarity) and F17 (environmental 502s) are documentation-only.** F13: update the M4 smoke recipe's "score-sorted" assertion to "`fetch_priority` dense 1..N + within-tier monotonic" — that's what the contract actually guarantees. F17: not actionable, but documented so future smoke runs hitting the same EC portal during an outage have prior art.
+
+### What this clears for Slice 2
+
+- The `plan → curate → fetch` chain is contract-clean. `candidates.json` is a stable input for the next phase (claim extraction at ingest, `source-ingester` per `inverted-pipeline.md` §"Phase 4 — knowledge-ingest").
+- `fetch-cache.py` semantics — positive + negative cache symmetry, `from_cache` marking, freshness window honoured — work as designed. Slice 2's `source-ingester` can read cached bodies directly via `fetch-cache.py fetch` without re-fetching.
+- File-locked `candidate-store.py append-batch` (F16) is proven under contention. The same `fcntl.flock` pattern can be reused for `source-ingester` if M6 needs concurrent wiki-page emission.
+- The clean-break invariant held: zero `cogni-research:` or `cogni-claims:` dispatches anywhere in the chain (`grep` against the dispatched agents' tool calls is clean).
