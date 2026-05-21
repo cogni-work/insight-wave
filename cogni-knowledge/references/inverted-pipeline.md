@@ -98,13 +98,16 @@ Output: `<project>/.metadata/fetch-manifest.json`:
 {
   "schema_version": "0.1.0",
   "fetched": [
-    {"url": "...", "cache_key": "<sha256>", "content_hash": "<sha256-of-body>", "fetch_method": "webfetch", "fetched_at": "..."}
+    {"url": "...", "cache_key": "<sha256>", "content_hash": "<sha256-of-body>", "fetch_method": "webfetch", "fetched_at": "..."},
+    {"url": "https://example.org/paper.pdf", "cache_key": "<sha256>", "content_hash": "<sha256-of-body>", "fetch_method": "webfetch", "fetched_at": "...", "pdf_pages_read": 13}
   ],
   "unavailable": [
     {"url": "...", "reason": "webfetch_timeout", "attempted_at": "...", "fallback_attempted": false}
   ]
 }
 ```
+
+`pdf_pages_read` (added v0.0.21, #278) is **PDF-only and optional**: it carries the cumulative page count successfully read by `source-fetcher`'s 20-page-window Read-loop. Non-PDF rows omit it. `pdf_truncated: true` (also optional, PDF-only) is set only when the agent's 200-page hard cap fired before the PDF ended — for PDFs that fit under the cap, `pdf_pages_read` alone conveys completeness.
 
 Cache hit semantics: if a cache file exists for the URL and `fetched_at` is within the freshness window (default 30 days, configurable in `binding.curator_defaults`), reuse without re-fetching. The fetch-cache is content-addressed by URL, not by content — so the same URL fetched twice produces one cache file with the latest body.
 
