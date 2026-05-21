@@ -159,14 +159,14 @@ Parse the return envelope:
 
 ### 5. Verify outputs on disk
 
-One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and non-empty `citations[]` each carrying `draft_position` / `wiki_slug` / `claim_id`; outline file is on disk). On failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
+One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and a list-typed `citations[]` each carrying `draft_position` / `wiki_slug` / `claim_id`; outline file is on disk). An empty `citations[]` is NOT a hard fail — it emits a stderr `WARN` line and surfaces in the final summary per the edge-case section below (zero claims is an upstream-data symptom, not a composer bug). On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
 
 ```
 DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
 MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
 OUTLINE_PATH="<project_path>/.metadata/writer-outline-v<N>.json" \
 python3 -c '
-import json, os
+import json, os, sys
 from pathlib import Path
 draft    = Path(os.environ["DRAFT_PATH"])
 manifest = Path(os.environ["MANIFEST_PATH"])
@@ -176,15 +176,17 @@ assert "[[sources/" in draft.read_text(encoding="utf-8"), "draft contains no [[s
 m = json.loads(manifest.read_text(encoding="utf-8"))
 assert m.get("schema_version") == "0.1.0", f"bad schema: {m.get(\"schema_version\")}"
 cites = m.get("citations", [])
-assert isinstance(cites, list) and cites, "citations[] empty"
+assert isinstance(cites, list), f"citations must be a list, got {type(cites).__name__}"
 for c in cites:
     assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c, c
 assert outline.exists(), f"outline missing: {outline}"
+if not cites:
+    print("WARN: citations[] empty — every cited statement will fail M8 verification", file=sys.stderr)
 print(len(cites))
 '
 ```
 
-The trailing `print(len(cites))` is captured for the final summary's `citations` count.
+The trailing `print(len(cites))` is captured for the final summary's `citations` count; the stderr `WARN` line is captured separately so the summary can surface the `⚠ Zero citations` line documented in the edge-case section below.
 
 ### 6. Append wiki/log.md
 
