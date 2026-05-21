@@ -23,8 +23,7 @@ set -eu
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT="$PLUGIN_ROOT/scripts/candidate-store.py"
 
-red()   { printf '\033[31m%s\033[0m\n' "$1"; }
-green() { printf '\033[32m%s\033[0m\n' "$1"; }
+. "$(dirname "$0")/fixtures/test_helpers.sh"
 
 if [ ! -f "$SCRIPT" ]; then
   red "FAIL: candidate-store.py not found at $SCRIPT"
@@ -229,6 +228,31 @@ then
   green "PASS: URL normalization collapses scheme-case, trailing slash, and tracking params"
 else
   red "FAIL: URL normalization broken"
+  errors=$((errors + 1))
+fi
+
+# 6. Empty batch is a no-op — does not rewrite candidates.json on disk
+# (early-return optimisation; verified via mtime).
+PROJ4="$WORK/project4"
+mkdir -p "$PROJ4"
+python3 "$SCRIPT" init --project-path "$PROJ4" >/dev/null
+EMPTY_BATCH="$WORK/empty-batch.json"
+echo '[]' > "$EMPTY_BATCH"
+BEFORE_MTIME=$(python3 -c "import os; print(int(os.stat('$PROJ4/.metadata/candidates.json').st_mtime_ns))")
+# Sleep just enough to make a mtime-change observable if the file is rewritten.
+sleep 0.05
+EMPTY_OUT=$(python3 "$SCRIPT" append-batch --project-path "$PROJ4" --batch-file "$EMPTY_BATCH")
+AFTER_MTIME=$(python3 -c "import os; print(int(os.stat('$PROJ4/.metadata/candidates.json').st_mtime_ns))")
+if [ "$BEFORE_MTIME" = "$AFTER_MTIME" ] && echo "$EMPTY_OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True and d['data']['added'] == 0 and d['data']['merged'] == 0, d
+"; then
+  green "PASS: empty batch short-circuits — no rewrite, added=merged=0"
+else
+  red "FAIL: empty batch triggered a rewrite or wrong envelope"
+  red "  before: $BEFORE_MTIME, after: $AFTER_MTIME"
+  red "  got:    $EMPTY_OUT"
   errors=$((errors + 1))
 fi
 

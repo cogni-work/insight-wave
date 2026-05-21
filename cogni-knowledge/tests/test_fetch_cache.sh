@@ -328,6 +328,46 @@ else
   errors=$((errors + 1))
 fi
 
+# 9. URL normalization at key — semantically identical URLs (case, trailing
+# slash, tracking params) must produce the SAME cache key so that the
+# curator's dedup (candidate-store.normalize_url) and the cache lookup
+# agree. Regression guard for the bug fixed in v0.0.17.
+KEY_RAW=$(python3 "$SCRIPT" key --url "https://Example.ORG/Article/?utm_source=x&ref=y" --bare)
+KEY_NORM=$(python3 "$SCRIPT" key --url "https://example.org/Article" --bare)
+if [ "$KEY_RAW" = "$KEY_NORM" ]; then
+  green "PASS: cache key normalizes scheme/host case, trailing slash, tracking params"
+else
+  red "FAIL: cache keys diverge for semantically identical URLs"
+  red "  raw  : $KEY_RAW"
+  red "  norm : $KEY_NORM"
+  errors=$((errors + 1))
+fi
+
+# 10. store + fetch via two equivalent URL forms — body round-trips.
+KB2="$WORK/kb2"
+mkdir -p "$KB2/.cogni-knowledge"
+python3 "$SCRIPT" store \
+  --knowledge-root "$KB2" \
+  --url "https://EXAMPLE.com/Doc/?utm_source=foo" \
+  --fetch-method webfetch \
+  --status ok \
+  --body "the doc body" \
+  --http-status 200 >/dev/null
+FETCH_NORM=$(python3 "$SCRIPT" fetch --knowledge-root "$KB2" --url "https://example.com/Doc")
+if echo "$FETCH_NORM" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['entry']['body'] == 'the doc body', d
+print('OK')
+" | grep -q OK; then
+  green "PASS: store + fetch round-trip across equivalent URL forms"
+else
+  red "FAIL: cross-form fetch missed the entry"
+  red "  got: $FETCH_NORM"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
   exit 1

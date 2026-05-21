@@ -45,7 +45,7 @@ Phase 0 → Phase 1 → Phase 2
 
 ### Phase 0: Resolve
 
-1. Read `CANDIDATES_PATH`. Parse out the candidate objects matching `BATCH_URLS` (by exact URL string match — the curator and the cache use the same `normalize_url` form, so no normalization needed here).
+1. Read `CANDIDATES_PATH`. Parse out the candidate objects matching `BATCH_URLS` (by exact URL string match — `candidate-store.py` and `fetch-cache.py` both apply the same `normalize_url` form at write/key time, so a URL emitted by the curator and a URL passed to the cache lookup land on the same key without further work here).
 2. Locate `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py`. All cache interactions go through this script — never read or write `.cogni-knowledge/fetch-cache/<sha256>.json` directly.
 3. Resolve the `claude-in-chrome` MCP server's availability (presence of the cobrowse tool prefix in your tool list determines fallback eligibility).
 

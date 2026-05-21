@@ -97,7 +97,7 @@ For each sub-question id selected in Step 0:
 
    `source-curator` is invoked as an agent (lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md`); the `Skill` dispatch convention for agents in cogni-knowledge follows the same pattern cogni-research/cogni-wiki use.
 
-3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator does its own WebSearch — three concurrent curators is the rate-limit-friendly ceiling.
+3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator does its own WebSearch — three concurrent curators is the rate-limit-friendly ceiling. (Phase 3 / `knowledge-fetch` runs batches strictly sequentially for a related but stricter reason — see that skill's Step 3 for the rationale.)
 
 4. After each curator returns successfully, merge the batch:
    ```

@@ -28,34 +28,9 @@ set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-red()   { printf '\033[31m%s\033[0m\n' "$1"; }
-green() { printf '\033[32m%s\033[0m\n' "$1"; }
+. "$(dirname "$0")/fixtures/test_helpers.sh"
 
 errors=0
-
-assert_grep() {
-  local pattern="$1" file="$2" description="$3"
-  if grep -q -- "$pattern" "$file" 2>/dev/null; then
-    green "PASS: $description"
-  else
-    red "FAIL: $description"
-    red "  pattern: $pattern"
-    red "  file:    $file"
-    errors=$((errors + 1))
-  fi
-}
-
-assert_not_grep() {
-  local pattern="$1" file="$2" description="$3"
-  if grep -q -- "$pattern" "$file" 2>/dev/null; then
-    red "FAIL: $description"
-    red "  pattern (should NOT appear): $pattern"
-    red "  file: $file"
-    errors=$((errors + 1))
-  else
-    green "PASS: $description"
-  fi
-}
 
 # --- knowledge-plan SKILL.md ---------------------------------------------
 PLAN="$PLUGIN_ROOT/skills/knowledge-plan/SKILL.md"

@@ -126,12 +126,8 @@ def _tier_for(score: float) -> str:
 
 
 def _recompute_priorities(candidates: list[dict]) -> None:
-    """Assign fetch_priority in-place: tier order then score desc within tier.
-
-    fetch_priority is 1-indexed; lower fetches first. Stable on equal score
-    via the candidate's existing list position so the assignment is
-    deterministic across re-merges.
-    """
+    # Tie-break on original list position so re-merges produce a stable
+    # priority assignment instead of shuffling on equal scores.
     tier_order = {"primary": 0, "secondary": 1, "supporting": 2}
     indexed = list(enumerate(candidates))
     indexed.sort(
@@ -167,7 +163,6 @@ def _empty_payload() -> dict:
 
 
 def _validate_candidate(entry: dict) -> str | None:
-    """Return an error string if the entry is malformed; None if valid."""
     if not isinstance(entry, dict):
         return f"candidate is not an object: {entry!r}"
     url = entry.get("url")
@@ -185,18 +180,17 @@ def _validate_candidate(entry: dict) -> str | None:
 
 
 def _merge_entry(existing: dict, incoming: dict) -> dict:
-    """Merge an incoming candidate into an existing one with the same normalized URL.
+    """Merge an incoming candidate with an existing entry for the same URL.
 
-    - Higher score wins.
+    - Higher score wins; non-URL fields come from the winner.
     - Earlier discovered_at wins (curator emits ISO 8601 UTC).
-    - sub_question_refs are unioned (order: existing first, then new refs).
-    - Other fields from the higher-score entry win.
+    - sub_question_refs are unioned (existing first, then new refs).
     - tier + fetch_priority recomputed by the caller after all merges.
     """
     if float(incoming.get("score", 0.0)) > float(existing.get("score", 0.0)):
-        winner, loser = incoming, existing
+        winner = incoming
     else:
-        winner, loser = existing, incoming
+        winner = existing
     merged = dict(winner)
     existing_at = existing.get("discovered_at") or ""
     incoming_at = incoming.get("discovered_at") or ""
@@ -220,38 +214,36 @@ def _merge_entry(existing: dict, incoming: dict) -> dict:
 
 def cmd_init(args: argparse.Namespace) -> int:
     project_path = Path(args.project_path).resolve()
-    if not project_path.is_dir():
-        return _emit(False, error=f"project_path does not exist: {project_path}")
-    _metadata_dir(project_path).mkdir(parents=True, exist_ok=True)
+    try:
+        _metadata_dir(project_path).mkdir(parents=True, exist_ok=True)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        return _emit(False, error=f"project_path is not a usable directory: {exc}")
     target = _candidates_path(project_path)
-    if target.is_file():
-        try:
-            existing = json.loads(target.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            return _emit(False, error=f"existing candidates.json is malformed: {exc}")
-        return _emit(
-            True,
-            data={
-                "path": str(target),
-                "candidates_count": len(existing.get("candidates", [])),
-                "created": False,
-            },
-        )
-    _atomic_write(target, _empty_payload())
-    return _emit(True, data={"path": str(target), "candidates_count": 0, "created": True})
+    try:
+        existing = json.loads(target.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        _atomic_write(target, _empty_payload())
+        return _emit(True, data={"path": str(target), "candidates_count": 0, "created": True})
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"existing candidates.json is malformed: {exc}")
+    return _emit(
+        True,
+        data={
+            "path": str(target),
+            "candidates_count": len(existing.get("candidates", [])),
+            "created": False,
+        },
+    )
 
 
 def cmd_append_batch(args: argparse.Namespace) -> int:
     project_path = Path(args.project_path).resolve()
-    if not project_path.is_dir():
-        return _emit(False, error=f"project_path does not exist: {project_path}")
-
     batch_file = Path(args.batch_file).resolve()
-    if not batch_file.is_file():
-        return _emit(False, error=f"batch_file does not exist: {batch_file}")
 
     try:
         batch = json.loads(batch_file.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return _emit(False, error=f"batch_file does not exist: {batch_file}")
     except json.JSONDecodeError as exc:
         return _emit(False, error=f"batch_file is not valid JSON: {exc}")
 
@@ -266,38 +258,48 @@ def cmd_append_batch(args: argparse.Namespace) -> int:
         if err:
             return _emit(False, error=err)
 
-    # Lock + read-modify-write. Lock file is created lazily and never
-    # deleted — deletion races with the next acquirer's flock-acquire.
-    _metadata_dir(project_path).mkdir(parents=True, exist_ok=True)
-    lock = _lock_path(project_path)
     target = _candidates_path(project_path)
+    # Skip the lock + rewrite cycle when the batch contributes nothing —
+    # otherwise an empty curator batch still incurs an atomic-write.
+    if not batch:
+        try:
+            payload = json.loads(target.read_text(encoding="utf-8"))
+            count = len(payload.get("candidates", []))
+        except FileNotFoundError:
+            count = 0
+        except json.JSONDecodeError as exc:
+            return _emit(False, error=f"existing candidates.json is malformed: {exc}")
+        return _emit(True, data={"path": str(target), "added": 0, "merged": 0, "candidates_count": count})
+
+    try:
+        _metadata_dir(project_path).mkdir(parents=True, exist_ok=True)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        return _emit(False, error=f"project_path is not a usable directory: {exc}")
+    # Lock file is created lazily and never deleted — unlinking it would
+    # race the next acquirer's flock against a different inode.
+    lock = _lock_path(project_path)
 
     with open(lock, "a+", encoding="utf-8") as lock_fh:
         fcntl.flock(lock_fh.fileno(), fcntl.LOCK_EX)
         try:
-            if target.is_file():
-                try:
-                    payload = json.loads(target.read_text(encoding="utf-8"))
-                except json.JSONDecodeError as exc:
-                    return _emit(False, error=f"existing candidates.json is malformed: {exc}")
-            else:
+            try:
+                payload = json.loads(target.read_text(encoding="utf-8"))
+            except FileNotFoundError:
                 payload = _empty_payload()
+            except json.JSONDecodeError as exc:
+                return _emit(False, error=f"existing candidates.json is malformed: {exc}")
 
             existing = payload.setdefault("candidates", [])
             payload.setdefault("schema_version", SCHEMA_VERSION)
 
-            # Build an index by normalized URL for O(1) merge lookup.
-            index: dict[str, int] = {}
-            for idx, entry in enumerate(existing):
-                key = normalize_url(entry.get("url", ""))
-                # Last-writer-wins on a pre-existing duplicate (shouldn't happen,
-                # but tolerate legacy files).
-                index[key] = idx
+            index: dict[str, int] = {
+                normalize_url(entry.get("url", "")): idx
+                for idx, entry in enumerate(existing)
+            }
 
             added = 0
             merged = 0
             for incoming in batch:
-                # Stamp tier from score if absent (curator-side defaults).
                 if "tier" not in incoming:
                     incoming["tier"] = _tier_for(float(incoming.get("score", 0.0)))
                 key = normalize_url(incoming.get("url", ""))
@@ -307,7 +309,6 @@ def cmd_append_batch(args: argparse.Namespace) -> int:
                     merged += 1
                 else:
                     new_entry = dict(incoming)
-                    new_entry["url"] = incoming.get("url", "")  # preserve canonical form caller passed
                     new_entry["tier"] = _tier_for(float(new_entry.get("score", 0.0)))
                     existing.append(new_entry)
                     index[key] = len(existing) - 1
