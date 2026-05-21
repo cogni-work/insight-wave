@@ -34,11 +34,14 @@ import argparse
 import datetime as _dt
 import hashlib
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _knowledge_lib import (  # noqa: E402
+    atomic_write,
+    normalize_url,
+)
 
 SCHEMA_VERSION = "0.1.0"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -49,12 +52,6 @@ BINDING_DIRNAME = ".cogni-knowledge"
 # coordinating an additive change there.
 VALID_FETCH_METHODS = {"webfetch", "cobrowse_interactive"}
 VALID_STATUSES = {"ok", "unavailable"}
-# Kept in sync with candidate-store.py:_STRIP_QUERY_*. Duplicated here so
-# candidates.json dedup and fetch-cache lookup land on the same key for
-# semantically identical URLs. The deferred _knowledge_lib.py extraction
-# will collapse the two copies.
-_STRIP_QUERY_PREFIXES = ("utm_",)
-_STRIP_QUERY_EXACT = frozenset({"ref", "fbclid", "gclid"})
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -71,23 +68,6 @@ def _cache_dir(knowledge_root: Path) -> Path:
     return knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME
 
 
-def normalize_url(url: str) -> str:
-    if not url or not url.strip():
-        return url
-    parts = urlsplit(url.strip())
-    scheme = parts.scheme.lower()
-    netloc = parts.netloc.lower()
-    path = parts.path
-    if path.endswith("/") and path != "/":
-        path = path.rstrip("/")
-    kept = [
-        (k, v)
-        for k, v in parse_qsl(parts.query, keep_blank_values=True)
-        if not (k.startswith(_STRIP_QUERY_PREFIXES) or k in _STRIP_QUERY_EXACT)
-    ]
-    return urlunsplit((scheme, netloc, path, urlencode(kept), ""))
-
-
 def _url_key(url: str) -> str:
     return hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
 
@@ -98,26 +78,6 @@ def _entry_path(knowledge_root: Path, url: str) -> Path:
 
 def _content_hash(body: str) -> str:
     return "sha256:" + hashlib.sha256(body.encode("utf-8")).hexdigest()
-
-
-def _atomic_write(path: Path, payload: dict) -> Path:
-    # Mirrors cogni-wiki/_wikilib.atomic_write semantics — tempfile.mkstemp
-    # so two concurrent writers to the same URL cannot collide on a
-    # predictable `.tmp` suffix, and the temp file is unlinked on exception.
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(payload, fh, indent=2, ensure_ascii=False)
-            fh.write("\n")
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
-    return path
 
 
 def _parse_iso(stamp: str) -> _dt.datetime | None:
@@ -178,7 +138,7 @@ def cmd_store(args: argparse.Namespace) -> int:
 
     target = _entry_path(knowledge_root, args.url)
     try:
-        _atomic_write(target, payload)
+        atomic_write(target, payload)
     except (FileNotFoundError, NotADirectoryError) as exc:
         return _emit(False, error=f"knowledge_root is not a usable directory: {exc}")
     return _emit(

@@ -40,12 +40,16 @@ import argparse
 import datetime as _dt
 import fcntl
 import json
-import os
-import re
 import sys
-import tempfile
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _knowledge_lib import (  # noqa: E402
+    _STRIP_QUERY_EXACT,
+    _STRIP_QUERY_PREFIXES,
+    atomic_write,
+    normalize_url,
+)
 
 SCHEMA_VERSION = "0.1.0"
 CANDIDATES_FILENAME = "candidates.json"
@@ -57,13 +61,6 @@ METADATA_DIRNAME = ".metadata"
 # `cogni-knowledge/agents/source-curator.md` Phase 3.
 TIER_PRIMARY_MIN = 0.80
 TIER_SECONDARY_MIN = 0.50
-
-# Tracking-param prefixes/names stripped during URL normalization. Covers
-# the common cases seen in EU regulatory crawls; conservative on purpose —
-# only well-known tracking params are dropped to avoid breaking URLs that
-# rely on a query string for content identity.
-_STRIP_QUERY_PREFIXES = ("utm_",)
-_STRIP_QUERY_EXACT = frozenset({"ref", "fbclid", "gclid"})
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -88,35 +85,6 @@ def _lock_path(project_path: Path) -> Path:
     return _metadata_dir(project_path) / (CANDIDATES_FILENAME + LOCK_SUFFIX)
 
 
-def normalize_url(url: str) -> str:
-    """Canonicalize a URL for dedup purposes.
-
-    - Lowercase scheme + host (path case preserved — RFC 3986 §6.2.2.1).
-    - Strip trailing `/` from path unless the path is just `/`.
-    - Drop query params whose name starts with any _STRIP_QUERY_PREFIXES
-      or is in _STRIP_QUERY_EXACT. Remaining params keep their order.
-    - Drop fragment.
-
-    Whitespace-only or empty input returns the input unchanged so callers
-    surface the bad value rather than silently coalescing distinct entries.
-    """
-    if not url or not url.strip():
-        return url
-    parts = urlsplit(url.strip())
-    scheme = parts.scheme.lower()
-    netloc = parts.netloc.lower()
-    path = parts.path
-    if path.endswith("/") and path != "/":
-        path = path.rstrip("/")
-    kept = [
-        (k, v)
-        for k, v in parse_qsl(parts.query, keep_blank_values=True)
-        if not (k.startswith(_STRIP_QUERY_PREFIXES) or k in _STRIP_QUERY_EXACT)
-    ]
-    query = urlencode(kept)
-    return urlunsplit((scheme, netloc, path, query, ""))
-
-
 def _tier_for(score: float) -> str:
     if score >= TIER_PRIMARY_MIN:
         return "primary"
@@ -139,23 +107,6 @@ def _recompute_priorities(candidates: list[dict]) -> None:
     )
     for new_priority, (_orig_idx, entry) in enumerate(indexed, start=1):
         entry["fetch_priority"] = new_priority
-
-
-def _atomic_write(path: Path, payload: dict) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(payload, fh, indent=2, ensure_ascii=False)
-            fh.write("\n")
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
-    return path
 
 
 def _empty_payload() -> dict:
@@ -222,7 +173,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     try:
         existing = json.loads(target.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        _atomic_write(target, _empty_payload())
+        atomic_write(target, _empty_payload())
         return _emit(True, data={"path": str(target), "candidates_count": 0, "created": True})
     except json.JSONDecodeError as exc:
         return _emit(False, error=f"existing candidates.json is malformed: {exc}")
@@ -315,7 +266,7 @@ def cmd_append_batch(args: argparse.Namespace) -> int:
                     added += 1
 
             _recompute_priorities(existing)
-            _atomic_write(target, payload)
+            atomic_write(target, payload)
         finally:
             fcntl.flock(lock_fh.fileno(), fcntl.LOCK_UN)
 
