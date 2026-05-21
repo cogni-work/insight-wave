@@ -143,14 +143,12 @@ Dispatch via the `Task` tool (matches the upstream `knowledge-ingest` / `knowled
 Task(wiki-composer,
      PROJECT_PATH=<project_path>,
      WIKI_ROOT=<wiki_root>,
-     PLAN_PATH=<project_path>/.metadata/plan.json,
-     INGEST_MANIFEST_PATH=<project_path>/.metadata/ingest-manifest.json,
      DRAFT_VERSION=<N>,
      TARGET_WORDS=<resolved>,
      RESUME_FROM_OUTLINE=<true|false>)
 ```
 
-`wiki-composer` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched via `Task`, not `Skill`. Single-pass, no fan-out, no per-section sharding — the agent reads the wiki itself and writes both output files atomically.
+The agent derives the plan and ingest-manifest paths from `PROJECT_PATH` (fixed `.metadata/plan.json` and `.metadata/ingest-manifest.json`). `wiki-composer` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched via `Task`, not `Skill`. Single-pass, no fan-out, no per-section sharding — the agent reads the wiki itself and writes both output files atomically.
 
 Parse the return envelope:
 
@@ -161,35 +159,32 @@ Parse the return envelope:
 
 ### 5. Verify outputs on disk
 
+One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and non-empty `citations[]` each carrying `draft_position` / `wiki_slug` / `claim_id`; outline file is on disk). On failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
+
 ```
-DRAFT_PATH=<project_path>/output/draft-v<N>.md
-MANIFEST_PATH=<project_path>/.metadata/citation-manifest.json
-OUTLINE_PATH=<project_path>/.metadata/writer-outline-v<N>.json
+DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
+MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
+OUTLINE_PATH="<project_path>/.metadata/writer-outline-v<N>.json" \
+python3 -c '
+import json, os
+from pathlib import Path
+draft    = Path(os.environ["DRAFT_PATH"])
+manifest = Path(os.environ["MANIFEST_PATH"])
+outline  = Path(os.environ["OUTLINE_PATH"])
+assert draft.exists() and draft.stat().st_size > 0, f"draft missing or empty: {draft}"
+assert "[[sources/" in draft.read_text(encoding="utf-8"), "draft contains no [[sources/...]] wikilink"
+m = json.loads(manifest.read_text(encoding="utf-8"))
+assert m.get("schema_version") == "0.1.0", f"bad schema: {m.get(\"schema_version\")}"
+cites = m.get("citations", [])
+assert isinstance(cites, list) and cites, "citations[] empty"
+for c in cites:
+    assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c, c
+assert outline.exists(), f"outline missing: {outline}"
+print(len(cites))
+'
 ```
 
-For each path, confirm:
-
-- `DRAFT_PATH` exists, non-empty, contains at least one `[[sources/` token (smoke check — every research draft will have multiple, but one is the minimum to certify the composer produced wikilink citations as designed).
-- `MANIFEST_PATH` exists and parses as JSON with `citations[]` populated. Validate via a stdlib pass:
-
-  ```
-  KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-  MANIFEST_PATH="<manifest_path>" \
-  python3 -c '
-  import json, os, sys
-  m = json.loads(open(os.environ["MANIFEST_PATH"]).read())
-  assert m.get("schema_version") == "0.1.0", f"bad schema: {m.get(\"schema_version\")}"
-  cites = m.get("citations", [])
-  assert isinstance(cites, list) and cites, "citations[] empty"
-  for c in cites:
-      assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c, c
-  print(len(cites))
-  '
-  ```
-
-  Surface any failure verbatim in the summary; do not auto-retry.
-
-- `OUTLINE_PATH` exists (was written by Phase 1 regardless of resume state).
+The trailing `print(len(cites))` is captured for the final summary's `citations` count.
 
 ### 6. Append wiki/log.md
 

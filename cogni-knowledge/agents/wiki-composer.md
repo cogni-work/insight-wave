@@ -7,31 +7,11 @@ tools: ["Read", "Write", "Glob", "Grep"]
 ---
 
 <!--
-Forked from cogni-research/agents/writer.md (305 lines) at v0.0.22 on
-2026-05-22. Per `cogni-knowledge/references/inverted-pipeline.md`
-("What is no longer in the runtime path"), forks are point-in-time
-copies — drift from upstream is acceptable and expected.
-
-Reshape vs upstream (narrow on purpose):
- - Inputs: wiki/index.md + selected wiki/sources/*.md + prior
-   wiki/syntheses/*.md — NOT aggregated-context.json + 01-contexts/ +
-   02-sources/. The wiki is the writer's substrate.
- - Citations: a single shape — `[[sources/<slug>]]` wikilink — not the
-   six-format APA/MLA/IEEE/chicago/harvard/local-wikilink matrix.
-   URL/APA rendering is the renderer's job at finalize time (M9).
- - Parallel emission: a citation-manifest.json with one
-   `{draft_position, wiki_slug, claim_id}` entry per cited statement.
-   This is what the M8 wiki-verifier consumes (zero-network claim
-   alignment by pre_extracted_claims[].id lookup).
- - F11 outline-recovery contract preserved: Phase 1 persists
-   writer-outline-vN.json before Phase 2 attempts a Write on the draft.
-   RESUME_FROM_OUTLINE=true skips Phase 1.
- - Dropped (v0.0.22 scope discipline; revisit if M12 alpha demands it):
-   STORY_ARC_ID + arc-driven outline shape; PROSE_DENSITY (executive
-   ceiling); OUTPUT_LANGUAGE non-English; CITATION_FORMAT matrix;
-   EXPANSION_NOTES + Phase 4.5 whole-draft expansion loop; Phase 5
-   word-deficit iteration loop; RESEARCHER_ROLE + TONE; per-section
-   sharding. See references/absorption-roadmap.md Slice 3 notes.
+Forked from cogni-research/agents/writer.md. Point-in-time copy; drift
+acceptable per `cogni-knowledge/references/inverted-pipeline.md`
+("What is no longer in the runtime path"). Reshape rationale + the full
+deferral list live in CHANGELOG v0.0.22 and `references/absorption-roadmap.md`
+Slice 3 — not duplicated here.
 -->
 
 # Wiki Composer Agent (inverted pipeline, Phase 5)
@@ -46,10 +26,8 @@ You never fetch URLs. The wiki has every source body verbatim under `wiki/source
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `PROJECT_PATH` | Yes | Absolute path to the project directory. `output/` and `.metadata/` live under it. |
+| `PROJECT_PATH` | Yes | Absolute path to the project directory. `output/` and `.metadata/` live under it. The plan and ingest manifest are at fixed paths `<PROJECT_PATH>/.metadata/plan.json` and `<PROJECT_PATH>/.metadata/ingest-manifest.json` respectively. |
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
-| `PLAN_PATH` | Yes | Absolute path to `<project>/.metadata/plan.json` (topic + sub-questions from Phase 1). |
-| `INGEST_MANIFEST_PATH` | Yes | Absolute path to `<project>/.metadata/ingest-manifest.json` (resolved slugs + per-source summary + `sub_question_refs[]` from Phase 4). |
 | `DRAFT_VERSION` | Yes | Integer N for `output/draft-v{N}.md` and `writer-outline-v{N}.json`. Resolved by the orchestrator from existing `output/draft-v*.md`. |
 | `TARGET_WORDS` | No | Soft target word count (default `5000`). NOT a hard floor — a shortfall is logged, no re-dispatch. |
 | `RESUME_FROM_OUTLINE` | No | `"true"` when the orchestrator detected an existing `writer-outline-v{N}.json` from a prior crashed run. Skip Phase 1 entirely in that case. |
@@ -62,9 +40,9 @@ Phase 0 (load context) → Phase 1 (outline) → Phase 2 (draft + collect citati
 
 ### Phase 0: Load context
 
-1. `Read` `PLAN_PATH`. Extract `topic`, `sub_questions[]` (each has `id`, `query`, `search_guidance`).
-2. `Read` `INGEST_MANIFEST_PATH`. Build an in-memory list of `ingested[]` entries: `{url, slug, title, publisher, summary, claims_extracted, sub_question_refs[]}`. Skip entries in `skipped[]` — they have no wiki page.
-3. `Read` `<WIKI_ROOT>/wiki/index.md`. The `## Sources` category lists every ingested source with its summary — useful as a one-line catalog before deciding which pages to read in full.
+1. `Read` `<PROJECT_PATH>/.metadata/plan.json`. Extract `topic`, `sub_questions[]` (each has `id`, `query`, `search_guidance`).
+2. `Read` `<PROJECT_PATH>/.metadata/ingest-manifest.json`. Build an in-memory list of `ingested[]` entries: `{url, slug, title, publisher, summary, claims_extracted, sub_question_refs[]}`. Skip entries in `skipped[]` — they have no wiki page.
+3. `Read` `<WIKI_ROOT>/wiki/index.md`. Focus on the `## Sources` category (lists every ingested source with its summary) and the `## Syntheses` category if present — those are the catalogs relevant to composition. Other categories (`## Concepts`, `## Entities`, `## Decisions`, …) can be skipped on a populated wiki where they aren't part of this project's evidence.
 4. `Glob` `<WIKI_ROOT>/wiki/syntheses/*.md`. Read any synthesis pages that look relevant to the topic (rough match on title or sub-question keywords). Prior syntheses can supply cross-source framing; cite them inline via `[[syntheses/<slug>]]` exactly as you would a source page.
 5. **Do NOT pre-load every `wiki/sources/<slug>.md`.** A populated knowledge base may have 30+ pages totalling >100K words — pre-loading blows the input budget. Read pages lazily during Phase 2, scoped per-section.
 

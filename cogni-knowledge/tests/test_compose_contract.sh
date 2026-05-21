@@ -1,25 +1,12 @@
 #!/usr/bin/env bash
-# test_compose_contract.sh — grep-based contract assertions for the v0.0.22
-# Phase 5 compose surface: knowledge-compose skill, wiki-composer agent.
+# test_compose_contract.sh — Phase 5 (knowledge-compose + wiki-composer)
+# contract assertions.
 #
 # Per tests/README.md §"Contract tests": for pure LLM skills, regression
-# coverage is SKILL.md / agent-md content invariants. These checks catch
-# the most likely failure mode — a path, flag, or step silently disappearing
-# from the contract. They do NOT assert LLM behaviour.
-#
-# Coverage:
-#   - knowledge-compose: reads plan.json + ingest-manifest.json, dispatches
-#     wiki-composer via Task, writes draft-vN.md + citation-manifest.json
-#     schema 0.1.0, preserves F11 outline-recovery contract (RESUME_FROM_OUTLINE
-#     gate keyed off writer-outline-vN.json presence), probes only cogni-wiki,
-#     appends `compose` line to wiki/log.md.
-#   - wiki-composer: forked from cogni-research/agents/writer.md, reads the
-#     wiki (not aggregated-context.json), emits [[sources/<slug>]] wikilinks,
-#     persists writer-outline-vN.json before the draft (F11), emits
-#     citation-manifest.json with {draft_position, wiki_slug, claim_id} per
-#     citation, single-pass (no Task in tools list, no expansion loop).
-#   - Scope-discipline negatives: no story_arc_id / PROSE_DENSITY /
-#     OUTPUT_LANGUAGE multilingual / CITATION_FORMAT matrix in the fork.
+# coverage is SKILL.md / agent-md content invariants — these checks catch a
+# path, flag, or step silently disappearing from the contract, not LLM
+# behaviour. The assertions below are self-documenting; do not maintain a
+# parallel coverage list here (it will drift from the actual asserts).
 #
 # bash 3.2 + grep only.
 
@@ -48,7 +35,10 @@ assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogn
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
 assert_grep 'writer-outline-v' "$COMPOSE" "knowledge-compose: F11 — detects writer-outline-vN.json for recovery"
 assert_grep 'wiki/log.md' "$COMPOSE" "knowledge-compose: appends to wiki/log.md"
-assert_grep 'compose' "$COMPOSE" "knowledge-compose: uses 'compose' log prefix"
+# Match the actual log-line shape Step 6 emits (`## [DATE] compose | project=...`)
+# rather than the bare word `compose`, which would also match the filename,
+# skill name, and every doc paragraph.
+assert_grep '\] compose | project=' "$COMPOSE" "knowledge-compose: emits the '## [DATE] compose | project=...' log-line shape"
 # Defence-in-depth: confirm there is no obsolete Skill("cogni-knowledge:wiki-composer)
 # dispatch. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:wiki-composer' "$COMPOSE" "knowledge-compose: no Skill('cogni-knowledge:wiki-composer) — agents go through Task"
