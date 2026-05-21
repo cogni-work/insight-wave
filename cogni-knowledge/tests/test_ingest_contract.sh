@@ -54,6 +54,16 @@ assert_grep 'Task' "$INGEST" "knowledge-ingest: Task listed in allowed-tools"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
+# knowledge-ingest allowed-tools must include only what Steps 0-6 actually
+# use. Trimmed to Read, Write, Bash, Task at v0.0.20 per #277 review.
+INGEST_TOOLS_LINE=$(grep '^allowed-tools:' "$INGEST" || true)
+if echo "$INGEST_TOOLS_LINE" | grep -qE 'Glob|Skill'; then
+  red "FAIL: knowledge-ingest: allowed-tools must not include Glob or Skill (unused)"
+  red "  got: $INGEST_TOOLS_LINE"
+  errors=$((errors + 1))
+else
+  green "PASS: knowledge-ingest: allowed-tools trimmed (no unused Glob / Skill)"
+fi
 
 # --- source-ingester agent -----------------------------------------------
 INGESTER="$PLUGIN_ROOT/agents/source-ingester.md"
@@ -108,6 +118,18 @@ assert_grep 'is_pdf_response' "$FETCHER" "source-fetcher: uses is_pdf_response h
 assert_grep 'pdf_extraction_failed' "$FETCHER" "source-fetcher: closed vocab includes pdf_extraction_failed (#275)"
 assert_grep 'cobrowse_unavailable' "$FETCHER" "source-fetcher: closed vocab includes cobrowse_unavailable (#276)"
 assert_grep 'pdf_truncated' "$FETCHER" "source-fetcher: documents pdf_truncated note for PDFs >20 pages"
+# Regression guard for the #277 review-blocker: the PDF branch instructs
+# the agent to `Read pages: "1-20"` the saved binary; the Read tool MUST
+# be in the frontmatter tools list or the PDF rail fails at runtime with
+# tool-not-permitted. Mirror the existing INGESTER_TOOLS_LINE idiom.
+FETCHER_TOOLS_LINE=$(grep '^tools:' "$FETCHER" || true)
+if echo "$FETCHER_TOOLS_LINE" | grep -q '"Read"'; then
+  green "PASS: source-fetcher: frontmatter tools: includes Read (required by PDF branch)"
+else
+  red "FAIL: source-fetcher: frontmatter tools: must include Read for the PDF branch"
+  red "  got: $FETCHER_TOOLS_LINE"
+  errors=$((errors + 1))
+fi
 
 # --- _knowledge_lib.py new helpers ---------------------------------------
 LIB="$PLUGIN_ROOT/scripts/_knowledge_lib.py"

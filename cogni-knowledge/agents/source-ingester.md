@@ -116,6 +116,7 @@ pre_extracted_claims:
 YAML frontmatter rules:
 
 - Emit YAML as literal text in the page body — match the shape `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter` parses. Inline strings get double quotes; multiline strings stay scalar (no `|` blocks needed for our short claim texts). The Python that calls `atomic_write_text` must stay stdlib-only — do not import `yaml` (or any pip dependency) in the wrapper code.
+- **Quote string fields with `json.dumps(s, ensure_ascii=False)`.** JSON's double-quoted-string syntax is a strict subset of YAML's flow-string syntax, so `json.dumps` output is YAML-valid and correctly escapes `\`, `"`, embedded newlines, tabs, and control characters in claim `text` / `excerpt_quote` payloads. A regulatory PDF excerpt containing a backslash or quoted phrase would break a hand-rolled `\"`-only escaper. `json.dumps` is stdlib.
 - `pre_extracted_claims:` is a block list of mappings. Indent two spaces; quote `text` and `excerpt_quote` (escape internal `"` as `\"`). Numeric `excerpt_position` stays unquoted.
 - `sub_question_refs:` inside each claim is a flow sequence: `[sq-01, sq-03]`.
 
@@ -125,19 +126,25 @@ Body rules:
 - The fetched body follows verbatim. **No** in-body highlighting markup, **no** body-level edits. The wiki-verifier will use `excerpt_position` offsets to render context.
 - If the body itself starts with an H1, drop our injected H1 to avoid double headings.
 
-Write atomically via `python3 -c "from _knowledge_lib import atomic_write_text; ..."` against `<WIKI_ROOT>/wiki/sources/<slug>.md`. Example:
+Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/sources/<slug>.md`. Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal:
 
 ```bash
-python3 -c "
-import sys
-sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts')
+KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+PAGE_PATH="<WIKI_ROOT>/wiki/sources/<slug>.md" \
+TMP_PAGE_PATH="<tmp_page_path>" \
+python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from pathlib import Path
 from _knowledge_lib import atomic_write_text
-atomic_write_text(Path('<WIKI_ROOT>/wiki/sources/<slug>.md'), open('<tmp_page_path>', encoding='utf-8').read())
-"
+atomic_write_text(
+    Path(os.environ["PAGE_PATH"]),
+    Path(os.environ["TMP_PAGE_PATH"]).read_text(encoding="utf-8"),
+)
+'
 ```
 
-(Or call it from a small one-shot script the orchestrator writes into a tmpdir — either way, the markdown write goes through `atomic_write_text`, never raw `Write`.)
+The markdown write always goes through `atomic_write_text`, never raw `Write`.
 
 If the target file already exists (slug collision from a re-run or a duplicate that slipped past URL dedup), surface in the batch envelope as `reason: slug_collision` and **do not overwrite**. The orchestrator dedupes slugs before fan-out; this is the defence-in-depth check.
 

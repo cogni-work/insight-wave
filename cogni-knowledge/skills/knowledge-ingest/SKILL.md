@@ -1,7 +1,7 @@
 ---
 name: knowledge-ingest
 description: "Phase 4 of the v0.1.0 inverted pipeline. Reads fetch-manifest.json, dispatches source-ingester per fetched source to write wiki/sources/<slug>.md pages with pre_extracted_claims:, merges per-source results into ingest-manifest.json, then runs cogni-wiki's backlink_audit.py + wiki_index_update.py per new slug. The wiki becomes populated before any draft runs — the F6 fix from the alpha. Use this skill whenever the user says 'ingest the fetched sources', 'deposit fetched pages into the wiki', 'phase 4 of the knowledge pipeline', 'run the ingesters', 'knowledge ingest'. After ingest, the next slice (M7) will run knowledge-compose to draft the report."
-allowed-tools: Read, Write, Bash, Glob, Skill, Task
+allowed-tools: Read, Write, Bash, Task
 ---
 
 # Knowledge Ingest
@@ -85,14 +85,16 @@ Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --p
 ### 1. Build batch plan
 
 1. Filter `fetched[]` to entries with `cache_key` populated and a positive cache hit confirmed (skip entries whose cache file has gone missing — surface in the summary).
-2. **Resolve slugs (orchestrator-owned, single pass).** Per entry, derive the final slug by calling the shared helper:
+2. **Resolve slugs (orchestrator-owned, single pass).** Per entry, derive the final slug by calling the shared helper. Pass the candidate title via env var — never interpolate untrusted text into a Python string literal:
    ```
-   python3 -c "
-   import sys
-   sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts')
+   KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+   CANDIDATE_TITLE="<candidate title>" \
+   python3 -c '
+   import os, sys
+   sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
    from _knowledge_lib import slugify
-   print(slugify('<candidate-title>') or '')
-   "
+   print(slugify(os.environ["CANDIDATE_TITLE"]) or "")
+   '
    ```
    If the result is empty (title was non-alnum / whitespace / missing), fall back to `src-<first-12-of-sha256(normalize_url(URL))>` via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url <URL> --bare` (take the first 12 hex chars). The ingester does NOT re-derive — it only sanity-checks `[a-z0-9][a-z0-9-]{0,79}`. `slugify()` lives in `_knowledge_lib.py` alongside `normalize_url` and the `atomic_write*` helpers — single source of truth.
 3. **Skip already-ingested.** Read `ingest-manifest.json` (if it exists) and drop any `fetched[]` entry whose URL appears in `ingested[]` already. This is the re-run no-op contract: a second `knowledge-ingest` run on the same project should not re-dispatch `source-ingester` / `claim-extractor` for sources already on the wiki. The agent-side slug-collision check (`agents/source-ingester.md` Phase 3) is defence-in-depth for the cross-process race; the orchestrator-side skip is what saves cost on the common re-run path.
@@ -141,18 +143,21 @@ For each batch:
 4. After all ingesters in this batch return, merge the per-source batch JSONs into `ingest-manifest.json`:
    - For each batch JSON file: on `ok: true` append to `ingested[]`; on `ok: false` / skipped append to `skipped[]` with the `reason`.
    - Dedup within each array by URL (covers cross-run re-merges — same URL ingested twice keeps the later entry).
-   - **Single atomic write per batch**, not per source. Use the shared helper rather than reinventing the mkstemp+os.replace dance:
+   - **Single atomic write per batch**, not per source. Use the shared helper rather than reinventing the mkstemp+os.replace dance. Pass paths via env vars so apostrophes / spaces in project paths cannot break the Python literal:
      ```
-     python3 -c "
-     import json, sys
-     sys.path.insert(0, '${CLAUDE_PLUGIN_ROOT}/scripts')
+     KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+     MANIFEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
+     BATCH_PATHS="<comma-separated per-source batch JSON paths>" \
+     python3 -c '
+     import json, os, sys
+     sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
      from pathlib import Path
      from _knowledge_lib import atomic_write
-     manifest_path = Path('<project_path>/.metadata/ingest-manifest.json')
-     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-     # ... append batch entries to manifest['ingested'] / manifest['skipped'], dedup by URL ...
+     manifest_path = Path(os.environ["MANIFEST_PATH"])
+     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+     # ... append batch entries to manifest["ingested"] / manifest["skipped"], dedup by URL ...
      atomic_write(manifest_path, manifest)
-     "
+     '
      ```
      No file lock needed — sequential merge after each batch returns.
 
