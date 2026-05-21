@@ -1,8 +1,35 @@
 # cogni-knowledge changelog
 
+## 0.0.18 — 2026-05-21
+
+### Changed
+
+- `scripts/_knowledge_lib.py` — NEW. Extracts the `normalize_url` +
+  `_STRIP_QUERY_*` + `atomic_write` helpers previously duplicated across
+  `candidate-store.py` and `fetch-cache.py`. Closes #272. The extraction was
+  scheduled for M5 (`source-ingester` as the third caller); landed early
+  because the two existing callers had already started style-drifting on
+  `normalize_url`. Single source of truth for URL identity in the inverted
+  pipeline — the dedup-key contract between curator-side merge and
+  fetcher-side cache lookup is now structural rather than convention.
+- `scripts/candidate-store.py`, `scripts/fetch-cache.py` — now import the
+  shared helpers from `_knowledge_lib`; `_atomic_write` call sites renamed
+  in-place to the public `atomic_write`. No behavioural change.
+- `tests/test_knowledge_lib.sh` — NEW. Three-way `is`-identity assertion
+  between `candidate-store`, `fetch-cache`, and `_knowledge_lib`
+  `normalize_url` / `atomic_write`; behavioural canonicalization sanity
+  check across a representative URL; `atomic_write` round-trip plus
+  no-leftover-`.tmp` assertion.
+
+### Notes
+
+- `knowledge-binding.py:_write_binding` shares the same atomic-write pattern
+  but a different signature (takes `knowledge_root`, resolves the binding
+  path internally). Not extracted in this slice — possible follow-up.
+
 ## 0.0.17 — 2026-05-20
 
-Phase 5 milestones M2-finish + M3 + M4 — the `plan → curate → fetch` chain of the v0.1.0 inverted pipeline. PR #269 (M1 + M2-script) shipped the foundation without a version bump; this release surfaces the first user-visible inverted-pipeline skills. Plugin stays at `0.0.x`/maturity `incubating` per the absorption-roadmap M-table — the maturity flip to Preview ships at M12 alongside the alpha re-run + 0.1.0 bump. The `0.0.16` slot is reserved for the alpha-re-run measurement record referenced in `references/alpha-findings.md` and the `knowledge-binding.py` comment block; no released artefact ships under that tag.
+Phase 5 milestones M2-finish + M3 + M4 — the `plan → curate → fetch` chain of the v0.1.0 inverted pipeline. PR #269 (M1 + M2-script) shipped the foundation without a version bump; this release surfaces the first user-visible inverted-pipeline skills. Plugin stays at `0.0.x`/maturity `incubating` per the absorption-roadmap M-table — the maturity flip to Preview ships at M12 alongside the alpha re-run + 0.1.0 bump. The `0.0.16` slot is reserved for the alpha-re-run measurement record referenced in `references/alpha-findings.md` and the `knowledge-binding.py` comment block; no source code shipped under that version. The annotated git tag `cogni-knowledge-v0.0.16-alpha-measurement` at commit `f6c9d24e` marks the measurement record so the version timeline reads linearly. Closes #273.
 
 ### Added
 
