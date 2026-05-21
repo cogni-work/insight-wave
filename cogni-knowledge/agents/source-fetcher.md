@@ -3,7 +3,7 @@ name: source-fetcher
 description: Phase-3 source fetcher for the inverted pipeline. Reads a batch of URLs from candidates.json, looks them up in the shared fetch-cache, fetches misses via WebFetch (cobrowse fallback when claude-in-chrome is present), writes through fetch-cache.py. Emits per-batch {fetched[], unavailable[]} for merge into fetch-manifest.json. Records availability — never decides to drop a URL.
 model: sonnet
 color: blue
-tools: ["Bash", "WebFetch", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
+tools: ["Read", "Bash", "WebFetch", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
 ---
 
 <!--
