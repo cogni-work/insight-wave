@@ -87,7 +87,11 @@ Reason about the topic. Decompose it into 3-7 sub-questions that together cover 
 - `id`: `sq-NN` (zero-padded, sequential from `sq-01`).
 - `query`: a concrete, search-engine-friendly phrasing of the sub-question.
 - `search_guidance`: 1-2 sentences telling the Phase 2 source-curator what kinds of sources would best answer this sub-question (regulatory text, industry analysis, court rulings, etc.).
-- `candidate_domains`: a list of 3-8 domain stems where authoritative answers likely live for this market. Examples for `dach`: `eur-lex.europa.eu`, `bfdi.bund.de`, `edpb.europa.eu`, `bitkom.org`. Use the market's authority sources as your starting set — for `dach` see `${CLAUDE_PLUGIN_ROOT}/../cogni-research/references/market-sources.json` (the static reference file is permitted; the clean-break excludes skills + agents, not reference files).
+- `candidate_domains`: a list of 3-8 domain stems where authoritative answers likely live for this market. Examples for `dach`: `eur-lex.europa.eu`, `bfdi.bund.de`, `edpb.europa.eu`, `bitkom.org`. Use the market's authority sources as your starting set — resolved via the canonical workspace helper:
+  ```
+  python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <market>
+  ```
+  Same path cogni-portfolio's agents use; the helper joins the canonical registry (`cogni-workspace/references/supported-markets-registry.json`) with the research overlay so cogni-knowledge never reaches into cogni-research's filesystem.
 
 If `--sub-question-hints` was passed, ensure each hint maps to at least one sub-question — but you may rephrase, split, or merge as needed for coherence.
 

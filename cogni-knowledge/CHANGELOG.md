@@ -18,6 +18,7 @@ Phase 5 milestones M2-finish + M3 + M4 — the `plan → curate → fetch` chain
 ### Changed
 
 - `CLAUDE.md` — Skills table gains rows for `knowledge-plan` / `knowledge-curate` / `knowledge-fetch`. Scripts table gains `candidate-store.py`. "Future phases" paragraph rewritten to delegate the milestone narrative to `references/absorption-roadmap.md` (the source of truth) with a one-line progress pointer.
+- `fetch-cache.py` `_url_key` now hashes the **normalized** URL form (`normalize_url` — same canonicalization `candidate-store.py` applies for dedup) rather than the raw URL. Any cache entries written between PR #269 and v0.0.17 are keyed against the un-normalized hash and will be invisible to post-v0.0.17 lookups. PR #269 only just shipped so production caches are unlikely, but if you have one, run `python3 cogni-knowledge/scripts/fetch-cache.py evict --older-than-days 0` to clear it.
 
 ### Dependencies
 

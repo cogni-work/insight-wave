@@ -45,12 +45,18 @@ You **do not fetch URL bodies**. That is Phase 3 (`source-fetcher`). You also do
 | `PROJECT_PATH` | Yes | Absolute path to the project directory (`<knowledge-root>/<topic-slug>-<YYYY-MM-DD>/`) |
 | `SUB_QUESTION_ID` | Yes | sq-id from `plan.json`, e.g. `sq-01` |
 | `BATCH_OUTPUT_PATH` | Yes | Absolute path the orchestrator wants this batch's JSON array written to, e.g. `<project>/.metadata/.candidates.batch.sq-01.json` |
-| `MARKET` | Yes | Region code. Must be one of the keys in `${CLAUDE_PLUGIN_ROOT}/../cogni-research/references/market-sources.json`: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Drives market-localized search queries and authority scoring. Fall back to `_default` if unexpectedly absent. |
+| `MARKET` | Yes | Region code: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Drives market-localized search queries and authority scoring. Resolved through `cogni-workspace/scripts/get-market-config.py --plugin research --market <MARKET>` (see Phase 0). |
 | `MAX_CANDIDATES` | No | Cap on candidates this curator emits for the sub-question (default 12; read from `binding.curator_defaults.max_candidates_per_sq`). |
 | `SCORE_THRESHOLD` | No | Minimum composite score to emit (default 0.5; read from `binding.curator_defaults.score_threshold`). |
 | `CURRENT_YEAR` | No | Four-digit year. Used for recency-aware queries. |
 
-The market-sources.json reference is reached via `${CLAUDE_PLUGIN_ROOT}/../cogni-research/references/market-sources.json` — the **clean-break commitment** is that cogni-knowledge's runtime path does not dispatch cogni-research skills/agents, but reading a static reference file from a sibling plugin is permitted (and unavoidable until that file moves to cogni-workspace at M11+).
+Market configuration is read via the canonical workspace helper:
+
+```
+python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <MARKET>
+```
+
+This is the same path cogni-portfolio's `customer-researcher` agent uses (`cogni-portfolio/agents/customer-researcher.md`). It joins the canonical registry at `cogni-workspace/references/supported-markets-registry.json` with the research plugin overlay and returns a merged config — meaning this agent reaches zero cogni-research code at runtime, honouring the clean-break commitment. Falls back to `_default` if the requested market is missing.
 
 ## Core Workflow
 
@@ -61,7 +67,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3
 ### Phase 0: Load Inputs
 
 1. Read `<PROJECT_PATH>/.metadata/plan.json`. Locate the sub-question with `id == SUB_QUESTION_ID`. Extract `query`, `search_guidance`, `candidate_domains[]`.
-2. Read `${CLAUDE_PLUGIN_ROOT}/../cogni-research/references/market-sources.json`, extract the entry for `MARKET` (fall back to `_default`). Store as `market_config`.
+2. Load market config via the workspace helper (see above). Parse `data.config` from the JSON envelope; on a missing-market error, fall back to `_default`. Store as `market_config`.
 3. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
 
 ### Phase 1: Search Query Generation

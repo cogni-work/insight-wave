@@ -1,7 +1,7 @@
 ---
 name: knowledge-fetch
 description: "Phase 3 of the v0.1.0 inverted pipeline. Reads candidates.json, dispatches source-fetcher agents in batches to WebFetch each URL (with cobrowse fallback) and store bodies through fetch-cache.py. Merges per-batch results into fetch-manifest.json. Cache hits short-circuit; unavailable URLs are negatively cached. Use this skill whenever the user says 'fetch candidates for project X', 'materialize sources for the eu-ai-act plan', 'phase 3 of the knowledge pipeline', 'run the fetchers', 'knowledge fetch'. After fetch, the next slice (M5+M6) will run knowledge-ingest to deposit per-URL wiki pages."
-allowed-tools: Read, Write, Bash, Glob, Skill
+allowed-tools: Read, Write, Bash, Glob, Skill, Task
 ---
 
 # Knowledge Fetch
@@ -91,14 +91,14 @@ For each batch:
 
 1. Define the batch output path: `<project_path>/.metadata/.fetch.batch.<NNN>.json` (e.g., `.fetch.batch.001.json`).
 
-2. Dispatch:
+2. Dispatch via the `Task` tool (matches the upstream `cogni-research/skills/research-report` agent-dispatch convention at lines 408, 559):
    ```
-   Skill("cogni-knowledge:source-fetcher",
-         args="CANDIDATES_PATH=<project_path>/.metadata/candidates.json \
-               KNOWLEDGE_ROOT=<knowledge_root> \
-               BATCH_URLS=<comma-separated URLs from the batch> \
-               MAX_AGE_DAYS=<max_age_days> \
-               BATCH_OUTPUT_PATH=<batch_path>")
+   Task(source-fetcher,
+        CANDIDATES_PATH=<project_path>/.metadata/candidates.json,
+        KNOWLEDGE_ROOT=<knowledge_root>,
+        BATCH_URLS=<comma-separated URLs from the batch>,
+        MAX_AGE_DAYS=<max_age_days>,
+        BATCH_OUTPUT_PATH=<batch_path>)
    ```
 
 3. Default cadence: dispatch batches **sequentially** at v0.0.17 (WebFetch rate-limit awareness, and `fetch-manifest.json` writes happen between batches). Future tuning may parallelize once the rate-limit behaviour is characterised in the alpha re-run (M12).

@@ -1,7 +1,7 @@
 ---
 name: knowledge-curate
 description: "Phase 2 of the v0.1.0 inverted pipeline. Reads plan.json, dispatches one source-curator agent per sub-question to WebSearch + score candidate sources, merges the per-sub-question batches into candidates.json via candidate-store.py. Does NOT fetch URL bodies — that is Phase 3 (knowledge-fetch). Use this skill whenever the user says 'curate sources for the eu-ai-act plan', 'discover candidates for project X', 'run the curators on plan.json', 'knowledge curate', 'phase 2 of the knowledge pipeline'. After curate, run knowledge-fetch to materialize bodies into the shared fetch-cache."
-allowed-tools: Read, Write, Bash, Glob, Skill
+allowed-tools: Read, Write, Bash, Glob, Skill, Task
 ---
 
 # Knowledge Curate
@@ -86,16 +86,18 @@ For each sub-question id selected in Step 0:
 
 1. Define the batch output path: `<project_path>/.metadata/.candidates.batch.<sq-id>.json` (leading dot keeps it out of casual ls; the file is intermediate state).
 
-2. Dispatch:
+2. Dispatch via the `Task` tool (matches the upstream `cogni-research/skills/research-report` agent-dispatch convention at lines 408, 559):
    ```
-   Skill("cogni-knowledge:source-curator",
-         args="PROJECT_PATH=<project_path> SUB_QUESTION_ID=<sq-id> \
-               BATCH_OUTPUT_PATH=<batch_path> MARKET=<market> \
-               MAX_CANDIDATES=<max_candidates_per_sq> \
-               SCORE_THRESHOLD=<score_threshold>")
+   Task(source-curator,
+        PROJECT_PATH=<project_path>,
+        SUB_QUESTION_ID=<sq-id>,
+        BATCH_OUTPUT_PATH=<batch_path>,
+        MARKET=<market>,
+        MAX_CANDIDATES=<max_candidates_per_sq>,
+        SCORE_THRESHOLD=<score_threshold>)
    ```
 
-   `source-curator` is invoked as an agent (lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md`); the `Skill` dispatch convention for agents in cogni-knowledge follows the same pattern cogni-research/cogni-wiki use.
+   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills).
 
 3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator does its own WebSearch — three concurrent curators is the rate-limit-friendly ceiling. (Phase 3 / `knowledge-fetch` runs batches strictly sequentially for a related but stricter reason — see that skill's Step 3 for the rationale.)
 

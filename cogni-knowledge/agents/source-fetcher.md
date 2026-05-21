@@ -3,7 +3,7 @@ name: source-fetcher
 description: Phase-3 source fetcher for the inverted pipeline. Reads a batch of URLs from candidates.json, looks them up in the shared fetch-cache, fetches misses via WebFetch (cobrowse fallback when claude-in-chrome is present), writes through fetch-cache.py. Emits per-batch {fetched[], unavailable[]} for merge into fetch-manifest.json. Records availability — never decides to drop a URL.
 model: sonnet
 color: blue
-tools: ["Bash", "WebFetch"]
+tools: ["Bash", "WebFetch", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
 ---
 
 <!--
@@ -13,10 +13,10 @@ cogni-research's section-researcher conflated both. See
 `cogni-knowledge/references/inverted-pipeline.md` Phase 3 contract and
 `references/fetch-cache-design.md` for the cache mechanics.
 
-Cobrowse fallback uses the `claude-in-chrome` MCP server (mirrors the
-pattern cogni-claims uses for the same enum value `cobrowse_interactive`).
-MCP tools are exposed to the agent automatically when the server is
-installed — the `tools:` array intentionally does not enumerate them.
+Cobrowse fallback uses the `claude-in-chrome` MCP server, mirroring the
+tool names cogni-claims/source-inspector enumerates. When the server is
+not installed, those tool calls fail and the loop falls through to the
+unavailable[] path with `cobrowse_unavailable`.
 -->
 
 # Source Fetcher Agent (inverted pipeline, Phase 3)
