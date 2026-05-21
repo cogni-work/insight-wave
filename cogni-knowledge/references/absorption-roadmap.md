@@ -114,9 +114,28 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 
 **Current sprint.** Refresh this block on every landing — either replace with the next slice, or mark `complete (next: M<NN>)` until the next planning pass.
 
-*Slice 1 — v0.0.19: M4 end-to-end smoke* — **SHIPPED 2026-05-21.** All seven verification steps passed against a fresh `.alpha/eu-ai-act-gpai/` base on topic "EU AI Act GPAI Code of Practice obligations" (6 sub-questions → 57 candidates → 41 fetched + 16 unavailable → 100% cache-hit on re-run → 404 injection clean). Five new findings logged (F13–F17 in `references/alpha-findings.md` §"M4 smoke (2026-05-21)"). Net code change: zero — docs-only release. **Recommendation: GO** for Slice 2.
+*Slice 1 — v0.0.19: M4 end-to-end smoke* — **SHIPPED 2026-05-21** (commit `3b181fe9`). All seven verification steps passed against a fresh `.alpha/eu-ai-act-gpai/` base on topic "EU AI Act GPAI Code of Practice obligations" (6 sub-questions → 57 candidates → 41 fetched + 16 unavailable → 100% cache-hit on re-run → 404 injection clean). Five new findings logged (F13–F17 in `references/alpha-findings.md` §"M4 smoke (2026-05-21)"); two filed as follow-up issues for Slice 2 to close: **#275 (F15 — PDF handling)** and **#276 (F14 — cobrowse_unavailable reason)**. Net code change: zero — docs-only release. **Recommendation: GO** for Slice 2.
 
-*Slice 2 — v0.0.20: M5 + M6 (claim-extractor + source-ingester + knowledge-ingest)* — **ACTIVE.** Lands the Phase-4 ingest step of the inverted pipeline. NEW: `agents/claim-extractor.md` (point-in-time fork from `cogni-research/agents/claim-extractor.md`; reshape outputs to populate `pre_extracted_claims:` per `claim-at-ingest.md`); `agents/source-ingester.md` (per-fetched-source emitter writing `wiki/sources/<slug>.md` with `type: source`, `sources: [<URL>]`, `pre_extracted_claims:` populated, body with claim excerpts highlighted; **must handle PDF Content-Type per Slice-1 finding F15** — either invoke a stdlib PDF text extractor or record a distinct `pdf_unsupported` reason); `skills/knowledge-ingest/SKILL.md` (Phase-4 orchestrator dispatching `source-ingester` per fetched source, then calling `cogni-wiki/skills/wiki-ingest/scripts/{backlink_audit,wiki_index_update}.py` directly per `inverted-pipeline.md:119-120` — not via `cogni-wiki:wiki-ingest` skill, clean-break). EXTEND: `CLAUDE.md` skills + agents tables; `tests/test_skill_contracts.sh` clean-break invariant for the new files; NEW `tests/test_ingest_contract.sh`. REUSE: `scripts/_knowledge_lib.py` (`normalize_url` + `atomic_write`) and the cogni-wiki ingest scripts above — do not reinvent. Smoke: extend the Slice-1 base (`.alpha/eu-ai-act-gpai/`) with step 8 — `knowledge-ingest` against the fetch manifest → assert `wiki/sources/*.md` populated, `wiki/index.md` + `wiki/log.md` updated, `cogni-wiki/scripts/wiki_lint.py --wiki-root <base>` clean. Exit: bump to `0.0.20`; record alpha-findings under `## M5+M6 smoke (YYYY-MM-DD)`; refresh this block to either name the next sprint (M7 composer is the natural follow-on) or flip the title to `Current sprint — complete (next: M7)`.
+*Slice 2 — v0.0.20: M5 + M6 (claim-extractor + source-ingester + knowledge-ingest)* — **ACTIVE.** Lands the Phase-4 ingest step of the inverted pipeline, plus closes the two Slice-1 follow-up issues.
+
+**Must close on Slice-2 PR merge:**
+
+- **#275** — PDF detection in `source-fetcher` Step 2 (and shared via `_knowledge_lib.py` so `source-ingester` reuses it). Without this, the cache contract stays uneven and PDFs stay dropped.
+- **#276** — `cobrowse_unavailable` reason added to the closed `webfetch_error_class` vocabulary in `source-fetcher.md` + `fetch-cache-design.md`. Optional but small; recommend bundling.
+
+**New files:**
+
+- `agents/claim-extractor.md` — point-in-time fork from `cogni-research/agents/claim-extractor.md`; reshape outputs to populate `pre_extracted_claims:` per `claim-at-ingest.md`.
+- `agents/source-ingester.md` — per-fetched-source emitter writing `wiki/sources/<slug>.md` with `type: source`, `sources: [<URL>]`, `pre_extracted_claims:` populated, body with claim excerpts highlighted. Reads cached bodies; relies on PDF detection from #275 so the cache contract is uniform text.
+- `skills/knowledge-ingest/SKILL.md` — Phase-4 orchestrator dispatching `source-ingester` per fetched source, then calling `cogni-wiki/skills/wiki-ingest/scripts/{backlink_audit,wiki_index_update}.py` directly per `inverted-pipeline.md:119-120` — not via `cogni-wiki:wiki-ingest` skill, clean-break.
+
+**Extend:** `CLAUDE.md` skills + agents tables; `tests/test_skill_contracts.sh` clean-break invariant for the new files; NEW `tests/test_ingest_contract.sh`.
+
+**Reuse:** `scripts/_knowledge_lib.py` (`normalize_url` + `atomic_write` + new PDF detection helper from #275) and the cogni-wiki ingest scripts above — do not reinvent.
+
+**Smoke:** extend the Slice-1 base (`.alpha/eu-ai-act-gpai/`) with step 8 — `knowledge-ingest` against the fetch manifest → assert `wiki/sources/*.md` populated (including bodies for previously-dropped PDFs once #275 is in), `wiki/index.md` + `wiki/log.md` updated, `cogni-wiki/scripts/wiki_lint.py --wiki-root <base>` clean.
+
+**Exit:** bump to `0.0.20`; record alpha-findings under `## M5+M6 smoke (YYYY-MM-DD)`; PR commit body includes `Closes #275 Closes #276`; refresh this block to either name the next sprint (M7 composer is the natural follow-on) or flip the title to `Current sprint — complete (next: M7)`.
 
 **Cross-plugin coordination.**
 
