@@ -1,5 +1,35 @@
 # cogni-knowledge changelog
 
+## 0.0.22 — 2026-05-22
+
+Slice 3 of the absorption-roadmap Current sprint — Phase 5 M7. Lands the Phase-5 compose step of the v0.1.0 inverted pipeline (`plan → curate → fetch → ingest → **compose** → verify → finalize`): with the wiki populated by M5/M6, the writer now reads `wiki/index.md` + selected `wiki/sources/*.md` + prior `wiki/syntheses/*.md` and emits `<project>/output/draft-vN.md` + `<project>/.metadata/citation-manifest.json` with `[[sources/<slug>]]` wikilink citations. M8's verifier consumes the citation manifest's `(wiki_slug, claim_id)` pairs against each page's `pre_extracted_claims:` frontmatter for zero-network claim alignment.
+
+### Added
+
+- `agents/wiki-composer.md` — point-in-time fork of `cogni-research/agents/writer.md` (305 lines) at v0.0.22. Phase-5 composer for the inverted pipeline. Reshapes inputs (wiki pages, not aggregated-context.json + 01-contexts/ + 02-sources/) and outputs (single `[[sources/<slug>]]` citation shape + parallel citation manifest, not the upstream APA/MLA/IEEE matrix). Single-pass, no fan-out, no Task in tools list. Preserves the F11 outline-recovery contract: Phase 1 persists `writer-outline-vN.json` before Phase 2 attempts to write the draft; `RESUME_FROM_OUTLINE=true` skips Phase 1 on a recovery dispatch. Drops the upstream story-arc shape, executive density mode, multilingual output, expansion loops, and per-section sharding — all deferred per the Slice 3 notes in `references/absorption-roadmap.md`. M7 part 1/2.
+- `skills/knowledge-compose/SKILL.md` — Phase-5 orchestrator. Reads `binding.json` for `WIKI_ROOT`, confirms `plan.json` + `ingest-manifest.json` exist, resolves the next draft version N from existing `output/draft-v*.md`, detects a leftover `writer-outline-vN.json` and passes `RESUME_FROM_OUTLINE=true` on recovery, dispatches `wiki-composer` once via `Task`, verifies both outputs land on disk (draft non-empty + contains `[[sources/`; citation-manifest parses with schema `0.1.0` + non-empty `citations[]` carrying `{draft_position, wiki_slug, claim_id}`), and appends one `## [YYYY-MM-DD] compose | …` line to `<wiki-root>/wiki/log.md`. M7 part 2/2.
+- `tests/test_compose_contract.sh` — grep-based contract assertions matching `tests/test_ingest_contract.sh`. Covers the composer's input/output paths, the F11 surface (outline persistence + `RESUME_FROM_OUTLINE` honoured), the citation-manifest entry shape, the frontmatter-tools constraints (`Read`/`Write`/`Glob`/`Grep` only — no `Task`, no `WebFetch`), and the scope-discipline negatives (no `OUTPUT_LANGUAGE` / `PROSE_DENSITY` / `CITATION_FORMAT` / `EXPANSION_NOTES` / `STORY_ARC_ID` parameter rows; Phase 0 doesn't read `aggregated-context.json`).
+
+### Changed
+
+- `tests/test_skill_contracts.sh` — clean-break invariant loop extended to scan `wiki-composer.md` + `knowledge-compose/SKILL.md` alongside the M5/M6 surface for `Skill("cogni-{research,claims,wiki}:` dispatch.
+- `CLAUDE.md` — Skills table gains `knowledge-compose`; Agents table gains `wiki-composer`. "Future phases" paragraph records M7 shipped at v0.0.22; next slice is M8.
+- `references/absorption-roadmap.md` — M-table row 7 status `pending` → `shipped at v0.0.22 — Slice 3`. Current-sprint block records Slice 3 SHIPPED and advances the lookahead to Slice 4 (M8 — wiki-verifier + revisor fork + knowledge-verify).
+
+### Notes
+
+- **English-only in v0.0.22.** Multilingual output (DE/FR/IT/PL/NL/ES) is deferred. The upstream writer carries ~270 lines of language-aware output rules; revisit when a user asks. Source-language quotes are quoted verbatim inside English narrative.
+- **Standard density only.** `PROSE_DENSITY` and the executive ceiling-mode inversion stay upstream-only. This is an orthogonal knob — it can land later without touching M7's contract.
+- **No story arcs.** Implicit `standard-research`. The arc-driven outline shape and the `arc_element` field are not emitted.
+- **Single writer pass.** No Phase 4.5 whole-draft expansion re-dispatch, no Phase 5 word-deficit iteration loop. `target_words` is read as a soft target; the orchestrator does not re-dispatch on shortfall. Composition over a bounded ingested-wiki corpus (~10–40 source pages typical) is inherently shorter than upstream's 45K-word aggregated-context inputs, so a single call usually clears the soft target. If M12 alpha surfaces a real shortfall pattern, port the expansion chain then.
+- **Wikilink citations only.** The composer emits `[[sources/<slug>]]` inline. URL/APA/MLA/IEEE rendering is the renderer's job at finalize time (M9). Cleaner separation than upstream's six-format citation matrix.
+- **`compose` log prefix is additive.** cogni-wiki's `wiki/log.md` operation enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") doesn't list `compose` today, but pre-v0.0.35 readers count unknown prefixes in their catch-all bucket without crashing. Formalising the prefix lands in Slice 4 / M10 when query/dashboard get rebuilt on the new manifests anyway.
+- **End-to-end smoke is M12's job.** This release ships contract-test coverage of the new files. Semantic correctness of the full pipeline (including M7) gets exercised on the alpha re-run at M12 against `eu-ai-act-v0.1`.
+
+### Dependencies
+
+No new minimum-version requirements. cogni-wiki ≥ 0.0.44 (the `type: source` allowlist) from v0.0.20 still holds.
+
 ## 0.0.21 — 2026-05-21
 
 `source-fetcher` Step 2 PDF branch now reads PDFs past page 20. Resolves F18 from the v0.0.20 M5+M6 smoke (issue #278). Single-file behaviour change in the agent contract plus a contract-test assertion; no script or schema changes.
