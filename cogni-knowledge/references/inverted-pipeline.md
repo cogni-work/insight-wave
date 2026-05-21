@@ -114,8 +114,8 @@ For each fetched source, dispatch `source-ingester` to emit one wiki page at `<w
 
 - frontmatter `type: source` (requires cogni-wiki v0.0.44 type:source allowlist)
 - frontmatter `sources: [<original URL>]`
-- frontmatter `pre_extracted_claims:` — list of `{id, text, excerpt_quote, sub_question_refs}` extracted from the source body by `claim-extractor` (forked from cogni-research)
-- body: the fetched source content, with claim excerpts highlighted
+- frontmatter `pre_extracted_claims:` — list of `{id, text, excerpt_quote, excerpt_position, sub_question_refs, extracted_at}` extracted from the source body by `claim-extractor` (forked from cogni-research). Claim shape: `references/claim-at-ingest.md:37-49`.
+- body: the fetched source content, verbatim. `excerpt_position` offsets inside `pre_extracted_claims:` are the indexing primitive — the future `wiki-verifier` renders context around each excerpt from the offset; there is no in-body highlighting markup. See `references/claim-at-ingest.md:57` for the Unicode-code-point offset contract.
 
 After per-source emission, run `backlink_audit.py` + `wiki_index_update.py` once per dispatch (atomic) via reused cogni-wiki scripts. Append to `wiki/log.md`.
 

@@ -60,6 +60,26 @@ Default 30 days, configurable per knowledge base in `binding.json`:
 
 `fetch-cache.py --evict --older-than-days N` removes entries older than N days. Run manually (or wired into a `knowledge-refresh --vacuum` future enhancement). v0.1.0 does not auto-evict.
 
+## Reason semantics
+
+Unavailable entries carry a closed-vocabulary `reason` token. `source-fetcher` writes it; `knowledge-fetch`'s summary aggregates it; `source-ingester` reads it when a cached entry has `status: unavailable` to decide whether to skip or retry. The full list, with semantics:
+
+| Token | Class | Semantics |
+|---|---|---|
+| `webfetch_timeout` | recoverable | WebFetch exceeded its internal deadline. Typically transient — re-fetch outside the freshness window usually succeeds. |
+| `webfetch_4xx` | terminal-ish | Server returned 4xx. 404 is terminal (page is gone); 401/403 may recover with proper auth, but cogni-knowledge does not handle auth. |
+| `webfetch_5xx` | recoverable | Server returned 5xx (502 / 503 / 504). Often transient infrastructure flap — see F17 (EC-portal 502s during the M4 smoke window). |
+| `webfetch_blocked` | terminal | Robots, geo-fence, or anti-bot policy refused the fetch. Negative cache prevents wasted retries. |
+| `webfetch_refused` | terminal-ish | Transport-level failure: connection refused, DNS, unsupported scheme. Catch-all for anything Step 2 cannot classify. |
+| `pdf_extraction_failed` | terminal-for-now | Step 2's PDF branch ran but could not parse a saved-file path from WebFetch's output (the EUR-Lex case). Cobrowse is not a viable fallback — browsers download PDFs rather than render text — so Step 3 is skipped on this reason. v0.0.20+, issue #275. A future native-PDF-text WebFetch feature would invalidate the "terminal" classification. |
+| `cobrowse_unavailable` | environmental | Step 3 was not attempted because the `claude-in-chrome` MCP server is absent from the runtime tool list. `fallback_attempted: false`. Distinct from `cobrowse_failed` so an operator can see "install the MCP and re-run" separately from "actually dead". v0.0.20+, issue #276 (F14). |
+| `cobrowse_failed` | terminal | Cobrowse was attempted (MCP available) but the page did not render — navigation error, timeout, or blank text. `fallback_attempted: true`. Likely terminal: a page that does not render in a real browser will not render on retry. |
+
+Two practical consequences:
+
+- **Negative-cache value is highest for terminal reasons** (`webfetch_blocked`, `cobrowse_failed`). Re-attempting them inside the freshness window burns budget; the negative cache is exactly the short-circuit. Recoverable reasons (`webfetch_timeout`, `webfetch_5xx`) age out under the same window and re-attempt naturally.
+- **`cobrowse_unavailable` is operator-actionable, not URL-fatal.** Installing the MCP and re-running will resolve every URL that recorded this reason (subject to its underlying page still being reachable). `knowledge-fetch`'s `fetch-cache.py evict --reason cobrowse_unavailable` is a clean follow-up if the vocabulary grows complex enough to want per-reason eviction (out of scope at v0.0.20).
+
 ## Negative-cache retention
 
 Entries with `status: unavailable` age out under the same `--older-than-days` rule as `status: ok` entries. This is deliberate — a URL that was unreachable 30 days ago should be re-attempted, since transient outages, paywalled-then-opened pages, and corporate redirects often recover. The trade-off is repeated cobrowse prompts for genuinely-dead URLs (an unavailable entry inside the freshness window will short-circuit; outside it, a fresh fetch attempt fires).

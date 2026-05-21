@@ -197,6 +197,27 @@ else
   errors=$((errors + 1))
 fi
 
+# 5c-bis. --reason outside the closed VALID_REASONS vocabulary should be rejected (v0.0.20+).
+BAD_REASON=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB" \
+  --url "https://example.org/closed-vocab-check" \
+  --fetch-method webfetch \
+  --status unavailable \
+  --reason "cobrowse_unavail" 2>&1 || true)
+if echo "$BAD_REASON" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False, d
+assert 'closed vocabulary' in d['error'], d
+print('OK')
+" | grep -q OK; then
+  green "PASS: --reason outside VALID_REASONS is rejected with a closed-vocabulary error (catches typos)"
+else
+  red "FAIL: --reason typo was not rejected"
+  red "  got: $BAD_REASON"
+  errors=$((errors + 1))
+fi
+
 # 5d. Empty / whitespace --url should be rejected.
 BAD_EMPTY_URL=$(python3 "$SCRIPT" store \
   --knowledge-root "$KB" \

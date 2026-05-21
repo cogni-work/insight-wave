@@ -3,7 +3,7 @@ name: source-fetcher
 description: Phase-3 source fetcher for the inverted pipeline. Reads a batch of URLs from candidates.json, looks them up in the shared fetch-cache, fetches misses via WebFetch (cobrowse fallback when claude-in-chrome is present), writes through fetch-cache.py. Emits per-batch {fetched[], unavailable[]} for merge into fetch-manifest.json. Records availability — never decides to drop a URL.
 model: sonnet
 color: blue
-tools: ["Bash", "WebFetch", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
+tools: ["Read", "Bash", "WebFetch", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
 ---
 
 <!--
@@ -71,6 +71,40 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py fetch \
 
 WebFetch the URL with a brief, generic prompt (e.g., `Extract the full text content of this page.`). On success:
 
+**PDF branch.** Decide if the response is a PDF using the shared detection helper (`_knowledge_lib.is_pdf_response`). Two signals trigger the branch:
+
+- `Content-Type` header reported in the WebFetch output starts with `application/pdf`.
+- Normalised URL path ends with `.pdf` (case-insensitive).
+
+If either is true, WebFetch will typically have saved the binary body to a session-local path and surfaced the path in its text output via a line shaped roughly:
+
+```
+[Binary content (application/pdf, <bytes> bytes) also saved to <path>]
+```
+
+This line is an **undocumented tool-output convention** — parse defensively. The acceptable patterns are the literal `also saved to ` substring followed by an absolute path ending in `.pdf` on the same line. If a saved-file path is found:
+
+1. `Read` the PDF with `pages: "1-20"` (the Read tool caps at 20 pages per call). For PDFs longer than 20 pages, read pages 1-20 only and record `pdf_truncated: true` in the cache entry's `notes` field below.
+2. Concatenate the per-page text into a single body string.
+3. Write the transcribed text to a temp file (`mktemp`).
+4. Store via:
+   ```
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py store \
+       --knowledge-root <KNOWLEDGE_ROOT> \
+       --url <URL> \
+       --body-file <TMP_PATH> \
+       --fetch-method webfetch \
+       --status ok \
+       --publisher <publisher from candidate> \
+       --http-status 200
+   ```
+   The body is text; `fetch_method` stays `webfetch` (the cache entry records that the original response was a PDF in spirit via the URL — `fetch_method` describes the transport, not the MIME).
+5. Emit `fetched[]` entry with the returned `cache_key` and `content_hash`.
+
+If no saved-file path is found in the WebFetch output (the EUR-Lex case empirically observed during the M4 smoke) → proceed to Step 4 with `reason: pdf_extraction_failed`. Do NOT fall through to Step 3 — cobrowse downloads PDFs rather than rendering their text, so it is not a usable fallback for the PDF branch.
+
+**Non-PDF branch.** On success:
+
 1. Write the fetched body to a temp file (use `mktemp`; remove on exit).
 2. Store it:
    ```
@@ -91,7 +125,9 @@ On WebFetch failure (timeout, 4xx, 5xx, blocked, refusal) → proceed to Step 3.
 
 If the `claude-in-chrome` MCP tools are available in your tool list, invoke the cobrowse equivalent (navigate to URL, extract page text, return body). On success: same `fetch-cache.py store` as Step 2 but with `--fetch-method cobrowse_interactive`. Emit `fetched[]` entry.
 
-If MCP is not available, or cobrowse also fails → proceed to Step 4.
+If the `claude-in-chrome` MCP tools are **not** in your runtime tool list (the server is not installed in this environment), do NOT attempt the cobrowse calls — record `unavailable` with `reason: cobrowse_unavailable` and `fallback_attempted: false`. This is the F14 fix (issue #276): the operator gets a distinct "fixable by MCP install" signal separate from "actually dead".
+
+If the MCP tools are available but the cobrowse navigation itself fails (page does not render, timeout, etc.) → proceed to Step 4 with `reason: cobrowse_failed` and `fallback_attempted: true`.
 
 **Step 4 — record unavailable.**
 
@@ -104,7 +140,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py store \
     --reason "<webfetch_error_class>"
 ```
 
-`<webfetch_error_class>` is a short stable token: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `cobrowse_unavailable`, `cobrowse_failed`. The vocabulary is closed; downstream summarisation depends on it.
+`<webfetch_error_class>` is a closed vocabulary: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `pdf_extraction_failed`, `cobrowse_unavailable`, `cobrowse_failed`. Per-token semantics (when each fires, recoverable vs terminal vs environmental) live in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Downstream summarisation depends on the closed set; do not invent new tokens here.
 
 Emit an `unavailable[]` entry:
 
