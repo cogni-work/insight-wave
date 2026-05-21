@@ -4,6 +4,8 @@ cogni-knowledge is structured around a committed endgame: if the alpha proves po
 
 Reading order: this file, then `inverted-pipeline.md` (the v0.1.0 technical contract), then `differentiation-thesis.md`, then `delegation-contract.md`.
 
+**Resuming work?** Jump to §"Phase 5" → **Current sprint** (after the M-table) — that block names the next concrete slice (target version, file set, exit criterion) instead of forcing you to re-derive it from the M-table + PR history. The M-table is the long view; **Current sprint** is the short view that refreshes on each landing.
+
 ## Phases
 
 ### Phase 1 — MVP: binding + accumulating research (v0.0.1 → v0.0.5)
@@ -73,7 +75,7 @@ Reading order: this file, then `inverted-pipeline.md` (the v0.1.0 technical cont
 
 ### Phase 5 — Inverted-pipeline clean break (v0.1.0) — **THIS PHASE**
 
-**Status.** Foundation work landing in PR #269 (milestones 1 + 2 of 12). Maturity callout stays at Incubating until milestone 12 (alpha re-run) is clean.
+**Status.** M1–M4 shipped (PR #269, #271, #274); plugin at v0.0.18 / Incubating. M5–M12 pending — see the M-table for status and **Current sprint** below for the next concrete slice. Maturity callout stays at Incubating until milestone 12 (alpha re-run) is clean.
 
 **Context for the restructure.** The original Phase 5 plan was a hardening pass (README rewrite, doc-audit clean, maturity callout flip) sequenced before a separate Phase 6 absorption. The Phase 4 alpha closed positive but exposed three structural problems the user wanted fixed before the maturity boundary crossing:
 
@@ -98,17 +100,23 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 | # | Milestone | Status |
 |---|---|---|
 | 1 | Plumbing — binding schema 0.1.0, fetch-cache bootstrap, contract docs | **shipped** (PR #269) |
-| 2 | `source-fetcher` agent + `fetch-cache.py` script | **partial** — script + tests shipped (PR #269); agent pending |
-| 3 | `source-curator` fork from cogni-research | pending |
-| 4 | `knowledge-curate` + `knowledge-fetch` skills | pending |
-| 5 | `claim-extractor` fork + `source-ingester` agent | pending |
-| 6 | `knowledge-ingest` skill | pending — **blocked on cogni-wiki v0.0.44** (`type: source` allowlist in `wiki-lint` + `wiki-health`) |
+| 2 | `source-fetcher` agent + `fetch-cache.py` script | **shipped** — script + tests (PR #269), agent (PR #271) |
+| 3 | `source-curator` fork from cogni-research | **shipped** (PR #271) |
+| 4 | `knowledge-curate` + `knowledge-fetch` skills | **shipped** (PR #271) — also `knowledge-plan` (Phase 1 skill) + `candidate-store.py`; manual end-to-end smoke deferred to v0.0.19 (see **Current sprint** below) |
+| 5 | `claim-extractor` fork + `source-ingester` agent | pending — `_knowledge_lib.py` extraction pulled forward to v0.0.18 (PR #274) so M5 ingester can import without re-extracting |
+| 6 | `knowledge-ingest` skill | pending — **unblocked**, cogni-wiki v0.0.44 (`type: source` allowlist in `wiki-lint` + `wiki-health`) shipped at PR #270 |
 | 7 | `wiki-composer` agent (fork of cogni-research `writer`) + `knowledge-compose` skill | pending — must preserve F11 outline-recovery contract |
 | 8 | `wiki-verifier` agent (replaces cogni-claims verifier) + `revisor` agent (forked from cogni-research, kept local to honour the clean break) + `knowledge-verify` skill | pending |
 | 9 | `knowledge-finalize` skill | pending — reuses existing `cycle-guard.py` |
 | 10 | Rebuild `knowledge-query`, `knowledge-dashboard`, `knowledge-resume`, `knowledge-refresh` on new manifests | pending — `--pull-mode` rewritten on inverted pipeline (clean-break commitment) |
 | 11 | Archive `knowledge-research` + `knowledge-report` → `skills/_archive/`; rewrite README, CLAUDE.md, references | pending |
 | 12 | Alpha re-run on `eu-ai-act-v0.1`; bump `plugin.json` + `marketplace.json` to 0.1.0; flip maturity callout to Preview | pending — gates the version bump |
+
+**Current sprint.** Two slices, each its own PR. Refresh this block on every landing — either replace with the next slice, or mark `complete (next: M<NN>)` until the next planning pass.
+
+*Slice 1 — v0.0.19: M4 end-to-end smoke.* Closes the unchecked smoke item from PR #271. Run the 7-step recipe on a fresh `.alpha/eu-ai-act-gpai/` knowledge base for topic **"EU AI Act GPAI Code of Practice obligations"** (continues v0.0.16 alpha-findings narrative). Recipe: `knowledge-setup` → `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → re-run for cache-hit verification → inject 404 for unavailable handling → `fetch-cache.py stat`. Patch any breakage in `knowledge-plan` / `knowledge-curate` / `knowledge-fetch` / `candidate-store.py` / `fetch-cache.py` / `source-curator.md` / `source-fetcher.md` as one-fix-per-finding commits inside the same PR. Append outcomes to `references/alpha-findings.md` under a `## M4 smoke (YYYY-MM-DD)` section matching the v0.0.16 pattern. Exit: bump `plugin.json` + `marketplace.json` → `0.0.19`; refresh this block to surface Slice 2 as active.
+
+*Slice 2 — v0.0.20: M5 + M6 (claim-extractor + source-ingester + knowledge-ingest).* Lands the Phase-4 ingest step of the inverted pipeline. NEW: `agents/claim-extractor.md` (point-in-time fork from `cogni-research/agents/claim-extractor.md`; reshape outputs to populate `pre_extracted_claims:` per `claim-at-ingest.md`); `agents/source-ingester.md` (per-fetched-source emitter writing `wiki/sources/<slug>.md` with `type: source`, `sources: [<URL>]`, `pre_extracted_claims:` populated, body with claim excerpts highlighted); `skills/knowledge-ingest/SKILL.md` (Phase-4 orchestrator dispatching `source-ingester` per fetched source, then calling `cogni-wiki/skills/wiki-ingest/scripts/{backlink_audit,wiki_index_update}.py` directly per `inverted-pipeline.md:119-120` — not via `cogni-wiki:wiki-ingest` skill, clean-break). EXTEND: `CLAUDE.md` skills + agents tables; `tests/test_skill_contracts.sh` clean-break invariant for the new files; NEW `tests/test_ingest_contract.sh`. REUSE: `scripts/_knowledge_lib.py` (`normalize_url` + `atomic_write`) and the cogni-wiki ingest scripts above — do not reinvent. Smoke: extend the Slice-1 base with step 8 — `knowledge-ingest` against the fetch manifest → assert `wiki/sources/*.md` populated, `wiki/index.md` + `wiki/log.md` updated, `cogni-wiki/scripts/wiki_lint.py --wiki-root <base>` clean. Exit: bump to `0.0.20`; record alpha-findings under `## M5+M6 smoke`; refresh this block to either name the next sprint (M7 composer is the natural follow-on) or flip the title to `Current sprint — complete (next: M7)`.
 
 **Cross-plugin coordination.**
 
