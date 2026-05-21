@@ -1,5 +1,29 @@
 # cogni-knowledge changelog
 
+## 0.0.17 — 2026-05-20
+
+Phase 5 milestones M2-finish + M3 + M4 — the `plan → curate → fetch` chain of the v0.1.0 inverted pipeline. PR #269 (M1 + M2-script) shipped the foundation without a version bump; this release surfaces the first user-visible inverted-pipeline skills. Plugin stays at `0.0.x`/maturity `incubating` per the absorption-roadmap M-table — the maturity flip to Preview ships at M12 alongside the alpha re-run + 0.1.0 bump. The `0.0.16` slot is reserved for the alpha-re-run measurement record referenced in `references/alpha-findings.md` and the `knowledge-binding.py` comment block; no released artefact ships under that tag.
+
+### Added
+
+- `agents/source-curator.md` — point-in-time fork of `cogni-research/agents/source-curator.md` (SHA `d2ee309` at fork time). Phase 2 curator for the inverted pipeline. Reshapes output: writes `<project>/.metadata/candidates.json` instead of `curated-sources.json`; renames `composite_score → score`; adds `tier`, `sub_question_refs[]`; drops emission of `dimensions{}`, `annotation`, `diversity{}` (computation stays internal; the M12 alpha gate is content-not-process). Composite scoring weights (0.30/0.25/0.15/0.15/0.15) unchanged at fork time. WebSearch only — no WebFetch (Phase 3's job). M3.
+- `agents/source-fetcher.md` — NEW agent (no upstream). Phase 3 fetcher. Per-URL loop: `fetch-cache.py fetch` (cache lookup) → WebFetch → cobrowse fallback (via `claude-in-chrome` MCP when present) → `fetch-cache.py store` for both success and `unavailable` outcomes. Negative-cache symmetric with positive per `fetch-cache-design.md:53`. Never decides to drop a URL — only records availability. Closed `webfetch_error_class` vocabulary so downstream summarisation is stable. M2-finish.
+- `skills/knowledge-plan/SKILL.md` — Phase 1 skill. Decomposes a topic into 3-7 sub-questions with per-sub-question `candidate_domains[]` (no web). Writes `<project>/.metadata/plan.json` schema `0.1.0` per `references/inverted-pipeline.md:41-57`. Creates the project directory at `<knowledge-root>/<topic-slug>-<YYYY-MM-DD>/`. Probes only `cogni-wiki` (clean-break — no cogni-research dispatch). Binding append deferred to M9 (`knowledge-finalize`). M4 part 1/3.
+- `skills/knowledge-curate/SKILL.md` — Phase 2 orchestrator. Reads `plan.json` + `binding.curator_defaults`, fans out one `source-curator` dispatch per sub-question (parallel when ≤3, sequential otherwise), merges per-sub-question batches into `candidates.json` via `candidate-store.py append-batch`. Legacy-binding fallback: applies `DEFAULT_CURATOR_DEFAULTS` from `knowledge-binding.py` when pre-v0.0.3 bindings lack `curator_defaults`. M4 part 2/3.
+- `skills/knowledge-fetch/SKILL.md` — Phase 3 orchestrator. Reads `candidates.json` + `binding.curator_defaults.fetch_cache_max_age_days`, builds batches (default 8 URLs each, sorted by `fetch_priority`), dispatches `source-fetcher` per batch (sequential at v0.0.17 for WebFetch rate-limit awareness), merges `fetched[]` + `unavailable[]` into `<project>/.metadata/fetch-manifest.json` schema `0.1.0` per `references/inverted-pipeline.md:91-109`. Optional `--tier` flag scopes fetches to a single tier. Non-blocking warning when unavailable rate exceeds 30%. M4 part 3/3.
+- `scripts/candidate-store.py` — stdlib helper for file-locked (`fcntl.flock`) merge of parallel curator output batches into `<project>/.metadata/candidates.json`. Subcommands `init` / `append-batch` / `read`. Dedup key is URL-normalized (lowercase scheme+host, trailing-slash-stripped, `utm_*` / `ref` / `fbclid` / `gclid` params dropped, fragment dropped). Merge semantics on collision: higher score wins, earliest `discovered_at` wins, `sub_question_refs[]` unioned, `tier` + `fetch_priority` recomputed. Posix-only (consistent with `tests/README.md` Linux/macOS posture). M4 supporting infrastructure.
+- `tests/test_candidate_store.sh` — 8 assertions: init idempotency + schema `0.1.0`, dedup+merge+ref-union+fetch_priority assignment, concurrent-append lock correctness (two parallel subshells racing on the same project), three malformed-input rejection cases (non-array, missing url, out-of-range score), URL normalization collapsing case + trailing slash + tracking params.
+- `tests/test_skill_contracts.sh` — grep-based SKILL.md / agent-md contract assertions for the 6 new files. Catches silent contract drift (path, flag, or step disappearing). Includes a clean-break invariant check that asserts no new file dispatches a `cogni-research:` or `cogni-claims:` skill/agent.
+
+### Changed
+
+- `CLAUDE.md` — Skills table gains rows for `knowledge-plan` / `knowledge-curate` / `knowledge-fetch`. Scripts table gains `candidate-store.py`. "Future phases" paragraph rewritten to delegate the milestone narrative to `references/absorption-roadmap.md` (the source of truth) with a one-line progress pointer.
+- `fetch-cache.py` `_url_key` now hashes the **normalized** URL form (`normalize_url` — same canonicalization `candidate-store.py` applies for dedup) rather than the raw URL. Any cache entries written between PR #269 and v0.0.17 are keyed against the un-normalized hash and will be invisible to post-v0.0.17 lookups. PR #269 only just shipped so production caches are unlikely, but if you have one, run `python3 cogni-knowledge/scripts/fetch-cache.py evict --older-than-days 0` to clear it.
+
+### Dependencies
+
+No new minimum-version requirements. cogni-wiki ≥ 0.0.43 from v0.0.14 still holds. (cogni-wiki 0.0.44's `type: source` allowlist is the next slice's dep — M6 `knowledge-ingest` — not this slice's.)
+
 ## 0.0.15 — 2026-05-20
 
 Phase 4 alpha re-run on a fresh `eu-ai-act` knowledge base completed end-to-end without chain-breaker regression. Docs-only release recording the go decision for Phase 5 graduation.

@@ -32,8 +32,20 @@ They live as siblings. The wiki is the substrate; the binding records which rese
 | `knowledge-query` | Ask a question against the bound base. Resolves the wiki path from `binding.json`, dispatches `cogni-wiki:wiki-query` against it, appends a one-line knowledge-base footer. Read-only. Phase 3, v0.0.8+. |
 | `knowledge-dashboard` | Render an HTML overview. Dispatches `cogni-wiki:wiki-dashboard` against the bound wiki, then writes a `knowledge-overlay.md` sidecar listing deposited projects + latest lint-audit `claim_drift` count. Phase 3, v0.0.9+. |
 | `knowledge-refresh` | Self-healing loop. Pull-mode delegates to `cogni-wiki:wiki-refresh`. Push-mode lints the wiki, asks which stale topics to re-research, then sequentially dispatches `knowledge-research` + `wiki-refresh` per selected topic. Phase 3, v0.0.10+. |
+| `knowledge-plan` | **v0.1.0 inverted pipeline, Phase 1.** Decomposes a topic into 3-7 sub-questions with per-sub-question `candidate_domains[]` (no web). Writes `<project>/.metadata/plan.json` schema `0.1.0`. Probes only `cogni-wiki` — the v0.1.0 path does not dispatch cogni-research. Phase 5, v0.0.17+. |
+| `knowledge-curate` | **v0.1.0 inverted pipeline, Phase 2.** Reads `plan.json`, fans out one `source-curator` dispatch per sub-question (WebSearch + score, no fetch), merges per-sub-question batches into `<project>/.metadata/candidates.json` via `candidate-store.py append-batch`. Phase 5, v0.0.17+. |
+| `knowledge-fetch` | **v0.1.0 inverted pipeline, Phase 3.** Reads `candidates.json`, dispatches `source-fetcher` per batch (WebFetch + cobrowse fallback), merges into `<project>/.metadata/fetch-manifest.json`. Successful bodies land in the shared `.cogni-knowledge/fetch-cache/`; unavailable URLs are negatively cached. Phase 5, v0.0.17+. |
 
 Phase 2 closes the round-trip — `knowledge-report` reads the wiki, re-deposits via `wiki-from-research` Mode B with the opt-in flags, and `cycle-guard.py` refuses self-citing loops. The differentiation thesis (knowledge compounds across projects) holds only with this loop closed; before v0.0.6 a second research run could only deposit, never compose-and-deposit.
+
+## Agents (v0.1.0 inverted pipeline)
+
+Starting at v0.0.17, cogni-knowledge has an `agents/` directory. v0.0.x had none by design (everything delegated to upstream cogni-research agents); the v0.1.0 clean break forks agents locally so the runtime path is 0% cogni-research. The v0.0.x "What about `agents/`?" paragraph in `references/delegation-contract.md` is the legacy contract — `references/inverted-pipeline.md` is the v0.1.0 source of truth.
+
+| Agent | Role |
+|---|---|
+| `source-curator` | Phase 2. Forked from `cogni-research/agents/source-curator.md` (point-in-time copy; drift acceptable). Per-sub-question WebSearch + scoring. Emits a batch JSON array for merge into `candidates.json`. v0.0.17+. |
+| `source-fetcher` | Phase 3. NEW (no upstream). Per-URL WebFetch with `claude-in-chrome` cobrowse fallback; reads/writes through `fetch-cache.py`. Emits per-batch `{fetched[], unavailable[]}` for merge into `fetch-manifest.json`. v0.0.17+. |
 
 ## Scripts
 
@@ -42,6 +54,8 @@ Phase 2 closes the round-trip — `knowledge-report` reads the wiki, re-deposits
 | `knowledge-binding.py` | `init` / `append-project` / `read` subcommands against `.cogni-knowledge/binding.json` | No (stdlib only) |
 | `lineage-stamp.py` | Stamps `derived_from_research: <slug>` into the YAML frontmatter of deposited wiki pages | No (stdlib only) |
 | `cycle-guard.py` | Detects direct self-cycles before a wiki-mode re-deposit: walks the candidate project's `02-sources/data/src-*.md` for `wiki://<bound-slug>/<page-id>` citations and checks each resolved page's frontmatter for `derived_from_research: <candidate-slug>`. Exit 1 on `cycle_detected`, exit 0 on `clear` or `not_applicable` (web/local mode). | No (stdlib only) |
+| `fetch-cache.py` | **v0.1.0 inverted pipeline.** Content-addressed URL→body cache at `.cogni-knowledge/fetch-cache/<sha256>.json`. Subcommands `store` / `fetch` (with `--max-age-days` staleness gate) / `evict` / `stat` / `key`. Negative caching for unavailable URLs; freshness symmetric with positive entries. Atomic temp+rename per entry. v0.0.16-foundation (shipped via PR #269, no version bump); consumed by `source-fetcher` at v0.0.17. | No (stdlib only) |
+| `candidate-store.py` | **v0.1.0 inverted pipeline.** File-locked (`fcntl.flock`) merge of parallel `source-curator` output batches into `<project>/.metadata/candidates.json`. Subcommands `init` / `append-batch` / `read`. Dedup key URL-normalized (lowercase scheme+host, trailing-slash-stripped, common tracking params dropped). On collision: higher score wins, earliest `discovered_at` wins, `sub_question_refs[]` unioned, `tier` + `fetch_priority` recomputed. Posix-only. v0.0.17+. | No (stdlib only) |
 
 All scripts return `{"success": bool, "data": {...}, "error": "..."}` per the insight-wave convention (`../CLAUDE.md` §"Script Output Format"). Stdlib only — no pip dependencies.
 
@@ -113,4 +127,6 @@ Only the frontmatter changes — page bodies are never touched.
 
 ## Future phases
 
-Phase 2 (v0.0.6) shipped — `knowledge-report` + `cycle-guard.py` close the wiki-roundtrip loop. Phase 3 (v0.0.11) shipped — `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh` make the accumulated knowledge legible and self-healing. Phase 2/3 follow-up debt cleared at v0.0.13 (transitive cycle detection, slug→path index, factored project-config reader, pre-flight dependency check in `knowledge-setup`, cycle-guard docstring precision; cogni-wiki contract regression tests landed alongside as cogni-wiki v0.0.42). Phase 4 (the internal alpha) surfaced findings F1–F10 — F1–F4 fixed at v0.0.14 (F5 transitively via F4) alongside PR-#267 reviewer-deferred items A1–A4 (`read-project-config.py --bare`, binding `project_path` schema 0.0.2, `cogni-knowledge/tests/`, probe rolled to all 7 skills). cogni-wiki contract tests for F2/F3/F4 landed alongside as cogni-wiki v0.0.43. F6–F10 remain deferred — see `references/alpha-findings.md`. Phase 5 graduates to v0.1.0 (Preview) once the v0.0.16 alpha re-run completes clean end-to-end. Phase 6 absorbs `cogni-research`. See `references/absorption-roadmap.md`.
+Phases 1-3 shipped (v0.0.1 → v0.0.11), 2/3 follow-up debt cleared at v0.0.13, Phase 4 alpha completed at v0.0.15 with a **GO** recommendation. **Phase 5 is in flight as one big v0.1.0 inverted-pipeline clean break** — see `references/absorption-roadmap.md` for the canonical 12-milestone (M1–M12) table and current status. The plugin stays at `0.0.x`/maturity `incubating` until M12 ships the alpha re-run + version bump to 0.1.0 + maturity flip in a single landing. Phase 6 (cogni-research deprecation cleanup) follows Phase 5.
+
+Inverted-pipeline progress: M1 (plumbing) + M2-script (fetch-cache.py) shipped at PR #269 with no version bump. M2-finish (`source-fetcher` agent) + M3 (`source-curator` fork) + M4 (`knowledge-plan` / `knowledge-curate` / `knowledge-fetch` skills + `candidate-store.py`) ship at v0.0.17. Next slice: M5 (`claim-extractor` fork + `source-ingester` agent) + M6 (`knowledge-ingest` skill; unblocked by cogni-wiki 0.0.44's `type: source` allowlist).

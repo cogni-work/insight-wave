@@ -38,6 +38,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 SCHEMA_VERSION = "0.1.0"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -48,6 +49,12 @@ BINDING_DIRNAME = ".cogni-knowledge"
 # coordinating an additive change there.
 VALID_FETCH_METHODS = {"webfetch", "cobrowse_interactive"}
 VALID_STATUSES = {"ok", "unavailable"}
+# Kept in sync with candidate-store.py:_STRIP_QUERY_*. Duplicated here so
+# candidates.json dedup and fetch-cache lookup land on the same key for
+# semantically identical URLs. The deferred _knowledge_lib.py extraction
+# will collapse the two copies.
+_STRIP_QUERY_PREFIXES = ("utm_",)
+_STRIP_QUERY_EXACT = frozenset({"ref", "fbclid", "gclid"})
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -64,8 +71,25 @@ def _cache_dir(knowledge_root: Path) -> Path:
     return knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME
 
 
+def normalize_url(url: str) -> str:
+    if not url or not url.strip():
+        return url
+    parts = urlsplit(url.strip())
+    scheme = parts.scheme.lower()
+    netloc = parts.netloc.lower()
+    path = parts.path
+    if path.endswith("/") and path != "/":
+        path = path.rstrip("/")
+    kept = [
+        (k, v)
+        for k, v in parse_qsl(parts.query, keep_blank_values=True)
+        if not (k.startswith(_STRIP_QUERY_PREFIXES) or k in _STRIP_QUERY_EXACT)
+    ]
+    return urlunsplit((scheme, netloc, path, urlencode(kept), ""))
+
+
 def _url_key(url: str) -> str:
-    return hashlib.sha256(url.encode("utf-8")).hexdigest()
+    return hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
 
 
 def _entry_path(knowledge_root: Path, url: str) -> Path:
@@ -117,8 +141,6 @@ def _age_days(stamp: str) -> float | None:
 
 def cmd_store(args: argparse.Namespace) -> int:
     knowledge_root = Path(args.knowledge_root).resolve()
-    if not knowledge_root.is_dir():
-        return _emit(False, error=f"knowledge_root does not exist: {knowledge_root}")
 
     if not args.url or not args.url.strip():
         return _emit(False, error="--url must be a non-empty, non-whitespace string")
@@ -131,7 +153,10 @@ def cmd_store(args: argparse.Namespace) -> int:
     if args.body and args.body_file:
         return _emit(False, error="--body and --body-file are mutually exclusive")
     if args.body_file:
-        body = Path(args.body_file).read_text(encoding="utf-8")
+        try:
+            body = Path(args.body_file).read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return _emit(False, error=f"--body-file does not exist: {args.body_file}")
     else:
         body = args.body or ""
 
@@ -152,7 +177,10 @@ def cmd_store(args: argparse.Namespace) -> int:
         payload["reason"] = args.reason
 
     target = _entry_path(knowledge_root, args.url)
-    _atomic_write(target, payload)
+    try:
+        _atomic_write(target, payload)
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        return _emit(False, error=f"knowledge_root is not a usable directory: {exc}")
     return _emit(
         True,
         data={
