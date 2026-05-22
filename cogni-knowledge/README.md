@@ -37,14 +37,15 @@ This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wik
 5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
 6. **Compose** the draft report by reading the populated wiki, with `[[sources/<slug>]]` wikilink citations + a parallel citation manifest — Phase 5
 7. **Verify** every cited claim against the cited page's `pre_extracted_claims` (zero network) and loop with the revisor on `unsupported` deviations, capped at 2 iterations — Phase 6
-8. **Research** a topic INTO the bound wiki via the legacy `cogni-wiki:wiki-from-research` Mode A path (pre-v0.1.0 surface)
-9. **Report** by reading the bound wiki with `cycle-guard.py`, then re-deposit via `wiki-from-research` Mode B (pre-v0.1.0 surface)
-10. **Resume** project status — deposited projects, wiki health, suggested next action
-11. **Query** the bound base — natural-language question routed through `cogni-wiki:wiki-query`
-12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
-13. **Refresh** stale pages — pull-mode pipes a research project in; push-mode auto-researches stale topics
+8. **Finalize** the verified draft as `wiki/syntheses/<slug>.md` with `type: synthesis` + `derived_from_research:` lineage, refuse self-citing loops via `cycle-guard.py` (now with a citation-manifest fallback), update the wiki index + entries_count + context_brief, and append the project to the binding — Phase 7 (closes the inverted-pipeline loop)
+9. **Research** a topic INTO the bound wiki via the legacy `cogni-wiki:wiki-from-research` Mode A path (pre-v0.1.0 surface)
+10. **Report** by reading the bound wiki with `cycle-guard.py`, then re-deposit via `wiki-from-research` Mode B (pre-v0.1.0 surface)
+11. **Resume** project status — deposited projects, wiki health, suggested next action
+12. **Query** the bound base — natural-language question routed through `cogni-wiki:wiki-query`
+13. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
+14. **Refresh** stale pages — pull-mode pipes a research project in; push-mode auto-researches stale topics
 
-See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M8 shipped; M9 finalize pending).
+See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M9 shipped; M10 manifest-aware query/dashboard rebuild pending).
 
 ## Install
 
@@ -142,6 +143,7 @@ The deposited pages are now part of the wiki and visible to the next `knowledge-
 | knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter |
 | knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
 | knowledge-verify | Skill | Phase 6 — zero-network claim alignment + revisor loop on `unsupported` deviations (max 2 iterations) |
+| knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append (closes the inverted-pipeline loop) |
 | knowledge-research | Skill | Legacy v0.0.x — research a topic INTO the bound wiki via `cogni-wiki:wiki-from-research` Mode A |
 | knowledge-report | Skill | Legacy v0.0.x — compose a report by reading the bound wiki with `cycle-guard.py`, then re-deposit Mode B |
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
@@ -171,7 +173,7 @@ cogni-knowledge/
 └── tests/                        Contract tests (one per phase)
 ```
 
-The plugin sits between the user and `cogni-wiki`. On the v0.1.0 inverted pipeline (Phases 1–6 shipped), the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition + verification. The pre-v0.1.0 legacy path (`knowledge-research` / `knowledge-report`) still delegates to `cogni-wiki:wiki-from-research`, which internally calls `cogni-research`.
+The plugin sits between the user and `cogni-wiki`. On the v0.1.0 inverted pipeline (Phases 1–7 shipped), the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The pre-v0.1.0 legacy path (`knowledge-research` / `knowledge-report`) still delegates to `cogni-wiki:wiki-from-research`, which internally calls `cogni-research`.
 
 ## Dependencies
 

@@ -3,14 +3,32 @@
 cycle-guard.py — refuse a wiki-mode re-deposit that would form a self-citing
 loop in the candidate cogni-research project's evidence chain.
 
-A self-cycle exists when the candidate's source entities
-(`02-sources/data/src-*.md`) cite wiki pages (`url: wiki://...`) whose own
-`derived_from_research:` lineage stamps eventually point back to the candidate
-slug. A **direct** cycle closes in one hop (the cited page is stamped
+A self-cycle exists when the candidate's citations resolve to wiki pages whose
+own `derived_from_research:` lineage stamps eventually point back to the
+candidate slug. A **direct** cycle closes in one hop (the cited page is stamped
 `derived_from_research: <candidate-slug>` itself). A **transitive** cycle
 closes through one or more intermediate projects recorded in
 `binding.research_projects[]` — the citation chain hops candidate → P → … →
 candidate.
+
+Two citation input shapes are supported:
+
+  legacy-source-entities  — the cogni-research v0.0.x layout. Walks
+                            `<project>/02-sources/data/src-*.md` for
+                            `url: wiki://<wiki_slug>/<page-id>` lines.
+  citation-manifest        — the v0.1.0 inverted-pipeline layout. Reads
+                            `<project>/.metadata/citation-manifest.json` and
+                            treats each `citations[].wiki_slug` as a cited
+                            page id.
+
+The fallback is additive: the legacy glob wins when it returns ≥ 1 source
+entity (preserves existing semantics on mixed-shape projects); otherwise the
+manifest fallback fires. The resulting `input_shape` is surfaced in the
+JSON envelope's `data.input_shape` field so observers can tell which path
+ran. Direct-cycle detection works identically for both shapes (page resolution
++ frontmatter `derived_from_research` lookup is shape-agnostic). Transitive
+recursion walks each hop's local shape independently, so mixed-shape bindings
+(some v0.0.x projects, some v0.1.0 projects) coexist cleanly.
 
 The walk is bounded:
 - `visited` set keyed by project slug short-circuits revisits.
@@ -55,6 +73,7 @@ WIKI_DIRNAME = ".cogni-wiki"
 WIKI_CONFIG_FILENAME = "config.json"
 SOURCES_GLOB = "02-sources/data/src-*.md"
 PROJECT_CONFIG_RELPATH = ".metadata/project-config.json"
+CITATION_MANIFEST_RELPATH = ".metadata/citation-manifest.json"
 DEFAULT_MAX_DEPTH = 5
 # Slug character class matches the canonical contract enforced by cogni-wiki's
 # `WIKILINK_RE` in skills/wiki-ingest/scripts/_wikilib.py (kebab-case: lowercase
@@ -201,33 +220,66 @@ def _resolve_wiki_page(
 def _walk_project_citations(
     project_path: Path,
     wiki_slug: str,
-) -> list[str]:
-    """Walk a project's `02-sources/data/src-*.md` entities and return the
-    deduplicated list of `wiki://<wiki_slug>/<page-id>` page ids cited.
-    Citations pointing at a different wiki are filtered out — they cannot
-    participate in a self-cycle within this binding."""
+) -> tuple[list[str], str]:
+    """Walk a project's citation set and return the deduplicated list of page
+    ids cited, plus an `input_shape` label identifying which layout produced
+    the list:
+
+      "legacy-source-entities"  — at least one `02-sources/data/src-*.md`
+                                  found; manifest fallback was NOT consulted.
+      "citation-manifest"        — legacy dir absent or empty; fell back to
+                                  `.metadata/citation-manifest.json`.
+      "none"                     — neither input present (project has no
+                                  citations to walk).
+
+    Legacy-shape filtering: citations pointing at a different wiki are dropped
+    (they cannot participate in a self-cycle within this binding). The
+    manifest shape carries bare page slugs, not `wiki://<wiki>/<page>` URLs,
+    so unknown-slug filtering happens downstream in `_resolve_wiki_page`.
+    """
     sources_dir = project_path / "02-sources" / "data"
-    if not sources_dir.is_dir():
-        return []
-    cited: list[str] = []
-    seen: set[str] = set()
-    for src in sorted(sources_dir.glob("src-*.md")):
+    legacy_files = (
+        sorted(sources_dir.glob("src-*.md")) if sources_dir.is_dir() else []
+    )
+
+    if legacy_files:
+        cited: list[str] = []
+        seen: set[str] = set()
+        for src in legacy_files:
+            try:
+                fm = _parse_frontmatter(src.read_text(encoding="utf-8"))
+            except OSError:
+                continue
+            url = _strip_quotes(str(fm.get("url", "")))
+            m = WIKI_URL_RE.match(url)
+            if not m:
+                continue
+            cited_wiki_slug, page_id = m.group(1), m.group(2)
+            if cited_wiki_slug != wiki_slug:
+                continue
+            if page_id in seen:
+                continue
+            seen.add(page_id)
+            cited.append(page_id)
+        return cited, "legacy-source-entities"
+
+    manifest_path = project_path / CITATION_MANIFEST_RELPATH
+    if manifest_path.is_file():
         try:
-            fm = _parse_frontmatter(src.read_text(encoding="utf-8"))
-        except OSError:
-            continue
-        url = _strip_quotes(str(fm.get("url", "")))
-        m = WIKI_URL_RE.match(url)
-        if not m:
-            continue
-        cited_wiki_slug, page_id = m.group(1), m.group(2)
-        if cited_wiki_slug != wiki_slug:
-            continue
-        if page_id in seen:
-            continue
-        seen.add(page_id)
-        cited.append(page_id)
-    return cited
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return [], "citation-manifest"
+        cited_m: list[str] = []
+        seen_m: set[str] = set()
+        for entry in manifest.get("citations", []) or []:
+            slug = (entry or {}).get("wiki_slug")
+            if not isinstance(slug, str) or not slug or slug in seen_m:
+                continue
+            seen_m.add(slug)
+            cited_m.append(slug)
+        return cited_m, "citation-manifest"
+
+    return [], "none"
 
 
 def _walk_lineage(
@@ -262,6 +314,7 @@ def _walk_lineage(
         "transitive_self_cycles": [],
         "cross_lineage_overlap": [],
         "cycle_path": [],
+        "input_shape": "none",
     }
 
     visited: set[str] = {candidate_slug}
@@ -293,9 +346,10 @@ def _walk_lineage(
         cycle has been closed (in which case `out["cycle_path"]` is set and
         the caller should stop). Recursion is depth-bounded; revisits short-
         circuit via the shared `visited` set."""
-        cited = _walk_project_citations(project_path, wiki_slug)
+        cited, shape = _walk_project_citations(project_path, wiki_slug)
         if depth == 0:
             out["cited_page_ids"] = cited
+            out["input_shape"] = shape
 
         for page_id in cited:
             page_file, collisions = _resolve_wiki_page(slug_index, page_id)
@@ -430,6 +484,7 @@ def main(argv: list[str]) -> int:
         "report_source": report_source,
         "wiki_slug": wiki_slug,
         "max_depth": args.max_depth,
+        "input_shape": "none",
         "wiki_pages_cited": [],
         "wiki_pages_cited_missing": [],
         "wiki_slug_collisions": [],
@@ -463,6 +518,7 @@ def main(argv: list[str]) -> int:
     base_data["transitive_self_cycles"] = walk["transitive_self_cycles"]
     base_data["cross_lineage_overlap"] = walk["cross_lineage_overlap"]
     base_data["cycle_path"] = walk["cycle_path"]
+    base_data["input_shape"] = walk["input_shape"]
 
     if base_data["direct_self_cycles"] or base_data["transitive_self_cycles"]:
         base_data["status"] = "cycle_detected"

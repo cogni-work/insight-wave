@@ -107,3 +107,44 @@ d["research_projects"].append({
 with open(p, "w") as fh: json.dump(d, fh, indent=2)
 PY
 }
+
+# v0.1.0 inverted-pipeline project layout: .metadata/ holds plan, citation
+# manifest, and project-config; no 02-sources/data/ dir. Used by the M9
+# finalize contract test to exercise cycle-guard's citation-manifest
+# fallback path. Citation entries are appended one at a time via
+# add_manifest_citation below.
+mk_v01_project() {
+  local proj="$1" slug="$2"
+  mkdir -p "$proj/.metadata" "$proj/output"
+  cat > "$proj/.metadata/project-config.json" <<EOF
+{"slug": "$slug", "topic": "test", "report_source": "wiki"}
+EOF
+  cat > "$proj/.metadata/citation-manifest.json" <<EOF
+{
+  "schema_version": "0.1.0",
+  "draft_version": 1,
+  "citations": []
+}
+EOF
+  cat > "$proj/.metadata/plan.json" <<EOF
+{"schema_version": "0.1.0", "topic": "$slug topic"}
+EOF
+  : > "$proj/output/draft-v1.md"
+}
+
+add_manifest_citation() {
+  local proj="$1" wiki_slug="$2" claim_id="$3"
+  python3 - "$proj" "$wiki_slug" "$claim_id" <<'PY'
+import json, sys
+proj, wiki_slug, claim_id = sys.argv[1:4]
+p = f"{proj}/.metadata/citation-manifest.json"
+with open(p) as fh: d = json.load(fh)
+position = f"01:{len(d.get('citations', [])) + 1:02d}"
+d.setdefault("citations", []).append({
+    "draft_position": position,
+    "wiki_slug": wiki_slug,
+    "claim_id": claim_id or None,
+})
+with open(p, "w") as fh: json.dump(d, fh, indent=2)
+PY
+}
