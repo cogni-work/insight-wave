@@ -98,7 +98,14 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> dict:
 # — if that upstream parser grows new edge cases (multi-line scalars, quoted
 # values, nested block lists), this copy must be updated in lock-step or the
 # cycle-guard silently under-detects.
-_FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n", re.DOTALL)
+_FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
+
+
+class ManifestUnreadableError(Exception):
+    """Raised when `<project>/.metadata/citation-manifest.json` exists but
+    cannot be read or parsed. Surfaced loudly by main() rather than swallowed
+    — the manifest is the only evidence input for v0.1.0 projects, so a
+    silent "no citations → status=clear" path would defeat the guard."""
 
 
 def _parse_frontmatter(text: str) -> dict:
@@ -267,8 +274,10 @@ def _walk_project_citations(
     if manifest_path.is_file():
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return [], "citation-manifest"
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ManifestUnreadableError(
+                f"citation-manifest at {manifest_path} is unreadable: {exc}"
+            ) from exc
         cited_m: list[str] = []
         seen_m: set[str] = set()
         for entry in manifest.get("citations", []) or []:
@@ -314,7 +323,12 @@ def _walk_lineage(
         "transitive_self_cycles": [],
         "cross_lineage_overlap": [],
         "cycle_path": [],
+        # `input_shape` is the depth-0 (candidate project's own) shape; kept
+        # for back-compat. `input_shapes` is the ordered per-hop list, so
+        # mixed-shape transitive walks are observable. Both are populated by
+        # the inner `dfs()`.
         "input_shape": "none",
+        "input_shapes": [],
     }
 
     visited: set[str] = {candidate_slug}
@@ -347,6 +361,7 @@ def _walk_lineage(
         the caller should stop). Recursion is depth-bounded; revisits short-
         circuit via the shared `visited` set."""
         cited, shape = _walk_project_citations(project_path, wiki_slug)
+        out["input_shapes"].append({"slug": project_slug, "shape": shape})
         if depth == 0:
             out["cited_page_ids"] = cited
             out["input_shape"] = shape
@@ -485,6 +500,7 @@ def main(argv: list[str]) -> int:
         "wiki_slug": wiki_slug,
         "max_depth": args.max_depth,
         "input_shape": "none",
+        "input_shapes": [],
         "wiki_pages_cited": [],
         "wiki_pages_cited_missing": [],
         "wiki_slug_collisions": [],
@@ -501,15 +517,20 @@ def main(argv: list[str]) -> int:
         return 0
 
     slug_index = _build_slug_index(wiki_path)
-    walk = _walk_lineage(
-        candidate_slug=candidate_slug,
-        candidate_project_path=project_path,
-        binding=binding,
-        wiki_path=wiki_path,
-        wiki_slug=wiki_slug,
-        slug_index=slug_index,
-        max_depth=args.max_depth,
-    )
+    try:
+        walk = _walk_lineage(
+            candidate_slug=candidate_slug,
+            candidate_project_path=project_path,
+            binding=binding,
+            wiki_path=wiki_path,
+            wiki_slug=wiki_slug,
+            slug_index=slug_index,
+            max_depth=args.max_depth,
+        )
+    except ManifestUnreadableError as exc:
+        base_data["status"] = "manifest_unreadable"
+        _emit(False, data=base_data, error=str(exc))
+        return 1
 
     base_data["wiki_pages_cited"] = walk["cited_page_ids"]
     base_data["wiki_pages_cited_missing"] = walk["missing_pages"]
@@ -519,6 +540,7 @@ def main(argv: list[str]) -> int:
     base_data["cross_lineage_overlap"] = walk["cross_lineage_overlap"]
     base_data["cycle_path"] = walk["cycle_path"]
     base_data["input_shape"] = walk["input_shape"]
+    base_data["input_shapes"] = walk["input_shapes"]
 
     if base_data["direct_self_cycles"] or base_data["transitive_self_cycles"]:
         base_data["status"] = "cycle_detected"

@@ -169,7 +169,20 @@ print(slugify(plan.get("topic") or "") or "")
 
 If `--synthesis-slug <slug>` was passed, use it; otherwise use the derived value. Abort if the derived value is empty (no usable topic) and no override was passed.
 
-Confirm `<WIKI_ROOT>/wiki/syntheses/<SYNTHESIS_SLUG>.md` does not already exist. If it does and `--overwrite` was not passed, abort with: "synthesis page wiki/syntheses/<slug>.md already exists; pass --overwrite or --synthesis-slug <other> to proceed".
+Confirm `<WIKI_ROOT>/wiki/syntheses/<SYNTHESIS_SLUG>.md` does not already exist. Capture `SYNTHESIS_EXISTED_PRE=yes|no` — Step 8's overwrite-skip decision depends on whether the page existed before this run. If `SYNTHESIS_EXISTED_PRE=yes` and `--overwrite` was not passed, abort with: "synthesis page wiki/syntheses/<slug>.md already exists; pass --overwrite or --synthesis-slug <other> to proceed".
+
+Compute `CITATION_COUNT` for the dry-run printout (and the final summary's audit line):
+
+```
+KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
+python3 -c '
+import json, os
+from pathlib import Path
+m = json.loads(Path(os.environ["MANIFEST_PATH"]).read_text(encoding="utf-8"))
+print(len(m.get("citations", []) or []))
+'
+```
 
 If `--dry-run`, print:
 
@@ -178,7 +191,8 @@ WIKI_ROOT=<wiki_root>
 PROJECT_PATH=<project_path>
 DRAFT_VERSION=<N>
 SYNTHESIS_SLUG=<slug>
-CITATION_COUNT=<count from citation-manifest.json>
+SYNTHESIS_EXISTED_PRE=<yes|no>
+CITATION_COUNT=<count>
 UNSUPPORTED_COUNT=<count>
 REVISION_ROUND=<round>
 ```
@@ -204,6 +218,7 @@ Interpret return:
 - **Exit 0, `status: clear`** — proceed. `cross_lineage_overlap[]` may be non-empty; surface count in Step 11.
 - **Exit 0, `status: not_applicable`** — should not happen (`--report-source wiki` is explicit). Treat as defence-in-depth; proceed.
 - **Exit 1, `status: cycle_detected`** — abort. Print `direct_self_cycles[]` + remediation: "The synthesis would cite a wiki page derived from this same project — that's a self-citing loop. Rename the synthesis (`--synthesis-slug <other>`), narrow the topic, or hand-edit the draft to drop the self-referential citations."
+- **Exit 1, `status: manifest_unreadable`** — added v0.0.24. The citation manifest at `.metadata/citation-manifest.json` cannot be parsed (corrupt JSON, I/O error). Abort with the script's `error` field verbatim; remediate by re-running `knowledge-compose` to regenerate the manifest. **Do not proceed** — depositing a synthesis whose lineage cannot be checked is the exact failure mode the guard exists to prevent.
 
 ### 5. Compose + 6. Atomic write
 
@@ -219,7 +234,7 @@ DRAFT_VERSION=<N> \
 REVISION_ROUND=<round> \
 python3 -c '
 import datetime as _dt
-import json, os, sys
+import json, os, re, sys
 from pathlib import Path
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from _knowledge_lib import atomic_write_text
@@ -234,13 +249,15 @@ revision_round = int(os.environ["REVISION_ROUND"])
 draft = (project / "output" / ("draft-v" + str(n) + ".md")).read_text(encoding="utf-8")
 manifest = json.loads((project / ".metadata" / "citation-manifest.json").read_text(encoding="utf-8"))
 plan = json.loads((project / ".metadata" / "plan.json").read_text(encoding="utf-8"))
-wiki_cfg = json.loads((wiki_root / ".cogni-wiki" / "config.json").read_text(encoding="utf-8"))
 
 topic = plan.get("topic", "").strip() or synthesis_slug
-wiki_slug = wiki_cfg.get("slug", "")
-today = _dt.date.today().isoformat()
+# UTC date so frontmatter created/updated align with Step 10s `date -u +%F` log
+# stamp. Mixed local/UTC across midnight produced cross-artifact date skew.
+today = _dt.datetime.now(_dt.timezone.utc).date().isoformat()
 
-# Dedupe cited page slugs preserving first-seen order.
+# Dedupe cited page slugs preserving first-seen order. claim_id is allowed to
+# be null (synthesis-page citations per agents/wiki-composer.md), so we key
+# only on wiki_slug.
 cited_slugs = []
 seen = set()
 for c in manifest.get("citations", []) or []:
@@ -249,33 +266,74 @@ for c in manifest.get("citations", []) or []:
         seen.add(s)
         cited_slugs.append(s)
 
-# Lookup title + publisher per cited page for the References list.
+# Lookup each cited pages kind + title + publisher. Try wiki/sources/ first
+# (the common case — Phase-4 source ingest); fall back to wiki/syntheses/
+# (wiki-composer cites prior syntheses with claim_id: null). page_kind drives
+# the inline wikilink prefix below ([[sources/...]] vs [[syntheses/...]]).
+def _parse_top_level_kv(fm_block):
+    out = {}
+    for line in fm_block.splitlines():
+        # Skip indented lines so nested keys under pre_extracted_claims: dont
+        # overwrite top-level title/publisher.
+        if not line or line[0] in (" ", "\t") or line.lstrip().startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        k = key.strip()
+        # Strip surrounding quote pair (ASCII single/double + curly variants).
+        v = val.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ("\"", "'", "“", "‘"):
+            v = v[1:-1]
+        # Also strip a paired curly closing if it sneaked through.
+        v = v.strip("“”‘’")
+        out[k] = v
+    return out
+
 refs = []
+page_kind_by_slug = {}
 for slug in cited_slugs:
-    page = wiki_root / "wiki" / "sources" / (slug + ".md")
+    page_path = None
+    page_kind = None
+    for kind, dirname in (("source", "sources"), ("synthesis", "syntheses")):
+        candidate = wiki_root / "wiki" / dirname / (slug + ".md")
+        if candidate.is_file():
+            page_path = candidate
+            page_kind = kind
+            break
+    page_kind_by_slug[slug] = page_kind  # None if cited page is missing on disk
     title = slug
     publisher = ""
-    if page.is_file():
-        text = page.read_text(encoding="utf-8")
+    if page_path is not None:
+        text = page_path.read_text(encoding="utf-8")
         if text.startswith("---"):
-            end = text.find("\n---", 4)
-            if end > 0:
-                fm_block = text[4:end]
-                for line in fm_block.splitlines():
-                    key, _, val = line.partition(":")
-                    k = key.strip()
-                    v = val.strip().strip("\"“”‘’")
-                    if k == "title" and v:
-                        title = v
-                    elif k == "publisher" and v:
-                        publisher = v
+            # Tolerant frontmatter close: optional trailing newline.
+            m = re.match(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.DOTALL)
+            if m:
+                fm = _parse_top_level_kv(m.group(1))
+                if fm.get("title"):
+                    title = fm["title"]
+                if fm.get("publisher"):
+                    publisher = fm["publisher"]
+    # Wikilink path prefix matches the cited pages directory; falls back to
+    # sources/ when the page is missing (better than leaving the slug bare).
+    link_dir = "syntheses" if page_kind == "synthesis" else "sources"
     if publisher:
-        refs.append("- [[sources/" + slug + "]] — " + title + " (" + publisher + ")")
+        refs.append("- [[" + link_dir + "/" + slug + "]] — " + title + " (" + publisher + ")")
     else:
-        refs.append("- [[sources/" + slug + "]] — " + title)
+        refs.append("- [[" + link_dir + "/" + slug + "]] — " + title)
 
-sources_lines = ["  - wiki://" + wiki_slug + "/" + slug for slug in cited_slugs]
-sources_block = "\n".join(sources_lines) if sources_lines else "  []"
+# `wiki://<slug>` is the bare-slug shape cogni-wiki health.py expects
+# (cogni-wiki/skills/wiki-health/scripts/health.py:206 splits on the prefix
+# and looks the bare slug up in slug_index). A `wiki://<wiki_slug>/<slug>`
+# composite would trip `broken_wiki_source` on every cited entry.
+if cited_slugs:
+    sources_block = "sources:\n" + "\n".join("  - wiki://" + slug for slug in cited_slugs)
+else:
+    # Empty list emits inline (matches `tags: []` shape) instead of the
+    # block-style `sources:\n  []` continuation, which strict YAML parsers
+    # mis-read as the literal string "[]".
+    sources_block = "sources: []"
 
 frontmatter = (
     "---\n"
@@ -285,7 +343,7 @@ frontmatter = (
     "tags: []\n"
     "created: " + today + "\n"
     "updated: " + today + "\n"
-    "sources:\n" + sources_block + "\n"
+    + sources_block + "\n"
     "derived_from_research: " + project_slug + "\n"
     "draft_revision_round: " + str(revision_round) + "\n"
     "---\n"
@@ -296,6 +354,18 @@ body = draft.lstrip()
 if body.startswith("# "):
     nl = body.find("\n")
     body = body[nl + 1 :].lstrip() if nl >= 0 else ""
+
+# wiki-composer already emits a `## References` section at the end of every
+# draft (agents/wiki-composer.md "References section"); we now compose a
+# richer one (with publishers) from the citation-manifest, so strip the
+# composers tail to avoid two References sections in the deposited page.
+# Match the LAST `## References` H2 in case the draft text discusses
+# references elsewhere; everything from that header to EOF is the composers
+# section.
+ref_re = re.compile(r"\n##[ \t]+References[ \t]*\n", re.IGNORECASE)
+matches = list(ref_re.finditer(body))
+if matches:
+    body = body[: matches[-1].start()]
 
 page_text = (
     frontmatter
@@ -312,11 +382,13 @@ out_path.parent.mkdir(parents=True, exist_ok=True)
 atomic_write_text(out_path, page_text)
 
 # Surface counts the orchestrator needs for Steps 7-11.
+n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
 print(json.dumps({
     "synthesis_path": str(out_path.relative_to(wiki_root).as_posix()),
     "n_sources": len(cited_slugs),
+    "n_synthesis_citations": sum(1 for k in page_kind_by_slug.values() if k == "synthesis"),
+    "n_missing_pages": n_missing,
     "topic": topic,
-    "wiki_slug": wiki_slug,
 }))
 '
 ```
@@ -333,9 +405,18 @@ python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
     --category "Syntheses"
 ```
 
-Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`). On non-zero exit, surface the error but do not abort — the page itself is on disk; only discoverability is degraded.
+Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
 
-### 8. Bump entries_count (cogni-wiki helper)
+Capture the JSON envelope. On `success: true`, set `INDEX_OK=yes` and continue to Step 8. On `success: false` OR a non-zero exit, set `INDEX_OK=no`, surface the error in the final summary, and **skip Step 8** (do not bump `entries_count` when the index didn't actually get a new row — keeping the counter and the filesystem in lockstep is the structural invariant `wiki-lint --fix=entries_count_drift` is supposed to reconcile, not a hazard for finalize to create).
+
+### 8. Bump entries_count (cogni-wiki helper) — conditional
+
+Two conditions gate Step 8:
+
+1. `INDEX_OK=yes` (Step 7 succeeded) — required.
+2. The page was newly created at Step 6, not overwritten. Specifically: if `--overwrite` was passed AND the synthesis page already existed before Step 6 (the precondition check at Step 3), the counter was bumped on the original finalize. Re-bumping here would permanently drift `entries_count` by +1 per overwrite.
+
+When both conditions hold, run:
 
 ```
 python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
@@ -346,7 +427,11 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
 
 Same call shape as `wiki-query --file-back` (`cogni-wiki/skills/wiki-query/SKILL.md:91`). Lock-wrapped. Non-fatal on failure (operator can reconcile via `wiki-lint --fix=entries_count_drift`).
 
+When skipped (either condition fails), surface the reason in the final summary: `"entries_count not bumped (Step 7 failed | overwrite re-deposit)"`.
+
 ### 9. Append the project to the binding
+
+When `--overwrite` was NOT passed (first deposit):
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
@@ -358,7 +443,20 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --report-source wiki
 ```
 
-`--report-source wiki` is hard-coded — the v0.1.0 inverted pipeline only ever produces wiki-mode deposits (the legacy `read-project-config.py --field report_source` shellout from `knowledge-report` Step 5 is not used). On `research_slug already recorded` duplicate-slug error, surface a warning but do not abort — Steps 6–8 already landed the page.
+When `--overwrite` WAS passed (re-deposit), add `--allow-update` so the existing binding entry is updated in place (refresh `report_path` to the new draft version, `deposited_at` to today):
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
+    --knowledge-root <knowledge_root> \
+    --knowledge-slug <knowledge_slug> \
+    --research-slug <project-slug> \
+    --report-path <project_path>/output/draft-v<N>.md \
+    --project-path <project_path> \
+    --report-source wiki \
+    --allow-update
+```
+
+`--report-source wiki` is hard-coded — the v0.1.0 inverted pipeline only ever produces wiki-mode deposits (the legacy `read-project-config.py --field report_source` shellout from `knowledge-report` Step 5 is not used). Without `--allow-update`, a duplicate `research_slug` aborts the script — surface a warning but do not abort the SKILL (Steps 6–8 already landed the page); the operator may have re-run finalize from a fresh project state and the missing update is recoverable via a separate `--allow-update` re-run.
 
 ### 10. Rebuild context_brief.md + append wiki/log.md
 
@@ -369,12 +467,17 @@ python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" \
 
 Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
 
-Append one log line (Bash `>>`; `wiki/log.md` is append-only by cogni-wiki convention):
+Append one log line (Bash `>>`; `wiki/log.md` is append-only by cogni-wiki convention).
+
+The topic is operator-supplied free text. Replace any embedded CR/LF with a space first so a multi-line topic cannot break `wiki/log.md`'s one-line-per-event invariant — the cogni-wiki log-format enum is line-oriented. Use `printf` (not `echo`) so backslash-escape interpretation across `bash`/`sh`/`dash` does not vary:
 
 ```
 DATE_STAMP=$(date -u +%F)
-TOPIC=<topic from Step 5 subprocess output>
-echo "## [${DATE_STAMP}] finalize | project=${TOPIC} slug=${SYNTHESIS_SLUG} draft=v${DRAFT_VERSION} round=${REVISION_ROUND} sources=${N_SOURCES}" >> "${WIKI_ROOT}/wiki/log.md"
+TOPIC_RAW=<topic from Step 5 subprocess output>
+TOPIC=$(printf '%s' "$TOPIC_RAW" | tr '\r\n' '  ')
+printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s\n' \
+    "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$DRAFT_VERSION" "$REVISION_ROUND" "$N_SOURCES" \
+    >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
 `finalize` is a new operation prefix. Same additive-prefix posture as M7's `compose` and M8's `verify` — pre-v0.0.35 cogni-wiki readers count unknown prefixes in their catch-all bucket without crashing (`cogni-wiki/CLAUDE.md` §"Key Conventions"). Formalising the prefix into the enum lands in M10 when query / dashboard rebuild on the new manifests.

@@ -36,6 +36,25 @@ Slice 5 of the absorption-roadmap Current sprint — Phase 5 M9. Lands the Phase
 
 No new minimum-version requirements. cogni-wiki ≥ 0.0.44 (the `type: source` allowlist) from v0.0.20 still holds. The Phase-7 synthesis page uses `type: synthesis` which has been allowlisted in cogni-wiki since v0.0.23.
 
+### Post-review hardening (same v0.0.24, pre-merge)
+
+A multi-angle code review surfaced 15 findings. All landed in the same v0.0.24 release before merge:
+
+- **E1 / `wiki://` URL shape.** The synthesis page's `sources:` frontmatter now emits bare `wiki://<cited-slug>` per `cogni-wiki/skills/wiki-health/scripts/health.py:206`, not the composite `wiki://<wiki_slug>/<cited-slug>` that would have tripped `broken_wiki_source` on every cited entry on the next health run.
+- **E3 / double `## References`.** `wiki-composer` already writes a `## References` H2 at the end of the draft (per its agent contract). Step 5 now matches a trailing `\n## References` regex and strips the composer's tail before composing its own richer References list (with publisher annotations).
+- **E2 / synthesis-page citation handling.** Step 5 now tries `wiki/syntheses/<slug>.md` as a fallback when the cited page isn't under `wiki/sources/`, tracks `page_kind_by_slug`, and emits `[[syntheses/<slug>]]` vs `[[sources/<slug>]]` to match the cited page's actual directory.
+- **Manifest swallow → hard error.** `scripts/cycle-guard.py` now defines `ManifestUnreadableError`, raises it on `json.JSONDecodeError` / `OSError` from the citation-manifest read, and `main()` catches and emits `status: manifest_unreadable` + exit 1. Previously a corrupt manifest silently returned `status: clear` — the exact failure mode the guard exists to prevent.
+- **Step 7 → Step 8 gating + `--overwrite` skip.** Step 8 (`config_bump.py --delta 1`) now requires `INDEX_OK=yes` from Step 7 AND `SYNTHESIS_EXISTED_PRE=no`. Previous behavior bumped `entries_count` on every Step 7 failure (drift) and on every `--overwrite` re-deposit (permanent +1 per overwrite).
+- **`--overwrite` binding update.** `scripts/knowledge-binding.py append-project` gained a `--allow-update` flag — on duplicate `research_slug`, the existing entry is updated in place (preserving array order, refreshing `report_path` / `deposited_at`). Step 9 passes the flag when `--overwrite` is in effect. Without the flag, duplicate-slug still aborts (existing semantics preserved).
+- **Log-line CR/LF sanitization.** Step 10 now uses `printf '%s\n'` (not `echo`) and pre-strips `\r` / `\n` from TOPIC via `tr` so an operator-supplied multi-line topic cannot break `wiki/log.md`'s one-line-per-event invariant.
+- **UTC date alignment.** Step 5 now stamps `created:` / `updated:` from `_dt.datetime.now(_dt.timezone.utc).date()` so the synthesis-page frontmatter agrees with Step 10's `date -u +%F` log stamp across midnight.
+- **Frontmatter parser hardening.** Step 5's inline frontmatter parser now (a) skips indented lines so nested `pre_extracted_claims:` keys don't overwrite top-level `title:` / `publisher:`, (b) tolerates the no-trailing-newline case via `(?:\r?\n|\Z)`, (c) strips ASCII single-quote `'` alongside ASCII double + curly variants. Same regex tolerance landed in `cycle-guard.py::_FRONTMATTER_RE`.
+- **Empty `sources:` shape.** When `citation-manifest.json::citations[]` is empty, frontmatter now emits inline `sources: []` (matching the `tags: []` shape) rather than the block-style `sources:\n  []` continuation that strict YAML parsers misread.
+- **`input_shapes` per-hop tracking.** `cycle-guard.py`'s envelope now carries `input_shapes: [{slug, shape}, ...]` ordered by DFS depth, so mixed-shape transitive walks (some hops legacy, some hops citation-manifest) are observable rather than collapsed to the depth-0 shape. The singular `input_shape` field is retained for back-compat.
+- **Test asserts replaced with `sys.exit`.** `tests/test_finalize_contract.sh`'s inline `python3 -c` verification blocks now use `if not X: sys.exit(...)` instead of `assert`; under `python3 -O` (where `assert` is stripped), the tests would have passed vacuously on broken output.
+- **`CITATION_COUNT` computed in Step 3.** The dry-run printout block now has an explicit subprocess to read `len(manifest.citations)`; previously the SKILL named the field but no step computed it.
+- New contract-test assertions cover each of the above fixes; new inline cycle-guard fixture in `test_finalize_contract.sh` exercises the corrupt-manifest case (exit 1 + `status: manifest_unreadable`).
+
 ## 0.0.23 — 2026-05-22
 
 Slice 4 of the absorption-roadmap Current sprint — Phase 5 M8. Lands the Phase-6 verify step of the v0.1.0 inverted pipeline (`plan → curate → fetch → ingest → compose → **verify** → finalize`): the citation manifest M7 emits is now consumed by a zero-network claim-alignment pass against each cited page's `pre_extracted_claims:` frontmatter. The structural cost win versus cogni-claims (20–30 min verify → < 5 min) lands here — no WebFetch, no re-extraction, no claims.json store.

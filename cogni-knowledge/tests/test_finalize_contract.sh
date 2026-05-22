@@ -58,6 +58,29 @@ assert_grep 'citation-manifest' "$FIN" "knowledge-finalize: notes citation-manif
 assert_not_grep 'Skill("cogni-research:' "$FIN" "knowledge-finalize: no Skill('cogni-research:') dispatch (clean break)"
 assert_not_grep 'Skill("cogni-claims:' "$FIN" "knowledge-finalize: no Skill('cogni-claims:') dispatch (clean break)"
 assert_not_grep 'Skill("cogni-wiki:' "$FIN" "knowledge-finalize: no Skill('cogni-wiki:') dispatch (M6 contract: call helpers at script level)"
+# Post-review hardening (v0.0.24, all 15 review findings).
+# E1: wiki:// shape must be bare slug, not path-prefixed (cogni-wiki health.py:206).
+assert_grep 'wiki://" + slug' "$FIN" "knowledge-finalize: emits bare 'wiki://<slug>' (not 'wiki://<wiki_slug>/<slug>') per cogni-wiki contract"
+assert_not_grep 'wiki://" + wiki_slug + "/"' "$FIN" "knowledge-finalize: does NOT emit composite 'wiki://<wiki_slug>/<slug>' (would trip broken_wiki_source)"
+# E2: synthesis-page citations must be resolved under wiki/syntheses/ as fallback.
+assert_grep 'syntheses' "$FIN" "knowledge-finalize: resolves synthesis-page citations under wiki/syntheses/"
+assert_grep 'page_kind' "$FIN" "knowledge-finalize: tracks page kind (source vs synthesis) for wikilink emission"
+# E3: must strip the composer's trailing ## References section before re-appending its own.
+assert_grep 'References' "$FIN" "knowledge-finalize: strips composer's trailing '## References' to avoid double sections"
+# A4/D7: UTC date so frontmatter created/updated align with Step 10's `date -u`.
+assert_grep 'timezone.utc' "$FIN" "knowledge-finalize: stamps created/updated in UTC (not local time)"
+# A7 / B6: Step 8 entries_count bump is gated.
+assert_grep 'INDEX_OK' "$FIN" "knowledge-finalize: Step 8 gated on Step 7 success (INDEX_OK)"
+assert_grep 'SYNTHESIS_EXISTED_PRE' "$FIN" "knowledge-finalize: tracks pre-existence so Step 8 skips on --overwrite re-deposit"
+# B7: --overwrite re-deposit passes --allow-update to knowledge-binding.py.
+assert_grep 'allow-update' "$FIN" "knowledge-finalize: passes --allow-update on overwrite to refresh binding's report_path"
+# A3/D8: log line uses printf, not echo, and sanitizes TOPIC newlines.
+assert_grep "printf '## " "$FIN" "knowledge-finalize: log line uses printf (not echo) to avoid CR/LF + escape-interp drift"
+assert_grep "tr '" "$FIN" "knowledge-finalize: sanitizes TOPIC CR/LF before logging to preserve one-line-per-event invariant"
+# A4 follow-on: cycle-guard's new manifest_unreadable status is documented in the SKILL.
+assert_grep 'manifest_unreadable' "$FIN" "knowledge-finalize: documents how to handle cycle-guard's new status=manifest_unreadable"
+# CITATION_COUNT must actually be computed (E6 was a contract-gap finding).
+assert_grep 'CITATION_COUNT=<count>' "$FIN" "knowledge-finalize: dry-run printout actually computes CITATION_COUNT"
 # Defence-in-depth: no Task dispatch (M9 has no agents).
 FIN_TOOLS_LINE=$(grep '^allowed-tools:' "$FIN" || true)
 if echo "$FIN_TOOLS_LINE" | grep -q 'Task'; then
@@ -90,6 +113,9 @@ assert_grep 'citation-manifest' "$CG" "cycle-guard.py: docstring documents the c
 assert_grep 'input_shape' "$CG" "cycle-guard.py: emits input_shape in JSON envelope"
 assert_grep 'legacy-source-entities' "$CG" "cycle-guard.py: input_shape vocabulary includes legacy-source-entities"
 assert_grep 'CITATION_MANIFEST_RELPATH' "$CG" "cycle-guard.py: defines CITATION_MANIFEST_RELPATH constant"
+assert_grep 'ManifestUnreadableError' "$CG" "cycle-guard.py: defines ManifestUnreadableError (no silent green on corrupt manifest)"
+assert_grep 'manifest_unreadable' "$CG" "cycle-guard.py: emits status=manifest_unreadable on corrupt citation manifest"
+assert_grep 'input_shapes' "$CG" "cycle-guard.py: tracks per-hop input_shapes (mixed-shape transitive walks observable)"
 
 # --- Inline cycle-guard fixture: v0.1.0 clear case -----------------------
 # v0.1.0 project layout: .metadata/citation-manifest.json + .metadata/project-config.json
@@ -127,19 +153,20 @@ fi
 if ! echo "$OUT" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-assert d['success'] is True, d
+if d['success'] is not True: sys.exit('expected success=true, got ' + repr(d))
 data = d['data']
-assert data['status'] == 'clear', 'expected status=clear, got ' + repr(data.get('status'))
-assert data['input_shape'] == 'citation-manifest', 'expected input_shape=citation-manifest, got ' + repr(data.get('input_shape'))
-assert data['direct_self_cycles'] == [], data['direct_self_cycles']
-assert len(data['cross_lineage_overlap']) >= 1, 'cross_lineage_overlap empty'
+if data.get('status') != 'clear': sys.exit('expected status=clear, got ' + repr(data.get('status')))
+if data.get('input_shape') != 'citation-manifest': sys.exit('expected input_shape=citation-manifest, got ' + repr(data.get('input_shape')))
+if data.get('direct_self_cycles') != []: sys.exit('expected no direct cycles, got ' + repr(data.get('direct_self_cycles')))
+if not data.get('cross_lineage_overlap'): sys.exit('cross_lineage_overlap empty')
+if not isinstance(data.get('input_shapes'), list) or not data['input_shapes']: sys.exit('input_shapes missing or empty')
 print('OK')
 " 2>/dev/null | grep -q OK; then
   red "FAIL: v0.1.0 clear case — output did not match clear contract"
   red "  got: $OUT"
   errors=$((errors + 1))
 else
-  green "PASS: cycle-guard v0.1.0 clear case — status=clear, input_shape=citation-manifest"
+  green "PASS: cycle-guard v0.1.0 clear case — status=clear, input_shape=citation-manifest, input_shapes recorded"
 fi
 
 # --- Inline cycle-guard fixture: v0.1.0 self-cycle case ------------------
@@ -176,11 +203,11 @@ fi
 if ! echo "$OUT2" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-assert d['success'] is False, 'expected success=false on cycle, got success=true'
+if d['success'] is not False: sys.exit('expected success=false on cycle')
 data = d['data']
-assert data['status'] == 'cycle_detected', 'expected status=cycle_detected, got ' + repr(data.get('status'))
-assert data['input_shape'] == 'citation-manifest', 'expected input_shape=citation-manifest, got ' + repr(data.get('input_shape'))
-assert len(data['direct_self_cycles']) >= 1, 'direct_self_cycles empty'
+if data.get('status') != 'cycle_detected': sys.exit('expected status=cycle_detected, got ' + repr(data.get('status')))
+if data.get('input_shape') != 'citation-manifest': sys.exit('expected input_shape=citation-manifest')
+if not data.get('direct_self_cycles'): sys.exit('direct_self_cycles empty')
 print('OK')
 " 2>/dev/null | grep -q OK; then
   red "FAIL: v0.1.0 self-cycle case — output did not match cycle_detected contract"
@@ -188,6 +215,50 @@ print('OK')
   errors=$((errors + 1))
 else
   green "PASS: cycle-guard v0.1.0 self-cycle case — exit 1 + status=cycle_detected"
+fi
+
+# --- Inline cycle-guard fixture: malformed citation-manifest case ---------
+# v0.0.24 added a hard-fail on unparseable citation-manifest.json (previously
+# silently returned status=clear with empty cited list — a green light for
+# what cycle-guard exists to prevent). Confirm exit 1 + status=manifest_unreadable.
+WORK_BAD=$(mktemp -d)
+KB3="$WORK_BAD/kb"
+PROJ3="$WORK_BAD/proj"
+mk_knowledge_base "$KB3" test-wiki
+mk_v01_project "$PROJ3" project-bad
+# Replace the citation manifest with corrupt JSON.
+printf '{ this is not JSON' > "$PROJ3/.metadata/citation-manifest.json"
+
+set +e
+OUT3=$(python3 "$CG" \
+  --knowledge-root "$KB3" \
+  --research-slug project-bad \
+  --research-project-path "$PROJ3" \
+  --report-source wiki 2>&1)
+RC3=$?
+set -e
+rm -rf "$WORK_BAD"
+
+if [ $RC3 -ne 1 ]; then
+  red "FAIL: corrupt-manifest case — expected exit 1, got $RC3"
+  red "  output: $OUT3"
+  errors=$((errors + 1))
+fi
+
+if ! echo "$OUT3" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d['success'] is not False: sys.exit('expected success=false on corrupt manifest')
+data = d['data']
+if data.get('status') != 'manifest_unreadable': sys.exit('expected status=manifest_unreadable, got ' + repr(data.get('status')))
+if not d.get('error'): sys.exit('expected non-empty error field')
+print('OK')
+" 2>/dev/null | grep -q OK; then
+  red "FAIL: corrupt-manifest case — output did not match manifest_unreadable contract"
+  red "  got: $OUT3"
+  errors=$((errors + 1))
+else
+  green "PASS: cycle-guard corrupt-manifest case — exit 1 + status=manifest_unreadable (was silent green pre-v0.0.24)"
 fi
 
 if [ $errors -eq 0 ]; then
