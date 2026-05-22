@@ -116,9 +116,14 @@ python3 -c '
 import json, os, sys
 from pathlib import Path
 m = json.loads(Path(os.environ["MANIFEST_PATH"]).read_text(encoding="utf-8"))
-assert m.get("schema_version") == "0.1.0", f"bad schema: {m.get(\"schema_version\")}"
-assert m.get("draft_version") == int(os.environ["EXPECTED_VERSION"]), \
-    f"manifest draft_version={m.get(\"draft_version\")} but draft on disk is v{os.environ[\"EXPECTED_VERSION\"]}"
+schema = m.get("schema_version")
+assert schema == "0.1.0", "bad schema: " + repr(schema)
+manifest_v = m.get("draft_version")
+expected_v = int(os.environ["EXPECTED_VERSION"])
+assert manifest_v == expected_v, (
+    "manifest draft_version=" + repr(manifest_v)
+    + " but draft on disk is v" + str(expected_v)
+)
 print(len(m.get("citations", [])))
 '
 ```
@@ -159,19 +164,47 @@ Parse the return envelope:
 
 #### 3.2 Inspect deviations
 
+`draft_position_out_of_range` deviations are filtered out before counting: the revisor can only drop those manifest entries (revisor.md Phase 1 triage) — it cannot produce a prose fix — so they should not trigger a revisor dispatch. The orchestrator handles them inline at 3.2 step b below.
+
 ```
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
 VERIFY_PATH="<project_path>/.metadata/verify-v<CURRENT_DRAFT_VERSION>.json" \
+MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
 python3 -c '
 import json, os, sys
 from pathlib import Path
 v = json.loads(Path(os.environ["VERIFY_PATH"]).read_text(encoding="utf-8"))
-unsup = [d for d in v.get("deviations", []) if d.get("verdict") == "unsupported"]
-print(len(unsup))
+deviations = v.get("deviations", [])
+# (a) Repairable unsupported: anything with verdict=unsupported except out-of-range,
+#     which the revisor can only drop — handle those inline at (b), do not dispatch.
+repairable = [
+    d for d in deviations
+    if d.get("verdict") == "unsupported"
+    and d.get("reason") != "draft_position_out_of_range"
+]
+out_of_range = [
+    d for d in deviations
+    if d.get("verdict") == "unsupported"
+    and d.get("reason") == "draft_position_out_of_range"
+]
+# (b) Prune out-of-range entries from the citation manifest inline. The revisor
+#     would otherwise spend an entire dispatch just to drop these.
+if out_of_range:
+    manifest = Path(os.environ["MANIFEST_PATH"])
+    m = json.loads(manifest.read_text(encoding="utf-8"))
+    stale = {(d["draft_position"], d["wiki_slug"], d.get("claim_id")) for d in out_of_range}
+    m["citations"] = [
+        c for c in m.get("citations", [])
+        if (c.get("draft_position"), c.get("wiki_slug"), c.get("claim_id")) not in stale
+    ]
+    manifest.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
+print(json.dumps({"repairable": len(repairable), "out_of_range": len(out_of_range)}))
 '
 ```
 
-The trailing print is captured as `UNSUPPORTED_COUNT`. If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
+The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `OUT_OF_RANGE_COUNT = out_of_range` (pruned inline, surface in the final summary).
+
+If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
 
 If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND >= MAX_ROUNDS` → loop terminates EXHAUSTED. Skip to Step 4 with a `⚠ Loop exhausted` warning for the final summary; the operator decides whether to ship the draft anyway or invoke M9 against the highest verify-vN.
 
@@ -211,21 +244,24 @@ from pathlib import Path
 project = Path(os.environ["PROJECT_PATH"])
 n = int(os.environ["CURRENT_DRAFT_VERSION"])
 round_ = int(os.environ["REVISION_ROUND"])
-verify = project / ".metadata" / f"verify-v{n}.json"
-assert verify.exists() and verify.stat().st_size > 0, f"verify missing or empty: {verify}"
+verify = project / ".metadata" / ("verify-v" + str(n) + ".json")
+assert verify.exists() and verify.stat().st_size > 0, "verify missing or empty: " + str(verify)
 v = json.loads(verify.read_text(encoding="utf-8"))
-assert v.get("schema_version") == "0.1.0", f"bad verify schema: {v.get(\"schema_version\")}"
-assert v.get("draft_version") == n, f"verify draft_version mismatch: {v.get(\"draft_version\")} != {n}"
+verify_schema = v.get("schema_version")
+assert verify_schema == "0.1.0", "bad verify schema: " + repr(verify_schema)
+verify_v = v.get("draft_version")
+assert verify_v == n, "verify draft_version mismatch: " + repr(verify_v) + " != " + str(n)
 counts = v.get("counts", {})
 total = counts.get("total")
 expected = len(v.get("verified", [])) + len(v.get("deviations", []))
-assert total == expected, f"counts.total={total} != verified+deviations={expected}"
+assert total == expected, "counts.total=" + repr(total) + " != verified+deviations=" + str(expected)
 if round_ > 0:
-    draft = project / "output" / f"draft-v{n}.md"
+    draft = project / "output" / ("draft-v" + str(n) + ".md")
     manifest = project / ".metadata" / "citation-manifest.json"
-    assert draft.exists() and draft.stat().st_size > 0, f"draft missing or empty: {draft}"
+    assert draft.exists() and draft.stat().st_size > 0, "draft missing or empty: " + str(draft)
     m = json.loads(manifest.read_text(encoding="utf-8"))
-    assert m.get("draft_version") == n, f"manifest draft_version mismatch after revisor: {m.get(\"draft_version\")} != {n}"
+    manifest_v = m.get("draft_version")
+    assert manifest_v == n, "manifest draft_version mismatch after revisor: " + repr(manifest_v) + " != " + str(n)
 print(json.dumps(counts))
 '
 ```

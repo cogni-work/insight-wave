@@ -84,7 +84,7 @@ Order: address `claim_text_misaligned` first (cheapest fixes, single sentence ea
 
 For each deviation, edit the in-memory draft:
 
-1. **Locate the sentence.** `draft_position` is `"<two-digit section index>:<one-based sentence index>"`. Walk the draft H2-by-H2 to find the section, then sentence-by-sentence within it.
+1. **Locate the sentence.** `draft_position` is `"<two-digit section index>:<one-based sentence index>"`. Walk the draft H2-by-H2 to find the section, then sentence-by-sentence within it. **Use the same sentence delimiter the verifier uses** (`wiki-verifier.md` Phase 0 step 2): a sentence is delimited by `. `, `? `, or `! ` followed by a capital letter or end-of-line; each H2 starts a new section. Cross-agent tokenization drift here would cause round-2 verifier scoring to read positions that no longer align — never invent a different rule.
 
 2. **Apply the fix per the triage outcome above:**
    - **Rephrase** — replace the sentence with a version that lines up with the chosen claim's `text` (or `excerpt_quote` if you need to preserve a specific phrase). Keep the inline `[[sources/<slug>]]` wikilink in place (or update it if you switched to a different page in the rare cross-page case). Preserve neighbouring sentences byte-for-byte — surgical correction, not paragraph rewrite.
@@ -93,7 +93,7 @@ For each deviation, edit the in-memory draft:
 3. **Update the manifest copy.** For every fix:
    - **Rephrase** — leave the manifest entry's `draft_position` + `wiki_slug` intact; if you switched to a different `claim_id` on the same page, update it; if you switched pages, update both `wiki_slug` and `claim_id`.
    - **Drop** — remove the manifest entry entirely.
-   - All remaining manifest entries' `draft_position` values may need re-indexing if sentence-level removals/insertions shifted later sentences inside the same section. Recompute `draft_position` for every entry after all edits land (single pass over the final draft).
+   - All remaining manifest entries' `draft_position` values may need re-indexing if sentence-level removals/insertions shifted later sentences inside the same section. Recompute `draft_position` for every entry after all edits land — single pass over the final draft, **using the same delimiter rule as Phase 2 step 1 above** (verifier-compatible: `. ` / `? ` / `! ` + capital or EOL, H2-bounded sections). The next round's verifier reads these positions; any tokenizer drift here cascades into spurious `draft_position_out_of_range` deviations.
 
 4. **Never invent claims.** If no existing claim on the cited page (or a near-neighbour page from the same `deviations[]` slug list) covers the draft sentence's factual content, you MUST drop the citation. Inventing a `claim_id` that doesn't exist in the page's frontmatter is a fabrication and exactly the failure mode the inverted pipeline exists to prevent.
 
@@ -103,7 +103,7 @@ For each deviation, edit the in-memory draft:
 
 1. **Compose the revised draft** as one markdown string. `Write` it to `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md` exactly once — spilling the draft into the response body can exhaust your output budget before `Write` fires.
 
-2. **Read-back verify the draft.** Immediately after `Write` returns, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty, contain at least one `[[sources/` wikilink (unless every citation was dropped, which is a degenerate case worth a `notes` warning), and roughly match the length you composed. If `Read` fails or returns empty, `Write` once more with the same content. On second failure, return `write_failed`.
+2. **Read-back verify the draft.** Immediately after `Write` returns, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty and roughly match the length you composed. **Citation-integrity check** (regression guard): every `[[sources/...` opening in the content MUST have a matching `]]` close on the same line, and the number of `[[sources/<slug>]]` complete wikilinks MUST equal the number of `citations[]` entries in the in-memory manifest you're about to write (modulo entries you intentionally dropped). A truncated wikilink like `[[sources/foo` (no close) or a plain-text collapse like `(sources/foo)` is a regression — even though a `[[sources/` substring grep would still match. If the count is off by more than the explicit drops, the LLM either truncated a citation mid-token or collapsed one to plain text — `Write` once more with the same content and re-verify. If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
 
 3. **Rewrite the citation manifest.** Recompute `draft_position` values from the final draft (Phase 2 step 3). Compose:
 

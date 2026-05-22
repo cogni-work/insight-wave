@@ -90,7 +90,7 @@ Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug
    }
    ```
 
-   `counts.total` MUST equal `len(verified) + len(deviations)`; this is the audit hook the orchestrator's Step 6 read-back asserts.
+   `counts.total` MUST equal `len(verified) + len(deviations)`; this is the audit hook the orchestrator's Step 4 read-back asserts.
 
 2. **Read-back verify.** Immediately after `Write` returns, `Read` the file. Confirm it parses, `schema_version == "0.1.0"`, `draft_version == DRAFT_VERSION`, `revision_round == REVISION_ROUND`, and `counts.total == len(verified) + len(deviations)`. On any failure, `Write` once more with the same content. If the second attempt also fails, return the `write_failed` envelope below.
 

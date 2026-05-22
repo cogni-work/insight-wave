@@ -39,6 +39,19 @@ assert_grep '\] verify | project=' "$VERIFY" "knowledge-verify: emits the '## [D
 assert_grep '2 revisor iterations' "$VERIFY" "knowledge-verify: documents the max-2 revisor iterations cap"
 assert_grep 'REVISION_ROUND' "$VERIFY" "knowledge-verify: threads REVISION_ROUND through verifier dispatch"
 assert_grep 'MAX_ROUNDS' "$VERIFY" "knowledge-verify: caps loop with MAX_ROUNDS"
+# Positive assertion: the SKILL must mention incrementing REVISION_ROUND between
+# rounds — without this, a regression that drops the increment would silently
+# infinite-loop while the contract test passes green. We grep for the prose
+# stating the increment happens before the next dispatch (Step 3.3 -> loop back).
+if grep -qE 'increment +(`?REVISION_ROUND`?|the (revisor )?round|round counter)' "$VERIFY"; then
+  green "PASS: knowledge-verify: SKILL documents incrementing REVISION_ROUND between rounds"
+else
+  red "FAIL: knowledge-verify: SKILL must document incrementing REVISION_ROUND between rounds (without it, the loop would never terminate via MAX_ROUNDS)"
+  errors=$((errors + 1))
+fi
+# Defence-in-depth: out_of_range deviations are filtered before the dispatch
+# decision (otherwise the revisor pays an LLM call just to drop manifest entries).
+assert_grep 'draft_position_out_of_range' "$VERIFY" "knowledge-verify: filters draft_position_out_of_range out of the revisor trigger (revisor can only drop these)"
 # Defence-in-depth: confirm there is no obsolete Skill("cogni-knowledge:wiki-verifier)
 # or Skill("cogni-knowledge:revisor) dispatch — agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:wiki-verifier' "$VERIFY" "knowledge-verify: no Skill('cogni-knowledge:wiki-verifier) — agents go through Task"
@@ -146,7 +159,15 @@ done
 # dropped vs upstream) — we exempt that comment by filtering to lines
 # after the `-->` close, matching how test_compose_contract.sh exempts
 # wiki-composer's HTML comment for `aggregated-context.json`.
-REVISOR_BODY=$(awk 'BEGIN{p=0} /^-->/{p=1; next} p' "$REVISOR")
+# Anchor the close-tag match so trailing whitespace on the `-->` line (rebase
+# conflict resolution, autoformatter, CR-LF editor) doesn't cause the filter
+# to fall through to an empty body — which would make every scope-discipline
+# assert below pass vacuously.
+REVISOR_BODY=$(awk 'BEGIN{p=0} /^-->[[:space:]]*$/{p=1; next} p' "$REVISOR")
+if [ -z "$REVISOR_BODY" ]; then
+  red "FAIL: revisor: awk body filter returned empty — '-->' close marker missing or has unexpected suffix"
+  errors=$((errors + 1))
+fi
 for token in 'citation_density' 'cross_references_emitted' 'placed-evidence ledger' 'scripts/create-entity.sh' 'Source-Mode Evidence Gathering'; do
   if echo "$REVISOR_BODY" | grep -q -- "$token"; then
     red "FAIL: revisor: body still references '$token' (deferred surface; upstream-only at v0.0.23)"
