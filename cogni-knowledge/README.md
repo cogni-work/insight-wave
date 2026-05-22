@@ -2,6 +2,10 @@
 
 > **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
 
+> **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
+
+> **Start here.** Run `/cogni-knowledge:knowledge-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
 **Wiki-first research that compounds.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent cogni-wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time.
 
 This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wiki. Every primitive delegates upward to those plugins; the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
@@ -26,40 +30,58 @@ This plugin is a thin orchestrator. It does not fork cogni-research or cogni-wik
 
 ## What it does
 
-| Skill | Purpose | Delegates to |
-|---|---|---|
-| `knowledge-setup` | Bootstrap a knowledge base (wiki + binding manifest) | `cogni-wiki:wiki-setup` |
-| `knowledge-research` | Research a topic INTO the bound wiki and record the project | `cogni-wiki:wiki-from-research` (Mode A) |
-| `knowledge-report` | Compose a report BY READING the bound wiki, with cycle-guard, then re-deposit | `cogni-wiki:wiki-from-research` (Mode B, with opt-in flags) |
-| `knowledge-resume` | Status: deposited projects, wiki health, suggested next action | `cogni-wiki:wiki-resume` |
-| `knowledge-query` | Ask a question against the bound base | `cogni-wiki:wiki-query` |
-| `knowledge-dashboard` | Render an HTML overview with a binding overlay sidecar | `cogni-wiki:wiki-dashboard` |
-| `knowledge-refresh` | Refresh stale pages — pull-mode pipes a research project in, push-mode auto-researches stale topics | `cogni-wiki:wiki-refresh`, `cogni-wiki:wiki-lint`, `cogni-knowledge:knowledge-research` |
+1. **Setup** a knowledge base — one cogni-wiki + a `binding.json` manifest that records every research project deposited
+2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web yet) — Phase 1 of the v0.1.0 inverted pipeline
+3. **Curate** candidate sources per sub-question via WebSearch + scoring (no fetch yet) — Phase 2
+4. **Fetch** source bodies via WebFetch with `claude-in-chrome` cobrowse fallback through a shared fetch-cache — Phase 3
+5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
+6. **Compose** the draft report by reading the populated wiki, with `[[sources/<slug>]]` wikilink citations + a parallel citation manifest — Phase 5
+7. **Verify** every cited claim against the cited page's `pre_extracted_claims` (zero network) and loop with the revisor on `unsupported` deviations, capped at 2 iterations — Phase 6
+8. **Research** a topic INTO the bound wiki via the legacy `cogni-wiki:wiki-from-research` Mode A path (pre-v0.1.0 surface)
+9. **Report** by reading the bound wiki with `cycle-guard.py`, then re-deposit via `wiki-from-research` Mode B (pre-v0.1.0 surface)
+10. **Resume** project status — deposited projects, wiki health, suggested next action
+11. **Query** the bound base — natural-language question routed through `cogni-wiki:wiki-query`
+12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
+13. **Refresh** stale pages — pull-mode pipes a research project in; push-mode auto-researches stale topics
 
-See `references/absorption-roadmap.md` for the full epic plan — Phase 4 (internal alpha) and onward.
+See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M8 shipped; M9 finalize pending).
 
-## Installation
+## Install
 
-Install via the insight-wave marketplace:
+Install insight-wave via Claude Code desktop:
 
-```
-/plugin install cogni-knowledge@insight-wave
-```
+- **5-minute walkthrough** — [From Install to Infographic](../docs/workflows/install-to-infographic.md)
+- **Full setup reference** — [Claude Code desktop](../docs/claude-code-desktop.md)
+- **Enterprise / compliance setup** — [Deployment guide](../docs/deployment-guide.md)
 
-Requires both `cogni-wiki` and `cogni-research` installed (they are the delegate targets).
+This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
+
+> **Note**: cogni-knowledge orchestrates `cogni-wiki` and (on the pre-v0.1.0 legacy path) `cogni-research`. The v0.1.0 inverted pipeline forks the agents locally so the runtime path is 0% cogni-research; the binding still records `report_source` so legacy projects keep working.
 
 ## Quick start
 
 ```
+/cogni-knowledge:knowledge-resume --knowledge-slug eu-ai-act  # ← entry point: status + next step
 /cogni-knowledge:knowledge-setup --knowledge-slug eu-ai-act --knowledge-title "EU AI Act knowledge base"
-/cogni-knowledge:knowledge-research --knowledge-slug eu-ai-act --topic "EU AI Act Article 6 high-risk systems"
-/cogni-knowledge:knowledge-research --knowledge-slug eu-ai-act --topic "EU AI Act foundation model obligations"
-/cogni-knowledge:knowledge-resume --knowledge-slug eu-ai-act
+/cogni-knowledge:knowledge-plan --knowledge-slug eu-ai-act --topic "EU AI Act Article 6 high-risk systems"
+/cogni-knowledge:knowledge-curate --knowledge-slug eu-ai-act --project-path ...
+/cogni-knowledge:knowledge-fetch --knowledge-slug eu-ai-act --project-path ...
+/cogni-knowledge:knowledge-ingest --knowledge-slug eu-ai-act --project-path ...
+/cogni-knowledge:knowledge-compose --knowledge-slug eu-ai-act --project-path ...
+/cogni-knowledge:knowledge-verify --knowledge-slug eu-ai-act --project-path ...
 /cogni-knowledge:knowledge-dashboard --knowledge-slug eu-ai-act --open yes
 /cogni-knowledge:knowledge-query --knowledge-slug eu-ai-act --question "what does the wiki say about foundation models?"
 ```
 
-The second `knowledge-research` reads the wiki that the first deposited — that is the compounding loop. The `dashboard` and `query` calls let you inspect and ask the accumulated base. Use `knowledge-refresh --mode push|pull` later to keep stale pages fresh.
+Or just describe what you want in natural language:
+
+- "Set up a new knowledge base for EU AI Act compliance"
+- "Plan a research project on Article 6 high-risk systems"
+- "What does my wiki say about foundation model obligations?"
+- "Show me the dashboard for the EU AI Act knowledge base"
+- "Refresh the stale pages in my wiki"
+
+The second project reads the wiki the first one deposited — that is the compounding loop. The `dashboard` and `query` skills let you inspect and ask the accumulated base. Use `knowledge-refresh --mode push|pull` later to keep stale pages fresh.
 
 ## Data model
 
@@ -110,23 +132,51 @@ The deposited pages are now part of the wiki and visible to the next `knowledge-
 
 ## Components
 
-- 7 skills (`knowledge-setup`, `knowledge-research`, `knowledge-report`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`)
-- 3 scripts (`knowledge-binding.py`, `lineage-stamp.py`, `cycle-guard.py`)
-- 3 references (`differentiation-thesis.md`, `delegation-contract.md`, `absorption-roadmap.md`)
+| Component | Type | Description |
+|-----------|------|-------------|
+| knowledge-resume | Skill | Show status of a cogni-knowledge base — slug, bound wiki, deposited projects, wiki health, next-step guidance |
+| knowledge-setup | Skill | Bootstrap a cogni-knowledge base — wiki + a binding manifest that records every research project deposited |
+| knowledge-plan | Skill | Phase 1 of the v0.1.0 inverted pipeline — decompose a topic into 3–7 sub-questions with candidate domains |
+| knowledge-curate | Skill | Phase 2 — fan out one `source-curator` per sub-question; merge scored candidates into `candidates.json` |
+| knowledge-fetch | Skill | Phase 3 — per-batch `source-fetcher` dispatch with WebFetch + cobrowse fallback through a shared fetch-cache |
+| knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter |
+| knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
+| knowledge-verify | Skill | Phase 6 — zero-network claim alignment + revisor loop on `unsupported` deviations (max 2 iterations) |
+| knowledge-research | Skill | Legacy v0.0.x — research a topic INTO the bound wiki via `cogni-wiki:wiki-from-research` Mode A |
+| knowledge-report | Skill | Legacy v0.0.x — compose a report by reading the bound wiki with `cycle-guard.py`, then re-deposit Mode B |
+| knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
+| knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
+| knowledge-refresh | Skill | Self-healing — pull-mode pipes a research project in; push-mode auto-researches stale topics |
+| source-curator | Agent | Phase 2 fork — per-sub-question WebSearch + scoring; emits a batch JSON array for merge into `candidates.json` |
+| source-fetcher | Agent | Phase 3 NEW — per-URL WebFetch with cobrowse fallback; reads/writes through `fetch-cache.py`; PDF branch via Read pages |
+| claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
+| source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
+| wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with wikilink citations and a citation manifest |
+| wiki-verifier | Agent | Phase 6 NEW — scores every citation as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network) |
+| revisor | Agent | Phase 6 fork — rephrases unsupported draft sentences toward existing claims or drops the citation (no new fetches) |
 
 ## Architecture
 
-cogni-knowledge sits **between the user and `cogni-research`+`cogni-wiki`**. Direct user → `cogni-research` and direct user → `cogni-wiki` paths remain unchanged. The plugin's only value-add is the binding (`binding.json`), lineage stamping, and one-prompt workflow choreography.
+```
+cogni-knowledge/
+├── .claude-plugin/plugin.json    Plugin manifest
+├── README.md                     Plugin documentation
+├── CLAUDE.md                     Developer guide
+├── CHANGELOG.md                  Version history
+├── LICENSE                       AGPL-3.0
+├── agents/                       7 forked + new pipeline agents
+├── references/                   7 framework + design docs
+├── scripts/                      7 utility scripts (binding, lineage, cycle-guard, fetch-cache, candidate-store, …)
+├── skills/                       13 knowledge-* skills
+└── tests/                        Contract tests (one per phase)
+```
 
-```
-user ──> cogni-knowledge ──> cogni-wiki:wiki-from-research ──> cogni-research:research-setup → research-report
-                                                          └──> cogni-wiki:wiki-ingest
-```
+The plugin sits between the user and `cogni-wiki`. On the v0.1.0 inverted pipeline (Phases 1–6 shipped), the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition + verification. The pre-v0.1.0 legacy path (`knowledge-research` / `knowledge-report`) still delegates to `cogni-wiki:wiki-from-research`, which internally calls `cogni-research`.
 
 ## Dependencies
 
-- `cogni-wiki` ≥ 0.0.41 (Phase 2 needs the `--allow-wiki-source --cycle-guard-cleared` flag pair on `wiki-from-research`; Phase 3 `knowledge-query` needs the `--wiki-root` flag added to `wiki-query` in 0.0.41)
-- `cogni-research` ≥ 0.8.3
+- `cogni-wiki` ≥ 0.0.44 (Phase 4 `knowledge-ingest` needs the `type: source` allowlist added to `wiki-lint` / `wiki-health` at 0.0.44; legacy `knowledge-report` needs the `--allow-wiki-source --cycle-guard-cleared` flag pair from 0.0.40 and the `--wiki-root` flag on `wiki-query` from 0.0.41)
+- `cogni-research` — installed for the pre-v0.1.0 legacy `knowledge-research` / `knowledge-report` path only; the v0.1.0 inverted pipeline has no runtime dependency (forked agents are local point-in-time copies)
 
 ## Custom development
 
@@ -134,8 +184,8 @@ Adding a skill: every skill delegates. If you find yourself writing a new agent 
 
 ## License
 
-AGPL-3.0-only. See [LICENSE](LICENSE).
+[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution terms.
 
 ---
 
-Built by [Cogni Work](https://cogni-work.ai). Part of [insight-wave](../README.md).
+Built by [cogni-work](https://cogni-work.ai) — open-source tools for consulting intelligence.
