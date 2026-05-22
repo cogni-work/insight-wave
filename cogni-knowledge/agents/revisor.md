@@ -75,10 +75,11 @@ Group deviations by `reason`:
 
 - **`page_not_found`** — drop the citation. There is no page; nothing to rephrase toward. The sentence either loses its citation and gets rewritten as non-evidence-based, or (if it had no other purpose) gets removed.
 - **`claim_not_found`** — the page exists but the cited `claim_id` doesn't. Look at the page's other claims in `claims_by_slug[wiki_slug]`. If any existing claim covers the same factual ground as the draft sentence, **rephrase the sentence + switch `claim_id` to the matching claim**. Otherwise, drop the citation.
+- **`composer_dropped_claim`** — the composer cited a source page with `claim_id: null` (the composer was supposed to drop the citation but didn't). Same triage as `claim_not_found`: search `claims_by_slug[wiki_slug]` for a claim covering the draft sentence's factual content; rephrase + assign that `claim_id` if found, drop the citation otherwise.
 - **`claim_text_misaligned`** — the claim exists but the draft sentence drifted (added a quantifier, shifted scope, contradicted, etc.). Read the claim's `text` + `excerpt_quote`. **Rephrase the draft sentence** to match the claim's scope/quantifier/relation exactly. Keep the citation.
-- **`draft_position_out_of_range`** — the manifest pointed at a sentence that no longer exists in the draft (the verifier saw the mismatch). Drop the manifest entry. No prose change.
+- **`draft_position_out_of_range`** — the manifest pointed at a sentence that no longer exists in the draft (the verifier saw the mismatch). Drop the manifest entry. No prose change. (Note: the orchestrator's Step 3.2 prunes these inline so the revisor should never see them; this branch is defence-in-depth.)
 
-Order: address `claim_text_misaligned` first (cheapest fixes, single sentence each), then `claim_not_found` (requires re-reading the page's other claims), then `page_not_found` (largest surgical surface — may delete a sentence).
+Order: address `claim_text_misaligned` first (cheapest fixes, single sentence each), then `claim_not_found` and `composer_dropped_claim` together (both require re-reading the page's other claims), then `page_not_found` (largest surgical surface — may delete a sentence).
 
 ### Phase 2: Revise
 

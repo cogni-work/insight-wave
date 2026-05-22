@@ -89,6 +89,16 @@ Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/
 - `<project_path>/.metadata/citation-manifest.json` — "no citation manifest — run knowledge-compose first"
 - At least one `<project_path>/output/draft-v*.md` — "no draft on disk — run knowledge-compose first"
 
+### 0.5 Resolve MAX_ROUNDS
+
+Default `2`. If `--max-rounds` is passed:
+
+- Integer 0–2 → use as-is.
+- Integer ≥ 3 → abort with `"max-rounds capped at 2 — the structural contract is fixed; lower the value or remove the flag"`.
+- Non-integer / negative → abort with `"max-rounds must be a non-negative integer ≤ 2"`.
+
+`MAX_ROUNDS` is then referenced by Step 3.2's loop-termination decision. The 2-iteration cap is a structural property of `references/inverted-pipeline.md` Phase 6, not a tunable — higher values would silently blow the < 5 min cost target.
+
 ### 1. Resolve current draft version N
 
 ```

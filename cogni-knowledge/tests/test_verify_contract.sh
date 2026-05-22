@@ -39,6 +39,11 @@ assert_grep '\] verify | project=' "$VERIFY" "knowledge-verify: emits the '## [D
 assert_grep '2 revisor iterations' "$VERIFY" "knowledge-verify: documents the max-2 revisor iterations cap"
 assert_grep 'REVISION_ROUND' "$VERIFY" "knowledge-verify: threads REVISION_ROUND through verifier dispatch"
 assert_grep 'MAX_ROUNDS' "$VERIFY" "knowledge-verify: caps loop with MAX_ROUNDS"
+# MAX_ROUNDS >= 3 must be rejected — the 2-iteration cap is a structural contract,
+# not a tunable. Without an explicit validation step, --max-rounds 5 silently
+# blows the < 5 min cost target documented in references/inverted-pipeline.md.
+assert_grep 'max-rounds capped at 2' "$VERIFY" "knowledge-verify: rejects --max-rounds >= 3 (structural cap, not a tunable)"
+assert_grep '0.5 Resolve MAX_ROUNDS' "$VERIFY" "knowledge-verify: has an explicit Step 0.5 that validates MAX_ROUNDS"
 # Positive assertion: the SKILL must mention incrementing REVISION_ROUND between
 # rounds — without this, a regression that drops the increment would silently
 # infinite-loop while the contract test passes green. We grep for the prose
@@ -85,6 +90,13 @@ assert_grep 'paraphrase' "$VERIFIER" "wiki-verifier: emits paraphrase verdict"
 assert_grep 'unsupported' "$VERIFIER" "wiki-verifier: emits unsupported verdict"
 # The informational 4th verdict for claim_id: null citations to synthesis pages.
 assert_grep 'synthesis' "$VERIFIER" "wiki-verifier: emits synthesis informational verdict (for claim_id: null wikilinks)"
+# Closed vocabulary of unsupported reasons — covers claim_id: null on a source
+# page (composer_dropped_claim) so the synthesis verdict doesn't swallow them.
+# Page kind comes from Phase 0's directory resolution, never from claim_id alone.
+for reason in 'page_not_found' 'claim_not_found' 'composer_dropped_claim' 'claim_text_misaligned' 'draft_position_out_of_range'; do
+  assert_grep "$reason" "$VERIFIER" "wiki-verifier: documents '$reason' as an unsupported reason"
+done
+assert_grep 'page_kind_by_slug' "$VERIFIER" "wiki-verifier: tracks page kind from Phase 0 directory resolution (not inferred from claim_id)"
 assert_grep 'claim_id' "$VERIFIER" "wiki-verifier: looks up claims by claim_id"
 assert_grep 'draft_position' "$VERIFIER" "wiki-verifier: walks citations by draft_position"
 # Zero-network is the load-bearing invariant.

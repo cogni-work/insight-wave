@@ -44,12 +44,15 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
 
 1. `Read` `<PROJECT_PATH>/.metadata/citation-manifest.json`. Confirm `schema_version == "0.1.0"` and `draft_version == DRAFT_VERSION`. On mismatch, return the `manifest_mismatch` envelope (Phase 2) — do not attempt scoring against a stale manifest.
 2. `Read` `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md`. Build an in-memory map `section_index → list of sentences in that section`. A sentence is delimited by `. `, `? `, or `! ` followed by a capital letter or end-of-line; treat each H2 as a section boundary. `draft_position` strings in the manifest are `"<two-digit section index>:<one-based sentence index>"` (e.g. `"02:07"`) — Phase 1 walks the manifest, not the draft text.
-3. Build the set of distinct `wiki_slug` values referenced in the manifest. For each slug, locate the page:
-   - First try `<WIKI_ROOT>/wiki/sources/<slug>.md`.
-   - If absent, try `<WIKI_ROOT>/wiki/syntheses/<slug>.md`.
+3. Build the set of distinct `wiki_slug` values referenced in the manifest. For each slug, locate the page **and record which directory it resolved under** in a `page_kind_by_slug` map:
+   - First try `<WIKI_ROOT>/wiki/sources/<slug>.md` → `page_kind_by_slug[slug] = "source"`.
+   - If absent, try `<WIKI_ROOT>/wiki/syntheses/<slug>.md` → `page_kind_by_slug[slug] = "synthesis"`.
    - If neither exists, record the slug in a `missing_pages` set — every citation pointing at it gets verdict `unsupported` with `reason: "page_not_found"` in Phase 1.
+
+   The directory is the **only** authoritative signal for whether a citation targets first-class evidence (`sources/`) vs. cross-source framing (`syntheses/`). Phase 1's `synthesis` verdict depends on this — do not infer page kind from `claim_id == null` alone (M7's composer emits `claim_id: null` on synthesis-page wikilinks AND when it failed to find a matching claim on a source page; only the directory disambiguates).
+
 4. For each present page, `Read` it and parse the YAML frontmatter:
-   - Extract `pre_extracted_claims:` into an in-memory dict `claims_by_id[claim_id] = {text, excerpt_quote}`. If the field is absent or empty (synthesis pages typically have none), record the page as `kind: synthesis` for the Phase 1 dispatch table.
+   - Extract `pre_extracted_claims:` into an in-memory dict `claims_by_id[claim_id] = {text, excerpt_quote}`. If the field is absent or empty (synthesis pages typically have none), leave the dict empty for that slug — Phase 1's dispatch table reads `page_kind_by_slug[slug]` to decide what to do.
    - Stdlib parsing only — match the same shape `agents/source-ingester.md` Phase 3 writes (`json.dumps`-quoted string values, two-space indent under `pre_extracted_claims:`). Use line-by-line matching; do NOT import `yaml` (it's not stdlib).
 
 ### Phase 1: Score per citation
@@ -58,10 +61,11 @@ Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug
 
 1. **Locate the draft sentence.** Parse `draft_position` as `"<section_idx>:<sentence_idx>"`. Look up the sentence in the map built at Phase 0 step 2. If indices are out of range (draft drift since the manifest was written), record the citation as `unsupported` with `reason: "draft_position_out_of_range"` and continue.
 
-2. **Resolve the verdict.**
-   - **`synthesis`** — `claim_id` is `null` (or missing). The manifest emits `claim_id: null` for synthesis-page wikilinks per `agents/wiki-composer.md:91`. Surface in `verified[]`. Do not score — synthesis pages are not first-class evidence and this verdict never triggers the revisor.
-   - **`unsupported`** with `reason: "page_not_found"` — the slug had no page on disk (Phase 0 step 3).
-   - **`unsupported`** with `reason: "claim_not_found"` — page exists, `claim_id` is non-null, but no entry in `claims_by_id[claim_id]` matches.
+2. **Resolve the verdict** (page kind from Phase 0 step 3's `page_kind_by_slug[wiki_slug]` is authoritative — do NOT infer from `claim_id`):
+   - **`unsupported`** with `reason: "page_not_found"` — the slug is in `missing_pages` (Phase 0 step 3 found no file under either `sources/` or `syntheses/`).
+   - **`synthesis`** — `page_kind_by_slug[wiki_slug] == "synthesis"` AND `claim_id` is `null`. The manifest emits `claim_id: null` for synthesis-page wikilinks per `agents/wiki-composer.md:91`. Surface in `verified[]`. Do not score — synthesis pages are not first-class evidence and this verdict never triggers the revisor.
+   - **`unsupported`** with `reason: "composer_dropped_claim"` — `page_kind_by_slug[wiki_slug] == "source"` AND `claim_id` is `null`. The composer cited a source page but couldn't identify a matching pre-extracted claim (see `agents/wiki-composer.md:91` — the composer was instructed to drop the citation in that case, but if a `claim_id: null` manifest entry pointing at a source page is present, the composer didn't follow through). The revisor's `claim_not_found` triage path picks this up.
+   - **`unsupported`** with `reason: "claim_not_found"` — page exists (under `sources/`), `claim_id` is non-null, but no entry in `claims_by_id[claim_id]` matches.
    - **`verbatim`** — the draft sentence reproduces the claim's `text` or `excerpt_quote` near-exactly (≥ 90% lexical overlap; case- and whitespace-insensitive comparison; punctuation-tolerant). Use your own judgement on the threshold — there's no string-match function available, only your reading. Verbatim is acceptable but signals copy-paste over synthesis; flag in the dashboard.
    - **`paraphrase`** — the draft sentence makes the same factual claim as `claims_by_id[claim_id]` (numbers match, named entities match, relation matches) but uses different wording. This is the desired state.
    - **`unsupported`** (default fall-through) — page and claim both exist, but the draft sentence does not assert the claim. Includes cases where the draft contradicts the claim, adds unsupported quantifiers, or shifts the claim's scope. Record `reason: "claim_text_misaligned"` plus a one-line note (≤ 100 chars) of what's misaligned (e.g., `"draft says 'all member states'; claim scope is 'Tier-1 member states'"`). This note becomes the revisor's primary input.
