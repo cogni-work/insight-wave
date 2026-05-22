@@ -158,8 +158,11 @@ INGESTER="$PLUGIN_ROOT/agents/source-ingester.md"
 CLAIM_EXTRACTOR="$PLUGIN_ROOT/agents/claim-extractor.md"
 COMPOSE="$PLUGIN_ROOT/skills/knowledge-compose/SKILL.md"
 COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
+VERIFY="$PLUGIN_ROOT/skills/knowledge-verify/SKILL.md"
+VERIFIER="$PLUGIN_ROOT/agents/wiki-verifier.md"
+REVISOR="$PLUGIN_ROOT/agents/revisor.md"
 
-for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER"; do
+for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-(research|claims):' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-research/cogni-claims skill"
@@ -168,12 +171,14 @@ for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" 
   fi
 done
 
-# cogni-wiki extension — applies to the v0.0.20 ingest surface and the
-# v0.0.22 compose surface. Both call cogni-wiki helpers at script level
-# only (knowledge-ingest hits backlink_audit.py + wiki_index_update.py;
-# knowledge-compose only reads the wiki — no script calls — and the
-# composer is fully read-only against wiki/*).
-for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER"; do
+# cogni-wiki extension — applies to the v0.0.20 ingest surface, the
+# v0.0.22 compose surface, and the v0.0.23 verify surface. All call
+# cogni-wiki helpers at script level only (knowledge-ingest hits
+# backlink_audit.py + wiki_index_update.py; knowledge-compose only reads
+# the wiki — no script calls — and the composer is fully read-only
+# against wiki/*; knowledge-verify only reads the wiki — no script calls
+# — and the verifier + revisor are read-only against wiki/* too).
+for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-wiki:' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-wiki skill (M6 contract: call helper scripts directly)"
