@@ -174,9 +174,10 @@ outline  = Path(os.environ["OUTLINE_PATH"])
 assert draft.exists() and draft.stat().st_size > 0, f"draft missing or empty: {draft}"
 assert "[[sources/" in draft.read_text(encoding="utf-8"), "draft contains no [[sources/...]] wikilink"
 m = json.loads(manifest.read_text(encoding="utf-8"))
-assert m.get("schema_version") == "0.1.0", f"bad schema: {m.get(\"schema_version\")}"
+schema = m.get("schema_version")
+assert schema == "0.1.0", "bad schema: " + repr(schema)
 cites = m.get("citations", [])
-assert isinstance(cites, list), f"citations must be a list, got {type(cites).__name__}"
+assert isinstance(cites, list), "citations must be a list, got " + type(cites).__name__
 for c in cites:
     assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c, c
 assert outline.exists(), f"outline missing: {outline}"

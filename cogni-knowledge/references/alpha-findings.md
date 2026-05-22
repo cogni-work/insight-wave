@@ -194,3 +194,16 @@ The new `knowledge-ingest` skill + `source-ingester`/`claim-extractor` agents sh
 - Manual driver, not the installed skill — fan-out parallelism (8 ingesters per batch) was not exercised. The marketplace clone needs to be bumped to v0.0.20 post-merge for a fully-orchestrated smoke. The contract surfaces that the skill would exercise (slug pipeline, frontmatter shape, helper-script chain, lint/health) **are** all exercised here.
 - Sample of 3 of 42 fetched sources — not the full set. The full-run smoke runs once the skill is installed; the contract assertions verified here would surface the same way at 42 sources as at 3.
 - F18 follow-up (PDF page-loop) and the reviewer's deferred items 5 (`--summary-file` cross-plugin coordination in cogni-wiki) and 6 (this run is item 6) stay open as documented in the PR comments on #277.
+
+## M8 design (2026-05-22)
+
+### New findings (F20)
+
+| # | Theme | Verdict | Detail |
+|---|---|---|---|
+| F20 | Sentence-delimiter rule misclassifies regulator abbreviations + article numbering | watch at M12 | The shared verifier↔revisor delimiter (`. ` / `? ` / `! ` followed by a capital letter or end-of-line, H2-bounded sections) splits `"Dr. Smith said …"`, `"Article 1.2 of the AI Act"`, and numbered lists at the wrong places. The failure mode is bounded — Step 3.2's `draft_position_out_of_range` inline filter prunes mis-aligned manifest entries and the loop terminates with a few pruned citations rather than crashing. **Non-blocking for M8 ship**, but EU-AI-Act prose is heavy on `Article N.M`, `Annex III`, `Dr.`/`Prof.`, and bulleted clauses — M12 alpha will exercise the failure mode. Likely fix surface (deferred to a follow-up slice): swap the regex-style rule for a small tokenizer that handles abbreviation lookbehind + numbered-list continuation. Raised by `sdh07` in PR #281 review. |
+
+### What this clears for Slice 4 (M8) ship
+
+- The Step 3.2 `draft_position_out_of_range` inline-filter contract makes F20's failure mode bounded — pruned manifest entries surface in the summary; the loop terminates cleanly. No crash, no infinite-loop risk.
+- Cross-agent tokenization-rule coupling (verifier line 46 ↔ revisor lines 87/96) ensures both agents tokenize identically; F20 is a property of the **shared** rule, not a drift between agents.
