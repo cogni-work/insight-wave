@@ -116,13 +116,14 @@ Then continue with the binding-resolution checks:
 
 5. **Per-topic loop — run the seven-phase inverted pipeline.** For each selected stale page, sequentially run the chain below. The page title is the topic. All dispatches pass `--knowledge-root <knowledge_root>` so they resolve the same base regardless of cwd. Parse each phase's `{success}` summary; **on any phase failure, capture `{topic, failed_phase, error}` in `failures[]` and skip to the next topic — do not run later phases for that topic, and do not roll back.** The manifests already on disk are the truth, and every phase is idempotent (see §"Push-mode resume contract" below), so a partial topic is safely resumable by re-running this skill.
 
-   **Phase 1 — plan (idempotent guard).** `knowledge-plan` derives `project_path = <knowledge_root>/<topic-slug>-<today>/` and *aborts if that directory already exists* (it never overwrites). So before dispatching, compute the same path — `topic_slug` = kebab-case of the page title (lowercase, alphanumerics + dashes, collapse dash runs, strip ends, cap 60 chars), `today = $(date -u +%F)` — and check for `<project_path>/.metadata/plan.json`:
-   - **If it exists** (a same-day retry of this topic): skip the dispatch and reuse `<project_path>` — this is the resume path.
-   - **Else**: dispatch and capture the resolved `<project_path>` from the summary's "New project:" / "Plan path:" lines:
+   **Phase 1 — plan (idempotent guard).** `knowledge-plan` derives `project_path = <knowledge_root>/<topic-slug>-<today>/` and *aborts if that directory already exists* (it never overwrites; it `mkdir -p`s `<project_path>/.metadata/` before writing `plan.json`). So before dispatching, compute the same path — `topic_slug` = kebab-case of the page title (lowercase, alphanumerics + dashes, collapse dash runs, strip ends, cap 60 chars), `today = $(date -u +%F)` — and branch on the **project directory**, matching `knowledge-plan`'s own abort condition (not on `plan.json` alone, or a crashed prior plan that created the dir but no manifest would be re-dispatched into an abort):
+   - **Dir does not exist** → dispatch `knowledge-plan` and capture the resolved `<project_path>` from the summary's "New project:" / "Plan path:" lines:
      ```
      Skill("cogni-knowledge:knowledge-plan",
            args="--knowledge-slug <knowledge_slug> --topic '<page title>' --knowledge-root <knowledge_root>")
      ```
+   - **Dir exists AND `<project_path>/.metadata/plan.json` exists** → skip the dispatch and reuse `<project_path>` — the resume path for a same-day retry.
+   - **Dir exists BUT `plan.json` is absent** (orphaned dir from a crashed plan) → do **not** re-dispatch; `knowledge-plan` would abort on the existing dir. Capture `{topic, failed_phase: "plan", error: "orphaned project dir <project_path> has no plan.json — remove it and re-run"}` and skip to the next topic.
 
    **Phases 2–7 — curate → fetch → ingest → compose → verify → finalize.** Each takes the uniform `--knowledge-slug <slug> --project-path <project_path> --knowledge-root <knowledge_root>` interface; dispatch them in order, stopping that topic's chain on the first failure:
    ```
@@ -135,12 +136,15 @@ Then continue with the binding-resolution checks:
    ```
    `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` with `report_source: wiki` — that is the per-topic deliverable. Do not pass `--overwrite`; finalize refusing to clobber an existing synthesis is the correct resume behaviour.
 
+   **What push-mode does and does not do to the stale page.** Push-mode brings fresh, claim-verified evidence into the base as a **new** `synthesis` page per topic. Unlike the legacy push-mode (which dispatched `wiki-refresh` to rewrite the flagged page in place), it does **not** rewrite or delete the originally-flagged stale page — the inverted pipeline has no in-place page-rewrite primitive, and the v0.1.0 wiki separates `sources/` + `syntheses/` rather than editing arbitrary pages. The fresh synthesis supersedes the stale framing; the originally-flagged page stays on disk and a later `wiki-lint` may still flag it. Retiring or merging the old page is a manual `cogni-wiki:wiki-update` decision — surface this in the final summary so the user is not surprised.
+
    Sequential overall (topic-A's full chain, then topic-B's) — `knowledge-binding.py append-project` writes without an external lock, so concurrent finalizes could race. See `references/delegation-contract.md` §"Phase-3 push-refresh behaviour" for the contract.
 
 6. **Final summary.** ≤ 8 lines:
    - `<N>` topics finalized (synthesis slug list)
    - `<K>` topics with a per-phase failure — list each as `<topic> — failed at <failed_phase>: <error>` so the user knows exactly where to resume
    - To resume a failed topic, re-run `knowledge-refresh --mode push` and re-select it (the chain short-circuits on already-complete phases) — or run the remaining phases by hand from `<project_path>`
+   - Note that the originally-flagged stale pages were **superseded by new syntheses, not rewritten** — they remain on disk and `wiki-lint` may still flag them; retire them via `cogni-wiki:wiki-update` if desired.
    - Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the new deposits, or `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
 
 ### Push-mode resume contract
@@ -166,6 +170,7 @@ The per-topic loop fails soft: a topic that dies mid-chain leaves valid manifest
 - **Cycle-detection between push-mode runs.** `knowledge-finalize` runs `cycle-guard.py` (with the v0.0.24 citation-manifest fallback) per topic before depositing the synthesis — that is where self-citing loops are refused, not in this orchestrator.
 - **Auto-running `wiki-resume` or `knowledge-resume` after the batch.** Surfaced in the summary as a suggestion; manual decision.
 - **Modifying the binding directly.** All binding writes flow through `knowledge-finalize`'s own `append-project` call (one per finalized topic, `report_source: wiki`).
+- **In-place rewrite of the originally-flagged stale page.** Push-mode deposits a fresh `synthesis` and supersedes the stale framing; it does not edit or remove the old page (the legacy `wiki-refresh`-rewrite path is gone with the clean break). Retiring the superseded page is a manual `cogni-wiki:wiki-update` decision.
 
 For the push-mode UX contract (single batch confirmation, sequential, composition-only), see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour".
 

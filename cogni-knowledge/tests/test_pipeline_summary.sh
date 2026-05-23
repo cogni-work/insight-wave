@@ -263,6 +263,52 @@ else
   errors=$((errors + 1))
 fi
 
+# --- Robustness: a manifest path that is a DIRECTORY degrades, not crashes --
+# Regression guard: _load_json must treat an unreadable manifest (incl. a
+# directory where a file is expected) as absent, never raise to a traceback.
+DIRMAN="$WORK/dirman/.metadata"
+mkdir -p "$DIRMAN/verify-v1.json"   # verify-v1.json is a DIRECTORY
+plant "$DIRMAN/plan.json" <<'JSON'
+{"topic":"dir-manifest","sub_questions":[{"id":"sq-01"}]}
+JSON
+DIR_OUT=$(python3 "$SCRIPT" project --project-path "$WORK/dirman" 2>/dev/null || true)
+if echo "$DIR_OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['phase_reached'] == 'plan', d['data']
+assert d['data']['verify_version'] is None, d['data']
+print('OK')
+" 2>/dev/null | grep -q OK; then
+  green "PASS: project — a directory-shaped manifest degrades gracefully (no crash)"
+else
+  red "FAIL: directory-shaped manifest crashed or mis-summarized"
+  red "  got: $DIR_OUT"
+  errors=$((errors + 1))
+fi
+
+# --- Robustness: boolean values in verify counts clamp to 0 (bool ⊄ int) ----
+BOOLMAN="$WORK/boolman/.metadata"
+mkdir -p "$BOOLMAN"
+plant "$BOOLMAN/verify-v0.json" <<'JSON'
+{"counts":{"verbatim":true,"paraphrase":5,"synthesis":0,"unsupported":0,"total":5},"revision_round":true}
+JSON
+BOOL_OUT=$(python3 "$SCRIPT" project --project-path "$WORK/boolman")
+if echo "$BOOL_OUT" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['verify_counts']['verbatim'] == 0, x       # bool true -> 0
+assert x['verify_counts']['paraphrase'] == 5, x     # real int preserved
+assert x['revision_round'] == 0, x                  # bool true -> 0
+print('OK')
+" | grep -q OK; then
+  green "PASS: project — boolean count values clamp to 0, real ints preserved"
+else
+  red "FAIL: boolean-in-counts not clamped"
+  red "  got: $BOOL_OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

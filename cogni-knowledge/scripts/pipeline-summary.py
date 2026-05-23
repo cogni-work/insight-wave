@@ -57,14 +57,17 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
 
 
 def _load_json(path: Path) -> dict | None:
-    """Read a JSON object, or None if absent / unparseable.
+    """Read a JSON object, or None if absent / unreadable / unparseable.
 
-    A malformed manifest is treated as absent rather than fatal — the
-    read-side skills must still render the rest of the summary.
+    A manifest that is missing, is a directory, is unreadable, or holds
+    invalid JSON is treated as absent rather than fatal — the read-side
+    skills must still render the rest of the summary. `OSError` covers the
+    full family of read failures (FileNotFoundError, NotADirectoryError,
+    IsADirectoryError, PermissionError); `JSONDecodeError` covers bad bytes.
     """
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, NotADirectoryError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError):
         return None
     return loaded if isinstance(loaded, dict) else None
 
@@ -74,6 +77,17 @@ def _count(obj: dict | None, key: str) -> int:
         return 0
     val = obj.get(key)
     return len(val) if isinstance(val, list) else 0
+
+
+def _as_int(value) -> int:
+    """Coerce a manifest value to a non-negative int, else 0.
+
+    `bool` is a subclass of `int` in Python, so a JSON `true`/`false` would
+    pass a bare `isinstance(x, int)` check and surface as `True`/`False`;
+    exclude it explicitly so a malformed manifest degrades to 0 rather than
+    leaking a boolean into the count fields.
+    """
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _latest_verify(metadata: Path) -> tuple[int, dict] | None:
@@ -133,11 +147,8 @@ def cmd_project(args: argparse.Namespace) -> int:
         raw_counts = verify_obj.get("counts")
         if isinstance(raw_counts, dict):
             for key in verify_counts:
-                got = raw_counts.get(key, 0)
-                verify_counts[key] = got if isinstance(got, int) else 0
-        revision_round = verify_obj.get("revision_round", 0)
-        if not isinstance(revision_round, int):
-            revision_round = 0
+                verify_counts[key] = _as_int(raw_counts.get(key, 0))
+        revision_round = _as_int(verify_obj.get("revision_round", 0))
 
     data = {
         "project_path": str(project_path),
@@ -201,12 +212,23 @@ def cmd_cache_health(args: argparse.Namespace) -> int:
     except OSError as exc:
         return _emit(False, error=f"failed to invoke fetch-cache.py stat: {exc}")
 
+    # Surface the child's exit code + stderr on failure — otherwise a crash in
+    # fetch-cache.py (traceback to stderr, empty stdout) is reported only as an
+    # opaque "non-JSON output: ''", hiding the real diagnostic.
+    stderr_tail = (proc.stderr or "").strip()[:500]
+    if proc.returncode != 0 and not proc.stdout.strip():
+        return _emit(
+            False,
+            error=f"fetch-cache.py stat exited {proc.returncode}: {stderr_tail or '(no output)'}",
+        )
+
     try:
         envelope = json.loads(proc.stdout)
     except json.JSONDecodeError:
+        suffix = f" (stderr: {stderr_tail})" if stderr_tail else ""
         return _emit(
             False,
-            error=f"fetch-cache.py stat returned non-JSON output: {proc.stdout!r}",
+            error=f"fetch-cache.py stat returned non-JSON output: {proc.stdout!r}{suffix}",
         )
     if not envelope.get("success"):
         return _emit(False, error=f"fetch-cache.py stat failed: {envelope.get('error')}")
