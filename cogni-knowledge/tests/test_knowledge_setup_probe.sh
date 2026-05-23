@@ -5,14 +5,21 @@
 # layout (../<plugin>/skills/...) and the marketplace cache layout
 # (../../<plugin>/<version>/skills/...).
 #
-# A4 (rollout): the same probe exists in the other 6 knowledge-* skills
-# (research, report, query, dashboard, refresh, resume) so a user who
-# reaches any of them without setup gets the same clean abort.
+# A4 (rollout): the same probe exists in the other knowledge-* skills so a
+# user who reaches any of them without setup gets the same clean abort.
+#
+# M10a (v0.0.25) clean-break split: the read-side skills (query, dashboard,
+# resume) dispatch ONLY cogni-wiki, so they probe cogni-wiki only and drop the
+# cogni-research probe + "requires both" wording (decision-1: cogni-research is
+# 0% of the v0.1.0 runtime path). The legacy chain skills (setup, research,
+# report, refresh) still probe both — refresh flips to wiki-only at M10b.
 #
 # This test:
-#   1. Greps all 7 SKILL.md files for the probe_plugin function and the
-#      abort wording (contract-level).
-#   2. Executes the probe body against two synthetic layouts (dev-repo
+#   1. Greps the both-probe skills for the cogni-wiki + cogni-research probes
+#      and the "requires both" abort wording (contract-level).
+#   2. Greps the wiki-only skills for the cogni-wiki probe and asserts the
+#      cogni-research probe + "requires both" wording are ABSENT.
+#   3. Executes the probe body against two synthetic layouts (dev-repo
 #      sibling AND marketplace cache) and asserts both resolve.
 #
 # bash 3.2 + stdlib only.
@@ -31,17 +38,23 @@ errors=0
 # Part 1: contract-level — every knowledge-* skill carries the probe.
 # -----------------------------------------------------------------------------
 
-ALL_SKILLS=(
+# Legacy-chain skills still gate on both cogni-wiki + cogni-research.
+# (refresh flips to wiki-only at M10b.)
+BOTH_PROBE_SKILLS=(
   knowledge-setup
   knowledge-research
   knowledge-report
+  knowledge-refresh
+)
+
+# Read-side skills dispatch only cogni-wiki (M10a clean-break split).
+WIKI_ONLY_PROBE_SKILLS=(
   knowledge-query
   knowledge-dashboard
-  knowledge-refresh
   knowledge-resume
 )
 
-assert_skill_has_probe() {
+assert_skill_probes_both() {
   local skill="$1"
   local skill_file="$SKILLS_DIR/$skill/SKILL.md"
   if [ ! -f "$skill_file" ]; then
@@ -62,14 +75,48 @@ assert_skill_has_probe() {
     fi
   done
   if [ $missing -eq 0 ]; then
-    green "PASS: $skill carries the probe and abort wording"
+    green "PASS: $skill carries the both-plugin probe and abort wording"
   else
     errors=$((errors + missing))
   fi
 }
 
-for skill in "${ALL_SKILLS[@]}"; do
-  assert_skill_has_probe "$skill"
+assert_skill_probes_wiki_only() {
+  local skill="$1"
+  local skill_file="$SKILLS_DIR/$skill/SKILL.md"
+  if [ ! -f "$skill_file" ]; then
+    red "FAIL: skill file not found: $skill_file"
+    errors=$((errors + 1))
+    return
+  fi
+  local bad=0
+  # Must keep the cogni-wiki probe.
+  if ! grep -qE 'probe_plugin cogni-wiki wiki-setup' "$skill_file"; then
+    red "FAIL: $skill missing cogni-wiki probe"
+    bad=$((bad + 1))
+  fi
+  # Must NOT carry the cogni-research probe or "requires both" wording.
+  if grep -qE 'probe_plugin cogni-research' "$skill_file"; then
+    red "FAIL: $skill still probes cogni-research (M10a clean break requires wiki-only)"
+    bad=$((bad + 1))
+  fi
+  if grep -qE 'requires both .cogni-wiki. and .cogni-research.' "$skill_file"; then
+    red "FAIL: $skill still carries 'requires both' abort wording"
+    bad=$((bad + 1))
+  fi
+  if [ $bad -eq 0 ]; then
+    green "PASS: $skill probes cogni-wiki only (clean break)"
+  else
+    errors=$((errors + bad))
+  fi
+}
+
+for skill in "${BOTH_PROBE_SKILLS[@]}"; do
+  assert_skill_probes_both "$skill"
+done
+
+for skill in "${WIKI_ONLY_PROBE_SKILLS[@]}"; do
+  assert_skill_probes_wiki_only "$skill"
 done
 
 # -----------------------------------------------------------------------------

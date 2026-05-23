@@ -33,7 +33,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 ### 0. Pre-flight
 
-**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** This skill dispatches `cogni-wiki:wiki-resume` and reads the inverted-pipeline manifests — it never reaches cogni-research, so it probes only `cogni-wiki` (the v0.1.0 clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -45,13 +45,12 @@ probe_plugin() {
   return 1
 }
 probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
-probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
 ```
 
-If either is `no`, list the missing plugin(s) and abort:
+If `WIKI_OK` is `no`, abort:
 
-> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
-> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+> cogni-knowledge requires `cogni-wiki` to be installed.
+> Install it via the marketplace, then retry.
 
 Resume is read-only with respect to disk, but it still dispatches `cogni-wiki:wiki-resume` and would fail mid-skill if cogni-wiki were missing. The probe gives the user the same clean signal every other `knowledge-*` skill emits.
 
@@ -85,13 +84,30 @@ Capture the wiki-resume output. Look for:
 - Entry count and recent log activity
 - Wiki health verdict (broken wikilinks, missing frontmatter, stale drafts)
 
+For each deposited project (cap at 5, newest first), read its inverted-pipeline depth so the summary shows how far each project got, not just that it exists:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py project \
+    --project-path <research_projects[i].project_path>
+```
+
+Capture `sub_questions`, `fetched`, and `phase_reached`. Legacy v0.0.x deposits (no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render their depth as `(legacy deposit)` rather than `0 sub-questions`. Then read the knowledge-base-global fetch-cache verdict once:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
+    --knowledge-root <knowledge_root>
+```
+
+Capture `verdict` (and `entries`).
+
 ### 3. Compose the cogni-knowledge summary
 
 Print a ≤ 12-line summary that layers the binding onto the wiki status:
 
 - **Knowledge base.** `<knowledge_title>` (`<knowledge_slug>`), created `<created>`
 - **Wiki path.** `<wiki_path>` — wiki health verdict from Step 2 (one line: "OK" / "N issues — see wiki-resume output above")
-- **Deposited research projects.** `<count>` (list slugs + `deposited_at`, newest first; cap at 5, summarise the rest as "and N more")
+- **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
+- **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — run knowledge-fetch --refresh`; `empty` → `fetch-cache empty — run knowledge-plan first`.
 - **Topic lineage.** If `covered_themes` or `open_themes` are non-empty, print them as two short lists. Else omit.
 - **Next action.** Recommend based on state:
   - If `research_projects` is empty: "Run `knowledge-research --knowledge-slug <slug> --topic '...'` to deposit your first project."
@@ -105,6 +121,8 @@ The full `wiki-resume` output appears verbatim above the summary so the user has
 - **Binding exists but `wiki_path` no longer does.** Step 1(4) catches the missing `.cogni-wiki/config.json`. Abort with a clear message.
 - **`wiki-resume` fails.** Surface its error and still print the binding section — the user benefits from at least knowing the deposit count even if the wiki status is broken.
 - **`research_projects[]` references a `report_path` that no longer exists.** Do not abort; flag in the summary with "(report file missing — possibly archived)" next to that entry. The binding is the durable record; the on-disk research project is incidental.
+- **`project_path` missing or its `.metadata/` gone (legacy / archived deposit).** `pipeline-summary.py project` returns zeros + `phase_reached: "none"`; render that project's depth as `(legacy deposit)` rather than zeros. Never abort on a per-project read failure — the binding-level line still renders.
+- **`pipeline-summary.py cache-health` fails.** Omit the Pipeline status line rather than aborting; the rest of the summary is still useful.
 
 ## Out of scope
 
@@ -121,3 +139,4 @@ A status block printed to the user. No files written.
 - `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md`
 - `cogni-wiki:wiki-resume` SKILL.md
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache verdict (`cache-health`)
