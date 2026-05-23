@@ -222,6 +222,86 @@ else
   errors=$((errors + 1))
 fi
 
+# 6. merge conservation guards. Fresh dir with 2 input shards (4 citations).
+MR="$WORK/merge-robust"
+mkdir -p "$MR"
+python3 - <<PY
+import json
+shards = {
+  "shard-00-v1.json": ["cit-001", "cit-002"],
+  "shard-01-v1.json": ["cit-003", "cit-004"],
+}
+for name, ids in shards.items():
+    body = {"schema_version":"0.1.0","draft_version":1,"shard_index":0,
+            "citations":[{"id":i,"draft_position":"00:01","draft_sentence":"s","wiki_slug":"p","claim_id":"c"} for i in ids]}
+    open("$MR/"+name,"w").write(json.dumps(body))
+PY
+
+write_frag() {  # write_frag <name> <json>
+  printf '%s' "$2" > "$MR/$1"
+}
+clear_frags() { rm -f "$MR"/verify-shard-*-v1.json; }
+frag_full_00='{"schema_version":"0.1.0","draft_version":1,"revision_round":0,"verified":[{"id":"cit-001","verdict":"paraphrase"}],"deviations":[{"id":"cit-002","verdict":"unsupported","reason":"claim_text_misaligned"}],"counts":{"total":2}}'
+frag_full_01='{"schema_version":"0.1.0","draft_version":1,"revision_round":0,"verified":[{"id":"cit-003","verdict":"verbatim"},{"id":"cit-004","verdict":"paraphrase"}],"deviations":[],"counts":{"total":2}}'
+
+# 6a. Missing fragment → completeness error (merged 2 of 4).
+clear_frags; write_frag verify-shard-00-v1.json "$frag_full_00"
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$MR" --draft-version 1 --revision-round 0 --out "$WORK/mr-a.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'of 4' in d['error']" 2>/dev/null; then
+  green "PASS: merge rejects a missing fragment (2 of 4 sharded citations)"
+else
+  red "FAIL: missing fragment not caught by completeness check"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 6b. Duplicate id across fragments → reject.
+clear_frags; write_frag verify-shard-00-v1.json "$frag_full_00"; write_frag verify-shard-01-v1.json "$frag_full_01"
+write_frag verify-shard-02-v1.json '{"schema_version":"0.1.0","draft_version":1,"revision_round":0,"verified":[{"id":"cit-001","verdict":"paraphrase"}],"deviations":[],"counts":{"total":1}}'
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$MR" --draft-version 1 --revision-round 0 --out "$WORK/mr-b.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'duplicate' in d['error'].lower()" 2>/dev/null; then
+  green "PASS: merge rejects duplicate citation id across fragments"
+else
+  red "FAIL: duplicate id not rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 6c. unsupported verdict mis-filed into verified[] → reject.
+clear_frags; write_frag verify-shard-01-v1.json "$frag_full_01"
+write_frag verify-shard-00-v1.json '{"schema_version":"0.1.0","draft_version":1,"revision_round":0,"verified":[{"id":"cit-001","verdict":"paraphrase"},{"id":"cit-002","verdict":"unsupported","reason":"x"}],"deviations":[],"counts":{"total":2}}'
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$MR" --draft-version 1 --revision-round 0 --out "$WORK/mr-c.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'mis-filed' in d['error']" 2>/dev/null; then
+  green "PASS: merge rejects unsupported verdict mis-filed in verified[]"
+else
+  red "FAIL: mis-filed unsupported not rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 6d. Non-dict fragment top-level → JSON envelope error, NOT a Python traceback.
+clear_frags; write_frag verify-shard-00-v1.json "$frag_full_00"; write_frag verify-shard-01-v1.json '[1,2,3]'
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$MR" --draft-version 1 --revision-round 0 --out "$WORK/mr-d.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'object' in d['error']" 2>/dev/null; then
+  green "PASS: merge returns an envelope (not a traceback) on a non-dict fragment"
+else
+  red "FAIL: non-dict fragment crashed instead of returning the envelope"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 6e. Non-dict manifest top-level for shard → JSON envelope error, not a traceback.
+NONDICT="$WORK/nondict-manifest.json"
+echo '[1,2,3]' > "$NONDICT"
+OUT=$(python3 "$SCRIPT" shard --manifest "$NONDICT" --draft-version 1 --shard-size 2 --out-dir "$WORK/nd" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'object' in d['error']" 2>/dev/null; then
+  green "PASS: shard returns an envelope (not a traceback) on a non-dict manifest"
+else
+  red "FAIL: non-dict manifest crashed instead of returning the envelope"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

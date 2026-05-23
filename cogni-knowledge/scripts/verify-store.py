@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -62,6 +63,8 @@ def _load_manifest(path: Path, expected_version: int) -> tuple[dict | None, str]
         return None, f"manifest does not exist: {path}"
     except json.JSONDecodeError as exc:
         return None, f"manifest is not valid JSON: {exc}"
+    if not isinstance(manifest, dict):
+        return None, f"manifest top-level must be a JSON object, got {type(manifest).__name__}"
     schema = manifest.get("schema_version")
     if schema != SCHEMA_VERSION:
         return None, f"manifest schema_version must be {SCHEMA_VERSION!r}, got {schema!r}"
@@ -145,6 +148,24 @@ def cmd_merge(args: argparse.Namespace) -> int:
     if not shard_dir.is_dir():
         return _emit(False, error=f"shard-dir does not exist: {shard_dir}")
 
+    # End-to-end completeness signal: the citation ids that were sharded for
+    # THIS draft version. `shard` leaves its inputs in place, so when merge
+    # runs after shard (the pipeline flow) we can verify the recombined set
+    # equals the partitioned set — catching a missing/under-populated/duplicate
+    # fragment, which the internal counts.total tally cannot. When the inputs
+    # are absent (a bare standalone merge), fall back to internal consistency.
+    input_shards = sorted(shard_dir.glob(f"shard-*-v{draft_version}.json"))
+    expected_ids: list = []
+    have_expected = bool(input_shards)
+    for sp in input_shards:
+        try:
+            sm = json.loads(sp.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            return _emit(False, error=f"shard input {sp.name} is not valid JSON: {exc}")
+        if not isinstance(sm, dict) or not isinstance(sm.get("citations"), list):
+            return _emit(False, error=f"shard input {sp.name} is malformed (no citations list)")
+        expected_ids.extend(c.get("id") for c in sm["citations"] if isinstance(c, dict))
+
     fragments = sorted(shard_dir.glob(f"verify-shard-*-v{draft_version}.json"))
     if not fragments:
         return _emit(
@@ -159,6 +180,8 @@ def cmd_merge(args: argparse.Namespace) -> int:
             frag = json.loads(frag_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             return _emit(False, error=f"fragment {frag_path.name} is not valid JSON: {exc}")
+        if not isinstance(frag, dict):
+            return _emit(False, error=f"fragment {frag_path.name} top-level must be a JSON object")
         frag_verified = frag.get("verified")
         frag_deviations = frag.get("deviations")
         if not isinstance(frag_verified, list) or not isinstance(frag_deviations, list):
@@ -166,8 +189,26 @@ def cmd_merge(args: argparse.Namespace) -> int:
                 False,
                 error=f"fragment {frag_path.name} missing list 'verified'/'deviations'",
             )
+        if not all(isinstance(e, dict) for e in frag_verified + frag_deviations):
+            return _emit(
+                False,
+                error=f"fragment {frag_path.name} has a non-object entry in verified/deviations",
+            )
         verified.extend(frag_verified)
         deviations.extend(frag_deviations)
+
+    # Verdict placement: `unsupported` MUST live in deviations[] — the revisor
+    # only triages deviations[], so an `unsupported` mis-filed into verified[]
+    # would silently escape correction (the internal tally below can't see it).
+    misfiled = [e.get("id") for e in verified if e.get("verdict") == "unsupported"]
+    if misfiled:
+        return _emit(
+            False,
+            error=(
+                f"unsupported verdict mis-filed in verified[] (ids: {misfiled}) — "
+                "the revisor only reads deviations[]"
+            ),
+        )
 
     counts = {v: 0 for v in VERDICTS}
     for entry in verified + deviations:
@@ -184,6 +225,29 @@ def cmd_merge(args: argparse.Namespace) -> int:
                 "a fragment carried an unrecognized verdict"
             ),
         )
+
+    # Duplicate ids (an overlapping/double-written fragment) inflate counts and
+    # emit two verdicts for one citation — reject rather than silently merge.
+    merged_ids = [e.get("id") for e in verified + deviations]
+    dupes = sorted({i for i, n in Counter(merged_ids).items() if n > 1}, key=lambda x: (x is None, x))
+    if dupes:
+        return _emit(False, error=f"duplicate citation id(s) across fragments: {dupes}")
+
+    # Conservation: the recombined id-set must equal the sharded id-set — no
+    # dropped shard, no extra/stale fragment, no under-populated shard.
+    if have_expected:
+        merged_set, expected_set = set(merged_ids), set(expected_ids)
+        if counts["total"] != len(expected_ids) or merged_set != expected_set:
+            missing = sorted(expected_set - merged_set, key=lambda x: (x is None, x))
+            extra = sorted(merged_set - expected_set, key=lambda x: (x is None, x))
+            return _emit(
+                False,
+                error=(
+                    f"verified {counts['total']} of {len(expected_ids)} sharded citations — "
+                    f"a fragment is missing or under-populated (missing ids: {missing}; "
+                    f"unexpected ids: {extra})"
+                ),
+            )
 
     atomic_write(
         out_path,

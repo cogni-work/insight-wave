@@ -85,7 +85,7 @@ Order: address `claim_text_misaligned` first (cheapest — single sentence each)
 
 For each deviation, edit the in-memory draft:
 
-1. **Locate the sentence.** Exact-string-search the draft for the deviation entry's `draft_sentence` (recovered by `id` join in Phase 0 step 3) — it was copied verbatim by the composer / previous round, so it is a stable, unambiguous anchor. **Do not count sentences and do not re-tokenize by delimiter** — that re-derivation is exactly the off-by-one F22 removed. If the exact sentence appears more than once (rare), disambiguate with the best-effort `draft_position` as a hint.
+1. **Locate the sentence.** Exact-string-search the draft for the deviation entry's `draft_sentence` (recovered by `id` join in Phase 0 step 3) — it was copied verbatim by the composer / previous round, so it is a stable, unambiguous anchor. **Do not count sentences and do not re-tokenize by delimiter** — that re-derivation is exactly the off-by-one F22 removed. If the exact sentence appears more than once (rare), disambiguate with the best-effort `draft_position` as a hint. If it is **not found at all** (the draft drifted out from under the manifest), treat it as a `sentence_not_in_draft` drop: remove the manifest entry, make no prose change, and record it under `drop` in `fixes_summary`.
 
 2. **Apply the fix per the triage outcome above:**
    - **Rephrase** — replace the sentence with a version that lines up with the *cited* claim's `text` (or `excerpt_quote` if you need to preserve a specific phrase), keeping the same `claim_id`. Keep the inline `[[sources/<slug>]]` wikilink in place. Preserve neighbouring sentences byte-for-byte — surgical correction, not paragraph rewrite.

@@ -135,11 +135,13 @@ assert manifest_v == expected_v, (
     "manifest draft_version=" + repr(manifest_v)
     + " but draft on disk is v" + str(expected_v)
 )
-print(len(m.get("citations", [])))
+n_cites = len(m.get("citations", []))
+assert n_cites > 0, "citation manifest has zero citations — nothing to verify"
+print(n_cites)
 '
 ```
 
-If the assertion fires, abort with "citation manifest is stale — re-run knowledge-compose". The trailing print is captured as `INITIAL_CITATION_COUNT` for the final summary.
+If the schema/version assertion fires, abort with "citation manifest is stale — re-run knowledge-compose". If the zero-citations assertion fires, abort with "the draft has no sourced citations — nothing to verify" (consistent with the non-empty-`citations[]` precondition in "When to run"; a zero-citation manifest would otherwise shard into nothing). The trailing print is captured as `INITIAL_CITATION_COUNT` for the final summary.
 
 If `--dry-run`, print the resolved inputs and stop:
 
@@ -232,12 +234,18 @@ stale_sentence = [
 ]
 # (b) Prune stale-sentence entries from the citation manifest inline, by id.
 #     The revisor would otherwise spend an entire dispatch just to drop these.
-if stale_sentence:
+# Drop None ids first: a deviation that omitted its id would otherwise put
+# None in the set and prune EVERY citation that also lacks an id.
+stale_ids = {d.get("id") for d in stale_sentence if d.get("id") is not None}
+if stale_ids:
     manifest = Path(os.environ["MANIFEST_PATH"])
     m = json.loads(manifest.read_text(encoding="utf-8"))
-    stale_ids = {d.get("id") for d in stale_sentence}
     m["citations"] = [c for c in m.get("citations", []) if c.get("id") not in stale_ids]
-    manifest.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
+    # Atomic rewrite (temp + os.replace) — matches the rest of the pipeline;
+    # an interrupted write must not truncate the canonical manifest.
+    tmp = manifest.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, manifest)
 print(json.dumps({"repairable": len(repairable), "stale_sentence": len(stale_sentence)}))
 '
 ```
