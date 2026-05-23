@@ -1,21 +1,21 @@
 # Delegation contract
 
-cogni-knowledge is a **thin orchestrator**. Every primitive delegates to `cogni-wiki` or `cogni-research`. This document is the precise contract: what cogni-knowledge owns vs. what it delegates.
+cogni-knowledge is a **thin orchestrator**. Its live v0.1.0 path delegates to `cogni-wiki` and forks the agents it needs locally (see `agents/`); the archived v0.0.x chain also delegated to `cogni-research`. This document is the precise contract: what cogni-knowledge owns vs. what it delegates.
 
 ## The hard rule
 
 If a behavior already exists in `cogni-wiki` or `cogni-research`, cogni-knowledge MUST delegate to it. Re-implementing upstream behavior in this plugin is a design error, not a shortcut. The reasons:
 
 1. **Bugfix locality.** A bug in wiki bootstrapping should be fixed in one place (`cogni-wiki:wiki-setup`), not in N orchestrators that each forked the logic.
-2. **Future absorption.** Phase 6 absorbs `cogni-research` into this plugin. Until then, the absorption boundary is clean only if we never duplicate.
+2. **Clean absorption boundary.** cogni-research is being absorbed — runtime reached zero at v0.1.0; formal deprecation is Phase 6. The boundary stays clean only if we never duplicate `cogni-wiki` logic; the forked v0.1.0 agents under `agents/` are the one intentional, documented exception.
 3. **Version skew.** `cogni-wiki` and `cogni-research` are released independently. Forked logic drifts; delegated logic tracks the upstream automatically.
 
 ## What cogni-knowledge owns
 
 - **`binding.json`.** The single new artifact. Records knowledge_slug, wiki path, deposited research_projects[]. Read/written by `scripts/knowledge-binding.py`.
-- **Lineage stamping.** `scripts/lineage-stamp.py` adds `derived_from_research: <slug>` to YAML frontmatter on deposited wiki pages. Phase 2's cycle-guard depends on this; we cannot push it upstream because the field is cogni-knowledge-specific (`cogni-wiki` is general-purpose and has no concept of research lineage).
+- **Lineage stamping.** `derived_from_research: <slug>` on a deposited wiki page is cogni-knowledge-specific (`cogni-wiki` is general-purpose and has no concept of research lineage), so cycle-guard depends on it. `knowledge-finalize` sets it inline; the legacy `lineage-stamp.py` helper is archived under `_archive/scripts/`.
 - **Skill choreography.** The order and conditional logic of dispatching upstream skills. This is real value — the user gets one-prompt workflows in exchange for the loss of fine-grained control.
-- **Opinionated defaults.** `--research-overrides report_type=detailed` if the caller did not pass any; `--skip-prefill-prompt` on `wiki-setup` so the seeding does not duplicate `knowledge-research`'s own deposit-driven seeding.
+- **Opinionated defaults.** `--skip-prefill-prompt` on `wiki-setup` so cogni-knowledge's own deposit-driven seeding (via the inverted pipeline) is not duplicated by canonical foundations.
 
 ## What cogni-knowledge delegates
 
@@ -35,20 +35,21 @@ If a behavior already exists in `cogni-wiki` or `cogni-research`, cogni-knowledg
 | Render the wiki dashboard (Phase 3) | `cogni-wiki:wiki-dashboard` |
 | Refresh stale pages from a research project (Phase 3 pull-mode) | `cogni-wiki:wiki-refresh` |
 
+> **Note (M11+).** The rows describing `cogni-research:*` dispatch and `cogni-wiki:wiki-from-research` Mode A/B were the legacy `knowledge-research` / `knowledge-report` delegation targets, now archived under `_archive/`. The live v0.1.0 inverted pipeline does **not** use `wiki-from-research`; it writes `wiki/sources/*.md` and `wiki/syntheses/*.md` directly (see `references/inverted-pipeline.md`). Its live delegation surface is `cogni-wiki:wiki-setup` / `wiki-resume` / `wiki-query` / `wiki-dashboard` / `wiki-lint` / `wiki-refresh`, plus cogni-wiki helper scripts called at script level (`backlink_audit.py`, `wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`).
+
 ## What about `agents/`?
 
-> **Legacy (v0.0.x) contract.** Superseded for the v0.1.0 inverted-pipeline runtime path — see `references/inverted-pipeline.md`. Since v0.0.17 cogni-knowledge ships its own `agents/` directory (forked `source-curator`, `claim-extractor`, `wiki-composer`, `revisor`, plus net-new `source-fetcher`, `source-ingester`, `wiki-verifier`); the v0.1.0 path dispatches **zero** cogni-research agents. As of v0.0.26, `knowledge-refresh --mode push` runs those local phase skills/agents, not the legacy chain below. The paragraph below describes the original delegated-everything design and is retained for historical context until M11's docs rewrite.
+Since v0.0.17 cogni-knowledge ships its own `agents/` directory, and the v0.1.0 inverted pipeline dispatches **zero** cogni-research agents. The seven local agents:
 
-cogni-knowledge has no `agents/` directory by design. All agent dispatch goes to upstream agents:
+- `source-curator` (Phase 2 — forked from cogni-research; per-sub-question WebSearch + scoring)
+- `source-fetcher` (Phase 3 — net-new; per-URL WebFetch with cobrowse fallback)
+- `claim-extractor` (Phase 4 — forked from cogni-research; per-body claim extraction)
+- `source-ingester` (Phase 4 — net-new; writes `wiki/sources/<slug>.md` with `pre_extracted_claims:`)
+- `wiki-composer` (Phase 5 — forked from cogni-research `writer`; reads the populated wiki, emits a cited draft)
+- `wiki-verifier` (Phase 6 — net-new; zero-network claim alignment, replaces the cogni-claims verifier)
+- `revisor` (Phase 6 — forked from cogni-research; rephrase-or-drop on `unsupported` deviations)
 
-- `cogni-research/agents/section-researcher.md` (web research per sub-question)
-- `cogni-research/agents/deep-researcher.md` (recursive web research for deep mode)
-- `cogni-research/agents/local-researcher.md` (local-document research)
-- `cogni-research/agents/wiki-researcher.md` (wiki-as-source research — load-bearing for Phase 2)
-- `cogni-research/agents/writer.md`, `reviewer.md`, `revisor.md` (composition)
-- `cogni-research/agents/claim-extractor.md`, `source-curator.md` (provenance)
-
-When Phase 6 absorbs cogni-research, these agents move into `cogni-knowledge/agents/`. Until then, leaving them upstream means we benefit from any cogni-research patch immediately.
+These are point-in-time forks — drift from upstream is acceptable and documented in `references/inverted-pipeline.md` (the v0.1.0 source of truth). The legacy v0.0.x design delegated all agent dispatch upstream and shipped no local agents; that chain (`knowledge-research` / `knowledge-report`) is archived under `_archive/` — see `_archive/README.md`.
 
 ## How to add a new cogni-knowledge skill
 
@@ -64,9 +65,9 @@ Phase 2 modifies `cogni-wiki:wiki-from-research` to lift its current abort on `r
 
 ## Wiring `report_source` into `binding.json`
 
-`knowledge-research` (v0.0.7) and `knowledge-report` (v0.0.6) both read the live `report_source` from `<project>/.metadata/project-config.json` and pass it through to `knowledge-binding.py append-project` — `wiki` for round-trip runs, `hybrid` if a user opts in, `web`/`local` for default Mode A invocations or when a user pivots away from wiki mode in the interactive menu.
+`knowledge-finalize` is the only live skill that calls `knowledge-binding.py append-project`, and it hard-codes `--report-source wiki` — the v0.1.0 inverted pipeline only ever produces wiki-mode synthesis deposits. (The archived legacy chain read a live `report_source` from a cogni-research project config and could record `web` / `local` / `hybrid`; that path is gone.)
 
-The guardrail rule: when a new skill or codepath calls `append-project`, the `report_source` value MUST be sourced live from `<project>/.metadata/project-config.json`, never assumed.
+The guardrail rule still holds for any new codepath: a `report_source` value other than `wiki` MUST be sourced from real project state, never assumed.
 
 ## Phase-3 push-refresh behaviour
 

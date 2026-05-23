@@ -1,6 +1,6 @@
 ---
 name: knowledge-resume
-description: "Show status of a cogni-knowledge base — knowledge slug, bound wiki path, deposited research projects, wiki health verdict, and the recommended next action. Delegates structural integrity to cogni-wiki:wiki-resume (which runs wiki-health automatically). Use this skill whenever the user says 'resume the knowledge base', 'knowledge resume', 'knowledge status', 'where was I with the eu-ai-act base', 'what's in my knowledge base', 'show me the knowledge base overview'. Proactively after a long gap between sessions, or right after knowledge-setup or knowledge-research."
+description: "Show status of a cogni-knowledge base — knowledge slug, bound wiki path, deposited research projects, wiki health verdict, and the recommended next action. Delegates structural integrity to cogni-wiki:wiki-resume (which runs wiki-health automatically). Use this skill whenever the user says 'resume the knowledge base', 'knowledge resume', 'knowledge status', 'where was I with the eu-ai-act base', 'what's in my knowledge base', 'show me the knowledge base overview'. Proactively after a long gap between sessions, or right after knowledge-setup or a knowledge-finalize run."
 allowed-tools: Read, Bash, Glob, Skill
 ---
 
@@ -14,7 +14,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 - User asks for status, overview, or "where was I" on a knowledge base
 - User returns after a gap and wants orientation
-- Right after `knowledge-setup` or `knowledge-research` finished, to confirm the deposit and suggest the next step
+- Right after `knowledge-setup` or a `knowledge-finalize` run finished, to confirm the deposit and suggest the next step
 - Proactively when a session opens in a directory containing `.cogni-knowledge/binding.json`
 
 ## Never run when

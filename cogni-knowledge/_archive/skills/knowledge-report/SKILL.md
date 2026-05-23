@@ -2,6 +2,7 @@
 name: knowledge-report
 description: "Compose a research report by reading the bound cogni-wiki knowledge base, then re-deposit the result back into the same wiki — the wiki-roundtrip primitive. Reads .cogni-knowledge/binding.json to resolve the wiki path so the user does not have to. Dispatches cogni-research with report_source=wiki against the bound wiki, runs cycle-guard.py to refuse self-citing loops, then re-deposits via cogni-wiki:wiki-from-research Mode B with the --allow-wiki-source --cycle-guard-cleared opt-in flags. Every deposited page is stamped with derived_from_research:<slug>, and the project is recorded in the binding with the live report_source (wiki or hybrid). Use this skill whenever the user says 'write a report from my <knowledge-slug> knowledge base', 'roundtrip report on X', 'compose from accumulated knowledge', 'synthesise what we know about X from the wiki', 'wiki-report on <topic>'. Phase 2 of the absorption roadmap — proves that knowledge compounds across projects."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
+archived: true
 ---
 
 # Knowledge Report

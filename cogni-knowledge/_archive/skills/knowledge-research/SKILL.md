@@ -2,6 +2,7 @@
 name: knowledge-research
 description: "Research a topic INTO a bound cogni-knowledge base — runs cogni-research on the topic and deposits the findings into the knowledge base's wiki in one prompt. Reads .cogni-knowledge/binding.json to resolve the wiki path so the user does not have to. Every deposited page is stamped with derived_from_research:<slug>, and the project is recorded in the binding's research_projects[] list. Use this skill whenever the user says 'research X into my knowledge base', 'deposit research on X into the eu-ai-act base', 'knowledge research on X', 'add research on X to the knowledge base', 'feed the knowledge base a research run on X'. Knowledge accumulates across runs — the second knowledge-research on a related topic reads what the first deposited."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
+archived: true
 ---
 
 # Knowledge Research

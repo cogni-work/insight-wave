@@ -227,6 +227,38 @@ else
   errors=$((errors + 1))
 fi
 
+# --- M11 audit: legacy chain archived, unreachable in live code -----------
+# After M11 (v0.0.27) the knowledge-research / knowledge-report skills + their
+# two private helper scripts (scripts/lineage-stamp.py, scripts/read-project-
+# config.py) live under _archive/. This canary fails any future PR that
+# re-references the legacy chain — by skill slug OR by dead script path — from
+# a live runtime surface. It scans the whole plugin EXCEPT: _archive/ (the
+# retained chain), references/ (history), tests/ (this file + test_refresh_
+# push_chain.sh name the slugs on purpose), and README/CLAUDE/CHANGELOG (which
+# recount the history) — so hooks/, commands/, plugin.json, and any future
+# runtime dir are covered automatically.
+#
+# Portability + precision:
+#   - grep -E (ERE alternation) so the pattern works on BSD/macOS grep, not
+#     only GNU (every other alternation in this file uses -E).
+#   - the trailing (non-letter|EOL) guard avoids matching legitimate names
+#     such as `knowledge-researcher` / `knowledge-reporting`.
+#   - --include scopes to text files so a stray *.pyc under __pycache__ can't
+#     produce a binary-match false positive.
+AUDIT_HITS=$(grep -rnE \
+  --include='*.md' --include='*.py' --include='*.sh' --include='*.json' \
+  --exclude-dir=_archive --exclude-dir=references --exclude-dir=tests \
+  --exclude=README.md --exclude=CLAUDE.md --exclude=CHANGELOG.md \
+  'knowledge-(research|report)([^a-zA-Z]|$)|scripts/(lineage-stamp|read-project-config)\.py' \
+  "$PLUGIN_ROOT" 2>/dev/null || true)
+if [ -n "$AUDIT_HITS" ]; then
+  red "FAIL: M11 audit — legacy knowledge-research/knowledge-report reference in live code:"
+  echo "$AUDIT_HITS" | sed 's/^/    /'
+  errors=$((errors + 1))
+else
+  green "PASS: M11 audit — no legacy chain reference in the live plugin surface"
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

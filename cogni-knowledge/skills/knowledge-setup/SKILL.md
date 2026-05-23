@@ -1,6 +1,6 @@
 ---
 name: knowledge-setup
-description: "Bootstrap a cogni-knowledge knowledge base — a cogni-wiki + a binding manifest that records every research project deposited into it. Creates the wiki via cogni-wiki:wiki-setup if it does not exist, then writes .cogni-knowledge/binding.json. Use this skill whenever the user says 'set up a knowledge base', 'start a knowledge base on X', 'bootstrap a wiki-first research base', 'new knowledge base for X', 'create a knowledge base', or 'wiki-first research setup'. After setup, the user can run knowledge-research to deposit research projects into the base."
+description: "Bootstrap a cogni-knowledge knowledge base — a cogni-wiki + a binding manifest that records every research project deposited into it. Creates the wiki via cogni-wiki:wiki-setup if it does not exist, then writes .cogni-knowledge/binding.json. Use this skill whenever the user says 'set up a knowledge base', 'start a knowledge base on X', 'bootstrap a wiki-first research base', 'new knowledge base for X', 'create a knowledge base', or 'wiki-first research setup'. After setup, run the inverted pipeline (knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify → knowledge-finalize) to deposit research syntheses into the base."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 ---
 
@@ -21,7 +21,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 ## Never run when
 
 - The target directory already has `.cogni-knowledge/binding.json` — report the existing binding and stop. Re-initialisation is destructive; surface the existing slug and let the user decide.
-- The user wants a one-off research report — point them at `cogni-research:research-setup` directly. cogni-knowledge is opinionated about accumulation.
+- The user wants a one-off research report — point them at `cogni-research:research-setup` directly. cogni-knowledge is opinionated about accumulation; cogni-research stays available as a sibling plugin for one-shot reports.
 
 ## Parameters
 
@@ -39,7 +39,7 @@ If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with 
 
 ### 0. Pre-flight: required plugins
 
-cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; without either of them, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe both sibling plugin dirs before touching anything else. The probe tries both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`) so a marketplace-installed user gets the same abort as a dev-repo user:
+cogni-knowledge is a thin orchestrator over `cogni-wiki` (the v0.1.0 inverted pipeline forks the agents it needs locally — see `agents/`); without it, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe the cogni-wiki sibling plugin dir before touching anything else. The probe tries both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`) so a marketplace-installed user gets the same abort as a dev-repo user:
 
 ```
 probe_plugin() {
@@ -53,13 +53,12 @@ probe_plugin() {
   return 1
 }
 probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
-probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
 ```
 
-If either is `no`, list the missing plugin(s) and abort:
+If it is `no`, report the missing plugin and abort:
 
-> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
-> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+> cogni-knowledge requires `cogni-wiki` to be installed.
+> Install via the marketplace, then retry.
 
 Do not attempt to install or auto-recover — surface the missing dependency and let the user install it explicitly.
 
@@ -87,7 +86,7 @@ Skill("cogni-wiki:wiki-setup",
       args="--name '<knowledge-title>' --wiki-root <knowledge_root> [--description ...] [--publisher-base-url ...] --skip-prefill-prompt")
 ```
 
-Pass `--skip-prefill-prompt` because cogni-knowledge has its own opinionated seeding (the user's first `knowledge-research` run will seed the wiki domain-specifically — layering canonical foundations on top would clutter the base). The user can still run `cogni-wiki:wiki-prefill` later.
+Pass `--skip-prefill-prompt` because cogni-knowledge has its own opinionated seeding (the user's first `knowledge-plan` → … → `knowledge-finalize` run will seed the wiki domain-specifically — layering canonical foundations on top would clutter the base). The user can still run `cogni-wiki:wiki-prefill` later.
 
 On `wiki-setup` failure, surface the error verbatim and stop. The binding is not written if the wiki was not created.
 
@@ -111,7 +110,7 @@ Print a short summary, ≤ 8 lines:
 - Knowledge slug and title
 - Wiki path (`<knowledge_root>` — they are the same in the default layout)
 - Binding file path (`<knowledge_root>/.cogni-knowledge/binding.json`)
-- Suggested next action: `cogni-knowledge:knowledge-research --knowledge-slug <slug> --topic '...'`
+- Suggested next action: `cogni-knowledge:knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`
 
 Do not print the full binding JSON in the summary — point at the file path and let the user inspect it if they want.
 
@@ -123,9 +122,9 @@ Do not print the full binding JSON in the summary — point at the file path and
 
 ## Out of scope
 
-- Does NOT write wiki pages — that is `cogni-wiki:wiki-ingest`'s job (transitively via `knowledge-research`).
+- Does NOT write wiki pages — that is `cogni-wiki:wiki-ingest`'s job (transitively via `knowledge-ingest`).
 - Does NOT pre-fill the wiki with cogni-wiki foundations — `--skip-prefill-prompt` is set deliberately.
-- Does NOT configure cogni-research — that happens during `knowledge-research`, where the topic is known.
+- Does NOT configure source mode — that happens during `knowledge-plan`, where the topic is known.
 
 ## Output
 

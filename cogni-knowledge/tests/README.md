@@ -12,9 +12,8 @@ tests/
 ├── fixtures/                              Shared test fixtures
 ├── test_knowledge_setup_probe.sh          F1 + A4: probe handles dev-repo
 │                                          and marketplace cache layouts,
-│                                          present in all 7 knowledge-* skills
-├── test_read_project_config_bare.sh       A1: --bare flag prints value to
-│                                          stdout; envelope mode unchanged
+│                                          present in every gating knowledge-*
+│                                          skill (cogni-wiki-only after M11)
 ├── test_binding_project_path.sh           A2: project_path field + schema
 │                                          0.0.2; legacy 0.0.1 compat
 └── test_cycle_guard_*.sh                  A3: 6 fixture-driven scenarios
@@ -48,6 +47,12 @@ For pure LLM skills, regression coverage is **SKILL.md content invariants**
 — grep-based assertions that catch the most likely failure mode (a path,
 flag, or step silently disappears from the contract). These do not assert
 LLM-driven behaviour, only that the contract surface remains intact.
+
+`test_skill_contracts.sh` also carries the **M11 audit-grep**: a permanent
+invariant that `skills/`, `scripts/`, and `agents/` contain zero references to
+the archived `knowledge-research` / `knowledge-report` chain. It fails any PR
+that re-introduces the legacy chain into the live runtime surface. (The
+archived chain itself lives under `_archive/`, outside the live test glob.)
 
 ## Maintenance note
 
