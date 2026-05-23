@@ -1,14 +1,28 @@
 # _cycle_guard_lib.sh - shared fixture builder for the cycle-guard tests.
 # Source from each test_cycle_guard_*.sh; do not execute directly.
 #
+# TODO (post-M9 follow-up sweep, not blocking): the existing five
+# test_cycle_guard_*.sh tests still inline their own fixture code (which is
+# what this lib was extracted from at v0.0.24). Migrate them to source this
+# lib so it becomes the single source of truth for cycle-guard fixtures.
+# Deferred from M9 (PR #282) to keep slice scope tight; test_finalize_contract.sh
+# already sources this lib and exercises both legacy + v0.1.0 helper paths.
+#
 # Provides:
 #   mk_knowledge_base <KB> <wiki_slug>            - .cogni-wiki + binding skeleton
 #   mk_research_project <PROJ> <slug>             - .metadata/project-config + dirs
+#                                                   (legacy v0.0.x cogni-research layout)
+#   mk_v01_project <PROJ> <slug>                  - v0.1.0 inverted-pipeline layout
+#                                                   (.metadata/citation-manifest.json +
+#                                                   plan.json + output/draft-v1.md)
 #   set_report_source <PROJ> <source>             - rewrite report_source in config
 #   mk_wiki_page <KB> <type> <slug> <derived_from> - wiki page with frontmatter
 #   add_wiki_citation <PROJ> <src-id> <wiki-slug> <page-slug>
 #                                                  - add 02-sources entry citing
-#                                                    wiki://<wiki-slug>/<page-slug>
+#                                                    wiki://<wiki-slug>/<page-slug> (legacy)
+#   add_manifest_citation <PROJ> <wiki-slug> <claim-id>
+#                                                  - append a citation entry to
+#                                                    .metadata/citation-manifest.json (v0.1.0)
 #   append_binding_entry <KB> <slug> <project_path> <report_path>
 #                                                  - append a deposited project
 
@@ -103,6 +117,47 @@ d["research_projects"].append({
     "report_path": report_path,
     "report_source": "wiki",
     "project_path": project_path,
+})
+with open(p, "w") as fh: json.dump(d, fh, indent=2)
+PY
+}
+
+# v0.1.0 inverted-pipeline project layout: .metadata/ holds plan, citation
+# manifest, and project-config; no 02-sources/data/ dir. Used by the M9
+# finalize contract test to exercise cycle-guard's citation-manifest
+# fallback path. Citation entries are appended one at a time via
+# add_manifest_citation below.
+mk_v01_project() {
+  local proj="$1" slug="$2"
+  mkdir -p "$proj/.metadata" "$proj/output"
+  cat > "$proj/.metadata/project-config.json" <<EOF
+{"slug": "$slug", "topic": "test", "report_source": "wiki"}
+EOF
+  cat > "$proj/.metadata/citation-manifest.json" <<EOF
+{
+  "schema_version": "0.1.0",
+  "draft_version": 1,
+  "citations": []
+}
+EOF
+  cat > "$proj/.metadata/plan.json" <<EOF
+{"schema_version": "0.1.0", "topic": "$slug topic"}
+EOF
+  : > "$proj/output/draft-v1.md"
+}
+
+add_manifest_citation() {
+  local proj="$1" wiki_slug="$2" claim_id="$3"
+  python3 - "$proj" "$wiki_slug" "$claim_id" <<'PY'
+import json, sys
+proj, wiki_slug, claim_id = sys.argv[1:4]
+p = f"{proj}/.metadata/citation-manifest.json"
+with open(p) as fh: d = json.load(fh)
+position = f"01:{len(d.get('citations', [])) + 1:02d}"
+d.setdefault("citations", []).append({
+    "draft_position": position,
+    "wiki_slug": wiki_slug,
+    "claim_id": claim_id or None,
 })
 with open(p, "w") as fh: json.dump(d, fh, indent=2)
 PY

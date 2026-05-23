@@ -154,7 +154,7 @@ Output: `<project>/.metadata/verify-vN.json`:
 
 ### Phase 7 — `knowledge-finalize`
 
-Deposit the verified draft as `wiki/syntheses/<slug>.md`. Run `cycle-guard.py` (reused as-is from v0.0.x) to refuse self-citing loops. Update `binding.json` `research_projects[]` with the new entry. Refresh dashboard.
+Deposit the verified draft as `wiki/syntheses/<slug>.md` (frontmatter `type: synthesis`, `derived_from_research: <project-slug>`, `sources:` reconstructed from `citation-manifest.json::citations[].wiki_slug`; body is the verified draft verbatim plus an auto-generated `## References` list). Run `cycle-guard.py` to refuse self-citing loops — at v0.0.24 the guard gained an additive fallback that reads `<project>/.metadata/citation-manifest.json` when the legacy `02-sources/data/src-*.md` glob is empty, so direct-cycle detection works on v0.1.0 projects without further adapter code. Call three cogni-wiki helpers directly at script level (matches the M6 pattern of calling `backlink_audit.py` + `wiki_index_update.py` script-level): `wiki_index_update.py --category "Syntheses"` (so the page lands in `wiki/index.md`), `config_bump.py --key entries_count --delta 1` (so `.cogni-wiki/config.json` stays consistent), and `rebuild_context_brief.py` (so the next session's "first read" picks the synthesis up). Append the new entry to `binding.json::research_projects[]` via `knowledge-binding.py append-project --report-source wiki`. Write one `## [YYYY-MM-DD] finalize | …` line to `wiki/log.md` (additive log prefix — same posture as M7's `compose` and M8's `verify`).
 
 ## What is no longer in the runtime path
 
@@ -167,7 +167,7 @@ Deposit the verified draft as `wiki/syntheses/<slug>.md`. Run `cycle-guard.py` (
 - `cogni-wiki:wiki-setup` for wiki bootstrap (called from `knowledge-setup`).
 - `cogni-wiki:wiki-query`, `wiki-dashboard`, `wiki-health`, `wiki-resume`, `wiki-lint`, `wiki-refresh` — `knowledge-query`, `knowledge-dashboard`, `knowledge-resume`, `knowledge-refresh` remain thin wrappers around these.
 - `cogni-wiki/skills/wiki-ingest/scripts/{backlink_audit,wiki_index_update}.py` — called from `source-ingester` directly (script-level, not skill-level).
-- `cogni-wiki/scripts/{config_bump,rebuild_context_brief}.py` — called from `knowledge-finalize`.
+- `cogni-wiki/skills/wiki-ingest/scripts/{wiki_index_update,config_bump,rebuild_context_brief}.py` — called from `knowledge-finalize` at script level. `wiki_index_update.py` was added to the helper trio at v0.0.24 — without it the new synthesis page would not appear in `wiki/index.md` (the catalog), matching the same posture `wiki-query --file-back` and `knowledge-ingest` already adopt for their new pages.
 
 ## Cross-plugin coordination prerequisites
 

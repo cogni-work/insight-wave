@@ -165,12 +165,10 @@ def cmd_append_project(args: argparse.Namespace) -> int:
         )
 
     projects = binding.setdefault("research_projects", [])
-    if any(p.get("slug") == args.research_slug for p in projects):
-        return _emit(
-            False,
-            data={"existing_slug": args.research_slug},
-            error="research_slug already recorded in this binding; refusing to duplicate",
-        )
+    existing_idx = next(
+        (i for i, p in enumerate(projects) if p.get("slug") == args.research_slug),
+        None,
+    )
 
     entry = {
         "slug": args.research_slug,
@@ -179,8 +177,30 @@ def cmd_append_project(args: argparse.Namespace) -> int:
         "report_source": args.report_source,
         "project_path": str(Path(args.project_path).resolve()) if args.project_path else "",
     }
-    projects.append(entry)
 
+    if existing_idx is not None:
+        if not args.allow_update:
+            return _emit(
+                False,
+                data={"existing_slug": args.research_slug},
+                error="research_slug already recorded in this binding; refusing to duplicate",
+            )
+        # In-place update so the array's ordering is preserved (downstream
+        # readers like knowledge-dashboard surface projects by index order).
+        previous = projects[existing_idx]
+        projects[existing_idx] = entry
+        written = _write_binding(knowledge_root, binding)
+        return _emit(
+            True,
+            data={
+                "path": str(written),
+                "updated": entry,
+                "previous": previous,
+                "research_projects_count": len(projects),
+            },
+        )
+
+    projects.append(entry)
     written = _write_binding(knowledge_root, binding)
     return _emit(
         True,
@@ -235,6 +255,16 @@ def main(argv: list[str]) -> int:
     )
     p_append.add_argument("--report-source", required=True, choices=sorted(VALID_REPORT_SOURCES))
     p_append.add_argument("--deposited-at", required=False, default="")
+    p_append.add_argument(
+        "--allow-update",
+        action="store_true",
+        help=(
+            "On duplicate research_slug, update the existing entry in place "
+            "instead of refusing. Used by knowledge-finalize --overwrite to "
+            "keep the binding's report_path / deposited_at fresh when "
+            "re-depositing a refined draft."
+        ),
+    )
     p_append.set_defaults(func=cmd_append_project)
 
     p_read = sub.add_parser("read", help="Emit the binding manifest")

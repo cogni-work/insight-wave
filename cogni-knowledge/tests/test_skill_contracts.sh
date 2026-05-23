@@ -161,8 +161,9 @@ COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
 VERIFY="$PLUGIN_ROOT/skills/knowledge-verify/SKILL.md"
 VERIFIER="$PLUGIN_ROOT/agents/wiki-verifier.md"
 REVISOR="$PLUGIN_ROOT/agents/revisor.md"
+FINALIZE="$PLUGIN_ROOT/skills/knowledge-finalize/SKILL.md"
 
-for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR"; do
+for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-(research|claims):' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-research/cogni-claims skill"
@@ -178,7 +179,7 @@ done
 # the wiki — no script calls — and the composer is fully read-only
 # against wiki/*; knowledge-verify only reads the wiki — no script calls
 # — and the verifier + revisor are read-only against wiki/* too).
-for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR"; do
+for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-wiki:' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-wiki skill (M6 contract: call helper scripts directly)"
