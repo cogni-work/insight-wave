@@ -11,7 +11,7 @@ Ask a question against a bound cogni-knowledge base. This skill is a binding-awa
 This skill is a thin orchestrator. The cogni-knowledge value-add over a raw `cogni-wiki:wiki-query` dispatch is:
 
 1. **Binding-aware wiki path resolution** — no `--wiki-root` from the user; read from `binding.json`.
-2. **Knowledge-base footer** — every answer ends with one line tying it to the knowledge slug + deposit count, so the user remembers where the answer came from.
+2. **Knowledge-base footer** — every answer ends with one line tying it to the knowledge slug + deposit count + fetch-cache health (cached / unavailable source counts), so the user remembers where the answer came from and how much evidence the base holds.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once per session to anchor on the accumulation thesis; read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` to remember the delegation boundary.
 
@@ -42,7 +42,7 @@ If `--question` is missing, ask the user once via `AskUserQuestion` (single free
 
 ### 0. Pre-flight
 
-**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** This skill dispatches `cogni-wiki:wiki-query` and reads the bound wiki — it never reaches cogni-research, so it probes only `cogni-wiki` (the v0.1.0 clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -54,13 +54,12 @@ probe_plugin() {
   return 1
 }
 probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
-probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
 ```
 
-If either is `no`, list the missing plugin(s) and abort:
+If `WIKI_OK` is `no`, abort:
 
-> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
-> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+> cogni-knowledge requires `cogni-wiki` to be installed.
+> Install it via the marketplace, then retry.
 
 Then continue with the binding-resolution checks:
 
@@ -90,13 +89,22 @@ Skill("cogni-wiki:wiki-query",
 
 ### 2. Print the answer + footer
 
+Before printing, read the knowledge-base-global fetch-cache health so the footer can show how much evidence the base has cached:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
+    --knowledge-root <knowledge_root>
+```
+
+Capture `entries` (cached source count `<M>`) and `unavailable` (`<U>`) from `data`. On `success: false`, treat the counts as unknown and drop the fetch-cache clause from the footer rather than aborting — the answer itself is the deliverable.
+
 Print the upstream answer verbatim, then append a single footer line on its own line:
 
 ```
-Knowledge base: <knowledge_slug> · <N> deposited projects · /cogni-knowledge:knowledge-resume for status.
+Knowledge base: <knowledge_slug> · <N> deposited projects · fetch-cache: <M> sources cached (<U> unavailable) · /cogni-knowledge:knowledge-resume for status.
 ```
 
-`<N>` is `len(research_projects)` from the binding. The footer reminds the user which base the answer came from and points at the status skill if they want to see what is in the base.
+`<N>` is `len(research_projects)` from the binding; `<M>`/`<U>` come from `cache-health`. The footer reminds the user which base the answer came from, how much evidence the inverted pipeline has cached, and points at the status skill.
 
 ### 3. No binding write
 
@@ -126,3 +134,4 @@ No files are written outside `<wiki_path>/` and only by upstream `wiki-query`.
 - `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
 - `cogni-wiki:wiki-query` SKILL.md — the upstream contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health --help` — fetch-cache health for the footer

@@ -192,6 +192,41 @@ if [ $errors -eq 0 ]; then
   green "PASS: clean-break — no cogni-research/cogni-claims/cogni-wiki skill dispatch in new files"
 fi
 
+# --- Read-side skills: cogni-research probe drop (M10a, v0.0.25) ----------
+# query / dashboard / resume dispatch ONLY cogni-wiki. The v0.1.0 clean break
+# (decision-1) makes cogni-research 0% of the runtime path, so these skills
+# must probe cogni-wiki only — otherwise an uninstalled cogni-research (after
+# M11 archives the legacy skills) would brick read-only status surfaces. Each
+# must also wire the new pipeline-summary.py reader.
+QUERY="$PLUGIN_ROOT/skills/knowledge-query/SKILL.md"
+DASHBOARD="$PLUGIN_ROOT/skills/knowledge-dashboard/SKILL.md"
+RESUME="$PLUGIN_ROOT/skills/knowledge-resume/SKILL.md"
+
+for f in "$QUERY" "$DASHBOARD" "$RESUME"; do
+  name=$(basename "$(dirname "$f")")
+  if [ ! -f "$f" ]; then
+    red "FAIL: $name/SKILL.md not found"
+    errors=$((errors + 1))
+    continue
+  fi
+  assert_not_grep 'probe_plugin cogni-research' "$f" "$name: does NOT probe cogni-research (clean break)"
+  assert_grep 'probe_plugin cogni-wiki' "$f" "$name: still probes cogni-wiki"
+  assert_grep 'pipeline-summary.py' "$f" "$name: wired to pipeline-summary.py reader"
+done
+
+# knowledge-refresh shares the probe-drop invariant (M10b, v0.0.26) but does
+# not read pipeline-summary.py — it dispatches the seven phase skills. Its
+# phase-chain + clean-break contract lives in test_refresh_push_chain.sh; here
+# we just pin the probe split alongside the read-side trio.
+REFRESH="$PLUGIN_ROOT/skills/knowledge-refresh/SKILL.md"
+if [ -f "$REFRESH" ]; then
+  assert_not_grep 'probe_plugin cogni-research' "$REFRESH" "knowledge-refresh: does NOT probe cogni-research (clean break)"
+  assert_grep 'probe_plugin cogni-wiki' "$REFRESH" "knowledge-refresh: still probes cogni-wiki"
+else
+  red "FAIL: knowledge-refresh/SKILL.md not found"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0
