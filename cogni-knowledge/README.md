@@ -166,7 +166,7 @@ cogni-knowledge/
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
 ├── agents/                       7 forked + new pipeline agents
 ├── references/                   7 framework + design docs
-├── scripts/                      6 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, pipeline-summary, …)
+├── scripts/                      5 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, pipeline-summary) + _knowledge_lib helper
 ├── skills/                       12 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```
