@@ -208,7 +208,10 @@ def cmd_cache_health(args: argparse.Namespace) -> int:
             ],
             capture_output=True,
             text=True,
+            timeout=30,
         )
+    except subprocess.TimeoutExpired:
+        return _emit(False, error="fetch-cache.py stat timed out after 30s")
     except OSError as exc:
         return _emit(False, error=f"failed to invoke fetch-cache.py stat: {exc}")
 

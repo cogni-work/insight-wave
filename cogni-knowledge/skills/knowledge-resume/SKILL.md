@@ -110,9 +110,9 @@ Print a ≤ 12-line summary that layers the binding onto the wiki status:
 - **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — run knowledge-fetch --refresh`; `empty` → `fetch-cache empty — run knowledge-plan first`.
 - **Topic lineage.** If `covered_themes` or `open_themes` are non-empty, print them as two short lists. Else omit.
 - **Next action.** Recommend based on state:
-  - If `research_projects` is empty: "Run `knowledge-research --knowledge-slug <slug> --topic '...'` to deposit your first project."
-  - If wiki has structural issues: "Fix structural issues first — see the wiki-resume output above. Then `knowledge-research` for more deposits or `cogni-wiki:wiki-query` to ask the base."
-  - Otherwise: "Run another `knowledge-research` to keep accumulating, or `cogni-wiki:wiki-query --question '...'` to ask the base what it knows."
+  - If `research_projects` is empty: "Run the inverted pipeline (`knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`) to deposit your first project."
+  - If wiki has structural issues: "Fix structural issues first — see the wiki-resume output above. Then run the inverted pipeline for more deposits, or `cogni-wiki:wiki-query` to ask the base."
+  - Otherwise: "Run the inverted pipeline (`knowledge-plan` → … → `knowledge-finalize`) to keep accumulating, or `cogni-wiki:wiki-query --question '...'` to ask the base what it knows."
 
 The full `wiki-resume` output appears verbatim above the summary so the user has the structural detail at hand; cogni-knowledge's contribution is the binding overlay.
 
