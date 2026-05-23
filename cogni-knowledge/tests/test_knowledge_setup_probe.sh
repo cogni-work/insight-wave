@@ -8,11 +8,13 @@
 # A4 (rollout): the same probe exists in the other knowledge-* skills so a
 # user who reaches any of them without setup gets the same clean abort.
 #
-# M10a (v0.0.25) clean-break split: the read-side skills (query, dashboard,
-# resume) dispatch ONLY cogni-wiki, so they probe cogni-wiki only and drop the
-# cogni-research probe + "requires both" wording (decision-1: cogni-research is
-# 0% of the v0.1.0 runtime path). The legacy chain skills (setup, research,
-# report, refresh) still probe both — refresh flips to wiki-only at M10b.
+# Clean-break split: skills that dispatch ONLY cogni-wiki (+ this plugin's own
+# phase skills) probe cogni-wiki only and drop the cogni-research probe +
+# "requires both" wording (decision-1: cogni-research is 0% of the v0.1.0
+# runtime path). The read-side trio (query, dashboard, resume) flipped at M10a
+# (v0.0.25); knowledge-refresh flipped at M10b (v0.0.26) when its push-mode was
+# rewritten onto the inverted pipeline. The remaining legacy-chain skills
+# (setup, research, report) still probe both until M11 archives them.
 #
 # This test:
 #   1. Greps the both-probe skills for the cogni-wiki + cogni-research probes
@@ -39,19 +41,20 @@ errors=0
 # -----------------------------------------------------------------------------
 
 # Legacy-chain skills still gate on both cogni-wiki + cogni-research.
-# (refresh flips to wiki-only at M10b.)
 BOTH_PROBE_SKILLS=(
   knowledge-setup
   knowledge-research
   knowledge-report
-  knowledge-refresh
 )
 
-# Read-side skills dispatch only cogni-wiki (M10a clean-break split).
+# Skills that dispatch only cogni-wiki (+ this plugin's own phase skills):
+# the read-side trio (M10a v0.0.25) plus knowledge-refresh, whose push-mode
+# was rewritten onto the inverted pipeline at M10b (v0.0.26).
 WIKI_ONLY_PROBE_SKILLS=(
   knowledge-query
   knowledge-dashboard
   knowledge-resume
+  knowledge-refresh
 )
 
 assert_skill_probes_both() {

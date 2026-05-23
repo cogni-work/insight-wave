@@ -1,6 +1,6 @@
 ---
 name: knowledge-refresh
-description: "Refresh a bound cogni-knowledge base — two modes. Pull-mode delegates to cogni-wiki:wiki-refresh against the bound wiki to refresh stale pages from an existing research project. Push-mode lints the bound wiki, asks the user which stale topics to re-research, sequentially dispatches knowledge-research per selected topic, then dispatches wiki-refresh per new project so originally-stale pages refresh against the fresh evidence. Use this skill whenever the user says 'refresh my knowledge base', 'knowledge refresh push|pull', 'update stale pages in my <slug> base', 're-research stale topics in the eu-ai-act base', 'pull fresh research into the bound wiki'."
+description: "Refresh a bound cogni-knowledge base — two modes. Pull-mode delegates to cogni-wiki:wiki-refresh against the bound wiki to refresh stale pages from an existing research project. Push-mode lints the bound wiki, asks the user which stale topics to refresh, then runs the v0.1.0 inverted pipeline per selected topic — the seven-phase chain knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify → knowledge-finalize — so each stale topic gets a freshly-composed, claim-verified synthesis deposited into the bound wiki. Use this skill whenever the user says 'refresh my knowledge base', 'knowledge refresh push|pull', 'update stale pages in my <slug> base', 'refresh stale topics in the eu-ai-act base', 'pull fresh research into the bound wiki'."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 ---
 
@@ -8,10 +8,10 @@ allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 
 Close the self-healing loop for a bound cogni-knowledge base. Wiki pages age — `wiki-lint` flags `stale_page` (>365d) and `stale_draft` (>180d) findings, but lint alone doesn't bring fresh evidence. This skill has two modes:
 
-- **Pull-mode** — the user already has a completed cogni-research project; we delegate to `cogni-wiki:wiki-refresh` to match its sub-questions to stale pages and refresh them.
-- **Push-mode** — we lint the wiki, ask the user which stale pages they want fresh research on, sequentially dispatch `knowledge-research` per selected topic, then dispatch `wiki-refresh` per new project so the originally-stale pages refresh against the new evidence.
+- **Pull-mode** — the user already has a completed cogni-research project; we delegate to `cogni-wiki:wiki-refresh` to match its sub-questions to stale pages and refresh them. (Pull-mode is the legacy bridge; it stays unchanged.)
+- **Push-mode** — we lint the wiki, ask the user which stale topics they want fresh evidence on, then run the **v0.1.0 inverted pipeline** per selected topic: the seven-phase chain `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Each topic ends with a freshly-composed, claim-verified `type: synthesis` page deposited into the bound wiki.
 
-This skill is a pure orchestrator — pull-mode is a thin pass-through; push-mode composes `wiki-lint` + `knowledge-research` + `wiki-refresh` via existing skills, never re-implementing them.
+This skill is a pure orchestrator — pull-mode is a thin pass-through; push-mode composes existing `cogni-knowledge` phase skills via `Skill(...)`, never re-implementing them. **Push-mode dispatches zero cogni-research skills** — the v0.1.0 clean break (decision-1) means cogni-research is 0% of the runtime path. The legacy push-mode (which re-ran the old research+ingest chain) was replaced by the seven-phase inverted pipeline at v0.0.26.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the delegation boundary.
 
@@ -24,7 +24,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 ## Never run when
 
 - No `binding.json` exists at the resolved knowledge root — route to `/cogni-knowledge:knowledge-setup`
-- `research_projects[]` is empty AND `--mode pull` — there's no upstream research project to pull from; suggest `knowledge-research` instead
+- `research_projects[]` is empty AND `--mode pull` — there's no upstream research project to pull from; suggest `--mode push` (which builds fresh evidence via the inverted pipeline) instead
 - The bound wiki has zero stale pages AND `--mode push` — there's nothing to push-refresh
 
 ## Parameters
@@ -49,7 +49,7 @@ If `--mode` is missing, ask the user once via `AskUserQuestion`. Do not infer.
 
 ### 0. Pre-flight (both modes)
 
-**Required plugins.** cogni-knowledge is a thin orchestrator over `cogni-wiki` and `cogni-research`; abort cleanly here rather than letting downstream `Skill` dispatches fail with opaque errors. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** Both modes dispatch only `cogni-wiki` (pull-mode → `wiki-refresh`; push-mode → `wiki-lint` to find stale topics) plus this plugin's own inverted-pipeline phase skills. Neither reaches cogni-research, so probe only `cogni-wiki` — the v0.1.0 clean break (decision-1: cogni-research is 0% of the runtime path; same posture as `knowledge-plan`). Abort cleanly here rather than letting a downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -61,13 +61,12 @@ probe_plugin() {
   return 1
 }
 probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
-probe_plugin cogni-research research-setup && RESEARCH_OK=yes || RESEARCH_OK=no
 ```
 
-If either is `no`, list the missing plugin(s) and abort:
+If `WIKI_OK` is `no`, abort:
 
-> cogni-knowledge requires both `cogni-wiki` and `cogni-research` to be installed.
-> Missing: `<comma-separated list>`. Install via the marketplace, then retry.
+> cogni-knowledge requires `cogni-wiki` to be installed.
+> Install it via the marketplace, then retry.
 
 Then continue with the binding-resolution checks:
 
@@ -111,62 +110,79 @@ Then continue with the binding-resolution checks:
 
 2. **Parse stale findings.** Read the freshest audit file at `<wiki_path>/wiki/audits/lint-*.md` (sorted by filename, last one). Extract `stale_page` and `stale_draft` warnings — for each, capture the page slug and page title. If the stale set is empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
 
-3. **Ask which stale topics to re-research.** `AskUserQuestion` with `multiSelect: true`. One option per stale page; the label is the page title (truncated to ~50 chars for readability), with the slug in parentheses. Default surfaced: none preselected (the user opts in explicitly). If the user picks zero, exit 0 cleanly.
+3. **Ask which stale topics to refresh.** `AskUserQuestion` with `multiSelect: true`. One option per stale page; the label is the page title (truncated to ~50 chars for readability), with the slug in parentheses. Default surfaced: none preselected (the user opts in explicitly). If the user picks zero, exit 0 cleanly.
 
-4. **Batch confirmation.** `AskUserQuestion` (single-select) with the question: "Launch `<K>` sequential research runs against the `<knowledge_slug>` knowledge base? Each run costs roughly $1–$5." Options: `proceed`, `abort`. On `abort`, exit 0.
+4. **Batch confirmation.** `AskUserQuestion` (single-select) with the question: "Run the inverted pipeline for `<K>` stale topics against the `<knowledge_slug>` knowledge base? Each topic runs the seven-phase chain (plan → curate → fetch → ingest → compose → verify → finalize) and costs roughly $1–$5 in WebSearch/WebFetch budget." Options: `proceed`, `abort`. On `abort`, exit 0. This is the **single batch-level gate** — there is no per-topic confirmation from this skill.
 
-5. **Per-topic loop — research, then refresh.** For each selected stale page, sequentially:
-   ```
-   Skill("cogni-knowledge:knowledge-research",
-         args="--knowledge-slug <knowledge_slug> --topic '<page title>'")
-   ```
-   Capture the new `<resolved_slug>` from the dispatch summary (parse `cogni-research-<slug>/` from the printed project path, same convention as `knowledge-research/SKILL.md` Step 1). On per-topic research failure, capture in `failures: [{topic, error}]` and skip to the next topic.
+5. **Per-topic loop — run the seven-phase inverted pipeline.** For each selected stale page, sequentially run the chain below. The page title is the topic. All dispatches pass `--knowledge-root <knowledge_root>` so they resolve the same base regardless of cwd. Parse each phase's `{success}` summary; **on any phase failure, capture `{topic, failed_phase, error}` in `failures[]` and skip to the next topic — do not run later phases for that topic, and do not roll back.** The manifests already on disk are the truth, and every phase is idempotent (see §"Push-mode resume contract" below), so a partial topic is safely resumable by re-running this skill.
 
-   On research success, immediately dispatch the matching refresh:
-   ```
-   Skill("cogni-wiki:wiki-refresh",
-         args="--from-research <resolved_slug> --wiki-root <wiki_path>")
-   ```
-   The new research's topic was the originally-stale page title, so `wiki-refresh`'s Jaccard match should score high against the original page. The upstream skill runs its own batch-confirmation per dispatch — that's a feature: the user can decline a per-run plan if the match is unexpectedly weak.
+   **Phase 1 — plan (idempotent guard).** `knowledge-plan` derives `project_path = <knowledge_root>/<topic-slug>-<today>/` and *aborts if that directory already exists* (it never overwrites). So before dispatching, compute the same path — `topic_slug` = kebab-case of the page title (lowercase, alphanumerics + dashes, collapse dash runs, strip ends, cap 60 chars), `today = $(date -u +%F)` — and check for `<project_path>/.metadata/plan.json`:
+   - **If it exists** (a same-day retry of this topic): skip the dispatch and reuse `<project_path>` — this is the resume path.
+   - **Else**: dispatch and capture the resolved `<project_path>` from the summary's "New project:" / "Plan path:" lines:
+     ```
+     Skill("cogni-knowledge:knowledge-plan",
+           args="--knowledge-slug <knowledge_slug> --topic '<page title>' --knowledge-root <knowledge_root>")
+     ```
 
-   Interleaved (research-A → refresh-A → research-B → refresh-B …) rather than two batches: a mid-loop abort leaves a consistent partial state (each completed topic is fully landed), and refreshed pages are visible to the user sooner. Sequential overall — see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour" for the contract.
+   **Phases 2–7 — curate → fetch → ingest → compose → verify → finalize.** Each takes the uniform `--knowledge-slug <slug> --project-path <project_path> --knowledge-root <knowledge_root>` interface; dispatch them in order, stopping that topic's chain on the first failure:
+   ```
+   Skill("cogni-knowledge:knowledge-curate",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   Skill("cogni-knowledge:knowledge-fetch",    args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   Skill("cogni-knowledge:knowledge-ingest",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   Skill("cogni-knowledge:knowledge-compose",  args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   Skill("cogni-knowledge:knowledge-verify",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   Skill("cogni-knowledge:knowledge-finalize", args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   ```
+   `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` with `report_source: wiki` — that is the per-topic deliverable. Do not pass `--overwrite`; finalize refusing to clobber an existing synthesis is the correct resume behaviour.
+
+   Sequential overall (topic-A's full chain, then topic-B's) — `knowledge-binding.py append-project` writes without an external lock, so concurrent finalizes could race. See `references/delegation-contract.md` §"Phase-3 push-refresh behaviour" for the contract.
 
 6. **Final summary.** ≤ 8 lines:
-   - `<N>` topics re-researched (slug list)
-   - `<M>` pages refreshed downstream via `wiki-refresh`
-   - `<K>` per-topic failures (topic + error)
+   - `<N>` topics finalized (synthesis slug list)
+   - `<K>` topics with a per-phase failure — list each as `<topic> — failed at <failed_phase>: <error>` so the user knows exactly where to resume
+   - To resume a failed topic, re-run `knowledge-refresh --mode push` and re-select it (the chain short-circuits on already-complete phases) — or run the remaining phases by hand from `<project_path>`
    - Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the new deposits, or `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
+
+### Push-mode resume contract
+
+The per-topic loop fails soft: a topic that dies mid-chain leaves valid manifests on disk for the phases that completed. To resume, the user re-runs `knowledge-refresh --mode push` (same day) and re-selects the topic; each phase short-circuits on already-complete state by construction:
+
+- **`knowledge-plan`** — Step 5's existence guard skips the re-dispatch when `<project_path>/.metadata/plan.json` already exists, because `knowledge-plan` itself aborts on an existing project dir (it never overwrites). Same-day retry → reuse; a retry on a later day computes a new `<topic-slug>-<date>` and starts a fresh project (acceptable — a day later you likely want fresh evidence anyway).
+- **`knowledge-curate` / `knowledge-fetch`** — `candidate-store.py` and `fetch-cache.py` are dedup-by-construction; re-runs cost only the WebSearch/WebFetch budget for cache misses.
+- **`knowledge-ingest`** — skips URLs already in `ingest-manifest.json::ingested[]` (orchestrator-side, URL-keyed); re-runs are a no-op on already-ingested slugs.
+- **`knowledge-compose`** — preserves the F11 outline-recovery contract: a leftover `writer-outline-vN.json` from a crashed prior run triggers `RESUME_FROM_OUTLINE=true` so only Phase 2 re-runs.
+- **`knowledge-verify`** — single-pass per round, max-2 revisor iterations. **`knowledge-finalize`** — refuses to overwrite an existing `<wiki>/syntheses/<slug>.md` without `--overwrite`, so a re-run after a successful finalize is a safe no-op.
 
 ## Edge cases
 
 - **Empty `research_projects[]` + pull-mode.** Pre-flight does not block this — the user may want to pull from a project deposited via another binding or hand-created on disk. Step 1(2) emits the "not in binding" warning if applicable, and `wiki-refresh` itself fails if the project files don't exist.
-- **All selected topics fail to research in push-mode.** Step 5 captures every failure; step 6 reports honestly with `<N> = 0`.
+- **All selected topics fail mid-chain in push-mode.** Step 5 captures every failure with its `failed_phase`; step 6 reports honestly with `<N> = 0` and lists where each topic stopped.
 - **Stale pages exist but `wiki-lint` returns no `stale_page`/`stale_draft` warnings.** Step 2 treats the audit as empty and exits cleanly.
 - **User selects zero stale topics in step 3.** Exit 0 cleanly — the multi-select prompt is genuinely opt-in.
-- **Inherited interactive menu mid-batch.** Each per-topic `knowledge-research` dispatch transitively invokes `cogni-research:research-setup`, which surfaces its own interactive menu (market, language, report type, source mode). The batch confirmation in step 4 gates the *count* of runs, not their per-run scope decisions — the user should expect `K` interactive prompts after answering "proceed".
+- **A phase dies after writing partial manifests.** Re-running the skill resumes from the last complete phase per the resume contract above — no manual cleanup needed for the common case.
 
 ## Out of scope
 
-- **Cycle-detection between push-mode runs.** Phase 2's `cycle-guard.py` only fires on `report_source ∈ {wiki, hybrid}`. Push-mode invokes `knowledge-research`, which always lands at `report_source == web` (Mode A) — no circular evidence is possible by construction.
+- **Cycle-detection between push-mode runs.** `knowledge-finalize` runs `cycle-guard.py` (with the v0.0.24 citation-manifest fallback) per topic before depositing the synthesis — that is where self-citing loops are refused, not in this orchestrator.
 - **Auto-running `wiki-resume` or `knowledge-resume` after the batch.** Surfaced in the summary as a suggestion; manual decision.
-- **Modifying the binding directly.** All binding writes flow through `knowledge-research`'s own `append-project` call.
+- **Modifying the binding directly.** All binding writes flow through `knowledge-finalize`'s own `append-project` call (one per finalized topic, `report_source: wiki`).
 
-For the push-mode UX contract (single batch confirmation, sequential, composition-only, no cost cap), see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour".
+For the push-mode UX contract (single batch confirmation, sequential, composition-only), see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour".
 
 ## Output
 
 - **Pull-mode:** upstream `wiki-refresh` output verbatim. Wiki pages updated by `wiki-update` (via `wiki-refresh`); raw refresh files under `<wiki_path>/raw/refresh-<slug>-<date>/`. No binding write.
 - **Push-mode:**
   - One `<wiki_path>/wiki/audits/lint-<date>.md` from the upstream lint run (and one `lint` log line)
-  - Per selected topic: a new `cogni-research-<slug>/` project, deposited wiki pages, one entry in `research_projects[]` (all written by `knowledge-research`)
-  - Per new project: refreshed wiki pages and a raw refresh subdir (all written by `wiki-refresh`)
+  - Per selected topic: a new `<topic-slug>-<date>/` project directory with its six `.metadata/` manifests, one or more `wiki/sources/<slug>.md` pages, one `wiki/syntheses/<slug>.md` synthesis, one `research_projects[]` entry (`report_source: wiki`), and `compose` / `verify` / `finalize` lines in `wiki/log.md` — all written by the dispatched phase skills.
 
-No files are written directly by this skill — every artefact comes from a downstream dispatch.
+No files are written directly by this skill — every artefact comes from a downstream phase dispatch.
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
-- `cogni-wiki:wiki-refresh` SKILL.md — pull-mode and per-new-project dispatch target
+- `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — the seven-phase chain push-mode drives
+- `cogni-wiki:wiki-refresh` SKILL.md — pull-mode dispatch target
 - `cogni-wiki:wiki-lint` SKILL.md — push-mode staleness source
-- `cogni-knowledge:knowledge-research` SKILL.md — push-mode per-topic dispatch target
+- `cogni-knowledge:knowledge-plan` … `knowledge-finalize` SKILL.md — push-mode per-topic phase chain
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

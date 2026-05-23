@@ -37,6 +37,8 @@ If a behavior already exists in `cogni-wiki` or `cogni-research`, cogni-knowledg
 
 ## What about `agents/`?
 
+> **Legacy (v0.0.x) contract.** Superseded for the v0.1.0 inverted-pipeline runtime path — see `references/inverted-pipeline.md`. Since v0.0.17 cogni-knowledge ships its own `agents/` directory (forked `source-curator`, `claim-extractor`, `wiki-composer`, `revisor`, plus net-new `source-fetcher`, `source-ingester`, `wiki-verifier`); the v0.1.0 path dispatches **zero** cogni-research agents. As of v0.0.26, `knowledge-refresh --mode push` runs those local phase skills/agents, not the legacy chain below. The paragraph below describes the original delegated-everything design and is retained for historical context until M11's docs rewrite.
+
 cogni-knowledge has no `agents/` directory by design. All agent dispatch goes to upstream agents:
 
 - `cogni-research/agents/section-researcher.md` (web research per sub-question)
@@ -68,9 +70,11 @@ The guardrail rule: when a new skill or codepath calls `append-project`, the `re
 
 ## Phase-3 push-refresh behaviour
 
-`knowledge-refresh --mode push` (v0.0.10) is the only skill that initiates new research runs without the user supplying a topic per run. The contract:
+`knowledge-refresh --mode push` is the only skill that initiates new research runs without the user supplying a topic per run. As of **v0.0.26 (M10b)** push-mode drives the v0.1.0 inverted pipeline — the legacy `knowledge-research` + `wiki-refresh` pair is gone (that path transitively reached cogni-research, which the decision-1 clean break forbids). The contract:
 
-- **One batch-level confirmation, not per-run.** The user is asked twice: which stale topics to re-research (multi-select), and one yes/no on whether to launch `<K>` runs at roughly $1–$5 each. There is no per-run confirmation gate from this skill (the downstream `wiki-refresh` calls still surface their own match-plan prompts).
-- **Composition only — no new research orchestration.** Push-mode dispatches `cogni-knowledge:knowledge-research` per selected topic, which transitively reaches `cogni-research:research-setup` → `research-report` via `cogni-wiki:wiki-from-research`. Knowledge-refresh never reaches into research internals; if `knowledge-research` changes, push-mode tracks the change automatically.
-- **Sequential, not parallel.** `knowledge-binding.py append-project` writes via temp-file + `os.replace` without an external lock; concurrent appends could race. Sequential is the simple safe choice.
-- **No cost cap by design.** The single batch confirmation is the user gate. A per-run cap would either need a cost-aware orchestrator (none today) or surprise the user mid-batch.
+- **One batch-level confirmation, not per-topic.** The user is asked twice: which stale topics to refresh (multi-select), and one yes/no on whether to run the pipeline for `<K>` topics at roughly $1–$5 of WebSearch/WebFetch budget each. There is no per-topic confirmation gate from this skill.
+- **Composition only — no new orchestration logic.** Push-mode dispatches this plugin's own seven phase skills per selected topic, in order: `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Knowledge-refresh never re-implements a phase; if a phase skill changes, push-mode tracks the change automatically. Every phase skill probes only `cogni-wiki` and runs forked agents locally — no cogni-research dispatch anywhere in the chain.
+- **Fail-soft per topic, idempotent resume.** A topic that dies mid-chain records `{topic, failed_phase, error}` and the loop skips to the next topic — no rollback. The manifests on disk are the truth, and each phase short-circuits on already-complete state (plan aborts-on-existing so refresh reuses an existing project dir; curate/fetch dedup-by-construction; ingest skips already-ingested URLs; compose honours the F11 outline-recovery contract; finalize refuses to overwrite a synthesis without `--overwrite`). Re-running the skill resumes a partial topic.
+- **Sequential, not parallel.** `knowledge-binding.py append-project` (called by `knowledge-finalize`) writes via temp-file + `os.replace` without an external lock; concurrent finalizes could race. Sequential per-topic is the simple safe choice.
+- **No cost cap by design.** The single batch confirmation is the user gate. A per-topic cap would either need a cost-aware orchestrator (none today) or surprise the user mid-batch.
+- **Cycle-guarding is finalize's job.** Self-citing-loop refusal lives in `knowledge-finalize`'s `cycle-guard.py` pass per topic, not in this orchestrator.

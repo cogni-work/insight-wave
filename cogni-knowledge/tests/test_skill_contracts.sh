@@ -214,6 +214,19 @@ for f in "$QUERY" "$DASHBOARD" "$RESUME"; do
   assert_grep 'pipeline-summary.py' "$f" "$name: wired to pipeline-summary.py reader"
 done
 
+# knowledge-refresh shares the probe-drop invariant (M10b, v0.0.26) but does
+# not read pipeline-summary.py — it dispatches the seven phase skills. Its
+# phase-chain + clean-break contract lives in test_refresh_push_chain.sh; here
+# we just pin the probe split alongside the read-side trio.
+REFRESH="$PLUGIN_ROOT/skills/knowledge-refresh/SKILL.md"
+if [ -f "$REFRESH" ]; then
+  assert_not_grep 'probe_plugin cogni-research' "$REFRESH" "knowledge-refresh: does NOT probe cogni-research (clean break)"
+  assert_grep 'probe_plugin cogni-wiki' "$REFRESH" "knowledge-refresh: still probes cogni-wiki"
+else
+  red "FAIL: knowledge-refresh/SKILL.md not found"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0
