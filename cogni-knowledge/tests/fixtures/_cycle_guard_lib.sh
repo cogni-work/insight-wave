@@ -1,14 +1,28 @@
 # _cycle_guard_lib.sh - shared fixture builder for the cycle-guard tests.
 # Source from each test_cycle_guard_*.sh; do not execute directly.
 #
+# TODO (post-M9 follow-up sweep, not blocking): the existing five
+# test_cycle_guard_*.sh tests still inline their own fixture code (which is
+# what this lib was extracted from at v0.0.24). Migrate them to source this
+# lib so it becomes the single source of truth for cycle-guard fixtures.
+# Deferred from M9 (PR #282) to keep slice scope tight; test_finalize_contract.sh
+# already sources this lib and exercises both legacy + v0.1.0 helper paths.
+#
 # Provides:
 #   mk_knowledge_base <KB> <wiki_slug>            - .cogni-wiki + binding skeleton
 #   mk_research_project <PROJ> <slug>             - .metadata/project-config + dirs
+#                                                   (legacy v0.0.x cogni-research layout)
+#   mk_v01_project <PROJ> <slug>                  - v0.1.0 inverted-pipeline layout
+#                                                   (.metadata/citation-manifest.json +
+#                                                   plan.json + output/draft-v1.md)
 #   set_report_source <PROJ> <source>             - rewrite report_source in config
 #   mk_wiki_page <KB> <type> <slug> <derived_from> - wiki page with frontmatter
 #   add_wiki_citation <PROJ> <src-id> <wiki-slug> <page-slug>
 #                                                  - add 02-sources entry citing
-#                                                    wiki://<wiki-slug>/<page-slug>
+#                                                    wiki://<wiki-slug>/<page-slug> (legacy)
+#   add_manifest_citation <PROJ> <wiki-slug> <claim-id>
+#                                                  - append a citation entry to
+#                                                    .metadata/citation-manifest.json (v0.1.0)
 #   append_binding_entry <KB> <slug> <project_path> <report_path>
 #                                                  - append a deposited project
 
