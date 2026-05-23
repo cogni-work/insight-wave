@@ -9,7 +9,7 @@ The fetch cache is the single mechanism that solves the dual-fetch problem ident
 └── <sha256-of-url>.json     # one file per URL, content-addressed by URL
 ```
 
-One canonical cache per knowledge base, shared across all projects under that base. A second `knowledge-research` on a related topic that pulls the same URL gets a free hit.
+One canonical cache per knowledge base, shared across all projects under that base. A second knowledge run on a related topic that pulls the same URL gets a free hit.
 
 ## Cache entry shape
 

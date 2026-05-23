@@ -227,6 +227,23 @@ else
   errors=$((errors + 1))
 fi
 
+# --- M11 audit: legacy chain archived, unreachable in live code -----------
+# After M11 (v0.0.27) the knowledge-research / knowledge-report skills + their
+# two private helper scripts live under _archive/. This is the permanent canary
+# that fails any future PR (incl. M12) re-introducing a reference to the legacy
+# chain in the live runtime surface. Scope is skills/ scripts/ agents/ only:
+# references/ (history), CHANGELOG.md, tests/ (this file + test_refresh_push_
+# chain.sh legitimately name them), and _archive/** are intentionally excluded.
+AUDIT_HITS=$(grep -rn 'knowledge-research\|knowledge-report' \
+  "$PLUGIN_ROOT/skills" "$PLUGIN_ROOT/scripts" "$PLUGIN_ROOT/agents" 2>/dev/null || true)
+if [ -n "$AUDIT_HITS" ]; then
+  red "FAIL: M11 audit — legacy knowledge-research/knowledge-report reference in live code:"
+  echo "$AUDIT_HITS" | sed 's/^/    /'
+  errors=$((errors + 1))
+else
+  green "PASS: M11 audit — no legacy chain reference in skills/ scripts/ agents/"
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

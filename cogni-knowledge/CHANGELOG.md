@@ -1,5 +1,61 @@
 # cogni-knowledge changelog
 
+## 0.0.27 — 2026-05-23
+
+Slice 8 of the absorption-roadmap Current sprint — Phase 5 M11. Archives the legacy v0.0.x research+report chain so the v0.1.0 inverted pipeline is the only live path, and bakes a permanent audit-grep so the chain can't creep back. Establishes the monorepo `_archive/` convention. Maturity stays `incubating` (the v0.1.0 / Preview flip is M12).
+
+### Changed
+
+- **Archived to `_archive/`** (via `git mv`, history preserved): `skills/knowledge-research/` + `skills/knowledge-report/` (the last runtime reachers of cogni-research), their two private helper scripts `scripts/lineage-stamp.py` + `scripts/read-project-config.py`, and `tests/test_read_project_config_bare.sh`. The two SKILL.md files gain `archived: true` frontmatter. New `_archive/README.md` documents what was retired, what replaced it, and the convention. `_archive/` sits at the plugin root (not `skills/_archive/`) so skill discovery and the live `tests/test_*.sh` glob never pick it up.
+- `skills/knowledge-setup/SKILL.md` — dropped the `probe_plugin cogni-research research-setup` line and the "requires both `cogni-wiki` and `cogni-research`" abort wording (it only ever dispatched `cogni-wiki:wiki-setup`); rerouted its description, next-action, and out-of-scope prose to the inverted pipeline. Now probes cogni-wiki only.
+- Legacy-skill prose scrubbed from `knowledge-query`, `knowledge-dashboard`, `knowledge-resume` (incl. its routing description), `knowledge-plan`, and one `knowledge-finalize` line; `references/fetch-cache-design.md` updated. No runtime behaviour change — these were prose/discovery surfaces.
+- `tests/test_knowledge_setup_probe.sh` — rewritten to the post-M11 invariant: every live gating skill (setup/query/dashboard/resume/refresh) probes cogni-wiki only; the both-probe block and synthetic cogni-research assertions are gone.
+- `tests/test_skill_contracts.sh` — **new permanent audit-grep**: `skills/`, `scripts/`, and `agents/` must contain zero `knowledge-research` / `knowledge-report` references. Fails any future PR that re-introduces the legacy chain into the live surface.
+- Docs rewritten so the inverted pipeline is the only live path: `README.md` (What it is / What it does / How it works / Components / Architecture / Dependencies), `CLAUDE.md` (header, skills + scripts tables, lineage-stamping section, delegation bullets, future phases), `references/delegation-contract.md` (intro, hard rule, "What about `agents/`?" rewritten to the seven local agents, report_source wiring, delegation-table note), `references/absorption-roadmap.md` (M11 row → shipped at v0.0.27; Slice 8 SHIPPED + Slice 9 lookahead; Phase-5 status header).
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — version `0.0.26` → `0.0.27` (mirrored).
+- `cogni-claims/CLAUDE.md` — one-line lost-caller note: cogni-knowledge's v0.1.0 pipeline runs its own zero-network `knowledge-verify` instead of submitting to cogni-claims (per absorption-roadmap cross-plugin coordination).
+- **CHANGELOG backfill** — added the missing `0.0.25` (M10a) and `0.0.26` (M10b) entries below, which shipped together in PR #283 but were never recorded.
+
+### Notes
+
+- **No backwards-compat shim** for the archived `knowledge-research` / `knowledge-report` slugs — `/cogni-knowledge:knowledge-research` now returns "skill not found". Accepted cost while incubating (per `references/absorption-roadmap.md` "Out of scope for v0.1.0").
+- **cogni-wiki untouched.** `cogni-wiki/CLAUDE.md` + `wiki-from-research/SKILL.md` still name `knowledge-report` to describe their `--allow-wiki-source` contract surface, which any caller can use; not in M11 scope.
+
+## 0.0.26 — 2026-05-23
+
+Slice 7 — Phase 5 M10b. `knowledge-refresh --mode push` rewritten onto the seven-phase inverted pipeline; paired with cogni-wiki v0.0.45's log-enum cleanup. (Recorded retroactively at M11 — shipped in PR #283 alongside M10a.)
+
+### Changed
+
+- `skills/knowledge-refresh/SKILL.md` — push-mode now runs the inverted pipeline (`knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`) per selected stale topic, with uniform `--knowledge-slug` / `--project-path` / `--knowledge-root` dispatch, fail-soft per topic (`{topic, failed_phase, error}` capture), idempotent resume (plan aborts-on-existing; downstream phases dedup/skip by construction), and cycle-guard delegated to finalize. Removed the legacy `knowledge-research` + `wiki-refresh`-pair dispatch and the cogni-research pre-flight probe (clean break); pull-mode unchanged.
+- `references/delegation-contract.md` — §"Phase-3 push-refresh behaviour" rewritten; the legacy "What about agents/?" section banner-flagged as superseded.
+- `tests/test_skill_contracts.sh` + `tests/test_knowledge_setup_probe.sh` — updated for the refresh probe split.
+
+### Added
+
+- `tests/test_refresh_push_chain.sh` — asserts the seven-phase dispatch order, fail-soft capture, and the clean-break invariant (no `knowledge-research` / `wiki-refresh` dispatch in push-mode).
+
+### Notes
+
+- **Paired with cogni-wiki v0.0.45**, which appended `compose` / `verify` / `finalize` to the `wiki/log.md` operation enum (additive, no `schema_version` bump). Live push-mode smoke deferred to M12 (budget too large for CI; the contract is grep-checkable).
+
+## 0.0.25 — 2026-05-23
+
+Slice 6 — Phase 5 M10a. The read-side trio now surfaces inverted-pipeline state and drops cogni-research from its pre-flight. (Recorded retroactively at M11 — shipped in PR #283.)
+
+### Added
+
+- `scripts/pipeline-summary.py` — read-only summaries for the read-side skills. `project --project-path` returns per-project counts from the six `.metadata/` manifests (sub-questions, candidates, fetched/unavailable, ingested/skipped, citations, latest-`verify-vN` verdict counts, `phase_reached`), degrading to zeros + `phase_reached: "none"` on a legacy v0.0.x deposit; `cache-health --knowledge-root` joins `fetch-cache.py stat` with `binding.curator_defaults.fetch_cache_max_age_days` to emit a knowledge-base-global `{entries, negative_ratio, oldest_age_days, max_age_days, verdict}`.
+- `tests/test_pipeline_summary.sh` — 8 fixture-driven assertions.
+
+### Changed
+
+- `skills/knowledge-query/SKILL.md` — footer gains a fetch-cache health clause via `pipeline-summary.py cache-health`.
+- `skills/knowledge-dashboard/SKILL.md` — overlay gains per-project inverted-pipeline columns + a knowledge-base-global `## Pipeline health` block.
+- `skills/knowledge-resume/SKILL.md` — gains per-project pipeline depth + a Pipeline status line.
+- **All three drop their cogni-research pre-flight probe to cogni-wiki-only** — the clean-break invariant now holds for the read surface, ahead of M11's archive.
+- `tests/test_skill_contracts.sh` — extended with the read-side probe-drop + pipeline-summary-wiring block.
+
 ## 0.0.24 — 2026-05-22
 
 Slice 5 of the absorption-roadmap Current sprint — Phase 5 M9. Lands the Phase-7 finalize step of the v0.1.0 inverted pipeline (`plan → curate → fetch → ingest → compose → verify → **finalize**`): the latest verified `draft-vN.md` + `verify-vN.json` + `citation-manifest.json` are now deposited as `<wiki>/syntheses/<synthesis-slug>.md` with `type: synthesis` + `derived_from_research: <project-slug>` + an auto-generated `## References` list. The inverted-pipeline loop closes here — future `knowledge-compose` runs read the new synthesis pages as prior cross-source framing, which is the compounding property the differentiation thesis hinges on.

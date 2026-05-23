@@ -5,24 +5,22 @@
 # layout (../<plugin>/skills/...) and the marketplace cache layout
 # (../../<plugin>/<version>/skills/...).
 #
-# A4 (rollout): the same probe exists in the other knowledge-* skills so a
-# user who reaches any of them without setup gets the same clean abort.
+# A4 (rollout): the same probe exists in every gating knowledge-* skill so a
+# user who reaches one without setup gets the same clean abort.
 #
-# Clean-break split: skills that dispatch ONLY cogni-wiki (+ this plugin's own
-# phase skills) probe cogni-wiki only and drop the cogni-research probe +
-# "requires both" wording (decision-1: cogni-research is 0% of the v0.1.0
-# runtime path). The read-side trio (query, dashboard, resume) flipped at M10a
-# (v0.0.25); knowledge-refresh flipped at M10b (v0.0.26) when its push-mode was
-# rewritten onto the inverted pipeline. The remaining legacy-chain skills
-# (setup, research, report) still probe both until M11 archives them.
+# Post-M11 invariant: every live cogni-knowledge skill probes cogni-wiki ONLY.
+# The v0.1.0 clean break (decision-1) makes cogni-research 0% of the runtime
+# path. The read-side trio (query/dashboard/resume) flipped at M10a (v0.0.25);
+# knowledge-refresh at M10b (v0.0.26); knowledge-setup at M11 (v0.0.27) when
+# the legacy knowledge-research / knowledge-report skills were archived to
+# _archive/. No live skill probes cogni-research or carries the "requires
+# both" abort wording.
 #
 # This test:
-#   1. Greps the both-probe skills for the cogni-wiki + cogni-research probes
-#      and the "requires both" abort wording (contract-level).
-#   2. Greps the wiki-only skills for the cogni-wiki probe and asserts the
-#      cogni-research probe + "requires both" wording are ABSENT.
-#   3. Executes the probe body against two synthetic layouts (dev-repo
-#      sibling AND marketplace cache) and asserts both resolve.
+#   1. Greps every live gating skill for the cogni-wiki probe and asserts the
+#      cogni-research probe + "requires both" wording are ABSENT (contract).
+#   2. Executes the probe body against two synthetic layouts (dev-repo sibling
+#      AND marketplace cache) and asserts both resolve cogni-wiki.
 #
 # bash 3.2 + stdlib only.
 
@@ -37,52 +35,17 @@ green() { printf '\033[32m%s\033[0m\n' "$1"; }
 errors=0
 
 # -----------------------------------------------------------------------------
-# Part 1: contract-level — every knowledge-* skill carries the probe.
+# Part 1: contract-level — every gating skill probes cogni-wiki ONLY.
 # -----------------------------------------------------------------------------
 
-# Legacy-chain skills still gate on both cogni-wiki + cogni-research.
-BOTH_PROBE_SKILLS=(
-  knowledge-setup
-  knowledge-research
-  knowledge-report
-)
-
-# Skills that dispatch only cogni-wiki (+ this plugin's own phase skills):
-# the read-side trio (M10a v0.0.25) plus knowledge-refresh, whose push-mode
-# was rewritten onto the inverted pipeline at M10b (v0.0.26).
+# Skills carrying a Step 0 plugin pre-flight. All probe cogni-wiki only.
 WIKI_ONLY_PROBE_SKILLS=(
+  knowledge-setup
   knowledge-query
   knowledge-dashboard
   knowledge-resume
   knowledge-refresh
 )
-
-assert_skill_probes_both() {
-  local skill="$1"
-  local skill_file="$SKILLS_DIR/$skill/SKILL.md"
-  if [ ! -f "$skill_file" ]; then
-    red "FAIL: skill file not found: $skill_file"
-    errors=$((errors + 1))
-    return
-  fi
-  local missing=0
-  for pattern in \
-    'probe_plugin\(\) \{' \
-    'probe_plugin cogni-wiki wiki-setup' \
-    'probe_plugin cogni-research research-setup' \
-    'requires both .cogni-wiki. and .cogni-research.'
-  do
-    if ! grep -qE "$pattern" "$skill_file"; then
-      red "FAIL: $skill missing pattern: $pattern"
-      missing=$((missing + 1))
-    fi
-  done
-  if [ $missing -eq 0 ]; then
-    green "PASS: $skill carries the both-plugin probe and abort wording"
-  else
-    errors=$((errors + missing))
-  fi
-}
 
 assert_skill_probes_wiki_only() {
   local skill="$1"
@@ -100,7 +63,7 @@ assert_skill_probes_wiki_only() {
   fi
   # Must NOT carry the cogni-research probe or "requires both" wording.
   if grep -qE 'probe_plugin cogni-research' "$skill_file"; then
-    red "FAIL: $skill still probes cogni-research (M10a clean break requires wiki-only)"
+    red "FAIL: $skill still probes cogni-research (clean break requires wiki-only)"
     bad=$((bad + 1))
   fi
   if grep -qE 'requires both .cogni-wiki. and .cogni-research.' "$skill_file"; then
@@ -114,39 +77,31 @@ assert_skill_probes_wiki_only() {
   fi
 }
 
-for skill in "${BOTH_PROBE_SKILLS[@]}"; do
-  assert_skill_probes_both "$skill"
-done
-
 for skill in "${WIKI_ONLY_PROBE_SKILLS[@]}"; do
   assert_skill_probes_wiki_only "$skill"
 done
 
 # -----------------------------------------------------------------------------
-# Part 2: behaviour — the probe body resolves both layouts.
+# Part 2: behaviour — the probe body resolves both layouts for cogni-wiki.
 # -----------------------------------------------------------------------------
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
 # Simulate dev-repo layout. CLAUDE_PLUGIN_ROOT points at
-# $WORK/devrepo/cogni-knowledge; siblings live at $WORK/devrepo/<plugin>/.
+# $WORK/devrepo/cogni-knowledge; the sibling lives at $WORK/devrepo/cogni-wiki/.
 mkdir -p "$WORK/devrepo/cogni-knowledge"
 mkdir -p "$WORK/devrepo/cogni-wiki/skills/wiki-setup"
-mkdir -p "$WORK/devrepo/cogni-research/skills/research-setup"
 touch    "$WORK/devrepo/cogni-wiki/skills/wiki-setup/SKILL.md"
-touch    "$WORK/devrepo/cogni-research/skills/research-setup/SKILL.md"
 
 # Simulate marketplace cache layout. CLAUDE_PLUGIN_ROOT points at
-# $WORK/cache/cogni-knowledge/0.0.14; siblings live at
-# $WORK/cache/<plugin>/<version>/.
-mkdir -p "$WORK/cache/cogni-knowledge/0.0.14"
-mkdir -p "$WORK/cache/cogni-wiki/0.0.43/skills/wiki-setup"
-mkdir -p "$WORK/cache/cogni-research/0.8.0/skills/research-setup"
-touch    "$WORK/cache/cogni-wiki/0.0.43/skills/wiki-setup/SKILL.md"
-touch    "$WORK/cache/cogni-research/0.8.0/skills/research-setup/SKILL.md"
+# $WORK/cache/cogni-knowledge/0.0.27; the sibling lives at
+# $WORK/cache/cogni-wiki/<version>/.
+mkdir -p "$WORK/cache/cogni-knowledge/0.0.27"
+mkdir -p "$WORK/cache/cogni-wiki/0.0.45/skills/wiki-setup"
+touch    "$WORK/cache/cogni-wiki/0.0.45/skills/wiki-setup/SKILL.md"
 
-# Canonical probe body - mirrors the SKILL.md verbatim.
+# Canonical probe body - mirrors the SKILL.md verbatim (cogni-wiki only).
 PROBE_BODY=$(cat <<'BASH'
 probe_plugin() {
   local plugin="$1" skill="$2"
@@ -157,7 +112,6 @@ probe_plugin() {
   return 1
 }
 probe_plugin cogni-wiki wiki-setup && echo wiki_ok || echo wiki_missing
-probe_plugin cogni-research research-setup && echo research_ok || echo research_missing
 BASH
 )
 
@@ -168,7 +122,7 @@ run_probe() {
 
 # Dev-repo case.
 OUT=$(run_probe "$WORK/devrepo/cogni-knowledge")
-if echo "$OUT" | grep -q "^wiki_ok$" && echo "$OUT" | grep -q "^research_ok$"; then
+if echo "$OUT" | grep -q "^wiki_ok$"; then
   green "PASS: probe resolves dev-repo sibling layout"
 else
   red "FAIL: probe failed to resolve dev-repo siblings"
@@ -177,8 +131,8 @@ else
 fi
 
 # Marketplace cache case.
-OUT=$(run_probe "$WORK/cache/cogni-knowledge/0.0.14")
-if echo "$OUT" | grep -q "^wiki_ok$" && echo "$OUT" | grep -q "^research_ok$"; then
+OUT=$(run_probe "$WORK/cache/cogni-knowledge/0.0.27")
+if echo "$OUT" | grep -q "^wiki_ok$"; then
   green "PASS: probe resolves marketplace cache layout"
 else
   red "FAIL: probe failed to resolve marketplace cache siblings"
@@ -186,12 +140,10 @@ else
   errors=$((errors + 1))
 fi
 
-# Missing-plugin case - cogni-wiki absent, cogni-research present.
+# Missing-plugin case - cogni-wiki absent.
 mkdir -p "$WORK/missing_wiki/cogni-knowledge"
-mkdir -p "$WORK/missing_wiki/cogni-research/skills/research-setup"
-touch    "$WORK/missing_wiki/cogni-research/skills/research-setup/SKILL.md"
 OUT=$(run_probe "$WORK/missing_wiki/cogni-knowledge")
-if echo "$OUT" | grep -q "^wiki_missing$" && echo "$OUT" | grep -q "^research_ok$"; then
+if echo "$OUT" | grep -q "^wiki_missing$"; then
   green "PASS: probe correctly reports cogni-wiki missing"
 else
   red "FAIL: probe did not detect cogni-wiki missing"

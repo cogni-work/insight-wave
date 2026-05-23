@@ -89,6 +89,8 @@ Initialized by `claims-store.sh init` (idempotent).
 
 Claims are submitted via `cogni-claims:claims` skill in submit mode. The `claim-entity` skill defines the shared data contract any submitting plugin must follow.
 
+> **Lost caller (cogni-knowledge, v0.1.0).** cogni-knowledge does **not** submit to cogni-claims. Its v0.1.0 inverted pipeline runs a local zero-network `knowledge-verify` (the `wiki-verifier` agent) against pre-extracted source claims instead, per its clean-break design. cogni-claims stays the verification path for the cogni-trends / cogni-portfolio / cogni-research / cogni-consulting submitters above.
+
 ## Pipeline Position
 
 ```
