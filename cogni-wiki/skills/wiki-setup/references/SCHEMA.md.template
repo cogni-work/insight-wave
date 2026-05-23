@@ -97,10 +97,12 @@ Notes:
 Append only. Format:
 
 ```
-## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup|migrate|prefill|graph|queue} | one-line note
+## [YYYY-MM-DD] {ingest|query|synthesis|lint|health|update|setup|migrate|prefill|graph|queue|compose|verify|finalize} | one-line note
 ```
 
 The `synthesis` prefix (v0.0.23+) marks filed-back query answers — distinct from un-filed `query` reads. The `health` prefix (v0.0.27+) marks zero-LLM structural pre-flights — distinct from tokenful `lint` runs. The `migrate` prefix (v0.0.28+) marks one-shot layout migrations (e.g. flat `wiki/pages/` → per-type dirs). The `prefill` prefix (v0.0.33+) marks foundation-page seeding from the plugin's curated `foundations/` library — distinct from regular `ingest` because the source is a plugin-shipped concept stub, not a user-supplied raw file. The `graph` prefix (v0.0.34+) marks `wiki-dashboard --graph` runs (Pass 1 deterministic + Pass 2 LLM-inferred). The `queue` prefix (v0.0.35+) marks persistent-queue events from `wiki-ingest`'s Mode D — `enqueued <id>`, `failed <id>`, `retried <id>`. All six are surfaced separately by `wiki-resume` and `wiki-dashboard`. Never rewrite or reorder log entries. The `queue` extension is purely additive: pre-v0.0.35 readers count `queue` lines in their catch-all bucket without crashing, so no `schema_version` bump is needed.
+
+The `compose`, `verify`, and `finalize` prefixes (v0.0.45+) mark the write-side phases of `cogni-knowledge`'s v0.1.0 inverted pipeline when it runs against a bound wiki — `compose` is the draft step (`knowledge-compose`), `verify` is the zero-network claim-alignment step (`knowledge-verify`), and `finalize` is the synthesis-page deposit (`knowledge-finalize`, which also writes a `type: synthesis` page like `wiki-query --file-back`). They are cogni-knowledge operations, not cogni-wiki ones — documented here for the same reason the `type: source` page type is (an external write-side consumer authors them against this wiki, so the enum that catalogs `wiki/log.md` must recognise them). This extension is purely additive, same posture as `queue`: pre-v0.0.45 readers bucket the three prefixes in their catch-all without crashing, so no `schema_version` bump is needed. `knowledge-ingest` already reuses the existing `ingest` prefix; `knowledge-plan` / `knowledge-curate` / `knowledge-fetch` never touch `wiki/log.md` (they write only the project's `.metadata/` and the fetch-cache), so they get no prefix.
 
 ## Index format
 
