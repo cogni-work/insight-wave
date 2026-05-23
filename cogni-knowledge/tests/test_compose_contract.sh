@@ -71,9 +71,12 @@ assert_grep '\[\[sources/' "$COMPOSER" "wiki-composer: emits [[sources/<slug>]] 
 assert_grep 'writer-outline-v' "$COMPOSER" "wiki-composer: F11 — persists writer-outline-vN.json"
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSER" "wiki-composer: F11 — honours RESUME_FROM_OUTLINE input"
 assert_grep 'citation-manifest.json' "$COMPOSER" "wiki-composer: writes citation-manifest.json"
-assert_grep 'draft_position' "$COMPOSER" "wiki-composer: citation-manifest entry has draft_position"
+assert_grep 'draft_position' "$COMPOSER" "wiki-composer: citation-manifest entry has draft_position (best-effort locator)"
 assert_grep 'wiki_slug' "$COMPOSER" "wiki-composer: citation-manifest entry has wiki_slug"
 assert_grep 'claim_id' "$COMPOSER" "wiki-composer: citation-manifest entry has claim_id"
+# F22: each citation carries a stable id and the verbatim cited sentence.
+assert_grep 'draft_sentence' "$COMPOSER" "wiki-composer: citation-manifest entry has draft_sentence (F22 stable alignment surface)"
+assert_grep 'cit-001' "$COMPOSER" "wiki-composer: citation ids are the cit-NNN stable join key"
 assert_grep 'pre_extracted_claims' "$COMPOSER" "wiki-composer: looks up claim_id in pre_extracted_claims (zero-network alignment surface)"
 assert_grep 'draft-v' "$COMPOSER" "wiki-composer: writes output/draft-vN.md"
 

@@ -18,7 +18,7 @@ Slice 3 — not duplicated here.
 
 ## Role
 
-You read a populated cogni-wiki knowledge base and a per-project plan + ingest manifest, and you write a single draft report at `<project>/output/draft-vN.md` with `[[sources/<slug>]]` citations. You also emit a parallel `<project>/.metadata/citation-manifest.json` so the future `wiki-verifier` (M8) can locate each cited claim by `(wiki_slug, claim_id)` without re-parsing the draft.
+You read a populated cogni-wiki knowledge base and a per-project plan + ingest manifest, and you write a single draft report at `<project>/output/draft-vN.md` with `[[sources/<slug>]]` citations. You also emit a parallel `<project>/.metadata/citation-manifest.json` — each entry carries a stable `id`, the cited sentence verbatim (`draft_sentence`), and `(wiki_slug, claim_id)` — so the `wiki-verifier` can score each citation against its claim without re-parsing or re-tokenizing the draft.
 
 You never fetch URLs. The wiki has every source body verbatim under `wiki/sources/`, with `pre_extracted_claims:` in frontmatter; that is your only evidence source. The orchestrator (`knowledge-compose`) populated the wiki via M5/M6; your job is to read it and compose.
 
@@ -84,11 +84,16 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
    3. Write the section using findings from those pages. Every factual statement that draws on a source MUST carry an inline `[[sources/<slug>]]` citation (the slug is the page filename without `.md`). Synthesis-page draws use `[[syntheses/<slug>]]`.
    4. For each citation you write inline, append one entry to `citations`:
       ```json
-      {"draft_position": "<section-index>:<sentence-index>",
+      {"id": "cit-<NNN>",
+       "draft_position": "<section-index>:<sentence-index>",
+       "draft_sentence": "<the exact sentence carrying this wikilink, copied verbatim from the draft>",
        "wiki_slug": "<slug>",
        "claim_id": "<id from pre_extracted_claims[]>"}
       ```
-      `draft_position` is `"<two-digit section index>:<one-based sentence index within the section>"`, e.g. `"02:07"`. `claim_id` is the id of the pre-extracted claim your sentence paraphrases. If you cannot identify a matching `pre_extracted_claims[].id` for the statement (the page has no claim that aligns), **skip the citation** rather than fabricate one — the verifier would flag a citation-without-claim as `unsupported` anyway, and the cleaner signal is "the writer didn't cite a paraphrase that wasn't in the pre-extracted set". Synthesis pages may have no `pre_extracted_claims:`; cite them but omit the citation-manifest entry (record only the wikilink) by setting `claim_id: null`.
+      - `id` is a stable per-citation identifier — assign them in the order you emit citations: `cit-001`, `cit-002`, …. It is the join key the verifier, the orchestrator's prune step, and the revisor all reference; never reuse or renumber it within a draft.
+      - `draft_sentence` is the **load-bearing alignment surface**: copy the sentence that carries this wikilink **verbatim** from the prose you just wrote (the full sentence, wikilinks included). The verifier scores this string directly against the cited claim and never re-tokenizes the draft to find it. Two adjacent wikilinks on the same sentence share the same `draft_sentence` but get distinct `id`s and `claim_id`s.
+      - `draft_position` is `"<two-digit section index>:<one-based sentence index within the section>"`, e.g. `"02:07"` — emit it **best-effort** as a human-facing locator. It is no longer load-bearing for any verdict (the off-by-one in abbreviation-heavy prose is why `draft_sentence` exists); do not agonize over the exact count.
+      - `claim_id` is the id of the pre-extracted claim your sentence paraphrases. If you cannot identify a matching `pre_extracted_claims[].id` for the statement (the page has no claim that aligns), **skip the citation** rather than fabricate one — the verifier would flag a citation-without-claim as `unsupported` anyway, and the cleaner signal is "the writer didn't cite a paraphrase that wasn't in the pre-extracted set". Synthesis pages may have no `pre_extracted_claims:`; cite them but record `claim_id: null` (still assign an `id` + `draft_sentence`).
 
 2. **Citation cadence.** Cite aggressively — every statistic, named finding, quoted phrase, regulatory clause should have its own `[[sources/<slug>]]`. When two pages converge on the same point, cite both inline (two adjacent wikilinks). The reader sees `[[sources/eu-ai-act-article-6]] [[sources/bitkom-gpai-position]]`; the citation-manifest carries one entry per wikilink with its own `claim_id`.
 
@@ -109,8 +114,8 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
      "schema_version": "0.1.0",
      "draft_version": 1,
      "citations": [
-       {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
-       {"draft_position": "02:05", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
+       {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
+       {"id": "cit-002", "draft_position": "02:05", "draft_sentence": "The same article also captures stand-alone systems listed in Annex III.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
      ]
    }
    ```

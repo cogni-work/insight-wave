@@ -1,6 +1,6 @@
 ---
 name: knowledge-verify
-description: "Phase 6 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json, dispatches wiki-verifier to score every citation against each cited page's pre_extracted_claims (zero network), and loops with revisor on unsupported deviations — capped at 2 iterations per references/inverted-pipeline.md Phase 6. Writes <project>/.metadata/verify-vN.json per round and (when the revisor fires) draft-v{N+1}.md plus a rewritten citation-manifest.json. The structural cost win versus cogni-claims (20–30 min verify → < 5 min). Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, M9 (knowledge-finalize) deposits the verified draft as a synthesis page."
+description: "Phase 6 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json, shards the citations and dispatches wiki-verifier in parallel (via verify-store.py) to score every citation against each cited page's pre_extracted_claims (zero network), then loops with revisor on unsupported deviations — capped at 2 iterations per references/inverted-pipeline.md Phase 6. Writes <project>/.metadata/verify-vN.json per round and (when the revisor fires) draft-v{N+1}.md plus a rewritten citation-manifest.json. The structural cost win versus cogni-claims (20–30 min verify → < 5 min). Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, M9 (knowledge-finalize) deposits the verified draft as a synthesis page."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -20,10 +20,10 @@ This is the **zero-network claim-alignment gate**. The wiki has every source bod
   "draft_version": 1,
   "revision_round": 0,
   "verified": [
-    {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "verdict": "paraphrase"}
+    {"id": "cit-001", "draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "verdict": "paraphrase"}
   ],
   "deviations": [
-    {"draft_position": "03:07", "wiki_slug": "bitkom-gpai-position", "claim_id": "clm-004", "verdict": "unsupported", "reason": "claim_text_misaligned", "note": "..."}
+    {"id": "cit-023", "draft_position": "03:07", "wiki_slug": "bitkom-gpai-position", "claim_id": "clm-004", "verdict": "unsupported", "reason": "claim_text_misaligned", "note": "..."}
   ],
   "counts": {"verbatim": 4, "paraphrase": 28, "synthesis": 2, "unsupported": 3, "total": 37}
 }
@@ -51,7 +51,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 6 — `kno
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--max-rounds` | No | Hard ceiling on revisor iterations. Default `2` (the Phase 6 contract). Lower values short-circuit the loop early; higher values are rejected (the 2-iteration cap is a structural property of the contract, not a tunable). |
-| `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, citation count, max-rounds) without dispatching the verifier. |
+| `--shard-size` | No | Citations per verifier shard for the Step 3.1 fan-out. Default `40` — calibrated so each shard's wall-clock lands under the 5-min C3 target (169 citations → ~5 parallel shards). A draft with ≤ `--shard-size` citations produces one shard (equivalent to single-dispatch). |
+| `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, citation count, max-rounds, shard-size) without dispatching the verifier. |
 
 ## Workflow
 
@@ -148,33 +149,64 @@ PROJECT_PATH=<project_path>
 DRAFT_VERSION=<N>
 INITIAL_CITATION_COUNT=<count>
 MAX_ROUNDS=<resolved, default 2>
+SHARD_SIZE=<resolved, default 40>
 ```
 
 ### 3. Verify-revise loop
 
 Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`. The loop body is one verifier dispatch followed by an optional revisor dispatch:
 
-#### 3.1 Dispatch wiki-verifier (single Task call per round)
+#### 3.1 Verify (fan out → parallel dispatch → merge)
+
+Verification is embarrassingly parallel — each citation's verdict reads one cited page's `pre_extracted_claims` and one `draft_sentence`, with no cross-citation dependency. Shard the manifest, dispatch one `wiki-verifier` per shard **in parallel**, then merge the fragments. This mirrors the `candidate-store` / fetch-manifest / ingest-manifest fan-out the earlier phases use. (The composer and revisor stay single-dispatch — they need whole-draft coherence; only the verifier shards.)
+
+**(a) Shard the manifest.**
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py shard \
+    --manifest "<project_path>/.metadata/citation-manifest.json" \
+    --draft-version <CURRENT_DRAFT_VERSION> \
+    --shard-size <SHARD_SIZE> \
+    --out-dir "<project_path>/.metadata/verify-shards"
+```
+
+Capture `data.shard_count` and the `data.shards[]` rows — each carries a `citations_path` (hand to the verifier as `CITATIONS_PATH`) and a `verify_out_path` (hand it as `VERIFY_OUT_PATH`).
+
+**(b) Dispatch N verifiers in parallel.** Emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
 
 ```
 Task(wiki-verifier,
      PROJECT_PATH=<project_path>,
      WIKI_ROOT=<wiki_root>,
      DRAFT_VERSION=<CURRENT_DRAFT_VERSION>,
-     REVISION_ROUND=<REVISION_ROUND>)
+     REVISION_ROUND=<REVISION_ROUND>,
+     CITATIONS_PATH=<shards[i].citations_path>,
+     VERIFY_OUT_PATH=<shards[i].verify_out_path>)
 ```
 
-`wiki-verifier` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched via `Task`, not `Skill`. Single-pass, zero-network — the agent reads the wiki itself and writes `verify-v{CURRENT_DRAFT_VERSION}.json`.
+`wiki-verifier` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched via `Task`, not `Skill`. Single-pass, zero-network — each instance reads the wiki and writes its own fragment to `VERIFY_OUT_PATH`. Parse each return envelope:
 
-Parse the return envelope:
-
-- `ok: true` → continue to 3.2.
+- `ok: true` → fragment written; proceed once all shards return.
 - `ok: false, error: "manifest_mismatch"` → re-emit the stale-manifest abort message and stop (defence-in-depth; Step 2 should have caught this).
 - `ok: false, error: "write_failed"` → surface verbatim; do not retry blindly (the verifier already retried once internally).
 
+**(c) Merge the fragments into the canonical `verify-vN.json`.**
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py merge \
+    --shard-dir "<project_path>/.metadata/verify-shards" \
+    --draft-version <CURRENT_DRAFT_VERSION> \
+    --revision-round <REVISION_ROUND> \
+    --out "<project_path>/.metadata/verify-v<CURRENT_DRAFT_VERSION>.json"
+```
+
+Assert `data.shards_merged == shard_count` from step (a). A mismatch means a verifier shard crashed without writing its fragment — **stop** and surface it rather than proceeding on partial verification (a missing shard would silently under-count `unsupported`). Then continue to 3.2 against the merged `verify-v<CURRENT_DRAFT_VERSION>.json`. (A single-shard run still goes through merge — one uniform code path.)
+
+**C3 baseline:** the < 5 min target is now **per-shard wall-clock** (max over shards), not whole-draft — the shards run concurrently.
+
 #### 3.2 Inspect deviations
 
-`draft_position_out_of_range` deviations are filtered out before counting: the revisor can only drop those manifest entries (revisor.md Phase 1 triage) — it cannot produce a prose fix — so they should not trigger a revisor dispatch. The orchestrator handles them inline at 3.2 step b below.
+`sentence_not_in_draft` deviations are filtered out before counting: the revisor can only drop those manifest entries (revisor.md Phase 1 triage) — it cannot produce a prose fix — so they should not trigger a revisor dispatch. The orchestrator handles them inline at 3.2 step b below. Pruning keys on the stable `id` (the verifier echoes each manifest entry's `id` into its verdict), not on `draft_position` — which is now a best-effort locator and not safe to match on.
 
 ```
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
@@ -185,34 +217,32 @@ import json, os, sys
 from pathlib import Path
 v = json.loads(Path(os.environ["VERIFY_PATH"]).read_text(encoding="utf-8"))
 deviations = v.get("deviations", [])
-# (a) Repairable unsupported: anything with verdict=unsupported except out-of-range,
-#     which the revisor can only drop — handle those inline at (b), do not dispatch.
+# (a) Repairable unsupported: anything with verdict=unsupported except
+#     sentence_not_in_draft, which the revisor can only drop — handle those
+#     inline at (b), do not dispatch.
 repairable = [
     d for d in deviations
     if d.get("verdict") == "unsupported"
-    and d.get("reason") != "draft_position_out_of_range"
+    and d.get("reason") != "sentence_not_in_draft"
 ]
-out_of_range = [
+stale_sentence = [
     d for d in deviations
     if d.get("verdict") == "unsupported"
-    and d.get("reason") == "draft_position_out_of_range"
+    and d.get("reason") == "sentence_not_in_draft"
 ]
-# (b) Prune out-of-range entries from the citation manifest inline. The revisor
-#     would otherwise spend an entire dispatch just to drop these.
-if out_of_range:
+# (b) Prune stale-sentence entries from the citation manifest inline, by id.
+#     The revisor would otherwise spend an entire dispatch just to drop these.
+if stale_sentence:
     manifest = Path(os.environ["MANIFEST_PATH"])
     m = json.loads(manifest.read_text(encoding="utf-8"))
-    stale = {(d["draft_position"], d["wiki_slug"], d.get("claim_id")) for d in out_of_range}
-    m["citations"] = [
-        c for c in m.get("citations", [])
-        if (c.get("draft_position"), c.get("wiki_slug"), c.get("claim_id")) not in stale
-    ]
+    stale_ids = {d.get("id") for d in stale_sentence}
+    m["citations"] = [c for c in m.get("citations", []) if c.get("id") not in stale_ids]
     manifest.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
-print(json.dumps({"repairable": len(repairable), "out_of_range": len(out_of_range)}))
+print(json.dumps({"repairable": len(repairable), "stale_sentence": len(stale_sentence)}))
 '
 ```
 
-The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `OUT_OF_RANGE_COUNT = out_of_range` (pruned inline, surface in the final summary).
+The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `STALE_SENTENCE_COUNT = stale_sentence` (pruned inline, surface in the final summary).
 
 If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
 
@@ -328,7 +358,8 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 
 ## Output
 
-- `<project_path>/.metadata/verify-v<N>.json` per round (schema 0.1.0). One file per draft version; the round number is recorded inside the file as `revision_round`.
+- `<project_path>/.metadata/verify-v<N>.json` per round (schema 0.1.0), assembled by `verify-store.py merge`. One file per draft version; the round number is recorded inside the file as `revision_round`.
+- `<project_path>/.metadata/verify-shards/` — per-round shard inputs (`shard-NN-v<N>.json`) + verifier fragments (`verify-shard-NN-v<N>.json`). Intermediate fan-out artifacts; the merged `verify-v<N>.json` is the canonical output.
 - `<project_path>/output/draft-v<N+K>.md` per revisor round (K = 1 or 2). The latest is the verified-aligned draft M9 consumes.
 - `<project_path>/.metadata/citation-manifest.json` — rewritten in place by every revisor round to track the latest `draft_version`.
 - One new `## [YYYY-MM-DD] verify | …` line in `<WIKI_ROOT>/wiki/log.md`.
@@ -338,6 +369,7 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 6 contract (max-2-iterations cap, zero-network invariant)
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — verdict definitions (verbatim / paraphrase / unsupported)
 - `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — Slice 4 deferrals (cross-page substitute, multilingual, arcs)
-- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched agent (verifier)
-- `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched agent (revisor fork)
+- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched agent (verifier; sharded via `CITATIONS_PATH` / `VERIFY_OUT_PATH`)
+- `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched agent (revisor fork; repoint-before-drop)
+- `${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py --help` — `shard` / `merge` fan-out plumbing
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

@@ -131,26 +131,30 @@ Single `wiki-composer` agent. Reads `wiki/index.md` + selected `wiki/sources/*.m
 Emits two files:
 
 - `<project>/output/draft-vN.md` — the draft
-- `<project>/.metadata/citation-manifest.json` — `{draft_position, wiki_slug, claim_id}` per citation, so verifier can locate claims without parsing the draft
+- `<project>/.metadata/citation-manifest.json` — `{id, draft_position, draft_sentence, wiki_slug, claim_id}` per citation. `id` is a stable per-citation join key (`cit-001`, …); `draft_sentence` is the cited sentence copied verbatim — the verifier scores it directly against the claim and never re-tokenizes the draft (this dissolves the F20/F22 off-by-one). `draft_position` is a best-effort human locator only, no longer load-bearing for any verdict.
 
 **F11 recovery contract is preserved.** Phase 1 of the composer (outline) persists to `.metadata/writer-outline-v1.json` before Phase 2 (draft) attempts a write. If Phase 2 crashes mid-write, re-dispatch reads the outline and re-runs Phase 2 only.
 
 ### Phase 6 — `knowledge-verify`
 
-`wiki-verifier` agent. For each cited statement in the draft, locate via `citation-manifest.json` → wiki page → pre-extracted claims. Score alignment as `verbatim / paraphrase / unsupported`. **No re-fetching** — this is the cost win versus cogni-claims.
+`wiki-verifier` agent. For each citation, score the manifest's `draft_sentence` against the cited page's pre-extracted claim as `verbatim / paraphrase / unsupported` (plus the informational `synthesis` verdict). **No re-fetching** and **no draft re-tokenization** — the cost win versus cogni-claims, and the fix for the F22 off-by-one.
 
-Loop with `revisor` (forked from cogni-research at M8, kept in `cogni-knowledge/agents/` to preserve the clean-break commitment) up to 2 iterations on `unsupported` findings.
+**Fan-out (F21, v0.0.28):** verification is embarrassingly parallel (each verdict is independent), so `knowledge-verify` shards `citations[]` via `verify-store.py shard`, dispatches N `wiki-verifier` instances in parallel (each scoped to a subset via `CITATIONS_PATH` / `VERIFY_OUT_PATH`), and reassembles the fragments via `verify-store.py merge`. Wall-clock drops ~linearly with shard count while the LLM judgment is preserved; the < 5 min C3 target is now per-shard. A deterministic substring pre-filter is a documented complementary option, not yet implemented.
 
-Output: `<project>/.metadata/verify-vN.json`:
+Loop with `revisor` (forked from cogni-research at M8, kept in `cogni-knowledge/agents/` to preserve the clean-break commitment) up to 2 iterations on `unsupported` findings. The revisor **repoints to a covering on-page claim before dropping** (F23) — drop erodes the evidence base and is the last resort.
+
+Output: `<project>/.metadata/verify-vN.json` (merged from the shard fragments):
 
 ```json
 {
   "schema_version": "0.1.0",
-  "verified": [{"draft_position": "...", "verdict": "verbatim", "wiki_slug": "...", "claim_id": "..."}],
-  "deviations": [{"draft_position": "...", "verdict": "unsupported", "...": "..."}],
+  "verified": [{"id": "cit-001", "draft_position": "...", "verdict": "verbatim", "wiki_slug": "...", "claim_id": "..."}],
+  "deviations": [{"id": "cit-023", "draft_position": "...", "verdict": "unsupported", "reason": "...", "note": "..."}],
   "revision_round": 1
 }
 ```
+
+The `id` echoed into each entry is the join key the orchestrator's inline prune (on `reason: "sentence_not_in_draft"`) and the revisor both key on — `draft_position` is best-effort and never matched against.
 
 ### Phase 7 — `knowledge-finalize`
 

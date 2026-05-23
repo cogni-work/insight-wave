@@ -24,7 +24,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 
 **IS:** A binding orchestrator that turns `cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
 
-**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `pipeline-summary.py`). Sources are fetched once before composition; every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
+**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `pipeline-summary.py`, `verify-store.py`). Sources are fetched once before composition; every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
 
 **MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
 
@@ -141,7 +141,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-fetch | Skill | Phase 3 — per-batch `source-fetcher` dispatch with WebFetch + cobrowse fallback through a shared fetch-cache |
 | knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter |
 | knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
-| knowledge-verify | Skill | Phase 6 — zero-network claim alignment + revisor loop on `unsupported` deviations (max 2 iterations) |
+| knowledge-verify | Skill | Phase 6 — zero-network claim alignment, fanned out across parallel `wiki-verifier` shards (`verify-store.py`) + revisor loop on `unsupported` deviations (max 2 iterations) |
 | knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append (closes the inverted-pipeline loop) |
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
@@ -151,8 +151,8 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
 | source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
 | wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with wikilink citations and a citation manifest |
-| wiki-verifier | Agent | Phase 6 NEW — scores every citation as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network) |
-| revisor | Agent | Phase 6 fork — rephrases unsupported draft sentences toward existing claims or drops the citation (no new fetches) |
+| wiki-verifier | Agent | Phase 6 NEW — scores each citation's verbatim `draft_sentence` as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network, never re-tokenizes; shardable via `CITATIONS_PATH`) |
+| revisor | Agent | Phase 6 fork — re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
 
 ## Architecture
 
@@ -166,7 +166,7 @@ cogni-knowledge/
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
 ├── agents/                       7 forked + new pipeline agents
 ├── references/                   7 framework + design docs
-├── scripts/                      5 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, pipeline-summary) + _knowledge_lib helper
+├── scripts/                      6 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, pipeline-summary, verify-store) + _knowledge_lib helper
 ├── skills/                       12 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```
