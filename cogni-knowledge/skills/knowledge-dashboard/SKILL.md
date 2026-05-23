@@ -18,7 +18,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 ## When to run
 
 - User asks for a dashboard or HTML view of a bound knowledge base
-- After several `knowledge-research` deposits, to see the shape of the accumulated wiki
+- After several pipeline deposits, to see the shape of the accumulated wiki
 - Before sharing a knowledge base with a colleague — the dashboard + overlay are both single files
 
 ## Never run when

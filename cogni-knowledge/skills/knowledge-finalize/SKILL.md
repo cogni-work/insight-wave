@@ -456,7 +456,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --allow-update
 ```
 
-`--report-source wiki` is hard-coded — the v0.1.0 inverted pipeline only ever produces wiki-mode deposits (the legacy `read-project-config.py --field report_source` shellout from `knowledge-report` Step 5 is not used). Without `--allow-update`, a duplicate `research_slug` aborts the script — surface a **loud** warning so the operator can't miss the binding/wiki desync:
+`--report-source wiki` is hard-coded — the v0.1.0 inverted pipeline only ever produces wiki-mode deposits (the legacy archived `report_source` shellout is not used). Without `--allow-update`, a duplicate `research_slug` aborts the script — surface a **loud** warning so the operator can't miss the binding/wiki desync:
 
 ```
 ⚠ Binding append SKIPPED: project '<project-slug>' already bound; re-run with --overwrite to refresh the binding entry, or accept that this finalize landed the synthesis page on the wiki without updating binding.json::research_projects[]. The synthesis page IS on disk — re-running finalize without --overwrite will refuse on the existing page; re-run with --overwrite + --allow-update to reconcile both.

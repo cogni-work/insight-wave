@@ -108,7 +108,7 @@ Knowledge base: <knowledge_slug> · <N> deposited projects · fetch-cache: <M> s
 
 ### 3. No binding write
 
-This skill never modifies the binding. `cogni-wiki:wiki-query` may file the answer back as a `type: synthesis` page (depending on `--file-back`); that decision belongs to wiki-query. The binding's `research_projects[]` records deposits from `knowledge-research` / `knowledge-report`, not query answers.
+This skill never modifies the binding. `cogni-wiki:wiki-query` may file the answer back as a `type: synthesis` page (depending on `--file-back`); that decision belongs to wiki-query. The binding's `research_projects[]` records inverted-pipeline deposits (from `knowledge-finalize`), not query answers.
 
 ## Edge cases
 

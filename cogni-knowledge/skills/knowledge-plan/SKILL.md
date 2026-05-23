@@ -18,7 +18,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` once at the start o
 ## Never run when
 
 - No `binding.json` exists at the resolved knowledge root — offer `knowledge-setup` first. Plan output lives in a fresh project directory under the bound knowledge root; without a binding there is no anchor.
-- The user wants the legacy v0.0.x research+ingest flow — point at `knowledge-research` (legacy, still wired through `cogni-research`). v0.1.0 is the clean-break path.
+- The user wants the legacy v0.0.x research+ingest flow — that chain is archived under `_archive/` (see `_archive/README.md`). v0.1.0 is the only live path; if they truly want a one-shot report outside the knowledge base, point at `cogni-research:research-setup`.
 
 ## Parameters
 
