@@ -131,13 +131,13 @@ Single `wiki-composer` agent. Reads `wiki/index.md` + selected `wiki/sources/*.m
 Emits two files:
 
 - `<project>/output/draft-vN.md` — the draft
-- `<project>/.metadata/citation-manifest.json` — `{draft_position, wiki_slug, claim_id}` per citation, so verifier can locate claims without parsing the draft
+- `<project>/.metadata/citation-manifest.json` — `{draft_position, wiki_slug, claim_id, draft_sentence}` per citation. `draft_sentence` (the verbatim cited sentence, carrying its `[[…/<slug>]]` wikilink) is the load-bearing anchor the verifier consumes directly; `draft_position` is a coarse human-readable locator only. **The composer is the pipeline's only tokenizer** — the verifier and revisor consume `draft_sentence` and never re-tokenize the draft, so cross-agent `section:sentence` off-by-one drift is structurally impossible (#287, the F22 fix).
 
 **F11 recovery contract is preserved.** Phase 1 of the composer (outline) persists to `.metadata/writer-outline-v1.json` before Phase 2 (draft) attempts a write. If Phase 2 crashes mid-write, re-dispatch reads the outline and re-runs Phase 2 only.
 
 ### Phase 6 — `knowledge-verify`
 
-`wiki-verifier` agent. For each cited statement in the draft, locate via `citation-manifest.json` → wiki page → pre-extracted claims. Score alignment as `verbatim / paraphrase / unsupported`. **No re-fetching** — this is the cost win versus cogni-claims.
+`wiki-verifier` agent. For each cited statement, take the cited sentence verbatim from `citation-manifest.json::citations[].draft_sentence` — the verifier never re-tokenizes the draft; it only confirms the sentence is present and carries the cited `wiki_slug`'s wikilink — then looks up the cited page's pre-extracted claims and scores alignment as `verbatim / paraphrase / unsupported`. A citation whose `draft_sentence` is absent from the draft (or whose wikilink no longer matches) is `unsupported` with `reason: cited_text_not_in_draft` (the post-#287 structural-drift signal, pruned inline rather than sent to the revisor). **No re-fetching** — this is the cost win versus cogni-claims.
 
 Loop with `revisor` (forked from cogni-research at M8, kept in `cogni-knowledge/agents/` to preserve the clean-break commitment) up to 2 iterations on `unsupported` findings.
 
@@ -147,7 +147,7 @@ Output: `<project>/.metadata/verify-vN.json`:
 {
   "schema_version": "0.1.0",
   "verified": [{"draft_position": "...", "verdict": "verbatim", "wiki_slug": "...", "claim_id": "..."}],
-  "deviations": [{"draft_position": "...", "verdict": "unsupported", "...": "..."}],
+  "deviations": [{"draft_position": "...", "verdict": "unsupported", "reason": "claim_text_misaligned", "note": "..."}],
   "revision_round": 1
 }
 ```

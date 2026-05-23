@@ -43,7 +43,7 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
 ### Phase 0: Load context
 
 1. `Read` `<PROJECT_PATH>/.metadata/citation-manifest.json`. Confirm `schema_version == "0.1.0"` and `draft_version == DRAFT_VERSION`. On mismatch, return the `manifest_mismatch` envelope (Phase 2) — do not attempt scoring against a stale manifest.
-2. `Read` `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md`. Build an in-memory map `section_index → list of sentences in that section`. A sentence is delimited by `. `, `? `, or `! ` followed by a capital letter or end-of-line; treat each H2 as a section boundary. `draft_position` strings in the manifest are `"<two-digit section index>:<one-based sentence index>"` (e.g. `"02:07"`) — Phase 1 walks the manifest, not the draft text.
+2. `Read` `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md` once as a single string; keep a whitespace-normalized copy for substring-presence checks. **Do NOT tokenize the draft into sentences.** Phase 1 takes each cited sentence verbatim from the manifest's `draft_sentence` field and only checks that it is present in the draft — only the composer tokenizes, so there is no position arithmetic and no cross-agent off-by-one drift. `draft_position` is carried through as a coarse human-readable locator; it is never parsed for lookup. **Guard:** if any `citations[]` entry lacks a `draft_sentence` field, the manifest predates this contract — return the `manifest_missing_draft_sentence` envelope (Phase 2) and stop; do not score against it.
 3. Build the set of distinct `wiki_slug` values referenced in the manifest. For each slug, locate the page **and record which directory it resolved under** in a `page_kind_by_slug` map:
    - First try `<WIKI_ROOT>/wiki/sources/<slug>.md` → `page_kind_by_slug[slug] = "source"`.
    - If absent, try `<WIKI_ROOT>/wiki/syntheses/<slug>.md` → `page_kind_by_slug[slug] = "synthesis"`.
@@ -57,11 +57,11 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
 
 ### Phase 1: Score per citation
 
-Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug, claim_id}`:
+Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug, claim_id, draft_sentence}`:
 
-1. **Locate the draft sentence.** Parse `draft_position` as `"<section_idx>:<sentence_idx>"`. Look up the sentence in the map built at Phase 0 step 2. If indices are out of range (draft drift since the manifest was written), record the citation as `unsupported` with `reason: "draft_position_out_of_range"` and continue.
+1. **Take the cited sentence.** Use `citation.draft_sentence` verbatim — this is the sentence the composer wrote, carrying its own wikilink. **Presence guard** (both must hold): (a) `draft_sentence` appears in the draft (whitespace-normalized substring match against the string read at Phase 0 step 2); (b) the entry's `wiki_slug` wikilink (`[[sources/<slug>]]` or `[[syntheses/<slug>]]`) appears *inside* `draft_sentence`. If (a) or (b) fails, the manifest entry no longer matches the draft (the draft was hand-edited, or it is a phantom entry whose sentence carries a different wikilink) — record the citation as `unsupported` with `reason: "cited_text_not_in_draft"` and continue. No tokenization, no position arithmetic.
 
-2. **Resolve the verdict** (page kind from Phase 0 step 3's `page_kind_by_slug[wiki_slug]` is authoritative — do NOT infer from `claim_id`):
+2. **Resolve the verdict** (page kind from Phase 0 step 3's `page_kind_by_slug[wiki_slug]` is authoritative — do NOT infer from `claim_id`). Throughout, *the draft sentence* means `citation.draft_sentence` from step 1; verdict scoring is a claim-vs-sentence comparison and does not depend on any tokenization:
    - **`unsupported`** with `reason: "page_not_found"` — the slug is in `missing_pages` (Phase 0 step 3 found no file under either `sources/` or `syntheses/`).
    - **`synthesis`** — `page_kind_by_slug[wiki_slug] == "synthesis"` AND `claim_id` is `null`. The manifest emits `claim_id: null` for synthesis-page wikilinks per `agents/wiki-composer.md:91`. Surface in `verified[]`. Do not score — synthesis pages are not first-class evidence and this verdict never triggers the revisor.
    - **`unsupported`** with `reason: "composer_dropped_claim"` — `page_kind_by_slug[wiki_slug] == "source"` AND `claim_id` is `null`. The composer cited a source page but couldn't identify a matching pre-extracted claim (see `agents/wiki-composer.md:91` — the composer was instructed to drop the citation in that case, but if a `claim_id: null` manifest entry pointing at a source page is present, the composer didn't follow through). The revisor's `claim_not_found` triage path picks this up.
@@ -72,7 +72,7 @@ Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug
 
 3. **Append to the running output.** Verdict `verbatim` / `paraphrase` / `synthesis` go to `verified[]`. Verdict `unsupported` goes to `deviations[]`. Each entry carries `draft_position`, `wiki_slug`, `claim_id` (may be `null` for `synthesis`), `verdict`, and (for `unsupported` only) `reason` + `note`.
 
-4. **Score every citation exactly once.** Duplicate citations in the manifest (same `draft_position` cited twice — rare but legal when M7 emitted two adjacent wikilinks at the same sentence) are scored independently.
+4. **Score every citation exactly once.** Two adjacent wikilinks at one sentence produce two manifest entries that share the same `draft_sentence` but carry different `wiki_slug`; each is scored independently, and presence guard (b) validates each against its own slug.
 
 ### Phase 2: Write + verify
 
@@ -115,6 +115,11 @@ Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug
    {"ok": false, "error": "manifest_mismatch", "reason": "citation-manifest.json schema_version=0.1.0 draft_version=2 but DRAFT_VERSION=1"}
    ```
 
+   On a manifest that predates the `draft_sentence` contract (Phase 0 step 2 guard — at least one `citations[]` entry has no `draft_sentence`):
+   ```json
+   {"ok": false, "error": "manifest_missing_draft_sentence", "reason": "citation-manifest.json predates the draft_sentence anchor — re-run knowledge-compose to regenerate the manifest"}
+   ```
+
    On write failure (read-back twice):
    ```json
    {"ok": false, "error": "write_failed", "reason": "Write returned but read-back verification failed twice — likely output token budget exhausted before Write fired."}
@@ -135,12 +140,14 @@ Walk `citations[]` in manifest order. For each entry `{draft_position, wiki_slug
 - Does NOT call `cogni-research`, `cogni-claims`, or any `cogni-wiki:` skill — clean-break.
 - Does NOT revise the draft — that is the revisor's job (M8's second agent).
 - Does NOT loop — the orchestrator (`knowledge-verify`) owns the verifier-revisor loop. You run once per dispatch.
+- Does NOT re-tokenize the draft into `section:sentence` positions. The composer is the only tokenizer; you take each cited sentence verbatim from `draft_sentence` and only check substring-presence. `draft_position` is a coarse locator you carry through, never parse.
 - Does NOT modify the draft, the citation manifest, or any wiki page. Read-only against everything except `verify-vN.json`.
 - Does NOT use `excerpt_position` offsets for scoring — that's the indexing primitive for context rendering in M9+. Verdict scoring uses `text` + `excerpt_quote` only.
 
 ## Failure-mode invariants
 
 - A `citation-manifest.json` with `schema_version != "0.1.0"` or `draft_version != DRAFT_VERSION` returns `manifest_mismatch` and stops — never score against a stale manifest.
+- A `citation-manifest.json` where any `citations[]` entry lacks `draft_sentence` returns `manifest_missing_draft_sentence` and stops — the manifest predates the cited-text anchor; re-running `knowledge-compose` regenerates it.
 - A missing wiki page (slug not in `sources/` or `syntheses/`) produces `unsupported` + `reason: "page_not_found"` for every citation that points at it. The slug also appears in `missing_pages[]` so the orchestrator can surface it.
 - A page with empty `pre_extracted_claims:` AND `claim_id != null` produces `unsupported` + `reason: "claim_not_found"` for citations targeting it. (This is the upstream-data symptom M7's composer warned about in its `⚠ Zero citations` line.)
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch) is a phantom write. Retry once; on second failure return `write_failed`.

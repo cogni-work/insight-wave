@@ -30,6 +30,7 @@ assert_grep 'ingest-manifest.json' "$COMPOSE" "knowledge-compose: reads ingest-m
 assert_grep 'draft-v' "$COMPOSE" "knowledge-compose: writes draft-vN.md"
 assert_grep 'citation-manifest.json' "$COMPOSE" "knowledge-compose: writes citation-manifest.json"
 assert_grep '"schema_version": "0.1.0"' "$COMPOSE" "knowledge-compose: citation-manifest schema 0.1.0"
+assert_grep 'draft_sentence' "$COMPOSE" "knowledge-compose: post-write subprocess asserts draft_sentence (the cited-text anchor, #287)"
 assert_grep 'Task(wiki-composer' "$COMPOSE" "knowledge-compose: dispatches wiki-composer via Task"
 assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogni-wiki (clean-break)"
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
@@ -74,6 +75,7 @@ assert_grep 'citation-manifest.json' "$COMPOSER" "wiki-composer: writes citation
 assert_grep 'draft_position' "$COMPOSER" "wiki-composer: citation-manifest entry has draft_position"
 assert_grep 'wiki_slug' "$COMPOSER" "wiki-composer: citation-manifest entry has wiki_slug"
 assert_grep 'claim_id' "$COMPOSER" "wiki-composer: citation-manifest entry has claim_id"
+assert_grep 'draft_sentence' "$COMPOSER" "wiki-composer: citation-manifest entry has draft_sentence (the load-bearing cited-text anchor, #287)"
 assert_grep 'pre_extracted_claims' "$COMPOSER" "wiki-composer: looks up claim_id in pre_extracted_claims (zero-network alignment surface)"
 assert_grep 'draft-v' "$COMPOSER" "wiki-composer: writes output/draft-vN.md"
 

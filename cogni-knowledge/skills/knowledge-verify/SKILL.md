@@ -29,6 +29,8 @@ This is the **zero-network claim-alignment gate**. The wiki has every source bod
 }
 ```
 
+`deviations[].reason ∈ {page_not_found, claim_not_found, composer_dropped_claim, claim_text_misaligned, cited_text_not_in_draft}`. `cited_text_not_in_draft` fires when a citation's `draft_sentence` is absent from the draft (or its wikilink no longer matches) — the structural drift signal (it replaces the pre-#287 `draft_position_out_of_range`). The revisor can only drop these, so Step 3.2 prunes them inline rather than dispatching.
+
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 6 — `knowledge-verify`" and `references/claim-at-ingest.md` once to anchor on the contract.
 
 ## When to run
@@ -170,11 +172,12 @@ Parse the return envelope:
 
 - `ok: true` → continue to 3.2.
 - `ok: false, error: "manifest_mismatch"` → re-emit the stale-manifest abort message and stop (defence-in-depth; Step 2 should have caught this).
+- `ok: false, error: "manifest_missing_draft_sentence"` → the manifest predates the `draft_sentence` anchor (#287). Surface verbatim and direct the user to re-run `knowledge-compose` to regenerate it — same posture as `manifest_mismatch`.
 - `ok: false, error: "write_failed"` → surface verbatim; do not retry blindly (the verifier already retried once internally).
 
 #### 3.2 Inspect deviations
 
-`draft_position_out_of_range` deviations are filtered out before counting: the revisor can only drop those manifest entries (revisor.md Phase 1 triage) — it cannot produce a prose fix — so they should not trigger a revisor dispatch. The orchestrator handles them inline at 3.2 step b below.
+`cited_text_not_in_draft` deviations are filtered out before counting: the revisor can only drop those manifest entries (revisor.md Phase 1 triage) — it cannot produce a prose fix — so they should not trigger a revisor dispatch. The orchestrator handles them inline at 3.2 step b below.
 
 ```
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
@@ -185,34 +188,35 @@ import json, os, sys
 from pathlib import Path
 v = json.loads(Path(os.environ["VERIFY_PATH"]).read_text(encoding="utf-8"))
 deviations = v.get("deviations", [])
-# (a) Repairable unsupported: anything with verdict=unsupported except out-of-range,
-#     which the revisor can only drop — handle those inline at (b), do not dispatch.
+# (a) Repairable unsupported: anything with verdict=unsupported except
+#     cited_text_not_in_draft, which the revisor can only drop — handle those
+#     inline at (b), do not dispatch.
 repairable = [
     d for d in deviations
     if d.get("verdict") == "unsupported"
-    and d.get("reason") != "draft_position_out_of_range"
+    and d.get("reason") != "cited_text_not_in_draft"
 ]
-out_of_range = [
+not_in_draft = [
     d for d in deviations
     if d.get("verdict") == "unsupported"
-    and d.get("reason") == "draft_position_out_of_range"
+    and d.get("reason") == "cited_text_not_in_draft"
 ]
-# (b) Prune out-of-range entries from the citation manifest inline. The revisor
-#     would otherwise spend an entire dispatch just to drop these.
-if out_of_range:
+# (b) Prune cited-text-not-in-draft entries from the citation manifest inline.
+#     The revisor would otherwise spend an entire dispatch just to drop these.
+if not_in_draft:
     manifest = Path(os.environ["MANIFEST_PATH"])
     m = json.loads(manifest.read_text(encoding="utf-8"))
-    stale = {(d["draft_position"], d["wiki_slug"], d.get("claim_id")) for d in out_of_range}
+    stale = {(d["draft_position"], d["wiki_slug"], d.get("claim_id")) for d in not_in_draft}
     m["citations"] = [
         c for c in m.get("citations", [])
         if (c.get("draft_position"), c.get("wiki_slug"), c.get("claim_id")) not in stale
     ]
     manifest.write_text(json.dumps(m, indent=2, ensure_ascii=False), encoding="utf-8")
-print(json.dumps({"repairable": len(repairable), "out_of_range": len(out_of_range)}))
+print(json.dumps({"repairable": len(repairable), "not_in_draft": len(not_in_draft)}))
 '
 ```
 
-The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `OUT_OF_RANGE_COUNT = out_of_range` (pruned inline, surface in the final summary).
+The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `NOT_IN_DRAFT_COUNT = not_in_draft` (pruned inline, surface in the final summary).
 
 If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
 

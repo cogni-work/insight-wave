@@ -86,9 +86,12 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
       ```json
       {"draft_position": "<section-index>:<sentence-index>",
        "wiki_slug": "<slug>",
-       "claim_id": "<id from pre_extracted_claims[]>"}
+       "claim_id": "<id from pre_extracted_claims[]>",
+       "draft_sentence": "<the exact sentence you just wrote, verbatim, including its [[…/<slug>]] wikilink>"}
       ```
-      `draft_position` is `"<two-digit section index>:<one-based sentence index within the section>"`, e.g. `"02:07"`. `claim_id` is the id of the pre-extracted claim your sentence paraphrases. If you cannot identify a matching `pre_extracted_claims[].id` for the statement (the page has no claim that aligns), **skip the citation** rather than fabricate one — the verifier would flag a citation-without-claim as `unsupported` anyway, and the cleaner signal is "the writer didn't cite a paraphrase that wasn't in the pre-extracted set". Synthesis pages may have no `pre_extracted_claims:`; cite them but omit the citation-manifest entry (record only the wikilink) by setting `claim_id: null`.
+      `draft_sentence` is the **load-bearing citation anchor**: the verbatim text of the sentence you just wrote, copied exactly as it appears in the draft, *including* its inline `[[sources/<slug>]]` (or `[[syntheses/<slug>]]`) wikilink. The verifier consumes this string directly and never re-tokenizes the draft, so it MUST reproduce the sentence byte-for-byte and MUST carry the wikilink (the verifier confirms slug-presence by checking the wikilink appears inside `draft_sentence`). When two adjacent wikilinks sit on the same sentence (two citations at one point), emit two entries that share the *same* full `draft_sentence` (the whole sentence with both wikilinks); each entry keeps its own `wiki_slug` / `claim_id`. `claim_id` is the id of the pre-extracted claim your sentence paraphrases. If you cannot identify a matching `pre_extracted_claims[].id` for the statement (the page has no claim that aligns), **skip the citation** rather than fabricate one — the verifier would flag a citation-without-claim as `unsupported` anyway, and the cleaner signal is "the writer didn't cite a paraphrase that wasn't in the pre-extracted set". Synthesis pages may have no `pre_extracted_claims:`; cite them but set `claim_id: null` (still record `wiki_slug` + `draft_sentence`).
+
+      **Sentence-delimiter rule — the composer is the only tokenizer in the pipeline.** A sentence is delimited by `. `, `? `, or `! ` followed by a capital letter or end-of-line; each H2 starts a new section, numbered by its two-digit section index. `draft_position` is `"<two-digit section index>:<one-based sentence index within the section>"`, e.g. `"02:07"`, computed with this rule — it is now only a coarse human-readable locator, not a lookup key. Because the verifier and revisor consume `draft_sentence` and never tokenize, there is no cross-agent off-by-one drift to keep in sync.
 
 2. **Citation cadence.** Cite aggressively — every statistic, named finding, quoted phrase, regulatory clause should have its own `[[sources/<slug>]]`. When two pages converge on the same point, cite both inline (two adjacent wikilinks). The reader sees `[[sources/eu-ai-act-article-6]] [[sources/bitkom-gpai-position]]`; the citation-manifest carries one entry per wikilink with its own `claim_id`.
 
@@ -109,8 +112,10 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
      "schema_version": "0.1.0",
      "draft_version": 1,
      "citations": [
-       {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
-       {"draft_position": "02:05", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
+       {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001",
+        "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a regulated product [[sources/eu-ai-act-article-6]]."},
+       {"draft_position": "02:05", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002",
+        "draft_sentence": "Annex III then enumerates the eight stand-alone high-risk use-case areas [[sources/eu-ai-act-article-6]]."}
      ]
    }
    ```

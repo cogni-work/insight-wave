@@ -65,7 +65,7 @@ Phase 0 (load) → Phase 1 (triage) → Phase 2 (revise) → Phase 3 (write + ve
 ### Phase 0: Load inputs
 
 1. `Read` `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md`. This is the substrate.
-2. `Read` `<PROJECT_PATH>/.metadata/citation-manifest.json`. Build an in-memory copy you will mutate and re-emit at the new draft version.
+2. `Read` `<PROJECT_PATH>/.metadata/citation-manifest.json`. Build an in-memory copy you will mutate and re-emit at the new draft version. Each entry carries `{draft_position, wiki_slug, claim_id, draft_sentence}` — `draft_sentence` is the verbatim cited sentence (with its wikilink) you locate by text and update in place.
 3. `Read` `<PROJECT_PATH>/.metadata/verify-v{DRAFT_VERSION}.json`. Extract `deviations[]` — every entry carries `draft_position`, `wiki_slug`, `claim_id`, `verdict: "unsupported"`, `reason`, and a `note` describing the misalignment.
 4. For each distinct `wiki_slug` in `deviations[]`, `Read` `<WIKI_ROOT>/wiki/sources/<wiki_slug>.md` (or `syntheses/<wiki_slug>.md` if sources fails) and parse the `pre_extracted_claims:` frontmatter into `claims_by_slug[wiki_slug] = [{id, text, excerpt_quote}, …]`. These are the claims you can rephrase toward. Pages flagged `reason: "page_not_found"` have no claims to draw on — those citations are always dropped, never rephrased.
 
@@ -77,7 +77,7 @@ Group deviations by `reason`:
 - **`claim_not_found`** — the page exists but the cited `claim_id` doesn't. Look at the page's other claims in `claims_by_slug[wiki_slug]`. If any existing claim covers the same factual ground as the draft sentence, **rephrase the sentence + switch `claim_id` to the matching claim**. Otherwise, drop the citation.
 - **`composer_dropped_claim`** — the composer cited a source page with `claim_id: null` (the composer was supposed to drop the citation but didn't). Same triage as `claim_not_found`: search `claims_by_slug[wiki_slug]` for a claim covering the draft sentence's factual content; rephrase + assign that `claim_id` if found, drop the citation otherwise.
 - **`claim_text_misaligned`** — the claim exists but the draft sentence drifted (added a quantifier, shifted scope, contradicted, etc.). Read the claim's `text` + `excerpt_quote`. **Rephrase the draft sentence** to match the claim's scope/quantifier/relation exactly. Keep the citation.
-- **`draft_position_out_of_range`** — the manifest pointed at a sentence that no longer exists in the draft (the verifier saw the mismatch). Drop the manifest entry. No prose change. (Note: the orchestrator's Step 3.2 prunes these inline so the revisor should never see them; this branch is defence-in-depth.)
+- **`cited_text_not_in_draft`** — the manifest's `draft_sentence` is no longer present in the draft (or its wikilink no longer matches). Drop the manifest entry. No prose change. (Note: the orchestrator's Step 3.2 prunes these inline so the revisor should never see them; this branch is defence-in-depth.)
 
 Order: address `claim_text_misaligned` first (cheapest fixes, single sentence each), then `claim_not_found` and `composer_dropped_claim` together (both require re-reading the page's other claims), then `page_not_found` (largest surgical surface — may delete a sentence).
 
@@ -85,16 +85,16 @@ Order: address `claim_text_misaligned` first (cheapest fixes, single sentence ea
 
 For each deviation, edit the in-memory draft:
 
-1. **Locate the sentence.** `draft_position` is `"<two-digit section index>:<one-based sentence index>"`. Walk the draft H2-by-H2 to find the section, then sentence-by-sentence within it. **Use the same sentence delimiter the verifier uses** (`wiki-verifier.md` Phase 0 step 2): a sentence is delimited by `. `, `? `, or `! ` followed by a capital letter or end-of-line; each H2 starts a new section. Cross-agent tokenization drift here would cause round-2 verifier scoring to read positions that no longer align — never invent a different rule.
+1. **Locate the sentence.** Find the deviation's manifest entry (matched by `wiki_slug` + `claim_id` + `draft_position`); its `draft_sentence` is the verbatim text to fix. Find that string in the draft by whitespace-normalized substring match. Do **not** tokenize the draft into `section:sentence` positions — the composer is the only tokenizer, and you locate by text, so there is no cross-agent drift to keep in sync. If the substring isn't found, the deviation should already have been pruned as `cited_text_not_in_draft` (Phase 1); treat a stray miss as a drop.
 
 2. **Apply the fix per the triage outcome above:**
    - **Rephrase** — replace the sentence with a version that lines up with the chosen claim's `text` (or `excerpt_quote` if you need to preserve a specific phrase). Keep the inline `[[sources/<slug>]]` wikilink in place (or update it if you switched to a different page in the rare cross-page case). Preserve neighbouring sentences byte-for-byte — surgical correction, not paragraph rewrite.
    - **Drop the citation** — remove the inline `[[sources/<slug>]]` wikilink and rewrite the sentence as non-evidence-based ("Reports suggest …", "Available evidence indicates …", or remove the sentence entirely if it carried no independent content). Removing the citation also requires removing the corresponding `citations[]` entry from the in-memory manifest copy in Phase 0 step 2.
 
 3. **Update the manifest copy.** For every fix:
-   - **Rephrase** — leave the manifest entry's `draft_position` + `wiki_slug` intact; if you switched to a different `claim_id` on the same page, update it; if you switched pages, update both `wiki_slug` and `claim_id`.
+   - **Rephrase** — set the entry's `draft_sentence` to the new sentence text you just wrote (verbatim, keeping its `[[…/<slug>]]` wikilink); leave `draft_position` + `wiki_slug` intact (or update `claim_id` / `wiki_slug` if you re-pointed to a different claim/page). The next round's verifier consumes this updated `draft_sentence` directly.
    - **Drop** — remove the manifest entry entirely.
-   - All remaining manifest entries' `draft_position` values may need re-indexing if sentence-level removals/insertions shifted later sentences inside the same section. Recompute `draft_position` for every entry after all edits land — single pass over the final draft, **using the same delimiter rule as Phase 2 step 1 above** (verifier-compatible: `. ` / `? ` / `! ` + capital or EOL, H2-bounded sections). The next round's verifier reads these positions; any tokenizer drift here cascades into spurious `draft_position_out_of_range` deviations.
+   - **No `draft_position` re-index pass.** Positions are no longer load-bearing — the verifier never parses them, it locates by `draft_sentence`. You may optionally refresh `draft_position` on entries you actually edited, but do not walk the whole draft to recompute every position; that cross-agent tokenization is exactly what this contract removes.
 
 4. **Never invent claims.** If no existing claim on the cited page (or a near-neighbour page from the same `deviations[]` slug list) covers the draft sentence's factual content, you MUST drop the citation. Inventing a `claim_id` that doesn't exist in the page's frontmatter is a fabrication and exactly the failure mode the inverted pipeline exists to prevent.
 
@@ -106,15 +106,17 @@ For each deviation, edit the in-memory draft:
 
 2. **Read-back verify the draft.** Immediately after `Write` returns, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty and roughly match the length you composed. **Citation-integrity check** (regression guard): every `[[sources/...` opening in the content MUST have a matching `]]` close on the same line, and the number of `[[sources/<slug>]]` complete wikilinks MUST equal the number of `citations[]` entries in the in-memory manifest you're about to write (modulo entries you intentionally dropped). A truncated wikilink like `[[sources/foo` (no close) or a plain-text collapse like `(sources/foo)` is a regression — even though a `[[sources/` substring grep would still match. If the count is off by more than the explicit drops, the LLM either truncated a citation mid-token or collapsed one to plain text — `Write` once more with the same content and re-verify. If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
 
-3. **Rewrite the citation manifest.** Recompute `draft_position` values from the final draft (Phase 2 step 3). Compose:
+3. **Rewrite the citation manifest.** Emit the mutated in-memory copy (Phase 2 step 3) with `draft_version: NEW_DRAFT_VERSION`; every entry carries its updated `draft_sentence`. Compose:
 
    ```json
    {
      "schema_version": "0.1.0",
      "draft_version": 2,
      "citations": [
-       {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
-       {"draft_position": "02:05", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
+       {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001",
+        "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a regulated product [[sources/eu-ai-act-article-6]]."},
+       {"draft_position": "02:05", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002",
+        "draft_sentence": "Annex III then enumerates the eight stand-alone high-risk use-case areas [[sources/eu-ai-act-article-6]]."}
      ]
    }
    ```
@@ -156,6 +158,7 @@ For each deviation, edit the in-memory draft:
 - Does NOT dispatch other agents (`Task` is not in this agent's tool list). The orchestrator owns the verifier-revisor loop.
 - Does NOT call `cogni-research`, `cogni-claims`, or any `cogni-wiki:` skill — clean-break.
 - Does NOT search across other wiki pages for a substitute citation when the cited page has no matching claim. That cross-page substitute search is deferred (a future slice may add it if M12 alpha demands it). At v0.0.23 the rule is "rephrase toward an existing claim on the cited page, or drop the citation".
+- Does NOT re-tokenize the draft into `section:sentence` positions. It locates each cited sentence by `draft_sentence` text and updates that field in place; `draft_position` is a coarse locator only. The composer is the pipeline's only tokenizer.
 - Does NOT modify the verifier's `verify-vN.json` — that's the audit trail for that round, frozen on write. The next round produces `verify-v{N+1}.json` against your new draft.
 - Does NOT expand or trim the draft for length reasons. Word count drifts ±10% are tolerable; larger drifts signal a misclassification and get surfaced in `fixes_summary.skip`.
 - Does NOT emit `Report-Metadaten` / `Verfasser` / `Berichtsdatum` / `Report Metadata` / `Author` blocks or any self-attribution of the model name. Report metadata is written deterministically by M9's `knowledge-finalize`.

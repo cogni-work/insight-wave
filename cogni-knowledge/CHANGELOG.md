@@ -1,5 +1,26 @@
 # cogni-knowledge changelog
 
+## 0.0.28 — 2026-05-23
+
+Slice 10 of the absorption-roadmap Current sprint — closes **#287 / F22** (the C4 root cause from the M12 alpha gate). Makes `draft_position` non-load-bearing by adding a `draft_sentence` cited-text anchor so the composer becomes the pipeline's only tokenizer. Schema stays `0.1.0` (additive field); maturity stays `incubating` (the v0.1.0 / Preview flip is still gated on the M12 gate re-run after #286 + #288).
+
+### Changed
+
+- `agents/wiki-composer.md` — Phase 2 step 4 now records `draft_sentence` (the verbatim cited sentence, including its `[[…/<slug>]]` wikilink) on every `citations[]` entry; the sentence-delimiter rule is documented here as the pipeline's single tokenization point, and `draft_position` is demoted to a coarse human-readable locator. Phase 3 manifest example updated.
+- `agents/wiki-verifier.md` — Phase 0 reads the draft once as a single string and no longer builds a `section_index → sentences` map; Phase 1 takes each cited sentence verbatim from `draft_sentence` and validates it by substring-presence + slug-in-sentence guard. New `unsupported` reason **`cited_text_not_in_draft`** replaces `draft_position_out_of_range` 1:1. New `manifest_missing_draft_sentence` abort envelope for pre-#287 manifests (no legacy fallback). Added a "does NOT re-tokenize" invariant.
+- `agents/revisor.md` — locates each cited sentence by `draft_sentence` text (not by re-tokenizing positions); updates `draft_sentence` in place on rephrase; **deletes the global `draft_position` re-index pass**. Triage branch swapped to `cited_text_not_in_draft`.
+- `skills/knowledge-verify/SKILL.md` — Step 3.2 inline-prune filters `cited_text_not_in_draft` (was `draft_position_out_of_range`); Step 3.1 handles the new `manifest_missing_draft_sentence` verifier abort; `verify-vN.json` reason vocabulary documented.
+- `skills/knowledge-compose/SKILL.md` — post-write verification subprocess now asserts `draft_sentence` on every entry; documented manifest shape + field list updated.
+- `references/inverted-pipeline.md` (Phase 5/6), `references/absorption-roadmap.md` (Slice 10), `references/alpha-findings.md` (F22 forward note), and `CLAUDE.md` (composer / verifier / revisor agent-table rows) updated to the cited-text anchor and the "only the composer tokenizes" invariant.
+- `tests/test_compose_contract.sh` + `tests/test_verify_contract.sh` — assert `draft_sentence` on composer + skill, the `cited_text_not_in_draft` reason, the `manifest_missing_draft_sentence` guard, and that verifier/revisor consume `draft_sentence` without re-tokenizing.
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — version `0.0.27` → `0.0.28` (mirrored).
+
+### Notes
+
+- **Scope: #287 only.** #286 (F21, verifier fan-out for the C3 wall-clock) and #288 (F23, revisor re-point bias) are tracked separately; this fix de-risks both. The M12 gate re-run and the v0.1.0 / Preview maturity flip wait until all three land.
+- **F20 urgency drops to near-zero** — positions are now decorative and only the composer tokenizes, so there is no shared delimiter rule left to drift across agents.
+- Contract-test coverage only; the live re-dispatch against `.alpha/eu-ai-act-v01/` is the M12 gate re-run's job.
+
 ## 0.0.27 — 2026-05-23
 
 Slice 8 of the absorption-roadmap Current sprint — Phase 5 M11. Archives the legacy v0.0.x research+report chain so the v0.1.0 inverted pipeline is the only live path, and bakes a permanent audit-grep so the chain can't creep back. Establishes the monorepo `_archive/` convention. Maturity stays `incubating` (the v0.1.0 / Preview flip is M12).

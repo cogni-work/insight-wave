@@ -9,7 +9,7 @@ allowed-tools: Read, Write, Bash, Task
 Phase 5 of the v0.1.0 inverted pipeline. Reads the per-project `plan.json` + `ingest-manifest.json` + the populated wiki at `<binding.wiki_path>/wiki/`, dispatches `wiki-composer` once, and verifies the two output files land on disk. The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md`, then writes:
 
 - `<project>/output/draft-v{N}.md` — the draft, with `[[sources/<slug>]]` inline citations.
-- `<project>/.metadata/citation-manifest.json` — one `{draft_position, wiki_slug, claim_id}` entry per citation, schema `0.1.0`.
+- `<project>/.metadata/citation-manifest.json` — one `{draft_position, wiki_slug, claim_id, draft_sentence}` entry per citation, schema `0.1.0`. `draft_sentence` is the verbatim cited sentence (with its wikilink) — the load-bearing anchor M8's verifier consumes without re-tokenizing the draft; `draft_position` is a coarse locator only.
 
 A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any draft `Write` attempt — this is the **F11 outline-recovery contract**. If the composer crashes between outlining and drafting, re-running this skill detects the leftover outline and re-dispatches the composer with `RESUME_FROM_OUTLINE=true` so only Phase 2 runs.
 
@@ -20,7 +20,8 @@ A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any d
   "schema_version": "0.1.0",
   "draft_version": 1,
   "citations": [
-    {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"}
+    {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001",
+     "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a regulated product [[sources/eu-ai-act-article-6]]."}
   ]
 }
 ```
@@ -159,7 +160,7 @@ Parse the return envelope:
 
 ### 5. Verify outputs on disk
 
-One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and a list-typed `citations[]` each carrying `draft_position` / `wiki_slug` / `claim_id`; outline file is on disk). An empty `citations[]` is NOT a hard fail — it emits a stderr `WARN` line and surfaces in the final summary per the edge-case section below (zero claims is an upstream-data symptom, not a composer bug). On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
+One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and a list-typed `citations[]` each carrying `draft_position` / `wiki_slug` / `claim_id` / `draft_sentence`; outline file is on disk). An empty `citations[]` is NOT a hard fail — it emits a stderr `WARN` line and surfaces in the final summary per the edge-case section below (zero claims is an upstream-data symptom, not a composer bug). On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
 
 ```
 DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
@@ -179,7 +180,7 @@ assert schema == "0.1.0", "bad schema: " + repr(schema)
 cites = m.get("citations", [])
 assert isinstance(cites, list), "citations must be a list, got " + type(cites).__name__
 for c in cites:
-    assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c, c
+    assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c and "draft_sentence" in c, c
 assert outline.exists(), f"outline missing: {outline}"
 if not cites:
     print("WARN: citations[] empty — every cited statement will fail M8 verification", file=sys.stderr)

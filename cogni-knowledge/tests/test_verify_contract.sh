@@ -54,9 +54,10 @@ else
   red "FAIL: knowledge-verify: SKILL must document incrementing REVISION_ROUND between rounds (without it, the loop would never terminate via MAX_ROUNDS)"
   errors=$((errors + 1))
 fi
-# Defence-in-depth: out_of_range deviations are filtered before the dispatch
-# decision (otherwise the revisor pays an LLM call just to drop manifest entries).
-assert_grep 'draft_position_out_of_range' "$VERIFY" "knowledge-verify: filters draft_position_out_of_range out of the revisor trigger (revisor can only drop these)"
+# Defence-in-depth: cited_text_not_in_draft deviations are filtered before the
+# dispatch decision (otherwise the revisor pays an LLM call just to drop manifest
+# entries). Post-#287 this is the structural-drift reason (replaced draft_position_out_of_range).
+assert_grep 'cited_text_not_in_draft' "$VERIFY" "knowledge-verify: filters cited_text_not_in_draft out of the revisor trigger (revisor can only drop these)"
 # Defence-in-depth: confirm there is no obsolete Skill("cogni-knowledge:wiki-verifier)
 # or Skill("cogni-knowledge:revisor) dispatch — agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:wiki-verifier' "$VERIFY" "knowledge-verify: no Skill('cogni-knowledge:wiki-verifier) — agents go through Task"
@@ -93,12 +94,16 @@ assert_grep 'synthesis' "$VERIFIER" "wiki-verifier: emits synthesis informationa
 # Closed vocabulary of unsupported reasons — covers claim_id: null on a source
 # page (composer_dropped_claim) so the synthesis verdict doesn't swallow them.
 # Page kind comes from Phase 0's directory resolution, never from claim_id alone.
-for reason in 'page_not_found' 'claim_not_found' 'composer_dropped_claim' 'claim_text_misaligned' 'draft_position_out_of_range'; do
+# cited_text_not_in_draft is the post-#287 structural-drift reason (replaced
+# draft_position_out_of_range when the verifier stopped re-tokenizing the draft).
+for reason in 'page_not_found' 'claim_not_found' 'composer_dropped_claim' 'claim_text_misaligned' 'cited_text_not_in_draft'; do
   assert_grep "$reason" "$VERIFIER" "wiki-verifier: documents '$reason' as an unsupported reason"
 done
 assert_grep 'page_kind_by_slug' "$VERIFIER" "wiki-verifier: tracks page kind from Phase 0 directory resolution (not inferred from claim_id)"
 assert_grep 'claim_id' "$VERIFIER" "wiki-verifier: looks up claims by claim_id"
-assert_grep 'draft_position' "$VERIFIER" "wiki-verifier: walks citations by draft_position"
+# Post-#287: the verifier consumes draft_sentence verbatim and never re-tokenizes.
+assert_grep 'draft_sentence' "$VERIFIER" "wiki-verifier: consumes draft_sentence verbatim (the cited-text anchor; does not re-tokenize the draft)"
+assert_grep 'manifest_missing_draft_sentence' "$VERIFIER" "wiki-verifier: aborts on a pre-#287 manifest lacking draft_sentence (no legacy fallback)"
 # Zero-network is the load-bearing invariant.
 VERIFIER_TOOLS_LINE=$(grep '^tools:' "$VERIFIER" || true)
 for required in '"Read"' '"Write"' '"Glob"' '"Grep"'; do
@@ -133,6 +138,10 @@ assert_grep 'draft-v' "$REVISOR" "revisor: writes draft-v{N+1}.md"
 assert_grep 'citation-manifest.json' "$REVISOR" "revisor: rewrites citation-manifest.json"
 assert_grep 'NEW_DRAFT_VERSION' "$REVISOR" "revisor: takes NEW_DRAFT_VERSION parameter"
 assert_grep 'fixes_applied' "$REVISOR" "revisor: returns fixes_applied[] in JSON envelope"
+# Post-#287: the revisor locates by draft_sentence text and updates it in place;
+# it no longer re-tokenizes the draft or recomputes draft_position globally.
+assert_grep 'draft_sentence' "$REVISOR" "revisor: locates/updates citations by draft_sentence (does not re-tokenize the draft)"
+assert_grep 'cited_text_not_in_draft' "$REVISOR" "revisor: triages cited_text_not_in_draft (drop the manifest entry)"
 # Zero-network: tools list must not include WebFetch, WebSearch, Bash, or Task.
 REVISOR_TOOLS_LINE=$(grep '^tools:' "$REVISOR" || true)
 for required in '"Read"' '"Write"' '"Glob"' '"Grep"'; do
