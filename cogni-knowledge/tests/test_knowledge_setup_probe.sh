@@ -17,8 +17,11 @@
 # both" abort wording.
 #
 # This test:
-#   1. Greps every live gating skill for the cogni-wiki probe and asserts the
-#      cogni-research probe + "requires both" wording are ABSENT (contract).
+#   1. For every live gating skill, asserts (positively) the probe_plugin()
+#      function is defined, the cogni-wiki probe is invoked, and the
+#      "requires cogni-wiki to be installed" abort wording is present; and
+#      (negatively) that the cogni-research probe + "requires both" wording
+#      are ABSENT (contract).
 #   2. Executes the probe body against two synthetic layouts (dev-repo sibling
 #      AND marketplace cache) and asserts both resolve cogni-wiki.
 #
@@ -56,9 +59,23 @@ assert_skill_probes_wiki_only() {
     return
   fi
   local bad=0
-  # Must keep the cogni-wiki probe.
+  # Must DEFINE the probe function (not merely mention the invocation line in
+  # prose) — a stale `probe_plugin cogni-wiki wiki-setup` line in a comment
+  # without the function body would be a dead gate.
+  if ! grep -qE 'probe_plugin\(\) \{' "$skill_file"; then
+    red "FAIL: $skill missing probe_plugin() function definition"
+    bad=$((bad + 1))
+  fi
+  # Must invoke the cogni-wiki probe.
   if ! grep -qE 'probe_plugin cogni-wiki wiki-setup' "$skill_file"; then
     red "FAIL: $skill missing cogni-wiki probe"
+    bad=$((bad + 1))
+  fi
+  # Must carry the POSITIVE abort wording for a missing cogni-wiki — otherwise
+  # deleting the abort block would silently regress the clean-abort guarantee
+  # (the behaviour F1/A4 exists to protect) without any test noticing.
+  if ! grep -qE 'requires .cogni-wiki. to be installed' "$skill_file"; then
+    red "FAIL: $skill missing 'requires cogni-wiki to be installed' abort wording"
     bad=$((bad + 1))
   fi
   # Must NOT carry the cogni-research probe or "requires both" wording.
@@ -71,7 +88,7 @@ assert_skill_probes_wiki_only() {
     bad=$((bad + 1))
   fi
   if [ $bad -eq 0 ]; then
-    green "PASS: $skill probes cogni-wiki only (clean break)"
+    green "PASS: $skill probes cogni-wiki only + carries clean-abort wording"
   else
     errors=$((errors + bad))
   fi
