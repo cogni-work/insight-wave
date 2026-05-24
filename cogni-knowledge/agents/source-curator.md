@@ -87,6 +87,8 @@ Apply intent-based language routing using `market_config`:
 
 If `candidate_domains[]` is non-empty from the plan, append `site:<domain>` operators on the most relevant 1-2 queries. Generate 1-2 unfiltered queries as fallback when domain-restricted searches return thin results.
 
+**Normative-text source preference.** When the sub-question seeks the actual *text* of a law or regulation (articles, clauses, annexes — not commentary about it), prefer stable article/section pages on an authoritative restatement site over legal-database **landing / ELI** URLs (e.g. `eur-lex.europa.eu/eli/...`). ELI/landing endpoints resolve dynamically and have been observed to serve a *different* document (wrong OJ number) or only a short WebFetch summary instead of the full normative text. Worked example: for the EU AI Act, prefer `artificialintelligenceact.eu` article pages over the EUR-Lex ELI/landing URLs. Bias your `site:`-query targets toward the canonical article-page domain when one is available.
+
 **Authority site-searches.** From `market_config.authority_sources`, pick the 1-2 sources most relevant to this sub-question's topic. Use their `search_pattern` template (substitute `{TOPIC_LOCAL}` and `{YEAR}`).
 
 ### Phase 2: Web Search + Triage
@@ -103,7 +105,7 @@ For each surviving candidate, score on 5 dimensions (0.0-1.0):
 | Dimension | Weight | Guidance |
 |-----------|--------|----------|
 | Relevance | 0.30 | How directly does this source address the sub-question? |
-| Authority | 0.25 | Academic/government/established analysts = high; blogs/forums = low. If the source's domain matches an entry in `market_config.authority_sources`, apply the declared `authority` score (5 = highest, 2 = vendor/promotional) as a credibility boost. |
+| Authority | 0.25 | Academic/government/established analysts = high; blogs/forums = low. If the source's domain matches an entry in `market_config.authority_sources`, apply the declared `authority` score (5 = highest, 2 = vendor/promotional) as a credibility boost. **Normative-text caveat:** when the candidate is a legal-database landing/ELI URL (e.g. `eur-lex.europa.eu/eli/...`) *and* a canonical article-page candidate for the same law is present, deprioritize the landing/ELI URL — it may resolve to the wrong document or only a summary (see Phase 1's "Normative-text source preference"). |
 | Recency | 0.15 | Last 1-2 years scores highest for fast-moving topics; historical analysis weighs less. For annual reports, check whether a newer edition exists before accepting an older one. |
 | Specificity | 0.15 | Quantitative sources (data, statistics, dates) score higher than general commentary. |
 | Uniqueness | 0.15 | Sources providing information not covered by others in the set score higher. |

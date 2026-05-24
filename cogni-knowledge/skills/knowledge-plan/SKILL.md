@@ -87,7 +87,7 @@ Reason about the topic. Decompose it into 3-7 sub-questions that together cover 
 - `id`: `sq-NN` (zero-padded, sequential from `sq-01`).
 - `query`: a concrete, search-engine-friendly phrasing of the sub-question.
 - `search_guidance`: 1-2 sentences telling the Phase 2 source-curator what kinds of sources would best answer this sub-question (regulatory text, industry analysis, court rulings, etc.).
-- `candidate_domains`: a list of 3-8 domain stems where authoritative answers likely live for this market. Examples for `dach`: `eur-lex.europa.eu`, `bfdi.bund.de`, `edpb.europa.eu`, `bitkom.org`. Use the market's authority sources as your starting set — resolved via the canonical workspace helper:
+- `candidate_domains`: a list of 3-8 domain stems where authoritative answers likely live for this market. Examples for `dach`: `bfdi.bund.de`, `edpb.europa.eu`, `bitkom.org`, `eur-lex.europa.eu`. Use the market's authority sources as your starting set — resolved via the canonical workspace helper. **For regulatory topics that need the actual law text**, list the canonical article-page domain (e.g. `artificialintelligenceact.eu` for the EU AI Act) *first* — `candidate_domains[]` order drives the curator's `site:` queries — and treat legal-database landing/ELI domains (`eur-lex.europa.eu`) as a fallback only, since their ELI URLs can resolve to the wrong document or only a summary:
   ```
   python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <market>
   ```

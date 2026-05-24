@@ -59,9 +59,13 @@ If `WIKI_OK=no`, abort with the standard missing-plugin message.
 resolve_wiki_ingest_scripts() {
   local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/wiki-ingest/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
-  for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/wiki-ingest/scripts; do
-    [ -d "$d" ] && { echo "$d"; return 0; }
-  done
+  # F26: pick the NEWEST cached version, not the lexically-first.
+  # sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.45).
+  local newest
+  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/wiki-ingest/scripts; do
+    [ -d "$d" ] && printf '%s\n' "$d"
+  done | sort -V | tail -1)
+  [ -n "$newest" ] && { echo "$newest"; return 0; }
   return 1
 }
 WIKI_INGEST_SCRIPTS=$(resolve_wiki_ingest_scripts) || abort "cogni-wiki wiki-ingest scripts not found"

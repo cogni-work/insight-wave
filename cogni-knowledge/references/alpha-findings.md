@@ -272,3 +272,13 @@ Second full live run of the v0.1.0 inverted pipeline (Phases 1–7), this time o
 ### Landing
 
 On the green verdict, **v0.1.0 shipped in this same landing**: `plugin.json` + `marketplace.json` → 0.1.0, `binding.json` `SCHEMA_VERSION` → 0.1.0 (M12 re-alignment, no field change), README maturity callout flipped **Incubating → Preview**, `#287`/`#288` closed, epic #264 Phase 5 ticked. Approx run cost ~$1.30. **Phase 5 complete.** #289 (F24–F26) and #291 (pre-0.0.28 manifest guard) remain open as non-blocking polish; revisit during the v0.1.x bake before Phase 6.
+
+### Resolution status (updated 2026-05-24, v0.1.1)
+
+F24, F25, and F26 (**#289**) are **fixed in v0.1.1**. All three were non-blocking polish, so they shipped after the v0.1.0 maturity flip without re-running the gate — none touch pipeline behaviour beyond helper-script version resolution:
+
+- **F24 (count drift)** — pinned the one authoritative citation count to `len(citation-manifest.json::citations)` for the latest draft version (surfaced by `pipeline-summary.py project`): `wiki-composer` returns the exact array length (not an estimate), `knowledge-compose`/`knowledge-verify` quote the script-derived count, and `verify-vN.json` `counts.total` is relabelled as a per-round verdict tally (verdicts-scored-for-draft-vN), not the citation count. No script-logic change — the canonical surface + `verify-store.py` conservation checks already existed. Pinned in `CLAUDE.md` §Conventions.
+- **F25 (EUR-Lex curation)** — `source-curator` (Phase 1 + Phase 3 Authority) and `knowledge-plan` (§2 `candidate_domains`) now prefer canonical article-page domains (`artificialintelligenceact.eu`) over EUR-Lex landing/ELI URLs for normative text. Guidance-only.
+- **F26 (helper-script version resolution)** — `resolve_wiki_ingest_scripts()` (ingest + finalize) sorts cached cogni-wiki versions with `sort -V` and picks the newest; regression test `tests/test_resolve_wiki_scripts.sh`. The companion lexical-version bug in `cogni-workspace/scripts/discover-plugins.sh` was fixed in the same landing (cogni-workspace **v0.6.31**).
+
+#291 (pre-0.0.28 manifest guard) remains open.

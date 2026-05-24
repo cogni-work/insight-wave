@@ -1,5 +1,35 @@
 # cogni-knowledge changelog
 
+## 0.1.1 — 2026-05-24
+
+M12 minor follow-ups (**#289**) — the three lowest-severity findings from the M12 alpha gate, all non-blocking polish — plus a companion fix to the same lexical-version bug class in cogni-workspace. No pipeline behaviour change beyond helper-script version resolution. Maturity stays **Preview**. Closes **#289**; epic **#264**.
+
+### Fixed
+
+- **F24 — citation-count drift.** One draft was reported with five different counts across surfaces (composer return / manifest / verify-v1 / verify-v2 / `pipeline-summary`). Pinned the authoritative count to `len(citation-manifest.json::citations)` for the latest draft version (already surfaced by `pipeline-summary.py project`): `wiki-composer` now returns the exact manifest-array length (never an estimate); `knowledge-compose` logs/summary use the script-derived count; `knowledge-verify` relabels its per-round verdict tally as verdicts-scored-for-draft-vN and surfaces the authoritative manifest count plus the pruned-stale count. Pin documented in `CLAUDE.md` §Conventions. No script-logic change (the canonical surface + `verify-store.py` conservation checks already existed). Files: `agents/wiki-composer.md`, `skills/knowledge-compose/SKILL.md`, `skills/knowledge-verify/SKILL.md`, `CLAUDE.md`.
+- **F25 — normative-text source preference.** `source-curator` (Phase 1 + Phase 3 Authority) and `knowledge-plan` (§2 `candidate_domains`) now prefer canonical article-page domains (e.g. `artificialintelligenceact.eu`) over legal-database landing/ELI URLs (e.g. `eur-lex.europa.eu/eli/...`) for the actual text of a law — ELI endpoints can resolve to the wrong document or return only a WebFetch summary. Guidance-only; no data-file or `candidate-store.py` change. Files: `agents/source-curator.md`, `skills/knowledge-plan/SKILL.md`.
+- **F26 — version-aware helper-script resolution.** `resolve_wiki_ingest_scripts()` (in `knowledge-ingest` + `knowledge-finalize`) now picks the newest cached cogni-wiki version via `sort -V` instead of the lexically-first glob match (which selected `0.0.16` over the installed `0.0.45` on multi-version dev caches). `probe_plugin()` stays existence-only (unchanged). New regression test `tests/test_resolve_wiki_scripts.sh`. Files: `skills/knowledge-ingest/SKILL.md`, `skills/knowledge-finalize/SKILL.md`, `tests/test_resolve_wiki_scripts.sh`.
+
+### Companion (cogni-workspace v0.6.31)
+
+- `scripts/discover-plugins.sh` dedup-by-name now compares a parsed version tuple instead of a string (`'0.0.9' > '0.0.45'` in string order — the same bug class as F26). `'unknown'`/non-numeric segments sort lowest. Bumped cogni-workspace `0.6.30` → `0.6.31` (mirrored in `marketplace.json`).
+
+### Version
+
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — `0.1.0` → `0.1.1` (mirrored). Maturity stays `preview`.
+
+## 0.1.0 — 2026-05-24
+
+Phase 5 complete — the M12 alpha gate re-ran **GREEN** (C1–C5 all pass) on a fresh cold `.alpha/` base, so cogni-knowledge graduates **Incubating → Preview**. Full scorecard in `references/alpha-findings.md` §"M12 alpha re-run #2 (2026-05-24)". Closes **#287**, **#288**; ticks epic **#264** Phase 5.
+
+### Changed
+
+- Version `0.0.29` → `0.1.0` in `plugin.json` + root `marketplace.json` (mirrored); `binding.json` `SCHEMA_VERSION` → `0.1.0` (M12 re-alignment, no field change). README maturity callout flipped **Incubating → Preview**.
+
+### Notes
+
+- Backfilled entry: the v0.1.0 landing shipped without its own changelog stanza. Details of record live in `references/alpha-findings.md` §"M12 alpha re-run #2".
+
 ## 0.0.29 — 2026-05-24
 
 Slice 11 of the absorption-roadmap Current sprint — Phase 5. Parallelizes the inverted-pipeline fetch so the M12 gate re-run isn't bottlenecked on a strictly-sequential Phase-3 batch loop. The partial M12 re-run was paused because `source-fetcher` ran one batch at a time (~4–12 min each; one read a 164-page PDF), making the fetch the dominant pipeline wall-clock. This release folds the body fetch into the already-parallel Phase-2 curators (Option B) and shrinks Phase 3 to an opt-in cobrowse fallback. It does **not** re-run the gate or flip maturity — that is the next landing. Maturity stays `incubating`. Closes **#292**; epic **#264**.

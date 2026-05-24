@@ -64,7 +64,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "version": "0.6.30",
+      "version": "0.6.31",
       "maturity": "preview",
       "description": "Foundation-layer plugin for insight-wave marketplace plugins. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, an interactive workspace-configuration dashboard, Obsidian vault integration, and a bundled vendor-curated insight-wave reference wiki queryable via the ask skill.",
       "keywords": [
@@ -277,7 +277,7 @@
     {
       "name": "cogni-knowledge",
       "source": "./cogni-knowledge",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "maturity": "preview",
       "description": "Wiki-first research that compounds. Binds a cogni-wiki knowledge base to a project so every research run deposits into the same persistent, queryable, interlinked markdown wiki — and so future runs read what previous runs filed instead of starting from zero. The v0.1.0 inverted pipeline (plan → curate → fetch → ingest → compose → verify → finalize) forks dedicated agents locally and runs zero-network claim verification against pre-extracted source claims. The differentiator vs. one-shot deep-research tools (OpenAI Deep Research, Perplexity Spaces, GPT Researcher) is the binding: knowledge accumulates across projects instead of dying in chat history.",
       "keywords": [
