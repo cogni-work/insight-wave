@@ -197,7 +197,7 @@ Append one summary line (Bash `>>` append; `wiki/log.md` is append-only by cogni
 DATE_STAMP=$(date -u +%F)
 TOPIC=<topic from plan.json>
 N_WORDS=<words from composer return>
-N_CITES=<citations from composer return>
+N_CITES=<the script-derived count from Step 5's print(len(cites)) — NOT the composer return's "citations" field>
 echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
@@ -210,7 +210,7 @@ Print ≤ 10 lines:
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Draft: `output/draft-v<N>.md` (`<N_WORDS>` words across `<N_SECTIONS>` sections)
-- Citations: `<N_CITES>` (manifest at `.metadata/citation-manifest.json`)
+- Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
 - Outline: `.metadata/writer-outline-v<N>.json` (F11 anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Cost: `$X.XXX` (from composer return)
 - Next: M8 (`knowledge-verify`) will run zero-network claim alignment by reading the citation manifest + each cited page's `pre_extracted_claims[]`. For v0.0.22, end here — `draft-v<N>.md` + `citation-manifest.json` is this slice's deliverable.

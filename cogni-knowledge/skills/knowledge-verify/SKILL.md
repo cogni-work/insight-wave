@@ -156,7 +156,7 @@ SHARD_SIZE=<resolved, default 40>
 
 ### 3. Verify-revise loop
 
-Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`. The loop body is one verifier dispatch followed by an optional revisor dispatch:
+Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`, `TOTAL_PRUNED=0`. The loop body is one verifier dispatch followed by an optional revisor dispatch:
 
 #### 3.1 Verify (fan out → parallel dispatch → merge)
 
@@ -250,7 +250,7 @@ print(json.dumps({"repairable": len(repairable), "stale_sentence": len(stale_sen
 '
 ```
 
-The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `STALE_SENTENCE_COUNT = stale_sentence` (pruned inline, surface in the final summary).
+The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `STALE_SENTENCE_COUNT = stale_sentence` (pruned inline). **Now accumulate it:** `TOTAL_PRUNED = TOTAL_PRUNED + STALE_SENTENCE_COUNT` (it was initialised to 0 at Step 3, and this prune step runs every round before the termination check, so the running total is correct whether the loop ends at round 0 or after revising). The §6 summary surfaces `TOTAL_PRUNED` so the operator can see why the authoritative manifest count shrank.
 
 If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
 
@@ -303,18 +303,23 @@ counts = v.get("counts", {})
 total = counts.get("total")
 expected = len(v.get("verified", [])) + len(v.get("deviations", []))
 assert total == expected, "counts.total=" + repr(total) + " != verified+deviations=" + str(expected)
+# Authoritative citation count (F24): len of the post-verify citation manifest for
+# this draft version. counts.total is verdicts scored for draft-vN at the round
+# start (before the §3.2 sentence_not_in_draft prune + any revisor drop), which is
+# NOT the citation count — read the manifest itself for the pin.
+manifest = project / ".metadata" / "citation-manifest.json"
+m = json.loads(manifest.read_text(encoding="utf-8"))
+manifest_citations = len(m.get("citations", []))
 if round_ > 0:
     draft = project / "output" / ("draft-v" + str(n) + ".md")
-    manifest = project / ".metadata" / "citation-manifest.json"
     assert draft.exists() and draft.stat().st_size > 0, "draft missing or empty: " + str(draft)
-    m = json.loads(manifest.read_text(encoding="utf-8"))
     manifest_v = m.get("draft_version")
     assert manifest_v == n, "manifest draft_version mismatch after revisor: " + repr(manifest_v) + " != " + str(n)
-print(json.dumps(counts))
+print(json.dumps({"counts": counts, "manifest_citations": manifest_citations}))
 '
 ```
 
-The trailing JSON line is captured for the final summary's verdict-count line. On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim and stop — do not auto-retry.
+The trailing JSON line is captured for the final summary: `counts` feeds the verdict-count line and `manifest_citations` feeds the authoritative citation count. On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim and stop — do not auto-retry.
 
 ### 5. Append wiki/log.md
 
@@ -338,7 +343,8 @@ Print ≤ 10 lines:
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Draft: `output/draft-v<CURRENT_DRAFT_VERSION>.md` (revisor rounds: `<REVISION_ROUND>` of `<MAX_ROUNDS>`)
-- Verdicts: verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (total=`<N>`)
+- Citations: `<manifest_citations>` (authoritative count = `len(citation-manifest.json::citations)` for draft-v`<CURRENT_DRAFT_VERSION>`; `<TOTAL_PRUNED>` pruned as `sentence_not_in_draft`)
+- Verdicts scored on draft-v`<CURRENT_DRAFT_VERSION>` (round `<REVISION_ROUND>`): verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (total scored=`<N>`) — a per-round verdict tally, not the citation count
 - Latest verify: `.metadata/verify-v<CURRENT_DRAFT_VERSION>.json`
 - Cost: `$X.XXX` (sum of `cost_estimate.estimated_usd` across all verifier + revisor dispatches)
 - Next: M9 (`knowledge-finalize`) deposits the verified draft as `wiki/syntheses/<slug>.md`. For v0.0.23, end here — `verify-v<N>.json` + an aligned draft is this slice's deliverable.

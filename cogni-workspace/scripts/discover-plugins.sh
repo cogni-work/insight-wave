@@ -68,11 +68,19 @@ for pattern in ['*/.claude-plugin/plugin.json', '*/*/.claude-plugin/plugin.json'
         except (json.JSONDecodeError, IOError):
             continue
 
-# Deduplicate by name, keeping highest version
+# Deduplicate by name, keeping highest version. Compare by a parsed version
+# tuple, not by string — string compare puts '0.0.9' > '0.0.45' (same lexical
+# bug class as cogni-knowledge F26). 'unknown'/non-numeric segments sort lowest.
+def _ver_key(v):
+    # Require ASCII digits: str.isdigit() is True for chars like '²' that int()
+    # rejects, so a bare isdigit() guard would raise ValueError and (under
+    # set -euo pipefail) abort discovery on one malformed version string.
+    return tuple(int(s) if (s.isdigit() and s.isascii()) else -1 for s in str(v).split('.'))
+
 by_name = {}
 for p in found:
     name = p['name']
-    if name not in by_name or p['version'] > by_name[name]['version']:
+    if name not in by_name or _ver_key(p['version']) > _ver_key(by_name[name]['version']):
         by_name[name] = p
 
 result = sorted(by_name.values(), key=lambda x: x['name'])

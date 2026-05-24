@@ -134,6 +134,10 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
     "cost_estimate": {"input_words": 22000, "output_words": 5100, "estimated_usd": 0.082}}
    ```
 
+   `citations` is the **exact length of the `citations[]` array you just wrote to
+   `citation-manifest.json`** — count the entries, do not estimate. This is the value the orchestrator
+   logs and surfaces; a guessed number is the F24 count-drift bug. (The `38` above is illustrative.)
+
    On input failure (no `ingested[]` entries to draw on):
    ```json
    {"ok": false, "error": "no_ingested_sources", "reason": "ingest-manifest.json has empty ingested[] — run knowledge-ingest first"}
