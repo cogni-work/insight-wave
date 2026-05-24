@@ -41,8 +41,8 @@ If a behavior already exists in `cogni-wiki` or `cogni-research`, cogni-knowledg
 
 Since v0.0.17 cogni-knowledge ships its own `agents/` directory, and the v0.1.0 inverted pipeline dispatches **zero** cogni-research agents. The seven local agents:
 
-- `source-curator` (Phase 2 — forked from cogni-research; per-sub-question WebSearch + scoring)
-- `source-fetcher` (Phase 3 — net-new; per-URL WebFetch with cobrowse fallback)
+- `source-curator` (Phase 2 — forked from cogni-research; per-sub-question WebSearch + scoring + a Phase-4 WebFetch body-pull into the fetch-cache, Option B #292)
+- `source-fetcher` (Phase 3 — net-new; cobrowse-only recovery of WebFetch misses, opt-in)
 - `claim-extractor` (Phase 4 — forked from cogni-research; per-body claim extraction)
 - `source-ingester` (Phase 4 — net-new; writes `wiki/sources/<slug>.md` with `pre_extracted_claims:`)
 - `wiki-composer` (Phase 5 — forked from cogni-research `writer`; reads the populated wiki, emits a cited draft)

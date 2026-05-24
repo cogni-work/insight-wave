@@ -10,15 +10,18 @@
 # Covers:
 #   - knowledge-plan: writes plan.json schema 0.1.0, probes only cogni-wiki,
 #     does not append binding.
-#   - knowledge-curate: reads plan.json, dispatches source-curator, merges
+#   - knowledge-curate: reads plan.json, dispatches source-curator (forwarding
+#     KNOWLEDGE_ROOT/MAX_AGE_DAYS for the Phase-4 fetch, Option B #292), merges
 #     through candidate-store.py append-batch, reads curator_defaults from
 #     binding.
-#   - knowledge-fetch: reads candidates.json, dispatches source-fetcher,
+#   - knowledge-fetch: builds fetch-manifest.json from the curators' fetch
+#     results, cobrowse recovery opt-in (--cobrowse + claude-in-chrome probe),
 #     reads fetch_cache_max_age_days from binding, calls fetch-cache.py stat.
 #   - source-curator agent: forked header, candidates.json output, drops
-#     dimensions/annotation emission.
-#   - source-fetcher agent: webfetch + cobrowse_interactive enum,
-#     fetch-cache.py store/fetch contract.
+#     dimensions/annotation emission, WebFetch in tools: + Phase-4 fetch
+#     (Option B #292), no claude-in-chrome tools.
+#   - source-fetcher agent: cobrowse-only (no WebFetch/WebSearch in tools:),
+#     cobrowse_interactive enum, fetch-cache.py store/fetch contract.
 #   - Clean-break invariant: no `cogni-research:` or `cogni-claims:` skill
 #     dispatch references in any of the new files.
 #
@@ -62,6 +65,10 @@ assert_grep 'Task(source-curator' "$CURATE" "knowledge-curate: dispatches source
 # dispatch is not lingering. Agents live at agents/, not skills/.
 assert_not_grep 'Skill("cogni-knowledge:source-curator' "$CURATE" "knowledge-curate: no Skill('cogni-knowledge:source-curator) — agents go through Task"
 assert_grep 'Task' "$CURATE" "knowledge-curate: Task listed in allowed-tools"
+# Option B (#292, v0.0.29): the curator fetches bodies in Phase 4, so the
+# skill must forward the fetch params to each source-curator dispatch.
+assert_grep 'KNOWLEDGE_ROOT=' "$CURATE" "knowledge-curate: forwards KNOWLEDGE_ROOT to source-curator (Phase-4 fetch)"
+assert_grep 'MAX_AGE_DAYS=' "$CURATE" "knowledge-curate: forwards MAX_AGE_DAYS to source-curator (Phase-4 fetch)"
 
 # --- knowledge-fetch SKILL.md --------------------------------------------
 FETCH="$PLUGIN_ROOT/skills/knowledge-fetch/SKILL.md"
@@ -72,10 +79,14 @@ fi
 assert_grep 'name: knowledge-fetch' "$FETCH" "knowledge-fetch: frontmatter name"
 assert_grep 'fetch_cache_max_age_days' "$FETCH" "knowledge-fetch: reads fetch_cache_max_age_days"
 assert_grep 'fetch-cache.py stat' "$FETCH" "knowledge-fetch: calls fetch-cache.py stat in summary"
-assert_grep 'Task(source-fetcher' "$FETCH" "knowledge-fetch: dispatches source-fetcher via Task"
+assert_grep 'Task(source-fetcher' "$FETCH" "knowledge-fetch: dispatches source-fetcher via Task (cobrowse-only)"
 assert_grep 'fetch-manifest.json' "$FETCH" "knowledge-fetch: writes fetch-manifest.json"
 assert_not_grep 'Skill("cogni-knowledge:source-fetcher' "$FETCH" "knowledge-fetch: no Skill('cogni-knowledge:source-fetcher) — agents go through Task"
 assert_grep 'Task' "$FETCH" "knowledge-fetch: Task listed in allowed-tools"
+# Option B (#292, v0.0.29): cobrowse recovery is opt-in, and setup mirrors
+# cogni-claims (probe the claude-in-chrome extension, not install-mcp).
+assert_grep '--cobrowse' "$FETCH" "knowledge-fetch: cobrowse recovery is opt-in via --cobrowse"
+assert_grep 'mcp__claude-in-chrome__tabs_context_mcp' "$FETCH" "knowledge-fetch: probes the claude-in-chrome extension before cobrowse"
 
 # --- source-curator agent ------------------------------------------------
 CURATOR="$PLUGIN_ROOT/agents/source-curator.md"
@@ -94,16 +105,26 @@ assert_grep 'candidates.json' "$CURATOR" "source-curator: emits to candidates.js
 assert_grep 'sub_question_refs' "$CURATOR" "source-curator: emits sub_question_refs[]"
 assert_grep 'Do not emit' "$CURATOR" "source-curator: documents the drop-emission discipline"
 assert_grep 'WebSearch' "$CURATOR" "source-curator: uses WebSearch"
-# Negative assertion targets the frontmatter tools: line only — the body
-# legitimately mentions WebFetch to document the boundary.
+# Option B (#292, v0.0.29): the curator now WebFetches bodies in Phase 4, so
+# WebFetch MUST be in its frontmatter tools: list. It must still NOT carry
+# the claude-in-chrome cobrowse tools — cobrowse stays Phase 3 (opt-in).
 CURATOR_TOOLS_LINE=$(grep '^tools:' "$CURATOR" || true)
-if ! echo "$CURATOR_TOOLS_LINE" | grep -q WebFetch; then
-  green "PASS: source-curator: frontmatter tools: does NOT include WebFetch (Phase 3's job)"
+if echo "$CURATOR_TOOLS_LINE" | grep -q WebFetch; then
+  green "PASS: source-curator: frontmatter tools: includes WebFetch (Phase-4 body fetch, Option B #292)"
 else
-  red "FAIL: source-curator: frontmatter tools: must not include WebFetch"
+  red "FAIL: source-curator: frontmatter tools: must include WebFetch (Phase-4 fetch)"
   red "  got: $CURATOR_TOOLS_LINE"
   errors=$((errors + 1))
 fi
+if echo "$CURATOR_TOOLS_LINE" | grep -q 'mcp__claude-in-chrome__'; then
+  red "FAIL: source-curator: frontmatter tools: must NOT include claude-in-chrome (cobrowse is Phase 3)"
+  red "  got: $CURATOR_TOOLS_LINE"
+  errors=$((errors + 1))
+else
+  green "PASS: source-curator: frontmatter tools: no claude-in-chrome MCP tools (cobrowse stays Phase 3)"
+fi
+assert_grep 'KNOWLEDGE_ROOT' "$CURATOR" "source-curator: takes KNOWLEDGE_ROOT for the Phase-4 fetch"
+assert_grep 'fetch-cache.py' "$CURATOR" "source-curator: writes bodies through fetch-cache.py (Phase 4)"
 
 # --- source-fetcher agent ------------------------------------------------
 FETCHER="$PLUGIN_ROOT/agents/source-fetcher.md"
@@ -113,13 +134,20 @@ if [ ! -f "$FETCHER" ]; then
 fi
 assert_grep 'name: source-fetcher' "$FETCHER" "source-fetcher: frontmatter name"
 assert_grep 'fetch-cache.py store' "$FETCHER" "source-fetcher: calls fetch-cache.py store"
-assert_grep 'fetch-cache.py fetch' "$FETCHER" "source-fetcher: calls fetch-cache.py fetch (cache lookup)"
-assert_grep 'webfetch' "$FETCHER" "source-fetcher: uses webfetch enum (matches cogni-claims)"
+assert_grep 'fetch-cache.py fetch' "$FETCHER" "source-fetcher: calls fetch-cache.py fetch (positive-only cache lookup)"
 assert_grep 'cobrowse_interactive' "$FETCHER" "source-fetcher: uses cobrowse_interactive enum (matches cogni-claims)"
 assert_grep 'fallback_attempted' "$FETCHER" "source-fetcher: emits fallback_attempted in unavailable[]"
-assert_grep 'WebFetch' "$FETCHER" "source-fetcher: uses WebFetch tool"
-# Frontmatter-tools-only check (body mentions WebSearch to document the boundary).
+# Option B (#292, v0.0.29): source-fetcher shrank to cobrowse-only. WebFetch
+# (and the PDF Read-loop) moved to source-curator, so the frontmatter tools:
+# list must NOT include WebFetch or WebSearch (curator's job).
 FETCHER_TOOLS_LINE=$(grep '^tools:' "$FETCHER" || true)
+if echo "$FETCHER_TOOLS_LINE" | grep -q WebFetch; then
+  red "FAIL: source-fetcher: frontmatter tools: must NOT include WebFetch (moved to source-curator, Option B #292)"
+  red "  got: $FETCHER_TOOLS_LINE"
+  errors=$((errors + 1))
+else
+  green "PASS: source-fetcher: frontmatter tools: does NOT include WebFetch (cobrowse-only, Option B #292)"
+fi
 if ! echo "$FETCHER_TOOLS_LINE" | grep -q WebSearch; then
   green "PASS: source-fetcher: frontmatter tools: does NOT include WebSearch (curator's job)"
 else

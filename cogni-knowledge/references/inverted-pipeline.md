@@ -25,8 +25,8 @@ plan → curate → fetch → ingest → compose → verify → finalize
 |-------|-------|-------|--------|
 | 0 | `knowledge-setup` | — | `.cogni-knowledge/{binding.json, fetch-cache/}`, wiki dir |
 | 1 | `knowledge-plan` | topic, optional sub-question hints | `<project>/.metadata/plan.json` |
-| 2 | `knowledge-curate` | `plan.json` | `<project>/.metadata/candidates.json` |
-| 3 | `knowledge-fetch` | `candidates.json` | `.cogni-knowledge/fetch-cache/<sha256>.json`, `<project>/.metadata/fetch-manifest.json` |
+| 2 | `knowledge-curate` | `plan.json` | `<project>/.metadata/candidates.json` (+ `fetch{}` per candidate), `.cogni-knowledge/fetch-cache/<sha256>.json` |
+| 3 | `knowledge-fetch` | `candidates.json` | `<project>/.metadata/fetch-manifest.json` (+ opt-in cobrowse rescues to `fetch-cache/`) |
 | 4 | `knowledge-ingest` | `fetch-manifest.json` + cache | `wiki/sources/<slug>.md` (with `pre_extracted_claims:`), updated `wiki/index.md`, `wiki/log.md` |
 | 5 | `knowledge-compose` | `wiki/index.md` + selected `wiki/sources/*.md` + prior `wiki/syntheses/*.md` | `<project>/output/draft-vN.md`, `<project>/.metadata/citation-manifest.json` |
 | 6 | `knowledge-verify` | draft + citation manifest + wiki page claims | `<project>/.metadata/verify-vN.json` (revisor loop, max 2 iterations) |
@@ -58,7 +58,7 @@ Output: `<project>/.metadata/plan.json`:
 
 ### Phase 2 — `knowledge-curate`
 
-Fans out one `source-curator` agent per batch of sub-questions. Each runs WebSearch, scores candidates on relevance/authority/recency/uniqueness, **does not fetch**. Output is the union, deduped by URL.
+Fans out one `source-curator` agent per sub-question (≤ 3 concurrent). Each runs WebSearch, scores candidates on relevance/authority/recency/uniqueness, **then fetches each surviving candidate's body via WebFetch** through the shared fetch-cache (Option B, #292 — the body-pull moved here from the old Phase-3 `source-fetcher` so the fetch rides the existing per-sub-question parallelism). Cobrowse is **not** done here — it stays Phase 3, opt-in. Output is the union, deduped by URL.
 
 Output: `<project>/.metadata/candidates.json`:
 
@@ -74,23 +74,30 @@ Output: `<project>/.metadata/candidates.json`:
       "fetch_priority": 1,
       "sub_question_refs": ["sq-01", "sq-03"],
       "publisher": "europa.eu",
-      "discovered_at": "2026-05-20T..."
+      "discovered_at": "2026-05-20T...",
+      "fetch": {
+        "status": "ok",
+        "cache_key": "<sha256>", "content_hash": "sha256:...",
+        "fetch_method": "webfetch", "fetched_at": "2026-05-20T...",
+        "from_cache": false
+      }
     }
   ]
 }
 ```
 
-`tier ∈ {primary, secondary, supporting}`. `fetch_priority` is an integer; lower = fetch first. Writes through `candidate-store.py` with a file-lock so parallel curators can't race.
+`tier ∈ {primary, secondary, supporting}`. `fetch_priority` is an integer; lower = fetch first. The optional `fetch` sub-object records the Phase-2 body fetch: `status ∈ {ok, unavailable}`; on `ok` it carries `cache_key`/`content_hash`/`fetch_method`/`fetched_at` (+ `pdf_pages_read`/`pdf_truncated` for PDFs); on `unavailable` it carries `reason` (a `webfetch_*` or `pdf_extraction_failed` token), `fallback_attempted`, and `cobrowse_eligible` (true for the `webfetch_*` classes — Phase 3 can retry them; false for `pdf_extraction_failed`). Writes through `candidate-store.py` with a file-lock so parallel curators can't race; on a cross-SQ dedup the merge prefers the side with `fetch.status == "ok"` so a good body is never discarded.
 
-### Phase 3 — `knowledge-fetch`
+**C1 under Option B.** Because the fetch now lives inside the per-SQ curators (which run before the merge), two curators in the same concurrency wave can both miss the cache on a shared cross-SQ URL and each WebFetch it. The cache is content-addressed by URL, so both writes collapse to **one** entry (last-write-wins) — C1 holds when measured as `fetch-cache.py stat` entries == distinct normalized URLs. The curator's Phase-4 Step-1 cache lookup short-circuits all the other repeat classes (re-runs, prior projects, cross-wave repeats). Same-wave double-fetch is an accepted, bounded cost.
 
-For each candidate, attempt fetch via:
+### Phase 3 — `knowledge-fetch` (cobrowse reconcile, opt-in)
 
-1. WebFetch (`fetch_method: webfetch`)
-2. claude-in-chrome cobrowse fallback when the user is present (`fetch_method: cobrowse_interactive`) — same enum cogni-claims uses, so a future shared verifier reads either cache's entries identically
-3. Mark `unavailable` if both fail
+Under Option B the bodies are already fetched, so this phase no longer WebFetches. It:
 
-Successful fetches go to the global cache at `.cogni-knowledge/fetch-cache/<sha256(url)>.json`. The per-project `fetch-manifest.json` records what's in the cache for this project and what was marked unavailable.
+1. Builds `fetch-manifest.json` directly from each candidate's Phase-2 `fetch` sub-object — `fetched[]` from `status: ok`, `unavailable[]` from the rest. No `source-fetcher` dispatch for the WebFetch results.
+2. Offers **opt-in** cobrowse recovery of the WebFetch misses (`--cobrowse`, or an interactive prompt; default OFF so autonomous runs stay browser-free). When opted in, it walks the user through enabling the Claude-in-Chrome extension (mirroring cogni-claims — `claude-in-chrome` is the browser extension, not an `install-mcp` server), then dispatches `source-fetcher` (cobrowse-only, `fetch_method: cobrowse_interactive`) **sequentially** over the cobrowse-eligible misses. A rescue upgrades the manifest's `unavailable[]` entry to `fetched[]` and overwrites the cache's negative entry with a positive one.
+
+Successful fetches live in the global cache at `.cogni-knowledge/fetch-cache/<sha256(url)>.json`. The per-project `fetch-manifest.json` records what's in the cache for this project and what stayed unavailable.
 
 Output: `<project>/.metadata/fetch-manifest.json`:
 
@@ -107,9 +114,9 @@ Output: `<project>/.metadata/fetch-manifest.json`:
 }
 ```
 
-`pdf_pages_read` (added v0.0.21, #278) is **PDF-only and optional**: it carries the cumulative page count successfully read by `source-fetcher`'s 20-page-window Read-loop. Non-PDF rows omit it. `pdf_truncated: true` (also optional, PDF-only) is set only when the agent's 200-page hard cap fired before the PDF ended — for PDFs that fit under the cap, `pdf_pages_read` alone conveys completeness.
+`pdf_pages_read` (added v0.0.21, #278) is **PDF-only and optional**: it carries the cumulative page count successfully read by the curator's 20-page-window Read-loop. Non-PDF rows omit it. `pdf_truncated: true` (also optional, PDF-only) is set only when the 200-page hard cap fired before the PDF ended — for PDFs that fit under the cap, `pdf_pages_read` alone conveys completeness.
 
-Cache hit semantics: if a cache file exists for the URL and `fetched_at` is within the freshness window (default 30 days, configurable in `binding.curator_defaults`), reuse without re-fetching. The fetch-cache is content-addressed by URL, not by content — so the same URL fetched twice produces one cache file with the latest body.
+Cache hit semantics: if a cache file exists for the URL and `fetched_at` is within the freshness window (default 30 days, configurable in `binding.curator_defaults`), the curator's Phase-4 lookup reuses it without re-fetching. The fetch-cache is content-addressed by URL, not by content — so the same URL fetched twice produces one cache file with the latest body.
 
 ### Phase 4 — `knowledge-ingest`
 

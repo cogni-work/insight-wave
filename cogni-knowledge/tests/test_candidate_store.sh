@@ -15,6 +15,10 @@
 #      - candidate with out-of-range score
 #   5. URL normalization collapses scheme/host case, trailing slash, and
 #      tracking query params to a single entry.
+#   6. An empty batch is a no-op (no rewrite, added=merged=0).
+#   7. The optional fetch sub-object (Option B, #292): on a cross-SQ dedup the
+#      higher score wins scalar fields, but a fetch.status == "ok" survives
+#      even from the lower-score side.
 #
 # bash 3.2 + stdlib python3 only. Posix only (uses fcntl.flock).
 
@@ -253,6 +257,57 @@ else
   red "FAIL: empty batch triggered a rewrite or wrong envelope"
   red "  before: $BEFORE_MTIME, after: $AFTER_MTIME"
   red "  got:    $EMPTY_OUT"
+  errors=$((errors + 1))
+fi
+
+# 7. fetch sub-object (Option B, #292): on a cross-SQ dedup collision the
+# higher score wins the scalar fields, but a successful fetch (fetch.status
+# == "ok") survives even when it sits on the lower-score side — a good body
+# must never be discarded because a same-URL collision carried a higher score.
+PROJ5="$WORK/project5"
+mkdir -p "$PROJ5"
+python3 "$SCRIPT" init --project-path "$PROJ5" >/dev/null
+
+BATCH_E="$WORK/batch-e.json"
+cat > "$BATCH_E" <<'JSON'
+[
+  {"url": "https://shared.example/doc", "title": "high score, failed fetch",
+   "score": 0.90, "sub_question_refs": ["sq-01"], "publisher": "shared.example",
+   "discovered_at": "2026-05-20T10:00:00Z",
+   "fetch": {"status": "unavailable", "reason": "webfetch_timeout",
+             "fallback_attempted": false, "cobrowse_eligible": true}}
+]
+JSON
+
+BATCH_F="$WORK/batch-f.json"
+cat > "$BATCH_F" <<'JSON'
+[
+  {"url": "https://shared.example/doc", "title": "low score, good fetch",
+   "score": 0.70, "sub_question_refs": ["sq-02"], "publisher": "shared.example",
+   "discovered_at": "2026-05-20T11:00:00Z",
+   "fetch": {"status": "ok", "cache_key": "abc123", "content_hash": "sha256:deadbeef",
+             "fetch_method": "webfetch", "fetched_at": "2026-05-20T11:00:00Z"}}
+]
+JSON
+
+python3 "$SCRIPT" append-batch --project-path "$PROJ5" --batch-file "$BATCH_E" >/dev/null
+python3 "$SCRIPT" append-batch --project-path "$PROJ5" --batch-file "$BATCH_F" >/dev/null
+
+if python3 - <<PY > /dev/null
+import json
+data = json.load(open('$PROJ5/.metadata/candidates.json'))
+cands = data['candidates']
+assert len(cands) == 1, f"expected 1 deduped entry, got {len(cands)}"
+c = cands[0]
+assert c['score'] == 0.90, c                      # higher score wins the scalar fields
+assert c['fetch']['status'] == 'ok', c            # but the ok fetch survives the dedup
+assert c['fetch']['cache_key'] == 'abc123', c     # carried from the lower-score side
+assert sorted(c['sub_question_refs']) == ['sq-01', 'sq-02'], c  # refs still unioned
+PY
+then
+  green "PASS: fetch sub-object — ok fetch wins a cross-SQ dedup collision against a higher-score failed fetch"
+else
+  red "FAIL: fetch sub-object dedup preference broken"
   errors=$((errors + 1))
 fi
 

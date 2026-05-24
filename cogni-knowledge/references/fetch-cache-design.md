@@ -62,7 +62,7 @@ Default 30 days, configurable per knowledge base in `binding.json`:
 
 ## Reason semantics
 
-Unavailable entries carry a closed-vocabulary `reason` token. `source-fetcher` writes it; `knowledge-fetch`'s summary aggregates it; `source-ingester` reads it when a cached entry has `status: unavailable` to decide whether to skip or retry. The full list, with semantics:
+Unavailable entries carry a closed-vocabulary `reason` token. Since v0.0.29 (Option B, #292) the **`source-curator` (Phase 2) is the primary cache writer** — it writes every positive `ok` entry and the `webfetch_*` / `pdf_extraction_failed` negative entries during its Phase-4 fetch. The cobrowse-only `source-fetcher` (Phase 3, opt-in) writes only the cobrowse outcomes (`cobrowse_interactive` positives that overwrite a curator negative entry, or `cobrowse_unavailable` / `cobrowse_failed` negatives). `knowledge-fetch`'s summary aggregates the tokens; `source-ingester` reads them when a cached entry has `status: unavailable` to decide whether to skip or retry. The reason vocabulary itself is unchanged. The full list, with semantics:
 
 | Token | Class | Semantics |
 |---|---|---|

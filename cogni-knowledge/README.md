@@ -32,8 +32,8 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 
 1. **Setup** a knowledge base — one cogni-wiki + a `binding.json` manifest that records every research project deposited
 2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web yet) — Phase 1 of the v0.1.0 inverted pipeline
-3. **Curate** candidate sources per sub-question via WebSearch + scoring (no fetch yet) — Phase 2
-4. **Fetch** source bodies via WebFetch with `claude-in-chrome` cobrowse fallback through a shared fetch-cache — Phase 3
+3. **Curate** candidate sources per sub-question via WebSearch + scoring, then fetch each survivor's body via WebFetch into a shared fetch-cache (Option B — the fetch rides the parallel curators) — Phase 2
+4. **Fetch** assembles the fetch-manifest from the curators' results; cobrowse recovery of WebFetch misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`) — Phase 3
 5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
 6. **Compose** the draft report by reading the populated wiki, with `[[sources/<slug>]]` wikilink citations + a parallel citation manifest — Phase 5
 7. **Verify** every cited claim against the cited page's `pre_extracted_claims` (zero network) and loop with the revisor on `unsupported` deviations, capped at 2 iterations — Phase 6
@@ -102,8 +102,8 @@ knowledge-setup
 
 inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-slug X --topic T
   → knowledge-plan      decompose T into 3–7 sub-questions → plan.json
-  → knowledge-curate    source-curator per sub-question (WebSearch + score) → candidates.json
-  → knowledge-fetch     source-fetcher per batch (WebFetch + cobrowse fallback, shared fetch-cache) → fetch-manifest.json
+  → knowledge-curate    source-curator per sub-question (WebSearch + score + WebFetch bodies → shared fetch-cache) → candidates.json
+  → knowledge-fetch     build fetch-manifest.json from the curators' results; opt-in cobrowse reconcile of WebFetch misses
   → knowledge-ingest    source-ingester writes wiki/sources/<slug>.md with pre_extracted_claims:
   → knowledge-compose   wiki-composer reads the populated wiki → draft-vN.md + citation-manifest.json
   → knowledge-verify    wiki-verifier scores citations vs pre_extracted_claims (zero network); revisor loop on unsupported
@@ -137,8 +137,8 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-resume | Skill | Show status of a cogni-knowledge base — slug, bound wiki, deposited projects, wiki health, next-step guidance |
 | knowledge-setup | Skill | Bootstrap a cogni-knowledge base — wiki + a binding manifest that records every research project deposited |
 | knowledge-plan | Skill | Phase 1 of the v0.1.0 inverted pipeline — decompose a topic into 3–7 sub-questions with candidate domains |
-| knowledge-curate | Skill | Phase 2 — fan out one `source-curator` per sub-question; merge scored candidates into `candidates.json` |
-| knowledge-fetch | Skill | Phase 3 — per-batch `source-fetcher` dispatch with WebFetch + cobrowse fallback through a shared fetch-cache |
+| knowledge-curate | Skill | Phase 2 — fan out one `source-curator` per sub-question (WebSearch + score + WebFetch bodies); merge candidates (each with a `fetch` sub-object) into `candidates.json` |
+| knowledge-fetch | Skill | Phase 3 — build `fetch-manifest.json` from the curators' fetch results; opt-in (`--cobrowse`) `source-fetcher` reconcile of WebFetch misses |
 | knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter |
 | knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
 | knowledge-verify | Skill | Phase 6 — zero-network claim alignment, fanned out across parallel `wiki-verifier` shards (`verify-store.py`) + revisor loop on `unsupported` deviations (max 2 iterations) |
@@ -146,8 +146,8 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
 | knowledge-refresh | Skill | Self-healing — pull-mode pipes a research project in; push-mode auto-researches stale topics |
-| source-curator | Agent | Phase 2 fork — per-sub-question WebSearch + scoring; emits a batch JSON array for merge into `candidates.json` |
-| source-fetcher | Agent | Phase 3 NEW — per-URL WebFetch with cobrowse fallback; reads/writes through `fetch-cache.py`; PDF branch via Read pages |
+| source-curator | Agent | Phase 2 fork — per-sub-question WebSearch + scoring + Phase-4 WebFetch body-pull (incl. the PDF Read-loop) through `fetch-cache.py`; emits a batch JSON array (each candidate carries a `fetch` sub-object) |
+| source-fetcher | Agent | Phase 3 NEW — cobrowse-only recovery of WebFetch misses via the `claude-in-chrome` extension; reads/writes through `fetch-cache.py` |
 | claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
 | source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
 | wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with wikilink citations and a citation manifest |
