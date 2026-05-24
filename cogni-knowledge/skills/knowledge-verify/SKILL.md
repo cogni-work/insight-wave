@@ -156,7 +156,7 @@ SHARD_SIZE=<resolved, default 40>
 
 ### 3. Verify-revise loop
 
-Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`. The loop body is one verifier dispatch followed by an optional revisor dispatch:
+Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`, `TOTAL_PRUNED=0`. The loop body is one verifier dispatch followed by an optional revisor dispatch:
 
 #### 3.1 Verify (fan out → parallel dispatch → merge)
 
@@ -250,7 +250,7 @@ print(json.dumps({"repairable": len(repairable), "stale_sentence": len(stale_sen
 '
 ```
 
-The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `STALE_SENTENCE_COUNT = stale_sentence` (pruned inline). Maintain a running `TOTAL_PRUNED` (sum of `STALE_SENTENCE_COUNT` across every round) — the §6 summary surfaces it so the operator can see why the authoritative manifest count shrank.
+The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the dispatch trigger); `STALE_SENTENCE_COUNT = stale_sentence` (pruned inline). **Now accumulate it:** `TOTAL_PRUNED = TOTAL_PRUNED + STALE_SENTENCE_COUNT` (it was initialised to 0 at Step 3, and this prune step runs every round before the termination check, so the running total is correct whether the loop ends at round 0 or after revising). The §6 summary surfaces `TOTAL_PRUNED` so the operator can see why the authoritative manifest count shrank.
 
 If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
 

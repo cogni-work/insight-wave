@@ -82,11 +82,16 @@ If `WIKI_OK=no`, abort with the standard missing-plugin message.
 resolve_wiki_ingest_scripts() {
   local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/wiki-ingest/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
-  # F26: pick the NEWEST cached version, not the lexically-first.
-  # sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.45).
-  local newest
+  # F26: pick the NEWEST cached version, not the lexically-first. Consider ONLY
+  # numeric version dirs — sort -V ranks a non-numeric name (main/latest/a
+  # branch checkout) ABOVE every real version, so a stray dir would otherwise
+  # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.45).
+  local newest ver
   newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/wiki-ingest/scripts; do
-    [ -d "$d" ] && printf '%s\n' "$d"
+    [ -d "$d" ] || continue
+    ver=${d%/skills/wiki-ingest/scripts}; ver=${ver##*/}
+    case "$ver" in ''|*[!0-9.]*) continue ;; esac
+    printf '%s\n' "$d"
   done | sort -V | tail -1)
   [ -n "$newest" ] && { echo "$newest"; return 0; }
   return 1

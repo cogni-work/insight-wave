@@ -72,7 +72,10 @@ for pattern in ['*/.claude-plugin/plugin.json', '*/*/.claude-plugin/plugin.json'
 # tuple, not by string — string compare puts '0.0.9' > '0.0.45' (same lexical
 # bug class as cogni-knowledge F26). 'unknown'/non-numeric segments sort lowest.
 def _ver_key(v):
-    return tuple(int(s) if s.isdigit() else -1 for s in str(v).split('.'))
+    # Require ASCII digits: str.isdigit() is True for chars like '²' that int()
+    # rejects, so a bare isdigit() guard would raise ValueError and (under
+    # set -euo pipefail) abort discovery on one malformed version string.
+    return tuple(int(s) if (s.isdigit() and s.isascii()) else -1 for s in str(v).split('.'))
 
 by_name = {}
 for p in found:
