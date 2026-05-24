@@ -125,7 +125,15 @@ def _validate_candidate(entry: dict) -> str | None:
     refs = entry.get("sub_question_refs", [])
     if not isinstance(refs, list) or not all(isinstance(r, str) for r in refs):
         return f"candidate {url}: 'sub_question_refs' must be a list of strings"
+    fetch = entry.get("fetch")
+    if fetch is not None and not isinstance(fetch, dict):
+        return f"candidate {url}: 'fetch' must be an object when present"
     return None
+
+
+def _fetch_is_ok(entry: dict) -> bool:
+    fetch = entry.get("fetch")
+    return isinstance(fetch, dict) and fetch.get("status") == "ok"
 
 
 def _merge_entry(existing: dict, incoming: dict) -> dict:
@@ -135,12 +143,24 @@ def _merge_entry(existing: dict, incoming: dict) -> dict:
     - Earlier discovered_at wins (curator emits ISO 8601 UTC).
     - sub_question_refs are unioned (existing first, then new refs).
     - tier + fetch_priority recomputed by the caller after all merges.
+    - A successful fetch (fetch.status == "ok") survives the dedup even when
+      it sits on the lower-score side — a good body must never be discarded
+      because a same-URL collision happened to carry a higher score (Option
+      B, #292: curators fetch in parallel before this merge runs).
     """
     if float(incoming.get("score", 0.0)) > float(existing.get("score", 0.0)):
         winner = incoming
     else:
         winner = existing
     merged = dict(winner)
+    # Prefer whichever side actually has a body. merged already carries the
+    # winner's fetch; only override when the loser is the one with the ok
+    # fetch. If both are ok they describe the same URL (same body); if
+    # neither is ok the winner's reason is kept.
+    if _fetch_is_ok(incoming) and not _fetch_is_ok(existing):
+        merged["fetch"] = incoming["fetch"]
+    elif _fetch_is_ok(existing) and not _fetch_is_ok(incoming):
+        merged["fetch"] = existing["fetch"]
     existing_at = existing.get("discovered_at") or ""
     incoming_at = incoming.get("discovered_at") or ""
     if existing_at and incoming_at:

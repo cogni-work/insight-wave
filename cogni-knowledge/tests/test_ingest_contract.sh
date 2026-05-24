@@ -21,8 +21,10 @@
 #     does NOT WebFetch.
 #   - claim-extractor: reads BODY_FILE (cached body), emits excerpt_position,
 #     does NOT write files, does NOT create entities.
-#   - source-fetcher: #275 is_pdf_response branch, #276 cobrowse_unavailable
-#     reason in the closed vocabulary.
+#   - source-curator: #275 is_pdf_response branch + #278 pdf_pages_read/
+#     pdf_truncated + the Read tool — moved here from source-fetcher at
+#     v0.0.29 (Option B, #292; the WebFetch body-pull now lives in Phase 4).
+#   - source-fetcher: #276 cobrowse_unavailable reason (cobrowse-only after #292).
 #   - _knowledge_lib.py: is_pdf_response + atomic_write_text exist.
 #
 # bash 3.2 + grep only.
@@ -112,25 +114,33 @@ else
   green "PASS: claim-extractor: frontmatter tools: read-only (no Write, no WebFetch)"
 fi
 
-# --- source-fetcher additions (#275, #276) -------------------------------
-FETCHER="$PLUGIN_ROOT/agents/source-fetcher.md"
-assert_grep 'is_pdf_response' "$FETCHER" "source-fetcher: uses is_pdf_response helper (#275)"
-assert_grep 'pdf_extraction_failed' "$FETCHER" "source-fetcher: closed vocab includes pdf_extraction_failed (#275)"
-assert_grep 'cobrowse_unavailable' "$FETCHER" "source-fetcher: closed vocab includes cobrowse_unavailable (#276)"
-assert_grep 'pdf_truncated' "$FETCHER" "source-fetcher: documents pdf_truncated for the 200-page hard-cap case (#278)"
-assert_grep 'pdf_pages_read' "$FETCHER" "source-fetcher: records pdf_pages_read in per-batch fetched[] entry (#278)"
-# Regression guard for the #277 review-blocker: the PDF branch instructs
-# the agent to `Read pages: "1-20"` the saved binary; the Read tool MUST
-# be in the frontmatter tools list or the PDF rail fails at runtime with
-# tool-not-permitted. Mirror the existing INGESTER_TOOLS_LINE idiom.
-FETCHER_TOOLS_LINE=$(grep '^tools:' "$FETCHER" || true)
-if echo "$FETCHER_TOOLS_LINE" | grep -q '"Read"'; then
-  green "PASS: source-fetcher: frontmatter tools: includes Read (required by PDF branch)"
+# --- source-curator PDF branch (#275, #278) — moved here from source-fetcher
+# at v0.0.29 (Option B, #292): the WebFetch body-pull + PDF Read-loop moved
+# into the curator's Phase 4, so the PDF contract now lives on source-curator.
+CURATOR="$PLUGIN_ROOT/agents/source-curator.md"
+if [ ! -f "$CURATOR" ]; then
+  red "FAIL: agents/source-curator.md not found"
+  exit 1
+fi
+assert_grep 'is_pdf_response' "$CURATOR" "source-curator: uses is_pdf_response helper (#275, moved in #292)"
+assert_grep 'pdf_extraction_failed' "$CURATOR" "source-curator: closed vocab includes pdf_extraction_failed (#275)"
+assert_grep 'pdf_truncated' "$CURATOR" "source-curator: documents pdf_truncated for the 200-page hard-cap case (#278)"
+assert_grep 'pdf_pages_read' "$CURATOR" "source-curator: records pdf_pages_read in the candidate fetch sub-object (#278)"
+# Regression guard for the #277 review-blocker, now on the curator: the PDF
+# branch instructs `Read pages: "1-20"` the saved binary; the Read tool MUST
+# be in the frontmatter tools list or the PDF rail fails at runtime.
+CURATOR_TOOLS_LINE=$(grep '^tools:' "$CURATOR" || true)
+if echo "$CURATOR_TOOLS_LINE" | grep -q '"Read"'; then
+  green "PASS: source-curator: frontmatter tools: includes Read (required by the moved PDF branch)"
 else
-  red "FAIL: source-fetcher: frontmatter tools: must include Read for the PDF branch"
-  red "  got: $FETCHER_TOOLS_LINE"
+  red "FAIL: source-curator: frontmatter tools: must include Read for the PDF branch"
+  red "  got: $CURATOR_TOOLS_LINE"
   errors=$((errors + 1))
 fi
+
+# --- source-fetcher (#276) — cobrowse-only after #292 --------------------
+FETCHER="$PLUGIN_ROOT/agents/source-fetcher.md"
+assert_grep 'cobrowse_unavailable' "$FETCHER" "source-fetcher: closed vocab includes cobrowse_unavailable (#276)"
 
 # --- _knowledge_lib.py new helpers ---------------------------------------
 LIB="$PLUGIN_ROOT/scripts/_knowledge_lib.py"

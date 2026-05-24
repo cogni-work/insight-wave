@@ -1,12 +1,12 @@
 ---
 name: knowledge-curate
-description: "Phase 2 of the v0.1.0 inverted pipeline. Reads plan.json, dispatches one source-curator agent per sub-question to WebSearch + score candidate sources, merges the per-sub-question batches into candidates.json via candidate-store.py. Does NOT fetch URL bodies — that is Phase 3 (knowledge-fetch). Use this skill whenever the user says 'curate sources for the eu-ai-act plan', 'discover candidates for project X', 'run the curators on plan.json', 'knowledge curate', 'phase 2 of the knowledge pipeline'. After curate, run knowledge-fetch to materialize bodies into the shared fetch-cache."
+description: "Phase 2 of the v0.1.0 inverted pipeline. Reads plan.json, dispatches one source-curator agent per sub-question to WebSearch + score candidate sources AND fetch each survivor's body via WebFetch (Option B, #292) into the shared fetch-cache, then merges the per-sub-question batches into candidates.json via candidate-store.py. Each candidate carries a fetch sub-object. Use this skill whenever the user says 'curate sources for the eu-ai-act plan', 'discover candidates for project X', 'run the curators on plan.json', 'knowledge curate', 'phase 2 of the knowledge pipeline'. After curate, run knowledge-fetch (cobrowse reconcile; a near no-op unless --cobrowse)."
 allowed-tools: Read, Write, Bash, Glob, Skill, Task
 ---
 
 # Knowledge Curate
 
-Phase 2 of the v0.1.0 inverted pipeline. Reads `<project>/.metadata/plan.json`, fans out one `source-curator` dispatch per sub-question (WebSearch + scoring, no fetching), and merges the per-sub-question candidate batches into the canonical `<project>/.metadata/candidates.json` via `candidate-store.py append-batch`.
+Phase 2 of the v0.1.0 inverted pipeline. Reads `<project>/.metadata/plan.json`, fans out one `source-curator` dispatch per sub-question (WebSearch + scoring, then a WebFetch body-pull of each survivor into the shared fetch-cache — Option B, #292), and merges the per-sub-question candidate batches into the canonical `<project>/.metadata/candidates.json` via `candidate-store.py append-batch`. Each merged candidate carries a `fetch` sub-object recording cache key / content hash on success or the unavailable reason on a WebFetch miss.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 2 — `knowledge-curate`" once to anchor on the contract.
 
@@ -69,7 +69,7 @@ From the binding envelope above, parse `data.binding.curator_defaults`. Apply pe
 |---|---|
 | `max_candidates_per_sq` | 12 |
 | `score_threshold` | 0.5 |
-| `fetch_cache_max_age_days` | 30 (not used here; carries through for Phase 3) |
+| `fetch_cache_max_age_days` | 30 (forwarded to each curator's Phase-4 fetch as `MAX_AGE_DAYS`) |
 
 ### 2. Initialize candidates.json
 
@@ -94,12 +94,14 @@ For each sub-question id selected in Step 0:
         BATCH_OUTPUT_PATH=<batch_path>,
         MARKET=<market>,
         MAX_CANDIDATES=<max_candidates_per_sq>,
-        SCORE_THRESHOLD=<score_threshold>)
+        SCORE_THRESHOLD=<score_threshold>,
+        KNOWLEDGE_ROOT=<knowledge_root>,
+        MAX_AGE_DAYS=<fetch_cache_max_age_days>)
    ```
 
-   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills).
+   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills). `KNOWLEDGE_ROOT` + `MAX_AGE_DAYS` drive the curator's Phase-4 fetch through `fetch-cache.py`.
 
-3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator does its own WebSearch — three concurrent curators is the rate-limit-friendly ceiling. (Phase 3 / `knowledge-fetch` runs batches strictly sequentially for a related but stricter reason — see that skill's Step 3 for the rationale.)
+3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator now does its own WebSearch **and** WebFetch — three concurrent curators is the rate-limit-friendly ceiling. Folding the fetch into this parallel round is exactly the Option-B win (#292): the fetch wall-clock collapses to the slowest curator wave instead of a strictly-sequential Phase-3 batch loop.
 
 4. After each curator returns successfully, merge the batch:
    ```
@@ -124,26 +126,29 @@ Parse the result for the final summary. Print ≤ 8 lines:
 - Project: `<topic>` at `<project_path>`
 - Curators dispatched: `<count>` (failed: `<failed_count>`)
 - Candidates: `<total>` (`<primary_count>` primary / `<secondary_count>` secondary / `<supporting_count>` supporting)
+- Fetched: `<fetched>` (`<cache_hits>` from cache) / Unavailable: `<unavailable>` (`<reason_top_3>`) — summed across curator returns
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across curator return summaries)
 - Failed sub-questions (if any): `sq-NN, sq-MM` — re-run with `--sub-question-ids sq-NN,sq-MM`
-- Next: run `knowledge-fetch --knowledge-slug <slug> --project-path <project_path>` to materialize bodies
+- Next: run `knowledge-fetch --knowledge-slug <slug> --project-path <project_path>` to build the fetch manifest (a near no-op — bodies are already cached; add `--cobrowse` only if you want to recover WebFetch misses via your browser)
 
 ## Edge cases
 
-- **Re-curate of an existing project.** `candidates.json` already exists. `candidate-store.py init` is idempotent (no overwrite). Curators dispatched again will re-emit batches; the merge step dedupes by URL, unions sub-question refs, and keeps the higher score. Pre-existing entries from other sub-questions are preserved.
+- **Re-curate of an existing project.** `candidates.json` already exists. `candidate-store.py init` is idempotent (no overwrite). Curators dispatched again will re-emit batches; the merge step dedupes by URL, unions sub-question refs, keeps the higher score, and prefers the side whose `fetch.status == "ok"` so a good body survives the dedup. Re-fetches short-circuit on the fetch-cache (Phase-4 Step 1), so a re-curate is cheap.
+- **Same-wave cross-SQ duplicate (C1 note).** Because the fetch now lives inside the per-sub-question curators (which run before the merge), two curators in the same concurrency wave can both miss the cache on a URL they both discovered and each WebFetch it. The fetch-cache is content-addressed by URL, so both writes collapse to **one** entry (last-write-wins) — C1 still holds when measured as `fetch-cache.py stat` entries == distinct normalized URLs. This is an accepted, bounded cost of Option B (#292).
 - **Curator emits zero candidates.** Either the topic is too obscure for web sources or the score threshold is too high. Surface as a warning; the operator can re-run with `--sub-question-ids <id>` after adjusting `binding.curator_defaults.score_threshold` (manual edit, no skill yet).
 - **Plan has a sub-question id the user did not pass.** Skip — only dispatch the explicitly requested subset. The skipped sq-ids will not appear in `candidates.json`'s `sub_question_refs` until re-run.
 
 ## Out of scope
 
-- Does NOT WebFetch (Phase 3 / `source-fetcher`).
-- Does NOT touch the wiki — wiki ingest is Phase 4 (`knowledge-ingest`, not yet shipped).
+- Does NOT cobrowse — browser-assisted recovery of WebFetch misses is Phase 3 (`knowledge-fetch --cobrowse`, opt-in). The curators have no claude-in-chrome MCP tools.
+- Does NOT touch the wiki — wiki ingest is Phase 4 (`knowledge-ingest`).
 - Does NOT modify `plan.json` or `binding.json`.
 - Does NOT support tuning of scoring weights via CLI (forked composite weights are local to `agents/source-curator.md`; edit there).
 
 ## Output
 
-- `<project_path>/.metadata/candidates.json` (schema 0.1.0; merged + tier-stamped + priority-assigned)
+- `<project_path>/.metadata/candidates.json` (schema 0.1.0; merged + tier-stamped + priority-assigned; each candidate carries an optional `fetch` sub-object from the curator's Phase-4 fetch)
+- `<knowledge_root>/.cogni-knowledge/fetch-cache/<sha256>.json` for each fetched URL (shared cache; written by the curators' Phase-4 fetch)
 - `<project_path>/.metadata/.candidates.batch.<sq-id>.json` for each dispatched sub-question (intermediate; safe to clean up but kept for debugging)
 
 ## References

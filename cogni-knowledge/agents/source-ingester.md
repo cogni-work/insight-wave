@@ -8,8 +8,9 @@ tools: ["Read", "Write", "Bash", "Task"]
 
 <!--
 NEW agent at v0.0.20 — no upstream. The inverted pipeline separates
-fetching (Phase 3, source-fetcher) from ingest (Phase 4), where
-cogni-research's section-researcher conflated discovery + fetch + write.
+fetching (Phase 2's source-curator since Option B / #292; cobrowse-only
+source-fetcher in Phase 3) from ingest (Phase 4), where cogni-research's
+section-researcher conflated discovery + fetch + write.
 See `cogni-knowledge/references/inverted-pipeline.md` Phase 4 contract
 and `references/claim-at-ingest.md` for the claim-shape contract.
 
