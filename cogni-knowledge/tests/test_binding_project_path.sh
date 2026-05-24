@@ -48,8 +48,8 @@ mkdir -p "$PROJ/.metadata" "$PROJ/output"
 echo '{"slug": "test", "report_source": "web"}' > "$PROJ/.metadata/project-config.json"
 touch "$PROJ/output/report.md"
 
-# 1. init - schema_version should be 0.0.3 (additive bump for curator_defaults
-# on the existing 0.0.x track; the 0.1.0 jump aligns with plugin.json at M12).
+# 1. init - schema_version should be 0.1.0 (the M12 re-alignment bump that
+# lands alongside plugin.json v0.1.0; no field change vs the 0.0.3 shape).
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" \
   --knowledge-slug test-kb \
@@ -57,10 +57,10 @@ python3 "$SCRIPT" init \
   --wiki-path "$WIKI" >/dev/null
 
 SCHEMA=$(python3 -c "import json; print(json.load(open('$KB/.cogni-knowledge/binding.json'))['schema_version'])")
-if [ "$SCHEMA" = "0.0.3" ]; then
-  green "PASS: init writes schema_version 0.0.3"
+if [ "$SCHEMA" = "0.1.0" ]; then
+  green "PASS: init writes schema_version 0.1.0"
 else
-  red "FAIL: schema_version expected 0.0.3, got '$SCHEMA'"
+  red "FAIL: schema_version expected 0.1.0, got '$SCHEMA'"
   errors=$((errors + 1))
 fi
 

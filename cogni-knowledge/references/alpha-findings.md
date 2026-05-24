@@ -246,3 +246,29 @@ First **full live end-to-end** run of the v0.1.0 inverted pipeline (Phases 1–7
 ### Resolution status (updated 2026-05-23, v0.0.28 / Slice 10)
 
 F21 (#286), F22 (#287), and F23 (#288) are **fixed in v0.0.28** but the gate has **not** been re-run. The fix took the `draft_sentence`-carried-in-manifest route rather than the F20 tokenizer rewrite: composer + revisor emit the cited sentence verbatim with a stable `id`, the verifier scores it directly (no re-tokenization), `knowledge-verify` fans the verifier out across parallel shards via `verify-store.py`, and the revisor re-points to a covering on-page claim before dropping. The next landing re-runs the M12 gate on a fresh `.alpha/` base — only on green (C3 per-shard verify < 5 min; C4 verify→revise converges, `drop` down / `repoint` up) does the v0.1.0 bump + Preview maturity flip land. F24–F26 (#289) remain open.
+
+## M12 alpha re-run #2 (2026-05-24) — GREEN → v0.1.0 / Preview
+
+Second full live run of the v0.1.0 inverted pipeline (Phases 1–7), this time on **v0.0.29 code** (Option-B parallel fetch + sharded verify), on a fresh cold `.alpha/eu-ai-act-v03/` base. Same topic as the held run for comparability: "EU AI Act GPAI Code of Practice obligations", 6 sub-questions.
+
+**Run shape.** 6 sub-questions → 47 candidates (72 raw, dedup'd) → 42 fetched / 5 unavailable → 42 ingested / **283 claims** → draft-v1 6,060 words / **150 citations** → verify-v1 **16 unsupported** → revisor (repoint 3 + rephrase 13, drop 0) → draft-v2 **2 unsupported** → revisor (rephrase 2, drop 0) → draft-v3 **0 unsupported** → synthesis deposited (38 sources cited).
+
+### Pass-criteria scorecard (all GREEN)
+
+| Criterion | Held gate (2026-05-23) | Re-run (2026-05-24) | Verdict |
+|---|---|---|---|
+| **C1** one cache entry / distinct URL | ✅ | 47 cache entries == 47 distinct normalized URLs | ✅ PASS |
+| **C2** 0 unreachable cited | ✅ | 0 of 5 unavailable cited; 38/38 cited slugs resolve | ✅ PASS |
+| **C3** verify wall-clock < 5 min | ❌ ~16–18 min/pass @ 169 cites | **3.6 min** max per-shard (4 shards, parallel) | ✅ PASS |
+| **C4** verify→revise → 0 unsupported in ≤2 rounds | ❌ doesn't converge | **16 → 2 → 0**, revisor `drop=0` | ✅ PASS |
+| **C5** F11 recovery | ⊘ not exercised | crash-sim → `RESUME_FROM_OUTLINE=true` skipped Phase 1, drafted | ✅ PASS |
+
+### Why the held blockers cleared
+
+- **C3 (was F21):** the v0.0.28 verifier fan-out (`verify-store.py shard`/`merge`) turned one serial 16–18 min pass into 4 partition-disjoint shards run concurrently; the slowest shard was 3.6 min. The < 5 min target is now per-shard wall-clock, and it held with margin.
+- **C4 (was F22 + F23):** the F20 off-by-one never surfaced because the verifier scored the manifest's verbatim `draft_sentence` directly and never re-tokenized (F22). The revisor's repoint-before-drop (F23) closed 16 → 2 → 0 with **zero citation drops** — re-alignment, not evidence erosion. 4 of 150 manifest `draft_sentence` values weren't verbatim-present in draft-v1, but they scored as content deviations rather than `sentence_not_in_draft`, and all resolved by round 3.
+- **F20 itself stays deferred** — `draft_sentence` carriage made the tokenizer rewrite non-load-bearing, exactly as v0.0.28 intended.
+
+### Landing
+
+On the green verdict, **v0.1.0 shipped in this same landing**: `plugin.json` + `marketplace.json` → 0.1.0, `binding.json` `SCHEMA_VERSION` → 0.1.0 (M12 re-alignment, no field change), README maturity callout flipped **Incubating → Preview**, `#287`/`#288` closed, epic #264 Phase 5 ticked. Approx run cost ~$1.30. **Phase 5 complete.** #289 (F24–F26) and #291 (pre-0.0.28 manifest guard) remain open as non-blocking polish; revisit during the v0.1.x bake before Phase 6.
