@@ -3,7 +3,7 @@ name: source-fetcher
 description: Phase-3 cobrowse reconcile for the inverted pipeline. Takes a list of WebFetch-miss URLs the orchestrator (knowledge-fetch --cobrowse) hands it, recovers each via the claude-in-chrome browser extension, and writes successes through fetch-cache.py. Emits per-batch {fetched[], unavailable[]} for merge into fetch-manifest.json. Does NOT WebFetch — that moved to Phase 2's source-curator (Option B, #292). Records availability — never decides to drop a URL.
 model: sonnet
 color: blue
-tools: ["Bash", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
+tools: ["Read", "Bash", "mcp__claude-in-chrome__tabs_create_mcp", "mcp__claude-in-chrome__navigate", "mcp__claude-in-chrome__get_page_text", "mcp__claude-in-chrome__read_page", "mcp__claude-in-chrome__find"]
 ---
 
 <!--

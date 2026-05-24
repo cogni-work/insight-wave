@@ -128,13 +128,13 @@ Then continue with the binding-resolution checks:
    **Phases 2–7 — curate → fetch → ingest → compose → verify → finalize.** Each takes the uniform `--knowledge-slug <slug> --project-path <project_path> --knowledge-root <knowledge_root>` interface; dispatch them in order, stopping that topic's chain on the first failure:
    ```
    Skill("cogni-knowledge:knowledge-curate",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
-   Skill("cogni-knowledge:knowledge-fetch",    args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
+   Skill("cogni-knowledge:knowledge-fetch",    args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root> --no-cobrowse")
    Skill("cogni-knowledge:knowledge-ingest",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
    Skill("cogni-knowledge:knowledge-compose",  args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
    Skill("cogni-knowledge:knowledge-verify",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
    Skill("cogni-knowledge:knowledge-finalize", args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
    ```
-   `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` with `report_source: wiki` — that is the per-topic deliverable. Do not pass `--overwrite`; finalize refusing to clobber an existing synthesis is the correct resume behaviour.
+   `knowledge-fetch` is passed `--no-cobrowse` explicitly — push-mode is autonomous, so it must never block on the cobrowse opt-in prompt (the bodies are already fetched during `knowledge-curate`; WebFetch misses stay unavailable rather than waiting for a browser). `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` with `report_source: wiki` — that is the per-topic deliverable. Do not pass `--overwrite`; finalize refusing to clobber an existing synthesis is the correct resume behaviour.
 
    **What push-mode does and does not do to the stale page.** Push-mode brings fresh, claim-verified evidence into the base as a **new** `synthesis` page per topic. Unlike the legacy push-mode (which dispatched `wiki-refresh` to rewrite the flagged page in place), it does **not** rewrite or delete the originally-flagged stale page — the inverted pipeline has no in-place page-rewrite primitive, and the v0.1.0 wiki separates `sources/` + `syntheses/` rather than editing arbitrary pages. The fresh synthesis supersedes the stale framing; the originally-flagged page stays on disk and a later `wiki-lint` may still flag it. Retiring or merging the old page is a manual `cogni-wiki:wiki-update` decision — surface this in the final summary so the user is not surprised.
 
