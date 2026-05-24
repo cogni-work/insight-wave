@@ -30,6 +30,12 @@ assert_grep 'verify-v' "$VERIFY" "knowledge-verify: writes verify-vN.json"
 assert_grep '"schema_version": "0.1.0"' "$VERIFY" "knowledge-verify: verify-vN.json schema 0.1.0"
 assert_grep 'Task(wiki-verifier' "$VERIFY" "knowledge-verify: dispatches wiki-verifier via Task"
 assert_grep 'Task(revisor' "$VERIFY" "knowledge-verify: dispatches revisor via Task"
+# F21 fan-out: shard the manifest, dispatch N verifiers in parallel, merge fragments.
+assert_grep 'verify-store.py shard' "$VERIFY" "knowledge-verify: shards the manifest via verify-store.py shard"
+assert_grep 'verify-store.py merge' "$VERIFY" "knowledge-verify: merges fragments via verify-store.py merge"
+assert_grep 'CITATIONS_PATH' "$VERIFY" "knowledge-verify: passes CITATIONS_PATH shard subset to each verifier"
+assert_grep 'VERIFY_OUT_PATH' "$VERIFY" "knowledge-verify: passes VERIFY_OUT_PATH fragment path to each verifier"
+assert_grep 'shards_merged' "$VERIFY" "knowledge-verify: asserts shards_merged == shard_count (no silent partial verify)"
 assert_grep 'probe_plugin cogni-wiki' "$VERIFY" "knowledge-verify: probes cogni-wiki (clean-break)"
 assert_grep 'wiki/log.md' "$VERIFY" "knowledge-verify: appends to wiki/log.md"
 # Match the actual log-line shape (`## [DATE] verify | project=...`) rather
@@ -54,9 +60,11 @@ else
   red "FAIL: knowledge-verify: SKILL must document incrementing REVISION_ROUND between rounds (without it, the loop would never terminate via MAX_ROUNDS)"
   errors=$((errors + 1))
 fi
-# Defence-in-depth: out_of_range deviations are filtered before the dispatch
-# decision (otherwise the revisor pays an LLM call just to drop manifest entries).
-assert_grep 'draft_position_out_of_range' "$VERIFY" "knowledge-verify: filters draft_position_out_of_range out of the revisor trigger (revisor can only drop these)"
+# Defence-in-depth: stale-sentence deviations are filtered before the dispatch
+# decision (otherwise the revisor pays an LLM call just to drop manifest entries),
+# and the inline prune keys on the stable id (draft_position is best-effort now).
+assert_grep 'sentence_not_in_draft' "$VERIFY" "knowledge-verify: filters sentence_not_in_draft out of the revisor trigger (revisor can only drop these)"
+assert_grep 'stale_ids' "$VERIFY" "knowledge-verify: prunes stale manifest entries by id, not by draft_position tuple"
 # Defence-in-depth: confirm there is no obsolete Skill("cogni-knowledge:wiki-verifier)
 # or Skill("cogni-knowledge:revisor) dispatch — agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:wiki-verifier' "$VERIFY" "knowledge-verify: no Skill('cogni-knowledge:wiki-verifier) — agents go through Task"
@@ -93,12 +101,20 @@ assert_grep 'synthesis' "$VERIFIER" "wiki-verifier: emits synthesis informationa
 # Closed vocabulary of unsupported reasons — covers claim_id: null on a source
 # page (composer_dropped_claim) so the synthesis verdict doesn't swallow them.
 # Page kind comes from Phase 0's directory resolution, never from claim_id alone.
-for reason in 'page_not_found' 'claim_not_found' 'composer_dropped_claim' 'claim_text_misaligned' 'draft_position_out_of_range'; do
+# F22: sentence_not_in_draft replaces draft_position_out_of_range (positions are
+# no longer load-bearing — the staleness signal is draft_sentence absence).
+for reason in 'page_not_found' 'claim_not_found' 'composer_dropped_claim' 'claim_text_misaligned' 'sentence_not_in_draft'; do
   assert_grep "$reason" "$VERIFIER" "wiki-verifier: documents '$reason' as an unsupported reason"
 done
+assert_not_grep 'draft_position_out_of_range' "$VERIFIER" "wiki-verifier: drops draft_position_out_of_range (positions no longer load-bearing)"
+# F22: the alignment surface is the verbatim draft_sentence carried in the
+# manifest — scored directly, never re-tokenized from the draft.
+assert_grep 'draft_sentence' "$VERIFIER" "wiki-verifier: scores the manifest's draft_sentence (F22 stable surface)"
 assert_grep 'page_kind_by_slug' "$VERIFIER" "wiki-verifier: tracks page kind from Phase 0 directory resolution (not inferred from claim_id)"
 assert_grep 'claim_id' "$VERIFIER" "wiki-verifier: looks up claims by claim_id"
-assert_grep 'draft_position' "$VERIFIER" "wiki-verifier: walks citations by draft_position"
+# F21 fan-out params (optional; default = whole-manifest single dispatch).
+assert_grep 'CITATIONS_PATH' "$VERIFIER" "wiki-verifier: accepts CITATIONS_PATH shard override"
+assert_grep 'VERIFY_OUT_PATH' "$VERIFIER" "wiki-verifier: accepts VERIFY_OUT_PATH fragment override"
 # Zero-network is the load-bearing invariant.
 VERIFIER_TOOLS_LINE=$(grep '^tools:' "$VERIFIER" || true)
 for required in '"Read"' '"Write"' '"Glob"' '"Grep"'; do
@@ -133,6 +149,13 @@ assert_grep 'draft-v' "$REVISOR" "revisor: writes draft-v{N+1}.md"
 assert_grep 'citation-manifest.json' "$REVISOR" "revisor: rewrites citation-manifest.json"
 assert_grep 'NEW_DRAFT_VERSION' "$REVISOR" "revisor: takes NEW_DRAFT_VERSION parameter"
 assert_grep 'fixes_applied' "$REVISOR" "revisor: returns fixes_applied[] in JSON envelope"
+# F22: locate the sentence by the manifest's verbatim draft_sentence, never by
+# re-tokenizing / counting (that re-derivation was the off-by-one root cause).
+assert_grep 'draft_sentence' "$REVISOR" "revisor: locates the sentence by draft_sentence (F22), not by counting"
+# F23: repoint to a covering on-page claim before dropping; repoint is a first-class
+# fixes_summary key so the metric distinguishes re-alignment from evidence erosion.
+assert_grep 'repoint' "$REVISOR" "revisor: prefers repoint over drop (F23)"
+assert_grep 'fixes_summary' "$REVISOR" "revisor: reports fixes_summary with repoint/rephrase/drop/skip"
 # Zero-network: tools list must not include WebFetch, WebSearch, Bash, or Task.
 REVISOR_TOOLS_LINE=$(grep '^tools:' "$REVISOR" || true)
 for required in '"Read"' '"Write"' '"Glob"' '"Grep"'; do

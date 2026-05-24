@@ -1,5 +1,29 @@
 # cogni-knowledge changelog
 
+## 0.0.28 — 2026-05-23
+
+Slice 10 of the absorption-roadmap Current sprint — Phase 5 M12 gate blockers. The first full live M12 alpha gate (run 2026-05-23) was **HELD** on C3 (verify wall-clock ~16–18 min/pass at 169 citations ≫ 5 min) and C4 (verify→revise doesn't converge within the 2-round cap), both tracing to one root cause (F20): composer, verifier, and revisor each independently re-tokenize the draft into `section:sentence` positions and drift by one on EU-AI-Act prose. This release clears the three blockers. It does **not** re-run the gate or flip maturity — that is the next landing, gated on a green re-run. Maturity stays `incubating`. Closes **#286** (F21), **#287** (F22), **#288** (F23); epic **#264**.
+
+### Added
+
+- `scripts/verify-store.py` — Phase 6 fan-out plumbing. `shard` splits a citation manifest's `citations[]` into ⌈N/size⌉ per-shard manifests under `<project>/.metadata/verify-shards/` (each a valid citation-manifest scoped to a subset); `merge` concatenates the per-shard `wiki-verifier` fragments into the canonical `verify-vN.json`, recomputes `counts`, and enforces `counts.total == verified+deviations`. Stdlib-only, JSON envelope, `atomic_write`. **No `fcntl.flock`** (unlike `candidate-store.py`) — shards are partition-disjoint and `merge` is single-shot, so there is no shared-write contention to guard.
+- `tests/test_verify_store.sh` — shard/merge smoke (split shape, subset validity + exact union, single-shard case, merge recount, idempotent re-shard, malformed-input rejection).
+
+### Changed
+
+- **F22 (#287) — stable carried citation positions.** Each `citation-manifest.json` entry gains a stable `id` (`cit-001`, …) and `draft_sentence` (the cited sentence copied verbatim). The verifier now scores `draft_sentence` **directly** against the cited claim and never re-tokenizes the draft to locate it — dissolving the off-by-one that drove C4. `draft_position` is demoted to a best-effort operator locator (no longer load-bearing). `id` is the universal join key: the verifier echoes it into every `verified[]`/`deviations[]` entry, the orchestrator's inline prune keys on it, and the revisor maps deviations back by it. The verifier's `draft_position_out_of_range` reason becomes `sentence_not_in_draft` (a substring staleness check). Schema stays `0.1.0` (additive). Files: `agents/wiki-composer.md`, `agents/wiki-verifier.md`, `agents/revisor.md`, `skills/knowledge-verify/SKILL.md`, `references/inverted-pipeline.md`. The F20 sentence-tokenizer rewrite is therefore **not** done — `draft_sentence` makes it non-load-bearing.
+- **F21 (#286) — fan out the verifier.** `knowledge-verify` Step 3.1 is now shard → dispatch N `wiki-verifier` in parallel (one assistant message) → merge, via `verify-store.py`. `wiki-verifier` gains two optional, fully backward-compatible params — `CITATIONS_PATH` (read a shard subset) and `VERIFY_OUT_PATH` (write a per-shard fragment); omitting both is today's single-dispatch behaviour. New `--shard-size` skill param (default 40 → 169 citations ≈ 5 parallel shards). The orchestrator asserts `shards_merged == shard_count` so a crashed shard can't ship partial verification. C3 is re-baselined as per-shard wall-clock. Files: `scripts/verify-store.py`, `agents/wiki-verifier.md`, `skills/knowledge-verify/SKILL.md`, `references/inverted-pipeline.md`.
+- **F23 (#288) — revisor re-points before dropping.** `agents/revisor.md` now exhausts on-page re-pointing first (scan all `pre_extracted_claims` on the cited page for a covering claim, rephrase + repoint `claim_id`); **drop is the last resort** (only `page_not_found` or no on-page cover). `fixes_summary` gains a `repoint` count (and `fixes_applied[].action` gains `"repoint"`) so the metric distinguishes re-alignment from evidence erosion. The revisor locates sentences by exact-string-search of `draft_sentence` (F22) and preserves each entry's `id`.
+- `tests/test_verify_contract.sh` + `tests/test_compose_contract.sh` — updated for `id`/`draft_sentence`, the `sentence_not_in_draft` reason, the `verify-store.py` shard/merge + `CITATIONS_PATH`/`VERIFY_OUT_PATH` fan-out, prune-by-id, and the revisor `repoint`.
+- Docs: `README.md` (DOES scripts list + Components rows + Architecture script count 5→6), `CLAUDE.md` (wiki-verifier / revisor / knowledge-verify rows + `verify-store.py` in the Scripts table + Future-phases narrative), `references/absorption-roadmap.md` (Slice 10 SHIPPED + Slice 9 lookahead), `references/alpha-findings.md` (F21/F22/F23 marked fixed-pending-gate-rerun).
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — version `0.0.27` → `0.0.28` (mirrored). Maturity stays `incubating`.
+
+### Notes
+
+- **The M12 gate is NOT re-run by this release**, and the v0.1.0 + Preview maturity flip is deliberately a separate, later landing — only after a fresh `.alpha/` gate re-run shows C3 (per-shard verify < 5 min) and C4 (verify→revise converges; `drop` falls, `repoint` rises) green. We don't cross the 0.1.0 stability boundary speculatively.
+- **#289 (F24–F26)** — citation-count drift, EUR-Lex curation, helper-script version resolution — stays out of this slice.
+- The deterministic substring pre-filter named "complementary" in #286 stays a documented future option; fan-out alone is projected to clear C3.
+
 ## 0.0.27 — 2026-05-23
 
 Slice 8 of the absorption-roadmap Current sprint — Phase 5 M11. Archives the legacy v0.0.x research+report chain so the v0.1.0 inverted pipeline is the only live path, and bakes a permanent audit-grep so the chain can't creep back. Establishes the monorepo `_archive/` convention. Maturity stays `incubating` (the v0.1.0 / Preview flip is M12).

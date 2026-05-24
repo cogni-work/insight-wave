@@ -179,7 +179,7 @@ assert schema == "0.1.0", "bad schema: " + repr(schema)
 cites = m.get("citations", [])
 assert isinstance(cites, list), "citations must be a list, got " + type(cites).__name__
 for c in cites:
-    assert "draft_position" in c and "wiki_slug" in c and "claim_id" in c, c
+    assert "id" in c and "draft_sentence" in c and "wiki_slug" in c and "claim_id" in c, c
 assert outline.exists(), f"outline missing: {outline}"
 if not cites:
     print("WARN: citations[] empty — every cited statement will fail M8 verification", file=sys.stderr)
