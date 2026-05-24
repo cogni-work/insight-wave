@@ -70,7 +70,7 @@ Abort if `success: false` — offer `knowledge-curate` first.
 The bodies were already fetched in Phase 2 — each candidate carries a `fetch` sub-object. Build `<project_path>/.metadata/fetch-manifest.json` directly from `candidates.json`; do **not** dispatch `source-fetcher` for the WebFetch results.
 
 1. For each candidate with `fetch.status == "ok"` → a `fetched[]` entry: `{url, cache_key, content_hash, fetch_method, fetched_at, from_cache}` (carry `pdf_pages_read` / `pdf_truncated` if present).
-2. For each candidate with `fetch.status == "unavailable"` (or no `fetch` at all — treat a missing sub-object as unavailable with `reason: "unfetched"`) → an `unavailable[]` entry: `{url, reason, attempted_at, fallback_attempted, from_cache}`.
+2. For each candidate with `fetch.status == "unavailable"` (or no `fetch` at all — treat a missing sub-object as unavailable with `reason: "unfetched"`) → an `unavailable[]` entry: `{url, reason, attempted_at, fallback_attempted, from_cache}`. `unfetched` is a manifest-only sentinel for a candidate the curator never fetched (a legacy/partial curate) — it is **not** written to the fetch-cache via `fetch-cache.py store`, so it is exempt from the closed `VALID_REASONS` vocabulary; re-run `knowledge-curate` to populate bodies. Such candidates are not cobrowse-eligible (no `fetch.cobrowse_eligible`), so they are never offered for cobrowse recovery.
 3. Collect the **cobrowse-eligible misses**: candidates with `fetch.status == "unavailable"` and `fetch.cobrowse_eligible == true`. Apply the `--tier` filter to this set if set.
 4. Write the manifest atomically (`tempfile.mkstemp + os.replace`; inline `python3 -c` is fine — same pattern `fetch-cache.py` / `knowledge-binding.py` use). If a manifest already exists, merge rather than overwrite (dedup each array by URL, keep the newer `attempted_at`).
 
@@ -80,10 +80,11 @@ If `--dry-run`: print fetched / unavailable counts and the cobrowse-eligible mis
 
 Cobrowse is **never** auto-attempted — autonomous runs (the M12 gate re-run, `knowledge-refresh --mode push`) must stay deterministic and browser-free.
 
+- No cobrowse-eligible misses → nothing to recover; go to Step 4 (regardless of flags).
 - `--no-cobrowse` → skip cobrowse entirely; go to Step 4.
 - `--cobrowse` → opt in; go to Step 3.
-- Neither flag, **and** there are cobrowse-eligible misses, **and** the session is interactive → ask once via `AskUserQuestion`: "N source(s) failed WebFetch. Recover them via cobrowse? This opens your browser." (Yes → Step 3; No → Step 4.) Optionally persist the answer as `binding.curator_defaults.cobrowse_enabled` so future runs honour it without re-prompting.
-- No cobrowse-eligible misses → nothing to recover; go to Step 4.
+- Neither flag, **and** there are cobrowse-eligible misses, **and** the session is interactive → ask once via `AskUserQuestion`: "N source(s) failed WebFetch. Recover them via cobrowse? This opens your browser." (Yes → Step 3; No → Step 4.) Optionally persist the answer as `binding.curator_defaults.cobrowse_enabled` so future runs honour it without re-prompting (a persisted `true`/`false` is treated exactly like `--cobrowse`/`--no-cobrowse`).
+- **Otherwise** (neither flag, misses exist, but the session is non-interactive — the autonomous path: the M12 gate re-run, `knowledge-refresh --mode push`) → **default OFF**: do NOT call `AskUserQuestion` (there is no one to answer), go to Step 4. The misses stay unavailable and the summary prints the `--cobrowse` hint. This is the catch-all that keeps autonomous runs browser-free and non-blocking.
 
 ### 3. Cobrowse setup + recovery (when opted in)
 

@@ -151,8 +151,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py fetch \
 ```
 
 - `success: true` → cache hit. Inspect `data.entry.status`:
-  - `ok` → attach `fetch.status: "ok"` referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method` + `data.entry.fetched_at`. This is the C1 short-circuit: re-runs, prior projects, and cross-wave repeats reuse the cached body instead of re-fetching.
-  - `unavailable` → negative-cache hit. Attach `fetch.status: "unavailable"` with `reason: <data.entry.reason>`, `cobrowse_eligible` per the reason (see Step 4), `fallback_attempted: false`, `from_cache: true`. Skip to the next candidate.
+  - `ok` → attach `fetch.status: "ok"` referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method` + `data.entry.fetched_at`, **and set `from_cache: true`** (this row came from the cache, not a fresh fetch — the orchestrator's `cache_hits` count and the C1 check depend on the distinction). Skip to the next candidate. This is the C1 short-circuit: re-runs, prior projects, and cross-wave repeats reuse the cached body instead of re-fetching.
+  - `unavailable` → negative-cache hit. Attach `fetch.status: "unavailable"` with `reason: <data.entry.reason>`, `cobrowse_eligible` per the cached reason (`true` only for the `webfetch_*` classes; `false` for `pdf_extraction_failed` and for any cached `cobrowse_failed`/`cobrowse_unavailable` — a prior cobrowse already dispositioned those), `attempted_at: <data.entry.fetched_at>`, `fallback_attempted: false`, `from_cache: true`. Skip to the next candidate.
 - `success: false` with `data.reason == "miss"` or `"stale"` → proceed to Step 2.
 
 **Step 2 — WebFetch.**
@@ -224,7 +224,7 @@ Attach the `fetch` sub-object:
 "fetch": {
   "status": "unavailable",
   "reason": "webfetch_timeout",
-  "fetched_at": "<ISO 8601 UTC>",
+  "attempted_at": "<ISO 8601 UTC>",
   "fallback_attempted": false,
   "from_cache": false,
   "cobrowse_eligible": true
@@ -258,7 +258,7 @@ Return a compact summary:
  "cost_estimate": {"input_words": 0, "output_words": 13000, "estimated_usd": 0.036}}
 ```
 
-`cost_estimate` covers content read (search results + fetched bodies) and produced (batch JSON). See `cogni-research/references/model-strategy.md` for the formula; carry it through unchanged at fork time. A WebFetch exception while fetching one candidate must not abort the batch — record it `unavailable` with the closest applicable class and move on. Remove temp files at end of batch (`trap rm -f "$TMP" EXIT` or equivalent).
+`cost_estimate` covers content read (search results + fetched bodies) and produced (batch JSON). See `cogni-research/references/model-strategy.md` for the formula; carry it through unchanged at fork time. A WebFetch exception while fetching one candidate must not abort the batch — record it `unavailable` with the closest applicable class and move on. If a `fetch-cache.py store` call itself fails (disk full, permission denied), record that candidate `unavailable` with `reason: cache_write_failed` (in `VALID_REASONS`) and continue — the orchestrator will see the rate climb and decide. Remove temp files at end of batch (`trap rm -f "$TMP" EXIT` or equivalent).
 
 ## What this agent does NOT do
 
