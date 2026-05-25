@@ -4,7 +4,9 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-> **Markets covered.** 21 localized European, Anglo, LATAM, and APAC markets — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, ARCEP, Les Echos), IT (CNR, AGCOM, ASI), PL (UKE, POLSA, GUS), NL (TNO, ACM), ES (CNMC, INTA, CDTI), MX (INEGI, CONACYT, IFT), BR (IBGE, CNPq, FAPESP), CN (CAICT, MIIT, Xinhua), plus US, UK, and EU — bilingual queries, per-market authority sources, output in your chosen language.
+> **Markets covered.** 21 localized European, Anglo, LATAM, and APAC markets — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, ARCEP, Les Echos), IT (CNR, AGCOM, ASI), PL (UKE, POLSA, GUS), NL (TNO, ACM), ES (CNMC, INTA, CDTI), MX (INEGI, Conahcyt, IFT), BR (IBGE, CNPq, FAPESP), CN (CAICT, MIIT, Caixin), plus US, UK, and EU — bilingual queries, per-market authority sources, output in your chosen language.
+
+> **Start here.** Run `/cogni-research:research-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
 Multi-agent research report generator for the insight-wave ecosystem. STORM-inspired editorial workflow with parallel section research and claims-verified review loops. Five report types (basic, detailed, deep, outline, resource) and four source modes (web, local documents, wiki, hybrid) — from quick overviews to deep recursive explorations. Research runs localized across 21 European, Anglo, LATAM, and APAC markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU, MX, BR, CN) with intent-based bilingual search and per-market authority sources.
 
@@ -59,7 +61,14 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 
 ## Quick start
 
-Describe what you want in natural language — no slash commands needed. Claude detects the request and loads the skill automatically:
+```
+/cogni-research:research-resume   # ← entry point: status + next step
+/research-setup      # configure report type, market, source mode
+/research-report     # run the multi-agent research pipeline
+/verify-report       # verify every claim against its cited source
+```
+
+Or describe what you want in natural language — no slash commands needed. Claude detects the request and loads the skill automatically:
 
 - "Write a research report on quantum computing's impact on cryptography"
 - "Write a detailed research report on AI adoption in healthcare"
@@ -129,10 +138,11 @@ The pipeline uses two skills that split the work across separate context windows
 
 | Component | Type | What it does |
 |-----------|------|--------------|
-| `research-report` | skill | Generate a multi-agent research report using parallel web research with structural review |
 | `research-resume` | skill | Resume, continue, or check status of a cogni-research project across sessions |
+| `research-report` | skill | Generate a multi-agent research report using parallel web research with structural review |
 | `research-setup` | skill | Configure and initialize a cogni-research project via interactive Configuration Menu |
 | `verify-report` | skill | Verify claims in a research report against cited sources using cogni-claims |
+| `audit-arcs` | skill | Audit the story-arc registry against cogni-narrative upstream definitions and report drift |
 | `section-researcher` | agent (sonnet) | Parallel web researcher for a single sub-question or report section |
 | `local-researcher` | agent (sonnet) | Parallel document analyst for a single sub-question from local files (PDF, DOCX, TXT, MD, CSV) |
 | `wiki-researcher` | agent (sonnet) | Parallel wiki researcher querying cogni-wiki instances for a single sub-question using index-first page discovery |
@@ -150,7 +160,7 @@ The pipeline uses two skills that split the work across separate context windows
 ```
 cogni-research/
 ├── .claude-plugin/               Plugin manifest
-├── skills/                       4 skills (research-report, research-resume, research-setup, verify-report)
+├── skills/                       5 skills (research-report, research-resume, research-setup, verify-report, audit-arcs)
 │   ├── research-report/
 │   │   ├── SKILL.md
 │   │   └── references/           Report types, sub-questions, review criteria, agent roles
@@ -159,9 +169,11 @@ cogni-research/
 │   │   └── SKILL.md
 │   ├── research-setup/
 │   │   └── SKILL.md
-│   └── verify-report/
-│       ├── SKILL.md
-│       └── references/           Claims integration, standalone mode, review criteria
+│   ├── verify-report/
+│   │   ├── SKILL.md
+│   │   └── references/           Claims integration, standalone mode, review criteria
+│   └── audit-arcs/
+│       └── SKILL.md              Story-arc registry sync audit against cogni-narrative
 ├── agents/                       9 research agents
 │   ├── section-researcher.md
 │   ├── local-researcher.md

@@ -6,7 +6,9 @@
 
 > **Markets covered.** 25 pluggable regions — single-country (DE, FR, IT, ES, NL, PL, AT, CZ, SK, HU, RO, HR, GR, MK), composite (DACH, EU, Nordics, US/NA, APAC, LATAM, MEA), extended (CN, JP), and global (UK, Global) — market-segmented propositions, competitors, and customer personas — not one-size-fits-all.
 
-A [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis and customer profiling to export-ready deliverables, across eight pluggable industry taxonomies (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source).
+> **Start here.** Run `/cogni-portfolio:portfolio-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis and customer profiling to export-ready deliverables, across eight pluggable industry taxonomies (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source) and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).
 
 ## Why this exists
 
@@ -21,7 +23,7 @@ B2B companies know what they sell — but struggle to articulate why each market
 
 ## What it is
 
-A structured portfolio messaging workflow for Claude Cowork. Eight pluggable taxonomy templates (B2B ICT, SaaS, FinTech, HealthTech, etc.) provide industry-standard classification. The IS/DOES/MEANS framework ensures every proposition answers: what IS the capability, what DOES it do for the buyer, and what does it MEAN for their business.
+A structured portfolio messaging workflow for Claude Code / Claude Cowork. Eight pluggable taxonomy templates (B2B ICT, SaaS, FinTech, HealthTech, etc.) provide industry-standard classification. The IS/DOES/MEANS framework ensures every proposition answers: what IS the capability, what DOES it do for the buyer, and what does it MEAN for their business.
 
 ## What it does
 
@@ -62,6 +64,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
+/cogni-portfolio:portfolio-resume          # ← entry point: status + next step
 /portfolio-setup                           # create project, capture company context
 /products                                  # define named offerings
 /features                                  # add capabilities per product (IS layer)
@@ -123,6 +126,7 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 
 | Component | Type | What it does |
 |-----------|------|--------------|
+| `portfolio-resume` | skill | Resume, continue, or check status of a portfolio project |
 | `portfolio-setup` | skill | Initialize a new portfolio project with company context and directory structure |
 | `portfolio-canvas` | skill | Bootstrap a portfolio project from a Lean Canvas or Business Model Canvas |
 | `portfolio-scan` | skill | Discover offerings via website scanning and classify against taxonomy |
@@ -143,7 +147,6 @@ Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files 
 | `portfolio-lineage` | skill | Track source documents and URLs, detect changes, cascade refresh through features → propositions → solutions |
 | `portfolio-consolidate` | skill | Roll up N research-only scan outputs into a taxonomy-shaped coverage matrix across providers |
 | `trends-bridge` | skill | Bidirectional integration between cogni-trends TIPS analysis and the portfolio |
-| `portfolio-resume` | skill | Resume, continue, or check status of a portfolio project |
 | `market-researcher` | agent | Web research for TAM/SAM/SOM with claim submission |
 | `competitor-researcher` | agent | Web research for competitive intelligence per proposition |
 | `customer-researcher` | agent | Web research for named company profiling per target market |
@@ -186,7 +189,7 @@ cogni-portfolio/
 ├── hooks/                        1 guardrail hook (Excalidraw canvas auto-start)
 ├── references/
 │   └── data-model.md             Full entity schema and project structure reference
-└── scripts/                      13 utility scripts
+└── scripts/                      18 utility scripts
 ```
 
 ## Dependencies
@@ -198,6 +201,7 @@ cogni-portfolio/
 | cogni-marketing | No | Customer narratives from portfolio-communicate are auto-discovered by marketing-setup for voice/messaging enrichment |
 | cogni-claims | No | Claim verification for research-backed assertions via portfolio-verify |
 | cogni-trends | No | Bidirectional TIPS integration via trends-bridge |
+| cogni-research | No | Pitch arcs (technology-futures, strategic-foresight, trend-panorama, theme-thesis) in portfolio-communicate draw on cogni-research output for evidence |
 | cogni-workspace | No | Theme selection for portfolio-dashboard via pick-theme |
 | cogni-consulting | No | Lean Canvas extraction via portfolio-canvas (canvases from business-model-hypothesis vision class) |
 | cogni-sales | No | Downstream consumer — why-change pitch builds on portfolio features and propositions |

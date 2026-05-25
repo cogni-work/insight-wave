@@ -6,7 +6,9 @@
 
 > **Markets covered.** 8 European and Anglo markets with per-region trend authorities — DACH (VDMA, BITKOM, Fraunhofer), FR (INRIA, ARCEP, Les Echos), IT (CNR, AGCOM, ASI), PL (UKE, POLSA, GUS), NL (TNO, ACM), ES (CNMC, INTA, CDTI), plus US and UK — DE/EN bilingual research against regional authorities — no generic US-centric datasets.
 
-A [Claude Cowork](https://claude.ai/cowork) plugin for scouting, selecting, and reporting on strategic industry trends — **rooted in the German Mittelstand, covering European markets (DE/FR/IT/PL/NL/ES) and US/UK**. Combines the [Smarter Service Trendradar](https://www.smarter-service.com/2023/01/31/trendradar-fuer-die-multikrise-und-neue-geooekonomie/) (4-dimension structure by Bernhard Steimel) with the TIPS content framework (Trends, Implications, Possibilities, Solutions — a B2B consulting methodology widely used since the early 2000s; see [WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) for a detailed treatment, filed by Siemens 2017, ceased 2019).
+> **Start here.** Run `/cogni-trends:trends-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for scouting, selecting, and reporting on strategic industry trends — **rooted in the German Mittelstand, covering European markets (DE/FR/IT/PL/NL/ES) and US/UK**. Combines the [Smarter Service Trendradar](https://www.smarter-service.com/2023/01/31/trendradar-fuer-die-multikrise-und-neue-geooekonomie/) (4-dimension structure by Bernhard Steimel) with the TIPS content framework (Trends, Implications, Possibilities, Solutions — a B2B consulting methodology widely used since the early 2000s; see [WO2018046399A1](https://patents.google.com/patent/WO2018046399A1/en) for a detailed treatment, filed by Siemens 2017, ceased 2019).
 
 ## Frameworks
 
@@ -101,6 +103,7 @@ Describe what you want in natural language:
 Or invoke skills directly:
 
 ```
+/cogni-trends:trends-resume   # ← entry point: status + next step
 /trend-scout         → interactive industry selection + bilingual trend scouting
 /value-modeler       → investment themes, solution blueprints, portfolio anchoring
 /trend-research      → enrich every candidate with quantitative evidence; emit research manifest
@@ -209,7 +212,7 @@ cogni-trends/
 │   ├── verify-trend-report/  Claim verification + structural review + revision pipeline
 │   ├── trends-catalog/     Persistent industry knowledge base
 │   └── trends-dashboard/   Interactive HTML visualization
-├── agents/              11 research agents
+├── agents/              12 research agents
 │   ├── trend-web-researcher.md          Persona-shaped bilingual research (haiku)
 │   ├── trend-generator.md               60 scored candidates with persona reasoning (opus)
 │   ├── trend-candidate-reviewer.md      3-perspective stakeholder review (sonnet)
@@ -227,7 +230,8 @@ cogni-trends/
 ├── references/          Framework documentation
 │   ├── research-types/  Research type specifications
 │   └── taxonomies/      Taxonomy definitions
-└── scripts/             5 utility scripts
+├── scripts/             6 utility scripts
+└── tests/               Project-status test + fixtures
 ```
 
 ## Dependencies

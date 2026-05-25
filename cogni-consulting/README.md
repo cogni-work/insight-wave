@@ -4,7 +4,9 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-A [Claude Cowork](https://claude.ai/cowork) plugin for structured consulting engagements built on the Double Diamond framework (UK Design Council, 2005). Diverge to explore, converge to decide, twice. Four gated phases coordinate six insight-wave plugins under a Diamond Coach that opens with intent and closes with accomplishments. Lean Canvas authoring and lightweight how-might-we engagements ship in the same workflow.
+> **Start here.** Run `/cogni-consulting:consulting-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for structured consulting engagements built on the Double Diamond framework (UK Design Council, 2005). Diverge to explore, converge to decide, twice. Four gated phases coordinate six insight-wave plugins under a Diamond Coach that opens with intent and closes with accomplishments. Lean Canvas authoring and lightweight how-might-we engagements ship in the same workflow.
 
 ## Why this exists
 
@@ -48,6 +50,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
+/cogni-consulting:consulting-resume   # ← entry point: status + next step
 /consulting-setup         # frame the vision and scaffold the engagement
 /consulting-discover      # D1 diverge: research, trends, competitive baseline
 /consulting-define        # D1 converge: assumption verification, problem synthesis
@@ -92,12 +95,12 @@ Each engagement lives in `cogni-consulting/{slug}/` with phase output directorie
 
 | Component | Type | What it does |
 |-----------|------|--------------|
+| `consulting-resume` | skill | Resume, continue, or check status of a Double Diamond consulting engagement. |
 | `consulting-setup` | skill | Initialize a new Double Diamond consulting engagement with vision framing and project scaffolding. |
 | `consulting-discover` | skill | Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding of the problem landscape. |
 | `consulting-define` | skill | Execute the Define phase of a Double Diamond engagement — converge from discovery insights to a clear problem statement. |
 | `consulting-develop` | skill | Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore solution options. |
 | `consulting-deliver` | skill | Execute the Deliver phase of a Double Diamond engagement — converge on validated, actionable outcomes. |
-| `consulting-resume` | skill | Resume, continue, or check status of a Double Diamond consulting engagement. |
 | `consulting-export` | skill | Generate the final deliverable package for a Double Diamond engagement. |
 | `phase-analyst` | agent | Analyze diamond engagement state and assess phase readiness. |
 | `phase-gate-guard` | hook (PreToolUse) | Warns if consulting phase prerequisites are incomplete before allowing phase skills to execute. |
@@ -157,7 +160,9 @@ cogni-consulting/
 └── scripts/                      Engagement management scripts
     ├── engagement-init.sh
     ├── engagement-status.sh
-    └── update-phase.sh
+    ├── update-phase.sh
+    ├── discover-projects.sh      Wrapper delegating to cogni-workspace project discovery
+    └── _discover_extractor.py    Per-engagement JSON field extractor
 ```
 
 ## Dependencies

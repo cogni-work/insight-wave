@@ -4,6 +4,8 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
+> **Start here.** Run `/cogni-marketing:marketing-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
 B2B marketing content engine for the insight-wave ecosystem. Bridges cogni-trends strategic themes and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.
 
 ## Why this exists
@@ -53,6 +55,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
+/cogni-marketing:marketing-resume   # ← entry point: status + next step
 /marketing-setup                # initialize project from portfolio + TIPS data
 /content-strategy               # build the content matrix
 /thought-leadership             # generate awareness-stage content
@@ -108,6 +111,7 @@ Content pieces are markdown files with YAML frontmatter tracking type, format, m
 
 | Component | Type | What it does |
 |-----------|------|--------------|
+| `marketing-resume` | skill | Resume a session — show status, gaps, and recommended next actions |
 | `marketing-setup` | skill | Initialize project from portfolio + TIPS data, configure brand voice and markets |
 | `content-strategy` | skill | Build 3D content matrix with gap detection and priority sequencing |
 | `thought-leadership` | skill | Generate awareness-stage content (blogs, keynotes, op-eds, podcasts) |
@@ -118,7 +122,6 @@ Content pieces are markdown files with YAML frontmatter tracking type, format, m
 | `campaign-builder` | skill | Orchestrate content into multi-channel campaigns with phased funnel progression |
 | `content-calendar` | skill | Generate and manage editorial calendar with cadence tracking |
 | `marketing-dashboard` | skill | Interactive HTML dashboard for coverage and progress visualization |
-| `marketing-resume` | skill | Resume a session — show status, gaps, and recommended next actions |
 | `content-writer` | agent (sonnet) | Generates individual content pieces per format spec, brand voice, and source data |
 | `channel-adapter` | agent (haiku) | Adapts existing content to different channels while preserving core message |
 | `seo-researcher` | agent (sonnet) | Researches SEO keywords and competitor content for GTM path/market combinations |

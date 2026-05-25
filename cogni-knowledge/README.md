@@ -176,6 +176,7 @@ The plugin sits between the user and `cogni-wiki`. On the v0.1.0 inverted pipeli
 ## Dependencies
 
 - `cogni-wiki` ≥ 0.0.44 (Phase 4 `knowledge-ingest` needs the `type: source` allowlist added to `wiki-lint` / `wiki-health` at 0.0.44; `knowledge-query` uses the `--wiki-root` flag from 0.0.41)
+- `cogni-workspace` — optional. `knowledge-plan` and the `source-curator` agent call `cogni-workspace/scripts/get-market-config.py` at runtime when a market is configured for localized (bilingual + per-market authority) search. Without it, search falls back to the unlocalized default.
 - `cogni-research` — **not a runtime dependency** of the v0.1.0 inverted pipeline (forked agents are local point-in-time copies). The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports.
 
 ## Custom development

@@ -4,6 +4,8 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
+> **Start here.** Run `/cogni-website:website-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
 Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.
 
 ## Why this exists
@@ -56,6 +58,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
+/cogni-website:website-resume   # ← entry point: status + next step
 /website-setup     # Discover sources, select theme, configure the project, capture legal foundation
 /website-plan      # Plan site structure and map content to pages
 /website-legal     # Generate Impressum, Datenschutz, Cookie-Hinweis for DE/AT/CH/EU
@@ -100,12 +103,12 @@ Run `/website-setup` in any Claude Code session where cogni-portfolio is install
 
 | Component | Type | What it does |
 |-----------|------|--------------|
+| `website-resume` | skill | Detect project phase, check for source changes and new upstream plugins, route to the correct next skill |
 | `website-setup` | skill | Discover content sources, validate requirements, select theme, scaffold project, write `website-project.json` |
 | `website-plan` | skill | Deep-scan content, propose page structure, map content to page sections, write `website-plan.json` |
 | `website-legal` | skill | Generate Impressum/Datenschutz/Cookies from jurisdiction-specific templates (DE/AT/CH/EU), patch `website-plan.json` with footer-only legal entries and `legal_links` |
 | `website-build` | skill | Orchestrate CSS generation, hero rendering, and parallel page generation from the plan |
 | `website-preview` | skill | Validate built site file completeness and internal links; open in browser |
-| `website-resume` | skill | Detect project phase, check for source changes and new upstream plugins, route to the correct next skill |
 | `site-assembler` | agent (sonnet) | Generate `style.css` from design variables and navigation partials (`header.html`, `footer.html`, `sitemap.xml`) |
 | `page-generator` | agent (sonnet) | Generate a single HTML page from source content and a page-type template specification |
 | `hero-renderer` | agent (sonnet) | Render the homepage hero section using Pencil MCP for AI-generated imagery; falls back to CSS gradient |

@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-A [Claude Cowork](https://claude.ai/cowork) plugin for brief-based visual production — skills distill polished narratives and structured data into YAML+Markdown briefs (slides, infographics, storyboards, web narratives, enriched reports), then rendering agents hand those briefs to PPTX, Excalidraw, Pencil MCP, and HTML backends. Every output inherits brand identity from your cogni-workspace theme instead of generic templates.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for brief-based visual production — skills distill polished narratives and structured data into YAML+Markdown briefs (slides, infographics, storyboards, web narratives, enriched reports), then rendering agents hand those briefs to PPTX, Excalidraw, Pencil MCP, and HTML backends. Every output inherits brand identity from your cogni-workspace theme instead of generic templates.
 
 ## Why this exists
 
@@ -128,7 +128,7 @@ The pipeline follows a compose-polish-visualize flow: narratives from cogni-narr
 
 ```
 cogni-visual/                              # 7 skills · 19 agents · 6 commands · 1 hook
-├── .claude-plugin/                        Plugin manifest (v0.16.20)
+├── .claude-plugin/                        Plugin manifest (v0.16.22)
 ├── skills/                               7 visual skills (4 brief generators · 1 renderer · 1 enricher · 1 reviewer)
 │   ├── story-to-slides/
 │   ├── story-to-web/
