@@ -17,6 +17,7 @@ Slice 14 of the Phase 5 v0.1.x bake-in (**#264**) — two pipeline state / confi
 ### Contract docs
 
 - `references/inverted-pipeline.md` — Phase 4 now documents the `config_bump.py --delta <n_new>` lockstep bump; Phase 2 documents the orchestrator's once-resolution + loud `_default` abort + `MARKET_CONFIG_PATH` threading.
+- `README.md` — the cogni-workspace dependency note no longer says the `source-curator` agent calls `get-market-config.py` at runtime or that a missing config silently falls back to the unlocalized default; it now reflects that `knowledge-curate` resolves the config once and fails loudly (#304). `knowledge-curate`'s `--dry-run` now explicitly stops before the curator dispatch so the not-written `market-config.json` is never referenced.
 
 ### Version
 
