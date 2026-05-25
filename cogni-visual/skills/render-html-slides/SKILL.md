@@ -185,7 +185,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/render-html-slides/scripts/generate-html-s
   ${theme_slug:+--theme-slug "$theme_slug"}
 ```
 
-The script outputs JSON: `{"status": "ok", "path": "...", "slides": N, "size_kb": N.N, "theme_slug": "...", "tokens_css_imported": true|false}` or `{"error": "..."}`. The `--theme-slug` flag is optional — see the Theme System v2 subsection below for the fallback contract.
+The script outputs JSON: `{"status": "ok", "path": "...", "slides": N, "size_kb": N.N, "theme_slug": "...", "tokens_css_imported": true|false, "theme_slug_resolution": "imported"|"<reason>"|null}` or `{"error": "..."}`. The `--theme-slug` flag is optional — see the Theme System v2 subsection below for the fallback contract.
 
 If error, read the error message and attempt to fix the input data. Common issues:
 - Missing required fields in slide-data.json → re-parse the brief
@@ -196,6 +196,8 @@ If error, read the error message and attempt to fix the input data. Common issue
 Tier-1 tokens are wired today. Pass `theme_slug: cogni-work` to import the canonical Phase-2 pilot's CSS custom properties. Tier-3 deck-component primitives (`title-slide.html`, `content-slide.html`, etc.) are the next increment — the loader infrastructure is in place at `cogni-visual/scripts/load-theme-component.py` (see `cogni-visual/references/theme-component-loader.md`), but `cogni-work` does not yet ship a `tiers.components.deck` family, so component-substitution is gated on a follow-up issue. Today's behavior: every layout renderer uses its inline template; tomorrow's behavior (after deck primitives ship): the renderer prefers theme-supplied primitives and falls back to inline on miss.
 
 **Backwards-compat contract.** Omitting `--theme-slug` preserves the v1.0.0 code path byte-for-byte. With `--theme-slug` set, themes without `tiers.tokens` (and tier-0 themes generally) exercise the same fallback path — there is no failure case for unmigrated themes. `evals/run.py` enforces this with three regression cases: tier-0 baseline, tier-1 cogni-work tokens.css imported, tier-0 `_template` with `--theme-slug` set (graceful fallback).
+
+**Fallback diagnostics.** When `--theme-slug` is set, the output envelope's `theme_slug_resolution` field names *why* the tier-1 path was (or wasn't) taken — `imported` on success, or a reason code on fallback: `themes_dir_unresolved` (workspace not found — e.g. `$COGNI_WORKSPACE_ROOT` unset or unexported), `manifest_missing` (tier-0 theme), `manifest_unreadable`, `tokens_tier_absent`, or `tokens_css_missing`. The field is `null` when `--theme-slug` is omitted. This distinguishes "this theme is tier-0" from "I couldn't find the workspace" without re-walking the resolution. Add `--verbose` to additionally write a one-line `themes_dir=… manifest_path=… tokens_css=… resolution=…` diagnostic to stderr (off by default; the stdout JSON contract is unchanged).
 
 ### Phase 4: Validation
 

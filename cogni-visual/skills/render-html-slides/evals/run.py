@@ -122,6 +122,8 @@ def case_1_tier0_baseline():
     failures = [msg for ok, msg in checks if not ok]
     if status.get("tokens_css_imported") is True:
         failures.append("case 1: status reported tokens_css_imported=true on legacy invocation")
+    if status.get("theme_slug_resolution") is not None:
+        failures.append("case 1: theme_slug_resolution={} (expected None with no --theme-slug)".format(status.get("theme_slug_resolution")))
     return len(failures) == 0, failures
 
 
@@ -140,6 +142,8 @@ def case_2_tier1_cogni_work():
     failures = [msg for ok, msg in checks if not ok]
     if status.get("tokens_css_imported") is not True:
         failures.append("case 2: status reported tokens_css_imported={} (expected true)".format(status.get("tokens_css_imported")))
+    if status.get("theme_slug_resolution") != "imported":
+        failures.append("case 2: theme_slug_resolution={} (expected 'imported')".format(status.get("theme_slug_resolution")))
     return len(failures) == 0, failures
 
 
@@ -159,6 +163,8 @@ def case_3_tier0_theme_with_slug():
     failures = [msg for ok, msg in checks if not ok]
     if status.get("tokens_css_imported") is True:
         failures.append("case 3: status reported tokens_css_imported=true (expected false — fallback path)")
+    if status.get("theme_slug_resolution") != "manifest_missing":
+        failures.append("case 3: theme_slug_resolution={} (expected 'manifest_missing')".format(status.get("theme_slug_resolution")))
     return len(failures) == 0, failures
 
 
