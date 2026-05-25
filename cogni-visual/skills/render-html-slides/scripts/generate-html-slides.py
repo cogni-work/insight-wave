@@ -107,34 +107,39 @@ def resolve_themes_dir(themes_dir_arg):
     return None
 
 
-def resolve_tokens_css(themes_dir, theme_slug):
-    """Return the absolute path to ``themes/<slug>/tokens/tokens.css``.
+def resolve_tokens_css_with_reason(themes_dir, theme_slug):
+    """Resolve ``themes/<slug>/tokens/tokens.css`` and report why.
 
-    Returns None when the theme is tier-0 (no manifest.json), when the
-    manifest does not declare ``tiers.tokens``, or when the resolved file
-    does not exist on disk. None is the documented "use the inline
-    :root tokens block only" signal — every existing tier-0 caller flows
-    through this path.
+    Returns ``(path, reason_code)``. ``path`` is the absolute tokens.css
+    path when resolution succeeds (``reason_code == "imported"``), else
+    None — the documented "use the inline :root tokens block only" signal
+    that every existing tier-0 caller flows through. ``reason_code`` names
+    the short-circuit so callers can distinguish "theme is tier-0" from "I
+    couldn't find the workspace" without re-walking the resolution.
     """
-    if not themes_dir or not theme_slug:
-        return None
+    if not themes_dir:
+        return None, "themes_dir_unresolved"
+    if not theme_slug:
+        return None, "theme_slug_missing"
     theme_dir = os.path.join(themes_dir, theme_slug)
     manifest_path = os.path.join(theme_dir, "manifest.json")
     if not os.path.isfile(manifest_path):
-        return None
+        return None, "manifest_missing"
     try:
         with open(manifest_path, "r", encoding="utf-8") as h:
             manifest = json.load(h)
     except (json.JSONDecodeError, OSError):
-        return None
+        return None, "manifest_unreadable"
     tiers = manifest.get("tiers")
     if not isinstance(tiers, dict):
-        return None
+        return None, "tokens_tier_absent"
     tokens_rel = tiers.get("tokens")
     if not isinstance(tokens_rel, str) or not tokens_rel:
-        return None
+        return None, "tokens_tier_absent"
     tokens_css = os.path.join(theme_dir, tokens_rel.rstrip("/"), "tokens.css")
-    return tokens_css if os.path.isfile(tokens_css) else None
+    if not os.path.isfile(tokens_css):
+        return None, "tokens_css_missing"
+    return tokens_css, "imported"
 
 
 # ---------------------------------------------------------------------------
@@ -1673,8 +1678,8 @@ def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", langua
     """Assemble the complete HTML document.
 
     ``tokens_css_path`` is the optional absolute path to a Theme System v2
-    ``tokens.css`` resolved by ``resolve_tokens_css`` (or None for tier-0 /
-    legacy callers). When set, an ``@import url('file://...');`` line is
+    ``tokens.css`` resolved by ``resolve_tokens_css_with_reason`` (or None
+    for tier-0 / legacy callers). When set, an ``@import url('file://...');`` line is
     injected ahead of the existing inline ``:root`` block so the manifest
     theme's CSS custom properties cascade in first; the inline DEFAULT_THEME-
     derived block then provides fallback values for any unmapped names. When
@@ -1853,6 +1858,10 @@ def main():
                         help="Override the workspace themes/ directory used "
                              "for --theme-slug resolution. Default: "
                              "$COGNI_WORKSPACE_ROOT/themes or auto-discovery.")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Write a one-line theme-slug resolution "
+                             "diagnostic to stderr. Off by default; the "
+                             "stdout JSON contract is unchanged.")
     args = parser.parse_args()
 
     try:
@@ -1867,9 +1876,29 @@ def main():
         # tokens.css), tokens_css_path is None and assemble_html emits the
         # legacy byte-equivalent output.
         tokens_css_path = None
+        theme_slug_resolution = None
+        theme_slug_resolution_detail = None
         if args.theme_slug:
             themes_dir = resolve_themes_dir(args.themes_dir)
-            tokens_css_path = resolve_tokens_css(themes_dir, args.theme_slug)
+            tokens_css_path, reason = resolve_tokens_css_with_reason(themes_dir, args.theme_slug)
+            theme_slug_resolution = reason
+            if reason == "themes_dir_unresolved":
+                theme_slug_resolution_detail = (
+                    "$COGNI_WORKSPACE_ROOT unset / not a dir, "
+                    "walk-up found no cogni-workspace/themes"
+                )
+            if args.verbose:
+                manifest_path = (
+                    os.path.join(themes_dir, args.theme_slug, "manifest.json")
+                    if themes_dir else None
+                )
+                print(
+                    "render-html-slides theme resolution: themes_dir={} "
+                    "manifest_path={} tokens_css={} resolution={}".format(
+                        themes_dir, manifest_path, tokens_css_path, reason
+                    ),
+                    file=sys.stderr,
+                )
 
         # Generate HTML
         html = assemble_html(
@@ -1896,6 +1925,8 @@ def main():
             "theme": dv.get("theme_name", "unknown"),
             "theme_slug": args.theme_slug or None,
             "tokens_css_imported": bool(tokens_css_path),
+            "theme_slug_resolution": theme_slug_resolution,
+            "theme_slug_resolution_detail": theme_slug_resolution_detail,
             "has_mermaid": any(
                 s.get("diagram_mermaid") or
                 (isinstance(s.get("fields", {}).get("Diagram"), str) and s["fields"]["Diagram"].strip())
