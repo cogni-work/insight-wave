@@ -76,6 +76,19 @@ def _load_manifest(path: Path, expected_version: int) -> tuple[dict | None, str]
     citations = manifest.get("citations")
     if not isinstance(citations, list):
         return None, "manifest 'citations' must be a list"
+    # F22 (v0.0.28) made `id` + `draft_sentence` required per entry but kept the
+    # additive schema_version 0.1.0 — so a pre-0.0.28 manifest passes the schema
+    # check above yet would mass-drop every citation as `sentence_not_in_draft`
+    # (no draft_sentence to substring-check) and collapse missing ids to None in
+    # merge's dup check. Fail loud here instead. See #291.
+    for idx, entry in enumerate(citations):
+        if not isinstance(entry, dict):
+            return None, f"citation {idx} is not a JSON object"
+        if "id" not in entry or "draft_sentence" not in entry:
+            return None, (
+                f"citation {idx} is missing id/draft_sentence — citation-manifest "
+                "predates v0.0.28; re-run knowledge-compose"
+            )
     return manifest, ""
 
 

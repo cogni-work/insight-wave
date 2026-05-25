@@ -135,13 +135,23 @@ assert manifest_v == expected_v, (
     "manifest draft_version=" + repr(manifest_v)
     + " but draft on disk is v" + str(expected_v)
 )
-n_cites = len(m.get("citations", []))
+# F22/#291: id + draft_sentence are required per entry since v0.0.28 but the
+# schema_version stayed 0.1.0 (additive), so a pre-0.0.28 manifest slips the
+# schema assert above. Reject it here rather than mass-drop every citation.
+citations = m.get("citations", [])
+stale = [i for i, c in enumerate(citations)
+         if not isinstance(c, dict) or "id" not in c or "draft_sentence" not in c]
+assert not stale, (
+    "citation-manifest predates v0.0.28 (entries missing id/draft_sentence) "
+    "— re-run knowledge-compose"
+)
+n_cites = len(citations)
 assert n_cites > 0, "citation manifest has zero citations — nothing to verify"
 print(n_cites)
 '
 ```
 
-If the schema/version assertion fires, abort with "citation manifest is stale — re-run knowledge-compose". If the zero-citations assertion fires, abort with "the draft has no sourced citations — nothing to verify" (consistent with the non-empty-`citations[]` precondition in "When to run"; a zero-citation manifest would otherwise shard into nothing). The trailing print is captured as `INITIAL_CITATION_COUNT` for the final summary.
+If the schema/version assertion fires, abort with "citation manifest is stale — re-run knowledge-compose". If the pre-0.0.28 guard fires (entries missing `id`/`draft_sentence`), abort with "manifest predates v0.0.28 — re-run knowledge-compose". If the zero-citations assertion fires, abort with "the draft has no sourced citations — nothing to verify" (consistent with the non-empty-`citations[]` precondition in "When to run"; a zero-citation manifest would otherwise shard into nothing). The trailing print is captured as `INITIAL_CITATION_COUNT` for the final summary.
 
 If `--dry-run`, print the resolved inputs and stop:
 
