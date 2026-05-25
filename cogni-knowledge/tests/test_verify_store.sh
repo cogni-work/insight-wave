@@ -367,7 +367,7 @@ sources: ["https://example.com/a"]
 pre_extracted_claims:
   - id: clm-001
     text: "Article 6: high-risk classification rule"
-    excerpt_quote: "shall be considered high-risk"
+    excerpt_quote: "The system shall be considered high-risk under Annex III"
     excerpt_position: 12
     sub_question_refs: [sq-01]
 ---
@@ -438,9 +438,11 @@ else
 fi
 
 # 7b-fp. FALSE-POSITIVE GUARDS — the prefilter must NOT mark verbatim on a
-#        block-scalar needle ('>'/'|'), a too-short needle, or a manifest
-#        sentence that is not actually in the draft (stale). All must fall
-#        through to the LLM (remaining_ids), never a wrong verbatim.
+#        block-scalar needle ('>'/'|'), a too-short needle, a sentence that only
+#        CONTAINS the excerpt while adding an unsupported qualifier, or a manifest
+#        sentence that is not actually in the draft (stale). All must fall through
+#        to the LLM (remaining_ids), never a wrong verbatim. Only `cit-real`,
+#        whose sentence IS the excerpt, is a true verbatim.
 FPWIKI="$WORK/fp-wiki"
 mkdir -p "$FPWIKI/wiki/sources"
 cat > "$FPWIKI/wiki/sources/p.md" <<'EOF'
@@ -455,7 +457,9 @@ pre_extracted_claims:
     text: AI
   - id: clm-real
     text: "Article 6 classifies high-risk systems."
-    excerpt_quote: "shall be considered high-risk under Annex III"
+    excerpt_quote: "AI systems referred to in Annex III shall be considered high-risk"
+  - id: clm-stale
+    excerpt_quote: "Stand-alone systems listed in Annex III are also in scope"
 ---
 
 # body
@@ -465,25 +469,28 @@ cat > "$FPM" <<'EOF'
 {"schema_version":"0.1.0","draft_version":1,"citations":[
  {"id":"cit-block","draft_position":"0:1","draft_sentence":"The system shall be considered high-risk<sup>[1](https://x.eu/a)</sup>.","wiki_slug":"p","claim_id":"clm-block"},
  {"id":"cit-short","draft_position":"0:2","draft_sentence":"This sentence mentions AI somewhere<sup>[2](https://x.eu/b)</sup>.","wiki_slug":"p","claim_id":"clm-shorttext"},
- {"id":"cit-real","draft_position":"0:3","draft_sentence":"A system shall be considered high-risk under Annex III here<sup>[3](https://x.eu/c)</sup>.","wiki_slug":"p","claim_id":"clm-real"},
- {"id":"cit-stale","draft_position":"0:4","draft_sentence":"Not in the draft yet shall be considered high-risk under Annex III.","wiki_slug":"p","claim_id":"clm-real"}
+ {"id":"cit-real","draft_position":"0:3","draft_sentence":"AI systems referred to in Annex III shall be considered high-risk<sup>[3](https://x.eu/c)</sup>.","wiki_slug":"p","claim_id":"clm-real"},
+ {"id":"cit-qual","draft_position":"0:4","draft_sentence":"Contrary to early drafts, AI systems referred to in Annex III shall be considered high-risk only after 2027<sup>[4](https://x.eu/d)</sup>.","wiki_slug":"p","claim_id":"clm-real"},
+ {"id":"cit-stale","draft_position":"0:5","draft_sentence":"Stand-alone systems listed in Annex III are also in scope<sup>[5](https://x.eu/e)</sup>.","wiki_slug":"p","claim_id":"clm-stale"}
 ]}
 EOF
 FPDRAFT="$WORK/fp-draft-v1.md"
+# Note: cit-stale's sentence is deliberately absent from the draft.
 cat > "$FPDRAFT" <<'EOF'
 The system shall be considered high-risk<sup>[1](https://x.eu/a)</sup>.
 This sentence mentions AI somewhere<sup>[2](https://x.eu/b)</sup>.
-A system shall be considered high-risk under Annex III here<sup>[3](https://x.eu/c)</sup>.
+AI systems referred to in Annex III shall be considered high-risk<sup>[3](https://x.eu/c)</sup>.
+Contrary to early drafts, AI systems referred to in Annex III shall be considered high-risk only after 2027<sup>[4](https://x.eu/d)</sup>.
 EOF
 OUT=$(python3 "$SCRIPT" prefilter --manifest "$FPM" --wiki-root "$FPWIKI" --draft-version 1 --draft "$FPDRAFT" --out-dir "$WORK/fp-sh")
 if echo "$OUT" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 assert d['success'] is True, d
-assert d['data']['matched_ids'] == ['cit-real'], 'only the substantial in-draft match should be verbatim; got '+repr(d['data']['matched_ids'])
-assert sorted(d['data']['remaining_ids']) == ['cit-block','cit-short','cit-stale'], d['data']
+assert d['data']['matched_ids'] == ['cit-real'], 'only the whole-sentence in-draft match should be verbatim; got '+repr(d['data']['matched_ids'])
+assert sorted(d['data']['remaining_ids']) == ['cit-block','cit-qual','cit-short','cit-stale'], d['data']
 " 2>/dev/null; then
-  green "PASS: prefilter rejects block-scalar / short-needle / stale-sentence false positives (#305 review)"
+  green "PASS: prefilter rejects block-scalar / short-needle / qualifier-wrapped / stale-sentence false positives (#305 review)"
 else
   red "FAIL: prefilter false-positive guard regressed"
   red "  got: $OUT"
@@ -497,13 +504,14 @@ mkdir -p "$NFCWIKI/wiki/sources"
 python3 - "$NFCWIKI/wiki/sources/g.md" "$WORK/nfc-manifest.json" "$WORK/nfc-draft-v1.md" <<'PY'
 import sys, json, unicodedata
 page_path, man_path, draft_path = sys.argv[1], sys.argv[2], sys.argv[3]
-quote_nfd = unicodedata.normalize("NFD", "Geschäftsmodell der Hochrisiko-Systeme")
-quote_nfc = unicodedata.normalize("NFC", "Geschäftsmodell der Hochrisiko-Systeme")
+quote_nfd = unicodedata.normalize("NFD", "Geschäftsmodell der Hochrisiko-KI-Systeme nach Anhang III")
+quote_nfc = unicodedata.normalize("NFC", "Geschäftsmodell der Hochrisiko-KI-Systeme nach Anhang III")
 assert quote_nfd != quote_nfc
 open(page_path, "w", encoding="utf-8").write(
     '---\ntype: source\npre_extracted_claims:\n  - id: clm-de\n'
     '    excerpt_quote: "' + quote_nfd + '"\n---\n# body\n')
-sentence_nfc = "Das " + quote_nfc + " ist relevant."
+# Whole-sentence verbatim: the sentence IS the quote (plus the marker + period).
+sentence_nfc = quote_nfc + "<sup>[1](https://x.eu/de)</sup>."
 json.dump({"schema_version":"0.1.0","draft_version":1,"citations":[
     {"id":"cit-de","draft_position":"0:1","draft_sentence":sentence_nfc,"wiki_slug":"g","claim_id":"clm-de"}]},
     open(man_path,"w",encoding="utf-8"))
@@ -527,18 +535,20 @@ cat > "$DUPWIKI/wiki/sources/d.md" <<'EOF'
 type: source
 pre_extracted_claims:
   - id: clm-dup
-    excerpt_quote: "shall be considered high-risk under Annex III"
+    excerpt_quote: "A system shall be considered high-risk under Annex III"
   - id: clm-dup
     excerpt_quote: "is exempt under the significant-risk derogation"
 ---
 # body
 EOF
+# The sentence IS the first excerpt verbatim — absent the duplicate-id ambiguity
+# it WOULD match, so a `remaining` result isolates the ambiguity guard.
 cat > "$WORK/dup-manifest.json" <<'EOF'
 {"schema_version":"0.1.0","draft_version":1,"citations":[
- {"id":"cit-dup","draft_position":"0:1","draft_sentence":"A system shall be considered high-risk under Annex III now.","wiki_slug":"d","claim_id":"clm-dup"}]}
+ {"id":"cit-dup","draft_position":"0:1","draft_sentence":"A system shall be considered high-risk under Annex III<sup>[1](https://x.eu/d)</sup>.","wiki_slug":"d","claim_id":"clm-dup"}]}
 EOF
 cat > "$WORK/dup-draft-v1.md" <<'EOF'
-A system shall be considered high-risk under Annex III now.
+A system shall be considered high-risk under Annex III<sup>[1](https://x.eu/d)</sup>.
 EOF
 OUT=$(python3 "$SCRIPT" prefilter --manifest "$WORK/dup-manifest.json" --wiki-root "$DUPWIKI" --draft-version 1 --draft "$WORK/dup-draft-v1.md" --out-dir "$WORK/dup-sh")
 if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['data']['matched_ids']==[] and d['data']['remaining_ids']==['cit-dup'], d['data']" 2>/dev/null; then

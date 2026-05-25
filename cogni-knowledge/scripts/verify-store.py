@@ -54,7 +54,11 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import atomic_write, parse_pre_extracted_claims  # noqa: E402
+from _knowledge_lib import (  # noqa: E402
+    atomic_write,
+    parse_pre_extracted_claims,
+    strip_inline_citation_markers,
+)
 
 SCHEMA_VERSION = "0.1.0"
 SHARD_DIRNAME = "verify-shards"
@@ -63,6 +67,11 @@ VERDICTS = ("verbatim", "paraphrase", "synthesis", "unsupported")
 # real excerpt_quote is a full clause; anything shorter substring-matches by
 # coincidence, so below this floor the citation is left for the LLM verifier.
 MIN_PREFILTER_NEEDLE_LEN = 24
+# The needle must cover ~the whole (marker-stripped) draft sentence for `verbatim`
+# — "is the quote", not merely "contains the quote". A sentence that embeds the
+# excerpt but adds an unsupported qualifier/negation ("…only after 2027",
+# "Contrary to…") drops below this and falls through to the LLM verifier.
+PREFILTER_COVERAGE_RATIO = 0.9
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -253,14 +262,21 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
         if cid and slug and claim_id and draft_sentence and draft_sentence in draft_text:
             claim = claims_for(slug).get(claim_id)
             if claim:
-                needle = _nfc(claim.get("excerpt_quote") or claim.get("text") or "")
-                # Only a SUBSTANTIAL exact substring is a trustworthy verbatim
-                # signal. A short needle (e.g. "AI", a stray ">"/"|", a comment
-                # fragment) substring-matches coincidentally, so require a minimum
-                # length — a real excerpt_quote is a full clause. Below the floor
-                # the citation falls through to the LLM (safe miss, never a wrong
-                # verdict). Cross-language self-gates on top of this.
-                if len(needle.strip()) >= MIN_PREFILTER_NEEDLE_LEN and needle in draft_sentence:
+                needle = _nfc(claim.get("excerpt_quote") or claim.get("text") or "").strip()
+                # `verbatim` must mean the sentence IS the quote, not merely
+                # CONTAINS it: a sentence embedding the excerpt but adding an
+                # unsupported qualifier/negation is at most paraphrase/unsupported
+                # and must go to the LLM. So require the needle to be (a)
+                # SUBSTANTIAL (a short "AI"/">"/comment fragment matches by
+                # coincidence) and (b) to COVER ~the whole marker-stripped sentence.
+                # Below either bar the citation falls through to the LLM (safe miss,
+                # never a wrong verdict). Cross-language self-gates on top of this.
+                core = strip_inline_citation_markers(draft_sentence).strip().rstrip(" \t.;:,!?")
+                if (
+                    len(needle) >= MIN_PREFILTER_NEEDLE_LEN
+                    and needle in core
+                    and len(needle) >= PREFILTER_COVERAGE_RATIO * len(core)
+                ):
                     hit = True
         if hit:
             matched.append(

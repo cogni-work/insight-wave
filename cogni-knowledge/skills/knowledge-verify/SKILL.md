@@ -385,6 +385,12 @@ print(json.dumps({"counts": counts, "manifest_citations": manifest_citations}))
 
 The trailing JSON line is captured for the final summary: `counts` feeds the verdict-count line and `manifest_citations` feeds the authoritative citation count. On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim and stop — do not auto-retry.
 
+**Clean up the per-round manifest snapshots.** The deterministic-DELTA diff in Step 3.3 left `.metadata/.citation-manifest.pre-r*.json` scratch files; remove them now that the run is validated (they are only needed during the round that wrote them):
+
+```
+rm -f "<project_path>/.metadata/.citation-manifest.pre-r"*.json
+```
+
 ### 5. Append wiki/log.md
 
 Append one summary line (Bash `>>` append; `wiki/log.md` is append-only by cogni-wiki convention):

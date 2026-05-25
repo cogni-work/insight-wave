@@ -283,6 +283,20 @@ def assert_parse_pre_extracted_claims():
     assert col0[0]["excerpt_quote"] == "a contiguous quote", col0
 
 
+def assert_strip_inline_citation_markers():
+    # Strips the whole marker (with or without a URL), leaving the prose; the
+    # verify prefilter uses this to compare a sentence's text against a claim.
+    assert kl.strip_inline_citation_markers(
+        "AI systems are high-risk<sup>[3](https://x.eu/c)</sup>.") == "AI systems are high-risk."
+    assert kl.strip_inline_citation_markers("A synthesis claim<sup>[2]</sup>.") == "A synthesis claim."
+    # Multiple markers in one sentence.
+    assert kl.strip_inline_citation_markers(
+        "A<sup>[1](u1)</sup> and B<sup>[2](u2)</sup>.") == "A and B."
+    # No markers → unchanged.
+    assert kl.strip_inline_citation_markers("plain text") == "plain text"
+
+
+check("strip_inline_citation_markers", assert_strip_inline_citation_markers)
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
 check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
@@ -320,6 +334,7 @@ grade md_link_dest            "md_link_dest — angle-brackets a destination con
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
+grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

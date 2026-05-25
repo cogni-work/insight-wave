@@ -203,6 +203,17 @@ def ref_heading(lang: str | None) -> str:
 # NOT captured — renumbering rewrites only the number.
 _SUP_CITATION_RE = re.compile(r"<sup>\[(\d+)\]")
 
+# Matches a WHOLE inline citation marker — `<sup>[N](url)</sup>` or the bare
+# `<sup>[N]</sup>` synthesis form. `[^<]*` covers the `(url)` (URLs carry no `<`).
+_SUP_MARKER_RE = re.compile(r"<sup>\[\d+\][^<]*</sup>")
+
+
+def strip_inline_citation_markers(text: str) -> str:
+    """Remove every inline `<sup>[N](url)</sup>` / `<sup>[N]</sup>` marker, leaving
+    the surrounding prose. Used to compare a draft sentence's actual text against a
+    source claim without the citation markers getting in the way."""
+    return _SUP_MARKER_RE.sub("", text)
+
 
 def first_url(fm_value: str) -> str:
     """First http(s) URL in a frontmatter `sources:` value, else "".
