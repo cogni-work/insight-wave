@@ -246,7 +246,7 @@ import datetime as _dt
 import json, os, re, sys
 from pathlib import Path
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from _knowledge_lib import atomic_write_text
+from _knowledge_lib import atomic_write_text, ref_heading
 
 wiki_root = Path(os.environ["WIKI_ROOT"])
 project = Path(os.environ["PROJECT_PATH"])
@@ -260,6 +260,12 @@ manifest = json.loads((project / ".metadata" / "citation-manifest.json").read_te
 plan = json.loads((project / ".metadata" / "plan.json").read_text(encoding="utf-8"))
 
 topic = plan.get("topic", "").strip() or synthesis_slug
+# Reference-section heading localizes off the projects output_language (the
+# same value knowledge-compose threads to wiki-composer). Default en. Used for
+# BOTH the language-independent strip of the composers tail and the heading we
+# re-emit, so the deposited page never carries two reference sections.
+output_language = (plan.get("output_language") or "en")
+heading = ref_heading(output_language)
 # UTC date so frontmatter created/updated align with Step 10s `date -u +%F` log
 # stamp. Mixed local/UTC across midnight produced cross-artifact date skew.
 today = _dt.datetime.now(_dt.timezone.utc).date().isoformat()
@@ -299,9 +305,32 @@ def _parse_top_level_kv(fm_block):
         out[k] = v
     return out
 
+def _first_url(fm_value):
+    # The top-level `sources:` value on a source page is the inline-list shape
+    # `["<URL>"]` (source-ingester). Pull the first http(s) URL out of it.
+    # Synthesis pages use a block-style `sources:` (wiki://… entries on indented
+    # lines), so _parse_top_level_kv returns "" for them — correctly no URL.
+    if not fm_value:
+        return ""
+    try:
+        parsed = json.loads(fm_value)
+        if isinstance(parsed, list) and parsed and isinstance(parsed[0], str):
+            parsed = parsed[0]
+        if isinstance(parsed, str) and parsed.startswith(("http://", "https://")):
+            return parsed
+    except (ValueError, TypeError):
+        pass
+    m = re.search(r"https?://\S+", fm_value)
+    return m.group(0).rstrip("\"']") if m else ""
+
+# Reference list, numbered in citation-manifest first-appearance order so the
+# deposited [N] match the composers inline [N] markers (which finalize leaves
+# in the body verbatim — see the strip note below). N = index + 1.
 refs = []
 page_kind_by_slug = {}
-for slug in cited_slugs:
+url_by_slug = {}
+for idx, slug in enumerate(cited_slugs):
+    n = idx + 1
     page_path = None
     page_kind = None
     for kind, dirname in (("source", "sources"), ("synthesis", "syntheses")):
@@ -313,6 +342,7 @@ for slug in cited_slugs:
     page_kind_by_slug[slug] = page_kind  # None if cited page is missing on disk
     title = slug
     publisher = ""
+    url = ""
     if page_path is not None:
         text = page_path.read_text(encoding="utf-8")
         if text.startswith("---"):
@@ -324,13 +354,21 @@ for slug in cited_slugs:
                     title = fm["title"]
                 if fm.get("publisher"):
                     publisher = fm["publisher"]
+                if page_kind == "source":
+                    url = _first_url(fm.get("sources", ""))
+    url_by_slug[slug] = url
     # Wikilink path prefix matches the cited pages directory; falls back to
     # sources/ when the page is missing (better than leaving the slug bare).
     link_dir = "syntheses" if page_kind == "synthesis" else "sources"
-    if publisher:
-        refs.append("- [[" + link_dir + "/" + slug + "]] — " + title + " (" + publisher + ")")
+    backlink = "[[" + link_dir + "/" + slug + "]]"
+    bib = (publisher + ', "' + title + '"') if publisher else ('"' + title + '"')
+    # IEEE-style numbered entry. Clickable [URL](URL) when the source page
+    # carries an http(s) URL; synthesis pages / missing pages emit no link
+    # (the [[…]] backlink keeps the cogni-wiki graph intact either way).
+    if url:
+        refs.append("**[" + str(n) + "]** " + bib + ". [" + url + "](" + url + ") — " + backlink)
     else:
-        refs.append("- [[" + link_dir + "/" + slug + "]] — " + title)
+        refs.append("**[" + str(n) + "]** " + bib + " — " + backlink)
 
 # `wiki://<slug>` is the bare-slug shape cogni-wiki health.py expects
 # (cogni-wiki/skills/wiki-health/scripts/health.py:206 splits on the prefix
@@ -364,24 +402,55 @@ if body.startswith("# "):
     nl = body.find("\n")
     body = body[nl + 1 :].lstrip() if nl >= 0 else ""
 
-# wiki-composer already emits a `## References` section at the end of every
-# draft (agents/wiki-composer.md "References section"); we now compose a
-# richer one (with publishers) from the citation-manifest, so strip the
-# composers tail to avoid two References sections in the deposited page.
-# Match the LAST `## References` H2 in case the draft text discusses
-# references elsewhere; everything from that header to EOF is the composers
-# section.
-ref_re = re.compile(r"\n##[ \t]+References[ \t]*\n", re.IGNORECASE)
+# wiki-composer already emits a reference section at the end of every draft
+# (agents/wiki-composer.md "References section"); we re-compose a canonical one
+# (numbered, with URLs) from the citation-manifest, so strip the composers tail
+# to avoid two reference sections in the deposited page. The strip is
+# LANGUAGE-INDEPENDENT: a German run's composer emits `## Referenzen`, so a
+# hardcoded English `## References` regex would miss it and we'd append a second
+# list (the #301 duplicate bug). Match the localized heading AND English (covers
+# mixed-state drafts), case-insensitive, from the LAST such H2 to EOF.
+strip_words = [heading] + ([] if heading == "References" else ["References"])
+ref_re = re.compile(
+    r"\n##[ \t]+(?:" + "|".join(re.escape(w) for w in strip_words) + r")[ \t]*\n",
+    re.IGNORECASE,
+)
 matches = list(ref_re.finditer(body))
 if matches:
     body = body[: matches[-1].start()]
+else:
+    # Safety net for an unrecognized heading word (e.g. the composer emitted a
+    # synonym): strip the last H2 whose body is a pure citation/list block.
+    h2s = list(re.finditer(r"\n##[ \t]+.*\n", body))
+    if h2s:
+        tail = body[h2s[-1].end():]
+        tail_lines = [ln.strip() for ln in tail.splitlines() if ln.strip()]
+        if tail_lines and all(ln.startswith(("- ", "* ", "**[", "[")) for ln in tail_lines):
+            body = body[: h2s[-1].start()]
+
+# Renumber the body's inline source citations to match the re-derived,
+# contiguous reference numbering (N = cited_slugs first-appearance index + 1).
+# Keyed by URL — each source page has a unique sources: URL, so an inline
+# <sup>[<any-n>](<url>)</sup> is rewritten to its canonical [N]. This makes
+# finalize authoritative for numbering and absorbs composer/revisor drift
+# (e.g. a revisor that dropped every citation of one source, leaving a gap in
+# the body while the reference list re-packs). A no-op in the common case
+# (markers already carry their canonical N). Synthesis citations (plain [N],
+# no URL) are rare and left as authored. The lambda replacement sidesteps
+# re.sub backref interpretation of any character in the URL.
+for idx, slug in enumerate(cited_slugs):
+    u = url_by_slug.get(slug)
+    if not u:
+        continue
+    canonical = "<sup>[" + str(idx + 1) + "](" + u + ")</sup>"
+    body = re.sub(r"<sup>\[\d+\]\(" + re.escape(u) + r"\)</sup>", lambda m: canonical, body)
 
 page_text = (
     frontmatter
     + "\n"
     + "# " + topic + "\n\n"
     + body.rstrip() + "\n\n"
-    + "## References\n\n"
+    + "## " + heading + "\n\n"
     + ("\n".join(refs) if refs else "_No external citations recorded in citation-manifest.json._")
     + "\n"
 )
@@ -536,10 +605,10 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 ## Out of scope
 
 - Does NOT re-run the verifier, the composer, or the ingester. M9 reads the latest verified draft + manifest as-is.
-- Does NOT support APA / MLA / IEEE citation rendering. Wikilink + title/publisher list is enough for v0.0.24; M10 / M11 can render APA from the same citation-manifest if a bibliography skill ships.
+- Renders an IEEE-style numbered reference list (`**[N]** Publisher, "Title". [URL](URL) — [[sources/<slug>]]`, first-appearance order matching the composer's inline `[N]`; #300/#301, v0.1.4). Does NOT support APA / MLA / Chicago rendering — those can be derived from the same citation-manifest if a bibliography skill ships.
 - Does NOT update `topic_lineage.covered_themes[]` in the binding — that field is reserved for M10's manifest-aware dashboard rebuild.
 - Does NOT support cross-page substitute-citation search or transitive cycle detection on the new manifest shape (the adapter handles direct cycles only — same posture as M9's "smallest necessary change" framing).
-- Does NOT support multilingual finalization. English-only at v0.0.24 (matches M7/M8 Slice 3/4 deferrals).
+- **Localizes the reference-section heading** per `plan.json::output_language` via `_knowledge_lib.ref_heading` (`de→Referenzen`, default→English; #301, v0.1.4), and strips the composer's heading language-independently. Does NOT itself translate body content — the draft body language is the composer's responsibility (it honours `OUTPUT_LANGUAGE`); finalize deposits the verified body verbatim.
 - Does NOT dispatch the `lineage-stamp.py` helper — v0.1.0 projects do not write `raw/research-<slug>/`, so the stamp helper has no work to do; the `derived_from_research` field is set inline in Step 5's frontmatter.
 
 ## Output

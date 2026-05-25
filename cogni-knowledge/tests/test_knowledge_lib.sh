@@ -106,9 +106,47 @@ def assert_atomic_write_roundtrip():
     assert leftover == [], leftover
 
 
+def assert_slugify():
+    # #303: German umlauts transliterate by convention (ä→ae …) BEFORE the
+    # keep-regex strip, so `für` → `fuer` (not `f-r`); remaining Latin scripts
+    # de-accent via NFKD. The empty/non-alnum → "" contract is preserved.
+    cases = {
+        "Lean Canvas für Insight-Wave": "lean-canvas-fuer-insight-wave",
+        "für insight-wave": "fuer-insight-wave",
+        "Geschäftsidee": "geschaeftsidee",
+        "Über": "ueber",
+        "Öl": "oel",
+        "Maß": "mass",
+        "Café": "cafe",
+        "El Niño": "el-nino",
+        "": "",
+        "   ": "",
+        "!!!": "",
+    }
+    for inp, exp in cases.items():
+        got = kl.slugify(inp)
+        assert got == exp, f"slugify({inp!r})={got!r} expected {exp!r}"
+    # max-len truncation preserved (default 80), with no trailing dash.
+    long = kl.slugify("a" * 100)
+    assert len(long) == 80, f"max-len not enforced: len={len(long)}"
+    trimmed = kl.slugify("a" * 79 + " b")
+    assert not trimmed.endswith("-"), f"trailing dash after truncation: {trimmed!r}"
+
+
+def assert_ref_heading():
+    # #301/#300: localized reference heading, default/unknown → English.
+    assert kl.ref_heading("de") == "Referenzen", kl.ref_heading("de")
+    assert kl.ref_heading("DE") == "Referenzen", "case-insensitive"
+    assert kl.ref_heading("en") == "References", kl.ref_heading("en")
+    assert kl.ref_heading("xx") == "References", "unknown code → English"
+    assert kl.ref_heading(None) == "References", "None → English"
+
+
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
 check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
+check("slugify", assert_slugify)
+check("ref_heading", assert_ref_heading)
 PY
 )
 
@@ -129,6 +167,8 @@ grade() {
 grade identity                "three-way identity — normalize_url and atomic_write are the same objects in candidate-store, fetch-cache, _knowledge_lib"
 grade canonicalization        "canonicalization — scheme/host lowercased, trailing slash stripped, utm_+ref dropped, fragment removed, path case preserved"
 grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .tmp debris"
+grade slugify                 "slugify — German umlaut transliteration (für→fuer), NFKD de-accent, empty/non-alnum→'' contract, max-len truncation"
+grade ref_heading             "ref_heading — localized reference heading (de→Referenzen), default/unknown→References"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

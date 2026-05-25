@@ -159,6 +159,15 @@ assert_grep 'draft_sentence' "$REVISOR" "revisor: locates the sentence by draft_
 # fixes_summary key so the metric distinguishes re-alignment from evidence erosion.
 assert_grep 'repoint' "$REVISOR" "revisor: prefers repoint over drop (F23)"
 assert_grep 'fixes_summary' "$REVISOR" "revisor: reports fixes_summary with repoint/rephrase/drop/skip"
+# Slice 13 (#300): the revisor operates on the numbered <sup>[N](url)</sup> inline
+# shape and edits prose in the draft's existing language (no English-only revert).
+# Its citation-integrity guard counts inline numbered markers, and it explicitly
+# forbids emitting an inline [[sources/]] in the body.
+assert_grep 'sup>\[N\](url)' "$REVISOR" "revisor: keeps the numbered <sup>[N](url)</sup> inline citation, not inline [[sources/]] (#300)"
+assert_grep 'OUTPUT_LANGUAGE' "$REVISOR" "revisor: edits prose in the draft's OUTPUT_LANGUAGE, not English-only (#300)"
+# The stale 'Keep the inline [[sources/<slug>]] wikilink in place' rephrase
+# instruction must be gone (it would re-pollute prose with a wikilink).
+assert_not_grep 'Keep the inline `\[\[sources' "$REVISOR" "revisor: dropped the stale 'Keep the inline [[sources/...]] wikilink' instruction (#300)"
 # Zero-network: tools list must not include WebFetch, WebSearch, Bash, or Task.
 REVISOR_TOOLS_LINE=$(grep '^tools:' "$REVISOR" || true)
 for required in '"Read"' '"Write"' '"Glob"' '"Grep"'; do

@@ -18,6 +18,7 @@ import json
 import os
 import re
 import tempfile
+import unicodedata
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
@@ -107,6 +108,12 @@ def atomic_write_text(path: Path, text: str) -> Path:
 _SLUG_KEEP_RE = re.compile(r"[^a-z0-9]+")
 _SLUG_DASH_RUN_RE = re.compile(r"-+")
 
+# German transliteration applied to the lowercased string BEFORE NFKD de-accent.
+# NFKD alone strips the umlaut diaeresis (ü→u), giving `fur`; the German
+# convention expands it (ü→ue), giving `fuer`. Capital forms are covered by the
+# prior `.lower()` (Ä→ä, and ẞ→ß), so only the lowercase keys are needed.
+_GERMAN_TRANSLITERATION = (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss"))
+
 
 def slugify(text: str, max_len: int = 80) -> str:
     """Canonical lower-kebab slug for wiki pages.
@@ -116,9 +123,15 @@ def slugify(text: str, max_len: int = 80) -> str:
     `source-ingester` only sanity-checks the result (`[a-z0-9][a-z0-9-]{0,79}`)
     rather than re-deriving — keeps the orchestrator authoritative.
 
-    Mirrors the algorithm in `cogni-research/scripts/create-entity.py::slugify`
-    and `cogni-wiki/.../batch_builder.py::derive_slug` (lift point-in-time;
-    drift acceptable per the clean-break commitment).
+    Transliterates non-ASCII text before the keep-regex strip so localized
+    topics survive: German umlauts expand by convention (`für`→`fuer`,
+    `Geschäftsidee`→`geschaeftsidee`), then NFKD + combining-mark removal
+    de-accents the remaining Latin scripts (`Café`→`cafe`, `ñ`→`n`, `ç`→`c`).
+    Without this pass the keep-regex turns every non-`[a-z0-9]` run into a dash
+    (`für`→`f-r`). This intentionally **diverges** from the point-in-time lift
+    in `cogni-research/scripts/create-entity.py::slugify` and
+    `cogni-wiki/.../batch_builder.py::derive_slug` — drift acceptable per the
+    clean-break commitment.
 
     Empty / non-alnum / whitespace-only input returns "" so callers can
     detect the no-slug case and apply their own fallback (e.g.,
@@ -127,6 +140,10 @@ def slugify(text: str, max_len: int = 80) -> str:
     if not text:
         return ""
     lowered = text.lower()
+    for src, dst in _GERMAN_TRANSLITERATION:
+        lowered = lowered.replace(src, dst)
+    decomposed = unicodedata.normalize("NFKD", lowered)
+    lowered = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     dashed = _SLUG_KEEP_RE.sub("-", lowered)
     collapsed = _SLUG_DASH_RUN_RE.sub("-", dashed).strip("-")
     if not collapsed:
@@ -134,6 +151,28 @@ def slugify(text: str, max_len: int = 80) -> str:
     if len(collapsed) > max_len:
         collapsed = collapsed[:max_len].rstrip("-")
     return collapsed
+
+
+# Localized heading for the synthesis-page reference section. Single source of
+# truth for the finalize Python side (which imports this module); the
+# wiki-composer agent — an LLM, not Python — restates the same mapping in its
+# prose. Keyed on the project's `output_language` (ISO 639-1, from plan.json).
+# Unknown / unmapped codes fall back to the English word, matching the
+# default-to-en posture used elsewhere in the pipeline.
+REF_HEADING = {
+    "en": "References",
+    "de": "Referenzen",
+    "fr": "Références",
+    "it": "Bibliografia",
+    "pl": "Bibliografia",
+    "nl": "Referenties",
+    "es": "Referencias",
+}
+
+
+def ref_heading(lang: str | None) -> str:
+    """Reference-section heading word for `lang` (default/unknown → English)."""
+    return REF_HEADING.get((lang or "en").lower(), REF_HEADING["en"])
 
 
 def is_pdf_response(content_type: str | None, url: str) -> bool:

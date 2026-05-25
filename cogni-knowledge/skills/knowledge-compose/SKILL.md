@@ -1,6 +1,6 @@
 ---
 name: knowledge-compose
-description: "Phase 5 of the v0.1.0 inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a single wiki-composer pass, and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Citations are [[sources/<slug>]] wikilinks; URL/APA rendering is deferred to M9 finalize. Preserves the F11 outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, M8 (knowledge-verify) will run the zero-network claim alignment."
+description: "Phase 5 of the v0.1.0 inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a single wiki-composer pass, and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the F11 outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, M8 (knowledge-verify) will run the zero-network claim alignment."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Bash, Task
 
 Phase 5 of the v0.1.0 inverted pipeline. Reads the per-project `plan.json` + `ingest-manifest.json` + the populated wiki at `<binding.wiki_path>/wiki/`, dispatches `wiki-composer` once, and verifies the two output files land on disk. The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md`, then writes:
 
-- `<project>/output/draft-v{N}.md` — the draft, with `[[sources/<slug>]]` inline citations.
+- `<project>/output/draft-v{N}.md` — the draft, with clickable numbered `[N]` inline citations (wikilinks confined to the reference list).
 - `<project>/.metadata/citation-manifest.json` — one `{draft_position, wiki_slug, claim_id}` entry per citation, schema `0.1.0`.
 
 A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any draft `Write` attempt — this is the **F11 outline-recovery contract**. If the composer crashes between outlining and drafting, re-running this skill detects the leftover outline and re-dispatches the composer with `RESUME_FROM_OUTLINE=true` so only Phase 2 runs.
@@ -145,10 +145,11 @@ Task(wiki-composer,
      WIKI_ROOT=<wiki_root>,
      DRAFT_VERSION=<N>,
      TARGET_WORDS=<resolved>,
+     OUTPUT_LANGUAGE=<plan.json::output_language, default en>,
      RESUME_FROM_OUTLINE=<true|false>)
 ```
 
-The agent derives the plan and ingest-manifest paths from `PROJECT_PATH` (fixed `.metadata/plan.json` and `.metadata/ingest-manifest.json`). `wiki-composer` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched via `Task`, not `Skill`. Single-pass, no fan-out, no per-section sharding — the agent reads the wiki itself and writes both output files atomically.
+`OUTPUT_LANGUAGE` is read from `<project_path>/.metadata/plan.json` (`output_language`, default `en` — the same value `knowledge-finalize` reads for its reference heading). It controls the draft body, section headings, and the reference-section heading. The agent derives the plan and ingest-manifest paths from `PROJECT_PATH` (fixed `.metadata/plan.json` and `.metadata/ingest-manifest.json`). `wiki-composer` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched via `Task`, not `Skill`. Single-pass, no fan-out, no per-section sharding — the agent reads the wiki itself and writes both output files atomically.
 
 Parse the return envelope:
 
