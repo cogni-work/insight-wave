@@ -1,5 +1,27 @@
 # cogni-knowledge changelog
 
+## 0.1.5 — 2026-05-25
+
+Slice 14 of the Phase 5 v0.1.x bake-in (**#264**) — two pipeline state / config-robustness bugs from the first real DACH run. No schema bump, no script change (both fixes reuse existing helpers). Maturity stays **Preview**. Closes **#302**, **#304**; epic **#264**.
+
+### Fixed
+
+- **#302 — `knowledge-ingest` bumps `entries_count` for the source pages it writes.** Phase 4 wrote N `wiki/sources/<slug>.md` pages but only `knowledge-finalize` ever bumped `.cogni-wiki/config.json::entries_count` (+1 for the synthesis), so a 49-source base left the counter ~49 pages short and cogni-wiki's `wiki-health` / `wiki-resume` reported a standing `entries_count_drift`. Step 4 now counts source pages whose per-slug `wiki_index_update.py` returned `action: "inserted"` into `n_new` (skipping `"updated"` re-ingests and failed index updates), then calls `config_bump.py --key entries_count --delta <n_new>` **once** after the loop — the same Step 7→8 lockstep invariant `knowledge-finalize` already uses (counter and on-disk page count move together). A clean re-run skips already-ingested URLs at Step 1.3, so it reaches the bump with `n_new == 0` → no bump → no drift (re-run no-op). Non-fatal on failure (operator reconciles via `wiki-lint --fix=entries_count_drift`). Prose-only — `config_bump.py` already supports `--delta`. File: `skills/knowledge-ingest/SKILL.md`.
+- **#304 — the market config is resolved once in the orchestrator, not N times per curator.** Each `source-curator` subagent re-resolved the market config via an env-gated glob (`${WORKSPACE_PLUGIN_ROOT:-$(ls -td …/cogni-workspace/*/)}`); `WORKSPACE_PLUGIN_ROOT` is usually unset in a subagent, so the resolution was flaky and one shard (sq-05 in the DACH run) silently fell back to `_default` while siblings loaded DACH — N independent, non-deterministic resolutions, and a wrong authority list silently degrades that shard's scoring. `knowledge-curate` now resolves the config **once** in Step 0 (three-layer locate of `get-market-config.py`, mirroring the script's own `_resolve_sibling_plugin`), validates it, writes the verbatim envelope to `<project>/.metadata/market-config.json`, and threads `MARKET_CONFIG_PATH` to every curator. **Fails loudly on a `_default` resolution:** because the cogni-research overlay carries a `_default` entry, an unknown/unsupported market returns `success: true` with the `_default` config (no `data.code`), so a bare `success` check is insufficient — the orchestrator aborts when `data.code` is absent. `source-curator` Phase 0 now reads the resolved file (parsing the envelope's `data` field — also correcting the stale `data.config` reference) and treats a missing/unreadable config as a **hard error** (`{"ok": false, … "reason": "market_config_unavailable"}`) recorded in `failed_curators[]`, never a silent `_default`. Files: `skills/knowledge-curate/SKILL.md`, `agents/source-curator.md`.
+
+### Tests
+
+- `tests/test_ingest_contract.sh` — asserts Step 4 calls `config_bump.py` with `--delta`/`entries_count`, gates the bump on `action == "inserted"` (lockstep), counts into `n_new`, and states the re-run no-op (#302).
+- `tests/test_skill_contracts.sh` — curate block asserts the once-resolution (`get-market-config.py` + `market-config.json` + `MARKET_CONFIG_PATH=` dispatch); curator block reconciled to the new contract (reads `MARKET_CONFIG_PATH`, missing config is a `hard error`) with an `assert_not_grep` guarding the old env-gated `ls -td …/cogni-workspace` glob from creeping back into the agent (#304).
+
+### Contract docs
+
+- `references/inverted-pipeline.md` — Phase 4 now documents the `config_bump.py --delta <n_new>` lockstep bump; Phase 2 documents the orchestrator's once-resolution + loud `_default` abort + `MARKET_CONFIG_PATH` threading.
+
+### Version
+
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — `0.1.4` → `0.1.5` (mirrored). Maturity stays `preview`.
+
 ## 0.1.4 — 2026-05-25
 
 Slice 13 of the Phase 5 v0.1.x bake-in (**#264**) — the first real DACH run ("Lean Canvas für Insight-Wave", market `dach`, German output) surfaced three German / localized-output bugs, fixed here in foundational order (**#303 → #301 → #300**). The enabling fact: `output_language` was already captured in `plan.json` (schema 0.1.0) but never threaded into the composer or read by finalize — this slice closes that gap with no new config and no schema bump. Maturity stays **Preview**. Closes **#303**, **#301**, **#300**; epic **#264**.

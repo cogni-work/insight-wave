@@ -53,6 +53,17 @@ assert_grep 'wiki_index_update.py' "$INGEST" "knowledge-ingest: calls wiki_index
 assert_grep 'wiki/log.md' "$INGEST" "knowledge-ingest: appends to wiki/log.md"
 assert_grep 'probe_plugin cogni-wiki' "$INGEST" "knowledge-ingest: probes cogni-wiki"
 assert_grep 'Task' "$INGEST" "knowledge-ingest: Task listed in allowed-tools"
+# #302 (Slice 14): Step 4 bumps entries_count by the count of NEWLY-INDEXED
+# source pages via config_bump.py --delta <n_new>, gated on the index update's
+# action == "inserted" (same lockstep as knowledge-finalize Step 7→8), so
+# wiki-health / wiki-resume stop reporting an N-page entries_count_drift. The
+# re-run no-op (Step 1.3 skips ingested URLs → n_new == 0 → no bump) must be stated.
+assert_grep 'config_bump.py' "$INGEST" "knowledge-ingest: bumps entries_count via config_bump.py (#302)"
+assert_grep 'entries_count' "$INGEST" "knowledge-ingest: references entries_count (#302)"
+assert_grep 'delta' "$INGEST" "knowledge-ingest: config_bump uses --delta (#302)"
+assert_grep 'n_new' "$INGEST" "knowledge-ingest: counts newly-indexed pages in n_new (#302)"
+assert_grep '"inserted"' "$INGEST" "knowledge-ingest: gates the bump on action == inserted — lockstep invariant (#302)"
+assert_grep 'no-op' "$INGEST" "knowledge-ingest: states the re-run no-op (n_new == 0 → no bump) (#302)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"

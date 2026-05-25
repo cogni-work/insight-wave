@@ -61,6 +61,44 @@ On `success: false` → abort, offer `knowledge-setup`.
 
 Read `<project_path>/.metadata/plan.json`. Parse `topic`, `market`, `output_language`, `sub_questions[]`. If `--sub-question-ids` was passed, filter to that subset (reject ids not present).
 
+**Resolve the market config ONCE (orchestrator-owned, #304).** Each `source-curator` used to resolve the market config itself via an env-gated glob (`WORKSPACE_PLUGIN_ROOT` is usually unset in a subagent, so the resolution was flaky — one shard could silently fall back to `_default` while siblings loaded the real market). Resolve it here instead, in skill context where the env is consistent, and pass the result to every curator. Locate cogni-workspace's `get-market-config.py` with the same three-layer fallback the script uses internally (`get-market-config.py::_resolve_sibling_plugin`) and that sibling skills use for `resolve_wiki_ingest_scripts`:
+
+```
+resolve_market_config_script() {
+  # 1. Explicit env (skill context may have it; subagents usually don't).
+  if [ -n "${WORKSPACE_PLUGIN_ROOT:-}" ] && \
+     [ -f "${WORKSPACE_PLUGIN_ROOT}/scripts/get-market-config.py" ]; then
+    echo "${WORKSPACE_PLUGIN_ROOT}/scripts/get-market-config.py"; return 0
+  fi
+  # 2. Monorepo sibling.
+  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-workspace/scripts/get-market-config.py"
+  [ -f "$sib" ] && { echo "$sib"; return 0; }
+  # 3. Cache: newest installed cogni-workspace (mtime; lex-sort mis-ranks 0.6.10 < 0.6.9).
+  local newest
+  newest=$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/scripts/get-market-config.py 2>/dev/null | head -1)
+  [ -n "$newest" ] && { echo "$newest"; return 0; }
+  return 1
+}
+MARKET_CONFIG_SCRIPT=$(resolve_market_config_script) || abort "cogni-workspace get-market-config.py not found — fix the workspace install before curating"
+```
+
+Run it **once** for this run's `<market>` and capture the full stdout envelope:
+
+```
+python3 "$MARKET_CONFIG_SCRIPT" --plugin research --market <market>
+```
+
+The envelope is `{"success", "data", "error"}`; on success `data` is the merged market config (it carries `data.code == "<market>"` and a populated `data.authority_sources[]`).
+
+**Fail loudly — abort on either condition (do NOT proceed with `_default`):**
+
+1. The script exec fails / output is not parseable JSON, **or** the envelope's `success` is `false` → abort.
+2. The envelope's `success` is `true` **but** `data` is the `_default` fallback. The cogni-research overlay carries a `_default` entry, so an unknown / unsupported market resolves to `success: true` with the `_default` config (empty `authority_sources: []`, a `_note` key, and **no `code` field**) — a bare `success` check would silently accept it. Detect `_default` by the **absence of a non-empty `data.code`** (every real registry/overlay market carries `code`; `_default` does not) and abort.
+
+Abort message: `could not resolve market config for '<market>' (script failed, or the market resolved to the _default fallback) — fix the workspace install or correct the market code in plan.json before curating`. A wrong authority list degrades the whole run's scoring, so this is a hard stop, not per-curator partial coverage.
+
+On success, write the **full stdout envelope verbatim** to `<project_path>/.metadata/market-config.json` (`.metadata/` already exists — `plan.json` lives there). This is the single resolution every curator reads. In `--dry-run`, resolve + validate + print `MARKET=<market> AUTHORITY_SOURCES=<count from data.authority_sources>` but do **not** write the file (keep `--dry-run` side-effect-free).
+
 ### 1. Read curator defaults
 
 From the binding envelope above, parse `data.binding.curator_defaults`. Apply per-field fallbacks for legacy bindings (pre-v0.0.3 had no `curator_defaults` block; the consumer-side `.get(..., DEFAULT)` requirement is documented in `CLAUDE.md` §"Data model"):
@@ -93,13 +131,14 @@ For each sub-question id selected in Step 0:
         SUB_QUESTION_ID=<sq-id>,
         BATCH_OUTPUT_PATH=<batch_path>,
         MARKET=<market>,
+        MARKET_CONFIG_PATH=<project_path>/.metadata/market-config.json,
         MAX_CANDIDATES=<max_candidates_per_sq>,
         SCORE_THRESHOLD=<score_threshold>,
         KNOWLEDGE_ROOT=<knowledge_root>,
         MAX_AGE_DAYS=<fetch_cache_max_age_days>)
    ```
 
-   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills). `KNOWLEDGE_ROOT` + `MAX_AGE_DAYS` drive the curator's Phase-4 fetch through `fetch-cache.py`.
+   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills). `KNOWLEDGE_ROOT` + `MAX_AGE_DAYS` drive the curator's Phase-4 fetch through `fetch-cache.py`. `MARKET_CONFIG_PATH` points at the single market config resolved in Step 0 — every curator in this run reads the **same** authority list (#304); `MARKET` stays as the informational region label for query localization.
 
 3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator now does its own WebSearch **and** WebFetch — three concurrent curators is the rate-limit-friendly ceiling. Folding the fetch into this parallel round is exactly the Option-B win (#292): the fetch wall-clock collapses to the slowest curator wave instead of a strictly-sequential Phase-3 batch loop.
 
@@ -147,6 +186,7 @@ Parse the result for the final summary. Print ≤ 8 lines:
 
 ## Output
 
+- `<project_path>/.metadata/market-config.json` — the merged market config resolved once in Step 0 (verbatim `get-market-config.py` envelope), read by every `source-curator` so the run uses one authority list (#304). Not written in `--dry-run`.
 - `<project_path>/.metadata/candidates.json` (schema 0.1.0; merged + tier-stamped + priority-assigned; each candidate carries an optional `fetch` sub-object from the curator's Phase-4 fetch)
 - `<knowledge_root>/.cogni-knowledge/fetch-cache/<sha256>.json` for each fetched URL (shared cache; written by the curators' Phase-4 fetch)
 - `<project_path>/.metadata/.candidates.batch.<sq-id>.json` for each dispatched sub-question (intermediate; safe to clean up but kept for debugging)

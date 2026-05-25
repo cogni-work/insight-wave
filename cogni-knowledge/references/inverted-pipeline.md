@@ -60,6 +60,8 @@ Output: `<project>/.metadata/plan.json`:
 
 Fans out one `source-curator` agent per sub-question (≤ 3 concurrent). Each runs WebSearch, scores candidates on relevance/authority/recency/uniqueness, **then fetches each surviving candidate's body via WebFetch** through the shared fetch-cache (Option B, #292 — the body-pull moved here from the old Phase-3 `source-fetcher` so the fetch rides the existing per-sub-question parallelism). Cobrowse is **not** done here — it stays Phase 3, opt-in. Output is the union, deduped by URL.
 
+The orchestrator resolves the market config **once** (cogni-workspace `get-market-config.py --plugin research --market <market>`), aborts loudly if the market resolves to the `_default` fallback (no `data.code`), writes the envelope to `<project>/.metadata/market-config.json`, and threads `MARKET_CONFIG_PATH` to every curator — so all curators in a run score against the same authority list instead of each re-resolving it from a flaky `WORKSPACE_PLUGIN_ROOT` glob (#304).
+
 Output: `<project>/.metadata/candidates.json`:
 
 ```json
@@ -127,7 +129,7 @@ For each fetched source, dispatch `source-ingester` to emit one wiki page at `<w
 - frontmatter `pre_extracted_claims:` — list of `{id, text, excerpt_quote, excerpt_position, sub_question_refs, extracted_at}` extracted from the source body by `claim-extractor` (forked from cogni-research). Claim shape: `references/claim-at-ingest.md:37-49`.
 - body: the fetched source content, verbatim. `excerpt_position` offsets inside `pre_extracted_claims:` are the indexing primitive — the future `wiki-verifier` renders context around each excerpt from the offset; there is no in-body highlighting markup. See `references/claim-at-ingest.md:57` for the Unicode-code-point offset contract.
 
-After per-source emission, run `backlink_audit.py` + `wiki_index_update.py` once per dispatch (atomic) via reused cogni-wiki scripts. Append to `wiki/log.md`.
+After per-source emission, run `backlink_audit.py` + `wiki_index_update.py` per new slug via reused cogni-wiki scripts, then `config_bump.py --key entries_count --delta <n_new>` once — where `n_new` is the count of source pages whose `wiki_index_update.py` returned `action: "inserted"` (the same Step 7→8 lockstep `knowledge-finalize` uses), so `.cogni-wiki/config.json::entries_count` tracks the on-disk page count and `wiki-health` stops reporting an N-page drift (#302). Append to `wiki/log.md`.
 
 This is the F6 fix — by the end of phase 4 the wiki is populated, and the operator can browse it before the writer runs.
 

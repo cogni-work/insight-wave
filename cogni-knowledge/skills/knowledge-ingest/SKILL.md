@@ -196,7 +196,22 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
    ```
    `--category "Sources"` creates a top-level `## Sources` heading in `wiki/index.md` on first ingest and appends to it on subsequent ingests. Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
 
-3. On any helper failure, record in `failed_index_updates[]` and continue. The page itself is already on disk; only the discoverability is incomplete.
+   Capture the JSON envelope. When `success == true` **and** `data.action == "inserted"`, increment an in-loop counter `n_new` (initialised to `0` before the loop) — a brand-new index row means a brand-new page. When `data.action == "updated"`, a row for this slug already existed → do **not** count it (this is the re-ingest / pre-existing-page case; counting it would over-count `entries_count`).
+
+3. On any helper failure, record in `failed_index_updates[]` and continue (do **not** increment `n_new` — a failed index update is not a new row). The page itself is already on disk; only the discoverability is incomplete.
+
+After the loop completes, bump `entries_count` **once** by the number of newly-indexed source pages — mirroring `knowledge-finalize` Step 8's lockstep invariant (counter and on-disk page count move together; only count rows the index actually gained):
+
+```
+# Only when n_new > 0 — a clean re-run skips already-ingested URLs at Step 1.3,
+# so it reaches here with n_new == 0 → no bump → no drift (the re-run no-op).
+python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
+    --wiki-root "$WIKI_ROOT" \
+    --key entries_count \
+    --delta <n_new>
+```
+
+Same call shape and script `knowledge-finalize` Step 8 uses (`config_bump.py` already supports a signed `--delta`); lock-wrapped at its own write site. **Non-fatal on failure** — if the bump fails, the source pages are already on disk and discoverable; surface the failure in the Step 6 summary and let the operator reconcile via `wiki-lint --fix=entries_count_drift` (the same posture finalize takes). Without this bump, `wiki-health` / `wiki-resume` report an `entries_count_drift` equal to the number of ingested source pages (#302).
 
 ### 5. Append wiki/log.md
 
@@ -222,6 +237,7 @@ Print ≤ 10 lines:
 - Ingested: `<count>` new pages (`<total_claims>` total claims extracted)
 - Skipped: `<count>` (reason breakdown: `cache_miss=<n>, unavailable=<n>, slug_collision=<n>`)
 - Backlink audit candidates surfaced: `<n>` (apply manually via `wiki-update`)
+- Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
 - Next: M7 will land `knowledge-compose`. For v0.0.20, end here — `wiki/sources/*.md` populated + `ingest-manifest.json` is this slice's deliverable.
 
@@ -247,6 +263,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 
 - `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry).
 - `<WIKI_ROOT>/wiki/index.md` updated (new `## Sources` category on first ingest; appended otherwise).
+- `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` (the count of newly-indexed source pages this run; #302).
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] ingest | …` line.
 - `<project_path>/.metadata/ingest-manifest.json` (schema 0.1.0).
 - `<project_path>/.metadata/.ingest.batch.<NNN>.<NN>.json` per ingester dispatch (intermediate; kept for debugging).
