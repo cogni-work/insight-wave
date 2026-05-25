@@ -203,6 +203,17 @@ def ref_heading(lang: str | None) -> str:
 # NOT captured — renumbering rewrites only the number.
 _SUP_CITATION_RE = re.compile(r"<sup>\[(\d+)\]")
 
+# Matches a WHOLE inline citation marker — `<sup>[N](url)</sup>` or the bare
+# `<sup>[N]</sup>` synthesis form. `[^<]*` covers the `(url)` (URLs carry no `<`).
+_SUP_MARKER_RE = re.compile(r"<sup>\[\d+\][^<]*</sup>")
+
+
+def strip_inline_citation_markers(text: str) -> str:
+    """Remove every inline `<sup>[N](url)</sup>` / `<sup>[N]</sup>` marker, leaving
+    the surrounding prose. Used to compare a draft sentence's actual text against a
+    source claim without the citation markers getting in the way."""
+    return _SUP_MARKER_RE.sub("", text)
+
 
 def first_url(fm_value: str) -> str:
     """First http(s) URL in a frontmatter `sources:` value, else "".
@@ -303,6 +314,123 @@ def renumber_inline_citations(body: str) -> str:
             lambda m: "<sup>[" + str(remap[int(m.group(1))]) + "]", body
         )
     return body
+
+
+# --- pre_extracted_claims block-list parser (used by verify-store.py prefilter) -
+# `pre_extracted_claims:` is a nested YAML block-list of dicts whose
+# `text` / `excerpt_quote` values are free text (colons, quotes, commas). The
+# flat-scalar frontmatter parsers elsewhere in the monorepo
+# (`cycle-guard.py::_parse_frontmatter`, cogni-wiki's `_wikilib.parse_frontmatter`)
+# cannot reconstruct it, and this package is stdlib-only (no PyYAML). So this is a
+# narrow, FAIL-SAFE extractor: it pulls only `{id, text, excerpt_quote}` per item
+# and silently skips anything it cannot confidently parse. The single consumer
+# (the verify prefilter) only ever uses a successful parse to ADD a `verbatim`
+# verdict it is certain of; a parse miss simply leaves the citation for the LLM
+# verifier. Correctness is therefore independent of this parser's completeness.
+
+_FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
+_CLAIMS_KEY_RE = re.compile(r"^pre_extracted_claims[ \t]*:[ \t]*$")
+_WANTED_CLAIM_KEYS = ("id", "text", "excerpt_quote")
+# A YAML block-scalar header: `|` / `>` with an optional indent digit and/or
+# chomping indicator (`-`/`+`). The actual text lives on the following indented
+# lines, which this single-line parser does not assemble.
+_BLOCK_SCALAR_RE = re.compile(r"^[|>][0-9]*[+-]?$")
+
+
+def _unquote_scalar(v: str) -> str:
+    """Best-effort YAML scalar unquoting. A value that is not cleanly quoted
+    (e.g. a quoted string whose close-quote is on a later line) is returned
+    as-is — it simply won't substring-match downstream, which is the safe
+    outcome."""
+    if len(v) >= 2 and v[0] == '"' and v[-1] == '"':
+        # The source-ingester writes these via json.dumps(…, ensure_ascii=False),
+        # so json.loads is the correct, complete decoder (handles \n, \t, \", \\,
+        # \uXXXX). Fall back to a minimal manual unescape for a value that is
+        # double-quoted but not valid JSON.
+        try:
+            decoded = json.loads(v)
+            if isinstance(decoded, str):
+                return decoded
+        except ValueError:
+            pass
+        return v[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+    if len(v) >= 2 and v[0] == "'" and v[-1] == "'":
+        return v[1:-1].replace("''", "'")
+    return v
+
+
+def _absorb_claim_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — free-text values may contain ':'
+    key = key.strip()
+    if key not in _WANTED_CLAIM_KEYS:
+        return
+    value = value.strip()
+    # A block-scalar header (`|` / `>`) is NOT a value — capturing the bare
+    # indicator would yield a 1-char needle (`>` / `|`) that substring-matches
+    # almost any draft sentence (every IEEE marker contains `>`). Skip the field
+    # so the claim simply lacks it → the prefilter falls through to the LLM,
+    # never a wrong `verbatim`.
+    if _BLOCK_SCALAR_RE.match(value):
+        return
+    # Strip a YAML inline comment from an UNQUOTED plain scalar (a comment needs
+    # leading whitespace before `#`). Quoted values keep `#` verbatim.
+    if value[:1] not in ('"', "'"):
+        hash_pos = value.find(" #")
+        if hash_pos != -1:
+            value = value[:hash_pos].rstrip()
+    item[key] = _unquote_scalar(value)
+
+
+def parse_pre_extracted_claims(page_text: str) -> list[dict]:
+    """Extract `[{id, text, excerpt_quote}, …]` from a wiki page's
+    `pre_extracted_claims:` frontmatter block. Returns [] for any page without a
+    parseable block. Tolerant of indent width, of the first key sitting inline
+    after the `- ` bullet, and of block sequences whose `- ` bullets sit at the
+    same column as the parent key; only single-line `key: value` scalars are
+    read."""
+    if not page_text:
+        return []
+    m = _FRONTMATTER_RE.match(page_text)
+    if not m:
+        return []
+    lines = m.group(1).splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if _CLAIMS_KEY_RE.match(line):
+            start = i + 1
+            break
+    if start is None:
+        return []
+    # The block is the run of blank / indented / bullet lines after the key, up
+    # to the next top-level key. Bullet lines (`- …`) are included even at
+    # column 0 — a YAML block sequence may sit at the parent key's indent.
+    block: list[str] = []
+    for line in lines[start:]:
+        stripped = line.strip()
+        if stripped == "" or line[:1] in (" ", "\t") or stripped == "-" or stripped.startswith("- "):
+            block.append(line)
+        else:
+            break
+    claims: list[dict] = []
+    current: dict | None = None
+    for line in block:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped == "-" or stripped.startswith("- "):
+            if current is not None:
+                claims.append(current)
+            current = {}
+            rest = stripped[1:].strip()
+            if rest:
+                _absorb_claim_kv(current, rest)
+        elif current is not None:
+            _absorb_claim_kv(current, stripped)
+    if current is not None:
+        claims.append(current)
+    return claims
 
 
 def is_pdf_response(content_type: str | None, url: str) -> bool:

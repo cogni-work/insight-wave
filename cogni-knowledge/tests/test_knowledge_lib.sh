@@ -220,6 +220,83 @@ def assert_renumber_inline_citations():
     assert "<sup>[2]</sup>" in kl.renumber_inline_citations(syn)
 
 
+def assert_parse_pre_extracted_claims():
+    # Happy path: block-list of dicts; a colon inside the `text` value must NOT
+    # break the key:value split (partition on first colon only).
+    page = (
+        "---\n"
+        "type: source\n"
+        "pre_extracted_claims:\n"
+        "  - id: clm-001\n"
+        '    text: "Article 6: high-risk classification rule"\n'
+        '    excerpt_quote: "shall be considered high-risk"\n'
+        "    excerpt_position: 12\n"
+        "    sub_question_refs: [sq-01]\n"
+        "  - id: clm-002\n"
+        "    text: plain unquoted value\n"
+        '    excerpt_quote: "another quote"\n'
+        "---\n\n# body\n"
+    )
+    claims = kl.parse_pre_extracted_claims(page)
+    assert len(claims) == 2, claims
+    assert claims[0]["id"] == "clm-001", claims[0]
+    assert claims[0]["text"] == "Article 6: high-risk classification rule", claims[0]
+    assert claims[0]["excerpt_quote"] == "shall be considered high-risk", claims[0]
+    assert claims[1]["id"] == "clm-002" and claims[1]["text"] == "plain unquoted value", claims[1]
+    # Fail-safe: a page with no closing frontmatter fence yields [] (never raises).
+    broken = "---\ntype: source\npre_extracted_claims:\n  - id: clm-009\n\n# no close\n"
+    assert kl.parse_pre_extracted_claims(broken) == [], "malformed frontmatter must fail safe to []"
+    # No claims key at all → [].
+    assert kl.parse_pre_extracted_claims("---\ntype: source\n---\n# body\n") == []
+    # Empty / non-frontmatter input → [].
+    assert kl.parse_pre_extracted_claims("") == []
+    assert kl.parse_pre_extracted_claims("# just a body, no frontmatter\n") == []
+    # #305 review: a YAML block-scalar value ('>' / '|') must NOT be captured as
+    # the bare indicator (that 1-char needle would false-match). The field is
+    # dropped so the claim simply lacks excerpt_quote.
+    block = (
+        "---\npre_extracted_claims:\n"
+        "  - id: clm-bs\n"
+        "    excerpt_quote: >\n"
+        "      Annex III systems shall be considered high-risk.\n"
+        "---\n"
+    )
+    bsc = kl.parse_pre_extracted_claims(block)
+    assert len(bsc) == 1 and bsc[0].get("id") == "clm-bs", bsc
+    assert "excerpt_quote" not in bsc[0], "block-scalar indicator must not be captured as a value: " + repr(bsc[0])
+    for pipe in ("|", "|-", ">-", ">2"):
+        one = kl.parse_pre_extracted_claims("---\npre_extracted_claims:\n  - id: c\n    text: " + pipe + "\n---\n")
+        assert "text" not in one[0], "block-scalar " + pipe + " leaked: " + repr(one)
+    # Inline YAML comment on an UNQUOTED plain scalar is stripped (a comment needs
+    # leading whitespace before '#'); a quoted value keeps '#' verbatim.
+    com = kl.parse_pre_extracted_claims(
+        "---\npre_extracted_claims:\n  - id: c1\n    text: real value # trailing note\n"
+        '    excerpt_quote: "kept # inside quotes"\n---\n'
+    )
+    assert com[0]["text"] == "real value", com[0]
+    assert com[0]["excerpt_quote"] == "kept # inside quotes", com[0]
+    # Column-0 block-sequence bullets (legal YAML at the parent key's indent).
+    col0 = kl.parse_pre_extracted_claims(
+        "---\npre_extracted_claims:\n- id: clm-c0\n  excerpt_quote: \"a contiguous quote\"\ntags: [x]\n---\n"
+    )
+    assert len(col0) == 1 and col0[0]["id"] == "clm-c0", col0
+    assert col0[0]["excerpt_quote"] == "a contiguous quote", col0
+
+
+def assert_strip_inline_citation_markers():
+    # Strips the whole marker (with or without a URL), leaving the prose; the
+    # verify prefilter uses this to compare a sentence's text against a claim.
+    assert kl.strip_inline_citation_markers(
+        "AI systems are high-risk<sup>[3](https://x.eu/c)</sup>.") == "AI systems are high-risk."
+    assert kl.strip_inline_citation_markers("A synthesis claim<sup>[2]</sup>.") == "A synthesis claim."
+    # Multiple markers in one sentence.
+    assert kl.strip_inline_citation_markers(
+        "A<sup>[1](u1)</sup> and B<sup>[2](u2)</sup>.") == "A and B."
+    # No markers → unchanged.
+    assert kl.strip_inline_citation_markers("plain text") == "plain text"
+
+
+check("strip_inline_citation_markers", assert_strip_inline_citation_markers)
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
 check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
@@ -229,6 +306,7 @@ check("first_url", assert_first_url)
 check("md_link_dest", assert_md_link_dest)
 check("strip_reference_section", assert_strip_reference_section)
 check("renumber_inline_citations", assert_renumber_inline_citations)
+check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 PY
 )
 
@@ -255,6 +333,8 @@ grade first_url               "first_url — JSON-list + non-JSON fallback URL e
 grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
+grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
+grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

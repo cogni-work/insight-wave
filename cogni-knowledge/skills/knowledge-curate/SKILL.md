@@ -140,16 +140,16 @@ For each sub-question id selected in Step 0:
 
    `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills). `KNOWLEDGE_ROOT` + `MAX_AGE_DAYS` drive the curator's Phase-4 fetch through `fetch-cache.py`. `MARKET_CONFIG_PATH` points at the single market config resolved in Step 0 — every curator in this run reads the **same** authority list (#304); `MARKET` stays as the informational region label for query localization.
 
-3. Default cadence: dispatch sub-questions in parallel **when 3 or fewer**; otherwise sequential. Parallelism helps wall-clock but each curator now does its own WebSearch **and** WebFetch — three concurrent curators is the rate-limit-friendly ceiling. Folding the fetch into this parallel round is exactly the Option-B win (#292): the fetch wall-clock collapses to the slowest curator wave instead of a strictly-sequential Phase-3 batch loop.
+3. **Dispatch all N sub-questions in one fan-out wave (#299).** Emit **one assistant message containing all N `Task(source-curator, …)` calls** — that single-message batch is what makes them run concurrently (the same mechanism `knowledge-verify` Step 3.1(b) uses to fan its verifier shards). N is bounded by the plan: `knowledge-plan` hard-caps a plan at **3–7 sub-questions** (8+ is rejected with "plan per theme"), so N ≤ 7 and one wave always covers the whole plan. Peak concurrent web calls = N (each curator does its WebSearch **and** WebFetch sequentially *within* itself), which is the same scale the verifier fan-out already runs at M12-green. The earlier ≤3-per-wave cadence ran a 6-SQ plan as two sequential waves (~doubled fetch wall-clock); one wave collapses it to a single round. Defensive only: if a future plan-cap change ever yields N > 8, batch into waves of 8 — this cannot occur under the current cap.
 
-4. After each curator returns successfully, merge the batch:
+4. After **all** curators return, merge each returned batch via sequential `append-batch` calls (one per sq-id):
    ```
    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/candidate-store.py append-batch \
        --project-path <project_path> \
        --batch-file <batch_path>
    ```
 
-   `append-batch` is file-locked (`fcntl.flock`) so concurrent merges from parallel curators are safe.
+   `append-batch` is file-locked (`fcntl.flock`); concurrent merges are safe, so this is belt-and-suspenders now that the merges run after the wave rather than interleaved with it.
 
 5. On a curator failure (`{"ok": false, …}` summary, or a missing batch file), record the sq-id in a `failed_curators[]` collection and continue. Do not abort the skill — partial coverage is better than zero coverage.
 

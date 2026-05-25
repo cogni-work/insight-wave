@@ -1,5 +1,49 @@
 # cogni-knowledge changelog
 
+## 0.1.6 — 2026-05-25
+
+Slice 15 of the Phase 5 v0.1.x bake-in (**#264**) — two cost / wall-clock wins for the inverted pipeline. Maturity stays **Preview**. Closes **#299**, **#305**; epic **#264**.
+
+### Changed
+
+- **#299 — Phase 2 fans all sub-questions in one wave.** `knowledge-curate` Step 3 previously dispatched curators in waves of ≤3, so a 6-sub-question plan ran two sequential waves (~doubled fetch wall-clock now that each curator does its own WebFetch under Option B). It now emits **one assistant message containing all N `Task(source-curator, …)` calls** — the same single-message fan-out `knowledge-verify` already uses for its verifier shards. The plan cap bounds the wave: `knowledge-plan` hard-caps a plan at 3–7 sub-questions, so N ≤ 7 and one wave always covers the whole plan; peak concurrent web calls = N (each curator's WebSearch/WebFetch are sequential within itself), the scale the verifier fan-out already runs at M12-green. Batch merges (`candidate-store.py append-batch`, already `flock`-safe) now run after the wave. File: `skills/knowledge-curate/SKILL.md`.
+
+### Fixed (performance)
+
+- **#305 — Phase 6 verify is incremental and the revisor patches in place.** Three coupled changes cut the verify→revise loop's cost:
+  - **Patch-in-place revisor.** The orchestrator pre-creates `draft-v{N+1}.md` as a verbatim `cp` of the verified draft, and `revisor` now `Edit`s only the changed sentences in place (gained `Edit` in its tools) instead of regenerating the whole ~5k-word draft. This keeps untouched sentences byte-identical across versions — the precondition that makes incremental re-verify sound — and stops a global rewrite from introducing fresh deviations in prose it was not asked to touch.
+  - **Incremental re-verify.** `verify-store.py` gains `shard --only-ids`, `merge --manifest` (conservation against the current manifest id-set), and `merge --carry-forward-from` (fold untouched verdicts from the prior round). After a revisor round, `knowledge-verify` re-scores only `DELTA_IDS` (the citations the revisor rephrased/repointed) and carries the rest forward, so the verifier shards shrink to the touched-citation delta while the canonical `verify-vN.json` stays complete (`knowledge-finalize` reads `counts`).
+  - **Deterministic substring pre-filter.** New `verify-store.py prefilter` classifies a citation `verbatim` without an LLM call when the manifest's `draft_sentence` contains the cited claim's `excerpt_quote` (fallback `text`) as an exact substring. It is **fail-safe** — a page it cannot parse, or a cross-language sentence, simply falls through to the LLM verifier; it never emits a deviation or a drop, so correctness is independent of the parser's completeness. Backed by a new narrow, stdlib-only `_knowledge_lib.parse_pre_extracted_claims()` (no PyYAML).
+  - Files: `agents/revisor.md`, `skills/knowledge-verify/SKILL.md`, `scripts/verify-store.py`, `scripts/_knowledge_lib.py`.
+
+### Tests
+
+- `tests/test_verify_store.sh` — `shard --only-ids`; `prefilter` (match / cross-language no-match / unparseable-page fail-safe / no-deviation invariant); `merge --manifest` conservation (and why a non-manifest merge of prefilter+delta is rejected); `merge --carry-forward-from` (delta re-scored + untouched carried == manifest, empty-delta round, missing-`--manifest` and missing-prior-verdict rejections); reshard preserves the prefilter fragment.
+- `tests/test_knowledge_lib.sh` — `parse_pre_extracted_claims()` units (block-list dicts incl. colon-bearing values; malformed / empty frontmatter → `[]`).
+- `tests/test_verify_contract.sh` — revisor `Edit` tool + patch-in-place language (no whole-draft compose); knowledge-verify `cp` substrate, prefilter, `--only-ids`, `--carry-forward-from`, `DELTA_IDS`.
+- `tests/test_skill_contracts.sh` — knowledge-curate one-wave fan-out assertion + `assert_not_grep '3 or fewer'`.
+
+### Notes
+
+- Ships on deterministic-gate + contract coverage, consistent with Slices 3–14. No schema bump. The live convergence re-run folds into the open #311 German bake-in.
+
+### Review fixes
+
+A multi-angle review of the prefilter surfaced several ways it could emit a wrong-too-strong `verbatim` (silently skipping verification) — the fail-safe guarantee did not actually hold. Hardened:
+
+- **No false `verbatim` from a degenerate needle.** A YAML block-scalar value (`excerpt_quote: >` / `|`) was parsed as the bare indicator `>`/`|`, which substring-matches the `<sup>…</sup>` marker in every cited sentence. The parser now drops block-scalar headers (the field is simply absent), and the prefilter requires a **substantial** needle (`MIN_PREFILTER_NEEDLE_LEN = 24`) so short/coincidental matches (`"AI"`, stray punctuation) fall through to the LLM.
+- **Draft-staleness guard.** The prefilter now reads the current draft (new `--draft`, threaded by `knowledge-verify`) and only asserts `verbatim` when the manifest `draft_sentence` is actually present in it — matching the `sentence_not_in_draft` check the wiki-verifier applies; it never auto-passes a stale sentence.
+- **NFC normalization.** Both sides of the substring test are NFC-normalized, so genuinely-verbatim non-ASCII citations (German/French/Polish/… — the markets the plugin targets) are matched across NFC/NFD composition instead of silently missing.
+- **Deterministic re-verify delta.** `DELTA_IDS` is now derived from a deterministic diff of a pre-revisor manifest **snapshot** vs the rewritten manifest, not the LLM revisor's self-reported `fixes_applied` — an under-report can no longer carry a stale verdict forward.
+- **Stale-fragment cleanup.** `knowledge-verify` runs `shard` every round (even when nothing remains to score) so a numbered fragment left by an interrupted prior attempt at the same draft version cannot leak into the merge.
+- **Robustness guards in `verify-store.py`:** `merge --manifest` rejects a manifest with null/duplicate ids (instead of a self-contradictory conservation error); `merge --carry-forward-from` rejects a prior file with duplicate ids (instead of silent last-write-wins); the prefilter treats a duplicate `claim_id` on one page as ambiguous and falls through. `_unquote_scalar` decodes double-quoted values via `json.loads` (the ingester's writer), handling escaped quotes / `\n` / `\uXXXX` correctly. The revisor's empty-deviations invariant was reworded for patch-in-place.
+
+Follow-up review (PR #316) — one LOW + one NIT:
+
+- **`verbatim` now means "is the quote", not "contains the quote".** The prefilter matched `excerpt_quote in draft_sentence`, so a sentence embedding the excerpt verbatim but adding an unsupported qualifier/negation ("…only after 2027", "Contrary to…") would auto-pass and skip the LLM that would flag it. The match now strips the inline `<sup>[N](url)</sup>` marker(s) (new `_knowledge_lib.strip_inline_citation_markers`) and requires the needle to cover ≥ `PREFILTER_COVERAGE_RATIO` (0.9) of the resulting sentence — a qualifier-wrapped excerpt drops below that and falls through to the LLM.
+- **Per-round manifest snapshots are cleaned up.** `knowledge-verify` Step 4 now `rm -f`s the `.metadata/.citation-manifest.pre-r*.json` diff snapshots once the run is validated, instead of leaving them in `.metadata/`.
+- Tests: `test_verify_store.sh` + `test_knowledge_lib.sh` gained cases for every guard above (block-scalar, short-needle, qualifier-wrapped, stale-sentence, NFC/NFD, duplicate-claim, duplicate-manifest-id, duplicate-carry-forward-id, inline-comment, column-0 bullets, marker-stripping); `test_verify_contract.sh` asserts the deterministic-diff DELTA, manifest snapshot, `--draft`, and always-run-shard wiring.
+
 ## 0.1.5 — 2026-05-25
 
 Slice 14 of the Phase 5 v0.1.x bake-in (**#264**) — two pipeline state / config-robustness bugs from the first real DACH run. No schema bump, no script change (both fixes reuse existing helpers). Maturity stays **Preview**. Closes **#302**, **#304**; epic **#264**.
