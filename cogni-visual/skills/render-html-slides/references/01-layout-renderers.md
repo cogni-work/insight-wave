@@ -9,6 +9,16 @@ the field contracts when parsing the brief in Phase 1.
 Each layout's YAML fields must be preserved exactly when parsing into `slide-data.json`.
 The Python script expects these field names and structures.
 
+### Bottom-Banner (all layouts)
+
+`Bottom-Banner` is layout-independent. Parse it to the **top-level** `bottom_banner`
+field on the slide (a sibling of `fields`, not inside it). The renderer emits it as
+a shared footer on every layout — including `title-slide`, `closing-slide`, and any
+unrecognized layout — so it is not repeated in the per-layout contracts below. The
+value may be a dict with a `Text:` key or a plain string. The legacy form, nested as
+`Bottom-Banner` inside `fields` (shown in some layout examples below), is still
+accepted by the renderer.
+
 ### title-slide
 
 ```yaml
