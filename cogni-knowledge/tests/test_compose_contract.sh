@@ -31,6 +31,9 @@ assert_grep 'draft-v' "$COMPOSE" "knowledge-compose: writes draft-vN.md"
 assert_grep 'citation-manifest.json' "$COMPOSE" "knowledge-compose: writes citation-manifest.json"
 assert_grep '"schema_version": "0.1.0"' "$COMPOSE" "knowledge-compose: citation-manifest schema 0.1.0"
 assert_grep 'Task(wiki-composer' "$COMPOSE" "knowledge-compose: dispatches wiki-composer via Task"
+# Slice 13 (#300): threads the project's output_language into the composer dispatch.
+assert_grep 'OUTPUT_LANGUAGE=' "$COMPOSE" "knowledge-compose: threads OUTPUT_LANGUAGE into the wiki-composer dispatch (#300)"
+assert_grep 'output_language' "$COMPOSE" "knowledge-compose: reads plan.json::output_language (#300)"
 assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogni-wiki (clean-break)"
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
 assert_grep 'writer-outline-v' "$COMPOSE" "knowledge-compose: F11 — detects writer-outline-vN.json for recovery"
@@ -83,18 +86,34 @@ assert_grep 'draft-v' "$COMPOSER" "wiki-composer: writes output/draft-vN.md"
 # Scope-discipline negatives — these deferred surfaces may appear in the
 # header HTML comment (as provenance documenting what the fork dropped)
 # but MUST NOT appear in the input parameter table or as live workflow.
-# Pattern is the parameter-table-row form `| \`TOKEN\` |` (mirrors how the
-# OUTPUT_LANGUAGE check works below).
+# Pattern is the parameter-table-row form `| \`TOKEN\` |`.
 assert_not_grep '01-contexts/data' "$COMPOSER" "wiki-composer: does NOT reference cogni-research's 01-contexts/data"
 assert_not_grep '02-sources/data' "$COMPOSER" "wiki-composer: does NOT reference cogni-research's 02-sources/data"
-for token in OUTPUT_LANGUAGE PROSE_DENSITY CITATION_FORMAT EXPANSION_NOTES STORY_ARC_ID; do
+# Slice 13 (#300): OUTPUT_LANGUAGE + CITATION_FORMAT are now LIVE parameter rows
+# (the composer honours the project's output_language and a numbered citation
+# format). The remaining three stay deferred.
+for token in OUTPUT_LANGUAGE CITATION_FORMAT; do
+  if grep -q "| \`${token}\` |" "$COMPOSER"; then
+    green "PASS: wiki-composer: ${token} parameter row present (#300 — language/citation-format aware)"
+  else
+    red "FAIL: wiki-composer: ${token} parameter row missing (#300 expects it as a live input)"
+    errors=$((errors + 1))
+  fi
+done
+for token in PROSE_DENSITY EXPANSION_NOTES STORY_ARC_ID; do
   if grep -q "| \`${token}\` |" "$COMPOSER"; then
     red "FAIL: wiki-composer: ${token} parameter row present (deferred surface)"
     errors=$((errors + 1))
   else
-    green "PASS: wiki-composer: no ${token} parameter row (deferred in v0.0.22)"
+    green "PASS: wiki-composer: no ${token} parameter row (deferred)"
   fi
 done
+# #300 inline-citation convention: numbered [N] inline, wikilinks confined to
+# the reference list (never in prose), numbered in first-appearance order.
+assert_grep 'first-appearance order' "$COMPOSER" "wiki-composer: numbers [N] in first-appearance order (#300)"
+assert_grep '\[\[N\]\]' "$COMPOSER" "wiki-composer: forbids the Obsidian-colliding [[N]] form (#300)"
+assert_grep 'reference list, never in prose' "$COMPOSER" "wiki-composer: wikilinks confined to the reference list, not prose (#300)"
+assert_grep 'OUTPUT_LANGUAGE' "$COMPOSER" "wiki-composer: honours OUTPUT_LANGUAGE for output + headings (#300)"
 # `aggregated-context.json` is cogni-research's input shape. The fork
 # header explains it was dropped; the composer must not READ it. The
 # read-input contract lives in Phase 0 — assert the workflow phase

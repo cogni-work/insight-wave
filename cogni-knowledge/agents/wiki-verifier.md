@@ -55,7 +55,7 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
    - If absent, try `<WIKI_ROOT>/wiki/syntheses/<slug>.md` → `page_kind_by_slug[slug] = "synthesis"`.
    - If neither exists, record the slug in a `missing_pages` set — every citation pointing at it gets verdict `unsupported` with `reason: "page_not_found"` in Phase 1.
 
-   The directory is the **only** authoritative signal for whether a citation targets first-class evidence (`sources/`) vs. cross-source framing (`syntheses/`). Phase 1's `synthesis` verdict depends on this — do not infer page kind from `claim_id == null` alone (M7's composer emits `claim_id: null` on synthesis-page wikilinks AND when it failed to find a matching claim on a source page; only the directory disambiguates).
+   The directory is the **only** authoritative signal for whether a citation targets first-class evidence (`sources/`) vs. cross-source framing (`syntheses/`). Phase 1's `synthesis` verdict depends on this — do not infer page kind from `claim_id == null` alone (M7's composer emits `claim_id: null` on synthesis-page citations AND when it failed to find a matching claim on a source page; only the directory disambiguates).
 
 4. For each present page, `Read` it and parse the YAML frontmatter:
    - Extract `pre_extracted_claims:` into an in-memory dict `claims_by_id[claim_id] = {text, excerpt_quote}`. If the field is absent or empty (synthesis pages typically have none), leave the dict empty for that slug — Phase 1's dispatch table reads `page_kind_by_slug[slug]` to decide what to do.
@@ -69,8 +69,8 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 
 2. **Resolve the verdict** (page kind from Phase 0 step 3's `page_kind_by_slug[wiki_slug]` is authoritative — do NOT infer from `claim_id`):
    - **`unsupported`** with `reason: "page_not_found"` — the slug is in `missing_pages` (Phase 0 step 3 found no file under either `sources/` or `syntheses/`).
-   - **`synthesis`** — `page_kind_by_slug[wiki_slug] == "synthesis"` AND `claim_id` is `null`. The manifest emits `claim_id: null` for synthesis-page wikilinks per `agents/wiki-composer.md:96`. Surface in `verified[]`. Do not score — synthesis pages are not first-class evidence and this verdict never triggers the revisor.
-   - **`unsupported`** with `reason: "composer_dropped_claim"` — `page_kind_by_slug[wiki_slug] == "source"` AND `claim_id` is `null`. The composer cited a source page but couldn't identify a matching pre-extracted claim (see `agents/wiki-composer.md:96` — the composer was instructed to drop the citation in that case, but if a `claim_id: null` manifest entry pointing at a source page is present, the composer didn't follow through). The revisor's `claim_not_found` triage path picks this up.
+   - **`synthesis`** — `page_kind_by_slug[wiki_slug] == "synthesis"` AND `claim_id` is `null`. The manifest emits `claim_id: null` for synthesis-page citations (see `agents/wiki-composer.md` Phase 2, the `claim_id` rule). Surface in `verified[]`. Do not score — synthesis pages are not first-class evidence and this verdict never triggers the revisor.
+   - **`unsupported`** with `reason: "composer_dropped_claim"` — `page_kind_by_slug[wiki_slug] == "source"` AND `claim_id` is `null`. The composer cited a source page but couldn't identify a matching pre-extracted claim (see `agents/wiki-composer.md` Phase 2's `claim_id` rule — the composer was instructed to drop the citation in that case, but if a `claim_id: null` manifest entry pointing at a source page is present, the composer didn't follow through). The revisor's `claim_not_found` triage path picks this up.
    - **`unsupported`** with `reason: "claim_not_found"` — page exists (under `sources/`), `claim_id` is non-null, but no entry in `claims_by_id[claim_id]` matches.
    - **`verbatim`** — the draft sentence reproduces the claim's `text` or `excerpt_quote` near-exactly (≥ 90% lexical overlap; case- and whitespace-insensitive comparison; punctuation-tolerant). Use your own judgement on the threshold — there's no string-match function available, only your reading. Verbatim is acceptable but signals copy-paste over synthesis; flag in the dashboard.
    - **`paraphrase`** — the draft sentence makes the same factual claim as `claims_by_id[claim_id]` (numbers match, named entities match, relation matches) but uses different wording. This is the desired state.
@@ -78,7 +78,7 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 
 3. **Append to the running output.** Verdict `verbatim` / `paraphrase` / `synthesis` go to `verified[]`. Verdict `unsupported` goes to `deviations[]`. Each entry carries `id` (the manifest entry's stable id — the join key the orchestrator's prune step and the revisor use), `draft_position` (best-effort locator, echoed through unchanged), `wiki_slug`, `claim_id` (may be `null` for `synthesis`), `verdict`, and (for `unsupported` only) `reason` + `note`.
 
-4. **Score every citation exactly once.** Two adjacent wikilinks at the same sentence share a `draft_sentence` but carry distinct `id`s (and usually distinct `claim_id`s) — score each independently.
+4. **Score every citation exactly once.** Two adjacent citation markers at the same sentence share a `draft_sentence` but carry distinct `id`s (and usually distinct `claim_id`s) — score each independently.
 
 ### Phase 2: Write + verify
 
@@ -132,7 +132,7 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 
 - **Be conservative on `paraphrase`.** A draft sentence that adds a quantifier (`mostly`, `largely`, `in some cases`) or shifts scope (`EU-wide` vs. `Germany`) is **not** a paraphrase — that's `unsupported`. The revisor needs the strict signal to do its job.
 - **Verbatim is fine but flag it.** Aggressive copy-paste signals weak synthesis; the dashboard surfaces the verbatim/paraphrase ratio later. Do not "promote" a verbatim match to paraphrase out of generosity.
-- **Synthesis is informational.** Citations to `[[syntheses/<slug>]]` carry `claim_id: null` by design; do not attempt to score them and do not count them as deviations.
+- **Synthesis is informational.** Citations whose `wiki_slug` resolves to a `syntheses/` page carry `claim_id: null` by design; do not attempt to score them and do not count them as deviations.
 
 ## What this agent does NOT do
 

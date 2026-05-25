@@ -28,11 +28,13 @@ Reshape vs upstream (narrow on purpose):
    on a wiki-only pipeline), expansion-mode branch (citation_density{},
    placed-evidence ledger, cross_references_emitted, density self-check,
    word-budget +20% / -20% caps), arc-preservation discipline (no
-   STORY_ARC_ID), language-aware revision (English-only at v0.0.23,
-   matches M7), citation-format preservation matrix (single
-   `[[sources/<slug>]]` shape on the wiki side), oscillation detection
-   (no verdict chain), confidence assessment table (no new evidence to
-   confidence-rate).
+   STORY_ARC_ID), the upstream multi-format citation-preservation
+   matrix (the inverted pipeline uses ONE inline shape — clickable
+   numbered `<sup>[N](url)</sup>` since v0.1.4, with `[[…]]` wikilinks
+   confined to the reference list — so there is no per-format branch),
+   oscillation detection (no verdict chain), confidence assessment table
+   (no new evidence to confidence-rate). Revision follows the draft's
+   OUTPUT_LANGUAGE (it edits the existing prose in place), not English-only.
  - Outputs: draft-v{N+1}.md + rewritten citation-manifest.json with
    `draft_version: N+1`. The verifier reads the manifest, so the manifest
    has to track the latest draft. The audit trail of past verdicts is
@@ -87,10 +89,10 @@ For each deviation, edit the in-memory draft:
 
 1. **Locate the sentence.** Exact-string-search the draft for the deviation entry's `draft_sentence` (recovered by `id` join in Phase 0 step 3) — it was copied verbatim by the composer / previous round, so it is a stable, unambiguous anchor. **Do not count sentences and do not re-tokenize by delimiter** — that re-derivation is exactly the off-by-one F22 removed. If the exact sentence appears more than once (rare), disambiguate with the best-effort `draft_position` as a hint. If it is **not found at all** (the draft drifted out from under the manifest), treat it as a `sentence_not_in_draft` drop: remove the manifest entry, make no prose change, and record it under `drop` in `fixes_summary`.
 
-2. **Apply the fix per the triage outcome above:**
-   - **Rephrase** — replace the sentence with a version that lines up with the *cited* claim's `text` (or `excerpt_quote` if you need to preserve a specific phrase), keeping the same `claim_id`. Keep the inline `[[sources/<slug>]]` wikilink in place. Preserve neighbouring sentences byte-for-byte — surgical correction, not paragraph rewrite.
-   - **Repoint** — when a *different* on-page claim covers the sentence better (the `claim_not_found` / `composer_dropped_claim` path, or a better cover found while fixing `claim_text_misaligned`): rewrite the sentence to line up with that claim and switch the manifest entry's `claim_id` to it. Keep the same `[[sources/<slug>]]` wikilink (same page). This is the preferred fix — it preserves the citation instead of eroding evidence.
-   - **Drop the citation** — only when no on-page claim covers the sentence (or `page_not_found`). Remove the inline `[[sources/<slug>]]` wikilink and rewrite the sentence as non-evidence-based ("Reports suggest …", "Available evidence indicates …", or remove the sentence entirely if it carried no independent content). Removing the citation also requires removing the corresponding `citations[]` entry from the in-memory manifest copy in Phase 0 step 2.
+2. **Apply the fix per the triage outcome above.** The inline citation is a clickable numbered marker `<sup>[N](url)</sup>` (the v0.1.4 shape — `[N]` is the source's first-appearance ordinal, `url` is the source page's URL); there is no inline `[[…]]` wikilink to manipulate (those live only in the reference list). Edit the prose **in the draft's existing language** — you are correcting one sentence, not translating it.
+   - **Rephrase** — replace the sentence with a version that lines up with the *cited* claim's `text` (or `excerpt_quote` if you need to preserve a specific phrase), keeping the same `claim_id`. **Keep the inline `<sup>[N](url)</sup>` marker in place, byte-for-byte** (same `N`, same `url`). Preserve neighbouring sentences byte-for-byte — surgical correction, not paragraph rewrite.
+   - **Repoint** — when a *different* on-page claim covers the sentence better (the `claim_not_found` / `composer_dropped_claim` path, or a better cover found while fixing `claim_text_misaligned`): rewrite the sentence to line up with that claim and switch the manifest entry's `claim_id` to it. **Keep the same inline `<sup>[N](url)</sup>` marker** (same source page, same `N`, same `url`). This is the preferred fix — it preserves the citation instead of eroding evidence.
+   - **Drop the citation** — only when no on-page claim covers the sentence (or `page_not_found`). Remove the inline `<sup>[N](url)</sup>` marker and rewrite the sentence as non-evidence-based ("Reports suggest …", "Available evidence indicates …", or remove the sentence entirely if it carried no independent content). Removing the citation also requires removing the corresponding `citations[]` entry from the in-memory manifest copy in Phase 0 step 2. Do **not** renumber the surviving `[N]` markers — `knowledge-finalize` re-derives clean, contiguous numbering (body + reference list) from the manifest at deposit, keyed by URL, so a gap left here is cosmetic and is normalized downstream.
 
 3. **Update the manifest copy.** Always **preserve the entry's `id`** (it is the join key the next round's verifier and orchestrator rely on). For every fix:
    - **Rephrase / Repoint** — keep `id` + `wiki_slug`; **update `draft_sentence` to the exact new sentence text** you wrote (this is the load-bearing alignment surface the next verifier round scores against — it MUST match the prose byte-for-byte); for a repoint, also update `claim_id` to the chosen on-page claim.
@@ -105,7 +107,7 @@ For each deviation, edit the in-memory draft:
 
 1. **Compose the revised draft** as one markdown string. `Write` it to `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md` exactly once — spilling the draft into the response body can exhaust your output budget before `Write` fires.
 
-2. **Read-back verify the draft.** Immediately after `Write` returns, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty and roughly match the length you composed. **Citation-integrity check** (regression guard): every `[[sources/...` opening in the content MUST have a matching `]]` close on the same line, and the number of `[[sources/<slug>]]` complete wikilinks MUST equal the number of `citations[]` entries in the in-memory manifest you're about to write (modulo entries you intentionally dropped). A truncated wikilink like `[[sources/foo` (no close) or a plain-text collapse like `(sources/foo)` is a regression — even though a `[[sources/` substring grep would still match. If the count is off by more than the explicit drops, the LLM either truncated a citation mid-token or collapsed one to plain text — `Write` once more with the same content and re-verify. If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
+2. **Read-back verify the draft.** Immediately after `Write` returns, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty and roughly match the length you composed. **Citation-integrity check** (regression guard): count the inline numbered citation markers in the **body** (each is a `<sup>[N](url)</sup>`, or a plain `<sup>[N]</sup>` for a synthesis citation with no URL). That count MUST equal the number of `citations[]` entries in the in-memory manifest you're about to write (modulo entries you intentionally dropped) — every retained citation has exactly one inline marker, and re-citing a source reuses its `[N]` but still places a distinct marker per citation. A marker that collapsed to plain text (e.g. `[1]` with no `<sup>`/link) or a `[[N]]` double-bracket (the Obsidian-colliding form #300 forbids) is a regression. If the count is off by more than the explicit drops, the LLM truncated or malformed a citation — `Write` once more with the same content and re-verify. **Do not** emit any inline `[[sources/<slug>]]` wikilink in the body — those belong only in the reference list (the draft body carries no `[[…]]`). If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
 
 3. **Rewrite the citation manifest.** Carry every retained entry's `id` forward, with its `draft_sentence` updated to the new prose (Phase 2 step 3) and `draft_position` left best-effort. Compose:
 
@@ -114,8 +116,8 @@ For each deviation, edit the in-memory draft:
      "schema_version": "0.1.0",
      "draft_version": 2,
      "citations": [
-       {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
-       {"id": "cit-002", "draft_position": "02:05", "draft_sentence": "Stand-alone systems listed in Annex III are also in scope.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
+       {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
+       {"id": "cit-002", "draft_position": "02:05", "draft_sentence": "Stand-alone systems listed in Annex III are also in scope<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
      ]
    }
    ```
