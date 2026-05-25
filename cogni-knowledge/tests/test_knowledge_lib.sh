@@ -119,6 +119,10 @@ def assert_slugify():
         "Maß": "mass",
         "Café": "cafe",
         "El Niño": "el-nino",
+        # Polish ł has no NFKD decomposition and is not auto-de-accented; the
+        # manual map (ł→l) keeps the supported PL market legible (#303 review).
+        "Wrocław": "wroclaw",
+        "łódź": "lodz",
         "": "",
         "   ": "",
         "!!!": "",
@@ -126,6 +130,15 @@ def assert_slugify():
     for inp, exp in cases.items():
         got = kl.slugify(inp)
         assert got == exp, f"slugify({inp!r})={got!r} expected {exp!r}"
+    # NFD-form input (decomposed umlaut) must slugify identically to NFC — the
+    # transliteration runs after an NFC compose, so macOS/web-sourced decomposed
+    # text does not silently fall back to bare-vowel de-accenting (#303 review).
+    import unicodedata
+    assert kl.slugify(unicodedata.normalize("NFD", "für")) == "fuer", "NFD für -> fuer"
+    assert kl.slugify(unicodedata.normalize("NFD", "Geschäftsidee")) == "geschaeftsidee", "NFD Geschäftsidee"
+    # NFKD compatibility decomposition can emit UPPERCASE ASCII; the final
+    # lowercase pass folds it instead of the keep-regex dropping it (#303 review).
+    assert kl.slugify("№5") == "no5", f"NFKD-uppercase: got {kl.slugify('№5')!r}"
     # max-len truncation preserved (default 80), with no trailing dash.
     long = kl.slugify("a" * 100)
     assert len(long) == 80, f"max-len not enforced: len={len(long)}"
@@ -140,6 +153,10 @@ def assert_ref_heading():
     assert kl.ref_heading("en") == "References", kl.ref_heading("en")
     assert kl.ref_heading("xx") == "References", "unknown code → English"
     assert kl.ref_heading(None) == "References", "None → English"
+    # A non-str language (malformed plan.json) must default to English, not
+    # crash on .lower() (#301 review).
+    assert kl.ref_heading(5) == "References", "non-str (int) → English, no crash"
+    assert kl.ref_heading(True) == "References", "non-str (bool) → English, no crash"
 
 
 check("identity", assert_identity)

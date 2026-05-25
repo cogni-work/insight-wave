@@ -411,8 +411,12 @@ if body.startswith("# "):
 # list (the #301 duplicate bug). Match the localized heading AND English (covers
 # mixed-state drafts), case-insensitive, from the LAST such H2 to EOF.
 strip_words = [heading] + ([] if heading == "References" else ["References"])
+# Anchor on (?:\A|\n) and (?:\n|\Z) so the heading matches even when it is the
+# FIRST line of body (after the H1 strip + lstrip) or the LAST line with no
+# trailing newline — a bare `\n##…\n` would miss both, leaving the composer's
+# reference section in place and depositing two (the #301 duplicate recurring).
 ref_re = re.compile(
-    r"\n##[ \t]+(?:" + "|".join(re.escape(w) for w in strip_words) + r")[ \t]*\n",
+    r"(?:\A|\n)##[ \t]+(?:" + "|".join(re.escape(w) for w in strip_words) + r")[ \t]*(?:\n|\Z)",
     re.IGNORECASE,
 )
 matches = list(ref_re.finditer(body))
@@ -420,30 +424,39 @@ if matches:
     body = body[: matches[-1].start()]
 else:
     # Safety net for an unrecognized heading word (e.g. the composer emitted a
-    # synonym): strip the last H2 whose body is a pure citation/list block.
-    h2s = list(re.finditer(r"\n##[ \t]+.*\n", body))
+    # synonym like `## Quellen`): strip the last H2 — but ONLY when its whole
+    # body is a genuine REFERENCE list, i.e. every non-blank line is a wikilink
+    # entry (`[[sources/` / `[[syntheses/`) or a numbered `**[N]**` entry. A
+    # generic trailing bullet list (Recommendations / Conclusions) is NOT a
+    # reference list and MUST survive — the looser "any bullet/bracket line"
+    # test silently deleted real content sections.
+    h2s = list(re.finditer(r"(?:\A|\n)##[ \t]+.*(?:\n|\Z)", body))
     if h2s:
         tail = body[h2s[-1].end():]
         tail_lines = [ln.strip() for ln in tail.splitlines() if ln.strip()]
-        if tail_lines and all(ln.startswith(("- ", "* ", "**[", "[")) for ln in tail_lines):
+        if tail_lines and all(
+            ("[[sources/" in ln) or ("[[syntheses/" in ln) or ln.startswith("**[")
+            for ln in tail_lines
+        ):
             body = body[: h2s[-1].start()]
 
-# Renumber the body's inline source citations to match the re-derived,
-# contiguous reference numbering (N = cited_slugs first-appearance index + 1).
-# Keyed by URL — each source page has a unique sources: URL, so an inline
-# <sup>[<any-n>](<url>)</sup> is rewritten to its canonical [N]. This makes
-# finalize authoritative for numbering and absorbs composer/revisor drift
-# (e.g. a revisor that dropped every citation of one source, leaving a gap in
-# the body while the reference list re-packs). A no-op in the common case
-# (markers already carry their canonical N). Synthesis citations (plain [N],
-# no URL) are rare and left as authored. The lambda replacement sidesteps
-# re.sub backref interpretation of any character in the URL.
-for idx, slug in enumerate(cited_slugs):
-    u = url_by_slug.get(slug)
-    if not u:
-        continue
-    canonical = "<sup>[" + str(idx + 1) + "](" + u + ")</sup>"
-    body = re.sub(r"<sup>\[\d+\]\(" + re.escape(u) + r"\)</sup>", lambda m: canonical, body)
+# Renumber the body's inline citation markers to a contiguous 1..K matching the
+# re-derived reference list. The composer numbers markers in first-appearance
+# order; a revisor that drops every citation of one source leaves a gap
+# (body keeps [1][3] while the reference list re-packs to [1][2]). Remap by the
+# MARKER NUMBER itself — ascending == first-appearance == cited_slugs order — not
+# by URL: this is robust to two slugs sharing one URL, to URL normalization
+# drift, and to synthesis markers that carry no URL (a URL-keyed pass mishandled
+# all three). Rewrites only the `<sup>[N]` prefix; any trailing `(url)</sup>` is
+# untouched. A no-op when the markers are already contiguous (the common case).
+present = sorted({int(m.group(1)) for m in re.finditer(r"<sup>\[(\d+)\]", body)})
+if present and present != list(range(1, len(present) + 1)):
+    remap = {old: new for new, old in enumerate(present, start=1)}
+    body = re.sub(
+        r"<sup>\[(\d+)\]",
+        lambda m: "<sup>[" + str(remap[int(m.group(1))]) + "]",
+        body,
+    )
 
 page_text = (
     frontmatter

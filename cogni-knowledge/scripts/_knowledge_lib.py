@@ -108,11 +108,16 @@ def atomic_write_text(path: Path, text: str) -> Path:
 _SLUG_KEEP_RE = re.compile(r"[^a-z0-9]+")
 _SLUG_DASH_RUN_RE = re.compile(r"-+")
 
-# German transliteration applied to the lowercased string BEFORE NFKD de-accent.
-# NFKD alone strips the umlaut diaeresis (ü→u), giving `fur`; the German
-# convention expands it (ü→ue), giving `fuer`. Capital forms are covered by the
-# prior `.lower()` (Ä→ä, and ẞ→ß), so only the lowercase keys are needed.
-_GERMAN_TRANSLITERATION = (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss"))
+# Manual transliteration applied (on NFC-composed, lowercased text) BEFORE the
+# NFKD de-accent. NFKD alone is insufficient for two reasons: (1) it strips the
+# umlaut diaeresis (ü→u, giving `fur`) where the German convention expands it
+# (ü→ue, giving `fuer`); (2) some precomposed Latin letters have NO NFKD
+# decomposition (Polish ł) and NFKD would drop them entirely — ł→l keeps the
+# supported PL market legible. Capital forms are covered by the prior `.lower()`
+# (Ä→ä, ẞ→ß, Ł→ł), so only lowercase keys are needed.
+_MANUAL_TRANSLITERATION = (
+    ("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss"), ("ł", "l"),
+)
 
 
 def slugify(text: str, max_len: int = 80) -> str:
@@ -139,11 +144,17 @@ def slugify(text: str, max_len: int = 80) -> str:
     """
     if not text:
         return ""
-    lowered = text.lower()
-    for src, dst in _GERMAN_TRANSLITERATION:
+    # Lowercase, then COMPOSE (NFC) so decomposed input (NFD: u + combining
+    # diaeresis — common from macOS paths and some web/clipboard sources)
+    # presents as a single `ü` the transliteration map can match. Transliterate,
+    # then NFKD-decompose + drop combining marks to de-accent the rest
+    # (é→e, ñ→n), then lowercase AGAIN: NFKD compatibility decomposition can emit
+    # UPPERCASE ASCII (№→No, ™→TM) that the first `.lower()` never saw.
+    lowered = unicodedata.normalize("NFC", text.lower())
+    for src, dst in _MANUAL_TRANSLITERATION:
         lowered = lowered.replace(src, dst)
     decomposed = unicodedata.normalize("NFKD", lowered)
-    lowered = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    lowered = "".join(ch for ch in decomposed if not unicodedata.combining(ch)).lower()
     dashed = _SLUG_KEEP_RE.sub("-", lowered)
     collapsed = _SLUG_DASH_RUN_RE.sub("-", dashed).strip("-")
     if not collapsed:
@@ -171,8 +182,13 @@ REF_HEADING = {
 
 
 def ref_heading(lang: str | None) -> str:
-    """Reference-section heading word for `lang` (default/unknown → English)."""
-    return REF_HEADING.get((lang or "en").lower(), REF_HEADING["en"])
+    """Reference-section heading word for `lang` (default/unknown → English).
+
+    `str(...)` coerces a non-str `lang` (e.g. a number from a malformed
+    plan.json) to a harmless lookup miss → English, rather than crashing on
+    `.lower()`.
+    """
+    return REF_HEADING.get(str(lang or "en").lower(), REF_HEADING["en"])
 
 
 def is_pdf_response(content_type: str | None, url: str) -> bool:

@@ -21,6 +21,12 @@ Slice 13 of the Phase 5 v0.1.x bake-in (**#264**) — the first real DACH run ("
 - `tests/test_verify_contract.sh` — asserts the revisor operates on the numbered `<sup>[N](url)</sup>` shape, edits in `OUTPUT_LANGUAGE`, and dropped the stale "keep the inline `[[sources/…]]` wikilink" instruction.
 - Full suite green (20 files).
 
+### Review fixes (multi-angle code review of the slice)
+
+- **slugify robustness (#303 follow-ups).** (1) NFC-compose before transliterating, so NFD-form input (decomposed umlaut, common from macOS/web sources) slugifies identically to NFC — previously `NFD('für')`→`fur`, silently defeating the fix. (2) Lowercase **after** NFKD, so compatibility decompositions that emit uppercase ASCII (`№`→`No`, `™`→`TM`) are folded, not dropped by the keep-regex. (3) Added Polish `ł→l` to the manual map (`ł` has no NFKD decomposition and was being dropped — PL is a supported market). `ref_heading()` now `str()`-coerces its argument so a non-str `output_language` defaults to English instead of crashing on `.lower()`. New unit cases in `test_knowledge_lib.sh`.
+- **`knowledge-finalize` strip/renumber hardening (#301/#300 follow-ups).** (1) The reference-section strip regex is anchored `(?:\A|\n)…(?:\n|\Z)`, so a reference heading that is the first/last line of the body is matched — the strip-miss otherwise re-introduced the duplicate-reference-section (#301) bug. (2) The safety-net (unrecognized-heading fallback) now strips a trailing H2 **only when every line is a genuine reference entry** (`[[sources/`/`[[syntheses/`/`**[N]**`), so a trailing Recommendations/Conclusions bullet list is no longer silently deleted. (3) The inline-marker renumber now remaps by the **marker number** (ascending = first-appearance = `cited_slugs` order) instead of by URL — robust to two slugs sharing a URL, to URL normalization drift, and to synthesis markers (no URL), which a URL-keyed pass mishandled.
+- **Contract de-drift.** `wiki-composer`: synthesis citations are explicitly `<sup>[N]</sup>` (never a bare `[N]`, which the revisor's integrity guard would reject); the stale failure-mode line that still described an inline `[[sources/<slug>]]` is rewritten to the `[N]` shape; `CITATION_FORMAT` is documented as IEEE-only (the APA branch was unwired in `knowledge-compose` and structurally incompatible with finalize's numbered list).
+
 ### Version
 
 - `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — `0.1.3` → `0.1.4` (mirrored). Maturity stays `preview`.
