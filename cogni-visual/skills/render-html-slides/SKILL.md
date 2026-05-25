@@ -110,7 +110,7 @@ Write the parsed data to `{brief_dir}/cogni-visual/slide-data.json`:
 - Speaker-Notes is a multi-line YAML string (after `|`) — preserve the full text
 - Mermaid diagrams appear in the `Diagram:` field as multi-line strings
 - IS/DOES/MEANS labels come from the `Label:` field inside each box — but the Python script handles localization, so just pass the text content
-- Bottom-Banner can be a dict with `Text:` key or a plain string. Write it to the top-level `bottom_banner` field — the renderer emits it as a shared footer on **every** layout (title-slide, closing-slide, content layouts, and unrecognized layouts alike). The legacy form, nested as `Bottom-Banner` inside `fields`, is still accepted by the renderer.
+- Bottom-Banner can be a dict with `Text:` key or a plain string. Write it to the top-level `bottom_banner` field — the renderer emits it as a shared footer on **every** layout. The legacy nested form (`Bottom-Banner` inside `fields`) is also accepted.
 
 ### Phase 2: Theme → Design Variables
 

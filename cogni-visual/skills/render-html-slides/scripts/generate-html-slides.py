@@ -195,14 +195,10 @@ def render_bullets(bullets, css_class=""):
 def render_bottom_banner(slide):
     """Render a bottom banner if present.
 
-    The banner may live at the slide top level (``bottom_banner`` — the
-    canonical Phase-1 location) or inside ``fields["Bottom-Banner"]`` (the
-    legacy form some layout briefs use). Read both so the banner renders on
-    every layout regardless of which shape Phase 1 produced.
+    Accepts the canonical top-level ``bottom_banner`` and the legacy
+    ``fields["Bottom-Banner"]`` so the banner renders on every layout.
     """
-    banner = slide.get("bottom_banner")
-    if not banner:
-        banner = slide.get("fields", {}).get("Bottom-Banner")
+    banner = slide.get("bottom_banner") or slide.get("fields", {}).get("Bottom-Banner")
     if not banner:
         return ""
     text = banner.get("Text", "") if isinstance(banner, dict) else str(banner)
