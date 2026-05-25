@@ -45,3 +45,8 @@ cogni-research/test-diagram-pipeline/
 
 # cogni-knowledge Phase 4 alpha scratch (per-user research bases, not shared state)
 /.alpha/
+
+# Inverted-pipeline per-project fan-out + manifest intermediates (per-user, regenerable):
+# cogni-knowledge verify-shards + manifests, cogni-portfolio scan-output. /.alpha/ above
+# covers the in-repo alpha base; this covers a knowledge/portfolio project created elsewhere.
+**/.metadata/

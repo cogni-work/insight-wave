@@ -16,6 +16,7 @@
 #      - non-0.1.0 schema
 #      - draft_version mismatch
 #      - merge with no fragments present
+#      - citation missing id/draft_sentence (pre-0.0.28 manifest, #291)
 #
 # NOTE: no concurrency/file-lock case — unlike candidate-store.py, shards are
 # partition-disjoint and merge is single-shot, so there is no shared-write
@@ -218,6 +219,28 @@ if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['
   green "PASS: merge with no fragments rejected"
 else
   red "FAIL: merge with no fragments not rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 5e. Citation missing id/draft_sentence (pre-0.0.28 manifest) → reject (#291).
+#     schema_version + draft_version are valid, so this slips every check EXCEPT
+#     the per-entry id/draft_sentence guard.
+PRE028="$WORK/pre-028.json"
+cat > "$PRE028" <<'JSON'
+{
+  "schema_version": "0.1.0",
+  "draft_version": 1,
+  "citations": [
+    {"draft_position": "00:01", "wiki_slug": "page-a", "claim_id": "clm-001"}
+  ]
+}
+JSON
+OUT=$(python3 "$SCRIPT" shard --manifest "$PRE028" --draft-version 1 --shard-size 2 --out-dir "$WORK/pre028-out" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'v0.0.28' in d['error']" 2>/dev/null; then
+  green "PASS: pre-0.0.28 manifest (citation missing id/draft_sentence) rejected"
+else
+  red "FAIL: pre-0.0.28 manifest not rejected"
   red "  got: $OUT"
   errors=$((errors + 1))
 fi

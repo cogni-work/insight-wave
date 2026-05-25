@@ -48,6 +48,9 @@ assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: indexes synthesis
 assert_grep 'append-project' "$FIN" "knowledge-finalize: appends to binding via knowledge-binding.py append-project"
 assert_grep 'report-source wiki' "$FIN" "knowledge-finalize: hard-codes --report-source wiki on binding append"
 assert_grep 'wiki/log.md' "$FIN" "knowledge-finalize: appends to wiki/log.md"
+# #291: Step 9.5 best-effort sweeps the merged-away verify-shards/ fan-out scratch
+# after deposit. Anchors the housekeeping layer like Step 2's guard is anchored.
+assert_grep 'verify-shards' "$FIN" "knowledge-finalize: Step 9.5 sweeps verify-shards/ after deposit (#291)"
 # Match the actual log-line shape `## [DATE] finalize | project=...`.
 assert_grep '\] finalize | project=' "$FIN" "knowledge-finalize: emits the '## [DATE] finalize | project=...' log-line shape"
 assert_grep 'slugify' "$FIN" "knowledge-finalize: reuses _knowledge_lib.slugify for default slug"

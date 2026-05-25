@@ -63,6 +63,9 @@ fi
 # Defence-in-depth: stale-sentence deviations are filtered before the dispatch
 # decision (otherwise the revisor pays an LLM call just to drop manifest entries),
 # and the inline prune keys on the stable id (draft_position is best-effort now).
+# #291: Step 2 rejects a pre-0.0.28 manifest (entries missing id/draft_sentence)
+# loud-and-early instead of mass-dropping every citation as sentence_not_in_draft.
+assert_grep 'predates v0.0.28' "$VERIFY" "knowledge-verify: Step 2 guards a pre-0.0.28 citation-manifest (missing id/draft_sentence)"
 assert_grep 'sentence_not_in_draft' "$VERIFY" "knowledge-verify: filters sentence_not_in_draft out of the revisor trigger (revisor can only drop these)"
 assert_grep 'stale_ids' "$VERIFY" "knowledge-verify: prunes stale manifest entries by id, not by draft_position tuple"
 # Defence-in-depth: confirm there is no obsolete Skill("cogni-knowledge:wiki-verifier)

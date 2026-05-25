@@ -1,5 +1,27 @@
 # cogni-knowledge changelog
 
+## 0.1.2 — 2026-05-25
+
+Follow-up from the PR #290 review (**#291**) — guards `knowledge-verify` against a citation-manifest written before v0.0.28. F22 (v0.0.28) made `id` + `draft_sentence` required per citation but kept the additive `schema_version: "0.1.0"`, so a manifest from a ≤0.0.27 composer still declares `0.1.0` while carrying neither field. Run against such a mid-upgrade draft, the verifier would mass-drop every citation as `sentence_not_in_draft` and merge could trip its duplicate-id check on the `None` ids. Now it fails loud and early with a "re-run knowledge-compose" message. Plus secondary housekeeping. Maturity stays **Preview**. Closes **#291**; epic **#264**.
+
+### Fixed
+
+- **Pre-0.0.28 citation-manifest guard (two layers).** (1) Deterministic backstop: `verify-store.py` `_load_manifest()` now rejects any `citations[]` entry missing `id`/`draft_sentence` with `…predates v0.0.28; re-run knowledge-compose` (exit 1, standard JSON envelope). `_load_manifest` is the single chokepoint `cmd_shard` calls before any verifier dispatch and before merge, so it covers both failure modes. (2) Friendly early abort: `knowledge-verify` Step 2's inline manifest check fails the same way before the shard runs, so the orchestrated flow surfaces the cause first. Files: `scripts/verify-store.py`, `skills/knowledge-verify/SKILL.md`.
+
+### Housekeeping
+
+- **verify-shards sweep.** `knowledge-finalize` gains a best-effort Step 9.5 that `rm -rf`s `<project>/.metadata/verify-shards/` after the synthesis is deposited — the canonical `verify-vN.json` is already merged and finalize never reads the shards. Never blocks finalize. File: `skills/knowledge-finalize/SKILL.md`.
+- **`.gitignore`.** Added `**/.metadata/` so a knowledge/portfolio project created outside the in-repo `/.alpha/` base does not leave per-user, regenerable pipeline intermediates (verify-shards, manifests, scan-output) in `git status`. Does not untrack the already-tracked, separately-ignored `cogni-portfolio-evals/**/.metadata/` fixtures. File: `.gitignore`.
+
+### Tests
+
+- `tests/test_verify_store.sh` — new shard-reject case 5e: a schema-valid manifest whose citation omits `id`/`draft_sentence` is rejected with `v0.0.28` in `error`.
+- `tests/test_verify_contract.sh` — asserts Step 2 of `knowledge-verify` carries the `predates v0.0.28` guard (regression anchor for the friendly-abort layer).
+
+### Version
+
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — `0.1.1` → `0.1.2` (mirrored). Maturity stays `preview`.
+
 ## 0.1.1 — 2026-05-24
 
 M12 minor follow-ups (**#289**) — the three lowest-severity findings from the M12 alpha gate, all non-blocking polish — plus a companion fix to the same lexical-version bug class in cogni-workspace. No pipeline behaviour change beyond helper-script version resolution. Maturity stays **Preview**. Closes **#289**; epic **#264**.

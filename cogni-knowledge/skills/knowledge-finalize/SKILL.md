@@ -473,6 +473,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
 
 Do not abort the SKILL — Steps 6–8 already landed the page, and refusing now would leave wiki state on disk that's not reflected in the binding (the same desync the warning is alerting the operator to). The operator decides whether to reconcile via `--overwrite` re-run or accept the asymmetric state.
 
+### 9.5 Sweep verify-shards intermediates
+
+Best-effort cleanup of the Phase 6 fan-out scratch — `<project_path>/.metadata/verify-shards/` holds per-round `shard-NN-vN.json` inputs + `verify-shard-NN-vN.json` fragments that `knowledge-verify` produced, but the canonical `verify-vN.json` is already merged and the synthesis is now deposited (Step 6). Finalize never reads `verify-shards/`, and a later `knowledge-verify` re-shards from scratch (idempotent re-shard, `verify-store.py` `cmd_shard`), so the directory is safe to remove:
+
+```
+rm -rf "<project_path>/.metadata/verify-shards"
+```
+
+Non-critical: a failure here (e.g. permissions) **never blocks finalize** — the deliverable already landed at Steps 6–10. Skip silently if the directory does not exist.
+
 ### 10. Rebuild context_brief.md + append wiki/log.md
 
 ```
