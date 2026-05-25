@@ -168,23 +168,44 @@ SHARD_SIZE=<resolved, default 40>
 
 Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`, `TOTAL_PRUNED=0`. The loop body is one verifier dispatch followed by an optional revisor dispatch:
 
-#### 3.1 Verify (fan out → parallel dispatch → merge)
+#### 3.1 Verify (pre-filter → fan out → parallel dispatch → merge)
 
-Verification is embarrassingly parallel — each citation's verdict reads one cited page's `pre_extracted_claims` and one `draft_sentence`, with no cross-citation dependency. Shard the manifest, dispatch one `wiki-verifier` per shard **in parallel**, then merge the fragments. This mirrors the `candidate-store` / fetch-manifest / ingest-manifest fan-out the earlier phases use. (The composer and revisor stay single-dispatch — they need whole-draft coherence; only the verifier shards.)
+Verification is embarrassingly parallel — each citation's verdict reads one cited page's `pre_extracted_claims` and one `draft_sentence`, with no cross-citation dependency. The pass has four stages: a deterministic substring **pre-filter** (zero LLM), then **shard** the remainder, dispatch one `wiki-verifier` per shard **in parallel**, then **merge**. (The composer and revisor stay single-dispatch — they need whole-draft coherence; only the verifier shards.)
 
-**(a) Shard the manifest.**
+**Round split (#305).** Re-verify is incremental after the first round:
+
+- **Round 0** (`REVISION_ROUND == 0`): the candidate id-set is the **full** manifest. Merge with `--manifest` only.
+- **Round ≥1**: the candidate id-set is `DELTA_IDS` — the ids the revisor actually changed, captured from its return in Step 3.3 (`action ∈ {rephrase, repoint}`). Drops were removed from the manifest and skips are byte-identical, so neither needs re-scoring. Merge with `--manifest` **and** `--carry-forward-from` so untouched verdicts fold in and the canonical file stays complete. This is sound because patch-in-place (revisor #305) keeps untouched `(draft_sentence, claim_id)` pairs byte-identical, so their verdict is guaranteed-identical.
+
+Set `CANDIDATE_IDS` accordingly (round 0 → all; round ≥1 → `DELTA_IDS`). The `--only-ids <csv>` arguments below take the comma-joined `CANDIDATE_IDS`.
+
+**(a) Pre-filter the candidates (deterministic, zero LLM).**
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py prefilter \
+    --manifest "<project_path>/.metadata/citation-manifest.json" \
+    --wiki-root "<wiki_root>" \
+    --draft-version <CURRENT_DRAFT_VERSION> \
+    --out-dir "<project_path>/.metadata/verify-shards" \
+    [--only-ids <CANDIDATE_IDS>]    # round ≥1 only; omit on round 0 (full manifest)
+```
+
+Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — any page it cannot parse leaves its citations in `remaining_ids` (they fall through to the LLM), and it never emits a deviation or a drop. **If `remaining_ids` is empty**, skip (b) and (c) entirely and go straight to (d) merge — the prefilter fragment carries every verdict this round needs.
+
+**(b) Shard the remaining ids.**
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py shard \
     --manifest "<project_path>/.metadata/citation-manifest.json" \
     --draft-version <CURRENT_DRAFT_VERSION> \
     --shard-size <SHARD_SIZE> \
+    --only-ids <remaining_ids from (a)> \
     --out-dir "<project_path>/.metadata/verify-shards"
 ```
 
-Capture `data.shard_count` and the `data.shards[]` rows — each carries a `citations_path` (hand to the verifier as `CITATIONS_PATH`) and a `verify_out_path` (hand it as `VERIFY_OUT_PATH`).
+`shard` runs **after** `prefilter` and preserves the prefilter fragment (its cleanup is scoped to numbered fragments). Capture `data.shard_count` and the `data.shards[]` rows — each carries a `citations_path` (hand to the verifier as `CITATIONS_PATH`) and a `verify_out_path` (hand it as `VERIFY_OUT_PATH`).
 
-**(b) Dispatch N verifiers in parallel.** Emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
+**(c) Dispatch N verifiers in parallel.** Emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
 
 ```
 Task(wiki-verifier,
@@ -202,19 +223,21 @@ Task(wiki-verifier,
 - `ok: false, error: "manifest_mismatch"` → re-emit the stale-manifest abort message and stop (defence-in-depth; Step 2 should have caught this).
 - `ok: false, error: "write_failed"` → surface verbatim; do not retry blindly (the verifier already retried once internally).
 
-**(c) Merge the fragments into the canonical `verify-vN.json`.**
+**(d) Merge into the canonical `verify-vN.json`.**
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py merge \
     --shard-dir "<project_path>/.metadata/verify-shards" \
     --draft-version <CURRENT_DRAFT_VERSION> \
     --revision-round <REVISION_ROUND> \
+    --manifest "<project_path>/.metadata/citation-manifest.json" \
+    [--carry-forward-from "<project_path>/.metadata/verify-v<CURRENT_DRAFT_VERSION minus 1>.json"]  # round ≥1 only \
     --out "<project_path>/.metadata/verify-v<CURRENT_DRAFT_VERSION>.json"
 ```
 
-Assert `data.shards_merged == shard_count` from step (a). A mismatch means a verifier shard crashed without writing its fragment — **stop** and surface it rather than proceeding on partial verification (a missing shard would silently under-count `unsupported`). Then continue to 3.2 against the merged `verify-v<CURRENT_DRAFT_VERSION>.json`. (A single-shard run still goes through merge — one uniform code path.)
+`--manifest` is passed every round so conservation is against the **current manifest id-set** (the prefilter fragment + LLM fragments + — on round ≥1 — carry-forward must reconstruct exactly the manifest). On round ≥1 also pass `--carry-forward-from` pointing at the **prior** round's `verify-v<N-1>.json` so untouched verdicts fold in; the merged `verify-v<N>.json` is therefore **complete** (the shards shrank to the delta, the canonical file did not — `knowledge-finalize` Step 2 reads `counts`). `merge` errors if a shard fragment is missing or if a manifest id has no verdict; surface verbatim and **stop** rather than proceeding on partial verification. Then continue to 3.2 against the merged file. (A single-shard or prefilter-only round still goes through merge — one uniform code path.)
 
-**C3 baseline:** the < 5 min target is now **per-shard wall-clock** (max over shards), not whole-draft — the shards run concurrently.
+**C3 baseline:** the < 5 min target is **per-shard wall-clock** (max over shards), and incremental rounds shard only the delta, so round ≥1 is strictly cheaper than round 0.
 
 #### 3.2 Inspect deviations
 
@@ -270,8 +293,17 @@ If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND < MAX_ROUNDS` → continue to 3.3
 
 #### 3.3 Dispatch revisor (single Task call per round)
 
+**Pre-create the draft substrate (#305).** The revisor now **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version:
+
 ```
 NEW_DRAFT_VERSION=$((CURRENT_DRAFT_VERSION + 1))
+cp "<project_path>/output/draft-v<CURRENT_DRAFT_VERSION>.md" \
+   "<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md"
+```
+
+This `cp` is what guarantees every sentence the revisor does **not** touch is byte-identical across versions — the precondition for Step 3.1's round-≥1 carry-forward. Then dispatch:
+
+```
 Task(revisor,
      PROJECT_PATH=<project_path>,
      WIKI_ROOT=<wiki_root>,
@@ -279,11 +311,11 @@ Task(revisor,
      NEW_DRAFT_VERSION=<NEW_DRAFT_VERSION>)
 ```
 
-`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki.
+`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md`.
 
 Parse the return envelope:
 
-- `ok: true` → set `CURRENT_DRAFT_VERSION=NEW_DRAFT_VERSION`, increment `REVISION_ROUND`, loop back to 3.1.
+- `ok: true` → **derive `DELTA_IDS`** = the `id`s in `fixes_applied[]` whose `action ∈ {rephrase, repoint}` (drops are already removed from the manifest; skips are byte-identical — neither is re-scored). Set `CURRENT_DRAFT_VERSION=NEW_DRAFT_VERSION`, increment `REVISION_ROUND`, loop back to 3.1 (which will pre-filter + shard only `DELTA_IDS` and carry the rest forward).
 - `ok: false, error: "verify_input_missing"` → surface verbatim; this is a defence-in-depth check, should not fire if 3.1 succeeded.
 - `ok: false, error: "write_failed"` → surface verbatim and stop. The previous verify-vN.json is still the latest valid audit trail for the operator.
 
@@ -370,6 +402,7 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 - **Revisor returns `fixes_summary.skip > 0`.** Some deviations were misclassified or had no fix path. Surface in the summary as `⚠ <N> deviations skipped by revisor — see verify-v<N>.json for details`. The next round's verifier will re-score; if those deviations persist, the operator gets a clean signal.
 - **`--max-rounds 0`.** Operator wants verifier output only, no revision attempt. Loop runs Step 3.1 once, skips 3.3 unconditionally, terminates as EXHAUSTED if `UNSUPPORTED_COUNT > 0` or SUCCESS if `0`. Surface the value in the summary so it's clear no revision was attempted.
 - **Concurrent edits.** Another session writing to `draft-vN.md` or the manifest mid-run isn't guarded against. Same posture as M7 — single-user-per-project assumption holds at v0.0.23.
+- **Missing prior `verify-v<N-1>.json` on an incremental round (#305).** Round ≥1's `merge --carry-forward-from` needs the previous round's file. If it was manually deleted (so untouched verdicts cannot be carried), fall back to a **full re-shard** for that round: run Step 3.1 (a) `prefilter` over the **full** manifest (omit `--only-ids`), shard the remainder, dispatch, and `merge --manifest` **without** `--carry-forward-from`. Correctness is unchanged — only the wall-clock saving is forfeited for that one round.
 
 ## Out of scope
 
@@ -383,7 +416,7 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 ## Output
 
 - `<project_path>/.metadata/verify-v<N>.json` per round (schema 0.1.0), assembled by `verify-store.py merge`. One file per draft version; the round number is recorded inside the file as `revision_round`.
-- `<project_path>/.metadata/verify-shards/` — per-round shard inputs (`shard-NN-v<N>.json`) + verifier fragments (`verify-shard-NN-v<N>.json`). Intermediate fan-out artifacts; the merged `verify-v<N>.json` is the canonical output.
+- `<project_path>/.metadata/verify-shards/` — per-round shard inputs (`shard-NN-v<N>.json`), verifier fragments (`verify-shard-NN-v<N>.json`), and the deterministic pre-filter fragment (`verify-shard-prefilter-v<N>.json`). Intermediate fan-out artifacts; the merged `verify-v<N>.json` is the canonical output.
 - `<project_path>/output/draft-v<N+K>.md` per revisor round (K = 1 or 2). The latest is the verified-aligned draft M9 consumes.
 - `<project_path>/.metadata/citation-manifest.json` — rewritten in place by every revisor round to track the latest `draft_version`.
 - One new `## [YYYY-MM-DD] verify | …` line in `<WIKI_ROOT>/wiki/log.md`.
@@ -395,5 +428,5 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 - `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — Slice 4 deferrals (cross-page substitute, multilingual, arcs)
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched agent (verifier; sharded via `CITATIONS_PATH` / `VERIFY_OUT_PATH`)
 - `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched agent (revisor fork; repoint-before-drop)
-- `${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py --help` — `shard` / `merge` fan-out plumbing
+- `${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py --help` — `shard` / `prefilter` / `merge` fan-out plumbing (incremental re-verify via `shard --only-ids` + `merge --manifest --carry-forward-from`, #305)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

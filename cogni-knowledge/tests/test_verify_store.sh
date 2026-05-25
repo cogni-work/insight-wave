@@ -325,6 +325,246 @@ else
   errors=$((errors + 1))
 fi
 
+# =============================================================================
+# #305 — incremental re-verify (shard --only-ids), prefilter, merge --manifest
+#        + --carry-forward-from.
+# =============================================================================
+
+# 7a. shard --only-ids restricts the split to the requested subset.
+SH_ONLY="$WORK/shards-only"
+OUT=$(python3 "$SCRIPT" shard --manifest "$MANIFEST" --draft-version 1 --shard-size 40 --only-ids "cit-002,cit-004" --out-dir "$SH_ONLY")
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['citation_count'] == 2, d
+" 2>/dev/null && python3 - <<PY > /dev/null
+import json, glob
+files = glob.glob("$SH_ONLY/shard-*-v1.json")
+ids = []
+for f in files:
+    for c in json.load(open(f))['citations']:
+        ids.append(c['id'])
+assert sorted(ids) == ['cit-002','cit-004'], ids
+PY
+then
+  green "PASS: shard --only-ids splits only the requested delta subset (#305)"
+else
+  red "FAIL: shard --only-ids did not restrict to the subset"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# Build a small wiki for the prefilter: page-a has a real claim; page-c has a
+# malformed (no closing ---) frontmatter so the parser must fail safe.
+PFWIKI="$WORK/pf-wiki"
+mkdir -p "$PFWIKI/wiki/sources"
+cat > "$PFWIKI/wiki/sources/page-a.md" <<'EOF'
+---
+type: source
+slug: page-a
+sources: ["https://example.com/a"]
+pre_extracted_claims:
+  - id: clm-001
+    text: "Article 6: high-risk classification rule"
+    excerpt_quote: "shall be considered high-risk"
+    excerpt_position: 12
+    sub_question_refs: [sq-01]
+---
+
+# body
+EOF
+cat > "$PFWIKI/wiki/sources/page-c.md" <<'EOF'
+---
+type: source
+pre_extracted_claims:
+  - id: clm-009
+    excerpt_quote: "never reached because frontmatter is unterminated"
+
+# body with no closing fence
+EOF
+
+PFM="$WORK/pf-manifest.json"
+cat > "$PFM" <<'EOF'
+{
+  "schema_version": "0.1.0",
+  "draft_version": 1,
+  "citations": [
+    {"id": "cit-p1", "draft_position": "00:01", "draft_sentence": "The system shall be considered high-risk under Annex III.", "wiki_slug": "page-a", "claim_id": "clm-001"},
+    {"id": "cit-p2", "draft_position": "00:02", "draft_sentence": "Eine deutsche Aussage ganz ohne englisches Zitat.", "wiki_slug": "page-a", "claim_id": "clm-001"},
+    {"id": "cit-p3", "draft_position": "00:03", "draft_sentence": "Cites a page whose frontmatter cannot be parsed.", "wiki_slug": "page-c", "claim_id": "clm-009"}
+  ]
+}
+EOF
+
+# 7b. prefilter: exact-substring match → verbatim; cross-language + unparseable
+#     page → remaining (fail-safe, never a wrong verdict).
+PFSH="$WORK/pf-shards"
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$PFM" --wiki-root "$PFWIKI" --draft-version 1 --out-dir "$PFSH")
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['matched_ids'] == ['cit-p1'], d['data']
+assert sorted(d['data']['remaining_ids']) == ['cit-p2', 'cit-p3'], d['data']
+" 2>/dev/null; then
+  green "PASS: prefilter matches the verbatim citation, falls through on cross-lang + unparseable (#305)"
+else
+  red "FAIL: prefilter match/remaining split wrong"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+if python3 - <<PY > /dev/null
+import json
+frag = json.load(open("$PFSH/verify-shard-prefilter-v1.json"))
+assert frag['deviations'] == [], frag          # prefilter NEVER emits a deviation
+assert len(frag['verified']) == 1, frag
+e = frag['verified'][0]
+assert e['id'] == 'cit-p1' and e['verdict'] == 'verbatim', e
+PY
+then
+  green "PASS: prefilter fragment carries only verbatim verdicts, no deviations"
+else
+  red "FAIL: prefilter fragment malformed"
+  errors=$((errors + 1))
+fi
+
+# 7c. merge --manifest: prefilter fragment + LLM fragment union == manifest.
+#     shard the remaining ids (preserving the prefilter fragment), add a verifier
+#     fragment for them, merge against the manifest id-set.
+python3 "$SCRIPT" shard --manifest "$PFM" --draft-version 1 --shard-size 40 --only-ids "cit-p2,cit-p3" --out-dir "$PFSH" >/dev/null
+cat > "$PFSH/verify-shard-00-v1.json" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"revision_round":0,"verified":[{"id":"cit-p2","verdict":"paraphrase"}],"deviations":[{"id":"cit-p3","verdict":"unsupported","reason":"claim_not_found"}],"counts":{"total":2}}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$PFSH" --draft-version 1 --revision-round 0 --manifest "$PFM" --out "$WORK/pf-verify-v1.json")
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+c = d['data']['counts']
+assert c['total'] == 3 and c['verbatim'] == 1 and c['paraphrase'] == 1 and c['unsupported'] == 1, c
+" 2>/dev/null; then
+  green "PASS: merge --manifest unions prefilter + LLM fragments to the full manifest (#305)"
+else
+  red "FAIL: merge --manifest conservation wrong"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7d. merge WITHOUT --manifest now fails: the prefilter's cit-p1 is not in the
+#     shard inputs (which cover only the delta), so input-set conservation can't
+#     reconcile it — this is exactly why --manifest is required for the new flow.
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$PFSH" --draft-version 1 --revision-round 0 --out "$WORK/pf-nomani.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'of 2' in d['error']" 2>/dev/null; then
+  green "PASS: merge without --manifest rejects the prefilter+delta union (conservation needs the manifest)"
+else
+  red "FAIL: merge without --manifest should fail conservation against the delta-only shard inputs"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7e. Idempotent reshard preserves the prefilter fragment (cleanup is scoped to
+#     numbered fragments) while clearing the numbered ones.
+python3 "$SCRIPT" shard --manifest "$PFM" --draft-version 1 --shard-size 40 --only-ids "cit-p2,cit-p3" --out-dir "$PFSH" >/dev/null
+if python3 - <<PY > /dev/null
+import glob, os
+assert os.path.exists("$PFSH/verify-shard-prefilter-v1.json"), "prefilter fragment was clobbered by reshard"
+assert glob.glob("$PFSH/verify-shard-[0-9]*-v1.json") == [], "numbered fragments not cleared"
+PY
+then
+  green "PASS: reshard preserves the prefilter fragment, clears numbered fragments (#305)"
+else
+  red "FAIL: reshard fragment-cleanup scope wrong"
+  errors=$((errors + 1))
+fi
+
+# 7f. Incremental round ≥1: merge --manifest --carry-forward-from. The delta is
+#     re-scored; untouched verdicts are carried from the prior round; the merged
+#     file equals the manifest id-set and is complete.
+CFM="$WORK/cf-manifest.json"
+cat > "$CFM" <<'EOF'
+{"schema_version":"0.1.0","draft_version":2,"citations":[
+ {"id":"cit-001","draft_position":"00:01","draft_sentence":"s1","wiki_slug":"p","claim_id":"c1"},
+ {"id":"cit-002","draft_position":"00:02","draft_sentence":"s2","wiki_slug":"p","claim_id":"c2"},
+ {"id":"cit-003","draft_position":"00:03","draft_sentence":"s3","wiki_slug":"p","claim_id":"c3"}
+]}
+EOF
+PREV="$WORK/cf-verify-v1.json"
+cat > "$PREV" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"revision_round":0,
+ "verified":[{"id":"cit-001","verdict":"verbatim"},{"id":"cit-003","verdict":"paraphrase"}],
+ "deviations":[{"id":"cit-002","verdict":"unsupported","reason":"claim_text_misaligned"}],
+ "counts":{"verbatim":1,"paraphrase":1,"synthesis":0,"unsupported":1,"total":3}}
+EOF
+CFSH="$WORK/cf-shards"
+python3 "$SCRIPT" shard --manifest "$CFM" --draft-version 2 --only-ids "cit-002" --out-dir "$CFSH" >/dev/null
+cat > "$CFSH/verify-shard-00-v2.json" <<'EOF'
+{"schema_version":"0.1.0","draft_version":2,"revision_round":1,"verified":[{"id":"cit-002","verdict":"paraphrase"}],"deviations":[],"counts":{"total":1}}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$CFSH" --draft-version 2 --revision-round 1 --manifest "$CFM" --carry-forward-from "$PREV" --out "$WORK/cf-verify-v2.json")
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+c = d['data']['counts']
+# cit-002 re-scored paraphrase; cit-001 verbatim + cit-003 paraphrase carried.
+assert c['total'] == 3 and c['unsupported'] == 0 and c['paraphrase'] == 2 and c['verbatim'] == 1, c
+" 2>/dev/null && python3 - <<PY > /dev/null
+import json
+v = json.load(open("$WORK/cf-verify-v2.json"))
+ids = sorted(e['id'] for e in v['verified'] + v['deviations'])
+assert ids == ['cit-001','cit-002','cit-003'], ids
+PY
+then
+  green "PASS: merge --carry-forward-from re-scores the delta + carries untouched → complete (#305)"
+else
+  red "FAIL: carry-forward merge wrong"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7g. Empty delta: a fragment with no fresh ids + carry-forward rebuilds the full
+#     file purely from the prior round (revisor did only drops/skips).
+EMPTYSH="$WORK/cf-empty-shards"
+mkdir -p "$EMPTYSH"
+cat > "$EMPTYSH/verify-shard-prefilter-v2.json" <<'EOF'
+{"schema_version":"0.1.0","draft_version":2,"revision_round":1,"verified":[],"deviations":[],"counts":{"total":0}}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$EMPTYSH" --draft-version 2 --revision-round 1 --manifest "$CFM" --carry-forward-from "$PREV" --out "$WORK/cf-empty-v2.json")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['counts']['total'] == 3, d" 2>/dev/null; then
+  green "PASS: empty-delta round rebuilds the full file by carry-forward alone (#305)"
+else
+  red "FAIL: empty-delta carry-forward wrong"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7h. --carry-forward-from without --manifest → reject.
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$CFSH" --draft-version 2 --revision-round 1 --carry-forward-from "$PREV" --out "$WORK/cf-bad.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'requires --manifest' in d['error']" 2>/dev/null; then
+  green "PASS: --carry-forward-from without --manifest rejected"
+else
+  red "FAIL: --carry-forward-from without --manifest not rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7i. carry-forward when the prior file lacks a manifest id → reject (a manual
+#     deletion of the prior round should force a full re-shard, not a silent gap).
+PREV_GAP="$WORK/cf-prev-gap.json"
+cat > "$PREV_GAP" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"revision_round":0,
+ "verified":[{"id":"cit-001","verdict":"verbatim"}],"deviations":[],"counts":{"total":1}}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$CFSH" --draft-version 2 --revision-round 1 --manifest "$CFM" --carry-forward-from "$PREV_GAP" --out "$WORK/cf-gap.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'no prior verdict' in d['error']" 2>/dev/null; then
+  green "PASS: carry-forward rejects a manifest id with no prior verdict (forces full re-shard)"
+else
+  red "FAIL: carry-forward did not reject a missing prior verdict"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

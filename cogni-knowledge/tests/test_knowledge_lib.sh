@@ -220,6 +220,39 @@ def assert_renumber_inline_citations():
     assert "<sup>[2]</sup>" in kl.renumber_inline_citations(syn)
 
 
+def assert_parse_pre_extracted_claims():
+    # Happy path: block-list of dicts; a colon inside the `text` value must NOT
+    # break the key:value split (partition on first colon only).
+    page = (
+        "---\n"
+        "type: source\n"
+        "pre_extracted_claims:\n"
+        "  - id: clm-001\n"
+        '    text: "Article 6: high-risk classification rule"\n'
+        '    excerpt_quote: "shall be considered high-risk"\n'
+        "    excerpt_position: 12\n"
+        "    sub_question_refs: [sq-01]\n"
+        "  - id: clm-002\n"
+        "    text: plain unquoted value\n"
+        '    excerpt_quote: "another quote"\n'
+        "---\n\n# body\n"
+    )
+    claims = kl.parse_pre_extracted_claims(page)
+    assert len(claims) == 2, claims
+    assert claims[0]["id"] == "clm-001", claims[0]
+    assert claims[0]["text"] == "Article 6: high-risk classification rule", claims[0]
+    assert claims[0]["excerpt_quote"] == "shall be considered high-risk", claims[0]
+    assert claims[1]["id"] == "clm-002" and claims[1]["text"] == "plain unquoted value", claims[1]
+    # Fail-safe: a page with no closing frontmatter fence yields [] (never raises).
+    broken = "---\ntype: source\npre_extracted_claims:\n  - id: clm-009\n\n# no close\n"
+    assert kl.parse_pre_extracted_claims(broken) == [], "malformed frontmatter must fail safe to []"
+    # No claims key at all → [].
+    assert kl.parse_pre_extracted_claims("---\ntype: source\n---\n# body\n") == []
+    # Empty / non-frontmatter input → [].
+    assert kl.parse_pre_extracted_claims("") == []
+    assert kl.parse_pre_extracted_claims("# just a body, no frontmatter\n") == []
+
+
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
 check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
@@ -229,6 +262,7 @@ check("first_url", assert_first_url)
 check("md_link_dest", assert_md_link_dest)
 check("strip_reference_section", assert_strip_reference_section)
 check("renumber_inline_citations", assert_renumber_inline_citations)
+check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 PY
 )
 
@@ -255,6 +289,7 @@ grade first_url               "first_url — JSON-list + non-JSON fallback URL e
 grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
+grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

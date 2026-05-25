@@ -84,6 +84,11 @@ assert_grep 'MARKET_CONFIG_PATH=' "$CURATE" "knowledge-curate: forwards MARKET_C
 # the _default degrade (#304).
 assert_grep 'data.code' "$CURATE" "knowledge-curate: gate keys on data.code, not bare success (#304)"
 assert_grep 'Abort unless' "$CURATE" "knowledge-curate: aborts unless data.code == requested market — guards the _default fail-loudly gate (#304)"
+# #299 (Slice 15): all N sub-questions fan out in ONE wave (one assistant message
+# of N Task calls), not the old "3 or fewer per wave" cadence. The plan cap (3-7)
+# bounds N, so one wave always covers the plan.
+assert_grep 'one assistant message containing all N' "$CURATE" "knowledge-curate: fans all N curators in one assistant message (#299)"
+assert_not_grep '3 or fewer' "$CURATE" "knowledge-curate: dropped the old <=3-per-wave concurrency cadence (#299)"
 
 # --- knowledge-fetch SKILL.md --------------------------------------------
 FETCH="$PLUGIN_ROOT/skills/knowledge-fetch/SKILL.md"

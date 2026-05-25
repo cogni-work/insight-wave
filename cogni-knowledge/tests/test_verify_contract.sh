@@ -35,7 +35,17 @@ assert_grep 'verify-store.py shard' "$VERIFY" "knowledge-verify: shards the mani
 assert_grep 'verify-store.py merge' "$VERIFY" "knowledge-verify: merges fragments via verify-store.py merge"
 assert_grep 'CITATIONS_PATH' "$VERIFY" "knowledge-verify: passes CITATIONS_PATH shard subset to each verifier"
 assert_grep 'VERIFY_OUT_PATH' "$VERIFY" "knowledge-verify: passes VERIFY_OUT_PATH fragment path to each verifier"
-assert_grep 'shards_merged' "$VERIFY" "knowledge-verify: asserts shards_merged == shard_count (no silent partial verify)"
+# Completeness guard: merge must catch a crashed/under-populated shard rather
+# than proceeding on partial verification. (The pre-#305 `shards_merged ==
+# shard_count` check no longer holds — the prefilter fragment is an extra
+# fragment — so the guard is now merge's manifest-conservation error.)
+assert_grep 'partial verification' "$VERIFY" "knowledge-verify: merge stops on partial verification (completeness guard)"
+# #305 incremental re-verify + prefilter + patch-in-place substrate copy.
+assert_grep 'verify-store.py prefilter' "$VERIFY" "knowledge-verify: runs the deterministic substring prefilter (#305)"
+assert_grep '--only-ids' "$VERIFY" "knowledge-verify: shards only the delta via --only-ids on round >= 1 (#305)"
+assert_grep '--carry-forward-from' "$VERIFY" "knowledge-verify: carries untouched verdicts forward via merge --carry-forward-from (#305)"
+assert_grep 'DELTA_IDS' "$VERIFY" "knowledge-verify: derives DELTA_IDS from the revisor's fixes_applied (rephrase/repoint) (#305)"
+assert_grep 'cp ' "$VERIFY" "knowledge-verify: pre-creates draft-v{N+1} via cp before the revisor (patch-in-place substrate, #305)"
 assert_grep 'probe_plugin cogni-wiki' "$VERIFY" "knowledge-verify: probes cogni-wiki (clean-break)"
 assert_grep 'wiki/log.md' "$VERIFY" "knowledge-verify: appends to wiki/log.md"
 # Match the actual log-line shape (`## [DATE] verify | project=...`) rather
@@ -168,9 +178,19 @@ assert_grep 'OUTPUT_LANGUAGE' "$REVISOR" "revisor: edits prose in the draft's OU
 # The stale 'Keep the inline [[sources/<slug>]] wikilink in place' rephrase
 # instruction must be gone (it would re-pollute prose with a wikilink).
 assert_not_grep 'Keep the inline `\[\[sources' "$REVISOR" "revisor: dropped the stale 'Keep the inline [[sources/...]] wikilink' instruction (#300)"
+# #305 patch-in-place: the revisor Edits the changed sentences in a pre-created
+# draft copy instead of regenerating the whole draft. Edit must be in the tools
+# list, and the workflow must say it edits in place (not compose + Write whole).
+assert_grep 'patch' "$REVISOR" "revisor: documents patch-in-place revision (#305)"
+assert_grep 'Edit(draft-v' "$REVISOR" "revisor: applies fixes via Edit() against the new draft (#305)"
+assert_grep 'pre-created' "$REVISOR" "revisor: notes the orchestrator pre-creates draft-v{N+1} as a verbatim copy (#305)"
+# The old whole-draft compose-and-Write instruction must be gone — a global
+# rewrite would break the byte-identity incremental re-verify depends on.
+assert_not_grep 'Compose the revised draft' "$REVISOR" "revisor: dropped the whole-draft compose-and-Write step (#305)"
 # Zero-network: tools list must not include WebFetch, WebSearch, Bash, or Task.
+# Edit IS required now (patch-in-place); Write stays for the manifest rewrite.
 REVISOR_TOOLS_LINE=$(grep '^tools:' "$REVISOR" || true)
-for required in '"Read"' '"Write"' '"Glob"' '"Grep"'; do
+for required in '"Read"' '"Write"' '"Edit"' '"Glob"' '"Grep"'; do
   if echo "$REVISOR_TOOLS_LINE" | grep -q "$required"; then
     green "PASS: revisor: frontmatter tools: includes $required"
   else

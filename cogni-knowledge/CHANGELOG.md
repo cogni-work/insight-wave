@@ -1,5 +1,32 @@
 # cogni-knowledge changelog
 
+## 0.1.6 — 2026-05-25
+
+Slice 15 of the Phase 5 v0.1.x bake-in (**#264**) — two cost / wall-clock wins for the inverted pipeline. Maturity stays **Preview**. Closes **#299**, **#305**; epic **#264**.
+
+### Changed
+
+- **#299 — Phase 2 fans all sub-questions in one wave.** `knowledge-curate` Step 3 previously dispatched curators in waves of ≤3, so a 6-sub-question plan ran two sequential waves (~doubled fetch wall-clock now that each curator does its own WebFetch under Option B). It now emits **one assistant message containing all N `Task(source-curator, …)` calls** — the same single-message fan-out `knowledge-verify` already uses for its verifier shards. The plan cap bounds the wave: `knowledge-plan` hard-caps a plan at 3–7 sub-questions, so N ≤ 7 and one wave always covers the whole plan; peak concurrent web calls = N (each curator's WebSearch/WebFetch are sequential within itself), the scale the verifier fan-out already runs at M12-green. Batch merges (`candidate-store.py append-batch`, already `flock`-safe) now run after the wave. File: `skills/knowledge-curate/SKILL.md`.
+
+### Fixed (performance)
+
+- **#305 — Phase 6 verify is incremental and the revisor patches in place.** Three coupled changes cut the verify→revise loop's cost:
+  - **Patch-in-place revisor.** The orchestrator pre-creates `draft-v{N+1}.md` as a verbatim `cp` of the verified draft, and `revisor` now `Edit`s only the changed sentences in place (gained `Edit` in its tools) instead of regenerating the whole ~5k-word draft. This keeps untouched sentences byte-identical across versions — the precondition that makes incremental re-verify sound — and stops a global rewrite from introducing fresh deviations in prose it was not asked to touch.
+  - **Incremental re-verify.** `verify-store.py` gains `shard --only-ids`, `merge --manifest` (conservation against the current manifest id-set), and `merge --carry-forward-from` (fold untouched verdicts from the prior round). After a revisor round, `knowledge-verify` re-scores only `DELTA_IDS` (the citations the revisor rephrased/repointed) and carries the rest forward, so the verifier shards shrink to the touched-citation delta while the canonical `verify-vN.json` stays complete (`knowledge-finalize` reads `counts`).
+  - **Deterministic substring pre-filter.** New `verify-store.py prefilter` classifies a citation `verbatim` without an LLM call when the manifest's `draft_sentence` contains the cited claim's `excerpt_quote` (fallback `text`) as an exact substring. It is **fail-safe** — a page it cannot parse, or a cross-language sentence, simply falls through to the LLM verifier; it never emits a deviation or a drop, so correctness is independent of the parser's completeness. Backed by a new narrow, stdlib-only `_knowledge_lib.parse_pre_extracted_claims()` (no PyYAML).
+  - Files: `agents/revisor.md`, `skills/knowledge-verify/SKILL.md`, `scripts/verify-store.py`, `scripts/_knowledge_lib.py`.
+
+### Tests
+
+- `tests/test_verify_store.sh` — `shard --only-ids`; `prefilter` (match / cross-language no-match / unparseable-page fail-safe / no-deviation invariant); `merge --manifest` conservation (and why a non-manifest merge of prefilter+delta is rejected); `merge --carry-forward-from` (delta re-scored + untouched carried == manifest, empty-delta round, missing-`--manifest` and missing-prior-verdict rejections); reshard preserves the prefilter fragment.
+- `tests/test_knowledge_lib.sh` — `parse_pre_extracted_claims()` units (block-list dicts incl. colon-bearing values; malformed / empty frontmatter → `[]`).
+- `tests/test_verify_contract.sh` — revisor `Edit` tool + patch-in-place language (no whole-draft compose); knowledge-verify `cp` substrate, prefilter, `--only-ids`, `--carry-forward-from`, `DELTA_IDS`.
+- `tests/test_skill_contracts.sh` — knowledge-curate one-wave fan-out assertion + `assert_not_grep '3 or fewer'`.
+
+### Notes
+
+- Ships on deterministic-gate + contract coverage, consistent with Slices 3–14. No schema bump. The live convergence re-run folds into the open #311 German bake-in.
+
 ## 0.1.5 — 2026-05-25
 
 Slice 14 of the Phase 5 v0.1.x bake-in (**#264**) — two pipeline state / config-robustness bugs from the first real DACH run. No schema bump, no script change (both fixes reuse existing helpers). Maturity stays **Preview**. Closes **#302**, **#304**; epic **#264**.

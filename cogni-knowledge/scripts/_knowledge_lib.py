@@ -305,6 +305,90 @@ def renumber_inline_citations(body: str) -> str:
     return body
 
 
+# --- pre_extracted_claims block-list parser (used by verify-store.py prefilter) -
+# `pre_extracted_claims:` is a nested YAML block-list of dicts whose
+# `text` / `excerpt_quote` values are free text (colons, quotes, commas). The
+# flat-scalar frontmatter parsers elsewhere in the monorepo
+# (`cycle-guard.py::_parse_frontmatter`, cogni-wiki's `_wikilib.parse_frontmatter`)
+# cannot reconstruct it, and this package is stdlib-only (no PyYAML). So this is a
+# narrow, FAIL-SAFE extractor: it pulls only `{id, text, excerpt_quote}` per item
+# and silently skips anything it cannot confidently parse. The single consumer
+# (the verify prefilter) only ever uses a successful parse to ADD a `verbatim`
+# verdict it is certain of; a parse miss simply leaves the citation for the LLM
+# verifier. Correctness is therefore independent of this parser's completeness.
+
+_FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
+_CLAIMS_KEY_RE = re.compile(r"^pre_extracted_claims[ \t]*:[ \t]*$")
+_WANTED_CLAIM_KEYS = ("id", "text", "excerpt_quote")
+
+
+def _unquote_scalar(v: str) -> str:
+    """Best-effort YAML scalar unquoting. A value that is not cleanly quoted
+    (e.g. a multi-line block scalar collapsed to its `|`/`>` indicator, or a
+    quoted string whose close-quote is on a later line) is returned as-is — it
+    simply won't substring-match downstream, which is the safe outcome."""
+    if len(v) >= 2 and v[0] == '"' and v[-1] == '"':
+        return v[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+    if len(v) >= 2 and v[0] == "'" and v[-1] == "'":
+        return v[1:-1].replace("''", "'")
+    return v
+
+
+def _absorb_claim_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — free-text values may contain ':'
+    key = key.strip()
+    if key in _WANTED_CLAIM_KEYS:
+        item[key] = _unquote_scalar(value.strip())
+
+
+def parse_pre_extracted_claims(page_text: str) -> list[dict]:
+    """Extract `[{id, text, excerpt_quote}, …]` from a wiki page's
+    `pre_extracted_claims:` frontmatter block. Returns [] for any page without a
+    parseable block. Tolerant of indent width and of the first key sitting inline
+    after the `- ` bullet; only single-line `key: value` scalars are read."""
+    if not page_text:
+        return []
+    m = _FRONTMATTER_RE.match(page_text)
+    if not m:
+        return []
+    lines = m.group(1).splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if _CLAIMS_KEY_RE.match(line):
+            start = i + 1
+            break
+    if start is None:
+        return []
+    # The block is the run of blank / indented lines after the key, up to the
+    # next top-level (column-0) key.
+    block: list[str] = []
+    for line in lines[start:]:
+        if line.strip() == "" or line[:1] in (" ", "\t"):
+            block.append(line)
+        else:
+            break
+    claims: list[dict] = []
+    current: dict | None = None
+    for line in block:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped == "-" or stripped.startswith("- "):
+            if current is not None:
+                claims.append(current)
+            current = {}
+            rest = stripped[1:].strip()
+            if rest:
+                _absorb_claim_kv(current, rest)
+        elif current is not None:
+            _absorb_claim_kv(current, stripped)
+    if current is not None:
+        claims.append(current)
+    return claims
+
+
 def is_pdf_response(content_type: str | None, url: str) -> bool:
     """True if a fetched response looks like a PDF.
 
