@@ -21,8 +21,9 @@ The plugin implements [Andrej Karpathy's LLM Wiki pattern](https://gist.github.c
 | **`[[wikilink]]`** | A bidirectional reference between wiki pages — audited after every ingest to keep the knowledge graph connected |
 | **SCHEMA.md** | The contract file shipped inside every wiki — defines conventions, frontmatter fields, and linking rules so the wiki is self-describing |
 | **Compile-time knowledge** | Karpathy's core insight: synthesize once at ingest, not per query. The wiki gets denser over time instead of re-discovering the same ground |
-| **Page type** | Classification of a wiki page: `concept`, `entity`, `summary`, `decision`, `learning`, or `note` |
-| **Lint** | A health audit that checks for broken wikilinks, orphan pages, stale dates, missing frontmatter, and contradictions between pages |
+| **Page type** | Classification of a wiki page: `concept`, `entity`, `summary`, `decision`, `interview`, `meeting`, `learning`, `synthesis`, `note`, or `source`. The directory the page lives in must match its `type:` frontmatter field |
+| **Health check** | A zero-LLM structural integrity preflight (broken wikilinks, missing frontmatter, id mismatches, stub pages, layout drift) — fast enough to run every session automatically via `wiki-resume` |
+| **Lint** | A tokenful semantic audit — contradictions, type drift, undercited claims, missing concept pages. Runs periodically; refuses to start while the health check reports errors |
 
 ---
 
@@ -44,7 +45,17 @@ cogni-wiki/ai-safety-research/
 │   ├── index.md           One-line summary per page
 │   ├── log.md             Append-only operation log
 │   ├── overview.md        Evolving synthesis
-│   └── pages/             Your wiki pages live here
+│   ├── concepts/          type: concept pages
+│   ├── entities/          type: entity pages
+│   ├── summaries/         type: summary pages
+│   ├── decisions/         type: decision pages
+│   ├── interviews/        type: interview pages
+│   ├── meetings/          type: meeting pages
+│   ├── learnings/         type: learning pages
+│   ├── syntheses/         type: synthesis pages (filed-back query answers)
+│   ├── notes/             type: note pages
+│   ├── sources/           type: source pages
+│   └── audits/            lint and health audit reports
 └── .cogni-wiki/config.json
 ```
 
@@ -60,73 +71,118 @@ Claude reads the source, writes a structured summary page with YAML frontmatter,
 
 ## Capabilities
 
+### wiki-resume — Session entry point
+
+Run `wiki-resume` at the start of every session. It automatically runs a zero-LLM `wiki-health` preflight, surfaces the structural-integrity counts (broken links, missing frontmatter, stub pages, layout drift), shows page counts by type, days since last lint, and recommends a concrete next action. If the wiki needs a schema migration, `wiki-resume` surfaces that nudge before anything else.
+
+**Example:**
+> "Where was I with my wiki?"
+
 ### wiki-setup — Bootstrap a new wiki
 
-Run `wiki-setup` to create a fresh wiki at a directory you choose. The skill creates the full layout (raw/, wiki/pages/, assets/, .cogni-wiki/) and seeds the contract files — SCHEMA.md, index.md, log.md, and overview.md. After setup, the wiki is immediately ready to receive sources.
+Run `wiki-setup` to create a fresh wiki at a directory you choose. The skill creates the full per-type directory layout (raw/, wiki/concepts/, wiki/entities/, wiki/summaries/, ..., wiki/audits/, assets/, .cogni-wiki/) and seeds the contract files — SCHEMA.md, index.md, log.md, and overview.md. After setup, the wiki is immediately ready to receive sources. Setup also prompts to prefill the consulting foundations subset via `wiki-prefill`.
 
 **Example:**
 > "Set up a wiki for my AI safety research"
 
 ### wiki-ingest — Add sources to the wiki
 
-Run `wiki-ingest` after dropping a source document (PDF, URL, pasted text, transcript) into `raw/`. Claude reads the source, surfaces key takeaways, writes a summary page with YAML frontmatter (id, title, type, tags, sources), updates `wiki/index.md`, appends to `wiki/log.md`, and runs a backlink audit to weave the new page into existing knowledge.
+Run `wiki-ingest` after dropping a source document (PDF, URL, pasted text, transcript) into `raw/`. Claude reads the source, surfaces key takeaways, writes a summary page with YAML frontmatter (id, title, type, tags, sources) into the appropriate per-type subdirectory, updates `wiki/index.md`, appends to `wiki/log.md`, and runs a backlink audit to weave the new page into existing knowledge. For deferred draining, `--enqueue` / `--next` / `--queue-status` / `--queue-retry` operate a persistent file-based ingest queue.
 
 **Example:**
 > "Ingest this paper into the wiki"
 
 ### wiki-query — Ask questions from the wiki
 
-Run `wiki-query` to ask a question that Claude answers by reading the wiki — never from model memory. The skill consults `wiki/index.md` to find relevant pages, reads them, and synthesizes an answer with `[[wikilink]]` citations. If the wiki doesn't contain the answer, Claude says so rather than hallucinating. Optionally, the answer itself can be filed as a new wiki page so the knowledge compounds.
+Run `wiki-query` to ask a question that Claude answers by reading the wiki — never from model memory. The skill consults `wiki/index.md` to find relevant pages, reads them, and synthesizes an answer with `[[wikilink]]` citations. If the wiki doesn't contain the answer, Claude says so rather than hallucinating. Pass `--file-back yes` to file the answer as a `type: synthesis` page in `wiki/syntheses/` so the exploration compounds rather than evaporating into chat history.
 
 **Example:**
-> "What does my wiki say about constitutional AI?"
+> "What does my wiki say about constitutional AI? Save the answer as a synthesis."
 
-### wiki-lint — Audit wiki health
+### wiki-health — Zero-LLM structural preflight
 
-Run `wiki-lint` after every 5-10 ingests as a maintenance pass. The audit checks for broken `[[wikilinks]]`, orphan pages with no inbound links, stale dates, missing frontmatter fields, contradictions between pages, tag typos, and sources that no longer exist in `raw/`. Results are written to a severity-tiered lint report at `wiki/pages/lint-YYYY-MM-DD.md`.
+Run `wiki-health` (or let `wiki-resume` run it automatically every session) for a free structural integrity scan: broken `[[wikilinks]]`, missing frontmatter fields, broken raw/`wiki://` sources, id mismatches, invalid page types, stub pages, `entries_count` drift between config and filesystem, index/filesystem drift, and the count of citation-drift findings from the last `wiki-claims-resweep`. Zero LLM calls — safe to run before any other work.
 
 **Example:**
-> "Is my wiki healthy?"
+> "Is my wiki structurally sound?" (or just run `wiki-resume`)
+
+### wiki-lint — Tokenful semantic audit
+
+Run `wiki-lint` after every 5-10 ingests as a periodic maintenance pass. The audit checks for contradictions between pages, type drift, undercited claims, missing concept pages, and the deterministic warnings that need narrative — orphans, stale dates, tag typos, reverse-link gaps, claim-drift severity from the latest resweep. Lint calls `wiki-health` as a free preflight and refuses to run while structural errors are pending, so you never burn tokens reasoning about a broken graph. Results are written to `wiki/audits/lint-YYYY-MM-DD.md`.
+
+**Example:**
+> "Audit my wiki for contradictions"
 
 ### wiki-update — Revise existing pages
 
-Run `wiki-update` when knowledge has changed and a page needs correction. The skill shows you the planned diff before writing (diff-before-write discipline), requires a source citation for every new claim, and sweeps related pages for now-stale statements that the update contradicts. This is the wiki equivalent of `git diff` + manual inspection before commit.
+Run `wiki-update` when knowledge has changed and a page needs correction. The skill shows you the planned diff before writing (diff-before-write discipline), requires a source citation for every new claim, and sweeps related pages for now-stale statements that the update contradicts.
 
 **Example:**
 > "Update the constitutional-ai page with findings from this new paper"
 
-### wiki-resume — Status and next action
-
-Run `wiki-resume` to see where you left off — entry count, days since last lint, recent log activity, stale drafts, and a recommended next action. Use this when returning to a wiki after a break.
-
-**Example:**
-> "Where was I with my wiki?"
-
 ### wiki-dashboard — Visual HTML overview
 
-Run `wiki-dashboard` to generate a self-contained HTML file with pages by type, a tag cloud, a backlink graph, recent activity, and size/age histograms. The file has no external CDN calls — safe to open offline or share with collaborators.
+Run `wiki-dashboard` to generate a self-contained HTML file with pages by type (including synthesis), a tag cloud, a backlink graph, recent activity, and size/age histograms. The file has no external CDN calls — safe to open offline or share with collaborators. Add `--graph yes` for the two-pass interactive graph view.
 
 **Example:**
 > "Show me the wiki as a dashboard"
+
+### wiki-from-research — Cold-start from a research project
+
+Run `wiki-from-research` to bootstrap a new wiki directly from a cogni-research project in one dispatch. Mode A (`--topic`) starts fresh — it chains `cogni-research:research-setup` → `research-report` → `wiki-setup` → `wiki-ingest --discover research:<slug>`. Mode B (`--research-slug`) starts from an existing research project and skips straight to setup and ingest. Pre-flight detects wiki-target collisions before any research budget is spent.
+
+**Example:**
+> "Cold-start a wiki from research on agent economy"
+
+### wiki-refresh — Refresh stale pages from research
+
+Run `wiki-refresh --from-research <slug>` to pull fresh evidence from a completed cogni-research project into stale wiki pages. The skill calls `lint_wiki.py` to enumerate `stale_page` (>365 days) and `stale_draft` (>180 days) findings, uses Jaccard token overlap to match each stale page to the most relevant research sub-question, prints the batch plan for one user confirmation, then dispatches `wiki-update` sequentially per matched page.
+
+**Example:**
+> "Refresh stale pages from the agent-economy research"
+
+### wiki-claims-resweep — Re-verify cited URLs
+
+Run `wiki-claims-resweep` to check whether the sources cited in existing wiki pages still support the claims made. The skill walks every per-type page directory, extracts inline-cited statements deterministically, dispatches them through `cogni-claims` for re-verification, and writes a sweep report to `raw/claims-resweep-<date>/report.md` plus a lint-bridge JSON at `.cogni-wiki/last-resweep.json`. Report-only: it never modifies wiki pages directly. Stale-marker decisions go through `wiki-update` manually after reviewing the report.
+
+**Example:**
+> "Re-verify wiki citations against current sources"
+
+### wiki-prefill — Seed foundation concept pages
+
+Run `wiki-prefill` to seed `wiki/concepts/` with curated `foundation: true` concept pages — Porter's Five Forces, Jobs-to-be-Done, MECE, Pyramid Principle, OODA Loop, SWOT, BCG Matrix, Value Chain, Lean Canvas, Wardley Mapping, Double Diamond. The skill is idempotent and locked; existing foundation pages are never overwritten. Pass `--filter consulting|product|strategy|all` to select a subset, `--list` to preview, or `--dry-run` to plan without writing.
+
+**Example:**
+> "Seed my wiki with consulting framework foundations"
 
 ---
 
 ## Integration Points
 
-### Upstream — no plugin dependencies
+### cogni-research (live)
 
-cogni-wiki is standalone in v0.0.x. Sources come from the user (documents dropped in `raw/`, URLs, pasted text), not from other plugins.
+Three skills connect cogni-wiki to cogni-research:
 
-### Downstream — future integration contracts
+- **wiki-from-research** bootstraps a new wiki directly from a cogni-research project — either from a free-text topic (Mode A) or an existing project slug (Mode B). This is the fastest path from "I want a wiki on X" to a populated, queryable knowledge base.
+- **wiki-refresh** pulls fresh research evidence into stale wiki pages. After running a new research cycle on a topic your wiki already covers, `wiki-refresh --from-research <slug>` matches the stale pages to relevant sub-questions and dispatches `wiki-update` per match.
+- **wiki-ingest --discover research:\<slug\>** can also be run standalone to deposit a completed research project's sub-question findings into an existing wiki without the full cold-start orchestration.
 
-These integrations are deferred to post-MVP but documented in the plugin's CLAUDE.md:
+### cogni-claims (live)
 
-| Plugin | Planned integration |
-|--------|-------------------|
-| cogni-research | Research reports deposit verified findings as wiki pages |
-| cogni-narrative | Narrative skill reads wiki pages as structured input |
-| cogni-consulting | Engagement knowledge (interviews, decisions, constraints) persists beyond the engagement |
-| cogni-claims | Wiki claim extraction and verification via cogni-claims |
+**wiki-claims-resweep** closes the citation-drift loop. It extracts inline-cited statements from every wiki page, dispatches them through cogni-claims for source re-verification, and writes a sweep report. The findings feed back into `wiki-health` (which surfaces a `claim_drift_count`) and `wiki-lint` (which surfaces `claim_drift` warnings with severity), so regular health checks give you a running signal on citation freshness without re-running the full resweep.
+
+The reverse direction — cogni-claims propagating corrections back into wiki pages — remains deferred. Current workflow: review the resweep report, then run `wiki-update` manually on flagged pages.
+
+### cogni-knowledge (live)
+
+cogni-knowledge uses cogni-wiki as its substrate. When `cogni-knowledge:knowledge-ingest` processes sources, it writes `type: source` pages into `wiki/sources/`. When `cogni-knowledge:knowledge-compose` and `knowledge-finalize` run, they write `type: synthesis` pages into `wiki/syntheses/`. cogni-wiki recognizes these page types and routes them correctly; the per-type semantics (e.g., `pre_extracted_claims:` frontmatter on source pages) are owned by cogni-knowledge, not by cogni-wiki's schema.
+
+### Planned integrations
+
+| Plugin | Status | Integration direction |
+|--------|--------|-----------------------|
+| cogni-narrative | Planned (v0.1.x) | Narrative skill reads wiki pages as structured input |
+| cogni-consulting | Planned (v0.1.x) | Engagement knowledge (interviews, decisions, constraints) persists beyond the engagement slug |
 
 ---
 
@@ -193,6 +249,27 @@ helpful, harmless, and honest using a set of principles...
 - [[ai-safety-overview]] — broader context for alignment approaches
 ```
 
+This page lives at `wiki/concepts/constitutional-ai.md` because its `type:` is `concept`. The `type:` frontmatter field must match the directory — `wiki-health`'s `type_directory_mismatch` check catches any drift.
+
+**Page types and their directories:**
+
+| type | directory | notes |
+|------|-----------|-------|
+| `concept` | `wiki/concepts/` | Framework definitions, foundational ideas |
+| `entity` | `wiki/entities/` | Named actors, organizations, products |
+| `summary` | `wiki/summaries/` | Source document summaries |
+| `decision` | `wiki/decisions/` | Recorded decisions with rationale |
+| `interview` | `wiki/interviews/` | Customer calls, expert interviews |
+| `meeting` | `wiki/meetings/` | Meeting notes |
+| `learning` | `wiki/learnings/` | Retrospectives and lessons learned |
+| `synthesis` | `wiki/syntheses/` | LLM-derived answers filed back by `wiki-query --file-back yes`; cite `wiki://` provenance |
+| `note` | `wiki/notes/` | Unstructured notes |
+| `source` | `wiki/sources/` | Raw source bodies written by cogni-knowledge |
+
+Audit reports (`lint-YYYY-MM-DD.md`, `health-YYYY-MM-DD.md`) live in `wiki/audits/`.
+
+`[[wikilinks]]` use slugs only — no path component — so they work regardless of which directory a page lives in. Slugs must be globally unique across all page types.
+
 The wiki's metadata lives in `.cogni-wiki/config.json`:
 
 ```json
@@ -201,7 +278,8 @@ The wiki's metadata lives in `.cogni-wiki/config.json`:
   "slug": "ai-safety-research",
   "created": "2026-04-12",
   "entries_count": 23,
-  "last_lint": "2026-04-12"
+  "last_lint": "2026-04-12",
+  "schema_version": "0.0.6"
 }
 ```
 
@@ -230,7 +308,7 @@ Claude Code has its own memory system at `~/.claude/projects/.../memory/` — th
 cogni-wiki is open-source under AGPL-3.0. The most useful contribution areas are:
 
 - **New page types** — the current taxonomy covers concept, entity, summary, decision, learning, and note. Domain-specific types (e.g., `experiment`, `protocol`, `glossary-entry`) would help specialized wikis.
-- **Cross-plugin integration** — the planned cogni-research and cogni-claims integrations are documented but not yet implemented. Contributions that connect wiki ingestion to the research or claims pipeline are high-value.
+- **Cross-plugin integration** — cogni-research and cogni-claims integrations are live (`wiki-from-research`, `wiki-refresh`, `wiki-claims-resweep`). The next open frontier is the cogni-narrative and cogni-consulting directions (planned for v0.1.x) — contributions that surface wiki pages as structured narrative input or persist consulting engagement knowledge are high-value.
 - **Lint rules** — new health checks (e.g., detecting circular wikilink chains, flagging pages with no sources, or checking citation freshness) expand the quality audit.
 
 See [CONTRIBUTING.md](../../cogni-wiki/CONTRIBUTING.md) for guidelines and the [plugin development guide](../contributing/plugin-development.md) for the plugin standard.

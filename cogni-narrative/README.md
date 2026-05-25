@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-The story arc engine for the insight-wave ecosystem — transforms structured research and portfolio output into executive-grade narratives using 10 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, and six more) and 8 narrative techniques, sitting between cogni-research and cogni-copywriting in the pipeline and feeding cogni-visual, cogni-sales, and cogni-marketing downstream. Bilingual EN/DE.
+The story arc engine for the insight-wave ecosystem — transforms structured research and portfolio output into executive-grade narratives using 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, and seven more) and 8 narrative techniques, sitting between cogni-research and cogni-copywriting in the pipeline and feeding cogni-visual, cogni-sales, and cogni-marketing downstream. Bilingual EN/DE.
 
 ## Why this exists
 
@@ -23,7 +23,7 @@ This plugin applies structured story arc frameworks — each with defined sectio
 
 ## What it is
 
-A story arc engine for the insight-wave ecosystem. Ten named arc frameworks — covering sales, innovation, competitive intelligence, investment themes, portfolio introductions, and company pages — impose rhetorical discipline on structured content, mapping evidence to arc elements, transitions, and quality gates. Other plugins produce research and data; cogni-narrative shapes it into executive-grade stories that drive decisions.
+A story arc engine for the insight-wave ecosystem. Eleven named arc frameworks — covering sales, innovation, competitive intelligence, investment themes, portfolio introductions, and company pages — impose rhetorical discipline on structured content, mapping evidence to arc elements, transitions, and quality gates. Other plugins produce research and data; cogni-narrative shapes it into executive-grade stories that drive decisions.
 
 ## What it does
 

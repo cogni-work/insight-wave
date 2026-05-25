@@ -4,6 +4,8 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
+> **Start here.** Run `/cogni-wiki:wiki-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
+
 **A better RAG for personal and small-team knowledge work.** Instead of re-discovering the same information every query through embedding similarity, cogni-wiki has Claude compile sources once into a persistent, interlinked markdown wiki — no vector store, no chunking heuristics, no opaque retrieval. Knowledge compounds with every ingest; answers trace to readable markdown files, not vector math. Plain files, plain backlinks, plain Unix tools.
 
 Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and the reference implementation by [kfchou/wiki-skills](https://github.com/kfchou/wiki-skills).
@@ -101,6 +103,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
+/cogni-wiki:wiki-resume                                        # ← entry point: status + next step
 /cogni-wiki:wiki-setup                                         # Bootstrap a new wiki
 # (drop a paper in cogni-wiki/primary/raw/)
 /cogni-wiki:wiki-ingest                                        # Summarise + cross-link
@@ -109,7 +112,6 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 /cogni-wiki:wiki-lint                                          # Tokenful semantic pass after every 5–10 ingests
 /cogni-wiki:wiki-update --page <slug>                          # Revise a page with new evidence
 /cogni-wiki:wiki-dashboard                                     # Visual HTML overview (incl. synthesis bucket)
-/cogni-wiki:wiki-resume                                        # "Where was I?" (with health snapshot + synthesis_count_30d)
 /cogni-wiki:wiki-from-research                                 # Cold-start: research → wiki in one dispatch
 /cogni-wiki:wiki-refresh --from-research <slug>                # Refresh stale pages from a research project
 /cogni-wiki:wiki-claims-resweep                                # Re-verify cited URLs against current source content
@@ -138,13 +140,13 @@ Claude Code already has an auto-memory system at `~/.claude/projects/.../memory/
 
 | Component | Type | Description |
 |-----------|------|-------------|
+| wiki-resume | Skill | Show status, activity (incl. synthesis count + health snapshot), and recommended next action for the wiki |
 | wiki-setup | Skill | Bootstrap a new Karpathy-style LLM wiki at a user-chosen directory |
 | wiki-ingest | Skill | Ingest a source document into the wiki with summary, frontmatter, and backlink audit; also operates the persistent ingest queue (Mode D, v0.0.35+) for deferred draining via `--enqueue` / `--next` / `--queue-status` / `--queue-retry` |
 | wiki-query | Skill | Answer a question by reading the wiki — never from memory; optionally files the answer back as a `type: synthesis` page |
 | wiki-health | Skill | Zero-LLM structural integrity preflight — broken wikilinks, missing frontmatter, broken raw/`wiki://` sources, id mismatch, invalid type, stub pages, `entries_count` drift, index/filesystem drift, claim_drift count. Runs automatically every session via wiki-resume (v0.0.27) |
 | wiki-lint | Skill | Tokenful semantic audit — contradictions, type drift, undercited claims, missing concept pages, plus deterministic warnings that need narrative (orphans, stale, tag typos, reverse links, claim_drift severity). Refuses to run while wiki-health reports errors |
 | wiki-update | Skill | Revise an existing wiki page with diff-before-write discipline and source citations |
-| wiki-resume | Skill | Show status, activity (incl. synthesis count + health snapshot), and recommended next action for the wiki |
 | wiki-dashboard | Skill | Generate a self-contained HTML dashboard with tag cloud, backlink graph, type bars (incl. synthesis), and histograms |
 | wiki-from-research | Skill | Cold-start orchestrator: chains cogni-research's setup + report into wiki-setup + wiki-ingest in one dispatch (Mode A from a topic, Mode B from an existing research slug) |
 | wiki-refresh | Skill | Refresh stale wiki pages with fresh evidence from a completed cogni-research project; Jaccard match, batch-confirmed, sequential wiki-update dispatch |

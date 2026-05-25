@@ -92,6 +92,9 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | `workspace-status` | skill | Five-tier diagnostic: foundation, env vars, plugin registry, themes, dependencies |
 | `install-mcp` | skill | End-to-end MCP server installation — clone and build git-based MCPs, configure native app MCPs, and patch Claude Desktop config |
 | `ask` | skill | Answer questions about the insight-wave ecosystem by reading the bundled wiki — grounded, cited, never from memory |
+| `manage-markets` | skill | Write path for the canonical supported-markets registry — show status and add markets (codes, locales, authorities) |
+| `audit-region-sources` | skill | Read-only sibling of manage-markets — audit per-plugin region-source overlays against the canonical registry for orphans and drift |
+| `workspace-dashboard` | skill | Interactive HTML dashboard of workspace foundation, env vars, plugin registry, themes, and dependencies |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
 | `check-dependencies.sh` | script | Returns JSON with availability/version of required and optional dependencies |
 | `check-skill-names.sh` | script | Validates skill directory names against plugin.json manifest for consistency |
@@ -108,12 +111,15 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       6 workspace management skills
+├── skills/                       9 workspace management skills
 │   ├── ask/                      Query the bundled insight-wave wiki for grounded answers
+│   ├── audit-region-sources/     Audit per-plugin region-source overlays against the registry
 │   ├── install-mcp/              MCP server installation and Desktop config patching
+│   ├── manage-markets/           Write path for the canonical supported-markets registry
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
 │   ├── manage-themes/
 │   ├── pick-theme/
+│   ├── workspace-dashboard/      Interactive HTML workspace status dashboard
 │   └── workspace-status/
 ├── wiki/                         Bundled vendor-curated insight-wave reference wiki (read by ask)
 │   ├── .cogni-wiki/              Wiki config + lockfile
