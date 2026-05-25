@@ -6,7 +6,7 @@
 
 > **Start here.** Run `/cogni-consulting:consulting-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-A [Claude Cowork](https://claude.ai/cowork) plugin for structured consulting engagements built on the Double Diamond framework (UK Design Council, 2005). Diverge to explore, converge to decide, twice. Four gated phases coordinate six insight-wave plugins under a Diamond Coach that opens with intent and closes with accomplishments. Lean Canvas authoring and lightweight how-might-we engagements ship in the same workflow.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for structured consulting engagements built on the Double Diamond framework (UK Design Council, 2005). Diverge to explore, converge to decide, twice. Four gated phases coordinate six insight-wave plugins under a Diamond Coach that opens with intent and closes with accomplishments. Lean Canvas authoring and lightweight how-might-we engagements ship in the same workflow.
 
 ## Why this exists
 

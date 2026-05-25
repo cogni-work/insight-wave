@@ -23,7 +23,7 @@ This plugin provides the infrastructure layer — workspace initialization, them
 
 cogni-workspace implements the **infrastructure-as-plugin pattern**: a dedicated plugin whose sole job is to own the shared state that all other plugins consume — environment variables, plugin registry, theme storage, and tool configuration. It is the only plugin in the ecosystem with no upward dependencies; every other cogni-x plugin depends on it, and none of them duplicate what it provides.
 
-In the Claude Cowork plugin model, workspace-level state (paths, env vars, installed MCPs) cannot be assumed — it must be actively initialized and maintained. cogni-workspace does this in one command and keeps it consistent across plugin updates. Health diagnostics run a five-tier check (foundation, env vars, plugin registry, themes, dependencies) so drift is caught before downstream skills break, not after.
+In the Claude Code / Claude Cowork plugin model, workspace-level state (paths, env vars, installed MCPs) cannot be assumed — it must be actively initialized and maintained. cogni-workspace does this in one command and keeps it consistent across plugin updates. Health diagnostics run a five-tier check (foundation, env vars, plugin registry, themes, dependencies) so drift is caught before downstream skills break, not after.
 
 ## What it does
 

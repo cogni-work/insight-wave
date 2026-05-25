@@ -8,7 +8,7 @@
 
 > **Start here.** Run `/cogni-portfolio:portfolio-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-A [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis and customer profiling to export-ready deliverables, across eight pluggable industry taxonomies (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source) and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis and customer profiling to export-ready deliverables, across eight pluggable industry taxonomies (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source) and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).
 
 ## Why this exists
 
@@ -23,7 +23,7 @@ B2B companies know what they sell — but struggle to articulate why each market
 
 ## What it is
 
-A structured portfolio messaging workflow for Claude Cowork. Eight pluggable taxonomy templates (B2B ICT, SaaS, FinTech, HealthTech, etc.) provide industry-standard classification. The IS/DOES/MEANS framework ensures every proposition answers: what IS the capability, what DOES it do for the buyer, and what does it MEAN for their business.
+A structured portfolio messaging workflow for Claude Code / Claude Cowork. Eight pluggable taxonomy templates (B2B ICT, SaaS, FinTech, HealthTech, etc.) provide industry-standard classification. The IS/DOES/MEANS framework ensures every proposition answers: what IS the capability, what DOES it do for the buyer, and what does it MEAN for their business.
 
 ## What it does
 
