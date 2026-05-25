@@ -191,6 +191,120 @@ def ref_heading(lang: str | None) -> str:
     return REF_HEADING.get(str(lang or "en").lower(), REF_HEADING["en"])
 
 
+# --- Synthesis-page composition helpers (used by knowledge-finalize) ---------
+# These are the intricate, regression-prone transforms knowledge-finalize runs
+# when it deposits a synthesis page: pulling a source URL out of frontmatter,
+# rendering a safe markdown link destination, stripping the composer's own
+# reference section, and renumbering the body's inline citation markers. They
+# live here (not inline in the SKILL heredoc) so they are unit-testable.
+
+# Matches an inline numbered citation marker's `<sup>[N]` prefix. The trailing
+# `(url)</sup>` (or bare `</sup>` for a synthesis citation) is intentionally
+# NOT captured — renumbering rewrites only the number.
+_SUP_CITATION_RE = re.compile(r"<sup>\[(\d+)\]")
+
+
+def first_url(fm_value: str) -> str:
+    """First http(s) URL in a frontmatter `sources:` value, else "".
+
+    A source page carries the inline-list shape `["<URL>"]`; a synthesis page
+    carries a block-style `sources:` (its `wiki://…` entries live on indented
+    lines that the top-level frontmatter parse never surfaces), so this returns
+    "" for synthesis pages — correctly, they have no external URL.
+    """
+    if not fm_value:
+        return ""
+    try:
+        parsed = json.loads(fm_value)
+        if isinstance(parsed, list) and parsed and isinstance(parsed[0], str):
+            parsed = parsed[0]
+        if isinstance(parsed, str) and parsed.startswith(("http://", "https://")):
+            return parsed
+    except (ValueError, TypeError):
+        pass
+    # Fallback only (non-JSON value). Strip trailing quotes and at most one
+    # leaked list-closer `]` — NOT a whole `]"'` charset, which would also eat a
+    # URL legitimately ending in `]`.
+    m = re.search(r"https?://\S+", fm_value)
+    if not m:
+        return ""
+    url = m.group(0).rstrip("\"'")
+    return url[:-1] if url.endswith("]") else url
+
+
+def md_link_dest(url: str) -> str:
+    """Markdown link destination for `url`, angle-bracketed when needed.
+
+    A raw URL containing `(`/`)`/space truncates at the first `)` in many
+    renderers (Obsidian included), breaking the citation link. CommonMark allows
+    an angle-bracketed destination `<url>` for exactly this — except it forbids
+    `<`/`>` inside, so fall back to the bare URL if those appear (vanishingly
+    rare in an http URL).
+    """
+    if ("(" in url or ")" in url or " " in url) and "<" not in url and ">" not in url:
+        return "<" + url + ">"
+    return url
+
+
+def strip_reference_section(body: str, heading: str) -> str:
+    """Remove the composer's trailing reference section from a draft body.
+
+    `knowledge-finalize` re-composes a canonical numbered reference list, so the
+    composer's own section must be stripped first to avoid depositing two. The
+    strip is LANGUAGE-INDEPENDENT: it matches the localized `heading` AND the
+    English `References` (covers a mixed-state draft), anchored on
+    `(?:\\A|\\n)…(?:\\n|\\Z)` so the heading is found even as the first/last line
+    of `body` (a bare `\\n##…\\n` would miss both — the #301 duplicate bug).
+    Strips from the LAST such heading to EOF.
+
+    Safety net (no recognized heading — composer used a synonym like
+    `## Quellen`): strip the last H2 ONLY when its whole body is a genuine
+    reference list, i.e. every non-blank line is a wikilink entry
+    (`[[sources/` / `[[syntheses/`) or a numbered `**[N]**` entry. A generic
+    trailing bullet list (Recommendations / Conclusions) is NOT a reference list
+    and is preserved — stripping it was silent content loss.
+    """
+    strip_words = [heading] + ([] if heading == "References" else ["References"])
+    ref_re = re.compile(
+        r"(?:\A|\n)##[ \t]+(?:" + "|".join(re.escape(w) for w in strip_words) + r")[ \t]*(?:\n|\Z)",
+        re.IGNORECASE,
+    )
+    matches = list(ref_re.finditer(body))
+    if matches:
+        return body[: matches[-1].start()]
+    h2s = list(re.finditer(r"(?:\A|\n)##[ \t]+.*(?:\n|\Z)", body))
+    if h2s:
+        tail = body[h2s[-1].end():]
+        tail_lines = [ln.strip() for ln in tail.splitlines() if ln.strip()]
+        if tail_lines and all(
+            ("[[sources/" in ln) or ("[[syntheses/" in ln) or ln.startswith("**[")
+            for ln in tail_lines
+        ):
+            return body[: h2s[-1].start()]
+    return body
+
+
+def renumber_inline_citations(body: str) -> str:
+    """Remap the body's inline `<sup>[N]` markers to a contiguous 1..K.
+
+    The composer numbers markers in first-appearance order; a revisor that drops
+    every citation of one source leaves a gap (body keeps `[1][3]` while the
+    re-derived reference list re-packs to `[1][2]`). Remap by the MARKER NUMBER
+    itself (ascending == first-appearance == cited-slug order), NOT by URL: this
+    is robust to two slugs sharing one URL, to URL normalization drift, and to
+    synthesis markers that carry no URL. Rewrites only the `<sup>[N]` prefix; any
+    trailing `(url)</sup>` is untouched. A no-op when markers are already
+    contiguous (the common case).
+    """
+    present = sorted({int(m.group(1)) for m in _SUP_CITATION_RE.finditer(body)})
+    if present and present != list(range(1, len(present) + 1)):
+        remap = {old: new for new, old in enumerate(present, start=1)}
+        body = _SUP_CITATION_RE.sub(
+            lambda m: "<sup>[" + str(remap[int(m.group(1))]) + "]", body
+        )
+    return body
+
+
 def is_pdf_response(content_type: str | None, url: str) -> bool:
     """True if a fetched response looks like a PDF.
 

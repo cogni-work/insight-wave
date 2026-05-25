@@ -70,14 +70,16 @@ assert_grep 'syntheses' "$FIN" "knowledge-finalize: resolves synthesis-page cita
 assert_grep 'page_kind' "$FIN" "knowledge-finalize: tracks page kind (source vs synthesis) for wikilink emission"
 # E3: must strip the composer's trailing ## References section before re-appending its own.
 assert_grep 'References' "$FIN" "knowledge-finalize: strips composer's trailing '## References' to avoid double sections"
-# Slice 13 (#301): the reference section is language-aware — read output_language,
-# derive the heading from _knowledge_lib.ref_heading, and strip
-# LANGUAGE-INDEPENDENTLY (localized heading + English) so a `## Referenzen` draft
-# does not leave two reference sections.
+# Slice 13 (#301/#300): the reference section is language-aware — read
+# output_language, derive the heading from _knowledge_lib.ref_heading, and run
+# the language-independent strip + inline renumber via the unit-tested
+# _knowledge_lib helpers (the strip/renumber/URL logic was extracted out of the
+# heredoc so it is executable-tested in test_knowledge_lib.sh, not just grepped).
 assert_grep 'output_language' "$FIN" "knowledge-finalize: reads plan.json::output_language for the reference heading (#301)"
 assert_grep 'ref_heading' "$FIN" "knowledge-finalize: derives the localized reference heading via _knowledge_lib.ref_heading (#301)"
-assert_grep 'LANGUAGE-INDEPENDENT' "$FIN" "knowledge-finalize: strips the composer's reference heading language-independently (#301)"
-assert_grep 'strip_words' "$FIN" "knowledge-finalize: strip matches localized heading AND English, not a hardcoded English-only regex (#301)"
+assert_grep 'strip_reference_section' "$FIN" "knowledge-finalize: strips the composer's reference section via _knowledge_lib.strip_reference_section (language-independent; #301)"
+assert_grep 'renumber_inline_citations' "$FIN" "knowledge-finalize: renumbers inline [N] markers via _knowledge_lib.renumber_inline_citations (#300)"
+assert_grep 'md_link_dest' "$FIN" "knowledge-finalize: angle-brackets paren-bearing citation URLs via _knowledge_lib.md_link_dest (#300)"
 # A4/D7: UTC date so frontmatter created/updated align with Step 10's `date -u`.
 assert_grep 'timezone.utc' "$FIN" "knowledge-finalize: stamps created/updated in UTC (not local time)"
 # A7 / B6: Step 8 entries_count bump is gated.

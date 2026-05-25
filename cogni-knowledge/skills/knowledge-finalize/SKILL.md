@@ -246,7 +246,10 @@ import datetime as _dt
 import json, os, re, sys
 from pathlib import Path
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from _knowledge_lib import atomic_write_text, ref_heading
+from _knowledge_lib import (
+    atomic_write_text, ref_heading, first_url, md_link_dest,
+    strip_reference_section, renumber_inline_citations,
+)
 
 wiki_root = Path(os.environ["WIKI_ROOT"])
 project = Path(os.environ["PROJECT_PATH"])
@@ -305,46 +308,14 @@ def _parse_top_level_kv(fm_block):
         out[k] = v
     return out
 
-def _first_url(fm_value):
-    # The top-level `sources:` value on a source page is the inline-list shape
-    # `["<URL>"]` (source-ingester). Pull the first http(s) URL out of it.
-    # Synthesis pages use a block-style `sources:` (wiki://… entries on indented
-    # lines), so _parse_top_level_kv returns "" for them — correctly no URL.
-    if not fm_value:
-        return ""
-    try:
-        parsed = json.loads(fm_value)
-        if isinstance(parsed, list) and parsed and isinstance(parsed[0], str):
-            parsed = parsed[0]
-        if isinstance(parsed, str) and parsed.startswith(("http://", "https://")):
-            return parsed
-    except (ValueError, TypeError):
-        pass
-    m = re.search(r"https?://\S+", fm_value)
-    if not m:
-        return ""
-    # Fallback path only (non-JSON `sources:` value). Strip trailing quotes and
-    # at most one leaked list-closer `]` — NOT a whole `]"'` charset, which would
-    # also eat a URL legitimately ending in `]`.
-    url = m.group(0).rstrip("\"'")
-    return url[:-1] if url.endswith("]") else url
-
-def _md_dest(u):
-    # Markdown link destination. A raw URL containing `(`/`)`/space truncates at
-    # the first `)` in many renderers (Obsidian included), breaking the citation
-    # link — wrap it in angle brackets, which CommonMark allows for exactly this.
-    # Angle-bracket dests forbid `<`/`>`; fall back to bare if those appear
-    # (vanishingly rare in an http URL).
-    if ("(" in u or ")" in u or " " in u) and "<" not in u and ">" not in u:
-        return "<" + u + ">"
-    return u
-
 # Reference list, numbered in citation-manifest first-appearance order so the
 # deposited [N] match the composers inline [N] markers (which finalize leaves
-# in the body verbatim — see the strip note below). N = index + 1.
+# in the body verbatim — see the strip note below). N = index + 1. The URL
+# extraction, link-destination escaping, reference-section strip, and inline
+# renumber all live in _knowledge_lib (unit-tested) — see first_url /
+# md_link_dest / strip_reference_section / renumber_inline_citations.
 refs = []
 page_kind_by_slug = {}
-url_by_slug = {}
 for idx, slug in enumerate(cited_slugs):
     n = idx + 1
     page_path = None
@@ -371,18 +342,18 @@ for idx, slug in enumerate(cited_slugs):
                 if fm.get("publisher"):
                     publisher = fm["publisher"]
                 if page_kind == "source":
-                    url = _first_url(fm.get("sources", ""))
-    url_by_slug[slug] = url
+                    url = first_url(fm.get("sources", ""))
     # Wikilink path prefix matches the cited pages directory; falls back to
     # sources/ when the page is missing (better than leaving the slug bare).
     link_dir = "syntheses" if page_kind == "synthesis" else "sources"
     backlink = "[[" + link_dir + "/" + slug + "]]"
     bib = (publisher + ', "' + title + '"') if publisher else ('"' + title + '"')
     # IEEE-style numbered entry. Clickable [URL](URL) when the source page
-    # carries an http(s) URL; synthesis pages / missing pages emit no link
-    # (the [[…]] backlink keeps the cogni-wiki graph intact either way).
+    # carries an http(s) URL (angle-bracketed via md_link_dest when it contains
+    # parens); synthesis pages / missing pages emit no link (the [[…]] backlink
+    # keeps the cogni-wiki graph intact either way).
     if url:
-        refs.append("**[" + str(n) + "]** " + bib + ". [" + url + "](" + _md_dest(url) + ") — " + backlink)
+        refs.append("**[" + str(n) + "]** " + bib + ". [" + url + "](" + md_link_dest(url) + ") — " + backlink)
     else:
         refs.append("**[" + str(n) + "]** " + bib + " — " + backlink)
 
@@ -418,61 +389,15 @@ if body.startswith("# "):
     nl = body.find("\n")
     body = body[nl + 1 :].lstrip() if nl >= 0 else ""
 
-# wiki-composer already emits a reference section at the end of every draft
-# (agents/wiki-composer.md "References section"); we re-compose a canonical one
-# (numbered, with URLs) from the citation-manifest, so strip the composers tail
-# to avoid two reference sections in the deposited page. The strip is
-# LANGUAGE-INDEPENDENT: a German run's composer emits `## Referenzen`, so a
-# hardcoded English `## References` regex would miss it and we'd append a second
-# list (the #301 duplicate bug). Match the localized heading AND English (covers
-# mixed-state drafts), case-insensitive, from the LAST such H2 to EOF.
-strip_words = [heading] + ([] if heading == "References" else ["References"])
-# Anchor on (?:\A|\n) and (?:\n|\Z) so the heading matches even when it is the
-# FIRST line of body (after the H1 strip + lstrip) or the LAST line with no
-# trailing newline — a bare `\n##…\n` would miss both, leaving the composer's
-# reference section in place and depositing two (the #301 duplicate recurring).
-ref_re = re.compile(
-    r"(?:\A|\n)##[ \t]+(?:" + "|".join(re.escape(w) for w in strip_words) + r")[ \t]*(?:\n|\Z)",
-    re.IGNORECASE,
-)
-matches = list(ref_re.finditer(body))
-if matches:
-    body = body[: matches[-1].start()]
-else:
-    # Safety net for an unrecognized heading word (e.g. the composer emitted a
-    # synonym like `## Quellen`): strip the last H2 — but ONLY when its whole
-    # body is a genuine REFERENCE list, i.e. every non-blank line is a wikilink
-    # entry (`[[sources/` / `[[syntheses/`) or a numbered `**[N]**` entry. A
-    # generic trailing bullet list (Recommendations / Conclusions) is NOT a
-    # reference list and MUST survive — the looser "any bullet/bracket line"
-    # test silently deleted real content sections.
-    h2s = list(re.finditer(r"(?:\A|\n)##[ \t]+.*(?:\n|\Z)", body))
-    if h2s:
-        tail = body[h2s[-1].end():]
-        tail_lines = [ln.strip() for ln in tail.splitlines() if ln.strip()]
-        if tail_lines and all(
-            ("[[sources/" in ln) or ("[[syntheses/" in ln) or ln.startswith("**[")
-            for ln in tail_lines
-        ):
-            body = body[: h2s[-1].start()]
-
-# Renumber the body's inline citation markers to a contiguous 1..K matching the
-# re-derived reference list. The composer numbers markers in first-appearance
-# order; a revisor that drops every citation of one source leaves a gap
-# (body keeps [1][3] while the reference list re-packs to [1][2]). Remap by the
-# MARKER NUMBER itself — ascending == first-appearance == cited_slugs order — not
-# by URL: this is robust to two slugs sharing one URL, to URL normalization
-# drift, and to synthesis markers that carry no URL (a URL-keyed pass mishandled
-# all three). Rewrites only the `<sup>[N]` prefix; any trailing `(url)</sup>` is
-# untouched. A no-op when the markers are already contiguous (the common case).
-present = sorted({int(m.group(1)) for m in re.finditer(r"<sup>\[(\d+)\]", body)})
-if present and present != list(range(1, len(present) + 1)):
-    remap = {old: new for new, old in enumerate(present, start=1)}
-    body = re.sub(
-        r"<sup>\[(\d+)\]",
-        lambda m: "<sup>[" + str(remap[int(m.group(1))]) + "]",
-        body,
-    )
+# Strip the composer's own reference section (it re-emits below) so the page
+# never carries two; LANGUAGE-INDEPENDENT (localized heading + English, anchored
+# so a heading on the first/last body line still matches — the #301 fix) with a
+# content-preserving safety net. Then renumber the body's inline `<sup>[N]`
+# markers to a contiguous 1..K matching the re-derived reference list (closes a
+# gap left by a revisor full-source-drop). Both transforms are unit-tested in
+# _knowledge_lib (strip_reference_section / renumber_inline_citations).
+body = strip_reference_section(body, heading)
+body = renumber_inline_citations(body)
 
 page_text = (
     frontmatter

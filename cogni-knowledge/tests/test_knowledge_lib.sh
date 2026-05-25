@@ -159,11 +159,76 @@ def assert_ref_heading():
     assert kl.ref_heading(True) == "References", "non-str (bool) → English, no crash"
 
 
+def assert_first_url():
+    # JSON inline-list shape (source-ingester) → first http(s) URL.
+    assert kl.first_url('["https://example.org/a"]') == "https://example.org/a"
+    # Non-JSON fallback: a leaked list-closer is stripped once...
+    assert kl.first_url("[https://x.com/a]") == "https://x.com/a"
+    # ...but a URL legitimately ending in `]` keeps it (the old charset-rstrip
+    # would have eaten it). json path handles this cleanly.
+    assert kl.first_url('["https://x.com/p?q=[1]"]') == "https://x.com/p?q=[1]"
+    # Block-style / empty / non-URL → "".
+    assert kl.first_url("") == ""
+    assert kl.first_url("wiki://src-a") == ""
+
+
+def assert_md_link_dest():
+    # Paren / space → angle-bracketed so renderers don't truncate the dest at ')'.
+    assert kl.md_link_dest("https://en.wikipedia.org/wiki/AI_(disambiguation)") == \
+        "<https://en.wikipedia.org/wiki/AI_(disambiguation)>"
+    assert kl.md_link_dest("https://x.com/a b") == "<https://x.com/a b>"
+    # Plain URL unchanged.
+    assert kl.md_link_dest("https://x.com/a") == "https://x.com/a"
+
+
+def assert_strip_reference_section():
+    # Localized (de) heading stripped from a normal body.
+    body = "Intro<sup>[1](u)</sup>.\n\n## Referenzen\n\n**[1]** X — [[sources/x]]\n"
+    assert "Referenzen" not in kl.strip_reference_section(body, "Referenzen")
+    # English heading stripped even when the localized heading is German
+    # (mixed-state draft): strip_words contains both.
+    body_en = "Intro.\n\n## References\n\n**[1]** X — [[sources/x]]\n"
+    assert "References" not in kl.strip_reference_section(body_en, "Referenzen")
+    # #301 non-recurrence: heading as the FIRST line (no leading newline) is
+    # still matched and stripped.
+    body_first = "## Referenzen\n\n**[1]** X — [[sources/x]]\n"
+    assert "Referenzen" not in kl.strip_reference_section(body_first, "Referenzen")
+    # Safety net: an unrecognized synonym heading whose tail is a PURE reference
+    # list is stripped.
+    body_syn = 'Intro.\n\n## Quellen\n\n**[1]** X, "T". [u](u) — [[sources/x]]\n'
+    assert "Quellen" not in kl.strip_reference_section(body_syn, "Referenzen")
+    # Content-preserving: a trailing Recommendations BULLET section is NOT a
+    # reference list and MUST survive (no reference heading matched).
+    body_rec = "Intro.\n\n## Empfehlungen\n\n- Erstens handeln\n- Zweitens messen\n"
+    assert kl.strip_reference_section(body_rec, "Referenzen") == body_rec
+    # No reference section at all → unchanged.
+    assert kl.strip_reference_section("Just prose.\n", "References") == "Just prose.\n"
+
+
+def assert_renumber_inline_citations():
+    import re as _re
+    # Full-source-drop gap: body [1][3] → [1][2] matching the re-derived list.
+    body = "A<sup>[1](u1)</sup>. B<sup>[3](u3)</sup>, again A<sup>[1](u1)</sup>."
+    out = kl.renumber_inline_citations(body)
+    assert sorted(set(_re.findall(r"<sup>\[(\d+)\]", out))) == ["1", "2"], out
+    assert out.count("<sup>[1]") == 2 and out.count("<sup>[2]") == 1, out
+    # Already contiguous → unchanged (no-op).
+    contig = "A<sup>[1](u1)</sup>. B<sup>[2](u2)</sup>."
+    assert kl.renumber_inline_citations(contig) == contig
+    # A plain synthesis marker (no URL) is remapped too: [1][4] → [1][2].
+    syn = "A<sup>[1](u1)</sup>. S<sup>[4]</sup>."
+    assert "<sup>[2]</sup>" in kl.renumber_inline_citations(syn)
+
+
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
 check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
 check("slugify", assert_slugify)
 check("ref_heading", assert_ref_heading)
+check("first_url", assert_first_url)
+check("md_link_dest", assert_md_link_dest)
+check("strip_reference_section", assert_strip_reference_section)
+check("renumber_inline_citations", assert_renumber_inline_citations)
 PY
 )
 
@@ -186,6 +251,10 @@ grade canonicalization        "canonicalization — scheme/host lowercased, trai
 grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .tmp debris"
 grade slugify                 "slugify — German umlaut transliteration (für→fuer), NFKD de-accent, empty/non-alnum→'' contract, max-len truncation"
 grade ref_heading             "ref_heading — localized reference heading (de→Referenzen), default/unknown→References"
+grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip"
+grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"
+grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
+grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
