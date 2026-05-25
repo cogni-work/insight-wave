@@ -25,7 +25,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--knowledge-slug` | Yes | Slug of the knowledge base to resume. Resolves to `<cwd>/<slug>/` unless `--knowledge-root` overrides. |
+| `--knowledge-slug` | Yes | Slug of the knowledge base to resume. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--verbose` | No | Forward to `cogni-wiki:wiki-resume --verbose`. Includes recent log activity verbatim. |
 
@@ -58,7 +58,7 @@ Resume is read-only with respect to disk, but it still dispatches `cogni-wiki:wi
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = <cwd>/<knowledge-slug>/`.
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 2. Read the binding:
    ```

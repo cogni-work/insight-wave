@@ -1,5 +1,17 @@
 # cogni-knowledge changelog
 
+## 0.1.3 — 2026-05-25
+
+Fixes the default knowledge-base location (**#296**). `knowledge-setup` defaulted `--knowledge-root` to `<cwd>/<knowledge-slug>/`, which in a multi-plugin workspace drops the base at the repo root instead of under the plugin namespace — breaking the monorepo's `cogni-{plugin}/{project-slug}/` convention and diverging from its only dependency, `cogni-wiki:wiki-setup`, which already defaults to `cogni-wiki/{slug}`. The default now resolves to `cogni-knowledge/<knowledge-slug>/` (relative to cwd). The `--knowledge-root` override is unchanged. Clean change, no legacy fallback — appropriate for a Preview plugin with no in-repo base relying on the old default. Migration: a knowledge base created before 0.1.3 at the old `<cwd>/<slug>/` default needs an explicit `--knowledge-root <path>` on subsequent `knowledge-*` calls, since the new default resolves to `cogni-knowledge/<slug>/`. Maturity stays **Preview**. Closes **#296**; epic **#264**.
+
+### Fixed
+
+- **Default knowledge-root now follows the cogni-plugin convention.** The default resolves to `cogni-knowledge/<knowledge-slug>/` instead of `<cwd>/<knowledge-slug>/`, mirroring `cogni-wiki:wiki-setup`'s `cogni-wiki/{slug}` default. The resolution lives entirely in skill prose (the LLM passes an already-resolved `--knowledge-root` to `knowledge-binding.py init`; the script never computes the default), so this is a prose-only change with no script or test edit. `knowledge-setup` Step 1 is the canonical resolver and now carries the convention note; the five sibling skills that restate the formula (`knowledge-plan` / `knowledge-resume` / `knowledge-query` / `knowledge-dashboard` / `knowledge-refresh`) were updated in lockstep, and the six pipeline skills that delegate via "same logic as <prev>" inherit it. The bound wiki nests correctly with no extra change — Step 3 passes `--wiki-root <knowledge_root>` and the binding's `--wiki-path` is `<knowledge_root>`. Files: `skills/{knowledge-setup,knowledge-plan,knowledge-resume,knowledge-query,knowledge-dashboard,knowledge-refresh}/SKILL.md`, `CLAUDE.md`.
+
+### Version
+
+- `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — `0.1.2` → `0.1.3` (mirrored). Maturity stays `preview`.
+
 ## 0.1.2 — 2026-05-25
 
 Follow-up from the PR #290 review (**#291**) — guards `knowledge-verify` against a citation-manifest written before v0.0.28. F22 (v0.0.28) made `id` + `draft_sentence` required per citation but kept the additive `schema_version: "0.1.0"`, so a manifest from a ≤0.0.27 composer still declares `0.1.0` while carrying neither field. Run against such a mid-upgrade draft, the verifier would mass-drop every citation as `sentence_not_in_draft` and merge could trip its duplicate-id check on the `None` ids. Now it fails loud and early with a "re-run knowledge-compose" message. Plus secondary housekeeping. Maturity stays **Preview**. Closes **#291**; epic **#264**.

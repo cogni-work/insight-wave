@@ -31,7 +31,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `<cwd>/<slug>/` unless `--knowledge-root` overrides. |
+| `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--mode` | Yes | `push` or `pull`. Selects the workflow. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--from-research <slug>` | Pull-mode only | Slug of the cogni-research project to pull from. Required when `--mode pull`. |
@@ -72,7 +72,7 @@ Then continue with the binding-resolution checks:
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = <cwd>/<knowledge-slug>/`.
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 2. Read the binding:
    ```

@@ -122,7 +122,7 @@ A few specifics:
 - Skill names: `knowledge-*` (generic skill names like `setup`, `research`, `resume` MUST be prefixed per `../CLAUDE.md` §"Contributing").
 - Skill frontmatter: `name`, `description`, `allowed-tools` — same shape as cogni-wiki/cogni-research skills.
 - Script CLI: `python3 scripts/<name>.py --action ...`, JSON envelope output.
-- Path conventions: knowledge bases default to `<cwd>/<knowledge-slug>/` (matching `cogni-wiki/{slug}/`).
+- Path conventions: knowledge bases default to `cogni-knowledge/<knowledge-slug>/` (standard cogni-plugin convention, matching `cogni-wiki/{slug}/`).
 - Versioning: bump patch on any skill/script change; mirror in `marketplace.json` (`../CLAUDE.md` §"Version Management").
 - Citation count (F24 pin): the one authoritative count is `len(.metadata/citation-manifest.json::citations)` for the latest draft version — surfaced by `pipeline-summary.py project`. The composer's return `citations` field and the `knowledge-compose`/`knowledge-verify` summary lines all source this same length (never an LLM estimate). A `verify-vN.json` `counts.total` is verdicts scored for draft-vN at that round's start (before the §3.2 `sentence_not_in_draft` prune), NOT the citation count.
 
