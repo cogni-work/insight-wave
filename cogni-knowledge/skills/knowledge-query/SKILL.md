@@ -32,7 +32,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once per sessi
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--question` | Yes (prompted) | Free-text question. Forwarded to `cogni-wiki:wiki-query --question`. |
-| `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the cwd). |
+| `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). |
 | `--file-back` | No | `auto` (default — wiki-query asks the user) / `yes` / `no`. Pass-through to `cogni-wiki:wiki-query --file-back`. |
 | `--max-pages` | No | Cap on how many pages wiki-query reads. Pass-through to `cogni-wiki:wiki-query --max-pages`. Default 12 (upstream). |
 
@@ -65,7 +65,7 @@ Then continue with the binding-resolution checks:
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the cwd).
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 2. Read the binding:
    ```

@@ -58,7 +58,7 @@ If `WIKI_OK=no`, abort:
 
 **Binding.** Resolve `knowledge_root`:
 1. If `--knowledge-root` is set, use it.
-2. Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the cwd).
+2. Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 Read the binding:
 

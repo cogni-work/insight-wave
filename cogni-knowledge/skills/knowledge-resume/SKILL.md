@@ -58,7 +58,7 @@ Resume is read-only with respect to disk, but it still dispatches `cogni-wiki:wi
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the cwd).
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 2. Read the binding:
    ```

@@ -72,7 +72,7 @@ Then continue with the binding-resolution checks:
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the cwd).
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 2. Read the binding:
    ```

@@ -31,7 +31,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
-| `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the cwd). |
+| `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). |
 | `--graph` | No | Pass-through to `cogni-wiki:wiki-dashboard --graph`. Values: `no` (default) / `pass1` / `yes`. |
 | `--open` | No | Pass-through to `cogni-wiki:wiki-dashboard --open`. Values: `yes` / `no` (default). |
 
@@ -62,7 +62,7 @@ Then continue with the binding-resolution checks:
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the cwd).
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
 
 2. Read the binding:
    ```

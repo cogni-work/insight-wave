@@ -2,7 +2,7 @@
 
 ## 0.1.3 — 2026-05-25
 
-Fixes the default knowledge-base location (**#296**). `knowledge-setup` defaulted `--knowledge-root` to `<cwd>/<knowledge-slug>/`, which in a multi-plugin workspace drops the base at the repo root instead of under the plugin namespace — breaking the monorepo's `cogni-{plugin}/{project-slug}/` convention and diverging from its only dependency, `cogni-wiki:wiki-setup`, which already defaults to `cogni-wiki/{slug}`. The default now resolves to `cogni-knowledge/<knowledge-slug>/` (relative to cwd). The `--knowledge-root` override is unchanged. Clean change, no legacy fallback — appropriate for a Preview plugin with no in-repo base relying on the old default. Maturity stays **Preview**. Closes **#296**; epic **#264**.
+Fixes the default knowledge-base location (**#296**). `knowledge-setup` defaulted `--knowledge-root` to `<cwd>/<knowledge-slug>/`, which in a multi-plugin workspace drops the base at the repo root instead of under the plugin namespace — breaking the monorepo's `cogni-{plugin}/{project-slug}/` convention and diverging from its only dependency, `cogni-wiki:wiki-setup`, which already defaults to `cogni-wiki/{slug}`. The default now resolves to `cogni-knowledge/<knowledge-slug>/` (relative to cwd). The `--knowledge-root` override is unchanged. Clean change, no legacy fallback — appropriate for a Preview plugin with no in-repo base relying on the old default. Migration: a knowledge base created before 0.1.3 at the old `<cwd>/<slug>/` default needs an explicit `--knowledge-root <path>` on subsequent `knowledge-*` calls, since the new default resolves to `cogni-knowledge/<slug>/`. Maturity stays **Preview**. Closes **#296**; epic **#264**.
 
 ### Fixed
 

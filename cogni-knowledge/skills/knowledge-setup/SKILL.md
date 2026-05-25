@@ -29,7 +29,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes (prompted) | Kebab-case identifier for the knowledge base, e.g. `eu-ai-act`. Used for the directory name (`cogni-knowledge/<slug>/`) and the `knowledge_slug` field in the binding. |
 | `--knowledge-title` | Yes (prompted) | Human-readable title, e.g. `"EU AI Act knowledge base"`. Used as the `--name` for `cogni-wiki:wiki-setup`. |
-| `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the cwd). Both the wiki and the binding live inside this directory. |
+| `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). Both the wiki and the binding live inside this directory. |
 | `--description` | No | One-sentence description forwarded to `cogni-wiki:wiki-setup --description`. |
 | `--publisher-base-url` | No | Forwarded to `cogni-wiki:wiki-setup --publisher-base-url`. Used as last-resort fallback URL when wiki pages have no per-page publisher URL. |
 
@@ -67,7 +67,7 @@ The same probe runs in every other `knowledge-*` skill (rolled out at v0.0.14, a
 ### 1. Resolve the knowledge root
 
 1. If `--knowledge-root` was passed, use it as-is.
-2. Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` relative to the cwd — the standard cogni-plugin convention (`cogni-{plugin}/{project-slug}/`), matching `cogni-wiki/{slug}/`.
+2. Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` relative to the current working directory — the standard cogni-plugin convention (`cogni-{plugin}/{project-slug}/`), matching `cogni-wiki/{slug}/`.
 3. If `<knowledge_root>/.cogni-knowledge/binding.json` already exists: read it, report the existing knowledge_slug/title/wiki_path, and stop. Do not overwrite.
 
 ### 2. Pre-flight: wiki vs no wiki
