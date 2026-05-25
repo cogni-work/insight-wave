@@ -24,7 +24,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` once at the start o
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `<cwd>/<slug>/` unless `--knowledge-root` overrides. |
+| `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--topic` | Yes (prompted) | Free-text research topic, e.g. `"GDPR Article 30 records of processing"`. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--market` | No | Market code (default `dach`). One of: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. |
@@ -58,7 +58,7 @@ If `WIKI_OK=no`, abort:
 
 **Binding.** Resolve `knowledge_root`:
 1. If `--knowledge-root` is set, use it.
-2. Otherwise, `knowledge_root = <cwd>/<knowledge-slug>/`.
+2. Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the cwd).
 
 Read the binding:
 
