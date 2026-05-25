@@ -179,7 +179,7 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 - An `Edit` that the read-back shows did not apply (or malformed the citation marker) is re-applied once against the offending sentence; on a second failure return `write_failed`. Because the draft is patched in place from a verbatim copy, a read-back that comes back empty means the pre-created copy itself was empty — surface `write_failed` rather than composing a draft from scratch.
 - A deviation whose `wiki_slug` resolves to no page (Phase 0 step 4 fails) is force-dropped — the citation goes, the sentence is rewritten as non-evidence-based.
 - A deviation whose `claim_id` doesn't exist in `claims_by_slug[wiki_slug]` falls through to the **`claim_not_found`** triage path (Phase 1) — repoint to a covering claim on the same page; drop only if none covers it.
-- A `verify-vN.json` with empty `deviations[]` is a no-op: emit the unchanged draft as `draft-v{N+1}.md`, copy the manifest with `draft_version: N+1`, and return `fixes_summary: {repoint: 0, rephrase: 0, drop: 0, skip: 0}`. The orchestrator should not have dispatched in that case, but defence-in-depth.
+- A `verify-vN.json` with empty `deviations[]` is a no-op: make **no** `Edit`s (the orchestrator-supplied `draft-v{N+1}.md` is already a verbatim copy of the verified draft — leave it as-is), rewrite the manifest with `draft_version: N+1` and every `id`/`draft_sentence` carried unchanged, and return `fixes_summary: {repoint: 0, rephrase: 0, drop: 0, skip: 0}`. The orchestrator should not have dispatched in that case, but defence-in-depth.
 
 ## Grounding & anti-hallucination rules
 

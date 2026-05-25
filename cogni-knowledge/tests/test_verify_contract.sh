@@ -44,8 +44,19 @@ assert_grep 'partial verification' "$VERIFY" "knowledge-verify: merge stops on p
 assert_grep 'verify-store.py prefilter' "$VERIFY" "knowledge-verify: runs the deterministic substring prefilter (#305)"
 assert_grep '--only-ids' "$VERIFY" "knowledge-verify: shards only the delta via --only-ids on round >= 1 (#305)"
 assert_grep '--carry-forward-from' "$VERIFY" "knowledge-verify: carries untouched verdicts forward via merge --carry-forward-from (#305)"
-assert_grep 'DELTA_IDS' "$VERIFY" "knowledge-verify: derives DELTA_IDS from the revisor's fixes_applied (rephrase/repoint) (#305)"
+assert_grep 'DELTA_IDS' "$VERIFY" "knowledge-verify: re-verifies only the touched DELTA_IDS on round >= 1 (#305)"
+# Review fix: DELTA_IDS comes from a DETERMINISTIC manifest diff (snapshot vs
+# rewritten manifest), NOT the revisor's self-reported fixes_applied — so an LLM
+# under-report cannot silently carry a stale verdict forward.
+assert_grep 'deterministically from the manifest diff' "$VERIFY" "knowledge-verify: derives DELTA_IDS from a deterministic manifest diff, not fixes_applied (review)"
+assert_grep 'citation-manifest.pre-r' "$VERIFY" "knowledge-verify: snapshots the manifest before the revisor for the diff (review)"
 assert_grep 'cp ' "$VERIFY" "knowledge-verify: pre-creates draft-v{N+1} via cp before the revisor (patch-in-place substrate, #305)"
+# Review fix: the prefilter is handed the current draft so it can apply the
+# sentence_not_in_draft staleness guard before asserting verbatim.
+assert_grep '\-\-draft "' "$VERIFY" "knowledge-verify: passes --draft to the prefilter for the staleness guard (review)"
+# Review fix: shard runs every round (even on empty remaining) so stale numbered
+# fragments from an interrupted prior attempt are cleared before merge.
+assert_grep 'even when .*remaining_ids.* is empty' "$VERIFY" "knowledge-verify: runs shard every round to clear stale fragments (review)"
 assert_grep 'probe_plugin cogni-wiki' "$VERIFY" "knowledge-verify: probes cogni-wiki (clean-break)"
 assert_grep 'wiki/log.md' "$VERIFY" "knowledge-verify: appends to wiki/log.md"
 # Match the actual log-line shape (`## [DATE] verify | project=...`) rather

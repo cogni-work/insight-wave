@@ -186,13 +186,14 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py prefilter \
     --manifest "<project_path>/.metadata/citation-manifest.json" \
     --wiki-root "<wiki_root>" \
     --draft-version <CURRENT_DRAFT_VERSION> \
+    --draft "<project_path>/output/draft-v<CURRENT_DRAFT_VERSION>.md" \
     --out-dir "<project_path>/.metadata/verify-shards" \
     [--only-ids <CANDIDATE_IDS>]    # round ≥1 only; omit on round 0 (full manifest)
 ```
 
-Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — any page it cannot parse leaves its citations in `remaining_ids` (they fall through to the LLM), and it never emits a deviation or a drop. **If `remaining_ids` is empty**, skip (b) and (c) entirely and go straight to (d) merge — the prefilter fragment carries every verdict this round needs.
+Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). `--draft` lets the prefilter confirm each manifest `draft_sentence` is actually in the current draft (the same `sentence_not_in_draft` staleness guard the verifier applies) before it dares classify `verbatim`. Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — it only ever asserts `verbatim` on a substantial exact substring of an in-draft sentence; anything it cannot confidently match (short/block-scalar/cross-language/stale) is left in `remaining_ids` for the LLM, and it never emits a deviation or a drop.
 
-**(b) Shard the remaining ids.**
+**(b) Shard the remaining ids.** Run this **every round, even when `remaining_ids` is empty** — `shard` is the step that clears stale numbered `verify-shard-[0-9]*-v<N>.json` fragments left by an interrupted prior attempt at the same draft version, so skipping it would let a stale fragment leak into the merge.
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py shard \
@@ -203,9 +204,9 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py shard \
     --out-dir "<project_path>/.metadata/verify-shards"
 ```
 
-`shard` runs **after** `prefilter` and preserves the prefilter fragment (its cleanup is scoped to numbered fragments). Capture `data.shard_count` and the `data.shards[]` rows — each carries a `citations_path` (hand to the verifier as `CITATIONS_PATH`) and a `verify_out_path` (hand it as `VERIFY_OUT_PATH`).
+`shard` runs **after** `prefilter` and preserves the prefilter fragment (its cleanup is scoped to numbered fragments). When `remaining_ids` is empty it writes zero shards (`shard_count: 0`) but still performs the cleanup. Capture `data.shard_count` and the `data.shards[]` rows — each carries a `citations_path` (hand to the verifier as `CITATIONS_PATH`) and a `verify_out_path` (hand it as `VERIFY_OUT_PATH`).
 
-**(c) Dispatch N verifiers in parallel.** Emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
+**(c) Dispatch N verifiers in parallel.** If `data.shard_count == 0` (everything was pre-filtered or carried forward), skip dispatch and go to (d). Otherwise emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
 
 ```
 Task(wiki-verifier,
@@ -293,15 +294,17 @@ If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND < MAX_ROUNDS` → continue to 3.3
 
 #### 3.3 Dispatch revisor (single Task call per round)
 
-**Pre-create the draft substrate (#305).** The revisor now **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version:
+**Pre-create the draft substrate + snapshot the manifest (#305).** The revisor now **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version AND snapshots the manifest the revisor is about to rewrite (the snapshot is what lets `DELTA_IDS` be derived deterministically below, instead of trusting the revisor's self-reported `fixes_applied`):
 
 ```
 NEW_DRAFT_VERSION=$((CURRENT_DRAFT_VERSION + 1))
 cp "<project_path>/output/draft-v<CURRENT_DRAFT_VERSION>.md" \
    "<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md"
+cp "<project_path>/.metadata/citation-manifest.json" \
+   "<project_path>/.metadata/.citation-manifest.pre-r<REVISION_ROUND>.json"
 ```
 
-This `cp` is what guarantees every sentence the revisor does **not** touch is byte-identical across versions — the precondition for Step 3.1's round-≥1 carry-forward. Then dispatch:
+The draft `cp` guarantees every sentence the revisor does **not** touch is byte-identical across versions — the precondition for Step 3.1's round-≥1 carry-forward. Then dispatch:
 
 ```
 Task(revisor,
@@ -311,11 +314,30 @@ Task(revisor,
      NEW_DRAFT_VERSION=<NEW_DRAFT_VERSION>)
 ```
 
-`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md`.
+`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md` and rewrites `citation-manifest.json` (updated `draft_sentence`/`claim_id` for changed citations, dropped entries removed).
 
 Parse the return envelope:
 
-- `ok: true` → **derive `DELTA_IDS`** = the `id`s in `fixes_applied[]` whose `action ∈ {rephrase, repoint}` (drops are already removed from the manifest; skips are byte-identical — neither is re-scored). Set `CURRENT_DRAFT_VERSION=NEW_DRAFT_VERSION`, increment `REVISION_ROUND`, loop back to 3.1 (which will pre-filter + shard only `DELTA_IDS` and carry the rest forward).
+- `ok: true` → **derive `DELTA_IDS` deterministically from the manifest diff** (NOT from the revisor's self-reported `fixes_applied`, which an LLM could under-report — that would carry a stale verdict forward with no cross-check). `DELTA_IDS` = the ids present in the **rewritten** manifest whose `(draft_sentence, claim_id)` pair differs from the pre-revisor snapshot. Dropped ids are absent from the new manifest (not re-scored, not carried — correct); untouched ids match the snapshot (carried forward). Compute it:
+
+  ```
+  KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+  PRE="<project_path>/.metadata/.citation-manifest.pre-r<REVISION_ROUND>.json" \
+  POST="<project_path>/.metadata/citation-manifest.json" \
+  python3 -c '
+  import json, os
+  from pathlib import Path
+  pre = {c["id"]: (c.get("draft_sentence"), c.get("claim_id"))
+         for c in json.loads(Path(os.environ["PRE"]).read_text(encoding="utf-8")).get("citations", [])
+         if isinstance(c, dict) and c.get("id") is not None}
+  post = json.loads(Path(os.environ["POST"]).read_text(encoding="utf-8")).get("citations", [])
+  delta = [c["id"] for c in post if isinstance(c, dict) and c.get("id") is not None
+           and (c.get("draft_sentence"), c.get("claim_id")) != pre.get(c["id"])]
+  print(",".join(delta))
+  '
+  ```
+
+  The trailing print is captured as the comma-joined `DELTA_IDS` (may be empty — an all-drops/all-skips round). Set `CURRENT_DRAFT_VERSION=NEW_DRAFT_VERSION`, increment `REVISION_ROUND`, loop back to 3.1 (which pre-filters + shards only `DELTA_IDS` and carries the rest forward). `fixes_applied`/`fixes_summary` are still captured for the cost/summary lines, but they no longer drive re-scoring.
 - `ok: false, error: "verify_input_missing"` → surface verbatim; this is a defence-in-depth check, should not fire if 3.1 succeeded.
 - `ok: false, error: "write_failed"` → surface verbatim and stop. The previous verify-vN.json is still the latest valid audit trail for the operator.
 

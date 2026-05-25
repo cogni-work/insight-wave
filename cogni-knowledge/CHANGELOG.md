@@ -27,6 +27,18 @@ Slice 15 of the Phase 5 v0.1.x bake-in (**#264**) — two cost / wall-clock wins
 
 - Ships on deterministic-gate + contract coverage, consistent with Slices 3–14. No schema bump. The live convergence re-run folds into the open #311 German bake-in.
 
+### Review fixes
+
+A multi-angle review of the prefilter surfaced several ways it could emit a wrong-too-strong `verbatim` (silently skipping verification) — the fail-safe guarantee did not actually hold. Hardened:
+
+- **No false `verbatim` from a degenerate needle.** A YAML block-scalar value (`excerpt_quote: >` / `|`) was parsed as the bare indicator `>`/`|`, which substring-matches the `<sup>…</sup>` marker in every cited sentence. The parser now drops block-scalar headers (the field is simply absent), and the prefilter requires a **substantial** needle (`MIN_PREFILTER_NEEDLE_LEN = 24`) so short/coincidental matches (`"AI"`, stray punctuation) fall through to the LLM.
+- **Draft-staleness guard.** The prefilter now reads the current draft (new `--draft`, threaded by `knowledge-verify`) and only asserts `verbatim` when the manifest `draft_sentence` is actually present in it — matching the `sentence_not_in_draft` check the wiki-verifier applies; it never auto-passes a stale sentence.
+- **NFC normalization.** Both sides of the substring test are NFC-normalized, so genuinely-verbatim non-ASCII citations (German/French/Polish/… — the markets the plugin targets) are matched across NFC/NFD composition instead of silently missing.
+- **Deterministic re-verify delta.** `DELTA_IDS` is now derived from a deterministic diff of a pre-revisor manifest **snapshot** vs the rewritten manifest, not the LLM revisor's self-reported `fixes_applied` — an under-report can no longer carry a stale verdict forward.
+- **Stale-fragment cleanup.** `knowledge-verify` runs `shard` every round (even when nothing remains to score) so a numbered fragment left by an interrupted prior attempt at the same draft version cannot leak into the merge.
+- **Robustness guards in `verify-store.py`:** `merge --manifest` rejects a manifest with null/duplicate ids (instead of a self-contradictory conservation error); `merge --carry-forward-from` rejects a prior file with duplicate ids (instead of silent last-write-wins); the prefilter treats a duplicate `claim_id` on one page as ambiguous and falls through. `_unquote_scalar` decodes double-quoted values via `json.loads` (the ingester's writer), handling escaped quotes / `\n` / `\uXXXX` correctly. The revisor's empty-deviations invariant was reworded for patch-in-place.
+- Tests: `test_verify_store.sh` + `test_knowledge_lib.sh` gained cases for every guard above (block-scalar, short-needle, stale-sentence, NFC/NFD, duplicate-claim, duplicate-manifest-id, duplicate-carry-forward-id, inline-comment, column-0 bullets); `test_verify_contract.sh` asserts the deterministic-diff DELTA, manifest snapshot, `--draft`, and always-run-shard wiring.
+
 ## 0.1.5 — 2026-05-25
 
 Slice 14 of the Phase 5 v0.1.x bake-in (**#264**) — two pipeline state / config-robustness bugs from the first real DACH run. No schema bump, no script change (both fixes reuse existing helpers). Maturity stays **Preview**. Closes **#302**, **#304**; epic **#264**.

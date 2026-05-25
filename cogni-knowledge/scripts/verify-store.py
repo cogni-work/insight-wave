@@ -49,6 +49,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -58,6 +59,10 @@ from _knowledge_lib import atomic_write, parse_pre_extracted_claims  # noqa: E40
 SCHEMA_VERSION = "0.1.0"
 SHARD_DIRNAME = "verify-shards"
 VERDICTS = ("verbatim", "paraphrase", "synthesis", "unsupported")
+# Minimum needle length for the deterministic prefilter to assert `verbatim`. A
+# real excerpt_quote is a full clause; anything shorter substring-matches by
+# coincidence, so below this floor the citation is left for the LLM verifier.
+MIN_PREFILTER_NEEDLE_LEN = 24
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -169,6 +174,10 @@ def cmd_shard(args: argparse.Namespace) -> int:
     )
 
 
+def _nfc(s: str) -> str:
+    return unicodedata.normalize("NFC", s) if s else s
+
+
 def cmd_prefilter(args: argparse.Namespace) -> int:
     manifest_path = Path(args.manifest).resolve()
     wiki_root = Path(args.wiki_root).resolve()
@@ -184,6 +193,20 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
         wanted = {tok for tok in (t.strip() for t in args.only_ids.split(",")) if tok}
         citations = [c for c in citations if c.get("id") in wanted]
 
+    # Read the current draft (NFC-normalized) so we can confirm the manifest's
+    # draft_sentence is ACTUALLY in the draft before classifying — the same
+    # staleness guard the wiki-verifier applies (`sentence_not_in_draft`). The
+    # prefilter never trusts a stale manifest sentence. Path: explicit --draft,
+    # else derived from the manifest's project layout (<project>/output/).
+    if args.draft:
+        draft_path = Path(args.draft).resolve()
+    else:
+        draft_path = manifest_path.parent.parent / "output" / f"draft-v{draft_version}.md"
+    try:
+        draft_text = _nfc(draft_path.read_text(encoding="utf-8")) if draft_path.is_file() else ""
+    except OSError:
+        draft_text = ""
+
     claims_cache: dict[str, dict] = {}
 
     def claims_for(slug: str) -> dict:
@@ -198,7 +221,21 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
                 except OSError:
                     text = ""
                 break
-        by_id = {c["id"]: c for c in parse_pre_extracted_claims(text) if c.get("id")}
+        # A duplicate claim_id on one page is ambiguous — the citation could mean
+        # either claim, so we cannot safely pick one. Drop ambiguous ids so the
+        # citation falls through to the LLM rather than being scored against an
+        # arbitrary (parse-order) excerpt.
+        by_id: dict = {}
+        ambiguous: set = set()
+        for c in parse_pre_extracted_claims(text):
+            cid2 = c.get("id")
+            if not cid2 or cid2 in ambiguous:
+                continue
+            if cid2 in by_id:
+                ambiguous.add(cid2)
+                by_id.pop(cid2, None)
+                continue
+            by_id[cid2] = c
         claims_cache[slug] = by_id
         return by_id
 
@@ -209,16 +246,21 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
         cid = cit.get("id")
         slug = cit.get("wiki_slug")
         claim_id = cit.get("claim_id")
-        draft_sentence = cit.get("draft_sentence") or ""
+        draft_sentence = _nfc(cit.get("draft_sentence") or "")
         hit = False
-        if cid and slug and claim_id:
+        # Staleness: the sentence must actually appear in the current draft (else
+        # the wiki-verifier would flag sentence_not_in_draft — never auto-pass it).
+        if cid and slug and claim_id and draft_sentence and draft_sentence in draft_text:
             claim = claims_for(slug).get(claim_id)
             if claim:
-                needle = claim.get("excerpt_quote") or claim.get("text") or ""
-                # Conservative: only an EXACT substring match yields `verbatim`.
-                # Cross-language self-gates (a German sentence can't contain an
-                # English excerpt), so no language flag is needed.
-                if needle and needle in draft_sentence:
+                needle = _nfc(claim.get("excerpt_quote") or claim.get("text") or "")
+                # Only a SUBSTANTIAL exact substring is a trustworthy verbatim
+                # signal. A short needle (e.g. "AI", a stray ">"/"|", a comment
+                # fragment) substring-matches coincidentally, so require a minimum
+                # length — a real excerpt_quote is a full clause. Below the floor
+                # the citation falls through to the LLM (safe miss, never a wrong
+                # verdict). Cross-language self-gates on top of this.
+                if len(needle.strip()) >= MIN_PREFILTER_NEEDLE_LEN and needle in draft_sentence:
                     hit = True
         if hit:
             matched.append(
@@ -285,6 +327,15 @@ def cmd_merge(args: argparse.Namespace) -> int:
         if cm is None:
             return _emit(False, error=merr)
         manifest_ids = [c.get("id") for c in cm["citations"]]
+        # Conservation is an id-SET comparison, so a null or duplicate manifest id
+        # makes len(expected_ids) != len(set) — yielding a self-contradictory
+        # "verified N of M ... missing: []; unexpected: []" error that can never
+        # reconcile. Reject up front with a clear message.
+        if any(i is None for i in manifest_ids):
+            return _emit(False, error="manifest has a citation with a null/missing id")
+        mdupes = sorted({i for i, n in Counter(manifest_ids).items() if n > 1})
+        if mdupes:
+            return _emit(False, error=f"manifest has duplicate citation id(s): {mdupes}")
 
     expected_ids: list = []
     if manifest_ids is not None:
@@ -353,10 +404,16 @@ def cmd_merge(args: argparse.Namespace) -> int:
             return _emit(False, error=f"carry-forward source is not valid JSON: {exc}")
         if not isinstance(prev, dict):
             return _emit(False, error=f"carry-forward source is not a JSON object: {prev_path}")
-        prev_by_id: dict = {}
-        for e in (prev.get("verified") or []) + (prev.get("deviations") or []):
-            if isinstance(e, dict) and e.get("id") is not None:
-                prev_by_id[e["id"]] = e
+        prev_entries = [
+            e for e in (prev.get("verified") or []) + (prev.get("deviations") or [])
+            if isinstance(e, dict) and e.get("id") is not None
+        ]
+        # A duplicate id in the prior file would silently collapse last-write-wins
+        # and carry an arbitrary (file-order) verdict — reject rather than guess.
+        prev_dupes = sorted({i for i, n in Counter(e["id"] for e in prev_entries).items() if n > 1})
+        if prev_dupes:
+            return _emit(False, error=f"carry-forward source has duplicate citation id(s): {prev_dupes}")
+        prev_by_id: dict = {e["id"]: e for e in prev_entries}
         fresh_ids = {e.get("id") for e in verified + deviations}
         missing_prev: list = []
         for mid in manifest_ids:  # manifest_ids is set whenever carry-forward is used
@@ -487,6 +544,11 @@ def main(argv: list[str]) -> int:
     p_pre.add_argument("--wiki-root", required=True, help="Bound wiki root (dir containing wiki/)")
     p_pre.add_argument("--draft-version", required=True, type=int)
     p_pre.add_argument("--out-dir", required=True, help="Directory for the prefilter fragment (verify-shards/)")
+    p_pre.add_argument(
+        "--draft",
+        default=None,
+        help="Path to the current draft-vN.md (staleness check; default: derived from --manifest layout)",
+    )
     p_pre.add_argument("--only-ids", default=None, help="CSV of citation ids to restrict the scan to")
     p_pre.add_argument("--revision-round", type=int, default=0, help="Cosmetic; merge sets the canonical round")
     p_pre.set_defaults(func=cmd_prefilter)

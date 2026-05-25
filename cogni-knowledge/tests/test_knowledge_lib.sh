@@ -251,6 +251,36 @@ def assert_parse_pre_extracted_claims():
     # Empty / non-frontmatter input → [].
     assert kl.parse_pre_extracted_claims("") == []
     assert kl.parse_pre_extracted_claims("# just a body, no frontmatter\n") == []
+    # #305 review: a YAML block-scalar value ('>' / '|') must NOT be captured as
+    # the bare indicator (that 1-char needle would false-match). The field is
+    # dropped so the claim simply lacks excerpt_quote.
+    block = (
+        "---\npre_extracted_claims:\n"
+        "  - id: clm-bs\n"
+        "    excerpt_quote: >\n"
+        "      Annex III systems shall be considered high-risk.\n"
+        "---\n"
+    )
+    bsc = kl.parse_pre_extracted_claims(block)
+    assert len(bsc) == 1 and bsc[0].get("id") == "clm-bs", bsc
+    assert "excerpt_quote" not in bsc[0], "block-scalar indicator must not be captured as a value: " + repr(bsc[0])
+    for pipe in ("|", "|-", ">-", ">2"):
+        one = kl.parse_pre_extracted_claims("---\npre_extracted_claims:\n  - id: c\n    text: " + pipe + "\n---\n")
+        assert "text" not in one[0], "block-scalar " + pipe + " leaked: " + repr(one)
+    # Inline YAML comment on an UNQUOTED plain scalar is stripped (a comment needs
+    # leading whitespace before '#'); a quoted value keeps '#' verbatim.
+    com = kl.parse_pre_extracted_claims(
+        "---\npre_extracted_claims:\n  - id: c1\n    text: real value # trailing note\n"
+        '    excerpt_quote: "kept # inside quotes"\n---\n'
+    )
+    assert com[0]["text"] == "real value", com[0]
+    assert com[0]["excerpt_quote"] == "kept # inside quotes", com[0]
+    # Column-0 block-sequence bullets (legal YAML at the parent key's indent).
+    col0 = kl.parse_pre_extracted_claims(
+        "---\npre_extracted_claims:\n- id: clm-c0\n  excerpt_quote: \"a contiguous quote\"\ntags: [x]\n---\n"
+    )
+    assert len(col0) == 1 and col0[0]["id"] == "clm-c0", col0
+    assert col0[0]["excerpt_quote"] == "a contiguous quote", col0
 
 
 check("identity", assert_identity)

@@ -396,11 +396,19 @@ cat > "$PFM" <<'EOF'
   ]
 }
 EOF
+# All three sentences are present in the draft, so a non-match is due to the
+# language/parse-fail guard, NOT the staleness check (tested separately in 7j).
+PFDRAFT="$WORK/pf-draft-v1.md"
+cat > "$PFDRAFT" <<'EOF'
+The system shall be considered high-risk under Annex III.
+Eine deutsche Aussage ganz ohne englisches Zitat.
+Cites a page whose frontmatter cannot be parsed.
+EOF
 
 # 7b. prefilter: exact-substring match → verbatim; cross-language + unparseable
 #     page → remaining (fail-safe, never a wrong verdict).
 PFSH="$WORK/pf-shards"
-OUT=$(python3 "$SCRIPT" prefilter --manifest "$PFM" --wiki-root "$PFWIKI" --draft-version 1 --out-dir "$PFSH")
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$PFM" --wiki-root "$PFWIKI" --draft-version 1 --draft "$PFDRAFT" --out-dir "$PFSH")
 if echo "$OUT" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
@@ -426,6 +434,118 @@ then
   green "PASS: prefilter fragment carries only verbatim verdicts, no deviations"
 else
   red "FAIL: prefilter fragment malformed"
+  errors=$((errors + 1))
+fi
+
+# 7b-fp. FALSE-POSITIVE GUARDS — the prefilter must NOT mark verbatim on a
+#        block-scalar needle ('>'/'|'), a too-short needle, or a manifest
+#        sentence that is not actually in the draft (stale). All must fall
+#        through to the LLM (remaining_ids), never a wrong verbatim.
+FPWIKI="$WORK/fp-wiki"
+mkdir -p "$FPWIKI/wiki/sources"
+cat > "$FPWIKI/wiki/sources/p.md" <<'EOF'
+---
+type: source
+pre_extracted_claims:
+  - id: clm-block
+    text: short
+    excerpt_quote: >
+      Annex III systems shall be considered high-risk.
+  - id: clm-shorttext
+    text: AI
+  - id: clm-real
+    text: "Article 6 classifies high-risk systems."
+    excerpt_quote: "shall be considered high-risk under Annex III"
+---
+
+# body
+EOF
+FPM="$WORK/fp-manifest.json"
+cat > "$FPM" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"citations":[
+ {"id":"cit-block","draft_position":"0:1","draft_sentence":"The system shall be considered high-risk<sup>[1](https://x.eu/a)</sup>.","wiki_slug":"p","claim_id":"clm-block"},
+ {"id":"cit-short","draft_position":"0:2","draft_sentence":"This sentence mentions AI somewhere<sup>[2](https://x.eu/b)</sup>.","wiki_slug":"p","claim_id":"clm-shorttext"},
+ {"id":"cit-real","draft_position":"0:3","draft_sentence":"A system shall be considered high-risk under Annex III here<sup>[3](https://x.eu/c)</sup>.","wiki_slug":"p","claim_id":"clm-real"},
+ {"id":"cit-stale","draft_position":"0:4","draft_sentence":"Not in the draft yet shall be considered high-risk under Annex III.","wiki_slug":"p","claim_id":"clm-real"}
+]}
+EOF
+FPDRAFT="$WORK/fp-draft-v1.md"
+cat > "$FPDRAFT" <<'EOF'
+The system shall be considered high-risk<sup>[1](https://x.eu/a)</sup>.
+This sentence mentions AI somewhere<sup>[2](https://x.eu/b)</sup>.
+A system shall be considered high-risk under Annex III here<sup>[3](https://x.eu/c)</sup>.
+EOF
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$FPM" --wiki-root "$FPWIKI" --draft-version 1 --draft "$FPDRAFT" --out-dir "$WORK/fp-sh")
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['matched_ids'] == ['cit-real'], 'only the substantial in-draft match should be verbatim; got '+repr(d['data']['matched_ids'])
+assert sorted(d['data']['remaining_ids']) == ['cit-block','cit-short','cit-stale'], d['data']
+" 2>/dev/null; then
+  green "PASS: prefilter rejects block-scalar / short-needle / stale-sentence false positives (#305 review)"
+else
+  red "FAIL: prefilter false-positive guard regressed"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7b-nfc. NFC/NFD normalization — a genuinely-verbatim non-ASCII match across
+#         differing Unicode composition must still be found.
+NFCWIKI="$WORK/nfc-wiki"
+mkdir -p "$NFCWIKI/wiki/sources"
+python3 - "$NFCWIKI/wiki/sources/g.md" "$WORK/nfc-manifest.json" "$WORK/nfc-draft-v1.md" <<'PY'
+import sys, json, unicodedata
+page_path, man_path, draft_path = sys.argv[1], sys.argv[2], sys.argv[3]
+quote_nfd = unicodedata.normalize("NFD", "Geschäftsmodell der Hochrisiko-Systeme")
+quote_nfc = unicodedata.normalize("NFC", "Geschäftsmodell der Hochrisiko-Systeme")
+assert quote_nfd != quote_nfc
+open(page_path, "w", encoding="utf-8").write(
+    '---\ntype: source\npre_extracted_claims:\n  - id: clm-de\n'
+    '    excerpt_quote: "' + quote_nfd + '"\n---\n# body\n')
+sentence_nfc = "Das " + quote_nfc + " ist relevant."
+json.dump({"schema_version":"0.1.0","draft_version":1,"citations":[
+    {"id":"cit-de","draft_position":"0:1","draft_sentence":sentence_nfc,"wiki_slug":"g","claim_id":"clm-de"}]},
+    open(man_path,"w",encoding="utf-8"))
+open(draft_path,"w",encoding="utf-8").write(sentence_nfc + "\n")
+PY
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$WORK/nfc-manifest.json" --wiki-root "$NFCWIKI" --draft-version 1 --draft "$WORK/nfc-draft-v1.md" --out-dir "$WORK/nfc-sh")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['data']['matched_ids']==['cit-de'], d['data']" 2>/dev/null; then
+  green "PASS: prefilter matches a verbatim non-ASCII citation across NFC/NFD composition (#305 review)"
+else
+  red "FAIL: prefilter NFC/NFD normalization missing"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7b-dup. A duplicate claim_id on one page is ambiguous → that citation falls
+#         through to the LLM (never matched against an arbitrary excerpt).
+DUPWIKI="$WORK/dup-wiki"
+mkdir -p "$DUPWIKI/wiki/sources"
+cat > "$DUPWIKI/wiki/sources/d.md" <<'EOF'
+---
+type: source
+pre_extracted_claims:
+  - id: clm-dup
+    excerpt_quote: "shall be considered high-risk under Annex III"
+  - id: clm-dup
+    excerpt_quote: "is exempt under the significant-risk derogation"
+---
+# body
+EOF
+cat > "$WORK/dup-manifest.json" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"citations":[
+ {"id":"cit-dup","draft_position":"0:1","draft_sentence":"A system shall be considered high-risk under Annex III now.","wiki_slug":"d","claim_id":"clm-dup"}]}
+EOF
+cat > "$WORK/dup-draft-v1.md" <<'EOF'
+A system shall be considered high-risk under Annex III now.
+EOF
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$WORK/dup-manifest.json" --wiki-root "$DUPWIKI" --draft-version 1 --draft "$WORK/dup-draft-v1.md" --out-dir "$WORK/dup-sh")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['data']['matched_ids']==[] and d['data']['remaining_ids']==['cit-dup'], d['data']" 2>/dev/null; then
+  green "PASS: prefilter treats a duplicate claim_id on a page as ambiguous → LLM fallthrough (#305 review)"
+else
+  red "FAIL: prefilter duplicate-claim_id ambiguity not handled"
+  red "  got: $OUT"
   errors=$((errors + 1))
 fi
 
@@ -561,6 +681,39 @@ if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['
   green "PASS: carry-forward rejects a manifest id with no prior verdict (forces full re-shard)"
 else
   red "FAIL: carry-forward did not reject a missing prior verdict"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7j. merge --manifest with a DUPLICATE id in the manifest → clean rejection
+#     (not the self-contradictory 'missing: []; unexpected: []' conservation error).
+DUPMAN="$WORK/dup-manifest-merge.json"
+cat > "$DUPMAN" <<'EOF'
+{"schema_version":"0.1.0","draft_version":2,"citations":[
+ {"id":"cit-001","draft_position":"0:1","draft_sentence":"a","wiki_slug":"p","claim_id":"c1"},
+ {"id":"cit-001","draft_position":"0:2","draft_sentence":"b","wiki_slug":"p","claim_id":"c2"}]}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$CFSH" --draft-version 2 --revision-round 1 --manifest "$DUPMAN" --carry-forward-from "$PREV" --out "$WORK/dupman-out.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'duplicate citation id' in d['error']" 2>/dev/null; then
+  green "PASS: merge rejects a manifest with duplicate citation ids (#305 review)"
+else
+  red "FAIL: merge did not reject a duplicate-id manifest"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7k. carry-forward source with a duplicate id → reject (no silent last-write-wins).
+PREV_DUP="$WORK/cf-prev-dup.json"
+cat > "$PREV_DUP" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"revision_round":0,
+ "verified":[{"id":"cit-001","verdict":"verbatim"},{"id":"cit-003","verdict":"paraphrase"},{"id":"cit-001","verdict":"unsupported"}],
+ "deviations":[],"counts":{"total":3}}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$CFSH" --draft-version 2 --revision-round 1 --manifest "$CFM" --carry-forward-from "$PREV_DUP" --out "$WORK/cf-dup.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is False and 'duplicate citation id' in d['error']" 2>/dev/null; then
+  green "PASS: carry-forward rejects a prior file with duplicate citation ids (#305 review)"
+else
+  red "FAIL: carry-forward did not reject a duplicate-id prior file"
   red "  got: $OUT"
   errors=$((errors + 1))
 fi
