@@ -19,6 +19,13 @@ Slice 14 of the Phase 5 v0.1.x bake-in (**#264**) — two pipeline state / confi
 - `references/inverted-pipeline.md` — Phase 4 now documents the `config_bump.py --delta <n_new>` lockstep bump; Phase 2 documents the orchestrator's once-resolution + loud `_default` abort + `MARKET_CONFIG_PATH` threading.
 - `README.md` — the cogni-workspace dependency note no longer says the `source-curator` agent calls `get-market-config.py` at runtime or that a missing config silently falls back to the unlocalized default; it now reflects that `knowledge-curate` resolves the config once and fails loudly (#304). `knowledge-curate`'s `--dry-run` now explicitly stops before the curator dispatch so the not-written `market-config.json` is never referenced.
 
+### Review fixes (PR #314)
+
+- **Gate tightened to `data.code == <market>`.** The `_default` detection now requires the resolved `data.code` to equal the *requested* market (not merely a non-empty `code`), confirming the config is for the right market, not merely *a* market. Strictly stronger; all supported markets echo their own code (`dach`→`dach`, `eu`→`eu`).
+- **Contract test for the fail-loudly gate.** `test_skill_contracts.sh` now asserts the gate keys on `data.code` and carries the `Abort unless` instruction, so a future edit can't silently drop the gate and reintroduce the `_default` degrade — the subtlest, most regression-prone line in the slice.
+- **Orchestrator write-verification.** `knowledge-curate` Step 0 now confirms `market-config.json` exists and is non-empty after writing; a write failure aborts cleanly rather than surfacing as N confusing per-curator `market_config_unavailable` failures.
+- **doc-audit / Dependencies note.** Confirmed the README Dependencies section is hand-authored narrative (no auto-gen sentinels; doc-generate preserves hand-written content), so the cogni-workspace note edit is not at risk of being clobbered.
+
 ### Version
 
 - `.claude-plugin/plugin.json` + root `.claude-plugin/marketplace.json` — `0.1.4` → `0.1.5` (mirrored). Maturity stays `preview`.

@@ -76,6 +76,14 @@ assert_grep 'MAX_AGE_DAYS=' "$CURATE" "knowledge-curate: forwards MAX_AGE_DAYS t
 assert_grep 'get-market-config.py' "$CURATE" "knowledge-curate: resolves market config via get-market-config.py once (#304)"
 assert_grep 'market-config.json' "$CURATE" "knowledge-curate: writes the resolved config to .metadata/market-config.json (#304)"
 assert_grep 'MARKET_CONFIG_PATH=' "$CURATE" "knowledge-curate: forwards MARKET_CONFIG_PATH to source-curator (#304)"
+# The fail-loudly gate is the subtlest, most regression-prone line in the slice:
+# get-market-config.py returns success:true with the _default config (no
+# data.code) for an unknown market, so the abort MUST key on data.code, not on
+# success alone. Guard both the mechanism (data.code) and the abort instruction
+# ('abort unless') so a future edit can't silently drop the gate and reintroduce
+# the _default degrade (#304).
+assert_grep 'data.code' "$CURATE" "knowledge-curate: gate keys on data.code, not bare success (#304)"
+assert_grep 'Abort unless' "$CURATE" "knowledge-curate: aborts unless data.code == requested market — guards the _default fail-loudly gate (#304)"
 
 # --- knowledge-fetch SKILL.md --------------------------------------------
 FETCH="$PLUGIN_ROOT/skills/knowledge-fetch/SKILL.md"
