@@ -192,9 +192,13 @@ def render_bullets(bullets, css_class=""):
     return f"      <ul{cls}>\n{items}\n      </ul>"
 
 
-def render_bottom_banner(fields):
-    """Render a bottom banner if present in slide fields."""
-    banner = fields.get("Bottom-Banner")
+def render_bottom_banner(slide):
+    """Render a bottom banner if present.
+
+    Accepts the canonical top-level ``bottom_banner`` and the legacy
+    ``fields["Bottom-Banner"]`` so the banner renders on every layout.
+    """
+    banner = slide.get("bottom_banner") or slide.get("fields", {}).get("Bottom-Banner")
     if not banner:
         return ""
     text = banner.get("Text", "") if isinstance(banner, dict) else str(banner)
@@ -1721,7 +1725,7 @@ def assemble_html(slide_data, dv, transition="fade", aspect_ratio="16:9", langua
 
         # Render slide content
         content_html = render_slide(slide, dv, language)
-        banner_html = render_bottom_banner(slide.get("fields", {}))
+        banner_html = render_bottom_banner(slide)
 
         # Slide title (not shown on title-slide or closing-slide)
         title_html = ""
