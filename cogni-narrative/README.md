@@ -34,7 +34,7 @@ A story arc engine for the insight-wave ecosystem. Eleven named arc frameworks �
 ## What it means for you
 
 - **Arc-disciplined, not improvised.** Every narrative follows one of 10 proven story arc structures — cutting first-draft time from hours to under 15 minutes while maintaining consistent quality across documents and authors.
-- **Match the arc to the audience before you write.** Ten frameworks cover every consulting output type — from sales enablement to board-ready investment themes to company pages — so structure decisions are made by context, not guesswork.
+- **Match the arc to the audience before you write.** Eleven frameworks cover every consulting output type — from sales enablement to board-ready investment themes to company pages — so structure decisions are made by context, not guesswork.
 - **Quality-gated.** Automated scoring (0-100, A-F grades) on structural compliance, critical accuracy, evidence density, and language — with improvement suggestions per dimension.
 - **One narrative, three derivative formats.** Executive briefs, talking points, and one-pagers — adapted from the source narrative without rewriting.
 - **Ship in the reader's language.** Full EN/DE support with localized arc headers and proper Unicode — no post-processing needed for German-language clients or DACH reports.
