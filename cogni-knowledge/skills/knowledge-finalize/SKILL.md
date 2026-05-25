@@ -321,7 +321,23 @@ def _first_url(fm_value):
     except (ValueError, TypeError):
         pass
     m = re.search(r"https?://\S+", fm_value)
-    return m.group(0).rstrip("\"']") if m else ""
+    if not m:
+        return ""
+    # Fallback path only (non-JSON `sources:` value). Strip trailing quotes and
+    # at most one leaked list-closer `]` — NOT a whole `]"'` charset, which would
+    # also eat a URL legitimately ending in `]`.
+    url = m.group(0).rstrip("\"'")
+    return url[:-1] if url.endswith("]") else url
+
+def _md_dest(u):
+    # Markdown link destination. A raw URL containing `(`/`)`/space truncates at
+    # the first `)` in many renderers (Obsidian included), breaking the citation
+    # link — wrap it in angle brackets, which CommonMark allows for exactly this.
+    # Angle-bracket dests forbid `<`/`>`; fall back to bare if those appear
+    # (vanishingly rare in an http URL).
+    if ("(" in u or ")" in u or " " in u) and "<" not in u and ">" not in u:
+        return "<" + u + ">"
+    return u
 
 # Reference list, numbered in citation-manifest first-appearance order so the
 # deposited [N] match the composers inline [N] markers (which finalize leaves
@@ -366,7 +382,7 @@ for idx, slug in enumerate(cited_slugs):
     # carries an http(s) URL; synthesis pages / missing pages emit no link
     # (the [[…]] backlink keeps the cogni-wiki graph intact either way).
     if url:
-        refs.append("**[" + str(n) + "]** " + bib + ". [" + url + "](" + url + ") — " + backlink)
+        refs.append("**[" + str(n) + "]** " + bib + ". [" + url + "](" + _md_dest(url) + ") — " + backlink)
     else:
         refs.append("**[" + str(n) + "]** " + bib + " — " + backlink)
 
