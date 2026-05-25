@@ -11,11 +11,11 @@ The Python script expects these field names and structures.
 
 ### Bottom-Banner (all layouts)
 
-`Bottom-Banner` is layout-independent. Parse it to the **top-level** `bottom_banner`
-field (a sibling of `fields`); the renderer emits it as a shared footer on every
-layout, so it is not repeated in the per-layout contracts below. The value may be a
+`Bottom-Banner` is layout-independent — it renders as a shared footer on every
+layout, so its contract is documented once here rather than per layout. Parse it to
+the **top-level** `bottom_banner` field (a sibling of `fields`). The value may be a
 dict with a `Text:` key or a plain string. The legacy nested form (`Bottom-Banner`
-inside `fields`, shown in some examples below) is also accepted.
+inside `fields`, shown in some per-layout examples below) is also accepted.
 
 ### title-slide
 
