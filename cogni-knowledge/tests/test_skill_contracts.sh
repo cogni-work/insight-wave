@@ -69,6 +69,21 @@ assert_grep 'Task' "$CURATE" "knowledge-curate: Task listed in allowed-tools"
 # skill must forward the fetch params to each source-curator dispatch.
 assert_grep 'KNOWLEDGE_ROOT=' "$CURATE" "knowledge-curate: forwards KNOWLEDGE_ROOT to source-curator (Phase-4 fetch)"
 assert_grep 'MAX_AGE_DAYS=' "$CURATE" "knowledge-curate: forwards MAX_AGE_DAYS to source-curator (Phase-4 fetch)"
+# #304 (Slice 14): the orchestrator resolves the market config ONCE via
+# get-market-config.py, validates it (aborts loudly on the _default fallback),
+# writes it to .metadata/market-config.json, and threads MARKET_CONFIG_PATH to
+# every curator — instead of N fragile per-agent WORKSPACE_PLUGIN_ROOT globs.
+assert_grep 'get-market-config.py' "$CURATE" "knowledge-curate: resolves market config via get-market-config.py once (#304)"
+assert_grep 'market-config.json' "$CURATE" "knowledge-curate: writes the resolved config to .metadata/market-config.json (#304)"
+assert_grep 'MARKET_CONFIG_PATH=' "$CURATE" "knowledge-curate: forwards MARKET_CONFIG_PATH to source-curator (#304)"
+# The fail-loudly gate is the subtlest, most regression-prone line in the slice:
+# get-market-config.py returns success:true with the _default config (no
+# data.code) for an unknown market, so the abort MUST key on data.code, not on
+# success alone. Guard both the mechanism (data.code) and the abort instruction
+# ('abort unless') so a future edit can't silently drop the gate and reintroduce
+# the _default degrade (#304).
+assert_grep 'data.code' "$CURATE" "knowledge-curate: gate keys on data.code, not bare success (#304)"
+assert_grep 'Abort unless' "$CURATE" "knowledge-curate: aborts unless data.code == requested market — guards the _default fail-loudly gate (#304)"
 
 # --- knowledge-fetch SKILL.md --------------------------------------------
 FETCH="$PLUGIN_ROOT/skills/knowledge-fetch/SKILL.md"
@@ -96,10 +111,16 @@ if [ ! -f "$CURATOR" ]; then
 fi
 assert_grep 'name: source-curator' "$CURATOR" "source-curator: frontmatter name"
 assert_grep 'Forked from cogni-research/agents/source-curator.md at SHA' "$CURATOR" "source-curator: declares fork SHA in header"
-# Market config must route through the canonical workspace helper, NOT a
-# direct read of cogni-research/references/market-sources.json (preserves
-# the clean-break commitment past M11+ when cogni-research is archived).
-assert_grep 'get-market-config.py' "$CURATOR" "source-curator: routes market config through cogni-workspace helper"
+# Market config now comes from the orchestrator-resolved MARKET_CONFIG_PATH
+# (#304, Slice 14). The agent must still reference get-market-config.py for
+# provenance, must read MARKET_CONFIG_PATH, must treat a missing config as a
+# HARD ERROR (not a silent _default drop), and must NOT re-resolve it via the
+# old env-gated WORKSPACE_PLUGIN_ROOT cache glob. Still no direct read of
+# cogni-research/references/market-sources.json (preserves the clean break).
+assert_grep 'get-market-config.py' "$CURATOR" "source-curator: references the orchestrator-resolved get-market-config.py output"
+assert_grep 'MARKET_CONFIG_PATH' "$CURATOR" "source-curator: reads market config from MARKET_CONFIG_PATH (#304)"
+assert_grep 'hard error' "$CURATOR" "source-curator: missing MARKET_CONFIG_PATH is a hard error, not a silent _default (#304)"
+assert_not_grep 'ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace' "$CURATOR" "source-curator: no env-gated cogni-workspace glob — resolution moved to the orchestrator (#304)"
 assert_not_grep 'cogni-research/references/market-sources.json' "$CURATOR" "source-curator: no direct read of cogni-research/references/market-sources.json"
 assert_grep 'candidates.json' "$CURATOR" "source-curator: emits to candidates.json contract"
 assert_grep 'sub_question_refs' "$CURATOR" "source-curator: emits sub_question_refs[]"

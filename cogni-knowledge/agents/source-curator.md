@@ -49,20 +49,15 @@ You **do not cobrowse**. Browser-assisted recovery of WebFetch misses is Phase 3
 | `PROJECT_PATH` | Yes | Absolute path to the project directory (`<knowledge-root>/<topic-slug>-<YYYY-MM-DD>/`) |
 | `SUB_QUESTION_ID` | Yes | sq-id from `plan.json`, e.g. `sq-01` |
 | `BATCH_OUTPUT_PATH` | Yes | Absolute path the orchestrator wants this batch's JSON array written to, e.g. `<project>/.metadata/.candidates.batch.sq-01.json` |
-| `MARKET` | Yes | Region code: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Drives market-localized search queries and authority scoring. Resolved through `cogni-workspace/scripts/get-market-config.py --plugin research --market <MARKET>` (see Phase 0). |
+| `MARKET` | Yes | Region code: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Informational region label for market-localized search-query formulation (Phase 1). The authority list comes from `MARKET_CONFIG_PATH`, not from re-resolving this code. |
+| `MARKET_CONFIG_PATH` | Yes | Absolute path to the market config the orchestrator (`knowledge-curate`) resolved **once** for this run (`<project>/.metadata/market-config.json`). Read in Phase 0; never re-resolved per-agent (#304). |
 | `MAX_CANDIDATES` | No | Cap on candidates this curator emits for the sub-question (default 12; read from `binding.curator_defaults.max_candidates_per_sq`). |
 | `SCORE_THRESHOLD` | No | Minimum composite score to emit (default 0.5; read from `binding.curator_defaults.score_threshold`). |
 | `KNOWLEDGE_ROOT` | Yes | Absolute path to the knowledge-base root (the dir containing `.cogni-knowledge/`). Forwarded to `fetch-cache.py` as `--knowledge-root` in Phase 4. |
 | `MAX_AGE_DAYS` | No | Cache freshness window in days (default 30; from `binding.curator_defaults.fetch_cache_max_age_days`). Forwarded to `fetch-cache.py fetch --max-age-days` in Phase 4. |
 | `CURRENT_YEAR` | No | Four-digit year. Used for recency-aware queries. |
 
-Market configuration is read via the canonical workspace helper:
-
-```
-python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <MARKET>
-```
-
-This is the same path cogni-portfolio's `customer-researcher` agent uses (`cogni-portfolio/agents/customer-researcher.md`). It joins the canonical registry at `cogni-workspace/references/supported-markets-registry.json` with the research plugin overlay and returns a merged config — meaning this agent reaches zero cogni-research code at runtime, honouring the clean-break commitment. Falls back to `_default` if the requested market is missing.
+Market configuration is **not** resolved by this agent. The orchestrator (`knowledge-curate`) runs cogni-workspace's `get-market-config.py --plugin research --market <MARKET>` **once** per run — joining the canonical registry at `cogni-workspace/references/supported-markets-registry.json` with the research plugin overlay — validates it (it aborts the run if the market resolves to the `_default` fallback), and writes the merged-config envelope to `MARKET_CONFIG_PATH`. This agent just **reads that file** (Phase 0). Resolving once in skill context — where the env is consistent — removes the per-agent `WORKSPACE_PLUGIN_ROOT` glob that made one shard silently fall back to `_default` while siblings loaded the real market (#304), and still reaches zero cogni-research code at runtime, honouring the clean-break commitment.
 
 ## Core Workflow
 
@@ -73,7 +68,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 ### Phase 0: Load Inputs
 
 1. Read `<PROJECT_PATH>/.metadata/plan.json`. Locate the sub-question with `id == SUB_QUESTION_ID`. Extract `query`, `search_guidance`, `candidate_domains[]`.
-2. Load market config via the workspace helper (see above). Parse `data.config` from the JSON envelope; on a missing-market error, fall back to `_default`. Store as `market_config`.
+2. Read the market config from `MARKET_CONFIG_PATH` (the orchestrator-resolved `get-market-config.py` envelope). Parse the envelope's **`data`** field — the merged market config — and store it as `market_config` (this is the shape Phases 1 and 3 consume: `market_config.authority_sources`, `market_config.local_query_tips`, …). Do **not** re-resolve the config and do **not** fall back to `_default`: the orchestrator already validated it (or aborted the run). If `MARKET_CONFIG_PATH` is missing/unreadable, is not valid JSON, or the envelope has no `data`, this is a **hard error** (defence-in-depth) — return the failure summary `{"ok": false, "sub_question_id": "<SUB_QUESTION_ID>", "reason": "market_config_unavailable"}` and stop. The orchestrator records it in `failed_curators[]`.
 3. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
 
 ### Phase 1: Search Query Generation
