@@ -1877,16 +1877,16 @@ def main():
         # legacy byte-equivalent output.
         tokens_css_path = None
         theme_slug_resolution = None
+        theme_slug_resolution_detail = None
         if args.theme_slug:
             themes_dir = resolve_themes_dir(args.themes_dir)
             tokens_css_path, reason = resolve_tokens_css_with_reason(themes_dir, args.theme_slug)
+            theme_slug_resolution = reason
             if reason == "themes_dir_unresolved":
-                theme_slug_resolution = (
-                    "themes_dir_unresolved: $COGNI_WORKSPACE_ROOT unset / not a dir, "
+                theme_slug_resolution_detail = (
+                    "$COGNI_WORKSPACE_ROOT unset / not a dir, "
                     "walk-up found no cogni-workspace/themes"
                 )
-            else:
-                theme_slug_resolution = reason
             if args.verbose:
                 manifest_path = (
                     os.path.join(themes_dir, args.theme_slug, "manifest.json")
@@ -1926,6 +1926,7 @@ def main():
             "theme_slug": args.theme_slug or None,
             "tokens_css_imported": bool(tokens_css_path),
             "theme_slug_resolution": theme_slug_resolution,
+            "theme_slug_resolution_detail": theme_slug_resolution_detail,
             "has_mermaid": any(
                 s.get("diagram_mermaid") or
                 (isinstance(s.get("fields", {}).get("Diagram"), str) and s["fields"]["Diagram"].strip())

@@ -168,11 +168,35 @@ def case_3_tier0_theme_with_slug():
     return len(failures) == 0, failures
 
 
+def case_4_themes_dir_unresolved():
+    """The actual #241 footgun: --theme-slug set but the themes dir can't be
+    resolved (here forced via a bogus --themes-dir, which resolve_themes_dir
+    rejects → None). Asserts the fallback is taken AND the diagnostic names
+    it: theme_slug_resolution is the bare code "themes_dir_unresolved" and the
+    companion detail field carries the human hint."""
+    html, status = run_render(theme_slug="cogni-work", themes_dir="/nonexistent/bogus-themes-dir")
+    if html is None:
+        return False, ["case 4: render failed: {}".format(status.get("error"))]
+    checks = [
+        assert_substring("case 4", html, "@import url('file://", present=False),
+        assert_substring("case 4", html, ":root", present=True),
+    ]
+    failures = [msg for ok, msg in checks if not ok]
+    if status.get("tokens_css_imported") is True:
+        failures.append("case 4: status reported tokens_css_imported=true (expected false — workspace unresolved)")
+    if status.get("theme_slug_resolution") != "themes_dir_unresolved":
+        failures.append("case 4: theme_slug_resolution={} (expected bare code 'themes_dir_unresolved')".format(status.get("theme_slug_resolution")))
+    if not (status.get("theme_slug_resolution_detail") or ""):
+        failures.append("case 4: theme_slug_resolution_detail missing (expected the workspace hint)")
+    return len(failures) == 0, failures
+
+
 def main():
     cases = [
         ("tier-0 baseline (regression)", case_1_tier0_baseline),
         ("tier-1 cogni-work tokens.css", case_2_tier1_cogni_work),
         ("tier-0 _template with --theme-slug (graceful fallback)", case_3_tier0_theme_with_slug),
+        ("themes_dir_unresolved diagnostic (#241 footgun)", case_4_themes_dir_unresolved),
     ]
     results = []
     failed = 0
