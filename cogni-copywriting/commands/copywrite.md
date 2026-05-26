@@ -58,7 +58,7 @@ Polish markdown documents into executive-ready content through the copywriter ag
   - `fr` | `it` | `pl` | `nl` | `es` — translate to French / Italian / Polish / Dutch / Spanish, then apply that language's clarity discipline and Flesch-family readability
   - Requires source language ≠ target. Source language is detected automatically (or set via `--lang`).
   - **Pivots on EN or DE.** Every direction must include English or German on one end (e.g. `en→fr`, `fr→de`). Direct non-EN/DE pairs (e.g. `fr→it`) are rejected — pivot via EN or DE, or follow #255 (Phase 3).
-  - **Not supported in arc mode** — when the document frontmatter contains `arc_id`, translation aborts (arc heading texts require exact-match preservation). Arc-mode translation is tracked in #255.
+  - **Arc mode (EN↔DE)** — when the document has `arc_id`, arc-element and bridge headings are **substituted** from cogni-narrative's canonical set (not freely translated). Supported for `corporate-visions` and `jtbd-portfolio` on EN↔DE; other arcs and FR/IT/PL/NL/ES arc-mode abort (tracked in #318).
   - When set, scope is overridden to ensure a full translate-and-polish cycle (Step 2 framework restructure is skipped; Steps 3 + 5 always run).
 
 - **--dry-run** - Show before/after diff without modifying the file (JSON only)
@@ -551,4 +551,4 @@ IF copywriter agent fails:
 - JSON files get an automatic backup (`.pre-copy-json.json`) before modification
 - JSON polishing preserves original file indentation
 - Use `--dry-run` with JSON to preview changes before committing them
-- `--translate` creates the same `.{filename}` backup as a regular polish (no separate translation backup naming); supports `de|en|fr|it|pl|nl|es` (pivoting on EN or DE), rejects direct non-EN/DE pairs, and aborts when the document has `arc_id` in its frontmatter
+- `--translate` creates the same `.{filename}` backup as a regular polish (no separate translation backup naming); supports `de|en|fr|it|pl|nl|es` (pivoting on EN or DE), rejects direct non-EN/DE pairs, and for `arc_id` documents substitutes arc headings from the canonical set on EN↔DE (`corporate-visions`, `jtbd-portfolio`; other arcs and non-EN/DE arc pairs abort, #318)

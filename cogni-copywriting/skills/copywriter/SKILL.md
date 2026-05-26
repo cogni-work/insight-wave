@@ -97,10 +97,11 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 
 1. Resolve `source_lang` via the existing detector in Step 3 (`--lang` → workspace config → content analysis).
 2. If `source_lang == TARGET_LANG`, log "source language already matches target — skipping translation pass" and fall through to standard polish. **Also unset the translation scope override below** so the user's explicit `--scope` is honoured (a user invoking `--scope=full` on a same-language doc expects Step 2 to run normally).
-3. **Arc-mode gate.** If document frontmatter contains `arc_id`:
-   - If **both** `source_lang` and `TARGET_LANG` are in `{en, de}` **and** `arc_id` is one of `corporate-visions`, `jtbd-portfolio` → **allow**: set `arc_mode = true` and proceed. The arc-element and bridge headings will be **substituted** (not freely translated) in Step 2.5.
-   - If both ends are in `{en, de}` but `arc_id` is any other arc → abort with: "EN↔DE arc-mode translation currently covers corporate-visions and jtbd-portfolio; arc `{arc_id}` is tracked in #318 (Slice 3)." Do not modify the file.
-   - Otherwise (the pair is not EN↔DE) → abort with: "Arc-mode translation is supported only for EN↔DE today; FR/IT/PL/NL/ES arc-mode is tracked in #318 (Slice 3), pending the upstream `language-templates.md` expansion." Do not modify the file.
+3. **Arc-mode gate.** Determine the document's arc: use frontmatter `arc_id` if present; otherwise, if the H2 headings match a known in-scope arc pattern (per `arc-preservation.md` detection), use that `arc_id`. If neither yields an arc, skip this gate (proceed as a non-arc translation). When an arc is identified:
+   - If **both** `source_lang` and `TARGET_LANG` are in `{en, de}` **and** the arc is one of `corporate-visions`, `jtbd-portfolio` → **allow**: set `arc_mode = true` and proceed. The arc-element and bridge headings will be **substituted** (not freely translated) in Step 2.5.
+   - If both ends are in `{en, de}` but the arc is any other arc → abort with: "EN↔DE arc-mode translation currently covers corporate-visions and jtbd-portfolio; arc `{arc_id}` is tracked in #318 (Slice 3)." Do not modify the file.
+   - If `TARGET_LANG` is a supported language but the pair is not EN↔DE (involves fr/it/pl/nl/es) → abort with: "Arc-mode translation is supported only for EN↔DE today; FR/IT/PL/NL/ES arc-mode is tracked in #318 (Slice 3), pending the upstream `language-templates.md` expansion." Do not modify the file.
+   - If `TARGET_LANG` is not in the accept-set at all → do **not** abort here; fall through to pre-check #4, which emits the correct "not a supported language" message.
    (Arc-mode EN↔DE for these two arcs is Slice 2 of #255; remaining arcs and non-EN/DE pairs stay blocking here.)
 4. **Accept-set check.** Accept only `de`, `en`, `fr`, `it`, `pl`, `nl`, `es`. Any other value: abort with "TARGET_LANG=`{value}` is not a supported language. Supported: de, en, fr, it, pl, nl, es."
 5. **Pivot guard.** Translation pivots on EN or DE. If **neither** `source_lang` **nor** `TARGET_LANG` is in `{en, de}` (e.g. a French source with `TARGET_LANG=it`), abort with: "Direct {source_lang}→{TARGET_LANG} translation is not supported — every direction must include English or German on one end. Pivot via EN or DE (translate to en/de first, then to the final language), or follow #255 for direct non-EN/DE pairs (Phase 3)." Do not modify the file.
@@ -174,13 +175,13 @@ Translate the entire document to `TARGET_LANG`, holding to these invariants:
 
 Arc-element and bridge headings are NOT freely translated — they are **substituted** from the canonical table in `references/09-preservation-modes/arc-preservation.md` (the downstream mirror; do **not** read cogni-narrative files at runtime):
 
-1. Read `arc_id` from frontmatter and load that arc's block (element index 1–4 + bridge) from the canonical heading table in `arc-preservation.md`.
+1. Read `arc_id` from frontmatter and load that arc's canonical headings from `arc-preservation.md`: the 4 element headings (index 1–4) from the canonical heading table, **and** the bridge heading from the bridge list immediately below that table (the bridge is a prose list, not a table row).
 2. Identify the document's headings **positionally**:
-   - The **bridge** is the trailing H2 whose text matches the bridge list in either language (`Further Reading` / `Weiterführende Lektüre`; accept the ASCII form `Weiterfuehrende Lektuere` on input).
-   - An H2 **subtitle** (if the document uses one as an H2) is the heading equal to the H2 subtitle text — preserve it byte-identical, never substitute.
-   - The remaining H2s, in document order, are arc elements 1..4.
-   - Prefix-match each element heading against the source-language column only as a **sanity guard** — if positional index and prefix-match disagree, trust the position and note the discrepancy. (A real narrative's source headings may legitimately differ from any cached form.)
-3. Replace arc-element heading *i* with the **`TARGET_LANG`** canonical full heading for index *i*; replace the bridge with the `TARGET_LANG` bridge form.
+   - The **bridge** is the trailing H2 whose text matches the bridge list in either language (`Further Reading` / `Weiterführende Lektüre`; accept the ASCII form `Weiterfuehrende Lektuere` on input). A document may have no bridge — that is fine; substitute only what is present.
+   - A **subtitle** rendered as an H2 (the single H2 that is neither an arc element nor the bridge — match it against the document's H2 subtitle text / frontmatter `subtitle:`) is preserved byte-identical, never substituted. Both in-scope arcs emit the subtitle as italic text, not an H2.
+   - The remaining H2s, in document order, are arc elements 1..4. **If the remaining count is not exactly 4, do not substitute** — log `fallback_reason="arc_elements_not_resolved"`, leave all headings as-is, and continue with body translation only. This guards against mis-indexed substitution (e.g. an unexpected extra H2).
+   - Prefix-match each element heading against the source-language column as a **sanity guard** — if positional index and prefix-match disagree, trust the position and note the discrepancy. (A real narrative's source headings may legitimately differ from any cached form.)
+3. Replace arc-element heading *i* with the **`TARGET_LANG`** canonical full heading for index *i*; replace the bridge (if present) with the `TARGET_LANG` bridge form.
 4. Translate the body prose under each heading per the invariants above (citations, URLs, protected content byte-identical).
 5. Preserve H2 count, element order, and heading hierarchy exactly — substitution changes heading *text*, never structure.
 

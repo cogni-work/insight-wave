@@ -92,10 +92,10 @@ These elements are frozen. Any change to them constitutes a structural violation
 
 1. **H1 title text** -- exact character match required
 2. **H2 subtitle text** -- exact character match required
-3. **All 4 arc element heading texts** -- exact character match required
-4. **Bridge section heading text** -- exact character match required (e.g., "Further Reading")
+3. **All 4 arc element heading texts** -- exact character match required *(native polish only; in arc-translation mode these are **substituted** to the target-language canonical set — see "Native vs. translation mode" above)*
+4. **Bridge section heading text** -- exact character match required, e.g., "Further Reading" *(native polish only; substituted to the target-language bridge form in arc-translation mode)*
 5. **Heading hierarchy** -- H1 and H2 levels stay as they are
-6. **Heading order and count** -- the sequence and number of headings never change
+6. **Heading order and count** -- the sequence and number of headings never change (translation substitutes heading *text* only, never order or count)
 7. **Content placement** -- no content moves between elements; each element is self-contained
 
 ### What You Must Never Apply in Arc-Aware Mode
@@ -214,10 +214,9 @@ Run every check after polishing. Each is a binary pass/fail.
 ```
 [ ] H1 title text -- exact character match to original
 [ ] H2 subtitle text -- exact character match to original
-[ ] 4 arc element headings -- exact character match to original arc pattern
-[ ] H2 count -- exactly 6 total (subtitle + 4 elements + bridge)
-[ ] Bridge heading -- exact match to "Further Reading" or localized equivalent
-[ ] Heading order -- unchanged from original
+[ ] 4 arc element headings -- exact character match to original arc pattern (NATIVE polish); in arc-translation mode, instead match the TARGET_LANG canonical set in the localized table above
+[ ] Bridge heading -- exact match to "Further Reading" / localized equivalent (NATIVE polish); in arc-translation mode, the TARGET_LANG bridge form
+[ ] H2 count and heading order -- unchanged from the original (do NOT assert a fixed total: the count varies by arc and by whether the subtitle is rendered as an H2; e.g. an italic subtitle yields 5 H2s)
 [ ] No content moved between elements
 ```
 
