@@ -3,8 +3,8 @@ title: Arc Technique Map
 type: reference
 category: preservation-modes
 tags: [arc, polish, techniques, number-plays, element-strengthening]
-version: 2.0
-last_updated: 2026-02-25
+version: 2.1
+last_updated: 2026-05-26
 ---
 
 # Arc Technique Map
@@ -743,6 +743,13 @@ FOR EACH element IN arc:
   6. Element serves its distinct purpose?                 [No blending between elements]
   7. You-Phrasing applied only where technique table specifies? [Check table]
 ```
+
+**Translation mode (`TARGET_LANG` set).** The absolute Word Targets in each arc table (150-200, 400-500, …) are for **native composition**. When the document is being **translated**, two checks change:
+
+- **Check 1 (Heading text):** headings are *expected* to change — to the target language. Validate that arc-element + bridge headings match the `TARGET_LANG` canonical set in `arc-preservation.md` byte-for-byte (umlauts required for `de`), rather than "unchanged".
+- **Check 4 (Word count):** the absolute target is advisory. Use a **relative** band against the source element: `translated_words ∈ source_element_words × factor × (1 ± 0.20)`, with **factor ≈ 1.20 for →de** (German prose runs ~15-25% longer) and **≈ 0.83 for →en**.
+
+Native (non-translation) arc polish keeps Check 1 ("unchanged") and the absolute `±50 words` rule exactly as written.
 
 If any check fails for an element, revert that element to its original text and log:
 `fallback_reason="technique_check_failed" element="{element_name}" check="{check_number}"`

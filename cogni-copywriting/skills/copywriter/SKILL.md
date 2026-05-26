@@ -97,11 +97,15 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 
 1. Resolve `source_lang` via the existing detector in Step 3 (`--lang` → workspace config → content analysis).
 2. If `source_lang == TARGET_LANG`, log "source language already matches target — skipping translation pass" and fall through to standard polish. **Also unset the translation scope override below** so the user's explicit `--scope` is honoured (a user invoking `--scope=full` on a same-language doc expects Step 2 to run normally).
-3. If document frontmatter contains `arc_id`, abort with: "Arc-mode translation is not supported yet (arc heading texts require exact-match preservation; translating them would break the arc contract). Run translation on the non-arc document, or follow #255 for arc-mode translation support." Do not modify the file. (Arc-mode translation is tracked as Slice 2/3 of #255 — it stays blocking here.)
+3. **Arc-mode gate.** If document frontmatter contains `arc_id`:
+   - If **both** `source_lang` and `TARGET_LANG` are in `{en, de}` **and** `arc_id` is one of `corporate-visions`, `jtbd-portfolio` → **allow**: set `arc_mode = true` and proceed. The arc-element and bridge headings will be **substituted** (not freely translated) in Step 2.5.
+   - If both ends are in `{en, de}` but `arc_id` is any other arc → abort with: "EN↔DE arc-mode translation currently covers corporate-visions and jtbd-portfolio; arc `{arc_id}` is tracked in #318 (Slice 3)." Do not modify the file.
+   - Otherwise (the pair is not EN↔DE) → abort with: "Arc-mode translation is supported only for EN↔DE today; FR/IT/PL/NL/ES arc-mode is tracked in #318 (Slice 3), pending the upstream `language-templates.md` expansion." Do not modify the file.
+   (Arc-mode EN↔DE for these two arcs is Slice 2 of #255; remaining arcs and non-EN/DE pairs stay blocking here.)
 4. **Accept-set check.** Accept only `de`, `en`, `fr`, `it`, `pl`, `nl`, `es`. Any other value: abort with "TARGET_LANG=`{value}` is not a supported language. Supported: de, en, fr, it, pl, nl, es."
 5. **Pivot guard.** Translation pivots on EN or DE. If **neither** `source_lang` **nor** `TARGET_LANG` is in `{en, de}` (e.g. a French source with `TARGET_LANG=it`), abort with: "Direct {source_lang}→{TARGET_LANG} translation is not supported — every direction must include English or German on one end. Pivot via EN or DE (translate to en/de first, then to the final language), or follow #255 for direct non-EN/DE pairs (Phase 3)." Do not modify the file.
 
-**Pre-check order:** resolve source (1) → no-op (2) → arc abort (3) → accept-set (4) → pivot guard (5). The arc and accept-set messages are the most actionable, so they win when multiple conditions hold.
+**Pre-check order:** resolve source (1) → no-op (2) → arc gate (3) → accept-set (4) → pivot guard (5). The arc and accept-set messages are the most actionable, so they win when multiple conditions hold.
 
 The scope override and Step 2.5 below apply only when `TARGET_LANG` is set **and** the source==target no-op did not fire (i.e. translation actually runs). When translation runs, the pre-checks guarantee a valid direction pair (one end EN or DE, both in the accept-set), so a `translation-{source_lang}-to-{TARGET_LANG}.md` file is guaranteed to exist.
 
@@ -152,6 +156,8 @@ READ: references/01-core-principles/translation-{source_lang}-to-{TARGET_LANG}.m
 
 For example: `en`→`fr` loads `translation-en-to-fr.md`; `pl`→`de` loads `translation-pl-to-de.md`. The validity matrix in `translation-principles.md` lists all 22 supported directions. DE-pivot composition files (e.g. `translation-de-to-fr.md`) cross-reference the matching EN-pivot file for the full target-language production rules; X→de files cross-reference `translation-en-to-de.md` for German production.
 
+When `arc_mode` is active, the arc references (`references/09-preservation-modes/arc-preservation.md`, `arc-technique-map.md`) are loaded **in addition** to the translation references (per `00-index.md` CHECK 0). `arc-preservation.md` supplies the canonical target-language headings for the substitution below.
+
 **Perform the translation (Pass A):**
 
 Translate the entire document to `TARGET_LANG`, holding to these invariants:
@@ -163,6 +169,20 @@ Translate the entire document to `TARGET_LANG`, holding to these invariants:
 5. **Code blocks** — fenced and inline code never translated.
 6. **Power Position structure markers** — `**IS**:`, `**DOES**:`, `**MEANS**:` stay unchanged (structural, not vocabulary).
 7. **Acronyms pass through unchanged** — the audience-tuned first-mention expansion is Step 3's job, running on the translated text. Do not expand here.
+
+**Arc-heading substitution (runs only when `arc_mode` is active):**
+
+Arc-element and bridge headings are NOT freely translated — they are **substituted** from the canonical table in `references/09-preservation-modes/arc-preservation.md` (the downstream mirror; do **not** read cogni-narrative files at runtime):
+
+1. Read `arc_id` from frontmatter and load that arc's block (element index 1–4 + bridge) from the canonical heading table in `arc-preservation.md`.
+2. Identify the document's headings **positionally**:
+   - The **bridge** is the trailing H2 whose text matches the bridge list in either language (`Further Reading` / `Weiterführende Lektüre`; accept the ASCII form `Weiterfuehrende Lektuere` on input).
+   - An H2 **subtitle** (if the document uses one as an H2) is the heading equal to the H2 subtitle text — preserve it byte-identical, never substitute.
+   - The remaining H2s, in document order, are arc elements 1..4.
+   - Prefix-match each element heading against the source-language column only as a **sanity guard** — if positional index and prefix-match disagree, trust the position and note the discrepancy. (A real narrative's source headings may legitimately differ from any cached form.)
+3. Replace arc-element heading *i* with the **`TARGET_LANG`** canonical full heading for index *i*; replace the bridge with the `TARGET_LANG` bridge form.
+4. Translate the body prose under each heading per the invariants above (citations, URLs, protected content byte-identical).
+5. Preserve H2 count, element order, and heading hierarchy exactly — substitution changes heading *text*, never structure.
 
 **Do NOT in this pass:**
 
@@ -289,15 +309,15 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 **Arc-aware validation** (when `arc_mode` is active):
 
 Run the technique validation checklist from `arc-technique-map.md`:
-- Heading text unchanged
+- Heading text unchanged — **except in translation mode** (`TARGET_LANG` set), where arc-element + bridge headings must instead **match the `TARGET_LANG` canonical set** in `arc-preservation.md` byte-for-byte (umlauts required for `de`; never ASCII ae/oe/ue/ss)
 - Primary technique intact per element
 - Number Play variant applied per element
-- Word count within +-50 words of arc targets
+- Word count within +-50 words of arc targets — **in translation mode** use the relative band instead (see `arc-technique-map.md` Post-Polish Validation: `source_element_words × factor × (1 ± 0.20)`, factor ≈ 1.20 for →de / ≈ 0.83 for →en)
 - Citations preserved per element
-- H2 count exactly 6 (subtitle + 4 elements + bridge)
+- H2 count + element order unchanged from the source (the absolute "exactly 6" expectation does not apply — a document may legitimately carry an italic subtitle and 5 H2s)
 - No content moved between elements
 
-If arc validation fails for an element, revert that element to its original text. Partial polish is acceptable.
+If arc validation fails for an element, revert that element to its original text. Partial polish is acceptable. (In translation mode a heading mismatch is a substitution error, not a free-translation error — re-apply the canonical heading rather than reverting to the source-language heading.)
 
 **Backup original** before writing:
 

@@ -6,8 +6,8 @@ tags: [arc-preservation, story-arc, narrative-structure, polish, cogni-narrative
 audience: [copywriter-skill]
 related:
   - arc-technique-map
-version: 2.0
-last_updated: 2026-02-25
+version: 2.1
+last_updated: 2026-05-26
 ---
 
 # Arc-Aware Preservation Mode
@@ -63,24 +63,26 @@ subtitle: "..."
 
 Match rule: Compare the document's H2 headings against the element columns above. A partial match on the first word is sufficient (e.g., "Why" matches "Why Change", "Job" matches "Job Landscape"). If 3 or more of the 4 elements match a single arc row, activate arc-aware mode with that arc_id.
 
-**Localized headings are also valid.** Arc element headings may appear in German:
+**Localized headings are also valid.** Arc element headings may appear in German. This table holds the **canonical full headings** for the arcs supported by EN↔DE arc-mode translation, mirrored byte-for-byte from cogni-narrative's `language-templates.md` ("Insight Summary (Arc Element Headers)"). The `audit-copywriter` checks C2/C3 keep this mirror in sync with upstream.
 
-| Arc | EN | DE |
-|-----|----|----|
-| corporate-visions | Why Change | Warum Aendern |
-| corporate-visions | Why Now | Warum Jetzt |
-| corporate-visions | Why You | Warum Wir |
-| corporate-visions | Why Pay | Warum Investieren |
-| jtbd-portfolio | Job Landscape | Job-Landschaft |
-| jtbd-portfolio | Friction Map | Reibungskarte |
-| jtbd-portfolio | Portfolio Map | Portfolio-Zuordnung |
-| jtbd-portfolio | Invitation | Einladung |
+| Arc | # | EN (canonical) | DE (canonical) |
+|-----|---|----------------|----------------|
+| corporate-visions | 1 | Why Change: Unconsidered Needs | Warum Wandel: Unerkannte Handlungsbedarfe |
+| corporate-visions | 2 | Why Now: Forcing Functions | Warum Jetzt: Handlungsdruck |
+| corporate-visions | 3 | Why You: Unique Positioning | Warum Sie: Einzigartige Positionierung |
+| corporate-visions | 4 | Why Pay: ROI Justification | Warum Investieren: ROI-Begründung |
+| jtbd-portfolio | 1 | Job Landscape: Functional Jobs | Job-Landschaft: Funktionale Aufgaben |
+| jtbd-portfolio | 2 | Friction Map: Obstacles and Cost of Inaction | Reibungskarte: Hindernisse und Handlungsdruck |
+| jtbd-portfolio | 3 | Portfolio Map: Solutions by Job | Portfolio-Zuordnung: Lösungen je Aufgabe |
+| jtbd-portfolio | 4 | Invitation: Next Step | Einladung: Nächster Schritt |
+
+The H2-detection match rule (first-word partial match) still applies — a document heading like `## Why Change` or `## Warum Wandel: …` matches its row regardless of whether the source used the short or full form.
 
 Bridge section heading by language:
 - EN: "Further Reading"
-- DE: "Weiterfuehrende Lektuere"
+- DE: "Weiterführende Lektüre"
 
-Both language variants are preserved exactly as they appear.
+**Native vs. translation mode.** In native arc polish (no `TARGET_LANG`), all of these headings are **preserved exactly** as they appear in the source — never substituted. In **arc-translation mode** (`TARGET_LANG` set, EN↔DE), the copywriter **substitutes** each arc-element heading positionally (the Nth arc-element H2 maps to element index N) and the bridge heading with the **target-language canonical full form** from this table. See SKILL.md Step 2.5.
 
 ## Structure Preservation Rules
 
@@ -234,7 +236,7 @@ FOR EACH element:
 ```
 [ ] Citation count >= original citation count (no citations removed)
 [ ] Citation format preserved: <sup>[N](source.md)</sup>
-[ ] German characters preserved exactly: ae, oe, ue, ss
+[ ] German characters preserved exactly: ä, ö, ü, ß (umlauts — never ASCII ae/oe/ue/ss)
 [ ] Protected content unchanged: diagram placeholders, figure references
 ```
 
@@ -274,7 +276,7 @@ When cogni-narrative invokes the copywriter with arc preservation, the task prom
 ```text
 CRITICAL PRESERVATION REQUIREMENTS:
 1. Citations: <sup>[N](source.md)</sup> -- PRESERVE EXACTLY
-2. German characters: ae, oe, ue, ss -- PRESERVE EXACTLY (if present)
+2. German characters: ä, ö, ü, ß -- PRESERVE EXACTLY (umlauts, never ASCII ae/oe/ue/ss; if present)
 3. STORY ARC STRUCTURE -- PRESERVE EXACTLY:
    - arc_id: corporate-visions
    - H1 Title: "The Case for Workflow Redesign" -- DO NOT MODIFY
