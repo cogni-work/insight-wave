@@ -130,6 +130,10 @@ assert_grep 'lint_wiki.py' "$FIN" "knowledge-finalize: Step 10.5 runs lint_wiki.
 assert_grep '\-\-fix=all' "$FIN" "knowledge-finalize: Step 10.5 lint runs --fix=all (backfills reverse_link_missing)"
 assert_grep 'health.py' "$FIN" "knowledge-finalize: Step 10.5 runs health.py"
 assert_grep 'data.errors' "$FIN" "knowledge-finalize: Step 10.5 asserts health data.errors == []"
+# The gate must also assert 0 orphan_page (the slice's actual metric — health.py
+# does NOT compute orphans), via a no-fix re-lint after --fix=all.
+assert_grep 'orphan_page' "$FIN" "knowledge-finalize: Step 10.5 asserts 0 orphan_page (re-lint after --fix; the slice's metric)"
+assert_grep 'no .*--fix' "$FIN" "knowledge-finalize: Step 10.5 re-lints with NO --fix to read post-fix orphan state"
 assert_grep 'reverse_link_missing' "$FIN" "knowledge-finalize: documents reverse_link_missing as the load-bearing de-orphaner"
 # overview.md refresh (#308 stale-overview item).
 assert_grep 'overview.md' "$FIN" "knowledge-finalize: refreshes wiki/overview.md (#308)"

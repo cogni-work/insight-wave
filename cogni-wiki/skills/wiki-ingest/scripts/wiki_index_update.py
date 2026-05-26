@@ -232,13 +232,18 @@ def strip_seed_placeholder(text: str) -> str:
     sections = _split_sections(text)
     new_sections: list = []
     for heading, body in sections:
-        body = [ln for ln in body if ln.strip() != SEED_PLACEHOLDER_LINE]
+        # Confine the cleanup to the wiki-setup seed `## Categories` section.
+        # A different heading that happens to contain the literal placeholder
+        # string (e.g. a user pasted it as a note) is left untouched.
         if heading is not None and _heading_matches_category(
             heading, SEED_CATEGORY_HEADING
         ):
-            has_bullets = any(_extract_slug_from_line(ln) for ln in body)
-            if not has_bullets:
-                continue  # drop the now-empty seed `## Categories` heading
+            body = [ln for ln in body if ln.strip() != SEED_PLACEHOLDER_LINE]
+            # Drop the heading only when nothing but blank lines remains, so a
+            # real `## Categories` carrying bullets OR prose is preserved (the
+            # docstring's "real heading with content is never touched" promise).
+            if not any(ln.strip() for ln in body):
+                continue
         new_sections.append((heading, body))
     return _join_sections(new_sections)
 

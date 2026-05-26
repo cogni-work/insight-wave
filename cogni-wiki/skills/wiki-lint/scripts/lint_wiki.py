@@ -757,8 +757,20 @@ def fix_synthesis_no_wiki_source(
                     "error": "page not in lint state",
                 })
                 continue
-            text = page_data["text"]
-            fm_dict = page_data["fm"]
+            entry = slug_index.get(slug)
+            if not entry:
+                failed.append({
+                    "class": "synthesis_no_wiki_source",
+                    "page": slug,
+                    "error": "slug not in index",
+                })
+                continue
+            path, _ = entry
+            # Read fresh from disk, NOT the start-of-scan all_pages snapshot, so
+            # a write by an earlier in-process fixer in the SAME --fix run (e.g.
+            # fix_reverse_link_missing's `## See also` append) is not clobbered.
+            text = path.read_text(encoding="utf-8")
+            fm_dict = parse_frontmatter(text)
             body_slugs = sorted({
                 s for s in WIKILINK_RE.findall(text)
                 if s in slug_index and not is_audit_slug(s) and s != slug
@@ -799,15 +811,6 @@ def fix_synthesis_no_wiki_source(
                 })
                 continue
             new_text = _join_frontmatter(new_fm, body)
-            entry = slug_index.get(slug)
-            if not entry:
-                failed.append({
-                    "class": "synthesis_no_wiki_source",
-                    "page": slug,
-                    "error": "slug not in index",
-                })
-                continue
-            path, _ = entry
             if not dry_run:
                 atomic_write(path, new_text)
             fixed.append({
@@ -840,7 +843,20 @@ def fix_frontmatter_defaults(
         if page_data.get("type_dir") == "audit":
             continue
         try:
-            text = page_data["text"]
+            entry = slug_index.get(slug)
+            if not entry:
+                failed.append({
+                    "class": "frontmatter_defaults",
+                    "page": slug,
+                    "error": "slug not in index",
+                })
+                continue
+            path, _ = entry
+            # Read fresh from disk, NOT the start-of-scan all_pages snapshot, so
+            # a write by an earlier in-process fixer in the SAME --fix run (e.g.
+            # fix_reverse_link_missing's `## See also` append to a cited source)
+            # is not clobbered when this page also needs an id:/updated: fix.
+            text = path.read_text(encoding="utf-8")
             fm_lines, body = _split_frontmatter(text)
             if fm_lines is None:
                 continue
@@ -869,15 +885,6 @@ def fix_frontmatter_defaults(
             if not changes:
                 continue
             new_text = _join_frontmatter(new_fm, body)
-            entry = slug_index.get(slug)
-            if not entry:
-                failed.append({
-                    "class": "frontmatter_defaults",
-                    "page": slug,
-                    "error": "slug not in index",
-                })
-                continue
-            path, _ = entry
             if not dry_run:
                 atomic_write(path, new_text)
             fixed.append({

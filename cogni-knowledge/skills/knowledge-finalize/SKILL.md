@@ -21,8 +21,8 @@ tags: [synthesis]
 created: <today ISO>
 updated: <today ISO>
 sources:
-  - wiki://<wiki_slug>/<cited-slug-1>
-  - wiki://<wiki_slug>/<cited-slug-2>
+  - wiki://<cited-slug-1>
+  - wiki://<cited-slug-2>
 derived_from_research: <project-slug>
 draft_revision_round: <verify.revision_round>
 ---
@@ -78,7 +78,7 @@ If `WIKI_OK=no`, abort with the standard missing-plugin message.
 
 **Resolve the cogni-wiki script dirs.** Same probe shape, parameterised by the
 skill subdir, so Steps 7/8/10 can call `wiki_index_update.py` / `config_bump.py` /
-`rebuild_context_brief.py` (wiki-ingest) and Step 11.5's conformance gate can call
+`rebuild_context_brief.py` (wiki-ingest) and Step 10.5's conformance gate can call
 `lint_wiki.py` (wiki-lint) + `health.py` (wiki-health). Each script imports
 `_wikilib` relatively from `wiki-ingest/scripts`, so resolving the real installed
 dir keeps those imports intact:
@@ -360,11 +360,11 @@ for idx, slug in enumerate(cited_slugs):
     # -> the literal 100% orphan rate) nor a broken link. Slugs are globally
     # unique across the per-type dirs, so the bare slug addresses the page with
     # no path. The reverse (source->synthesis) edge is backfilled by the Step
-    # 11.5 `lint_wiki.py --fix=reverse_link_missing` gate, de-orphaning both ends.
+    # 10.5 `lint_wiki.py --fix=reverse_link_missing` gate, de-orphaning both ends.
     #
     # Emit the backlink ONLY when the cited page exists on disk (page_kind is not
     # None). A missing page would make bare `[[<slug>]]` a broken_wikilink that
-    # health.py flags as an error and fails the Step 11.5 gate — so a missing
+    # health.py flags as an error and fails the Step 10.5 gate — so a missing
     # cited page gets a reference row with NO wikilink (the graceful-degradation
     # edge that the old invisible `[[sources/<slug>]]` form silently tolerated).
     backlink = ("[[" + slug + "]]") if page_kind is not None else ""
@@ -384,8 +384,16 @@ for idx, slug in enumerate(cited_slugs):
 # (cogni-wiki/skills/wiki-health/scripts/health.py:206 splits on the prefix
 # and looks the bare slug up in slug_index). A `wiki://<wiki_slug>/<slug>`
 # composite would trip `broken_wiki_source` on every cited entry.
-if cited_slugs:
-    sources_block = "sources:\n" + "\n".join("  - wiki://" + slug for slug in cited_slugs)
+#
+# Emit a `wiki://` source ONLY for a cited page that exists on disk — the same
+# page_kind gate the body backlink uses. health.py's `broken_wiki_source` flags
+# any `wiki://<slug>` whose target is not in the slug index as an ERROR, so a
+# cited page that went missing between ingest and finalize would otherwise fail
+# the Step 10.5 health gate even though its body backlink was suppressed. The
+# missing slug is still surfaced via the Step 11 "Missing pages" warning.
+sourced_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) is not None]
+if sourced_slugs:
+    sources_block = "sources:\n" + "\n".join("  - wiki://" + slug for slug in sourced_slugs)
 else:
     # Empty list emits inline (matches `tags: []` shape) instead of the
     # block-style `sources:\n  []` continuation, which strict YAML parsers
@@ -529,14 +537,9 @@ rm -rf "<project_path>/.metadata/verify-shards"
 
 Non-critical: a failure here (e.g. permissions) **never blocks finalize** — the deliverable already landed at Steps 6–10. Skip silently if the directory does not exist.
 
-### 10. Rebuild context_brief.md + append wiki/log.md
+### 10. Append wiki/log.md
 
-```
-python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" \
-    --wiki-root "$WIKI_ROOT"
-```
-
-Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
+`context_brief.md` is rebuilt at the **end** of the Step 10.5 gate (not here), so it reflects the gate's reverse-link / `entries_count` / `overview.md` writes rather than a pre-gate snapshot.
 
 Append one log line (Bash `>>`; `wiki/log.md` is append-only by cogni-wiki convention).
 
@@ -555,7 +558,7 @@ printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s\n' \
 
 ### 10.5 Conformance gate (run cogni-wiki's own gates)
 
-The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-health` / `wiki-lint` never run as a gate. This step closes that: it backfills the deterministic link/frontmatter fixes and then asserts the base is structurally clean. It runs after the deposit + index + context-brief are on disk, so the gate sees the final state.
+The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-health` / `wiki-lint` never run as a gate. This step closes that: it backfills the deterministic link/frontmatter fixes, asserts the base is structurally clean, and rebuilds `context_brief.md` last so it reflects the post-gate state. It runs after the deposit + index are on disk, so the gate sees the final page set.
 
 1. **Deterministic lint fixes — de-orphan + reconcile.**
    ```
@@ -565,14 +568,20 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ```
    `--fix=all` applies the five safe classes (`lint_wiki.py` `FIX_CLASSES`). The load-bearing one is **`reverse_link_missing`**: the bare `[[<slug>]]` references this finalize just wrote are forward edges synthesis→source, so lint backfills the reverse source→synthesis `[[<synthesis-slug>]]` (a `## See also` append on each cited source) — de-orphaning the synthesis. The others are housekeeping: `frontmatter_defaults`, `entries_count_drift` (reconciles `entries_count` to the on-disk truth — supersedes Step 8's conditional bump on any drift), `alphabetisation`, and `synthesis_no_wiki_source` (a no-op — Step 5 already wrote `wiki://<slug>` sources). Capture the envelope; surface `data.fixed[]` / `data.failed[]` counts in the Step 11 summary. **Non-fatal per item** — a per-page fix failure lands in `data.failed[]` and does not block finalize. (`orphan_page` is NOT a `--fix` class — it is suggest-only; 0 orphans comes from the inbound links the bare refs + this reverse-link backfill create, never from `--fix`.)
 
-2. **Health assertion — 0 structural errors.**
+2. **Health + orphan assertions (the actual gate).**
    ```
-   python3 "$WIKI_HEALTH_SCRIPTS/health.py" \
-       --wiki-root "$WIKI_ROOT"
+   python3 "$WIKI_HEALTH_SCRIPTS/health.py"   --wiki-root "$WIKI_ROOT"
+   python3 "$WIKI_LINT_SCRIPTS/lint_wiki.py"  --wiki-root "$WIKI_ROOT"
    ```
-   Parse the envelope and assert `data.errors == []`. If errors remain, surface them **loudly** in the Step 11 summary (`⚠ wiki-health: <N> error(s) after finalize: <class> on <page>, …`) — do **not** silently pass, and do **not** roll back (the synthesis already landed; the operator reconciles via `wiki-update` / a re-run). This is the slice's structural gate; the live `0 errors` + `0 orphan_page` proof on a fresh German base is #311's job.
+   The second call has **no `--fix`** — it reads the post-fix state. Assert two things and surface both **loudly** (and **non-fatally** — the synthesis already landed; the operator reconciles via `wiki-update` / a re-run, never a rollback):
+   - `health.py` `data.errors == []` → on any error: `⚠ wiki-health: <N> error(s) after finalize: <class> on <page>, …`.
+   - `lint_wiki.py` `data.warnings` has **no `orphan_page`** entry → on any: `⚠ wiki-lint: <N> orphan page(s) after finalize: <page>, …`.
 
-3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale (#308). Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and prepend/refresh a single bullet for this synthesis (idempotent on the slug, so an `--overwrite` re-deposit updates the line in place rather than duplicating). `overview.md` is not graph-scanned, so this is purely freshness:
+   The orphan assertion is what actually covers the slice's stated metric — `orphan_page` is a **lint warning, not a health error**, and is **not** a `--fix` class, so the `--fix=all` in sub-step 1 de-orphans by *writing inbound links* (bare refs + the `reverse_link_missing` backfill), and this read-only re-lint verifies it worked. Without this check the gate could report "health clean" while a synthesis was left orphaned (e.g. if the de-orphaning was undone). Residual orphans are expected and acceptable in two documented cases (surface, don't fail): an ingested source no synthesis ever cited and no sibling backlinks (cold-start), and a synthesis that cites zero existing pages (empty/all-missing manifest → it has no outbound links for `reverse_link_missing` to mirror). The live `0 errors` + `0 orphan_page` proof on a fresh German base is #311's job.
+
+   **Caveat — foundation pages.** `reverse_link_missing` has no `foundation: true` exemption, so if this synthesis cites a prefilled foundation concept, the fixer appends a `## See also` backlink onto that curated page (bypassing `wiki-update`'s `--force` guard). In the inverted pipeline the composer cites `wiki/sources/*` + prior `wiki/syntheses/*`, not `wiki/concepts/`, so this is not expected; noted so a future foundation-citing path is aware.
+
+3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale (#308). Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and refresh a single bullet for this synthesis (idempotent on the slug). The dedup removes only this slug's prior **bullet** (a `- … [[slug]] …` list item), never prose that merely mentions `[[slug]]`; the heading is matched by exact line, never substring. `overview.md` is not graph-scanned, so this is purely freshness:
    ```
    WIKI_ROOT="<wiki_root>" SYNTHESIS_SLUG="<slug>" TOPIC_RAW="<topic>" DATE_STAMP="$(date -u +%F)" \
    python3 -c '
@@ -580,23 +589,31 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    from pathlib import Path
    p = Path(os.environ["WIKI_ROOT"]) / "wiki" / "overview.md"
    slug = os.environ["SYNTHESIS_SLUG"]
-   topic = os.environ["TOPIC_RAW"].replace("\r", " ").replace("\n", " ").strip()
-   bullet = "- [" + os.environ["DATE_STAMP"] + "] [[" + slug + "]] — " + topic
+   marker = "[[" + slug + "]]"
+   topic = " ".join(os.environ["TOPIC_RAW"].split())
+   bullet = "- [" + os.environ["DATE_STAMP"] + "] " + marker + " — " + topic
+   heading = "## Recent syntheses"
    text = p.read_text(encoding="utf-8") if p.is_file() else "# Overview\n"
-   lines = [ln for ln in text.splitlines() if "[[" + slug + "]]" not in ln]
-   if "## Recent syntheses" not in "\n".join(lines):
-       lines += ["", "## Recent syntheses", ""]
-   out = []
-   inserted = False
-   for ln in lines:
-       out.append(ln)
-       if ln.strip() == "## Recent syntheses" and not inserted:
-           out.append(bullet)
-           inserted = True
-   p.write_text("\n".join(out).rstrip() + "\n", encoding="utf-8")
+   # Drop ONLY a prior Recent-syntheses bullet for this slug (a list item),
+   # never a prose line that happens to reference [[slug]].
+   lines = [ln for ln in text.splitlines()
+            if not (ln.lstrip().startswith("- ") and marker in ln)]
+   if heading in lines:                      # exact line match, not substring
+       lines.insert(lines.index(heading) + 1, bullet)
+   else:
+       if lines and lines[-1].strip():
+           lines.append("")
+       lines += [heading, "", bullet]
+   p.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
    '
    ```
    Non-fatal — `overview.md` is a derived narrative artefact; a failure here never blocks finalize.
+
+4. **Rebuild `context_brief.md` (last).**
+   ```
+   python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" --wiki-root "$WIKI_ROOT"
+   ```
+   Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
 
 ### 11. Final summary
 

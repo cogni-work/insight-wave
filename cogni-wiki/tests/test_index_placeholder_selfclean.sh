@@ -98,31 +98,59 @@ if ! printf '%s' "$INDEX_TEXT2" | grep -qF "[[gdpr-records]]"; then
 fi
 green "second insert idempotent — no placeholder regression, both entries present"
 
-# ---------- 3) a user's real `## Categories` heading with content is preserved ----------
+# ---------- 3a) seed placeholder PRESENT alongside a real bullet under `## Categories` ----------
+# This is the adversarial case the strip logic must actually run on (the seed
+# line IS present, so there is no early-return): the placeholder must go, but the
+# real `## Categories` heading + its bullet must survive.
 cat > "$WIKI/wiki/index.md" <<EOF
 # Index
 
 ## Categories
 
+${PLACEHOLDER}
 - [[real-page]] — A genuine page the user filed under Categories
 EOF
 OUT3=$(python3 "$UPDATE" --wiki-root "$WIKI" \
-  --slug another-page \
-  --summary "Another page" \
-  --category "Categories")
+  --slug new-a --summary "New A" --category "Other")
 OK3=$(printf '%s' "$OUT3" | python3 -c 'import json,sys; print("yes" if json.loads(sys.stdin.read()).get("success") else "no")' 2>/dev/null || echo "parse-error")
-[ "$OK3" = "yes" ] || { red "FAIL: insert into real Categories heading failed"; printf '%s\n' "$OUT3"; exit 1; }
+[ "$OK3" = "yes" ] || { red "FAIL: insert alongside seed+real-bullet Categories failed"; printf '%s\n' "$OUT3"; exit 1; }
 INDEX_TEXT3=$(cat "$WIKI/wiki/index.md")
+if printf '%s' "$INDEX_TEXT3" | grep -qF "$PLACEHOLDER"; then
+  red "FAIL: placeholder survived when '## Categories' also carried a real bullet"; printf '%s\n' "$INDEX_TEXT3"; exit 1
+fi
 if ! printf '%s\n' "$INDEX_TEXT3" | grep -qx "## Categories"; then
-  red "FAIL: a real '## Categories' heading with content was wrongly removed"
-  printf '%s\n' "$INDEX_TEXT3"
-  exit 1
+  red "FAIL: a real '## Categories' heading with a bullet was wrongly removed"; printf '%s\n' "$INDEX_TEXT3"; exit 1
 fi
 if ! printf '%s' "$INDEX_TEXT3" | grep -qF "[[real-page]]"; then
-  red "FAIL: existing content under real Categories heading was lost"
-  printf '%s\n' "$INDEX_TEXT3"
-  exit 1
+  red "FAIL: real bullet under '## Categories' was lost"; printf '%s\n' "$INDEX_TEXT3"; exit 1
 fi
-green "real '## Categories' heading with content preserved (seed match is exact)"
+green "seed placeholder shed while a real '## Categories' bullet is preserved (strip actually ran)"
+
+# ---------- 3b) seed placeholder PRESENT alongside PROSE-only `## Categories` ----------
+# Prose (no page bullets) under a real `## Categories` must NOT be deleted with
+# the placeholder (the heading is dropped only when nothing non-blank remains).
+cat > "$WIKI/wiki/index.md" <<EOF
+# Index
+
+## Categories
+
+${PLACEHOLDER}
+Some user notes explaining how this wiki organizes its categories.
+EOF
+OUT4=$(python3 "$UPDATE" --wiki-root "$WIKI" \
+  --slug new-b --summary "New B" --category "Other")
+OK4=$(printf '%s' "$OUT4" | python3 -c 'import json,sys; print("yes" if json.loads(sys.stdin.read()).get("success") else "no")' 2>/dev/null || echo "parse-error")
+[ "$OK4" = "yes" ] || { red "FAIL: insert alongside seed+prose Categories failed"; printf '%s\n' "$OUT4"; exit 1; }
+INDEX_TEXT4=$(cat "$WIKI/wiki/index.md")
+if printf '%s' "$INDEX_TEXT4" | grep -qF "$PLACEHOLDER"; then
+  red "FAIL: placeholder survived alongside prose under '## Categories'"; printf '%s\n' "$INDEX_TEXT4"; exit 1
+fi
+if ! printf '%s\n' "$INDEX_TEXT4" | grep -qx "## Categories"; then
+  red "FAIL: a prose-only '## Categories' heading was wrongly removed (A3 regression)"; printf '%s\n' "$INDEX_TEXT4"; exit 1
+fi
+if ! printf '%s' "$INDEX_TEXT4" | grep -qF "Some user notes explaining"; then
+  red "FAIL: user prose under '## Categories' was deleted with the placeholder (A3 regression)"; printf '%s\n' "$INDEX_TEXT4"; exit 1
+fi
+green "prose under a real '## Categories' preserved while the seed placeholder is shed"
 
 green "ALL TESTS PASS"
