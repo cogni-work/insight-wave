@@ -62,6 +62,8 @@ Fans out one `source-curator` agent per sub-question (≤ 3 concurrent). Each ru
 
 The orchestrator resolves the market config **once** (cogni-workspace `get-market-config.py --plugin research --market <market>`), aborts loudly if the market resolves to the `_default` fallback (no `data.code`), writes the envelope to `<project>/.metadata/market-config.json`, and threads `MARKET_CONFIG_PATH` to every curator — so all curators in a run score against the same authority list instead of each re-resolving it from a flaky `WORKSPACE_PLUGIN_ROOT` glob (#304).
 
+**Read-before-web coverage pre-step (P1.3, #309, v0.1.8).** Before any curator runs, the orchestrator resolves wiki coverage **once** (`wiki-coverage.py score --wiki-root <binding.wiki_path> --plan plan.json`, the same resolve-once posture as the market config), writes the manifest to `<project>/.metadata/wiki-coverage.json`, and threads `WIKI_ROOT` + `WIKI_COVERAGE_PATH` to every curator. Each curator reads its sub-question's verdict (`covered`/`partial`/`uncovered`) and, on a `covered`/`partial` verdict, reads the named `covered_pages[].page_path` under `WIKI_ROOT` and issues fewer new WebSearch queries — narrowing to genuine gaps so the next run on the same base does less web work (the differentiation thesis at research time). Unlike the market-config gate, this pre-step is **fail-soft**: a scorer error or unreadable wiki degrades to an all-`uncovered` manifest (every curator does a full search), and a fresh base is all-`uncovered` by construction, so run 1 is byte-identical to pre-#309 behaviour. The narrowing reduces *new web queries/fetches*, not citable coverage — the already-filed wiki pages are read directly by the Phase-5 composer.
+
 Output: `<project>/.metadata/candidates.json`:
 
 ```json

@@ -92,6 +92,17 @@ assert_grep 'Abort unless' "$CURATE" "knowledge-curate: aborts unless data.code 
 # bounds N, so one wave always covers the plan.
 assert_grep 'one assistant message containing all N' "$CURATE" "knowledge-curate: fans all N curators in one assistant message (#299)"
 assert_not_grep '3 or fewer' "$CURATE" "knowledge-curate: dropped the old <=3-per-wave concurrency cadence (#299)"
+# P1.3 (#309): read-before-web. Step 0.5 resolves wiki coverage ONCE via
+# wiki-coverage.py (mirroring the #304 resolve-once posture), writes it to
+# .metadata/wiki-coverage.json, and threads WIKI_ROOT + WIKI_COVERAGE_PATH to
+# every curator. The pre-check is fail-soft — a scorer error degrades to an
+# all-uncovered manifest and curation proceeds (the opposite of the #304
+# market-config hard-abort), which is what preserves the run-1 no-regression.
+assert_grep 'wiki-coverage.py' "$CURATE" "knowledge-curate: resolves wiki coverage via wiki-coverage.py once in Step 0.5 (#309)"
+assert_grep 'wiki-coverage.json' "$CURATE" "knowledge-curate: writes the coverage manifest to .metadata/wiki-coverage.json (#309)"
+assert_grep 'WIKI_COVERAGE_PATH=' "$CURATE" "knowledge-curate: forwards WIKI_COVERAGE_PATH to source-curator (#309)"
+assert_grep 'WIKI_ROOT=' "$CURATE" "knowledge-curate: forwards WIKI_ROOT to source-curator (#309)"
+assert_grep 'fail-soft' "$CURATE" "knowledge-curate: coverage pre-check is fail-soft, not a hard abort (#309)"
 
 # --- knowledge-fetch SKILL.md --------------------------------------------
 FETCH="$PLUGIN_ROOT/skills/knowledge-fetch/SKILL.md"
@@ -154,6 +165,13 @@ else
 fi
 assert_grep 'KNOWLEDGE_ROOT' "$CURATOR" "source-curator: takes KNOWLEDGE_ROOT for the Phase-4 fetch"
 assert_grep 'fetch-cache.py' "$CURATOR" "source-curator: writes bodies through fetch-cache.py (Phase 4)"
+# P1.3 (#309): read-before-web narrowing. The curator reads its sub-question's
+# verdict from WIKI_COVERAGE_PATH (Phase 0), branches on coverage_verdict
+# (Phase 1), and reads covering pages under WIKI_ROOT before narrowing its
+# query budget. Absent coverage data ⇒ full search (no regression).
+assert_grep 'WIKI_COVERAGE_PATH' "$CURATOR" "source-curator: reads wiki coverage from WIKI_COVERAGE_PATH (#309)"
+assert_grep 'coverage_verdict' "$CURATOR" "source-curator: branches on coverage_verdict for read-before-web narrowing (#309)"
+assert_grep 'WIKI_ROOT' "$CURATOR" "source-curator: takes WIKI_ROOT to read covering pages (#309)"
 
 # --- source-fetcher agent ------------------------------------------------
 FETCHER="$PLUGIN_ROOT/agents/source-fetcher.md"
