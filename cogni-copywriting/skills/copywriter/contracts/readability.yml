@@ -28,7 +28,7 @@ interface:
     schema:
       success: "boolean"
       data:
-        flesch_score: "number (0-100, Flesch Reading Ease)"
+        flesch_score: "number (Flesch Reading Ease; nominally 0-100 but can fall below 0 or above 100 for dense prose, the IT/PL coefficients, or cross-language scoring)"
         flesch_target_min: "number (language-aware minimum: DE=30, all others=50)"
         flesch_target_max: "number (language-aware maximum: DE=50, all others=60)"
         detected_language: "string (en, de, fr, it, pl, nl, or es)"

@@ -48,7 +48,7 @@ Output is one line per fixture plus a summary, e.g.:
 [de-dense] src=-32.1 out=7.2 margin=44.3 actual=PASS expect=PASS
 [degraded] src=69.6 out=48.1 margin=-16.5 actual=FAIL expect=FAIL
 [en-to-fr] src=85.8 out=96.4 margin=15.6 actual=PASS expect=PASS
-[es-to-en] src=14.0 out=71.2 margin=62.2 actual=PASS expect=PASS
+[es-to-en] src=9.3 out=71.2 margin=66.9 actual=PASS expect=PASS
 Summary: 4 matched, 0 mismatched
 ```
 

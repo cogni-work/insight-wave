@@ -135,7 +135,7 @@ def detect_language(text):
         'de': char_ratio(r'[äöüÄÖÜß]') * 100 + marker_ratio(GERMAN_MARKERS) * 50 + long_ratio * 30,
         'fr': char_ratio(r'[àâçéèêëîïôûùÿœæ]') * 100 + marker_ratio(FRENCH_MARKERS) * 50,
         'it': char_ratio(r'[àèéìíòóù]') * 100 + marker_ratio(ITALIAN_MARKERS) * 50,
-        'es': char_ratio(r'[áíóúñ¿¡]') * 100 + marker_ratio(SPANISH_MARKERS) * 50,
+        'es': char_ratio(r'[áéíóúñ¿¡]') * 100 + marker_ratio(SPANISH_MARKERS) * 50,
         'nl': marker_ratio(DUTCH_MARKERS) * 50,
         'pl': char_ratio(r'[ąćęłńśźż]') * 100 + marker_ratio(POLISH_MARKERS) * 50,
     }
@@ -150,6 +150,16 @@ def detect_language(text):
 
 # --- Syllable Counting ---
 
+# Vowel characters recognised across all supported languages. Superset of the
+# EN/DE set "aeiouyäöü": adds the romance/Polish accented vowels so a source in
+# any language counts faithfully when scored on another language's scale (e.g. a
+# Spanish source on the EN scale for an es->en translation, or a French source
+# on the DE scale). EN/DE prose contains none of the added characters, so EN/DE
+# scores stay byte-identical to prior releases — this extends the #258
+# cross-language umlaut fix to the #255 (FR/IT/PL/NL/ES) languages.
+_VOWELS = "aeiouyàáâãäèéêëęìíîïòóôõöùúûüÿœæą"
+
+
 def count_syllables_en(word, source_lang='en'):
     """Estimate syllable count for an English word.
 
@@ -161,7 +171,7 @@ def count_syllables_en(word, source_lang='en'):
     """
     word = word.lower()
     count = 0
-    vowels = "aeiouyäöü"
+    vowels = _VOWELS
     previous_was_vowel = False
 
     for char in word:
@@ -190,7 +200,7 @@ def count_syllables_de(word):
     """
     word = word.lower()
     count = 0
-    vowels = "aeiouyäöü"
+    vowels = _VOWELS
     previous_was_vowel = False
 
     i = 0
@@ -216,28 +226,23 @@ def count_syllables_de(word):
     return count
 
 
-# Broad vowel set covering the FR/IT/PL/NL/ES diacritic vowels. Used by the
-# fallback counter so any source prose (incl. EN/DE) counts vowel groups
-# sensibly when scored on a new-language scale.
-_OTHER_VOWELS = "aeiouyàâäéèêëíìîïóòôöúùûüÿœæąę"
-
-
 def count_syllables_other(word, source_lang='en'):
     """Vowel-group syllable estimate for FR/IT/PL/NL/ES.
 
-    A defensible relative approximation: count transitions into a vowel over a
-    broad accented-vowel set, then apply the silent-final-`e` subtraction when
-    the *source* prose is English or French (both have silent final `-e`). The
+    A defensible relative approximation: count transitions into a vowel over the
+    shared `_VOWELS` set, then apply the silent-final-`e` subtraction when the
+    *source* prose is English or French (both have silent final `-e`). The
     counter reflects source-prose phonology while the Flesch formula runs on the
-    requested target scale — same split as the EN counter's `source_lang` gate
-    (#261). PL/NL counting is approximate (no nasal-vowel or digraph handling).
+    requested target scale — the same source-lang gating idea as the EN counter
+    (#261), but the gate set here is `{en, fr}` rather than the EN counter's
+    `{en}`. PL/NL counting is approximate (no nasal-vowel or digraph handling).
     """
     word = word.lower()
     count = 0
     previous_was_vowel = False
 
     for char in word:
-        is_vowel = char in _OTHER_VOWELS
+        is_vowel = char in _VOWELS
         if is_vowel and not previous_was_vowel:
             count += 1
         previous_was_vowel = is_vowel

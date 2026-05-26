@@ -2,15 +2,15 @@
 title: Translation Principles (Two-Pass Translate-then-Polish)
 type: writing-principle
 category: core-principles
-tags: [translation, en-de, de-en, two-pass, citations, preservation]
+tags: [translation, multilingual, en-de, de-en, fr, it, pl, nl, es, two-pass, citations, preservation, charset, dispatch-matrix]
 audience: [all]
 related:
   - german-style-principles
   - acronym-handling-principles
   - clarity-principles
   - citation-formatting
-version: 1.0
-last_updated: 2026-05-19
+version: 1.1
+last_updated: 2026-05-26
 ---
 
 # Translation Principles
