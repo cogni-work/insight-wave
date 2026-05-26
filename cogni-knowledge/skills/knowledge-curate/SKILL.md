@@ -57,7 +57,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py read \
     --knowledge-root <knowledge_root>
 ```
 
-On `success: false` → abort, offer `knowledge-setup`.
+On `success: false` → abort, offer `knowledge-setup`. On success, capture `data.binding.wiki_path` (the bound wiki root) and `data.binding.curator_defaults` — `wiki_path` is threaded as `WIKI_ROOT` (Steps 0.5 + 3); `curator_defaults` is read in Step 1.
 
 Read `<project_path>/.metadata/plan.json`. Parse `topic`, `market`, `output_language`, `sub_questions[]`. If `--sub-question-ids` was passed, filter to that subset (reject ids not present).
 
@@ -97,7 +97,7 @@ The envelope is `{"success", "data", "error"}`; on success `data` is the merged 
 
 Abort message: `could not resolve market config for '<market>' (script failed, or the market resolved to the _default fallback) — fix the workspace install or correct the market code in plan.json before curating`. A wrong authority list degrades the whole run's scoring, so this is a hard stop, not per-curator partial coverage.
 
-On success, write the **full stdout envelope verbatim** to `<project_path>/.metadata/market-config.json` (`.metadata/` already exists — `plan.json` lives there). This is the single resolution every curator reads. Then confirm the file exists and is non-empty before continuing to Step 3; if the write failed (disk full, permission denied), abort the curate run with `market config resolved but could not be written to <path>` — a clean orchestrator abort, rather than dispatching N curators that would each fail with `market_config_unavailable` (zero coverage from a confusing failure mode). In `--dry-run`, resolve + validate (so a bad market / missing workspace is still caught early), print `MARKET=<market> AUTHORITY_SOURCES=<count from data.authority_sources>` plus the per-sub-question dispatch plan, then **stop** — do **not** write `market-config.json` and do **not** dispatch curators (this is `--dry-run`'s "print the dispatch plan without running curators" contract; stopping here is also what keeps the not-written file from being referenced by a Step 3 dispatch). (Step 0.5 below still runs in `--dry-run` — read-only — so the dry-run dispatch plan can show each sub-question's coverage verdict.)
+On success, write the **full stdout envelope verbatim** to `<project_path>/.metadata/market-config.json` (`.metadata/` already exists — `plan.json` lives there). This is the single resolution every curator reads. Then confirm the file exists and is non-empty before continuing to Step 3; if the write failed (disk full, permission denied), abort the curate run with `market config resolved but could not be written to <path>` — a clean orchestrator abort, rather than dispatching N curators that would each fail with `market_config_unavailable` (zero coverage from a confusing failure mode). In `--dry-run`, resolve + validate (so a bad market / missing workspace is still caught early) and print `MARKET=<market> AUTHORITY_SOURCES=<count from data.authority_sources>`, but do **not** write `market-config.json`. Then continue to Step 0.5 (which also runs read-only under `--dry-run`), print the per-sub-question dispatch plan with its `COVERAGE=<verdict>` lines, and **stop there — do not dispatch any curators**. (This is `--dry-run`'s "print the dispatch plan without running curators" contract; not writing `market-config.json` / `wiki-coverage.json` also keeps them from being referenced by a Step 3 dispatch.)
 
 ### 0.5. Resolve wiki coverage ONCE (read-before-web, P1.3 / #309)
 

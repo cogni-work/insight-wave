@@ -170,8 +170,14 @@ assert_grep 'fetch-cache.py' "$CURATOR" "source-curator: writes bodies through f
 # (Phase 1), and reads covering pages under WIKI_ROOT before narrowing its
 # query budget. Absent coverage data ⇒ full search (no regression).
 assert_grep 'WIKI_COVERAGE_PATH' "$CURATOR" "source-curator: reads wiki coverage from WIKI_COVERAGE_PATH (#309)"
-assert_grep 'coverage_verdict' "$CURATOR" "source-curator: branches on coverage_verdict for read-before-web narrowing (#309)"
+assert_grep 'coverage_verdict' "$CURATOR" "source-curator: references coverage_verdict (#309)"
 assert_grep 'WIKI_ROOT' "$CURATOR" "source-curator: takes WIKI_ROOT to read covering pages (#309)"
+# Guard the BEHAVIORAL change, not just the field name: `coverage_verdict` alone
+# also matches the return-summary JSON EXAMPLE, so it would pass even if the
+# Phase-1 branch were deleted. These two phrases live ONLY in the Phase-1
+# narrowing prose, so they fail if the actual branch logic is removed (#309).
+assert_grep 'Branch on the' "$CURATOR" "source-curator: Phase 1 branches on the verdict (behavioral, not just the schema example) (#309)"
+assert_grep 'fewer queries' "$CURATOR" "source-curator: covered/partial narrows to fewer queries (#309)"
 
 # --- source-fetcher agent ------------------------------------------------
 FETCHER="$PLUGIN_ROOT/agents/source-fetcher.md"

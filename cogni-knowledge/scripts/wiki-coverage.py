@@ -48,11 +48,12 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import _FRONTMATTER_RE, _unquote_scalar  # noqa: E402
+from _knowledge_lib import _FRONTMATTER_RE, _MANUAL_TRANSLITERATION, _unquote_scalar  # noqa: E402
 
 SCHEMA_VERSION = "0.1.0"
 DEFAULT_THRESHOLD = 0.30
@@ -83,9 +84,25 @@ def _stem(token: str) -> str:
     return token
 
 
+def _fold(text: str) -> str:
+    """De-accent so non-ASCII tokens survive the `[^a-z0-9]+` split instead of
+    fragmenting (German `Geschäftsidee` → `geschaeftsidee`, not `gesch`+`ftsidee`;
+    `Künstliche` → `kuenstliche`). Mirrors `_knowledge_lib.slugify`'s
+    normalization — lowercase, NFC, the manual umlaut/ß transliteration, then
+    NFKD + combining-mark removal. Applied identically to both the sub-question
+    and page sides, so Jaccard matching stays symmetric. This intentionally
+    DIVERGES from the `refresh_planner` replica (which is ASCII-only) because
+    cogni-knowledge targets German/EU content — the same reason `slugify`
+    already diverges from its own upstream lift."""
+    lowered = unicodedata.normalize("NFC", text.lower())
+    for src, dst in _MANUAL_TRANSLITERATION:
+        lowered = lowered.replace(src, dst)
+    decomposed = unicodedata.normalize("NFKD", lowered)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+
+
 def tokenize(*parts: str) -> set:
-    text = " ".join(p for p in parts if p)
-    text = text.lower()
+    text = _fold(" ".join(p for p in parts if p))
     raw_tokens = TOKEN_SPLIT_RE.split(text)
     out: set = set()
     for t in raw_tokens:
@@ -141,7 +158,14 @@ def _page_title_tags(page_text: str) -> tuple[str, list[str]]:
     for line in m.group(1).splitlines():
         tm = _TITLE_RE.match(line)
         if tm and not title:
-            title = _unquote_scalar(tm.group(1).strip())
+            raw = tm.group(1).strip()
+            # Strip a YAML inline comment from an UNQUOTED scalar only (a quoted
+            # title keeps `#` verbatim) — mirrors _knowledge_lib._absorb_claim_kv.
+            if raw[:1] not in ('"', "'"):
+                hash_pos = raw.find(" #")
+                if hash_pos != -1:
+                    raw = raw[:hash_pos].rstrip()
+            title = _unquote_scalar(raw)
             continue
         gm = _TAGS_RE.match(line)
         if gm and not tags:
@@ -190,6 +214,13 @@ def _collect_pages(wiki_root: Path) -> list[dict]:
         for page_file in sorted(d.glob("*.md")):
             slug = page_file.stem
             title, tags = _page_title_tags(_read_text(page_file))
+            # Fall back to the slug when a page has no parseable title (block-scalar
+            # title, leading-blank/BOM that defeats _FRONTMATTER_RE, or a genuinely
+            # title-less page) — mirrors refresh_planner's `title or slug`. The slug
+            # is descriptive kebab (`eu-ai-act-high-risk-classification`), so it
+            # carries real signal; without this a title-less page tokenizes to just
+            # its `[source]`/`[synthesis]` tag and goes invisible to coverage.
+            title = title or slug
             summary = index_map.get(slug, "")
             pages.append({
                 "slug": slug,
@@ -232,8 +263,11 @@ def _match_reasons(sq_tokens: set, page: dict) -> list[str]:
 
 def cmd_score(args: argparse.Namespace) -> int:
     threshold = args.threshold
-    if not (0.0 <= threshold <= 1.0):
-        return _emit(False, error=f"--threshold must be in [0.0, 1.0], got {threshold}")
+    # Lower bound is EXCLUSIVE: jaccard returns 0.0 for disjoint/empty token sets,
+    # so `score >= 0.0` would make every page "cover" every sub-question regardless
+    # of overlap. A coverage threshold of 0 is meaningless — require a positive one.
+    if not (0.0 < threshold <= 1.0):
+        return _emit(False, error=f"--threshold must be in (0.0, 1.0], got {threshold}")
 
     # plan.json is the one HARD input — without sub-questions there is nothing
     # to score. A malformed plan is a clean success:false (the caller writes an
