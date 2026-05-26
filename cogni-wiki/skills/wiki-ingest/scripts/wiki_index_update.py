@@ -72,6 +72,14 @@ from _wikilib import _wiki_lock, atomic_write, fail, ok  # noqa: E402
 HEADING_RE = re.compile(r"^(#{2,3})\s+(.*?)\s*$")
 SLUG_LINE_RE_TEMPLATE = r"^(\s*-\s*\[\[){slug}(\]\])"
 
+# wiki-setup seeds wiki/index.md with an empty `## Categories` section holding
+# this exact placeholder line (skills/wiki-setup/SKILL.md). Once a real page is
+# indexed the placeholder is dead weight — script-level callers
+# (cogni-knowledge:knowledge-ingest / knowledge-finalize) never run the
+# wiki-ingest LLM skill that would otherwise clean it, so it lingered (#306).
+SEED_PLACEHOLDER_LINE = "_No pages yet. Run `wiki-ingest` to add your first source._"
+SEED_CATEGORY_HEADING = "Categories"
+
 
 def _split_sections(text: str) -> list:
     """Split index.md into a list of (heading_line_or_None, lines_under_it).
@@ -204,6 +212,37 @@ def _create_category(sections: list, category: str, new_line: str) -> list:
     return sections
 
 
+def strip_seed_placeholder(text: str) -> str:
+    """Remove the wiki-setup seed placeholder from index.md text (#306).
+
+    wiki-setup seeds index.md with:
+
+        ## Categories
+
+        _No pages yet. Run `wiki-ingest` to add your first source._
+
+    On the first real category insert the placeholder is dead weight. Removes
+    the placeholder line wherever it appears, and drops an empty `## Categories`
+    heading that has no bullet entries left under it. Confined to the exact seed
+    string so a user's real `## Categories` heading carrying content is never
+    touched. Idempotent — a no-op once the seed is gone.
+    """
+    if SEED_PLACEHOLDER_LINE not in text:
+        return text
+    sections = _split_sections(text)
+    new_sections: list = []
+    for heading, body in sections:
+        body = [ln for ln in body if ln.strip() != SEED_PLACEHOLDER_LINE]
+        if heading is not None and _heading_matches_category(
+            heading, SEED_CATEGORY_HEADING
+        ):
+            has_bullets = any(_extract_slug_from_line(ln) for ln in body)
+            if not has_bullets:
+                continue  # drop the now-empty seed `## Categories` heading
+        new_sections.append((heading, body))
+    return _join_sections(new_sections)
+
+
 def reflow_categories(text: str) -> tuple:
     """Re-sort every category's contiguous bullet block alphabetically by slug.
 
@@ -255,6 +294,11 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
     except OSError as e:
         fail(f"could not read index.md: {e}")
         return {}
+
+    # #306: shed the wiki-setup seed placeholder on the first real insert/update
+    # so script-level callers stop inheriting the dead `## Categories` /
+    # `_No pages yet…_` block. Idempotent once the seed is gone.
+    text = strip_seed_placeholder(text)
 
     new_line = f"- [[{slug}]] — {summary}"
     sections = _split_sections(text)

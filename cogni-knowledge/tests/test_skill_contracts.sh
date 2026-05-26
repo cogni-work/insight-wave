@@ -47,6 +47,9 @@ assert_grep '3-7 sub-questions' "$PLAN" "knowledge-plan: 3-7 sub-question contra
 assert_grep 'probe_plugin cogni-wiki wiki-setup' "$PLAN" "knowledge-plan: probes cogni-wiki"
 assert_grep 'knowledge-finalize' "$PLAN" "knowledge-plan: defers binding append to M9 knowledge-finalize"
 assert_not_grep 'probe_plugin cogni-research' "$PLAN" "knowledge-plan: does NOT probe cogni-research (clean break)"
+# Slice 16 (#307): each sub-question carries a theme_label (the thematic index
+# category Phase 4 files sources under).
+assert_grep 'theme_label' "$PLAN" "knowledge-plan: emits theme_label per sub-question (#307)"
 
 # --- knowledge-curate SKILL.md -------------------------------------------
 CURATE="$PLUGIN_ROOT/skills/knowledge-curate/SKILL.md"
@@ -312,6 +315,18 @@ if [ -n "$AUDIT_HITS" ]; then
 else
   green "PASS: M11 audit — no legacy chain reference in the live plugin surface"
 fi
+
+# --- Slice 16 (#308/#307) audit: prefixed-link + audit-only can't creep back ---
+# The orphan linchpin was the path-prefixed `[[sources/<slug>]]` reference
+# backlink, built via a `link_dir` variable in knowledge-finalize. That variable
+# is gone — bare `[[<slug>]]` is the only form. And knowledge-ingest no longer
+# defers backlinks as "audit-only". These two negative greps fail any future PR
+# that reintroduces either pattern. (Explanatory prose may still MENTION
+# `[[sources/<slug>]]` when describing the fix, so we target the CODE construct
+# `link_dir`, not the literal `[[sources/`.)
+assert_not_grep 'link_dir' "$FINALIZE" "knowledge-finalize: no link_dir path-prefix construction — reference backlinks stay bare [[<slug>]] (#308)"
+assert_not_grep 'audit-only' "$INGEST" "knowledge-ingest: no 'audit-only' backlink deferral — apply-plan writes backlinks (#308)"
+assert_grep 'theme_label' "$INGEST" "knowledge-ingest: files sources under the sub-question theme_label category (#307)"
 
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
