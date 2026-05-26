@@ -102,6 +102,8 @@ When paired with cogni-narrative, detects `arc_id` in frontmatter and applies ar
 /copywrite why-change-narrative.md
 ```
 
+Arc documents can also be translated EN↔DE — `/copywrite arc-narrative.md --translate=de` swaps the arc-element and bridge headings to the canonical German set while preserving structure, citations, and arc contract (supported for the `corporate-visions` and `jtbd-portfolio` arcs).
+
 ### German Documents
 
 Detects German language automatically, loads Wolf Schneider style rules — breaks Satzklammer, shortens Mittelfeld, eliminates Floskeln. Validates with Amstad readability score.
@@ -118,7 +120,7 @@ Detects German language automatically, loads Wolf Schneider style rules — brea
 | Dutch | Flesch-Douma | U-vorm, closed compounds, V2 order | 50-60 (aspirational) | via EN/DE pivot — `--translate=nl` |
 | Spanish | Szigriszt-Pazos | Usted, accents + ñ, inverted ¿¡ | 50-60 (aspirational) | via EN/DE pivot — `--translate=es` |
 
-Translation runs as a two-pass translate-then-polish flow: Pass A transfers meaning (preserving citations, URLs, frontmatter technical IDs, and protected content byte-identical); Pass B applies the target-language style discipline above. Every direction pivots on EN or DE — direct non-EN/DE pairs (e.g. fr→it) are rejected. For the five additional languages the absolute Flesch-family band is aspirational; the translation validator enforces a relative-to-source rule on the same target-language scale. Non-arc FR/IT/PL/NL/ES translation ships now (#255 Slice 1); arc-mode translation (documents with `arc_id` frontmatter) and direct non-EN/DE pairs remain tracked in #255.
+Translation runs as a two-pass translate-then-polish flow: Pass A transfers meaning (preserving citations, URLs, frontmatter technical IDs, and protected content byte-identical); Pass B applies the target-language style discipline above. Every direction pivots on EN or DE — direct non-EN/DE pairs (e.g. fr→it) are rejected. For the five additional languages the absolute Flesch-family band is aspirational; the translation validator enforces a relative-to-source rule on the same target-language scale. Non-arc FR/IT/PL/NL/ES translation ships now (#255 Slice 1), and arc-mode **EN↔DE** translation ships for the `corporate-visions` and `jtbd-portfolio` arcs (#255 Slice 2) — arc-element and bridge headings are substituted from cogni-narrative's canonical heading set rather than freely translated. Arc-mode for FR/IT/PL/NL/ES and broader arc coverage remain tracked in #318 (Slice 3); direct non-EN/DE pairs are rejected.
 
 ## Components
 

@@ -5,6 +5,41 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.5.0] - 2026-05-26
+
+> The skill internal bump 7.4.0 → 7.5.0 ships in plugin release 0.5.0.
+
+### Added — Arc-mode translation EN↔DE (corporate-visions, jtbd-portfolio)
+
+Lifts the arc-mode translation block (Slice 1's unconditional `arc_id` abort) for the **EN↔DE pair**, scoped to the two arcs with downstream DE localization today: **corporate-visions** and **jtbd-portfolio**. This is **Slice 2** of #255. FR/IT/PL/NL/ES arc-mode stays blocked (Slice 3 / #318): upstream `language-templates.md` defines arc headings only in EN/DE.
+
+#### How it works
+
+- **Conditional arc gate (Step 1 pre-check #3):** the unconditional `arc_id` abort becomes a three-way gate — *allow* when both ends are EN/DE and `arc_id` is in scope; *abort with a coverage message* for other arcs on an EN↔DE pair; *abort with the #318 message* when the pair involves FR/IT/PL/NL/ES.
+- **Heading substitution (new in Step 2.5):** arc-element + bridge headings are **substituted**, not freely translated. The skill reads the **canonical target-language headings from the downstream mirror in `arc-preservation.md`** — it does **not** read cogni-narrative files at runtime (there is no stable path between two separately-installed plugins). Element identification is **positional** (the Nth arc-element H2 maps to element index N), because the upstream `arc-definition.md` (U2) and `language-templates.md` (U3) heading forms disagree and a real narrative's source headings may match neither; prefix-matching is only a sanity guard.
+- **Validation (Step 5):** in translation+arc mode the "heading unchanged" rule is replaced by "headings match the `TARGET_LANG` canonical set byte-for-byte (umlauts required for `de`)"; H2 count + order must match the source (the absolute "exactly 6" rule no longer applies); per-element word count uses a relative-to-source band (`× factor × (1 ± 0.20)`, factor ≈ 1.20 →de / ≈ 0.83 →en).
+
+### Fixed — arc-preservation.md DE headings reconciled to upstream (audit C3)
+
+The downstream localized heading table disagreed with upstream `language-templates.md` for corporate-visions: `Warum Aendern` (ASCII, *wrong word*) vs. `Warum Wandel`, and `Warum Wir` vs. `Warum Sie`. Reconciled both to the upstream full forms and upgraded the table to hold the **full canonical EN+DE headings** for both in-scope arcs (the substitution source). Fixed the bridge heading `Weiterfuehrende Lektuere` → `Weiterführende Lektüre` (umlaut), and the German-character validation rule `ae, oe, ue, ss` → `ä, ö, ü, ß` — which had directly contradicted the skill's own German-character preservation principle. `audit-copywriter` C2/C3 now pass **for corporate-visions and jtbd-portfolio**; the pre-existing C1/C3 findings for the other 9 arcs (missing detection rows / missing DE) are unchanged and out of scope.
+
+#### Changed Files
+
+- `references/09-preservation-modes/arc-preservation.md` — localized table upgraded to full canonical EN+DE headings (corporate-visions + jtbd-portfolio) with element index; corporate-visions DE reconciled to upstream; bridge umlaut fix; native-vs-translation note; German-character rule + integration-example umlaut fix; **"What You Must Never Modify" rules and the Validation Checklist carved out for translation mode, and the buggy "H2 count — exactly 6" assertion replaced with "count + order unchanged from source"** (it false-rejected the 5-H2 italic-subtitle layout); `version` 2.0 → 2.1.
+- `SKILL.md` — Step 1 pre-check #3 conditional arc gate (now also detects heading-pattern arcs without `arc_id`, and lets an invalid `TARGET_LANG` fall through to the accept-set check); Step 2.5 arc-heading-substitution sub-step (downstream mirror, positional identification, bridge sourced from the bridge list, abort-and-preserve guard when elements ≠ 4); Step 5 arc-aware validation made translation-mode-aware.
+- `references/01-core-principles/translation-principles.md` — Translate/Preserve list: the heading line no longer says "arc-mode translation is blocked"; it now points to the Step 2.5 substitution carve-out (this file is loaded on every translation run).
+- `references/00-index.md` — CHECK 0 now loads arc references alongside translation references for in-scope EN↔DE arc docs; `version` 8.3 → 8.4.
+- `references/09-preservation-modes/arc-technique-map.md` — Post-Polish Validation translation-mode note (relative word band + heading check); `version` 2.0 → 2.1.
+- `agents/copywriter.md`, `commands/copywrite.md` — replaced stale "arc-mode translation is blocked / aborts on `arc_id`" claims with the EN↔DE-supported (corporate-visions, jtbd-portfolio) substitution behavior.
+- `copywriter-workspace/test-docs/arc-narrative.de.md` — NEW full-canonical-DE corporate-visions fixture for the DE→EN reverse test (`arc-narrative.md` is left untouched, as it is also an input to cogni-visual's story-to-web eval).
+- Docs/version: `README.md`, `CLAUDE.md`, `.claude-plugin/plugin.json` (0.4.0 → 0.5.0), marketplace mirror.
+
+#### Migration Notes
+
+Non-breaking. Default `TARGET_LANG` unset preserves all existing polish behaviour exactly; native arc polish still validates headings as *unchanged*. Non-arc translation (Slice 1) is unaffected.
+
+References #317 (Slice 2) · Part of #255. Arc-mode FR/IT/PL/NL/ES and broader arc coverage tracked in #318 (Slice 3).
+
 ## [7.4.0] - 2026-05-26
 
 > The skill internal bump 7.3.3 → 7.4.0 ships in plugin release 0.4.0.

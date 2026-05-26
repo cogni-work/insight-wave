@@ -35,7 +35,7 @@ Translate the prose. Preserve the scaffolding. The list below is exhaustive — 
 ### Translate (target language)
 
 - Body paragraphs, sentences, clauses
-- Heading text (H1, H2, H3) — except when `arc_id` is present (arc-mode translation is blocked in v1)
+- Heading text (H1, H2, H3) — **except arc-element and bridge headings in `arc_mode`**, which are **substituted** (not freely translated) from the canonical target-language set in `09-preservation-modes/arc-preservation.md` (see SKILL.md Step 2.5). EN↔DE arc-mode translation ships for `corporate-visions` and `jtbd-portfolio`; other arcs and non-EN/DE pairs stay blocked (#318).
 - Image captions, table cell prose, list item prose
 - Block-quote prose
 - Bold and italic phrase content (preserve the formatting markers, translate the text inside)
