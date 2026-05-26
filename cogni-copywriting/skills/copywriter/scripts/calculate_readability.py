@@ -2,10 +2,20 @@
 """
 Calculate readability metrics for markdown documents.
 
-Supports language-aware Flesch scoring:
-- English: standard Flesch formula (206.835 - 1.015*ASL - 84.6*ASW)
-- German:  Amstad formula (180 - ASL - 58.5*ASW), adapted for German
-           compound words and higher syllable counts
+Supports language-aware Flesch-family scoring across seven languages:
+- English: standard Flesch        (206.835 - 1.015*ASL - 84.6*ASW)
+- German:  Amstad (1978)          (180 - ASL - 58.5*ASW)
+- French:  Kandel-Moles           (207 - 1.015*ASL - 73.6*ASW)
+- Italian: Flesch-Vacca           (217 - 1.3*ASL - 60*ASW)
+- Spanish: Szigriszt-Pazos/INFLESZ (206.835 - ASL - 62.3*ASW)
+- Dutch:   Flesch-Douma           (206.84 - 0.93*ASL - 77*ASW)
+- Polish:  generic-Flesch fallback (206.835 - 1.015*ASL - 84.6*ASW)
+
+The German and English coefficients/counters are unchanged from prior
+releases. FR/IT/PL/NL/ES were added for #255 (translation Slice 1). These
+serve the relative-to-source rule in copywriter Step 5 (translation mode),
+where source and output are scored on the same target-language scale; the
+absolute bands are aspirational only.
 
 When German is detected, also runs Wolf-Schneider style analysis:
 - Clause length (target: max 12 words per clause)
@@ -14,17 +24,17 @@ When German is detected, also runs Wolf-Schneider style analysis:
 - Attribute chain detection (target: max 2 adjectives before noun)
 
 Usage:
-    python3 calculate_readability.py <file_path> [--lang de|en|auto]
+    python3 calculate_readability.py <file_path> [--lang de|en|fr|it|pl|nl|es|auto]
 
 Returns JSON with:
 - flesch_score: Flesch Reading Ease score (0-100)
-- flesch_target_min: Language-aware minimum target (EN: 50, DE: 30)
-- flesch_target_max: Language-aware maximum target (EN: 60, DE: 50)
+- flesch_target_min: Language-aware minimum target (EN/FR/IT/ES/NL/PL: 50, DE: 30)
+- flesch_target_max: Language-aware maximum target (EN/FR/IT/ES/NL/PL: 60, DE: 50)
 - avg_paragraph_length: Average sentences per paragraph (target 3-5)
 - total_paragraphs: Number of paragraphs in document
 - visual_elements: Count of tables, callouts, lists, bold sections
 - header_levels: Max header depth (target <=3)
-- detected_language: Language used for scoring (en or de)
+- detected_language: Language used for scoring (one of the seven codes)
 - german_style (only when de): Wolf-Schneider metrics
 """
 
@@ -57,43 +67,85 @@ ENGLISH_MARKERS = {
     'into', 'about', 'because', 'between', 'through', 'during',
 }
 
+# Distinctive function words for the five #255 Slice-1 languages. Kept
+# deliberately free of tokens that collide with English/German function
+# words so a pure-EN or pure-DE document never out-scores its own language
+# on these sets (the EN/DE decision boundary must stay byte-identical).
+FRENCH_MARKERS = {
+    'le', 'les', 'une', 'des', 'du', 'et', 'est', 'sont', 'avec', 'pour',
+    'dans', 'sur', 'par', 'ne', 'pas', 'ce', 'cette', 'ces', 'qui', 'que',
+    'vous', 'nous', 'leur', 'leurs', 'aux', 'aussi', 'mais', 'cela',
+}
+ITALIAN_MARKERS = {
+    'il', 'lo', 'gli', 'una', 'uno', 'di', 'del', 'della', 'che', 'sono',
+    'per', 'con', 'non', 'questo', 'questa', 'anche', 'dei', 'delle',
+    'nella', 'nel', 'sulla', 'perché',
+}
+SPANISH_MARKERS = {
+    'los', 'las', 'una', 'unos', 'unas', 'del', 'pero', 'que', 'con',
+    'sin', 'para', 'por', 'sus', 'como', 'este', 'esta', 'estos', 'estas',
+    'muy', 'donde', 'están', 'desde', 'hacia',
+}
+DUTCH_MARKERS = {
+    'het', 'een', 'van', 'voor', 'niet', 'deze', 'wij', 'zij', 'hij',
+    'maar', 'ook', 'naar', 'door', 'tussen', 'wordt', 'worden', 'zijn',
+    'heeft', 'hebben', 'vandaag', 'gisteren', 'omdat',
+}
+POLISH_MARKERS = {
+    'jest', 'są', 'nie', 'oraz', 'lub', 'ale', 'że', 'który', 'która',
+    'które', 'dla', 'przez', 'przy', 'jako', 'tylko', 'bardzo', 'można',
+    'się', 'wszystkie', 'między', 'więc',
+}
+
 
 def detect_language(text):
-    """Detect whether text is primarily German or English.
+    """Detect the primary language of the text.
 
-    Uses three signals:
-    1. German-specific characters (umlauts, eszett)
-    2. Function word frequency comparison
-    3. Compound word indicators (long words)
+    Argmax over a per-language score built from:
+    1. Language-specific characters (umlauts/eszett for DE; the FR/IT/ES/PL
+       diacritic classes — Dutch has none and leans on markers)
+    2. Function word frequency
+    3. Compound word indicators (long words — a DE signal)
 
-    Returns 'de' or 'en'.
+    `en` is the default and tie-breaker, so a pure-English or pure-German
+    document classifies exactly as it did before the FR/IT/PL/NL/ES branches
+    were added: `de` wins only when it strictly out-scores `en`, identical to
+    the previous `de_score > en_score else en` rule.
+
+    Returns one of: 'en', 'de', 'fr', 'it', 'pl', 'nl', 'es'.
     """
     words = re.findall(r'\b\w+\b', text.lower())
     if not words:
         return 'en'
 
     total = len(words)
+    text_len = max(len(text), 1)
 
-    # Signal 1: German-specific characters anywhere in the text
-    german_chars = len(re.findall(r'[äöüÄÖÜß]', text))
-    char_ratio = german_chars / max(len(text), 1)
+    def char_ratio(pattern):
+        return len(re.findall(pattern, text)) / text_len
 
-    # Signal 2: Function word frequency
-    de_hits = sum(1 for w in words if w in GERMAN_MARKERS)
-    en_hits = sum(1 for w in words if w in ENGLISH_MARKERS)
+    def marker_ratio(markers):
+        return sum(1 for w in words if w in markers) / total
 
-    de_ratio = de_hits / total
-    en_ratio = en_hits / total
+    # Long compound words (>=15 chars) are a strong German signal
+    long_ratio = sum(1 for w in words if len(w) >= 15) / total
 
-    # Signal 3: Long compound words (>=15 chars) are a strong German signal
-    long_words = sum(1 for w in words if len(w) >= 15)
-    long_ratio = long_words / total
+    scores = {
+        'en': marker_ratio(ENGLISH_MARKERS) * 50,
+        'de': char_ratio(r'[äöüÄÖÜß]') * 100 + marker_ratio(GERMAN_MARKERS) * 50 + long_ratio * 30,
+        'fr': char_ratio(r'[àâçéèêëîïôûùÿœæ]') * 100 + marker_ratio(FRENCH_MARKERS) * 50,
+        'it': char_ratio(r'[àèéìíòóù]') * 100 + marker_ratio(ITALIAN_MARKERS) * 50,
+        'es': char_ratio(r'[áíóúñ¿¡]') * 100 + marker_ratio(SPANISH_MARKERS) * 50,
+        'nl': marker_ratio(DUTCH_MARKERS) * 50,
+        'pl': char_ratio(r'[ąćęłńśźż]') * 100 + marker_ratio(POLISH_MARKERS) * 50,
+    }
 
-    # Scoring: weighted combination
-    de_score = (char_ratio * 100) + (de_ratio * 50) + (long_ratio * 30)
-    en_score = (en_ratio * 50)
-
-    return 'de' if de_score > en_score else 'en'
+    # `en` is the default winner on ties / all-zero, preserving prior behavior.
+    best_lang, best_score = 'en', scores['en']
+    for lang_code, score in scores.items():
+        if score > best_score:
+            best_lang, best_score = lang_code, score
+    return best_lang
 
 
 # --- Syllable Counting ---
@@ -164,25 +216,95 @@ def count_syllables_de(word):
     return count
 
 
+# Broad vowel set covering the FR/IT/PL/NL/ES diacritic vowels. Used by the
+# fallback counter so any source prose (incl. EN/DE) counts vowel groups
+# sensibly when scored on a new-language scale.
+_OTHER_VOWELS = "aeiouyàâäéèêëíìîïóòôöúùûüÿœæąę"
+
+
+def count_syllables_other(word, source_lang='en'):
+    """Vowel-group syllable estimate for FR/IT/PL/NL/ES.
+
+    A defensible relative approximation: count transitions into a vowel over a
+    broad accented-vowel set, then apply the silent-final-`e` subtraction when
+    the *source* prose is English or French (both have silent final `-e`). The
+    counter reflects source-prose phonology while the Flesch formula runs on the
+    requested target scale — same split as the EN counter's `source_lang` gate
+    (#261). PL/NL counting is approximate (no nasal-vowel or digraph handling).
+    """
+    word = word.lower()
+    count = 0
+    previous_was_vowel = False
+
+    for char in word:
+        is_vowel = char in _OTHER_VOWELS
+        if is_vowel and not previous_was_vowel:
+            count += 1
+        previous_was_vowel = is_vowel
+
+    if word.endswith('e') and source_lang in ('en', 'fr'):
+        count -= 1
+
+    if count == 0:
+        count = 1
+
+    return count
+
+
+def count_syllables(word, lang, source_lang='en'):
+    """Dispatch to the language-appropriate syllable counter.
+
+    `de` and `en` route to the original, untouched counters so their behavior
+    (incl. the #258 umlaut vowel set and #261 silent-`e` gate) stays
+    byte-identical. FR/IT/PL/NL/ES use the broad fallback counter.
+    """
+    if lang == 'de':
+        return count_syllables_de(word)
+    if lang == 'en':
+        return count_syllables_en(word, source_lang=source_lang)
+    return count_syllables_other(word, source_lang=source_lang)
+
+
 # --- Flesch Scoring ---
 
+# Flesch-family coefficients: score = base - asl_coef*ASL - asw_coef*ASW.
+# EN (standard Flesch) and DE (Amstad 1978) are unchanged from prior releases.
+FLESCH_COEFFS = {
+    'en': (206.835, 1.015, 84.6),   # standard Flesch
+    'de': (180.0, 1.0, 58.5),       # Amstad (1978)
+    'fr': (207.0, 1.015, 73.6),     # Kandel-Moles
+    'it': (217.0, 1.3, 60.0),       # Flesch-Vacca
+    'es': (206.835, 1.0, 62.3),     # Szigriszt-Pazos (INFLESZ)
+    'nl': (206.84, 0.93, 77.0),     # Flesch-Douma
+    'pl': (206.835, 1.015, 84.6),   # generic-Flesch fallback + PL syllables
+}
+
+# Language-aware Flesch target bands (informational). DE sits lower because the
+# Amstad formula yields lower scores for compound-heavy prose. The FR/IT/PL/NL/ES
+# bands are aspirational only — translation Step 5 enforces the relative rule.
+FLESCH_TARGETS = {
+    'en': (50, 60),
+    'de': (30, 50),
+    'fr': (50, 60),
+    'it': (50, 60),
+    'es': (50, 60),
+    'nl': (50, 60),
+    'pl': (50, 60),
+}
+
 def calculate_flesch_score(text, lang='auto'):
-    """Calculate Flesch Reading Ease score.
+    """Calculate the Flesch-family Reading Ease score.
 
-    Uses the standard English formula or the German Amstad (1978)
-    formula depending on detected or specified language.
-
-    English: FRE = 206.835 - 1.015 * ASL - 84.6 * ASW
-    German:  FRE = 180 - ASL - 58.5 * ASW
+    Applies the coefficients in FLESCH_COEFFS for the detected or specified
+    language. `lang` is the FORMULA language (target scale); `source_lang` is
+    the actual prose language, used for source-faithful syllable adjustments.
+    The two differ in Step 5 cross-language scoring (e.g. DE/EN prose scored on
+    the FR scale for a translation's relative-to-source check).
     """
     # Remove markdown formatting but keep text
     text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)  # Links
     text = re.sub(r'[*_`#>-]', '', text)  # Markdown symbols
 
-    # `lang` is the Flesch FORMULA language (target). `source_lang` is the
-    # actual prose language (used for source-faithful syllable adjustments).
-    # The two differ in Step 5 cross-language scoring (e.g. DE prose on the
-    # EN scale).
     source_lang = detect_language(text)
     if lang == 'auto':
         lang = source_lang
@@ -199,13 +321,9 @@ def calculate_flesch_score(text, lang='auto'):
     if not words:
         return 0, lang
 
-    # Count syllables using language-appropriate function
-    if lang == 'de':
-        total_syllables = sum(count_syllables_de(word) for word in words)
-    else:
-        total_syllables = sum(
-            count_syllables_en(word, source_lang=source_lang) for word in words
-        )
+    # Count syllables using the language-appropriate counter (dispatcher keeps
+    # EN/DE byte-identical; FR/IT/PL/NL/ES use the fallback counter).
+    total_syllables = sum(count_syllables(word, lang, source_lang) for word in words)
 
     total_words = len(words)
     total_sentences = len(sentences)
@@ -213,13 +331,8 @@ def calculate_flesch_score(text, lang='auto'):
     asl = total_words / total_sentences  # Average Sentence Length
     asw = total_syllables / total_words  # Average Syllables per Word
 
-    # Apply language-specific formula
-    if lang == 'de':
-        # Amstad (1978) formula for German
-        score = 180 - asl - (58.5 * asw)
-    else:
-        # Standard English Flesch formula
-        score = 206.835 - (1.015 * asl) - (84.6 * asw)
+    base, asl_coef, asw_coef = FLESCH_COEFFS.get(lang, FLESCH_COEFFS['en'])
+    score = base - (asl_coef * asl) - (asw_coef * asw)
 
     return round(score, 1), lang
 
@@ -370,15 +483,10 @@ def analyze_document(file_path, lang='auto'):
     headers = re.findall(r'^(#+)\s', content, re.MULTILINE)
     max_header_level = max(len(h) for h in headers) if headers else 0
 
-    # Language-aware Flesch targets
-    # English: 50-60 (standard business writing)
-    # German:  30-50 (Amstad formula yields lower scores due to compound words)
-    if detected_lang == 'de':
-        flesch_target_min = 30
-        flesch_target_max = 50
-    else:
-        flesch_target_min = 50
-        flesch_target_max = 60
+    # Language-aware Flesch targets (see FLESCH_TARGETS). German sits at 30-50
+    # because the Amstad formula yields lower scores for compound-heavy prose;
+    # all other supported languages use the 50-60 business band.
+    flesch_target_min, flesch_target_max = FLESCH_TARGETS.get(detected_lang, (50, 60))
 
     result = {
         "flesch_score": flesch_score,
@@ -400,7 +508,7 @@ def analyze_document(file_path, lang='auto'):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "Usage: python3 calculate_readability.py <file_path> [--lang de|en|auto]"}))
+        print(json.dumps({"error": "Usage: python3 calculate_readability.py <file_path> [--lang de|en|fr|it|pl|nl|es|auto]"}))
         sys.exit(1)
 
     file_path = sys.argv[1]
@@ -411,8 +519,8 @@ if __name__ == "__main__":
         lang_idx = sys.argv.index('--lang')
         if lang_idx + 1 < len(sys.argv):
             lang = sys.argv[lang_idx + 1]
-            if lang not in ('de', 'en', 'auto'):
-                print(json.dumps({"error": "Invalid --lang value. Use: de, en, or auto"}))
+            if lang not in ('de', 'en', 'fr', 'it', 'pl', 'nl', 'es', 'auto'):
+                print(json.dumps({"error": "Invalid --lang value. Use: de, en, fr, it, pl, nl, es, or auto"}))
                 sys.exit(1)
 
     try:

@@ -1,7 +1,7 @@
 ---
 name: copywrite
 description: Polish markdown documents for executive readability using McKinsey Pyramid Principle, or polish text fields inside JSON files via the copy-json adapter
-usage: /copywrite <file> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--fields="selector"] [--mode=standard|sales] [--translate=de|en] [--dry-run]
+usage: /copywrite <file> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--fields="selector"] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
 aliases: [polish, executive-polish]
 category: content-editing
 allowed-tools: [Read, Task, Bash, Skill]
@@ -14,8 +14,8 @@ Polish markdown documents into executive-ready content through the copywriter ag
 ## Usage
 
 ```
-/copywrite <file.md> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--translate=de|en]
-/copywrite <file.json> --fields="<selector>" [--scope=tone] [--mode=standard|sales] [--translate=de|en] [--dry-run]
+/copywrite <file.md> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
+/copywrite <file.json> --fields="<selector>" [--scope=tone] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
 ```
 
 ## Parameters
@@ -55,9 +55,10 @@ Polish markdown documents into executive-ready content through the copywriter ag
 - **--translate** - Translate source content into the target language before polishing (default: unset)
   - `de` — translate to German, then apply Wolf-Schneider style discipline
   - `en` — translate to English, then apply Flesch readability targets
+  - `fr` | `it` | `pl` | `nl` | `es` — translate to French / Italian / Polish / Dutch / Spanish, then apply that language's clarity discipline and Flesch-family readability
   - Requires source language ≠ target. Source language is detected automatically (or set via `--lang`).
-  - v1 supports EN↔DE only. Other target languages will be rejected.
-  - **Not supported in arc mode** — when the document frontmatter contains `arc_id`, translation aborts (arc heading texts require exact-match preservation).
+  - **Pivots on EN or DE.** Every direction must include English or German on one end (e.g. `en→fr`, `fr→de`). Direct non-EN/DE pairs (e.g. `fr→it`) are rejected — pivot via EN or DE, or follow #255 (Phase 3).
+  - **Not supported in arc mode** — when the document frontmatter contains `arc_id`, translation aborts (arc heading texts require exact-match preservation). Arc-mode translation is tracked in #255.
   - When set, scope is overridden to ensure a full translate-and-polish cycle (Step 2 framework restructure is skipped; Steps 3 + 5 always run).
 
 - **--dry-run** - Show before/after diff without modifying the file (JSON only)
@@ -327,7 +328,7 @@ VALIDATE parsed values:
   - Flesch target must be numeric range
   - IF .json: --fields must be provided
   - IF .md: --fields, --mode, --dry-run are ignored
-  - IF --translate set: value must be `de` or `en` (v1); other languages rejected with a Phase 2 pointer
+  - IF --translate set: value must be one of `de|en|fr|it|pl|nl|es`; other values rejected. The skill's pivot guard additionally rejects direct non-EN/DE pairs (source and target both outside `{en,de}`)
 
 ROUTE --translate value through to the copywriter agent as TARGET_LANG=<value>.
 The agent passes it to the copywriter skill, which runs the translate-then-polish two-pass flow (Step 2.5 then Step 3).
@@ -550,4 +551,4 @@ IF copywriter agent fails:
 - JSON files get an automatic backup (`.pre-copy-json.json`) before modification
 - JSON polishing preserves original file indentation
 - Use `--dry-run` with JSON to preview changes before committing them
-- `--translate` creates the same `.{filename}` backup as a regular polish (no separate translation backup naming); v1 supports `de` and `en` only and aborts when the document has `arc_id` in its frontmatter
+- `--translate` creates the same `.{filename}` backup as a regular polish (no separate translation backup naming); supports `de|en|fr|it|pl|nl|es` (pivoting on EN or DE), rejects direct non-EN/DE pairs, and aborts when the document has `arc_id` in its frontmatter

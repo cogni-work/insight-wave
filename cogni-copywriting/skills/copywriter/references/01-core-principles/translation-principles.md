@@ -108,11 +108,44 @@ python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG   # out
 
 See `SKILL.md` § Step 5 "Translation-specific validation" → "Readability relative to source" for the validator wiring.
 
-## Per-Direction References
+## Per-Language Charset Rules
 
-Load the matching direction file for source-target-specific rules:
+Each target language has a required diacritic set. The translate pass must produce these characters at write time — never ASCII substitutes — and Step 5 validation rejects output that violates the rule. This table is the single source of truth; `SKILL.md` Step 5 and `copy-json` Step 3 both point here.
 
-- **EN → DE** — `translation-en-to-de.md`
-- **DE → EN** — `translation-de-to-en.md`
+| Target | Required diacritics | ASCII substitutes (forbidden) |
+|---|---|---|
+| `de` | ä ö ü ß (+ uppercase) | ae oe ue ss |
+| `fr` | é è ê ç (also à â ë î ï ô û ù) | bare a/e/c |
+| `it` | à è é ì ò ù | bare a/e/i/o/u |
+| `pl` | ą ć ę ł ń ó ś ź ż | bare a/c/e/l/n/o/s/z |
+| `es` | á é í ó ú ñ (also ¿ ¡) | bare a/e/i/o/u, n for ñ |
+| `nl` | none (ASCII) — Dutch business prose needs no special diacritics | n/a |
+| `en` | none — output must contain **no** ä/ö/ü/ß except inside preserved proper nouns or quoted source-language terms | n/a |
 
-These files contain the linguistic specifics (Satzklammer setup, gender resolution, compound decomposition) that the generic principles above do not cover.
+When translating **into** EN, the charset rule is *absence*: the only umlauts/accents permitted are inside preserved proper nouns (`Müller`, `Citroën`) or explicitly quoted source-language terms.
+
+## Per-Direction References (Deterministic Dispatch)
+
+There is exactly one direction file per valid pair, named `translation-{source}-to-{target}.md`. After loading this `translation-principles.md` hub, construct the filename from the resolved `source_lang` and `TARGET_LANG` and load it:
+
+```
+LOAD: references/01-core-principles/translation-{source_lang}-to-{TARGET_LANG}.md
+```
+
+These files contain the linguistic specifics (register, diacritic traps, compound handling, clause-splitting, number/date conventions, worked example) that the generic principles above do not cover.
+
+### Validity matrix (which pairs have a direction file)
+
+Slice 1 (#255) supports any direction with **EN or DE on one end** — the lingua-franca pivot. Direct non-EN/DE pairs are Phase 3 and are rejected by the Step 1 pivot guard before this dispatch runs. The diagonal is a no-op (source == target).
+
+| src \ tgt | en | de | fr | it | pl | nl | es |
+|---|---|---|---|---|---|---|---|
+| **en** | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **de** | ✓ | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **fr** | ✓ | ✓ | — | ✗ | ✗ | ✗ | ✗ |
+| **it** | ✓ | ✓ | ✗ | — | ✗ | ✗ | ✗ |
+| **pl** | ✓ | ✓ | ✗ | ✗ | — | ✗ | ✗ |
+| **nl** | ✓ | ✓ | ✗ | ✗ | ✗ | — | ✗ |
+| **es** | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | — |
+
+✓ = direction file exists (22 total: the 2 original EN↔DE + 20 added in Slice 1). ✗ = Phase 3 (pivot via EN or DE, or follow #255). The pre-checks in `SKILL.md` Step 1 guarantee that only ✓ pairs reach the dispatch.

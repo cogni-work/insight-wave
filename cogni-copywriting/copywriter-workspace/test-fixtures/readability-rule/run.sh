@@ -8,6 +8,8 @@
 #
 # Exits 0 iff every fixture's actual verdict matches its expected verdict.
 # Closes #258 (umlaut syllable counter) + #259 (this fixture suite).
+# Extended for #255 Slice 1 with FR composition + ES decomposition fixtures
+# that exercise the FR (Kandel-Moles) formula and ES source detection.
 
 set -euo pipefail
 
@@ -20,12 +22,16 @@ DE_SOURCE="$REPO_ROOT/cogni-copywriting/copywriter-workspace/test-docs/german-wi
 EN_TRANSLATION="$HERE/de-dense-source.en.md"
 EN_CLEAN="$HERE/en-clean-source.md"
 EN_DEGRADED="$HERE/en-degraded-translation.md"
+# #255 Slice 1 fixtures
+FR_OUTPUT="$HERE/en-clean-source.fr.md"   # faithful, polished FR of EN_CLEAN
+ES_SOURCE="$HERE/es-clean-source.md"      # clean ES source
+ES_OUTPUT="$HERE/es-clean-source.en.md"   # faithful EN of the ES source
 
 if [[ ! -f "$SCRIPT" ]]; then
   echo "ERROR: calculate_readability.py not found at $SCRIPT" >&2
   exit 2
 fi
-for f in "$DE_SOURCE" "$EN_TRANSLATION" "$EN_CLEAN" "$EN_DEGRADED"; do
+for f in "$DE_SOURCE" "$EN_TRANSLATION" "$EN_CLEAN" "$EN_DEGRADED" "$FR_OUTPUT" "$ES_SOURCE" "$ES_OUTPUT"; do
   if [[ ! -f "$f" ]]; then
     echo "ERROR: fixture missing: $f" >&2
     exit 2
@@ -70,6 +76,22 @@ fi
 # Fixture 2: clean EN source vs degraded EN "translation" should fail
 # the rule, sanity-checking that real style degradation is caught.
 if run_fixture "degraded" "$EN_CLEAN" "$EN_DEGRADED" "en" "FAIL"; then
+  matched=$((matched + 1))
+else
+  mismatched=$((mismatched + 1))
+fi
+
+# Fixture 3 (#255): composition EN -> FR. EN source and a faithful, polished
+# FR rendering both scored on the FR (Kandel-Moles) scale should pass the rule.
+if run_fixture "en-to-fr" "$EN_CLEAN" "$FR_OUTPUT" "fr" "PASS"; then
+  matched=$((matched + 1))
+else
+  mismatched=$((mismatched + 1))
+fi
+
+# Fixture 4 (#255): decomposition ES -> EN. Dense ES source and a faithful EN
+# translation both scored on the EN scale should pass the rule.
+if run_fixture "es-to-en" "$ES_SOURCE" "$ES_OUTPUT" "en" "PASS"; then
   matched=$((matched + 1))
 else
   mismatched=$((mismatched + 1))

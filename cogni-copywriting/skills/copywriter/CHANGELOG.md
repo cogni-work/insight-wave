@@ -5,6 +5,46 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.4.0] - 2026-05-26
+
+> The skill internal bump 7.3.3 → 7.4.0 ships in plugin release 0.4.0.
+
+### Added — Translation languages FR/IT/PL/NL/ES (non-arc, EN/DE pivot)
+
+Extends the EN↔DE translate-then-polish flow (v0.3.0) to French, Italian, Polish, Dutch, and Spanish for **non-arc** documents. This is **Slice 1** of #255; arc-mode translation and direct non-EN/DE pairs remain out of scope (see below).
+
+#### What ships
+
+- **20 new direction reference files** under `references/01-core-principles/`: `translation-{src}-to-{tgt}.md` for every pair with EN or DE on one end — `{en,de}→{fr,it,pl,nl,es}` (composition) and `{fr,it,pl,nl,es}→{en,de}` (decomposition). Composition files carry target-language register (FR vous / IT Lei / ES usted / NL u / PL Pan-Pani), diacritic-correctness tables, number/date/currency conventions, and a worked example. DE-pivot composition files cross-reference the matching EN-pivot file for the full target-production rules; X→de files cross-reference `translation-en-to-de.md` for German production.
+- **Per-language readability** in `scripts/calculate_readability.py`: FR (Kandel-Moles), IT (Flesch-Vacca), ES (Szigriszt-Pazos/INFLESZ), NL (Flesch-Douma), PL (generic-Flesch fallback). A 7-way `detect_language`, a `count_syllables(word, lang, source_lang)` dispatcher, a `FLESCH_COEFFS` table, and a `FLESCH_TARGETS` table. **EN/DE coefficients, counters, and detector classification are unchanged** — the dispatcher routes `de`/`en` to the untouched `count_syllables_de`/`count_syllables_en`, so the #258/#261-protected cross-language scores stay byte-identical.
+- **Deterministic dispatch**: `SKILL.md` Step 2.5 and `00-index.md` CHECK 0 now construct `translation-{source_lang}-to-{TARGET_LANG}.md` from the resolved languages instead of an IF-ladder. `translation-principles.md` gains a single-source-of-truth charset table and a 7×7 validity matrix.
+- **Pivot guard**: new Step 1 pre-check #5 rejects directions where neither end is EN or DE (e.g. fr→it) with an actionable message. The accept-set check (#4) widens to `{de,en,fr,it,pl,nl,es}`. The `arc_id` abort (#3) stays blocking.
+- **Pass rule unchanged**: Step 5 still uses the relative-to-source rule (`output_score ≥ source_score − 5`), scoring source and output on the target-language scale. New-language absolute bands are aspirational only; PL counting is a documented defensible approximation.
+
+#### Cross-plugin invocation (#255 §3) — decision: explicit
+
+Translation stays an **explicit** `/copywrite --translate=` step. Downstream adapters (`cogni-narrative narrative-adapt`, `cogni-marketing channel-adapter`, `cogni-portfolio customer-narrative-writer`) do **not** silently chain translation — this avoids hidden language-switches in pipelines. No code change; a recorded decision.
+
+#### Changed Files
+
+- **NEW** under `references/01-core-principles/`: 20 `translation-{src}-to-{tgt}.md` files (FR/IT/PL/NL/ES pivot directions).
+- `references/01-core-principles/translation-principles.md` — Per-Language Charset Rules section; deterministic dispatch + 7×7 validity matrix replacing the EN↔DE-only direction list.
+- `scripts/calculate_readability.py` — 7-way detector (EN/DE classification preserved); `count_syllables` dispatcher + `count_syllables_other`; `FLESCH_COEFFS` / `FLESCH_TARGETS` tables; CLI accepts `de|en|fr|it|pl|nl|es|auto`.
+- `contracts/readability.yml` — 1.2.0 → 1.3.0; widened `--lang` enum and `detected_language`.
+- `scripts/readability.sh` — 7-code formula-name display; widened usage/help.
+- `SKILL.md` — `TARGET_LANG` param, Step 1 pre-checks (#4 widened, #5 pivot guard), Step 2.5 deterministic dispatch, Step 5 charset rules, bundled resources.
+- `references/00-index.md` — CHECK 0 deterministic dispatch; File Inventory (+20 files); version 8.2 → 8.3.
+- `agents/copywriter.md`, `commands/copywrite.md`, `skills/copy-json/SKILL.md` — widened accept-set, pivot/arc notes, shared charset pointer.
+- `copywriter-workspace/test-docs/sample.{fr,it,es,nl,pl}.md` — new per-language sample docs.
+- `copywriter-workspace/test-fixtures/readability-rule/` — new FR/ES relative-rule fixtures wired into `run.sh`.
+- Docs/version: `README.md`, `CLAUDE.md`, `.claude-plugin/plugin.json` (0.3.3 → 0.4.0), marketplace mirror.
+
+#### Migration Notes
+
+Non-breaking. Default `TARGET_LANG` unset preserves all existing polish behaviour exactly; EN/DE scoring (including the v0.3.1–0.3.3 cross-language relative rule) is byte-identical because the syllable dispatcher delegates `de`/`en` to the original counters and the detector keeps EN/DE classification. Arc-mode translation and direct non-EN/DE pairs are explicitly blocked with actionable messages.
+
+References #255 (Slice 1). Arc-mode (Slice 2 EN↔DE, Slice 3 FR/IT/PL/NL/ES) tracked as follow-up children of #255.
+
 ## [7.3.3] - 2026-05-19
 
 > The skill internal bump 7.3.2 → 7.3.3 ships in plugin release 0.3.3.

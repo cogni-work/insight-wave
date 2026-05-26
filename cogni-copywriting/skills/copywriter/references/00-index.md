@@ -1,8 +1,8 @@
 ---
 title: Copywriting Skills Master Index
 type: index
-version: 8.2
-last_updated: 2026-05-19
+version: 8.3
+last_updated: 2026-05-26
 ---
 
 # Reference Loading Index
@@ -23,13 +23,12 @@ If `TARGET_LANG` is set and resolves to a different value from the detected sour
 
 ```
 LOAD: 01-core-principles/translation-principles.md
-IF source_lang = en AND TARGET_LANG = de:
-  LOAD: 01-core-principles/translation-en-to-de.md
-IF source_lang = de AND TARGET_LANG = en:
-  LOAD: 01-core-principles/translation-de-to-en.md
+LOAD: 01-core-principles/translation-{source_lang}-to-{TARGET_LANG}.md
 ```
 
-When `TARGET_LANG` is set, CHECK 1 (Arc) must NOT trigger — arc-mode translation is blocked in v1 (the skill aborts in Step 1 with an error). Proceed only into CHECK 2 (sales) or CHECK 3 (standard).
+Construct the direction filename deterministically from the resolved `source_lang` and `TARGET_LANG` (e.g. `en`→`fr` → `translation-en-to-fr.md`; `pl`→`de` → `translation-pl-to-de.md`). The Step 1 pre-checks (accept-set + pivot guard) guarantee a valid pair, so the file always exists. The 22 supported directions are the 7×7 validity matrix in `translation-principles.md` (any pair with EN or DE on one end; diagonal is a no-op; direct non-EN/DE pairs are rejected upstream).
+
+When `TARGET_LANG` is set, CHECK 1 (Arc) must NOT trigger — arc-mode translation is blocked (the skill aborts in Step 1 with an error). Proceed only into CHECK 2 (sales) or CHECK 3 (standard).
 
 After loading the translation references, continue with normal mode detection below.
 
@@ -283,9 +282,29 @@ All reference files in this system, organized by directory. Use this as the sour
 - `german-hook-principles.md` -- Wolf Schneider / Reiners / Nannen: 12 opening-sentence rules, Kuechenzuruf test, arc hook strategies
 - `plain-language-principles.md` -- Technical content accessibility
 - `readability-principles.md` -- Visual hierarchy and scannability
-- `translation-principles.md` -- Two-pass translate-then-polish philosophy; what to translate vs preserve; citation-anchored translation
+- `translation-principles.md` -- Two-pass translate-then-polish philosophy; what to translate vs preserve; citation-anchored translation; per-language charset table; deterministic dispatch + 7×7 validity matrix
 - `translation-en-to-de.md` -- EN→DE: Satzklammer formation, compound nouns, gender resolution, Sie-form, umlaut correctness
 - `translation-de-to-en.md` -- DE→EN: compound decomposition, sentence splitting, nominal→verbal style, number/date formatting
+- `translation-en-to-fr.md` -- EN→FR: vouvoiement, accent correctness, de-phrases, number/date conventions
+- `translation-en-to-it.md` -- EN→IT: Lei courtesy form, accents (è vs e), di-phrases, number/date conventions
+- `translation-en-to-es.md` -- EN→ES: usted, accents + ñ, inverted ¿¡, number/date conventions
+- `translation-en-to-nl.md` -- EN→NL: u-vorm, ASCII charset, closed compounds, V2/clause-final verbs
+- `translation-en-to-pl.md` -- EN→PL: Pan/Pani, ą/ć/ę/ł/ń/ó/ś/ź/ż, seven-case inflection, generic-Flesch note
+- `translation-de-to-fr.md` -- DE→FR: Sie→vous, compound decomposition, Satzklammer flattening (target rules → en-to-fr)
+- `translation-de-to-it.md` -- DE→IT: Sie→Lei, compound decomposition (target rules → en-to-it)
+- `translation-de-to-es.md` -- DE→ES: Sie→usted, compound decomposition (target rules → en-to-es)
+- `translation-de-to-nl.md` -- DE→NL: Sie→u, morpheme re-spelling, cognate false friends (target rules → en-to-nl)
+- `translation-de-to-pl.md` -- DE→PL: Sie→Pan/Pani, compound decomposition, case-driven order (target rules → en-to-pl)
+- `translation-fr-to-en.md` -- FR→EN: false friends, sentence splitting, no-accent charset, number conversion
+- `translation-it-to-en.md` -- IT→EN: false friends, sentence splitting, no-accent charset, number conversion
+- `translation-es-to-en.md` -- ES→EN: false friends, drop inverted punctuation, no-accent charset, number conversion
+- `translation-nl-to-en.md` -- NL→EN: compound decomposition, clause-final verb reordering, false friends
+- `translation-pl-to-en.md` -- PL→EN: restore articles, fix case-driven order, false friends, no-diacritic charset
+- `translation-fr-to-de.md` -- FR→DE: vous→Sie, recompose compounds, false friends (German production → en-to-de)
+- `translation-it-to-de.md` -- IT→DE: Lei→Sie, recompose compounds, false friends (German production → en-to-de)
+- `translation-es-to-de.md` -- ES→DE: usted→Sie, drop ¿¡, recompose compounds (German production → en-to-de)
+- `translation-nl-to-de.md` -- NL→DE: u→Sie, re-spell compounds + add umlauts, cognate false friends (German production → en-to-de)
+- `translation-pl-to-de.md` -- PL→DE: Pan/Pani→Sie, add articles, recompose compounds (German production → en-to-de)
 
 ### 02-messaging-frameworks/
 - `bluf-framework.md` -- Bottom Line Up Front

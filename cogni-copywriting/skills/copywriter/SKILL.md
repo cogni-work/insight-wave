@@ -79,7 +79,7 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 - `impact_level` (optional): standard | high
 - `MODE` (optional): standard | sales (default: standard)
 - `AUDIENCE` (optional): expert | mixed | lay (default: mixed) — tunes audience-aware disciplines such as acronym expansion depth
-- `TARGET_LANG` (optional): de | en — when set, runs a translate-then-polish two-pass flow (see Step 2.5). When unset, the skill polishes in the source language only.
+- `TARGET_LANG` (optional): de | en | fr | it | pl | nl | es — when set, runs a translate-then-polish two-pass flow (see Step 2.5). When unset, the skill polishes in the source language only. Translation requires EN or DE on one end of the pair (the pivot); direct non-EN/DE pairs (e.g. fr↔it) are rejected — see pre-check #5.
 
 **Audience resolution order** (used by acronym handling and any future audience-aware discipline):
 
@@ -97,10 +97,13 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 
 1. Resolve `source_lang` via the existing detector in Step 3 (`--lang` → workspace config → content analysis).
 2. If `source_lang == TARGET_LANG`, log "source language already matches target — skipping translation pass" and fall through to standard polish. **Also unset the translation scope override below** so the user's explicit `--scope` is honoured (a user invoking `--scope=full` on a same-language doc expects Step 2 to run normally).
-3. If document frontmatter contains `arc_id`, abort with: "Arc-mode translation is not supported in v1 (arc heading texts require exact-match preservation; translating them would break the arc contract). Run translation on the non-arc document, or follow the Phase 2 issue for arc-mode translation support." Do not modify the file.
-4. In v1, accept only `de` and `en`. Any other value: abort with "TARGET_LANG=`{value}` is not supported in v1 (EN↔DE only). See the follow-up issue for FR/IT/PL/NL/ES."
+3. If document frontmatter contains `arc_id`, abort with: "Arc-mode translation is not supported yet (arc heading texts require exact-match preservation; translating them would break the arc contract). Run translation on the non-arc document, or follow #255 for arc-mode translation support." Do not modify the file. (Arc-mode translation is tracked as Slice 2/3 of #255 — it stays blocking here.)
+4. **Accept-set check.** Accept only `de`, `en`, `fr`, `it`, `pl`, `nl`, `es`. Any other value: abort with "TARGET_LANG=`{value}` is not a supported language. Supported: de, en, fr, it, pl, nl, es."
+5. **Pivot guard.** Translation pivots on EN or DE. If **neither** `source_lang` **nor** `TARGET_LANG` is in `{en, de}` (e.g. a French source with `TARGET_LANG=it`), abort with: "Direct {source_lang}→{TARGET_LANG} translation is not supported — every direction must include English or German on one end. Pivot via EN or DE (translate to en/de first, then to the final language), or follow #255 for direct non-EN/DE pairs (Phase 3)." Do not modify the file.
 
-The scope override and Step 2.5 below apply only when `TARGET_LANG` is set **and** the source==target no-op did not fire (i.e. translation actually runs).
+**Pre-check order:** resolve source (1) → no-op (2) → arc abort (3) → accept-set (4) → pivot guard (5). The arc and accept-set messages are the most actionable, so they win when multiple conditions hold.
+
+The scope override and Step 2.5 below apply only when `TARGET_LANG` is set **and** the source==target no-op did not fire (i.e. translation actually runs). When translation runs, the pre-checks guarantee a valid direction pair (one end EN or DE, both in the accept-set), so a `translation-{source_lang}-to-{TARGET_LANG}.md` file is guaranteed to exist.
 
 **Load the reference index first:**
 
@@ -141,14 +144,13 @@ Skip entirely when `TARGET_LANG` is unset. When set, this pass runs after Step 2
 READ: references/01-core-principles/translation-principles.md
 ```
 
-Then load the direction-specific guide:
+Then load the direction-specific guide by constructing its filename deterministically from the resolved languages (the Step 1 pre-checks guarantee a valid pair, so this file always exists):
 
 ```text
-IF source_lang = en AND TARGET_LANG = de:
-  READ: references/01-core-principles/translation-en-to-de.md
-IF source_lang = de AND TARGET_LANG = en:
-  READ: references/01-core-principles/translation-de-to-en.md
+READ: references/01-core-principles/translation-{source_lang}-to-{TARGET_LANG}.md
 ```
+
+For example: `en`→`fr` loads `translation-en-to-fr.md`; `pl`→`de` loads `translation-pl-to-de.md`. The validity matrix in `translation-principles.md` lists all 22 supported directions. DE-pivot composition files (e.g. `translation-de-to-fr.md`) cross-reference the matching EN-pivot file for the full target-language production rules; X→de files cross-reference `translation-en-to-de.md` for German production.
 
 **Perform the translation (Pass A):**
 
@@ -255,7 +257,14 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 
 **Translation-specific validation** (only when `TARGET_LANG` was set):
 
-- **Target charset matches** — when `TARGET_LANG=de`, output contains German umlauts/eszett (ä/ö/ü/ß) where the German prose requires them; never ASCII substitutes (ae/oe/ue/ss). When `TARGET_LANG=en`, output contains no ä/ö/ü/ß characters except inside preserved proper nouns or quoted German terms.
+- **Target charset matches** — validate against the per-language diacritic rules in `references/01-core-principles/translation-principles.md` § "Per-Language Charset Rules" (the single source of truth). In summary:
+  - `de`: output contains ä/ö/ü/ß where German prose requires them; never ASCII substitutes (ae/oe/ue/ss).
+  - `fr`: required accents é/è/ê/ç (and à/â/ë/î/ï/ô/û/ù); no bare-vowel substitutes.
+  - `it`: required accents à/è/é/ì/ò/ù; note è (is) vs e (and).
+  - `pl`: required ą/ć/ę/ł/ń/ó/ś/ź/ż; no bare-Latin substitutes.
+  - `es`: required á/é/í/ó/ú/ñ (and inverted ¿/¡ on questions/exclamations); no bare-vowel substitutes, n→ñ never dropped.
+  - `nl`: ASCII — Dutch needs no special set; ensure no German umlauts leaked from the source.
+  - `en`: output contains no ä/ö/ü/ß or other diacritics except inside preserved proper nouns or quoted source-language terms.
 - **Citation count exactly preserved** — for each of the four citation-marker patterns supported by the skill, the regex count in the output equals the source count, and every URL is byte-identical to its source URL:
   1. Inline cite with URL: `\[P\d+-\d+\]\([^)]+\)`
   2. Inline cite without URL: `\[P\d+-\d+\](?!\()`
@@ -318,19 +327,19 @@ Quality: Framework + Structure + Readability ✓
 
 ## Readability Script
 
-Language-aware Flesch scoring with German Wolf-Schneider analysis:
+Language-aware Flesch-family scoring with German Wolf-Schneider analysis:
 
 ```bash
-python3 scripts/calculate_readability.py <file_path> [--lang de|en|auto]
+python3 scripts/calculate_readability.py <file_path> [--lang de|en|fr|it|pl|nl|es|auto]
 ```
 
-Auto-detects language. Returns `flesch_score`, `flesch_target_min/max`, `avg_paragraph_length`, `visual_elements`, `header_levels`, and German-specific style metrics when applicable.
+Auto-detects language. Returns `flesch_score`, `flesch_target_min/max`, `avg_paragraph_length`, `visual_elements`, `header_levels`, and German-specific style metrics when applicable. FR/IT/PL/NL/ES use Flesch-family formulas (Kandel-Moles, Flesch-Vacca, generic fallback, Flesch-Douma, Szigriszt-Pazos); their absolute target bands are aspirational — translation Step 5 enforces the relative-to-source rule.
 
 ## Bundled Resources
 
 All references are organized in progressive disclosure tiers. Start with `references/00-index.md` — it routes you to exactly the files needed for any given task.
 
-**Core Principles** (01-core-principles/) — Clarity, conciseness, active voice, German style (Wolf Schneider), German hooks, plain language, readability, acronym handling (audience-tuned first-mention expansion), translation (EN↔DE two-pass translate-then-polish)
+**Core Principles** (01-core-principles/) — Clarity, conciseness, active voice, German style (Wolf Schneider), German hooks, plain language, readability, acronym handling (audience-tuned first-mention expansion), translation (two-pass translate-then-polish; EN/DE-pivot directions for de/en/fr/it/pl/nl/es via `translation-{src}-to-{tgt}.md`)
 
 **Messaging Frameworks** (02-messaging-frameworks/) — BLUF, Pyramid, SCQA, Inverted Pyramid, STAR, PSB, FAB
 
