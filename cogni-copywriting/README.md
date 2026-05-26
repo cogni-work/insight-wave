@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin that turns AI-generated drafts into executive-ready documents. Seven messaging frameworks, five parallel stakeholder personas for blind-spot review, bilingual readability validation (English Flesch, German Amstad + Wolf Schneider), and Power Positions sales enhancement — while preserving upstream story arc structure from cogni-narrative. A `copy-json` adapter polishes text fields inside JSON files, and `audit-copywriter` verifies arc contracts stay in sync with cogni-narrative upstream.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin that turns AI-generated drafts into executive-ready documents. Seven messaging frameworks, five parallel stakeholder personas for blind-spot review, multilingual readability validation (Flesch-family scoring for DE/EN/FR/IT/PL/NL/ES, plus German Wolf Schneider), and Power Positions sales enhancement — while preserving upstream story arc structure from cogni-narrative. A `copy-json` adapter polishes text fields inside JSON files, and `audit-copywriter` verifies arc contracts stay in sync with cogni-narrative upstream.
 
 ## Why this exists
 
@@ -31,7 +31,7 @@ A professional editing toolkit for the insight-wave ecosystem. Seven messaging f
 4. **Preserve arcs** — when paired with cogni-narrative, detects story arc frontmatter and applies element-specific techniques without breaking arc structure
 5. **Polish JSON** — extract and polish text fields inside structured JSON files (plugin descriptions, propositions, category names) via the copy-json adapter
 6. **Audit** arc-preservation references against upstream cogni-narrative definitions — detect missing arcs, heading mismatches, technique inconsistencies
-7. **Translate** EN↔DE in a single pass — translates first, then applies target-language style discipline (Wolf-Schneider for DE, Flesch tuning for EN), preserving citations, frontmatter technical IDs, and protected content byte-identical
+7. **Translate** across DE/EN/FR/IT/PL/NL/ES (pivoting on EN or DE) — translates first, then applies target-language style discipline (Wolf-Schneider for DE, Flesch-family readability for the others), preserving citations, frontmatter technical IDs, and protected content byte-identical
 
 ## What it means for you
 
@@ -110,10 +110,15 @@ Detects German language automatically, loads Wolf Schneider style rules — brea
 
 | Language | Readability | Style Rules | Target Score | Translation |
 |----------|-------------|-------------|--------------|-------------|
-| English | Flesch Reading Ease | Messaging frameworks, active voice, visual hierarchy | 50-60 | EN ↔ DE via `--translate=en` |
-| German | Amstad | Wolf Schneider (7 rules: Satzklammer, Mittelfeld, Floskeln, Rhythmus, etc.) | 30-50 | EN ↔ DE via `--translate=de` |
+| English | Flesch Reading Ease | Messaging frameworks, active voice, visual hierarchy | 50-60 | via EN/DE pivot — `--translate=en` |
+| German | Amstad | Wolf Schneider (7 rules: Satzklammer, Mittelfeld, Floskeln, Rhythmus, etc.) | 30-50 | via EN/DE pivot — `--translate=de` |
+| French | Kandel-Moles | Vouvoiement, active voice, de-phrases | 50-60 (aspirational) | via EN/DE pivot — `--translate=fr` |
+| Italian | Flesch-Vacca | Lei courtesy form, di-phrases, accents | 50-60 (aspirational) | via EN/DE pivot — `--translate=it` |
+| Polish | generic-Flesch fallback | Pan/Pani, ą/ć/ę/ł/ń/ó/ś/ź/ż, case agreement | 50-60 (aspirational) | via EN/DE pivot — `--translate=pl` |
+| Dutch | Flesch-Douma | U-vorm, closed compounds, V2 order | 50-60 (aspirational) | via EN/DE pivot — `--translate=nl` |
+| Spanish | Szigriszt-Pazos | Usted, accents + ñ, inverted ¿¡ | 50-60 (aspirational) | via EN/DE pivot — `--translate=es` |
 
-Translation runs as a two-pass translate-then-polish flow: Pass A transfers meaning (preserving citations, URLs, frontmatter technical IDs, and protected content byte-identical); Pass B applies the target-language style discipline above. Arc-mode translation (documents with `arc_id` frontmatter) is not supported in v1 — additional languages (FR/IT/PL/NL/ES) and arc-mode translation are tracked as Phase 2 work.
+Translation runs as a two-pass translate-then-polish flow: Pass A transfers meaning (preserving citations, URLs, frontmatter technical IDs, and protected content byte-identical); Pass B applies the target-language style discipline above. Every direction pivots on EN or DE — direct non-EN/DE pairs (e.g. fr→it) are rejected. For the five additional languages the absolute Flesch-family band is aspirational; the translation validator enforces a relative-to-source rule on the same target-language scale. Non-arc FR/IT/PL/NL/ES translation ships now (#255 Slice 1); arc-mode translation (documents with `arc_id` frontmatter) and direct non-EN/DE pairs remain tracked in #255.
 
 ## Components
 

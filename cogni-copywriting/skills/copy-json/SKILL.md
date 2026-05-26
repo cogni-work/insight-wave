@@ -17,7 +17,7 @@ Adapter that bridges JSON files to the copywriter skill. Extracts text fields fr
 | `FIELDS` | yes | — | Dot-path field selector (e.g. `plugins[*].description`) |
 | `SCOPE` | no | `tone` | Passed to copywriter (`tone` is the right default for short JSON text) |
 | `MODE` | no | `standard` | `sales` for IS/DOES/MEANS fields |
-| `TARGET_LANG` | no | unset | `de` or `en` — when set, copywriter runs translate-then-polish on each field before writing back. v1 supports EN↔DE only. |
+| `TARGET_LANG` | no | unset | `de`/`en`/`fr`/`it`/`pl`/`nl`/`es` — when set, copywriter runs translate-then-polish on each field before writing back. Translation pivots on EN or DE (every direction includes English or German on one end); direct non-EN/DE pairs are rejected by the copywriter skill. |
 | `DRY_RUN` | no | `false` | Show before/after without writing |
 
 ## FIELDS Selector Syntax
@@ -91,10 +91,9 @@ Simple dot-path with `[*]` for arrays:
 1. Read the polished temp MD file
 2. Split content by `<!-- FIELD: ... -->` delimiters to recover per-field text
 3. For each extracted field, trim whitespace and validate:
-   - **German chars** — direction-aware:
-     - `TARGET_LANG` unset: ä/ö/ü/ß and uppercase forms still present if they were in original (preservation)
-     - `TARGET_LANG=de`: output must contain ä/ö/ü/ß where target prose requires them; never ASCII substitutes (ae/oe/ue/ss)
-     - `TARGET_LANG=en`: output must contain no ä/ö/ü/ß characters (except inside preserved proper nouns)
+   - **Charset** — direction-aware:
+     - `TARGET_LANG` unset: ä/ö/ü/ß and uppercase forms still present if they were in the original (preservation)
+     - `TARGET_LANG` set: validate the target language's diacritic set per the copywriter skill's single source of truth — `cogni-copywriting/skills/copywriter/references/01-core-principles/translation-principles.md` § "Per-Language Charset Rules" (e.g. `de` requires ä/ö/ü/ß and forbids ae/oe/ue/ss; `fr` requires é/è/ê/ç; `pl` requires ą/ć/ę/ł/ń/ó/ś/ź/ż; `es` requires á/é/í/ó/ú/ñ; `nl` is ASCII; `en` forbids stray umlauts/accents outside proper nouns)
    - **No markdown injection**: reject if polished text contains `**`, `__`, `# `, `- ` list markers, or `| table |` syntax (these don't belong in JSON string values)
    - **Length guard**: polished text must not exceed 2x length of original (prevents prose expansion). For translations, allow 2.5x — German translations of English text are typically 20-30% longer.
    - **Citations preserved**: if original contained `[P1-1]` or similar citation markers, they must still be present (translation requires exact count match; non-translation requires count >= original)

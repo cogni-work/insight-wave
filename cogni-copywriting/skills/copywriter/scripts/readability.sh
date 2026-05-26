@@ -6,11 +6,11 @@ set -euo pipefail
 # Category: validators
 #
 # Usage:
-#   readability.sh --file <path> [--lang de|en|auto] [--json]
+#   readability.sh --file <path> [--lang de|en|fr|it|pl|nl|es|auto] [--json]
 #
 # Arguments:
 #   --file <path>     Path to markdown file to analyze (required)
-#   --lang <lang>     Language for Flesch formula: de, en, or auto (default: auto)
+#   --lang <lang>     Language for Flesch formula: de, en, fr, it, pl, nl, es, or auto (default: auto)
 #   --json            Output raw JSON only, skip formatted display (optional)
 #   --help            Show this help message
 #
@@ -71,11 +71,11 @@ json_error() {
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 --file <path> [--lang de|en|auto] [--json]"
+    echo "Usage: $0 --file <path> [--lang de|en|fr|it|pl|nl|es|auto] [--json]"
     echo ""
     echo "Arguments:"
     echo "  --file <path>   Path to markdown file to analyze (required)"
-    echo "  --lang <lang>   Language for Flesch formula: de, en, or auto (default: auto)"
+    echo "  --lang <lang>   Language for Flesch formula: de, en, fr, it, pl, nl, es, or auto (default: auto)"
     echo "  --json          Output raw JSON only, skip formatted display"
     echo "  --help          Show this help message"
     echo ""
@@ -236,11 +236,15 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Detected Language
-if [ "$DETECTED_LANG" = "de" ]; then
-    echo "Language: German (using Amstad formula)"
-else
-    echo "Language: English (using standard Flesch formula)"
-fi
+case "$DETECTED_LANG" in
+    de) echo "Language: German (using Amstad formula)" ;;
+    fr) echo "Language: French (using Kandel-Moles formula)" ;;
+    it) echo "Language: Italian (using Flesch-Vacca formula)" ;;
+    es) echo "Language: Spanish (using Szigriszt-Pazos/INFLESZ formula)" ;;
+    nl) echo "Language: Dutch (using Flesch-Douma formula)" ;;
+    pl) echo "Language: Polish (using generic-Flesch fallback)" ;;
+    *)  echo "Language: English (using standard Flesch formula)" ;;
+esac
 echo ""
 
 # Flesch Reading Ease (language-aware targets)
