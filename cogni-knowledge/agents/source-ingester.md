@@ -128,6 +128,8 @@ Body rules:
 - The fetched body follows verbatim. **No** in-body highlighting markup, **no** body-level edits. The wiki-verifier will use `excerpt_position` offsets to render context.
 - If the body itself starts with an H1, drop our injected H1 to avoid double headings.
 
+`content_hash` is the **provenance hash of the fetched source body** (from `entry.content_hash`), not a hash of this markdown file. The on-disk page is the fetched body plus the injected `# <title>` H1, and downstream bidirectional-link maintenance (`knowledge-ingest`'s `backlink_audit.py --apply-plan`, `knowledge-finalize`'s `lint --fix=reverse_link_missing`) may append a `## See also` backlink trailer. So a future integrity check must compare `content_hash` against the **fetched body in the cache**, never against `hash(<on-disk page body>)` — the latter diverges by design once backlinks are written, and `excerpt_position` offsets (anchored to the verbatim body that precedes any appended trailer) stay valid.
+
 Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/sources/<slug>.md`. Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal:
 
 ```bash
