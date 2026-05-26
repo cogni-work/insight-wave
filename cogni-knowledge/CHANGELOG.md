@@ -1,5 +1,31 @@
 # cogni-knowledge changelog
 
+## 0.1.7 — 2026-05-26
+
+Slice 16 of the Phase 5 v0.1.x bake-in (**#264**) — **wiki conformance**: the deposited base must pass cogni-wiki's own `wiki-health` / `wiki-lint` gates. One systemic root: the inverted pipeline writes the wiki via forked agents + direct script calls, bypassing cogni-wiki's LLM skills, so it never ran those gates. Maturity stays **Preview**. Closes **#306**, **#307**, **#308** (umbrella); the live `0 errors` / `0 orphan_page` proof on a fresh German base folds into **#311**. Paired with cogni-wiki **v0.0.46** (#306 seed-placeholder self-clean + a `lint_wiki.py --fix` fresh-read fix so the conformance gate's `reverse_link_missing` de-orphaning isn't clobbered by `frontmatter_defaults`).
+
+### Fixed
+
+- **#308 — 100% orphan rate (the linchpin).** `knowledge-finalize` emitted reference-list backlinks as path-prefixed `[[sources/<slug>]]` / `[[syntheses/<slug>]]`. cogni-wiki's `WIKILINK_RE` (`_wikilib.py`) matches only a bare, slash-free slug, so every reference link was **invisible** to the link graph — neither an inbound link (each cited source counted as an orphan: the literal 100% rate) nor a broken link. Reference backlinks are now **bare `[[<slug>]]`** (slugs are globally unique across the per-type dirs, so no path is needed), which registers the synthesis→source forward edge. A cited page **missing on disk** emits its reference row with **no** wikilink (a bare link to a missing page would be a `broken_wikilink` error that fails the new health gate). File: `skills/knowledge-finalize/SKILL.md`.
+- **#308 — quoted `id:` on source pages.** `source-ingester` could emit `id: "<slug>"` (the json.dumps-quoting rule was ambiguous about `id:`); `_wikilib.parse_frontmatter` keeps the surrounding quotes on scalars, so the parsed id `'"<slug>"'` ≠ filename → `wiki-health` `id_mismatch` error. The frontmatter rule now makes `id:` an explicit exception — always emitted **unquoted** (the slug is always safe kebab-case). File: `agents/source-ingester.md`.
+- **#308 — empty `tags: []` and stale `overview.md`.** Synthesis pages default to `tags: [synthesis]` and source pages to `tags: [source]`; `knowledge-finalize` refreshes `wiki/overview.md` with a `## Recent syntheses` bullet (deterministic, idempotent on slug) so the "state of the wiki" page no longer goes stale. Files: `skills/knowledge-finalize/SKILL.md`, `agents/source-ingester.md`.
+
+### Added
+
+- **#308 — conformance gate at the finalize tail (Step 10.5).** After the deposit + index + context-brief land, `knowledge-finalize` runs `lint_wiki.py --wiki-root … --fix=all` then `health.py --wiki-root …`. `--fix=reverse_link_missing` backfills the source→synthesis reverse `[[<synthesis>]]` edge (a `## See also` append on each cited source), de-orphaning the synthesis; `entries_count_drift` / `frontmatter_defaults` / `alphabetisation` reconcile the rest. The health pass asserts `data.errors == []` and surfaces any residual error **loudly and non-fatally** (the deposit already landed). `orphan_page` is not a `--fix` class — 0 orphans comes from the inbound links the bare refs + reverse-link backfill create. A generalized `resolve_wiki_scripts <skill>` pre-flight resolver now locates the `wiki-lint` and `wiki-health` script dirs alongside `wiki-ingest`. File: `skills/knowledge-finalize/SKILL.md`.
+- **#308 — `knowledge-ingest` writes backlinks (de-orphans ingested sources).** Replaces the v0.0.20 audit-only path: after `backlink_audit.py … --top 8 --min-confidence medium`, the orchestrator curates a `targets[]` plan from the candidates (each `sentence` carries a bare `[[<slug>]]` trailer) and applies it via `backlink_audit.py … --apply-plan -` (idempotent, fail-soft per target). This gives ingested-but-never-cited sources an inbound link so they are not orphans. The script still never auto-selects targets. File: `skills/knowledge-ingest/SKILL.md`.
+- **#307 — thematic index.** `knowledge-plan` now emits a `theme_label` per sub-question (LLM-authored alongside `query` / `search_guidance`, in `output_language`). `knowledge-ingest` files each source under its first-listed sub-question's `theme_label` (`--category "<theme_label>"`, joined via `sub_question_refs[0]` → `plan.json`; best-effort, since `candidate-store.py` unions refs existing-first), so `wiki/index.md` groups sources thematically instead of under one flat `## Sources`. Falls back to `"Sources"` for legacy plans without `theme_label`. The synthesis stays under `## Syntheses`. Files: `skills/knowledge-plan/SKILL.md`, `skills/knowledge-ingest/SKILL.md`, `references/inverted-pipeline.md`.
+
+### Tests
+
+- `tests/test_finalize_contract.sh` — bare `[[<slug>]]` reference construction + `assert_not_grep` on the old `link_dir + "/" + slug` prefix form; Step 10.5 gate (`lint_wiki.py`, `--fix=all`, `health.py`, `data.errors`); `overview.md` refresh; `tags: [synthesis]`; generalized resolver.
+- `tests/test_ingest_contract.sh` — `--apply-plan` invoked (no "audit-only" wording); `--category "<theme_label>"` join (no hard-coded `"Sources"`-only); `tags: [source]` + unquoted `id:` on source-ingester.
+- `tests/test_skill_contracts.sh` — audit-grep so the prefixed-link and audit-only patterns can't creep back; `theme_label` present in knowledge-plan's schema.
+
+### Notes
+
+- Ships on contract coverage, consistent with Slices 3–15. No schema bump (`plan.json` `theme_label` is additive — legacy plans `.get()` to the `"Sources"` fallback). The live `health=0 errors` / `lint=0 orphan_page` proof on a freshly finalized German base is #311's job.
+
 ## 0.1.6 — 2026-05-25
 
 Slice 15 of the Phase 5 v0.1.x bake-in (**#264**) — two cost / wall-clock wins for the inverted pipeline. Maturity stays **Preview**. Closes **#299**, **#305**; epic **#264**.

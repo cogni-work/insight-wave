@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # test_resolve_wiki_scripts.sh - behaviour test for F26.
 #
-# F26: resolve_wiki_ingest_scripts() (in knowledge-ingest + knowledge-finalize)
-# must pick the NEWEST cached cogni-wiki version, not the lexically-first glob
-# match. On a multi-version dev cache the old code returned 0.0.16 (lexically
-# smallest) instead of the installed 0.0.45; the 0.0.16 helpers predate the
-# per-type-dir + `type: source` schema. The fix sorts the glob with `sort -V`
-# and takes the last entry, considering ONLY numeric version dirs (a stray
-# non-numeric dir like `main` would otherwise sort ABOVE every real version).
+# F26: resolve_wiki_scripts() (in knowledge-ingest + knowledge-finalize; named
+# resolve_wiki_ingest_scripts() before Slice 16 generalized it to take a skill
+# arg so finalize can also locate wiki-lint / wiki-health for the conformance
+# gate) must pick the NEWEST cached cogni-wiki version, not the lexically-first
+# glob match. On a multi-version dev cache the old code returned 0.0.16
+# (lexically smallest) instead of the installed 0.0.45; the 0.0.16 helpers
+# predate the per-type-dir + `type: source` schema. The fix sorts the glob with
+# `sort -V` and takes the last entry, considering ONLY numeric version dirs (a
+# stray non-numeric dir like `main` would otherwise sort ABOVE every real
+# version).
 #
 # To avoid testing a stale copy of the resolver, this test EXTRACTS the live
 # function body straight from each SKILL.md and runs THAT — and asserts the
@@ -33,12 +36,12 @@ green() { printf '\033[32m%s\033[0m\n' "$1"; }
 
 errors=0
 
-# Pull the live resolve_wiki_ingest_scripts() body straight from a SKILL.md so
-# the behavioural cases exercise the SHIPPED code, not a hand-maintained copy.
-# The function sits at column 0 inside a fenced block; print from its header
+# Pull the live resolve_wiki_scripts() body straight from a SKILL.md so the
+# behavioural cases exercise the SHIPPED code, not a hand-maintained copy. The
+# function sits at column 0 inside a fenced block; print from its header
 # through the first column-0 closing brace.
 extract_resolver() {
-  awk '/^resolve_wiki_ingest_scripts\(\) \{/{f=1} f{print} f&&/^\}/{exit}' "$1"
+  awk '/^resolve_wiki_scripts\(\) \{/{f=1} f{print} f&&/^\}/{exit}' "$1"
 }
 
 # -----------------------------------------------------------------------------
@@ -51,8 +54,8 @@ for skill_file in "$INGEST_SKILL" "$FINALIZE_SKILL"; do
   if [ ! -f "$skill_file" ]; then
     red "FAIL: skill file not found: $skill_file"; errors=$((errors + 1)); continue
   fi
-  if ! grep -qE 'resolve_wiki_ingest_scripts\(\) \{' "$skill_file"; then
-    red "FAIL: $name missing resolve_wiki_ingest_scripts() definition"; errors=$((errors + 1))
+  if ! grep -qE 'resolve_wiki_scripts\(\) \{' "$skill_file"; then
+    red "FAIL: $name missing resolve_wiki_scripts() definition"; errors=$((errors + 1))
   elif ! grep -qE 'sort -V' "$skill_file"; then
     red "FAIL: $name resolver does not version-sort (sort -V) — F26 would regress"; errors=$((errors + 1))
   else
@@ -64,7 +67,7 @@ INGEST_BODY=$(extract_resolver "$INGEST_SKILL")
 FINALIZE_BODY=$(extract_resolver "$FINALIZE_SKILL")
 
 if [ -z "$INGEST_BODY" ]; then
-  red "FAIL: could not extract resolve_wiki_ingest_scripts() body from knowledge-ingest SKILL.md"
+  red "FAIL: could not extract resolve_wiki_scripts() body from knowledge-ingest SKILL.md"
   errors=$((errors + 1))
 fi
 if [ "$INGEST_BODY" != "$FINALIZE_BODY" ]; then
@@ -97,7 +100,7 @@ mkdir -p "$WORK/devrepo/cogni-wiki/skills/wiki-ingest/scripts"
 mkdir -p "$WORK/missing/cogni-knowledge"
 
 RESOLVE_BODY="$INGEST_BODY
-if resolve_wiki_ingest_scripts; then exit 0; else exit 1; fi"
+if resolve_wiki_scripts wiki-ingest; then exit 0; else exit 1; fi"
 
 run_resolve() {
   CLAUDE_PLUGIN_ROOT="$1" bash -c "$RESOLVE_BODY"
@@ -145,4 +148,4 @@ if [ $errors -gt 0 ]; then
 fi
 
 green ""
-green "F26 resolve_wiki_ingest_scripts version-sort contract and behaviour all pass."
+green "F26 resolve_wiki_scripts version-sort contract and behaviour all pass."

@@ -40,7 +40,7 @@ assert_grep 'draft_revision_round:' "$FIN" "knowledge-finalize: records draft_re
 assert_grep 'cycle-guard.py' "$FIN" "knowledge-finalize: dispatches cycle-guard.py"
 assert_grep '## References' "$FIN" "knowledge-finalize: auto-generates ## References section"
 assert_grep 'probe_plugin cogni-wiki' "$FIN" "knowledge-finalize: probes cogni-wiki (clean-break)"
-assert_grep 'resolve_wiki_ingest_scripts' "$FIN" "knowledge-finalize: resolves WIKI_INGEST_SCRIPTS"
+assert_grep 'resolve_wiki_scripts wiki-ingest' "$FIN" "knowledge-finalize: resolves WIKI_INGEST_SCRIPTS via generalized resolver"
 assert_grep 'wiki_index_update.py' "$FIN" "knowledge-finalize: calls cogni-wiki wiki_index_update.py at script level"
 assert_grep 'config_bump.py' "$FIN" "knowledge-finalize: calls cogni-wiki config_bump.py at script level"
 assert_grep 'rebuild_context_brief.py' "$FIN" "knowledge-finalize: calls cogni-wiki rebuild_context_brief.py at script level"
@@ -112,6 +112,36 @@ for required in 'Read' 'Write' 'Bash'; do
     errors=$((errors + 1))
   fi
 done
+
+# --- Slice 16 (#308/#307/#306): wiki conformance -------------------------
+# Reference backlinks must be BARE [[<slug>]] so the synthesis->source edge
+# registers in cogni-wiki's link graph (WIKILINK_RE matches no slash). The old
+# path-prefixed construction (link_dir + "/" + slug) must be gone from the code.
+assert_grep 'backlink = ("\[\[" + slug + "\]\]")' "$FIN" "knowledge-finalize: emits a bare [[<slug>]] reference backlink (#308 orphan linchpin)"
+assert_not_grep 'link_dir + "/" + slug' "$FIN" "knowledge-finalize: no path-prefixed [[sources/<slug>]] construction remains (#308)"
+assert_not_grep 'link_dir = "syntheses"' "$FIN" "knowledge-finalize: dropped the link_dir prefix branch (#308)"
+# R1: a missing cited page (page_kind None) emits NO wikilink so it can't trip
+# health.py broken_wikilink in the new gate.
+assert_grep 'page_kind is not None' "$FIN" "knowledge-finalize: backlink emitted only when the cited page exists (#308 R1 — avoid broken_wikilink)"
+# Step 10.5 conformance gate: lint --fix=all then health.py asserting 0 errors.
+assert_grep 'resolve_wiki_scripts wiki-lint' "$FIN" "knowledge-finalize: resolves the wiki-lint scripts dir for the gate"
+assert_grep 'resolve_wiki_scripts wiki-health' "$FIN" "knowledge-finalize: resolves the wiki-health scripts dir for the gate"
+assert_grep 'lint_wiki.py' "$FIN" "knowledge-finalize: Step 10.5 runs lint_wiki.py"
+assert_grep '\-\-fix=all' "$FIN" "knowledge-finalize: Step 10.5 lint runs --fix=all (backfills reverse_link_missing)"
+assert_grep 'health.py' "$FIN" "knowledge-finalize: Step 10.5 runs health.py"
+assert_grep 'data.errors' "$FIN" "knowledge-finalize: Step 10.5 asserts health data.errors == []"
+# The gate must also assert 0 orphan_page (the slice's actual metric — health.py
+# does NOT compute orphans), via a no-fix re-lint after --fix=all.
+assert_grep 'orphan_page' "$FIN" "knowledge-finalize: Step 10.5 asserts 0 orphan_page (re-lint after --fix; the slice's metric)"
+assert_grep 'no .*--fix' "$FIN" "knowledge-finalize: Step 10.5 re-lints with NO --fix to read post-fix orphan state"
+assert_grep 'reverse_link_missing' "$FIN" "knowledge-finalize: documents reverse_link_missing as the load-bearing de-orphaner"
+# overview.md refresh (#308 stale-overview item).
+assert_grep 'overview.md' "$FIN" "knowledge-finalize: refreshes wiki/overview.md (#308)"
+assert_grep 'Recent syntheses' "$FIN" "knowledge-finalize: overview.md gets a Recent syntheses bullet"
+# Default synthesis tags (#308 empty-tags item).
+assert_grep 'tags: \[synthesis\]' "$FIN" "knowledge-finalize: synthesis frontmatter defaults tags: [synthesis] (#308)"
+# Defence-in-depth: the synthesis index category stays Syntheses (confirmed scope).
+assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: synthesis still filed under the Syntheses category"
 
 # --- Inverted-pipeline.md Phase 7 anchor ---------------------------------
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"

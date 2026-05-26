@@ -53,27 +53,28 @@ probe_plugin cogni-wiki wiki-ingest && WIKI_OK=yes || WIKI_OK=no
 
 If `WIKI_OK=no`, abort with the standard missing-plugin message.
 
-**Resolve `WIKI_INGEST_SCRIPTS`.** Same probe shape — find `cogni-wiki/skills/wiki-ingest/scripts/` so Step 5 below can call `backlink_audit.py` and `wiki_index_update.py` directly:
+**Resolve the cogni-wiki script dir.** Same probe shape, parameterised by the skill subdir (shared byte-for-byte with `knowledge-finalize`) — find `cogni-wiki/skills/wiki-ingest/scripts/` so Step 5 below can call `backlink_audit.py` and `wiki_index_update.py` directly:
 
 ```
-resolve_wiki_ingest_scripts() {
-  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/wiki-ingest/scripts"
+resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki-health
+  local skill="$1"
+  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
   # F26: pick the NEWEST cached version, not the lexically-first. Consider ONLY
   # numeric version dirs — sort -V ranks a non-numeric name (main/latest/a
   # branch checkout) ABOVE every real version, so a stray dir would otherwise
-  # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.45).
+  # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.46).
   local newest ver
-  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/wiki-ingest/scripts; do
+  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
     [ -d "$d" ] || continue
-    ver=${d%/skills/wiki-ingest/scripts}; ver=${ver##*/}
+    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
     case "$ver" in ''|*[!0-9.]*) continue ;; esac
     printf '%s\n' "$d"
   done | sort -V | tail -1)
   [ -n "$newest" ] && { echo "$newest"; return 0; }
   return 1
 }
-WIKI_INGEST_SCRIPTS=$(resolve_wiki_ingest_scripts) || abort "cogni-wiki wiki-ingest scripts not found"
+WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest) || abort "cogni-wiki wiki-ingest scripts not found"
 ```
 
 **Binding + wiki root.** Resolve `knowledge_root` (same logic as `knowledge-fetch`). Read the binding:
@@ -89,7 +90,9 @@ Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/
 
 **Fetch manifest + candidates.** Read `<project_path>/.metadata/fetch-manifest.json`. Abort with "run knowledge-fetch first" if absent or `fetched[]` is empty.
 
-Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --project-path <project_path>` so each fetched URL's `sub_question_refs[]`, `title`, and `publisher` are available to pass into the ingester.
+Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --project-path <project_path>` so each fetched URL's `sub_question_refs[]`, `title`, and `publisher` are available to pass into the ingester. Keep the URL → `sub_question_refs[]` mapping around — Step 4 reuses it to pick each source's index category.
+
+Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by sub-question id (`{"sq-01": "<theme_label>", ...}` from `plan.sub_questions[]`). Step 4's index update files each source under its **first-listed** sub-question's `theme_label` (`sub_question_refs[0]`; #307). Note `candidate-store.py` unions `sub_question_refs[]` (existing-first) on a cross-SQ dedup, so for a source matched by several sub-questions `[0]` is the first that discovered it, not a ranked "primary" — the thematic grouping is best-effort, not authoritative. Older plans (pre-Slice-16) have no `theme_label`; the map is then empty and Step 4 falls back to the `"Sources"` category. (`plan.json` is also read for `TOPIC` in Step 5.)
 
 ### 1. Build batch plan
 
@@ -176,7 +179,7 @@ For each batch:
 
 For each entry in `ingested[]` written this run, in deterministic slug order:
 
-1. **Backlink audit (audit-only at v0.0.20):**
+1. **Backlink audit + apply (de-orphans ingested sources).** First audit:
    ```
    python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" \
        --wiki-root <WIKI_ROOT> \
@@ -184,17 +187,25 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
        --top 8 \
        --min-confidence medium
    ```
-   Capture the JSON envelope. Surface the candidate count in the final summary (the operator can apply backlinks manually via `wiki-update`). **No `--apply-plan` at v0.0.20** — auto-curating which candidates to write requires an LLM pass not in this skill's scope; deferred to a follow-up slice.
+   Capture `data.candidates[]` (ranked sibling pages that textually reference this source). Then **curate a write-back plan**: for each candidate you judge a genuine relation (skip weak / coincidental term matches), author one `targets[]` entry whose `sentence` mentions the new source with a bare `[[<slug>]]` wikilink — appended as a short trailer (e.g. `"See also [[<slug>]] for ..."`) so the candidate page's verbatim body is not edited mid-text. Re-invoke the same script in apply mode, piping the plan on stdin:
+   ```
+   printf '%s' "$PLAN_JSON" | python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" \
+       --wiki-root <WIKI_ROOT> \
+       --new-page <slug> \
+       --apply-plan -
+   ```
+   The plan shape is `{"targets": [{"slug": "<target>", "sentence": "... [[<slug>]] ..."}, ...]}`; each `sentence` MUST contain `[[<slug>]]` or the script rejects that target. `apply_plan` is **idempotent** (skips a target that already links to `[[<slug>]]`) and **fail-soft per target** (per-target errors land in `data.failed[]`, never abort the batch). Writing these inbound links is what keeps an ingested-but-never-cited source from showing up as an `orphan_page` in `wiki-lint` (the synthesis only links the sources it cites; finalize de-orphans those — see `knowledge-finalize`). Surface `applied[]` / `failed[]` counts in the Step 6 summary. If you find no genuine relation for a slug, skip apply for it (write no backlink for that slug) — never invent a backlink.
 
-2. **Index update:**
+2. **Index update (thematic category, #307):**
+   Resolve the category: take the source's first-listed sub-question ref `sub_question_refs[0]` (from the candidates map built in Step 0), look it up in the `theme_label` map; use that label. Fall back to `"Sources"` only when the ref is missing or the map has no `theme_label` for it (legacy plans).
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
        --wiki-root <WIKI_ROOT> \
        --slug <slug> \
        --summary "<per-source summary, ≤180 chars>" \
-       --category "Sources"
+       --category "<theme_label, or Sources fallback>"
    ```
-   `--category "Sources"` creates a top-level `## Sources` heading in `wiki/index.md` on first ingest and appends to it on subsequent ingests. Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
+   `wiki_index_update.py` creates a `## <theme_label>` heading in `wiki/index.md` on first use and appends to it afterwards, so sources group thematically (per sub-question) instead of under one flat `## Sources` (#307). As of cogni-wiki v0.0.46 the first real insert also sheds the wiki-setup `## Categories` / `_No pages yet…_` seed placeholder (#306). Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
 
    Capture the JSON envelope. When `success == true` **and** `data.action == "inserted"`, increment an in-loop counter `n_new` (initialised to `0` before the loop) — a brand-new index row means a brand-new page. When `data.action == "updated"`, a row for this slug already existed → do **not** count it (this is the re-ingest / pre-existing-page case; counting it would over-count `entries_count`).
 
@@ -236,7 +247,7 @@ Print ≤ 10 lines:
 - Batches: `<count>` dispatched (failed: `<failed_count>`)
 - Ingested: `<count>` new pages (`<total_claims>` total claims extracted)
 - Skipped: `<count>` (reason breakdown: `cache_miss=<n>, unavailable=<n>, slug_collision=<n>`)
-- Backlink audit candidates surfaced: `<n>` (apply manually via `wiki-update`)
+- Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
 - Next: M7 will land `knowledge-compose`. For v0.0.20, end here — `wiki/sources/*.md` populated + `ingest-manifest.json` is this slice's deliverable.
@@ -248,21 +259,22 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - **Re-ingest of an existing project.** `ingest-manifest.json` already exists; the orchestrator skips entries already in `ingested[]` (URL-keyed). Manual cleanup (delete page + remove from manifest) is the path to force a re-ingest of a specific URL.
 - **Cache file gone missing between fetch and ingest.** Surface in `skipped[]` with `reason: cache_miss` and continue. The user can re-run `knowledge-fetch` to repopulate.
 - **Slug collision across batches.** Step 1.3 dedupes before dispatch; defence-in-depth check inside `source-ingester` refuses to overwrite an existing page. Surfaces as `reason: slug_collision` in `skipped[]`.
-- **First ingest into an empty wiki.** `wiki/index.md` may exist with only the wiki-setup header. `wiki_index_update.py` creates the `## Sources` category on first call; subsequent calls append.
+- **First ingest into an empty wiki.** `wiki/index.md` may exist with only the wiki-setup header + the `## Categories` / `_No pages yet…_` seed placeholder. The first `wiki_index_update.py` call creates the first `## <theme_label>` category and (cogni-wiki v0.0.46+) sheds the seed placeholder; subsequent calls append. On a brand-new base the backlink apply step has few or no sibling pages to link from — that's expected; the synthesis (finalize) and later ingests fill the graph in.
 - **Wiki schema < 0.0.6 (`type: source` not yet allowlisted).** cogni-wiki v0.0.44's `_wikilib.PAGE_TYPE_DIRS` includes `"source": "sources"`; older wikis hard-fail in `wiki-health` until migrated. The skill does not auto-migrate; surface the error and direct the user to upgrade cogni-wiki.
 
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`, M7).
 - Does NOT verify claims — Phase 6 (`knowledge-verify`, M8).
-- Does NOT auto-apply backlink candidates — audit-only at v0.0.20; `--apply-plan` integration is a follow-up slice.
+- Does NOT auto-select backlink targets — `backlink_audit.py` never invents links; the orchestrator curates the `targets[]` plan from the audit candidates and only then applies it (Slice 16, #308).
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
 - Does NOT re-run fetch — that is `knowledge-fetch`.
 
 ## Output
 
 - `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry).
-- `<WIKI_ROOT>/wiki/index.md` updated (new `## Sources` category on first ingest; appended otherwise).
+- `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (#307; falls back to `## Sources` for legacy plans); the wiki-setup seed placeholder is shed on the first real insert (cogni-wiki v0.0.46, #306).
+- Existing `wiki/<type>/<target>.md` pages gain a curated `[[<slug>]]` backlink to each new source (via `backlink_audit.py --apply-plan`), so ingested sources are not orphans.
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` (the count of newly-indexed source pages this run; #302).
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] ingest | …` line.
 - `<project_path>/.metadata/ingest-manifest.json` (schema 0.1.0).

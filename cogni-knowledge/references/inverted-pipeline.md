@@ -38,7 +38,7 @@ Each phase is a separate skill so the operator can pause and inspect between pha
 
 ### Phase 1 — `knowledge-plan`
 
-Reads the topic, decomposes into 3–7 sub-questions, identifies candidate authority domains per sub-question, computes a cost estimate. No web access.
+Reads the topic, decomposes into 3–7 sub-questions, identifies candidate authority domains per sub-question, computes a cost estimate. No web access. Each sub-question also carries a `theme_label` — a short thematic label (in `output_language`) that Phase 4 uses as the source page's `wiki/index.md` category so the index reads thematically rather than by page type (#307).
 
 Output: `<project>/.metadata/plan.json`:
 
@@ -47,7 +47,7 @@ Output: `<project>/.metadata/plan.json`:
   "schema_version": "0.1.0",
   "topic": "EU AI Act Article 6 high-risk system classification",
   "sub_questions": [
-    {"id": "sq-01", "query": "...", "search_guidance": "...", "candidate_domains": ["europa.eu", "..."]}
+    {"id": "sq-01", "query": "...", "search_guidance": "...", "theme_label": "High-risk Classification Scope", "candidate_domains": ["europa.eu", "..."]}
   ],
   "market": "dach",
   "output_language": "en",

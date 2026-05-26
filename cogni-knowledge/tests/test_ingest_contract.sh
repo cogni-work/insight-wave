@@ -64,6 +64,15 @@ assert_grep 'delta' "$INGEST" "knowledge-ingest: config_bump uses --delta (#302)
 assert_grep 'n_new' "$INGEST" "knowledge-ingest: counts newly-indexed pages in n_new (#302)"
 assert_grep '"inserted"' "$INGEST" "knowledge-ingest: gates the bump on action == inserted — lockstep invariant (#302)"
 assert_grep 'no-op' "$INGEST" "knowledge-ingest: states the re-run no-op (n_new == 0 → no bump) (#302)"
+# Slice 16 (#308/#307): write backlinks via --apply-plan (no longer audit-only),
+# and file sources under their sub-question's thematic theme_label category.
+assert_grep 'apply-plan' "$INGEST" "knowledge-ingest: writes backlinks via backlink_audit.py --apply-plan (#308)"
+assert_grep 'targets' "$INGEST" "knowledge-ingest: curates a targets[] backlink plan (#308)"
+assert_not_grep 'audit-only' "$INGEST" "knowledge-ingest: no 'audit-only' wording remains (#308)"
+assert_not_grep 'No \`--apply-plan\`' "$INGEST" "knowledge-ingest: no 'No --apply-plan' deferral wording remains (#308)"
+assert_grep 'theme_label' "$INGEST" "knowledge-ingest: index category derived from the sub-question theme_label (#307)"
+assert_grep 'sub_question_refs\[0\]' "$INGEST" "knowledge-ingest: joins on sub_question_refs[0] to pick the theme_label (#307)"
+assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Sources\" as the only category (#307; Sources is a fallback now)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
@@ -91,6 +100,11 @@ assert_grep 'wiki/sources/' "$INGESTER" "source-ingester: writes wiki/sources/<s
 assert_grep 'type: source' "$INGESTER" "source-ingester: emits type: source frontmatter"
 assert_grep 'pre_extracted_claims' "$INGESTER" "source-ingester: populates pre_extracted_claims frontmatter"
 assert_grep 'atomic_write_text' "$INGESTER" "source-ingester: writes via _knowledge_lib.atomic_write_text"
+# Slice 16 (#308): id: must be UNQUOTED (quoted form trips wiki-health id_mismatch),
+# and source pages default to a non-empty tags list.
+assert_grep 'UNQUOTED' "$INGESTER" "source-ingester: emits id: unquoted (#308 — quoted id trips health id_mismatch)"
+assert_grep 'tags: \[source\]' "$INGESTER" "source-ingester: default tags: [source] (#308)"
+assert_not_grep 'tags: \[\]' "$INGESTER" "source-ingester: no empty tags: [] remains (#308)"
 # Frontmatter tools must not include WebFetch (re-fetch is forbidden in Phase 4).
 INGESTER_TOOLS_LINE=$(grep '^tools:' "$INGESTER" || true)
 if ! echo "$INGESTER_TOOLS_LINE" | grep -q WebFetch; then

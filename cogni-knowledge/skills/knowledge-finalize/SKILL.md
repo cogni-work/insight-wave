@@ -1,12 +1,12 @@
 ---
 name: knowledge-finalize
-description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, and appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md. Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
+description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md, and runs a conformance gate (wiki-lint --fix=all + wiki-health) so the deposited base passes cogni-wiki's own checks — reference backlinks are bare [[slug]] so the synthesis de-orphans its cited sources. Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
 allowed-tools: Read, Write, Bash
 ---
 
 # Knowledge Finalize
 
-Phase 7 of the v0.1.0 inverted pipeline. Reads `<project>/output/draft-vN.md` + `<project>/.metadata/verify-vN.json` + `<project>/.metadata/citation-manifest.json`, runs `cycle-guard.py` to refuse self-citing loops, deposits the verified draft as `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md`, runs three cogni-wiki helpers (`wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`) directly at script level, appends a `research_projects[]` entry to `binding.json`, and writes one `## [YYYY-MM-DD] finalize | …` line to `wiki/log.md`.
+Phase 7 of the v0.1.0 inverted pipeline. Reads `<project>/output/draft-vN.md` + `<project>/.metadata/verify-vN.json` + `<project>/.metadata/citation-manifest.json`, runs `cycle-guard.py` to refuse self-citing loops, deposits the verified draft as `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md`, runs three cogni-wiki helpers (`wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`) directly at script level, appends a `research_projects[]` entry to `binding.json`, writes one `## [YYYY-MM-DD] finalize | …` line to `wiki/log.md`, and runs a Step 10.5 conformance gate (`lint_wiki.py --fix=all` + `health.py`) so the deposited base passes cogni-wiki's own structural checks.
 
 This is the **inverted-pipeline closing step**. Without it, every verified draft from M8 lives forever in `<project>/output/` and the wiki cannot accumulate cross-source framing — the compounding property that differentiates cogni-knowledge from one-shot deep-research tools requires future `knowledge-compose` runs to read `wiki/syntheses/*.md` as prior context. M9 is what makes that read non-empty.
 
@@ -17,12 +17,12 @@ Synthesis-page frontmatter shape (matches cogni-wiki SCHEMA for `type: synthesis
 id: <synthesis-slug>
 title: <plan.topic verbatim>
 type: synthesis
-tags: []
+tags: [synthesis]
 created: <today ISO>
 updated: <today ISO>
 sources:
-  - wiki://<wiki_slug>/<cited-slug-1>
-  - wiki://<wiki_slug>/<cited-slug-2>
+  - wiki://<cited-slug-1>
+  - wiki://<cited-slug-2>
 derived_from_research: <project-slug>
 draft_revision_round: <verify.revision_round>
 ---
@@ -76,27 +76,35 @@ probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
 
 If `WIKI_OK=no`, abort with the standard missing-plugin message.
 
-**Resolve `WIKI_INGEST_SCRIPTS`.** Same probe shape — find `cogni-wiki/skills/wiki-ingest/scripts/` so Steps 7, 8, and 10 can call `wiki_index_update.py`, `config_bump.py`, and `rebuild_context_brief.py` directly:
+**Resolve the cogni-wiki script dirs.** Same probe shape, parameterised by the
+skill subdir, so Steps 7/8/10 can call `wiki_index_update.py` / `config_bump.py` /
+`rebuild_context_brief.py` (wiki-ingest) and Step 10.5's conformance gate can call
+`lint_wiki.py` (wiki-lint) + `health.py` (wiki-health). Each script imports
+`_wikilib` relatively from `wiki-ingest/scripts`, so resolving the real installed
+dir keeps those imports intact:
 
 ```
-resolve_wiki_ingest_scripts() {
-  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/wiki-ingest/scripts"
+resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki-health
+  local skill="$1"
+  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
   # F26: pick the NEWEST cached version, not the lexically-first. Consider ONLY
   # numeric version dirs — sort -V ranks a non-numeric name (main/latest/a
   # branch checkout) ABOVE every real version, so a stray dir would otherwise
-  # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.45).
+  # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.46).
   local newest ver
-  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/wiki-ingest/scripts; do
+  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
     [ -d "$d" ] || continue
-    ver=${d%/skills/wiki-ingest/scripts}; ver=${ver##*/}
+    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
     case "$ver" in ''|*[!0-9.]*) continue ;; esac
     printf '%s\n' "$d"
   done | sort -V | tail -1)
   [ -n "$newest" ] && { echo "$newest"; return 0; }
   return 1
 }
-WIKI_INGEST_SCRIPTS=$(resolve_wiki_ingest_scripts) || abort "cogni-wiki wiki-ingest scripts not found"
+WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest) || abort "cogni-wiki wiki-ingest scripts not found"
+WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint)   || abort "cogni-wiki wiki-lint scripts not found"
+WIKI_HEALTH_SCRIPTS=$(resolve_wiki_scripts wiki-health) || abort "cogni-wiki wiki-health scripts not found"
 ```
 
 **Binding + wiki root.** Resolve `knowledge_root` (same logic as `knowledge-verify`). Read the binding:
@@ -286,8 +294,9 @@ for c in manifest.get("citations", []) or []:
 
 # Lookup each cited pages kind + title + publisher. Try wiki/sources/ first
 # (the common case — Phase-4 source ingest); fall back to wiki/syntheses/
-# (wiki-composer cites prior syntheses with claim_id: null). page_kind drives
-# the inline wikilink prefix below ([[sources/...]] vs [[syntheses/...]]).
+# (wiki-composer cites prior syntheses with claim_id: null). page_kind gates
+# whether the reference row gets a bare [[<slug>]] backlink below: a page that
+# exists (source OR synthesis) does; a missing page (page_kind None) does not.
 def _parse_top_level_kv(fm_block):
     out = {}
     for line in fm_block.splitlines():
@@ -343,26 +352,48 @@ for idx, slug in enumerate(cited_slugs):
                     publisher = fm["publisher"]
                 if page_kind == "source":
                     url = first_url(fm.get("sources", ""))
-    # Wikilink path prefix matches the cited pages directory; falls back to
-    # sources/ when the page is missing (better than leaving the slug bare).
-    link_dir = "syntheses" if page_kind == "synthesis" else "sources"
-    backlink = "[[" + link_dir + "/" + slug + "]]"
+    # Bare `[[<slug>]]` backlink so the synthesis->source forward edge actually
+    # registers in cogni-wiki's link graph. WIKILINK_RE only matches a BARE slug
+    # (cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py), so a path-prefixed
+    # `[[sources/<slug>]]` matches the slash-free grammar nowhere — it is
+    # invisible: neither an inbound link (every cited source counts as an orphan
+    # -> the literal 100% orphan rate) nor a broken link. Slugs are globally
+    # unique across the per-type dirs, so the bare slug addresses the page with
+    # no path. The reverse (source->synthesis) edge is backfilled by the Step
+    # 10.5 `lint_wiki.py --fix=reverse_link_missing` gate, de-orphaning both ends.
+    #
+    # Emit the backlink ONLY when the cited page exists on disk (page_kind is not
+    # None). A missing page would make bare `[[<slug>]]` a broken_wikilink that
+    # health.py flags as an error and fails the Step 10.5 gate — so a missing
+    # cited page gets a reference row with NO wikilink (the graceful-degradation
+    # edge that the old invisible `[[sources/<slug>]]` form silently tolerated).
+    backlink = ("[[" + slug + "]]") if page_kind is not None else ""
     bib = (publisher + ', "' + title + '"') if publisher else ('"' + title + '"')
     # IEEE-style numbered entry. Clickable [URL](URL) when the source page
     # carries an http(s) URL (angle-bracketed via md_link_dest when it contains
-    # parens); synthesis pages / missing pages emit no link (the [[…]] backlink
-    # keeps the cogni-wiki graph intact either way).
+    # parens). The trailing " — [[<slug>]]" backlink is appended only for a cited
+    # page that exists on disk.
+    entry = "**[" + str(n) + "]** " + bib
     if url:
-        refs.append("**[" + str(n) + "]** " + bib + ". [" + url + "](" + md_link_dest(url) + ") — " + backlink)
-    else:
-        refs.append("**[" + str(n) + "]** " + bib + " — " + backlink)
+        entry += ". [" + url + "](" + md_link_dest(url) + ")"
+    if backlink:
+        entry += " — " + backlink
+    refs.append(entry)
 
 # `wiki://<slug>` is the bare-slug shape cogni-wiki health.py expects
 # (cogni-wiki/skills/wiki-health/scripts/health.py:206 splits on the prefix
 # and looks the bare slug up in slug_index). A `wiki://<wiki_slug>/<slug>`
 # composite would trip `broken_wiki_source` on every cited entry.
-if cited_slugs:
-    sources_block = "sources:\n" + "\n".join("  - wiki://" + slug for slug in cited_slugs)
+#
+# Emit a `wiki://` source ONLY for a cited page that exists on disk — the same
+# page_kind gate the body backlink uses. health.py's `broken_wiki_source` flags
+# any `wiki://<slug>` whose target is not in the slug index as an ERROR, so a
+# cited page that went missing between ingest and finalize would otherwise fail
+# the Step 10.5 health gate even though its body backlink was suppressed. The
+# missing slug is still surfaced via the Step 11 "Missing pages" warning.
+sourced_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) is not None]
+if sourced_slugs:
+    sources_block = "sources:\n" + "\n".join("  - wiki://" + slug for slug in sourced_slugs)
 else:
     # Empty list emits inline (matches `tags: []` shape) instead of the
     # block-style `sources:\n  []` continuation, which strict YAML parsers
@@ -374,7 +405,7 @@ frontmatter = (
     "id: " + synthesis_slug + "\n"
     "title: " + topic + "\n"
     "type: synthesis\n"
-    "tags: []\n"
+    "tags: [synthesis]\n"
     "created: " + today + "\n"
     "updated: " + today + "\n"
     + sources_block + "\n"
@@ -506,14 +537,9 @@ rm -rf "<project_path>/.metadata/verify-shards"
 
 Non-critical: a failure here (e.g. permissions) **never blocks finalize** — the deliverable already landed at Steps 6–10. Skip silently if the directory does not exist.
 
-### 10. Rebuild context_brief.md + append wiki/log.md
+### 10. Append wiki/log.md
 
-```
-python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" \
-    --wiki-root "$WIKI_ROOT"
-```
-
-Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
+`context_brief.md` is rebuilt at the **end** of the Step 10.5 gate (not here), so it reflects the gate's reverse-link / `entries_count` / `overview.md` writes rather than a pre-gate snapshot.
 
 Append one log line (Bash `>>`; `wiki/log.md` is append-only by cogni-wiki convention).
 
@@ -530,6 +556,65 @@ printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s\n' \
 
 `finalize` is a new operation prefix. Same additive-prefix posture as M7's `compose` and M8's `verify` — pre-v0.0.35 cogni-wiki readers count unknown prefixes in their catch-all bucket without crashing (`cogni-wiki/CLAUDE.md` §"Key Conventions"). Formalising the prefix into the enum lands in M10 when query / dashboard rebuild on the new manifests.
 
+### 10.5 Conformance gate (run cogni-wiki's own gates)
+
+The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-health` / `wiki-lint` never run as a gate. This step closes that: it backfills the deterministic link/frontmatter fixes, asserts the base is structurally clean, and rebuilds `context_brief.md` last so it reflects the post-gate state. It runs after the deposit + index are on disk, so the gate sees the final page set.
+
+1. **Deterministic lint fixes — de-orphan + reconcile.**
+   ```
+   python3 "$WIKI_LINT_SCRIPTS/lint_wiki.py" \
+       --wiki-root "$WIKI_ROOT" \
+       --fix=all
+   ```
+   `--fix=all` applies the five safe classes (`lint_wiki.py` `FIX_CLASSES`). The load-bearing one is **`reverse_link_missing`**: the bare `[[<slug>]]` references this finalize just wrote are forward edges synthesis→source, so lint backfills the reverse source→synthesis `[[<synthesis-slug>]]` (a `## See also` append on each cited source) — de-orphaning the synthesis. The others are housekeeping: `frontmatter_defaults`, `entries_count_drift` (reconciles `entries_count` to the on-disk truth — supersedes Step 8's conditional bump on any drift), `alphabetisation`, and `synthesis_no_wiki_source` (a no-op — Step 5 already wrote `wiki://<slug>` sources). Capture the envelope; surface `data.fixed[]` / `data.failed[]` counts in the Step 11 summary. **Non-fatal per item** — a per-page fix failure lands in `data.failed[]` and does not block finalize. (`orphan_page` is NOT a `--fix` class — it is suggest-only; 0 orphans comes from the inbound links the bare refs + this reverse-link backfill create, never from `--fix`.)
+
+2. **Health + orphan assertions (the actual gate).**
+   ```
+   python3 "$WIKI_HEALTH_SCRIPTS/health.py"   --wiki-root "$WIKI_ROOT"
+   python3 "$WIKI_LINT_SCRIPTS/lint_wiki.py"  --wiki-root "$WIKI_ROOT"
+   ```
+   The second call has **no `--fix`** — it reads the post-fix state. Assert two things and surface both **loudly** (and **non-fatally** — the synthesis already landed; the operator reconciles via `wiki-update` / a re-run, never a rollback):
+   - `health.py` `data.errors == []` → on any error: `⚠ wiki-health: <N> error(s) after finalize: <class> on <page>, …`.
+   - `lint_wiki.py` `data.warnings` has **no `orphan_page`** entry → on any: `⚠ wiki-lint: <N> orphan page(s) after finalize: <page>, …`.
+
+   The orphan assertion is what actually covers the slice's stated metric — `orphan_page` is a **lint warning, not a health error**, and is **not** a `--fix` class, so the `--fix=all` in sub-step 1 de-orphans by *writing inbound links* (bare refs + the `reverse_link_missing` backfill), and this read-only re-lint verifies it worked. Without this check the gate could report "health clean" while a synthesis was left orphaned (e.g. if the de-orphaning was undone). Residual orphans are expected and acceptable in two documented cases (surface, don't fail): an ingested source no synthesis ever cited and no sibling backlinks (cold-start), and a synthesis that cites zero existing pages (empty/all-missing manifest → it has no outbound links for `reverse_link_missing` to mirror). The live `0 errors` + `0 orphan_page` proof on a fresh German base is #311's job.
+
+   **Caveat — foundation pages.** `reverse_link_missing` has no `foundation: true` exemption, so if this synthesis cites a prefilled foundation concept, the fixer appends a `## See also` backlink onto that curated page (bypassing `wiki-update`'s `--force` guard). In the inverted pipeline the composer cites `wiki/sources/*` + prior `wiki/syntheses/*`, not `wiki/concepts/`, so this is not expected; noted so a future foundation-citing path is aware.
+
+3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale (#308). Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and refresh a single bullet for this synthesis (idempotent on the slug). The dedup removes only this slug's prior **bullet** (a `- … [[slug]] …` list item), never prose that merely mentions `[[slug]]`; the heading is matched by exact line, never substring. `overview.md` is not graph-scanned, so this is purely freshness:
+   ```
+   WIKI_ROOT="<wiki_root>" SYNTHESIS_SLUG="<slug>" TOPIC_RAW="<topic>" DATE_STAMP="$(date -u +%F)" \
+   python3 -c '
+   import os
+   from pathlib import Path
+   p = Path(os.environ["WIKI_ROOT"]) / "wiki" / "overview.md"
+   slug = os.environ["SYNTHESIS_SLUG"]
+   marker = "[[" + slug + "]]"
+   topic = " ".join(os.environ["TOPIC_RAW"].split())
+   bullet = "- [" + os.environ["DATE_STAMP"] + "] " + marker + " — " + topic
+   heading = "## Recent syntheses"
+   text = p.read_text(encoding="utf-8") if p.is_file() else "# Overview\n"
+   # Drop ONLY a prior Recent-syntheses bullet for this slug (a list item),
+   # never a prose line that happens to reference [[slug]].
+   lines = [ln for ln in text.splitlines()
+            if not (ln.lstrip().startswith("- ") and marker in ln)]
+   if heading in lines:                      # exact line match, not substring
+       lines.insert(lines.index(heading) + 1, bullet)
+   else:
+       if lines and lines[-1].strip():
+           lines.append("")
+       lines += [heading, "", bullet]
+   p.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+   '
+   ```
+   Non-fatal — `overview.md` is a derived narrative artefact; a failure here never blocks finalize.
+
+4. **Rebuild `context_brief.md` (last).**
+   ```
+   python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" --wiki-root "$WIKI_ROOT"
+   ```
+   Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
+
 ### 11. Final summary
 
 Print ≤ 10 lines:
@@ -544,6 +629,7 @@ Print ≤ 10 lines:
   - On `INDEX_OK=yes` + new deposit: `index.md (Syntheses), entries_count +1, context_brief.md refreshed`
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
+- Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
 - Next: M10 will rebuild `knowledge-query` / `knowledge-dashboard` / `knowledge-resume` / `knowledge-refresh` on the new manifests. Today, `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
 
 If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsupported citations` warning so the audit trail is on-screen.
@@ -553,13 +639,13 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - **Re-run on an already-finalized project.** `<WIKI_ROOT>/wiki/syntheses/<slug>.md` exists — abort with the `--overwrite` nudge. If `--overwrite`, the synthesis page is rewritten but `config_bump.py --delta 1` would over-count; pass `--overwrite` only when the previous synthesis page is being replaced after a hand-edit, and reconcile entries_count via `wiki-lint --fix=entries_count_drift` afterward.
 - **No citations in the manifest.** Steps 5–6 still produce a synthesis page; the `## References` block becomes `_No external citations recorded in citation-manifest.json._`. cycle-guard's `wiki_pages_cited` will be `[]` and `status: clear` — surface in Step 11.
 - **Plan.json missing topic.** Step 3 falls back to `--synthesis-slug` if passed, else aborts cleanly.
-- **Cited source page missing on disk.** Step 5's reference-row falls back to the slug as the title. cycle-guard's `wiki_pages_cited_missing` will list the slug; surface in Step 11 as `⚠ Missing pages: <slug1>, <slug2>` so the operator knows the wiki was modified between ingest and finalize.
+- **Cited source page missing on disk.** Step 5's reference-row falls back to the slug as the title AND emits **no** `[[<slug>]]` backlink (a bare link to a missing page would be a `broken_wikilink` error that fails the Step 10.5 health gate). cycle-guard's `wiki_pages_cited_missing` will list the slug; surface in Step 11 as `⚠ Missing pages: <slug1>, <slug2>` so the operator knows the wiki was modified between ingest and finalize.
 - **Duplicate binding entry without `--overwrite`.** Step 9's `append-project` returns `existing_slug` (the SKILL did NOT pass `--allow-update` because `--overwrite` was off). Steps 6–8 already landed the synthesis page → the wiki has the new page but `binding.json::research_projects[]` still records the prior deposit's `report_path` / `deposited_at`. Step 11 surfaces the loud `⚠ Binding append SKIPPED` warning verbatim from Step 9. Reconcile via `--overwrite` re-run (which passes `--allow-update` per Step 9's contract), or accept the asymmetric state — both are valid operator decisions.
 
 ## Out of scope
 
 - Does NOT re-run the verifier, the composer, or the ingester. M9 reads the latest verified draft + manifest as-is.
-- Renders an IEEE-style numbered reference list (`**[N]** Publisher, "Title". [URL](URL) — [[sources/<slug>]]`, first-appearance order matching the composer's inline `[N]`; #300/#301, v0.1.4). Does NOT support APA / MLA / Chicago rendering — those can be derived from the same citation-manifest if a bibliography skill ships.
+- Renders an IEEE-style numbered reference list (`**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]`, first-appearance order matching the composer's inline `[N]`; #300/#301, v0.1.4). The reference backlink is a **bare** `[[<slug>]]` (not path-prefixed `[[sources/<slug>]]`) so the synthesis→source edge registers in cogni-wiki's link graph (#308, Slice 16). Does NOT support APA / MLA / Chicago rendering — those can be derived from the same citation-manifest if a bibliography skill ships.
 - Does NOT update `topic_lineage.covered_themes[]` in the binding — that field is reserved for M10's manifest-aware dashboard rebuild.
 - Does NOT support cross-page substitute-citation search or transitive cycle detection on the new manifest shape (the adapter handles direct cycles only — same posture as M9's "smallest necessary change" framing).
 - **Localizes the reference-section heading** per `plan.json::output_language` via `_knowledge_lib.ref_heading` (`de→Referenzen`, default→English; #301, v0.1.4), and strips the composer's heading language-independently. Does NOT itself translate body content — the draft body language is the composer's responsibility (it honours `OUTPUT_LANGUAGE`); finalize deposits the verified body verbatim.
@@ -573,6 +659,8 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/context_brief.md` — refreshed.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] finalize | …` line.
 - `<knowledge-root>/.cogni-knowledge/binding.json` — one new entry in `research_projects[]` with `report_source: "wiki"`.
+- `<WIKI_ROOT>/wiki/<type>/<cited-slug>.md` — each cited page gains a reverse `[[<synthesis-slug>]]` backlink (Step 10.5 `lint --fix=reverse_link_missing`), de-orphaning the synthesis.
+- `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
 
 No files are written outside the workspace root or the bound knowledge base.
 
@@ -586,3 +674,5 @@ No files are written outside the workspace root or the bound knowledge base.
 - `cogni-wiki/skills/wiki-ingest/scripts/wiki_index_update.py --help`
 - `cogni-wiki/skills/wiki-ingest/scripts/config_bump.py --help`
 - `cogni-wiki/skills/wiki-ingest/scripts/rebuild_context_brief.py --help`
+- `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py --help` — Step 10.5 conformance gate (`--fix=all`)
+- `cogni-wiki/skills/wiki-health/scripts/health.py --help` — Step 10.5 structural assertion

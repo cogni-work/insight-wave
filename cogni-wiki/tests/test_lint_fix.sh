@@ -404,4 +404,72 @@ after=$(snap)
 [ "$before" = "$after" ] || fail "--suggest modified files on disk"
 green "  --suggest writes nothing to disk"
 
+# ---------- 6) --fix=all composition: no stale-snapshot clobber ----------
+# Regression: in-process fixers (reverse_link_missing, then frontmatter_defaults)
+# must each read the page FRESH, not from the start-of-scan snapshot. Otherwise
+# frontmatter_defaults rewrites a cited source from the stale snapshot and erases
+# the `## See also` reverse link reverse_link_missing just wrote — silently
+# un-doing de-orphaning. Fixture: a source MISSING id: (triggers
+# frontmatter_defaults) that is ALSO cited by a synthesis (triggers
+# reverse_link_missing on that source). One --fix=all pass must apply BOTH.
+TODAY=$(date +%Y-%m-%d)
+CLOB="$WORKDIR/clobber-wiki"
+mkdir -p "$CLOB/wiki/sources" "$CLOB/wiki/syntheses" "$CLOB/.cogni-wiki"
+cat > "$CLOB/.cogni-wiki/config.json" <<EOF
+{"name":"c","slug":"c","created":"$TODAY","entries_count":2,"last_lint":null,"schema_version":"0.0.6"}
+EOF
+cat > "$CLOB/wiki/index.md" <<EOF
+# Index
+
+## T
+
+- [[clob-src]] — s
+- [[clob-syn]] — y
+EOF
+# Source page deliberately MISSING the id: field.
+cat > "$CLOB/wiki/sources/clob-src.md" <<EOF
+---
+title: "Clobber Source"
+type: source
+tags: [source]
+created: $TODAY
+updated: $TODAY
+sources: ["https://example.org/c"]
+---
+# Clobber Source
+Body text comfortably beyond the fifty-character stub threshold so no stub warning.
+EOF
+cat > "$CLOB/wiki/syntheses/clob-syn.md" <<EOF
+---
+id: clob-syn
+title: "Clobber Synthesis"
+type: synthesis
+tags: [synthesis]
+created: $TODAY
+updated: $TODAY
+sources:
+  - wiki://clob-src
+derived_from_research: proj
+---
+# Clobber Synthesis
+Synthesis body comfortably beyond the fifty-character stub threshold so no warning.
+
+## References
+
+**[1]** "Clobber Source". [https://example.org/c](https://example.org/c) — [[clob-src]]
+EOF
+python3 "$LINT" --wiki-root "$CLOB" --fix=all >/dev/null
+src_after=$(cat "$CLOB/wiki/sources/clob-src.md")
+case "$src_after" in
+  *"id: clob-src"*) : ;;
+  *) fail "clobber: frontmatter_defaults did not backfill id: on clob-src" ;;
+esac
+case "$src_after" in
+  *"[[clob-syn]]"*) : ;;
+  *) fail "clobber: reverse_link_missing's [[clob-syn]] back-link was clobbered by frontmatter_defaults (stale-snapshot regression)" ;;
+esac
+orphans=$(python3 "$LINT" --wiki-root "$CLOB" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([w for w in d['warnings'] if w['class']=='orphan_page']))")
+[ "$orphans" = "0" ] || fail "clobber: expected 0 orphan_page after --fix=all, got $orphans"
+green "  --fix=all applies reverse_link_missing AND frontmatter_defaults to one page without clobber"
+
 green "ALL TESTS PASS"

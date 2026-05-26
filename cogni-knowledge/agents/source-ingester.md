@@ -92,7 +92,7 @@ Compose the markdown page text:
 id: <slug>
 title: "<title>"
 type: source
-tags: []
+tags: [source]
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 sources: ["<URL>"]
@@ -117,7 +117,8 @@ pre_extracted_claims:
 YAML frontmatter rules:
 
 - Emit YAML as literal text in the page body — match the shape `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter` parses. Inline strings get double quotes; multiline strings stay scalar (no `|` blocks needed for our short claim texts). The Python that calls `atomic_write_text` must stay stdlib-only — do not import `yaml` (or any pip dependency) in the wrapper code.
-- **Quote string fields with `json.dumps(s, ensure_ascii=False)`.** JSON's double-quoted-string syntax is a strict subset of YAML's flow-string syntax, so `json.dumps` output is YAML-valid and correctly escapes `\`, `"`, embedded newlines, tabs, and control characters in claim `text` / `excerpt_quote` payloads. A regulatory PDF excerpt containing a backslash or quoted phrase would break a hand-rolled `\"`-only escaper. `json.dumps` is stdlib.
+- **Emit `id:` UNQUOTED** (`id: <slug>`, never `id: "<slug>"`). `SLUG` is always safe kebab-case (`[a-z0-9][a-z0-9-]*`, validated in Phase 0), so it needs no quoting — and `_wikilib.parse_frontmatter` keeps surrounding quotes on scalars, so a quoted `id: "<slug>"` parses as the literal string `"<slug>"` (quotes included) and trips cogni-wiki `wiki-health`'s `id_mismatch` error (frontmatter `id` ≠ filename stem). `id:` is the one exception to the quote-string-fields rule below.
+- **Quote the other string fields with `json.dumps(s, ensure_ascii=False)`** (`title`, `publisher`, claim `text` / `excerpt_quote`, etc.). JSON's double-quoted-string syntax is a strict subset of YAML's flow-string syntax, so `json.dumps` output is YAML-valid and correctly escapes `\`, `"`, embedded newlines, tabs, and control characters. A regulatory PDF excerpt containing a backslash or quoted phrase would break a hand-rolled `\"`-only escaper. `json.dumps` is stdlib. (`id:` is exempt — see above; `type:`, `created:`, `updated:` are fixed-vocabulary scalars and stay unquoted too.)
 - `pre_extracted_claims:` is a block list of mappings. Indent two spaces; quote `text` and `excerpt_quote` (escape internal `"` as `\"`). Numeric `excerpt_position` stays unquoted.
 - `sub_question_refs:` inside each claim is a flow sequence: `[sq-01, sq-03]`.
 
@@ -126,6 +127,8 @@ Body rules:
 - First non-frontmatter line is `# <title>` (markdown H1) using the resolved title.
 - The fetched body follows verbatim. **No** in-body highlighting markup, **no** body-level edits. The wiki-verifier will use `excerpt_position` offsets to render context.
 - If the body itself starts with an H1, drop our injected H1 to avoid double headings.
+
+`content_hash` is the **provenance hash of the fetched source body** (from `entry.content_hash`), not a hash of this markdown file. The on-disk page is the fetched body plus the injected `# <title>` H1, and downstream bidirectional-link maintenance (`knowledge-ingest`'s `backlink_audit.py --apply-plan`, `knowledge-finalize`'s `lint --fix=reverse_link_missing`) may append a `## See also` backlink trailer. So a future integrity check must compare `content_hash` against the **fetched body in the cache**, never against `hash(<on-disk page body>)` — the latter diverges by design once backlinks are written, and `excerpt_position` offsets (anchored to the verbatim body that precedes any appended trailer) stay valid.
 
 Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/sources/<slug>.md`. Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal:
 
