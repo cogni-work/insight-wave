@@ -454,6 +454,43 @@ Exact `##` section headers for insight-summary.md output, per arc and language. 
 | 4 | Foundations: Capability Requirements | Fundamente: Kompetenzanforderungen | S (Digitales Fundament) |
 | Synthesis | The Capability Imperative | Der Fähigkeitsimperativ | cross-theme close on S |
 
+### Arc-mode translation headings (FR/IT/PL/NL/ES)
+
+These tables are **reference data for downstream arc-mode translation** (consumed by
+cogni-copywriting's copywriter skill, Step 2.5, which substitutes them positionally when translating
+an arc narrative). cogni-narrative itself still **generates `insight-summary.md` only in EN/DE** —
+the "Language Detection", "Supported Languages", and `^(en|de)$` validation rules at the top of this
+file are unchanged. Only the two customer-facing arcs with downstream localization are covered
+(`corporate-visions`, `jtbd-portfolio`); the other 9 arcs remain EN/DE in their tables above. The
+"Keep in English" rules (framework names, Dublin Core keys, IDs) still apply.
+
+Address register is formal/courteous per language: FR *vous*, IT *Lei/voi*, ES *usted*, NL *u*,
+PL *Pan/Pani*. Diacritics are mandatory (never ASCII substitutes).
+
+**corporate-visions:**
+
+| # | English (en) | French (fr) | Italian (it) | Polish (pl) | Dutch (nl) | Spanish (es) |
+|---|--------------|-------------|--------------|-------------|------------|--------------|
+| 1 | Why Change: Unconsidered Needs | Pourquoi changer : besoins insoupçonnés | Perché cambiare: bisogni inespressi | Dlaczego zmiana: nieuświadomione potrzeby | Waarom veranderen: onopgemerkte behoeften | Por qué cambiar: necesidades no consideradas |
+| 2 | Why Now: Forcing Functions | Pourquoi maintenant : facteurs déclencheurs | Perché ora: fattori scatenanti | Dlaczego teraz: czynniki wymuszające | Waarom nu: dwingende factoren | Por qué ahora: factores determinantes |
+| 3 | Why You: Unique Positioning | Pourquoi vous : positionnement unique | Perché voi: posizionamento unico | Dlaczego Państwo: wyjątkowe pozycjonowanie | Waarom u: unieke positionering | Por qué usted: posicionamiento único |
+| 4 | Why Pay: ROI Justification | Pourquoi investir : justification du ROI | Perché investire: giustificazione del ROI | Dlaczego inwestować: uzasadnienie ROI | Waarom investeren: ROI-onderbouwing | Por qué invertir: justificación del ROI |
+
+**jtbd-portfolio:**
+
+| # | English (en) | French (fr) | Italian (it) | Polish (pl) | Dutch (nl) | Spanish (es) |
+|---|--------------|-------------|--------------|-------------|------------|--------------|
+| 1 | Job Landscape: Functional Jobs | Panorama des tâches : tâches fonctionnelles | Panorama dei job: job funzionali | Krajobraz zadań: zadania funkcjonalne | Takenlandschap: functionele taken | Panorama de tareas: tareas funcionales |
+| 2 | Friction Map: Obstacles and Cost of Inaction | Carte des frictions : obstacles et coût de l'inaction | Mappa degli attriti: ostacoli e costo dell'inazione | Mapa tarć: przeszkody i koszt bezczynności | Frictiekaart: obstakels en kosten van nietsdoen | Mapa de fricciones: obstáculos y coste de la inacción |
+| 3 | Portfolio Map: Solutions by Job | Cartographie du portefeuille : solutions par tâche | Mappa del portfolio: soluzioni per job | Mapa portfolio: rozwiązania według zadań | Portfoliokaart: oplossingen per taak | Mapa de portfolio: soluciones por tarea |
+| 4 | Invitation: Next Step | Invitation : prochaine étape | Invito: prossimo passo | Zaproszenie: następny krok | Uitnodiging: volgende stap | Invitación: siguiente paso |
+
+**Bridge heading** ("Further Reading" / "Weiterführende Lektüre") by language:
+
+| English (en) | French (fr) | Italian (it) | Polish (pl) | Dutch (nl) | Spanish (es) |
+|--------------|-------------|--------------|-------------|------------|--------------|
+| Further Reading | Pour aller plus loin | Approfondimenti | Dalsza lektura | Verder lezen | Lecturas adicionales |
+
 ## German Text Formatting
 
 When generating content in German (`language: "de"`):

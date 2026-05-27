@@ -10,7 +10,7 @@ skills/                         3 narrative skills
     scripts/
       bridge-citations.py         Convert upstream citation formats to per-source markdown files
     references/
-      language-templates.md       Language and arc element templates (EN/DE)
+      language-templates.md       Language and arc element templates (EN/DE; generation stays EN/DE). Also carries FR/IT/PL/NL/ES arc-element + bridge headings for corporate-visions and jtbd-portfolio as reference data for downstream arc-mode translation (cogni-copywriting). References #318.
       narrative-techniques/       8 narrative techniques for story construction
       phase-workflows/            Phase-based workflow guidance (12 workflow files)
         phase-4b-synthesis-corporate-visions.md

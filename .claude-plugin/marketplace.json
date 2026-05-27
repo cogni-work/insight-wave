@@ -28,7 +28,7 @@
     {
       "name": "cogni-narrative",
       "source": "./cogni-narrative",
-      "version": "0.10.1",
+      "version": "0.11.0",
       "maturity": "preview",
       "description": "Story arc engine for the insight-wave ecosystem. Transforms structured research and portfolio output into executive-grade narratives using 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, Smarter Service + 6 more) and 8 narrative techniques. Sits between cogni-research and cogni-copywriting, feeding cogni-visual, cogni-sales, and cogni-marketing. Includes narrative review scoring (0-100, A-F) and derivative-format adaptation (executive brief, talking points, one-pager). Bilingual EN/DE.",
       "keywords": [
