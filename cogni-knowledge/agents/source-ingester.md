@@ -164,7 +164,7 @@ Write a JSON envelope to `BATCH_OUTPUT_PATH`:
   "wiki_path": "<absolute path to the new page>",
   "title": "<resolved title>",
   "claims_extracted": 12,
-  "summary": "<≤180-char one-line summary suitable for wiki/index.md>",
+  "summary": "<one crisp, self-contained sentence describing what the page is about>",
   "publisher": "europa.eu",
   "fetched_at": "<entry.fetched_at>",
   "cost_estimate": {"input_words": 5400, "output_words": 1100, "estimated_usd": 0.024}
@@ -182,7 +182,7 @@ For the skip cases (cache miss / unavailable / empty body / slug collision):
 }
 ```
 
-`summary` is your distilled one-line description of what the page is about (derived from the body, ≤180 chars, no leading/trailing whitespace). The orchestrator passes this to `wiki_index_update.py --summary`.
+`summary` is one crisp, self-contained sentence describing what the page is about, derived from the body — a complete thought, never truncated mid-word, no leading/trailing whitespace. The orchestrator passes it to `wiki_index_update.py --summary`, which applies a defensive word-boundary clamp as a backstop.
 
 Return a compact summary to the calling Task:
 

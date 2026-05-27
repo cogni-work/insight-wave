@@ -202,9 +202,11 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
        --wiki-root <WIKI_ROOT> \
        --slug <slug> \
-       --summary "<per-source summary, ≤180 chars>" \
-       --category "<theme_label, or Sources fallback>"
+       --summary "<the source's one-sentence summary>" \
+       --category "<theme_label, or Sources fallback>" \
+       --max-summary 240
    ```
+   The `--max-summary 240` is a defensive backstop (cogni-wiki v0.0.47+): the helper clamps the one-liner on a word boundary and appends `…` **only** if the authored sentence runs long; a normal one-sentence summary passes through untouched. It guards `wiki/index.md` against the #324 mid-word artifact — the summary itself is authored as one crisp, complete sentence (no character count), not sliced to a length.
    `wiki_index_update.py` creates a `## <theme_label>` heading in `wiki/index.md` on first use and appends to it afterwards, so sources group thematically (per sub-question) instead of under one flat `## Sources` (#307). As of cogni-wiki v0.0.46 the first real insert also sheds the wiki-setup `## Categories` / `_No pages yet…_` seed placeholder (#306). Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
 
    Capture the JSON envelope. When `success == true` **and** `data.action == "inserted"`, increment an in-loop counter `n_new` (initialised to `0` before the loop) — a brand-new index row means a brand-new page. When `data.action == "updated"`, a row for this slug already existed → do **not** count it (this is the re-ingest / pre-existing-page case; counting it would over-count `entries_count`).

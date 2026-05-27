@@ -45,6 +45,11 @@ assert_grep 'wiki_index_update.py' "$FIN" "knowledge-finalize: calls cogni-wiki 
 assert_grep 'config_bump.py' "$FIN" "knowledge-finalize: calls cogni-wiki config_bump.py at script level"
 assert_grep 'rebuild_context_brief.py' "$FIN" "knowledge-finalize: calls cogni-wiki rebuild_context_brief.py at script level"
 assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: indexes synthesis under Syntheses category"
+# #324: Step 7 passes the --max-summary word-boundary clamp backstop (cogni-wiki
+# v0.0.47+), and the "truncated to 180 chars" instruction that caused the mid-word
+# artifact is gone (the summary is authored as one crisp, complete sentence).
+assert_grep 'max-summary' "$FIN" "knowledge-finalize: Step 7 passes --max-summary clamp backstop (#324)"
+assert_not_grep '180' "$FIN" "knowledge-finalize: no 'truncated to 180 chars' instruction remains (#324)"
 assert_grep 'append-project' "$FIN" "knowledge-finalize: appends to binding via knowledge-binding.py append-project"
 assert_grep 'report-source wiki' "$FIN" "knowledge-finalize: hard-codes --report-source wiki on binding append"
 assert_grep 'wiki/log.md' "$FIN" "knowledge-finalize: appends to wiki/log.md"

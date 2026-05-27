@@ -15,7 +15,8 @@ Usage:
     wiki_index_update.py --wiki-root <path> \\
                          --slug <slug> \\
                          --summary "<one-sentence summary>" \\
-                         --category "<heading-text>"
+                         --category "<heading-text>" \\
+                         [--max-summary <chars>]
 
     wiki_index_update.py --wiki-root <path> --reflow-only \\
                          [--dry-run]
@@ -66,7 +67,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _wikilib import _wiki_lock, atomic_write, fail, ok  # noqa: E402
+from _wikilib import _wiki_lock, atomic_write, clamp_summary, fail, ok  # noqa: E402
 
 
 HEADING_RE = re.compile(r"^(#{2,3})\s+(.*?)\s*$")
@@ -361,6 +362,12 @@ def main() -> None:
     parser.add_argument("--summary", help="One-sentence summary shown after the slug wikilink (slug mode)")
     parser.add_argument("--category", help="Category heading text without the leading ##/### (slug mode)")
     parser.add_argument(
+        "--max-summary",
+        type=int,
+        default=None,
+        help="Defensive word-boundary clamp ceiling for --summary (chars); omit to store verbatim.",
+    )
+    parser.add_argument(
         "--reflow-only",
         action="store_true",
         help=(
@@ -413,6 +420,8 @@ def main() -> None:
     summary = args.summary.strip()
     if not summary:
         fail("--summary must be a non-empty string")
+    if args.max_summary is not None:
+        summary = clamp_summary(summary, args.max_summary)
 
     category = args.category.strip()
     if not category:

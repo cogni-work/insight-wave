@@ -376,3 +376,17 @@ def extract_wikilinks(text: str) -> "set[str]":
     agree on what counts as a wikilink reference.
     """
     return set(WIKILINK_RE.findall(text))
+
+
+def clamp_summary(text: str, max_len: int) -> str:
+    """Collapse to one line and defensively clamp a wiki/index.md one-liner to
+    max_len chars on a WORD boundary, appending '…' when cut. Backstop for the
+    #324 mid-word ('abgehackt') artifact — NOT an authoring target; callers
+    instruct the LLM to write one crisp sentence and this only fires on a
+    pathological run-on. Counts Unicode codepoints (German ä/ö/ü/ß = 1 each)."""
+    one_line = " ".join((text or "").split())
+    if len(one_line) <= max_len:
+        return one_line
+    head = one_line[: max_len - 1]
+    cut = head.rsplit(" ", 1)[0] if " " in head else head
+    return cut.rstrip(" .,;:!?–—-") + "…"

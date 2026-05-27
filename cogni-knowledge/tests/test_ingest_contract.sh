@@ -73,6 +73,11 @@ assert_not_grep 'No \`--apply-plan\`' "$INGEST" "knowledge-ingest: no 'No --appl
 assert_grep 'theme_label' "$INGEST" "knowledge-ingest: index category derived from the sub-question theme_label (#307)"
 assert_grep 'sub_question_refs\[0\]' "$INGEST" "knowledge-ingest: joins on sub_question_refs[0] to pick the theme_label (#307)"
 assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Sources\" as the only category (#307; Sources is a fallback now)"
+# #324: Step 4.2 passes the --max-summary word-boundary clamp backstop (cogni-wiki
+# v0.0.47+), and the "≤180 chars" authoring contract that caused the mid-word
+# artifact is gone (the summary is authored as one crisp, complete sentence).
+assert_grep 'max-summary' "$INGEST" "knowledge-ingest: Step 4.2 passes --max-summary clamp backstop (#324)"
+assert_not_grep '180' "$INGEST" "knowledge-ingest: no '≤180 chars' authoring contract remains (#324)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
@@ -105,6 +110,9 @@ assert_grep 'atomic_write_text' "$INGESTER" "source-ingester: writes via _knowle
 assert_grep 'UNQUOTED' "$INGESTER" "source-ingester: emits id: unquoted (#308 — quoted id trips health id_mismatch)"
 assert_grep 'tags: \[source\]' "$INGESTER" "source-ingester: default tags: [source] (#308)"
 assert_not_grep 'tags: \[\]' "$INGESTER" "source-ingester: no empty tags: [] remains (#308)"
+# #324: the summary field is semantic (one self-contained sentence), no char count.
+assert_grep 'self-contained sentence' "$INGESTER" "source-ingester: summary authored as one self-contained sentence (#324)"
+assert_not_grep '180' "$INGESTER" "source-ingester: no character-count contract remains in the summary field (#324)"
 # Frontmatter tools must not include WebFetch (re-fetch is forbidden in Phase 4).
 INGESTER_TOOLS_LINE=$(grep '^tools:' "$INGESTER" || true)
 if ! echo "$INGESTER_TOOLS_LINE" | grep -q WebFetch; then
