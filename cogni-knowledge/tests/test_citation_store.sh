@@ -301,6 +301,34 @@ else
   errors=$((errors + 1))
 fi
 
+# 9. A record block missing its `id:` line must NOT be silently dropped (which
+#    would vanish a citation while the round-trip count self-validates) — the
+#    parser emits it with an empty id and the build rejects it as empty_id.
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+# First bullet is `- pos:`, no id: line; the sentence IS in the draft, so this
+# isolates the empty-id path (not the substring check).
+(work / "noid-records.txt").write_text(
+    "- pos: 0:1\n  slug: p\n  claim: clm-001\n"
+    '  sentence: She said "high-risk" applies here<sup>[1](https://x.eu/a)</sup>.\n',
+    encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/noid-records.txt" --draft "$WORK/draft-v1.md" \
+  --out "$WORK/noid-manifest.json" --draft-version 1 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'empty_id', d
+" 2>/dev/null && [ ! -f "$WORK/noid-manifest.json" ]; then
+  green "PASS: id-less record block → empty_id write_failed, not a silent drop"
+else
+  red "FAIL: id-less record block was silently dropped or mis-handled"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

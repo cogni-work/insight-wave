@@ -504,7 +504,11 @@ def parse_citation_records(text: str) -> list[dict]:
     on. Lines are split on `\\n` only (NOT `str.splitlines()`, which also breaks
     on U+2028/U+2029/NEL/VT/FF and would truncate a sentence that contains one);
     a trailing `\\r` from CRLF is stripped (though `Path.read_text` normally
-    normalizes it before this runs)."""
+    normalizes it before this runs).
+
+    A `-` bullet block missing its `id:` line is emitted with an empty id (NOT
+    silently dropped), so `citation-store.py build`'s empty-id guard surfaces it
+    as `write_failed` instead of losing a citation with `success: true`."""
     records: list[dict] = []
     current: dict | None = None
     for raw in (text or "").split("\n"):
@@ -514,7 +518,7 @@ def parse_citation_records(text: str) -> list[dict]:
         if not lstripped or lstripped.startswith("#"):
             continue
         if lstripped == "-" or lstripped.startswith("- "):
-            if current is not None and "id" in current:
+            if current is not None:
                 records.append(_finalize_citation_record(current))
             current = {}
             rest = lstripped[1:].strip()
@@ -522,7 +526,7 @@ def parse_citation_records(text: str) -> list[dict]:
                 _absorb_citation_kv(current, rest)
         elif current is not None:
             _absorb_citation_kv(current, lstripped)
-    if current is not None and "id" in current:
+    if current is not None:
         records.append(_finalize_citation_record(current))
     return records
 
