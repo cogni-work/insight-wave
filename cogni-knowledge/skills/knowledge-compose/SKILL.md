@@ -20,7 +20,7 @@ A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any d
   "schema_version": "0.1.0",
   "draft_version": 1,
   "citations": [
-    {"draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"}
+    {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk…<sup>[1](https://…)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"}
   ]
 }
 ```
@@ -178,7 +178,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
 
 ### 5. Verify outputs on disk
 
-One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and a list-typed `citations[]` each carrying `draft_position` / `wiki_slug` / `claim_id`; outline file is on disk). An empty `citations[]` is NOT a hard fail — it emits a stderr `WARN` line and surfaces in the final summary per the edge-case section below (zero claims is an upstream-data symptom, not a composer bug). On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
+One Python subprocess validates all three artefacts (draft non-empty + carries a `[[sources/` wikilink; citation-manifest parses with `schema_version == "0.1.0"` and a list-typed `citations[]` each carrying `id` / `draft_sentence` / `wiki_slug` / `claim_id` and a `draft_sentence` that is a verbatim NFC substring of the draft; outline file is on disk). An empty `citations[]` is NOT a hard fail — it emits a stderr `WARN` line and surfaces in the final summary per the edge-case section below (zero claims is an upstream-data symptom, not a composer bug). On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim in the summary and stop — do not auto-retry. Paths go via env vars so spaces / apostrophes in project paths can't break the Python literal:
 
 ```
 DRAFT_PATH="<project_path>/output/draft-v<N>.md" \

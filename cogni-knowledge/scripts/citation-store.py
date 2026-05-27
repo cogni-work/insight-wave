@@ -40,6 +40,7 @@ import argparse
 import json
 import sys
 import unicodedata
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -92,7 +93,11 @@ def cmd_build(args: argparse.Namespace) -> int:
     missing = [
         r.get("id")
         for r in records
-        if _nfc(r.get("draft_sentence") or "") not in nfc_draft
+        # An empty/whitespace draft_sentence has no alignment surface, and
+        # `"" in anything` is always True — guard it explicitly so a record whose
+        # `sentence:` line was omitted can't slip through the substring check.
+        if not (r.get("draft_sentence") or "").strip()
+        or _nfc(r.get("draft_sentence") or "") not in nfc_draft
     ]
     if missing:
         return _emit(
@@ -111,14 +116,31 @@ def cmd_build(args: argparse.Namespace) -> int:
         }
         for r in records
     ]
-    atomic_write(
-        out_path,
-        {
-            "schema_version": SCHEMA_VERSION,
-            "draft_version": draft_version,
-            "citations": citations,
-        },
-    )
+
+    # `id` is the join key the verifier / revisor / `verify-store.py merge
+    # --manifest` rely on (merge itself rejects null/duplicate ids). Catch an
+    # empty or duplicated id at this build gate — the layer that owns manifest
+    # validity — rather than several phases downstream.
+    ids = [c["id"] for c in citations]
+    if any(not i for i in ids):
+        return _emit(False, data={"failed_check": "empty_id"}, error="write_failed")
+    dup_ids = sorted({i for i, n in Counter(ids).items() if n > 1})
+    if dup_ids:
+        return _emit(False, data={"failed_check": "duplicate_id", "ids": dup_ids}, error="write_failed")
+
+    try:
+        atomic_write(
+            out_path,
+            {
+                "schema_version": SCHEMA_VERSION,
+                "draft_version": draft_version,
+                "citations": citations,
+            },
+        )
+    except OSError as exc:
+        # Disk full, unwritable parent, --out under a non-directory, etc. Return
+        # the envelope the orchestrator parses, not a bare traceback.
+        return _emit(False, data={"detail": f"manifest write failed: {exc}"}, error="write_failed")
 
     # Round-trip self-check: re-read what we just wrote and `json.loads` it (the
     # gap the composer's old "Read it back to confirm persistence" never closed —

@@ -189,6 +189,118 @@ else
   errors=$((errors + 1))
 fi
 
+# 5. Duplicate citation id → write_failed at the build gate (no manifest), so the
+#    bad join key is caught here, not several phases downstream.
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+(work / "dup-records.txt").write_text(
+    "- id: cit-001\n  pos: 0:1\n  slug: p\n  claim: clm-001\n"
+    "  sentence: She said \"high-risk\" applies here<sup>[1](https://x.eu/a)</sup>.\n"
+    "- id: cit-001\n  pos: 0:2\n  slug: p\n  claim: clm-002\n"
+    "  sentence: The pattern \\d+ matches one or more digits<sup>[2](https://x.eu/b)</sup>.\n",
+    encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/dup-records.txt" --draft "$WORK/draft-v1.md" \
+  --out "$WORK/dup-manifest.json" --draft-version 1 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'duplicate_id' and d['data']['ids'] == ['cit-001'], d
+" 2>/dev/null && [ ! -f "$WORK/dup-manifest.json" ]; then
+  green "PASS: duplicate citation id → write_failed, no manifest written"
+else
+  red "FAIL: duplicate id not rejected at the build gate"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 6. A record missing its `sentence:` line → empty draft_sentence must NOT slip
+#    past the substring check (`"" in draft` is always True).
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+(work / "nosent-records.txt").write_text(
+    "- id: cit-001\n  pos: 0:1\n  slug: p\n  claim: clm-001\n",  # no sentence line
+    encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/nosent-records.txt" --draft "$WORK/draft-v1.md" \
+  --out "$WORK/nosent-manifest.json" --draft-version 1 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'sentence_not_in_draft' and d['data']['ids'] == ['cit-001'], d
+" 2>/dev/null && [ ! -f "$WORK/nosent-manifest.json" ]; then
+  green "PASS: record with an empty/missing sentence → write_failed, no manifest"
+else
+  red "FAIL: empty draft_sentence slipped past the substring check"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 7. Long-key aliases: the composer may emit the manifest field names
+#    (draft_position / wiki_slug / claim_id / draft_sentence) instead of the short
+#    keys — the parser must accept both and produce an identical manifest.
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+(work / "alias-records.txt").write_text(
+    "- id: cit-001\n"
+    "  draft_position: 02:03\n"
+    "  wiki_slug: eu-ai-act-article-6\n"
+    "  claim_id: clm-001\n"
+    '  draft_sentence: She said "high-risk" applies here<sup>[1](https://x.eu/a)</sup>.\n',
+    encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/alias-records.txt" --draft "$WORK/draft-v1.md" \
+  --out "$WORK/alias-manifest.json" --draft-version 1)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==1, d" 2>/dev/null \
+   && python3 -c "
+import json
+c = json.load(open('$WORK/alias-manifest.json'))['citations'][0]
+assert c['draft_position'] == '02:03' and c['wiki_slug'] == 'eu-ai-act-article-6', c
+assert c['claim_id'] == 'clm-001' and c['draft_sentence'].startswith('She said'), c
+" 2>/dev/null; then
+  green "PASS: parser accepts long-key aliases (draft_position/wiki_slug/claim_id/draft_sentence)"
+else
+  red "FAIL: long-key aliases not accepted"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 8. A sentence containing a Unicode line separator (U+2028) must NOT be
+#    truncated — the parser splits on \n only, not str.splitlines() (which also
+#    breaks on U+2028/U+2029/NEL and would split the sentence mid-record, then
+#    fail the substring check on prose the composer wrote correctly).
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+sentence = "Phrase one phrase two<sup>[1](https://x.eu/a)</sup>."
+(work / "ls-records.txt").write_text(
+    "- id: cit-001\n  pos: 0:1\n  slug: p\n  claim: clm-001\n  sentence: " + sentence + "\n",
+    encoding="utf-8")
+(work / "ls-draft.md").write_text("# R\n\n" + sentence + "\n\n## References\n[[sources/p]]\n",
+    encoding="utf-8")
+(work / "ls-expected.txt").write_text(sentence, encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/ls-records.txt" --draft "$WORK/ls-draft.md" \
+  --out "$WORK/ls-manifest.json" --draft-version 1)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==1, d" 2>/dev/null \
+   && python3 -c "
+import json
+c = json.load(open('$WORK/ls-manifest.json'))['citations'][0]
+exp = open('$WORK/ls-expected.txt', encoding='utf-8').read()
+assert c['draft_sentence'] == exp, ('truncated: ' + repr(c['draft_sentence']))
+" 2>/dev/null; then
+  green "PASS: U+2028 inside a sentence is preserved, not truncated (split on \\n only)"
+else
+  red "FAIL: sentence with a Unicode line separator was truncated"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

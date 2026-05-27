@@ -444,12 +444,20 @@ def parse_pre_extracted_claims(page_text: str) -> list[dict]:
 # already authors for `pre_extracted_claims:` frontmatter, so no new authoring
 # format is introduced and the LLM never emits JSON or escapes a quote.
 
+# Short keys are the documented authoring form; the long aliases are accepted
+# defensively because the composer also sees the manifest field names
+# (draft_position / wiki_slug / claim_id / draft_sentence) in the same step and
+# could conflate the two — "be liberal in what you accept".
 _CITATION_RECORD_KEYS = {
     "id": "id",
     "pos": "draft_position",
+    "draft_position": "draft_position",
     "slug": "wiki_slug",
+    "wiki_slug": "wiki_slug",
     "claim": "claim_id",
+    "claim_id": "claim_id",
     "sentence": "draft_sentence",
+    "draft_sentence": "draft_sentence",
 }
 
 
@@ -461,10 +469,10 @@ def _absorb_citation_kv(item: dict, kv: str) -> None:
     if field is None:
         return
     if field == "draft_sentence":
-        # Verbatim: strip exactly ONE conventional leading space after the colon
-        # and preserve everything else byte-for-byte (no trailing strip), so the
-        # sentence round-trips byte-exact and stays a substring of the draft.
-        item[field] = value[1:] if value.startswith(" ") else value
+        # Strip the conventional leading space(s) after the colon — a prose
+        # sentence never begins with a space, so this stays byte-exact while
+        # forgiving an extra space. No trailing strip — preserve verbatim.
+        item[field] = value.lstrip(" ")
     else:
         item[field] = value.strip()
 
@@ -493,10 +501,15 @@ def parse_citation_records(text: str) -> list[dict]:
     `claim` literal `null`/empty → None (synthesis citations). Blank and
     `#`-comment lines are skipped. draft_sentence is assumed single-line — the
     same invariant the verifier's `draft_sentence in draft` check already relies
-    on. `splitlines()` absorbs CRLF, so no `\\r` handling is needed."""
+    on. Lines are split on `\\n` only (NOT `str.splitlines()`, which also breaks
+    on U+2028/U+2029/NEL/VT/FF and would truncate a sentence that contains one);
+    a trailing `\\r` from CRLF is stripped (though `Path.read_text` normally
+    normalizes it before this runs)."""
     records: list[dict] = []
     current: dict | None = None
-    for raw in (text or "").splitlines():
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
         lstripped = raw.lstrip()
         if not lstripped or lstripped.startswith("#"):
             continue
