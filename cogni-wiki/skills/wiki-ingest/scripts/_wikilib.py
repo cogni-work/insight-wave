@@ -387,6 +387,6 @@ def clamp_summary(text: str, max_len: int) -> str:
     one_line = " ".join((text or "").split())
     if len(one_line) <= max_len:
         return one_line
-    head = one_line[: max_len - 1]
+    head = one_line[: max(0, max_len - 1)]
     cut = head.rsplit(" ", 1)[0] if " " in head else head
     return cut.rstrip(" .,;:!?–—-") + "…"

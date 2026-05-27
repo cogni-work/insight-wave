@@ -118,6 +118,13 @@ assert ow2[-1] == "fuer", "#324: clamp backs off to the last whole word before t
 assert clamp_summary("", 240) == ""
 assert clamp_summary("   ", 240) == ""
 
+# non-positive max_len must not negative-slice into a near-full string —
+# the max(0, max_len - 1) guard bounds it to just the ellipsis.
+long = "The quick brown fox jumps over the lazy dog repeatedly today"
+assert clamp_summary(long, 0) == "…", clamp_summary(long, 0)
+assert clamp_summary(long, -3) == "…", clamp_summary(long, -3)
+assert clamp_summary(long, 1) == "…", clamp_summary(long, 1)
+
 print("clamp_summary unit checks OK")
 PY
 green "(e) clamp_summary unit checks pass (word-prefix invariant + exact #324 case + German + edges)"
