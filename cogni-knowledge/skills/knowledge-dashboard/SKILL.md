@@ -11,7 +11,7 @@ Render a self-contained HTML dashboard for a bound cogni-knowledge base. This sk
 The cogni-knowledge value-add over a raw `cogni-wiki:wiki-dashboard` dispatch is:
 
 1. **Binding-aware wiki path resolution** — no `--wiki-root` from the user.
-2. **Knowledge overlay sidecar** — a markdown file co-located with `wiki-dashboard.html` that captures the binding view: a deposited-projects table with per-project inverted-pipeline depth (sub-questions, fetched/unavailable, verifier verdicts), a knowledge-base-global fetch-cache health block, and the latest lint-audit summary.
+2. **Knowledge overlay sidecar** — a markdown file co-located with `wiki-dashboard.html` that captures the binding view: a deposited-projects table with per-project inverted-pipeline depth (sub-questions, fetched/unavailable, distilled concepts + claim-dedup ratio, verifier verdicts), a knowledge-base-global fetch-cache health block, and the latest lint-audit summary.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the delegation boundary — this skill writes only one file (`knowledge-overlay.md`); everything else is the upstream dashboard's responsibility.
 
@@ -99,7 +99,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py project \
     --project-path <research_projects[i].project_path>
 ```
 
-Capture `sub_questions`, `fetched`, `unavailable`, and `verify_counts.{verbatim,paraphrase,unsupported}`. Legacy v0.0.x deposits (cogni-research layout, no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render those cells as `—` so the table reads honestly rather than implying a zero-claim pipeline ran. If a project entry has no `project_path` (pre-v0.0.2 binding), skip the per-project read and render `—`.
+Capture `sub_questions`, `fetched`, `unavailable`, the distill fields `concepts_total` / `claims_attached` / `claims_deduped` (#336), and `verify_counts.{verbatim,paraphrase,unsupported}`. Legacy v0.0.x deposits (cogni-research layout, no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render those cells as `—` so the table reads honestly rather than implying a zero-claim pipeline ran. A deposit that ran before Phase 4.5 existed (or skipped the optional distill) returns `concepts_total: 0` — render the concepts/deduped cells as `—`. If a project entry has no `project_path` (pre-v0.0.2 binding), skip the per-project read and render `—`.
 
 Then read the knowledge-base-global fetch-cache health once:
 
@@ -119,10 +119,10 @@ Created <created>. Wiki: <wiki_path>.
 
 ## Deposited research projects
 
-| slug | deposited_at | report_source | sub_questions | fetched | unavailable | verbatim | paraphrase | unsupported |
-|------|--------------|---------------|---------------|---------|-------------|----------|------------|-------------|
-| <slug-1> | <YYYY-MM-DD> | <web|local|wiki|hybrid> | <n or —> | <n or —> | <n or —> | <n or —> | <n or —> | <n or —> |
-| ...      | ...          | ...                     | ...      | ...      | ...      | ...      | ...      | ...      |
+| slug | deposited_at | report_source | sub_questions | fetched | unavailable | concepts | claims deduped | verbatim | paraphrase | unsupported |
+|------|--------------|---------------|---------------|---------|-------------|----------|----------------|----------|------------|-------------|
+| <slug-1> | <YYYY-MM-DD> | <web|local|wiki|hybrid> | <n or —> | <n or —> | <n or —> | <concepts_total or —> | <claims_deduped>/<claims_attached> | <n or —> | <n or —> | <n or —> |
+| ...      | ...          | ...                     | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      |
 
 (Or, if `research_projects[]` is empty:)
 > No research projects deposited yet — run the inverted pipeline (`knowledge-plan` → … → `knowledge-finalize`) to add the first.

@@ -56,6 +56,9 @@ JSON
 plant "$FULL/ingest-manifest.json" <<'JSON'
 {"schema_version":"0.1.0","ingested":[{"url":"a"},{"url":"b"}],"skipped":[{"url":"c","reason":"cache_miss"}]}
 JSON
+plant "$FULL/distill-manifest.json" <<'JSON'
+{"schema_version":"0.1.0","concepts":[{"slug":"x","action":"created"},{"slug":"y","action":"created"},{"slug":"z","action":"updated"}],"claims_attached_total":9,"claims_deduped_total":2}
+JSON
 plant "$FULL/citation-manifest.json" <<'JSON'
 {"schema_version":"0.1.0","draft_version":2,"citations":[{"draft_position":"01:01"},{"draft_position":"02:03"}]}
 JSON
@@ -83,9 +86,15 @@ assert x['skipped'] == 1, x
 assert x['citations'] == 2, x
 assert x['draft_version'] == 2, x
 assert x['phase_reached'] == 'verify', x
+# Distill (Phase 4.5, #336) read-side counts.
+assert x['concepts_created'] == 2, x
+assert x['concepts_updated'] == 1, x
+assert x['concepts_total'] == 3, x
+assert x['claims_attached'] == 9, x
+assert x['claims_deduped'] == 2, x
 print('OK')
 " | grep -q OK; then
-  green "PASS: project full — all six manifest counts + topic + phase_reached=verify"
+  green "PASS: project full — all manifest counts + distill counts + topic + phase_reached=verify"
 else
   red "FAIL: full-project summary wrong"
   red "  got: $FULL_OUT"

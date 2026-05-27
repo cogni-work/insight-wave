@@ -296,6 +296,101 @@ def assert_strip_inline_citation_markers():
     assert kl.strip_inline_citation_markers("plain text") == "plain text"
 
 
+def assert_tokenization_primitives():
+    # #336: the tokenization primitives lifted from wiki-coverage.py now live
+    # here. Spot-check the contract the lift must preserve.
+    # Folding: German umlaut survives the [^a-z0-9]+ split (geschaeftsidee, one token).
+    assert "geschaeftsidee" in kl.tokenize("Geschäftsidee"), kl.tokenize("Geschäftsidee")
+    # Stopwords + <3 drop, digits kept at any length (article-number anchors).
+    toks = kl.tokenize("Article 6 and the high-risk system")
+    assert "6" in toks, toks            # digit anchor kept
+    assert "the" not in toks and "and" not in toks, toks  # stopwords dropped
+    # token_weight: denylist → 0.0 (checked first); digit → x3.0; longer → higher.
+    assert kl.token_weight("system") == 0.0, "denylisted token must be 0"
+    assert kl.token_weight("2025") == 0.0, "denylisted year must be 0 (no digit boost)"
+    assert kl.token_weight("6") == 0.4 * 3.0, kl.token_weight("6")  # short digit, clamped base x3
+    assert kl.token_weight("classification") == 1.0, kl.token_weight("classification")
+    # compound_match: German compound by prefix; symmetric; rejects boilerplate stem.
+    assert kl.compound_match("bussgelder", "bussgeldsystem"), "compound prefix match"
+    assert kl.compound_match("bussgeldsystem", "bussgelder"), "compound match is symmetric"
+    assert not kl.compound_match("system", "systemverwaltung"), "denylisted token never matches"
+    assert not kl.compound_match("art", "artikel"), "too-short prefix rejected"
+
+
+def assert_norm_key():
+    # Same fact differing ONLY in stopwords/denylist (the, AI, system, is, of) →
+    # same key (those carry no discriminative signal and are dropped).
+    a = "the AI system classification is high-risk"
+    b = "high-risk classification of the system"
+    assert kl.norm_key(a) == kl.norm_key(b), (kl.norm_key(a), kl.norm_key(b))
+    # Deterministic + sorted.
+    assert kl.norm_key("risk high 6") == kl.norm_key("6 high risk")
+    # All-boilerplate / empty → "" (caller must treat as "no exact match").
+    assert kl.norm_key("the system and the AI") == "", repr(kl.norm_key("the system and the AI"))
+    assert kl.norm_key("") == ""
+
+
+def assert_claim_similarity():
+    # Identical discriminative content → 1.0.
+    assert kl.claim_similarity("high-risk classification scope",
+                               "high-risk classification scope") == 1.0
+    # Reworded same fact clears the 0.85 dedup bar.
+    s = kl.claim_similarity(
+        "Annex III lists eight categories of high-risk AI systems.",
+        "Annex III lists the eight high-risk AI system categories.")
+    assert s >= 0.85, f"reworded-same should merge, got {s}"
+    # Genuinely different facts stay well below the bar (fail-safe under-merge).
+    s2 = kl.claim_similarity(
+        "Member states must designate a supervisory authority.",
+        "The penalty ceiling is thirty five million euros.")
+    assert s2 < 0.85, f"distinct facts must not merge, got {s2}"
+    # All-boilerplate / empty side → 0.0 (keep both).
+    assert kl.claim_similarity("the system and the AI", "the system and the AI") == 0.0
+    assert kl.claim_similarity("", "anything at all here") == 0.0
+    # Symmetric.
+    x, y = "high-risk classification rules", "rules for high-risk classification"
+    assert kl.claim_similarity(x, y) == kl.claim_similarity(y, x), "similarity must be symmetric"
+
+
+def assert_parse_concept_records():
+    text = (
+        "- title: Annex III Categories\n"
+        "  type: concept\n"
+        "  summary: Categories of high-risk AI systems: the core list.\n"
+        "  related: conformity-assessment, gpai-obligations\n"
+        "  claim: src-a | clm-003 | Annex III lists eight categories.\n"
+        "  claim: src-b | clm-001 | Annex III enumerates the categories.\n"
+        "- title: European Commission\n"
+        "  type: entity\n"
+        "  claim: src-b | clm-002 | The Commission issued the Code.\n"
+    )
+    recs = kl.parse_concept_records(text)
+    assert len(recs) == 2, recs
+    r0 = recs[0]
+    assert r0["title"] == "Annex III Categories" and r0["type"] == "concept", r0
+    # A colon inside the summary must survive (partition on first colon only).
+    assert r0["summary"] == "Categories of high-risk AI systems: the core list.", r0["summary"]
+    assert r0["related"] == ["conformity-assessment", "gpai-obligations"], r0["related"]
+    assert len(r0["claims"]) == 2, r0["claims"]
+    assert r0["claims"][0] == {"source_slug": "src-a", "source_claim_id": "clm-003",
+                               "text": "Annex III lists eight categories."}, r0["claims"][0]
+    # entity record with a single claim.
+    assert recs[1]["type"] == "entity" and len(recs[1]["claims"]) == 1, recs[1]
+    # 3-part form: a claim text containing a pipe keeps everything after the 2nd ' | '.
+    pipe = kl.parse_concept_records("- title: T\n  claim: s | c | a | b | c\n")
+    assert pipe[0]["claims"][0]["text"] == "a | b | c", pipe[0]["claims"][0]
+    # Tolerated 2-part ref form `<slug>#<id> | <text>`.
+    ref = kl.parse_concept_records("- title: T\n  claim: src-x#clm-009 | A claim.\n")
+    assert ref[0]["claims"][0] == {"source_slug": "src-x", "source_claim_id": "clm-009",
+                                   "text": "A claim."}, ref[0]["claims"][0]
+    # Empty input → [].
+    assert kl.parse_concept_records("") == []
+
+
+check("tokenization_primitives", assert_tokenization_primitives)
+check("norm_key", assert_norm_key)
+check("claim_similarity", assert_claim_similarity)
+check("parse_concept_records", assert_parse_concept_records)
 check("strip_inline_citation_markers", assert_strip_inline_citation_markers)
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
@@ -335,6 +430,10 @@ grade strip_reference_section "strip_reference_section — language-independent 
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
 grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
+grade tokenization_primitives "tokenization primitives (#336 lift) — fold/tokenize/token_weight/compound_match preserved from wiki-coverage.py"
+grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"
+grade claim_similarity        "claim_similarity — symmetric weighted-Jaccard, reworded-same≥0.85, distinct<0.85, all-boilerplate→0.0 (#336)"
+grade parse_concept_records   "parse_concept_records — concept/entity records, repeatable claim: lines, colon-in-summary, first-pipe split (#336)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

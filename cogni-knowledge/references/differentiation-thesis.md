@@ -37,15 +37,18 @@ The opinionation is the value. cogni-wiki can ingest research, but it does not e
 ## The compounding loop
 
 ```
-Run 1: research topic A          → wiki has pages P1..P5
-Run 2: research adjacent topic B → wiki-researcher reads P1..P5 from the bound wiki
-                                  → finds gaps → fetches new sources only for the gaps
-                                  → deposits new pages P6..P9, some [[wikilinking]] back to P1..P5
-Run 3: research deeper subtopic  → reads P1..P9 → minimal new web work
-                                  → deposits P10..P12, dense with cross-references
+Run 1: research topic A          → ingest deposits source pages S1..S5
+                                  → distill (Phase 4.5) deposits concept/entity pages C1..C3,
+                                    each [[backlinking]] the sources whose claims it distils
+Run 2: research adjacent topic B → curate reads the bound wiki, narrows web work to gaps (#309)
+                                  → ingest deposits S6..S9
+                                  → distill ENRICHES C1..C3 (new claims appended, source
+                                    backlinks unioned, duplicate facts merged) and adds C4..C5
+Run 3: research deeper subtopic  → reads S1..S9 + C1..C5 → minimal new web work
+                                  → distill deposits/enriches a concept web dense with cross-references
 ```
 
-The wiki gets denser. The cost per research run trends down. The cross-project synthesis is visible in the markdown itself — no special query needed.
+The concept/entity web is the part that **compounds**: the same recurring concept gets one page that successive runs deepen, rather than N disconnected source extracts. The wiki gets denser, the cost per research run trends down (curate's read-before-web, #309), and the cross-project synthesis is visible in the concept pages' `distilled_claims:` + `[[backlinks]]` — no special query needed.
 
 ## What success looks like
 
@@ -53,7 +56,7 @@ In Phase 4 (alpha), we will measure:
 
 - **Time-to-second-research.** Should drop as the wiki primes the second run.
 - **Information density.** Count `[[wikilinks]]` between pages from different research projects (proxy for compounding).
-- **Claims duplication.** Compare claim count vs. unique-source count. `wiki-ingest` dedupes claims at deposit.
+- **Claims duplication.** Compare claim count vs. unique-source count. **Phase 4.5 `knowledge-distill` dedupes claims at deposit** (v0.1.13, #336): the distillation pass attaches each run's source claims to `type: concept` / `type: entity` pages, and `concept-store.py` merges duplicate facts deterministically (`norm_key` exact match, then a symmetric weighted-Jaccard ≥ 0.85, fail-safe to keep-both) — one fact, one claim line, multiple source `[[backlinks]]`. The measurable ratio is `distill-manifest.json::claims_deduped_total / claims_attached_total` (surfaced by `pipeline-summary.py`). URL-level dedup (`candidate-store.py`) still collapses same-URL candidates upstream; claim-level dedup is the distill layer's job. (Before v0.1.13 this metric was structurally unmet — the deposited base was a source+synthesis citation store with no claim-level dedup.)
 - **User-perceived value.** Would the user pick `cogni-knowledge` over standalone `cogni-research`?
 
 A positive alpha is what triggers Phase 6 (absorbing `cogni-research`). A negative alpha freezes `cogni-knowledge` as an experimental path and we do not migrate.
