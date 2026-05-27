@@ -464,11 +464,12 @@ The trailing JSON line is captured for the final summary. Steps 5 and 6 are bund
 python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
     --wiki-root "$WIKI_ROOT" \
     --slug <synthesis-slug> \
-    --summary "<topic, truncated to 180 chars>" \
-    --category "Syntheses"
+    --summary "<a crisp one-line description of the synthesis topic>" \
+    --category "Syntheses" \
+    --max-summary 240
 ```
 
-Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
+Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. Write the summary as one crisp, complete sentence (no character count); the `--max-summary 240` defensive backstop (cogni-wiki v0.0.47+) clamps on a word boundary with `…` only if it runs long, guarding `wiki/index.md` against the #324 mid-word artifact. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
 
 Capture the JSON envelope. On `success: true`, set `INDEX_OK=yes` and continue to Step 8. On `success: false` OR a non-zero exit, set `INDEX_OK=no`, surface the error in the final summary, and **skip Step 8** (do not bump `entries_count` when the index didn't actually get a new row — keeping the counter and the filesystem in lockstep is the structural invariant `wiki-lint --fix=entries_count_drift` is supposed to reconcile, not a hazard for finalize to create).
 
