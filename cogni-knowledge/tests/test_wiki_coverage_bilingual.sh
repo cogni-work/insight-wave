@@ -38,6 +38,10 @@
 #   8. NFD folding: a typographic fraction (`½`) in a page's claim text must NOT
 #      fabricate a `1`/`2` article-number anchor (the NFKD-compatibility-
 #      decomposition bug) and falsely cover an `Artikel 2` sub-question.
+#   9. search_guidance leak (#331): a genuinely-novel SQ whose ENGLISH
+#      `search_guidance` carries terms present on the German pages stays
+#      `uncovered` — _sq_tokens no longer tokenizes `search_guidance`. Re-add it
+#      and this flips to `partial` (matched the governance page via leaked tokens).
 #
 # bash 3.2 + python3 stdlib only (no pytest, no pip). Matches tests/README.md.
 
@@ -155,7 +159,7 @@ cat > "$WIKI/wiki/index.md" <<'MD'
 - [[article-14-oversight]] — Artikel 14 verlangt wirksame menschliche Aufsicht über Hochrisiko-Systeme.
 MD
 
-# A six-sub-question German plan exercising every branch.
+# An eight-sub-question German plan exercising every branch.
 cat > "$WORK/plan.json" <<'JSON'
 {
   "schema_version": "0.1.0",
@@ -173,7 +177,10 @@ cat > "$WORK/plan.json" <<'JSON'
     {"id": "sq-floor", "query": "Daten erfassen",
      "theme_label": "Daten", "search_guidance": "Datenerfassung"},
     {"id": "sq-head-guard", "query": "Systemverwaltung pflegen",
-     "theme_label": "Verwaltung", "search_guidance": "Systempflege"}
+     "theme_label": "Verwaltung", "search_guidance": "Systempflege"},
+    {"id": "sq-leak", "query": "Mehrsprachige Benutzeroberfläche Gestaltung",
+     "theme_label": "Benutzeroberfläche",
+     "search_guidance": "high risk governance database oversight high-risk base"}
   ]
 }
 JSON
@@ -273,6 +280,24 @@ import os, json
 d = json.loads(os.environ["PAYLOAD"])
 sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
 assert sq["sq-head-guard"]["coverage_verdict"] == "uncovered", sq["sq-head-guard"]
+print("OK")
+PY
+
+# --- Case 9: search_guidance must NOT leak generic English tokens (#331) ------
+# `sq-leak` has a genuinely-novel German query+theme_label (multilingual-UI,
+# absent from this AI-Act base), but its ENGLISH `search_guidance` is loaded with
+# terms present on the German pages. Because _sq_tokens no longer tokenizes
+# `search_guidance` (#331), those leaked tokens never enter the SQ token set and
+# the novel sub-question correctly stays `uncovered`. Re-add `search_guidance` to
+# _sq_tokens and this flips to `partial` — it matched `article-71-governance`
+# (overlap 0.4) via the leaked `database, governance, high, risk` — so this case
+# actually drives the fix (not a trivial zero-overlap pass).
+check "search_guidance leak (#331): a novel SQ with leaking English guidance stays uncovered" "$OUT" <<'PY'
+import os, json
+d = json.loads(os.environ["PAYLOAD"])
+sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
+assert sq["sq-leak"]["coverage_verdict"] == "uncovered", sq["sq-leak"]
+assert sq["sq-leak"]["covered_pages"] == [], sq["sq-leak"]["covered_pages"]
 print("OK")
 PY
 
