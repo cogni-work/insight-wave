@@ -282,3 +282,31 @@ F24, F25, and F26 (**#289**) are **fixed in v0.1.1**. All three were non-blockin
 - **F26 (helper-script version resolution)** — `resolve_wiki_ingest_scripts()` (ingest + finalize) sorts cached cogni-wiki versions with `sort -V` and picks the newest; regression test `tests/test_resolve_wiki_scripts.sh`. The companion lexical-version bug in `cogni-workspace/scripts/discover-plugins.sh` was fixed in the same landing (cogni-workspace **v0.6.31**).
 
 #291 (pre-0.0.28 manifest guard) remains open.
+
+## #311 live German bake-in (2026-05-27)
+
+The first **live German (`--output-language de`) end-to-end run** since the Slice-13/15/16 fixes, on installed **cogni-knowledge v0.1.8 + cogni-wiki v0.0.46**, base `.alpha/eu-ai-act-de/` (gitignored), topic *"Verpflichtungen für Anbieter von KI-Systemen mit hohem Risiko nach der EU-KI-Verordnung"*, market `dach`. This was both the Slice-13 exit verification and the place the Slice-15/16 + P1.3 live proofs were deferred to.
+
+**Version-resolution gotcha (recovered).** The session first resolved **v0.1.7** even though `installed_plugins.json` recorded 0.1.8 on disk — the running session had cached the older resolution. The tell was the skill prompt's base-dir header (`.../cogni-knowledge/0.1.7/skills/...`). Fix: `/plugin` refresh + **Claude Code restart**. **Always confirm the skill's printed base-dir version before a live run** (the M12 gotcha, re-confirmed live).
+
+**Run 1 (full pipeline).** 6 sub-questions → 69 candidates → 67 ingested / 408 claims → draft-v1 (4 900 words, 109 citations) → verify 6 unsupported → 1 revisor round (repoint 1 / rephrase 4 / drop 1) → 0 unsupported (verify-v2: 64 verbatim, 44 paraphrase) → synthesis deposited (26 of 67 sources cited). Per-shard verify wall-clock ≤ ~3.8 min (3 shards round 0; incremental round 1 = 1 shard of 6).
+
+**Slice-13/15/16 exit criteria — all PASS (live-proven in German):**
+
+| Criterion | Result |
+|---|---|
+| One localized `## Referenzen`, no `## References` dup (#301) | ✅ |
+| 109 clickable `<sup>[N](url)</sup>`, 0 raw `[[sources/]]` in prose (#300) | ✅ |
+| Transliterated synthesis slug `verpflichtungen-fuer-…-risiko-…`, 0 broken `f-r` (#303) | ✅ |
+| Body `[N]` contiguous 1..26, matches reference list (finalize renumber) | ✅ |
+| German ä/ö/ü/ß intact in body + headings, no ASCII fold | ✅ |
+| `health.py` 0 errors + `lint` 0 `orphan_page` (Slice 16) | ✅ *(see F30)* |
+
+**Findings (filed under #264):**
+
+- **F27 / #325 (HIGH — correctness blocker).** `wiki-composer` writes **invalid JSON** in `citation-manifest.json` when a `draft_sentence` contains a `"` — here a German `„…"` pair whose straight-ASCII closer was left unescaped (4 of 109 entries). `knowledge-verify` could not `json.loads` the manifest; the run needed a manual re-escape repair to proceed. The composer's Step-5 self-check returned `ok:true` without actually parsing what it wrote. **The German run does not pass end-to-end on stock v0.1.8 without this fix.** Fix: serialize the manifest via `json.dumps` (the source-ingester already does this correctly), and make the self-check `json.loads` + substring-assert.
+- **F28 / #326 (HIGH — headline; P1.3 cross-lingual).** **Read-before-web (P1.3, the v0.1.8 increment) does not fire for non-English bases.** Run 2 (overlapping German topic — GPAI transparency/governance/penalties) scored **all 6 sub-questions `uncovered`** despite the base demonstrably covering ≥3, because `wiki-coverage.py`'s lexical Jaccard matches the German query against the sources' **English titles** (Art-99 title vs German query = 0.118) and is brittle to German compounds (`Bußgelder` ≠ `Bußgeldsystem`). All-`uncovered` → curators take the full-search branch → **zero compounding; Run 2 query count ≈ Run 1.** The "fewer queries on run 2+" proof is **NEGATIVE for German.** **Couples to the open #309 P1.2-rest cross-lingual gap — P1.3 cannot be considered "done" on the #309 gate until coverage matching is language-aware.**
+- **F29 / #324 (med).** `wiki/index.md` one-liners are truncated **mid-word** (script-stored `[:180]` hard cut, not LLM-bounded). The index is reader-facing *and* the dominant signal `wiki-coverage.py` reads — so this also weakens F28's only German signal.
+- **F30 / #323 (med) + the 0-orphan caveat.** `knowledge-ingest --batch-size 8` is conservative; the live run dispatched the 67 ingesters in **two waves of 25/26** with no issue — the per-wave barrier (waiting for the slowest of 8) is the real cost. Separately, **0-orphan was only reached after manually running the deferred `knowledge-ingest` Step 4.1 `backlink_audit --apply-plan`**: the composer cited 26 of 67 sources, leaving 41 uncited orphans; `backlink_audit` found high-confidence sibling candidates for all 41 (de-orphan **works**), but per-slug LLM-curated authoring does **not scale to 67 sources in an orchestrator context** (same class as #323).
+
+**Verdict.** The Slice-13/15/16 localized-output + wiki-conformance fixes are **live-proven in German**. But the run is **not a clean stock-v0.1.8 end-to-end pass** (#325 blocker needed manual repair) and the **P1.3 compounding proof is negative** (#326). **#325 (correctness) + #326 (P1.3 / P1.2-rest) should gate the Phase-6 readiness verdict on #309.** #311 is now **closed** — its Slice-13 exit verification passed; the P1.3 live-proof obligation is tracked under **#326** (split decision). Recommended order: fix **#325** first (every German run is blocked end-to-end without it), then **#326 / P1.2-rest** (the cross-lingual coverage + verifier alignment), alongside the remaining #309 increments (P1.1 reviewer).
