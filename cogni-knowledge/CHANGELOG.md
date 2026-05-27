@@ -1,5 +1,23 @@
 # cogni-knowledge changelog
 
+## 0.1.11 — 2026-05-27
+
+Fixes **#331** — the inverse failure mode of #326, surfaced reviewing #330. `wiki-coverage.py::_sq_tokens` tokenized `query` + `theme_label` + **`search_guidance`**, but `search_guidance` is **English coverage meta-commentary even on a target-language (German) plan** — e.g. *"GPAI-specific — likely uncovered by the high-risk base."* Those generic English tokens (`high`, `risk`, `specific`, `base`) entered the sub-question's token set and matched an unrelated English high-risk page at 0.231 (> the 0.20 ratio), flipping a **genuinely-novel** sub-question from `uncovered` to `partial` (live: `.alpha/eu-ai-act-de` sq-06). Read-before-web is advisory and fail-soft so impact was bounded, but the leak weakened the novelty-preservation half of #326's closing criterion and added cross-lingual noise. Maturity stays **Preview**.
+
+### Changed
+
+- **#331 — `_sq_tokens` drops `search_guidance`.** The sub-question token set is now `query` + `theme_label` only — the real target-language intent. `search_guidance` joins `candidate_domains` as an intentionally-excluded field (docstring updated). The output envelope schema is byte-stable, so `source-curator` and `knowledge-curate` Step 0.5 are unchanged. File: `scripts/wiki-coverage.py`.
+- **#331 — `act` added to `GENERIC_DENYLIST`.** "AI Act" is near-boilerplate on an EU-AI-Act base (parallel to `regulation`/`verordnung`/`gesetz`). At 3 chars `act` can never be a `compound_match` prefix (the `cpl >= 5` guard) or a head-guard trigger, so denylisting it only zeros exact `act` matches — no new false rejections. The CRITICAL comment above the denylist was corrected (it previously listed `act` among the protected EN-side signal). File: `scripts/wiki-coverage.py`.
+
+### Tests
+
+- `tests/test_wiki_coverage_bilingual.sh` (Case 9, new) — the dedicated #331 regression guard. `sq-leak` has a genuinely-novel German `query`+`theme_label` (multilingual-UI, absent from the AI-Act base) but an **English** `search_guidance` loaded with terms present on the German pages; it asserts `uncovered` + `covered_pages == []`. Mutation-confirmed: re-adding `search_guidance` to `_sq_tokens` flips it to `partial` (matched `article-71-governance` at 0.4 via the leaked `database, governance, high, risk`), so the case drives the fix rather than passing on zero overlap.
+- `tests/test_wiki_coverage.sh` — sq-01's query gained off-page tokens (`transparency obligations`) and the dead `search_guidance` fields were removed. Without an off-page token, dropping `search_guidance` would leave sq-01's tokens all on the seeded page (recall 1.0), clearing the `--threshold 0.99` "drop everything" boundary case and flipping it `uncovered`→`covered`. With the off-page tokens recall is ~0.57, so `@0.20` covered / `@0.99` uncovered / `@0.01` covered all hold. `tests/test_skill_contracts.sh` doc guards unchanged.
+
+### Notes
+
+- No schema bump: `wiki-coverage.json`'s envelope shape is unchanged. The live `.alpha/eu-ai-act-de` re-score (sq-06 → `uncovered`) is gitignored / not CI-reproducible — the committed bilingual Case 9 is the regression proof, mirroring how #326 shipped. #331 is a natural fit for the language-config-UX half of **#309 P1.2-rest**; the remaining #309 increment is **P1.1** (structural reviewer), then **P2**.
+
 ## 0.1.10 — 2026-05-27
 
 Fixes **#326** — the read-before-web coverage scorer (`wiki-coverage.py`, P1.3, shipped v0.1.8) was a **no-op on every non-English base**, closing the cross-lingual-scoring half of the **#309 P1.2-rest** gate item. The #311 German bake-in (Run 2, 2026-05-27) proved it: a deliberately-overlapping German plan — transparency (Art 13/14), governance (Art 71/72), penalties (Art 99), all demonstrably present from Run 1 — scored **all 6 sub-questions `uncovered`, 0 covering pages**, so every curator took the full-search branch and the promised "fewer queries on run 2+" compounding never materialized. Because cogni-knowledge targets DACH/DE/FR/IT/PL/NL/ES, P1.3 was dead for all non-English markets. Maturity stays **Preview**.

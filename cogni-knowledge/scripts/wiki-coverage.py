@@ -120,11 +120,14 @@ STOPWORDS = frozenset({
 # and they dominate ranking, surfacing the wrong pages on top (the #326 defect-5
 # failure). Folded (umlaut/ß de-accented, lowercase) to match tokenize() output.
 # CRITICAL: this list MUST NOT contain topic-discriminating tokens — on the EN
-# side `high`/`risk`/`classification`/`scope`/`act` (the only signal the existing
+# side `high`/`risk`/`classification`/`scope` (the only signal the existing
 # fixtures match on), on the DE side `bussgeld`/`transparenz`/`governance`/
-# `aufsicht`/`sanktion` (what the bilingual regression test relies on).
+# `aufsicht`/`sanktion` (what the bilingual regression test relies on). `act` IS
+# denylisted: "AI Act" is near-boilerplate on an EU-AI-Act base (like
+# `regulation`/`verordnung`), and at 3 chars it can never be a compound prefix
+# (compound_match needs cpl>=5), so denylisting it only zeros exact matches (#331).
 GENERIC_DENYLIST = frozenset({
-    "verordnung", "gesetz", "artikel", "article", "regulation",
+    "verordnung", "gesetz", "artikel", "article", "regulation", "act",
     "ki", "ai", "system", "hochrisiko", "eu",
     "anbieter", "betreiber", "anforderung", "anforderungen",
     # Ubiquitous years masquerade as numeric anchors; deny so the digit x3.0
@@ -373,14 +376,16 @@ def _collect_pages(wiki_root: Path) -> list[dict]:
 
 
 def _sq_tokens(sq: dict) -> set:
-    """Sub-question token set: query + theme_label + search_guidance (all free
-    text — the strong lexical signal). `candidate_domains` are bare domains
-    (`europa.eu`) with negligible title overlap, so they are intentionally
-    excluded."""
+    """Sub-question token set: query + theme_label (the target-language lexical
+    intent). Two fields are intentionally excluded: `candidate_domains` are bare
+    domains (`europa.eu`) with negligible title overlap; `search_guidance` is
+    English coverage meta-commentary even on a target-language plan (e.g.
+    "GPAI-specific — likely uncovered by the high-risk base"), so it leaks
+    generic English tokens (`high`, `risk`, `base`) that match unrelated English
+    pages and spuriously cover genuinely-novel sub-questions (#331)."""
     return tokenize(
         str(sq.get("query", "")),
         str(sq.get("theme_label", "")),
-        str(sq.get("search_guidance", "")),
     )
 
 

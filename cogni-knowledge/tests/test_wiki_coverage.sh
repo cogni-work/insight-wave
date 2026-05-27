@@ -34,15 +34,20 @@ mkdir -p "$WIKI/wiki/sources" "$WIKI/wiki/syntheses"
 
 # A two-sub-question plan: sq-01 about EU AI Act high-risk classification,
 # sq-02 about an unrelated topic that no page covers.
+# NOTE: `search_guidance` is intentionally NOT tokenized by _sq_tokens (#331 — it
+# is English coverage meta-text that leaks generic tokens cross-lingually), so it
+# is omitted here. sq-01's `transparency`/`obligations` are off-page tokens that
+# keep recall below 1.0 so the --threshold 0.99 boundary case (Case 5) stays
+# meaningful. `candidate_domains` is kept to document the (also-excluded) shape.
 cat > "$WORK/plan.json" <<'JSON'
 {
   "schema_version": "0.1.0",
   "sub_questions": [
-    {"id": "sq-01", "query": "EU AI Act high-risk classification scope",
-     "theme_label": "High-risk Classification", "search_guidance": "find the article 6 text",
+    {"id": "sq-01", "query": "EU AI Act high-risk classification scope transparency obligations",
+     "theme_label": "High-risk Classification",
      "candidate_domains": ["europa.eu"]},
     {"id": "sq-02", "query": "quantum computing surface code error correction thresholds",
-     "theme_label": "Quantum Error Correction", "search_guidance": "decoder benchmarks"}
+     "theme_label": "Quantum Error Correction"}
   ]
 }
 JSON
