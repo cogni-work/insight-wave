@@ -123,12 +123,12 @@ For each arc present in both upstream and downstream:
 
 #### C3: Localized Heading Match (HIGH)
 
-For each arc present in the upstream language-templates.md, iterate over **every language column the upstream defines for that arc** (the per-arc upstream language set from Step 2 — `{en, de}` for the 9 plain arcs, `{en, de, fr, it, pl, nl, es}` for `corporate-visions` and `jtbd-portfolio`):
-- For each upstream language, check if arc-preservation.md's localized table has a matching entry for this arc.
+For each arc present in the upstream language-templates.md, iterate over the **localized (non-EN) languages the upstream defines for that arc** — i.e. the per-arc upstream language set from Step 2 **minus `en`** (EN element names are C2's responsibility, not C3's). That is `{de}` for the 9 plain arcs and `{de, fr, it, pl, nl, es}` for `corporate-visions` and `jtbd-portfolio`:
+- For each such localized language, check if arc-preservation.md's localized table has a matching entry for this arc.
 - If a localized heading (or the bridge form) is missing for a language the upstream defines: HIGH.
 - If the downstream localized heading exists but doesn't match upstream byte-for-byte (including diacritics — FR é/è/ê/ç, IT à/è/é/ì/ò/ù, PL ą/ć/ę/ł/ń/ó/ś/ź/ż, ES á/é/í/ó/ú/ñ, DE ä/ö/ü/ß; never ASCII substitutes): HIGH.
 
-Scoping falls out of the per-arc language set: the two in-scope arcs are now checked across all 7 languages (they should be green once the downstream mirror carries FR/IT/PL/NL/ES), while the 9 plain arcs keep their existing en/de-only findings — the FR/IT/PL/NL/ES columns are **not** demanded for arcs the upstream does not define them for.
+Scoping falls out of the per-arc language set: the two in-scope arcs are now checked across DE + FR/IT/PL/NL/ES (they should be green once the downstream mirror carries them), while the 9 plain arcs keep their **existing DE-only** findings unchanged — neither EN (covered by C2) nor FR/IT/PL/NL/ES is demanded for arcs the upstream does not define them for.
 
 #### C4: Word Target Consistency (MEDIUM)
 
