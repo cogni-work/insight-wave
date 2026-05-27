@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-wiki-coverage.py — read-before-web coverage scorer (P1.3, #309).
+wiki-coverage.py — read-before-web coverage scorer (P1.3, #309; #326).
 
 The differentiation thesis (`references/differentiation-thesis.md`) promises
 "the next research run reads the base before going to the web." Before this
@@ -18,10 +18,10 @@ overlap; the curator agent *reads those pages and decides query/fetch
 narrowing*.
 
   score   For each sub-question in plan.json, score the bound wiki's source +
-          synthesis pages by token (Jaccard) overlap and emit a per-sub-question
-          coverage verdict (covered / partial / uncovered) plus the covering
-          pages. An empty / unreadable / fresh base yields all-`uncovered`, so
-          run 1 behaves exactly like today (no regression).
+          synthesis pages by language-robust weighted coverage and emit a
+          per-sub-question verdict (covered / partial / uncovered) plus the
+          covering pages. An empty / unreadable / fresh base yields
+          all-`uncovered`, so run 1 behaves exactly like today (no regression).
 
 Fail-soft by contract: coverage is an OPTIMIZATION, not a correctness gate
 (unlike #304's market config, where a wrong authority list corrupts scoring and
@@ -29,12 +29,20 @@ hard-aborts). A malformed plan is the one hard error (the caller cannot proceed
 without sub-questions); a missing / unreadable wiki is NOT — it degrades to
 all-`uncovered`.
 
-The `tokenize()` / `_stem()` / `jaccard()` / STOPWORDS below are a point-in-time
-replica of `cogni-wiki/skills/wiki-refresh/scripts/refresh_planner.py:92-198`
-(the proven stale-page→sub-question matcher). Replicating rather than importing
-cogni-wiki is the established clean-break pattern — exactly how
-`_knowledge_lib.slugify` / `normalize_url` already diverge from their upstream
-lifts by design. Frontmatter scalar parsing reuses `_knowledge_lib`.
+Scoring (#326 — language-robust, replaces the original symmetric Jaccard that
+was a no-op on every non-English base): a sub-question's tokens are matched
+against each page's tokens by *directional weighted recall*. Numeric article
+numbers (13, 99, 101) are kept at any length and weighted x3.0 — they are the
+only reliable cross-lingual bridge ("Artikel 99" <-> "Article 99"). Ubiquitous
+regulatory boilerplate (`verordnung`, `artikel`, `system`, `hochrisiko`, …) is
+denylisted to zero weight so it can't dominate ranking. German compounds match
+by a length-guarded common prefix (`bussgelder` ~ `bussgeldsystem`), never by
+substring (which would re-introduce `system`-inside-`…system` false matches).
+A page covers a sub-question only when both the recall ratio AND an absolute
+matched-weight floor clear — the floor is what keeps genuinely-novel
+sub-questions `uncovered`. Page signal = title + index one-liner + tags +
+`pre_extracted_claims[].text` (the richest target-language content). Frontmatter
+scalar + claims parsing reuse `_knowledge_lib`.
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -53,10 +61,32 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import _FRONTMATTER_RE, _MANUAL_TRANSLITERATION, _unquote_scalar  # noqa: E402
+from _knowledge_lib import (  # noqa: E402
+    _FRONTMATTER_RE,
+    _MANUAL_TRANSLITERATION,
+    _unquote_scalar,
+    parse_pre_extracted_claims,
+)
 
 SCHEMA_VERSION = "0.1.0"
-DEFAULT_THRESHOLD = 0.30
+# Recall ratio a page must clear to count as covering. Recall (matched SQ weight
+# over total SQ weight) is a stricter quantity than the old Jaccard-over-union,
+# so the bar is lower than the original 0.30 (#326).
+DEFAULT_THRESHOLD = 0.20
+# Absolute matched-weight floor — the second half of the cover predicate. One
+# matched article number (len>=1 -> 0.4*3.0 = 1.2) clears it; one weak 4-char
+# content token (0.5) does not. This is what keeps a genuinely-novel
+# sub-question `uncovered` even when its one accidental token match clears the
+# ratio. Calibrated to stay <= 1.2 (a lone anchor must pass) and > 0.5 (a lone
+# weak token must not). Do NOT raise above 1.2.
+MIN_MATCHED_WEIGHT = 1.0
+# Cap the emitted covering pages per sub-question. The verdict is computed on the
+# FULL passing set first (so a 60-page base still reads `covered`); only the
+# emitted list is truncated, so the curator isn't told to read 60 pages. K >= 2
+# preserves the `covered` (>=2) invariant.
+TOP_K = 8
+# Max pre_extracted_claims[].text fields folded into a page's token signal.
+MAX_CLAIMS_PER_PAGE = 8
 # Page-type → wiki subdirectory. Plural of "synthesis" is "syntheses", NOT
 # "synthesiss" — so emit the resolved relative path per page and never let a
 # consumer pluralize `type` itself.
@@ -64,16 +94,42 @@ _TYPE_DIRS = {"source": "sources", "synthesis": "syntheses"}
 
 
 # ---------------------------------------------------------------------------
-# Tokenization — point-in-time replica of refresh_planner.py:92-198 (cogni-wiki).
+# Tokenization + deterministic token weighting (#326).
 # ---------------------------------------------------------------------------
 
 TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
 STOPWORDS = frozenset({
+    # English function words.
     "a", "an", "the", "of", "in", "on", "for", "with", "and", "or", "to", "is", "are", "was", "were",
     "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "should", "can",
     "could", "may", "might", "must", "what", "how", "why", "when", "where", "which", "who", "whom",
     "this", "that", "these", "those", "it", "its", "their", "they", "them", "we", "us", "our",
     "vs", "into", "from", "about", "as", "by", "if", "any", "all", "some", "more", "most",
+    # German function words (folded form: umlaut/ß de-accented, lowercase — see
+    # _fold). Without these, German queries/pages score on noise (#326). Tokens
+    # <3 chars (der/die/das/und are kept; im/am/zu fall out via the length drop
+    # anyway) are listed for clarity where they survive the digit/length rules.
+    "und", "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "eines", "einem", "einen",
+    "fuer", "von", "mit", "auf", "aus", "ist", "sind", "war", "waren", "wird", "werden",
+    "nicht", "auch", "oder", "aber", "als", "durch", "bei", "bis", "nach", "vor", "ueber", "unter",
+    "zwischen", "dass", "diese", "dieser", "dieses", "diesen", "wie", "was", "wenn", "sowie", "bzw",
+})
+
+# Regulatory boilerplate that appears on nearly every page of a regulation wiki
+# — zero discriminative value. Without zeroing these, ~60/68 pages share them
+# and they dominate ranking, surfacing the wrong pages on top (the #326 defect-5
+# failure). Folded (umlaut/ß de-accented, lowercase) to match tokenize() output.
+# CRITICAL: this list MUST NOT contain topic-discriminating tokens — on the EN
+# side `high`/`risk`/`classification`/`scope`/`act` (the only signal the existing
+# fixtures match on), on the DE side `bussgeld`/`transparenz`/`governance`/
+# `aufsicht`/`sanktion` (what the bilingual regression test relies on).
+GENERIC_DENYLIST = frozenset({
+    "verordnung", "gesetz", "artikel", "article", "regulation",
+    "ki", "ai", "system", "hochrisiko", "eu",
+    "anbieter", "betreiber", "anforderung", "anforderungen",
+    # Ubiquitous years masquerade as numeric anchors; deny so the digit x3.0
+    # boost (token_weight) can't fire on them — denylist is checked first.
+    "2024", "2025", "2026",
 })
 
 
@@ -90,10 +146,8 @@ def _fold(text: str) -> str:
     `Künstliche` → `kuenstliche`). Mirrors `_knowledge_lib.slugify`'s
     normalization — lowercase, NFC, the manual umlaut/ß transliteration, then
     NFKD + combining-mark removal. Applied identically to both the sub-question
-    and page sides, so Jaccard matching stays symmetric. This intentionally
-    DIVERGES from the `refresh_planner` replica (which is ASCII-only) because
-    cogni-knowledge targets German/EU content — the same reason `slugify`
-    already diverges from its own upstream lift."""
+    and page sides, and to STOPWORDS / GENERIC_DENYLIST membership (those are
+    written in folded form), so matching stays consistent across languages."""
     lowered = unicodedata.normalize("NFC", text.lower())
     for src, dst in _MANUAL_TRANSLITERATION:
         lowered = lowered.replace(src, dst)
@@ -106,21 +160,85 @@ def tokenize(*parts: str) -> set:
     raw_tokens = TOKEN_SPLIT_RE.split(text)
     out: set = set()
     for t in raw_tokens:
-        if len(t) < 3:
+        if not t or t in STOPWORDS:
             continue
-        if t in STOPWORDS:
+        # Keep all-digit tokens at ANY length — article numbers (13, 99, 101) are
+        # the cross-lingual anchors ("Artikel 99" <-> "Article 99"). Every other
+        # token keeps the original <3-char drop, which sheds eu/ki/ai-style
+        # 2-char boilerplate and split fragments (#326).
+        if not t.isdigit() and len(t) < 3:
             continue
         out.add(_stem(t))
     return out
 
 
-def jaccard(a: set, b: set) -> float:
-    if not a and not b:
+def token_weight(token: str) -> float:
+    """Deterministic discriminativeness weight in [0, 3.0].
+
+    Boilerplate -> 0.0 (checked first, so a denylisted *year* never gets the
+    numeric x3.0 boost). Otherwise base = clamp(len/8, 0.4, 1.0) rewards longer,
+    more-specific tokens, times a x3.0 anchor multiplier for pure article numbers
+    (the cross-lingual bridge) and x1.0 for everything else. NOT corpus-IDF:
+    IDF amplifies rare tokens and would inflate accidental matches on a
+    genuinely-novel sub-question, and degenerates on a 1-page base (#326)."""
+    if token in GENERIC_DENYLIST:
         return 0.0
-    union = a | b
-    if not union:
-        return 0.0
-    return len(a & b) / len(union)
+    base = len(token) / 8.0
+    base = 0.4 if base < 0.4 else (1.0 if base > 1.0 else base)
+    return base * (3.0 if token.isdigit() else 1.0)
+
+
+def _common_prefix_len(a: str, b: str) -> int:
+    n = 0
+    for ca, cb in zip(a, b):
+        if ca != cb:
+            break
+        n += 1
+    return n
+
+
+def compound_match(t_sq: str, t_pg: str) -> bool:
+    """True if a sub-question token covers a page token. Exact match is the
+    trivial case; otherwise a length-guarded common *prefix* handles German
+    compounds (`bussgelder` ~ `bussgeldsystem`, prefix `bussgeld`=8). Prefix-only
+    (never substring) is deliberate: it rejects `system` inside
+    `risikomanagementsystem` (a suffix; common prefix "") and short `art` against
+    `artikel` (prefix `art`=3 < 5). The 0.6-of-shorter-length guard rejects
+    shared-generic-prefix false matches (`risiko…`). Denylisted tokens on either
+    side never match (#326)."""
+    if t_sq in GENERIC_DENYLIST or t_pg in GENERIC_DENYLIST:
+        return False
+    if t_sq == t_pg:
+        return True
+    cpl = _common_prefix_len(t_sq, t_pg)
+    if cpl < 5 or cpl < 0.6 * min(len(t_sq), len(t_pg)):
+        return False
+    # The shared head must itself be discriminative. Two compounds that merely
+    # share a boilerplate stem (`systemverwaltung` ~ `systeme`, common prefix
+    # `system`; `hochrisikobereich` ~ `hochrisikosystem`, common prefix
+    # `hochrisiko`) are NOT a real topical match — reject when the common prefix
+    # is a denylisted token. `bussgelder` ~ `bussgeldsystem` (prefix `bussgeld`)
+    # and `aufsichtsbehoerde` ~ `aufsicht` (prefix `aufsicht`) survive (#326).
+    return t_sq[:cpl] not in GENERIC_DENYLIST
+
+
+def coverage_score(sq_tokens: set, page_tokens: set) -> tuple:
+    """Directional weighted recall: fraction of the sub-question's *weight*
+    covered by the page. Returns (score, matched_weight). Extra page-side tokens
+    do NOT dilute (the fix for cross-lingual union bloat). total == 0 (an
+    all-boilerplate sub-question) guards to 0.0 rather than dividing by zero."""
+    total = 0.0
+    matched = 0.0
+    for t in sq_tokens:
+        w = token_weight(t)
+        if w == 0.0:  # denylisted — contributes nothing and cannot match
+            continue
+        total += w
+        if any(compound_match(t, p) for p in page_tokens):
+            matched += w
+    if total == 0.0:
+        return 0.0, 0.0
+    return matched / total, matched
 
 
 # ---------------------------------------------------------------------------
@@ -200,7 +318,8 @@ def _read_text(path: Path) -> str:
 
 
 def _collect_pages(wiki_root: Path) -> list[dict]:
-    """Gather source + synthesis pages with their title/tags/index-summary.
+    """Gather source + synthesis pages with their title/tags/index-summary +
+    pre-extracted claim text.
 
     Returns a list of {slug, type, page_path (wiki-root-relative), title,
     tokens}. A missing wiki/ dir (fresh base) yields []."""
@@ -213,22 +332,32 @@ def _collect_pages(wiki_root: Path) -> list[dict]:
             continue
         for page_file in sorted(d.glob("*.md")):
             slug = page_file.stem
-            title, tags = _page_title_tags(_read_text(page_file))
+            page_text = _read_text(page_file)
+            title, tags = _page_title_tags(page_text)
             # Fall back to the slug when a page has no parseable title (block-scalar
             # title, leading-blank/BOM that defeats _FRONTMATTER_RE, or a genuinely
-            # title-less page) — mirrors refresh_planner's `title or slug`. The slug
-            # is descriptive kebab (`eu-ai-act-high-risk-classification`), so it
-            # carries real signal; without this a title-less page tokenizes to just
-            # its `[source]`/`[synthesis]` tag and goes invisible to coverage.
+            # title-less page). The slug is descriptive kebab
+            # (`eu-ai-act-high-risk-classification`), so it carries real signal;
+            # without this a title-less page tokenizes to just its
+            # `[source]`/`[synthesis]` tag and goes invisible to coverage.
             title = title or slug
             summary = index_map.get(slug, "")
+            # Claim text is the richest TARGET-LANGUAGE signal — a German source
+            # page keeps an English title but its claims are German (#326). Pull
+            # only `.text` (skip the often-English `excerpt_quote`), capped so a
+            # claim-heavy page doesn't swamp the token set. Reuses
+            # _knowledge_lib.parse_pre_extracted_claims on the already-read text.
+            claims = parse_pre_extracted_claims(page_text)
+            claim_text = " ".join(
+                str(c.get("text", "")) for c in claims[:MAX_CLAIMS_PER_PAGE]
+            )
             pages.append({
                 "slug": slug,
                 "type": ptype,
                 "page_path": f"wiki/{subdir}/{page_file.name}",
                 "title": title,
                 "tags": tags,
-                "tokens": tokenize(title, summary, " ".join(tags)),
+                "tokens": tokenize(title, summary, " ".join(tags), claim_text),
             })
     return pages
 
@@ -246,26 +375,47 @@ def _sq_tokens(sq: dict) -> set:
 
 
 def _match_reasons(sq_tokens: set, page: dict) -> list[str]:
-    """Up to 3 human-readable reasons (debuggability, not behavioural).
-    Deterministic — sorted token iteration. Mirrors
-    refresh_planner.explain_match."""
+    """Up to 3 human-readable reasons (debuggability, not behavioural), derived
+    from the SAME match function as the score so they never lie: article anchors
+    first, then distinctive content terms by weight, then compound matches
+    (`bussgeld~bussgeldsystem`). Deterministic — every key sorts to a unique
+    token (#326)."""
+    page_tokens = sorted(page["tokens"])  # sorted -> deterministic compound hit
+    matched: list[tuple] = []  # (sq_token, page_hit, is_exact, weight)
+    for t in sq_tokens:
+        w = token_weight(t)
+        if w == 0.0:
+            continue
+        hit = None
+        for p in page_tokens:
+            if compound_match(t, p):
+                hit = p
+                if t == p:
+                    break  # prefer an exact hit over a later compound one
+        if hit is not None:
+            matched.append((t, hit, t == hit, w))
+
     reasons: list[str] = []
-    tag_tokens = tokenize(" ".join(page["tags"]))
-    overlap_tags = sorted(t for t in tag_tokens if t in sq_tokens)
-    if overlap_tags:
-        reasons.append(f"tag overlap: {overlap_tags[:3]}")
-    title_tokens = tokenize(page["title"])
-    title_hits = sorted(t for t in title_tokens if t in sq_tokens)
-    if title_hits:
-        reasons.append(f"title term: '{title_hits[0]}'")
+    anchors = sorted((m for m in matched if m[0].isdigit()), key=lambda m: m[0])
+    if anchors:
+        reasons.append("article anchor: " + ", ".join(m[0] for m in anchors[:3]))
+    terms = sorted((m for m in matched if not m[0].isdigit() and m[2]),
+                   key=lambda m: (-m[3], m[0]))
+    if terms:
+        reasons.append("terms: " + ", ".join(m[0] for m in terms[:3]))
+    compounds = sorted((m for m in matched if not m[2] and not m[0].isdigit()),
+                       key=lambda m: m[0])
+    if compounds:
+        reasons.append("compound: " + ", ".join(f"{m[0]}~{m[1]}" for m in compounds[:2]))
     return reasons[:3]
 
 
 def cmd_score(args: argparse.Namespace) -> int:
     threshold = args.threshold
-    # Lower bound is EXCLUSIVE: jaccard returns 0.0 for disjoint/empty token sets,
-    # so `score >= 0.0` would make every page "cover" every sub-question regardless
-    # of overlap. A coverage threshold of 0 is meaningless — require a positive one.
+    # Lower bound is EXCLUSIVE: coverage_score returns 0.0 for a page with no
+    # matching tokens, so `score >= 0.0` would make every page "cover" every
+    # sub-question regardless of overlap. A coverage threshold of 0 is
+    # meaningless — require a positive one.
     if not (0.0 < threshold <= 1.0):
         return _emit(False, error=f"--threshold must be in (0.0, 1.0], got {threshold}")
 
@@ -291,11 +441,25 @@ def cmd_score(args: argparse.Namespace) -> int:
         sq_tokens = _sq_tokens(sq)
         scored = []
         for page in pages:
-            score = jaccard(sq_tokens, page["tokens"])
-            if score >= threshold:
+            score, matched_weight = coverage_score(sq_tokens, page["tokens"])
+            # Cover predicate is BOTH halves: the recall ratio AND the absolute
+            # matched-weight floor. The floor is what stops a lone weak accidental
+            # token match (which can clear the ratio on a small sub-question) from
+            # flipping a genuinely-novel sub-question to `covered` (#326).
+            if score >= threshold and matched_weight >= MIN_MATCHED_WEIGHT:
                 scored.append((score, page))
         # Highest overlap first; stable tie-break by slug for determinism.
         scored.sort(key=lambda sp: (-sp[0], sp[1]["slug"]))
+
+        # Verdict is computed on the FULL passing set; only the emitted list is
+        # capped (TOP_K >= 2, so the `covered` invariant survives the truncation).
+        if len(scored) >= 2:
+            verdict = "covered"
+        elif len(scored) == 1:
+            verdict = "partial"
+        else:
+            verdict = "uncovered"
+
         covered_pages = [{
             "slug": page["slug"],
             "type": page["type"],
@@ -303,14 +467,7 @@ def cmd_score(args: argparse.Namespace) -> int:
             "title": page["title"],
             "overlap_score": round(score, 4),
             "reasons": _match_reasons(sq_tokens, page),
-        } for score, page in scored]
-
-        if len(covered_pages) >= 2:
-            verdict = "covered"
-        elif len(covered_pages) == 1:
-            verdict = "partial"
-        else:
-            verdict = "uncovered"
+        } for score, page in scored[:TOP_K]]
 
         sub_questions.append({
             "sq_id": sq_id,
@@ -345,7 +502,8 @@ def main(argv: list[str]) -> int:
     p_score.add_argument("--plan", required=True,
                          help="Absolute path to <project>/.metadata/plan.json.")
     p_score.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD,
-                         help=f"Jaccard overlap a page must clear to count as covering (default {DEFAULT_THRESHOLD}).")
+                         help=f"Weighted-recall ratio a page must clear (alongside the matched-weight "
+                              f"floor) to count as covering (default {DEFAULT_THRESHOLD}).")
     p_score.set_defaults(func=cmd_score)
 
     args = parser.parse_args(argv)
