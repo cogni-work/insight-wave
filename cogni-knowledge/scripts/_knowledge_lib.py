@@ -433,6 +433,87 @@ def parse_pre_extracted_claims(page_text: str) -> list[dict]:
     return claims
 
 
+# --- citation-records parser (used by citation-store.py build) ----------------
+# wiki-composer has no Bash and cannot run a JSON serializer, so it MUST NOT
+# hand-build citation-manifest.json — a draft_sentence with a straight `"`
+# (routine in German/FR/IT/ES/PL prose) broke json.loads downstream and killed
+# the verify→finalize tail (#325). Instead the composer writes citation RECORDS
+# as raw text through the byte-safe `Write` channel, and `citation-store.py build`
+# json.dumps the manifest. This parser reads that records file. The format is a
+# labeled, line-oriented block list — deliberately the same idiom the composer
+# already authors for `pre_extracted_claims:` frontmatter, so no new authoring
+# format is introduced and the LLM never emits JSON or escapes a quote.
+
+_CITATION_RECORD_KEYS = {
+    "id": "id",
+    "pos": "draft_position",
+    "slug": "wiki_slug",
+    "claim": "claim_id",
+    "sentence": "draft_sentence",
+}
+
+
+def _absorb_citation_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — sentences contain ':'
+    field = _CITATION_RECORD_KEYS.get(key.strip())
+    if field is None:
+        return
+    if field == "draft_sentence":
+        # Verbatim: strip exactly ONE conventional leading space after the colon
+        # and preserve everything else byte-for-byte (no trailing strip), so the
+        # sentence round-trips byte-exact and stays a substring of the draft.
+        item[field] = value[1:] if value.startswith(" ") else value
+    else:
+        item[field] = value.strip()
+
+
+def _finalize_citation_record(item: dict) -> dict:
+    claim = item.get("claim_id")
+    claim_id = None if claim in (None, "", "null") else claim
+    return {
+        "id": item.get("id", ""),
+        "draft_position": item.get("draft_position", ""),
+        "draft_sentence": item.get("draft_sentence", ""),
+        "wiki_slug": item.get("wiki_slug", ""),
+        "claim_id": claim_id,
+    }
+
+
+def parse_citation_records(text: str) -> list[dict]:
+    """Parse a wiki-composer citation-records file into a list of
+    `{id, draft_position, draft_sentence, wiki_slug, claim_id}` dicts.
+
+    Each record is a `- id:` bullet followed by `pos:` / `slug:` / `claim:` /
+    `sentence:` lines (indent-tolerant). `sentence` is the LAST field and its
+    value is the rest of the line VERBATIM — raw text (quotes, backslashes,
+    colons, Unicode) passes through unescaped; `citation-store.py build` then
+    `json.dumps` it, so escaping is owned by the serializer, never the agent.
+    `claim` literal `null`/empty → None (synthesis citations). Blank and
+    `#`-comment lines are skipped. draft_sentence is assumed single-line — the
+    same invariant the verifier's `draft_sentence in draft` check already relies
+    on. `splitlines()` absorbs CRLF, so no `\\r` handling is needed."""
+    records: list[dict] = []
+    current: dict | None = None
+    for raw in (text or "").splitlines():
+        lstripped = raw.lstrip()
+        if not lstripped or lstripped.startswith("#"):
+            continue
+        if lstripped == "-" or lstripped.startswith("- "):
+            if current is not None and "id" in current:
+                records.append(_finalize_citation_record(current))
+            current = {}
+            rest = lstripped[1:].strip()
+            if rest:
+                _absorb_citation_kv(current, rest)
+        elif current is not None:
+            _absorb_citation_kv(current, lstripped)
+    if current is not None and "id" in current:
+        records.append(_finalize_citation_record(current))
+    return records
+
+
 def is_pdf_response(content_type: str | None, url: str) -> bool:
     """True if a fetched response looks like a PDF.
 

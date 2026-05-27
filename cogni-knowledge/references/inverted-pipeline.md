@@ -144,6 +144,8 @@ Emits two files:
 - `<project>/output/draft-vN.md` — the draft
 - `<project>/.metadata/citation-manifest.json` — `{id, draft_position, draft_sentence, wiki_slug, claim_id}` per citation. `id` is a stable per-citation join key (`cit-001`, …); `draft_sentence` is the cited sentence copied verbatim — the verifier scores it directly against the claim and never re-tokenizes the draft (this dissolves the F20/F22 off-by-one). `draft_position` is a best-effort human locator only, no longer load-bearing for any verdict.
 
+The composer has no `Bash`, so it does **not** author the manifest JSON itself (hand-typed JSON broke on an unescaped `"` — #325). Instead it writes a raw-text **citation-records** file (`<project>/.metadata/citation-records-vN.txt`, one labeled `- id:` block per citation, the sentence verbatim), and `knowledge-compose` Step 4.5 runs `citation-store.py build` to `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer) and self-check it (round-trip + verbatim-substring-in-draft). Step 5 re-asserts `draft_sentence`-in-draft as the authoritative gate.
+
 **F11 recovery contract is preserved.** Phase 1 of the composer (outline) persists to `.metadata/writer-outline-v1.json` before Phase 2 (draft) attempts a write. If Phase 2 crashes mid-write, re-dispatch reads the outline and re-runs Phase 2 only.
 
 ### Phase 6 — `knowledge-verify`

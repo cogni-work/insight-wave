@@ -9,7 +9,7 @@ allowed-tools: Read, Write, Bash, Task
 Phase 5 of the v0.1.0 inverted pipeline. Reads the per-project `plan.json` + `ingest-manifest.json` + the populated wiki at `<binding.wiki_path>/wiki/`, dispatches `wiki-composer` once, and verifies the two output files land on disk. The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md`, then writes:
 
 - `<project>/output/draft-v{N}.md` — the draft, with clickable numbered `[N]` inline citations (wikilinks confined to the reference list).
-- `<project>/.metadata/citation-manifest.json` — one `{draft_position, wiki_slug, claim_id}` entry per citation, schema `0.1.0`.
+- `<project>/.metadata/citation-records-v{N}.txt` — one raw-text record per citation (the composer writes this; it never hand-builds JSON). This skill then runs `citation-store.py build` to serialize and validate `<project>/.metadata/citation-manifest.json` (schema `0.1.0`, one `{id, draft_position, draft_sentence, wiki_slug, claim_id}` entry per citation). Escaping is owned by `json.dumps`, never the LLM — the #325 fix (a straight `"` in a `draft_sentence` used to break the hand-built manifest's `json.loads` and kill the verify phase).
 
 A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any draft `Write` attempt — this is the **F11 outline-recovery contract**. If the composer crashes between outlining and drafting, re-running this skill detects the leftover outline and re-dispatches the composer with `RESUME_FROM_OUTLINE=true` so only Phase 2 runs.
 
@@ -153,10 +153,28 @@ Task(wiki-composer,
 
 Parse the return envelope:
 
-- `ok: true` → continue to Step 5.
+- `ok: true` → continue to Step 4.5 (build the manifest).
 - `ok: false, error: "no_ingested_sources"` → re-emit the abort message and stop (shouldn't happen if Step 0 ran, but defence-in-depth).
 - `ok: false, error: "write_failed"` → surface the reason; do not retry blindly. The composer already retried once internally. Direct the user to inspect output token-budget conditions or re-run.
 - `ok: false, error: "outline_write_failed"` → surface; no recovery in this slice (Phase 1 couldn't even land the outline).
+
+### 4.5 Build citation-manifest.json from the composer's records
+
+The composer wrote a raw-text **citation-records** file (`<project_path>/.metadata/citation-records-v<N>.txt`), never JSON — so a `draft_sentence` containing a straight `"` (routine in German/FR/IT/ES/PL prose) can't break the manifest. Serialize and self-check the manifest with `citation-store.py build`. Paths go via env vars so spaces / apostrophes in project paths can't break the literal:
+
+```
+RECORDS_PATH="<project_path>/.metadata/citation-records-v<N>.txt" \
+DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
+OUT_PATH="<project_path>/.metadata/citation-manifest.json" \
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
+    --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <N>
+```
+
+`citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, and round-trips the file it wrote (`json.loads` + count). Parse the envelope:
+
+- `success: true` → capture `data.citations_count` (the authoritative count, F24) and continue to Step 5.
+- `success: false, error: "write_failed"` → surface `error` + `data` (e.g. `failed_check: "sentence_not_in_draft"` with the offending `ids`) verbatim and **stop** — do not auto-retry. A sentence the composer claims to have written verbatim is not in the draft it just wrote, or the manifest did not round-trip.
+- `success: false, error: "records_not_found"` / `"draft_not_found"` → surface and stop; the composer's write did not land (re-run the composer).
 
 ### 5. Verify outputs on disk
 
@@ -167,13 +185,15 @@ DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
 MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
 OUTLINE_PATH="<project_path>/.metadata/writer-outline-v<N>.json" \
 python3 -c '
-import json, os, sys
+import json, os, sys, unicodedata
 from pathlib import Path
 draft    = Path(os.environ["DRAFT_PATH"])
 manifest = Path(os.environ["MANIFEST_PATH"])
 outline  = Path(os.environ["OUTLINE_PATH"])
 assert draft.exists() and draft.stat().st_size > 0, f"draft missing or empty: {draft}"
-assert "[[sources/" in draft.read_text(encoding="utf-8"), "draft contains no [[sources/...]] wikilink"
+dtext = draft.read_text(encoding="utf-8")
+assert "[[sources/" in dtext, "draft contains no [[sources/...]] wikilink"
+nfc_draft = unicodedata.normalize("NFC", dtext)
 m = json.loads(manifest.read_text(encoding="utf-8"))
 schema = m.get("schema_version")
 assert schema == "0.1.0", "bad schema: " + repr(schema)
@@ -181,6 +201,10 @@ cites = m.get("citations", [])
 assert isinstance(cites, list), "citations must be a list, got " + type(cites).__name__
 for c in cites:
     assert "id" in c and "draft_sentence" in c and "wiki_slug" in c and "claim_id" in c, c
+    # #325 authoritative gate: citation-store.py already builds + self-checks the
+    # manifest, but re-assert here that every draft_sentence is a verbatim (NFC)
+    # substring of the draft so a future regression cannot ship a stale surface.
+    assert unicodedata.normalize("NFC", c["draft_sentence"]) in nfc_draft, "draft_sentence not in draft: " + repr(c.get("id"))
 assert outline.exists(), f"outline missing: {outline}"
 if not cites:
     print("WARN: citations[] empty — every cited statement will fail M8 verification", file=sys.stderr)
@@ -237,7 +261,8 @@ If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ 
 ## Output
 
 - `<project_path>/output/draft-v<N>.md`
-- `<project_path>/.metadata/citation-manifest.json` (schema 0.1.0)
+- `<project_path>/.metadata/citation-records-v<N>.txt` (composer's raw-text records; input to `citation-store.py build`)
+- `<project_path>/.metadata/citation-manifest.json` (schema 0.1.0; built by `citation-store.py build`)
 - `<project_path>/.metadata/writer-outline-v<N>.json` (F11 anchor)
 - One new `## [YYYY-MM-DD] compose | …` line in `<WIKI_ROOT>/wiki/log.md`.
 
@@ -247,4 +272,5 @@ If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ 
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — claim shape on the wiki page
 - `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — Slice 3 deferrals (multilingual, density, arcs, expansion)
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched agent
+- `${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py --help` — builds + self-checks citation-manifest.json (#325)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
