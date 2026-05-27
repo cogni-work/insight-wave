@@ -154,7 +154,7 @@ The composer has no `Bash`, so it does **not** author the manifest JSON itself (
 
 **Fan-out (F21, v0.0.28):** verification is embarrassingly parallel (each verdict is independent), so `knowledge-verify` shards `citations[]` via `verify-store.py shard`, dispatches N `wiki-verifier` instances in parallel (each scoped to a subset via `CITATIONS_PATH` / `VERIFY_OUT_PATH`), and reassembles the fragments via `verify-store.py merge`. Wall-clock drops ~linearly with shard count while the LLM judgment is preserved; the < 5 min C3 target is now per-shard. A deterministic substring pre-filter is a documented complementary option, not yet implemented.
 
-Loop with `revisor` (forked from cogni-research at M8, kept in `cogni-knowledge/agents/` to preserve the clean-break commitment) up to 2 iterations on `unsupported` findings. The revisor **repoints to a covering on-page claim before dropping** (F23) — drop erodes the evidence base and is the last resort.
+Loop with `revisor` (forked from cogni-research at M8, kept in `cogni-knowledge/agents/` to preserve the clean-break commitment) up to 2 iterations on `unsupported` findings. The revisor **repoints to a covering on-page claim before dropping** (F23) — drop erodes the evidence base and is the last resort. Like the composer, the revisor has no `Bash` and so **never hand-builds the manifest JSON** (#325): it `Edit`s the draft in place and writes a raw-text `citation-records-v{N+1}.txt`, which `knowledge-verify` serializes into `citation-manifest.json` via `citation-store.py build` after each revise round — so a rephrased German `„…"` sentence can't re-break `json.loads` and stall the loop.
 
 Output: `<project>/.metadata/verify-vN.json` (merged from the shard fragments):
 

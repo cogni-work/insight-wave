@@ -1,6 +1,6 @@
 ---
 name: knowledge-verify
-description: "Phase 6 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json, shards the citations and dispatches wiki-verifier in parallel (via verify-store.py) to score every citation against each cited page's pre_extracted_claims (zero network), then loops with revisor on unsupported deviations — capped at 2 iterations per references/inverted-pipeline.md Phase 6. Writes <project>/.metadata/verify-vN.json per round and (when the revisor fires) draft-v{N+1}.md plus a rewritten citation-manifest.json. The structural cost win versus cogni-claims (20–30 min verify → < 5 min). Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, M9 (knowledge-finalize) deposits the verified draft as a synthesis page."
+description: "Phase 6 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json, shards the citations and dispatches wiki-verifier in parallel (via verify-store.py) to score every citation against each cited page's pre_extracted_claims (zero network), then loops with revisor on unsupported deviations — capped at 2 iterations per references/inverted-pipeline.md Phase 6. Writes <project>/.metadata/verify-vN.json per round and (when the revisor fires) draft-v{N+1}.md plus a citation-records file the orchestrator serializes into citation-manifest.json via citation-store.py build (never hand-built JSON — #325). The structural cost win versus cogni-claims (20–30 min verify → < 5 min). Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, M9 (knowledge-finalize) deposits the verified draft as a synthesis page."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -314,11 +314,23 @@ Task(revisor,
      NEW_DRAFT_VERSION=<NEW_DRAFT_VERSION>)
 ```
 
-`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md` and rewrites `citation-manifest.json` (updated `draft_sentence`/`claim_id` for changed citations, dropped entries removed).
+`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md` and writes a raw-text `citation-records-v<NEW_DRAFT_VERSION>.txt` (updated `draft_sentence`/`claim_id` for changed citations, dropped entries removed) — it never hand-builds the manifest JSON (#325); the orchestrator serializes it below.
 
 Parse the return envelope:
 
-- `ok: true` → **derive `DELTA_IDS` deterministically from the manifest diff** (NOT from the revisor's self-reported `fixes_applied`, which an LLM could under-report — that would carry a stale verdict forward with no cross-check). `DELTA_IDS` = the ids present in the **rewritten** manifest whose `(draft_sentence, claim_id)` pair differs from the pre-revisor snapshot. Dropped ids are absent from the new manifest (not re-scored, not carried — correct); untouched ids match the snapshot (carried forward). Compute it:
+- `ok: true` → **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads` — #325). Serialize + self-check it exactly as Phase 5 does (paths via env vars):
+
+  ```
+  RECORDS_PATH="<project_path>/.metadata/citation-records-v<NEW_DRAFT_VERSION>.txt" \
+  DRAFT_PATH="<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md" \
+  OUT_PATH="<project_path>/.metadata/citation-manifest.json" \
+  python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
+      --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <NEW_DRAFT_VERSION>
+  ```
+
+  `build` `json.dumps` the records into `citation-manifest.json` and asserts every `draft_sentence` is a verbatim substring of `draft-v<NEW_DRAFT_VERSION>.md` (which doubly catches a revisor whose `Edit` didn't land the rephrased sentence verbatim). On `success: false` — e.g. `error: "write_failed"` with `failed_check: "sentence_not_in_draft"` (a revised sentence is not in the draft) or `duplicate_id` — surface `error` + `data` verbatim and **stop**; the prior `verify-v<CURRENT_DRAFT_VERSION>.json` remains the latest valid audit trail. On `success: true`, continue.
+
+  Then **derive `DELTA_IDS` deterministically from the manifest diff** (NOT from the revisor's self-reported `fixes_applied`, which an LLM could under-report — that would carry a stale verdict forward with no cross-check). `DELTA_IDS` = the ids present in the **rebuilt** manifest whose `(draft_sentence, claim_id)` pair differs from the pre-revisor snapshot. Dropped ids are absent from the new manifest (not re-scored, not carried — correct); untouched ids match the snapshot (carried forward). Compute it:
 
   ```
   KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
