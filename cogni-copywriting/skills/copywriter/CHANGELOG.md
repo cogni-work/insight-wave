@@ -5,6 +5,66 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.6.0] - 2026-05-27
+
+> The skill internal bump 7.5.0 → 7.6.0 ships in plugin release 0.6.0.
+
+### Added — arc-mode translation FR/IT/PL/NL/ES (corporate-visions, jtbd-portfolio)
+
+Extends arc-mode translation (Slice 2's substitution machinery) from EN↔DE to **all seven
+languages** for the two customer-facing arcs **corporate-visions** and **jtbd-portfolio**. This is
+**Slice 3** of #255 and closes #318; with it, #255 is complete. No new translation *directions* are
+added — every FR/IT/PL/NL/ES direction file already shipped in Slice 1; Slice 3 only unblocks
+`arc_mode` for those directions on the two in-scope arcs. The other 9 arcs stay EN/DE-only (future
+expansion). Requires the upstream cogni-narrative `language-templates.md` to carry the FR/IT/PL/NL/ES
+arc headings (cogni-narrative 0.11.0).
+
+#### How it works
+
+- **Gate widened (Step 1 pre-check #3):** the EN↔DE-only arc gate becomes an EN/DE-**pivot** gate —
+  *allow* when `arc_id ∈ {corporate-visions, jtbd-portfolio}` and at least one end of the pair is
+  EN or DE (so en↔de, en/de→fr/it/pl/nl/es, and the fr/it/pl/nl/es→en/de reverse all pass);
+  *abort (coverage)* for any other arc regardless of language; in-scope arcs whose pair has neither
+  end EN/DE fall through to the pivot guard (#5). The same EN↔DE→pivot widening lands in
+  `00-index.md` CHECK 0 and `translation-principles.md`.
+- **Heading substitution (Step 2.5):** unchanged in mechanism — arc-element + bridge headings are
+  substituted positionally from the downstream mirror in `arc-preservation.md`, now carrying the
+  target language's required diacritics per `translation-principles.md` § "Per-Language Charset
+  Rules" (single source of truth, already complete for all 7 langs).
+- **Validation (Step 5 / arc-technique-map):** the relative word-count band gains a per-target
+  factor table (≈1.20 →de, 0.83 →en, 1.15 →fr, 1.10 →it, 1.20 →es, 1.05 →nl, 1.10 →pl; ±20% band).
+- **Audit (audit-copywriter):** Step 2 now also parses the upstream "Arc-mode translation headings
+  (FR/IT/PL/NL/ES)" subsection; C3 iterates every language the upstream defines per arc (7 for the
+  in-scope arcs, en/de for the rest), keeping the downstream mirror honest byte-for-byte without
+  demanding FR/IT/PL/NL/ES for the 9 unmirrored arcs.
+
+#### Changed Files
+
+- `references/09-preservation-modes/arc-preservation.md` — localized heading table widened EN/DE →
+  7 languages (byte-for-byte mirror of upstream); 5 new bridge forms; EN↔DE→pivot prose; `version`
+  2.1 → 2.2.
+- `references/09-preservation-modes/arc-technique-map.md` — Post-Polish Validation per-target word
+  factor table + per-language charset note; `version` 2.1 → 2.2.
+- `SKILL.md` — Step 1 pre-check #3 rewritten to the EN/DE-pivot, 2-arc coverage gate; Step 2.5 +
+  Step 5 charset/word-band notes generalized to all 7 languages.
+- `references/00-index.md` — CHECK 0 trigger widened "pair is EN↔DE" → "pair pivots on EN/DE";
+  `version` 8.4 → 8.5.
+- `references/01-core-principles/translation-principles.md` — Translate/Preserve heading line:
+  EN↔DE → EN/DE-pivot (all 7 languages) for the 2 arcs.
+- `../audit-copywriter/SKILL.md` — Step 2 reads the new upstream subsection; Step 3 reads all
+  downstream language columns; C3 generalized to the per-arc upstream language set.
+- `copywriter-workspace/test-docs/arc-narrative.jtbd.md` — NEW EN jtbd-portfolio fixture exercising
+  the second in-scope arc's 5-language headings (`arc-narrative.md` / `arc-narrative.de.md` left
+  untouched; the former is also a cogni-visual story-to-web eval input).
+- Docs/version: `README.md`, `CLAUDE.md`, `agents/copywriter.md`, `commands/copywrite.md`,
+  `.claude-plugin/plugin.json` (0.5.0 → 0.6.0), marketplace mirror.
+
+#### Migration Notes
+
+Non-breaking. Default `TARGET_LANG` unset preserves all existing polish behaviour; native arc polish
+still validates headings as *unchanged*. Slice-1 non-arc translation and Slice-2 EN↔DE arc
+translation are unaffected. Direct non-EN/DE pairs (fr→it) remain rejected by the pivot guard.
+
 ## [7.5.0] - 2026-05-26
 
 > The skill internal bump 7.4.0 → 7.5.0 ships in plugin release 0.5.0.

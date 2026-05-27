@@ -3,8 +3,8 @@ title: Arc Technique Map
 type: reference
 category: preservation-modes
 tags: [arc, polish, techniques, number-plays, element-strengthening]
-version: 2.1
-last_updated: 2026-05-26
+version: 2.2
+last_updated: 2026-05-27
 ---
 
 # Arc Technique Map
@@ -746,8 +746,14 @@ FOR EACH element IN arc:
 
 **Translation mode (`TARGET_LANG` set).** The absolute Word Targets in each arc table (150-200, 400-500, …) are for **native composition**. When the document is being **translated**, two checks change:
 
-- **Check 1 (Heading text):** headings are *expected* to change — to the target language. Validate that arc-element + bridge headings match the `TARGET_LANG` canonical set in `arc-preservation.md` byte-for-byte (umlauts required for `de`), rather than "unchanged".
-- **Check 4 (Word count):** the absolute target is advisory. Use a **relative** band against the source element: `translated_words ∈ source_element_words × factor × (1 ± 0.20)`, with **factor ≈ 1.20 for →de** (German prose runs ~15-25% longer) and **≈ 0.83 for →en**.
+- **Check 1 (Heading text):** headings are *expected* to change — to the target language. Validate that arc-element + bridge headings match the `TARGET_LANG` canonical set in `arc-preservation.md` byte-for-byte, carrying that language's required diacritics (per `01-core-principles/translation-principles.md` § "Per-Language Charset Rules"; e.g. ä/ö/ü/ß for `de`, é/è/ê/ç for `fr`, ą/ć/ę/ł/ń/ó/ś/ź/ż for `pl`), rather than "unchanged".
+- **Check 4 (Word count):** the absolute target is advisory. Use a **relative** band against the source element: `translated_words ∈ source_element_words × factor × (1 ± 0.20)`, with the per-target factor below:
+
+  | Target | →de | →en | →fr | →it | →es | →nl | →pl |
+  |--------|-----|-----|-----|-----|-----|-----|-----|
+  | factor | 1.20 | 0.83 | 1.15 | 1.10 | 1.20 | 1.05 | 1.10 |
+
+  The factors approximate prose expansion from an EN/DE source (German/Spanish run ~15-20% longer than English; English compresses German ~17%). They are deliberately coarse — the ±20% band absorbs pivot-source variance (e.g. a DE→FR pivot whose source element is already German-length), so a single source×target matrix is not maintained.
 
 Native (non-translation) arc polish keeps Check 1 ("unchanged") and the absolute `±50 words` rule exactly as written.
 

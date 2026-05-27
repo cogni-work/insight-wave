@@ -18,7 +18,7 @@ allowed-tools: Read, Glob, Grep, Bash
 
 cogni-narrative (upstream) defines story arcs — each with 4 named elements, section proportions, technique assignments, and localized headings. cogni-copywriting (downstream) has an arc-preservation mode that polishes narratives without breaking their arc structure. The preservation mode relies on three reference files that must stay in sync with upstream definitions:
 
-- **arc-preservation.md** — detection table mapping arc_id to 4 element headings, localized (DE) heading variants, and structural validation rules (H2 counts, heading hierarchy)
+- **arc-preservation.md** — detection table mapping arc_id to 4 element headings, localized heading variants (DE for all mirrored arcs; FR/IT/PL/NL/ES for the translation-supported arcs corporate-visions + jtbd-portfolio), and structural validation rules (H2 counts, heading hierarchy)
 - **arc-technique-map.md** — per-arc sections with element-level technique assignments, Number Play variants, and word targets
 - **00-index.md** — mode detection logic that lists which arc patterns trigger arc-aware mode
 
@@ -32,7 +32,7 @@ Resolve paths relative to the monorepo root. The monorepo root is the nearest an
 |---|------|-----------------|
 | U1 | `cogni-narrative/skills/narrative/references/story-arc/arc-registry.md` | Master list of all arcs: arc_id, element short names, section proportions, detection signals |
 | U2 | `cogni-narrative/skills/narrative/references/story-arc/{arc-id}/arc-definition.md` | Per-arc: full element headings, DE translations, word proportions, technique notes |
-| U3 | `cogni-narrative/skills/narrative/references/language-templates.md` | Section "Insight Summary (Arc Element Headers)" — exact EN/DE `##` headers per arc |
+| U3 | `cogni-narrative/skills/narrative/references/language-templates.md` | Section "Insight Summary (Arc Element Headers)" — exact EN/DE `##` headers per arc, plus the "Arc-mode translation headings (FR/IT/PL/NL/ES)" subsection for corporate-visions + jtbd-portfolio |
 | U4 | `cogni-narrative/skills/narrative/references/narrative-techniques/techniques-overview.md` | "Application by Arc Element" matrix — which techniques apply to which arc elements |
 
 ## Downstream Targets (files under audit)
@@ -73,7 +73,7 @@ For each arc_id, read `{arc-id}/arc-definition.md` (U2) and extract:
 - Full element headings (EN) — the exact `##` header text
 - Section proportions (if they differ from registry, prefer arc-definition as more detailed)
 
-From **language-templates.md** (U3), find the "Insight Summary (Arc Element Headers)" section. For each arc, extract the EN/DE heading table. These are the canonical heading strings.
+From **language-templates.md** (U3), find the "Insight Summary (Arc Element Headers)" section. For each arc, extract the per-arc EN/DE heading table. **Then also parse the "Arc-mode translation headings (FR/IT/PL/NL/ES)" subsection** (the two tables + the bridge-form table for `corporate-visions` and `jtbd-portfolio`). Build a per-arc **upstream language set** of canonical heading strings: `{en, de}` for the 9 plain arcs, and `{en, de, fr, it, pl, nl, es}` for the two in-scope arcs that appear in the translation subsection. These are the canonical heading strings the downstream mirror must match.
 
 From **techniques-overview.md** (U4), find the "Application by Arc Element" table. For each technique row, note which arc elements it applies to.
 
@@ -81,8 +81,8 @@ From **techniques-overview.md** (U4), find the "Application by Arc Element" tabl
 
 From **arc-preservation.md** (D1), extract:
 - The H2 heading detection table (the markdown table mapping arc_id to 4 element columns)
-- The localized headings table (DE translations)
-- Note which arc_ids are present
+- The localized headings table — read **every language column present** (EN, DE, and FR/IT/PL/NL/ES for the in-scope arcs), plus the bridge-section list
+- Note which arc_ids are present in the localized table
 
 From **arc-technique-map.md** (D2), extract:
 - Which `## Arc: {arc-id}` sections exist
@@ -123,10 +123,12 @@ For each arc present in both upstream and downstream:
 
 #### C3: Localized Heading Match (HIGH)
 
-For each arc present in the upstream language-templates.md:
-- Check if arc-preservation.md has DE heading entries for this arc.
-- If the DE headings are missing for an arc: HIGH.
-- If DE headings exist but don't match language-templates.md: HIGH.
+For each arc present in the upstream language-templates.md, iterate over **every language column the upstream defines for that arc** (the per-arc upstream language set from Step 2 — `{en, de}` for the 9 plain arcs, `{en, de, fr, it, pl, nl, es}` for `corporate-visions` and `jtbd-portfolio`):
+- For each upstream language, check if arc-preservation.md's localized table has a matching entry for this arc.
+- If a localized heading (or the bridge form) is missing for a language the upstream defines: HIGH.
+- If the downstream localized heading exists but doesn't match upstream byte-for-byte (including diacritics — FR é/è/ê/ç, IT à/è/é/ì/ò/ù, PL ą/ć/ę/ł/ń/ó/ś/ź/ż, ES á/é/í/ó/ú/ñ, DE ä/ö/ü/ß; never ASCII substitutes): HIGH.
+
+Scoping falls out of the per-arc language set: the two in-scope arcs are now checked across all 7 languages (they should be green once the downstream mirror carries FR/IT/PL/NL/ES), while the 9 plain arcs keep their existing en/de-only findings — the FR/IT/PL/NL/ES columns are **not** demanded for arcs the upstream does not define them for.
 
 #### C4: Word Target Consistency (MEDIUM)
 
