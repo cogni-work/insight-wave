@@ -159,7 +159,7 @@ cat > "$WIKI/wiki/index.md" <<'MD'
 - [[article-14-oversight]] — Artikel 14 verlangt wirksame menschliche Aufsicht über Hochrisiko-Systeme.
 MD
 
-# A six-sub-question German plan exercising every branch.
+# An eight-sub-question German plan exercising every branch.
 cat > "$WORK/plan.json" <<'JSON'
 {
   "schema_version": "0.1.0",
