@@ -62,6 +62,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
+    _FRONTMATTER_RE,
     atomic_write,
     atomic_write_text,
     claim_similarity,
@@ -120,6 +121,7 @@ def _empty_manifest() -> dict:
         "concepts": [],
         "claims_attached_total": 0,
         "claims_deduped_total": 0,
+        "claims_rejected_total": 0,
     }
 
 
@@ -131,7 +133,9 @@ def _empty_manifest() -> dict:
 # refuses to ship a page whose claims would not parse back — so a parse-fragility
 # bug surfaces loudly instead of silently losing a fact across runs.
 
-_FM_BLOCK_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
+# The frontmatter-block regex is the single source of truth in `_knowledge_lib`
+# (imported above), not re-declared here — a future tweak (BOM tolerance, …) must
+# apply everywhere at once.
 _DISTILLED_KEY_RE = re.compile(r"^distilled_claims[ \t]*:[ \t]*$")
 
 
@@ -156,7 +160,7 @@ def _decode_scalar(raw: str):
 def _parse_distilled_claims(page_text: str) -> list[dict]:
     """Read back the `distilled_claims:` block we wrote. Returns a list of full
     claim dicts. Tolerant of indent; only reads the fields we emit."""
-    m = _FM_BLOCK_RE.match(page_text or "")
+    m = _FRONTMATTER_RE.match(page_text or "")
     if not m:
         return []
     lines = m.group(1).splitlines()
@@ -241,8 +245,9 @@ def _next_dcl_id(claims: list[dict]) -> int:
 def _merge_claims(existing: list[dict], incoming: list[dict], today: str) -> tuple:
     """Merge the distiller's proposed claims into the existing claim list.
 
-    Returns (merged_claims, stats) where stats = {in, new, deduped, noop}.
+    Returns (merged_claims, stats) where stats = {in, new, deduped, noop, rejected}.
     Per incoming claim, in order:
+      - missing source_slug / source_claim_id / text -> REJECTED (counted, visible)
       - ref already on a claim's source_claim_refs  -> NOOP (idempotent re-run)
       - same non-empty norm_key                     -> DEDUP (union backlinks/ref)
       - claim_similarity >= threshold               -> DEDUP (union backlinks/ref)
@@ -252,14 +257,18 @@ def _merge_claims(existing: list[dict], incoming: list[dict], today: str) -> tup
     all-boilerplate claim (empty norm_key, 0 similarity) never matches -> kept."""
     merged = [dict(c) for c in existing]
     next_id = _next_dcl_id(merged)
-    stats = {"in": 0, "new": 0, "deduped": 0, "noop": 0}
+    stats = {"in": 0, "new": 0, "deduped": 0, "noop": 0, "rejected": 0}
 
     for inc in incoming:
         src_slug = (inc.get("source_slug") or "").strip()
         cid = (inc.get("source_claim_id") or "").strip()
         text = (inc.get("text") or "").strip()
         if not src_slug or not cid or not text:
-            continue  # malformed proposal line — skip silently (fail-safe)
+            # Malformed proposal line (e.g. the distiller emitted a claim missing
+            # its provenance) — COUNT it so a systematic format drop is visible in
+            # the manifest rather than masquerading as a claimless run.
+            stats["rejected"] += 1
+            continue
         stats["in"] += 1
         ref = f"{src_slug}#{cid}"
         nk = norm_key(text)
@@ -356,6 +365,7 @@ def _render_page(
     claims: list[dict],
     summary_block_inner: str,
     human_tail: str,
+    wiki_root: Path,
 ) -> str:
     fm = ["---"]
     fm.append(f"id: {slug}")
@@ -379,8 +389,13 @@ def _render_page(
         bl = " ".join(f"[[{b}]]" for b in c.get("backlinks", []))
         claims_lines.append(f"- {c.get('text', '')}" + (f" — {bl}" if bl else ""))
     claims_inner = "## Claims\n\n" + ("\n".join(claims_lines) if claims_lines else "_No claims yet._")
+    # Body `## Related` emits a bare `[[<slug>]]` ONLY for a related page that
+    # exists on disk — a link to a non-existent slug would be a `broken_wikilink`
+    # health error, and `related:` holds slugs (frontmatter), so an unresolved one
+    # is kept in frontmatter (health does not validate it) but omitted from the body.
+    related_body = [r for r in related if _page_exists(wiki_root, r)]
     related_inner = "## Related\n\n" + (
-        "\n".join(f"- [[{r}]]" for r in related) if related else "_No related pages yet._"
+        "\n".join(f"- [[{r}]]" for r in related_body) if related_body else "_No related pages yet._"
     )
     sources_inner = "## Sources\n\n" + (
         "\n".join(f"- [[{s}]]" for s in sources) if sources else "_No sources yet._"
@@ -410,6 +425,41 @@ def _dedup_keep_order(seq) -> list:
     return out
 
 
+def _page_exists(wiki_root: Path, slug: str) -> bool:
+    """True if `slug` already addresses a concept OR entity page on disk."""
+    for sub in _TYPE_DIRS.values():
+        if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
+            return True
+    return False
+
+
+def _result(slug: str, ptype: str, action: str, *, reason: str = "",
+            page_path: str = "", summary: str = "", claims_total: int = 0,
+            stats: dict | None = None) -> dict:
+    """Build a per-concept result dict with a UNIFORM key set, so every result —
+    created / updated / unchanged / skipped / write_failed / exception — carries
+    the same fields and no downstream reader hits a KeyError on a missing key."""
+    stats = stats or {}
+    return {
+        "slug": slug, "type": ptype, "action": action, "reason": reason,
+        "page_path": page_path, "summary": summary, "claims_total": claims_total,
+        "claims_in": stats.get("in", 0), "claims_new": stats.get("new", 0),
+        "claims_deduped": stats.get("deduped", 0), "claims_noop": stats.get("noop", 0),
+        "claims_rejected": stats.get("rejected", 0),
+    }
+
+
+def _claims_fingerprint(claims: list[dict]) -> list[tuple]:
+    """A tuple per claim covering EVERY persisted field, for the pre-write
+    round-trip self-check — so a corruption of text / norm_key / backlinks /
+    refs / timestamps (not just the id set) is caught before the page ships."""
+    return [(
+        c.get("claim_id", ""), c.get("text", ""), c.get("norm_key", ""),
+        tuple(c.get("backlinks", [])), tuple(c.get("source_claim_refs", [])),
+        c.get("created", ""), c.get("updated", ""),
+    ) for c in claims]
+
+
 # --- merge command -----------------------------------------------------------
 
 
@@ -429,33 +479,34 @@ def _merge_one(
         ptype = "concept"
     slug = slugify(title)
     if not slug:
-        return {"slug": "", "type": ptype, "action": "skipped", "reason": "empty_slug",
-                "claims_in": 0, "claims_new": 0, "claims_deduped": 0, "claims_noop": 0}
+        return _result("", ptype, "skipped", reason="empty_slug")
 
     page_path = wiki_root / "wiki" / _TYPE_DIRS[ptype] / f"{slug}.md"
     incoming_claims = record.get("claims", [])
-    incoming_sources = _dedup_keep_order(c.get("source_slug", "") for c in incoming_claims)
-    incoming_related = _dedup_keep_order(record.get("related", []))
+
+    # Slug-type collision: the same slug already addresses a page in the OTHER
+    # type dir (e.g. a `concept` slug that a prior — or same-run — `entity`
+    # proposal already created). cogni-wiki slugs are GLOBALLY unique, so refuse
+    # to write a second page at the same slug under a different type. Sequential
+    # writes under the lock mean a same-run sibling is already on disk here.
+    other_type = "entity" if ptype == "concept" else "concept"
+    if (wiki_root / "wiki" / _TYPE_DIRS[other_type] / f"{slug}.md").is_file():
+        return _result(slug, ptype, "skipped", reason="slug_type_collision")
 
     if page_path.is_file():
         existing_text = page_path.read_text(encoding="utf-8")
         fm = parse_frontmatter(existing_text)
         if is_foundation_page(fm):
-            return {"slug": slug, "type": ptype, "action": "skipped",
-                    "reason": "foundation_collision", "claims_in": len(incoming_claims),
-                    "claims_new": 0, "claims_deduped": 0, "claims_noop": 0}
+            return _result(slug, ptype, "skipped", reason="foundation_collision")
         if "MACHINE-OWNED" not in existing_text:
             # A page at our slug we did NOT author (hand-curated / cogni-wiki).
             # Never touch it — skip rather than risk clobbering human frontmatter
             # or body. Conservative refinement of the plan's "additive frontmatter".
-            return {"slug": slug, "type": ptype, "action": "skipped",
-                    "reason": "no_sentinels_human_page", "claims_in": len(incoming_claims),
-                    "claims_new": 0, "claims_deduped": 0, "claims_noop": 0}
+            return _result(slug, ptype, "skipped", reason="no_sentinels_human_page")
         existing_claims = _parse_distilled_claims(existing_text)
         created = _scalar_str(fm.get("created")) or today
         existing_updated = _scalar_str(fm.get("updated"))
         tags = _existing_tags(fm) or [ptype, "distilled"]
-        existing_sources = _strip_wiki_prefix(_as_list(fm.get("sources")))
         existing_related = _as_list(fm.get("related"))
         existing_from = _as_list(fm.get("distilled_from_research"))
         summary_inner = _extract_machine_block(existing_text, "SUMMARY") \
@@ -468,60 +519,59 @@ def _merge_one(
         existing_updated = ""
         created = today
         tags = [ptype, "distilled"]
-        existing_sources = existing_related = existing_from = []
+        existing_related = existing_from = []
         summary_inner = _default_summary(record)
         human_tail = ""
         action = "created"
 
     merged_claims, stats = _merge_claims(existing_claims, incoming_claims, today)
-    sources = _dedup_keep_order(list(existing_sources) + list(incoming_sources))
-    related = _dedup_keep_order(list(existing_related) + list(incoming_related))
+    # `sources:` = exactly the sources whose claims are actually on the page (the
+    # union of the merged claims' backlinks). Deriving it from the raw incoming
+    # claims would resurrect a skipped/malformed claim's source_slug as an orphan
+    # `wiki://` entry + a broken `[[slug]]` body link.
+    sources = _dedup_keep_order(b for c in merged_claims for b in c.get("backlinks", []))
+    # Related are slugs (the agent proposes titles → slugify here; prior-run values
+    # are already slugs). Frontmatter keeps all; the body links only existing ones.
+    related = _dedup_keep_order(
+        list(existing_related) + [slugify(r) for r in record.get("related", [])]
+    )
     distilled_from = _dedup_keep_order(list(existing_from) + [project_slug])
 
-    # Only bump `updated:` when something actually changed, so a pure re-run is
-    # byte-stable (idempotency layer 3). On create, today.
-    if action == "created":
-        page_updated = today
-    else:
-        changed = (stats["new"] > 0 or stats["deduped"] > 0
-                   or sources != existing_sources
-                   or related != existing_related
-                   or distilled_from != existing_from)
-        page_updated = today if changed else (existing_updated or today)
+    def render(updated: str) -> str:
+        return _render_page(
+            slug=slug, title=title, ptype=ptype, tags=tags, created=created, today=updated,
+            sources=sources, related=related, distilled_from=distilled_from,
+            claims=merged_claims, summary_block_inner=summary_inner, human_tail=human_tail,
+            wiki_root=wiki_root,
+        )
 
-    page_text = _render_page(
-        slug=slug, title=title, ptype=ptype, tags=tags, created=created, today=page_updated,
-        sources=sources, related=related, distilled_from=distilled_from,
-        claims=merged_claims, summary_block_inner=summary_inner, human_tail=human_tail,
-    )
-
-    # Pre-write round-trip self-check: parse the text we are about to write and
-    # assert the claim set survives. Refuse to ship a page whose claims would not
-    # parse back (data loss across runs is unrecoverable) — never write on a miss.
-    reparsed = _parse_distilled_claims(page_text)
-    if len(reparsed) != len(merged_claims) or \
-            [c["claim_id"] for c in reparsed] != [c["claim_id"] for c in merged_claims]:
-        return {"slug": slug, "type": ptype, "action": "write_failed",
-                "reason": "claims_round_trip_mismatch", "claims_in": stats["in"],
-                "claims_new": 0, "claims_deduped": 0, "claims_noop": 0}
-
-    summary_line = _summary_line(summary_inner)
-
-    # Byte-stable no-op: an existing page already in the target state is left
-    # untouched (no mtime churn, no spurious "updated" in the manifest).
+    # Render first with the EXISTING `updated:` (today on create). If that is
+    # byte-identical to what's on disk, nothing changed → no write, no date bump
+    # (idempotency layer 3, robust to ANY field — title, related-existence, claims).
+    base_updated = today if action == "created" else (existing_updated or today)
+    page_text = render(base_updated)
     if existing_text is not None and page_text == existing_text:
-        return {"slug": slug, "type": ptype, "action": "unchanged", "reason": "",
-                "page_path": str(page_path), "summary": summary_line,
-                "claims_total": len(merged_claims),
-                "claims_in": stats["in"], "claims_new": 0,
-                "claims_deduped": 0, "claims_noop": stats["noop"]}
+        return _result(slug, ptype, "unchanged", page_path=str(page_path),
+                       summary=(_summary_line(summary_inner) or title),
+                       claims_total=len(merged_claims), stats=stats)
+
+    # A genuine change → bump `updated:` to today (re-render only the date scalar).
+    if base_updated != today:
+        page_text = render(today)
+
+    # Pre-write round-trip self-check on the FINAL text: every persisted claim
+    # field (not just the id set) must parse back. Refuse to ship a page whose
+    # claims would not survive the round-trip (data loss across runs is
+    # unrecoverable) — never write on a miss.
+    reparsed = _parse_distilled_claims(page_text)
+    if _claims_fingerprint(reparsed) != _claims_fingerprint(merged_claims):
+        return _result(slug, ptype, "write_failed",
+                       reason="claims_round_trip_mismatch", stats=stats)
 
     atomic_write_text(page_path, page_text)
-    return {"slug": slug, "type": ptype, "action": action, "reason": "",
-            "page_path": str(page_path), "summary": summary_line,
-            "claims_total": len(merged_claims),
-            "claims_in": stats["in"], "claims_new": stats["new"],
-            "claims_deduped": stats["deduped"], "claims_noop": stats["noop"]}
+    return _result(slug, ptype, action, page_path=str(page_path),
+                   summary=(_summary_line(summary_inner) or title),
+                   claims_total=len(merged_claims), stats=stats)
 
 
 def _scalar_str(v) -> str:
@@ -534,13 +584,6 @@ def _as_list(v) -> list:
     if isinstance(v, str) and v.strip():
         return [v.strip()]
     return []
-
-
-def _strip_wiki_prefix(items: list[str]) -> list[str]:
-    out = []
-    for it in items:
-        out.append(it[len("wiki://"):] if it.startswith("wiki://") else it)
-    return out
 
 
 def _existing_tags(fm: dict) -> list[str]:
@@ -616,14 +659,22 @@ def cmd_merge(args: argparse.Namespace) -> int:
                     parse_frontmatter, is_foundation_page,
                 ))
             except Exception as exc:  # noqa: BLE001 — one bad proposal must not abort the run
-                results.append({"slug": slugify(record.get("title", "")), "type": record.get("type", "concept"),
-                                "action": "write_failed", "reason": f"exception: {exc}",
-                                "claims_in": 0, "claims_new": 0, "claims_deduped": 0, "claims_noop": 0})
+                results.append(_result(slugify(record.get("title", "")),
+                                       (record.get("type") or "concept"),
+                                       "write_failed", reason=f"exception: {exc}"))
 
     attached_total = sum(r["claims_new"] + r["claims_deduped"] for r in results)
     deduped_total = sum(r["claims_deduped"] for r in results)
-    created_slugs = [r["slug"] for r in results if r["action"] == "created"]
-    updated_slugs = [r["slug"] for r in results if r["action"] == "updated"]
+    rejected_total = sum(r.get("claims_rejected", 0) for r in results)
+    # created_slugs / updated_slugs MUST be disjoint: a slug created and then
+    # re-touched in the SAME run (two proposals → one slug) is net-created, so it
+    # belongs only to created_slugs. Without this it lands in both lists and the
+    # orchestrator's per-slug loop double-indexes / double-bumps entries_count.
+    created_slugs = _dedup_keep_order(r["slug"] for r in results if r["action"] == "created" and r["slug"])
+    created_set = set(created_slugs)
+    updated_slugs = [s for s in _dedup_keep_order(
+        r["slug"] for r in results if r["action"] == "updated" and r["slug"]
+    ) if s not in created_set]
 
     manifest = {
         "schema_version": SCHEMA_VERSION,
@@ -632,7 +683,13 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "concepts": results,
         "claims_attached_total": attached_total,
         "claims_deduped_total": deduped_total,
+        "claims_rejected_total": rejected_total,
     }
+    # The script is the single writer of the manifest, so it also owns the
+    # bundle_hash the orchestrator's resume check reads back (no fragile
+    # second-process patch). Optional — absent when the caller doesn't pass it.
+    if args.bundle_hash:
+        manifest["bundle_hash"] = args.bundle_hash
     try:
         atomic_write(_manifest_path(project_path), manifest)
     except OSError as exc:
@@ -647,6 +704,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "n_updated": len(updated_slugs),
         "claims_attached_total": attached_total,
         "claims_deduped_total": deduped_total,
+        "claims_rejected_total": rejected_total,
     })
 
 
@@ -680,6 +738,8 @@ def main(argv: list[str]) -> int:
     p_merge.add_argument("--project-slug", required=True, help="Research project slug (for distilled_from_research)")
     p_merge.add_argument("--wiki-scripts-dir", required=True,
                          help="Path to cogni-wiki wiki-ingest/scripts (for _wiki_lock / is_foundation_page / parse_frontmatter)")
+    p_merge.add_argument("--bundle-hash", default="",
+                         help="Stable sha256 of the source-claim bundle; written into the manifest for the orchestrator's resume no-op check")
     p_merge.set_defaults(func=cmd_merge)
 
     p_read = sub.add_parser("read", help="Emit distill-manifest.json content")

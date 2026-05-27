@@ -664,19 +664,24 @@ def _absorb_concept_kv(item: dict, kv: str) -> None:
     elif key == "related":
         item["related"] = [r.strip() for r in value.split(",") if r.strip()]
     elif key == "claim":
-        # Provenance + text. Two accepted forms (liberal in what we accept):
-        #   `<source_slug> | <claim_id> | <text>`  (the documented 3-part form)
-        #   `<source_slug>#<claim_id> | <text>`     (tolerated 2-part ref form)
-        # `split("|", 2)` keeps any `|` inside the claim text intact (it lands in
-        # the last part). The `#` fallback splits the ref (slugs never contain `#`).
-        parts = [p.strip() for p in value.split("|", 2)]
-        if len(parts) >= 3:
-            src_slug, cid, ctext = parts[0], parts[1], parts[2]
-        elif len(parts) == 2:
-            ref, _, cid = parts[0].partition("#")
-            src_slug, ctext = ref, parts[1]
+        # Provenance + text. Two accepted forms, disambiguated by whether the
+        # FIRST `|`-segment carries a `#` (slugs/claim-ids never contain `#`, so
+        # its presence unambiguously marks the ref form). We split on `#`/`|`
+        # positionally — NOT `split("|", 2)` — so a claim text containing ` | `
+        # (common in regulatory prose: "Article 6 | paragraph 2") is preserved
+        # verbatim in BOTH forms rather than mis-split into the provenance fields.
+        #   `<source_slug>#<claim_id> | <text…>`     (2-part ref form)
+        #   `<source_slug> | <claim_id> | <text…>`   (documented 3-part form)
+        first, sep, rest = value.partition("|")
+        if "#" in first:
+            src_slug, _, cid = first.partition("#")
+            ctext = rest if sep else ""
         else:
-            src_slug, cid, ctext = (parts[0] if parts else ""), "", ""
+            src_slug = first
+            cid_part, sep2, ctext = rest.partition("|")
+            cid = cid_part
+            if not sep2:
+                ctext = ""  # only one `|` and no `#` → no text field → reject downstream
         item["claims"].append({
             "source_slug": src_slug.strip(),
             "source_claim_id": cid.strip(),

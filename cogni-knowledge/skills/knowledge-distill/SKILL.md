@@ -95,7 +95,11 @@ for e in man.get("ingested", []):
         cid = c.get("id", "")
         text = " ".join(str(c.get("text", "")).split())
         if cid and text:
-            lines.append(cid + " | " + text)
+            # Emit the FULL 3-part provenance per claim line (`<slug> | <id> | <text>`)
+            # so the distiller copies the triple VERBATIM into its records — no
+            # per-line slug reconstruction from the `## source:` header (a verbatim
+            # copy of a 2-part line would parse to an empty claim_id and be dropped).
+            lines.append(slug + " | " + cid + " | " + text)
     lines.append("")
 Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(lines) + "\n", encoding="utf-8")
 print(len([l for l in lines if l.startswith("## source:")]))
@@ -104,11 +108,9 @@ print(len([l for l in lines if l.startswith("## source:")]))
 
 Capture the printed source count. If it is `0` (no source carries claims) → warn ("no source claims to distill") and exit cleanly.
 
-Compute a bundle hash for the resume check (Step 3):
+Compute a **content** hash of the bundle for the resume check (Step 3). It MUST hash the bundle's bytes, not a path — `fetch-cache.py key` hashes a URL string and would make the resume check path-keyed (a changed claim set on the same path would falsely look "unchanged"), so do not use it here:
 
 ```
-BUNDLE_HASH=$(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url "file://<project_path>/.metadata/distill-bundle.txt" --bare 2>/dev/null || true)
-# (or any stable sha256 of the bundle file; the value just needs to be stable.)
 SHA=$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "<project_path>/.metadata/distill-bundle.txt")
 ```
 
@@ -187,26 +189,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py merge \
     --wiki-root <WIKI_ROOT> \
     --project-path <project_path> \
     --project-slug <project-slug> \
-    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    --bundle-hash "$SHA"
 ```
 
-Parse `data`: `created_slugs[]`, `updated_slugs[]`, `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, ...}`), `claims_attached_total`, `claims_deduped_total`. On `success: false` → warn + exit cleanly. After a successful merge, append the `bundle_hash` (Step 1 `SHA`) into the manifest so Step 3's resume check works next time:
-
-```
-KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-MANIFEST_PATH="<project_path>/.metadata/distill-manifest.json" \
-BUNDLE_HASH="$SHA" \
-python3 -c '
-import json, os, sys
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from pathlib import Path
-from _knowledge_lib import atomic_write
-p = Path(os.environ["MANIFEST_PATH"])
-m = json.loads(p.read_text(encoding="utf-8"))
-m["bundle_hash"] = os.environ["BUNDLE_HASH"]
-atomic_write(p, m)
-'
-```
+`--bundle-hash "$SHA"` (the Step-1 content hash) is written into the manifest by `concept-store.py` itself — it is the single writer, so Step 3's resume check reads it back with no fragile second-process patch. Parse `data`: `created_slugs[]`, `updated_slugs[]` (disjoint), `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, claims_rejected, ...}`), `claims_attached_total`, `claims_deduped_total`, `claims_rejected_total`. On `success: false` → warn + exit cleanly. **If `claims_rejected_total > 0`, surface it loudly** — it means the distiller emitted malformed claim lines (e.g. dropped the `<slug> | <id> |` provenance), which would otherwise silently shrink the concept web; check the records file format.
 
 ### 7. Per-new/updated-slug cogni-wiki integration (sequential, after merge)
 
@@ -222,11 +209,11 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
    ```
    `apply_plan` is idempotent + fail-soft per target. If no genuine relation, skip apply for that slug (never invent a backlink). The concept page already carries bare `[[<source-slug>]]` links in its `## Sources` block (written by `concept-store.py`), so its concept→source edges exist; this step adds the inbound source→concept / concept→concept edges.
 
-2. **Index update (thematic category).** File the page under `Concepts` or `Entities` per its `type` (from the merge result), using the merge result's `summary`:
+2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title). Every flag is on a continued line (trailing `\`); do not put a shell comment on an argument line, or `--max-summary` is dropped and the #324 mid-word clamp is lost:
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" --wiki-root <WIKI_ROOT> --slug <slug> \
        --summary "<the concept's summary from the merge result>" \
-       --category "Concepts"   # or "Entities" for type: entity
+       --category "<Concepts|Entities per the merge result's type>" \
        --max-summary 240
    ```
    Capture the envelope. When `success == true` **and** `data.action == "inserted"`, increment `n_new` (init `0` before the loop). `data.action == "updated"` (a row already existed) does NOT count — same lockstep as `knowledge-ingest` Step 4.
@@ -260,8 +247,8 @@ Print ≤ 10 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
-- Concepts created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`empty_slug`)
-- Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`)
+- Concepts created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
+- Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
 - Wiki entries_count: `+<n_new>` (or `⚠ bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0`)
 - Cost: `$X.XXX` (from the distiller return)
 - Next: `knowledge-compose` reads the concept/entity pages as framing context (not citable evidence).

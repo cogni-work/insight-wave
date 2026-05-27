@@ -383,6 +383,17 @@ def assert_parse_concept_records():
     ref = kl.parse_concept_records("- title: T\n  claim: src-x#clm-009 | A claim.\n")
     assert ref[0]["claims"][0] == {"source_slug": "src-x", "source_claim_id": "clm-009",
                                    "text": "A claim."}, ref[0]["claims"][0]
+    # 2-part ref form whose TEXT contains ` | ` must keep the whole text (disambiguate
+    # on the `#` in the first segment, not on pipe count). Regression for the
+    # split("|", 2) mis-split that fabricated claim_id='Article 6'.
+    rp = kl.parse_concept_records("- title: T\n  claim: src-a#clm-001 | Article 6 | paragraph 2\n")
+    assert rp[0]["claims"][0] == {"source_slug": "src-a", "source_claim_id": "clm-001",
+                                  "text": "Article 6 | paragraph 2"}, rp[0]["claims"][0]
+    # A no-`#` line with only ONE pipe (3-part form missing its text field) →
+    # empty text, so concept-store's guard rejects it (the reject-driver is the
+    # empty text, regardless of how the single field is bucketed).
+    bad = kl.parse_concept_records("- title: T\n  claim: src-a | just text no id\n")
+    assert bad[0]["claims"][0]["text"] == "", bad[0]["claims"][0]
     # Empty input → [].
     assert kl.parse_concept_records("") == []
 

@@ -134,6 +134,45 @@ AFTER=$(cat "$NS")
 [ "$BEFORE" = "$AFTER" ] && green "PASS: identical re-run is byte-stable" || { red "FAIL: re-run changed the page"; errors=$((errors+1)); }
 echo "$OUT" | grep -q '"action": "unchanged"' && green "PASS: re-run reports unchanged" || { red "FAIL: re-run not reported unchanged"; errors=$((errors+1)); }
 
+# --- 6. FAIL-SAFE: near-but-distinct claims are KEPT, not over-merged --------
+PROJ3="$WORK/project3"; mkdir -p "$PROJ3/.metadata"
+cat > "$PROJ3/.metadata/recsafe.txt" <<'EOF'
+- title: Fail Safe Probe
+  type: concept
+  claim: src-a#clm-020 | Member states must designate a national supervisory authority.
+  claim: src-b#clm-021 | The penalty ceiling is thirty five million euros.
+EOF
+python3 "$SCRIPT" merge --records "$PROJ3/.metadata/recsafe.txt" --wiki-root "$WIKI" --project-path "$PROJ3" --project-slug proj-safe --wiki-scripts-dir "$WSD" >/dev/null
+FS="$WIKI/wiki/concepts/fail-safe-probe.md"
+N=$(grep -c 'claim_id: dcl-' "$FS" 2>/dev/null || echo 0)
+[ "$N" = "2" ] && green "PASS: two distinct facts (sim < 0.85) kept as 2 claims (fail-safe keep-both)" || { red "FAIL: distinct claims over-merged (got $N)"; errors=$((errors+1)); }
+
+# --- 6b. orphan-source guard: a malformed (empty-text) claim's slug must NOT --
+# leak into sources:/## Sources, and must be COUNTED as rejected.
+cat > "$PROJ3/.metadata/reorph.txt" <<'EOF'
+- title: Orphan Guard
+  type: concept
+  claim: src-a#clm-030 | A real attached claim.
+  claim: src-orphan#clm-031 |
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ3/.metadata/reorph.txt" --wiki-root "$WIKI" --project-path "$PROJ3" --project-slug proj-safe --wiki-scripts-dir "$WSD")
+OG="$WIKI/wiki/concepts/orphan-guard.md"
+grep -q 'src-orphan' "$OG" && { red "FAIL: malformed claim's source leaked into the page"; errors=$((errors+1)); } || green "PASS: malformed-claim source not added to sources/backlinks"
+echo "$OUT" | grep -q '"claims_rejected_total": 1' && green "PASS: malformed claim counted in claims_rejected_total" || { red "FAIL: rejected claim not counted"; errors=$((errors+1)); }
+
+# --- 7b. slug-type collision: same title as concept AND entity -> 2nd skipped -
+cat > "$PROJ3/.metadata/recdual.txt" <<'EOF'
+- title: Data Protection Authority
+  type: concept
+  claim: src-a#clm-040 | The authority enforces the regulation.
+- title: Data Protection Authority
+  type: entity
+  claim: src-b#clm-041 | The authority is an independent body.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ3/.metadata/recdual.txt" --wiki-root "$WIKI" --project-path "$PROJ3" --project-slug proj-safe --wiki-scripts-dir "$WSD")
+echo "$OUT" | grep -q 'slug_type_collision' && green "PASS: concept+entity same slug -> 2nd skipped (slug_type_collision)" || { red "FAIL: slug_type_collision not enforced"; errors=$((errors+1)); }
+[ -f "$WIKI/wiki/concepts/data-protection-authority.md" ] && [ ! -f "$WIKI/wiki/entities/data-protection-authority.md" ] && green "PASS: only ONE page exists for the colliding slug" || { red "FAIL: duplicate slug across type dirs"; errors=$((errors+1)); }
+
 # --- 7. foundation collision (slug must match slugify(title)) ----------------
 cat > "$WIKI/wiki/concepts/risk-management-system.md" <<'EOF'
 ---

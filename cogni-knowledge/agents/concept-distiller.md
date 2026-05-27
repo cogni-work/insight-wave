@@ -47,7 +47,7 @@ only group claims under the concept they are about.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `CLAIM_BUNDLE_PATH` | Yes | Absolute path to the run's claim bundle (one block per ingested source: its slug, title, and `pre_extracted_claims:` as `clm-NNN | <text>` lines). Your only evidence — do not read the source pages or fetch anything. |
+| `CLAIM_BUNDLE_PATH` | Yes | Absolute path to the run's claim bundle. Each source is a block: a `## source: <slug> \| <title>` header, then one claim per line in the **3-part form `<source_slug> \| <claim_id> \| <text>`** (the source slug is repeated on every line so you never reconstruct it). Your only evidence — do not read the source pages or fetch anything. |
 | `SLUG_INDEX_PATH` | Yes | Absolute path to the existing-concept index (one line per concept/entity page already on the wiki: `<slug> | <type> | <title>`). Use it to reuse an existing concept's **title** when your cluster matches one (so the merge lands on the same page) and to avoid proposing a near-duplicate of an existing page. May be empty on a fresh base. |
 | `RECORDS_OUTPUT_PATH` | Yes | Absolute path to write your raw-text concept-records file. |
 | `OUTPUT_LANGUAGE` | No | ISO 639-1 code (default `en`). Concept titles + summaries are authored in this language (matching the source claims' language). |
@@ -61,7 +61,7 @@ Phase 0 (load) → Phase 1 (cluster) → Phase 2 (write records) → Phase 3 (re
 
 ### Phase 0: Load
 
-1. `Read` `CLAIM_BUNDLE_PATH`. Each block is one ingested source with its slug, title, and a list of `clm-NNN | <claim text>` lines.
+1. `Read` `CLAIM_BUNDLE_PATH`. Each block opens with `## source: <slug> | <title>` and lists its claims one per line as **`<source_slug> | <claim_id> | <claim text>`** (3-part). When you attach a claim to a concept (Phase 2), copy that whole `<source_slug> | <claim_id> | <text>` line **verbatim** as the `claim:` value — never re-type or shorten it, and never emit just `<claim_id> | <text>` (a 2-part line parses to an empty source_slug/claim_id and the claim is dropped).
 2. `Read` `SLUG_INDEX_PATH`. Each line is an existing concept/entity page: `<slug> | <type> | <title>`. (Empty file = fresh base — everything you propose is new.)
 3. If the bundle has no claims → write an empty records file (`Write` an empty string) and return `{"ok": true, "concepts_proposed": 0, "reason": "empty_bundle"}`.
 
@@ -103,9 +103,9 @@ Field rules (each on a **single line**):
 - `title:` — the concept/entity name. Reuse an existing page's title verbatim when your cluster matches it.
 - `type:` — `concept` or `entity` (lowercase).
 - `summary:` — one crisp sentence in `OUTPUT_LANGUAGE`. May contain colons/commas/quotes — write them raw (do NOT quote or escape the value; `concept-store.py` serializes it safely).
-- `related:` — optional comma-separated list of other concept titles/ideas.
+- `related:` — optional comma-separated list of other concept titles (best-effort cross-references; `concept-store.py` slugifies them and only links the ones that resolve to a real page).
 - `update:` — `true`/`false`, advisory only (the real decision is on-disk).
-- `claim:` — one line per attached claim, value is **`<source_slug> | <claim_id> | <claim text verbatim>`**. The source slug + claim id come straight from the bundle block this claim sits in. The claim text is copied **verbatim** (raw — no quoting, no escaping). Repeat the `claim:` line as many times as needed.
+- `claim:` — one line per attached claim. **Copy the bundle's `<source_slug> | <claim_id> | <text>` line VERBATIM** as the value — all three parts, including the leading source slug. Do NOT drop the slug, do NOT emit a 2-part `<claim_id> | <text>` line (it parses to an empty source_slug/claim_id and the claim is silently rejected). The text is raw (no quoting, no escaping); a `|` inside the claim text is fine — `concept-store.py` splits provenance off the first one/two delimiters positionally. Repeat the `claim:` line as many times as needed.
 
 **Critical — raw text, never JSON.** Copy claim texts and summaries verbatim. Do not wrap them in quotes, do not escape `"`/`\`, do not assemble JSON. The `Write` tool persists your bytes exactly, so a straight `"` in a German `„…"` claim is safe here precisely because you are not building JSON. `concept-store.py` `json.dumps`-quotes every value when it writes the page — escaping is the serializer's job, never yours (#325).
 
