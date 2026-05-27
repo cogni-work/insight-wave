@@ -294,7 +294,7 @@ If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND < MAX_ROUNDS` → continue to 3.3
 
 #### 3.3 Dispatch revisor (single Task call per round)
 
-**Pre-create the draft substrate + snapshot the manifest (#305).** The revisor now **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version AND snapshots the manifest the revisor is about to rewrite (the snapshot is what lets `DELTA_IDS` be derived deterministically below, instead of trusting the revisor's self-reported `fixes_applied`):
+**Pre-create the draft substrate + snapshot the manifest (#305).** The revisor now **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version AND snapshots the current manifest before the revise round overwrites it (the build in the `ok: true` branch below rebuilds it from the revisor's records; the snapshot is what lets `DELTA_IDS` be derived deterministically against that rebuild, instead of trusting the revisor's self-reported `fixes_applied`):
 
 ```
 NEW_DRAFT_VERSION=$((CURRENT_DRAFT_VERSION + 1))
@@ -355,7 +355,7 @@ Parse the return envelope:
 
 ### 4. Verify outputs on disk
 
-One Python subprocess validates the latest verify-vN.json (and, if the revisor ran, the latest draft + rewritten manifest). Paths go via env vars so spaces / apostrophes in project paths cannot break the Python literal:
+One Python subprocess validates the latest verify-vN.json (and, if the revisor ran, the latest draft + the rebuilt manifest). Paths go via env vars so spaces / apostrophes in project paths cannot break the Python literal:
 
 ```
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
