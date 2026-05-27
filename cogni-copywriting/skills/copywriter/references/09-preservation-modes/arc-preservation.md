@@ -6,8 +6,8 @@ tags: [arc-preservation, story-arc, narrative-structure, polish, cogni-narrative
 audience: [copywriter-skill]
 related:
   - arc-technique-map
-version: 2.1
-last_updated: 2026-05-26
+version: 2.2
+last_updated: 2026-05-27
 ---
 
 # Arc-Aware Preservation Mode
@@ -63,26 +63,31 @@ subtitle: "..."
 
 Match rule: Compare the document's H2 headings against the element columns above. A partial match on the first word is sufficient (e.g., "Why" matches "Why Change", "Job" matches "Job Landscape"). If 3 or more of the 4 elements match a single arc row, activate arc-aware mode with that arc_id.
 
-**Localized headings are also valid.** Arc element headings may appear in German. This table holds the **canonical full headings** for the arcs supported by EN↔DE arc-mode translation, mirrored byte-for-byte from cogni-narrative's `language-templates.md` ("Insight Summary (Arc Element Headers)"). The `audit-copywriter` checks C2/C3 keep this mirror in sync with upstream.
+**Localized headings are also valid.** Arc element headings may appear in a non-English language. This table holds the **canonical full headings** for the arcs supported by EN/DE-pivot arc-mode translation (any of de/en/fr/it/pl/nl/es, with EN or DE on one end of the pair), mirrored byte-for-byte from cogni-narrative's `language-templates.md` (the "Insight Summary (Arc Element Headers)" EN/DE tables plus the "Arc-mode translation headings (FR/IT/PL/NL/ES)" subsection). The `audit-copywriter` checks C2/C3 keep this mirror in sync with upstream.
 
-| Arc | # | EN (canonical) | DE (canonical) |
-|-----|---|----------------|----------------|
-| corporate-visions | 1 | Why Change: Unconsidered Needs | Warum Wandel: Unerkannte Handlungsbedarfe |
-| corporate-visions | 2 | Why Now: Forcing Functions | Warum Jetzt: Handlungsdruck |
-| corporate-visions | 3 | Why You: Unique Positioning | Warum Sie: Einzigartige Positionierung |
-| corporate-visions | 4 | Why Pay: ROI Justification | Warum Investieren: ROI-Begründung |
-| jtbd-portfolio | 1 | Job Landscape: Functional Jobs | Job-Landschaft: Funktionale Aufgaben |
-| jtbd-portfolio | 2 | Friction Map: Obstacles and Cost of Inaction | Reibungskarte: Hindernisse und Handlungsdruck |
-| jtbd-portfolio | 3 | Portfolio Map: Solutions by Job | Portfolio-Zuordnung: Lösungen je Aufgabe |
-| jtbd-portfolio | 4 | Invitation: Next Step | Einladung: Nächster Schritt |
+| Arc | # | EN (canonical) | DE (canonical) | FR | IT | PL | NL | ES |
+|-----|---|----------------|----------------|----|----|----|----|----|
+| corporate-visions | 1 | Why Change: Unconsidered Needs | Warum Wandel: Unerkannte Handlungsbedarfe | Pourquoi changer : besoins insoupçonnés | Perché cambiare: bisogni latenti | Dlaczego zmiana: nieuświadomione potrzeby | Waarom veranderen: onopgemerkte behoeften | Por qué cambiar: necesidades no consideradas |
+| corporate-visions | 2 | Why Now: Forcing Functions | Warum Jetzt: Handlungsdruck | Pourquoi maintenant : facteurs déclencheurs | Perché ora: fattori scatenanti | Dlaczego teraz: czynniki wymuszające | Waarom nu: dwingende factoren | Por qué ahora: factores determinantes |
+| corporate-visions | 3 | Why You: Unique Positioning | Warum Sie: Einzigartige Positionierung | Pourquoi vous : positionnement unique | Perché Lei: posizionamento unico | Dlaczego Państwo: wyjątkowe pozycjonowanie | Waarom u: unieke positionering | Por qué usted: posicionamiento único |
+| corporate-visions | 4 | Why Pay: ROI Justification | Warum Investieren: ROI-Begründung | Pourquoi investir : justification du ROI | Perché investire: giustificazione del ROI | Dlaczego inwestować: uzasadnienie ROI | Waarom investeren: ROI-onderbouwing | Por qué invertir: justificación del ROI |
+| jtbd-portfolio | 1 | Job Landscape: Functional Jobs | Job-Landschaft: Funktionale Aufgaben | Panorama des tâches : tâches fonctionnelles | Panorama dei job: job funzionali | Krajobraz zadań: zadania funkcjonalne | Takenlandschap: functionele taken | Panorama de tareas: tareas funcionales |
+| jtbd-portfolio | 2 | Friction Map: Obstacles and Cost of Inaction | Reibungskarte: Hindernisse und Handlungsdruck | Carte des frictions : obstacles et coût de l'inaction | Mappa degli attriti: ostacoli e costo dell'inazione | Mapa tarć: przeszkody i koszt bezczynności | Frictiekaart: obstakels en kosten van nietsdoen | Mapa de fricciones: obstáculos y coste de la inacción |
+| jtbd-portfolio | 3 | Portfolio Map: Solutions by Job | Portfolio-Zuordnung: Lösungen je Aufgabe | Cartographie du portefeuille : solutions par tâche | Mappa del portfolio: soluzioni per job | Mapa portfolio: rozwiązania według zadań | Portfoliokaart: oplossingen per taak | Mapa de portfolio: soluciones por tarea |
+| jtbd-portfolio | 4 | Invitation: Next Step | Einladung: Nächster Schritt | Invitation : prochaine étape | Invito: prossimo passo | Zaproszenie: następny krok | Uitnodiging: volgende stap | Invitación: siguiente paso |
 
 The H2-detection match rule (first-word partial match) still applies — a document heading like `## Why Change` or `## Warum Wandel: …` matches its row regardless of whether the source used the short or full form.
 
 Bridge section heading by language:
 - EN: "Further Reading"
 - DE: "Weiterführende Lektüre"
+- FR: "Pour aller plus loin"
+- IT: "Approfondimenti"
+- PL: "Dalsza lektura"
+- NL: "Verder lezen"
+- ES: "Lecturas adicionales"
 
-**Native vs. translation mode.** In native arc polish (no `TARGET_LANG`), all of these headings are **preserved exactly** as they appear in the source — never substituted. In **arc-translation mode** (`TARGET_LANG` set, EN↔DE), the copywriter **substitutes** each arc-element heading positionally (the Nth arc-element H2 maps to element index N) and the bridge heading with the **target-language canonical full form** from this table. See SKILL.md Step 2.5.
+**Native vs. translation mode.** In native arc polish (no `TARGET_LANG`), all of these headings are **preserved exactly** as they appear in the source — never substituted. In **arc-translation mode** (`TARGET_LANG` set, EN/DE-pivot — one end of the pair is EN or DE), the copywriter **substitutes** each arc-element heading positionally (the Nth arc-element H2 maps to element index N) and the bridge heading with the **target-language canonical full form** from this table. See SKILL.md Step 2.5.
 
 ## Structure Preservation Rules
 

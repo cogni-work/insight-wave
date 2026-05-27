@@ -1,7 +1,7 @@
 {
   "name": "cogni-copywriting",
-  "version": "0.5.0",
-  "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, arc contract audit against cogni-narrative, and translation pass (translate then polish) across DE/EN/FR/IT/PL/NL/ES via an EN/DE pivot, including arc-mode EN↔DE translation for cogni-narrative story arcs (corporate-visions, jtbd-portfolio).",
+  "version": "0.6.0",
+  "description": "Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readability optimization, sales enhancement (Power Positions), multi-language support, JSON field polishing via the copy-json adapter, arc contract audit against cogni-narrative, and translation pass (translate then polish) across DE/EN/FR/IT/PL/NL/ES via an EN/DE pivot, including arc-mode translation across all seven languages for cogni-narrative story arcs (corporate-visions, jtbd-portfolio).",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
