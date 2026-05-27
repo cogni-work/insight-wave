@@ -106,9 +106,9 @@ STOPWORDS = frozenset({
     "this", "that", "these", "those", "it", "its", "their", "they", "them", "we", "us", "our",
     "vs", "into", "from", "about", "as", "by", "if", "any", "all", "some", "more", "most",
     # German function words (folded form: umlaut/ß de-accented, lowercase — see
-    # _fold). Without these, German queries/pages score on noise (#326). Tokens
-    # <3 chars (der/die/das/und are kept; im/am/zu fall out via the length drop
-    # anyway) are listed for clarity where they survive the digit/length rules.
+    # _fold). Most are exactly 3 chars (der/die/das/und/von/mit/…), so the <3
+    # length-drop does NOT shed them — they must be stopworded explicitly or
+    # German queries/pages would score on this noise (#326).
     "und", "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "eines", "einem", "einen",
     "fuer", "von", "mit", "auf", "aus", "ist", "sind", "war", "waren", "wird", "werden",
     "nicht", "auch", "oder", "aber", "als", "durch", "bei", "bis", "nach", "vor", "ueber", "unter",
@@ -143,15 +143,25 @@ def _stem(token: str) -> str:
 def _fold(text: str) -> str:
     """De-accent so non-ASCII tokens survive the `[^a-z0-9]+` split instead of
     fragmenting (German `Geschäftsidee` → `geschaeftsidee`, not `gesch`+`ftsidee`;
-    `Künstliche` → `kuenstliche`). Mirrors `_knowledge_lib.slugify`'s
-    normalization — lowercase, NFC, the manual umlaut/ß transliteration, then
-    NFKD + combining-mark removal. Applied identically to both the sub-question
-    and page sides, and to STOPWORDS / GENERIC_DENYLIST membership (those are
-    written in folded form), so matching stays consistent across languages."""
+    `Künstliche` → `kuenstliche`). Lowercase, NFC, the manual umlaut/ß
+    transliteration, then **NFD** (canonical) + combining-mark removal. Applied
+    identically to both the sub-question and page sides, and to STOPWORDS /
+    GENERIC_DENYLIST membership (those are written in folded form), so matching
+    stays consistent across languages.
+
+    NFD, NOT NFKD (which `_knowledge_lib.slugify` uses): NFKD *compatibility*
+    decomposition fabricates ASCII digits from typographic glyphs (`½` → `1` `2`,
+    superscript `²` → `2`, fullwidth `９` → `9`), which `tokenize` would then keep
+    as pure-numeric tokens and weight ×3.0 as article-number anchors — a
+    typographic footnote marker or fraction in a page's claim text would inject a
+    spurious cross-lingual anchor and falsely cover an unrelated sub-question.
+    NFD's *canonical* decomposition still de-accents every supported-market
+    letter (é→e, ñ→n, Polish ł handled by the manual map) but leaves ½/²/№
+    intact so the `[a-z0-9]` split discards them."""
     lowered = unicodedata.normalize("NFC", text.lower())
     for src, dst in _MANUAL_TRANSLITERATION:
         lowered = lowered.replace(src, dst)
-    decomposed = unicodedata.normalize("NFKD", lowered)
+    decomposed = unicodedata.normalize("NFD", lowered)
     return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
 
 

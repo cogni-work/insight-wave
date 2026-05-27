@@ -21,14 +21,23 @@
 #   2. A lone article-number anchor alone clears the matched-weight floor.
 #   3. An all-boilerplate sub-question stays `uncovered` (the denylist guard).
 #   4. A genuinely-novel sub-question (Art 51/52, absent from the base) stays
-#      `uncovered` — the floor preserves novelty, the whole point of the gate.
+#      `uncovered` — an absent topic finds nothing.
+#   4b. The matched-weight FLOOR: a near-miss SQ (`Daten erfassen`) whose one
+#      weak token (`daten`~`datenbank`) clears the recall ratio but NOT the
+#      floor stays `uncovered` — drop the floor and this flips to `partial`.
 #   5. RANKING: the topically-correct Art-71 page outranks a generic oversight
 #      page for the governance SQ (the old scorer surfaced the wrong pages on
 #      top — #326 defect 5).
-#   6. Compound false-positive guard: a SUFFIX (`managementsystem` inside
-#      `risikomanagementsystem`) and a boilerplate-headed compound
-#      (`managementsystem`/`datenerfassung`) do NOT spuriously match.
+#   6. Boilerplate-head compound guard: a compound that shares only a denylisted
+#      stem (`systemverwaltung`~`systeme`, shared prefix `system`) does NOT match
+#      — remove the `t_sq[:cpl] not in denylist` guard and this flips to
+#      `covered`. (Prefix-only matching also makes the suffix case —
+#      `managementsystem` inside `risikomanagementsystem` — structurally
+#      impossible, since they share a zero-length prefix.)
 #   7. A one-page German base -> `partial` (exercises the middle branch).
+#   8. NFD folding: a typographic fraction (`½`) in a page's claim text must NOT
+#      fabricate a `1`/`2` article-number anchor (the NFKD-compatibility-
+#      decomposition bug) and falsely cover an `Artikel 2` sub-question.
 #
 # bash 3.2 + python3 stdlib only (no pytest, no pip). Matches tests/README.md.
 
@@ -115,7 +124,8 @@ body
 MD
 
 # Human oversight (Art 14) — the generic page that must NOT outrank the others.
-# Its claim mentions `Risikomanagementsystem` to exercise the suffix guard (#6).
+# `Hochrisiko-Systeme` yields the page token `systeme` (the boilerplate-head
+# guard probe, #6); `Risikomanagementsystem` is inert boilerplate.
 cat > "$WIKI/wiki/sources/article-14-oversight.md" <<'MD'
 ---
 id: article-14-oversight
@@ -160,8 +170,10 @@ cat > "$WORK/plan.json" <<'JSON'
      "theme_label": "Verordnung", "search_guidance": "Verordnung System"},
     {"id": "sq-anchor", "query": "Übergangsfristen nach Artikel 71",
      "theme_label": "Fristen", "search_guidance": "Übergangsfristen"},
-    {"id": "sq-falsepos", "query": "Managementsystem und Datenerfassung",
-     "theme_label": "Verwaltung", "search_guidance": "Managementsystem Datenerfassung"}
+    {"id": "sq-floor", "query": "Daten erfassen",
+     "theme_label": "Daten", "search_guidance": "Datenerfassung"},
+    {"id": "sq-head-guard", "query": "Systemverwaltung pflegen",
+     "theme_label": "Verwaltung", "search_guidance": "Systempflege"}
   ]
 }
 JSON
@@ -206,12 +218,26 @@ assert sq["sq-boilerplate"]["covered_pages"] == [], sq["sq-boilerplate"]["covere
 print("OK")
 PY
 
-# --- Case 4: a genuinely-novel sub-question stays uncovered (novelty kept) ----
-check "novel GPAI SQ: Art 51/52 absent from the base -> uncovered (floor preserves novelty)" "$OUT" <<'PY'
+# --- Case 4: a genuinely-novel sub-question stays uncovered (absent topic) ----
+check "novel GPAI SQ: Art 51/52 absent from the base -> uncovered (nothing to match)" "$OUT" <<'PY'
 import os, json
 d = json.loads(os.environ["PAYLOAD"])
 sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
 assert sq["sq-gpai-novel"]["coverage_verdict"] == "uncovered", sq["sq-gpai-novel"]
+print("OK")
+PY
+
+# --- Case 4b: the matched-weight FLOOR rejects a near-miss -------------------
+# `Daten erfassen` matches `daten` ~ `datenbank` (Art-71 page) — a real
+# compound hit of weight ~0.625 that clears the 0.20 recall ratio (~0.24) but
+# NOT MIN_MATCHED_WEIGHT (1.0). This is the case that would FLIP to `partial`
+# if the floor were dropped, so it actually exercises the floor (unlike the
+# absent-topic Case 4, which matches nothing at all).
+check "floor near-miss: a single weak compound hit clears the ratio but not the floor -> uncovered" "$OUT" <<'PY'
+import os, json
+d = json.loads(os.environ["PAYLOAD"])
+sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
+assert sq["sq-floor"]["coverage_verdict"] == "uncovered", sq["sq-floor"]
 print("OK")
 PY
 
@@ -234,15 +260,19 @@ assert scores == sorted(scores, reverse=True), scores
 print("OK")
 PY
 
-# --- Case 6: compound false-positive guard -----------------------------------
-# `Managementsystem` must NOT suffix-match `Risikomanagementsystem` (prefix-only
-# matching), and the boilerplate-headed compound must not slip through, so the
-# SQ finds no real overlap and stays uncovered.
-check "false-positive guard: a suffix/boilerplate-head compound does NOT spuriously cover" "$OUT" <<'PY'
+# --- Case 6: boilerplate-head compound guard ---------------------------------
+# `Systemverwaltung` / `Systempflege` share a 6-char common prefix `system` with
+# the page token `systeme` (from `Hochrisiko-Systeme`), which clears the length
+# guards — but `system` is denylisted boilerplate, so the head-guard
+# (`t_sq[:cpl] not in GENERIC_DENYLIST`) rejects the match and the SQ stays
+# `uncovered`. Remove that one line and these compounds match (weight ~2.0) and
+# the SQ flips to `covered` — so this case actually drives the guard branch
+# (not a trivial zero-overlap pass).
+check "boilerplate-head guard: compounds sharing only a denylisted stem do NOT cover" "$OUT" <<'PY'
 import os, json
 d = json.loads(os.environ["PAYLOAD"])
 sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
-assert sq["sq-falsepos"]["coverage_verdict"] == "uncovered", sq["sq-falsepos"]
+assert sq["sq-head-guard"]["coverage_verdict"] == "uncovered", sq["sq-head-guard"]
 print("OK")
 PY
 
@@ -276,6 +306,47 @@ sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
 p = sq["sq-penalties"]
 assert p["coverage_verdict"] == "partial", p["coverage_verdict"]
 assert len(p["covered_pages"]) == 1, p["covered_pages"]
+print("OK")
+PY
+
+# --- Case 8: NFD folding must not fabricate digit anchors from typography -----
+# A page whose claim text contains a typographic fraction `½`. Under NFKD
+# (compatibility) decomposition `½` would decompose to `1` `2`, which tokenize()
+# keeps as pure-numeric tokens and weights x3.0 as article-number anchors — so
+# an unrelated `Artikel 2` sub-question would falsely match the fabricated `2`
+# (weight 1.2, clearing the floor). _fold uses NFD (canonical), which leaves `½`
+# intact for the `[a-z0-9]` split to discard, so no anchor is fabricated.
+WIKI2="$WORK/wiki2"
+mkdir -p "$WIKI2/wiki/sources" "$WIKI2/wiki/syntheses"
+cat > "$WIKI2/wiki/sources/typographic-quirk.md" <<'MD'
+---
+id: typographic-quirk
+title: "Annex statistics overview"
+type: source
+tags: [source]
+pre_extracted_claims:
+  - id: c1
+    text: "Etwa ½ aller Vorfaelle betrafen statistische Auswertungen im Anhang."
+---
+# body
+MD
+cat > "$WIKI2/wiki/index.md" <<'MD'
+# Index
+### Statistik
+- [[typographic-quirk]] — Etwa ½ aller Vorfaelle betrafen statistische Auswertungen.
+MD
+cat > "$WORK/plan-nfd.json" <<'JSON'
+{"schema_version": "0.1.0", "sub_questions": [
+  {"id": "sq-art2", "query": "Artikel 2 Geltungsbereich",
+   "theme_label": "Geltungsbereich", "search_guidance": "Anwendungsbereich Artikel 2"}
+]}
+JSON
+run_score_ok "nfd-no-fabricated-anchor" "$WIKI2" "$WORK/plan-nfd.json"
+check "NFD folding: a '½' in claim text does NOT fabricate a '2' anchor that covers an 'Artikel 2' SQ" "$OUT" <<'PY'
+import os, json
+d = json.loads(os.environ["PAYLOAD"])
+sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
+assert sq["sq-art2"]["coverage_verdict"] == "uncovered", sq["sq-art2"]
 print("OK")
 PY
 
