@@ -464,16 +464,16 @@ file are unchanged. Only the two customer-facing arcs with downstream localizati
 (`corporate-visions`, `jtbd-portfolio`); the other 9 arcs remain EN/DE in their tables above. The
 "Keep in English" rules (framework names, Dublin Core keys, IDs) still apply.
 
-Address register is formal/courteous per language: FR *vous*, IT *Lei/voi*, ES *usted*, NL *u*,
+Address register is formal/courteous per language: FR *vous*, IT *Lei*, ES *usted*, NL *u*,
 PL *Pan/Pani*. Diacritics are mandatory (never ASCII substitutes).
 
 **corporate-visions:**
 
 | # | English (en) | French (fr) | Italian (it) | Polish (pl) | Dutch (nl) | Spanish (es) |
 |---|--------------|-------------|--------------|-------------|------------|--------------|
-| 1 | Why Change: Unconsidered Needs | Pourquoi changer : besoins insoupçonnés | Perché cambiare: bisogni inespressi | Dlaczego zmiana: nieuświadomione potrzeby | Waarom veranderen: onopgemerkte behoeften | Por qué cambiar: necesidades no consideradas |
+| 1 | Why Change: Unconsidered Needs | Pourquoi changer : besoins insoupçonnés | Perché cambiare: bisogni latenti | Dlaczego zmiana: nieuświadomione potrzeby | Waarom veranderen: onopgemerkte behoeften | Por qué cambiar: necesidades no consideradas |
 | 2 | Why Now: Forcing Functions | Pourquoi maintenant : facteurs déclencheurs | Perché ora: fattori scatenanti | Dlaczego teraz: czynniki wymuszające | Waarom nu: dwingende factoren | Por qué ahora: factores determinantes |
-| 3 | Why You: Unique Positioning | Pourquoi vous : positionnement unique | Perché voi: posizionamento unico | Dlaczego Państwo: wyjątkowe pozycjonowanie | Waarom u: unieke positionering | Por qué usted: posicionamiento único |
+| 3 | Why You: Unique Positioning | Pourquoi vous : positionnement unique | Perché Lei: posizionamento unico | Dlaczego Państwo: wyjątkowe pozycjonowanie | Waarom u: unieke positionering | Por qué usted: posicionamiento único |
 | 4 | Why Pay: ROI Justification | Pourquoi investir : justification du ROI | Perché investire: giustificazione del ROI | Dlaczego inwestować: uzasadnienie ROI | Waarom investeren: ROI-onderbouwing | Por qué invertir: justificación del ROI |
 
 **jtbd-portfolio:**
