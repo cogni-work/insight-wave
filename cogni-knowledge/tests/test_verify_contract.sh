@@ -51,6 +51,10 @@ assert_grep 'DELTA_IDS' "$VERIFY" "knowledge-verify: re-verifies only the touche
 assert_grep 'deterministically from the manifest diff' "$VERIFY" "knowledge-verify: derives DELTA_IDS from a deterministic manifest diff, not fixes_applied (review)"
 assert_grep 'citation-manifest.pre-r' "$VERIFY" "knowledge-verify: snapshots the manifest before the revisor for the diff (review)"
 assert_grep 'cp ' "$VERIFY" "knowledge-verify: pre-creates draft-v{N+1} via cp before the revisor (patch-in-place substrate, #305)"
+# #325: the revisor writes raw-text records (no Bash, no hand-built JSON); the
+# orchestrator serializes the manifest from them via citation-store.py build on
+# the revise round, so a rephrased German „…" sentence can't re-break json.loads.
+assert_grep 'citation-store.py' "$VERIFY" "knowledge-verify: builds the manifest from the revisor's records via citation-store.py (#325)"
 # Review fix: the prefilter is handed the current draft so it can apply the
 # sentence_not_in_draft staleness guard before asserting verbatim.
 assert_grep '\-\-draft "' "$VERIFY" "knowledge-verify: passes --draft to the prefilter for the staleness guard (review)"
@@ -170,7 +174,12 @@ assert_grep 'verify-v' "$REVISOR" "revisor: reads verify-vN.json"
 assert_grep 'deviations' "$REVISOR" "revisor: consumes verify-vN.json deviations[]"
 assert_grep 'pre_extracted_claims' "$REVISOR" "revisor: rephrases toward existing pre_extracted_claims"
 assert_grep 'draft-v' "$REVISOR" "revisor: writes draft-v{N+1}.md"
-assert_grep 'citation-manifest.json' "$REVISOR" "revisor: rewrites citation-manifest.json"
+# #325: the revisor writes a raw-text citation-records file (no Bash); the
+# orchestrator serializes it into citation-manifest.json via citation-store.py.
+# Hand-typing the manifest here re-broke json.loads on a rephrased German „…" pair.
+assert_grep 'citation-manifest.json' "$REVISOR" "revisor: references citation-manifest.json (built by the orchestrator)"
+assert_grep 'citation-records' "$REVISOR" "revisor: writes a raw-text citation-records file, not hand-built JSON (#325)"
+assert_not_grep 'Rewrite the citation manifest' "$REVISOR" "revisor: no longer hand-rewrites the manifest JSON (#325)"
 assert_grep 'NEW_DRAFT_VERSION' "$REVISOR" "revisor: takes NEW_DRAFT_VERSION parameter"
 assert_grep 'fixes_applied' "$REVISOR" "revisor: returns fixes_applied[] in JSON envelope"
 # F22: locate the sentence by the manifest's verbatim draft_sentence, never by

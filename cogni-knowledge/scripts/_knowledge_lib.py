@@ -433,6 +433,104 @@ def parse_pre_extracted_claims(page_text: str) -> list[dict]:
     return claims
 
 
+# --- citation-records parser (used by citation-store.py build) ----------------
+# wiki-composer has no Bash and cannot run a JSON serializer, so it MUST NOT
+# hand-build citation-manifest.json — a draft_sentence with a straight `"`
+# (routine in German/FR/IT/ES/PL prose) broke json.loads downstream and killed
+# the verify→finalize tail (#325). Instead the composer writes citation RECORDS
+# as raw text through the byte-safe `Write` channel, and `citation-store.py build`
+# json.dumps the manifest. This parser reads that records file. The format is a
+# labeled, line-oriented block list — deliberately the same idiom the composer
+# already authors for `pre_extracted_claims:` frontmatter, so no new authoring
+# format is introduced and the LLM never emits JSON or escapes a quote.
+
+# Short keys are the documented authoring form; the long aliases are accepted
+# defensively because the composer also sees the manifest field names
+# (draft_position / wiki_slug / claim_id / draft_sentence) in the same step and
+# could conflate the two — "be liberal in what you accept".
+_CITATION_RECORD_KEYS = {
+    "id": "id",
+    "pos": "draft_position",
+    "draft_position": "draft_position",
+    "slug": "wiki_slug",
+    "wiki_slug": "wiki_slug",
+    "claim": "claim_id",
+    "claim_id": "claim_id",
+    "sentence": "draft_sentence",
+    "draft_sentence": "draft_sentence",
+}
+
+
+def _absorb_citation_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — sentences contain ':'
+    field = _CITATION_RECORD_KEYS.get(key.strip())
+    if field is None:
+        return
+    if field == "draft_sentence":
+        # Strip the conventional leading space(s) after the colon — a prose
+        # sentence never begins with a space, so this stays byte-exact while
+        # forgiving an extra space. No trailing strip — preserve verbatim.
+        item[field] = value.lstrip(" ")
+    else:
+        item[field] = value.strip()
+
+
+def _finalize_citation_record(item: dict) -> dict:
+    claim = item.get("claim_id")
+    claim_id = None if claim in (None, "", "null") else claim
+    return {
+        "id": item.get("id", ""),
+        "draft_position": item.get("draft_position", ""),
+        "draft_sentence": item.get("draft_sentence", ""),
+        "wiki_slug": item.get("wiki_slug", ""),
+        "claim_id": claim_id,
+    }
+
+
+def parse_citation_records(text: str) -> list[dict]:
+    """Parse a wiki-composer citation-records file into a list of
+    `{id, draft_position, draft_sentence, wiki_slug, claim_id}` dicts.
+
+    Each record is a `- id:` bullet followed by `pos:` / `slug:` / `claim:` /
+    `sentence:` lines (indent-tolerant). `sentence` is the LAST field and its
+    value is the rest of the line VERBATIM — raw text (quotes, backslashes,
+    colons, Unicode) passes through unescaped; `citation-store.py build` then
+    `json.dumps` it, so escaping is owned by the serializer, never the agent.
+    `claim` literal `null`/empty → None (synthesis citations). Blank and
+    `#`-comment lines are skipped. draft_sentence is assumed single-line — the
+    same invariant the verifier's `draft_sentence in draft` check already relies
+    on. Lines are split on `\\n` only (NOT `str.splitlines()`, which also breaks
+    on U+2028/U+2029/NEL/VT/FF and would truncate a sentence that contains one);
+    a trailing `\\r` from CRLF is stripped (though `Path.read_text` normally
+    normalizes it before this runs).
+
+    A `-` bullet block missing its `id:` line is emitted with an empty id (NOT
+    silently dropped), so `citation-store.py build`'s empty-id guard surfaces it
+    as `write_failed` instead of losing a citation with `success: true`."""
+    records: list[dict] = []
+    current: dict | None = None
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
+        lstripped = raw.lstrip()
+        if not lstripped or lstripped.startswith("#"):
+            continue
+        if lstripped == "-" or lstripped.startswith("- "):
+            if current is not None:
+                records.append(_finalize_citation_record(current))
+            current = {}
+            rest = lstripped[1:].strip()
+            if rest:
+                _absorb_citation_kv(current, rest)
+        elif current is not None:
+            _absorb_citation_kv(current, lstripped)
+    if current is not None:
+        records.append(_finalize_citation_record(current))
+    return records
+
+
 def is_pdf_response(content_type: str | None, url: str) -> bool:
     """True if a fetched response looks like a PDF.
 

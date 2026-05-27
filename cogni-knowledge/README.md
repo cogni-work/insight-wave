@@ -24,7 +24,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 
 **IS:** A binding orchestrator that turns `cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
 
-**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`). Sources are fetched once before composition; every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
+**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`). Sources are fetched once before composition; every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
 
 **MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
 
@@ -150,7 +150,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | source-fetcher | Agent | Phase 3 NEW — cobrowse-only recovery of WebFetch misses via the `claude-in-chrome` extension; reads/writes through `fetch-cache.py` |
 | claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
 | source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
-| wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with clickable numbered `[N]` citations (localized per `output_language`) and a citation manifest |
+| wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with clickable numbered `[N]` citations (localized per `output_language`) plus a raw-text citation-records file the orchestrator serializes into the manifest via `citation-store.py` (#325) |
 | wiki-verifier | Agent | Phase 6 NEW — scores each citation's verbatim `draft_sentence` as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network, never re-tokenizes; shardable via `CITATIONS_PATH`) |
 | revisor | Agent | Phase 6 fork — re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
 
@@ -166,7 +166,7 @@ cogni-knowledge/
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
 ├── agents/                       7 forked + new pipeline agents
 ├── references/                   7 framework + design docs
-├── scripts/                      7 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, pipeline-summary, verify-store, wiki-coverage) + _knowledge_lib helper
+├── scripts/                      8 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, citation-store, pipeline-summary, verify-store, wiki-coverage) + _knowledge_lib helper
 ├── skills/                       12 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```

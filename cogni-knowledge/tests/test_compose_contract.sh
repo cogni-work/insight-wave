@@ -38,6 +38,12 @@ assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogn
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
 assert_grep 'writer-outline-v' "$COMPOSE" "knowledge-compose: F11 — detects writer-outline-vN.json for recovery"
 assert_grep 'wiki/log.md' "$COMPOSE" "knowledge-compose: appends to wiki/log.md"
+# #325: the orchestrator builds citation-manifest.json from the composer's raw
+# records via citation-store.py (json.dumps, not LLM-hand-built JSON), and the
+# Step-5 validator re-asserts every draft_sentence is in the draft (authoritative
+# gate, issue #4). The '#325' marker tags the substring guard line.
+assert_grep 'citation-store.py' "$COMPOSE" "knowledge-compose: builds the manifest via citation-store.py (#325)"
+assert_grep '#325' "$COMPOSE" "knowledge-compose: Step-5 draft_sentence-in-draft guard tagged #325"
 # Match the actual log-line shape Step 6 emits (`## [DATE] compose | project=...`)
 # rather than the bare word `compose`, which would also match the filename,
 # skill name, and every doc paragraph.
@@ -82,6 +88,11 @@ assert_grep 'draft_sentence' "$COMPOSER" "wiki-composer: citation-manifest entry
 assert_grep 'cit-001' "$COMPOSER" "wiki-composer: citation ids are the cit-NNN stable join key"
 assert_grep 'pre_extracted_claims' "$COMPOSER" "wiki-composer: looks up claim_id in pre_extracted_claims (zero-network alignment surface)"
 assert_grep 'draft-v' "$COMPOSER" "wiki-composer: writes output/draft-vN.md"
+# #325: the composer writes a RAW-TEXT citation-records file (never hand-built
+# JSON); the orchestrator serializes it. The old "Compose the JSON envelope and
+# Write it" instruction is the regression that shipped invalid JSON.
+assert_grep 'citation-records' "$COMPOSER" "wiki-composer: writes a raw-text citation-records file (#325)"
+assert_not_grep 'Compose the JSON envelope' "$COMPOSER" "wiki-composer: no longer hand-builds the manifest JSON (#325)"
 
 # Scope-discipline negatives — these deferred surfaces may appear in the
 # header HTML comment (as provenance documenting what the fork dropped)

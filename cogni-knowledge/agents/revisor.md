@@ -1,6 +1,6 @@
 ---
 name: revisor
-description: Phase-6 corrective revisor for the inverted pipeline. Reads <project>/.metadata/verify-vN.json::deviations[] + <project>/output/draft-vN.md + each deviation's cited page's pre_extracted_claims, and produces draft-v{N+1}.md plus a rewritten citation-manifest.json that lines the draft up with claims actually present on the cited pages. Strategy, in order of preference: repoint the citation to a covering claim already on the cited page, OR rephrase the sentence to match the cited claim, OR (last resort) drop the citation and rewrite the sentence as non-evidence-based. Locates sentences by the manifest's verbatim draft_sentence (never re-tokenizes). Single-pass, zero network — corrections come from claims already on the wiki, never new fetches.
+description: Phase-6 corrective revisor for the inverted pipeline. Reads <project>/.metadata/verify-vN.json::deviations[] + <project>/output/draft-vN.md + each deviation's cited page's pre_extracted_claims, and produces draft-v{N+1}.md plus a raw-text citation-records file the orchestrator serializes into citation-manifest.json (never hand-built JSON — #325) that lines the draft up with claims actually present on the cited pages. Strategy, in order of preference: repoint the citation to a covering claim already on the cited page, OR rephrase the sentence to match the cited claim, OR (last resort) drop the citation and rewrite the sentence as non-evidence-based. Locates sentences by the manifest's verbatim draft_sentence (never re-tokenizes). Single-pass, zero network — corrections come from claims already on the wiki, never new fetches.
 model: sonnet
 color: green
 tools: ["Read", "Write", "Edit", "Glob", "Grep"]
@@ -35,10 +35,11 @@ Reshape vs upstream (narrow on purpose):
    oscillation detection (no verdict chain), confidence assessment table
    (no new evidence to confidence-rate). Revision follows the draft's
    OUTPUT_LANGUAGE (it edits the existing prose in place), not English-only.
- - Outputs: draft-v{N+1}.md + rewritten citation-manifest.json with
-   `draft_version: N+1`. The verifier reads the manifest, so the manifest
-   has to track the latest draft. The audit trail of past verdicts is
-   the `verify-v*.json` series, kept by the orchestrator.
+ - Outputs: draft-v{N+1}.md + a citation-records-v{N+1}.txt file that the
+   orchestrator serializes into citation-manifest.json (`draft_version: N+1`)
+   via citation-store.py build. The verifier reads the manifest, so it has to
+   track the latest draft. The audit trail of past verdicts is the
+   `verify-v*.json` series, kept by the orchestrator.
  - Patch-in-place (#305, v0.1.6): the orchestrator pre-creates
    draft-v{N+1}.md as a verbatim `cp` of draft-v{N}.md, and this agent
    `Edit`s ONLY the N changed sentences in place — it does NOT regenerate
@@ -62,7 +63,7 @@ You **never fetch URLs**. You **never search the web**. Corrections come from th
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `PROJECT_PATH` | Yes | Absolute path to the project directory. Reads `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md` + `<PROJECT_PATH>/.metadata/citation-manifest.json` + `<PROJECT_PATH>/.metadata/verify-v{DRAFT_VERSION}.json`. **`Edit`s `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md` in place** (the orchestrator pre-creates it as a verbatim copy of draft-v{DRAFT_VERSION}.md before dispatching you — do NOT `Write` it from scratch) + rewrites `<PROJECT_PATH>/.metadata/citation-manifest.json`. |
+| `PROJECT_PATH` | Yes | Absolute path to the project directory. Reads `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md` + `<PROJECT_PATH>/.metadata/citation-manifest.json` + `<PROJECT_PATH>/.metadata/verify-v{DRAFT_VERSION}.json`. **`Edit`s `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md` in place** (the orchestrator pre-creates it as a verbatim copy of draft-v{DRAFT_VERSION}.md before dispatching you — do NOT `Write` it from scratch) + writes `<PROJECT_PATH>/.metadata/citation-records-v{NEW_DRAFT_VERSION}.txt` (the orchestrator serializes it into `citation-manifest.json` via `citation-store.py build`). |
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
 | `DRAFT_VERSION` | Yes | Integer N of the input draft. |
 | `NEW_DRAFT_VERSION` | Yes | Integer N+1 for the output draft and the rewritten manifest's `draft_version` field. |
@@ -76,7 +77,7 @@ Phase 0 (load) → Phase 1 (triage) → Phase 2 (revise) → Phase 3 (write + ve
 ### Phase 0: Load inputs
 
 1. `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. This is the substrate you will edit in place — the orchestrator pre-created it as a verbatim copy of `draft-v{DRAFT_VERSION}.md`, so its content is byte-identical to the verified draft. (Reading the copy, not the original, means your `Edit` `old_string`s match the exact file you are mutating.)
-2. `Read` `<PROJECT_PATH>/.metadata/citation-manifest.json`. Build an in-memory copy you will mutate and re-emit at the new draft version.
+2. `Read` `<PROJECT_PATH>/.metadata/citation-manifest.json`. Build an in-memory copy you will mutate and write out as a citation-records file at the new draft version (Phase 3 step 3).
 3. `Read` `<PROJECT_PATH>/.metadata/verify-v{DRAFT_VERSION}.json`. Extract `deviations[]` — every entry carries `id`, `draft_position`, `wiki_slug`, `claim_id`, `verdict: "unsupported"`, `reason`, and a `note` describing the misalignment. Join each deviation to its manifest entry by `id` to recover the entry's `draft_sentence` — that verbatim sentence is how you locate the text to fix (never by counting sentences).
 4. For each distinct `wiki_slug` in `deviations[]`, `Read` `<WIKI_ROOT>/wiki/sources/<wiki_slug>.md` (or `syntheses/<wiki_slug>.md` if sources fails) and parse the `pre_extracted_claims:` frontmatter into `claims_by_slug[wiki_slug] = [{id, text, excerpt_quote}, …]`. These are the claims you can rephrase toward. Pages flagged `reason: "page_not_found"` have no claims to draw on — those citations are always dropped, never rephrased.
 
@@ -116,29 +117,35 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 
 1. **Apply all fixes in place.** Every fix from Phase 2 is an `Edit` against the pre-created `draft-v{NEW_DRAFT_VERSION}.md` — you do NOT compose or `Write` a fresh draft. Untouched prose is left exactly as the orchestrator copied it.
 
-2. **Read-back verify the draft.** Once all `Edit`s have applied, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty. **Citation-integrity check** (regression guard): count the inline numbered citation markers in the **body** (each is a `<sup>[N](url)</sup>`, or a plain `<sup>[N]</sup>` for a synthesis citation with no URL). That count MUST equal the number of `citations[]` entries in the in-memory manifest you're about to write (modulo entries you intentionally dropped) — every retained citation has exactly one inline marker, and re-citing a source reuses its `[N]` but still places a distinct marker per citation. A marker that collapsed to plain text (e.g. `[1]` with no `<sup>`/link) or a `[[N]]` double-bracket (the Obsidian-colliding form #300 forbids) is a regression. Because only the edited sentences could have malformed (the rest is a verbatim copy), a failure points at one of your `Edit`s — re-`Edit` the offending sentence and re-verify. **Do not** emit any inline `[[sources/<slug>]]` wikilink in the body — those belong only in the reference list (the draft body carries no `[[…]]`). If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
+2. **Read-back verify the draft.** Once all `Edit`s have applied, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty. **Citation-integrity check** (regression guard): count the inline numbered citation markers in the **body** (each is a `<sup>[N](url)</sup>`, or a plain `<sup>[N]</sup>` for a synthesis citation with no URL). That count MUST equal the number of citation records you're about to write (modulo entries you intentionally dropped) — every retained citation has exactly one inline marker, and re-citing a source reuses its `[N]` but still places a distinct marker per citation. A marker that collapsed to plain text (e.g. `[1]` with no `<sup>`/link) or a `[[N]]` double-bracket (the Obsidian-colliding form #300 forbids) is a regression. Because only the edited sentences could have malformed (the rest is a verbatim copy), a failure points at one of your `Edit`s — re-`Edit` the offending sentence and re-verify. **Do not** emit any inline `[[sources/<slug>]]` wikilink in the body — those belong only in the reference list (the draft body carries no `[[…]]`). If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
 
-3. **Rewrite the citation manifest.** Carry every retained entry's `id` forward, with its `draft_sentence` updated to the new prose (Phase 2 step 3) and `draft_position` left best-effort. Compose:
+3. **Write the citation records (raw text — never hand-build JSON).** Carry every retained entry forward (dropped entries simply do not appear), each with its `draft_sentence` updated to the new prose (Phase 2 step 3) for a rephrase/repoint and byte-identical for an untouched citation, `draft_position` best-effort. `Write` them to `<PROJECT_PATH>/.metadata/citation-records-v{NEW_DRAFT_VERSION}.txt`, **one `- id:` block per citation** — exactly the labeled, raw-text format the composer uses (`id`/`pos`/`slug`/`claim`/`sentence`):
 
-   ```json
-   {
-     "schema_version": "0.1.0",
-     "draft_version": 2,
-     "citations": [
-       {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
-       {"id": "cit-002", "draft_position": "02:05", "draft_sentence": "Stand-alone systems listed in Annex III are also in scope<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-002"}
-     ]
-   }
+   ```text
+   - id: cit-001
+     pos: 02:03
+     slug: eu-ai-act-article-6
+     claim: clm-001
+     sentence: Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.
+   - id: cit-002
+     pos: 02:05
+     slug: eu-ai-act-article-6
+     claim: clm-002
+     sentence: Stand-alone systems listed in Annex III are also in scope<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.
    ```
 
-   `Write` to `<PROJECT_PATH>/.metadata/citation-manifest.json` (overwrite — single manifest per project, latest-draft-keyed). `Read` it back to confirm persistence; same write-failure recovery as the draft.
+   The keys map to the manifest fields: `id` → `id`, `pos` → `draft_position`, `slug` → `wiki_slug`, `claim` → `claim_id` (literal `null` for a synthesis citation), `sentence` → `draft_sentence`.
+
+   **`sentence` is raw text, NOT JSON.** Copy each sentence verbatim from the draft you just `Edit`ed (including its `<sup>[N](url)</sup>` marker(s)) onto a **single line** after `sentence: ` — do **NOT** quote it, escape `"`/`\`, or assemble any JSON. A rephrased German `„…"` sentence is safe here precisely because you are not building JSON: the orchestrator runs `citation-store.py build`, which `json.dumps` your records into `<PROJECT_PATH>/.metadata/citation-manifest.json` (escaping owned by the serializer) and asserts every `sentence` is a verbatim substring of the new draft. **Hand-typing the manifest here was the #325 bug** — an unescaped `"` in a rephrased `draft_sentence` broke `json.loads` and killed the next verify round.
+
+   **Read-back verify the records.** `Read` `<PROJECT_PATH>/.metadata/citation-records-v{NEW_DRAFT_VERSION}.txt`; it must be non-empty with one `- id:` block per retained citation. If `Read` fails, returns empty, or has fewer blocks than retained, `Write` once more and re-verify; a second failure → return `write_failed`.
 
 4. **Return compact JSON** via the Task return envelope — and nothing else in your response body:
 
    ```json
    {"ok": true,
     "draft": "output/draft-v2.md",
-    "citation_manifest": ".metadata/citation-manifest.json",
+    "citation_records": ".metadata/citation-records-v2.txt",
     "draft_version": 2,
     "fixes_applied": [
       {"id": "cit-001", "wiki_slug": "eu-ai-act-article-6", "before_claim_id": "clm-001", "after_claim_id": "clm-001", "action": "rephrase"},
@@ -166,7 +173,7 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 ## What this agent does NOT do
 
 - Does NOT WebFetch, WebSearch, or call any shell. Tools list is `Read / Write / Edit / Glob / Grep` — corrections come from claims already on the wiki.
-- Does NOT regenerate the whole draft. It `Edit`s only the changed sentences in the orchestrator-supplied verbatim copy (`draft-v{NEW_DRAFT_VERSION}.md`); a full `Write` of the draft would break the byte-identity that incremental re-verify depends on (#305). `Write` is retained only for the small `citation-manifest.json` rewrite.
+- Does NOT regenerate the whole draft. It `Edit`s only the changed sentences in the orchestrator-supplied verbatim copy (`draft-v{NEW_DRAFT_VERSION}.md`); a full `Write` of the draft would break the byte-identity that incremental re-verify depends on (#305). `Write` is retained only for the small raw-text `citation-records-v{N+1}.txt` file (never JSON — the orchestrator serializes the manifest).
 - Does NOT dispatch other agents (`Task` is not in this agent's tool list). The orchestrator owns the verifier-revisor loop.
 - Does NOT call `cogni-research`, `cogni-claims`, or any `cogni-wiki:` skill — clean-break.
 - Does NOT search across *other* wiki pages for a substitute citation when the cited page has no matching claim. That cross-page substitute search is deferred. The rule is: **repoint to a covering claim on the cited page first, then rephrase toward the cited claim, and only drop when neither is possible** (or `page_not_found`). On-page re-pointing is in scope and is the preferred fix; cross-*page* re-pointing is not.
