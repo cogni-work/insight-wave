@@ -99,16 +99,11 @@ assert_grep "tr '" "$FIN" "knowledge-finalize: sanitizes TOPIC CR/LF before logg
 assert_grep 'manifest_unreadable' "$FIN" "knowledge-finalize: documents how to handle cycle-guard's new status=manifest_unreadable"
 # CITATION_COUNT must actually be computed (E6 was a contract-gap finding).
 assert_grep 'CITATION_COUNT=<count>' "$FIN" "knowledge-finalize: dry-run printout actually computes CITATION_COUNT"
-# Defence-in-depth: no Task dispatch (M9 has no agents).
+# Task dispatch is REQUIRED as of v0.1.15 — Step 10.6 dispatches the
+# wiki-contradictor agent (#335). The pre-v0.1.15 "no Task" assertion
+# was tied to M9's no-agents posture, which is no longer the contract.
 FIN_TOOLS_LINE=$(grep '^allowed-tools:' "$FIN" || true)
-if echo "$FIN_TOOLS_LINE" | grep -q 'Task'; then
-  red "FAIL: knowledge-finalize: allowed-tools must NOT include Task (M9 has no agents)"
-  red "  got: $FIN_TOOLS_LINE"
-  errors=$((errors + 1))
-else
-  green "PASS: knowledge-finalize: allowed-tools omits Task (M9 has no agents)"
-fi
-for required in 'Read' 'Write' 'Bash'; do
+for required in 'Read' 'Write' 'Bash' 'Task'; do
   if echo "$FIN_TOOLS_LINE" | grep -q "$required"; then
     green "PASS: knowledge-finalize: allowed-tools includes $required"
   else
@@ -148,12 +143,44 @@ assert_grep 'tags: \[synthesis\]' "$FIN" "knowledge-finalize: synthesis frontmat
 # Defence-in-depth: the synthesis index category stays Syntheses (confirmed scope).
 assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: synthesis still filed under the Syntheses category"
 
+# --- #335 contradiction tripwire (Step 10.6, v0.1.15) --------------------
+# Pure observability tripwire — fail-soft, never blocks finalize. Partially
+# defends differentiation-thesis.md Pillar 2 at synthesis-write time.
+# Step 10.6 lands after Step 10.5 sub-step 4 (rebuild_context_brief.py),
+# before Step 11.
+assert_grep '### 10.6 Contradiction tripwire' "$FIN" "knowledge-finalize: Step 10.6 heading present (#335)"
+assert_grep 'wiki-contradictor' "$FIN" "knowledge-finalize: Step 10.6 dispatches wiki-contradictor agent (#335)"
+assert_grep 'contradictor-v' "$FIN" "knowledge-finalize: Step 10.6 writes contradictor-v<N>.json output artifact (#335)"
+assert_grep '\-\-no-contradictor' "$FIN" "knowledge-finalize: --no-contradictor opt-out flag documented in Parameters table (#335, R1)"
+assert_grep '#335' "$FIN" "knowledge-finalize: Step 10.6 references issue #335"
+# Fail-soft framing — must be explicit so a future maintainer doesn't
+# tighten Step 10.6 into a blocking gate.
+assert_grep 'observability-only\|non-fatal\|never rolls back\|never blocks' "$FIN" "knowledge-finalize: Step 10.6 documented as fail-soft / observability-only (#335)"
+# Skip conditions — all three must be documented in the SKILL.
+assert_grep 'Contradiction tripwire skipped: --no-contradictor' "$FIN" "knowledge-finalize: Step 10.6 documents --no-contradictor skip path (#335)"
+assert_grep 'Contradiction tripwire skipped: empty citation manifest' "$FIN" "knowledge-finalize: Step 10.6 documents empty-citation-manifest skip path (#335)"
+# Step 11 surfaces the tripwire line — must mention the prefix so the
+# operator-visible warning shape is anchored.
+assert_grep 'Contradiction tripwire: ' "$FIN" "knowledge-finalize: Step 11 final summary surfaces Contradiction tripwire line (#335)"
+# Step 5/6 subprocess must emit cited_source_slugs — the orchestrator
+# reuses page_kind_by_slug from there rather than re-resolving pages.
+assert_grep 'cited_source_slugs' "$FIN" "knowledge-finalize: Step 5/6 subprocess emits cited_source_slugs for Step 10.6 (#335)"
+# Pillar 2 framing — the SKILL must be honest about partial defense.
+assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
+# References block must include the new agent.
+assert_grep 'agents/wiki-contradictor.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-contradictor.md (#335)"
+
 # --- Inverted-pipeline.md Phase 7 anchor ---------------------------------
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"
 assert_grep 'Phase 7 — `knowledge-finalize`' "$PIPELINE" "inverted-pipeline.md: Phase 7 section header anchored"
 assert_grep 'wiki_index_update' "$PIPELINE" "inverted-pipeline.md: Phase 7 names wiki_index_update.py as a helper call"
 assert_grep 'config_bump' "$PIPELINE" "inverted-pipeline.md: Phase 7 names config_bump.py as a helper call"
 assert_grep 'rebuild_context_brief' "$PIPELINE" "inverted-pipeline.md: Phase 7 names rebuild_context_brief.py as a helper call"
+# #335 contradiction tripwire — the reference contract must name the new
+# artifact + agent so the doc stays load-bearing.
+assert_grep 'wiki-contradictor' "$PIPELINE" "inverted-pipeline.md: Phase 7 names wiki-contradictor agent (#335)"
+assert_grep 'contradictor-v' "$PIPELINE" "inverted-pipeline.md: Phase 7 names contradictor-v<N>.json artifact (#335)"
+assert_grep '#335' "$PIPELINE" "inverted-pipeline.md: Phase 7 references issue #335"
 
 # --- cycle-guard.py docstring documents the new fallback -----------------
 CG="$PLUGIN_ROOT/scripts/cycle-guard.py"
