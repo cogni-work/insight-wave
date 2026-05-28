@@ -1,7 +1,7 @@
 ---
 name: knowledge-finalize
-description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md, and runs a conformance gate (wiki-lint --fix=all + wiki-health) so the deposited base passes cogni-wiki's own checks — reference backlinks are bare [[slug]] so the synthesis de-orphans its cited sources. Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
-allowed-tools: Read, Write, Bash
+description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md, runs a conformance gate (wiki-lint --fix=all + wiki-health) so the deposited base passes cogni-wiki's own checks — reference backlinks are bare [[slug]] so the synthesis de-orphans its cited sources — and dispatches the wiki-contradictor agent for a zero-network contradiction tripwire against each cited source page's pre_extracted_claims (#335, v0.1.15, fail-soft observability — no auto-resolution, no rollback). Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
+allowed-tools: Read, Write, Bash, Task
 ---
 
 # Knowledge Finalize
@@ -55,6 +55,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--synthesis-slug` | No | Override the auto-derived synthesis slug (default: `_knowledge_lib.slugify(plan.topic)`). |
 | `--overwrite` | No | Replace an existing `wiki/syntheses/<slug>.md`. Default: refuse. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, SYNTHESIS_SLUG, citation count) without writing anything or dispatching cycle-guard. |
+| `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire (#335). Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
 
 ## Workflow
 
@@ -446,12 +447,23 @@ atomic_write_text(out_path, page_text)
 
 # Surface counts the orchestrator needs for Steps 7-11.
 n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
+# Step 10.6 (#335 contradiction tripwire) reuses the page_kind resolution
+# this subprocess already did — passing the filtered source-only slug list
+# through avoids a second pass over the citation manifest in the
+# orchestrator and keeps the page-kind decision in one place. Synthesis-
+# page citations and missing pages are excluded here because the Phase-1
+# contradictor only compares against pages with pre_extracted_claims:
+# (source pages by construction; synthesis pages carry none, missing
+# pages are reported via missing_pages[]).
+cited_source_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) == "source"]
 print(json.dumps({
     "synthesis_path": str(out_path.relative_to(wiki_root).as_posix()),
     "n_sources": len(cited_slugs),
     "n_synthesis_citations": sum(1 for k in page_kind_by_slug.values() if k == "synthesis"),
     "n_missing_pages": n_missing,
     "topic": topic,
+    "output_language": output_language,
+    "cited_source_slugs": cited_source_slugs,
 }))
 '
 ```
@@ -616,6 +628,74 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ```
    Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
 
+### 10.6 Contradiction tripwire (#335)
+
+Phase 1 of approach **(a)** from #335 — observability-only. Dispatches the `wiki-contradictor` agent to compare the just-deposited synthesis sentence-by-sentence against each cited *source* page's `pre_extracted_claims:` and emit a per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`. **Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time;** the thesis's literal "wiki-ingest writes page B" framing — per-source ingest-time check — is approach **(b)**, deferred. Synthesis-vs-prior-syntheses comparison, `type_drift`, and `undercited_synthesis` defer to v0.1.16.
+
+**Fail-soft posture (explicit).** Step 10.6 is observability-only. A Task failure, schema mismatch, or malformed envelope **never rolls back the synthesis** — surfaces in Step 11 as `⚠ contradiction tripwire FAILED — synthesis on disk; re-run interactive cogni-wiki:wiki-lint for forensic detail`. The synthesis already landed at Steps 6–10; the contradictor is a read-only observation layer.
+
+**Skip conditions (evaluated in order).** The orchestrator skips dispatch (and writes no JSON) when any of these hold:
+
+1. `--dry-run` was passed — same posture as Step 4's cycle-guard dry-run skip. Silent.
+2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue.
+3. `len(cited_source_slugs) == 0` — the citation manifest had zero **source-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] == "source"`). Log `Contradiction tripwire skipped: empty citation manifest (no source-page peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis-vs-synthesis comparison is v0.1.16 work.
+
+**Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it into a **heredoc-quoted assignment** so a `topic` containing apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell. Then extract the contradictor inputs by piping through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
+
+```
+# Heredoc with quoted 'EOF' disables ALL shell expansion (no $, no backtick,
+# no quote handling) so a topic like "L'avenir de l'AI Act" or a wiki slug
+# with shell metacharacters never trips the assignment.
+COMPOSE_JSON=$(cat <<'EOF'
+<verbatim Step 5/6 trailing JSON line>
+EOF
+)
+OUTPUT_LANGUAGE=$(printf '%s' "$COMPOSE_JSON" | python3 -c '
+import json, sys
+print((json.loads(sys.stdin.read()).get("output_language") or "en"))
+')
+N_CITED_PRE_TRUNCATION=$(printf '%s' "$COMPOSE_JSON" | python3 -c '
+import json, sys
+print(len(json.loads(sys.stdin.read()).get("cited_source_slugs") or []))
+')
+CONTRADICTOR_MAX_SOURCES=30
+CITED_SOURCE_SLUGS_CSV=$(printf '%s' "$COMPOSE_JSON" | CAP="$CONTRADICTOR_MAX_SOURCES" python3 -c '
+import json, os, sys
+slugs = (json.loads(sys.stdin.read()).get("cited_source_slugs") or [])[: int(os.environ["CAP"])]
+print(",".join(slugs))
+')
+```
+
+Slugs are kebab-case-only by `_knowledge_lib.slugify` (transliterated, NFKD-folded, `[a-z0-9-]+` only) so the CSV is safe against embedded commas, backslashes, or quotes — `_knowledge_lib.slugify` is the structural guarantor.
+
+`N_CITED_PRE_TRUNCATION` is the pre-truncation count Step 11 needs to render `truncated at 30/<N>`; `CITED_SOURCE_SLUGS_CSV` is the post-truncation CSV the agent receives. Both stay shell variables for the dispatch + summary.
+
+**Input cap surface.** If `N_CITED_PRE_TRUNCATION > 30`, the CSV above is already truncated; Step 11 surfaces `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION source pages`. The agent never sees the dropped slugs and does NOT emit a `truncated_at` field — truncation is observable only via the Step 11 line (envelope `compared_against.sources[]` records exactly what was scored).
+
+**Dispatch.**
+
+```
+Task(wiki-contradictor,
+     WIKI_ROOT=$WIKI_ROOT,
+     PROJECT_PATH=$PROJECT_PATH,
+     SYNTHESIS_PAGE_PATH=$WIKI_ROOT/wiki/syntheses/$SYNTHESIS_SLUG.md,
+     CITED_SOURCE_SLUGS=$CITED_SOURCE_SLUGS_CSV,
+     OUTPUT_LANGUAGE=$OUTPUT_LANGUAGE,
+     DRAFT_VERSION=$DRAFT_VERSION,
+     CONTRADICTOR_OUT_PATH=$PROJECT_PATH/.metadata/contradictor-v$DRAFT_VERSION.json)
+```
+
+`OUTPUT_LANGUAGE` is the same value Step 5/6 already threaded from `plan.json::output_language` via the subprocess JSON line (so the agent operates in the synthesis's language and never translates — bilingual coverage is approach (c) territory from #335 and #345).
+
+**Interpret return.**
+
+- **`ok: true`** — capture `counts.high`, `counts.medium`, `counts.low`, `counts.unknown`, `counts.total`, the top-3 `high`-severity findings (or all of them if `counts.high <= 3`), `compared_against.missing_pages[]` (for the optional Step 11 TOCTOU note), and the full `cost_estimate` object (`input_words`, `output_words`, `estimated_usd`) — Step 11's cost template needs all three.
+- **`ok: false, error: synthesis_unreadable`** — surface `⚠ contradiction tripwire FAILED — synthesis_unreadable: <reason>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` in Step 11. Never block.
+- **`ok: false, error: write_failed`** — surface `⚠ contradiction tripwire FAILED — write_failed (output token budget likely exhausted); synthesis on disk; re-run cogni-wiki:wiki-lint manually` in Step 11. Never block.
+- **Task dispatch error / no envelope returned** — same fail-soft posture: surface `⚠ contradiction tripwire FAILED — Task dispatch did not return; synthesis on disk` and continue to Step 11.
+
+**Idempotency.** Re-finalize on the same `draft_version` overwrites `contradictor-v<N>.json` — see `## Edge cases` for the full rule (`Re-finalize on the same draft (#335 idempotency)`).
+
 ### 11. Final summary
 
 Print ≤ 10 lines:
@@ -631,6 +711,24 @@ Print ≤ 10 lines:
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
+- Contradiction tripwire (Step 10.6, #335): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
+  ```
+  ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown (#335)
+    - <sanitized_synthesis_excerpt[:80]>...
+      ~ <conflicting_page> (high) — <sanitized_note[:60]>
+    - <sanitized_synthesis_excerpt[:80]>...
+      ~ <conflicting_page> (high) — <sanitized_note[:60]>
+  Detail in <project_path>/.metadata/contradictor-v<N>.json.
+  Reconcile via cogni-wiki:wiki-update --page <synthesis-slug> --reason contradiction.
+  Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
+  ```
+  Surface only the top 3 `high`-severity findings by name; `medium`/`low` are count-only on the header line (operator reads the JSON for the rest). `<sanitized_synthesis_excerpt>` / `<sanitized_note>` are the agent's verbatim strings with **backtick / pipe / CR / LF** all replaced by a single space — pass each through `tr '\r\n`|' '    '` (four-character set, four spaces — preserves column width) so a sentence containing inline code, a literal pipe (e.g. in a markdown-table fragment), or an embedded newline does not break the bullet structure. Same discipline-shape as the `TOPIC` `tr '\r\n' '  '` already used at Step 10 for the log line — extended to the two additional markdown-break risk characters that Step 11's bullets carry. `<input_words>` / `<output_words>` come from `cost_estimate.input_words` / `cost_estimate.output_words` captured at Step 10.6.
+
+  Independent branches (not gated on `high`/`unknown`):
+  - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> cited source page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors; the operator may want to investigate concurrent wiki maintenance.
+  - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION source pages (Phase 1 hard cap; lifting is v0.1.16 work)`.
+  - On `--no-contradictor` / dry-run / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
+  - On `ok: false`, print `⚠ contradiction tripwire FAILED — <reason>; synthesis on disk` (loud, non-fatal — same posture as the wiki-health failure path).
 - Next: M10 will rebuild `knowledge-query` / `knowledge-dashboard` / `knowledge-resume` / `knowledge-refresh` on the new manifests. Today, `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
 
 If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsupported citations` warning so the audit trail is on-screen.
@@ -642,6 +740,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - **Plan.json missing topic.** Step 3 falls back to `--synthesis-slug` if passed, else aborts cleanly.
 - **Cited source page missing on disk.** Step 5's reference-row falls back to the slug as the title AND emits **no** `[[<slug>]]` backlink (a bare link to a missing page would be a `broken_wikilink` error that fails the Step 10.5 health gate). cycle-guard's `wiki_pages_cited_missing` will list the slug; surface in Step 11 as `⚠ Missing pages: <slug1>, <slug2>` so the operator knows the wiki was modified between ingest and finalize.
 - **Duplicate binding entry without `--overwrite`.** Step 9's `append-project` returns `existing_slug` (the SKILL did NOT pass `--allow-update` because `--overwrite` was off). Steps 6–8 already landed the synthesis page → the wiki has the new page but `binding.json::research_projects[]` still records the prior deposit's `report_path` / `deposited_at`. Step 11 surfaces the loud `⚠ Binding append SKIPPED` warning verbatim from Step 9. Reconcile via `--overwrite` re-run (which passes `--allow-update` per Step 9's contract), or accept the asymmetric state — both are valid operator decisions.
+- **Re-finalize on the same draft (#335 idempotency).** Re-running finalize with `--overwrite` against the same `draft_version` overwrites `<project_path>/.metadata/contradictor-v<N>.json` (same convention as `verify-v<N>.json`). The agent is non-deterministic across runs at two distinct layers: (1) `findings[].id` (`ctr-NNN`) is stable WITHIN one envelope but may renumber across re-runs (emission order ≠ index order); (2) the **finding set itself may differ** — a re-run can legitimately surface a contradiction the prior run missed, or drop one the prior run flagged as `low` on doubt. The "same contradictions re-surface on each re-run" guidance applies to clear-cut `high` flips; `medium`/`low`/`unknown` carry expected cross-run variance. De-dup across runs defers to v0.1.16 and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` (not `id`) precisely so the deferred consumer joins on content, not on the unstable id.
 
 ## Out of scope
 
@@ -662,6 +761,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<knowledge-root>/.cogni-knowledge/binding.json` — one new entry in `research_projects[]` with `report_source: "wiki"`.
 - `<WIKI_ROOT>/wiki/<type>/<cited-slug>.md` — each cited page gains a reverse `[[<synthesis-slug>]]` backlink (Step 10.5 `lint --fix=reverse_link_missing`), de-orphaning the synthesis.
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
+- `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 (#335) contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
 
 No files are written outside the workspace root or the bound knowledge base.
 
@@ -677,3 +777,4 @@ No files are written outside the workspace root or the bound knowledge base.
 - `cogni-wiki/skills/wiki-ingest/scripts/rebuild_context_brief.py --help`
 - `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py --help` — Step 10.5 conformance gate (`--fix=all`)
 - `cogni-wiki/skills/wiki-health/scripts/health.py --help` — Step 10.5 structural assertion
+- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-contradictor.md` — Step 10.6 contradiction tripwire (#335)
