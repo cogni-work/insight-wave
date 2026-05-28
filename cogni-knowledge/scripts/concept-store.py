@@ -28,7 +28,7 @@ made UNDER the lock by on-disk slug existence (never by the manifest), so a cras
 between page-write and manifest-write cannot double-create.
 
 Subcommands:
-  init            Create an empty distill-manifest.json (schema 0.1.0). Idempotent.
+  init            Create an empty distill-manifest.json (schema 0.1.1). Idempotent.
   merge           Parse the distiller's --records file, merge each proposal into
                   its concept/entity page under the lock (slug derived here via
                   _knowledge_lib.slugify — orchestrator-owns-slug discipline), and
@@ -63,6 +63,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     _FRONTMATTER_RE,
+    _unquote_scalar,
     atomic_write,
     atomic_write_text,
     claim_similarity,
@@ -71,7 +72,7 @@ from _knowledge_lib import (  # noqa: E402
     slugify,
 )
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.1.1"
 MANIFEST_FILENAME = "distill-manifest.json"
 METADATA_DIRNAME = ".metadata"
 
@@ -82,6 +83,12 @@ METADATA_DIRNAME = ".metadata"
 # keep both. Raising it under-merges (more visible duplicates, recoverable);
 # lowering it risks an unrecoverable over-merge.
 SIMILARITY_THRESHOLD = 0.85
+
+# #340 observable tripwire — a NEW concept whose title scores >= this against
+# any existing concept/entity title is flagged in `near_existing_slug`. Lower
+# than SIMILARITY_THRESHOLD because titles are short (2-3 tokens). Pure
+# observability; tuning is cheap and reversible.
+NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65
 
 # concept type -> wiki subdirectory. Phase-1 ships concept + entity only
 # (summary / learning deferred). Mirrors cogni-wiki PAGE_TYPE_DIRS for these two.
@@ -122,6 +129,8 @@ def _empty_manifest() -> dict:
         "claims_attached_total": 0,
         "claims_deduped_total": 0,
         "claims_rejected_total": 0,
+        "near_existing_total": 0,
+        "near_existing_slugs": [],
     }
 
 
@@ -435,10 +444,12 @@ def _page_exists(wiki_root: Path, slug: str) -> bool:
 
 def _result(slug: str, ptype: str, action: str, *, reason: str = "",
             page_path: str = "", summary: str = "", claims_total: int = 0,
-            stats: dict | None = None) -> dict:
+            stats: dict | None = None, near_existing_slug: dict | None = None) -> dict:
     """Build a per-concept result dict with a UNIFORM key set, so every result —
     created / updated / unchanged / skipped / write_failed / exception — carries
-    the same fields and no downstream reader hits a KeyError on a missing key."""
+    the same fields and no downstream reader hits a KeyError on a missing key.
+    `near_existing_slug` (#340 tripwire) is `{}` everywhere except a created
+    concept that crossed NEAR_TITLE_SIMILARITY_THRESHOLD."""
     stats = stats or {}
     return {
         "slug": slug, "type": ptype, "action": action, "reason": reason,
@@ -446,6 +457,7 @@ def _result(slug: str, ptype: str, action: str, *, reason: str = "",
         "claims_in": stats.get("in", 0), "claims_new": stats.get("new", 0),
         "claims_deduped": stats.get("deduped", 0), "claims_noop": stats.get("noop", 0),
         "claims_rejected": stats.get("rejected", 0),
+        "near_existing_slug": near_existing_slug or {},
     }
 
 
@@ -460,6 +472,60 @@ def _claims_fingerprint(claims: list[dict]) -> list[tuple]:
     ) for c in claims]
 
 
+# --- #340 observable tripwire — title-index + near-match scan ---------------
+
+_TITLE_KEY_RE = re.compile(r"^title[ \t]*:[ \t]*(.+?)[ \t]*$")
+
+
+def _read_page_title(page_path: Path) -> str:
+    """First frontmatter `title:` scalar, or `""` if unreadable. A missing
+    title yields 0.0 similarity downstream — the page is silently excluded
+    from the tripwire rather than matched against its slug."""
+    try:
+        text = page_path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    m = _FRONTMATTER_RE.match(text)
+    if not m:
+        return ""
+    for line in m.group(1).splitlines():
+        tm = _TITLE_KEY_RE.match(line)
+        if tm:
+            return _unquote_scalar(tm.group(1).strip())
+    return ""
+
+
+def _build_title_index(wiki_root: Path) -> list[tuple]:
+    """Snapshot every existing concept/entity page as (slug, title, type).
+    Called once under the wiki lock so the view is consistent with disk."""
+    out: list[tuple] = []
+    for ptype, sub in (("concept", "concepts"), ("entity", "entities")):
+        d = wiki_root / "wiki" / sub
+        if not d.is_dir():
+            continue
+        for p in sorted(d.glob("*.md")):
+            out.append((p.stem, _read_page_title(p), ptype))
+    return out
+
+
+def _find_near_existing(title: str, title_index: list[tuple]) -> dict:
+    """Highest claim_similarity match >= NEAR_TITLE_SIMILARITY_THRESHOLD as
+    `{slug, title, type, score}`, or `{}` when none crosses the bar."""
+    if not title or not title_index:
+        return {}
+    best_score = 0.0
+    best: tuple | None = None
+    for entry in title_index:
+        score = claim_similarity(title, entry[1])
+        if score > best_score:
+            best_score = score
+            best = entry
+    if best is None or best_score < NEAR_TITLE_SIMILARITY_THRESHOLD:
+        return {}
+    return {"slug": best[0], "title": best[1], "type": best[2],
+            "score": round(best_score, 3)}
+
+
 # --- merge command -----------------------------------------------------------
 
 
@@ -470,6 +536,7 @@ def _merge_one(
     today: str,
     parse_frontmatter,
     is_foundation_page,
+    title_index: list[tuple],
 ) -> dict:
     """Merge a single concept/entity proposal into its page. Returns a result
     dict (the per-slug manifest entry). Caller holds the wiki lock."""
@@ -483,6 +550,7 @@ def _merge_one(
 
     page_path = wiki_root / "wiki" / _TYPE_DIRS[ptype] / f"{slug}.md"
     incoming_claims = record.get("claims", [])
+    near_existing: dict = {}
 
     # Slug-type collision: the same slug already addresses a page in the OTHER
     # type dir (e.g. a `concept` slug that a prior — or same-run — `entity`
@@ -523,6 +591,9 @@ def _merge_one(
         summary_inner = _default_summary(record)
         human_tail = ""
         action = "created"
+        # #340 observable tripwire — only the `created` path can silently fork a
+        # near-duplicate page; `updated` lands on an exact-slug match by definition.
+        near_existing = _find_near_existing(title, title_index)
 
     merged_claims, stats = _merge_claims(existing_claims, incoming_claims, today)
     # `sources:` = exactly the sources whose claims are actually on the page (the
@@ -571,7 +642,8 @@ def _merge_one(
     atomic_write_text(page_path, page_text)
     return _result(slug, ptype, action, page_path=str(page_path),
                    summary=(_summary_line(summary_inner) or title),
-                   claims_total=len(merged_claims), stats=stats)
+                   claims_total=len(merged_claims), stats=stats,
+                   near_existing_slug=near_existing)
 
 
 def _scalar_str(v) -> str:
@@ -652,11 +724,14 @@ def cmd_merge(args: argparse.Namespace) -> int:
     # One lock for the whole batch: each _merge_one re-reads its page from disk,
     # so two same-run proposals colliding on a slug see each other's write.
     with _wiki_lock(wiki_root):
+        # #340 tripwire snapshot — taken under the lock; same-run later proposals
+        # don't see earlier same-run additions (cross-run drift is the target).
+        title_index = _build_title_index(wiki_root)
         for record in records:
             try:
                 results.append(_merge_one(
                     record, wiki_root, project_slug, today,
-                    parse_frontmatter, is_foundation_page,
+                    parse_frontmatter, is_foundation_page, title_index,
                 ))
             except Exception as exc:  # noqa: BLE001 — one bad proposal must not abort the run
                 results.append(_result(slugify(record.get("title", "")),
@@ -676,6 +751,21 @@ def cmd_merge(args: argparse.Namespace) -> int:
         r["slug"] for r in results if r["action"] == "updated" and r["slug"]
     ) if s not in created_set]
 
+    # #340 tripwire — aggregate the per-concept warnings (sorted by score desc to
+    # match the SKILL Step-9 contract; the orchestrator prints them as-is).
+    near_existing_slugs = sorted(
+        (
+            {"slug": r["slug"],
+             "near_slug": r["near_existing_slug"].get("slug", ""),
+             "near_title": r["near_existing_slug"].get("title", ""),
+             "near_type": r["near_existing_slug"].get("type", ""),
+             "score": r["near_existing_slug"].get("score", 0.0)}
+            for r in results if r.get("near_existing_slug")
+        ),
+        key=lambda x: x["score"], reverse=True,
+    )
+    near_existing_total = len(near_existing_slugs)
+
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "project_slug": project_slug,
@@ -684,6 +774,8 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "claims_attached_total": attached_total,
         "claims_deduped_total": deduped_total,
         "claims_rejected_total": rejected_total,
+        "near_existing_total": near_existing_total,
+        "near_existing_slugs": near_existing_slugs,
     }
     # The script is the single writer of the manifest, so it also owns the
     # bundle_hash the orchestrator's resume check reads back (no fragile
@@ -705,6 +797,8 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "claims_attached_total": attached_total,
         "claims_deduped_total": deduped_total,
         "claims_rejected_total": rejected_total,
+        "near_existing_total": near_existing_total,
+        "near_existing_slugs": near_existing_slugs,
     })
 
 
