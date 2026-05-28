@@ -221,6 +221,59 @@ echo "$OUT" | grep -q 'no_sentinels_human_page' && green "PASS: no-sentinel huma
 OUT=$(python3 "$SCRIPT" read --project-path "$PROJ")
 echo "$OUT" | grep -q 'claims_attached_total' && green "PASS: manifest carries claims_attached_total" || { red "FAIL: manifest missing dedup totals"; errors=$((errors+1)); }
 
+# --- 10. #340 observable title→slug tripwire --------------------------------
+# A new project proposes a title that's title-similar (>= 0.65) but slugifies
+# DIFFERENTLY from a page already on disk. The page must still be CREATED
+# (no auto-merge), but the result envelope must carry near_existing_slug and the
+# manifest must aggregate near_existing_total / near_existing_slugs[].
+# "Annex III Categories" already exists from Step 2 (slug annex-iii-categories).
+# "Annex III Risk Categories" slugifies to annex-iii-risk-categories — DIFFERENT
+# slug, but `claim_similarity` scores ~0.80 (above the 0.65 threshold) because
+# the discriminative tokens (annex/categori) overlap with weight.
+PROJ4="$WORK/project4"; mkdir -p "$PROJ4/.metadata"
+cat > "$PROJ4/.metadata/recnear.txt" <<'EOF'
+- title: Annex III Risk Categories
+  type: concept
+  claim: src-a#clm-080 | The Annex enumerates several high-risk categories.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ4/.metadata/recnear.txt" --wiki-root "$WIKI" --project-path "$PROJ4" --project-slug proj-near --wiki-scripts-dir "$WSD")
+# Created (no auto-merge): the page lives at the NEW slug.
+NEAR="$WIKI/wiki/concepts/annex-iii-risk-categories.md"
+[ -f "$NEAR" ] && green "PASS: near-title creates a NEW page (no auto-merge)" || { red "FAIL: near-title did not create page"; errors=$((errors+1)); }
+# near_existing_total >= 1 in manifest + return envelope.
+echo "$OUT" | grep -q '"near_existing_total": 1' && green "PASS: near_existing_total counted (1)" || { red "FAIL: near_existing_total != 1"; errors=$((errors+1)); }
+# The per-concept envelope carries near_existing_slug with the existing match.
+echo "$OUT" | grep -q '"near_slug": "annex-iii-categories"' && green "PASS: near_existing_slug points at the cross-run match" || { red "FAIL: near_existing_slug not surfaced"; errors=$((errors+1)); }
+echo "$OUT" | grep -q '"near_type": "concept"' && green "PASS: near_existing_slug carries the type" || { red "FAIL: near_existing_slug type missing"; errors=$((errors+1)); }
+# The schema bumped from 0.1.0 → 0.1.1 because the manifest gained two fields.
+python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));assert d["schema_version"]=="0.1.1";assert d["near_existing_total"]==1;assert len(d["near_existing_slugs"])==1' "$PROJ4/.metadata/distill-manifest.json" && green "PASS: manifest schema bumped + tripwire fields aggregated" || { red "FAIL: manifest schema/fields wrong"; errors=$((errors+1)); }
+
+# --- 11. CLEAN-RUN BASELINE: no near match → empty tripwire ------------------
+# A title with no overlap against any existing concept/entity must yield
+# near_existing_total = 0 (no false alarms on clean runs).
+PROJ5="$WORK/project5"; mkdir -p "$PROJ5/.metadata"
+cat > "$PROJ5/.metadata/recclean.txt" <<'EOF'
+- title: Maritime Surveillance Protocol
+  type: concept
+  claim: src-a#clm-090 | Vessels must transmit identifying telemetry.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ5/.metadata/recclean.txt" --wiki-root "$WIKI" --project-path "$PROJ5" --project-slug proj-clean --wiki-scripts-dir "$WSD")
+echo "$OUT" | grep -q '"near_existing_total": 0' && green "PASS: unrelated title → near_existing_total=0 (no false alarm)" || { red "FAIL: false alarm on unrelated title"; errors=$((errors+1)); }
+echo "$OUT" | grep -q '"near_existing_slugs": \[\]' && green "PASS: clean run leaves near_existing_slugs empty" || { red "FAIL: near_existing_slugs not empty on clean run"; errors=$((errors+1)); }
+
+# --- 12. tripwire NEVER fires on the `updated` path --------------------------
+# Same title as Step 3's update -> action=updated, near_existing_slug must be {}.
+# (An updated page's slug IS one of the existing slugs, so warning about its own
+# near-self would be circular noise.)
+PROJ6="$WORK/project6"; mkdir -p "$PROJ6/.metadata"
+cat > "$PROJ6/.metadata/recupd.txt" <<'EOF'
+- title: Annex III Categories
+  type: concept
+  claim: src-a#clm-095 | A third source contributes an Annex III statement.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ6/.metadata/recupd.txt" --wiki-root "$WIKI" --project-path "$PROJ6" --project-slug proj-upd --wiki-scripts-dir "$WSD")
+echo "$OUT" | grep -q '"near_existing_total": 0' && green "PASS: updated path never fires the tripwire" || { red "FAIL: tripwire fired on update"; errors=$((errors+1)); }
+
 echo ""
 if [ "$errors" -eq 0 ]; then
   green "concept-store.py contract: all pass."

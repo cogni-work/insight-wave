@@ -193,7 +193,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py merge \
     --bundle-hash "$SHA"
 ```
 
-`--bundle-hash "$SHA"` (the Step-1 content hash) is written into the manifest by `concept-store.py` itself — it is the single writer, so Step 3's resume check reads it back with no fragile second-process patch. Parse `data`: `created_slugs[]`, `updated_slugs[]` (disjoint), `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, claims_rejected, ...}`), `claims_attached_total`, `claims_deduped_total`, `claims_rejected_total`. On `success: false` → warn + exit cleanly. **If `claims_rejected_total > 0`, surface it loudly** — it means the distiller emitted malformed claim lines (e.g. dropped the `<slug> | <id> |` provenance), which would otherwise silently shrink the concept web; check the records file format.
+`--bundle-hash "$SHA"` (the Step-1 content hash) is written into the manifest by `concept-store.py` itself — it is the single writer, so Step 3's resume check reads it back with no fragile second-process patch. Parse `data`: `created_slugs[]`, `updated_slugs[]` (disjoint), `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, claims_rejected, near_existing_slug, ...}`), `claims_attached_total`, `claims_deduped_total`, `claims_rejected_total`, `near_existing_total`, `near_existing_slugs[]` (`{slug, near_slug, near_title, near_type, score}`). On `success: false` → warn + exit cleanly. **If `claims_rejected_total > 0`, surface it loudly** — it means the distiller emitted malformed claim lines (e.g. dropped the `<slug> | <id> |` provenance), which would otherwise silently shrink the concept web; check the records file format. **`near_existing_total` / `near_existing_slugs[]` are the #340 observable tripwire** — see Step 9.
 
 ### 7. Per-new/updated-slug cogni-wiki integration (sequential, after merge)
 
@@ -243,17 +243,24 @@ The `distill` prefix is additive-safe — cogni-wiki readers bucket an unknown p
 
 ### 9. Final summary
 
-Print ≤ 10 lines:
+Print ≤ 12 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Concepts created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
+- **#340 title→slug tripwire** — if `near_existing_total > 0`, surface a warning block:
+  - Header: `⚠ <near_existing_total> concepts created near an existing slug — check title stability (#340)`
+  - One line per entry from `near_existing_slugs[]` (deterministic order, score-sorted desc): `  <slug> ~ <near_slug> (<near_type>, score=<score>)`
+  - Subline: `If these are the same concept, the run forked a near-duplicate page; rename the proposal in the next run, or merge manually via the wiki.`
+  - When `near_existing_total == 0` print nothing (no false-alarm noise on clean runs).
 - Wiki entries_count: `+<n_new>` (or `⚠ bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0`)
 - Cost: `$X.XXX` (from the distiller return)
 - Next: `knowledge-compose` reads the concept/entity pages as framing context (not citable evidence).
 
 The dedup ratio is the Finding-H success metric (`differentiation-thesis.md`): of the new facts proposed this run, the fraction that merged into an existing claim instead of adding a duplicate line.
+
+The #340 tripwire is **pure observability** — it never blocks the pipeline, never auto-merges, never skips a write. A `near_existing_slug` warning means `claim_similarity(new_title, existing_title) >= 0.65` on the symmetric weighted-Jaccard primitive; titles in that band MAY be a silent slug-fork (e.g. `"Hochrisiko-Klassifizierung"` vs `"Einstufung als hochriskant"` — different slugs, same concept) but may also be genuinely-distinct neighbours. Human judgment owns the disposition.
 
 ## Edge cases
 

@@ -162,22 +162,26 @@ Phase 4 makes the wiki a **citation store** (verbatim source bodies + `pre_extra
 
 **Safety branches.** A target slug that resolves to a `foundation: true` page → skipped (`foundation_collision`). A target that exists but has no MACHINE-OWNED sentinels (hand-authored / cogni-wiki page) → skipped (`no_sentinels_human_page`), left untouched (never clobber a page we did not author).
 
-Output: `<project>/.metadata/distill-manifest.json`:
+Output: `<project>/.metadata/distill-manifest.json` (schema `0.1.1` from v0.1.14, #340 tripwire bump):
 
 ```json
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.1.1",
   "project_slug": "eu-ai-act-de",
   "concepts": [
-    {"slug": "high-risk-classification", "type": "concept", "action": "created", "summary": "...", "claims_total": 6, "claims_new": 6, "claims_deduped": 0, "claims_noop": 0}
+    {"slug": "high-risk-classification", "type": "concept", "action": "created", "summary": "...", "claims_total": 6, "claims_new": 6, "claims_deduped": 0, "claims_noop": 0, "near_existing_slug": {}}
   ],
   "claims_attached_total": 41,
   "claims_deduped_total": 7,
+  "near_existing_total": 0,
+  "near_existing_slugs": [],
   "bundle_hash": "<sha256 of the claim bundle — drives the resume no-op>"
 }
 ```
 
 `claims_deduped_total / claims_attached_total` is the Finding-H success metric (`differentiation-thesis.md` §"What success looks like"). `pipeline-summary.py project` surfaces the concept counts + this ratio for the read-side skills.
+
+**#340 observable title→slug tripwire (v0.1.14).** Under the wiki lock, `concept-store.py merge` snapshots every existing concept/entity page's `(slug, title, type)` and, for each `created` action, scores `claim_similarity(new_title, each_existing_title)` (the same symmetric weighted-Jaccard primitive used for claim dedup). The highest-scoring entry above `NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65` lands in the per-concept envelope's `near_existing_slug: {slug, title, type, score}` and is aggregated into manifest-level `near_existing_total` + `near_existing_slugs[]`. The orchestrator's Step-9 summary surfaces a `⚠ N concepts created near an existing slug — check title stability (#340)` warning when `near_existing_total > 0`. **Pure observability — no auto-merge, no skip, no behaviour change.** The tripwire is a human-visible signal that the LLM-driven distiller may have proposed a title whose `slugify()` silently forked a near-duplicate concept page, breaking compounding for that concept. The `updated` action never fires the tripwire (an existing slug warning against itself would be circular noise). Pure monolingual or near-monolingual signal — a cross-lingual title rename (`"Hochrisiko-Klassifizierung"` vs `"Einstufung als hochriskant"`) scores `≈ 0.0` and will not trip; the canonical-title map planned in #340 approach (c) covers that case.
 
 ### Phase 5 — `knowledge-compose`
 

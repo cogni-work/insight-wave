@@ -1,5 +1,36 @@
 # cogni-knowledge changelog
 
+## 0.1.14 — 2026-05-28
+
+Resolves **#340** Phase 1 — ships approach **(a) observable title→slug tripwire** from the issue's smallest → fullest path. The #346 live Phase-4.5 compounding proof (closed 2026-05-28) verified that the LLM-driven `concept-distiller`, given run-N's slug-index, *did* land 5 of 8 update proposals on the existing pages — no fork observed in that run. But the load-bearing assumption behind every compounding claim (#340: *"title reuse is LLM judgment — `'Hochrisiko-Klassifizierung'` vs `'Einstufung als hochriskant'` silently forks a new page, breaking compounding for that concept without any warning"*) still has zero structural defense. This release adds the observability the #346 closing note recommended ("live monitoring should continue across future runs"). No behaviour change, no auto-merge — the warning is purely a human-readable signal at the Step-9 summary that a created concept's title was close enough to an existing one to suggest the slug-fork failure mode may have fired. Maturity stays **Preview**.
+
+Per the #340 approach (a)/(b)/(c) path, this ship targets only (a). (b) the LLM disambiguation pass and (c) the bilingual canonical-title map are explicitly deferred per the issue's own guidance ("Ship (a) immediately; (b) after #311 produces real fork examples; (c) only if mixed-language bases prove it necessary").
+
+### Added
+
+- **`scripts/concept-store.py` — `NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65` + tripwire helpers.** Under the wiki lock at the top of `cmd_merge`, the script now snapshots every existing `wiki/concepts/*.md` + `wiki/entities/*.md` page's `(slug, title, type)` via a new `_build_title_index(wiki_root)` (same `_FRONTMATTER_RE` + `_unquote_scalar` idiom the SKILL Step 2 builder uses). For each `_merge_one` invocation on the `created` path, `_find_near_existing(title, slug, title_index)` scores `claim_similarity(new_title, each_existing_title)` and returns the highest-scoring match `{slug, title, type, score}` when `score >= 0.65` (otherwise `{}`). The per-concept result dict carries the match in a new `near_existing_slug` field (always present, `{}` on every path except a triggered `created`). The `updated` path never fires the tripwire (an existing slug warning against itself would be circular noise).
+- **`scripts/concept-store.py` — manifest counters `near_existing_total` + `near_existing_slugs[]`.** Aggregated in `cmd_merge` from the per-concept envelopes and threaded into both `distill-manifest.json` and the script's return-envelope `data`. Per-entry shape: `{slug, near_slug, near_title, near_type, score}`. Schema bumped to `0.1.1`.
+- **`skills/knowledge-distill/SKILL.md` Step 6 + Step 9 — orchestrator surfaces the warning.** Step 6 documents the new return-envelope fields; Step 9 prints `⚠ <near_existing_total> concepts created near an existing slug — check title stability (#340)` followed by one line per entry (`<slug> ~ <near_slug> (<near_type>, score=<score>)`) when `near_existing_total > 0`, plus a one-sentence guidance note. Prints nothing on clean runs (`near_existing_total == 0`) — no false-alarm noise.
+
+### Changed
+
+- **Manifest schema 0.1.0 → 0.1.1.** `init` and `merge` both write the two new fields with `0`/`[]` defaults, so a pre-bump consumer reading the new manifest still gets every previously-emitted field at its previous semantics. The `_empty_manifest()` shape is updated in lockstep so a freshly-`init`-ed manifest never lacks the new keys.
+
+### Tests
+
+- `tests/test_concept_store.sh` — three new cases (now 34 total, was 26):
+  - **Trip path:** seed an existing "Annex III Categories" page (slug `annex-iii-categories`), then a new project proposes "Annex III Risk Categories" (slug `annex-iii-risk-categories`, `claim_similarity ≈ 0.80`). Asserts the new page IS created (no auto-merge), the per-concept envelope carries `near_existing_slug` pointing at the existing match, the manifest aggregates `near_existing_total == 1`, and the schema bumped to `0.1.1`.
+  - **Clean-run baseline:** a completely unrelated title ("Maritime Surveillance Protocol") leaves `near_existing_total == 0` and `near_existing_slugs == []` — guards against false-alarm noise on every clean run.
+  - **Updated-path guard:** a proposal whose slug already exists on disk (driving the `updated` action) reports `near_existing_total == 0` — the tripwire is `created`-only and cannot warn about a slug against itself.
+- `tests/test_distill_contract.sh` — five new SKILL.md assertions (`near_existing_total` / `near_existing_slugs` in Step 6, the Step-9 warning text + #340 reference + observability framing).
+
+### Notes
+
+- **No schema bump on `binding.json`** — tripwire data lives in `<project>/.metadata/distill-manifest.json`, not in the binding.
+- **No new dependency on cogni-wiki.** The title index is built in-process via the existing `_FRONTMATTER_RE` + `_unquote_scalar` primitives that already cross the script boundary; `_wiki_lock` is unchanged.
+- **The German failure case in the #340 issue** (`"Hochrisiko-Klassifizierung"` vs `"Einstufung als hochriskant"`) reduces to `claim_similarity ≈ 0.0` because the discriminative tokens (`klassifizier` vs `einstuf`) share no compound roots — so this specific bilingual fork would NOT trip (a), only (c) the canonical-title map would catch it. The tripwire's stated value is monolingual or near-monolingual silent forks (e.g. word reordering, minor reformulation), and as a stepping stone that produces real fork examples for the (b) disambiguation pass once #311 / future bilingual runs accumulate signal.
+- **Threshold calibration.** 0.65 is the issue author's proposed target. Tuning is cheap and reversible — this is observability, not a merge decision. If false-positive volume becomes a problem in real runs, raise it; if real forks slip through, lower it.
+
 ## 0.1.13 — 2026-05-27
 
 Resolves **#336** (Option (a) — build the compounding layer). Before this, the inverted pipeline wrote only `type: source` (verbatim bodies + `pre_extracted_claims:`) and `type: synthesis` (the report) pages, so after N runs the bound wiki was a **citation store**, not the interlinked concept web `differentiation-thesis.md` advertises — no recurring concept/entity ever got its own page successive runs *enriched* (the Karpathy compounding mechanism). It also had **no claim-level dedup** (Finding H: dedup was URL-level only in `candidate-store.py`), so the thesis's "dedupes claims at deposit" metric was structurally unmet. Adds a new optional, fail-soft **Phase 4.5 `knowledge-distill`** between ingest and compose. Maturity stays **Preview**.
