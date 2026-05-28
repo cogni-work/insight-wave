@@ -46,7 +46,7 @@ DEFAULT_FETCH_CACHE_MAX_AGE_DAYS = 30
 # Furthest-phase ordering. A phase is "reached" when its manifest is present.
 # `finalize` is not manifest-backed at the project level (it deposits to the
 # wiki + binding), so the deepest project-local phase is `verify`.
-_PHASE_ORDER = ["plan", "curate", "fetch", "ingest", "compose", "verify"]
+_PHASE_ORDER = ["plan", "curate", "fetch", "ingest", "distill", "compose", "verify"]
 _VERIFY_RE = re.compile(r"^verify-v(\d+)\.json$")
 
 
@@ -116,15 +116,20 @@ def cmd_project(args: argparse.Namespace) -> int:
     candidates = _load_json(metadata / "candidates.json")
     fetch = _load_json(metadata / "fetch-manifest.json")
     ingest = _load_json(metadata / "ingest-manifest.json")
+    distill = _load_json(metadata / "distill-manifest.json")
     citation = _load_json(metadata / "citation-manifest.json")
     verify = _latest_verify(metadata)
 
-    # phase_reached = deepest phase whose manifest is present on disk.
+    # phase_reached = deepest phase whose manifest is present on disk. Distill
+    # (Phase 4.5) is optional + fail-soft, so its manifest may be absent on a
+    # run that skipped it — present=False simply leaves phase_reached at the last
+    # phase that did run (the deeper compose/verify still advance it).
     present = {
         "plan": plan is not None,
         "curate": candidates is not None,
         "fetch": fetch is not None,
         "ingest": ingest is not None,
+        "distill": distill is not None,
         "compose": citation is not None,
         "verify": verify is not None,
     }
@@ -150,6 +155,17 @@ def cmd_project(args: argparse.Namespace) -> int:
                 verify_counts[key] = _as_int(raw_counts.get(key, 0))
         revision_round = _as_int(verify_obj.get("revision_round", 0))
 
+    # Distill (Phase 4.5) read-side counts — concept/entity pages created/updated
+    # this run + the claim-dedup ratio (the Finding-H success metric, #336).
+    concepts = (distill or {}).get("concepts", [])
+    if not isinstance(concepts, list):
+        concepts = []
+    distill_actions = {"created": 0, "updated": 0, "unchanged": 0, "skipped": 0}
+    for c in concepts:
+        a = c.get("action") if isinstance(c, dict) else None
+        if a in distill_actions:
+            distill_actions[a] += 1
+
     data = {
         "project_path": str(project_path),
         "topic": (plan or {}).get("topic", ""),
@@ -159,6 +175,11 @@ def cmd_project(args: argparse.Namespace) -> int:
         "unavailable": _count(fetch, "unavailable"),
         "ingested": _count(ingest, "ingested"),
         "skipped": _count(ingest, "skipped"),
+        "concepts_created": distill_actions["created"],
+        "concepts_updated": distill_actions["updated"],
+        "concepts_total": len(concepts),
+        "claims_attached": _as_int((distill or {}).get("claims_attached_total", 0)),
+        "claims_deduped": _as_int((distill or {}).get("claims_deduped_total", 0)),
         "citations": _count(citation, "citations"),
         "draft_version": (citation or {}).get("draft_version", 0),
         "verify_version": verify_version,

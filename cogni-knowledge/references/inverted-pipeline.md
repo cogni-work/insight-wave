@@ -15,11 +15,15 @@ v0.0.15 chained `cogni-research → cogni-wiki:wiki-from-research → cogni-clai
 
 The inverted pipeline fixes all three by treating the wiki as the writer's substrate, fetching once before composition, and dropping unreachable sources before they can be cited.
 
-## The seven phases
+## The phases
 
 ```
-plan → curate → fetch → ingest → compose → verify → finalize
+plan → curate → fetch → ingest → distill → compose → verify → finalize
 ```
+
+Phase 4.5 (`knowledge-distill`) is an **optional, fail-soft interphase** added in v0.1.13 (#336): it
+sits between ingest and compose, never blocks the pipeline, and is the only phase that may be skipped
+without affecting downstream correctness. The other seven phases are the v0.1.0 core.
 
 | Phase | Skill | Reads | Writes |
 |-------|-------|-------|--------|
@@ -28,7 +32,8 @@ plan → curate → fetch → ingest → compose → verify → finalize
 | 2 | `knowledge-curate` | `plan.json` | `<project>/.metadata/candidates.json` (+ `fetch{}` per candidate), `.cogni-knowledge/fetch-cache/<sha256>.json` |
 | 3 | `knowledge-fetch` | `candidates.json` | `<project>/.metadata/fetch-manifest.json` (+ opt-in cobrowse rescues to `fetch-cache/`) |
 | 4 | `knowledge-ingest` | `fetch-manifest.json` + cache | `wiki/sources/<slug>.md` (with `pre_extracted_claims:`), updated `wiki/index.md`, `wiki/log.md` |
-| 5 | `knowledge-compose` | `wiki/index.md` + selected `wiki/sources/*.md` + prior `wiki/syntheses/*.md` | `<project>/output/draft-vN.md`, `<project>/.metadata/citation-manifest.json` |
+| 4.5 | `knowledge-distill` (optional, fail-soft) | `ingest-manifest.json` + `wiki/sources/*.md` claims + existing concept/entity pages | `wiki/concepts/<slug>.md` + `wiki/entities/<slug>.md` (with `distilled_claims:`), updated `wiki/index.md`, `wiki/log.md`, `<project>/.metadata/distill-manifest.json` |
+| 5 | `knowledge-compose` | `wiki/index.md` + selected `wiki/sources/*.md` + prior `wiki/syntheses/*.md` + distilled `wiki/concepts,entities/*.md` (framing only) | `<project>/output/draft-vN.md`, `<project>/.metadata/citation-manifest.json` |
 | 6 | `knowledge-verify` | draft + citation manifest + wiki page claims | `<project>/.metadata/verify-vN.json` (revisor loop, max 2 iterations) |
 | 7 | `knowledge-finalize` | verified draft | `wiki/syntheses/<slug>.md` (cycle-guarded), updated binding |
 
@@ -135,9 +140,48 @@ After per-source emission, run `backlink_audit.py` + `wiki_index_update.py` per 
 
 This is the F6 fix — by the end of phase 4 the wiki is populated, and the operator can browse it before the writer runs.
 
+### Phase 4.5 — `knowledge-distill` (optional, fail-soft) — v0.1.13, #336
+
+Phase 4 makes the wiki a **citation store** (verbatim source bodies + `pre_extracted_claims:`). Phase 4.5 turns those source claims into the distilled **concept/entity web** that makes a Karpathy wiki *compound* across runs instead of merely accumulate — the mechanism `references/differentiation-thesis.md` advertises. It also implements the **claim-level dedup** (Finding H) the thesis's success metric requires; URL-level dedup (`candidate-store.py`) was the only dedup before this.
+
+**Optional + fail-soft.** A distill failure must never block `knowledge-compose`. Same posture as the `knowledge-curate` Step 0.5 coverage pre-step: the concept/entity layer is enrichment, not a correctness gate. A pipeline run that skips distill is byte-identical downstream to pre-v0.1.13 behaviour.
+
+**Division of labor** (mirrors `claim-extractor`/`source-ingester`/`candidate-store.py`, and the #325 "script owns serialization" lesson):
+
+- `agents/concept-distiller.md` — **pure proposal.** Reads the run's source-claim bundle + an index of existing concept/entity slugs; clusters recurring facts into `concept`/`entity` proposals; writes a **raw-text** concept-records file (one `- title:` block per concept, repeatable `claim:` lines as `<source_slug> | <claim_id> | <text>`). Writes no wiki pages, never builds JSON/YAML, never computes slugs, never decides dedup. `model: sonnet`, tools `Read`/`Write`.
+- `skills/knowledge-distill/SKILL.md` — Phase-4.5 orchestrator. Builds the claim bundle (from `ingest-manifest.json` + each `wiki/sources/<slug>.md`'s `pre_extracted_claims:`) and the existing-slug index, dispatches the distiller, runs `concept-store.py merge`, then the script-level cogni-wiki helpers, writes `distill-manifest.json` + a `wiki/log.md` `distill` line. Fail-soft throughout.
+- `scripts/concept-store.py` — the locked create-or-merge engine. Subcommands `init` / `merge` / `read`. Derives each slug via `_knowledge_lib.slugify(title)` (orchestrator-owns-slug), and under cogni-wiki's `_wiki_lock` (`<wiki-root>/.cogni-wiki/.lock`, imported via `--wiki-scripts-dir`) creates-or-merges each page. Owns all YAML serialization + the created-vs-updated decision (on-disk slug existence, under the lock) + a pre-write round-trip self-check.
+
+**Claim-level dedup — deterministic, fail-safe, never the LLM.** The distiller proposes *which* claims attach to a concept; `concept-store.py` decides "same fact?" via `_knowledge_lib.norm_key` (exact) then `claim_similarity` (symmetric weighted-Jaccard ≥ 0.85). The dedup key is **`<source_slug>#<claim_id>`** (claim ids are per-page-unique — `clm-001` recurs on every source page). On a match: union the source backlinks onto the existing claim (one fact, multiple `[[backlinks]]`, one line), never a duplicate. **Fail-safe = keep both when uncertain** — a wrong merge silently destroys a distinct fact and is unrecoverable; a missed merge is a visible, measurable duplicate.
+
+**Concept/entity page layout.** Frontmatter: `id`/`title`/`type`/`tags`/`created`/`updated`, `sources:` as `wiki://<source-slug>` (health validates targets), `related:`, `status: distilled`, `distilled_from_research: [<project-slug>]`, and a cogni-knowledge-owned `distilled_claims:` block (each: `claim_id` `dcl-NNN`, `text`, `norm_key`, `backlinks[]`, `source_claim_refs[]`, timestamps). Body: `## Summary` / `## Claims` / `## Related` / `## Sources` (bare `[[<source-slug>]]` wikilinks so the link graph forms real edges) wrapped in `<!-- MACHINE-OWNED:X:START/END -->` sentinels; a `## Notes` **human-owned** region below the last sentinel is preserved byte-for-byte across runs.
+
+**Cross-run compounding.** Run N creates the page; run N+1 reads it, dedups incoming claims against `distilled_claims:`, appends genuinely-new claims, unions backlinks/`sources:`/`related:`/`distilled_from_research:`, bumps `updated:` (never `created:`), regenerates only the machine-owned blocks, splices the human region back unchanged. Phase-1 does **not** re-narrate the `## Summary` body (first-writer-wins). A pure re-run is byte-stable (action `unchanged`, no `entries_count` bump).
+
+**Script-level cogni-wiki helpers** (no `wiki-ingest` dispatch), per new/updated slug: `concept-store.py merge` (locked page write) → `backlink_audit.py --apply-plan` (concept↔source / concept↔concept inbound edges, LLM-curated targets) → `wiki_index_update.py --category "Concepts"|"Entities" --max-summary 240` → `config_bump.py --key entries_count --delta <n_created>` (counts only `action: "inserted"`, the same #302 lockstep ingest/finalize use). The `lint_wiki.py --fix=all`/`health.py` conformance gate is **not** run here — `knowledge-finalize` Step 10.5 covers the whole run's writes (including the distilled pages) once, at the end.
+
+**Safety branches.** A target slug that resolves to a `foundation: true` page → skipped (`foundation_collision`). A target that exists but has no MACHINE-OWNED sentinels (hand-authored / cogni-wiki page) → skipped (`no_sentinels_human_page`), left untouched (never clobber a page we did not author).
+
+Output: `<project>/.metadata/distill-manifest.json`:
+
+```json
+{
+  "schema_version": "0.1.0",
+  "project_slug": "eu-ai-act-de",
+  "concepts": [
+    {"slug": "high-risk-classification", "type": "concept", "action": "created", "summary": "...", "claims_total": 6, "claims_new": 6, "claims_deduped": 0, "claims_noop": 0}
+  ],
+  "claims_attached_total": 41,
+  "claims_deduped_total": 7,
+  "bundle_hash": "<sha256 of the claim bundle — drives the resume no-op>"
+}
+```
+
+`claims_deduped_total / claims_attached_total` is the Finding-H success metric (`differentiation-thesis.md` §"What success looks like"). `pipeline-summary.py project` surfaces the concept counts + this ratio for the read-side skills.
+
 ### Phase 5 — `knowledge-compose`
 
-Single `wiki-composer` agent. Reads `wiki/index.md` + selected `wiki/sources/*.md` + relevant prior `wiki/syntheses/*.md`. Drafts the report with `[[wiki-slug]]` citations (not URLs — URLs are looked up via the page's frontmatter when rendering).
+Single `wiki-composer` agent. Reads `wiki/index.md` + selected `wiki/sources/*.md` + relevant prior `wiki/syntheses/*.md`, plus (since Phase 4.5) the distilled `wiki/concepts/*.md` + `wiki/entities/*.md` pages as **framing context only** — topic-matched, lazily read, and **never cited**. Concept/entity pages carry `distilled_claims:` (not `pre_extracted_claims:`), are absent from the citation manifest, and the verifier does not score them, so the composer cites the underlying **source** pages a concept backlinks, never the concept page itself — keeping Phases 5/6/7 byte-stable whether or not distill ran. Drafts the report with `[[wiki-slug]]` citations (not URLs — URLs are looked up via the page's frontmatter when rendering).
 
 Emits two files:
 
@@ -184,6 +228,7 @@ Deposit the verified draft as `wiki/syntheses/<slug>.md` (frontmatter `type: syn
 - `cogni-wiki:wiki-setup` for wiki bootstrap (called from `knowledge-setup`).
 - `cogni-wiki:wiki-query`, `wiki-dashboard`, `wiki-health`, `wiki-resume`, `wiki-lint`, `wiki-refresh` — `knowledge-query`, `knowledge-dashboard`, `knowledge-resume`, `knowledge-refresh` remain thin wrappers around these.
 - `cogni-wiki/skills/wiki-ingest/scripts/{backlink_audit,wiki_index_update}.py` — called from `source-ingester` directly (script-level, not skill-level).
+- `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py` — `knowledge-distill`'s `concept-store.py` **imports** `_wiki_lock` / `is_foundation_page` / `parse_frontmatter` from it (via the orchestrator-resolved `--wiki-scripts-dir`) rather than re-inlining the lock, honouring cogni-wiki's "new shared-state writers MUST import `_wiki_lock`" contract. cogni-knowledge thus becomes a **locked writer into the wiki tree** (the concept/entity page RMW runs under the canonical `<wiki-root>/.cogni-wiki/.lock`). `knowledge-distill` also calls `backlink_audit.py` / `wiki_index_update.py` / `config_bump.py` at script level, same posture as `knowledge-ingest`.
 - `cogni-wiki/skills/wiki-ingest/scripts/{wiki_index_update,config_bump,rebuild_context_brief}.py` — called from `knowledge-finalize` at script level. `wiki_index_update.py` was added to the helper trio at v0.0.24 — without it the new synthesis page would not appear in `wiki/index.md` (the catalog), matching the same posture `wiki-query --file-back` and `knowledge-ingest` already adopt for their new pages.
 
 ## Cross-plugin coordination prerequisites

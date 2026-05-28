@@ -56,16 +56,17 @@ import argparse
 import json
 import re
 import sys
-import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     _FRONTMATTER_RE,
-    _MANUAL_TRANSLITERATION,
     _unquote_scalar,
+    compound_match,
     parse_pre_extracted_claims,
+    token_weight,
+    tokenize,
 )
 
 SCHEMA_VERSION = "0.1.0"
@@ -94,145 +95,14 @@ _TYPE_DIRS = {"source": "sources", "synthesis": "syntheses"}
 
 
 # ---------------------------------------------------------------------------
-# Tokenization + deterministic token weighting (#326).
+# Coverage scoring (#326). The tokenization primitives this builds on
+# (tokenize / token_weight / compound_match / STOPWORDS / GENERIC_DENYLIST) were
+# lifted to `_knowledge_lib.py` (#336) so this scorer and `concept-store.py`'s
+# claim-dedup share ONE normalization source of truth; they are imported above.
+# `coverage_score` stays here because it is DIRECTIONAL recall (page coverage of
+# a sub-question), distinct from `_knowledge_lib.claim_similarity`'s symmetric
+# measure — do not conflate the two.
 # ---------------------------------------------------------------------------
-
-TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
-STOPWORDS = frozenset({
-    # English function words.
-    "a", "an", "the", "of", "in", "on", "for", "with", "and", "or", "to", "is", "are", "was", "were",
-    "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "should", "can",
-    "could", "may", "might", "must", "what", "how", "why", "when", "where", "which", "who", "whom",
-    "this", "that", "these", "those", "it", "its", "their", "they", "them", "we", "us", "our",
-    "vs", "into", "from", "about", "as", "by", "if", "any", "all", "some", "more", "most",
-    # German function words (folded form: umlaut/ß de-accented, lowercase — see
-    # _fold). Most are exactly 3 chars (der/die/das/und/von/mit/…), so the <3
-    # length-drop does NOT shed them — they must be stopworded explicitly or
-    # German queries/pages would score on this noise (#326).
-    "und", "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "eines", "einem", "einen",
-    "fuer", "von", "mit", "auf", "aus", "ist", "sind", "war", "waren", "wird", "werden",
-    "nicht", "auch", "oder", "aber", "als", "durch", "bei", "bis", "nach", "vor", "ueber", "unter",
-    "zwischen", "dass", "diese", "dieser", "dieses", "diesen", "wie", "was", "wenn", "sowie", "bzw",
-})
-
-# Regulatory boilerplate that appears on nearly every page of a regulation wiki
-# — zero discriminative value. Without zeroing these, ~60/68 pages share them
-# and they dominate ranking, surfacing the wrong pages on top (the #326 defect-5
-# failure). Folded (umlaut/ß de-accented, lowercase) to match tokenize() output.
-# CRITICAL: this list MUST NOT contain topic-discriminating tokens — on the EN
-# side `high`/`risk`/`classification`/`scope` (the only signal the existing
-# fixtures match on), on the DE side `bussgeld`/`transparenz`/`governance`/
-# `aufsicht`/`sanktion` (what the bilingual regression test relies on). `act` IS
-# denylisted: "AI Act" is near-boilerplate on an EU-AI-Act base (like
-# `regulation`/`verordnung`), and at 3 chars it can never be a compound prefix
-# (compound_match needs cpl>=5), so denylisting it only zeros exact matches (#331).
-GENERIC_DENYLIST = frozenset({
-    "verordnung", "gesetz", "artikel", "article", "regulation", "act",
-    "ki", "ai", "system", "hochrisiko", "eu",
-    "anbieter", "betreiber", "anforderung", "anforderungen",
-    # Ubiquitous years masquerade as numeric anchors; deny so the digit x3.0
-    # boost (token_weight) can't fire on them — denylist is checked first.
-    "2024", "2025", "2026",
-})
-
-
-def _stem(token: str) -> str:
-    for suffix in ("ing", "ed", "es", "s"):
-        if token.endswith(suffix) and len(token) - len(suffix) >= 3:
-            return token[: -len(suffix)]
-    return token
-
-
-def _fold(text: str) -> str:
-    """De-accent so non-ASCII tokens survive the `[^a-z0-9]+` split instead of
-    fragmenting (German `Geschäftsidee` → `geschaeftsidee`, not `gesch`+`ftsidee`;
-    `Künstliche` → `kuenstliche`). Lowercase, NFC, the manual umlaut/ß
-    transliteration, then **NFD** (canonical) + combining-mark removal. Applied
-    identically to both the sub-question and page sides, and to STOPWORDS /
-    GENERIC_DENYLIST membership (those are written in folded form), so matching
-    stays consistent across languages.
-
-    NFD, NOT NFKD (which `_knowledge_lib.slugify` uses): NFKD *compatibility*
-    decomposition fabricates ASCII digits from typographic glyphs (`½` → `1` `2`,
-    superscript `²` → `2`, fullwidth `９` → `9`), which `tokenize` would then keep
-    as pure-numeric tokens and weight ×3.0 as article-number anchors — a
-    typographic footnote marker or fraction in a page's claim text would inject a
-    spurious cross-lingual anchor and falsely cover an unrelated sub-question.
-    NFD's *canonical* decomposition still de-accents every supported-market
-    letter (é→e, ñ→n, Polish ł handled by the manual map) but leaves ½/²/№
-    intact so the `[a-z0-9]` split discards them."""
-    lowered = unicodedata.normalize("NFC", text.lower())
-    for src, dst in _MANUAL_TRANSLITERATION:
-        lowered = lowered.replace(src, dst)
-    decomposed = unicodedata.normalize("NFD", lowered)
-    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
-
-
-def tokenize(*parts: str) -> set:
-    text = _fold(" ".join(p for p in parts if p))
-    raw_tokens = TOKEN_SPLIT_RE.split(text)
-    out: set = set()
-    for t in raw_tokens:
-        if not t or t in STOPWORDS:
-            continue
-        # Keep all-digit tokens at ANY length — article numbers (13, 99, 101) are
-        # the cross-lingual anchors ("Artikel 99" <-> "Article 99"). Every other
-        # token keeps the original <3-char drop, which sheds eu/ki/ai-style
-        # 2-char boilerplate and split fragments (#326).
-        if not t.isdigit() and len(t) < 3:
-            continue
-        out.add(_stem(t))
-    return out
-
-
-def token_weight(token: str) -> float:
-    """Deterministic discriminativeness weight in [0, 3.0].
-
-    Boilerplate -> 0.0 (checked first, so a denylisted *year* never gets the
-    numeric x3.0 boost). Otherwise base = clamp(len/8, 0.4, 1.0) rewards longer,
-    more-specific tokens, times a x3.0 anchor multiplier for pure article numbers
-    (the cross-lingual bridge) and x1.0 for everything else. NOT corpus-IDF:
-    IDF amplifies rare tokens and would inflate accidental matches on a
-    genuinely-novel sub-question, and degenerates on a 1-page base (#326)."""
-    if token in GENERIC_DENYLIST:
-        return 0.0
-    base = len(token) / 8.0
-    base = 0.4 if base < 0.4 else (1.0 if base > 1.0 else base)
-    return base * (3.0 if token.isdigit() else 1.0)
-
-
-def _common_prefix_len(a: str, b: str) -> int:
-    n = 0
-    for ca, cb in zip(a, b):
-        if ca != cb:
-            break
-        n += 1
-    return n
-
-
-def compound_match(t_sq: str, t_pg: str) -> bool:
-    """True if a sub-question token covers a page token. Exact match is the
-    trivial case; otherwise a length-guarded common *prefix* handles German
-    compounds (`bussgelder` ~ `bussgeldsystem`, prefix `bussgeld`=8). Prefix-only
-    (never substring) is deliberate: it rejects `system` inside
-    `risikomanagementsystem` (a suffix; common prefix "") and short `art` against
-    `artikel` (prefix `art`=3 < 5). The 0.6-of-shorter-length guard rejects
-    shared-generic-prefix false matches (`risiko…`). Denylisted tokens on either
-    side never match (#326)."""
-    if t_sq in GENERIC_DENYLIST or t_pg in GENERIC_DENYLIST:
-        return False
-    if t_sq == t_pg:
-        return True
-    cpl = _common_prefix_len(t_sq, t_pg)
-    if cpl < 5 or cpl < 0.6 * min(len(t_sq), len(t_pg)):
-        return False
-    # The shared head must itself be discriminative. Two compounds that merely
-    # share a boilerplate stem (`systemverwaltung` ~ `systeme`, common prefix
-    # `system`; `hochrisikobereich` ~ `hochrisikosystem`, common prefix
-    # `hochrisiko`) are NOT a real topical match — reject when the common prefix
-    # is a denylisted token. `bussgelder` ~ `bussgeldsystem` (prefix `bussgeld`)
-    # and `aufsichtsbehoerde` ~ `aufsicht` (prefix `aufsicht`) survive (#326).
-    return t_sq[:cpl] not in GENERIC_DENYLIST
 
 
 def coverage_score(sq_tokens: set, page_tokens: set) -> tuple:

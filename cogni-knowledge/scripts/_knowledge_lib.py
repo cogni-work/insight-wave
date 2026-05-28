@@ -433,6 +433,294 @@ def parse_pre_extracted_claims(page_text: str) -> list[dict]:
     return claims
 
 
+# --- Tokenization + token weighting (shared by wiki-coverage.py and -----------
+# concept-store.py) ------------------------------------------------------------
+# Lifted verbatim from wiki-coverage.py (#326/#331) so the read-before-web
+# coverage scorer and the Phase-4.5 claim-dedup engine share ONE normalization
+# source of truth. `wiki-coverage.py` imports `tokenize` / `token_weight` /
+# `compound_match` / `GENERIC_DENYLIST` / `STOPWORDS` from here; `concept-store.py`
+# builds `norm_key` + `claim_similarity` on the same primitives. See
+# wiki-coverage.py's module docstring for the full rationale behind each tuning
+# choice (digit anchors x3.0, regulatory-boilerplate denylist, German-compound
+# prefix matching). When editing these, `tests/test_wiki_coverage_bilingual.sh`
+# is the regression guard.
+
+TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
+STOPWORDS = frozenset({
+    # English function words.
+    "a", "an", "the", "of", "in", "on", "for", "with", "and", "or", "to", "is", "are", "was", "were",
+    "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "should", "can",
+    "could", "may", "might", "must", "what", "how", "why", "when", "where", "which", "who", "whom",
+    "this", "that", "these", "those", "it", "its", "their", "they", "them", "we", "us", "our",
+    "vs", "into", "from", "about", "as", "by", "if", "any", "all", "some", "more", "most",
+    # German function words (folded form: umlaut/ß de-accented, lowercase — see
+    # _fold). Most are exactly 3 chars (der/die/das/und/von/mit/…), so the <3
+    # length-drop does NOT shed them — they must be stopworded explicitly or
+    # German queries/pages would score on this noise (#326).
+    "und", "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "eines", "einem", "einen",
+    "fuer", "von", "mit", "auf", "aus", "ist", "sind", "war", "waren", "wird", "werden",
+    "nicht", "auch", "oder", "aber", "als", "durch", "bei", "bis", "nach", "vor", "ueber", "unter",
+    "zwischen", "dass", "diese", "dieser", "dieses", "diesen", "wie", "was", "wenn", "sowie", "bzw",
+})
+
+# Regulatory boilerplate that appears on nearly every page of a regulation wiki
+# — zero discriminative value. Without zeroing these, ~60/68 pages share them
+# and they dominate ranking, surfacing the wrong pages on top (the #326 defect-5
+# failure). Folded (umlaut/ß de-accented, lowercase) to match tokenize() output.
+# CRITICAL: this list MUST NOT contain topic-discriminating tokens — on the EN
+# side `high`/`risk`/`classification`/`scope` (the only signal the existing
+# fixtures match on), on the DE side `bussgeld`/`transparenz`/`governance`/
+# `aufsicht`/`sanktion` (what the bilingual regression test relies on). `act` IS
+# denylisted: "AI Act" is near-boilerplate on an EU-AI-Act base (like
+# `regulation`/`verordnung`), and at 3 chars it can never be a compound prefix
+# (compound_match needs cpl>=5), so denylisting it only zeros exact matches (#331).
+GENERIC_DENYLIST = frozenset({
+    "verordnung", "gesetz", "artikel", "article", "regulation", "act",
+    "ki", "ai", "system", "hochrisiko", "eu",
+    "anbieter", "betreiber", "anforderung", "anforderungen",
+    # Ubiquitous years masquerade as numeric anchors; deny so the digit x3.0
+    # boost (token_weight) can't fire on them — denylist is checked first.
+    "2024", "2025", "2026",
+})
+
+
+def _stem(token: str) -> str:
+    for suffix in ("ing", "ed", "es", "s"):
+        if token.endswith(suffix) and len(token) - len(suffix) >= 3:
+            return token[: -len(suffix)]
+    return token
+
+
+def _fold(text: str) -> str:
+    """De-accent so non-ASCII tokens survive the `[^a-z0-9]+` split instead of
+    fragmenting (German `Geschäftsidee` → `geschaeftsidee`, not `gesch`+`ftsidee`;
+    `Künstliche` → `kuenstliche`). Lowercase, NFC, the manual umlaut/ß
+    transliteration, then **NFD** (canonical) + combining-mark removal. Applied
+    identically to both the sub-question and page sides, and to STOPWORDS /
+    GENERIC_DENYLIST membership (those are written in folded form), so matching
+    stays consistent across languages.
+
+    NFD, NOT NFKD (which `slugify` uses): NFKD *compatibility* decomposition
+    fabricates ASCII digits from typographic glyphs (`½` → `1` `2`, superscript
+    `²` → `2`, fullwidth `９` → `9`), which `tokenize` would then keep as
+    pure-numeric tokens and weight ×3.0 as article-number anchors — a typographic
+    footnote marker or fraction in a page's claim text would inject a spurious
+    cross-lingual anchor and falsely cover an unrelated sub-question. NFD's
+    *canonical* decomposition still de-accents every supported-market letter
+    (é→e, ñ→n, Polish ł handled by the manual map) but leaves ½/²/№ intact so the
+    `[a-z0-9]` split discards them."""
+    lowered = unicodedata.normalize("NFC", text.lower())
+    for src, dst in _MANUAL_TRANSLITERATION:
+        lowered = lowered.replace(src, dst)
+    decomposed = unicodedata.normalize("NFD", lowered)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+
+
+def tokenize(*parts: str) -> set:
+    text = _fold(" ".join(p for p in parts if p))
+    raw_tokens = TOKEN_SPLIT_RE.split(text)
+    out: set = set()
+    for t in raw_tokens:
+        if not t or t in STOPWORDS:
+            continue
+        # Keep all-digit tokens at ANY length — article numbers (13, 99, 101) are
+        # the cross-lingual anchors ("Artikel 99" <-> "Article 99"). Every other
+        # token keeps the original <3-char drop, which sheds eu/ki/ai-style
+        # 2-char boilerplate and split fragments (#326).
+        if not t.isdigit() and len(t) < 3:
+            continue
+        out.add(_stem(t))
+    return out
+
+
+def token_weight(token: str) -> float:
+    """Deterministic discriminativeness weight in [0, 3.0].
+
+    Boilerplate -> 0.0 (checked first, so a denylisted *year* never gets the
+    numeric x3.0 boost). Otherwise base = clamp(len/8, 0.4, 1.0) rewards longer,
+    more-specific tokens, times a x3.0 anchor multiplier for pure article numbers
+    (the cross-lingual bridge) and x1.0 for everything else. NOT corpus-IDF:
+    IDF amplifies rare tokens and would inflate accidental matches on a
+    genuinely-novel sub-question, and degenerates on a 1-page base (#326)."""
+    if token in GENERIC_DENYLIST:
+        return 0.0
+    base = len(token) / 8.0
+    base = 0.4 if base < 0.4 else (1.0 if base > 1.0 else base)
+    return base * (3.0 if token.isdigit() else 1.0)
+
+
+def _common_prefix_len(a: str, b: str) -> int:
+    n = 0
+    for ca, cb in zip(a, b):
+        if ca != cb:
+            break
+        n += 1
+    return n
+
+
+def compound_match(t_sq: str, t_pg: str) -> bool:
+    """True if a sub-question token covers a page token. Exact match is the
+    trivial case; otherwise a length-guarded common *prefix* handles German
+    compounds (`bussgelder` ~ `bussgeldsystem`, prefix `bussgeld`=8). Prefix-only
+    (never substring) is deliberate: it rejects `system` inside
+    `risikomanagementsystem` (a suffix; common prefix "") and short `art` against
+    `artikel` (prefix `art`=3 < 5). The 0.6-of-shorter-length guard rejects
+    shared-generic-prefix false matches (`risiko…`). Denylisted tokens on either
+    side never match (#326). Symmetric: `_common_prefix_len` and every guard are
+    order-independent, so `compound_match(a, b) == compound_match(b, a)` — which
+    is what lets `claim_similarity` reuse it for a symmetric measure."""
+    if t_sq in GENERIC_DENYLIST or t_pg in GENERIC_DENYLIST:
+        return False
+    if t_sq == t_pg:
+        return True
+    cpl = _common_prefix_len(t_sq, t_pg)
+    if cpl < 5 or cpl < 0.6 * min(len(t_sq), len(t_pg)):
+        return False
+    # The shared head must itself be discriminative. Two compounds that merely
+    # share a boilerplate stem (`systemverwaltung` ~ `systeme`, common prefix
+    # `system`; `hochrisikobereich` ~ `hochrisikosystem`, common prefix
+    # `hochrisiko`) are NOT a real topical match — reject when the common prefix
+    # is a denylisted token. `bussgelder` ~ `bussgeldsystem` (prefix `bussgeld`)
+    # and `aufsichtsbehoerde` ~ `aufsicht` (prefix `aufsicht`) survive (#326).
+    return t_sq[:cpl] not in GENERIC_DENYLIST
+
+
+# --- Claim-level dedup (Finding H, #336) — symmetric, deterministic -----------
+# concept-store.py decides "do two claims assert the same fact?" — NEVER the LLM.
+# Two-stage predicate: an exact `norm_key` match (fast path), then a symmetric
+# weighted-Jaccard `claim_similarity` >= threshold. Fail-safe = keep both when
+# uncertain (a wrong merge silently destroys a distinct fact and is
+# unrecoverable; a missed merge is a visible, measurable duplicate). Built on the
+# same tokenization primitives above so dedup and coverage normalize identically.
+
+
+def norm_key(text: str) -> str:
+    """Deterministic exact-dedup key: the discriminative (weight > 0) token set,
+    sorted and space-joined. Two claim texts with the SAME non-empty norm_key
+    assert the same fact (the cheap exact path before `claim_similarity`).
+
+    Denylisted/boilerplate tokens are dropped (they carry no discriminative
+    signal), so two claims differing only in regulatory boilerplate collapse to
+    the same key. An all-boilerplate / empty claim yields `""` — callers MUST
+    treat an empty key as "no exact match" (never merge two empty keys), or
+    distinct all-boilerplate claims would false-merge."""
+    toks = sorted(t for t in tokenize(text) if token_weight(t) > 0.0)
+    return " ".join(toks)
+
+
+def claim_similarity(a: str, b: str) -> float:
+    """Symmetric weighted-Jaccard similarity of two claim texts in [0.0, 1.0].
+
+    Intersection-weight / union-weight over `token_weight`, with `compound_match`
+    handling German compounds. This is the NEAR-match half of the dedup
+    predicate (the exact half is `norm_key`). It is deliberately **symmetric** —
+    NOT `wiki-coverage.py::coverage_score`, which is *directional recall* (page
+    coverage of a sub-question). Returns 0.0 when either side has no
+    discriminative token (an all-boilerplate claim), the safe "keep both"
+    direction. A score >= the caller's threshold inherently requires >= 1 shared
+    discriminative token, so it already encodes the "shared content token" gate."""
+    ta = {t for t in tokenize(a) if token_weight(t) > 0.0}
+    tb = {t for t in tokenize(b) if token_weight(t) > 0.0}
+    if not ta or not tb:
+        return 0.0
+    wa = sum(token_weight(t) for t in ta)
+    wb = sum(token_weight(t) for t in tb)
+    matched_a = [t for t in ta if any(compound_match(t, p) for p in tb)]
+    matched_b = [p for p in tb if any(compound_match(t, p) for t in ta)]
+    # Average the two sides' matched weight — for exact matches the two sums are
+    # equal, so this reduces to the standard weighted Jaccard; for compound hits
+    # the matched tokens differ in length (hence weight) on each side, and the
+    # average keeps the measure symmetric (claim_similarity(a, b) == (b, a)).
+    inter = (sum(token_weight(t) for t in matched_a)
+             + sum(token_weight(p) for p in matched_b)) / 2.0
+    union = wa + wb - inter
+    if union <= 0.0:
+        return 0.0
+    return inter / union
+
+
+# --- concept-records parser (used by concept-store.py / knowledge-distill) -----
+# The `concept-distiller` agent has no Bash and MUST NOT hand-build JSON/YAML
+# (same #325 constraint as wiki-composer). It writes raw-text concept records;
+# `concept-store.py` parses them via this function and owns all serialization.
+# Format mirrors `parse_citation_records` — a labeled, line-oriented block list,
+# one `- title:` bullet per concept/entity, with repeatable `claim:` lines. The
+# `type` line is `concept` | `entity`; `claim:` value is
+# `<source_slug>#<claim_id> | <claim text>`.
+
+
+def _absorb_concept_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — summaries/claims contain ':'
+    key = key.strip().lower()
+    value = value.strip()
+    if key == "title":
+        item["title"] = value
+    elif key == "type":
+        item["type"] = value.lower()
+    elif key == "summary":
+        item["summary"] = value
+    elif key == "related":
+        item["related"] = [r.strip() for r in value.split(",") if r.strip()]
+    elif key == "claim":
+        # Provenance + text. Two accepted forms, disambiguated by whether the
+        # FIRST `|`-segment carries a `#` (slugs/claim-ids never contain `#`, so
+        # its presence unambiguously marks the ref form). We split on `#`/`|`
+        # positionally — NOT `split("|", 2)` — so a claim text containing ` | `
+        # (common in regulatory prose: "Article 6 | paragraph 2") is preserved
+        # verbatim in BOTH forms rather than mis-split into the provenance fields.
+        #   `<source_slug>#<claim_id> | <text…>`     (2-part ref form)
+        #   `<source_slug> | <claim_id> | <text…>`   (documented 3-part form)
+        first, sep, rest = value.partition("|")
+        if "#" in first:
+            src_slug, _, cid = first.partition("#")
+            ctext = rest if sep else ""
+        else:
+            src_slug = first
+            cid_part, sep2, ctext = rest.partition("|")
+            cid = cid_part
+            if not sep2:
+                ctext = ""  # only one `|` and no `#` → no text field → reject downstream
+        item["claims"].append({
+            "source_slug": src_slug.strip(),
+            "source_claim_id": cid.strip(),
+            "text": ctext.strip(),
+        })
+    # Unknown keys (e.g. the advisory `update:` flag) are ignored — the
+    # created-vs-updated decision is made on-disk under the lock, not here.
+
+
+def parse_concept_records(text: str) -> list[dict]:
+    """Parse a concept-distiller records file into a list of
+    `{title, type, summary, related[], claims[]}` dicts (each claim
+    `{source_slug, source_claim_id, text}`). A `- ` bullet starts a record; the
+    first field may sit inline after the bullet. Repeatable `claim:` lines
+    accumulate. Blank and `#`-comment lines are skipped. Indent-tolerant. A
+    record missing its `title:` is emitted with an empty title (NOT dropped) so
+    `concept-store.py` can surface it rather than silently lose a concept."""
+    records: list[dict] = []
+    current: dict | None = None
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
+        lstripped = raw.lstrip()
+        if not lstripped or lstripped.startswith("#"):
+            continue
+        if lstripped == "-" or lstripped.startswith("- "):
+            if current is not None:
+                records.append(current)
+            current = {"title": "", "type": "", "summary": "", "related": [], "claims": []}
+            rest = lstripped[1:].strip()
+            if rest:
+                _absorb_concept_kv(current, rest)
+        elif current is not None:
+            _absorb_concept_kv(current, lstripped)
+    if current is not None:
+        records.append(current)
+    return records
+
+
 # --- citation-records parser (used by citation-store.py build) ----------------
 # wiki-composer has no Bash and cannot run a JSON serializer, so it MUST NOT
 # hand-build citation-manifest.json — a draft_sentence with a straight `"`

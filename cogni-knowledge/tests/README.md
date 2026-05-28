@@ -54,6 +54,13 @@ the archived `knowledge-research` / `knowledge-report` chain. It fails any PR
 that re-introduces the legacy chain into the live runtime surface. (The
 archived chain itself lives under `_archive/`, outside the live test glob.)
 
+Phase 4.5 (`knowledge-distill`, #336) is covered by two files: `test_concept_store.sh`
+exercises the actual `concept-store.py` (create / cross-run compounding / claim-id
+namespacing / byte-stable re-run / foundation + no-sentinel skips), and
+`test_distill_contract.sh` is the grep-based SKILL.md + agent contract guard.
+`test_knowledge_lib.sh` covers the lifted tokenization primitives + `norm_key` /
+`claim_similarity` / `parse_concept_records`.
+
 ## Maintenance note
 
 Grep patterns assert exact layout (e.g. `| `--bare` | No |` for parameter
