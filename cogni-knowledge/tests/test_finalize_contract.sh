@@ -181,6 +181,11 @@ assert_grep 'Contradiction tripwire skipped: empty citation manifest' "$FIN" "kn
 # Step 11 surfaces the tripwire line — must mention the prefix so the
 # operator-visible warning shape is anchored.
 assert_grep 'Contradiction tripwire: ' "$FIN" "knowledge-finalize: Step 11 final summary surfaces Contradiction tripwire line (#335)"
+# Anchor the cost-line surface. It is the operator's feedback loop for the
+# v0.1.16 --contradictor opt-in flip ('if sustained > $0.05/run across real
+# bases...'). Losing it silently to a future SKILL edit would defeat the
+# gating decision the CHANGELOG promises.
+assert_grep 'Cost: \$' "$FIN" "knowledge-finalize: Step 11 surfaces tripwire Cost line (#335, sustained-cost gating)"
 # Step 5/6 subprocess must emit cited_source_slugs — the orchestrator
 # reuses page_kind_by_slug from there rather than re-resolving pages.
 assert_grep 'cited_source_slugs' "$FIN" "knowledge-finalize: Step 5/6 subprocess emits cited_source_slugs for Step 10.6 (#335)"

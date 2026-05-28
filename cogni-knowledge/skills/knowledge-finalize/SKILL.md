@@ -640,10 +640,16 @@ Phase 1 of approach **(a)** from #335 — observability-only. Dispatches the `wi
 2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue.
 3. `len(cited_source_slugs) == 0` — the citation manifest had zero **source-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] == "source"`). Log `Contradiction tripwire skipped: empty citation manifest (no source-page peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis-vs-synthesis comparison is v0.1.16 work.
 
-**Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it once and extract the contradictor inputs (mirror the Step 2 pattern that already does this for `UNSUPPORTED_COUNT` and friends). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
+**Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it into a **heredoc-quoted assignment** so a `topic` containing apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell. Then extract the contradictor inputs by piping through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
 
 ```
-COMPOSE_JSON='<verbatim Step 5/6 trailing JSON line>'
+# Heredoc with quoted 'EOF' disables ALL shell expansion (no $, no backtick,
+# no quote handling) so a topic like "L'avenir de l'AI Act" or a wiki slug
+# with shell metacharacters never trips the assignment.
+COMPOSE_JSON=$(cat <<'EOF'
+<verbatim Step 5/6 trailing JSON line>
+EOF
+)
 OUTPUT_LANGUAGE=$(printf '%s' "$COMPOSE_JSON" | python3 -c '
 import json, sys
 print((json.loads(sys.stdin.read()).get("output_language") or "en"))
@@ -659,6 +665,8 @@ slugs = (json.loads(sys.stdin.read()).get("cited_source_slugs") or [])[: int(os.
 print(",".join(slugs))
 ')
 ```
+
+Slugs are kebab-case-only by `_knowledge_lib.slugify` (transliterated, NFKD-folded, `[a-z0-9-]+` only) so the CSV is safe against embedded commas, backslashes, or quotes — `_knowledge_lib.slugify` is the structural guarantor.
 
 `N_CITED_PRE_TRUNCATION` is the pre-truncation count Step 11 needs to render `truncated at 30/<N>`; `CITED_SOURCE_SLUGS_CSV` is the post-truncation CSV the agent receives. Both stay shell variables for the dispatch + summary.
 
@@ -714,7 +722,7 @@ Print ≤ 10 lines:
   Reconcile via cogni-wiki:wiki-update --page <synthesis-slug> --reason contradiction.
   Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
   ```
-  Surface only the top 3 `high`-severity findings by name; `medium`/`low` are count-only on the header line (operator reads the JSON for the rest). `<sanitized_synthesis_excerpt>` / `<sanitized_note>` are the agent's verbatim strings with backtick / pipe / CR / LF replaced by a single space (mirror the `TOPIC` `tr '\r\n' '  '` sanitisation already used at Step 10 for the log line) so a sentence containing inline code or list markers does not break the markdown bullet structure. `<input_words>` / `<output_words>` come from `cost_estimate.input_words` / `cost_estimate.output_words` captured at Step 10.6.
+  Surface only the top 3 `high`-severity findings by name; `medium`/`low` are count-only on the header line (operator reads the JSON for the rest). `<sanitized_synthesis_excerpt>` / `<sanitized_note>` are the agent's verbatim strings with **backtick / pipe / CR / LF** all replaced by a single space — pass each through `tr '\r\n`|' '    '` (four-character set, four spaces — preserves column width) so a sentence containing inline code, a literal pipe (e.g. in a markdown-table fragment), or an embedded newline does not break the bullet structure. Same discipline-shape as the `TOPIC` `tr '\r\n' '  '` already used at Step 10 for the log line — extended to the two additional markdown-break risk characters that Step 11's bullets carry. `<input_words>` / `<output_words>` come from `cost_estimate.input_words` / `cost_estimate.output_words` captured at Step 10.6.
 
   Independent branches (not gated on `high`/`unknown`):
   - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> cited source page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors; the operator may want to investigate concurrent wiki maintenance.
@@ -732,7 +740,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - **Plan.json missing topic.** Step 3 falls back to `--synthesis-slug` if passed, else aborts cleanly.
 - **Cited source page missing on disk.** Step 5's reference-row falls back to the slug as the title AND emits **no** `[[<slug>]]` backlink (a bare link to a missing page would be a `broken_wikilink` error that fails the Step 10.5 health gate). cycle-guard's `wiki_pages_cited_missing` will list the slug; surface in Step 11 as `⚠ Missing pages: <slug1>, <slug2>` so the operator knows the wiki was modified between ingest and finalize.
 - **Duplicate binding entry without `--overwrite`.** Step 9's `append-project` returns `existing_slug` (the SKILL did NOT pass `--allow-update` because `--overwrite` was off). Steps 6–8 already landed the synthesis page → the wiki has the new page but `binding.json::research_projects[]` still records the prior deposit's `report_path` / `deposited_at`. Step 11 surfaces the loud `⚠ Binding append SKIPPED` warning verbatim from Step 9. Reconcile via `--overwrite` re-run (which passes `--allow-update` per Step 9's contract), or accept the asymmetric state — both are valid operator decisions.
-- **Re-finalize on the same draft (#335 idempotency).** Re-running finalize with `--overwrite` against the same `draft_version` overwrites `<project_path>/.metadata/contradictor-v<N>.json` (same convention as `verify-v<N>.json`). The same contradictions re-surface on each re-run — accepted Phase-1 behavior; `findings[].id` (`ctr-NNN`) is stable WITHIN one envelope but may renumber across re-runs (emission order ≠ index order). De-dup across runs defers to v0.1.16 and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)`, not on `id`.
+- **Re-finalize on the same draft (#335 idempotency).** Re-running finalize with `--overwrite` against the same `draft_version` overwrites `<project_path>/.metadata/contradictor-v<N>.json` (same convention as `verify-v<N>.json`). The agent is non-deterministic across runs at two distinct layers: (1) `findings[].id` (`ctr-NNN`) is stable WITHIN one envelope but may renumber across re-runs (emission order ≠ index order); (2) the **finding set itself may differ** — a re-run can legitimately surface a contradiction the prior run missed, or drop one the prior run flagged as `low` on doubt. The "same contradictions re-surface on each re-run" guidance applies to clear-cut `high` flips; `medium`/`low`/`unknown` carry expected cross-run variance. De-dup across runs defers to v0.1.16 and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` (not `id`) precisely so the deferred consumer joins on content, not on the unstable id.
 
 ## Out of scope
 
