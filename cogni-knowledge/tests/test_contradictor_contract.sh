@@ -84,7 +84,7 @@ assert_grep 'undercited_synthesis' "$CTR" "wiki-contradictor: names undercited_s
 assert_grep 'synthesis-vs-prior-syntheses\|synthesis-vs-synthesis\|prior `wiki/syntheses/' "$CTR" "wiki-contradictor: names synthesis-vs-synthesis as out of scope (Phase 1)"
 
 # Pillar 2 framing — the agent must be honest about partial defense.
-assert_grep 'partially defend\|Partially defends\|partial.*defend\|Phase 1' "$CTR" "wiki-contradictor: honest about partial Pillar 2 defense"
+assert_grep 'partially defend\|Partially defends\|partial.*defend' "$CTR" "wiki-contradictor: honest about partial Pillar 2 defense"
 
 # Conservative-bias discipline — the agent prompt MUST steer toward 'low'
 # on doubt. This is R1's only structural mitigation.

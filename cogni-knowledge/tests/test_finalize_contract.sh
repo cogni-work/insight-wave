@@ -112,6 +112,20 @@ for required in 'Read' 'Write' 'Bash' 'Task'; do
     errors=$((errors + 1))
   fi
 done
+# Closed-set guard: the pre-v0.1.15 'no Task' block also transitively forbade
+# network-shaped tools from sneaking in. Re-establish that floor explicitly so
+# a future PR that adds WebFetch / WebSearch / Edit to allowed-tools fails
+# loudly (Step 10.6 dispatches a zero-network agent; finalize itself must
+# stay zero-network and zero-mutation-outside-the-Python-heredoc).
+for forbidden in 'WebFetch' 'WebSearch' 'Edit' 'NotebookEdit'; do
+  if echo "$FIN_TOOLS_LINE" | grep -q "$forbidden"; then
+    red "FAIL: knowledge-finalize: allowed-tools must NOT include $forbidden (zero-network / no-mutation contract beyond the existing Bash heredoc surface)"
+    red "  got: $FIN_TOOLS_LINE"
+    errors=$((errors + 1))
+  else
+    green "PASS: knowledge-finalize: allowed-tools omits $forbidden (zero-network contract)"
+  fi
+done
 
 # --- Slice 16 (#308/#307/#306): wiki conformance -------------------------
 # Reference backlinks must be BARE [[<slug>]] so the synthesis->source edge
@@ -150,6 +164,11 @@ assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: synthesis still f
 # before Step 11.
 assert_grep '### 10.6 Contradiction tripwire' "$FIN" "knowledge-finalize: Step 10.6 heading present (#335)"
 assert_grep 'wiki-contradictor' "$FIN" "knowledge-finalize: Step 10.6 dispatches wiki-contradictor agent (#335)"
+# Anchor the literal dispatch syntax, not just a prose mention. The bare
+# `wiki-contradictor` token also appears in the SKILL's description/Output/
+# References blocks, so a maintainer could strip the actual Task(...) call
+# while keeping the prose and the test would still pass without this anchor.
+assert_grep 'Task(wiki-contradictor' "$FIN" "knowledge-finalize: Step 10.6 contains the literal Task(wiki-contradictor ...) dispatch (#335)"
 assert_grep 'contradictor-v' "$FIN" "knowledge-finalize: Step 10.6 writes contradictor-v<N>.json output artifact (#335)"
 assert_grep '\-\-no-contradictor' "$FIN" "knowledge-finalize: --no-contradictor opt-out flag documented in Parameters table (#335, R1)"
 assert_grep '#335' "$FIN" "knowledge-finalize: Step 10.6 references issue #335"

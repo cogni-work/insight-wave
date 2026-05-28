@@ -45,7 +45,7 @@ This step partially defends `references/differentiation-thesis.md` Pillar 2 (*"C
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
 | `PROJECT_PATH` | Yes | Absolute path to the project directory. Used only to derive the default `CONTRADICTOR_OUT_PATH`. |
 | `SYNTHESIS_PAGE_PATH` | Yes | Absolute path to the just-deposited synthesis page (`<WIKI_ROOT>/wiki/syntheses/<SYNTHESIS_SLUG>.md`). The orchestrator threads this from Step 6's deposit. |
-| `CITED_SOURCE_SLUGS` | Yes | Comma-separated list of source-page slugs to compare the synthesis against. The orchestrator filters `citation-manifest.json::citations[].wiki_slug` to `page_kind_by_slug[slug] == "source"` (synthesis-page citations are excluded — synthesis pages have no `pre_extracted_claims:` for Phase 1's source-vs-synthesis surface). Empty/blank => the orchestrator skips this step before dispatching. Hard cap: 30 slugs; the orchestrator truncates above that and emits `compared_against.truncated_at: 30`. |
+| `CITED_SOURCE_SLUGS` | Yes | Comma-separated list of source-page slugs to compare the synthesis against. The orchestrator filters `citation-manifest.json::citations[].wiki_slug` to `page_kind_by_slug[slug] == "source"` (synthesis-page citations are excluded — synthesis pages have no `pre_extracted_claims:` for Phase 1's source-vs-synthesis surface). Empty/blank => the orchestrator skips this step before dispatching. Hard cap: 30 slugs; the orchestrator truncates above that and surfaces the truncation as a Step 11 warning (`⚠ contradiction tripwire truncated at 30/<N>`). The agent only ever sees the post-truncation CSV — it has no way to know the original `N` and therefore does NOT emit a `truncated_at` field. Truncation is the orchestrator's signal to surface; the on-disk envelope records exactly what was scored, never what was dropped. |
 | `OUTPUT_LANGUAGE` | Yes | The language the synthesis and its sources are written in (from `plan.json::output_language`, default `"en"`). You operate in this language natively — never translate. Cross-language scoring (DE↔EN sources) is approach (c) territory and explicitly out of scope. |
 | `DRAFT_VERSION` | Yes | Integer N. Drives the output filename (`contradictor-v{N}.json`). |
 | `CONTRADICTOR_OUT_PATH` | Yes | Absolute path where you `Write` the JSON envelope. Default `<PROJECT_PATH>/.metadata/contradictor-v{DRAFT_VERSION}.json`; the orchestrator threads it explicitly so a re-finalize on the same draft overwrites a single canonical file (matches `verify-v{N}.json` convention). |
@@ -58,15 +58,19 @@ Phase 0 (load context) → Phase 1 (score per sentence) → Phase 2 (write + ver
 
 ### Phase 0: Load context
 
-1. `Read` `SYNTHESIS_PAGE_PATH`. Parse the YAML frontmatter using the same line-by-line stdlib idiom `wiki-verifier.md` Phase 0 uses — match `^---\n(.*?)\n---\n` greedily on the first frontmatter block, then split top-level scalars. Capture `synthesis_slug` (frontmatter `id`) and the synthesis body (everything after the frontmatter close `---`). You will NOT use `import yaml` — it is not stdlib. If the synthesis page is unreadable or carries no frontmatter, return the `synthesis_unreadable` envelope (Phase 3) — do not attempt scoring against a phantom body.
+1. `Read` `SYNTHESIS_PAGE_PATH`. Parse the YAML frontmatter using the same line-by-line stdlib idiom `wiki-verifier.md` Phase 0 uses — match `^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)` greedily on the first frontmatter block (the CRLF-tolerant shape `_knowledge_lib._FRONTMATTER_RE` enforces — Windows-edited pages and trailing-whitespace `---` markers must both match), then split top-level scalars. Capture `synthesis_slug` (frontmatter `id`) and the synthesis body (everything after the frontmatter close `---`). You will NOT use `import yaml` — it is not stdlib. If the synthesis page is unreadable or carries no frontmatter, return the `synthesis_unreadable` envelope (Phase 3) — do not attempt scoring against a phantom body.
 
 2. Parse `CITED_SOURCE_SLUGS` as a comma-separated list. Strip whitespace; drop empty entries. For each slug, resolve `<WIKI_ROOT>/wiki/sources/<slug>.md`:
    - If the file exists, `Read` it and parse `pre_extracted_claims:` from frontmatter into `claims_by_slug[slug] = [{claim_id, text, excerpt_quote}, ...]`. An absent or empty `pre_extracted_claims:` block (rare on a source page — `claim-extractor` runs on every Phase-4 ingest) yields an empty list for that slug; do not crash.
-   - If the file does NOT exist, record the slug in `missing_pages[]` and continue. A cited page that disappeared between Step 6 and Step 10.6 is rare but possible (concurrent wiki maintenance); surface it in the envelope and skip.
+   - If the file does NOT exist, record the slug in `compared_against.missing_pages[]` and continue. A cited page that disappeared between Step 6 and Step 10.6 is rare but possible (concurrent wiki maintenance); surface it in the envelope and skip. Note that the orchestrator pre-filters `CITED_SOURCE_SLUGS` to existing source pages at Step 5/6, so a non-empty `missing_pages[]` necessarily signals a TOCTOU race between orchestrator resolution and your read — not a bug in the orchestrator's slug list.
 
-3. Build a simple sentence list from the synthesis body. Split on `[.!?]\s+` boundaries, then strip leading/trailing whitespace from each candidate. Drop sentences shorter than ~30 characters (almost certainly non-assertive — list items, fragments). Keep the original index `i` for each kept sentence so `findings[].id` is stable across re-runs.
+3. **Strip the auto-generated reference section before sentence-splitting.** The synthesis body ends with a `## References` (or localized `## Referenzen` — see `_knowledge_lib.ref_heading`) block of `**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]` rows that `knowledge-finalize` Step 6 wrote from the citation manifest. Those rows pass the assertive pre-filter on their digits + publisher names + URLs but contain ZERO original synthesis claims — scoring them against cited sources is guaranteed false-positive surface. Drop everything from the localized `## <ref-heading>` line through end-of-body BEFORE building the sentence list. The reference rows are an artifact of finalize's deposit, not synthesis prose.
 
-4. Pre-filter the sentence list to *assertive* sentences only. A sentence is assertive when it contains at least one of: a digit (numeric claim or year), an uppercase letter mid-sentence (named entity / proper noun), or a date keyword (`January`/`Januar`/…, `Q1`/`Q2`/…, `deadline`/`Frist`/…). Non-assertive sentences cannot structurally contradict pre-extracted claims (which are themselves assertive by construction). Track the kept count for `cost_estimate`.
+4. Build a simple sentence list from the (reference-stripped) synthesis body. Append a trailing whitespace to the body before splitting so the final sentence's terminal punctuation matches `[.!?]\s+` — without this, a body ending `… 12 months.` (no trailing newline) lumps the headline numeric claim with the previous sentence or drops it under the 30-char floor. Split on `[.!?]\s+` boundaries, strip leading/trailing whitespace, then drop sentences shorter than ~30 characters (almost certainly non-assertive — list items, fragments). Keep the original index `i` for each kept sentence — re-runs may renumber `findings[].id` (emission order is not index order), so any stability guarantee on `id` holds only within a single envelope, not across re-finalizes.
+
+5. Pre-filter the sentence list to *assertive* sentences only. A sentence is assertive when it contains at least one of: a digit (numeric claim or year), an entity-shaped uppercase token (proper noun — see language-specific note below), or a date keyword (`January`/`Januar`/`janvier`/`gennaio`/`enero`/…, `Q1`/`Q2`/…, `deadline`/`Frist`/`délai`/`scadenza`/`plazo`/…). Non-assertive sentences cannot structurally contradict pre-extracted claims (which are themselves assertive by construction). Track the kept count for `cost_estimate`.
+
+   **Language-specific note on uppercase tokens.** German common nouns are capitalized mid-sentence, so for `OUTPUT_LANGUAGE=de` the uppercase-token signal is structurally an all-pass and must NOT be used as the sole assertive signal — fall back to digits + date keywords only on DE bases. EN/FR/IT/PL/NL/ES treat mid-sentence uppercase as the standard proper-noun signal. Cross-language scoring is approach (c) territory and out of scope — a finding that requires translation to detect is correctly emitted as `unknown` or skipped (Phase 1 discipline below).
 
 ### Phase 1: Score per assertive sentence
 
@@ -88,7 +92,7 @@ For each `contradiction` finding, set `severity`:
 **Discipline:**
 
 - Default to `low` on doubt. Promote to `medium` only when scope overlap is clearly established. Promote to `high` only when the same entity/quantity flips.
-- Score each (sentence, claim) pair at most once. The same sentence may legitimately contradict claims on multiple sources — emit one finding per (sentence, source) pair, not per claim.
+- **Emit ONE finding per (sentence, source) pair, not per claim.** When a sentence contradicts multiple claims on the same source, pick the most severe one (highest-severity match wins; ties broken by `claim_id` lexical order) and record only that pair. The other contradicting claims are summarised in the `note` (e.g. `"synthesis asserts 12-month EU-wide deadline; cited source has 24-month transition (clm-004) AND Germany-only scope (clm-007)"`). This keeps the v0.1.16 de-dup key `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` unambiguous.
 - A single sentence will rarely contradict more than 2 sources cleanly; if you find yourself emitting more, your bar is too loose — re-read with conservative discipline.
 
 Each finding entry shape:
@@ -106,7 +110,7 @@ Each finding entry shape:
 }
 ```
 
-`id` is `ctr-001`, `ctr-002`, … in emission order — stable join key for any future consumer.
+`id` is `ctr-001`, `ctr-002`, … in emission order within the current envelope — stable join key WITHIN one `contradictor-v<N>.json`, but **not stable across re-runs**: a re-finalize on the same draft may notice findings in a different order and assign different `ctr-NNN` ids. Cross-run de-dup is v0.1.16 work and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` — not `id`.
 
 ### Phase 2: Write + verify
 
@@ -153,11 +157,13 @@ Return a compact JSON envelope via the Task return path — and nothing else in 
 {"ok": true,
  "contradictor_path": "<the CONTRADICTOR_OUT_PATH you wrote — e.g. .metadata/contradictor-v3.json>",
  "counts": {"contradiction": 1, "unknown": 0, "total": 1, "high": 1, "medium": 0, "low": 0},
- "missing_pages": [],
- "cost_estimate": {"input_words": 4200, "output_words": 110, "estimated_usd": 0.044}}
+ "compared_against": {"source_count": 2, "missing_pages": []},
+ "cost_estimate": {"input_words": 4200, "output_words": 110, "estimated_usd": 0.011}}
 ```
 
-`cost_estimate.input_words` ≈ word count of the synthesis body + every cited source page's `pre_extracted_claims:` block you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Use the same Sonnet pricing constants `wiki-verifier.md` uses for `estimated_usd` so the dashboard surfaces are comparable.
+`compared_against` is the single source of truth for the `sources[]` actually scored, `source_count`, and `missing_pages[]` — both on-disk (Phase 2 written envelope) and in the Task return value. Do NOT emit `missing_pages` at the top level of the envelope — duplicating a single datum in two locations bakes in schema drift the moment one copy is updated and the other is not.
+
+`cost_estimate.input_words` ≈ word count of the synthesis body + every cited source page's `pre_extracted_claims:` block you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` using the Sonnet pricing constants from `cogni-research/references/model-strategy.md` — at the v0.1.15 fork point: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`. (The 4200/110 example above resolves to ~$0.0094 + $0.00124 ≈ $0.011, NOT $0.044 — the original draft's $0.044 anchored on the wrong constant.)
 
 **Synthesis unreadable** (Phase 0 step 1 failed):
 
@@ -199,7 +205,7 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - A cited source page slug whose `wiki/sources/<slug>.md` does not exist on disk lands in `compared_against.missing_pages[]`. The remaining sources are still scored (best-effort), so a single concurrent deletion does not abort the run.
 - A cited source page with empty `pre_extracted_claims:` is scored as if it carried no comparable claims — no findings against it, no error. This is rare on a real source page; it is most likely a malformed ingest.
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch, count invariant fails) is a phantom write. Retry once; on second failure return `write_failed`.
-- A request to compare against more than 30 source slugs is the orchestrator's responsibility to truncate (`compared_against.truncated_at: 30`); the agent itself never silently drops slugs without surfacing.
+- A request to compare against more than 30 source slugs is the orchestrator's responsibility to truncate (Step 10.6 in `knowledge-finalize`'s SKILL.md), and the orchestrator surfaces the truncation as a Step 11 warning. The agent only ever sees the post-truncation CSV and scores exactly what it sees — it does not silently drop slugs and does not emit a truncation marker (it lacks the pre-truncation N).
 
 ## Phase 1 scope reminders (v0.1.15, #335)
 
