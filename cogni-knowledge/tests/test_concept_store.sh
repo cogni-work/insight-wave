@@ -2,7 +2,7 @@
 # test_concept_store.sh — smoke test for concept-store.py (Phase 4.5, #336).
 #
 # Asserts:
-#   1. init creates an empty distill-manifest.json (schema 0.1.0), idempotent.
+#   1. init creates an empty distill-manifest.json (schema 0.1.1), idempotent.
 #   2. merge CREATE: a concept + an entity page land on disk with the expected
 #      frontmatter (wiki:// sources, distilled_claims, status: distilled),
 #      MACHINE-OWNED sentinels, and bare [[source-slug]] backlinks in the body.
@@ -273,6 +273,80 @@ cat > "$PROJ6/.metadata/recupd.txt" <<'EOF'
 EOF
 OUT=$(python3 "$SCRIPT" merge --records "$PROJ6/.metadata/recupd.txt" --wiki-root "$WIKI" --project-path "$PROJ6" --project-slug proj-upd --wiki-scripts-dir "$WSD")
 echo "$OUT" | grep -q '"near_existing_total": 0' && green "PASS: updated path never fires the tripwire" || { red "FAIL: tripwire fired on update"; errors=$((errors+1)); }
+
+# --- 13. QUOTED frontmatter title parses correctly ---------------------------
+# Hand-place a page whose `title:` value is JSON-double-quoted (the writer's
+# own format, but here pre-seeded directly so we explicitly cover the
+# _unquote_scalar path through _read_page_title — not just the implicit
+# round-trip from Step 2's merge-created page). A proposal whose title shares
+# discriminative tokens must trip, AND the manifest's near_title must carry
+# the UNQUOTED value (proving the parser stripped the quotes — if it didn't,
+# the warning text in Step 9 of the SKILL would print the literal `"Regulatory
+# Sandbox"` with quotes).
+cat > "$WIKI/wiki/concepts/regulatory-sandbox.md" <<'EOF'
+---
+id: regulatory-sandbox
+title: "Regulatory Sandbox"
+type: concept
+created: 2026-01-01
+updated: 2026-01-01
+---
+# Regulatory Sandbox
+EOF
+PROJ7="$WORK/project7"; mkdir -p "$PROJ7/.metadata"
+cat > "$PROJ7/.metadata/recquoted.txt" <<'EOF'
+- title: Regulatory Sandbox Pilot
+  type: concept
+  claim: src-a#clm-100 | The sandbox pilot runs for twelve months.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ7/.metadata/recquoted.txt" --wiki-root "$WIKI" --project-path "$PROJ7" --project-slug proj-quoted --wiki-scripts-dir "$WSD")
+echo "$OUT" | grep -q '"near_existing_total": 1' && green "PASS: quoted title parsed — tripwire fires" || { red "FAIL: quoted title not parsed (tripwire silent)"; errors=$((errors+1)); }
+echo "$OUT" | grep -q '"near_title": "Regulatory Sandbox"' && green "PASS: quoted title round-trips UNQUOTED in manifest" || { red "FAIL: near_title kept literal quotes"; errors=$((errors+1)); }
+echo "$OUT" | grep -q '"near_slug": "regulatory-sandbox"' && green "PASS: quoted title near_slug points at the pre-seeded page" || { red "FAIL: near_slug wrong on quoted title"; errors=$((errors+1)); }
+
+# --- 14. MISSING title key silently degrades to "" ---------------------------
+# Regression guard against the dropped stem-fallback (review-cycle fix in
+# be870e2f). A page with no `title:` key in frontmatter must yield `""` from
+# _read_page_title — claim_similarity("", anything) == 0.0, so the page is
+# silently excluded from the tripwire. If the fallback ever comes back (e.g.
+# `title or page_path.stem`), this test trips because the slug `quantum-research`
+# folds to tokens that share `quantum`+`research` with the proposal — i.e. a
+# false-positive warning against a broken page.
+cat > "$WIKI/wiki/concepts/quantum-research.md" <<'EOF'
+---
+id: quantum-research
+type: concept
+created: 2026-01-01
+updated: 2026-01-01
+---
+# (no title key in frontmatter)
+EOF
+PROJ8="$WORK/project8"; mkdir -p "$PROJ8/.metadata"
+cat > "$PROJ8/.metadata/recnotitle.txt" <<'EOF'
+- title: Quantum Research Methods
+  type: concept
+  claim: src-a#clm-110 | Quantum research methods include lattice simulation.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ8/.metadata/recnotitle.txt" --wiki-root "$WIKI" --project-path "$PROJ8" --project-slug proj-notitle --wiki-scripts-dir "$WSD")
+echo "$OUT" | grep -q '"near_existing_total": 0' && green "PASS: missing title key silently excluded from tripwire" || { red "FAIL: missing title fell through to slug fallback (false positive)"; errors=$((errors+1)); }
+
+# --- 15. CROSS-TYPE matching (concept proposal trips on entity page) ---------
+# The title index spans BOTH concepts/ and entities/, so a new concept whose
+# title is similar to an existing ENTITY (or vice versa) must trip. Reuses the
+# `european-commission` entity created at Step 2. A new concept "European
+# Commission Procedures" shares european+commission (score > 0.65), so the
+# tripwire must fire AND `near_type` must report "entity" — proving cross-type
+# coverage isn't a concept-only or entity-only blind spot.
+PROJ9="$WORK/project9"; mkdir -p "$PROJ9/.metadata"
+cat > "$PROJ9/.metadata/reccross.txt" <<'EOF'
+- title: European Commission Procedures
+  type: concept
+  claim: src-a#clm-120 | The Commission publishes procedural rules for delegated acts.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ9/.metadata/reccross.txt" --wiki-root "$WIKI" --project-path "$PROJ9" --project-slug proj-cross --wiki-scripts-dir "$WSD")
+echo "$OUT" | grep -q '"near_existing_total": 1' && green "PASS: cross-type match (concept → entity) trips" || { red "FAIL: cross-type tripwire silent"; errors=$((errors+1)); }
+echo "$OUT" | grep -q '"near_type": "entity"' && green "PASS: cross-type near_type reports entity" || { red "FAIL: near_type not 'entity' on cross-type match"; errors=$((errors+1)); }
+echo "$OUT" | grep -q '"near_slug": "european-commission"' && green "PASS: cross-type near_slug points at the entity page" || { red "FAIL: cross-type near_slug wrong"; errors=$((errors+1)); }
 
 echo ""
 if [ "$errors" -eq 0 ]; then

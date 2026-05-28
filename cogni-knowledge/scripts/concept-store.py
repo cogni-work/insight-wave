@@ -28,7 +28,7 @@ made UNDER the lock by on-disk slug existence (never by the manifest), so a cras
 between page-write and manifest-write cannot double-create.
 
 Subcommands:
-  init            Create an empty distill-manifest.json (schema 0.1.0). Idempotent.
+  init            Create an empty distill-manifest.json (schema 0.1.1). Idempotent.
   merge           Parse the distiller's --records file, merge each proposal into
                   its concept/entity page under the lock (slug derived here via
                   _knowledge_lib.slugify — orchestrator-owns-slug discipline), and

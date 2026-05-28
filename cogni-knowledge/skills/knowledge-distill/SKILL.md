@@ -287,7 +287,7 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
-- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.0) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`.
+- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`.
 
 ## References
 
