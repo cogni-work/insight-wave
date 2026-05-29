@@ -327,10 +327,18 @@ def renumber_inline_citations(body: str) -> str:
 # (the verify prefilter) only ever uses a successful parse to ADD a `verbatim`
 # verdict it is certain of; a parse miss simply leaves the citation for the LLM
 # verifier. Correctness is therefore independent of this parser's completeness.
+# The same fail-safe pattern is reused by `parse_distilled_claims` (below) for the
+# `distilled_claims:` block on concept/entity pages — only the `text` field is
+# extracted, because the coverage scorer (the only outside reader of that block)
+# does not need the writer-side metadata that concept-store.py keeps private.
 
 _FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 _CLAIMS_KEY_RE = re.compile(r"^pre_extracted_claims[ \t]*:[ \t]*$")
 _WANTED_CLAIM_KEYS = ("id", "text", "excerpt_quote")
+# concept/entity pages (written by concept-store.py) carry `distilled_claims:`
+# instead — the coverage scorer reads only `text` from it (see parse_distilled_claims).
+_DISTILLED_KEY_RE = re.compile(r"^distilled_claims[ \t]*:[ \t]*$")
+_DISTILLED_WANTED_KEYS = ("text",)
 # A YAML block-scalar header: `|` / `>` with an optional indent digit and/or
 # chomping indicator (`-`/`+`). The actual text lives on the following indented
 # lines, which this single-line parser does not assemble.
@@ -428,6 +436,84 @@ def parse_pre_extracted_claims(page_text: str) -> list[dict]:
                 _absorb_claim_kv(current, rest)
         elif current is not None:
             _absorb_claim_kv(current, stripped)
+    if current is not None:
+        claims.append(current)
+    return claims
+
+
+# --- distilled_claims block-list parser (used by wiki-coverage.py) ------------
+# concept-store.py writes `distilled_claims:` on concept/entity pages with a
+# richer field set (claim_id / norm_key / backlinks / source_claim_refs /
+# created / updated). The coverage scorer only needs `text:` — the lib reader
+# stays narrow on purpose; the writer-side metadata is concept-store-private and
+# lives in concept-store.py::_parse_distilled_claims. Fail-safe: a parse miss
+# returns [] (the page degrades to title+summary+tag signal only — never a false
+# `covered`).
+
+
+def _absorb_distilled_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — free-text values may contain ':'
+    key = key.strip()
+    if key not in _DISTILLED_WANTED_KEYS:
+        return
+    value = value.strip()
+    # Block-scalar header (`|` / `>`): the text lives on following indented lines
+    # this single-line parser does not assemble — skip so the page degrades to
+    # title+tag signal rather than capturing a bare 1-char indicator.
+    if _BLOCK_SCALAR_RE.match(value):
+        return
+    if value[:1] not in ('"', "'"):
+        hash_pos = value.find(" #")
+        if hash_pos != -1:
+            value = value[:hash_pos].rstrip()
+    item[key] = _unquote_scalar(value)
+
+
+def parse_distilled_claims(page_text: str) -> list[dict]:
+    """Extract `[{text}, …]` from a wiki page's `distilled_claims:` frontmatter
+    block (concept/entity pages, written by concept-store.py). Returns [] for any
+    page without a parseable block — including the inline `distilled_claims: []`
+    empty form, which `_DISTILLED_KEY_RE` (key-on-its-own-line) deliberately does
+    not match. Tolerant of indent width and of the first key sitting inline after
+    the `- ` bullet. Only `text` is absorbed; the writer-side metadata
+    (claim_id / norm_key / backlinks / source_claim_refs / dates) is ignored."""
+    if not page_text:
+        return []
+    m = _FRONTMATTER_RE.match(page_text)
+    if not m:
+        return []
+    lines = m.group(1).splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if _DISTILLED_KEY_RE.match(line):
+            start = i + 1
+            break
+    if start is None:
+        return []
+    block: list[str] = []
+    for line in lines[start:]:
+        stripped = line.strip()
+        if stripped == "" or line[:1] in (" ", "\t") or stripped == "-" or stripped.startswith("- "):
+            block.append(line)
+        else:
+            break
+    claims: list[dict] = []
+    current: dict | None = None
+    for line in block:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped == "-" or stripped.startswith("- "):
+            if current is not None:
+                claims.append(current)
+            current = {}
+            rest = stripped[1:].strip()
+            if rest:
+                _absorb_distilled_kv(current, rest)
+        elif current is not None:
+            _absorb_distilled_kv(current, stripped)
     if current is not None:
         claims.append(current)
     return claims

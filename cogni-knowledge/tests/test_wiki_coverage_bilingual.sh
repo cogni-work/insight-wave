@@ -42,6 +42,13 @@
 #      `search_guidance` carries terms present on the German pages stays
 #      `uncovered` — _sq_tokens no longer tokenizes `search_guidance`. Re-add it
 #      and this flips to `partial` (matched the governance page via leaked tokens).
+#  10. A concept page distilled from multiple sources surfaces as a covering page
+#      for an integrative sub-question that no single source covers strongly
+#      enough on its own — proves the new concept/entity branch in _collect_pages
+#      (the #343 multiplicative-compounding payoff).
+#  11. A concept page with `distilled_claims: []` contributes only title/tag
+#      signal — guards against a parser regression that would silently fall back
+#      to source-style claim parsing or fabricate coverage from an empty block.
 #
 # bash 3.2 + python3 stdlib only (no pytest, no pip). Matches tests/README.md.
 
@@ -372,6 +379,154 @@ import os, json
 d = json.loads(os.environ["PAYLOAD"])
 sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
 assert sq["sq-art2"]["coverage_verdict"] == "uncovered", sq["sq-art2"]
+print("OK")
+PY
+
+# --- Case CN-1 (#343): a concept page covers a sub-question that no single source does
+# Builds a wiki where THREE sources each touch one fragment of a topic (Art 51 GPAI
+# threshold, Art 52 reporting, Art 53 transparency), but no single source carries
+# enough overlap to cover an integrative sub-question. A concept page distilled
+# from all three carries the unified token surface in distilled_claims[].text.
+# Without this PR the sub-question stays `uncovered` (each source alone falls below
+# the matched-weight floor). With this PR the concept page surfaces the unified
+# coverage and the SQ flips to `covered` (or at minimum `partial`). The asserted
+# covered_pages[].type == "concept" is the load-bearing proof that the new branch
+# in _collect_pages actually fires.
+WIKI3="$WORK/wiki3"
+mkdir -p "$WIKI3/wiki/sources" "$WIKI3/wiki/syntheses" "$WIKI3/wiki/concepts" "$WIKI3/wiki/entities"
+
+cat > "$WIKI3/wiki/sources/article-51-thresholds.md" <<'MD'
+---
+id: article-51-thresholds
+title: "Article 51 — GPAI thresholds"
+type: source
+tags: [source]
+pre_extracted_claims:
+  - id: c1
+    text: "Artikel 51 definiert Schwellenwerte fuer allgemeine KI-Modelle."
+---
+# body
+MD
+
+cat > "$WIKI3/wiki/sources/article-52-reporting.md" <<'MD'
+---
+id: article-52-reporting
+title: "Article 52 — reporting"
+type: source
+tags: [source]
+pre_extracted_claims:
+  - id: c1
+    text: "Artikel 52 regelt Meldepflichten fuer Anbieter."
+---
+# body
+MD
+
+cat > "$WIKI3/wiki/sources/article-53-transparency.md" <<'MD'
+---
+id: article-53-transparency
+title: "Article 53 — transparency"
+type: source
+tags: [source]
+pre_extracted_claims:
+  - id: c1
+    text: "Artikel 53 schreibt Transparenzpflichten vor."
+---
+# body
+MD
+
+cat > "$WIKI3/wiki/concepts/gpai-regime.md" <<'MD'
+---
+id: gpai-regime
+title: "GPAI-Regime — Schwellenwerte, Meldepflichten und Transparenz"
+type: concept
+tags: [concept]
+distilled_claims:
+  - claim_id: dcl-001
+    text: "Das GPAI-Regime der KI-Verordnung kombiniert Schwellenwerte aus Artikel 51, Meldepflichten aus Artikel 52 und Transparenzpflichten aus Artikel 53 zu einem einheitlichen Pflichtenkanon fuer Allzweck-KI-Anbieter."
+    norm_key: ""
+    backlinks: ["article-51-thresholds","article-52-reporting","article-53-transparency"]
+    source_claim_refs: ["article-51-thresholds#c1","article-52-reporting#c1","article-53-transparency#c1"]
+    created: "2026-05-29"
+    updated: "2026-05-29"
+  - claim_id: dcl-002
+    text: "Allgemeine KI-Modelle ab dem Schwellenwert nach Artikel 51 unterliegen Melde- und Transparenzpflichten der Artikel 52 und 53."
+    norm_key: ""
+    backlinks: ["article-51-thresholds","article-52-reporting","article-53-transparency"]
+    source_claim_refs: ["article-51-thresholds#c1","article-52-reporting#c1","article-53-transparency#c1"]
+    created: "2026-05-29"
+    updated: "2026-05-29"
+---
+# GPAI-Regime
+body
+MD
+
+cat > "$WIKI3/wiki/index.md" <<'MD'
+# Index
+### Sanktionen
+- [[article-51-thresholds]] — Artikel 51 definiert Schwellenwerte fuer allgemeine KI-Modelle.
+- [[article-52-reporting]] — Artikel 52 regelt Meldepflichten fuer Anbieter.
+- [[article-53-transparency]] — Artikel 53 schreibt Transparenzpflichten vor.
+### Concepts
+- [[gpai-regime]] — GPAI-Regime: Schwellenwerte, Meldepflichten und Transparenz kombiniert.
+MD
+
+cat > "$WORK/plan-cn1.json" <<'JSON'
+{"schema_version": "0.1.0", "sub_questions": [
+  {"id": "sq-gpai-integrated",
+   "query": "GPAI Schwellenwerte Meldepflichten Transparenz Artikel 51 52 53",
+   "theme_label": "GPAI-Regime",
+   "search_guidance": "Allzweck-KI Pflichten"}
+]}
+JSON
+
+run_score_ok "concept-page-covers-integrated-SQ" "$WIKI3" "$WORK/plan-cn1.json"
+check "CN-1: a concept page distilled from 3 sources covers an integrative SQ (covered_pages[].type == 'concept')" "$OUT" <<'PY'
+import os, json
+d = json.loads(os.environ["PAYLOAD"])
+sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
+g = sq["sq-gpai-integrated"]
+assert g["coverage_verdict"] in ("covered", "partial"), g["coverage_verdict"]
+types = [c["type"] for c in g["covered_pages"]]
+assert "concept" in types, types
+slugs = [c["slug"] for c in g["covered_pages"]]
+assert "gpai-regime" in slugs, slugs
+print("OK")
+PY
+
+# --- Case CN-2 (#343): an empty distilled_claims:[] block contributes only title/tag signal
+# Guards against a parser regression that "falls through" to source-style claim
+# parsing on a concept page or fabricates coverage from an empty block. The
+# fixture's concept page has an empty claims block and a deliberately weak title;
+# the SQ matches nothing meaningful and must stay `uncovered`.
+WIKI4="$WORK/wiki4"
+mkdir -p "$WIKI4/wiki/sources" "$WIKI4/wiki/syntheses" "$WIKI4/wiki/concepts" "$WIKI4/wiki/entities"
+cat > "$WIKI4/wiki/concepts/empty-distillation.md" <<'MD'
+---
+id: empty-distillation
+title: "Platzhalter"
+type: concept
+tags: [concept]
+distilled_claims: []
+---
+# Platzhalter
+MD
+cat > "$WIKI4/wiki/index.md" <<'MD'
+# Index
+### Concepts
+- [[empty-distillation]] — Platzhalter ohne distillierten Inhalt.
+MD
+cat > "$WORK/plan-cn2.json" <<'JSON'
+{"schema_version": "0.1.0", "sub_questions": [
+  {"id": "sq-art2-novel", "query": "Artikel 2 Geltungsbereich Anwendungsbereich",
+   "theme_label": "Geltungsbereich", "search_guidance": "Anwendungsbereich"}
+]}
+JSON
+run_score_ok "empty-distilled-claims-no-false-cover" "$WIKI4" "$WORK/plan-cn2.json"
+check "CN-2: an empty distilled_claims:[] block does NOT fabricate coverage" "$OUT" <<'PY'
+import os, json
+d = json.loads(os.environ["PAYLOAD"])
+sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
+assert sq["sq-art2-novel"]["coverage_verdict"] == "uncovered", sq["sq-art2-novel"]
 print("OK")
 PY
 

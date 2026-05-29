@@ -41,8 +41,11 @@ substring (which would re-introduce `system`-inside-`…system` false matches).
 A page covers a sub-question only when both the recall ratio AND an absolute
 matched-weight floor clear — the floor is what keeps genuinely-novel
 sub-questions `uncovered`. Page signal = title + index one-liner + tags +
-`pre_extracted_claims[].text` (the richest target-language content). Frontmatter
-scalar + claims parsing reuse `_knowledge_lib`.
+per-type claim text: `pre_extracted_claims[].text` on source/synthesis pages
+(the richest target-language content from a single source), `distilled_claims[].text`
+on concept/entity pages (cross-source-distilled facts, the richest signal per
+byte — #343). Both fields are extracted by stdlib-only parsers in `_knowledge_lib`;
+frontmatter scalar parsing reuses the same module.
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -64,6 +67,7 @@ from _knowledge_lib import (  # noqa: E402
     _FRONTMATTER_RE,
     _unquote_scalar,
     compound_match,
+    parse_distilled_claims,
     parse_pre_extracted_claims,
     token_weight,
     tokenize,
@@ -91,7 +95,12 @@ MAX_CLAIMS_PER_PAGE = 8
 # Page-type → wiki subdirectory. Plural of "synthesis" is "syntheses", NOT
 # "synthesiss" — so emit the resolved relative path per page and never let a
 # consumer pluralize `type` itself.
-_TYPE_DIRS = {"source": "sources", "synthesis": "syntheses"}
+_TYPE_DIRS = {
+    "source": "sources",
+    "synthesis": "syntheses",
+    "concept": "concepts",
+    "entity": "entities",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -228,9 +237,16 @@ def _collect_pages(wiki_root: Path) -> list[dict]:
             # Claim text is the richest TARGET-LANGUAGE signal — a German source
             # page keeps an English title but its claims are German (#326). Pull
             # only `.text` (skip the often-English `excerpt_quote`), capped so a
-            # claim-heavy page doesn't swamp the token set. Reuses
-            # _knowledge_lib.parse_pre_extracted_claims on the already-read text.
-            claims = parse_pre_extracted_claims(page_text)
+            # claim-heavy page doesn't swamp the token set. Per-type claim block:
+            # source/synthesis carry `pre_extracted_claims:` (a per-source claim
+            # list written by the ingester); concept/entity carry `distilled_claims:`
+            # (cross-source-distilled facts written by concept-store.py, #336/#343).
+            # Same fail-safe contract for both: a parse miss returns [] and the page
+            # degrades to title+summary+tag signal only — never a false `covered`.
+            if ptype in ("concept", "entity"):
+                claims = parse_distilled_claims(page_text)
+            else:
+                claims = parse_pre_extracted_claims(page_text)
             claim_text = " ".join(
                 str(c.get("text", "")) for c in claims[:MAX_CLAIMS_PER_PAGE]
             )
