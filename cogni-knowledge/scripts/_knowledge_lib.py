@@ -946,6 +946,22 @@ def _plan_message_index(project_path) -> dict:
     return out
 
 
+def _iter_coverage_gaps(project_path):
+    """Yield `(sq_id, verdict)` for every regex-safe sub-question scored a gap
+    (`uncovered`/`partial`) in `<project>/.metadata/wiki-coverage.json`, in
+    coverage-manifest order. The single source of truth for the gap filter +
+    sq_id validation shared by the two public helpers below."""
+    for sq in _coverage_sub_questions(project_path):
+        if not isinstance(sq, dict):
+            continue
+        verdict = sq.get("coverage_verdict")
+        if verdict not in _COVERAGE_GAP_CLASS:
+            continue
+        sid = str(sq.get("sq_id", ""))
+        if sid and _SQ_ID_RE.match(sid):
+            yield sid, verdict
+
+
 def gap_sq_ids_from_coverage(project_path) -> list:
     """Bare `sq_id` list (no `sq:` prefix) for sub-questions scored
     `uncovered`/`partial` in `<project>/.metadata/wiki-coverage.json`.
@@ -955,16 +971,7 @@ def gap_sq_ids_from_coverage(project_path) -> list:
     [] when the manifest is absent/malformed (degraded but valid). Ids that are
     not regex-safe are dropped.
     """
-    out = []
-    for sq in _coverage_sub_questions(project_path):
-        if not isinstance(sq, dict):
-            continue
-        if sq.get("coverage_verdict") not in _COVERAGE_GAP_CLASS:
-            continue
-        sid = str(sq.get("sq_id", ""))
-        if sid and _SQ_ID_RE.match(sid):
-            out.append(sid)
-    return out
+    return [sid for sid, _ in _iter_coverage_gaps(project_path)]
 
 
 def load_wiki_coverage_findings(project_path) -> list:
@@ -982,16 +989,7 @@ def load_wiki_coverage_findings(project_path) -> list:
     """
     messages = _plan_message_index(project_path)
     out = []
-    for sq in _coverage_sub_questions(project_path):
-        if not isinstance(sq, dict):
-            continue
-        verdict = sq.get("coverage_verdict")
-        cls = _COVERAGE_GAP_CLASS.get(verdict)
-        if cls is None:
-            continue
-        sid = str(sq.get("sq_id", ""))
-        if not sid or not _SQ_ID_RE.match(sid):
-            continue
+    for sid, verdict in _iter_coverage_gaps(project_path):
         msg = messages.get(sid) or f"sub-question {sid} ({verdict})"
-        out.append({"class": cls, "id": f"sq:{sid}", "message": msg})
+        out.append({"class": _COVERAGE_GAP_CLASS[verdict], "id": f"sq:{sid}", "message": msg})
     return out

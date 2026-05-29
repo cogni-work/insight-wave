@@ -200,10 +200,11 @@ def load_findings(wiki_root: Path, findings_stdin: bool) -> tuple[list, str]:
         # (cogni-knowledge's build_open_questions_payload.py emits the latter so
         # its own stdout honours the {success, data, error} script convention,
         # #354). Unwrap `data` only when it carries the finding buckets.
-        if isinstance(payload, dict) and isinstance(payload.get("data"), dict) and any(
-            k in payload["data"] for k in ("errors", "warnings", "info")
+        envelope_data = payload.get("data") if isinstance(payload, dict) else None
+        if isinstance(envelope_data, dict) and any(
+            k in envelope_data for k in ("errors", "warnings", "info")
         ):
-            payload = payload["data"]
+            payload = envelope_data
         return _flatten(payload), "stdin"
 
     lint_script = (

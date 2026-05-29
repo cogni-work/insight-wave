@@ -76,11 +76,7 @@ def _run_lint(wiki_lint: Path, wiki_root: Path) -> tuple[dict, str]:
     if not env.get("success"):
         return empty, f"lint_wiki.py reported failure: {env.get('error', '')}"
     data = env.get("data") or {}
-    return {
-        "errors": list(data.get("errors") or []),
-        "warnings": list(data.get("warnings") or []),
-        "info": list(data.get("info") or []),
-    }, ""
+    return {k: list(data.get(k) or []) for k in ("errors", "warnings", "info")}, ""
 
 
 def main(argv: list) -> int:
@@ -99,10 +95,7 @@ def main(argv: list) -> int:
     project = Path(args.project).resolve()
     wiki_lint = Path(args.wiki_lint)
 
-    degraded = []
     data, lint_degraded = _run_lint(wiki_lint, wiki_root)
-    if lint_degraded:
-        degraded.append(lint_degraded)
     lint_count = len(data["errors"]) + len(data["warnings"]) + len(data["info"])
 
     research = [] if args.no_research_gaps else load_wiki_coverage_findings(project)
@@ -114,16 +107,14 @@ def main(argv: list) -> int:
     meta = {
         "lint_findings": lint_count,
         "research_findings": len(research),
-        "degraded": degraded,
+        "degraded": [lint_degraded] if lint_degraded else [],
     }
     return _emit(data, meta)
 
 
 if __name__ == "__main__":
     try:
-        raise SystemExit(main(sys.argv[1:]))
-    except SystemExit:
-        raise
-    except Exception as exc:  # genuine parse-stage crash → non-zero exit
+        sys.exit(main(sys.argv[1:]))
+    except Exception as exc:  # genuine parse-stage crash → non-zero exit (never via _emit)
         print(json.dumps({"success": False, "data": {}, "error": str(exc)}))
-        raise SystemExit(1)
+        sys.exit(1)
