@@ -1,5 +1,18 @@
 # cogni-knowledge changelog
 
+## 0.1.18 — 2026-05-29 — Discoverability — manifest description compacted (closes #351)
+
+`description` in `.claude-plugin/plugin.json` and the matching `marketplace.json`
+entry compacted from 893 to 365 chars. Citation-consistent verification semantics,
+opt-in `--resweep`, and inverted-pipeline framing remain inline; contradiction-tripwire
+surfacing now declared via `keywords[]`. Competitor-differentiator paragraph and
+Phase 4.5 distillation detail kept in README. No behavioural change. No schema
+change. No skill change.
+
+`keywords[]` updated: drops the orphan `deep-research` token (overlaps cogni-research's
+keyword surface); adds `inverted-pipeline`, `citation-consistent`,
+`zero-network-verification`, `resweep`, `contradiction-tripwire`.
+
 ## 0.1.17 — 2026-05-29 — Convention surface — Skill(...) dispatch contract named once
 
 **Closes #350** ([deferred-from PR #349 suggestion 5](https://github.com/cogni-work/insight-wave/pull/349#issuecomment-4570497287)).
