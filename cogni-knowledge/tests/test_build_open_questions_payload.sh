@@ -70,8 +70,12 @@ OUT=$(python3 "$HELPER" --wiki-root "$WORK/w" --project "$EMPTY" --wiki-lint "$L
 assert_env b "$OUT" "d['success'] and d['meta']['research_findings']==0 and len(d['data']['warnings'])==1 and d['meta']['lint_findings']==1" "b: lint only, zero research findings"
 
 # c. gaps only (lint stub fails → degraded, gaps still streamed)
-OUT=$(python3 "$HELPER" --wiki-root "$WORK/w" --project "$PROJ" --wiki-lint "$LINT_FAIL")
-RC=$?
+# Capture the exit code with `|| RC=$?` — under `set -e` a bare `OUT=$(...)`
+# whose command exits non-zero aborts the script before a following `RC=$?`
+# line, making the exit-code assertion dead. The fail-soft helper MUST exit 0
+# even when lint fails, so this guards that contract for real.
+RC=0
+OUT=$(python3 "$HELPER" --wiki-root "$WORK/w" --project "$PROJ" --wiki-lint "$LINT_FAIL") || RC=$?
 assert_env c "$OUT" "d['success'] and d['meta']['research_findings']==1 and len(d['meta']['degraded'])>=1 and len(d['data']['warnings'])==1" "c: lint failure degraded, gaps still streamed"
 [ "$RC" = "0" ] || { red "FAIL: c exit code should be 0, got $RC"; errors=$((errors + 1)); }
 

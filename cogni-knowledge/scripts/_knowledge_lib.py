@@ -937,6 +937,7 @@ def _plan_message_index(project_path) -> dict:
         theme = str(sq.get("theme_label", "")).strip()
         query = str(sq.get("query", "")).strip()
         if len(query) > 140:
+            # Clamp to 140 chars *including* the ellipsis (139 of query + "…").
             query = query[:139].rstrip() + "…"
         if theme and query:
             msg = f"{theme} — {query}"

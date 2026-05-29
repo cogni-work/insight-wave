@@ -199,12 +199,17 @@ def load_findings(wiki_root: Path, findings_stdin: bool) -> tuple[list, str]:
         # --findings - contract) or a standard `{success, data: {...}}` envelope
         # (cogni-knowledge's build_open_questions_payload.py emits the latter so
         # its own stdout honours the {success, data, error} script convention,
-        # #354). Unwrap `data` only when it carries the finding buckets.
-        envelope_data = payload.get("data") if isinstance(payload, dict) else None
-        if isinstance(envelope_data, dict) and any(
-            k in envelope_data for k in ("errors", "warnings", "info")
-        ):
-            payload = envelope_data
+        # #354). A `success: false` envelope is a HARD failure — surfacing it as
+        # an exit-1 (which fires the caller's ⚠ surface) is correct, because the
+        # alternative (treating its empty `data` as "no findings") would silently
+        # close every open item. Defends any future `--findings -` producer too.
+        if isinstance(payload, dict) and "success" in payload and "data" in payload:
+            if not payload.get("success"):
+                raise RuntimeError(
+                    f"--findings -: upstream payload reported failure: "
+                    f"{payload.get('error', '')}"
+                )
+            payload = payload.get("data") or {}
         return _flatten(payload), "stdin"
 
     lint_script = (
@@ -265,13 +270,17 @@ def _flatten(payload: dict) -> list:
 
 def attribute_close(log_path: Path, page_slug: str) -> str:
     """Walk wiki/log.md from the bottom up; return the op of the most
-    recent CLOSING_OPS line whose `rest` contains the page slug. Empty
-    string if no match (renders as "closed YYYY-MM-DD" only).
+    recent CLOSING_OPS line that names the identifier. Empty string if no
+    match (renders as "closed YYYY-MM-DD" only).
 
-    For a research-time gap the identifier is `sq:<sq_id>` but the finalize
-    log line carries the bare `sqs=sq-04,...` form, so the `sq:` prefix is
-    stripped before the substring scan (#354). Lint page slugs never start
-    with `sq:`, so this is a no-op for the seven existing classes.
+    Two identifier shapes, two match rules:
+      - lint page slug — substring scan of the line's `rest` (the long-standing
+        behaviour; a `## [date] update | <slug> — …` line names the slug inline).
+      - research-time gap `sq:<sq_id>` (#354) — the finalize line carries the
+        bare ids in an `sqs=sq-04,sq-01` suffix, so we parse that CSV and check
+        **exact** membership. Substring matching here would falsely credit
+        `sq-04` against `sqs=sq-040,…` (or against an sq_id-shaped fragment in a
+        `slug=`/`project=` value), so the exact check is load-bearing.
     """
     if not log_path.is_file():
         return ""
@@ -279,14 +288,20 @@ def attribute_close(log_path: Path, page_slug: str) -> str:
         text = log_path.read_text(encoding="utf-8")
     except OSError:
         return ""
-    needle = page_slug[3:] if page_slug.startswith("sq:") else page_slug
+    is_gap = page_slug.startswith("sq:")
+    needle = page_slug[3:] if is_gap else page_slug
     for line in reversed(text.splitlines()):
         m = LOG_LINE_RE.match(line)
         if not m:
             continue
         if m.group("op") not in CLOSING_OPS:
             continue
-        if needle in m.group("rest"):
+        rest = m.group("rest")
+        if is_gap:
+            m_sqs = re.search(r"\bsqs=([^\s|]+)", rest)
+            if m_sqs and needle in m_sqs.group(1).split(","):
+                return m.group("op")
+        elif needle in rest:
             return m.group("op")
     return ""
 

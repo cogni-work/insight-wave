@@ -52,7 +52,13 @@ def _emit(data: dict, meta: dict) -> int:
 
 def _run_lint(wiki_lint: Path, wiki_root: Path) -> tuple[dict, str]:
     """Return (lint_data, degraded_reason). lint_data is `{errors, warnings,
-    info}`; degraded_reason is "" on success, else a short description."""
+    info}`; degraded_reason is "" on success, else a short description.
+
+    `capture_output=True` deliberately swallows lint's stderr — a lint crash is
+    summarised in the returned degraded_reason (and surfaced via meta.degraded),
+    not streamed here. lint's own operator-visible trace lives on cogni-wiki's
+    terminal during its own dispatches, not on this merge path.
+    """
     empty = {"errors": [], "warnings": [], "info": []}
     if not wiki_lint.is_file():
         return empty, f"lint_wiki.py not found at {wiki_lint}"

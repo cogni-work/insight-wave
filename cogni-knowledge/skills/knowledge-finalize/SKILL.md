@@ -595,9 +595,9 @@ TOPIC=$(printf '%s' "$TOPIC_RAW" | tr '\r\n' '  ')
 # sub-questions scored uncovered/partial in this project's pre-finalize
 # wiki-coverage.json — the research-time gaps this synthesis presumably now
 # covers. Empty (suffix omitted) when no coverage manifest exists.
-GAP_SQS=$(PROJECT_PATH="$PROJECT_PATH" python3 -c '
+GAP_SQS=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" PROJECT_PATH="$PROJECT_PATH" python3 -c '
 import os, sys
-sys.path.insert(0, os.environ.get("KNOWLEDGE_SCRIPTS", ""))
+sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from _knowledge_lib import gap_sq_ids_from_coverage
 print(",".join(gap_sq_ids_from_coverage(os.environ["PROJECT_PATH"])))
 ' 2>/dev/null || true)

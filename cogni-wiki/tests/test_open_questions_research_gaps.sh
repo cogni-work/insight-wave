@@ -146,4 +146,38 @@ assert_success_json "T6 enveloped" "$OUT"
 grep -qE '^- \[ \] `sq:sq-09` — Enveloped payload gap' "$OQ" || fail "T6: enveloped payload not unwrapped"
 green "T6: enveloped {success,data} payload unwrapped via --findings -"
 
+# ---------- T7: a {success:false} envelope is a HARD failure, not a mass-close ----------
+# The merge helper's crash path emits {success:false, data:{}}. That must NOT be
+# treated as "no findings" (which would silently close every open item) — the
+# script must exit non-zero so the finalize SKILL fires its ⚠ surface.
+# First seed an open item so a mass-close would be observable (GAPS opens sq-04).
+run_findings "$GAPS" >/dev/null
+grep -qE '^- \[ \] `sq:sq-04`' "$OQ" || fail "T7 setup: expected an open item before the failure payload"
+FAIL_ENV='{"success": false, "data": {}, "error": "boom"}'
+RC=0
+OUT=$(printf '%s' "$FAIL_ENV" | python3 "$SCRIPT" --wiki-root "$WIKI" --findings - 2>/dev/null) || RC=$?
+[ "$RC" != "0" ] || fail "T7: a {success:false} payload must exit non-zero, got exit 0"
+# The open item must survive (no silent mass-close).
+grep -qE '^- \[ \] `sq:sq-04`' "$OQ" || fail "T7: open item was silently closed on a failure payload"
+green "T7: {success:false} envelope hard-fails (exit non-zero), backlog untouched"
+
+# ---------- T8: credit-close is exact, not a substring (sq-04 ≠ sq-040) ----------
+# Isolated wiki: the ONLY finalize line credits sq-040, which must NOT match
+# sq:sq-04 (the shared $WIKI already carries a legit sqs=sq-04 line from T3).
+WIKI8="$WORKDIR/wiki8"
+cp -R "$FIXTURES/legacy-wiki" "$WIKI8"
+python3 "$PLUGIN_ROOT/skills/wiki-setup/scripts/migrate_layout.py" --wiki-root "$WIKI8" --apply >/dev/null
+OQ8="$WIKI8/wiki/open_questions.md"
+printf '## [%s] finalize | project=X slug=x draft=v1 round=0 sources=1 sqs=sq-040,sq-99\n' "$TODAY" >> "$WIKI8/wiki/log.md"
+# Open sq-04, then drop it so reconcile closes it.
+printf '%s' "$GAPS" | python3 "$SCRIPT" --wiki-root "$WIKI8" --findings - >/dev/null
+OUT=$(printf '%s' "$GAPS_NO_SQ04" | python3 "$SCRIPT" --wiki-root "$WIKI8" --findings -)
+assert_success_json "T8 substring guard" "$OUT"
+# sq-04 closed, but with NO 'by finalize' attribution (sq-040 is not sq-04).
+grep -qE '^- \[x\] ~~`sq:sq-04` — .*~~ — closed '"$TODAY"'$' "$OQ8" || {
+  red "T8: sq-04 should close WITHOUT attribution (sq-040 ≠ sq-04); got:"
+  grep '`sq:sq-04`' "$OQ8"; exit 1
+}
+green "T8: sqs=sq-040 does not falsely credit-close sq:sq-04 (exact CSV membership)"
+
 green "ALL TESTS PASS"
