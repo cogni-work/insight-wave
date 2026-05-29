@@ -130,7 +130,7 @@ else:
 '
 ```
 
-Parse into `LAST_RESWEEP_DATE` + `LAST_RESWEEP_AGE_DAYS` (the bare `never` line means no resweep has ever run). This is **wiki-global** (one resweep applies to the whole bound wiki, not per-project), so it surfaces in the `## Claim verification scope` block + the short summary — never as a per-project table column.
+Parse the output: a bare `never` line means no resweep has ever run; otherwise split the single line on `|` into `LAST_RESWEEP_DATE` + `LAST_RESWEEP_AGE_DAYS` (age is `-` when `sweep_date` is unparseable). This is **wiki-global** (one resweep applies to the whole bound wiki, not per-project), so it surfaces in the `## Claim verification scope` block + the short summary — never as a per-project table column.
 
 Contents:
 

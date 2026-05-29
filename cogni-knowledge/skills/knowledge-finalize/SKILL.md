@@ -278,12 +278,7 @@ v_verbatim = int(os.environ.get("VERIFY_VERBATIM", "0"))
 v_paraphrase = int(os.environ.get("VERIFY_PARAPHRASE", "0"))
 v_synthesis = int(os.environ.get("VERIFY_SYNTHESIS", "0"))
 v_unsupported = int(os.environ.get("VERIFY_UNSUPPORTED", "0"))
-verification_ratio = (
-    "verbatim=" + str(v_verbatim)
-    + " paraphrase=" + str(v_paraphrase)
-    + " synthesis=" + str(v_synthesis)
-    + " unsupported=" + str(v_unsupported)
-)
+verification_ratio = f"verbatim={v_verbatim} paraphrase={v_paraphrase} synthesis={v_synthesis} unsupported={v_unsupported}"
 
 draft = (project / "output" / ("draft-v" + str(n) + ".md")).read_text(encoding="utf-8")
 manifest = json.loads((project / ".metadata" / "citation-manifest.json").read_text(encoding="utf-8"))
