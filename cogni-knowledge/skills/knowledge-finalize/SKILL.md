@@ -429,9 +429,13 @@ frontmatter = (
     # is a fixed enum — the Phase 6 verifier scored each citation's draft_sentence
     # against the cited page's ingest-time pre_extracted_claims:, zero-network, no
     # live-source re-fetch. verification_ratio is the same verify-vN.json::counts
-    # the dashboard surfaces, double-quoted so YAML reads it as one string scalar
-    # (cogni-wiki's _wikilib.parse_frontmatter convention; additive key, tolerated
-    # like draft_revision_round). For live-source re-verification: knowledge-refresh --resweep.
+    # the dashboard surfaces, kept as ONE double-quoted flat string scalar (NOT a
+    # nested `verification_counts: {verbatim: 4, ...}` map) on purpose: it matches
+    # cogni-wiki's existing flat-frontmatter convention (same shape as
+    # draft_revision_round) so _wikilib.parse_frontmatter reads it without YAML-map
+    # support, and it stays an additive, tolerated key. If a future consumer needs
+    # structured access, switching to a nested map is the right moment to do it
+    # (a breaking frontmatter change). For live-source re-verification: knowledge-refresh --resweep.
     "verification: citation_consistent_zero_network\n"
     'verification_ratio: "' + verification_ratio + '"\n'
     "---\n"
@@ -720,7 +724,7 @@ Task(wiki-contradictor,
 
 ### 11. Final summary
 
-Print ≤ 10 lines:
+Print ≤ 12 lines (the verbatim/paraphrase ratio and the contradiction-tripwire block are conditional — the common-case base summary is ~10 lines, both #337 lines included):
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
@@ -728,7 +732,7 @@ Print ≤ 10 lines:
 - Cycle-guard: `input_shape=citation-manifest`, `direct_self_cycles=0`, `cross_lineage_overlap=<N>`
 - Verify lineage: `verify-v<N>.json` — verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (round `<R>` of 2)
 - Verification: citation-consistent (zero-network, no live-source re-check; #337). The synthesis-page frontmatter carries `verification: citation_consistent_zero_network` + `verification_ratio:`. For live-source ground-truth, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in).
-- Verbatim/paraphrase ratio (print this line **only when `verbatim + paraphrase > 0`** — no divide-by-zero on a deviation-only run): `<V>/<P> = <pct>% verbatim`, where `pct = round(100 * V / (V + P), 1)`. Append ` (high copy-paste — consider revising for synthesis density)` **only when `V / (V + P) > 0.5`** (informational nudge, no gate). When `verbatim + paraphrase == 0`, print `Verbatim/paraphrase ratio: (no scored verdicts)` instead.
+- Verbatim/paraphrase ratio (print this line **only when `verbatim + paraphrase > 0`** — no divide-by-zero on a deviation-only run): `<V>/<P> = <pct>% verbatim`, where `pct = round(100 * V / (V + P), 1)`. Append ` (high copy-paste — consider revising for synthesis density)` **only when `V / (V + P) > 0.5`** — i.e. a *majority* of scored citations are verbatim, the point at which copy-paste outweighs synthesis (informational nudge, no gate; tune the 0.5 majority threshold here if real runs prove it noisy). When `verbatim + paraphrase == 0`, print `Verbatim/paraphrase ratio: (no scored verdicts)` instead.
 - Binding: total deposited projects now `<count>`
 - Wiki updates (conditional on Step 7 + Step 8 outcomes):
   - On `INDEX_OK=yes` + new deposit: `index.md (Syntheses), entries_count +1, context_brief.md refreshed`

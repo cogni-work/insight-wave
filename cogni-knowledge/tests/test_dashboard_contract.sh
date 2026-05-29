@@ -48,7 +48,7 @@ assert_grep 'Last live-source resweep' "$DASH" "knowledge-dashboard: short summa
 assert_grep 'knowledge-refresh --resweep' "$DASH" "knowledge-dashboard: suggests knowledge-refresh --resweep as the opt-in refresh path (#337)"
 
 # --- 5) Edge case + Out of scope -------------------------------------------
-assert_grep 'last-resweep.json` (no resweep ever run\|Missing `<wiki_path>/.cogni-wiki/last-resweep.json' "$DASH" "knowledge-dashboard: Edge cases document the missing-last-resweep.json case (#337)"
+assert_grep 'no resweep ever run on this base' "$DASH" "knowledge-dashboard: Edge cases document the missing-last-resweep.json case (#337)"
 # The dashboard must NOT dispatch the (expensive) resweep itself.
 assert_not_grep 'Skill("cogni-wiki:wiki-claims-resweep"' "$DASH" "knowledge-dashboard: does NOT dispatch wiki-claims-resweep itself (cheap-and-frequent contract, #337)"
 

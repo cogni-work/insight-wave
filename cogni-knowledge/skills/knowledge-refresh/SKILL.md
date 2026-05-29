@@ -180,6 +180,8 @@ The per-topic loop fails soft: a topic that dies mid-chain leaves valid manifest
 
 Runs **only when `--resweep` is passed** — after push/pull completes (if a `--mode` was given), or **alone** when `--resweep` carries no `--mode`. This is the minimal (a)-skeleton hook from issue #337: it re-verifies the bound wiki's cited claims against **live** source URLs, the one thing the zero-network per-run pipeline structurally never does. Never auto-dispatched — the operator must pass the flag, so every finalize/verify/dashboard run stays zero-network and fast.
 
+**After a partial push (`--mode push --resweep` where ≥ 1 topic failed mid-chain):** the resweep still runs. Push-mode is fail-soft per topic, and a topic that crashed *before* `knowledge-finalize` deposited **no** `wiki/syntheses/<slug>.md` page — so there is nothing on disk for the resweep to scan, and it cannot surface phantom deviations on a partially-deposited topic. The resweep therefore covers only the syntheses that actually landed; failed topics are simply absent. No special skip logic needed.
+
 1. Confirm `RESWEEP_OK == yes` (the Step 0 probe). If `no`, the skill already aborted in pre-flight.
 
 2. Dispatch the upstream primitive against the bound wiki, forwarding only the `--resweep-*` flags the caller actually set (omitted → upstream defaults apply):
@@ -191,7 +193,7 @@ Runs **only when `--resweep` is passed** — after push/pull completes (if a `--
 
 3. **No binding write, no `last-resweep.json` write.** `wiki-claims-resweep` writes `<binding.wiki_path>/.cogni-wiki/last-resweep.json` itself (lock-wrapped, single-writer-per-wiki) and its own report under `<wiki_root>/raw/claims-resweep-<date>/`. cogni-knowledge does not duplicate or shadow that state.
 
-4. **Final summary (≤ 5 lines)** — capture the upstream summary and surface:
+4. **Final summary (≤ 6 lines)** — capture the upstream summary and surface:
    ```
    Resweep dispatched against <binding.wiki_path>.
      <N> pages scanned, <T> claims checked.
@@ -199,6 +201,7 @@ Runs **only when `--resweep` is passed** — after push/pull completes (if a `--
      Report: <relative path>. Reconcile flagged pages via cogni-wiki:wiki-update.
      last-resweep.json updated → knowledge-dashboard will surface the new date.
    ```
+   **Synthesis-underyield note (standing, every resweep).** The upstream report classifies scanned pages by directory; surface the source-vs-synthesis split so the underyield is visible at run time, not only in the CHANGELOG: append `Note: yield is from wiki/sources/<slug>.md (inline-URL bodies); wiki/syntheses/<slug>.md ([N]/[[slug]] citations) underyield until the synthesis-extractor adapter ships (v0.1.17, #337).` If the upstream summary exposes per-directory page counts, prefer the concrete form `Covered <K_src> source page(s); <K_syn> synthesis page(s) underyielded (v0.1.17 adapter pending, #337).`
    When the upstream reports `total_claims == 0` for a `--resweep-page <slug>`, append: `⚠ <slug> yielded zero re-verifiable claims — this is a synthesis page or a page without inline URLs; resweep is most useful against wiki/sources/<slug>.md pages until the v0.1.17 synthesis-extractor adapter ships (#337).`
 
 ## Edge cases
