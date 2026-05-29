@@ -52,6 +52,14 @@ assert_grep 'observability' "$SKILL" "knowledge-distill: documents the tripwire 
 # Must NOT run the conformance gate (finalize Step 10.5 owns it once).
 assert_not_grep 'health.py asserts' "$SKILL" "knowledge-distill: does NOT run the conformance gate itself"
 assert_grep 'Task' "$SKILL" "knowledge-distill: Task in allowed-tools"
+# #341 Step 6.5 — re-narrate the ## Summary of updated pages from merged claims.
+assert_grep 'Task(concept-summary-narrator' "$SKILL" "knowledge-distill: dispatches concept-summary-narrator via Task (#341)"
+assert_grep 'concept-store.py renarrate' "$SKILL" "knowledge-distill: calls concept-store.py renarrate (#341)"
+assert_grep 'no-renarrate' "$SKILL" "knowledge-distill: documents the --no-renarrate opt-out (#341)"
+assert_grep 'updated_slugs' "$SKILL" "knowledge-distill: Step 6.5 keys on updated_slugs (created pages keep distiller summary)"
+assert_grep 'RENARRATE_BUNDLE_PATH' "$SKILL" "knowledge-distill: threads the renarrate bundle path"
+assert_grep 'summaries re-narrated\|Summaries re-narrated' "$SKILL" "knowledge-distill: Step 9 surfaces the re-narration tally"
+assert_grep 'extract_machine_block' "$SKILL" "knowledge-distill: Step 6.5 reads the SUMMARY block via the shared helper"
 
 # --- concept-distiller agent -------------------------------------------------
 AGENT="$PLUGIN_ROOT/agents/concept-distiller.md"
@@ -74,11 +82,29 @@ assert_grep 'concept-store.py' "$AGENT" "concept-distiller: defers dedup/seriali
 # tools-list line is the guard (the prose legitimately says "does NOT WebSearch").
 assert_grep 'tools: \["Read", "Write"\]' "$AGENT" "concept-distiller: tools Read + Write only"
 
+# --- concept-summary-narrator agent (#341) -----------------------------------
+NARRATOR="$PLUGIN_ROOT/agents/concept-summary-narrator.md"
+if [ ! -f "$NARRATOR" ]; then
+  red "FAIL: agents/concept-summary-narrator.md not found"
+  exit 1
+fi
+assert_grep 'name: concept-summary-narrator' "$NARRATOR" "concept-summary-narrator: frontmatter name"
+assert_grep 'model: sonnet' "$NARRATOR" "concept-summary-narrator: model sonnet"
+assert_grep 'RENARRATE_BUNDLE_PATH' "$NARRATOR" "concept-summary-narrator: reads the per-slug bundle"
+assert_grep 'RECORDS_OUTPUT_PATH' "$NARRATOR" "concept-summary-narrator: writes raw-text records"
+assert_grep 'OUTPUT_LANGUAGE' "$NARRATOR" "concept-summary-narrator: re-narrates in OUTPUT_LANGUAGE"
+assert_grep '<<<SUMMARY' "$NARRATOR" "concept-summary-narrator: sentinel-fenced records idiom"
+assert_grep 'raw text' "$NARRATOR" "concept-summary-narrator: writes raw text, never JSON/YAML (#325)"
+# Summary-only discipline + scope guard (no contradiction pass — #335 is closed).
+assert_grep 'only the summary\|only the SUMMARY\|touch .*only\|Summary-only\|summary-only' "$NARRATOR" "concept-summary-narrator: touches only the summary block"
+assert_grep '#335' "$NARRATOR" "concept-summary-narrator: names #335 as out-of-scope (no contradiction pass)"
+assert_grep 'tools: \["Read", "Write"\]' "$NARRATOR" "concept-summary-narrator: tools Read + Write only"
+
 if [ "$errors" -eq 0 ]; then
   green ""
-  green "knowledge-distill + concept-distiller contract: all pass."
+  green "knowledge-distill + concept-distiller + concept-summary-narrator contract: all pass."
   exit 0
 else
-  red "knowledge-distill + concept-distiller contract: $errors failure(s)."
+  red "knowledge-distill + concept-distiller + concept-summary-narrator contract: $errors failure(s)."
   exit 1
 fi

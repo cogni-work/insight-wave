@@ -34,6 +34,12 @@ Subcommands:
                   _knowledge_lib.slugify — orchestrator-owns-slug discipline), and
                   rewrite <project>/.metadata/distill-manifest.json reflecting
                   this run. Returns per-slug actions + the dedup totals.
+  renarrate       Parse the concept-summary-narrator's --records file and, under
+                  the lock, replace ONLY the SUMMARY machine block of each named
+                  page (every other block + the human ## Notes tail stay
+                  byte-identical; updated: bumped iff the prose changed). #341 —
+                  makes the wiki compound NARRATIVELY (summary integrates new
+                  evidence), not just structurally (claim lists accrete).
   read            Emit the current distill-manifest.json content.
 
 `--wiki-scripts-dir` points at cogni-wiki's `wiki-ingest/scripts/` (resolved by
@@ -68,8 +74,10 @@ from _knowledge_lib import (  # noqa: E402
     atomic_write,
     atomic_write_text,
     claim_similarity,
+    extract_machine_block,
     norm_key,
     parse_concept_records,
+    parse_renarrate_records,
     slugify,
 )
 
@@ -103,6 +111,10 @@ _HUMAN_NOTES_PLACEHOLDER = (
     "_Notes below this line are human-owned and preserved across distill runs._\n"
 )
 _DCL_ID_RE = re.compile(r"^dcl-(\d+)$")
+# The frontmatter `updated:` scalar, anchored at column 0 so it never matches the
+# indented per-claim `    updated:` lines inside the `distilled_claims:` block.
+# `renarrate` bumps this in place (no full re-render) when a summary changes.
+_FM_UPDATED_RE = re.compile(r"(?m)^updated:[ \t]*.+$")
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -219,14 +231,24 @@ def _absorb_claim_field(item: dict, kv: str) -> None:
 
 
 def _extract_machine_block(body: str, name: str) -> str | None:
-    """Inner text between `<!-- MACHINE-OWNED:NAME:START -->` and `:END -->`."""
+    """Inner text between `<!-- MACHINE-OWNED:NAME:START -->` and `:END -->`.
+    Delegates to `_knowledge_lib.extract_machine_block` — the single source of
+    truth, also read by knowledge-distill's Step-6.5 bundle builder (#341)."""
+    return extract_machine_block(body, name)
+
+
+def _replace_machine_block(body: str, name: str, new_inner: str) -> str:
+    """Return `body` with the named MACHINE-OWNED block's inner replaced by
+    `new_inner`, leaving every other byte untouched. Used by `renarrate` to swap
+    ONLY the SUMMARY block without re-rendering the page. The match mirrors
+    `extract_machine_block` so it is symmetric with the reader; the START/END
+    sentinels and surrounding bytes are preserved verbatim."""
     pat = re.compile(
-        r"<!--\s*MACHINE-OWNED:" + name + r":START\s*-->\r?\n(.*?)\r?\n?<!--\s*MACHINE-OWNED:"
-        + name + r":END\s*-->",
+        r"(<!--\s*MACHINE-OWNED:" + re.escape(name) + r":START\s*-->\r?\n)(.*?)"
+        r"(\r?\n?<!--\s*MACHINE-OWNED:" + re.escape(name) + r":END\s*-->)",
         re.DOTALL,
     )
-    m = pat.search(body or "")
-    return m.group(1) if m else None
+    return pat.sub(lambda m: m.group(1) + new_inner + m.group(3), body, count=1)
 
 
 def _human_tail(body: str) -> str:
@@ -803,6 +825,106 @@ def cmd_merge(args: argparse.Namespace) -> int:
     })
 
 
+def _renarrate_one(
+    slug: str,
+    new_prose: str,
+    wiki_root: Path,
+    today: str,
+) -> dict:
+    """Replace ONLY the SUMMARY machine block of a concept/entity page with a
+    fresh narration. Caller holds the wiki lock. Returns a compact per-slug
+    result `{slug, action, reason, page_path}` (action ∈ renarrated / unchanged /
+    skipped)."""
+    # Resolve the page across both type dirs (the slug is globally unique).
+    page_path = None
+    for sub in _TYPE_DIRS.values():
+        cand = wiki_root / "wiki" / sub / f"{slug}.md"
+        if cand.is_file():
+            page_path = cand
+            break
+    if page_path is None:
+        return {"slug": slug, "action": "skipped", "reason": "page_not_found", "page_path": ""}
+
+    text = page_path.read_text(encoding="utf-8")
+    old_inner = _extract_machine_block(text, "SUMMARY")
+    if old_inner is None:
+        # No machine-owned SUMMARY block — a hand-authored / foundation page we
+        # must never touch (same conservative guard as `_merge_one`).
+        return {"slug": slug, "action": "skipped", "reason": "no_summary_sentinel",
+                "page_path": str(page_path)}
+
+    # Canonical inner shape mirrors `_default_summary`: a `## Summary` heading,
+    # a blank line, then the prose. The narrator emits prose only — the heading +
+    # sentinels are the script's to own.
+    new_inner = "## Summary\n\n" + new_prose.strip("\n")
+    if new_inner == old_inner:
+        return {"slug": slug, "action": "unchanged", "reason": "", "page_path": str(page_path)}
+
+    updated = _replace_machine_block(text, "SUMMARY", new_inner)
+    if updated == text:  # defensive — sub matched nothing
+        return {"slug": slug, "action": "skipped", "reason": "summary_replace_noop",
+                "page_path": str(page_path)}
+    # Bump the frontmatter `updated:` to today (a genuine content change).
+    updated = _FM_UPDATED_RE.sub(f"updated: {today}", updated, count=1)
+    atomic_write_text(page_path, updated)
+    return {"slug": slug, "action": "renarrated", "reason": "", "page_path": str(page_path)}
+
+
+def cmd_renarrate(args: argparse.Namespace) -> int:
+    """Re-narrate the `## Summary` block of already-merged concept/entity pages
+    from the concept-summary-narrator's raw-text records (#341). Summary-only:
+    every other machine block + the human `## Notes` tail stay byte-identical;
+    the page write runs under cogni-wiki's `_wiki_lock`, same as `merge`."""
+    wiki_scripts = Path(args.wiki_scripts_dir).resolve()
+    if not wiki_scripts.is_dir():
+        return _emit(False, error=f"--wiki-scripts-dir does not exist: {wiki_scripts}")
+    sys.path.insert(0, str(wiki_scripts))
+    try:
+        from _wikilib import _wiki_lock  # noqa: E402
+    except ImportError as exc:
+        return _emit(False, error=f"could not import cogni-wiki _wikilib from {wiki_scripts}: {exc}")
+
+    wiki_root = Path(args.wiki_root).resolve()
+    if not (wiki_root / "wiki").is_dir():
+        return _emit(False, error=f"wiki_root has no wiki/ dir: {wiki_root}")
+    records_path = Path(args.records).resolve()
+    try:
+        records_text = records_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return _emit(False, data={"path": str(records_path)}, error="records_not_found")
+    except OSError as exc:
+        return _emit(False, error=f"records file is not readable: {exc}")
+
+    proposals = parse_renarrate_records(records_text)
+    today = _today()
+    renarrated: list[str] = []
+    unchanged: list[str] = []
+    skipped: list[dict] = []
+
+    with _wiki_lock(wiki_root):
+        for slug, prose in proposals.items():
+            try:
+                res = _renarrate_one(slug, prose, wiki_root, today)
+            except Exception as exc:  # noqa: BLE001 — one bad page must not abort the batch
+                skipped.append({"slug": slug, "reason": f"exception: {exc}"})
+                continue
+            if res["action"] == "renarrated":
+                renarrated.append(res["slug"])
+            elif res["action"] == "unchanged":
+                unchanged.append(res["slug"])
+            else:
+                skipped.append({"slug": res["slug"], "reason": res["reason"]})
+
+    return _emit(True, data={
+        "renarrated": renarrated,
+        "unchanged": unchanged,
+        "skipped": skipped,
+        "n_renarrated": len(renarrated),
+        "n_unchanged": len(unchanged),
+        "n_skipped": len(skipped),
+    })
+
+
 def cmd_read(args: argparse.Namespace) -> int:
     project_path = Path(args.project_path).resolve()
     target = _manifest_path(project_path)
@@ -836,6 +958,21 @@ def main(argv: list[str]) -> int:
     p_merge.add_argument("--bundle-hash", default="",
                          help="Stable sha256 of the source-claim bundle; written into the manifest for the orchestrator's resume no-op check")
     p_merge.set_defaults(func=cmd_merge)
+
+    p_renarrate = sub.add_parser(
+        "renarrate",
+        help="Re-narrate the ## Summary block of merged concept/entity pages from the narrator's records (#341)",
+    )
+    p_renarrate.add_argument("--records", required=True,
+                             help="Path to the concept-summary-narrator's raw-text records file")
+    p_renarrate.add_argument("--wiki-root", required=True, help="Absolute path to the bound wiki root")
+    p_renarrate.add_argument("--project-path", required=False, default="",
+                             help="Absolute path to the project directory (accepted for call-site symmetry; unused)")
+    p_renarrate.add_argument("--project-slug", required=False, default="",
+                             help="Research project slug (accepted for call-site symmetry; unused)")
+    p_renarrate.add_argument("--wiki-scripts-dir", required=True,
+                             help="Path to cogni-wiki wiki-ingest/scripts (for _wiki_lock)")
+    p_renarrate.set_defaults(func=cmd_renarrate)
 
     p_read = sub.add_parser("read", help="Emit distill-manifest.json content")
     p_read.add_argument("--project-path", required=True)

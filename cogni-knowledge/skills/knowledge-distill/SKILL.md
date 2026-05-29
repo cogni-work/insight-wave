@@ -32,6 +32,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4.5 — `k
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. |
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
+| `--no-renarrate` | No | Skip Step 6.5 (summary re-narration). Default is **on** — narrative compounding is the point of Phase 4.5; this opt-out exists for byte-stable re-runs / cost control. |
 | `--dry-run` | No | Print the resolved inputs (bundle source count, existing concept/entity count, bundle hash, resume verdict) without dispatching the distiller. |
 
 ## Workflow
@@ -195,6 +196,83 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py merge \
 
 `--bundle-hash "$SHA"` (the Step-1 content hash) is written into the manifest by `concept-store.py` itself — it is the single writer, so Step 3's resume check reads it back with no fragile second-process patch. Parse `data`: `created_slugs[]`, `updated_slugs[]` (disjoint), `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, claims_rejected, near_existing_slug, ...}`), `claims_attached_total`, `claims_deduped_total`, `claims_rejected_total`, `near_existing_total`, `near_existing_slugs[]` (`{slug, near_slug, near_title, near_type, score}`). On `success: false` → warn + exit cleanly. **If `claims_rejected_total > 0`, surface it loudly** — it means the distiller emitted malformed claim lines (e.g. dropped the `<slug> | <id> |` provenance), which would otherwise silently shrink the concept web; check the records file format. **`near_existing_total` / `near_existing_slugs[]` are the #340 observable tripwire** — see Step 9.
 
+### 6.5. Re-narrate updated summaries (default-on, fail-soft) — #341
+
+Phase 4.5 compounds the `## Claims` / `## Related` / `## Sources` blocks across runs, but `concept-store.py merge` keeps the `## Summary` block **first-writer-wins** on update — so an `updated` page can list 20 distilled claims under prose that still reflects only run 1's framing. This step re-narrates the summary of each **updated** page from its *merged* claims so the wiki compounds **narratively**, not just structurally. **Summary-only**: every other machine block + the human `## Notes` tail stay byte-identical.
+
+**Skip cleanly when:** `--no-renarrate` was passed, OR `updated_slugs[]` (from Step 6) is empty (`created` pages already carry a fresh distiller summary; pure re-runs have no updated pages). In either case jump straight to Step 7 — re-narration is purely additive enrichment.
+
+Otherwise:
+
+**a. Build the per-slug bundle.** For each slug in `updated_slugs[]`, read its on-disk page, pull the existing `## Summary` inner (stripping the `## Summary` heading line) + the merged `distilled_claims[].text`, and append a block to `renarrate-bundle.txt`. Reuse the shared parsers — no new block parsing:
+
+```
+KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+WIKI_ROOT="<WIKI_ROOT>" \
+UPDATED_SLUGS="<space-separated updated_slugs from Step 6>" \
+BUNDLE_PATH="<project_path>/.metadata/renarrate-bundle.txt" \
+python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
+from pathlib import Path
+from _knowledge_lib import extract_machine_block, parse_distilled_claims
+wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
+out = []
+for slug in os.environ["UPDATED_SLUGS"].split():
+    page = None
+    for sub in ("concepts", "entities"):
+        cand = wiki / sub / (slug + ".md")
+        if cand.is_file():
+            page = cand; break
+    if page is None:
+        continue
+    text = page.read_text(encoding="utf-8")
+    inner = extract_machine_block(text, "SUMMARY") or ""
+    # Drop the leading `## Summary` heading + blank line — the bundle wants prose only.
+    prose_lines = [ln for ln in inner.splitlines() if ln.strip() != "## Summary"]
+    while prose_lines and not prose_lines[0].strip():
+        prose_lines.pop(0)
+    claims = parse_distilled_claims(text)
+    out.append("## slug: " + slug)
+    out.append("### current-summary")
+    out.append("\n".join(prose_lines) if prose_lines else "_No summary yet._")
+    out.append("### claims")
+    for c in claims:
+        t = " ".join(str(c.get("text", "")).split())
+        if t:
+            out.append("- " + t)
+    out.append("")
+Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(out) + "\n", encoding="utf-8")
+print(len([l for l in out if l.startswith("## slug:")]))
+'
+```
+
+If the printed slug count is `0` → skip to Step 7 (nothing to re-narrate).
+
+**b. Dispatch the narrator (single Task call).**
+
+```
+Task(concept-summary-narrator,
+     RENARRATE_BUNDLE_PATH=<project_path>/.metadata/renarrate-bundle.txt,
+     RECORDS_OUTPUT_PATH=<project_path>/.metadata/renarrate-records.txt,
+     OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
+```
+
+`concept-summary-narrator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched via `Task`, not `Skill`. Parse the return envelope: `ok: false` → **warn (surface the error) and jump to Step 7 with summaries unchanged** (re-narration never blocks the pipeline).
+
+**c. Apply the re-narration (locked, summary-only).**
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py renarrate \
+    --records <project_path>/.metadata/renarrate-records.txt \
+    --wiki-root <WIKI_ROOT> \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+```
+
+`renarrate` parses the records, and under the SAME `_wiki_lock` as `merge` replaces **only** the SUMMARY machine block of each named page (every other block + `## Notes` byte-identical), bumping `updated:` only when the prose actually changed. Parse `data`: `renarrated[]`, `unchanged[]`, `skipped[]` (each `{slug, reason}`; reasons `page_not_found` / `no_summary_sentinel`). On `success: false` (e.g. `records_not_found`) → warn + continue to Step 7. Capture `n_renarrated` / `n_unchanged` / `n_skipped` for the Step 9 summary.
+
+**Fail-soft at every hop.** A narrator `ok:false`, a missing/empty records file, or a non-zero `renarrate` exit must each **warn and continue** to Step 7 with the existing summaries intact. Re-narration is enrichment, never a gate. (Note: because this runs only for `updated_slugs[]` and `merge` already bumped those pages' `updated:` to today in Step 6, a re-narration date bump lands on the same date — no extra churn.)
+
 ### 7. Per-new/updated-slug cogni-wiki integration (sequential, after merge)
 
 For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (skip `skipped`/`write_failed`/`unchanged` slugs — they need no index/backlink work):
@@ -249,6 +327,7 @@ Print ≤ 12 lines:
 - Wiki: `<WIKI_ROOT>`
 - Concepts created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
+- Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.5 did not run
 - **#340 title→slug tripwire** — if `near_existing_total > 0`, surface a warning block:
   - Header: `⚠ <near_existing_total> concepts created near an existing slug — check title stability (#340)`
   - One line per entry from `near_existing_slugs[]` (deterministic order, score-sorted desc): `  <slug> ~ <near_slug> (<near_type>, score=<score>)`
@@ -274,7 +353,7 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
-- Does NOT re-narrate concept summaries across runs — Phase-1 is first-writer-wins on the `## Summary` body; only the claim/source/related lists grow (full body re-synthesis deferred).
+- Re-narrates the `## Summary` body of **updated** pages from the merged claims (Step 6.5, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
 - Does NOT emit `summary` / `learning` page types — Phase-1 ships `concept` + `entity` only.
 - Does NOT run the `lint_wiki.py --fix=all` / `health.py` conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
@@ -287,12 +366,14 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
-- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`.
+- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.5 runs) `renarrate-bundle.txt` / `renarrate-records.txt`.
+- Updated concept/entity pages get their `## Summary` body re-narrated from the merged claims (Step 6.5, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 4.5 contract
 - `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` — the compounding loop + claims-dedup metric this phase realizes
-- `${CLAUDE_PLUGIN_ROOT}/agents/concept-distiller.md` — dispatched agent
+- `${CLAUDE_PLUGIN_ROOT}/agents/concept-distiller.md` — dispatched agent (Phase 1 proposals)
+- `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched agent (Step 6.5 summary re-narration, #341)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py --help` — locked create-or-merge + claim-dedup engine
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

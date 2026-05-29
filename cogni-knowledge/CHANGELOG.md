@@ -1,5 +1,43 @@
 # cogni-knowledge changelog
 
+## 0.1.22 — 2026-05-29 — Re-narrate concept/entity `## Summary` across runs (closes #341)
+
+Phase-4.5 distillation (#336) compounded the wiki **structurally** — across runs the
+`## Claims` / `## Related` / `## Sources` machine blocks accrete and claims dedup —
+but **not narratively**: `concept-store.py merge` kept the `## Summary` block
+first-writer-wins on update, so an `updated` concept page could list 20 distilled
+claims under prose that still reflected only run 1's framing. The `## Summary` is the
+reader's entry point to a wiki page; a stale one undersold what the page now contained.
+
+`knowledge-distill` now re-narrates it. New **Step 6.5** (default-on, fail-soft) runs
+after the merge (Step 6) and before the wiki-helper integration (Step 7): for each slug
+in `updated_slugs[]`, it builds a per-slug bundle (existing summary inner +
+merged `distilled_claims[].text`), dispatches the new `concept-summary-narrator` agent
+(`model: sonnet`, `Read`/`Write` only — raw text, never JSON/YAML, the #325 discipline)
+to rewrite the prose in `OUTPUT_LANGUAGE`, then runs the new `concept-store.py renarrate`
+subcommand. `renarrate` parses the narrator's sentinel-fenced records and, under the same
+`_wiki_lock` as `merge`, replaces **only** the SUMMARY machine block of each named page —
+frontmatter, the `## Claims` / `## Related` / `## Sources` blocks, and the human `##
+Notes` tail stay **byte-identical**; `updated:` bumps only when the prose actually changed
+(idempotent re-narrate ⇒ `action: unchanged`, no date churn). `created` pages keep the
+distiller's fresh summary; pure re-runs touch nothing.
+
+**Fail-soft at every hop** — a narrator `ok:false`, a missing records file, or a non-zero
+`renarrate` exit warns and continues with the existing summaries intact; re-narration
+never blocks `knowledge-compose`. **`--no-renarrate`** opts out (byte-stable re-runs /
+cost control). The Step 9 summary gains a `summaries re-narrated: <n> (<unchanged>
+unchanged, <skipped> skipped)` line.
+
+New: `agents/concept-summary-narrator.md`; `concept-store.py renarrate` (+ `_replace_machine_block`);
+`_knowledge_lib.extract_machine_block` (now the single source of truth — `concept-store.py`'s
+private `_extract_machine_block` delegates to it, and Step 6.5's bundle builder reads the
+SUMMARY block through it) and `_knowledge_lib.parse_renarrate_records`. Docs:
+`references/inverted-pipeline.md` Phase 4.5 "Cross-run compounding". Tests:
+`tests/test_renarrate.sh` (summary-only replace + byte-identical other blocks + idempotency
++ no-sentinel/missing-page skips), `tests/test_knowledge_lib.sh` + `tests/test_distill_contract.sh`
+extended. **Scope:** summary re-narration only — #335 (contradiction surfacing) is already
+closed, so no dedicated contradiction pass was added.
+
 ## 0.1.21 — 2026-05-29 — Research-time gaps streamed into open_questions.md (closes #354)
 
 `knowledge-finalize` Step 10.5 sub-step 5 now streams research-time gaps from
