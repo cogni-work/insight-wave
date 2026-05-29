@@ -460,6 +460,28 @@ def parse_distilled_claims(page_text: str) -> list[dict]:
     return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_WANTED_KEYS)
 
 
+# --- machine-owned body blocks ------------------------------------------------
+# concept/entity pages (written by concept-store.py) wrap each regenerated body
+# region in `<!-- MACHINE-OWNED:NAME:START/END -->` sentinels (SUMMARY / CLAIMS /
+# RELATED / SOURCES). The single source of truth for reading a block's inner text
+# lives here so concept-store.py (the writer) AND knowledge-distill's bundle
+# builder (the reader, Step 6.5) parse it the same way — a future tweak (CRLF,
+# whitespace tolerance) applies everywhere at once.
+
+
+def extract_machine_block(page_text: str, name: str) -> str | None:
+    """Inner text between `<!-- MACHINE-OWNED:NAME:START -->` and `:END -->`, or
+    None when the named block is absent. CRLF-tolerant; the inner is returned
+    verbatim (it includes the block's own `## Heading`)."""
+    pat = re.compile(
+        r"<!--\s*MACHINE-OWNED:" + re.escape(name) + r":START\s*-->\r?\n(.*?)"
+        r"\r?\n?<!--\s*MACHINE-OWNED:" + re.escape(name) + r":END\s*-->",
+        re.DOTALL,
+    )
+    m = pat.search(page_text or "")
+    return m.group(1) if m else None
+
+
 # --- Tokenization + token weighting (shared by wiki-coverage.py and -----------
 # concept-store.py) ------------------------------------------------------------
 # Lifted verbatim from wiki-coverage.py (#326/#331) so the read-before-web
@@ -844,6 +866,93 @@ def parse_citation_records(text: str) -> list[dict]:
     if current is not None:
         records.append(_finalize_citation_record(current))
     return records
+
+
+# --- renarrate-records parser (used by concept-store.py renarrate) ------------
+# The concept-summary-narrator (#341) re-writes a concept/entity page's `##
+# Summary` prose from the merged `distilled_claims[]`. Like every other Phase-4.5
+# agent it has no Bash and writes RAW TEXT only — never JSON/YAML — because a
+# straight `"` in a German „…" summary would break a hand-built structure (#325).
+# Summaries are multi-line prose, so a single-line `key: value` record (the
+# citation/concept idiom) won't do; instead each record fences its prose between
+# a `<<<SUMMARY` opener and a closing line that is exactly `SUMMARY`. concept-
+# store.py `renarrate` parses this, then owns all serialization + the page write.
+
+_RENARRATE_SLUG_RE = re.compile(r"^-\s*slug\s*:\s*(.+?)\s*$")
+_RENARRATE_OPEN = "<<<SUMMARY"
+_RENARRATE_CLOSE = "SUMMARY"
+
+
+def parse_renarrate_records(text: str) -> dict:
+    """Parse a concept-summary-narrator records file into `{slug: new_prose}`.
+
+    Format (one block per slug)::
+
+        - slug: high-risk-classification
+          <<<SUMMARY
+          Re-narrated prose, possibly
+          multiple lines, in OUTPUT_LANGUAGE.
+          SUMMARY
+
+    The prose between `<<<SUMMARY` and a line that is exactly `SUMMARY` (stripped)
+    is captured verbatim, dedented to the block's common left margin, joined with
+    `\\n`, and trailing/leading blank lines trimmed. A slug whose prose is empty
+    is omitted (the script then leaves that page untouched). A later block for the
+    same slug wins. CRLF-tolerant; lines split on `\\n` so an embedded U+2028 in
+    prose is preserved. A `<<<SUMMARY` with no closing `SUMMARY` runs to EOF."""
+    out: dict[str, str] = {}
+    slug: str | None = None
+    capturing = False
+    buf: list[str] = []
+
+    def _flush() -> None:
+        nonlocal slug, buf
+        if slug is not None:
+            prose = _dedent_join(buf)
+            if prose:
+                out[slug] = prose
+        buf = []
+
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
+        stripped = raw.strip()
+        if capturing:
+            if stripped == _RENARRATE_CLOSE:
+                capturing = False
+                _flush()
+                slug = None
+                continue
+            buf.append(raw)
+            continue
+        m = _RENARRATE_SLUG_RE.match(raw.lstrip())
+        if m:
+            # A new slug bullet — flush any open (unterminated) prior block first.
+            _flush()
+            slug = m.group(1).strip()
+            continue
+        if stripped == _RENARRATE_OPEN and slug is not None:
+            capturing = True
+            buf = []
+    # Trailing unterminated block (no closing `SUMMARY` before EOF).
+    if capturing:
+        _flush()
+    return out
+
+
+def _dedent_join(lines: list[str]) -> str:
+    """Strip leading/trailing blank lines, remove the common leading-whitespace
+    margin, and join with `\\n`. Empty / all-blank input → empty string."""
+    body = list(lines)
+    while body and not body[0].strip():
+        body.pop(0)
+    while body and not body[-1].strip():
+        body.pop()
+    if not body:
+        return ""
+    margins = [len(ln) - len(ln.lstrip()) for ln in body if ln.strip()]
+    cut = min(margins) if margins else 0
+    return "\n".join(ln[cut:] if len(ln) >= cut else ln for ln in body)
 
 
 def is_pdf_response(content_type: str | None, url: str) -> bool:

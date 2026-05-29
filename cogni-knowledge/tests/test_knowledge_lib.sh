@@ -441,10 +441,65 @@ def assert_parse_concept_records():
     assert kl.parse_concept_records("") == []
 
 
+def assert_extract_machine_block():
+    page = ("x\n<!-- MACHINE-OWNED:SUMMARY:START -->\n## Summary\n\nHello.\n"
+            "<!-- MACHINE-OWNED:SUMMARY:END -->\ntail\n")
+    # Inner is returned verbatim INCLUDING its own `## Heading`.
+    assert kl.extract_machine_block(page, "SUMMARY") == "## Summary\n\nHello.", \
+        repr(kl.extract_machine_block(page, "SUMMARY"))
+    # Absent block → None (not "").
+    assert kl.extract_machine_block(page, "CLAIMS") is None
+    # CRLF tolerance — matches the _FRONTMATTER_RE convention.
+    crlf = "<!-- MACHINE-OWNED:SUMMARY:START -->\r\nA.\r\n<!-- MACHINE-OWNED:SUMMARY:END -->\r\n"
+    assert kl.extract_machine_block(crlf, "SUMMARY") == "A.", repr(kl.extract_machine_block(crlf, "SUMMARY"))
+    # Parity with concept-store.py's private delegate (single source of truth).
+    cstore = load("concept_store", "concept-store.py")
+    assert cstore._extract_machine_block(page, "SUMMARY") == kl.extract_machine_block(page, "SUMMARY")
+
+
+def assert_parse_renarrate_records():
+    text = (
+        "- slug: high-risk-classification\n"
+        "  <<<SUMMARY\n"
+        "  Annex III lists eight categories.\n"
+        "  A system is high-risk when a safety component.\n"
+        "  SUMMARY\n"
+        "- slug: european-commission\n"
+        "  <<<SUMMARY\n"
+        "  The Commission issued the GPAI Code in 2025.\n"
+        "  SUMMARY\n"
+        "- slug: empty-one\n"
+        "  <<<SUMMARY\n"
+        "  SUMMARY\n"
+    )
+    r = kl.parse_renarrate_records(text)
+    # Multi-line prose preserved; common 2-space margin dedented.
+    assert r["high-risk-classification"] == (
+        "Annex III lists eight categories.\n"
+        "A system is high-risk when a safety component."), repr(r["high-risk-classification"])
+    assert r["european-commission"] == "The Commission issued the GPAI Code in 2025."
+    # A slug with empty prose is OMITTED (the script then leaves the page untouched).
+    assert "empty-one" not in r, r
+    # A later block for the same slug wins.
+    dup = kl.parse_renarrate_records(
+        "- slug: x\n  <<<SUMMARY\n  first\n  SUMMARY\n- slug: x\n  <<<SUMMARY\n  second\n  SUMMARY\n")
+    assert dup["x"] == "second", dup
+    # Unterminated trailing block (no closing SUMMARY) still captures to EOF.
+    eof = kl.parse_renarrate_records("- slug: y\n  <<<SUMMARY\n  tail line\n")
+    assert eof["y"] == "tail line", eof
+    # CRLF tolerance.
+    crlf = kl.parse_renarrate_records("- slug: z\r\n  <<<SUMMARY\r\n  zee\r\n  SUMMARY\r\n")
+    assert crlf["z"] == "zee", crlf
+    # Empty input → {}.
+    assert kl.parse_renarrate_records("") == {}
+
+
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("claim_similarity", assert_claim_similarity)
 check("parse_concept_records", assert_parse_concept_records)
+check("extract_machine_block", assert_extract_machine_block)
+check("parse_renarrate_records", assert_parse_renarrate_records)
 check("strip_inline_citation_markers", assert_strip_inline_citation_markers)
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
@@ -490,6 +545,8 @@ grade tokenization_primitives "tokenization primitives (#336 lift) — fold/toke
 grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"
 grade claim_similarity        "claim_similarity — symmetric weighted-Jaccard, reworded-same≥0.85, distinct<0.85, all-boilerplate→0.0 (#336)"
 grade parse_concept_records   "parse_concept_records — concept/entity records, repeatable claim: lines, colon-in-summary, first-pipe split (#336)"
+grade extract_machine_block   "extract_machine_block — verbatim inner incl. heading, absent→None, CRLF, concept-store delegate parity (#341)"
+grade parse_renarrate_records "parse_renarrate_records — multi-line dedented prose, empty-prose omitted, last-slug-wins, unterminated-to-EOF, CRLF (#341)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
