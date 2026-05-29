@@ -234,7 +234,7 @@ No files are written directly by this skill — every artefact comes from a down
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — the seven-phase chain push-mode drives
 - `cogni-wiki:wiki-refresh` SKILL.md — pull-mode dispatch target
 - `cogni-wiki:wiki-lint` SKILL.md — push-mode staleness source
