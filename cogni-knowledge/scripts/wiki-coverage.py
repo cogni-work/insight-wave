@@ -210,8 +210,9 @@ def _read_text(path: Path) -> str:
 
 
 def _collect_pages(wiki_root: Path) -> list[dict]:
-    """Gather source + synthesis pages with their title/tags/index-summary +
-    pre-extracted claim text.
+    """Gather source/synthesis/concept/entity pages with their title/tags/
+    index-summary + per-type claim text (`pre_extracted_claims[].text` for
+    source/synthesis, `distilled_claims[].text` for concept/entity).
 
     Returns a list of {slug, type, page_path (wiki-root-relative), title,
     tokens}. A missing wiki/ dir (fresh base) yields []."""

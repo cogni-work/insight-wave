@@ -44,8 +44,9 @@
 #      and this flips to `partial` (matched the governance page via leaked tokens).
 #  10. A concept page distilled from multiple sources surfaces as a covering page
 #      for an integrative sub-question that no single source covers strongly
-#      enough on its own — proves the new concept/entity branch in _collect_pages
-#      (the #343 multiplicative-compounding payoff).
+#      enough on its own; a sibling entity page covers its own SQ — together they
+#      prove BOTH new branches (concept→concepts AND entity→entities) in
+#      _collect_pages fire (the #343 multiplicative-compounding payoff).
 #  11. A concept page with `distilled_claims: []` contributes only title/tag
 #      signal — guards against a parser regression that would silently fall back
 #      to source-style claim parsing or fabricate coverage from an empty block.
@@ -460,6 +461,27 @@ distilled_claims:
 body
 MD
 
+# An entity page (distilled_claims too) — proves the `entity → entities` half of
+# the new _TYPE_DIRS enumeration fires end-to-end, not just `concept → concepts`.
+cat > "$WIKI3/wiki/entities/eu-kommission.md" <<'MD'
+---
+id: eu-kommission
+title: "Europaeische Kommission"
+type: entity
+tags: [entity]
+distilled_claims:
+  - claim_id: dcl-001
+    text: "Die Europaeische Kommission erlaesst delegierte Rechtsakte nach Artikel 97 zur Aktualisierung der Hochrisiko-Anforderungen."
+    norm_key: ""
+    backlinks: ["article-51-thresholds"]
+    source_claim_refs: ["article-51-thresholds#c1"]
+    created: "2026-05-29"
+    updated: "2026-05-29"
+---
+# Europaeische Kommission
+body
+MD
+
 cat > "$WIKI3/wiki/index.md" <<'MD'
 # Index
 ### Sanktionen
@@ -468,6 +490,8 @@ cat > "$WIKI3/wiki/index.md" <<'MD'
 - [[article-53-transparency]] — Artikel 53 schreibt Transparenzpflichten vor.
 ### Concepts
 - [[gpai-regime]] — GPAI-Regime: Schwellenwerte, Meldepflichten und Transparenz kombiniert.
+### Entities
+- [[eu-kommission]] — Europaeische Kommission: delegierte Rechtsakte nach Artikel 97.
 MD
 
 cat > "$WORK/plan-cn1.json" <<'JSON'
@@ -475,21 +499,28 @@ cat > "$WORK/plan-cn1.json" <<'JSON'
   {"id": "sq-gpai-integrated",
    "query": "GPAI Schwellenwerte Meldepflichten Transparenz Artikel 51 52 53",
    "theme_label": "GPAI-Regime",
-   "search_guidance": "Allzweck-KI Pflichten"}
+   "search_guidance": "Allzweck-KI Pflichten"},
+  {"id": "sq-eu-kommission",
+   "query": "Europaeische Kommission delegierte Rechtsakte Artikel 97 Hochrisiko",
+   "theme_label": "Europaeische Kommission",
+   "search_guidance": "delegierte Rechtsakte"}
 ]}
 JSON
 
-run_score_ok "concept-page-covers-integrated-SQ" "$WIKI3" "$WORK/plan-cn1.json"
-check "CN-1: a concept page distilled from 3 sources covers an integrative SQ (covered_pages[].type == 'concept')" "$OUT" <<'PY'
+run_score_ok "concept-and-entity-pages-cover-distinct-SQs" "$WIKI3" "$WORK/plan-cn1.json"
+check "CN-1: concept AND entity distilled pages each cover their integrative SQ (covered_pages[].type 'concept'+'entity')" "$OUT" <<'PY'
 import os, json
 d = json.loads(os.environ["PAYLOAD"])
 sq = {s["sq_id"]: s for s in d["data"]["sub_questions"]}
 g = sq["sq-gpai-integrated"]
 assert g["coverage_verdict"] in ("covered", "partial"), g["coverage_verdict"]
-types = [c["type"] for c in g["covered_pages"]]
-assert "concept" in types, types
-slugs = [c["slug"] for c in g["covered_pages"]]
-assert "gpai-regime" in slugs, slugs
+assert "concept" in [c["type"] for c in g["covered_pages"]], g["covered_pages"]
+assert "gpai-regime" in [c["slug"] for c in g["covered_pages"]], g["covered_pages"]
+# The entity page covers its own SQ — exercises the `entity → entities` dir branch.
+e = sq["sq-eu-kommission"]
+assert e["coverage_verdict"] in ("covered", "partial"), e["coverage_verdict"]
+assert "entity" in [c["type"] for c in e["covered_pages"]], e["covered_pages"]
+assert "eu-kommission" in [c["slug"] for c in e["covered_pages"]], e["covered_pages"]
 print("OK")
 PY
 
