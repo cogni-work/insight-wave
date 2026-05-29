@@ -365,6 +365,20 @@ assert_not_grep 'link_dir' "$FINALIZE" "knowledge-finalize: no link_dir path-pre
 assert_not_grep 'audit-only' "$INGEST" "knowledge-ingest: no 'audit-only' backlink deferral — apply-plan writes backlinks (#308)"
 assert_grep 'theme_label' "$INGEST" "knowledge-ingest: files sources under the sub-question theme_label category (#307)"
 
+# --- Slice 17 (#350) Skill(...) dispatch convention named once + cross-referenced ---
+# Convention surface — the dispatch contract lives in delegation-contract.md
+# under §"How `Skill(...)` blocks are written", and every orchestrator skill
+# cross-references it via that section title. Locks in #350's middle path:
+# central statement + light cross-refs instead of per-site clarifiers.
+DELEGATION_CONTRACT="$PLUGIN_ROOT/references/delegation-contract.md"
+assert_grep 'How `Skill(...)` blocks are written' "$DELEGATION_CONTRACT" \
+  "delegation-contract.md names the Skill(...) dispatch convention (#350)"
+for orch in knowledge-setup knowledge-resume knowledge-dashboard knowledge-refresh knowledge-query; do
+  ORCH_SKILL="$PLUGIN_ROOT/skills/${orch}/SKILL.md"
+  assert_grep 'How `Skill(...)` blocks are written' "$ORCH_SKILL" \
+    "${orch}: cross-references the Skill-dispatch convention (#350)"
+done
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0
