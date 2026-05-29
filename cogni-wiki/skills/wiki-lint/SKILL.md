@@ -203,6 +203,8 @@ The script invokes `lint_wiki.py` itself as a subprocess (read-only, mirrors the
 
 **LLM-emitted findings (Step 4d's `missing_concept_page` items) are not yet wired in** — v0.0.30 ships deterministic-only. The script accepts `--findings -` (JSON on stdin) for the follow-up that will pipe a merged finding set in from this step. Until then the "Missing concept pages" section is omitted.
 
+**Research-time gaps (`research_uncovered` / `research_partial`, #354).** Two additional sections render at the **tail** of `open_questions.md` — `## Research-time gaps — uncovered` and `## Research-time gaps — partial`. These are **deposit-only**: `lint_wiki.py` never produces them. They are streamed in by `cogni-knowledge:knowledge-finalize` (Step 10.5 sub-step 5) via the `--findings -` contract, sourced from each research project's `<project>/.metadata/wiki-coverage.json`, and keyed by a synthetic `sq:<sq_id>` identifier (e.g. `` `sq:sq-04` ``) rather than an on-disk page slug. `finalize` is now a `CLOSING_OPS` op, so a later finalize whose `wiki/log.md` line carries a `sqs=sq-04,…` suffix credit-closes the item (`- [x] ~~\`sq:sq-04\` — …~~ — closed YYYY-MM-DD by finalize`). A plain `wiki-lint` dispatch (no cogni-knowledge involvement) never introduces these rows.
+
 **Failure isolation.** A non-zero exit or malformed JSON from `rebuild_open_questions.py` MUST NOT roll back the lint run. The audit report (Step 5), index update (Step 6), log line (Step 7), and `last_lint` bump (Step 8) are already on disk. Surface the error in the Step 9 report and continue — the next lint run will reconcile.
 
 ### 9. Report to the user

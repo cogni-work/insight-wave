@@ -868,3 +868,129 @@ def is_pdf_response(content_type: str | None, url: str) -> bool:
         return False
     parts = urlsplit(normalize_url(url))
     return parts.path.lower().endswith(".pdf")
+
+
+# ---------------------------------------------------------------------------
+# Research-time gap streaming (#354) — read <project>/.metadata/wiki-coverage.json
+# and turn `uncovered`/`partial` sub-questions into open_questions.md findings.
+# ---------------------------------------------------------------------------
+
+# A sub-question id must be regex-safe: it ends up inside a backtick-quoted
+# token (`sq:<sq_id>`) in open_questions.md and inside the `sqs=` log-line
+# suffix. knowledge-plan always emits `sq-01`, `sq-02`, … — anything that
+# does not match this shape is dropped defensively (R6).
+_SQ_ID_RE = re.compile(r"^[\w\-]+$")
+
+# verdict → open_questions.md tracked class.
+_COVERAGE_GAP_CLASS = {
+    "uncovered": "research_uncovered",
+    "partial": "research_partial",
+}
+
+
+def _read_metadata_json(project_path, name: str) -> dict:
+    """Read `<project_path>/.metadata/<name>`; return {} on any failure."""
+    p = Path(project_path) / ".metadata" / name
+    if not p.is_file():
+        return {}
+    try:
+        obj = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return obj if isinstance(obj, dict) else {}
+
+
+def _coverage_sub_questions(project_path) -> list:
+    """Return wiki-coverage.json's `data.sub_questions[]` (or [] on any failure)."""
+    cov = _read_metadata_json(project_path, "wiki-coverage.json")
+    data = cov.get("data") if isinstance(cov.get("data"), dict) else {}
+    sqs = data.get("sub_questions")
+    return sqs if isinstance(sqs, list) else []
+
+
+def _sanitize_gap_message(msg: str) -> str:
+    """Collapse whitespace and strip characters that would break the
+    open_questions.md line regexes (backticks delimit the id; `~~` wraps a
+    closed line)."""
+    msg = " ".join(str(msg).split())
+    return msg.replace("`", "").replace("~~", "")
+
+
+def _plan_message_index(project_path) -> dict:
+    """Map plan.json sub-question id → a one-line gap message.
+
+    plan.json keys sub-questions by `id` (e.g. `sq-04`); wiki-coverage.json
+    keys them by `sq_id`. They share the same value, so this index joins the
+    two. Message = "<theme_label> — <query truncated>".
+    """
+    plan = _read_metadata_json(project_path, "plan.json")
+    out: dict = {}
+    sqs = plan.get("sub_questions")
+    if not isinstance(sqs, list):
+        return out
+    for sq in sqs:
+        if not isinstance(sq, dict):
+            continue
+        sid = str(sq.get("id", ""))
+        if not sid:
+            continue
+        theme = str(sq.get("theme_label", "")).strip()
+        query = str(sq.get("query", "")).strip()
+        if len(query) > 140:
+            # Clamp to 140 chars *including* the ellipsis (139 of query + "…").
+            query = query[:139].rstrip() + "…"
+        if theme and query:
+            msg = f"{theme} — {query}"
+        else:
+            msg = theme or query
+        out[sid] = _sanitize_gap_message(msg)
+    return out
+
+
+def _iter_coverage_gaps(project_path):
+    """Yield `(sq_id, verdict)` for every regex-safe sub-question scored a gap
+    (`uncovered`/`partial`) in `<project>/.metadata/wiki-coverage.json`, in
+    coverage-manifest order. The single source of truth for the gap filter +
+    sq_id validation shared by the two public helpers below."""
+    for sq in _coverage_sub_questions(project_path):
+        if not isinstance(sq, dict):
+            continue
+        verdict = sq.get("coverage_verdict")
+        if verdict not in _COVERAGE_GAP_CLASS:
+            continue
+        sid = str(sq.get("sq_id", ""))
+        if sid and _SQ_ID_RE.match(sid):
+            yield sid, verdict
+
+
+def gap_sq_ids_from_coverage(project_path) -> list:
+    """Bare `sq_id` list (no `sq:` prefix) for sub-questions scored
+    `uncovered`/`partial` in `<project>/.metadata/wiki-coverage.json`.
+
+    Used by knowledge-finalize Step 10 to build the `sqs=sq-01,sq-04` suffix on
+    the `wiki/log.md` finalize line. Preserves coverage-manifest order. Returns
+    [] when the manifest is absent/malformed (degraded but valid). Ids that are
+    not regex-safe are dropped.
+    """
+    return [sid for sid, _ in _iter_coverage_gaps(project_path)]
+
+
+def load_wiki_coverage_findings(project_path) -> list:
+    """Turn research-time gaps into open_questions.md `--findings -` entries.
+
+    Reads `<project>/.metadata/wiki-coverage.json`; for each sub-question scored
+    `uncovered`/`partial`, emits
+    `{"class": "research_uncovered"|"research_partial", "id": "sq:<sq_id>",
+      "message": "<theme_label> — <query>"}`. The message text is read from
+    plan.json (wiki-coverage.json carries only sq_id + verdict); falls back to a
+    bare `sub-question <sq_id> (<verdict>)` when plan.json is missing.
+
+    Returns [] on a missing/malformed coverage manifest (fail-soft, matching the
+    SKILL's posture). Regex-unsafe sq_ids are dropped.
+    """
+    messages = _plan_message_index(project_path)
+    out = []
+    for sid, verdict in _iter_coverage_gaps(project_path):
+        msg = messages.get(sid) or f"sub-question {sid} ({verdict})"
+        out.append({"class": _COVERAGE_GAP_CLASS[verdict], "id": f"sq:{sid}", "message": msg})
+    return out
