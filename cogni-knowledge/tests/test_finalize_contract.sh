@@ -225,6 +225,20 @@ assert_not_grep '(printf|echo|cat|tee|>>).*open[_-]questions.*log\.md|(printf|ec
 # Edge-case section anchor: re-finalize idempotency for the open-questions RMW.
 assert_grep '#338 open-questions idempotency' "$FIN" "knowledge-finalize: edge-case section documents re-finalize idempotency for the open-questions RMW (#338)"
 
+# --- #354 research-time gap streaming ------------------------------------
+# Step 10 finalize log line carries the conditional sqs= suffix.
+assert_grep 'sqs=%s' "$FIN" "knowledge-finalize: Step 10 finalize log line carries an sqs= suffix (#354)"
+assert_grep 'gap_sq_ids_from_coverage' "$FIN" "knowledge-finalize: Step 10 builds sqs= from gap_sq_ids_from_coverage (#354)"
+# Step 10.5 sub-step 5 pipes the merged payload via the build helper + --findings -.
+assert_grep 'build_open_questions_payload.py' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 invokes build_open_questions_payload.py (#354)"
+assert_grep '\-\-findings  *-' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 pipes the merged payload via --findings - (#354)"
+# finalize is now a CLOSING_OPS op; the close-attribution prose reflects it.
+assert_grep 'closed <date> by finalize' "$FIN" "knowledge-finalize: documents the closed ... by finalize credit-close (#354)"
+# New opt-out flag.
+assert_grep '\-\-no-research-gaps' "$FIN" "knowledge-finalize: --no-research-gaps flag documented (#354)"
+# Step 11 split surface.
+assert_grep 'lint=<L>, research=<R>' "$FIN" "knowledge-finalize: Step 11 surfaces the lint/research open-questions split (#354)"
+
 # --- #337 verification-honesty surfacing (frontmatter + Step 11) ---------
 # Two additive synthesis-page frontmatter keys declare WHAT "verified" means;
 # Step 11 + the dashboard + verify Step 6 all carry the same qualifier so a

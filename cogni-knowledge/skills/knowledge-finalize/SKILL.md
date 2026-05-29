@@ -57,6 +57,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, SYNTHESIS_SLUG, citation count) without writing anything or dispatching cycle-guard. |
 | `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire (#335). Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
 | `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh (#338). Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
+| `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md` (#354). Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
 
 ## Workflow
 
@@ -589,10 +590,30 @@ The topic is operator-supplied free text. Replace any embedded CR/LF with a spac
 DATE_STAMP=$(date -u +%F)
 TOPIC_RAW=<topic from Step 5 subprocess output>
 TOPIC=$(printf '%s' "$TOPIC_RAW" | tr '\r\n' '  ')
-printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s\n' \
-    "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$DRAFT_VERSION" "$REVISION_ROUND" "$N_SOURCES" \
-    >> "${WIKI_ROOT}/wiki/log.md"
+
+# sqs= suffix (#354): the bare sq_id list (no `sq:` prefix) of the
+# sub-questions scored uncovered/partial in this project's pre-finalize
+# wiki-coverage.json — the research-time gaps this synthesis presumably now
+# covers. Empty (suffix omitted) when no coverage manifest exists.
+GAP_SQS=$(PROJECT_PATH="$PROJECT_PATH" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ.get("KNOWLEDGE_SCRIPTS", ""))
+from _knowledge_lib import gap_sq_ids_from_coverage
+print(",".join(gap_sq_ids_from_coverage(os.environ["PROJECT_PATH"])))
+' 2>/dev/null || true)
+
+if [ -n "$GAP_SQS" ]; then
+    printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s sqs=%s\n' \
+        "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$DRAFT_VERSION" "$REVISION_ROUND" "$N_SOURCES" "$GAP_SQS" \
+        >> "${WIKI_ROOT}/wiki/log.md"
+else
+    printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s\n' \
+        "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$DRAFT_VERSION" "$REVISION_ROUND" "$N_SOURCES" \
+        >> "${WIKI_ROOT}/wiki/log.md"
+fi
 ```
+
+`KNOWLEDGE_SCRIPTS` is `${CLAUDE_PLUGIN_ROOT}/scripts` (the cogni-knowledge scripts dir holding `_knowledge_lib.py`). The `sqs=` suffix is additive: cogni-wiki's `LOG_LINE_RE` parses `## [date] op | rest` and treats `rest` as opaque, so pre-existing readers ignore it. It is what cogni-wiki's `rebuild_open_questions.py::attribute_close` substring-scans (after stripping the `sq:` prefix from the checklist id) to credit-close a research-time gap `closed … by finalize` (#354).
 
 `finalize` is a new operation prefix. Same additive-prefix posture as M7's `compose` and M8's `verify` — pre-v0.0.35 cogni-wiki readers count unknown prefixes in their catch-all bucket without crashing (`cogni-wiki/CLAUDE.md` §"Key Conventions"). Formalising the prefix into the enum lands in M10 when query / dashboard rebuild on the new manifests.
 
@@ -662,26 +683,40 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    1. `--dry-run` was passed — silent skip (same posture as Step 10.6; finalize already exits at Step 3 on `--dry-run`, so reaching sub-step 5 under `--dry-run` should never happen — this guard is defence-in-depth).
    2. `--no-open-questions` was passed — log `Open questions rebuild skipped: --no-open-questions` and continue.
 
+   `--no-research-gaps` (#354) does **not** skip the sub-step — it narrows the payload. Set `NO_RESEARCH_GAPS=1` when the flag is present (else leave it unset) so the invocation below appends `--no-research-gaps` to the payload builder and only the lint findings stream.
+
+   The rebuild now consumes a **merged** findings payload (#354): cogni-wiki's `lint_wiki.py` output (the seven existing classes about *existing* pages) **plus** this project's research-time gaps (`research_uncovered` / `research_partial`) read from `<project>/.metadata/wiki-coverage.json`. `build_open_questions_payload.py` (cogni-knowledge) does the merge in one process and emits a `{success, data: {errors, warnings, info}, meta}` envelope; `rebuild_open_questions.py --findings -` unwraps `data` and reconciles. The research gaps render as two new tail sections (`## Research-time gaps — uncovered` / `## Research-time gaps — partial`).
+
    ```
    # Run ONLY after the two skip conditions above are evaluated (--dry-run,
-   # then --no-open-questions). Capture stdout ONLY — no 2>&1: stderr flows to
-   # the operator's terminal so a crash traceback stays visible and can never
-   # contaminate the single-line JSON envelope on stdout (a stray stderr line
-   # on an otherwise-successful rebuild would otherwise parse as malformed and
-   # surface a false FAILED). Mirrors cogni-wiki wiki-lint Step 8.5's
-   # `OQ_JSON=$(… --wiki-root "$WIKI_ROOT") || true` capture exactly.
-   OPEN_Q_JSON=$(python3 "$WIKI_LINT_SCRIPTS/rebuild_open_questions.py" \
-       --wiki-root "$WIKI_ROOT") || OPEN_Q_EXIT=$?
+   # then --no-open-questions). When --no-research-gaps is set, append it to the
+   # payload-builder args so only the lint findings stream (the research gaps
+   # are dropped, the seven existing classes still flow).
+   #
+   # Capture stdout ONLY — no 2>&1: stderr flows to the operator's terminal so a
+   # crash traceback stays visible and can never contaminate the single-line
+   # JSON envelope on stdout. Mirrors cogni-wiki wiki-lint Step 8.5's
+   # `OQ_JSON=$(…) || true` capture exactly.
+   OPEN_Q_PAYLOAD=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/build_open_questions_payload.py" \
+       --wiki-root "$WIKI_ROOT" \
+       --project   "$PROJECT_PATH" \
+       --wiki-lint "$WIKI_LINT_SCRIPTS/lint_wiki.py" \
+       ${NO_RESEARCH_GAPS:+--no-research-gaps})
+
+   OPEN_Q_JSON=$(printf '%s' "$OPEN_Q_PAYLOAD" \
+       | python3 "$WIKI_LINT_SCRIPTS/rebuild_open_questions.py" \
+           --wiki-root "$WIKI_ROOT" \
+           --findings  -) || OPEN_Q_EXIT=$?
    OPEN_Q_EXIT=${OPEN_Q_EXIT:-0}
    ```
 
-   The script emits a single-line `{success, data, error}` envelope on stdout (stdlib-only, `_wikilib.atomic_write`-backed). On a fresh wiki where `wiki/open_questions.md` does not yet exist, the script creates it (the reconcile starts from an empty checklist). Parse and surface in Step 11:
+   `build_open_questions_payload.py` is **fail-soft**: a `lint_wiki.py` crash degrades to a research-only payload (recorded in `meta.degraded`) rather than blocking the gap stream, and the envelope is always valid JSON. `rebuild_open_questions.py` then emits a single-line `{success, data, error}` envelope on stdout (stdlib-only, `_wikilib.atomic_write`-backed). On a fresh wiki where `wiki/open_questions.md` does not yet exist, the script creates it (the reconcile starts from an empty checklist). Parse and surface in Step 11:
 
-   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`. Step 11 surfaces `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` matches the `✓ wiki-health clean` marker on the adjacent conformance-gate line so an operator scanning the summary need not grep for the absence of `⚠`).
+   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`, plus `data.opened_by_class` (the per-class split #354 added) so Step 11 can break opens into lint vs research. Step 11 surfaces `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` matches the `✓ wiki-health clean` marker on the adjacent conformance-gate line so an operator scanning the summary need not grep for the absence of `⚠`).
    - `success: false` — surface `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` and continue.
    - `OPEN_Q_EXIT != 0` or malformed JSON — same template, `<error>` substituted by `script exit <code>` / `malformed JSON envelope`.
 
-   **Close-attribution caveat.** `rebuild_open_questions.py` reconciles the checklist against the latest on-disk lint findings. Because `finalize` is **not** one of the script's `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`), an item that disappears between runs renders as a bare `closed <date>` rather than a `closed by finalize` attribution — adding `finalize` to `CLOSING_OPS` is part of the deferred Option (b) cogni-wiki change (#354). No second `wiki/log.md` line is written here: the script never logs (that is the SKILL's job), and the existing Step 10 `## [YYYY-MM-DD] finalize | …` line is already on disk.
+   **Close-attribution (#354).** `finalize` is now one of `rebuild_open_questions.py`'s `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`, `finalize`). The credit-close flow spans two dispatches and is self-attributing via the Step 10 `sqs=` log line: in *this* dispatch the gap sub-questions are still scored `uncovered`/`partial` in `wiki-coverage.json` (that scan predates this synthesis), so they render **open** as `- [ ] \`sq:<sq_id>\` — …` AND the Step 10 line records `sqs=<sq_id>,…`. After the next `knowledge-curate` re-scores them `covered` (the synthesis is now queryable), the *next* finalize's merged payload no longer lists them as gaps → `reconcile` closes them, and `attribute_close` finds the bare `<sq_id>` inside the earlier finalize line's `sqs=` suffix → `- [x] ~~\`sq:<sq_id>\` — …~~ — closed <date> by finalize`. No second `wiki/log.md` line is written here: the script never logs (that is the SKILL's job), and the Step 10 line is already on disk. A revisor pass that drops a sub-question's coverage is self-correcting — the next curate's `wiki-coverage.json` reopens the gap per `reconcile`'s re-appearing-key semantics.
 
    **Fail-soft posture (explicit).** Sub-step 5 is a backlog refresh. A non-zero exit, malformed envelope, or `_wiki_lock` contention **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–4 are all already on disk. The summary surfaces the failure loudly so the operator can run `cogni-wiki:wiki-lint` manually; the next finalize dispatch reconciles. (Verbatim mirror of cogni-wiki Step 8.5's failure-isolation contract; matches Step 10.6's posture.)
 
@@ -772,7 +807,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio and the contradiction-tripwire
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
-- Open questions (Step 10.5 sub-step 5, #338): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` / `--dry-run` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
+- Open questions (Step 10.5 sub-step 5, #338 / #354): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0` (backward-compatible with #338's terse line). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` / `--dry-run` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6, #335): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
   ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown (#335)
