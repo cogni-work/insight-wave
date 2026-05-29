@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Bash, Task
 
 Phase 4.5 of the v0.1.0 inverted pipeline — it sits **between** `knowledge-ingest` (Phase 4) and `knowledge-compose` (Phase 5): `plan → curate → fetch → ingest → **distill** → compose → verify → finalize`.
 
-Phase 4 deposits one `type: source` page per fetched URL (verbatim body + `pre_extracted_claims:`). That makes the wiki a **citation store**. This phase turns those source claims into the distilled **concept/entity web** that makes a Karpathy wiki *compound* across runs: `type: concept` / `type: entity` pages that successive runs **enrich** (new claims appended, source backlinks unioned) rather than duplicate, with **claim-level dedup** at deposit (the Finding-H fix, #336). The differentiation thesis's compounding loop + claims-dedup metric become real here.
+Phase 4 deposits one `type: source` page per fetched URL (verbatim body + `pre_extracted_claims:`). That makes the wiki a **citation store**. This phase turns those source claims into the distilled **concept/entity web** that makes a Karpathy wiki *compound* across runs: `type: concept` / `type: entity` pages that successive runs **enrich** (new claims appended, source backlinks unioned) rather than duplicate, with **claim-level dedup** at deposit (the Finding-H fix, #336) and **per-run re-narration of updated summaries** (#341, Step 6.5) so the wiki compounds *narratively* — the entry-point prose integrates new evidence — as well as structurally. The differentiation thesis's compounding loop + claims-dedup metric become real here.
 
 **Optional + fail-soft.** A distill failure must NEVER block `knowledge-compose`. Same posture as the `knowledge-curate` Step 0.5 coverage pre-step: warn loudly, exit cleanly, let the pipeline continue. The concept/entity pages are an enrichment layer, not a correctness gate.
 
@@ -258,7 +258,7 @@ Task(concept-summary-narrator,
      OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
 ```
 
-`concept-summary-narrator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched via `Task`, not `Skill`. Parse the return envelope: `ok: false` → **warn (surface the error) and jump to Step 7 with summaries unchanged** (re-narration never blocks the pipeline).
+`concept-summary-narrator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched via `Task`, not `Skill`. Parse the return envelope: `ok: true` → continue to Step 6.5c; `ok: false` → **warn (surface the error) and jump to Step 7 with summaries unchanged** (re-narration never blocks the pipeline).
 
 **c. Apply the re-narration (locked, summary-only).**
 
@@ -269,7 +269,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py renarrate \
     --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
 ```
 
-`renarrate` parses the records, and under the SAME `_wiki_lock` as `merge` replaces **only** the SUMMARY machine block of each named page (every other block + `## Notes` byte-identical), bumping `updated:` only when the prose actually changed. Parse `data`: `renarrated[]`, `unchanged[]`, `skipped[]` (each `{slug, reason}`; reasons `page_not_found` / `no_summary_sentinel`). On `success: false` (e.g. `records_not_found`) → warn + continue to Step 7. Capture `n_renarrated` / `n_unchanged` / `n_skipped` for the Step 9 summary.
+`renarrate` parses the records, and under the SAME `_wiki_lock` as `merge` replaces **only** the SUMMARY machine block of each named page (every other block + `## Notes` byte-identical), bumping `updated:` only when the prose actually changed. Parse `data`: `renarrated[]`, `unchanged[]`, `skipped[]` (each `{slug, reason}`; reasons `page_not_found` / `no_summary_sentinel`). On `success: false` (e.g. `records_not_found`, or a `--wiki-scripts-dir` import failure) → warn + continue to Step 7. Capture `n_renarrated` / `n_unchanged` / `n_skipped` for the Step 9 summary.
 
 **Fail-soft at every hop.** A narrator `ok:false`, a missing/empty records file, or a non-zero `renarrate` exit must each **warn and continue** to Step 7 with the existing summaries intact. Re-narration is enrichment, never a gate. (Note: because this runs only for `updated_slugs[]` and `merge` already bumped those pages' `updated:` to today in Step 6, a re-narration date bump lands on the same date — no extra churn.)
 
@@ -344,7 +344,7 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 ## Edge cases
 
 - **Fresh base (run 1).** Every concept/entity is `created`; `claims_deduped_total` may be 0 (nothing prior to dedup against — same-run near-dupes still merge). Compounding shows from run 2 onward.
-- **Re-run on the same claim set.** Step 3 skips re-dispatch when `bundle_hash` is unchanged; even without the skip, `concept-store.py merge` is byte-stable (re-merge → all `unchanged`, `n_new == 0`, no bump).
+- **Re-run on the same claim set.** Step 3 skips re-dispatch when `bundle_hash` is unchanged; even without the skip, `concept-store.py merge` is byte-stable (re-merge → all `unchanged`, `n_new == 0`, no bump); `updated_slugs[]` is then empty, so Step 6.5 re-narration also no-ops.
 - **A concept slug collides with a `foundation: true` page.** `concept-store.py` refuses to merge (`skipped`, `reason: foundation_collision`) — never overwrites a curated foundation.
 - **A concept slug collides with a hand-authored page (no MACHINE-OWNED sentinels).** `concept-store.py` skips it (`reason: no_sentinels_human_page`) and leaves the page untouched — we never clobber a page we did not author.
 - **Distiller proposed a concept but every claim was a re-run duplicate.** The page is `unchanged`; no index churn, no `entries_count` bump.
