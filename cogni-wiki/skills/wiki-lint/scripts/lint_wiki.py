@@ -103,6 +103,11 @@ WIKI_INGEST_SCRIPTS = (
 CONFIG_BUMP_SCRIPT = WIKI_INGEST_SCRIPTS / "config_bump.py"
 WIKI_INDEX_UPDATE_SCRIPT = WIKI_INGEST_SCRIPTS / "wiki_index_update.py"
 
+# NOTE (#354): `research_uncovered` / `research_partial` are NOT lint classes —
+# lint never emits them. They are research-time gaps deposited into
+# wiki/open_questions.md by cogni-knowledge:knowledge-finalize via
+# rebuild_open_questions.py --findings -. They live exclusively in that
+# script's taxonomy, not here.
 FIX_CLASSES = (
     "reverse_link_missing",
     "synthesis_no_wiki_source",
