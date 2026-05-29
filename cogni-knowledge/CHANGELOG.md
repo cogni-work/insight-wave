@@ -1,5 +1,27 @@
 # cogni-knowledge changelog
 
+## 0.1.17 — 2026-05-29 — Convention surface — Skill(...) dispatch contract named once
+
+**Closes #350** ([deferred-from PR #349 suggestion 5](https://github.com/cogni-work/insight-wave/pull/349#issuecomment-4570497287)).
+
+Documentation-only. Zero behavioural change. Zero script, schema, or agent
+changes.
+
+Adds one new section — `## How \`Skill(...)\` blocks are written` — to
+`references/delegation-contract.md`. Extends the existing
+`delegation-contract.md` bullet in the References section of each of the five
+orchestrator SKILL.md files (`knowledge-setup`, `knowledge-resume`,
+`knowledge-dashboard`, `knowledge-refresh`, `knowledge-query`) to also point
+at the new section title — `knowledge-refresh:16`'s "Read
+`delegation-contract.md` once per session" line is extended in place. No
+per-site clarifier is added at any dispatch block (rejected as high-noise
+after monorepo audit — see PR body for the comparison). No `Skill(...)`
+dispatch block is modified.
+
+Tests: 6 new contract asserts in `test_skill_contracts.sh` (Slice 17) — one
+pins the new section heading in `delegation-contract.md`; five loop over the
+orchestrators and assert each cross-references the new section title.
+
 ## 0.1.16 — 2026-05-29
 
 Resolves **#337** approach **(b) semantic-honesty surfacing** in full, and ships a minimal **(a) opt-in skeleton** as `knowledge-refresh --resweep`. The Phase 6 `knowledge-verify` contract is, by design, **zero-network** (`references/inverted-pipeline.md` Phase 6: <5 min vs cogni-claims' 20–30 min; `agents/wiki-verifier.md` §"What this agent does NOT do": *"Does NOT WebFetch or WebSearch"*) — verdicts score the draft sentence against the cited page's `pre_extracted_claims:` extracted at ingest time, not against the live source URL. The dashboard, the synthesis frontmatter, and the finalize/verify summaries previously presented this as "verified" without qualifying what was actually checked, leaving two unchecked links: (1) extraction fidelity (the `source-ingester`'s `excerpt_position` sanity-check is positional, not semantic) and (2) live ground-truth drift (URLs 404, paywalls appear, content gets rewritten between ingest and read). This release closes the **honesty** gap on every reader-facing surface and adds an explicit **opt-in** path to the upstream `cogni-wiki:wiki-claims-resweep` primitive for operators who want live-source ground-truth on a cadence. Mirrors the #340/PR-#347 + #335 observability-first posture: surface, never auto-resolve. Maturity stays **Preview**.

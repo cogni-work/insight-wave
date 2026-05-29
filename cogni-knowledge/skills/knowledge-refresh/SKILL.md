@@ -13,7 +13,7 @@ Close the self-healing loop for a bound cogni-knowledge base. Wiki pages age —
 
 This skill is a pure orchestrator — pull-mode is a thin pass-through; push-mode composes existing `cogni-knowledge` phase skills via `Skill(...)`, never re-implementing them. **Push-mode dispatches zero cogni-research skills** — the v0.1.0 clean break (decision-1) means cogni-research is 0% of the runtime path. The legacy push-mode (which re-ran the old research+ingest chain) was replaced by the seven-phase inverted pipeline at v0.0.26.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the delegation boundary.
+Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the delegation boundary and the Skill-dispatch convention (§"How `Skill(...)` blocks are written").
 
 ## When to run
 
@@ -234,7 +234,7 @@ No files are written directly by this skill — every artefact comes from a down
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — the seven-phase chain push-mode drives
 - `cogni-wiki:wiki-refresh` SKILL.md — pull-mode dispatch target
 - `cogni-wiki:wiki-lint` SKILL.md — push-mode staleness source

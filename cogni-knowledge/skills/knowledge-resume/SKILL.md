@@ -136,7 +136,7 @@ A status block printed to the user. No files written.
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md`
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — delegation boundary + §"How `Skill(...)` blocks are written"
 - `cogni-wiki:wiki-resume` SKILL.md
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache verdict (`cache-health`)

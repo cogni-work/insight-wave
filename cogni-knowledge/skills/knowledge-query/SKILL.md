@@ -131,7 +131,7 @@ No files are written outside `<wiki_path>/` and only by upstream `wiki-query`.
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
 - `cogni-wiki:wiki-query` SKILL.md — the upstream contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health --help` — fetch-cache health for the footer

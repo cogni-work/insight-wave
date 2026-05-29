@@ -137,7 +137,7 @@ No files are written outside `<knowledge_root>/`.
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — what this skill owns vs. delegates
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — what this skill owns vs. delegates (incl. §"How `Skill(...)` blocks are written")
 - `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` — why wiki-first
 - `cogni-wiki:wiki-setup` SKILL.md — Step 3 contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
