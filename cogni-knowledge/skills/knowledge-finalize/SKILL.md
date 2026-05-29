@@ -663,14 +663,21 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    2. `--no-open-questions` was passed — log `Open questions rebuild skipped: --no-open-questions` and continue.
 
    ```
+   # Run ONLY after the two skip conditions above are evaluated (--dry-run,
+   # then --no-open-questions). Capture stdout ONLY — no 2>&1: stderr flows to
+   # the operator's terminal so a crash traceback stays visible and can never
+   # contaminate the single-line JSON envelope on stdout (a stray stderr line
+   # on an otherwise-successful rebuild would otherwise parse as malformed and
+   # surface a false FAILED). Mirrors cogni-wiki wiki-lint Step 8.5's
+   # `OQ_JSON=$(… --wiki-root "$WIKI_ROOT") || true` capture exactly.
    OPEN_Q_JSON=$(python3 "$WIKI_LINT_SCRIPTS/rebuild_open_questions.py" \
-       --wiki-root "$WIKI_ROOT" 2>&1) || OPEN_Q_EXIT=$?
+       --wiki-root "$WIKI_ROOT") || OPEN_Q_EXIT=$?
    OPEN_Q_EXIT=${OPEN_Q_EXIT:-0}
    ```
 
-   The script emits a single-line `{success, data, error}` envelope on stdout (stdlib-only, `_wikilib.atomic_write`-backed). Parse and surface in Step 11:
+   The script emits a single-line `{success, data, error}` envelope on stdout (stdlib-only, `_wikilib.atomic_write`-backed). On a fresh wiki where `wiki/open_questions.md` does not yet exist, the script creates it (the reconcile starts from an empty checklist). Parse and surface in Step 11:
 
-   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`. Step 11 surfaces `Open questions: opened=<n> closed=<n> trimmed=<n>`.
+   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`. Step 11 surfaces `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` matches the `✓ wiki-health clean` marker on the adjacent conformance-gate line so an operator scanning the summary need not grep for the absence of `⚠`).
    - `success: false` — surface `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` and continue.
    - `OPEN_Q_EXIT != 0` or malformed JSON — same template, `<error>` substituted by `script exit <code>` / `malformed JSON envelope`.
 
@@ -765,7 +772,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio and the contradiction-tripwire
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
-- Open questions (Step 10.5 sub-step 5, #338): on `success: true`, `Open questions: opened=<n> closed=<n> trimmed=<n>`. On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` / `--dry-run` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
+- Open questions (Step 10.5 sub-step 5, #338): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` / `--dry-run` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6, #335): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
   ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown (#335)
