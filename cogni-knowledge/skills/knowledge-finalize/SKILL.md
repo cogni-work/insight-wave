@@ -166,7 +166,7 @@ print(json.dumps({
 '
 ```
 
-Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, and the four counts for the Step 11 summary. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
+Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, and the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`) — they feed both the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key, #337) and the Step 11 summary's verbatim/paraphrase ratio line. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
 
 ### 3. Resolve synthesis slug + abort on collision
 
@@ -250,6 +250,10 @@ PROJECT_SLUG="<project-slug>" \
 SYNTHESIS_SLUG="<synthesis-slug>" \
 DRAFT_VERSION=<N> \
 REVISION_ROUND=<round> \
+VERIFY_VERBATIM=<verbatim count from Step 2> \
+VERIFY_PARAPHRASE=<paraphrase count from Step 2> \
+VERIFY_SYNTHESIS=<synthesis count from Step 2> \
+VERIFY_UNSUPPORTED=<unsupported count from Step 2> \
 python3 -c '
 import datetime as _dt
 import json, os, re, sys
@@ -266,6 +270,15 @@ project_slug = os.environ["PROJECT_SLUG"]
 synthesis_slug = os.environ["SYNTHESIS_SLUG"]
 n = int(os.environ["DRAFT_VERSION"])
 revision_round = int(os.environ["REVISION_ROUND"])
+# #337 verification-honesty: the four verdict counts already captured at Step 2
+# (verify-vN.json::counts) are threaded in so the synthesis-page frontmatter
+# carries a machine-readable record of WHAT verification ran. These describe a
+# citation-consistent (zero-network) check — see verification: key below.
+v_verbatim = int(os.environ.get("VERIFY_VERBATIM", "0"))
+v_paraphrase = int(os.environ.get("VERIFY_PARAPHRASE", "0"))
+v_synthesis = int(os.environ.get("VERIFY_SYNTHESIS", "0"))
+v_unsupported = int(os.environ.get("VERIFY_UNSUPPORTED", "0"))
+verification_ratio = f"verbatim={v_verbatim} paraphrase={v_paraphrase} synthesis={v_synthesis} unsupported={v_unsupported}"
 
 draft = (project / "output" / ("draft-v" + str(n) + ".md")).read_text(encoding="utf-8")
 manifest = json.loads((project / ".metadata" / "citation-manifest.json").read_text(encoding="utf-8"))
@@ -412,6 +425,19 @@ frontmatter = (
     + sources_block + "\n"
     "derived_from_research: " + project_slug + "\n"
     "draft_revision_round: " + str(revision_round) + "\n"
+    # #337: declare WHAT "verified" means on the durable artefact. verification
+    # is a fixed enum — the Phase 6 verifier scored each citation's draft_sentence
+    # against the cited page's ingest-time pre_extracted_claims:, zero-network, no
+    # live-source re-fetch. verification_ratio is the same verify-vN.json::counts
+    # the dashboard surfaces, kept as ONE double-quoted flat string scalar (NOT a
+    # nested `verification_counts: {verbatim: 4, ...}` map) on purpose: it matches
+    # cogni-wiki's existing flat-frontmatter convention (same shape as
+    # draft_revision_round) so _wikilib.parse_frontmatter reads it without YAML-map
+    # support, and it stays an additive, tolerated key. If a future consumer needs
+    # structured access, switching to a nested map is the right moment to do it
+    # (a breaking frontmatter change). For live-source re-verification: knowledge-refresh --resweep.
+    "verification: citation_consistent_zero_network\n"
+    'verification_ratio: "' + verification_ratio + '"\n'
     "---\n"
 )
 
@@ -698,13 +724,15 @@ Task(wiki-contradictor,
 
 ### 11. Final summary
 
-Print ≤ 10 lines:
+Print ≤ 12 lines (the verbatim/paraphrase ratio and the contradiction-tripwire block are conditional — the common-case base summary is ~10 lines, both #337 lines included):
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Synthesis page: `wiki/syntheses/<slug>.md` (sources cited: `<N_SOURCES>`)
 - Cycle-guard: `input_shape=citation-manifest`, `direct_self_cycles=0`, `cross_lineage_overlap=<N>`
 - Verify lineage: `verify-v<N>.json` — verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (round `<R>` of 2)
+- Verification: citation-consistent (zero-network, no live-source re-check; #337). The synthesis-page frontmatter carries `verification: citation_consistent_zero_network` + `verification_ratio:`. For live-source ground-truth, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in).
+- Verbatim/paraphrase ratio (print this line **only when `verbatim + paraphrase > 0`** — no divide-by-zero on a deviation-only run): `<V>/<P> = <pct>% verbatim`, where `pct = round(100 * V / (V + P), 1)`. Append ` (high copy-paste — consider revising for synthesis density)` **only when `V / (V + P) > 0.5`** — i.e. a *majority* of scored citations are verbatim, the point at which copy-paste outweighs synthesis (informational nudge, no gate; tune the 0.5 majority threshold here if real runs prove it noisy). When `verbatim + paraphrase == 0`, print `Verbatim/paraphrase ratio: (no scored verdicts)` instead.
 - Binding: total deposited projects now `<count>`
 - Wiki updates (conditional on Step 7 + Step 8 outcomes):
   - On `INDEX_OK=yes` + new deposit: `index.md (Syntheses), entries_count +1, context_brief.md refreshed`
@@ -750,10 +778,11 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - Does NOT support cross-page substitute-citation search or transitive cycle detection on the new manifest shape (the adapter handles direct cycles only — same posture as M9's "smallest necessary change" framing).
 - **Localizes the reference-section heading** per `plan.json::output_language` via `_knowledge_lib.ref_heading` (`de→Referenzen`, default→English; #301, v0.1.4), and strips the composer's heading language-independently. Does NOT itself translate body content — the draft body language is the composer's responsibility (it honours `OUTPUT_LANGUAGE`); finalize deposits the verified body verbatim.
 - Does NOT dispatch the `lineage-stamp.py` helper — v0.1.0 projects do not write `raw/research-<slug>/`, so the stamp helper has no work to do; the `derived_from_research` field is set inline in Step 5's frontmatter.
+- Does NOT re-fetch any source URL. The `verification:` semantics stamped here are **citation-consistent (zero-network)** per the Phase 6 contract — the verifier scored each `draft_sentence` against the cited page's ingest-time `pre_extracted_claims:`, not against the live source. For live-source re-verification (the long-tail drift problem), run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; dispatches `cogni-wiki:wiki-claims-resweep`) — #337.
 
 ## Output
 
-- `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md` — the deposited synthesis page (frontmatter + verified draft body + `## References` list).
+- `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md` — the deposited synthesis page (frontmatter + verified draft body + `## References` list). Frontmatter carries the two additive `verification:` + `verification_ratio:` keys (#337) — a durable, machine-readable record that the citations were scored citation-consistent (zero-network) plus the verbatim/paraphrase/synthesis/unsupported counts.
 - `<WIKI_ROOT>/wiki/index.md` — updated with a new entry under `## Syntheses` (or the category created on first finalize).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by 1.
 - `<WIKI_ROOT>/wiki/context_brief.md` — refreshed.

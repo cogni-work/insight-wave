@@ -110,6 +110,28 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
 
 Capture `entries`, `negative_ratio`, `oldest_age_days`, `max_age_days`, `verdict`.
 
+Then read the wiki-global live-source resweep cadence once (#337). `cogni-wiki:wiki-claims-resweep` writes `<wiki_path>/.cogni-wiki/last-resweep.json` (lock-wrapped, single-writer-per-wiki); the dashboard only reads it. Absent file → render `never`, no error:
+
+```
+python3 -c '
+import json, datetime as dt
+from pathlib import Path
+p = Path("<wiki_path>") / ".cogni-wiki" / "last-resweep.json"
+if not p.is_file():
+    print("never")
+else:
+    d = json.loads(p.read_text(encoding="utf-8"))
+    sd = d.get("sweep_date", "")
+    try:
+        age = (dt.date.today() - dt.date.fromisoformat(sd)).days
+        print(sd + "|" + str(age))
+    except Exception:
+        print(sd + "|-")
+'
+```
+
+Parse the output: a bare `never` line means no resweep has ever run; otherwise split the single line on `|` into `LAST_RESWEEP_DATE` + `LAST_RESWEEP_AGE_DAYS` (age is `-` when `sweep_date` is unparseable). This is **wiki-global** (one resweep applies to the whole bound wiki, not per-project), so it surfaces in the `## Claim verification scope` block + the short summary — never as a per-project table column.
+
 Contents:
 
 ```markdown
@@ -137,9 +159,16 @@ Fetch-cache (**knowledge-base-global** — one shared cache across all projects,
 (If `cache-health` reports `verdict: empty`:)
 No fetched sources yet — run `knowledge-fetch` to populate the cache.
 
-## Claim verification heatmap
+## Claim verification scope
 
-(Best-effort summary from the freshest audit file under `<wiki_path>/wiki/audits/lint-*.md`. If audit files exist, render:)
+**Verification semantics (#337)** — every citation in every synthesis below was scored as `verbatim` / `paraphrase` / `synthesis` / `unsupported` against the cited page's `pre_extracted_claims:` block, extracted from the source body **at ingest time**. This is the v0.1.0 inverted pipeline's structural cost win versus cogni-claims (<5 min per finalize vs ~25 min): the check is **zero-network** — **no live-source re-fetch ever happens at verify time** (`references/inverted-pipeline.md` Phase 6; `agents/wiki-verifier.md` §"What this agent does NOT do"). So "verified" here means **citation-consistent, not ground-truthed**. Two corollaries:
+
+1. *Extraction fidelity is unchecked.* An extracted claim that distorts the source body but is locatable at its declared `excerpt_position` passes ingest and propagates as evidence.
+2. *Sources drift between ingest and read.* URLs 404, paywalls appear, content gets rewritten — nothing re-checks the live URL after ingest.
+
+To re-check the bound wiki against live URLs: `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; delegates to `cogni-wiki:wiki-claims-resweep`, which WebFetches each cited URL once and LLM-compares the live source). Last live-source resweep on this base: `<LAST_RESWEEP_DATE>` (`<LAST_RESWEEP_AGE_DAYS>`d ago) — or `never` when `last-resweep.json` is absent.
+
+(Best-effort lint summary from the freshest audit file under `<wiki_path>/wiki/audits/lint-*.md`. If audit files exist, render:)
 Latest lint audit (<audit-filename>): <N> claim_drift findings.
 
 (If no audit files exist:)
@@ -159,6 +188,7 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - Deposited projects: `<count>`
 - Fetch-cache: `<entries>` cached, verdict `<verdict>` (knowledge-base-global)
 - Latest claim_drift findings: `<N>` (or `no lint audits yet`)
+- Last live-source resweep: `<LAST_RESWEEP_DATE>` (`<LAST_RESWEEP_AGE_DAYS>`d ago) | `never`. Run `/cogni-knowledge:knowledge-refresh --resweep` to refresh ground-truth (#337).
 - Open both with `open <wiki_path>/wiki-dashboard.html` and `open <wiki_path>/knowledge-overlay.md`
 
 ## Edge cases
@@ -168,11 +198,13 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - **`pipeline-summary.py cache-health` fails.** Render the `## Pipeline health` block with a one-line "fetch-cache health unavailable" note and keep going — the rest of the overlay is still useful.
 - **No `wiki/audits/` directory.** Treat as "no lint audits yet" — section 2 still renders.
 - **Audit file present but no `claim_drift` markers.** Report `0 claim_drift findings`.
+- **Missing `<wiki_path>/.cogni-wiki/last-resweep.json` (no resweep ever run on this base).** Treat as `never`; the `## Claim verification scope` block + short summary still render normally with the `--resweep` suggestion (#337).
 - **Upstream `wiki-dashboard` fails after partial render.** Step 1 already aborted; the overlay is not written.
 
 ## Out of scope
 
-- **Running `wiki-lint` from this skill.** The heatmap reads whatever audits already exist on disk. Running lint is a separate user-driven action (it costs tokens; the dashboard is meant to be cheap and frequent).
+- **Running `wiki-lint` from this skill.** The verification-scope block reads whatever audits already exist on disk. Running lint is a separate user-driven action (it costs tokens; the dashboard is meant to be cheap and frequent).
+- **Dispatching `wiki-claims-resweep` itself.** Resweep is expensive (WebFetch per cited URL). The dashboard is meant to be cheap and frequent; it only reads `last-resweep.json` and surfaces the cadence. The resweep is opt-in via `/cogni-knowledge:knowledge-refresh --resweep` (#337).
 - **Injecting the binding overlay into `wiki-dashboard.html` itself.** The upstream dashboard is wiki-general; layering knowledge-base-specific content into its HTML would couple the two. The sidecar approach keeps the contracts clean.
 - **Modifying the binding.** Read-only by design.
 - **Writing anywhere outside `<wiki_path>/`.** The overlay is the only file this skill writes, and it lives inside the bound wiki's directory.
@@ -189,3 +221,4 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - `cogni-wiki:wiki-dashboard` SKILL.md — the upstream contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache health (`cache-health`)
+- `cogni-wiki:wiki-claims-resweep` SKILL.md — writes `<wiki_path>/.cogni-wiki/last-resweep.json` (the resweep cadence pointer this overlay reads, #337)
