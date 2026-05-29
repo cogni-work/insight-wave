@@ -215,11 +215,13 @@ assert_grep 'open_questions rebuild FAILED' "$FIN" "knowledge-finalize: Step 11 
 assert_grep 'never rolls back the synthesis' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 documented as fail-soft (#338)"
 # Defence-in-depth: sub-step 5 must NOT add a second wiki/log.md line — the
 # existing Step 10 finalize line is the close-attribution surface; a second
-# line would double-count finalize ops. Catch ANY shell-write idiom (printf /
-# echo / cat / tee / >>) that puts an open_questions op into log.md, regardless
-# of the verb — broader than the original printf-only pattern. No current line
-# carries both tokens, so this stays green until a maintainer wires a log write.
-assert_not_grep 'open[_-]questions.*log\.md\|log\.md.*open[_-]questions' "$FIN" "knowledge-finalize: sub-step 5 does NOT write a second wiki/log.md line (#338)"
+# line would double-count finalize ops. Catch any shell-write idiom (printf /
+# echo / cat / tee / >>) that pipes an open_questions op into log.md, in either
+# token order — broader than the original printf-only pattern. ERE (the helper
+# uses grep -nE). Coupling to BOTH tokens + a write verb keeps the
+# close-attribution PROSE line (which legitimately names rebuild_open_questions.py
+# and wiki/log.md together, but with no write verb) from false-positiving.
+assert_not_grep '(printf|echo|cat|tee|>>).*open[_-]questions.*log\.md|(printf|echo|cat|tee|>>).*log\.md.*open[_-]questions' "$FIN" "knowledge-finalize: sub-step 5 does NOT write a second wiki/log.md line (#338)"
 # Edge-case section anchor: re-finalize idempotency for the open-questions RMW.
 assert_grep '#338 open-questions idempotency' "$FIN" "knowledge-finalize: edge-case section documents re-finalize idempotency for the open-questions RMW (#338)"
 
