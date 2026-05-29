@@ -217,7 +217,7 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
 - `cogni-wiki:wiki-dashboard` SKILL.md — the upstream contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache health (`cache-health`)
