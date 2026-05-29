@@ -194,6 +194,37 @@ assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-fi
 # References block must include the new agent.
 assert_grep 'agents/wiki-contradictor.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-contradictor.md (#335)"
 
+# --- #338 open-questions refresh (Step 10.5 sub-step 5, v0.1.19) ----------
+# Fail-soft refresh of the persistent data-gap backlog the inverted pipeline
+# leaves stale. Same posture as cogni-wiki wiki-lint Step 8.5: never rolls
+# back the synthesis; surfaces a loud failure line on error.
+assert_grep '5\. \*\*Refresh `wiki/open_questions.md` (#338)' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 heading present (#338)"
+assert_grep 'rebuild_open_questions.py' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 invokes rebuild_open_questions.py (#338)"
+# The script dir is already resolved at Pre-flight for the Step 10.5 gate —
+# anchor that sub-step 5 reuses $WIKI_LINT_SCRIPTS rather than re-resolving.
+assert_grep 'WIKI_LINT_SCRIPTS/rebuild_open_questions.py' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 resolves rebuild_open_questions.py via \$WIKI_LINT_SCRIPTS (already wired #338)"
+assert_grep '\-\-no-open-questions' "$FIN" "knowledge-finalize: --no-open-questions opt-out documented in Parameters table (#338)"
+assert_grep 'Open questions rebuild skipped: --no-open-questions' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 documents --no-open-questions skip path (#338)"
+# dry-run skip must be documented on the same line as the sub-step 5 anchor
+# so a future edit can't silently drop the defence-in-depth guard.
+assert_grep 'dry-run.*sub-step 5\|sub-step 5.*dry-run' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 skips on --dry-run (#338)"
+assert_grep 'Open questions: opened=' "$FIN" "knowledge-finalize: Step 11 surfaces opened/closed/trimmed deltas on success (#338)"
+assert_grep 'open_questions rebuild FAILED' "$FIN" "knowledge-finalize: Step 11 surfaces loud failure line on rebuild error (#338)"
+# Fail-soft framing — must be explicit so a future maintainer doesn't tighten
+# sub-step 5 into a blocking gate.
+assert_grep 'never rolls back the synthesis' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 documented as fail-soft (#338)"
+# Defence-in-depth: sub-step 5 must NOT add a second wiki/log.md line — the
+# existing Step 10 finalize line is the close-attribution surface; a second
+# line would double-count finalize ops. Catch any shell-write idiom (printf /
+# echo / cat / tee / >>) that pipes an open_questions op into log.md, in either
+# token order — broader than the original printf-only pattern. ERE (the helper
+# uses grep -nE). Coupling to BOTH tokens + a write verb keeps the
+# close-attribution PROSE line (which legitimately names rebuild_open_questions.py
+# and wiki/log.md together, but with no write verb) from false-positiving.
+assert_not_grep '(printf|echo|cat|tee|>>).*open[_-]questions.*log\.md|(printf|echo|cat|tee|>>).*log\.md.*open[_-]questions' "$FIN" "knowledge-finalize: sub-step 5 does NOT write a second wiki/log.md line (#338)"
+# Edge-case section anchor: re-finalize idempotency for the open-questions RMW.
+assert_grep '#338 open-questions idempotency' "$FIN" "knowledge-finalize: edge-case section documents re-finalize idempotency for the open-questions RMW (#338)"
+
 # --- #337 verification-honesty surfacing (frontmatter + Step 11) ---------
 # Two additive synthesis-page frontmatter keys declare WHAT "verified" means;
 # Step 11 + the dashboard + verify Step 6 all carry the same qualifier so a

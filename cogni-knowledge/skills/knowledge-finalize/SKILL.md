@@ -56,6 +56,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--overwrite` | No | Replace an existing `wiki/syntheses/<slug>.md`. Default: refuse. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, SYNTHESIS_SLUG, citation count) without writing anything or dispatching cycle-guard. |
 | `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire (#335). Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
+| `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh (#338). Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
 
 ## Workflow
 
@@ -654,6 +655,38 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ```
    Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
 
+5. **Refresh `wiki/open_questions.md` (#338).** The persistent, cross-session data-gap backlog. cogni-wiki maintains this file as part of `wiki-lint` Step 8.5 — every lint dispatch reconciles the checklist (items that disappear from the current lint output flip to `- [x]` with today's date; closed items > 90 days old are trimmed; new findings append as `- [ ]`). The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-lint` never runs as a gate here — sub-step 5 backfills the rebuild on the finalize path so the backlog tracks finalize-time state instead of going stale until the next interactive `wiki-lint`. It is the tail of the conformance gate: it reads the *post-fix*, *post-overview-refresh* on-disk state (the same state sub-step 2's read-only re-lint asserted), so it belongs after sub-step 4.
+
+   Skip conditions (evaluated in order):
+
+   1. `--dry-run` was passed — silent skip (same posture as Step 10.6; finalize already exits at Step 3 on `--dry-run`, so reaching sub-step 5 under `--dry-run` should never happen — this guard is defence-in-depth).
+   2. `--no-open-questions` was passed — log `Open questions rebuild skipped: --no-open-questions` and continue.
+
+   ```
+   # Run ONLY after the two skip conditions above are evaluated (--dry-run,
+   # then --no-open-questions). Capture stdout ONLY — no 2>&1: stderr flows to
+   # the operator's terminal so a crash traceback stays visible and can never
+   # contaminate the single-line JSON envelope on stdout (a stray stderr line
+   # on an otherwise-successful rebuild would otherwise parse as malformed and
+   # surface a false FAILED). Mirrors cogni-wiki wiki-lint Step 8.5's
+   # `OQ_JSON=$(… --wiki-root "$WIKI_ROOT") || true` capture exactly.
+   OPEN_Q_JSON=$(python3 "$WIKI_LINT_SCRIPTS/rebuild_open_questions.py" \
+       --wiki-root "$WIKI_ROOT") || OPEN_Q_EXIT=$?
+   OPEN_Q_EXIT=${OPEN_Q_EXIT:-0}
+   ```
+
+   The script emits a single-line `{success, data, error}` envelope on stdout (stdlib-only, `_wikilib.atomic_write`-backed). On a fresh wiki where `wiki/open_questions.md` does not yet exist, the script creates it (the reconcile starts from an empty checklist). Parse and surface in Step 11:
+
+   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`. Step 11 surfaces `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` matches the `✓ wiki-health clean` marker on the adjacent conformance-gate line so an operator scanning the summary need not grep for the absence of `⚠`).
+   - `success: false` — surface `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` and continue.
+   - `OPEN_Q_EXIT != 0` or malformed JSON — same template, `<error>` substituted by `script exit <code>` / `malformed JSON envelope`.
+
+   **Close-attribution caveat.** `rebuild_open_questions.py` reconciles the checklist against the latest on-disk lint findings. Because `finalize` is **not** one of the script's `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`), an item that disappears between runs renders as a bare `closed <date>` rather than a `closed by finalize` attribution — adding `finalize` to `CLOSING_OPS` is part of the deferred Option (b) cogni-wiki change (#354). No second `wiki/log.md` line is written here: the script never logs (that is the SKILL's job), and the existing Step 10 `## [YYYY-MM-DD] finalize | …` line is already on disk.
+
+   **Fail-soft posture (explicit).** Sub-step 5 is a backlog refresh. A non-zero exit, malformed envelope, or `_wiki_lock` contention **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–4 are all already on disk. The summary surfaces the failure loudly so the operator can run `cogni-wiki:wiki-lint` manually; the next finalize dispatch reconciles. (Verbatim mirror of cogni-wiki Step 8.5's failure-isolation contract; matches Step 10.6's posture.)
+
+   **Concurrency note.** `rebuild_open_questions.py` wraps the parse + reconcile + render + atomic write in `_wikilib._wiki_lock(wiki_root)`, so a concurrent `cogni-wiki:wiki-lint` dispatch from another session serialises rather than corrupts — the two dispatches converge on the on-disk lint findings only (which is the contract).
+
 ### 10.6 Contradiction tripwire (#335)
 
 Phase 1 of approach **(a)** from #335 — observability-only. Dispatches the `wiki-contradictor` agent to compare the just-deposited synthesis sentence-by-sentence against each cited *source* page's `pre_extracted_claims:` and emit a per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`. **Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time;** the thesis's literal "wiki-ingest writes page B" framing — per-source ingest-time check — is approach **(b)**, deferred. Synthesis-vs-prior-syntheses comparison, `type_drift`, and `undercited_synthesis` defer to v0.1.16.
@@ -724,7 +757,7 @@ Task(wiki-contradictor,
 
 ### 11. Final summary
 
-Print ≤ 12 lines (the verbatim/paraphrase ratio and the contradiction-tripwire block are conditional — the common-case base summary is ~10 lines, both #337 lines included):
+Print ≤ 13 lines (the verbatim/paraphrase ratio and the contradiction-tripwire block are conditional — the common-case base summary is ~10 lines, both #337 lines included; the #338 open-questions line adds one):
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
@@ -739,6 +772,7 @@ Print ≤ 12 lines (the verbatim/paraphrase ratio and the contradiction-tripwire
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
+- Open questions (Step 10.5 sub-step 5, #338): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` / `--dry-run` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6, #335): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
   ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown (#335)
@@ -769,6 +803,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - **Cited source page missing on disk.** Step 5's reference-row falls back to the slug as the title AND emits **no** `[[<slug>]]` backlink (a bare link to a missing page would be a `broken_wikilink` error that fails the Step 10.5 health gate). cycle-guard's `wiki_pages_cited_missing` will list the slug; surface in Step 11 as `⚠ Missing pages: <slug1>, <slug2>` so the operator knows the wiki was modified between ingest and finalize.
 - **Duplicate binding entry without `--overwrite`.** Step 9's `append-project` returns `existing_slug` (the SKILL did NOT pass `--allow-update` because `--overwrite` was off). Steps 6–8 already landed the synthesis page → the wiki has the new page but `binding.json::research_projects[]` still records the prior deposit's `report_path` / `deposited_at`. Step 11 surfaces the loud `⚠ Binding append SKIPPED` warning verbatim from Step 9. Reconcile via `--overwrite` re-run (which passes `--allow-update` per Step 9's contract), or accept the asymmetric state — both are valid operator decisions.
 - **Re-finalize on the same draft (#335 idempotency).** Re-running finalize with `--overwrite` against the same `draft_version` overwrites `<project_path>/.metadata/contradictor-v<N>.json` (same convention as `verify-v<N>.json`). The agent is non-deterministic across runs at two distinct layers: (1) `findings[].id` (`ctr-NNN`) is stable WITHIN one envelope but may renumber across re-runs (emission order ≠ index order); (2) the **finding set itself may differ** — a re-run can legitimately surface a contradiction the prior run missed, or drop one the prior run flagged as `low` on doubt. The "same contradictions re-surface on each re-run" guidance applies to clear-cut `high` flips; `medium`/`low`/`unknown` carry expected cross-run variance. De-dup across runs defers to v0.1.16 and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` (not `id`) precisely so the deferred consumer joins on content, not on the unstable id.
+- **Re-finalize on the same draft (#338 open-questions idempotency).** `rebuild_open_questions.py` is a locked read-modify-write that reconciles against the existing checklist — a re-finalize produces a delta but is never net-destructive. Items closed by a prior dispatch keep their original `closed_on` date; only items closed > 90 days ago are trimmed. The lock at `<WIKI_ROOT>/.cogni-wiki/.lock` is the same one cogni-wiki's `wiki-lint` Step 8.5 acquires.
 
 ## Out of scope
 
@@ -790,6 +825,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<knowledge-root>/.cogni-knowledge/binding.json` — one new entry in `research_projects[]` with `report_source: "wiki"`.
 - `<WIKI_ROOT>/wiki/<type>/<cited-slug>.md` — each cited page gains a reverse `[[<synthesis-slug>]]` backlink (Step 10.5 `lint --fix=reverse_link_missing`), de-orphaning the synthesis.
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
+- `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5, #338; deterministic-only — research-time gaps from `wiki-coverage.json::uncovered`/`partial` deferred to follow-up #354). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 (#335) contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
 
 No files are written outside the workspace root or the bound knowledge base.
