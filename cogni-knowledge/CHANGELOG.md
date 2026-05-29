@@ -1,5 +1,41 @@
 # cogni-knowledge changelog
 
+## 0.1.19 — 2026-05-29 — Wiki backlog — knowledge-finalize refreshes open_questions.md (closes #338)
+
+`knowledge-finalize` Step 10.5 grew a fail-soft sub-step 5: `rebuild_open_questions.py
+--wiki-root "$WIKI_ROOT"` runs **after** the existing four sub-steps (lint `--fix=all`,
+health + orphan re-lint, `overview.md` refresh, `context_brief` rebuild). Closes the wiki
+backlog the inverted pipeline left stale — `wiki/open_questions.md` now reflects
+finalize-time state instead of waiting for an interactive `cogni-wiki:wiki-lint` dispatch to
+reconcile. The script dir is already resolved at Pre-flight (`$WIKI_LINT_SCRIPTS`), so this is
+one extra script call on a path that was already wired.
+
+Fail-soft: a non-zero exit, malformed envelope, or `_wiki_lock` contention never rolls back the
+synthesis. The synthesis page, index entry, `entries_count` bump, `binding.json` append,
+`wiki/log.md` line, and the existing Step 10.5 sub-steps 1–4 are all already on disk by the time
+sub-step 5 starts. Step 11 surfaces `Open questions: opened=<n> closed=<n> trimmed=<n>` on
+success, or a loud `⚠ open_questions rebuild FAILED — …; re-run cogni-wiki:wiki-lint manually`
+line on failure. (Verbatim mirror of cogni-wiki Step 8.5's failure-isolation contract.)
+
+New `--no-open-questions` flag mirrors the existing `--no-contradictor` insurance pattern: skip
+the rebuild without touching the rest of the gate. Close-attribution falls back to a bare
+`closed <date>` because `finalize` is not one of `rebuild_open_questions.py`'s `CLOSING_OPS`
+(`update`, `ingest`, `re-ingest`, `synthesis`) — adding `finalize` there is part of the deferred
+Option (b) work.
+
+**Option (b) deferred (#354).** The issue's option (b) — seed `open_questions.md` from
+`wiki-coverage.json::uncovered`/`partial` sub-questions via the `rebuild_open_questions.py
+--findings -` stdin contract — requires a cogni-wiki side change: `_flatten` only accepts
+entries whose `class` is in `TRACKED_CLASSES`. A research-time gap is a new class
+(`research_uncovered` / `research_partial`) that needs adding to cogni-wiki's
+`SECTIONS`/`TRACKED_CLASSES` + section-header table + `finalize` added to `CLOSING_OPS` before
+cogni-knowledge can stream it in. Filed as follow-up issue #354.
+
+No script change. No schema change. No agent change. Contract test extended in
+`tests/test_finalize_contract.sh` to anchor the new sub-step, the fail-soft posture, and the
+summary template. `plugin.json` + `marketplace.json` bumped to 0.1.19 (description and keywords
+unchanged from v0.1.18).
+
 ## 0.1.18 — 2026-05-29 — Discoverability — manifest description compacted (closes #351)
 
 `description` in `.claude-plugin/plugin.json` and the matching `marketplace.json`
