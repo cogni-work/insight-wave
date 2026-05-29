@@ -133,10 +133,11 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 - **Be conservative on `paraphrase`.** A draft sentence that adds a quantifier (`mostly`, `largely`, `in some cases`) or shifts scope (`EU-wide` vs. `Germany`) is **not** a paraphrase — that's `unsupported`. The revisor needs the strict signal to do its job.
 - **Verbatim is fine but flag it.** Aggressive copy-paste signals weak synthesis; the dashboard surfaces the verbatim/paraphrase ratio later. Do not "promote" a verbatim match to paraphrase out of generosity.
 - **Synthesis is informational.** Citations whose `wiki_slug` resolves to a `syntheses/` page carry `claim_id: null` by design; do not attempt to score them and do not count them as deviations.
+- **Surface the verbatim/paraphrase ratio as the operator's confidence signal.** Downstream surfaces (`knowledge-finalize` Step 11, `knowledge-verify` Step 6, the dashboard's §"Claim verification scope" block, the synthesis-page `verification_ratio:` frontmatter) qualify this agent's `verbatim` + `paraphrase` counts as **citation-consistent** — the agent compared the draft sentence to the page's ingest-time pre-extracted claim, not to the live source. Heavy verbatim copy-paste signals weak synthesis; heavy paraphrase signals the composer reframed the source's claims. Neither is wrong; both are informational. Score conservatively per the rules above; the qualifier upstream makes the limitation explicit (#337).
 
 ## What this agent does NOT do
 
-- Does NOT WebFetch or WebSearch — every claim is already on a wiki page. Re-fetch defeats the entire cost-win premise.
+- Does NOT WebFetch or WebSearch — every claim is already on a wiki page. Re-fetch defeats the entire cost-win premise. For live-source re-verification (the long-tail drift problem — URLs 404, paywalls appear, content gets rewritten after ingest), the bound wiki is swept **opt-in** via `/cogni-knowledge:knowledge-refresh --resweep`, which dispatches `cogni-wiki:wiki-claims-resweep` (#337). That sweep is structurally separate from this verifier's per-finalize zero-network alignment — by design, never auto-run.
 - Does NOT dispatch other agents (`Task` is not in this agent's tool list). It is a single-pass scorer.
 - Does NOT call `cogni-research`, `cogni-claims`, or any `cogni-wiki:` skill — clean-break.
 - Does NOT revise the draft — that is the revisor's job (M8's second agent).

@@ -194,6 +194,25 @@ assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-fi
 # References block must include the new agent.
 assert_grep 'agents/wiki-contradictor.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-contradictor.md (#335)"
 
+# --- #337 verification-honesty surfacing (frontmatter + Step 11) ---------
+# Two additive synthesis-page frontmatter keys declare WHAT "verified" means;
+# Step 11 + the dashboard + verify Step 6 all carry the same qualifier so a
+# reader of any surface arrives at the same understanding.
+assert_grep 'verification: citation_consistent_zero_network' "$FIN" "knowledge-finalize: Step 5 frontmatter emits verification: citation_consistent_zero_network (#337)"
+assert_grep 'verification_ratio:' "$FIN" "knowledge-finalize: Step 5 frontmatter emits verification_ratio: (#337)"
+# The four verify-vN.json counts are threaded into the Step 5 compose subprocess.
+assert_grep 'VERIFY_VERBATIM' "$FIN" "knowledge-finalize: threads VERIFY_VERBATIM into Step 5's compose subprocess (#337)"
+assert_grep 'VERIFY_UNSUPPORTED' "$FIN" "knowledge-finalize: threads VERIFY_UNSUPPORTED into Step 5's compose subprocess (#337)"
+# Step 11 final-summary qualifier lines.
+assert_grep 'Verification: citation-consistent' "$FIN" "knowledge-finalize: Step 11 prints the citation-consistent Verification line (#337)"
+assert_grep 'zero-network' "$FIN" "knowledge-finalize: Step 11 names zero-network (no live-source re-check) (#337)"
+assert_grep 'Verbatim/paraphrase ratio' "$FIN" "knowledge-finalize: Step 11 prints the verbatim/paraphrase ratio line (#337)"
+# Out of scope must point live-source re-verification at the opt-in resweep.
+assert_grep 'knowledge-refresh --resweep' "$FIN" "knowledge-finalize: Out of scope names knowledge-refresh --resweep as the live-source path (#337)"
+# Output block must list the two additive frontmatter keys as deliverables.
+assert_grep 'verification_ratio:' "$FIN" "knowledge-finalize: Output block lists the additive verification frontmatter keys (#337)"
+assert_grep '#337' "$FIN" "knowledge-finalize: references #337"
+
 # --- Inverted-pipeline.md Phase 7 anchor ---------------------------------
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"
 assert_grep 'Phase 7 — `knowledge-finalize`' "$PIPELINE" "inverted-pipeline.md: Phase 7 section header anchored"

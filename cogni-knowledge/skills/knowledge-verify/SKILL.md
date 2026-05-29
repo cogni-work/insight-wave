@@ -424,9 +424,11 @@ Print ≤ 10 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
+- Verification scope: citation-consistent vs ingest-time `pre_extracted_claims` (zero-network; #337). Live-source re-check opt-in via `knowledge-refresh --resweep`.
 - Draft: `output/draft-v<CURRENT_DRAFT_VERSION>.md` (revisor rounds: `<REVISION_ROUND>` of `<MAX_ROUNDS>`)
 - Citations: `<manifest_citations>` (authoritative count = `len(citation-manifest.json::citations)` for draft-v`<CURRENT_DRAFT_VERSION>`; `<TOTAL_PRUNED>` pruned as `sentence_not_in_draft`)
 - Verdicts scored on draft-v`<CURRENT_DRAFT_VERSION>` (round `<REVISION_ROUND>`): verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (total scored=`<N>`) — a per-round verdict tally, not the citation count
+- Verbatim/paraphrase ratio (print **only when `verbatim + paraphrase > 0`**): `<V>/<P> = <pct>% verbatim` (`pct = round(100 * V / (V + P), 1)`) — the operator's confidence signal; high copy-paste signals weak synthesis. Suppressed when `verbatim + paraphrase == 0`.
 - Latest verify: `.metadata/verify-v<CURRENT_DRAFT_VERSION>.json`
 - Cost: `$X.XXX` (sum of `cost_estimate.estimated_usd` across all verifier + revisor dispatches)
 - Next: M9 (`knowledge-finalize`) deposits the verified draft as `wiki/syntheses/<slug>.md`. For v0.0.23, end here — `verify-v<N>.json` + an aligned draft is this slice's deliverable.
@@ -451,7 +453,7 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 - Does NOT re-run any earlier phase. A stale citation manifest aborts cleanly with a "re-run knowledge-compose" message.
 - Does NOT support cross-page substitute-citation search in the revisor (deferred per `references/absorption-roadmap.md` Slice 4 notes).
 - Does NOT support multilingual verification, executive density, or arc-aware revision — deferred (matches M7's Slice 3 deferrals).
-- Does NOT re-fetch any URL. The whole point of the inverted pipeline is that verification is zero-network — re-introducing fetches would defeat the < 5 min cost target.
+- Does NOT re-fetch any URL. The whole point of the inverted pipeline is that verification is zero-network — re-introducing fetches would defeat the < 5 min cost target. Verdicts are therefore **citation-consistent**, not live-ground-truthed. For live-source re-verification on a cadence, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; delegates to `cogni-wiki:wiki-claims-resweep`) — #337.
 
 ## Output
 

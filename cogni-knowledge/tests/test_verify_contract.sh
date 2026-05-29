@@ -111,6 +111,16 @@ else
   errors=$((errors + 1))
 fi
 
+# --- #337 verification-honesty surfacing (Step 6 summary) ----------------
+# The verify step is where an operator first interprets "verified"; Step 6 must
+# label the verdicts citation-consistent (zero-network) and surface the ratio,
+# and Out of scope must point live-source re-verification at the opt-in resweep.
+assert_grep 'Verification scope:' "$VERIFY" "knowledge-verify: Step 6 prints the verification-scope preamble (#337)"
+assert_grep 'citation-consistent' "$VERIFY" "knowledge-verify: Step 6 labels verdicts citation-consistent (#337)"
+assert_grep 'Verbatim/paraphrase ratio' "$VERIFY" "knowledge-verify: Step 6 surfaces the verbatim/paraphrase ratio (#337)"
+assert_grep 'knowledge-refresh --resweep' "$VERIFY" "knowledge-verify: Out of scope cross-references knowledge-refresh --resweep (#337)"
+assert_grep '#337' "$VERIFY" "knowledge-verify: references #337"
+
 # --- wiki-verifier agent -------------------------------------------------
 VERIFIER="$PLUGIN_ROOT/agents/wiki-verifier.md"
 if [ ! -f "$VERIFIER" ]; then
@@ -278,6 +288,11 @@ fi
 # max-2-iterations cap; the agents and skill must mention them.
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"
 assert_grep 'Phase 6 — `knowledge-verify`' "$PIPELINE" "inverted-pipeline.md: Phase 6 section header anchored"
+# #337: Phase 6 must name the citation-consistent semantics + the opt-in
+# wiki-claims-resweep delegation so a future PR doesn't re-litigate the scope.
+assert_grep 'citation-consistent' "$PIPELINE" "inverted-pipeline.md: Phase 6 names citation-consistent verification semantics (#337)"
+assert_grep 'wiki-claims-resweep' "$PIPELINE" "inverted-pipeline.md: names the opt-in wiki-claims-resweep delegation (#337)"
+assert_grep '#337' "$PIPELINE" "inverted-pipeline.md: references #337"
 
 if [ $errors -eq 0 ]; then
   green ""

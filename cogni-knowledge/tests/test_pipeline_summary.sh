@@ -118,6 +118,24 @@ else
   errors=$((errors + 1))
 fi
 
+# #337 field-name regression guard: knowledge-dashboard's §"Claim verification
+# scope" surfacing reads verify_counts.verbatim + .paraphrase by name. A rename
+# of either field would silently break the dashboard's ratio surface, so pin the
+# key names explicitly (independent of the whole-dict equality assert above).
+if echo "$FULL_OUT" | python3 -c "
+import sys, json
+c = json.load(sys.stdin)['data']['verify_counts']
+assert 'verbatim' in c, 'verify_counts missing verbatim key (#337 dashboard dependency)'
+assert 'paraphrase' in c, 'verify_counts missing paraphrase key (#337 dashboard dependency)'
+print('OK')
+" | grep -q OK; then
+  green "PASS: project full — verify_counts exposes stable 'verbatim' + 'paraphrase' keys (#337 dashboard dependency)"
+else
+  red "FAIL: verify_counts must expose 'verbatim' + 'paraphrase' keys for the dashboard (#337)"
+  red "  got: $FULL_OUT"
+  errors=$((errors + 1))
+fi
+
 # --- Scenario: partial project (plan+candidates+fetch only) --------------
 PARTIAL="$WORK/partial/.metadata"
 plant "$PARTIAL/plan.json" <<'JSON'
