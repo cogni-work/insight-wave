@@ -91,6 +91,31 @@ assert_grep 'MACHINE-OWNED:CLAIMS:START' "$CPAGE" "concept page: machine-owned s
 assert_grep '\[\[src-a\]\]' "$CPAGE" "concept page: bare [[source-slug]] backlink (link-graph edge)"
 assert_grep 'distilled_from_research' "$CPAGE" "concept page: distilled_from_research"
 
+# --- 2b. cross-parser no-drift (#343/#356 review #5) -------------------------
+# The read-before-web coverage scorer reads these pages with
+# _knowledge_lib.parse_distilled_claims (text only). Feed the pages concept-store
+# JUST WROTE to that reader and assert the text set round-trips — this is the
+# true no-drift guard between the writer (_render_distilled_claims) and the
+# coverage-side reader, beyond concept-store's own private round-trip self-check.
+python3 - "$PLUGIN_ROOT/scripts" "$CPAGE" "$EPAGE" <<'PY' && green "PASS: lib parse_distilled_claims round-trips concept-store's actual output (no drift)" || { red "FAIL: lib parser drifted from concept-store writer"; errors=$((errors+1)); }
+import sys
+sys.path.insert(0, sys.argv[1])
+import _knowledge_lib as kl
+cpage = open(sys.argv[2], encoding="utf-8").read()
+epage = open(sys.argv[3], encoding="utf-8").read()
+cclaims = kl.parse_distilled_claims(cpage)
+eclaims = kl.parse_distilled_claims(epage)
+ctexts = {c["text"] for c in cclaims}
+assert ctexts == {
+    "Annex III lists eight categories of high-risk AI systems.",
+    "Providers must register high-risk systems in the EU database.",
+}, ctexts
+assert all(set(c) == {"text"} for c in cclaims), cclaims  # writer metadata ignored
+assert {c["text"] for c in eclaims} == {
+    "The European Commission published the GPAI Code of Practice.",
+}, eclaims
+PY
+
 # --- 3. merge UPDATE (cross-run compounding) ---------------------------------
 printf '\nHuman note: this list is contested.\n' >> "$CPAGE"
 cat > "$PROJ/.metadata/rec2.txt" <<'EOF'

@@ -283,6 +283,49 @@ def assert_parse_pre_extracted_claims():
     assert col0[0]["excerpt_quote"] == "a contiguous quote", col0
 
 
+def assert_parse_distilled_claims():
+    # Canonical concept-store emission shape (claim_id / text / norm_key /
+    # backlinks / source_claim_refs / created / updated). Only `text` is absorbed;
+    # the writer-side metadata is concept-store-private and must be ignored. A
+    # colon inside `text` must NOT break the key:value split (#343).
+    page = (
+        "---\n"
+        "type: concept\n"
+        "distilled_claims:\n"
+        "  - claim_id: dcl-001\n"
+        '    text: "Artikel 6: Hochrisiko-Einstufung kombiniert mehrere Quellen."\n'
+        '    norm_key: "k1"\n'
+        '    backlinks: ["src-a","src-b"]\n'
+        '    source_claim_refs: ["src-a#c1"]\n'
+        "    created: 2026-05-29\n"
+        "    updated: 2026-05-29\n"
+        "  - claim_id: dcl-002\n"
+        '    text: "Zweite distillierte Aussage."\n'
+        "---\n\n# body\n"
+    )
+    claims = kl.parse_distilled_claims(page)
+    assert len(claims) == 2, claims
+    assert claims[0] == {"text": "Artikel 6: Hochrisiko-Einstufung kombiniert mehrere Quellen."}, claims[0]
+    assert set(claims[0]) == {"text"}, "writer-side metadata must be ignored: " + repr(claims[0])
+    assert claims[1] == {"text": "Zweite distillierte Aussage."}, claims[1]
+    # Inline `distilled_claims: []` (concept-store's empty form) → []. _DISTILLED_KEY_RE
+    # anchors on '$' so the key-with-inline-value line deliberately does not match.
+    assert kl.parse_distilled_claims("---\ntype: concept\ndistilled_claims: []\n---\n# body\n") == []
+    # The key on its own line but with no bullets → [].
+    assert kl.parse_distilled_claims("---\ndistilled_claims:\ntype: concept\n---\n") == []
+    # No claims key at all / empty / no-frontmatter → [] (fail-safe).
+    assert kl.parse_distilled_claims("---\ntype: concept\n---\n# body\n") == []
+    assert kl.parse_distilled_claims("") == []
+    assert kl.parse_distilled_claims("# just a body\n") == []
+    # Malformed (no closing fence) → [] (never raises).
+    assert kl.parse_distilled_claims("---\ndistilled_claims:\n  - claim_id: dcl-x\n\n# no close\n") == []
+    # Block-scalar `text: |` must NOT leak the bare 1-char indicator (same #305
+    # guarantee as the pre_extracted parser — both share _parse_claim_block).
+    for pipe in ("|", "|-", ">-", ">2"):
+        one = kl.parse_distilled_claims("---\ndistilled_claims:\n  - claim_id: c\n    text: " + pipe + "\n---\n")
+        assert "text" not in one[0], "block-scalar " + pipe + " leaked: " + repr(one)
+
+
 def assert_strip_inline_citation_markers():
     # Strips the whole marker (with or without a URL), leaving the prose; the
     # verify prefilter uses this to compare a sentence's text against a claim.
@@ -413,6 +456,7 @@ check("md_link_dest", assert_md_link_dest)
 check("strip_reference_section", assert_strip_reference_section)
 check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
+check("parse_distilled_claims", assert_parse_distilled_claims)
 PY
 )
 
@@ -440,6 +484,7 @@ grade md_link_dest            "md_link_dest — angle-brackets a destination con
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
+grade parse_distilled_claims  "parse_distilled_claims — text-only extraction, writer metadata ignored, inline []/no-bullets/malformed→[], block-scalar no-leak (#343)"
 grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
 grade tokenization_primitives "tokenization primitives (#336 lift) — fold/tokenize/token_weight/compound_match preserved from wiki-coverage.py"
 grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"

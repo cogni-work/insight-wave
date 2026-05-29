@@ -1,5 +1,49 @@
 # cogni-knowledge changelog
 
+## 0.1.20 — 2026-05-29 — Read-before-web — concept/entity coverage signal (closes #343)
+
+`wiki-coverage.py` (the read-before-web scorer shipped in #321 as P1.3 of #309) now
+folds `wiki/concepts/*.md` and `wiki/entities/*.md` into the page-signal pool.
+Concept/entity pages carry `distilled_claims[].text` — cross-source-distilled facts
+written by the Phase-4.5 distiller (#336/#339). Before this patch the scorer was
+blind to that layer; the read-before-web narrowing left multiplicative
+compounding-value on the table on any wiki with ≥ 1 prior run. A sub-question already
+covered by a concept distilled from several sources now flags `covered`/`partial`
+without each source needing to clear the matched-weight floor on its own — the payoff
+is multiplicative with #321: every subsequent run gets *less* web work **and**
+*better-grounded* gap detection.
+
+A new stdlib helper `parse_distilled_claims(page_text)` lives in `_knowledge_lib.py`
+next to `parse_pre_extracted_claims` (the same fail-safe shape, the same
+`_unquote_scalar`-based decode) and extracts only `text` — the writer-side metadata
+(`claim_id` / `norm_key` / `backlinks` / `source_claim_refs` / dates) stays
+concept-store-private in `concept-store.py::_parse_distilled_claims`.
+`wiki-coverage.py::_TYPE_DIRS` grows from 2 entries to 4. `_collect_pages` branches by
+page type: concept/entity → `parse_distilled_claims`, source/synthesis →
+`parse_pre_extracted_claims` (byte-identical path for the existing types). The matcher
+(digit anchors, denylist, prefix-compound, directional weighted recall +
+matched-weight floor) is **untouched**.
+
+Run-1 against a fresh base is byte-identical to the pre-patch scorer (no concept dirs
+→ no contribution). The compounding payoff starts at run 2+ on a wiki that has
+distilled concept/entity pages.
+
+Two new German bilingual test cases land in `tests/test_wiki_coverage_bilingual.sh`:
+
+- **CN-1**: a concept page distilled from 3 sources covers an integrative sub-question
+  that no single source covers strongly enough on its own. The load-bearing assertion
+  is `covered_pages[].type == "concept"` — proves the new branch in `_collect_pages`
+  actually fires.
+- **CN-2**: a concept page with `distilled_claims: []` contributes only title/tag
+  signal — guards against a parser regression that would silently fall back to
+  source-style parsing or fabricate coverage from an empty block.
+
+All 10 pre-existing bilingual cases (#326 / #331 contract surface) continue to PASS
+byte-identically. No `SCHEMA_VERSION` bump (additive enum extension to
+`covered_pages[].type`). No `knowledge-curate/SKILL.md` protocol change. No composer /
+verifier change (#344 is the separate, explicitly deferred contract extension that
+lifts concept/entity pages to citable evidence).
+
 ## 0.1.19 — 2026-05-29 — Wiki backlog — knowledge-finalize refreshes open_questions.md (closes #338)
 
 `knowledge-finalize` Step 10.5 grew a fail-soft sub-step 5: `rebuild_open_questions.py

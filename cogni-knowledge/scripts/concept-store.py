@@ -62,6 +62,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
+    _DISTILLED_KEY_RE,
     _FRONTMATTER_RE,
     _unquote_scalar,
     atomic_write,
@@ -142,10 +143,10 @@ def _empty_manifest() -> dict:
 # refuses to ship a page whose claims would not parse back — so a parse-fragility
 # bug surfaces loudly instead of silently losing a fact across runs.
 
-# The frontmatter-block regex is the single source of truth in `_knowledge_lib`
-# (imported above), not re-declared here — a future tweak (BOM tolerance, …) must
-# apply everywhere at once.
-_DISTILLED_KEY_RE = re.compile(r"^distilled_claims[ \t]*:[ \t]*$")
+# The frontmatter-block regex AND the `distilled_claims:` key regex are the single
+# source of truth in `_knowledge_lib` (both imported above), not re-declared here —
+# a future tweak (BOM tolerance, …) must apply everywhere at once. The coverage
+# scorer's `parse_distilled_claims` reads the same block via the same `_DISTILLED_KEY_RE`.
 
 
 def _json_scalar(value: str) -> str:
