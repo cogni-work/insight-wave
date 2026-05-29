@@ -78,6 +78,16 @@ assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded 
 # artifact is gone (the summary is authored as one crisp, complete sentence).
 assert_grep 'max-summary' "$INGEST" "knowledge-ingest: Step 4.2 passes --max-summary clamp backstop (#324)"
 assert_not_grep '180' "$INGEST" "knowledge-ingest: no '≤180 chars' authoring contract remains (#324)"
+# #323 (one-wave fan-out): Step 3 dispatches each batch as ONE wave (mirroring the
+# knowledge-curate #299 one-wave precedent), and --batch-size is an advisory cap
+# raised 8 -> 25 (the proven #311 live wave). Guard the new cadence wording, the
+# new default, and the cross-reference; assert_not the dropped per-wave-barrier
+# phrasing and the old default so a future edit can't silently reintroduce them.
+assert_grep 'one wave' "$INGEST" "knowledge-ingest: Step 3 dispatches each batch as one wave (#323)"
+assert_grep 'default 25' "$INGEST" "knowledge-ingest: --batch-size default is 25 (#323)"
+assert_grep 'fan-out-concurrency' "$INGEST" "knowledge-ingest: cross-references references/fan-out-concurrency.md (#323)"
+assert_not_grep 'sequential across batches' "$INGEST" "knowledge-ingest: dropped the 'sequential across batches' per-wave-barrier wording (#323)"
+assert_not_grep '[Dd]efault 8' "$INGEST" "knowledge-ingest: no 'Default 8'/'default 8' --batch-size default remains (#323)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
