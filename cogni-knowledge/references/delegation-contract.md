@@ -59,6 +59,22 @@ These are point-in-time forks — drift from upstream is acceptable and document
 4. If the skill needs new state, it goes in `binding.json` — never in a parallel manifest.
 5. Scripts (`knowledge-*.py`) stay stdlib-only. Anything that needs a library belongs upstream.
 
+## How `Skill(...)` blocks are written
+
+Every fenced code block of the shape
+
+    ```
+    Skill("<plugin>:<skill>", args="…")
+    ```
+
+in a cogni-knowledge **orchestrator** SKILL.md (`knowledge-setup`, `knowledge-resume`, `knowledge-dashboard`, `knowledge-refresh`, `knowledge-query`) is a **dispatch contract**: the orchestrating LLM MUST execute the call via the Skill tool, not output the literal text. The fenced shape (rather than inline backticks) is the canonical surface so the call survives copy-paste, line-wrap, and downstream rendering, and so contract tests can pin it with `grep`. The dispatch verb in the preceding prose — `Dispatch:`, `Delegate to`, or equivalent — reinforces the contract but the fenced block is the source of truth.
+
+Phase skills (`knowledge-plan` … `knowledge-finalize`) **do not dispatch other skills**; they run Bash + agent dispatch only. If a future phase skill needs to dispatch a downstream skill, this convention applies to it too.
+
+Scope: cogni-knowledge-internal. Sibling plugins (`cogni-wiki`, `cogni-research`, etc.) document their own dispatch conventions independently — this section does not constrain them.
+
+Rationale (#350): named the convention so future readers and reviewers find it once, rather than re-deriving it from prose verbs at each site.
+
 ## What about Phase 2's `--allow-wiki-source` flag on `wiki-from-research`?
 
 Phase 2 modifies `cogni-wiki:wiki-from-research` to lift its current abort on `report_source ∈ {wiki, hybrid}` projects, gated behind a new `--allow-wiki-source --cycle-guard-cleared` opt-in. This is the right pattern: the cycle-guard logic lives in cogni-knowledge (it is cogni-knowledge-specific — there is no general-purpose meaning to "research lineage" in `cogni-wiki`), but the deposit pathway lives in `cogni-wiki`. We add an opt-in flag instead of forking the deposit pathway.
