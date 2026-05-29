@@ -1,5 +1,37 @@
 # cogni-knowledge changelog
 
+## 0.1.21 — 2026-05-29 — Research-time gaps streamed into open_questions.md (closes #354)
+
+`knowledge-finalize` Step 10.5 sub-step 5 now streams research-time gaps from
+`<project>/.metadata/wiki-coverage.json::sub_questions[].coverage_verdict ∈
+{uncovered, partial}` into the cross-session `wiki/open_questions.md` backlog under
+cogni-wiki v0.0.49's new `research_uncovered` / `research_partial` classes. The
+sub-step pipes a merged payload — cogni-wiki's `lint_wiki.py` output **plus** the
+research gaps — through `rebuild_open_questions.py --findings -`. The backlog now
+tracks the wiki's data gaps AND the research pipeline's pending sub-questions in one
+file, closing Option (b) deferred from #338. This is the highest-value finalize
+signal: it tells the operator exactly where the next sub-question fan-out should land,
+defending `references/differentiation-thesis.md`'s "the wiki compounds" posture
+instead of letting the signal die in `.metadata/`.
+
+`knowledge-finalize` Step 10's `wiki/log.md` append now carries an `sqs=sq-01,sq-04`
+suffix listing the gap sub-questions (from the pre-finalize `wiki-coverage.json`).
+Paired with cogni-wiki 0.0.49's new `finalize` `CLOSING_OPS` entry, a later finalize
+credit-closes those `sq:<sq_id>` items as `closed … by finalize` once a fresh
+`knowledge-curate` re-scores them `covered`. The suffix is omitted on projects with
+no coverage manifest (degraded but valid).
+
+New helpers in `scripts/_knowledge_lib.py`: `load_wiki_coverage_findings()` (gap →
+`--findings -` entry, message joined from `plan.json` `theme_label` + `query`) and
+`gap_sq_ids_from_coverage()` (bare sq_id list for the log-line suffix); both fail-soft
+on missing/malformed manifests and drop regex-unsafe sq_ids. New
+`scripts/build_open_questions_payload.py` merges lint + gap findings into one
+`{success, data, error}` envelope (a `lint_wiki.py` crash degrades to research-only,
+never blocks). New `--no-research-gaps` flag narrows the rebuild to lint findings only.
+Step 11 surfaces a `(lint=<L>, research=<R>)` split when gaps were in play. New
+`tests/test_load_wiki_coverage_findings.sh` + `tests/test_build_open_questions_payload.sh`;
+`tests/test_finalize_contract.sh` extended. Builds on #338.
+
 ## 0.1.20 — 2026-05-29 — Read-before-web — concept/entity coverage signal (closes #343)
 
 `wiki-coverage.py` (the read-before-web scorer shipped in #321 as P1.3 of #309) now
