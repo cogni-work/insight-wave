@@ -1,7 +1,7 @@
 {
   "name": "cogni-knowledge",
-  "version": "0.1.17",
-  "description": "Wiki-first research that compounds. Binds a cogni-wiki knowledge base to a project so every research run deposits into the same persistent, queryable, interlinked markdown wiki — and so future runs read what previous runs filed instead of starting from zero. The v0.1.0 inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) forks dedicated agents locally and runs zero-network claim verification against pre-extracted source claims (citation-consistent — opt-in live-source resweep via knowledge-refresh --resweep); the optional Phase 4.5 distillation pass deduplicates claims and grows a concept/entity web that successive runs enrich rather than duplicate. The differentiator vs. one-shot deep-research tools (OpenAI Deep Research, Perplexity Spaces, GPT Researcher) is the binding: knowledge accumulates across projects instead of dying in chat history.",
+  "version": "0.1.18",
+  "description": "Wiki-first research that compounds. Binds each run to a cogni-wiki knowledge base; future runs read what prior runs filed before hitting the web. v0.1.0 inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification — opt-in live-source resweep via `knowledge-refresh --resweep`.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
@@ -14,7 +14,11 @@
     "research-orchestrator",
     "binding",
     "karpathy",
-    "deep-research",
+    "inverted-pipeline",
+    "citation-consistent",
+    "zero-network-verification",
+    "resweep",
+    "contradiction-tripwire",
     "knowledge-graph",
     "agents",
     "preview"
