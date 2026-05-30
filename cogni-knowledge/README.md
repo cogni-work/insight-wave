@@ -109,7 +109,7 @@ inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-sl
   → knowledge-distill   (optional) concept-distiller proposes → concept-store.py merges wiki/{concepts,entities}/<slug>.md (claim-dedup, enriched across runs)
   → knowledge-compose   wiki-composer reads the populated wiki (concepts as framing + citable evidence) → draft-vN.md + citation-manifest.json
   → knowledge-verify    wiki-verifier scores citations vs pre_extracted_claims / distilled_claims (zero network); revisor loop on unsupported
-  → knowledge-finalize  cycle-guard.py → wiki/syntheses/<slug>.md (derived_from_research:) → index/entries_count/context_brief → knowledge-binding.py --append-project
+  → knowledge-finalize  cycle-guard.py → wiki/syntheses/<slug>.md (derived_from_research:) → index/entries_count/context_brief → knowledge-binding.py --append-project; advisory tripwires: wiki-contradictor (#335) + wiki-reviewer structural score (#309 P1.1)
 
 knowledge-query --knowledge-slug X --question Q
   → cogni-wiki:wiki-query --question Q  (against the bound wiki)
@@ -160,6 +160,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | wiki-verifier | Agent | Phase 6 NEW — scores each citation's verbatim `draft_sentence` as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network, never re-tokenizes; shardable via `CITATIONS_PATH`) |
 | revisor | Agent | Phase 6 fork — re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
 | wiki-contradictor | Agent | Phase 7 Step 10.6 NEW (#335) — zero-network scorer comparing the just-deposited synthesis against each cited source's claims; emits a `contradictor-vN.json` observability report (no auto-resolution) |
+| wiki-reviewer | Agent | Phase 7 Step 10.7 NEW (#309 P1.1) — zero-network structural-quality scorer (ported from `cogni-research`'s reviewer) rating the draft on 5 weighted dimensions (completeness/coherence/source-diversity/depth/clarity) with a citation-density gate; emits an advisory `structural-review-vN.json` (no auto-fix, never blocks) |
 
 ## Architecture
 
@@ -171,7 +172,7 @@ cogni-knowledge/
 ├── CHANGELOG.md                  Version history
 ├── LICENSE                       AGPL-3.0
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
-├── agents/                       11 forked + new pipeline agents
+├── agents/                       12 forked + new pipeline agents
 ├── references/                   7 framework + design docs
 ├── scripts/                      9 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, citation-store, concept-store, pipeline-summary, verify-store, wiki-coverage) + _knowledge_lib helper
 ├── skills/                       13 knowledge-* skills

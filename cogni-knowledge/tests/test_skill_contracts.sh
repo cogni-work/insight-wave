@@ -245,8 +245,9 @@ REVISOR="$PLUGIN_ROOT/agents/revisor.md"
 FINALIZE="$PLUGIN_ROOT/skills/knowledge-finalize/SKILL.md"
 DISTILL="$PLUGIN_ROOT/skills/knowledge-distill/SKILL.md"
 DISTILLER="$PLUGIN_ROOT/agents/concept-distiller.md"
+REVIEWER="$PLUGIN_ROOT/agents/wiki-reviewer.md"
 
-for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE" "$DISTILL" "$DISTILLER"; do
+for f in "$PLAN" "$CURATE" "$FETCH" "$CURATOR" "$FETCHER" "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE" "$DISTILL" "$DISTILLER" "$REVIEWER"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-(research|claims):' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-research/cogni-claims skill"
@@ -263,7 +264,7 @@ done
 # _wikilib._wiki_lock — an import, not a skill dispatch; knowledge-compose
 # only reads the wiki; the composer/verifier/revisor are read-only against
 # wiki/*; the concept-distiller is read+write-records only, no skill dispatch).
-for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE" "$DISTILL" "$DISTILLER"; do
+for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE" "$DISTILL" "$DISTILLER" "$REVIEWER"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-wiki:' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-wiki skill (M6 contract: call helper scripts directly)"
