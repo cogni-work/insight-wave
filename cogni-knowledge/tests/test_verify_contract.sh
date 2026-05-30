@@ -90,7 +90,7 @@ fi
 # and the inline prune keys on the stable id (draft_position is best-effort now).
 # #291: Step 2 rejects a pre-0.0.28 manifest (entries missing id/draft_sentence)
 # loud-and-early instead of mass-dropping every citation as sentence_not_in_draft.
-assert_grep 'predates v0.0.28' "$VERIFY" "knowledge-verify: Step 2 guards a pre-0.0.28 citation-manifest (missing id/draft_sentence)"
+assert_grep 'missing id/draft_sentence' "$VERIFY" "knowledge-verify: Step 2 guards a stale citation-manifest (entries missing id/draft_sentence)"
 assert_grep 'sentence_not_in_draft' "$VERIFY" "knowledge-verify: filters sentence_not_in_draft out of the revisor trigger (revisor can only drop these)"
 assert_grep 'stale_ids' "$VERIFY" "knowledge-verify: prunes stale manifest entries by id, not by draft_position tuple"
 # Defence-in-depth: confirm there is no obsolete Skill("cogni-knowledge:wiki-verifier)
@@ -119,7 +119,6 @@ assert_grep 'Verification scope:' "$VERIFY" "knowledge-verify: Step 6 prints the
 assert_grep 'citation-consistent' "$VERIFY" "knowledge-verify: Step 6 labels verdicts citation-consistent (#337)"
 assert_grep 'Verbatim/paraphrase ratio' "$VERIFY" "knowledge-verify: Step 6 surfaces the verbatim/paraphrase ratio (#337)"
 assert_grep 'knowledge-refresh --resweep' "$VERIFY" "knowledge-verify: Out of scope cross-references knowledge-refresh --resweep (#337)"
-assert_grep '#337' "$VERIFY" "knowledge-verify: references #337"
 
 # --- wiki-verifier agent -------------------------------------------------
 VERIFIER="$PLUGIN_ROOT/agents/wiki-verifier.md"

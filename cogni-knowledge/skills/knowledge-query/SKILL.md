@@ -42,7 +42,7 @@ If `--question` is missing, ask the user once via `AskUserQuestion` (single free
 
 ### 0. Pre-flight
 
-**Required plugins.** This skill dispatches `cogni-wiki:wiki-query` and reads the bound wiki — it never reaches cogni-research, so it probes only `cogni-wiki` (the v0.1.0 clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** This skill dispatches `cogni-wiki:wiki-query` and reads the bound wiki — it never reaches cogni-research, so it probes only `cogni-wiki` (the clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -85,7 +85,7 @@ Skill("cogni-wiki:wiki-query",
       args="--wiki-root <wiki_path> --question '<question>' [--file-back <val>] [--max-pages <N>]")
 ```
 
-`--wiki-root` was added in cogni-wiki v0.0.41 — it pins the upstream skill to the bound wiki, bypassing the cwd-walk fallback. Forward `--file-back` and `--max-pages` only if the caller passed them.
+`--wiki-root` pins the upstream skill to the bound wiki, bypassing the cwd-walk fallback. Forward `--file-back` and `--max-pages` only if the caller passed them.
 
 ### 2. Print the answer + footer
 
@@ -118,7 +118,7 @@ This skill never modifies the binding. `cogni-wiki:wiki-query` may file the answ
 
 ## Out of scope
 
-- **Multi-question scoping.** Phase 3 takes one question per run; chaining is a future enhancement.
+- **Multi-question scoping.** This skill takes one question per run; chaining is a future enhancement.
 - **Modifying the binding.** Read-only by design.
 
 ## Output

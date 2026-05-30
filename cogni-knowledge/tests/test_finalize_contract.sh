@@ -176,7 +176,7 @@ assert_grep 'wiki-contradictor' "$FIN" "knowledge-finalize: Step 10.6 dispatches
 assert_grep 'Task(wiki-contradictor' "$FIN" "knowledge-finalize: Step 10.6 contains the literal Task(wiki-contradictor ...) dispatch (#335)"
 assert_grep 'contradictor-v' "$FIN" "knowledge-finalize: Step 10.6 writes contradictor-v<N>.json output artifact (#335)"
 assert_grep '\-\-no-contradictor' "$FIN" "knowledge-finalize: --no-contradictor opt-out flag documented in Parameters table (#335, R1)"
-assert_grep '#335' "$FIN" "knowledge-finalize: Step 10.6 references issue #335"
+assert_grep '### 10.6 Contradiction tripwire' "$FIN" "knowledge-finalize: Step 10.6 contradiction tripwire heading present"
 # Fail-soft framing — must be explicit so a future maintainer doesn't
 # tighten Step 10.6 into a blocking gate.
 assert_grep 'observability-only\|non-fatal\|never rolls back\|never blocks' "$FIN" "knowledge-finalize: Step 10.6 documented as fail-soft / observability-only (#335)"
@@ -222,7 +222,7 @@ assert_grep 'wiki-reviewer' "$FIN" "knowledge-finalize: Step 10.7 dispatches wik
 assert_grep 'Task(wiki-reviewer' "$FIN" "knowledge-finalize: Step 10.7 contains the literal Task(wiki-reviewer ...) dispatch (#309 P1.1)"
 assert_grep 'structural-review-v' "$FIN" "knowledge-finalize: Step 10.7 writes structural-review-v<N>.json output artifact (#309 P1.1)"
 assert_grep '\-\-no-reviewer' "$FIN" "knowledge-finalize: --no-reviewer opt-out flag documented in Parameters table (#309 P1.1)"
-assert_grep '#309' "$FIN" "knowledge-finalize: Step 10.7 references issue #309"
+assert_grep 'structural-quality half of the cogni-research feature-parity' "$FIN" "knowledge-finalize: Step 10.7 framed as the structural-quality feature-parity half"
 # Fail-soft / advisory framing — must be explicit so a future maintainer
 # doesn't tighten Step 10.7 into a blocking gate.
 assert_grep 'advisory\|Advisory\|never rolls back\|never blocks' "$FIN" "knowledge-finalize: Step 10.7 documented as advisory / fail-soft (#309 P1.1)"
@@ -237,7 +237,7 @@ assert_grep 'agents/wiki-reviewer.md' "$FIN" "knowledge-finalize: References blo
 # Fail-soft refresh of the persistent data-gap backlog the inverted pipeline
 # leaves stale. Same posture as cogni-wiki wiki-lint Step 8.5: never rolls
 # back the synthesis; surfaces a loud failure line on error.
-assert_grep '5\. \*\*Refresh `wiki/open_questions.md` (#338)' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 heading present (#338)"
+assert_grep '5\. \*\*Refresh `wiki/open_questions.md`' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 heading present"
 assert_grep 'rebuild_open_questions.py' "$FIN" "knowledge-finalize: Step 10.5 sub-step 5 invokes rebuild_open_questions.py (#338)"
 # The script dir is already resolved at Pre-flight for the Step 10.5 gate —
 # anchor that sub-step 5 reuses $WIKI_LINT_SCRIPTS rather than re-resolving.
@@ -262,7 +262,7 @@ assert_grep 'never rolls back the synthesis' "$FIN" "knowledge-finalize: Step 10
 # and wiki/log.md together, but with no write verb) from false-positiving.
 assert_not_grep '(printf|echo|cat|tee|>>).*open[_-]questions.*log\.md|(printf|echo|cat|tee|>>).*log\.md.*open[_-]questions' "$FIN" "knowledge-finalize: sub-step 5 does NOT write a second wiki/log.md line (#338)"
 # Edge-case section anchor: re-finalize idempotency for the open-questions RMW.
-assert_grep '#338 open-questions idempotency' "$FIN" "knowledge-finalize: edge-case section documents re-finalize idempotency for the open-questions RMW (#338)"
+assert_grep 'open-questions idempotency' "$FIN" "knowledge-finalize: edge-case section documents re-finalize idempotency for the open-questions RMW"
 
 # --- #354 research-time gap streaming ------------------------------------
 # Step 10 finalize log line carries the conditional sqs= suffix.
@@ -295,7 +295,6 @@ assert_grep 'Verbatim/paraphrase ratio' "$FIN" "knowledge-finalize: Step 11 prin
 assert_grep 'knowledge-refresh --resweep' "$FIN" "knowledge-finalize: Out of scope names knowledge-refresh --resweep as the live-source path (#337)"
 # Output block must list the two additive frontmatter keys as deliverables.
 assert_grep 'verification_ratio:' "$FIN" "knowledge-finalize: Output block lists the additive verification frontmatter keys (#337)"
-assert_grep '#337' "$FIN" "knowledge-finalize: references #337"
 
 # --- Inverted-pipeline.md Phase 7 anchor ---------------------------------
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"

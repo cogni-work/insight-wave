@@ -52,8 +52,8 @@ assert_grep 'no resweep ever run on this base' "$DASH" "knowledge-dashboard: Edg
 # The dashboard must NOT dispatch the (expensive) resweep itself.
 assert_not_grep 'Skill("cogni-wiki:wiki-claims-resweep"' "$DASH" "knowledge-dashboard: does NOT dispatch wiki-claims-resweep itself (cheap-and-frequent contract, #337)"
 
-# --- 6) Issue reference ----------------------------------------------------
-assert_grep '#337' "$DASH" "knowledge-dashboard: references #337"
+# --- 6) Verification-scope semantics named ---------------------------------
+assert_grep 'citation-consistent' "$DASH" "knowledge-dashboard: names citation-consistent verification semantics"
 
 # --- 7) Existing surfaces survive (regression guard) -----------------------
 assert_grep 'pipeline-summary.py' "$DASH" "knowledge-dashboard: still reads pipeline-summary.py per project"

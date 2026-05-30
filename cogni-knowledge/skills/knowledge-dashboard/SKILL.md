@@ -39,7 +39,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 
 ### 0. Pre-flight
 
-**Required plugins.** This skill dispatches `cogni-wiki:wiki-dashboard` and reads the bound wiki + the inverted-pipeline manifests — it never reaches cogni-research, so it probes only `cogni-wiki` (the v0.1.0 clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** This skill dispatches `cogni-wiki:wiki-dashboard` and reads the bound wiki + the inverted-pipeline manifests — it never reaches cogni-research, so it probes only `cogni-wiki` (cogni-research is 0% of the runtime path). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -99,7 +99,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py project \
     --project-path <research_projects[i].project_path>
 ```
 
-Capture `sub_questions`, `fetched`, `unavailable`, the distill fields `concepts_total` / `claims_attached` / `claims_deduped` (#336), and `verify_counts.{verbatim,paraphrase,unsupported}`. Legacy v0.0.x deposits (cogni-research layout, no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render those cells as `—` so the table reads honestly rather than implying a zero-claim pipeline ran. A deposit that ran before Phase 4.5 existed (or skipped the optional distill) returns `concepts_total: 0` — render the concepts/deduped cells as `—`. If a project entry has no `project_path` (pre-v0.0.2 binding), skip the per-project read and render `—`.
+Capture `sub_questions`, `fetched`, `unavailable`, the distill fields `concepts_total` / `claims_attached` / `claims_deduped`, and `verify_counts.{verbatim,paraphrase,unsupported}`. Legacy deposits (cogni-research layout, no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render those cells as `—` so the table reads honestly rather than implying a zero-claim pipeline ran. A deposit that ran before the distill phase existed (or skipped the optional distill) returns `concepts_total: 0` — render the concepts/deduped cells as `—`. If a project entry has no `project_path` (legacy binding), skip the per-project read and render `—`.
 
 Then read the knowledge-base-global fetch-cache health once:
 
@@ -110,7 +110,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
 
 Capture `entries`, `negative_ratio`, `oldest_age_days`, `max_age_days`, `verdict`.
 
-Then read the wiki-global live-source resweep cadence once (#337). `cogni-wiki:wiki-claims-resweep` writes `<wiki_path>/.cogni-wiki/last-resweep.json` (lock-wrapped, single-writer-per-wiki); the dashboard only reads it. Absent file → render `never`, no error:
+Then read the wiki-global live-source resweep cadence once. `cogni-wiki:wiki-claims-resweep` writes `<wiki_path>/.cogni-wiki/last-resweep.json` (lock-wrapped, single-writer-per-wiki); the dashboard only reads it. Absent file → render `never`, no error:
 
 ```
 python3 -c '
@@ -161,7 +161,7 @@ No fetched sources yet — run `knowledge-fetch` to populate the cache.
 
 ## Claim verification scope
 
-**Verification semantics (#337)** — every citation in every synthesis below was scored as `verbatim` / `paraphrase` / `synthesis` / `unsupported` against the cited page's `pre_extracted_claims:` block, extracted from the source body **at ingest time**. This is the v0.1.0 inverted pipeline's structural cost win versus cogni-claims (<5 min per finalize vs ~25 min): the check is **zero-network** — **no live-source re-fetch ever happens at verify time** (`references/inverted-pipeline.md` Phase 6; `agents/wiki-verifier.md` §"What this agent does NOT do"). So "verified" here means **citation-consistent, not ground-truthed**. Two corollaries:
+**Verification semantics** — every citation in every synthesis below was scored as `verbatim` / `paraphrase` / `synthesis` / `unsupported` against the cited page's `pre_extracted_claims:` block, extracted from the source body **at ingest time**. This is the inverted pipeline's structural cost win versus cogni-claims (<5 min per finalize vs ~25 min): the check is **zero-network** — **no live-source re-fetch ever happens at verify time** (`references/inverted-pipeline.md` Phase 6; `agents/wiki-verifier.md` §"What this agent does NOT do"). So "verified" here means **citation-consistent, not ground-truthed**. Two corollaries:
 
 1. *Extraction fidelity is unchecked.* An extracted claim that distorts the source body but is locatable at its declared `excerpt_position` passes ingest and propagates as evidence.
 2. *Sources drift between ingest and read.* URLs 404, paywalls appear, content gets rewritten — nothing re-checks the live URL after ingest.
@@ -188,23 +188,23 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - Deposited projects: `<count>`
 - Fetch-cache: `<entries>` cached, verdict `<verdict>` (knowledge-base-global)
 - Latest claim_drift findings: `<N>` (or `no lint audits yet`)
-- Last live-source resweep: `<LAST_RESWEEP_DATE>` (`<LAST_RESWEEP_AGE_DAYS>`d ago) | `never`. Run `/cogni-knowledge:knowledge-refresh --resweep` to refresh ground-truth (#337).
+- Last live-source resweep: `<LAST_RESWEEP_DATE>` (`<LAST_RESWEEP_AGE_DAYS>`d ago) | `never`. Run `/cogni-knowledge:knowledge-refresh --resweep` to refresh ground-truth.
 - Open both with `open <wiki_path>/wiki-dashboard.html` and `open <wiki_path>/knowledge-overlay.md`
 
 ## Edge cases
 
 - **Empty `research_projects[]`.** Section 2's table is replaced with the empty-state line; the rest of the overlay renders normally.
-- **Legacy v0.0.x deposit (no `.metadata/` manifests).** `pipeline-summary.py project` returns zeros + `phase_reached: "none"`; render the per-project pipeline columns as `—` rather than `0` so the row reads as "no inverted-pipeline data" rather than "ran with zero results".
+- **Legacy deposit (no `.metadata/` manifests).** `pipeline-summary.py project` returns zeros + `phase_reached: "none"`; render the per-project pipeline columns as `—` rather than `0` so the row reads as "no inverted-pipeline data" rather than "ran with zero results".
 - **`pipeline-summary.py cache-health` fails.** Render the `## Pipeline health` block with a one-line "fetch-cache health unavailable" note and keep going — the rest of the overlay is still useful.
 - **No `wiki/audits/` directory.** Treat as "no lint audits yet" — section 2 still renders.
 - **Audit file present but no `claim_drift` markers.** Report `0 claim_drift findings`.
-- **Missing `<wiki_path>/.cogni-wiki/last-resweep.json` (no resweep ever run on this base).** Treat as `never`; the `## Claim verification scope` block + short summary still render normally with the `--resweep` suggestion (#337).
+- **Missing `<wiki_path>/.cogni-wiki/last-resweep.json` (no resweep ever run on this base).** Treat as `never`; the `## Claim verification scope` block + short summary still render normally with the `--resweep` suggestion.
 - **Upstream `wiki-dashboard` fails after partial render.** Step 1 already aborted; the overlay is not written.
 
 ## Out of scope
 
 - **Running `wiki-lint` from this skill.** The verification-scope block reads whatever audits already exist on disk. Running lint is a separate user-driven action (it costs tokens; the dashboard is meant to be cheap and frequent).
-- **Dispatching `wiki-claims-resweep` itself.** Resweep is expensive (WebFetch per cited URL). The dashboard is meant to be cheap and frequent; it only reads `last-resweep.json` and surfaces the cadence. The resweep is opt-in via `/cogni-knowledge:knowledge-refresh --resweep` (#337).
+- **Dispatching `wiki-claims-resweep` itself.** Resweep is expensive (WebFetch per cited URL). The dashboard is meant to be cheap and frequent; it only reads `last-resweep.json` and surfaces the cadence. The resweep is opt-in via `/cogni-knowledge:knowledge-refresh --resweep`.
 - **Injecting the binding overlay into `wiki-dashboard.html` itself.** The upstream dashboard is wiki-general; layering knowledge-base-specific content into its HTML would couple the two. The sidecar approach keeps the contracts clean.
 - **Modifying the binding.** Read-only by design.
 - **Writing anywhere outside `<wiki_path>/`.** The overlay is the only file this skill writes, and it lives inside the bound wiki's directory.
@@ -221,4 +221,4 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - `cogni-wiki:wiki-dashboard` SKILL.md — the upstream contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache health (`cache-health`)
-- `cogni-wiki:wiki-claims-resweep` SKILL.md — writes `<wiki_path>/.cogni-wiki/last-resweep.json` (the resweep cadence pointer this overlay reads, #337)
+- `cogni-wiki:wiki-claims-resweep` SKILL.md — writes `<wiki_path>/.cogni-wiki/last-resweep.json` (the resweep cadence pointer this overlay reads)

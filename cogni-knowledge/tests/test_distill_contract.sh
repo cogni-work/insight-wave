@@ -50,8 +50,7 @@ assert_grep 'summaries,learnings\|summaries", "learnings\|summaries"), ("learnin
 # #340 observable title→slug tripwire — Step-9 warning surfaces near_existing_*.
 assert_grep 'near_existing_total' "$SKILL" "knowledge-distill: reads near_existing_total from merge output (#340)"
 assert_grep 'near_existing_slugs' "$SKILL" "knowledge-distill: reads near_existing_slugs[] from merge output (#340)"
-assert_grep 'concepts created near an existing slug' "$SKILL" "knowledge-distill: Step 9 surfaces the #340 tripwire warning"
-assert_grep '#340' "$SKILL" "knowledge-distill: Step 9 names the #340 watch-point so a reader can find the issue"
+assert_grep 'concepts created near an existing slug' "$SKILL" "knowledge-distill: Step 9 surfaces the title→slug tripwire warning"
 assert_grep 'observability' "$SKILL" "knowledge-distill: documents the tripwire as pure observability (no auto-merge)"
 # Must NOT run the conformance gate (finalize Step 10.5 owns it once).
 assert_not_grep 'health.py asserts' "$SKILL" "knowledge-distill: does NOT run the conformance gate itself"

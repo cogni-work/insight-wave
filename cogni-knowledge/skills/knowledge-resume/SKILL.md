@@ -33,7 +33,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 ### 0. Pre-flight
 
-**Required plugins.** This skill dispatches `cogni-wiki:wiki-resume` and reads the inverted-pipeline manifests — it never reaches cogni-research, so it probes only `cogni-wiki` (the v0.1.0 clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** This skill dispatches `cogni-wiki:wiki-resume` and reads the inverted-pipeline manifests — it never reaches cogni-research, so it probes only `cogni-wiki` (the clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -77,7 +77,7 @@ Resume is read-only with respect to disk, but it still dispatches `cogni-wiki:wi
 Skill("cogni-wiki:wiki-resume", args="--wiki-root <wiki_path> [--verbose]")
 ```
 
-`wiki-resume` already runs `wiki-health` automatically (see `cogni-wiki/skills/wiki-resume/SKILL.md` — "As of v0.0.27, resume also runs wiki-health automatically"). Do not run `wiki-health` separately; that would log a noisy second invocation.
+`wiki-resume` already runs `wiki-health` automatically (see `cogni-wiki/skills/wiki-resume/SKILL.md`). Do not run `wiki-health` separately; that would log a noisy second invocation.
 
 Capture the wiki-resume output. Look for:
 - The `wiki/context_brief.md` summary (auto-rebuilt by `wiki-ingest`)
@@ -91,7 +91,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py project \
     --project-path <research_projects[i].project_path>
 ```
 
-Capture `sub_questions`, `fetched`, `phase_reached`, and the distill fields `concepts_total` / `claims_attached` / `claims_deduped` (#336). Legacy v0.0.x deposits (no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render their depth as `(legacy deposit)` rather than `0 sub-questions`. Then read the knowledge-base-global fetch-cache verdict once:
+Capture `sub_questions`, `fetched`, `phase_reached`, and the distill fields `concepts_total` / `claims_attached` / `claims_deduped`. Legacy deposits (no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render their depth as `(legacy deposit)` rather than `0 sub-questions`. Then read the knowledge-base-global fetch-cache verdict once:
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
@@ -106,7 +106,7 @@ Print a ≤ 12-line summary that layers the binding onto the wiki status:
 
 - **Knowledge base.** `<knowledge_title>` (`<knowledge_slug>`), created `<created>`
 - **Wiki path.** `<wiki_path>` — wiki health verdict from Step 2 (one line: "OK" / "N issues — see wiki-resume output above")
-- **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + ` · <concepts_total> concepts (<claims_deduped>/<claims_attached> claims deduped)` when `concepts_total > 0` (the Phase-4.5 distill compounding signal, #336) + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
+- **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + ` · <concepts_total> concepts (<claims_deduped>/<claims_attached> claims deduped)` when `concepts_total > 0` (the Phase-4.5 distill compounding signal) + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
 - **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — run knowledge-fetch --refresh`; `empty` → `fetch-cache empty — run knowledge-plan first`.
 - **Topic lineage.** If `covered_themes` or `open_themes` are non-empty, print them as two short lists. Else omit.
 - **Next action.** Recommend based on state:

@@ -1,6 +1,6 @@
 ---
 name: knowledge-refresh
-description: "Refresh a bound cogni-knowledge base — two modes. Pull-mode delegates to cogni-wiki:wiki-refresh against the bound wiki to refresh stale pages from an existing research project. Push-mode lints the bound wiki, asks the user which stale topics to refresh, then runs the v0.1.0 inverted pipeline per selected topic — the seven-phase chain knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → (knowledge-distill, optional) → knowledge-compose → knowledge-verify → knowledge-finalize — so each stale topic gets a freshly-composed, claim-verified synthesis deposited into the bound wiki, and the concept/entity web is enriched along the way. An orthogonal opt-in --resweep flag re-verifies the bound wiki's cited claims against live source URLs by delegating to cogni-wiki:wiki-claims-resweep (composable with --mode, or standalone). Use this skill whenever the user says 'refresh my knowledge base', 'knowledge refresh push|pull', 'update stale pages in my <slug> base', 'refresh stale topics in the eu-ai-act base', 'pull fresh research into the bound wiki', 're-verify cited claims against live sources', 'resweep the bound wiki'."
+description: "Refresh a bound cogni-knowledge base — two modes. Pull-mode delegates to cogni-wiki:wiki-refresh against the bound wiki to refresh stale pages from an existing research project. Push-mode lints the bound wiki, asks the user which stale topics to refresh, then runs the inverted pipeline per selected topic — the seven-phase chain knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → (knowledge-distill, optional) → knowledge-compose → knowledge-verify → knowledge-finalize — so each stale topic gets a freshly-composed, claim-verified synthesis deposited into the bound wiki, and the concept/entity web is enriched along the way. An orthogonal opt-in --resweep flag re-verifies the bound wiki's cited claims against live source URLs by delegating to cogni-wiki:wiki-claims-resweep (composable with --mode, or standalone). Use this skill whenever the user says 'refresh my knowledge base', 'knowledge refresh push|pull', 'update stale pages in my <slug> base', 'refresh stale topics in the eu-ai-act base', 'pull fresh research into the bound wiki', 're-verify cited claims against live sources', 'resweep the bound wiki'."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 ---
 
@@ -9,9 +9,9 @@ allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 Close the self-healing loop for a bound cogni-knowledge base. Wiki pages age — `wiki-lint` flags `stale_page` (>365d) and `stale_draft` (>180d) findings, but lint alone doesn't bring fresh evidence. This skill has two modes:
 
 - **Pull-mode** — the user already has a completed cogni-research project; we delegate to `cogni-wiki:wiki-refresh` to match its sub-questions to stale pages and refresh them. (Pull-mode is the legacy bridge; it stays unchanged.)
-- **Push-mode** — we lint the wiki, ask the user which stale topics they want fresh evidence on, then run the **v0.1.0 inverted pipeline** per selected topic: the seven-phase chain `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (optional, fail-soft) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Each topic ends with a freshly-composed, claim-verified `type: synthesis` page deposited into the bound wiki, and the distill step enriches the concept/entity web.
+- **Push-mode** — we lint the wiki, ask the user which stale topics they want fresh evidence on, then run the **inverted pipeline** per selected topic: the seven-phase chain `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (optional, fail-soft) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Each topic ends with a freshly-composed, claim-verified `type: synthesis` page deposited into the bound wiki, and the distill step enriches the concept/entity web.
 
-This skill is a pure orchestrator — pull-mode is a thin pass-through; push-mode composes existing `cogni-knowledge` phase skills via `Skill(...)`, never re-implementing them. **Push-mode dispatches zero cogni-research skills** — the v0.1.0 clean break (decision-1) means cogni-research is 0% of the runtime path. The legacy push-mode (which re-ran the old research+ingest chain) was replaced by the seven-phase inverted pipeline at v0.0.26.
+This skill is a pure orchestrator — pull-mode is a thin pass-through; push-mode composes existing `cogni-knowledge` phase skills via `Skill(...)`, never re-implementing them. **Push-mode dispatches zero cogni-research skills** — cogni-research is 0% of the runtime path.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the delegation boundary and the Skill-dispatch convention (§"How `Skill(...)` blocks are written").
 
@@ -20,7 +20,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 - User wants to refresh stale pages in a bound knowledge base
 - User has a fresh research project and wants to pipe it into the wiki (pull-mode)
 - User wants the system to auto-research the stale topics (push-mode)
-- User wants to re-verify the bound wiki's cited claims against live source URLs — `--resweep` (opt-in, #337)
+- User wants to re-verify the bound wiki's cited claims against live source URLs — `--resweep` (opt-in)
 
 ## Never run when
 
@@ -44,7 +44,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 | `--force` | Pull pass-through | Forwarded to `cogni-wiki:wiki-refresh --force`. |
 | `--related-sweep <yes\|no>` | Pull pass-through | Forwarded to `cogni-wiki:wiki-refresh --related-sweep`. |
 | `--dry-run` | Pull pass-through | Forwarded to `cogni-wiki:wiki-refresh --dry-run`. |
-| `--resweep` | No | **Orthogonal opt-in (#337).** Re-verify the bound wiki's cited claims against live source URLs by dispatching `cogni-wiki:wiki-claims-resweep` against `binding.wiki_path`. Composable: `--mode push --resweep` runs push then resweep; `--resweep` alone (no `--mode`) runs the resweep only. **Never auto-runs** — the per-run zero-network invariant is preserved. |
+| `--resweep` | No | **Orthogonal opt-in.** Re-verify the bound wiki's cited claims against live source URLs by dispatching `cogni-wiki:wiki-claims-resweep` against `binding.wiki_path`. Composable: `--mode push --resweep` runs push then resweep; `--resweep` alone (no `--mode`) runs the resweep only. **Never auto-runs** — the per-run zero-network invariant is preserved. |
 | `--resweep-page <slug>` | Resweep pass-through | Forwarded to `wiki-claims-resweep --page`. Sweep a single page only (mutually exclusive with `--resweep-stale-only`). |
 | `--resweep-stale-only` | Resweep pass-through | Forwarded to `wiki-claims-resweep --stale-only`. Sweep only pages older than the upstream staleness threshold. |
 | `--resweep-days <N>` | Resweep pass-through | Forwarded to `wiki-claims-resweep --days` (only valid with `--resweep-stale-only`). |
@@ -58,7 +58,7 @@ If `--mode` is missing **and `--resweep` was not passed**, ask the user once via
 
 ### 0. Pre-flight (both modes)
 
-**Required plugins.** Both modes dispatch only `cogni-wiki` (pull-mode → `wiki-refresh`; push-mode → `wiki-lint` to find stale topics) plus this plugin's own inverted-pipeline phase skills. Neither reaches cogni-research, so probe only `cogni-wiki` — the v0.1.0 clean break (decision-1: cogni-research is 0% of the runtime path; same posture as `knowledge-plan`). Abort cleanly here rather than letting a downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** Both modes dispatch only `cogni-wiki` (pull-mode → `wiki-refresh`; push-mode → `wiki-lint` to find stale topics) plus this plugin's own inverted-pipeline phase skills. Neither reaches cogni-research, so probe only `cogni-wiki` — cogni-research is 0% of the runtime path. Abort cleanly here rather than letting a downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -154,7 +154,7 @@ Then continue with the binding-resolution checks:
    ```
    `knowledge-fetch` is passed `--no-cobrowse` explicitly — push-mode is autonomous, so it must never block on the cobrowse opt-in prompt (the bodies are already fetched during `knowledge-curate`; WebFetch misses stay unavailable rather than waiting for a browser). **`knowledge-distill` (Phase 4.5) is optional + fail-soft**: it enriches the bound wiki's concept/entity web, but a distill failure must NOT fail the topic — do not capture it in `failures[]` and do not skip `compose`; just note it and continue (distill itself exits 0 even on internal failure, so this is belt-and-suspenders). `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` with `report_source: wiki` — that is the per-topic deliverable. Do not pass `--overwrite`; finalize refusing to clobber an existing synthesis is the correct resume behaviour.
 
-   **What push-mode does and does not do to the stale page.** Push-mode brings fresh, claim-verified evidence into the base as a **new** `synthesis` page per topic. Unlike the legacy push-mode (which dispatched `wiki-refresh` to rewrite the flagged page in place), it does **not** rewrite or delete the originally-flagged stale page — the inverted pipeline has no in-place page-rewrite primitive, and the v0.1.0 wiki separates `sources/` + `syntheses/` rather than editing arbitrary pages. The fresh synthesis supersedes the stale framing; the originally-flagged page stays on disk and a later `wiki-lint` may still flag it. Retiring or merging the old page is a manual `cogni-wiki:wiki-update` decision — surface this in the final summary so the user is not surprised.
+   **What push-mode does and does not do to the stale page.** Push-mode brings fresh, claim-verified evidence into the base as a **new** `synthesis` page per topic. Unlike the legacy push-mode (which dispatched `wiki-refresh` to rewrite the flagged page in place), it does **not** rewrite or delete the originally-flagged stale page — the inverted pipeline has no in-place page-rewrite primitive, and the wiki separates `sources/` + `syntheses/` rather than editing arbitrary pages. The fresh synthesis supersedes the stale framing; the originally-flagged page stays on disk and a later `wiki-lint` may still flag it. Retiring or merging the old page is a manual `cogni-wiki:wiki-update` decision — surface this in the final summary so the user is not surprised.
 
    Sequential overall (topic-A's full chain, then topic-B's) — `knowledge-binding.py append-project` writes without an external lock, so concurrent finalizes could race. See `references/delegation-contract.md` §"Phase-3 push-refresh behaviour" for the contract.
 
@@ -173,12 +173,12 @@ The per-topic loop fails soft: a topic that dies mid-chain leaves valid manifest
 - **`knowledge-curate` / `knowledge-fetch`** — `candidate-store.py` and `fetch-cache.py` are dedup-by-construction; re-runs cost only the WebSearch/WebFetch budget for cache misses.
 - **`knowledge-ingest`** — skips URLs already in `ingest-manifest.json::ingested[]` (orchestrator-side, URL-keyed); re-runs are a no-op on already-ingested slugs.
 - **`knowledge-distill`** (optional, fail-soft) — `concept-store.py merge` is byte-stable on re-run (claim dedup + the on-disk created-vs-updated decision under the lock make an unchanged page a no-op); the orchestrator also skips re-dispatch when the source-claim-bundle hash is unchanged. A distill failure never blocks the topic chain.
-- **`knowledge-compose`** — preserves the F11 outline-recovery contract: a leftover `writer-outline-vN.json` from a crashed prior run triggers `RESUME_FROM_OUTLINE=true` so only Phase 2 re-runs.
+- **`knowledge-compose`** — preserves the outline-recovery contract: a leftover `writer-outline-vN.json` from a crashed prior run triggers `RESUME_FROM_OUTLINE=true` so only Phase 2 re-runs.
 - **`knowledge-verify`** — single-pass per round, max-2 revisor iterations. **`knowledge-finalize`** — refuses to overwrite an existing `<wiki>/syntheses/<slug>.md` without `--overwrite`, so a re-run after a successful finalize is a safe no-op.
 
-### 3. Resweep dispatch (opt-in, #337)
+### 3. Resweep dispatch (opt-in)
 
-Runs **only when `--resweep` is passed** — after push/pull completes (if a `--mode` was given), or **alone** when `--resweep` carries no `--mode`. This is the minimal (a)-skeleton hook from issue #337: it re-verifies the bound wiki's cited claims against **live** source URLs, the one thing the zero-network per-run pipeline structurally never does. Never auto-dispatched — the operator must pass the flag, so every finalize/verify/dashboard run stays zero-network and fast.
+Runs **only when `--resweep` is passed** — after push/pull completes (if a `--mode` was given), or **alone** when `--resweep` carries no `--mode`. It re-verifies the bound wiki's cited claims against **live** source URLs, the one thing the zero-network per-run pipeline structurally never does. Never auto-dispatched — the operator must pass the flag, so every finalize/verify/dashboard run stays zero-network and fast.
 
 **After a partial push (`--mode push --resweep` where ≥ 1 topic failed mid-chain):** the resweep still runs. Push-mode is fail-soft per topic, and a topic that crashed *before* `knowledge-finalize` deposited **no** `wiki/syntheses/<slug>.md` page — so there is nothing on disk for the resweep to scan, and it cannot surface phantom deviations on a partially-deposited topic. The resweep therefore covers only the syntheses that actually landed; failed topics are simply absent. No special skip logic needed.
 
@@ -201,8 +201,8 @@ Runs **only when `--resweep` is passed** — after push/pull completes (if a `--
      Report: <relative path>. Reconcile flagged pages via cogni-wiki:wiki-update.
      last-resweep.json updated → knowledge-dashboard will surface the new date.
    ```
-   **Synthesis-underyield note (standing, every resweep).** The upstream report classifies scanned pages by directory; surface the source-vs-synthesis split so the underyield is visible at run time, not only in the CHANGELOG: append `Note: yield is from wiki/sources/<slug>.md (inline-URL bodies); wiki/syntheses/<slug>.md ([N]/[[slug]] citations) underyield until the synthesis-extractor adapter ships (v0.1.17, #337).` If the upstream summary exposes per-directory page counts, prefer the concrete form `Covered <K_src> source page(s); <K_syn> synthesis page(s) underyielded (v0.1.17 adapter pending, #337).`
-   When the upstream reports `total_claims == 0` for a `--resweep-page <slug>`, append: `⚠ <slug> yielded zero re-verifiable claims — this is a synthesis page or a page without inline URLs; resweep is most useful against wiki/sources/<slug>.md pages until the v0.1.17 synthesis-extractor adapter ships (#337).`
+   **Synthesis-underyield note (standing, every resweep).** The upstream report classifies scanned pages by directory; surface the source-vs-synthesis split so the underyield is visible at run time: append `Note: yield is from wiki/sources/<slug>.md (inline-URL bodies); wiki/syntheses/<slug>.md ([N]/[[slug]] citations) underyield.` If the upstream summary exposes per-directory page counts, prefer the concrete form `Covered <K_src> source page(s); <K_syn> synthesis page(s) underyielded.`
+   When the upstream reports `total_claims == 0` for a `--resweep-page <slug>`, append: `⚠ <slug> yielded zero re-verifiable claims — this is a synthesis page or a page without inline URLs; resweep is most useful against wiki/sources/<slug>.md pages.`
 
 ## Edge cases
 
@@ -214,12 +214,12 @@ Runs **only when `--resweep` is passed** — after push/pull completes (if a `--
 
 ## Out of scope
 
-- **Cycle-detection between push-mode runs.** `knowledge-finalize` runs `cycle-guard.py` (with the v0.0.24 citation-manifest fallback) per topic before depositing the synthesis — that is where self-citing loops are refused, not in this orchestrator.
+- **Cycle-detection between push-mode runs.** `knowledge-finalize` runs `cycle-guard.py` per topic before depositing the synthesis — that is where self-citing loops are refused, not in this orchestrator.
 - **Auto-running `wiki-resume` or `knowledge-resume` after the batch.** Surfaced in the summary as a suggestion; manual decision.
 - **Modifying the binding directly.** All binding writes flow through `knowledge-finalize`'s own `append-project` call (one per finalized topic, `report_source: wiki`).
 - **In-place rewrite of the originally-flagged stale page.** Push-mode deposits a fresh `synthesis` and supersedes the stale framing; it does not edit or remove the old page (the legacy `wiki-refresh`-rewrite path is gone with the clean break). Retiring the superseded page is a manual `cogni-wiki:wiki-update` decision.
-- **Extracting claims from synthesis-page `[N]` markers during `--resweep`.** The upstream `extract_page_claims.py` heuristic matches sentences containing inline `http(s)://` URLs or `[text](url)` links. `wiki/sources/<slug>.md` pages carry the verbatim fetched source body with inline URLs, so they **DO yield correctly**; but `wiki/syntheses/<slug>.md` pages use `[N]` markers backed by a `## References` block + bare `[[<slug>]]` backlinks and will **underyield** until the synthesis-page extractor adapter ships (v0.1.17+, #337). The minimal `--resweep` skeleton wires the operator-facing surface in v0.1.16; the adapter is the next slice. Until then, resweep is most useful against source pages.
-- **Auto-running `--resweep` from `--mode push|pull`, `knowledge-finalize`, or any cadence scheduler.** Opt-in only — a forced live re-fetch would reintroduce the WebFetch cost the inverted pipeline structurally fixed (`agents/wiki-verifier.md` §"What this agent does NOT do"). Cadence / finalize-gate (`--resweep-on-finalize`) are deferred to v0.1.17+ (#337).
+- **Extracting claims from synthesis-page `[N]` markers during `--resweep`.** The upstream `extract_page_claims.py` heuristic matches sentences containing inline `http(s)://` URLs or `[text](url)` links. `wiki/sources/<slug>.md` pages carry the verbatim fetched source body with inline URLs, so they **DO yield correctly**; but `wiki/syntheses/<slug>.md` pages use `[N]` markers backed by a `## References` block + bare `[[<slug>]]` backlinks and will **underyield**. Resweep is most useful against source pages.
+- **Auto-running `--resweep` from `--mode push|pull`, `knowledge-finalize`, or any cadence scheduler.** Opt-in only — a forced live re-fetch would reintroduce the WebFetch cost the inverted pipeline structurally fixed (`agents/wiki-verifier.md` §"What this agent does NOT do").
 
 For the push-mode UX contract (single batch confirmation, sequential, composition-only), see `references/delegation-contract.md` §"Phase-3 push-refresh behaviour".
 
@@ -238,6 +238,6 @@ No files are written directly by this skill — every artefact comes from a down
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — the seven-phase chain push-mode drives
 - `cogni-wiki:wiki-refresh` SKILL.md — pull-mode dispatch target
 - `cogni-wiki:wiki-lint` SKILL.md — push-mode staleness source
-- `cogni-wiki:wiki-claims-resweep` SKILL.md — `--resweep` dispatch target (live-source re-verification, #337)
+- `cogni-wiki:wiki-claims-resweep` SKILL.md — `--resweep` dispatch target (live-source re-verification)
 - `cogni-knowledge:knowledge-plan` … `knowledge-finalize` SKILL.md — push-mode per-topic phase chain
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
