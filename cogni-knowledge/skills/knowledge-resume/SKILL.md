@@ -107,7 +107,7 @@ Print a ≤ 12-line summary that layers the binding onto the wiki status:
 - **Knowledge base.** `<knowledge_title>` (`<knowledge_slug>`), created `<created>`
 - **Wiki path.** `<wiki_path>` — wiki health verdict from Step 2 (one line: "OK" / "N issues — see wiki-resume output above")
 - **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + ` · <concepts_total> concepts (<claims_deduped>/<claims_attached> claims deduped)` when `concepts_total > 0` (the Phase-4.5 distill compounding signal) + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
-- **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — run knowledge-fetch --refresh`; `empty` → `fetch-cache empty — run knowledge-plan first`.
+- **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — re-run knowledge-curate to re-fetch aged sources (or knowledge-refresh to re-run the pipeline on stale topics)`; `empty` → `fetch-cache empty — run knowledge-plan first`.
 - **Topic lineage.** If `covered_themes` or `open_themes` are non-empty, print them as two short lists. Else omit.
 - **Next action.** One line, selected by the decision tree below.
 
