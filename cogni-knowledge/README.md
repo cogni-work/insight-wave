@@ -36,7 +36,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 4. **Fetch** assembles the fetch-manifest from the curators' results; cobrowse recovery of WebFetch misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`) — Phase 3
 5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
 6. **Distill** the source claims into `type: concept` / `type: entity` pages that successive runs enrich (claims appended, source backlinks unioned) instead of duplicating, with deterministic **claim-level dedup** at deposit — Phase 4.5 (optional, fail-soft; the compounding mechanism, #336)
-7. **Compose** the draft report by reading the populated wiki (concept/entity pages as framing context, never cited), with clickable numbered `[N]` inline citations (localized per the project's `output_language`) + a parallel citation manifest; `[[sources/<slug>]]` wikilinks are confined to the reference list — Phase 5
+7. **Compose** the draft report by reading the populated wiki (concept/entity pages as framing *and* citable cross-source evidence — #344), with clickable numbered `[N]` inline citations (localized per the project's `output_language`) + a parallel citation manifest; `[[sources/<slug>]]` wikilinks are confined to the reference list — Phase 5
 8. **Verify** every cited claim against the cited page's `pre_extracted_claims` (zero network) and loop with the revisor on `unsupported` deviations, capped at 2 iterations — Phase 6
 9. **Finalize** the verified draft as `wiki/syntheses/<slug>.md` with `type: synthesis` + `derived_from_research:` lineage, refuse self-citing loops via `cycle-guard.py` (now with a citation-manifest fallback), update the wiki index + entries_count + context_brief, and append the project to the binding — Phase 7 (closes the inverted-pipeline loop)
 10. **Resume** project status — deposited projects, wiki health, suggested next action
@@ -107,8 +107,8 @@ inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-sl
   → knowledge-fetch     build fetch-manifest.json from the curators' results; opt-in cobrowse reconcile of WebFetch misses
   → knowledge-ingest    source-ingester writes wiki/sources/<slug>.md with pre_extracted_claims:
   → knowledge-distill   (optional) concept-distiller proposes → concept-store.py merges wiki/{concepts,entities}/<slug>.md (claim-dedup, enriched across runs)
-  → knowledge-compose   wiki-composer reads the populated wiki (concepts as framing) → draft-vN.md + citation-manifest.json
-  → knowledge-verify    wiki-verifier scores citations vs pre_extracted_claims (zero network); revisor loop on unsupported
+  → knowledge-compose   wiki-composer reads the populated wiki (concepts as framing + citable evidence) → draft-vN.md + citation-manifest.json
+  → knowledge-verify    wiki-verifier scores citations vs pre_extracted_claims / distilled_claims (zero network); revisor loop on unsupported
   → knowledge-finalize  cycle-guard.py → wiki/syntheses/<slug>.md (derived_from_research:) → index/entries_count/context_brief → knowledge-binding.py --append-project
 
 knowledge-query --knowledge-slug X --question Q
@@ -143,7 +143,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-fetch | Skill | Phase 3 — build `fetch-manifest.json` from the curators' fetch results; opt-in (`--cobrowse`) `source-fetcher` reconcile of WebFetch misses |
 | knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter; writes curated backlinks (`backlink_audit.py --apply-plan`) and files each source under its sub-question's thematic index category |
 | knowledge-distill | Skill | Phase 4.5 (optional, fail-soft, #336) — `concept-distiller` proposes recurring `concept`/`entity` pages; `concept-store.py` create-or-merges them under a lock with **claim-level dedup**, so successive runs enrich the concept web rather than duplicate it (the compounding mechanism) |
-| knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki (concept/entity pages as framing context, never cited) and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
+| knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki (concept/entity pages as framing *and* citable cross-source evidence — #344) and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
 | knowledge-verify | Skill | Phase 6 — zero-network claim alignment, fanned out across parallel `wiki-verifier` shards (`verify-store.py`) + revisor loop on `unsupported` deviations (max 2 iterations) |
 | knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage + bare `[[<slug>]]` reference backlinks; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append, then a `wiki-lint --fix=all` + `wiki-health` conformance gate (closes the inverted-pipeline loop) |
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |

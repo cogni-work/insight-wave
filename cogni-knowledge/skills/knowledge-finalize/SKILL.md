@@ -310,9 +310,12 @@ for c in manifest.get("citations", []) or []:
 
 # Lookup each cited pages kind + title + publisher. Try wiki/sources/ first
 # (the common case — Phase-4 source ingest); fall back to wiki/syntheses/
-# (wiki-composer cites prior syntheses with claim_id: null). page_kind gates
-# whether the reference row gets a bare [[<slug>]] backlink below: a page that
-# exists (source OR synthesis) does; a missing page (page_kind None) does not.
+# (wiki-composer cites prior syntheses with claim_id: null), then the four
+# distilled dirs (concepts/entities/summaries/learnings — citable since #344;
+# the composer cites them with a dcl-NNN claim_id, no external URL). page_kind
+# gates whether the reference row gets a bare [[<slug>]] backlink below: a page
+# that exists (source / synthesis / distilled) does; a missing page (page_kind
+# None) does not.
 def _parse_top_level_kv(fm_block):
     out = {}
     for line in fm_block.splitlines():
@@ -345,7 +348,14 @@ for idx, slug in enumerate(cited_slugs):
     n = idx + 1
     page_path = None
     page_kind = None
-    for kind, dirname in (("source", "sources"), ("synthesis", "syntheses")):
+    for kind, dirname in (
+        ("source", "sources"),
+        ("synthesis", "syntheses"),
+        ("concept", "concepts"),
+        ("entity", "entities"),
+        ("summary", "summaries"),
+        ("learning", "learnings"),
+    ):
         candidate = wiki_root / "wiki" / dirname / (slug + ".md")
         if candidate.is_file():
             page_path = candidate
