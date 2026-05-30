@@ -109,12 +109,31 @@ Print a ≤ 12-line summary that layers the binding onto the wiki status:
 - **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + ` · <concepts_total> concepts (<claims_deduped>/<claims_attached> claims deduped)` when `concepts_total > 0` (the Phase-4.5 distill compounding signal) + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
 - **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — run knowledge-fetch --refresh`; `empty` → `fetch-cache empty — run knowledge-plan first`.
 - **Topic lineage.** If `covered_themes` or `open_themes` are non-empty, print them as two short lists. Else omit.
-- **Next action.** Recommend based on state:
-  - If `research_projects` is empty: "Run the inverted pipeline (`knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`) to deposit your first project."
-  - If wiki has structural issues: "Fix structural issues first — see the wiki-resume output above. Then run the inverted pipeline for more deposits, or `cogni-wiki:wiki-query` to ask the base."
-  - Otherwise: "Run the inverted pipeline (`knowledge-plan` → … → `knowledge-finalize`) to keep accumulating, or `cogni-wiki:wiki-query --question '...'` to ask the base what it knows."
+- **Next action.** One line, selected by the decision tree below.
 
 The full `wiki-resume` output appears verbatim above the summary so the user has the structural detail at hand; cogni-knowledge's contribution is the binding overlay.
+
+#### Next action — recommend by pipeline phase
+
+Pick the **one** Next-action line to print by branching on workflow state, not by reading out a fixed sequence. The state field is each project's `phase_reached` from `pipeline-summary.py project` (`none` → `plan` → `curate` → `fetch` → `ingest` → `distill` → `compose` → `verify`); a finalized project has `report_source == "wiki"` in its binding entry (the `· synthesis ✓` marker). Evaluate top to bottom and stop at the first match:
+
+- **No projects** (`research_projects` empty): "Run the inverted pipeline — `knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — to deposit your first project."
+- **Wiki has structural issues** (Step 2 verdict ≠ OK): "Fix the structural issues first — see the wiki-resume output above. Then resume the pipeline, or `knowledge-query --knowledge-slug <slug> --question '...'` to ask what the base already knows."
+
+Otherwise branch on the newest in-flight project's `phase_reached` (the deepest phase that ran but did not finalize) — one recommendation per state:
+
+| `phase_reached` | Recommend |
+|---|---|
+| `none` (legacy deposit, no `.metadata/`) | Re-run from `knowledge-plan` — the project predates the inverted pipeline and has no resumable state. |
+| `plan` | `knowledge-curate` — sources are planned but not yet discovered/fetched. |
+| `curate` | `knowledge-fetch` — candidates scored; build the fetch manifest (add `--cobrowse` to recover WebFetch misses). |
+| `fetch` | `knowledge-ingest` — bodies fetched; deposit per-source wiki pages with extracted claims. |
+| `ingest` | `knowledge-distill` (optional Phase 4.5 — compounds concepts/entities), then `knowledge-compose`. |
+| `distill` | `knowledge-compose` — distillation done; draft the synthesis from the populated wiki. |
+| `compose` | `knowledge-verify` — draft + citation manifest exist; run the zero-network claim check. |
+| `verify` | `knowledge-finalize` — verified; deposit the synthesis into `wiki/syntheses/` and close the loop. |
+
+- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --question '...'`, render an overview with `knowledge-dashboard`, refresh stale topics with `knowledge-refresh`, or start a new project with `knowledge-plan` to keep accumulating."
 
 ## Edge cases
 
