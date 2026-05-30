@@ -1,0 +1,905 @@
+{
+  "_comment": "Breadcrumb-guard ratchet baseline. Each entry is a breadcrumb occurrence present when the baseline was captured and therefore allowed to pass. Regenerate with `python3 scripts/check-breadcrumbs.py --update-baseline`. The fix for a NEW breadcrumb is to remove it and state the rationale semantically — not to add it here.",
+  "entries": [
+    {
+      "file": "cogni-copywriting/skills/copywriter/SKILL.md",
+      "match": "#255",
+      "line_sha": "34a60df590c11837302373a0b6779a5de1330dbc"
+    },
+    {
+      "file": "cogni-copywriting/skills/copywriter/SKILL.md",
+      "match": "#255",
+      "line_sha": "4ec315b928e32015549abf8dd8ea49b1824b1b76"
+    },
+    {
+      "file": "cogni-copywriting/skills/copywriter/SKILL.md",
+      "match": "#255",
+      "line_sha": "86359af92d8d254f9de23b483236832631b8da0f"
+    },
+    {
+      "file": "cogni-copywriting/skills/copywriter/SKILL.md",
+      "match": "Slice 3",
+      "line_sha": "34a60df590c11837302373a0b6779a5de1330dbc"
+    },
+    {
+      "file": "cogni-knowledge/_archive/skills/knowledge-report/SKILL.md",
+      "match": "v0.0.14",
+      "line_sha": "5aecf3aca76ff2471ed30473b4a0ffbb572711c6"
+    },
+    {
+      "file": "cogni-knowledge/_archive/skills/knowledge-report/SKILL.md",
+      "match": "v0.0.43",
+      "line_sha": "65665ccc6a60ae3f8f1e0f2556877acc99c42a6d"
+    },
+    {
+      "file": "cogni-knowledge/_archive/skills/knowledge-report/SKILL.md",
+      "match": "v0.0.7",
+      "line_sha": "b1eca0631f17f3b99248dc5614f48411c0eb1d58"
+    },
+    {
+      "file": "cogni-knowledge/_archive/skills/knowledge-report/SKILL.md",
+      "match": "v0.0.7",
+      "line_sha": "ca19d6e5106d52c353d6d6492285de1c252153be"
+    },
+    {
+      "file": "cogni-knowledge/_archive/skills/knowledge-research/SKILL.md",
+      "match": "v0.0.14",
+      "line_sha": "5aecf3aca76ff2471ed30473b4a0ffbb572711c6"
+    },
+    {
+      "file": "cogni-knowledge/_archive/skills/knowledge-research/SKILL.md",
+      "match": "v0.0.43",
+      "line_sha": "7fe494df7831a9b3eece5192a8d045d0010f45d0"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-consolidate/SKILL.md",
+      "match": "#103",
+      "line_sha": "dbec4d286ae03f8004926ad4fa381b7b12f4c9c2"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-consolidate/SKILL.md",
+      "match": "v0.9.23",
+      "line_sha": "ffaa3e048f33cb2a669df27987bddb891c17e7b2"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-dashboard/SKILL.md",
+      "match": "v1.2.0",
+      "line_sha": "56c19444cde76c15ef1437e517004c1c2ebcdf5f"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-dashboard/SKILL.md",
+      "match": "v1.2.0",
+      "line_sha": "72fc08934ac94325b8798ad73f58674745242c7c"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-dashboard/SKILL.md",
+      "match": "v1.3.0",
+      "line_sha": "72fc08934ac94325b8798ad73f58674745242c7c"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.0.0",
+      "line_sha": "93480210a71ebf315b69eadee5205cb2bf936d4e"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.0.0",
+      "line_sha": "a6186147e3803747e88049cd8327639fb4087988"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.1.0",
+      "line_sha": "93480210a71ebf315b69eadee5205cb2bf936d4e"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.1.0",
+      "line_sha": "a6186147e3803747e88049cd8327639fb4087988"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.2.0",
+      "line_sha": "cfc429f3ab09148a064b2b3929ed00db0bbfa6bb"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.2.0",
+      "line_sha": "de29f658f45746fc4fecf25eac723c0e0f147dc7"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.3.0",
+      "line_sha": "b34be6cbd8643c0d923be57619ff4f1953a61b34"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.3.0",
+      "line_sha": "de29f658f45746fc4fecf25eac723c0e0f147dc7"
+    },
+    {
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md",
+      "match": "v1.4.0",
+      "line_sha": "b34be6cbd8643c0d923be57619ff4f1953a61b34"
+    },
+    {
+      "file": "cogni-research/agents/local-researcher.md",
+      "match": "v0.7.14",
+      "line_sha": "1b04b0bd7ba8e5396ef05445f253fe670b16bfb3"
+    },
+    {
+      "file": "cogni-research/agents/local-researcher.md",
+      "match": "v0.7.14",
+      "line_sha": "c4e08714ed49df63cdbb4c03cc79ed6c0828c594"
+    },
+    {
+      "file": "cogni-research/agents/reviewer.md",
+      "match": "v0.7.7",
+      "line_sha": "c77ae2f70bbeec8c10919b8c844b18910711146c"
+    },
+    {
+      "file": "cogni-research/agents/reviewer.md",
+      "match": "v0.8.0",
+      "line_sha": "047215fd9d1adb04931aec9360507f1922ec7674"
+    },
+    {
+      "file": "cogni-research/agents/reviewer.md",
+      "match": "v0.8.0",
+      "line_sha": "6b31b50f13abcdf177752ba76d5c07b8b1130fb0"
+    },
+    {
+      "file": "cogni-research/agents/reviewer.md",
+      "match": "v0.8.0",
+      "line_sha": "fdbb17acaf22ae6d42d6b79d75f6c03c9d05c2b7"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "#25",
+      "line_sha": "4e8f7940bac564d47fc69fff889b1fa9341f6121"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "#33",
+      "line_sha": "3841aa8555b6326fe5b30611bf7a2611dd055d17"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "#33",
+      "line_sha": "bb6c1cf81c3751abd29a714ee1b083275eaf0a56"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "#48",
+      "line_sha": "bec106dfd71b0e65f33bde519a88d2cede36c5fd"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "#49",
+      "line_sha": "6794dd85d210f8f1cda1f28b063c572b9607163a"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "v0.7.7",
+      "line_sha": "324f4efc27cab6f66b4c7847a55d9baf8938ff69"
+    },
+    {
+      "file": "cogni-research/agents/revisor.md",
+      "match": "v0.8.0",
+      "line_sha": "67d38485efbdd71fdb992e82b1dd3c953d6a3e74"
+    },
+    {
+      "file": "cogni-research/agents/wiki-researcher.md",
+      "match": "v0.7.14",
+      "line_sha": "07e2d4e5ed145619742efcec2d5691538bc969f4"
+    },
+    {
+      "file": "cogni-research/agents/wiki-researcher.md",
+      "match": "v0.7.14",
+      "line_sha": "33c72bd885089780f2dfc3c737b098d67da89a25"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "#35",
+      "line_sha": "1d4a590a6a430e2161e4716400c8cd2a5c49dc17"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "#48",
+      "line_sha": "fd12662cd67301096f8fe07ee8b9416217b0722b"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "#49",
+      "line_sha": "0c67e24e1951f2962cfa12e07187f8058bedc98b"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.0",
+      "line_sha": "b43a1d4ab2a19bc8045c0efc34cc9fe817dc5f7d"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.7",
+      "line_sha": "0a6a886ec1c2270b6caed77a370fc628b5dd5b87"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.7",
+      "line_sha": "0be915866e7802bc6c6f1d6283dc9409af8885b7"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.7",
+      "line_sha": "1d4a590a6a430e2161e4716400c8cd2a5c49dc17"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.7",
+      "line_sha": "9f597160459f1a0e179a28ffcc7c4a20cf07b8ed"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.7",
+      "line_sha": "d20c474b38ac90a09cda196071666968cf2bbb83"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.7.7",
+      "line_sha": "fb49a1df22770c2a15ccb5311258c54c6437fdaa"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.8.0",
+      "line_sha": "b180b59084d9a0dad2e5ba69e7f620864339a115"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.8.0",
+      "line_sha": "cd480f32b21f213ecbdaaeda2a1970decb226441"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.8.0",
+      "line_sha": "d8a2a7083656055ff16a565883d80ae786acaae6"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.8.3",
+      "line_sha": "0115d927ea3e633aca29104c87214755ef9b8536"
+    },
+    {
+      "file": "cogni-research/agents/writer.md",
+      "match": "v0.8.3",
+      "line_sha": "fd12662cd67301096f8fe07ee8b9416217b0722b"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "#35",
+      "line_sha": "af6894d2132f6b3b362216b90c87471d7326a545"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "#35",
+      "line_sha": "ee9040ccfdcba26d91a9cf6cd2f74de43b1d48c0"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "#49",
+      "line_sha": "111fbca861c4def95a2d918bed4878356c7a85c5"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.14",
+      "line_sha": "87d8293f547168b4c8174ad6d8c4ea1ecfb37913"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.14",
+      "line_sha": "cba9589df6a56bfbf2793ea508c88d35fbf7df27"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.14",
+      "line_sha": "d8760cdb9dc1ba380e9646e79968b9fc5c88862c"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.14",
+      "line_sha": "e2d75663a448dd231e87606b447aa964d752bb3d"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "13c93afd58d6a790ca2d749ff9155c84c5d0fafd"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "2dca814e5dc7f10f6eab0b097881346a92ab2244"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "309e4eae934179a14f5e814a5bd697afd28b720e"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "6c18a196af47aec629525c98e92acf702faa503a"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "71ac6bd1b4898aa1b25ac66072cf255fa3f2453c"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "73e8e976f7b57ce0f52f77cb8b6387605afe7f86"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "7963460f9467d6d6b88bdb2a7acbf2012d1e8006"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "7f0daecfda72392dab24fe3bb5fb097f6933f90f"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "af6894d2132f6b3b362216b90c87471d7326a545"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "c3bc04417902daf8e0d72c0b0674c3eabb0a9556"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.8.0",
+      "line_sha": "1ccf09b6d26e5ea99470488cfb098466df3a5527"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.8.0",
+      "line_sha": "849939989c01532c01a16a7e1e69ec849c6bf57f"
+    },
+    {
+      "file": "cogni-research/skills/research-report/SKILL.md",
+      "match": "v0.8.0",
+      "line_sha": "af6894d2132f6b3b362216b90c87471d7326a545"
+    },
+    {
+      "file": "cogni-research/skills/research-resume/SKILL.md",
+      "match": "v0.6.26",
+      "line_sha": "47f2e7586c7a0dfeb846ec8f6252ae8558d88110"
+    },
+    {
+      "file": "cogni-research/skills/research-resume/SKILL.md",
+      "match": "v0.6.26",
+      "line_sha": "c28b888a86f57204d392f775f0a8833e71c4ba42"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "#35",
+      "line_sha": "9b53c07ce7334009c68618035e266550abce05ca"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "#35",
+      "line_sha": "c39cd09fb7373efe694a3f434b67ed5a23240140"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "0bac84e933dc1f193731dd23e977d4642425b454"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "7b30ef2c7bd66f6feb4437e9a50497befccc0b93"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "9b53c07ce7334009c68618035e266550abce05ca"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.7.7",
+      "line_sha": "c39cd09fb7373efe694a3f434b67ed5a23240140"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.8.0",
+      "line_sha": "0062291b4c8b450f2baf94841f1ef54053aaa131"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.8.0",
+      "line_sha": "41c8d881bba9e450aa4fccdc289709eae40aa519"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.8.0",
+      "line_sha": "a2fab11214af50d0723543b0c99310eba0d96fac"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.8.1",
+      "line_sha": "ba67be05c8c5c30b19329bdca2c8be623f7c7845"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.8.2",
+      "line_sha": "9b1e57756acffd402b2f5c4b2b13ccbbafdd10c6"
+    },
+    {
+      "file": "cogni-research/skills/research-setup/SKILL.md",
+      "match": "v0.8.2",
+      "line_sha": "f023c651dab8de9a0d3c22a14688ae816815a3ea"
+    },
+    {
+      "file": "cogni-trends/agents/trend-candidate-reviewer.md",
+      "match": "#12",
+      "line_sha": "8265c53483fe4d76ffdfafc16fb30e25198e6e0a"
+    },
+    {
+      "file": "cogni-trends/agents/trend-candidate-reviewer.md",
+      "match": "#12",
+      "line_sha": "b5ac2cd94500292abd299d4ab4f528db84c2c4b5"
+    },
+    {
+      "file": "cogni-trends/agents/trend-candidate-reviewer.md",
+      "match": "#12",
+      "line_sha": "ff200d0bf46c1f8df85b8d92dc40af3092160c9b"
+    },
+    {
+      "file": "cogni-trends/agents/trend-candidate-reviewer.md",
+      "match": "#34",
+      "line_sha": "8265c53483fe4d76ffdfafc16fb30e25198e6e0a"
+    },
+    {
+      "file": "cogni-trends/agents/trend-candidate-reviewer.md",
+      "match": "#34",
+      "line_sha": "b5ac2cd94500292abd299d4ab4f528db84c2c4b5"
+    },
+    {
+      "file": "cogni-trends/agents/trend-candidate-reviewer.md",
+      "match": "#34",
+      "line_sha": "ff200d0bf46c1f8df85b8d92dc40af3092160c9b"
+    },
+    {
+      "file": "cogni-trends/skills/trend-research/SKILL.md",
+      "match": "#182",
+      "line_sha": "6bcd9f3435d225b939cdf4a00e727601449e2e9d"
+    },
+    {
+      "file": "cogni-visual/skills/enrich-report/SKILL.md",
+      "match": "v0.16.11",
+      "line_sha": "ed7134f0ef6634689a6610cd4f885ad8e88cc31a"
+    },
+    {
+      "file": "cogni-visual/skills/render-html-slides/SKILL.md",
+      "match": "v1.0.0",
+      "line_sha": "7c3683e8533ead775f970b7a51cf2abfcd0d5582"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-dashboard/SKILL.md",
+      "match": "#221",
+      "line_sha": "af77779efca5405f52542c89bc4e67c673a37382"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-from-research/SKILL.md",
+      "match": "v0.0.40",
+      "line_sha": "9fdc1e7264a314523de6578cef2a63c0e128618d"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "#212",
+      "line_sha": "7bda2750f68e4ecca03184877602f3b24e4eaf6a"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "#73",
+      "line_sha": "035bd4b004e6d3b62abae8fe3cf4370998ca96d3"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "#84",
+      "line_sha": "4d659a332d699540bb2513de5d5db740dc6ba6a3"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.12",
+      "line_sha": "4d659a332d699540bb2513de5d5db740dc6ba6a3"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.22",
+      "line_sha": "3c2f057c04b13c94c21a882cae4846e356e477eb"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "0e5c2fde5f898fd3d8bf10b1dec43ac074def2d5"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "87e1ef5a889c269faeb0e79928c94001bddeaa43"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "a8dd84cc0c8df9c52d59639f77a1c225d29273bc"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "d56bc823fbfde86b6bcdabedf9e07987b2b8332d"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "020f846182f6ac3ec6ab0ae721efe3e22006d302"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "2b6d0d62305603e1082f9a5ad97391e65adae782"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "2ca78af5e1f53bfd3ee536e097511baaf1630342"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "3598f9b9c712714ef25b9976b94e2777f66a2459"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "543256c71497d9633a1a3ec5125da15778d93845"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "57681aa431cde4b8d7f7302088b02520b6383d58"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "70c71a274cca740688b811a469a7074f944263cb"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "a3ec01736c42185b9930ba799d60328c2f184b35"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-ingest/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "f50b9b782efeb59ac4783c42e6ea503441e529ce"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#222",
+      "line_sha": "11b4515ad28886af62923d86172c39c4761e2d64"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#222",
+      "line_sha": "54354e78fa96418f56a5c4c022b185d06c26104c"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#222",
+      "line_sha": "d581bdb4fbeb208695d566fd27804ef14a673de0"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#222",
+      "line_sha": "e9e1e50f59d49bffa008affc214acb7945bbcaf7"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#222",
+      "line_sha": "f691687bd27b53ea7188b2e38203d1da02531d1a"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#223",
+      "line_sha": "d09260b1c80f5060bb436b487e36a3891b7400bb"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "#354",
+      "line_sha": "abe75dbe9549f0340211068fe24673c2222d3745"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "1bc648ba3254e27e19c20da2e55d052152a53099"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "37855d1ada2eef5a50f48bb515787236a02aaf42"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "41e3965b40977d1a18f2478a4190de155af1e48d"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "abf6c61d2faa87cca045a5f54de5304ba44abbcc"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "ce23fa406482f226d21bf4fb132b4dddca9a5d92"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "d2404e1bbdf534135d96164338a0e1c264a8fefa"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.31",
+      "line_sha": "d09260b1c80f5060bb436b487e36a3891b7400bb"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "11b4515ad28886af62923d86172c39c4761e2d64"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "54354e78fa96418f56a5c4c022b185d06c26104c"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "7eee87f791bdf1af091894d2a703ee774cf289c5"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "d581bdb4fbeb208695d566fd27804ef14a673de0"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "e9e1e50f59d49bffa008affc214acb7945bbcaf7"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "f5c60181acd51c2247dbb306ef02ca635c1b0afc"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
+      "match": "v0.0.32",
+      "line_sha": "f691687bd27b53ea7188b2e38203d1da02531d1a"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-query/SKILL.md",
+      "match": "v0.0.23",
+      "line_sha": "29f8c4e258a28f5880f6a5c904c77cdbeb2609be"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-query/SKILL.md",
+      "match": "v0.0.23",
+      "line_sha": "57bdf6cc4fe90eadfb36eac91de6214340d5a2f2"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-refresh/SKILL.md",
+      "match": "#197",
+      "line_sha": "fd8169a8732eaed07246e8f49671b07f9570e803"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-refresh/SKILL.md",
+      "match": "#223",
+      "line_sha": "03f4d7dbaec9b683c8c1cf1eb5cab45c07ae425c"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-refresh/SKILL.md",
+      "match": "v0.0.31",
+      "line_sha": "03f4d7dbaec9b683c8c1cf1eb5cab45c07ae425c"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.23",
+      "line_sha": "47afab183e38fc0ba36afd1f4d6fe9474dc812ea"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.27",
+      "line_sha": "1ba6dc9c1a8135b51be86d52fc6543a9fdf8830f"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.27",
+      "line_sha": "1f871d2a4d5ee1a3e89d07b973186dfdb7d52330"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.27",
+      "line_sha": "1fed0819268f9220e3f3e85c484fd97469ed0e1a"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.27",
+      "line_sha": "e109771121f721adda61342a96f965ce16f4d5f6"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.27",
+      "line_sha": "f8aa32aba63085b5bb84b1327bbeba781565dd9f"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "1ba6dc9c1a8135b51be86d52fc6543a9fdf8830f"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "1e55b5576c200270d9222a92b5c6f7723697fd11"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "2137c638552cdd07aeb661bf105337b79e53e63b"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "d30061fb847117bd1dc61eb39d1399bc7ff62df6"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.29",
+      "line_sha": "e109771121f721adda61342a96f965ce16f4d5f6"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "1f871d2a4d5ee1a3e89d07b973186dfdb7d52330"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.30",
+      "line_sha": "ba48190fbf72a0f8e6c2efba7d0507598f760b07"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "18aa83aac9eda6b9e6c6060fe50eb62e8b78400e"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "1f871d2a4d5ee1a3e89d07b973186dfdb7d52330"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "386f1c58acc7ec285b6246b72fc2859af5c24407"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "4f4342255211e3ef57c0b6029ed5043f4f863cac"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "ab882740455bfb77912614b05fb319063e2ed307"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.35",
+      "line_sha": "bfba45348a929643be6159785209f2119a1f78a0"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.39",
+      "line_sha": "1f871d2a4d5ee1a3e89d07b973186dfdb7d52330"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.39",
+      "line_sha": "8add45095c30f5a11f7af08987dccf404ca9dc6a"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.39",
+      "line_sha": "ab882740455bfb77912614b05fb319063e2ed307"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.39",
+      "line_sha": "bfba45348a929643be6159785209f2119a1f78a0"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-resume/SKILL.md",
+      "match": "v0.0.4",
+      "line_sha": "575d5423ff9ea3d390fa4167a76111e2599360a3"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
+      "match": "v0.0.28",
+      "line_sha": "01b97e8318f777c01ff1262fd462e584f40cf456"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
+      "match": "v0.0.28",
+      "line_sha": "927d84925a3e2552ce880b56bec2bf92a3722240"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
+      "match": "v0.0.33",
+      "line_sha": "f883bd7fafc9e786f57e13dfc31379b346de7b6b"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
+      "match": "v0.0.4",
+      "line_sha": "c31de6bb9e7175395bb9669e7c69d7bef20edd45"
+    },
+    {
+      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
+      "match": "v0.0.44",
+      "line_sha": "927d84925a3e2552ce880b56bec2bf92a3722240"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "#10",
+      "line_sha": "b97ffccdde83fda2d8f82ea00a24475d08146e52"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "#10",
+      "line_sha": "d724851381197b14ae0ac8ac059b9ef5c7c7a6c1"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "#10",
+      "line_sha": "f8af5ce7c32fd8e2321be611373e04ba851d11bb"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "#10",
+      "line_sha": "fed8e17dd3af7a111423995c20f29fc10f12abb2"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "#124",
+      "line_sha": "d1f4b52289bbfe18963af2b44695d8f0bd80edea"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "#132",
+      "line_sha": "06301d7fe1e044233907886ccf38861ef0273990"
+    },
+    {
+      "file": "cogni-workspace/skills/manage-themes/SKILL.md",
+      "match": "v0.5.0",
+      "line_sha": "fed8e17dd3af7a111423995c20f29fc10f12abb2"
+    },
+    {
+      "file": "cogni-workspace/skills/workspace-status/SKILL.md",
+      "match": "#132",
+      "line_sha": "ae26d34e3e7df36efa214a22b878bb5bc909275c"
+    }
+  ]
+}

@@ -56,6 +56,27 @@ All contributions to core plugins require signing the [Contributor License Agree
 
 Run `cogni-workspace/scripts/check-skill-names.sh` to validate naming before submitting a PR.
 
+### Breadcrumb Guard
+
+`SKILL.md` bodies/frontmatter and `agents/*.md` prompts are the text the model executes — they must not carry **maintainer breadcrumbs**: bare issue/PR refs (`#344`), plugin-version tags (`v0.1.16`), or milestone/slice/finding codes (`M8`, `Slice 3`, `F11`). That provenance belongs in git history, the CHANGELOG, or `references/`. The CI `Lint` workflow runs `scripts/check-breadcrumbs.py` on every PR and fails when a new breadcrumb appears.
+
+The guard is a **ratchet**: every occurrence present today is recorded in `scripts/baselines/breadcrumb-baseline.json` and allowed to pass, so the guard fails **only on newly introduced** breadcrumbs. The baseline can only shrink — as a plugin is cleaned, its entries drop out on the next regeneration.
+
+If a line is a genuine **false positive** — an Apple M-series chip name (`M2 Mac`), a function key (`F12`), or similar prose that looks like a code — add the marker `breadcrumb-guard:allow` anywhere on that line (e.g. in an HTML comment) and the guard skips it. Prefer this over `--update-baseline` for false positives, so the baseline stays reserved for real-but-grandfathered breadcrumbs.
+
+When the guard trips on a real breadcrumb, the fix is to **remove** it and state the rationale semantically — **not** to reconcile a mismatched version tag. Run it locally before a PR:
+
+```bash
+python3 scripts/check-breadcrumbs.py        # fails (exit 1) on any new breadcrumb
+bash tests/test_check_breadcrumbs.sh        # self-test the guard itself
+```
+
+A genuine load-bearing compatibility fact (e.g. "requires `gh` ≥ 2.40 because…") or an intentional plugin clean-up regenerates the baseline — justify the diff in the PR:
+
+```bash
+python3 scripts/check-breadcrumbs.py --update-baseline
+```
+
 ---
 
 ## Publishing a Marketplace Plugin

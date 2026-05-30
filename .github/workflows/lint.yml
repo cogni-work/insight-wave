@@ -1,0 +1,24 @@
+name: Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  breadcrumb-guard:
+    name: Maintainer-breadcrumb guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Default shallow checkout is sufficient: the guard reads the working
+        # tree via `git ls-files` (the index at this commit), not git history.
+
+      - name: Check for maintainer breadcrumbs in SKILL.md + agents
+        run: |
+          set -euo pipefail
+          python3 scripts/check-breadcrumbs.py
