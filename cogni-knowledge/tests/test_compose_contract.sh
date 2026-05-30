@@ -34,6 +34,12 @@ assert_grep 'Task(wiki-composer' "$COMPOSE" "knowledge-compose: dispatches wiki-
 # Slice 13 (#300): threads the project's output_language into the composer dispatch.
 assert_grep 'OUTPUT_LANGUAGE=' "$COMPOSE" "knowledge-compose: threads OUTPUT_LANGUAGE into the wiki-composer dispatch (#300)"
 assert_grep 'output_language' "$COMPOSE" "knowledge-compose: reads plan.json::output_language (#300)"
+# #309 P2: TONE + PROSE_DENSITY + a now-LIVE CITATION_FORMAT are threaded into the
+# composer dispatch (resolved flag > plan.json > default).
+assert_grep 'TONE=' "$COMPOSE" "knowledge-compose: threads TONE into the wiki-composer dispatch (#309 P2.3)"
+assert_grep 'PROSE_DENSITY=' "$COMPOSE" "knowledge-compose: threads PROSE_DENSITY into the wiki-composer dispatch (#309 P2.1)"
+assert_grep 'CITATION_FORMAT=' "$COMPOSE" "knowledge-compose: threads CITATION_FORMAT (now live) into the wiki-composer dispatch (#309 P2.2)"
+assert_grep 'Over ceiling' "$COMPOSE" "knowledge-compose: executive-density over-ceiling warning (#309 P2.4)"
 assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogni-wiki (clean-break)"
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
 assert_grep 'writer-outline-v' "$COMPOSE" "knowledge-compose: F11 — detects writer-outline-vN.json for recovery"
@@ -100,25 +106,37 @@ assert_not_grep 'Compose the JSON envelope' "$COMPOSER" "wiki-composer: no longe
 # Pattern is the parameter-table-row form `| \`TOKEN\` |`.
 assert_not_grep '01-contexts/data' "$COMPOSER" "wiki-composer: does NOT reference cogni-research's 01-contexts/data"
 assert_not_grep '02-sources/data' "$COMPOSER" "wiki-composer: does NOT reference cogni-research's 02-sources/data"
-# Slice 13 (#300): OUTPUT_LANGUAGE + CITATION_FORMAT are now LIVE parameter rows
-# (the composer honours the project's output_language and a numbered citation
-# format). The remaining three stay deferred.
-for token in OUTPUT_LANGUAGE CITATION_FORMAT; do
+# Slice 13 (#300): OUTPUT_LANGUAGE + CITATION_FORMAT are LIVE parameter rows.
+# #309 P2: TONE + PROSE_DENSITY are now ALSO live (the composer honours the
+# project's tone register and standard/executive density). EXPANSION_NOTES and
+# STORY_ARC_ID stay deferred — cogni-knowledge has no expansion loop (the
+# advisory floor/ceiling is surfaced by wiki-reviewer, not re-dispatched) and no
+# story arcs.
+for token in OUTPUT_LANGUAGE CITATION_FORMAT TONE PROSE_DENSITY; do
   if grep -q "| \`${token}\` |" "$COMPOSER"; then
-    green "PASS: wiki-composer: ${token} parameter row present (#300 — language/citation-format aware)"
+    green "PASS: wiki-composer: ${token} parameter row present (live writer-quality input)"
   else
-    red "FAIL: wiki-composer: ${token} parameter row missing (#300 expects it as a live input)"
+    red "FAIL: wiki-composer: ${token} parameter row missing (expected as a live input)"
     errors=$((errors + 1))
   fi
 done
-for token in PROSE_DENSITY EXPANSION_NOTES STORY_ARC_ID; do
+for token in EXPANSION_NOTES STORY_ARC_ID; do
   if grep -q "| \`${token}\` |" "$COMPOSER"; then
-    red "FAIL: wiki-composer: ${token} parameter row present (deferred surface)"
+    red "FAIL: wiki-composer: ${token} parameter row present (deferred surface — no expansion loop / no arcs)"
     errors=$((errors + 1))
   else
     green "PASS: wiki-composer: no ${token} parameter row (deferred)"
   fi
 done
+# #309 P2: the executive-density discipline (BLUF + Pyramid + one citation per
+# claim) must be present, and the agent must stay single-pass (no re-dispatch).
+assert_grep 'BLUF' "$COMPOSER" "wiki-composer: executive density applies BLUF (#309 P2.1)"
+assert_grep 'Pyramid' "$COMPOSER" "wiki-composer: executive density applies the Pyramid Principle (#309 P2.1)"
+assert_grep 'One citation per claim\|one citation per claim' "$COMPOSER" "wiki-composer: executive density is one-citation-per-claim (#309 P2.1)"
+assert_grep 'writing-tones.md' "$COMPOSER" "wiki-composer: TONE references the writing-tones catalog (#309 P2.3)"
+assert_grep 'chicago' "$COMPOSER" "wiki-composer: CITATION_FORMAT renders chicago end-to-end (#309 P2.2)"
+# Single-pass invariant must survive the density knob — no re-dispatch loop.
+assert_grep 'does NOT re-dispatch\|never loops\|NEVER loop\|single pass\|Single pass\|single-pass' "$COMPOSER" "wiki-composer: stays single-pass under prose_density (#309 P2 — advisory floor/ceiling, no loop)"
 # #300 inline-citation convention: numbered [N] inline, wikilinks confined to
 # the reference list (never in prose), numbered in first-appearance order.
 assert_grep 'first-appearance order' "$COMPOSER" "wiki-composer: numbers [N] in first-appearance order (#300)"

@@ -566,6 +566,34 @@ def assert_parse_crossmerge_records():
     assert kl.parse_crossmerge_records("") == []
 
 
+def assert_writer_quality_normalizers():
+    # #309 P2: the four resolution helpers used by knowledge-plan Step 0.5 to keep
+    # the precedence chain robust to a malformed binding default or a typo'd flag.
+    # tone: valid passes (case-insensitive); unknown/empty → objective.
+    assert kl.normalize_tone("analytical") == "analytical"
+    assert kl.normalize_tone("EXECUTIVE") == "executive", "case-insensitive"
+    assert kl.normalize_tone("nonsense") == "objective", "unknown → objective"
+    assert kl.normalize_tone("") == "objective" and kl.normalize_tone(None) == "objective"
+    # prose_density: standard|executive; unknown/empty → standard.
+    assert kl.normalize_prose_density("executive") == "executive"
+    assert kl.normalize_prose_density("Standard") == "standard"
+    assert kl.normalize_prose_density("dense") == "standard" and kl.normalize_prose_density(None) == "standard"
+    # citation_format: ieee/chicago/apa/mla/harvard valid; wikilink→ieee; unknown→ieee.
+    assert kl.normalize_citation_format("chicago") == "chicago"
+    assert kl.normalize_citation_format("APA") == "apa"
+    assert kl.normalize_citation_format("wikilink") == "ieee", "deprecated alias → ieee"
+    assert kl.normalize_citation_format("bibtex") == "ieee" and kl.normalize_citation_format("") == "ieee"
+    # CITATION_FAMILY: numbered (ieee/chicago) vs author_date (apa/mla/harvard).
+    assert kl.CITATION_FAMILY["ieee"] == "numbered" and kl.CITATION_FAMILY["chicago"] == "numbered"
+    assert kl.CITATION_FAMILY["apa"] == "author_date"
+    # target_words: positive int; non-positive/unparseable → default 5000 (or given default).
+    assert kl.normalize_target_words(4000) == 4000
+    assert kl.normalize_target_words("8000") == 8000, "string coerces"
+    assert kl.normalize_target_words(0) == 5000 and kl.normalize_target_words(-3) == 5000
+    assert kl.normalize_target_words("abc") == 5000 and kl.normalize_target_words(None) == 5000
+    assert kl.normalize_target_words(0, default=3000) == 3000, "custom default honoured"
+
+
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("claim_similarity", assert_claim_similarity)
@@ -587,6 +615,7 @@ check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 check("parse_distilled_claims", assert_parse_distilled_claims)
 check("parse_distilled_claims_with_id", assert_parse_distilled_claims_with_id)
+check("writer_quality_normalizers", assert_writer_quality_normalizers)
 PY
 )
 
@@ -625,6 +654,7 @@ grade extract_machine_block   "extract_machine_block — verbatim inner incl. he
 grade parse_renarrate_records "parse_renarrate_records — multi-line dedented prose, empty-prose omitted, last-slug-wins, unterminated-to-EOF, CRLF (#341)"
 grade digit_anchor_tokens     "digit_anchor_tokens — Artikel/Article 99 → {99}, multi-anchor, GENERIC_DENYLIST years excluded, no-digit→∅ (#345)"
 grade parse_crossmerge_records "parse_crossmerge_records — merge: slug|survivor|absorbed, whitespace strip, wrong-arity/empty-field dropped, comments, CRLF, ''→[] (#345)"
+grade writer_quality_normalizers "writer-quality normalizers (#309 P2) — normalize_tone/prose_density/citation_format/target_words + CITATION_FAMILY, valid passthrough, unknown→safe default, wikilink→ieee"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

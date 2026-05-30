@@ -34,6 +34,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | `--publisher-base-url` | No | Forwarded to `cogni-wiki:wiki-setup --publisher-base-url`. Used as last-resort fallback URL when wiki pages have no per-page publisher URL. |
 | `--market` | No | Default market for this knowledge base. One of: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Persisted to `binding.json::research_defaults.market`; inherited by every `knowledge-plan` run. Resolved interactively in Step 2.5 when omitted (default `dach`). |
 | `--output-language` | No | Default output language (two-letter code) for this knowledge base. Persisted to `binding.json::research_defaults.output_language`; inherited by every `knowledge-plan` run. Resolved interactively in Step 2.5 when omitted — defaults to the chosen market's registry `default_output_language` (e.g. `dach`→`de`, `fr`→`fr`, `eu`→`en`). |
+| `--prose-density` | No | Default prose density (`standard`/`executive`) persisted to `binding.json::research_defaults.prose_density`. **Flag-or-default** — not prompted in Step 2.5 (safe default `standard`). |
+| `--tone` | No | Default writing tone persisted to `binding.json::research_defaults.tone` (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`). **Flag-or-default** — not prompted (safe default `objective`). |
+| `--citation-format` | No | Default citation format persisted to `binding.json::research_defaults.citation_format` (`ieee`/`chicago` wired; `apa`/`mla`/`harvard` staged). **Flag-or-default** — not prompted (safe default `ieee`). |
+| `--target-words` | No | Default soft target word count persisted to `binding.json::research_defaults.target_words`. **Flag-or-default** — not prompted (safe default `5000`). |
 
 If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with AskUserQuestion (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed). Do not invent slugs or titles silently.
 
@@ -100,6 +104,8 @@ Resolve `market` and `output_language`:
 
 Carry the resolved `market` + `output_language` into Step 4.
 
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`; #309 P2) are flag-or-default — NOT prompted here.** Unlike `market`/`output_language` (where a wrong language mis-languages the whole base, so asking once is worth it), each writer-quality knob has a safe default and is primarily a per-run choice on `knowledge-plan`. So Step 2.5's `AskUserQuestion` stays scoped to market + language; the four knobs are persisted from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`5000`). The base default is overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
+
 ### 3. Dispatch `cogni-wiki:wiki-setup` (only if no wiki exists)
 
 ```
@@ -120,10 +126,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py init \
     --knowledge-title "<knowledge_title>" \
     --wiki-path <knowledge_root> \
     --market <resolved market> \
-    --output-language <resolved output_language>
+    --output-language <resolved output_language> \
+    [--prose-density <flag>] [--tone <flag>] [--citation-format <flag>] [--target-words <flag>]
 ```
 
-`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.1; omitted flags fall back to `dach`/`en` script-side). The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
+`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.2). The four writer-quality flags are passed through only when the user supplied them; **omitted flags fall back script-side** to the `DEFAULT_RESEARCH_DEFAULTS` block (`dach`/`en`/`standard`/`objective`/`ieee`/`5000`), so a plain `init` still writes a complete schema-0.1.2 `research_defaults` block. The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
 
 ### 5. Final summary
 
@@ -133,7 +140,7 @@ Print a short summary, ≤ 8 lines:
 - Knowledge slug and title
 - Wiki path (`<knowledge_root>` — they are the same in the default layout)
 - Binding file path (`<knowledge_root>/.cogni-knowledge/binding.json`)
-- Defaults: market `<resolved market>`, output language `<resolved output_language>` (inherited by `knowledge-plan`; overridable per run)
+- Defaults: market `<resolved market>`, output language `<resolved output_language>`, density `<prose_density>`, tone `<tone>`, citations `<citation_format>`, target `<target_words>`w (all inherited by `knowledge-plan`; overridable per run)
 - Suggested next action: `cogni-knowledge:knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`
 
 Do not print the full binding JSON in the summary — point at the file path and let the user inspect it if they want.
@@ -149,7 +156,7 @@ Do not print the full binding JSON in the summary — point at the file path and
 - Does NOT write wiki pages — that is `cogni-wiki:wiki-ingest`'s job (transitively via `knowledge-ingest`).
 - Does NOT pre-fill the wiki with cogni-wiki foundations — `--skip-prefill-prompt` is set deliberately.
 - Does NOT configure source mode — that happens during `knowledge-plan`, where the topic is known.
-- Records only the knowledge-base **default** `market`/`output_language` in `binding.json::research_defaults` (Step 2.5). The per-run choice still lives in `knowledge-plan` — a single plan can override the base default with its own `--market`/`--output-language` (e.g. an English report about a German market).
+- Records only the knowledge-base **defaults** (`market`/`output_language` + the four writer-quality knobs `prose_density`/`tone`/`citation_format`/`target_words`) in `binding.json::research_defaults` (Step 2.5, schema 0.1.2). The per-run choice still lives in `knowledge-plan` — a single plan can override any base default with its own matching flag (e.g. an English report about a German market, or an `executive`-density draft on a `standard`-default base).
 
 ## Output
 
