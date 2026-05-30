@@ -20,10 +20,13 @@ A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any d
   "schema_version": "0.1.0",
   "draft_version": 1,
   "citations": [
-    {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk…<sup>[1](https://…)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"}
+    {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk…<sup>[1](https://…)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"},
+    {"id": "cit-002", "draft_position": "05:01", "draft_sentence": "Multiple analyses converge on conformity assessment as the central compliance burden…<sup>[2]</sup>.", "wiki_slug": "conformity-assessment", "claim_id": "dcl-007"}
   ]
 }
 ```
+
+The two entries show the two citable-page kinds: `cit-001` cites a **source** page (`claim_id` is a `clm-NNN`, inline marker is a clickable `<sup>[N](url)</sup>`); `cit-002` cites a **distilled** page (`claim_id` is a `dcl-NNN`, inline marker is a plain `<sup>[N]</sup>` — distilled pages have no external URL).
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `knowledge-compose`" and `references/claim-at-ingest.md` once to anchor on the contract.
 
