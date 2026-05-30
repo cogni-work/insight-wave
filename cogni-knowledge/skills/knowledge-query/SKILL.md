@@ -1,6 +1,6 @@
 ---
 name: knowledge-query
-description: "Ask a question against a bound cogni-knowledge base — resolves the wiki path from .cogni-knowledge/binding.json so the user does not need to remember it, then dispatches cogni-wiki:wiki-query against the bound wiki. Use this skill whenever the user says 'query my <slug> knowledge base', 'ask the eu-ai-act base about X', 'knowledge query on Y', 'what does my <slug> base know about Z', 'knowledge-query <slug>'. Read-only — never writes to the binding. The upstream wiki-query may file the answer back as a `type: synthesis` page; that decision belongs to wiki-query, not this skill."
+description: "Ask a question against a bound cogni-knowledge base — resolves the wiki path from .cogni-knowledge/binding.json so the user does not need to remember it, then dispatches cogni-wiki:wiki-query against the bound wiki. Use this skill whenever the user says 'query my <slug> knowledge base', 'ask the eu-ai-act base about X', 'knowledge query on Y', 'what does my <slug> base know about Z', 'knowledge-query <slug>'. Read-only — never writes to the binding."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 ---
 

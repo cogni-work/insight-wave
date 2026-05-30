@@ -228,7 +228,7 @@ N_CITES=<the script-derived count from Step 5's print(len(cites)) — NOT the co
 echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
-Note on the `compose` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `compose`, but the same paragraph notes that "pre-v0.0.35 readers count unknown prefixes in their catch-all bucket without crashing" — `compose` is additive and safe.
+Note on the `compose` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `compose`, but readers count unknown prefixes in their catch-all bucket without crashing — `compose` is additive and safe.
 
 ### 7. Final summary
 

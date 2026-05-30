@@ -201,7 +201,7 @@ Runs **only when `--resweep` is passed** — after push/pull completes (if a `--
      Report: <relative path>. Reconcile flagged pages via cogni-wiki:wiki-update.
      last-resweep.json updated → knowledge-dashboard will surface the new date.
    ```
-   **Synthesis-underyield note (standing, every resweep).** The upstream report classifies scanned pages by directory; surface the source-vs-synthesis split so the underyield is visible at run time: append `Note: yield is from wiki/sources/<slug>.md (inline-URL bodies); wiki/syntheses/<slug>.md ([N]/[[slug]] citations) underyield.` If the upstream summary exposes per-directory page counts, prefer the concrete form `Covered <K_src> source page(s); <K_syn> synthesis page(s) underyielded.`
+   **Synthesis-underyield note.** The upstream report classifies scanned pages by directory; surface the source-vs-synthesis split so the underyield is visible at run time: append `Note: yield is from wiki/sources/<slug>.md (inline-URL bodies); wiki/syntheses/<slug>.md ([N]/[[slug]] citations) underyield.` If the upstream summary exposes per-directory page counts, prefer the concrete form `Covered <K_src> source page(s); <K_syn> synthesis page(s) underyielded.`
    When the upstream reports `total_claims == 0` for a `--resweep-page <slug>`, append: `⚠ <slug> yielded zero re-verifiable claims — this is a synthesis page or a page without inline URLs; resweep is most useful against wiki/sources/<slug>.md pages.`
 
 ## Edge cases

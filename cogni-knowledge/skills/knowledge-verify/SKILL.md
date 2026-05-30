@@ -1,6 +1,6 @@
 ---
 name: knowledge-verify
-description: "Phase 6 of the inverted pipeline. Reads <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json, shards the citations and dispatches wiki-verifier in parallel (via verify-store.py) to score every citation against each cited page's pre_extracted_claims (zero network), then loops with revisor on unsupported deviations — capped at 2 iterations per references/inverted-pipeline.md Phase 6. Writes <project>/.metadata/verify-vN.json per round and (when the revisor fires) draft-v{N+1}.md plus a citation-records file the orchestrator serializes into citation-manifest.json via citation-store.py build (never hand-built JSON). The structural cost win versus cogni-claims (20–30 min verify → < 5 min). Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, knowledge-finalize deposits the verified draft as a synthesis page."
+description: "Phase 6 of the inverted pipeline. Reads the draft and citation manifest, shards the citations, and dispatches wiki-verifier in parallel to score every citation against each cited page's pre_extracted_claims (zero network), then loops with the revisor on unsupported deviations — capped at 2 iterations. Writes verify-vN.json per round and, when the revisor fires, draft-v{N+1}.md plus a citation-records file the orchestrator serializes into the manifest. Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, knowledge-finalize deposits the verified draft as a synthesis page."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -416,7 +416,7 @@ N_UNSUPPORTED=<counts.unsupported from final verify>
 echo "## [${DATE_STAMP}] verify | project=${TOPIC} draft=v${CURRENT_DRAFT_VERSION} round=${REVISION_ROUND} verbatim=${N_VERBATIM} paraphrase=${N_PARAPHRASE} unsupported=${N_UNSUPPORTED}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
-Note on the `verify` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `verify`, but the same paragraph notes that "pre-v0.0.35 readers count unknown prefixes in their catch-all bucket without crashing" — `verify` is additive and safe. Same additive-prefix posture as the `compose` line.
+Note on the `verify` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `verify`, but readers count unknown prefixes in their catch-all bucket without crashing — `verify` is additive and safe. Same additive-prefix posture as the `compose` line.
 
 ### 6. Final summary
 
