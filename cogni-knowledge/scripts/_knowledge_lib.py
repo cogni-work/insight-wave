@@ -482,7 +482,7 @@ def parse_distilled_claims_with_id(page_text: str) -> list[dict]:
 # region in `<!-- MACHINE-OWNED:NAME:START/END -->` sentinels (SUMMARY / CLAIMS /
 # RELATED / SOURCES). The single source of truth for reading a block's inner text
 # lives here so concept-store.py (the writer) AND knowledge-distill's bundle
-# builder (the reader, Step 6.5) parse it the same way — a future tweak (CRLF,
+# builder (the reader, Step 6.7) parse it the same way — a future tweak (CRLF,
 # whitespace tolerance) applies everywhere at once.
 
 

@@ -265,7 +265,7 @@ def _absorb_claim_field(item: dict, kv: str) -> None:
 def _extract_machine_block(body: str, name: str) -> str | None:
     """Inner text between `<!-- MACHINE-OWNED:NAME:START -->` and `:END -->`.
     Delegates to `_knowledge_lib.extract_machine_block` — the single source of
-    truth, also read by knowledge-distill's Step-6.5 bundle builder (#341)."""
+    truth, also read by knowledge-distill's Step-6.7 bundle builder (#341)."""
     return extract_machine_block(body, name)
 
 

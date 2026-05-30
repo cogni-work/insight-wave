@@ -148,7 +148,7 @@ estimate. On a write failure, return `{"ok": false, "error": "<message>", "pairs
 - Does NOT drop, edit, or rewrite a claim's text — the union keeps the survivor's text verbatim and never deletes provenance, only the duplicate dcl-id.
 - Does NOT merge same-language pairs — that is Phase-1's deterministic dedup, not this cross-lingual pass.
 - Does NOT compute slugs, fetch URLs, WebSearch, or read source/page bodies — the candidates file is its only evidence.
-- Does NOT touch any other block, re-narrate summaries (Step 6.5), compose the report (Phase 5), or verify claims (Phase 6).
+- Does NOT touch any other block, re-narrate summaries (Step 6.7), compose the report (Phase 5), or verify claims (Phase 6).
 
 ## Cost estimation
 
