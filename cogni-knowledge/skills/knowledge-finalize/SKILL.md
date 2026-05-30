@@ -843,9 +843,18 @@ try:
     p = json.loads(Path(os.environ["PLAN_PATH"]).read_text(encoding="utf-8"))
 except Exception:
     p = {}
+# target_words coercion is guarded separately so a hand-edited non-numeric value
+# falls back to 5000 instead of crashing this resolution subprocess (the reviewer
+# also defaults it, but a crash here would blank all three shell vars).
+try:
+    tw = int(p.get("target_words") or 5000)
+    if tw <= 0:
+        tw = 5000
+except (TypeError, ValueError):
+    tw = 5000
 print(json.dumps({
     "output_language": (p.get("output_language") or "en"),
-    "target_words": int(p.get("target_words") or 5000),
+    "target_words": tw,
     "prose_density": (p.get("prose_density") or "standard"),
 }))
 ')

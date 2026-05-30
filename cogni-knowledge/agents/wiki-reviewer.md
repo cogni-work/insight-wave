@@ -208,7 +208,7 @@ The verdict is **advisory**. A `revise` verdict does NOT re-dispatch the compose
      "review_iteration": 1,
      "output_language": "de",
      "verdict": "revise",
-     "score": 0.81,
+     "score": 0.76,
      "accept_threshold": 0.82,
      "structural_scores": {
        "completeness": 0.75,
@@ -270,8 +270,8 @@ Return a compact JSON envelope via the Task return path — and nothing else in 
 {"ok": true,
  "review_path": ".metadata/structural-review-v3.json",
  "verdict": "revise",
- "score": 0.81,
- "structural_scores": {"completeness":0.85,"coherence":0.80,"source_diversity":0.75,"depth":0.70,"clarity":0.85},
+ "score": 0.76,
+ "structural_scores": {"completeness":0.75,"coherence":0.80,"source_diversity":0.75,"depth":0.70,"clarity":0.85},
  "issue_count": 3,
  "high_severity_count": 1,
  "cost_estimate": {"input_words": 8000, "output_words": 400, "estimated_usd": 0.019}}
