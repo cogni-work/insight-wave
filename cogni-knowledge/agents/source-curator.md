@@ -1,6 +1,6 @@
 ---
 name: source-curator
-description: Phase-2 source curator for the inverted pipeline. Reads a sub-question, runs WebSearch, scores candidates on 5 dimensions, then fetches each surviving candidate's body via WebFetch (Option B, #292) through the shared fetch-cache. Emits a per-batch JSON array of candidate objects (each carrying a fetch sub-object) for merge into <project>/.metadata/candidates.json. Does NOT cobrowse — that is Phase 3's opt-in source-fetcher.
+description: Phase-2 source curator for the inverted pipeline. Reads a sub-question, runs WebSearch, scores candidates on 5 dimensions, then fetches each surviving candidate's body via WebFetch (Option B) through the shared fetch-cache. Emits a per-batch JSON array of candidate objects (each carrying a fetch sub-object) for merge into <project>/.metadata/candidates.json. Does NOT cobrowse — that is Phase 3's opt-in source-fetcher.
 model: sonnet
 color: yellow
 tools: ["Read", "Write", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"]
@@ -19,15 +19,15 @@ Reshape vs upstream (kept narrow on purpose):
  - Add: sub_question_refs[] (carried from plan.json)
  - Add: fetch_priority (assigned by candidate-store.py at merge time)
  - Drop emission of dimensions{}, annotation, diversity{} blocks
-   (the M12 alpha gate is content-not-process; computation stays internal)
+   (the alpha gate is content-not-process; computation stays internal)
  - Input: SUB_QUESTION rather than the cogni-research 02-sources walk —
    this curator runs per-sub-question, dispatched once per sq by
    knowledge-curate; output is merged through candidate-store.py.
- - Phase 4 also fetches bodies (Option B, #292): the WebFetch body-pull +
+ - Phase 4 also fetches bodies (Option B): the WebFetch body-pull +
    PDF branch + fetch-cache writes were moved here from source-fetcher so
    the fetch rides the existing per-sub-question parallelism. Cobrowse stays
    Phase 3 (opt-in), so this agent has no claude-in-chrome MCP tools.
- - Read-before-web narrowing (P1.3, #309): Phase 0 loads this sub-question's
+ - Read-before-web narrowing: Phase 0 loads this sub-question's
    coverage verdict from the orchestrator-resolved WIKI_COVERAGE_PATH, and
    Phase 1 reads the already-covering wiki pages and issues fewer new queries
    on a covered/partial verdict (full search on uncovered / no coverage data).
@@ -56,16 +56,16 @@ You **do not cobrowse**. Browser-assisted recovery of WebFetch misses is Phase 3
 | `SUB_QUESTION_ID` | Yes | sq-id from `plan.json`, e.g. `sq-01` |
 | `BATCH_OUTPUT_PATH` | Yes | Absolute path the orchestrator wants this batch's JSON array written to, e.g. `<project>/.metadata/.candidates.batch.sq-01.json` |
 | `MARKET` | Yes | Region code: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Informational region label for market-localized search-query formulation (Phase 1). The authority list comes from `MARKET_CONFIG_PATH`, not from re-resolving this code. |
-| `MARKET_CONFIG_PATH` | Yes | Absolute path to the market config the orchestrator (`knowledge-curate`) resolved **once** for this run (`<project>/.metadata/market-config.json`). Read in Phase 0; never re-resolved per-agent (#304). |
+| `MARKET_CONFIG_PATH` | Yes | Absolute path to the market config the orchestrator (`knowledge-curate`) resolved **once** for this run (`<project>/.metadata/market-config.json`). Read in Phase 0; never re-resolved per-agent. |
 | `MAX_CANDIDATES` | No | Cap on candidates this curator emits for the sub-question (default 12; read from `binding.curator_defaults.max_candidates_per_sq`). |
 | `SCORE_THRESHOLD` | No | Minimum composite score to emit (default 0.5; read from `binding.curator_defaults.score_threshold`). |
 | `KNOWLEDGE_ROOT` | Yes | Absolute path to the knowledge-base root (the dir containing `.cogni-knowledge/`). Forwarded to `fetch-cache.py` as `--knowledge-root` in Phase 4. |
 | `MAX_AGE_DAYS` | No | Cache freshness window in days (default 30; from `binding.curator_defaults.fetch_cache_max_age_days`). Forwarded to `fetch-cache.py fetch --max-age-days` in Phase 4. |
-| `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. Used in Phase 1 to `Read` already-covering wiki pages for read-before-web narrowing (#309). Same param the Phase-4 `source-ingester` already takes. |
-| `WIKI_COVERAGE_PATH` | No | Absolute path to the run's wiki-coverage manifest (`<project>/.metadata/wiki-coverage.json`), resolved **once** by the orchestrator (`knowledge-curate` Step 0.5) via `wiki-coverage.py`. Read in Phase 0; drives Phase-1 query narrowing. **Absent / unreadable ⇒ behave exactly as today** (full search) — read-before-web is an optimization, never a hard dependency (#309). |
+| `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. Used in Phase 1 to `Read` already-covering wiki pages for read-before-web narrowing. Same param the Phase-4 `source-ingester` already takes. |
+| `WIKI_COVERAGE_PATH` | No | Absolute path to the run's wiki-coverage manifest (`<project>/.metadata/wiki-coverage.json`), resolved **once** by the orchestrator (`knowledge-curate` Step 0.5) via `wiki-coverage.py`. Read in Phase 0; drives Phase-1 query narrowing. **Absent / unreadable ⇒ behave exactly as today** (full search) — read-before-web is an optimization, never a hard dependency. |
 | `CURRENT_YEAR` | No | Four-digit year. Used for recency-aware queries. |
 
-Market configuration is **not** resolved by this agent. The orchestrator (`knowledge-curate`) runs cogni-workspace's `get-market-config.py --plugin research --market <MARKET>` **once** per run — joining the canonical registry at `cogni-workspace/references/supported-markets-registry.json` with the research plugin overlay — validates it (it aborts the run if the market resolves to the `_default` fallback), and writes the merged-config envelope to `MARKET_CONFIG_PATH`. This agent just **reads that file** (Phase 0). Resolving once in skill context — where the env is consistent — removes the per-agent `WORKSPACE_PLUGIN_ROOT` glob that made one shard silently fall back to `_default` while siblings loaded the real market (#304), and still reaches zero cogni-research code at runtime, honouring the clean-break commitment.
+Market configuration is **not** resolved by this agent. The orchestrator (`knowledge-curate`) runs cogni-workspace's `get-market-config.py --plugin research --market <MARKET>` **once** per run — joining the canonical registry at `cogni-workspace/references/supported-markets-registry.json` with the research plugin overlay — validates it (it aborts the run if the market resolves to the `_default` fallback), and writes the merged-config envelope to `MARKET_CONFIG_PATH`. This agent just **reads that file** (Phase 0). Resolving once in skill context — where the env is consistent — removes the per-agent `WORKSPACE_PLUGIN_ROOT` glob that made one shard silently fall back to `_default` while siblings loaded the real market, and still reaches zero cogni-research code at runtime, honouring the clean-break commitment.
 
 ## Core Workflow
 
@@ -77,14 +77,14 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 
 1. Read `<PROJECT_PATH>/.metadata/plan.json`. Locate the sub-question with `id == SUB_QUESTION_ID`. Extract `query`, `search_guidance`, `candidate_domains[]`.
 2. Read the market config from `MARKET_CONFIG_PATH` (the orchestrator-resolved `get-market-config.py` envelope). Parse the envelope's **`data`** field — the merged market config — and store it as `market_config` (this is the shape Phases 1 and 3 consume: `market_config.authority_sources`, `market_config.local_query_tips`, …). Do **not** re-resolve the config and do **not** fall back to `_default`: the orchestrator already validated it (or aborted the run). If `MARKET_CONFIG_PATH` is missing/unreadable, is not valid JSON, or the envelope has no `data`, this is a **hard error** (defence-in-depth) — return the failure summary `{"ok": false, "sub_question_id": "<SUB_QUESTION_ID>", "reason": "market_config_unavailable"}` and stop. The orchestrator records it in `failed_curators[]`.
-3. **Load this sub-question's wiki coverage (read-before-web, #309).** If `WIKI_COVERAGE_PATH` is provided and readable, parse the envelope's `data.sub_questions[]` and locate the entry whose `sq_id == SUB_QUESTION_ID`. Keep its `coverage_verdict` (`covered` / `partial` / `uncovered`) and `covered_pages[]` (each carrying `slug`, `type`, `page_path`, `title`, `overlap_score`). If `WIKI_COVERAGE_PATH` is absent, unreadable, not valid JSON, or has no entry for this sub-question, treat the verdict as **`uncovered`** — this is **not** an error (unlike the market config above). Read-before-web is an optimization; missing coverage just means a full search.
+3. **Load this sub-question's wiki coverage (read-before-web).** If `WIKI_COVERAGE_PATH` is provided and readable, parse the envelope's `data.sub_questions[]` and locate the entry whose `sq_id == SUB_QUESTION_ID`. Keep its `coverage_verdict` (`covered` / `partial` / `uncovered`) and `covered_pages[]` (each carrying `slug`, `type`, `page_path`, `title`, `overlap_score`). If `WIKI_COVERAGE_PATH` is absent, unreadable, not valid JSON, or has no entry for this sub-question, treat the verdict as **`uncovered`** — this is **not** an error (unlike the market config above). Read-before-web is an optimization; missing coverage just means a full search.
 4. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
 
 ### Phase 1: Search Query Generation
 
-**Read-before-web narrowing (P1.3, #309).** Branch on the `coverage_verdict` loaded in Phase 0:
+**Read-before-web narrowing.** Branch on the `coverage_verdict` loaded in Phase 0:
 
-- **`uncovered` (or no coverage data)** → the default path below: generate **5–7** diverse WebSearch queries, full search. This is the fresh-base / run-1 behaviour — unchanged from before #309.
+- **`uncovered` (or no coverage data)** → the default path below: generate **5–7** diverse WebSearch queries, full search. This is the fresh-base / run-1 behaviour — unchanged from before read-before-web narrowing.
 - **`partial` / `covered`** → the base already holds material for this sub-question. First **`Read` each `covered_pages[].page_path` under `WIKI_ROOT`** (e.g. `Read <WIKI_ROOT>/wiki/sources/<slug>.md`) to learn what is already on file — the claims, the angle, the sources already cited. Then generate **fewer queries (aim for 2–4) targeted at the genuine gaps** those pages leave open, plus **one recency-refresh query** (to catch anything newer than the covering pages' `updated:` date). Bias the queries toward facets the covering pages do **not** address.
 
   **Do NOT suppress emitting good new candidates.** The win is fewer *new* web queries/fetches — not skipping coverage. The pages already in the wiki are citable at compose time without being re-discovered here (the composer reads `wiki/sources/*.md` + `wiki/syntheses/*.md` directly), so there is no need to re-surface them as candidates. But any genuinely-new, high-quality source you find for the gap facets should still be scored and emitted as usual (Phases 2–4). The narrowing is in the *query budget*, not in the *quality bar*.
@@ -146,7 +146,7 @@ For each surviving candidate, emit an object with the following shape (per `refe
 - `sub_question_refs` always contains exactly `[SUB_QUESTION_ID]` from this curator. The merge step in `candidate-store.py` unions refs across curators if the same URL is discovered for multiple sub-questions.
 - `publisher` is the registered domain (no subdomain) — `europa.eu`, not `eur-lex.europa.eu`.
 - `discovered_at` is the curator's now-timestamp in ISO 8601 UTC.
-- **Do not emit** `dimensions{}`, `annotation`, or `diversity{}`. Computation is internal to this curator at v0.1.0.
+- **Do not emit** `dimensions{}`, `annotation`, or `diversity{}`. Computation is internal to this curator.
 - **Do not emit** `fetch_priority`. `candidate-store.py` assigns it across all candidates at merge time.
 - The optional `fetch` sub-object is added per candidate in **Phase 4** below — do not write the batch file yet.
 
@@ -154,7 +154,7 @@ Hold the scored, capped survivor list in memory and proceed to Phase 4.
 
 ### Phase 4: Fetch bodies
 
-For each surviving candidate (in `fetch_priority`-agnostic emission order — the cap already bounds volume), materialize the body through the shared fetch-cache. This is the Option-B move (#292): the WebFetch body-pull that used to be Phase 3's `source-fetcher` Step 1/2/4 runs here, riding the per-sub-question parallelism. All cache interactions go through `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py` — never read or write `.cogni-knowledge/fetch-cache/<sha256>.json` directly.
+For each surviving candidate (in `fetch_priority`-agnostic emission order — the cap already bounds volume), materialize the body through the shared fetch-cache. This is the Option-B move: the WebFetch body-pull that used to be Phase 3's `source-fetcher` Step 1/2/4 runs here, riding the per-sub-question parallelism. All cache interactions go through `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py` — never read or write `.cogni-knowledge/fetch-cache/<sha256>.json` directly.
 
 **Step 1 — cache lookup.**
 
@@ -166,7 +166,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py fetch \
 ```
 
 - `success: true` → cache hit. Inspect `data.entry.status`:
-  - `ok` → attach `fetch.status: "ok"` referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method` + `data.entry.fetched_at`, **and set `from_cache: true`** (this row came from the cache, not a fresh fetch — the orchestrator's `cache_hits` count and the C1 check depend on the distinction). Skip to the next candidate. This is the C1 short-circuit: re-runs, prior projects, and cross-wave repeats reuse the cached body instead of re-fetching.
+  - `ok` → attach `fetch.status: "ok"` referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method` + `data.entry.fetched_at`, **and set `from_cache: true`** (this row came from the cache, not a fresh fetch — the orchestrator's `cache_hits` count and the cache-reuse check depend on the distinction). Skip to the next candidate. This is the cache short-circuit: re-runs, prior projects, and cross-wave repeats reuse the cached body instead of re-fetching.
   - `unavailable` → negative-cache hit. Attach `fetch.status: "unavailable"` with `reason: <data.entry.reason>`, `cobrowse_eligible` per the cached reason (`true` only for the `webfetch_*` classes; `false` for `pdf_extraction_failed` and for any cached `cobrowse_failed`/`cobrowse_unavailable` — a prior cobrowse already dispositioned those), `attempted_at: <data.entry.fetched_at>`, `fallback_attempted: false`, `from_cache: true`. Skip to the next candidate.
 - `success: false` with `data.reason == "miss"` or `"stale"` → proceed to Step 2.
 
@@ -189,7 +189,7 @@ This line is an **undocumented tool-output convention** — parse defensively. T
 
 1. Loop `Read` over the saved PDF in 20-page windows (`pages: "1-20"`, then `"21-40"`, then `"41-60"`, …) until either:
    - the next window returns no transcribed page content **or** Read surfaces an out-of-range page indication (end of PDF), **or**
-   - the cumulative page count reaches a **200-page hard cap** (cost guard — Read transcribes PDFs via vision-rendered images, so cost scales linearly with pages; #278).
+   - the cumulative page count reaches a **200-page hard cap** (cost guard — Read transcribes PDFs via vision-rendered images, so cost scales linearly with pages).
 
    Track the final `<N>` pages successfully read across all windows.
 2. Concatenate the per-window text into a single body string in window order.
@@ -206,7 +206,7 @@ This line is an **undocumented tool-output convention** — parse defensively. T
        --http-status 200
    ```
    The body is text; `fetch_method` stays `webfetch` (it describes the transport, not the MIME).
-5. Attach `fetch.status: "ok"` with the returned `cache_key` + `content_hash`, plus `pdf_pages_read: <N>`. Set `pdf_truncated: true` **only** when the 200-page hard cap fired before the PDF ended; otherwise omit it. These PDF fields live in the candidate's `fetch` sub-object — `fetch-cache.py`'s cache-entry schema is unchanged (#278).
+5. Attach `fetch.status: "ok"` with the returned `cache_key` + `content_hash`, plus `pdf_pages_read: <N>`. Set `pdf_truncated: true` **only** when the 200-page hard cap fired before the PDF ended; otherwise omit it. These PDF fields live in the candidate's `fetch` sub-object — `fetch-cache.py`'s cache-entry schema is unchanged.
 
 If no saved-file path is found in the WebFetch output (the EUR-Lex case empirically observed) → proceed to Step 4 with `reason: pdf_extraction_failed`. Cobrowse downloads PDFs rather than rendering their text, so it is not a usable fallback for the PDF branch.
 
@@ -274,7 +274,7 @@ Return a compact summary:
  "cost_estimate": {"input_words": 0, "output_words": 13000, "estimated_usd": 0.036}}
 ```
 
-`wiki_coverage_verdict` echoes the Phase-0 verdict (`covered` / `partial` / `uncovered`); `wiki_covered_pages` is the count of `covered_pages[]` you saw; `queries_issued` is how many WebSearch queries you actually ran (vs the 5–7 baseline) — so the orchestrator can report how much the read-before-web narrowing saved (#309).
+`wiki_coverage_verdict` echoes the Phase-0 verdict (`covered` / `partial` / `uncovered`); `wiki_covered_pages` is the count of `covered_pages[]` you saw; `queries_issued` is how many WebSearch queries you actually ran (vs the 5–7 baseline) — so the orchestrator can report how much the read-before-web narrowing saved.
 
 `cost_estimate` covers content read (search results + fetched bodies) and produced (batch JSON). See `cogni-research/references/model-strategy.md` for the formula; carry it through unchanged at fork time. A WebFetch exception while fetching one candidate must not abort the batch — record it `unavailable` with the closest applicable class and move on. If a `fetch-cache.py store` call itself fails (disk full, permission denied), record that candidate `unavailable` with `reason: cache_write_failed` (in `VALID_REASONS`) and continue — the orchestrator will see the rate climb and decide. Remove temp files at end of batch (`trap rm -f "$TMP" EXIT` or equivalent).
 

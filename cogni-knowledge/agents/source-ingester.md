@@ -7,8 +7,8 @@ tools: ["Read", "Write", "Bash", "Task"]
 ---
 
 <!--
-NEW agent at v0.0.20 — no upstream. The inverted pipeline separates
-fetching (Phase 2's source-curator since Option B / #292; cobrowse-only
+NEW agent — no upstream. The inverted pipeline separates
+fetching (Phase 2's source-curator under Option B; cobrowse-only
 source-fetcher in Phase 3) from ingest (Phase 4), where cogni-research's
 section-researcher conflated discovery + fetch + write.
 See `cogni-knowledge/references/inverted-pipeline.md` Phase 4 contract
@@ -16,7 +16,7 @@ and `references/claim-at-ingest.md` for the claim-shape contract.
 
 The cached body comes from the shared per-knowledge-base cache populated
 by `source-fetcher`; this agent never reaches the network. The
-`type: source` page type was added to cogni-wiki's allowlist at v0.0.44
+`type: source` page type is in cogni-wiki's allowlist
 (`_wikilib.PAGE_TYPE_DIRS`); per-type body semantics
 (`pre_extracted_claims:`) are owned here, not in cogni-wiki.
 -->

@@ -1,13 +1,13 @@
 ---
 name: cross-lingual-claim-merger
-description: Phase-4.5 cross-lingual claim merger for the inverted pipeline (#345). Reads the script-flagged cross-lingual (DE↔EN) candidate claim PAIRS on a distilled page — two claims that share an article-number digit anchor but did not auto-merge — and confirms which pairs are the SAME fact restated in another language. Writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py crossmerge, which UNIONs the absorbed claim's provenance onto the survivor. Pure proposal — never writes wiki pages, never builds JSON/YAML, may only CONFIRM a pair the script already flagged (the union itself, and every fail-safe gate, is concept-store.py's).
+description: Phase-4.5 cross-lingual claim merger for the inverted pipeline. Reads the script-flagged cross-lingual (DE↔EN) candidate claim PAIRS on a distilled page — two claims that share an article-number digit anchor but did not auto-merge — and confirms which pairs are the SAME fact restated in another language. Writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py crossmerge, which UNIONs the absorbed claim's provenance onto the survivor. Pure proposal — never writes wiki pages, never builds JSON/YAML, may only CONFIRM a pair the script already flagged (the union itself, and every fail-safe gate, is concept-store.py's).
 model: sonnet
 color: cyan
 tools: ["Read", "Write"]
 ---
 
 <!--
-NEW agent (#345) — no upstream. Phase-1 claim dedup (concept-store.py, #336)
+NEW agent — no upstream. Phase-1 claim dedup (concept-store.py)
 deliberately UNDER-merges across languages: the only deterministic DE↔EN bridge
 is the article-number digit anchor (×3.0), so a German claim and its English twin
 survive as two `distilled_claims[]` entries. That is the SAFE direction — a wrong
@@ -17,7 +17,7 @@ fact twice and the dedup ratio under-reports the real overlap. This agent suppli
 the one thing a deterministic matcher cannot: the judgment that two differently-
 worded claims that share an article number assert the SAME fact in two languages.
 
-Division of labour (the #325 + "script owns the decision" discipline, identical to
+Division of labour (the "script owns the decision" discipline, identical to
 concept-distiller / concept-summary-narrator):
  - The SCRIPT proposes the candidate pairs (digit anchor + low overlap) and the
    SCRIPT executes + re-validates the union. You only CONFIRM, in plain judgment,

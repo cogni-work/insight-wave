@@ -58,10 +58,10 @@ assert_grep '`low`' "$CTR" "wiki-contradictor: documents severity=low"
 # Schema literal — the contract version-pin.
 assert_grep '"schema_version": "0.1.0"' "$CTR" "wiki-contradictor: documents schema_version 0.1.0 literal"
 
-# Issue reference — the agent must say WHICH issue it implements.
-assert_grep '#335' "$CTR" "wiki-contradictor: references issue #335"
-# #363 — distilled-page scoring extension.
-assert_grep '#363' "$CTR" "wiki-contradictor: references issue #363 (distilled-page scoring)"
+# Pure-observability posture — the agent's defining contract (it scores, never resolves).
+# (The distilled-page-scoring extension is asserted directly by the distilled_claims /
+# four-dirs / no-excerpt_quote checks below — no need to pin an issue tag for it.)
+assert_grep 'Pure observability\|pure observability' "$CTR" "wiki-contradictor: documents the pure-observability posture"
 
 # #363: cited-page resolution must probe the four distilled dirs after
 # wiki/sources/ and parse distilled_claims (no excerpt_quote) — mirrors the
