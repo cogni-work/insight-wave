@@ -29,8 +29,14 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` once at the start o
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--market` | No | Market code. One of: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Resolved in Step 0.5: explicit flag > binding `research_defaults.market` > `dach`. |
 | `--output-language` | No | Two-letter code. Resolved in Step 0.5: explicit flag > binding `research_defaults.output_language` > the market's registry `default_output_language` > `en`. No longer a silent `en` default — a `dach` base now emits German without a flag. |
+| `--prose-density` | No | `standard` (floor) or `executive` (BLUF + Pyramid ceiling). Resolved in Step 0.5: flag > binding `research_defaults.prose_density` > framing suggestion > `standard`. Threaded to `wiki-composer`/`wiki-reviewer`. |
+| `--tone` | No | Writing tone (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`; one of 15). Resolved in Step 0.5: flag > binding `research_defaults.tone` > framing suggestion > `objective`. |
+| `--citation-format` | No | `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged author-date — see `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md`). Resolved in Step 0.5: flag > binding > framing suggestion > `ieee`. `wikilink` aliases to `ieee`. |
+| `--target-words` | No | Positive int. Soft target (floor under `standard`, ceiling under `executive`). Resolved in Step 0.5: flag > binding > framing suggestion > `5000`. Written into `plan.json::target_words` (which `knowledge-compose`/`-reviewer` read). |
+| `--frame` | No | Force the optional Step 0 topic-framing pass even when the topic looks sharp. |
+| `--no-framing` | No | Skip Step 0 topic-framing entirely (also implied by `--dry-run`). |
 | `--sub-question-hints` | No | Pipe-separated list of sub-question seeds the user wants reflected, e.g. `"records of processing scope|controller vs processor obligations"`. |
-| `--dry-run` | No | Print the resolved plan + target paths without writing. |
+| `--dry-run` | No | Print the resolved plan + target paths without writing. Also skips Step 0 framing (non-interactive). |
 
 If `--topic` is missing, ask the user once with AskUserQuestion. Do not invent a topic.
 
@@ -71,6 +77,19 @@ On `success: false` — abort and offer `knowledge-setup`. Do not auto-create.
 
 Verify the binding's `knowledge_slug` matches `--knowledge-slug` — mismatch means the user is pointing at the wrong directory.
 
+### 0.4. Topic framing (optional, skippable)
+
+Turn a fuzzy `--topic` into a sharp, scope-tested research prompt **before** decomposition (Step 2). Full playbook: `${CLAUDE_PLUGIN_ROOT}/references/topic-framing.md`.
+
+**Engage/skip decision** (apply the sharpness test from the playbook):
+
+- **Skip** when `--no-framing` or `--dry-run` was passed (non-interactive), or when the `--topic` is already sharp (≥ 3 of: explicit audience, named thesis/status-quo belief, defined scope, clear deliverable shape).
+- **Engage** when `--frame` was passed, or the topic is short/vague (≤ ~15 words, no audience/thesis/scope cue), or the user used explicit verbs ("frame", "sharpen", "scope", "rahmen", "schärfen").
+
+When engaged: **ground** (ask for optional context — a path/blob/URL — read conservatively, ≤ 50 KB, no network), **sharpen** (one `AskUserQuestion` turn, ≤ 4 questions: audience, status-quo belief/thesis, register preference → `tone`+`prose_density`, deliverable horizon → `target_words`), **right-size** (aggregate ≥ 8-leaf themes; keep total sub-questions within the 3–7 cap against `target_words`), and **hold** the sharpened prompt text + a `## Suggested configuration` block (suggested `market`/`output_language`/`tone`/`prose_density`/`target_words`/`citation_format`) in working context. The sharpened prompt is written to `<project_path>/.metadata/framing.md` in Step 3 (the project path is not resolved until Step 1).
+
+The framing's suggested config feeds Step 0.5 as a **new lowest-precedence tier** (below an explicit flag and below the binding's `research_defaults`, above the global/market default). When framing is skipped, there is no suggestion tier and Step 0.5 resolves exactly as before.
+
 ### 0.5. Resolve market + output language
 
 `market` and `output_language` are first-class config, not silent flags — `output_language` flows `plan.json` → `knowledge-compose` → `wiki-composer` → `knowledge-finalize` (body, headings, localized reference heading), so getting it wrong here mis-languages the whole run. Resolve each independently by this precedence (mirrors `cogni-research`'s `research-setup` Phase 0.1 — *market's `default_output_language`, fallback `en`*):
@@ -92,7 +111,20 @@ Verify the binding's `knowledge_slug` matches `--knowledge-slug` — mismatch me
 
 **Interactive fallback.** The trigger is **no `--output-language` flag AND no binding `research_defaults.output_language`** — i.e. steps 1 and 2 both missed (only reachable on a pre-0.1.1 base, since `knowledge-setup` Step 2.5 persists a binding default). In that case interactivity decides ask-vs-silent: on an **interactive** run, ask the user once with `AskUserQuestion` — option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others; the auto-added "Other" takes a two-letter code. On a **non-interactive** run (`--dry-run`, or any run driven by flags/automation), do **not** prompt — silently take step 3's market `default_output_language` (then `en`). Skipping the question also falls back to the market default.
 
-Carry the resolved `market` + `output_language` into Step 2 (candidate domains, `theme_label` language) and Step 3 (plan.json).
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`; #309 P2).** Resolve each independently by the same precedence shape, now with the optional Step 0.4 framing suggestion as a tier between the binding default and the hard default:
+
+```
+flag > binding research_defaults.<knob> > framing suggestion (Step 0.4) > hard default
+```
+
+- **`prose_density`**: `--prose-density` > `research_defaults.prose_density` > framing > `standard`. Validate against `{standard, executive}`; an invalid value falls back to `standard` with a one-line warning. (Resolve via `_knowledge_lib.normalize_prose_density` if you shell out; otherwise apply the same rule inline.)
+- **`tone`**: `--tone` > `research_defaults.tone` > framing > `objective`. Validate against the 15-tone catalog in `references/writing-tones.md` (`_knowledge_lib.normalize_tone`); unknown → `objective`.
+- **`citation_format`**: `--citation-format` > `research_defaults.citation_format` > framing > `ieee`. `wikilink` aliases to `ieee` (`_knowledge_lib.normalize_citation_format`); unknown → `ieee`. `ieee`/`chicago` render end-to-end; `apa`/`mla`/`harvard` are accepted + persisted but render as numbered until the author-date follow-up lands.
+- **`target_words`**: `--target-words` > `research_defaults.target_words` > framing > `5000`. Positive int (`_knowledge_lib.normalize_target_words`); non-positive/unparseable → `5000`.
+
+All four have safe defaults, so — unlike `output_language` — there is **no interactive prompt** for them; they resolve silently (flag-or-default), matching the `knowledge-setup` Step 2.5 posture. Read the binding block once: `binding.get("research_defaults", {})`; a pre-0.1.2 block simply lacks these keys and each `.get(knob, DEFAULT)` falls through.
+
+Carry the resolved `market` + `output_language` + the four knobs into Step 2 (candidate domains, `theme_label` language) and Step 3 (plan.json).
 
 ### 1. Slugify topic + resolve project root
 
@@ -127,7 +159,7 @@ Write `<project_path>/.metadata/plan.json` with the schema below (per `reference
 
 ```json
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.1.1",
   "topic": "<--topic verbatim>",
   "sub_questions": [
     {
@@ -140,12 +172,18 @@ Write `<project_path>/.metadata/plan.json` with the schema below (per `reference
   ],
   "market": "<resolved market>",
   "output_language": "<resolved language>",
+  "prose_density": "<resolved: standard|executive>",
+  "tone": "<resolved tone>",
+  "citation_format": "<resolved: ieee|chicago|apa|mla|harvard>",
+  "target_words": <resolved positive int, e.g. 5000>,
   "cost_estimate_usd": 0.0,
   "created": "<ISO 8601 UTC, e.g. 2026-05-20T14:31:02Z>"
 }
 ```
 
-Use the Write tool. JSON must be valid (no trailing commas, double quotes).
+Use the Write tool. JSON must be valid (no trailing commas, double quotes). The four writer-quality fields (`prose_density`, `tone`, `citation_format`, `target_words`) are additive at schema `0.1.1` (#309 P2); pre-0.1.1 consumers read them with `.get(..., DEFAULT)`, so a plan that predates the bump falls straight through to the composer's defaults. `target_words` is now **written** here (it was previously read opportunistically by `knowledge-compose` but never persisted by plan).
+
+**If Step 0.4 framing engaged**, also write the sharpened prompt to `<project_path>/.metadata/framing.md` (the project path is resolved at Step 1) — a durable record of the framing, mirroring cogni-research's `research-prompt.md`.
 
 `cost_estimate_usd` is 0.0 at Phase 1 since this skill does not call WebSearch/WebFetch. Downstream phases accumulate cost into their own manifests.
 
@@ -160,7 +198,9 @@ Print ≤ 6 lines:
 - Knowledge base: `<knowledge_slug>` at `<knowledge_root>`
 - New project: `<topic_slug>-<date_stamp>` (topic: `<topic>`)
 - Plan: `<sub_questions_count>` sub-questions, market `<market>`, language `<output_language>`
+- Config: density=`<prose_density>` tone=`<tone>` citations=`<citation_format>` target=`<target_words>`w
 - Plan path: `<project_path>/.metadata/plan.json`
+- Framing (only when Step 0.4 engaged): `<project_path>/.metadata/framing.md`
 - Next: run `knowledge-curate --knowledge-slug <slug> --project-path <project_path>` to discover candidate sources
 
 ## Edge cases
@@ -169,6 +209,7 @@ Print ≤ 6 lines:
 - **Sub-question count outside 3-7.** Re-decompose. Too few (1-2) usually means the topic is too narrow for sub-questions; suggest the user research the question directly via WebSearch. Too many (8+) means the topic is too broad; suggest a knowledge-plan per major theme.
 - **Binding has no `curator_defaults`.** No problem — `knowledge-plan` does not read `curator_defaults`. Downstream `knowledge-curate` falls back to `DEFAULT_CURATOR_DEFAULTS` for legacy bindings.
 - **Binding has no `research_defaults`** (pre-0.1.1 base created before this UX). Step 0.5's `.get("research_defaults", {})` returns empty, so resolution falls straight through to the market's registry `default_output_language` (then the interactive prompt / `en`) — no error, and the run is unaffected.
+- **Binding has `research_defaults` but no writer-quality knobs** (pre-0.1.2 base, schema 0.1.1). Step 0.5's per-knob `.get(knob, DEFAULT)` falls straight through to the hard defaults (`standard` / `objective` / `ieee` / `5000`) — no error. The base keeps its persisted `market`/`output_language`.
 
 ## Out of scope
 
@@ -179,11 +220,16 @@ Print ≤ 6 lines:
 
 ## Output
 
-- `<project_path>/.metadata/plan.json` (schema 0.1.0)
+- `<project_path>/.metadata/plan.json` (schema 0.1.1)
+- `<project_path>/.metadata/framing.md` — only when Step 0.4 topic-framing engaged.
 
 No other files written.
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 1 contract
+- `${CLAUDE_PLUGIN_ROOT}/references/topic-framing.md` — Step 0.4 framing playbook
+- `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md` — the `tone` catalog
+- `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md` — the `citation_format` menu
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/_knowledge_lib.py` — `normalize_tone` / `normalize_prose_density` / `normalize_citation_format` / `normalize_target_words`

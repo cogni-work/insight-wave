@@ -1,5 +1,64 @@
 # cogni-knowledge changelog
 
+## 0.1.36 — 2026-05-30 — #309 P2: writer-quality & usability knobs
+
+Closes the **last open increment** of the #309 Phase-6-readiness gate (P1.3 read-before-web
+v0.1.8 · P1.1 structural reviewer v0.1.29 · P1.2-rest language-config UX v0.1.35 · **P2 here**).
+Ports the writer-quality knobs cogni-research's `writer`/`reviewer`/`research-setup` support but
+the v0.1.0 fork deferred, so the downstream consumers (cogni-trends / -narrative / -portfolio)
+keep them at the Phase-6 cutover. **All four knobs honour the single-pass / zero-network composer
+contract — none adds an expansion loop.**
+
+**The config spine (build once, all knobs consume it).**
+- **`scripts/knowledge-binding.py`** — `binding.json` schema `0.1.1 → 0.1.2`: `research_defaults`
+  widens with `prose_density` / `tone` / `citation_format` / `target_words` (each with a safe
+  default), settable via the four new `init` flags. Omitted flags fall back to
+  `DEFAULT_RESEARCH_DEFAULTS`, so a plain `init` writes a complete block.
+- **`scripts/_knowledge_lib.py`** — `VALID_TONES` / `VALID_PROSE_DENSITIES` /
+  `VALID_CITATION_FORMATS` / `CITATION_FAMILY` + `normalize_tone` / `normalize_prose_density` /
+  `normalize_citation_format` (incl. `wikilink → ieee`) / `normalize_target_words`, so the
+  resolution precedence is robust to a malformed default or typo'd flag and is unit-testable.
+- **`plan.json` schema `0.1.0 → 0.1.1`** — `knowledge-plan` Step 0.5 resolves each knob
+  (`flag > binding research_defaults > framing suggestion > default`) and writes it into
+  `plan.json`; `knowledge-setup` Step 2.5 persists the base default (flag-or-default, **not**
+  prompted — only market + language are prompted). `target_words` is now *written* by plan
+  (previously read opportunistically by compose but never persisted).
+
+**P2.3 TONE** (`references/writing-tones.md`, NEW fork) — 15 tones threaded `plan.json::tone →
+knowledge-compose → wiki-composer`; the composer's hardcoded "objective and analytical" becomes
+register-aware. Composes orthogonally with density.
+
+**P2.1 PROSE_DENSITY + P2.4 word floor/ceiling** — `standard` keeps `target_words` a floor (cite
+aggressively, 5% outline headroom); `executive` makes it a ceiling with BLUF + Pyramid Principle +
+one-citation-per-claim. Two **non-blocking** enforcement layers, no re-dispatch: (a) the composer
+shapes ONE pass (outline budgeting + citation cadence + a branching word-count self-check that
+never loops); (b) `wiki-reviewer` **re-adds** the previously-dropped Word-Count gate as
+**advisory** — it caps Completeness on a standard-density deficit (`Word deficit`) / executive
+excess (`Word excess`), mirror-symmetric tiers, and emits a `word_count` envelope block
+(`structural-review` schema `0.1.0 → 0.1.1`). `allow_short` is **not** ported (no loop to
+short-circuit).
+
+**P2.2 CITATION_FORMAT** (`references/citation-formats.md`, NEW fork) — the reserved param goes
+**live**: `ieee` + `chicago` render end-to-end (both numbered `<sup>[N](url)</sup>` inline; only
+the `knowledge-finalize` reference-list *string* differs, so the renumber pass + all `<sup>[N]`
+scans are untouched). `apa`/`mla`/`harvard` (author-date) are accepted + persisted but render as
+numbered until a **named follow-up** makes `_knowledge_lib` renumber/strip + the
+verify/reviewer/revisor scans citation-family-aware (see `references/absorption-roadmap.md`).
+
+**P2.5 config step + topic-framing** — `knowledge-plan` gains an optional, skippable **Step 0.4
+topic-framing** pass (`references/topic-framing.md`, NEW adapted fork — arc machinery dropped,
+deliverable-horizon maps to `target_words`/`prose_density`): engage on a vague topic or `--frame`,
+skip on a sharp topic / `--no-framing` / `--dry-run`. Its suggested config feeds Step 0.5 as a new
+lowest-precedence tier and is written to `<project>/.metadata/framing.md`. Step 5 prints a resolved
+`Config: density=… tone=… citations=… target=…w` line.
+
+**Tests.** `test_knowledge_lib.sh` (+ normalizers), `test_language_config_contract.sh` (+ schema
+0.1.2 + 4 knobs), `test_binding_project_path.sh` (schema 0.1.2), `test_compose_contract.sh`
+(PROSE_DENSITY/TONE now live, CITATION_FORMAT live), `test_reviewer_contract.sh` (advisory
+Word-Count gate, schema 0.1.1), `test_finalize_contract.sh` (reviewer word-count threading + chicago
+branch), `test_skill_contracts.sh` (plan.json 0.1.1 + framing), and a new
+`test_prose_density_contract.sh` cross-cutting guard.
+
 ## 0.1.29 — 2026-05-30 — #309 P1.1: structural quality reviewer (Slice 20)
 
 Second increment of the **#309 Phase-6-readiness gate** (P1.3 read-before-web shipped v0.1.8;

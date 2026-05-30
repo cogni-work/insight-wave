@@ -233,6 +233,20 @@ assert_grep 'Structural review: score=' "$FIN" "knowledge-finalize: Step 11 fina
 # References block must include the new agent.
 assert_grep 'agents/wiki-reviewer.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-reviewer.md (#309 P1.1)"
 
+# --- #309 P2 writer-quality knobs ----------------------------------------
+# Step 10.7 threads TARGET_WORDS + PROSE_DENSITY into the wiki-reviewer dispatch
+# so its advisory Word Count Gate has a floor/ceiling reference. The reviewer
+# structural-review schema is now 0.1.1 (additive word_count block).
+assert_grep 'TARGET_WORDS=' "$FIN" "knowledge-finalize: Step 10.7 threads TARGET_WORDS into the wiki-reviewer dispatch (#309 P2)"
+assert_grep 'PROSE_DENSITY=' "$FIN" "knowledge-finalize: Step 10.7 threads PROSE_DENSITY into the wiki-reviewer dispatch (#309 P2)"
+assert_grep 'structural-review-v<N>.json` (schema `0.1.1`)\|structural-review.*schema.*0.1.1' "$FIN" "knowledge-finalize: structural-review schema bumped to 0.1.1 (#309 P2 word_count)"
+# Step 5/6 reference-row builder branches the bibliography string on
+# plan.json::citation_format — chicago renders end-to-end alongside ieee.
+assert_grep 'citation_format' "$FIN" "knowledge-finalize: Step 5/6 reads plan.json::citation_format (#309 P2.2)"
+assert_grep 'citation_format == "chicago"' "$FIN" "knowledge-finalize: Step 5/6 branches the reference string on chicago (#309 P2.2)"
+# Author-date (apa/mla/harvard) is the named follow-up, NOT wired this round.
+assert_grep 'author-date' "$FIN" "knowledge-finalize: documents author-date apa/mla/harvard as the named follow-up (#309 P2.2)"
+
 # --- #338 open-questions refresh (Step 10.5 sub-step 5, v0.1.19) ----------
 # Fail-soft refresh of the persistent data-gap backlog the inverted pipeline
 # leaves stale. Same posture as cogni-wiki wiki-lint Step 8.5: never rolls

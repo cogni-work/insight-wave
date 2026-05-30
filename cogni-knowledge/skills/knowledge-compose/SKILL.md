@@ -50,7 +50,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. |
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
-| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `5000`. Advisory — no re-dispatch on shortfall. |
+| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `5000`. Floor under `standard` density, ceiling under `executive`. Advisory — no re-dispatch either way. |
+| `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (floor, cite aggressively) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
+| `--tone` | No | Override `plan.json::tone` for this draft (see `references/writing-tones.md`). Default reads `plan.json`, else `objective`. |
+| `--citation-format` | No | Override `plan.json::citation_format`: `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged). Default reads `plan.json`, else `ieee`. |
 | `--draft-version` | No | Force a specific draft version N. Default: `max(existing output/draft-v*.md) + 1`, or `1`. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, RESUME_FROM_OUTLINE) without dispatching the composer. |
 
@@ -124,20 +127,27 @@ PROJECT_PATH=<project_path>
 DRAFT_VERSION=<N>
 RESUME_FROM_OUTLINE=<true|false>
 TARGET_WORDS=<resolved>
+PROSE_DENSITY=<resolved>
+TONE=<resolved>
+CITATION_FORMAT=<resolved>
+OUTPUT_LANGUAGE=<resolved>
 INGESTED_SOURCES=<count from ingest-manifest.json>
 ```
 
 and stop.
 
-### 3. Resolve TARGET_WORDS
+### 3. Resolve composer knobs (TARGET_WORDS, PROSE_DENSITY, TONE, CITATION_FORMAT)
 
-Order of resolution:
+Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, else the hard default. They were already resolved + validated in `knowledge-plan` Step 0.5 and written to `plan.json`, so this is a read-with-override (the `--flag` lets an operator re-compose a single draft with a different knob without re-planning):
 
-1. `--target-words` if passed.
-2. `plan.json` `target_words` if present.
-3. Default `5000`.
+| Knob | `--flag` | `plan.json` field | Default |
+|---|---|---|---|
+| `TARGET_WORDS` | `--target-words` | `target_words` | `5000` |
+| `PROSE_DENSITY` | `--prose-density` | `prose_density` | `standard` |
+| `TONE` | `--tone` | `tone` | `objective` |
+| `CITATION_FORMAT` | `--citation-format` | `citation_format` | `ieee` |
 
-This is a **soft target** — the composer does not re-dispatch on shortfall.
+`TARGET_WORDS` is a **soft target** — the composer does not re-dispatch on shortfall either way (it is a floor under `standard`, a ceiling under `executive`). `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
 
 ### 4. Dispatch wiki-composer (single Task call)
 
@@ -149,11 +159,14 @@ Task(wiki-composer,
      WIKI_ROOT=<wiki_root>,
      DRAFT_VERSION=<N>,
      TARGET_WORDS=<resolved>,
+     PROSE_DENSITY=<resolved, default standard>,
+     TONE=<resolved, default objective>,
+     CITATION_FORMAT=<resolved, default ieee>,
      OUTPUT_LANGUAGE=<plan.json::output_language, default en>,
      RESUME_FROM_OUTLINE=<true|false>)
 ```
 
-`OUTPUT_LANGUAGE` is read from `<project_path>/.metadata/plan.json` (`output_language`, default `en` — the same value `knowledge-finalize` reads for its reference heading). It controls the draft body, section headings, and the reference-section heading. The agent derives the plan and ingest-manifest paths from `PROJECT_PATH` (fixed `.metadata/plan.json` and `.metadata/ingest-manifest.json`). `wiki-composer` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched via `Task`, not `Skill`. Single-pass, no fan-out, no per-section sharding — the agent reads the wiki itself and writes both output files atomically.
+`OUTPUT_LANGUAGE` is read from `<project_path>/.metadata/plan.json` (`output_language`, default `en` — the same value `knowledge-finalize` reads for its reference heading). It controls the draft body, section headings, and the reference-section heading. `PROSE_DENSITY` / `TONE` / `CITATION_FORMAT` (Step 3) shape the draft's structural discipline, rhetorical register, and citation rendering respectively — all single-pass (the composer never loops on any of them). The agent derives the plan and ingest-manifest paths from `PROJECT_PATH` (fixed `.metadata/plan.json` and `.metadata/ingest-manifest.json`). `wiki-composer` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched via `Task`, not `Skill`. Single-pass, no fan-out, no per-section sharding — the agent reads the wiki itself and writes both output files atomically.
 
 Parse the return envelope:
 
@@ -246,7 +259,11 @@ Print ≤ 10 lines:
 - Cost: `$X.XXX` (from composer return)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, or `distilled_claims[]` on a cited distilled page.
 
-If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ Below target (N/TARGET)` warning line — but do not auto-retry.
+Surface a density-aware word-count warning from the composer's returned `words` — but do not auto-retry:
+- Under `PROSE_DENSITY=standard`: if `words` is well below `TARGET_WORDS` (the floor), `⚠ Below target (N/TARGET)`.
+- Under `PROSE_DENSITY=executive`: if `words` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (N/TARGET)`. Under-ceiling is the correct executive outcome — no warning.
+
+The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores this with its Word Count Gate; the compose-time line is a fast heads-up, not a gate.
 
 ## Edge cases
 
@@ -262,7 +279,7 @@ If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ 
 - Does NOT deposit the draft into the wiki as `wiki/syntheses/<slug>.md` — Phase 7 (`knowledge-finalize`).
 - Does NOT modify `binding.json` — Phase 7 appends the project entry.
 - Does NOT re-run any earlier phase.
-- Does NOT support executive density, story arcs, or expansion loops.
+- Does NOT run an expansion loop or story arcs — the composer is single-pass. `prose_density: executive` shapes that single pass (BLUF + Pyramid ceiling); it does **not** add a re-dispatch loop (the floor/ceiling is advisory, surfaced by `wiki-reviewer` at finalize).
 
 ## Output
 
@@ -276,7 +293,9 @@ If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ 
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 5 contract
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — claim shape on the wiki page
-- `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — deferrals (density, arcs, expansion)
+- `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md` — the `TONE` catalog threaded to the composer
+- `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md` — the `CITATION_FORMAT` menu (ieee/chicago wired)
+- `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — remaining deferrals (story arcs, author-date citation rendering, expansion loops)
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched agent
 - `${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py --help` — builds + self-checks citation-manifest.json
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

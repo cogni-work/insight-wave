@@ -27,12 +27,15 @@ from pathlib import Path
 # additive bump that added curator_defaults on top of v0.0.2's project_path.
 # The bump to 0.1.0 landed at v0.1.0 M12 alongside plugin.json so the two
 # version surfaces re-align there (no field change — a deliberate milestone
-# re-alignment per references/absorption-roadmap.md M12). 0.1.1 is the next
-# additive bump — it adds research_defaults (knowledge-base-level market +
-# output_language inherited by knowledge-plan; #309 P1.2-rest). Pre-0.1.1
-# bindings have no research_defaults; consumers MUST read it with
-# .get("research_defaults", DEFAULT_RESEARCH_DEFAULTS).
-SCHEMA_VERSION = "0.1.1"
+# re-alignment per references/absorption-roadmap.md M12). 0.1.1 added
+# research_defaults (knowledge-base-level market + output_language inherited by
+# knowledge-plan; #309 P1.2-rest). 0.1.2 is the next additive bump — it widens
+# research_defaults with the four writer-quality knobs (prose_density, tone,
+# citation_format, target_words; #309 P2). Pre-0.1.2 bindings have only the two
+# P1.2 keys (or no block at all); consumers MUST read the block with
+# .get("research_defaults", DEFAULT_RESEARCH_DEFAULTS) and each key with a
+# per-key .get(..., DEFAULT) so an older block falls straight through.
+SCHEMA_VERSION = "0.1.2"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -44,15 +47,23 @@ DEFAULT_CURATOR_DEFAULTS = {
     "score_threshold": 0.5,
     "fetch_cache_max_age_days": 30,
 }
-# research_defaults (schema 0.1.1, #309 P1.2-rest) records the knowledge
-# base's default market + output language so every knowledge-plan run
-# inherits them instead of re-deriving (or silently defaulting English on a
-# German base). An output concern, not a curator one — kept as a sibling
-# block. knowledge-plan's resolution precedence: explicit flag > this block >
-# the market's registry default_output_language > "en".
+# research_defaults records the knowledge base's default output config so every
+# knowledge-plan run inherits it instead of re-deriving (or silently defaulting
+# English / standard-density on a German base). An output concern, not a curator
+# one — kept as a sibling block. knowledge-plan's resolution precedence for each
+# key: explicit flag > this block > (market's registry default_output_language
+# for language) > the hard default below.
+#   schema 0.1.1 (#309 P1.2-rest): market + output_language.
+#   schema 0.1.2 (#309 P2): the four writer-quality knobs below —
+#     prose_density (standard|executive), tone (writing-tones.md), citation_format
+#     (ieee|chicago wired; apa/mla/harvard staged), target_words (soft floor/ceiling).
 DEFAULT_RESEARCH_DEFAULTS = {
     "market": "dach",
     "output_language": "en",
+    "prose_density": "standard",
+    "tone": "objective",
+    "citation_format": "ieee",
+    "target_words": 5000,
 }
 
 
@@ -148,6 +159,14 @@ def cmd_init(args: argparse.Namespace) -> int:
             "output_language": (
                 args.output_language or DEFAULT_RESEARCH_DEFAULTS["output_language"]
             ),
+            "prose_density": args.prose_density or DEFAULT_RESEARCH_DEFAULTS["prose_density"],
+            "tone": args.tone or DEFAULT_RESEARCH_DEFAULTS["tone"],
+            "citation_format": (
+                args.citation_format or DEFAULT_RESEARCH_DEFAULTS["citation_format"]
+            ),
+            # --target-words defaults to 0 (unset sentinel) so a positive int wins
+            # and 0/omitted falls through to the 5000 default.
+            "target_words": args.target_words or DEFAULT_RESEARCH_DEFAULTS["target_words"],
         },
         "created": _today(),
         "schema_version": SCHEMA_VERSION,
@@ -269,6 +288,42 @@ def main(argv: list[str]) -> int:
         default="",
         help="Default output language for this knowledge base "
              "(research_defaults.output_language). Falls back to 'en' when omitted.",
+    )
+    # The four writer-quality knobs (schema 0.1.2, #309 P2). Each persists into
+    # research_defaults and is inherited by every knowledge-plan run (overridable
+    # per run via knowledge-plan's matching flag). All have a safe default, so a
+    # plain `init` writes a complete block.
+    p_init.add_argument(
+        "--prose-density",
+        required=False,
+        default="",
+        help="Default prose density: 'standard' (target_words is a floor) or "
+             "'executive' (BLUF + Pyramid, target_words is a ceiling). "
+             "Falls back to 'standard' when omitted.",
+    )
+    p_init.add_argument(
+        "--tone",
+        required=False,
+        default="",
+        help="Default writing tone (see references/writing-tones.md). "
+             "Falls back to 'objective' when omitted.",
+    )
+    p_init.add_argument(
+        "--citation-format",
+        required=False,
+        default="",
+        help="Default citation format. 'ieee' / 'chicago' render end-to-end "
+             "(both numbered superscripts); 'apa'/'mla'/'harvard' are staged. "
+             "Falls back to 'ieee' when omitted.",
+    )
+    p_init.add_argument(
+        "--target-words",
+        required=False,
+        type=int,
+        default=0,
+        help="Default soft target word count (floor under standard density, "
+             "ceiling under executive). Positive int; falls back to 5000 when "
+             "omitted or 0.",
     )
     p_init.set_defaults(func=cmd_init)
 

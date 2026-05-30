@@ -294,6 +294,16 @@ topic = plan.get("topic", "").strip() or synthesis_slug
 # re-emit, so the deposited page never carries two reference sections.
 output_language = (plan.get("output_language") or "en")
 heading = ref_heading(output_language)
+# Citation-format reference-string selection (#309 P2). ieee + chicago BOTH render
+# the numbered <sup>[N]</sup> inline shape, so the renumber pass + scans below are
+# unchanged across them — only the bibliography STRING differs (ieee:
+# `Publisher, "Title"`; chicago: `Publisher. "Title."`). apa/mla/harvard are the
+# staged author-date follow-up: the composer renders them as numbered, so they
+# fall through to the ieee string here too (no author-date reference rows until
+# the format-aware finalize rework lands). wikilink aliases to ieee.
+citation_format = (plan.get("citation_format") or "ieee").strip().lower()
+if citation_format == "wikilink":
+    citation_format = "ieee"
 # UTC date so frontmatter created/updated align with Step 10s `date -u +%F` log
 # stamp. Mixed local/UTC across midnight produced cross-artifact date skew.
 today = _dt.datetime.now(_dt.timezone.utc).date().isoformat()
@@ -395,8 +405,13 @@ for idx, slug in enumerate(cited_slugs):
     # cited page gets a reference row with NO wikilink (the graceful-degradation
     # edge that the old invisible `[[sources/<slug>]]` form silently tolerated).
     backlink = ("[[" + slug + "]]") if page_kind is not None else ""
-    bib = (publisher + ', "' + title + '"') if publisher else ('"' + title + '"')
-    # IEEE-style numbered entry. Clickable [URL](URL) when the source page
+    if citation_format == "chicago":
+        # Chicago bibliography string: publisher/author-first, period-separated.
+        bib = (publisher + '. "' + title + '."') if publisher else ('"' + title + '."')
+    else:
+        # IEEE (default; also the staged apa/mla/harvard numbered fallback).
+        bib = (publisher + ', "' + title + '"') if publisher else ('"' + title + '"')
+    # Numbered entry (ieee/chicago). Clickable [URL](URL) when the source page
     # carries an http(s) URL (angle-bracketed via md_link_dest when it contains
     # parens). The trailing " — [[<slug>]]" backlink is appended only for a cited
     # page that exists on disk.
@@ -807,7 +822,7 @@ Task(wiki-contradictor,
 
 ### 10.7 Structural-quality review
 
-The structural-quality half of the cogni-research feature-parity gate. Step 10.6 (and Phase 6) check **citation-claim alignment** — does each cited sentence match the cited page's claims. This step checks **structural quality** — does the draft address every sub-question, flow coherently, draw on diverse publishers, go deep, and read cleanly in its output language. A synthesis can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph). Dispatches the `wiki-reviewer` agent to score the draft on the same 5 weighted dimensions cogni-research's reviewer scores (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15, with an inline citation-density gate that caps Depth) and emit `<project_path>/.metadata/structural-review-v<N>.json` (schema `0.1.0`).
+The structural-quality half of the cogni-research feature-parity gate. Step 10.6 (and Phase 6) check **citation-claim alignment** — does each cited sentence match the cited page's claims. This step checks **structural quality** — does the draft address every sub-question, flow coherently, draw on diverse publishers, go deep, and read cleanly in its output language. A synthesis can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph). Dispatches the `wiki-reviewer` agent to score the draft on the same 5 weighted dimensions cogni-research's reviewer scores (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15, with an inline citation-density gate that caps Depth and — #309 P2 — an advisory Word Count Gate that caps Completeness on a `standard`-density deficit / `executive`-density excess) and emit `<project_path>/.metadata/structural-review-v<N>.json` (schema `0.1.1`).
 
 **Advisory-only, fail-soft posture (explicit).** Step 10.7 is observability-only. The reviewer's verdict is **advisory** — the composer is single-pass and the revisor is zero-network/citation-only, so a `revise` verdict drives **no** automated content-expansion fix loop and **never rolls back the synthesis**. A Task failure, schema mismatch, or malformed envelope surfaces in Step 11 as `⚠ structural review FAILED — synthesis on disk; advisory only` and never blocks. The synthesis already landed at Steps 6–10; the reviewer is a read-only scoring layer (same posture as Step 10.6).
 
@@ -818,18 +833,25 @@ The structural-quality half of the cogni-research feature-parity gate. Step 10.6
 
 (There is no empty-manifest skip — the reviewer scores the draft prose, which exists even when the citation manifest is empty.)
 
-**Resolve `OUTPUT_LANGUAGE` (self-contained, independent of Step 10.6).** Read it directly from `plan.json` so this step does not depend on whether the contradictor ran:
+**Resolve `OUTPUT_LANGUAGE` + the Word-Count-gate inputs (self-contained, independent of Step 10.6).** Read them directly from `plan.json` so this step does not depend on whether the contradictor ran. `TARGET_WORDS` + `PROSE_DENSITY` feed the reviewer's advisory Word Count Gate (#309 P2):
 
 ```
-OUTPUT_LANGUAGE=$(PLAN_PATH="$PROJECT_PATH/.metadata/plan.json" python3 -c '
+REVIEW_PLAN_JSON=$(PLAN_PATH="$PROJECT_PATH/.metadata/plan.json" python3 -c '
 import json, os
 from pathlib import Path
 try:
     p = json.loads(Path(os.environ["PLAN_PATH"]).read_text(encoding="utf-8"))
-    print((p.get("output_language") or "en"))
 except Exception:
-    print("en")
+    p = {}
+print(json.dumps({
+    "output_language": (p.get("output_language") or "en"),
+    "target_words": int(p.get("target_words") or 5000),
+    "prose_density": (p.get("prose_density") or "standard"),
+}))
 ')
+OUTPUT_LANGUAGE=$(printf '%s' "$REVIEW_PLAN_JSON" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["output_language"])')
+TARGET_WORDS=$(printf '%s' "$REVIEW_PLAN_JSON" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["target_words"])')
+PROSE_DENSITY=$(printf '%s' "$REVIEW_PLAN_JSON" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["prose_density"])')
 ```
 
 **Dispatch.**
@@ -841,12 +863,14 @@ Task(wiki-reviewer,
      PLAN_PATH=$PROJECT_PATH/.metadata/plan.json,
      INGEST_MANIFEST_PATH=$PROJECT_PATH/.metadata/ingest-manifest.json,
      OUTPUT_LANGUAGE=$OUTPUT_LANGUAGE,
+     TARGET_WORDS=$TARGET_WORDS,
+     PROSE_DENSITY=$PROSE_DENSITY,
      REVIEW_ITERATION=1,
      DRAFT_VERSION=$DRAFT_VERSION,
      REVIEW_OUT_PATH=$PROJECT_PATH/.metadata/structural-review-v$DRAFT_VERSION.json)
 ```
 
-The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited synthesis differs only by frontmatter + reference renumber, and the structural dimensions are draft-level. `OUTPUT_LANGUAGE` makes the agent score Clarity natively and exclude the right reference heading from the density gate (never translates — bilingual scoring is out of scope here, same posture as Step 10.6).
+The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited synthesis differs only by frontmatter + reference renumber, and the structural dimensions are draft-level. `OUTPUT_LANGUAGE` makes the agent score Clarity natively and exclude the right reference heading from the density gate (never translates — bilingual scoring is out of scope here, same posture as Step 10.6). `TARGET_WORDS` + `PROSE_DENSITY` drive the **advisory** Word Count Gate (deficit under standard / excess under executive) — which caps Completeness and emits a `Word deficit`/`Word excess` issue but never blocks (the composer is single-pass; there is no expansion loop).
 
 **Interpret return.**
 
@@ -922,7 +946,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 ## Out of scope
 
 - Does NOT re-run the verifier, the composer, or the ingester. Finalize reads the latest verified draft + manifest as-is.
-- Renders an IEEE-style numbered reference list (`**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]`, first-appearance order matching the composer's inline `[N]`). The reference backlink is a **bare** `[[<slug>]]` (not path-prefixed `[[sources/<slug>]]`) so the synthesis→source edge registers in cogni-wiki's link graph. Does NOT support APA / MLA / Chicago rendering — those can be derived from the same citation-manifest if a bibliography skill ships.
+- Renders a **numbered** reference list keyed off `plan.json::citation_format` — `ieee` (`**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]`) and `chicago` (`**[N]** Publisher. "Title." …`, period-separated) both render end-to-end, first-appearance order matching the composer's inline `[N]`. The reference backlink is a **bare** `[[<slug>]]` (not path-prefixed `[[sources/<slug>]]`) so the synthesis→source edge registers in cogni-wiki's link graph. Does NOT yet render **author-date** `apa`/`mla`/`harvard` — those are accepted + persisted but fall through to the numbered IEEE string until the format-aware finalize follow-up makes the renumber pass + verify/reviewer/revisor scans citation-family-aware (named in `references/absorption-roadmap.md`).
 - Does NOT update `topic_lineage.covered_themes[]` in the binding.
 - Does NOT support cross-page substitute-citation search or transitive cycle detection on the new manifest shape (the adapter handles direct cycles only).
 - **Localizes the reference-section heading** per `plan.json::output_language` via `_knowledge_lib.ref_heading` (`de→Referenzen`, default→English), and strips the composer's heading language-independently. Does NOT itself translate body content — the draft body language is the composer's responsibility (it honours `OUTPUT_LANGUAGE`); finalize deposits the verified body verbatim.
@@ -941,7 +965,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
-- `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.0`): per-dimension `structural_scores`, `citation_density`, `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
+- `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.1`): per-dimension `structural_scores`, `citation_density`, `word_count` (the advisory Word Count Gate, #309 P2), `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
 
 No files are written outside the workspace root or the bound knowledge base.
 

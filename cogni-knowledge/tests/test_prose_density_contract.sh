@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# test_prose_density_contract.sh — #309 P2.1 + P2.4 cross-cutting contract.
+#
+# The prose-density knob spans three files (composer drafting discipline,
+# compose dispatch threading, reviewer advisory Word Count Gate). This file is
+# the single regression guard that the standard-floor / executive-ceiling
+# contract stays intact end-to-end — and, critically, that it never grows an
+# expansion LOOP (the composer stays single-pass; the floor/ceiling is advisory).
+#
+# bash 3.2 + grep only.
+
+set -eu
+
+PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+. "$(dirname "$0")/fixtures/test_helpers.sh"
+
+errors=0
+
+COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
+COMPOSE="$PLUGIN_ROOT/skills/knowledge-compose/SKILL.md"
+REVIEWER="$PLUGIN_ROOT/agents/wiki-reviewer.md"
+
+for f in "$COMPOSER" "$COMPOSE" "$REVIEWER"; do
+  if [ ! -f "$f" ]; then
+    red "FAIL: required file not found: $f"
+    exit 1
+  fi
+done
+
+# --- composer: standard floor vs executive ceiling, single pass ----------
+assert_grep 'floor' "$COMPOSER" "wiki-composer: names the standard-density floor"
+assert_grep 'ceiling' "$COMPOSER" "wiki-composer: names the executive-density ceiling"
+assert_grep 'no headroom' "$COMPOSER" "wiki-composer: executive outline budgets to a ceiling (no headroom)"
+assert_grep '× 1.05' "$COMPOSER" "wiki-composer: standard outline keeps the 5% floor headroom"
+# The self-check must branch but explicitly NEVER loop.
+assert_grep 'NEVER loop\|never loops\|no re-dispatch loop\|there is no re-dispatch loop' "$COMPOSER" "wiki-composer: the word-count self-check shapes ONE pass, never loops (#309 P2.4)"
+assert_grep 'Over ceiling\|over .TARGET_WORDS. (the ceiling)\|over the ceiling\|trim .*redundancy' "$COMPOSER" "wiki-composer: executive trims redundancy when over the ceiling"
+# The single-pass invariant in the NOT-list must survive the density knob.
+assert_grep 'Does NOT iterate on word-count shortfall\|does NOT re-dispatch' "$COMPOSER" "wiki-composer: NOT-list keeps the single-pass / no-re-dispatch invariant"
+
+# --- compose: threads PROSE_DENSITY + TARGET_WORDS, density-aware warning -
+assert_grep 'PROSE_DENSITY=' "$COMPOSE" "knowledge-compose: threads PROSE_DENSITY into the composer dispatch"
+assert_grep 'Below target' "$COMPOSE" "knowledge-compose: standard under-floor warning"
+assert_grep 'Over ceiling' "$COMPOSE" "knowledge-compose: executive over-ceiling warning"
+
+# --- reviewer: advisory Word Count Gate, deficit/excess, no loop ---------
+assert_grep 'Word Count Gate (advisory)\|advisory Word Count Gate' "$REVIEWER" "wiki-reviewer: has an advisory Word Count Gate"
+assert_grep 'Word deficit' "$REVIEWER" "wiki-reviewer: standard deficit emits Word deficit"
+assert_grep 'Word excess' "$REVIEWER" "wiki-reviewer: executive excess emits Word excess"
+# Mirror-symmetric cap tiers (a representative threshold from each direction).
+assert_grep '1.25' "$REVIEWER" "wiki-reviewer: gate has the >1.25 excess tier"
+assert_grep '0.50' "$REVIEWER" "wiki-reviewer: gate has the <0.50 deficit tier"
+# The cap targets Completeness, NOT Depth (Depth is the density gate's job).
+assert_grep 'cap.*Completeness\|caps Completeness\|Completeness.*cap\|applied_completeness_cap' "$REVIEWER" "wiki-reviewer: Word Count Gate caps Completeness"
+# Hard invariant: advisory only — no expansion loop, never blocks finalize.
+assert_grep 'no expansion loop\|never gates finalize\|never blocks\|advisory only\|drives no\|drives NO' "$REVIEWER" "wiki-reviewer: Word Count Gate is advisory — no expansion loop, never blocks"
+
+# allow_short must NOT be a live input parameter (it only made sense against the
+# upstream expansion loop). The reviewer prose legitimately EXPLAINS why it is
+# not ported, so we assert it is not a `| `allow_short` |` parameter-table row.
+if grep -q "| \`allow_short\` |\|allow_short.*input parameter\|takes.*allow_short" "$REVIEWER"; then
+  red "FAIL: wiki-reviewer: allow_short must not be a live input (no upstream loop to short-circuit)"
+  errors=$((errors + 1))
+else
+  green "PASS: wiki-reviewer: allow_short is not a live input parameter (not ported)"
+fi
+assert_grep 'allow_short.*not ported\|allow_short. is not ported\|not ported' "$REVIEWER" "wiki-reviewer: documents that allow_short is intentionally not ported"
+
+if [ $errors -eq 0 ]; then
+  green ""
+  green "ALL PASS"
+  exit 0
+else
+  red "$errors test(s) failed"
+  exit 1
+fi

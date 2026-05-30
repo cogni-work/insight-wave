@@ -80,8 +80,9 @@ assert_grep 'language-aware\|OUTPUT_LANGUAGE is not English\|output language' "$
 # Accept threshold — structural-only 0.82 bar (no claims multiplier).
 assert_grep '0.82' "$REV" "wiki-reviewer: structural-only accept threshold 0.82"
 
-# Schema literal — the contract version-pin.
-assert_grep '"schema_version": "0.1.0"' "$REV" "wiki-reviewer: documents schema_version 0.1.0 literal"
+# Schema literal — the contract version-pin (bumped to 0.1.1 for the additive
+# word_count block, #309 P2).
+assert_grep '"schema_version": "0.1.1"' "$REV" "wiki-reviewer: documents schema_version 0.1.1 literal (#309 P2 word_count block)"
 
 # Self-identity — the agent must name itself as the structural-quality reviewer
 # (the half of the cogni-research parity gate that is NOT citation-claim alignment).
@@ -94,12 +95,26 @@ assert_grep 'advisory\|Advisory' "$REV" "wiki-reviewer: documents advisory / non
 # Zero-network invariant — verbatim, so a drift toward re-fetch is loud.
 assert_grep 'never fetch' "$REV" "wiki-reviewer: explicitly states 'never fetch' (zero-network invariant)"
 
-# The four explicit DROPS vs the upstream reviewer — each must be named so a
-# maintainer cannot quietly re-add one without revisiting the contract.
+# Three explicit DROPS vs the upstream reviewer — each must be named so a
+# maintainer cannot quietly re-add one without revisiting the contract. (The
+# Word-Count gate is NO LONGER dropped — see the advisory re-add block below.)
 assert_grep 'claims-verification multiplier\|claims multiplier' "$REV" "wiki-reviewer: names the dropped claims-verification multiplier"
 assert_grep 'Arc-Structural Gate\|Arc gate\|arc-agnostic\|story-arc agnostic' "$REV" "wiki-reviewer: names the dropped Arc-Structural Gate"
-assert_grep 'Word-Count\|Word Count\|word-count\|prose-density' "$REV" "wiki-reviewer: names the dropped Word-Count / prose-density gate"
 assert_grep 'Diagram Quality Gate\|no Mermaid' "$REV" "wiki-reviewer: names the dropped Diagram Quality Gate"
+
+# #309 P2: the Word-Count / prose-density gate is RE-ADDED as ADVISORY only —
+# it caps Completeness on a standard-density deficit / executive-density excess,
+# emits Word deficit / Word excess issues, records a word_count envelope block,
+# but drives NO expansion loop (the composer is single-pass). These guard the
+# re-add against (a) silent removal and (b) accidental promotion to a blocking gate.
+assert_grep 'Word Count Gate (advisory)\|advisory Word Count Gate\|Word-Count gate is RE-ADDED\|re-added as ADVISORY\|re-added (#309 P2)\|Word-Count.*advisory' "$REV" "wiki-reviewer: Word-Count gate re-added as ADVISORY (#309 P2)"
+assert_grep 'word_count' "$REV" "wiki-reviewer: emits a word_count envelope block (#309 P2)"
+assert_grep 'Word deficit' "$REV" "wiki-reviewer: standard-density deficit emits a Word deficit issue (#309 P2)"
+assert_grep 'Word excess' "$REV" "wiki-reviewer: executive-density excess emits a Word excess issue (#309 P2)"
+assert_grep 'TARGET_WORDS' "$REV" "wiki-reviewer: takes TARGET_WORDS for the Word Count Gate (#309 P2)"
+assert_grep 'PROSE_DENSITY' "$REV" "wiki-reviewer: takes PROSE_DENSITY to pick the gate direction (#309 P2)"
+# The re-add must NOT reintroduce a loop — the advisory framing has to stay explicit.
+assert_grep 'no expansion loop\|never gates finalize\|advisory only\|never blocks' "$REV" "wiki-reviewer: Word-Count gate explicitly drives no expansion loop / never blocks (#309 P2)"
 
 # "What this agent does NOT do" block — at least 8 NOT invariants
 # (matches the wiki-contradictor template floor).

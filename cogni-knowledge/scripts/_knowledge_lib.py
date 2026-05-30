@@ -191,6 +191,81 @@ def ref_heading(lang: str | None) -> str:
     return REF_HEADING.get(str(lang or "en").lower(), REF_HEADING["en"])
 
 
+# --- Writer-quality knob validation (#309 P2) ---------------------------------
+# The four knobs (prose_density / tone / citation_format / target_words) are
+# resolved LLM-side in knowledge-plan Step 0.5 and threaded to wiki-composer /
+# wiki-reviewer. These normalizers keep the resolution precedence robust to a
+# malformed binding default or a typo'd flag — a bad value never reaches the
+# composer, it falls through to the safe default. Single source of truth so the
+# skill prose and any future script agree byte-for-byte. Kept here (not in the
+# skill markdown) so they are unit-testable in tests/test_knowledge_lib.sh.
+
+# The 15-tone catalog from references/writing-tones.md, default `objective`.
+VALID_TONES = frozenset({
+    "objective", "formal", "analytical", "persuasive", "informative",
+    "explanatory", "descriptive", "critical", "comparative", "speculative",
+    "narrative", "optimistic", "simple", "casual", "executive",
+})
+
+# Prose-density modes (references/absorption-roadmap.md #309 P2; mirrors
+# cogni-research writer.md). `standard` treats target_words as a floor;
+# `executive` as a ceiling with BLUF + Pyramid + one-citation-per-claim.
+VALID_PROSE_DENSITIES = frozenset({"standard", "executive"})
+
+# Citation formats from references/citation-formats.md. `ieee` / `chicago` are
+# wired end-to-end (both render the numbered `<sup>[N](url)</sup>` inline shape,
+# differing only in the reference-list string); `apa` / `mla` / `harvard` are
+# the staged author-date follow-up (parsed + accepted here so a base can persist
+# the choice, but the composer falls back to numbered rendering until the
+# format-aware finalize rework lands). `wikilink` is the deprecated alias for
+# `ieee`. Default `ieee`.
+VALID_CITATION_FORMATS = frozenset({
+    "ieee", "chicago", "apa", "mla", "harvard",
+})
+
+# Citation family — numbered (superscript `<sup>[N](url)</sup>`, renumber-safe in
+# finalize) vs author_date (`([Author, Year](url))`, NOT yet wired into finalize's
+# numbered renumber pass). The author_date branch is the named P2 follow-up.
+CITATION_FAMILY = {
+    "ieee": "numbered",
+    "chicago": "numbered",
+    "apa": "author_date",
+    "mla": "author_date",
+    "harvard": "author_date",
+}
+
+
+def normalize_tone(value: str | None) -> str:
+    """Lowercase + validate a tone against VALID_TONES; unknown/empty → objective."""
+    v = str(value or "").strip().lower()
+    return v if v in VALID_TONES else "objective"
+
+
+def normalize_prose_density(value: str | None) -> str:
+    """Lowercase + validate a prose density; unknown/empty → standard."""
+    v = str(value or "").strip().lower()
+    return v if v in VALID_PROSE_DENSITIES else "standard"
+
+
+def normalize_citation_format(value: str | None) -> str:
+    """Lowercase + validate a citation format; `wikilink` aliases to `ieee`;
+    unknown/empty → ieee (the numbered default the pipeline renders end-to-end)."""
+    v = str(value or "").strip().lower()
+    if v == "wikilink":
+        return "ieee"
+    return v if v in VALID_CITATION_FORMATS else "ieee"
+
+
+def normalize_target_words(value, default: int = 5000) -> int:
+    """Coerce a target-word value to a positive int; non-positive/unparseable →
+    `default`. Tolerates a string from a flag or a number from a binding/plan."""
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return default
+    return n if n > 0 else default
+
+
 # --- Synthesis-page composition helpers (used by knowledge-finalize) ---------
 # These are the intricate, regression-prone transforms knowledge-finalize runs
 # when it deposits a synthesis page: pulling a source URL out of frontmatter,

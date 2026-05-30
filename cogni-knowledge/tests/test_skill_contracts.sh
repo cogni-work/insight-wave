@@ -42,8 +42,17 @@ if [ ! -f "$PLAN" ]; then
   exit 1
 fi
 assert_grep 'name: knowledge-plan' "$PLAN" "knowledge-plan: frontmatter name"
-assert_grep '"schema_version": "0.1.0"' "$PLAN" "knowledge-plan: plan.json schema 0.1.0 in spec"
+assert_grep '"schema_version": "0.1.1"' "$PLAN" "knowledge-plan: plan.json schema 0.1.1 in spec (#309 P2 — writer-quality fields)"
 assert_grep '3-7 sub-questions' "$PLAN" "knowledge-plan: 3-7 sub-question contract"
+# #309 P2: the four writer-quality fields are written into plan.json (schema 0.1.1),
+# resolved in Step 0.5 (flag > binding > framing > default), and an optional Step 0.4
+# topic-framing pass can precede resolution.
+assert_grep '"prose_density"' "$PLAN" "knowledge-plan: writes prose_density into plan.json (#309 P2)"
+assert_grep '"tone"' "$PLAN" "knowledge-plan: writes tone into plan.json (#309 P2)"
+assert_grep '"citation_format"' "$PLAN" "knowledge-plan: writes citation_format into plan.json (#309 P2)"
+assert_grep '"target_words"' "$PLAN" "knowledge-plan: writes target_words into plan.json (#309 P2)"
+assert_grep '0.4. Topic framing' "$PLAN" "knowledge-plan: has the optional Step 0.4 topic-framing pass (#309 P2.5)"
+assert_grep 'no-framing' "$PLAN" "knowledge-plan: documents --no-framing skip for Step 0.4 (#309 P2.5)"
 assert_grep 'probe_plugin cogni-wiki wiki-setup' "$PLAN" "knowledge-plan: probes cogni-wiki"
 assert_grep 'knowledge-finalize' "$PLAN" "knowledge-plan: defers binding append to M9 knowledge-finalize"
 assert_not_grep 'probe_plugin cogni-research' "$PLAN" "knowledge-plan: does NOT probe cogni-research (clean break)"
