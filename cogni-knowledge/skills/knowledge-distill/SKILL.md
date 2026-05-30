@@ -33,7 +33,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4.5 — `k
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--no-renarrate` | No | Skip Step 6.5 (summary re-narration). Default is **on** — narrative compounding is the point of Phase 4.5; this opt-out exists for byte-stable re-runs / cost control. |
-| `--dry-run` | No | Print the resolved inputs (bundle source count, existing concept/entity count, bundle hash, resume verdict) without dispatching the distiller. |
+| `--dry-run` | No | Print the resolved inputs (bundle source count, existing distilled-page count, bundle hash, resume verdict) without dispatching the distiller. |
 
 ## Workflow
 
@@ -157,7 +157,7 @@ If `<project_path>/.metadata/distill-manifest.json` exists AND it records the sa
 
 (The orchestrator stores `SHA` by reading it back from the manifest's `bundle_hash` field — Step 6 threads it in. On the first run the manifest has no `bundle_hash`, so the check fails and the distiller runs.)
 
-If `--dry-run`: print the source count, existing concept/entity count, `SHA`, and the resume verdict, then stop.
+If `--dry-run`: print the source count, existing distilled-page count, `SHA`, and the resume verdict, then stop.
 
 ### 4. Initialize distill-manifest.json
 
@@ -356,8 +356,8 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
-- Re-narrates the `## Summary` body of **updated** pages from the merged claims (Step 6.5, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
-- Does NOT emit `summary` / `learning` page types — Phase-1 ships `concept` + `entity` only.
+- Re-narrates the `## Summary` body of **updated** distilled pages (any of the four types) from the merged claims (Step 6.5, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
+- Emits four page types — `concept` / `entity` plus, conservatively, the cross-source `summary` and run-level `learning` (#342, v0.1.24); the distiller defaults to `concept`/`entity` and reaches for the new types only when a cluster fits neither. It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
 - Does NOT run the `lint_wiki.py --fix=all` / `health.py` conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
 - Does NOT block the pipeline — every failure path warns and exits cleanly.
@@ -370,7 +370,7 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
 - `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.5 runs) `renarrate-bundle.txt` / `renarrate-records.txt`.
-- Updated concept/entity pages get their `## Summary` body re-narrated from the merged claims (Step 6.5, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
+- Updated distilled pages (any of the four types) get their `## Summary` body re-narrated from the merged claims (Step 6.5, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
 
 ## References
 
