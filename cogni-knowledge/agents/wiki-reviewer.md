@@ -72,7 +72,7 @@ This is **pure observability — advisory, non-blocking, fail-soft.** A `revise`
 | `PLAN_PATH` | Yes | Absolute path to `<PROJECT_PATH>/.metadata/plan.json`. Source of `sub_questions[]` (Completeness audit) + `output_language` (Clarity scoring language). |
 | `INGEST_MANIFEST_PATH` | No | Absolute path to `<PROJECT_PATH>/.metadata/ingest-manifest.json`. Source-diversity signal (`ingested[].publisher`). Absent/unreadable → diversity is scored from the draft's reference list alone (degraded, not fatal; the envelope records `source_diversity.manifest_present: false`). |
 | `OUTPUT_LANGUAGE` | Yes | The language the draft is written in (from `plan.json::output_language`, default `"en"`). Drives **language-aware Clarity scoring** AND the language-aware reference-section exclusion in the citation-density gate. You operate in this language natively — never translate. |
-| `REVIEW_ITERATION` | Yes | Integer; `1` on the single finalize-time dispatch. The operative accept bar is **0.82** (see Phase 2 — the relaxed 0.78 bar is reserved for a hypothetical future multi-round host and never applies under the current single dispatch). |
+| `REVIEW_ITERATION` | Yes | Integer; `1` on the single finalize-time dispatch. The operative accept bar is **0.82** (resolved in Phase 2). |
 | `DRAFT_VERSION` | Yes | Integer N. Drives the output filename `structural-review-v{N}.json`. |
 | `REVIEW_OUT_PATH` | Yes | Absolute path where you `Write` the JSON envelope. Default `<PROJECT_PATH>/.metadata/structural-review-v{DRAFT_VERSION}.json`; the orchestrator threads it explicitly so a re-finalize on the same draft overwrites one canonical file (matches `verify-v{N}.json` / `contradictor-v{N}.json` convention). |
 

@@ -93,11 +93,12 @@ assert_grep 'advisory\|Advisory' "$REV" "wiki-reviewer: documents advisory / non
 # Zero-network invariant — verbatim, so a drift toward re-fetch is loud.
 assert_grep 'never fetch' "$REV" "wiki-reviewer: explicitly states 'never fetch' (zero-network invariant)"
 
-# The three explicit DROPS vs the upstream reviewer — each must be named so a
+# The four explicit DROPS vs the upstream reviewer — each must be named so a
 # maintainer cannot quietly re-add one without revisiting the contract.
 assert_grep 'claims-verification multiplier\|claims multiplier' "$REV" "wiki-reviewer: names the dropped claims-verification multiplier"
 assert_grep 'Arc-Structural Gate\|Arc gate\|arc-agnostic\|story-arc agnostic' "$REV" "wiki-reviewer: names the dropped Arc-Structural Gate"
 assert_grep 'Word-Count\|Word Count\|word-count\|prose-density' "$REV" "wiki-reviewer: names the dropped Word-Count / prose-density gate"
+assert_grep 'Diagram Quality Gate\|no Mermaid' "$REV" "wiki-reviewer: names the dropped Diagram Quality Gate"
 
 # "What this agent does NOT do" block — at least 8 NOT invariants
 # (matches the wiki-contradictor template floor).
