@@ -234,33 +234,38 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
     def claims_for(slug: str) -> dict:
         if slug in claims_cache:
             return claims_cache[slug]
-        # Resolve the page across both evidence families, mirroring wiki-verifier
-        # Phase-0: source/synthesis pages (`pre_extracted_claims:`, keyed `id`)
-        # first, then the four distilled kinds (`distilled_claims:`, keyed
-        # `claim_id`, no `excerpt_quote`) — citable + scored since #344, fast-pathed
-        # here since #362. First file found wins; slugs are unique across dirs.
-        text = ""
-        parser = parse_pre_extracted_claims
-        id_key = "id"
+        # Resolve the page across both evidence families: source/synthesis pages
+        # (`pre_extracted_claims:`, keyed `id`) and the four distilled kinds
+        # (`distilled_claims:`, keyed `claim_id`, no `excerpt_quote`) — citable +
+        # scored since #344, fast-pathed here since #362. A slug is meant to be
+        # unique across all of these dirs. Rather than leave that invariant
+        # undefended with a first-wins pick (a collision would silently resolve to
+        # whichever family is scanned first and score against the wrong claim
+        # block), we DETECT a cross-dir collision and treat it as ambiguous — the
+        # same posture as the duplicate-claim-id guard below. An ambiguous (or
+        # absent) slug yields no claims, so its citation falls through to the LLM
+        # verifier (which owns the authoritative first-wins resolution), never a
+        # wrong `verbatim`.
+        hits: list[tuple[str, str]] = []  # (subdir, family) per existing page
         for sub in _SOURCE_SUBDIRS:
-            page = wiki_root / "wiki" / sub / f"{slug}.md"
-            if page.is_file():
-                try:
-                    text = page.read_text(encoding="utf-8")
-                except OSError:
-                    text = ""
-                break
+            if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
+                hits.append((sub, "source"))
+        for sub in _DISTILLED_SUBDIRS:
+            if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
+                hits.append((sub, "distilled"))
+        if len(hits) != 1:
+            # 0 hits (page absent) or >1 (cross-dir collision) → no claims.
+            claims_cache[slug] = {}
+            return {}
+        sub, family = hits[0]
+        try:
+            text = (wiki_root / "wiki" / sub / f"{slug}.md").read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        if family == "distilled":
+            parser, id_key = parse_distilled_claims_with_id, "claim_id"
         else:
-            for sub in _DISTILLED_SUBDIRS:
-                page = wiki_root / "wiki" / sub / f"{slug}.md"
-                if page.is_file():
-                    try:
-                        text = page.read_text(encoding="utf-8")
-                    except OSError:
-                        text = ""
-                    parser = parse_distilled_claims_with_id
-                    id_key = "claim_id"
-                    break
+            parser, id_key = parse_pre_extracted_claims, "id"
         # A duplicate claim id on one page is ambiguous — the citation could mean
         # either claim, so we cannot safely pick one. Drop ambiguous ids so the
         # citation falls through to the LLM rather than being scored against an

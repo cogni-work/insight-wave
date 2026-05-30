@@ -643,6 +643,50 @@ else
   errors=$((errors + 1))
 fi
 
+# 7b-collision. A slug that exists in BOTH a source dir and a distilled dir is an
+#         ambiguous cross-family collision (#362 review): the resolver cannot know
+#         which page the citation targets, so it yields no claims and the citation
+#         falls through to the LLM — never a silent first-wins wrong-family score.
+#         The source page's claim would otherwise be a whole-sentence verbatim hit,
+#         so a `remaining` result isolates the collision guard.
+COLWIKI="$WORK/col-wiki"
+mkdir -p "$COLWIKI/wiki/sources" "$COLWIKI/wiki/concepts"
+cat > "$COLWIKI/wiki/sources/annex-iii.md" <<'EOF'
+---
+type: source
+slug: annex-iii
+pre_extracted_claims:
+  - id: dcl-001
+    excerpt_quote: "AI systems referred to in Annex III shall be considered high-risk"
+---
+# body
+EOF
+cat > "$COLWIKI/wiki/concepts/annex-iii.md" <<'EOF'
+---
+type: concept
+slug: annex-iii
+distilled_claims:
+  - claim_id: dcl-001
+    text: "AI systems referred to in Annex III shall be considered high-risk"
+---
+# body
+EOF
+cat > "$WORK/col-manifest.json" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"citations":[
+ {"id":"cit-col","draft_position":"0:1","draft_sentence":"AI systems referred to in Annex III shall be considered high-risk<sup>[1](https://x.eu/a)</sup>.","wiki_slug":"annex-iii","claim_id":"dcl-001"}]}
+EOF
+cat > "$WORK/col-draft-v1.md" <<'EOF'
+AI systems referred to in Annex III shall be considered high-risk<sup>[1](https://x.eu/a)</sup>.
+EOF
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$WORK/col-manifest.json" --wiki-root "$COLWIKI" --draft-version 1 --draft "$WORK/col-draft-v1.md" --out-dir "$WORK/col-sh")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['data']['matched_ids']==[] and d['data']['remaining_ids']==['cit-col'], d['data']" 2>/dev/null; then
+  green "PASS: prefilter treats a cross-family slug collision as ambiguous → LLM fallthrough (#362 review)"
+else
+  red "FAIL: prefilter cross-family slug-collision guard regressed"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 # 7c. merge --manifest: prefilter fragment + LLM fragment union == manifest.
 #     shard the remaining ids (preserving the prefilter fragment), add a verifier
 #     fragment for them, merge against the manifest id-set.
