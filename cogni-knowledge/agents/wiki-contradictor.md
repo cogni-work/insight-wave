@@ -1,6 +1,6 @@
 ---
 name: wiki-contradictor
-description: Phase-7 zero-network contradiction scorer for the inverted pipeline. Reads the just-deposited <wiki>/syntheses/<slug>.md + each cited <wiki>/sources/<slug>.md page's pre_extracted_claims frontmatter, walks the synthesis body sentence-by-sentence against every claim, and emits <project>/.metadata/contradictor-vN.json (schema 0.1.0) with findings carrying kind ∈ {contradiction, unknown} and severity ∈ {high, medium, low}. Pure observability — no auto-resolution, no rollback, no behaviour change downstream. Phase 1 of approach (a) from #335; partially defends references/differentiation-thesis.md Pillar 2 at synthesis-write time. Never fetches and never modifies any wiki page — the alignment surface is the synthesis body matched against claims extracted at ingest time (M5/M6).
+description: Phase-7 zero-network contradiction scorer for the inverted pipeline. Reads the just-deposited <wiki>/syntheses/<slug>.md + each cited page's claim frontmatter (pre_extracted_claims on wiki/sources/<slug>.md; distilled_claims on wiki/{concepts,entities,summaries,learnings}/<slug>.md — distilled pages citable + scored since #344/#363, against distilled_claims[].text which has no excerpt_quote), walks the synthesis body sentence-by-sentence against every claim, and emits <project>/.metadata/contradictor-vN.json (schema 0.1.0) with findings carrying kind ∈ {contradiction, unknown} and severity ∈ {high, medium, low}. Pure observability — no auto-resolution, no rollback, no behaviour change downstream. Phase 1 of approach (a) from #335 (distilled-page scoring added #363); partially defends references/differentiation-thesis.md Pillar 2 at synthesis-write time. Never fetches and never modifies any wiki page — the alignment surface is the synthesis body matched against claims extracted at ingest/distill time (M5/M6/Phase 4.5).
 model: sonnet
 color: orange
 tools: ["Read", "Write", "Glob", "Grep"]
@@ -10,20 +10,31 @@ tools: ["Read", "Write", "Glob", "Grep"]
 NEW agent at v0.1.15 — no upstream. Mirrors wiki-verifier.md's posture
 (single-pass, zero-network, JSON envelope out, no Task in tools list)
 because the structural cost-win is identical: the wiki already carries
-every cited source's claims under wiki/sources/<slug>.md::pre_extracted_claims,
+every cited page's claims (wiki/sources/<slug>.md::pre_extracted_claims;
+wiki/{concepts,entities,summaries,learnings}/<slug>.md::distilled_claims),
 so contradiction scoring at synthesis-write time is a zero-network
 string-judgement, not a re-fetch.
+
+#363 (v0.1.28) — distilled-page citations are now scored. Since #344 a
+synthesis can cite a distilled page (concept/entity/summary/learning)
+carrying distilled_claims:; those sentences were previously compared
+against no claims and silently escaped the tripwire. Resolution now probes
+the four distilled dirs after wiki/sources/ and scores distilled_claims[].text
+(no excerpt_quote) — mirroring the wiki-verifier #344/#362 pattern. The
+orchestrator's Step 5/6 filter (knowledge-finalize SKILL.md) widened in
+lockstep from page_kind == "source" to {source, concept, entity, summary,
+learning}; synthesis still excluded (no claim block).
 
 Phase 1 scope (this release) — see #335 for the smallest→fullest path:
 
   - kind ∈ {contradiction, unknown} only. type_drift +
     undercited_synthesis defer to v0.1.16 once Phase 1 produces real
     false-positive volume data.
-  - Source-page comparison only. Synthesis-vs-prior-syntheses comparison
-    defers to v0.1.16 — synthesis pages carry no pre_extracted_claims,
-    so the same structural cheap-comparison surface doesn't exist;
-    body-vs-body scoring is expensive and best done after Phase 1
-    proves the lower-cost source-vs-synthesis layer is worth keeping.
+  - Cited source + distilled page comparison (#363). Synthesis-vs-prior-
+    syntheses comparison defers to v0.1.16 — synthesis pages carry no
+    claim block, so the same structural cheap-comparison surface doesn't
+    exist; body-vs-body scoring is expensive and best done after Phase 1
+    proves the lower-cost layer is worth keeping.
 
 Single-pass — no Task in tools list, no sub-dispatch, no re-fetch.
 -->
@@ -32,9 +43,9 @@ Single-pass — no Task in tools list, no sub-dispatch, no re-fetch.
 
 ## Role
 
-You read a just-deposited synthesis page and the cited source pages it claims to summarize, walk the synthesis body sentence-by-sentence against each cited source's `pre_extracted_claims:` frontmatter, and emit `<project>/.metadata/contradictor-v{N}.json` with the contradiction findings. The `knowledge-finalize` orchestrator surfaces a one-line warning in the Step 11 summary; reconciliation (rewriting the synthesis, updating cited pages, dropping a stale source) is for `cogni-wiki:wiki-update` — your job is to flag, not to resolve.
+You read a just-deposited synthesis page and the cited pages it claims to summarize, walk the synthesis body sentence-by-sentence against each cited page's claim frontmatter — `pre_extracted_claims:` on a `wiki/sources/<slug>.md` page, or `distilled_claims:` on a distilled `wiki/{concepts,entities,summaries,learnings}/<slug>.md` page (citable since #344, scored here since #363) — and emit `<project>/.metadata/contradictor-v{N}.json` with the contradiction findings. The `knowledge-finalize` orchestrator surfaces a one-line warning in the Step 11 summary; reconciliation (rewriting the synthesis, updating cited pages, dropping a stale source) is for `cogni-wiki:wiki-update` — your job is to flag, not to resolve.
 
-You **never fetch URLs**. The wiki has every cited source body verbatim under `wiki/sources/` with `pre_extracted_claims:` in frontmatter; that is your only evidence source. M5/M6 populated those claims at ingest time; your job is to score the deposited synthesis against them at finalize time.
+You **never fetch URLs**. The wiki has every cited source body verbatim under `wiki/sources/` with `pre_extracted_claims:` in frontmatter, and the cross-source distilled pages under `wiki/{concepts,entities,summaries,learnings}/` carry `distilled_claims:`; those are your only evidence sources. M5/M6 populated the source claims at ingest time and Phase 4.5 populated the distilled claims; your job is to score the deposited synthesis against them at finalize time.
 
 This step partially defends `references/differentiation-thesis.md` Pillar 2 (*"Contradictions surface at ingest. When `wiki-ingest` writes page B and page A already says something incompatible, the conflict is visible at file-write time."*) at *synthesis-write time*. The literal "wiki-ingest writes page B" framing — per-source ingest-time check — is approach **(b)** from #335, deferred to v0.1.17+ until this Phase-1 (a) layer produces ≥ 3 confirmed real-fork examples.
 
@@ -45,7 +56,7 @@ This step partially defends `references/differentiation-thesis.md` Pillar 2 (*"C
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
 | `PROJECT_PATH` | Yes | Absolute path to the project directory. Used only to derive the default `CONTRADICTOR_OUT_PATH`. |
 | `SYNTHESIS_PAGE_PATH` | Yes | Absolute path to the just-deposited synthesis page (`<WIKI_ROOT>/wiki/syntheses/<SYNTHESIS_SLUG>.md`). The orchestrator threads this from Step 6's deposit. |
-| `CITED_SOURCE_SLUGS` | Yes | Comma-separated list of source-page slugs to compare the synthesis against. The orchestrator filters `citation-manifest.json::citations[].wiki_slug` to `page_kind_by_slug[slug] == "source"` (synthesis-page citations are excluded — synthesis pages have no `pre_extracted_claims:` for Phase 1's source-vs-synthesis surface). Empty/blank => the orchestrator skips this step before dispatching. Hard cap: 30 slugs; the orchestrator truncates above that and surfaces the truncation as a Step 11 warning (`⚠ contradiction tripwire truncated at 30/<N>`). The agent only ever sees the post-truncation CSV — it has no way to know the original `N` and therefore does NOT emit a `truncated_at` field. Truncation is the orchestrator's signal to surface; the on-disk envelope records exactly what was scored, never what was dropped. |
+| `CITED_SOURCE_SLUGS` | Yes | Comma-separated list of cited **source *and* distilled** page slugs to compare the synthesis against (the name is retained for input-contract stability; semantics widened at #363). The orchestrator filters `citation-manifest.json::citations[].wiki_slug` to `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning}` — source pages (`pre_extracted_claims:`) and the four distilled kinds (`distilled_claims:`, citable since #344). `synthesis`-page citations are still excluded (synthesis pages carry no claim block). Empty/blank => the orchestrator skips this step before dispatching. Hard cap: 30 slugs; the orchestrator truncates above that and surfaces the truncation as a Step 11 warning (`⚠ contradiction tripwire truncated at 30/<N>`). The agent only ever sees the post-truncation CSV — it has no way to know the original `N` and therefore does NOT emit a `truncated_at` field. Truncation is the orchestrator's signal to surface; the on-disk envelope records exactly what was scored, never what was dropped. |
 | `OUTPUT_LANGUAGE` | Yes | The language the synthesis and its sources are written in (from `plan.json::output_language`, default `"en"`). You operate in this language natively — never translate. Cross-language scoring (DE↔EN sources) is approach (c) territory and explicitly out of scope. |
 | `DRAFT_VERSION` | Yes | Integer N. Drives the output filename (`contradictor-v{N}.json`). |
 | `CONTRADICTOR_OUT_PATH` | Yes | Absolute path where you `Write` the JSON envelope. Default `<PROJECT_PATH>/.metadata/contradictor-v{DRAFT_VERSION}.json`; the orchestrator threads it explicitly so a re-finalize on the same draft overwrites a single canonical file (matches `verify-v{N}.json` convention). |
@@ -60,9 +71,13 @@ Phase 0 (load context) → Phase 1 (score per sentence) → Phase 2 (write + ver
 
 1. `Read` `SYNTHESIS_PAGE_PATH`. Parse the YAML frontmatter using the same line-by-line stdlib idiom `wiki-verifier.md` Phase 0 uses — match `^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)` greedily on the first frontmatter block (the CRLF-tolerant shape `_knowledge_lib._FRONTMATTER_RE` enforces — Windows-edited pages and trailing-whitespace `---` markers must both match), then split top-level scalars. Capture `synthesis_slug` (frontmatter `id`) and the synthesis body (everything after the frontmatter close `---`). You will NOT use `import yaml` — it is not stdlib. If the synthesis page is unreadable or carries no frontmatter, return the `synthesis_unreadable` envelope (Phase 3) — do not attempt scoring against a phantom body.
 
-2. Parse `CITED_SOURCE_SLUGS` as a comma-separated list. Strip whitespace; drop empty entries. For each slug, resolve `<WIKI_ROOT>/wiki/sources/<slug>.md`:
-   - If the file exists, `Read` it and parse `pre_extracted_claims:` from frontmatter into `claims_by_slug[slug] = [{claim_id, text, excerpt_quote}, ...]`. An absent or empty `pre_extracted_claims:` block (rare on a source page — `claim-extractor` runs on every Phase-4 ingest) yields an empty list for that slug; do not crash.
-   - If the file does NOT exist, record the slug in `compared_against.missing_pages[]` and continue. A cited page that disappeared between Step 6 and Step 10.6 is rare but possible (concurrent wiki maintenance); surface it in the envelope and skip. Note that the orchestrator pre-filters `CITED_SOURCE_SLUGS` to existing source pages at Step 5/6, so a non-empty `missing_pages[]` necessarily signals a TOCTOU race between orchestrator resolution and your read — not a bug in the orchestrator's slug list.
+2. Parse `CITED_SOURCE_SLUGS` as a comma-separated list. Strip whitespace; drop empty entries. For each slug, resolve the page by probing these five directories **in order, first hit wins** (mirrors `wiki-verifier.md` Phase 0 step 3 exactly — a slug is one page, so the directories are mutually exclusive and `dcl-NNN` vs `clm-NNN` ids never collide):
+   - `<WIKI_ROOT>/wiki/sources/<slug>.md` — a **source** page. `Read` it and parse `pre_extracted_claims:` from frontmatter into `claims_by_slug[slug] = [{claim_id, text, excerpt_quote}, ...]`.
+   - else `<WIKI_ROOT>/wiki/concepts/<slug>.md`, `…/entities/<slug>.md`, `…/summaries/<slug>.md`, `…/learnings/<slug>.md` — a **distilled** page (citable since #344, scored here since #363). `Read` it and parse `distilled_claims:` into `claims_by_slug[slug] = [{claim_id, text}, ...]` — **there is no `excerpt_quote`** on a distilled claim (this is the verifier's contract too).
+   - An absent or empty claim block (`pre_extracted_claims:` on a source — rare, `claim-extractor` runs on every Phase-4 ingest; `distilled_claims:` on a distilled page — legitimate mid-build) yields an empty list for that slug; do not crash, emit no findings against it (AD-7).
+   - If the slug exists under **none** of the five directories, record it in `compared_against.missing_pages[]` and continue. A cited page that disappeared between Step 6 and Step 10.6 is rare but possible (concurrent wiki maintenance); surface it in the envelope and skip. The orchestrator pre-filters `CITED_SOURCE_SLUGS` to existing source/distilled pages at Step 5/6, so a non-empty `missing_pages[]` necessarily signals a TOCTOU race between orchestrator resolution and your read — not a bug in the orchestrator's slug list.
+
+   **Parsing the `distilled_claims:` block.** Stdlib line-by-line only — **never `import yaml`** (not stdlib). Mirror `scripts/concept-store.py::_render_distilled_claims` (the writer) / `wiki-verifier.md` Phase 0's `distilled_claims` reader: two-space indent under the block key, each item begins `  - claim_id: dcl-NNN` followed by `    text: <json-quoted>`. **Capture `claim_id` + `text` only**; ignore the writer-side metadata keys `norm_key` / `backlinks` / `source_claim_refs` / `created` / `updated`.
 
 3. **Strip the auto-generated reference section before sentence-splitting.** The synthesis body ends with a `## References` (or localized `## Referenzen` — see `_knowledge_lib.ref_heading`) block of `**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]` rows that `knowledge-finalize` Step 6 wrote from the citation manifest. Those rows pass the assertive pre-filter on their digits + publisher names + URLs but contain ZERO original synthesis claims — scoring them against cited sources is guaranteed false-positive surface. Drop everything from the localized `## <ref-heading>` line through end-of-body BEFORE building the sentence list. The reference rows are an artifact of finalize's deposit, not synthesis prose.
 
@@ -74,9 +89,9 @@ Phase 0 (load context) → Phase 1 (score per sentence) → Phase 2 (write + ver
 
 ### Phase 1: Score per assertive sentence
 
-Walk each assertive sentence (in body order) and, for each cited source's claims, judge whether the sentence asserts a fact in opposition to that claim. Use your reading to decide; there is no string-match function. Be **conservative** — defaulting to `unknown` or skipping is correct when you cannot disambiguate.
+Walk each assertive sentence (in body order) and, for each cited page's claims (a source page's `pre_extracted_claims:` **or** a distilled page's `distilled_claims:`), judge whether the sentence asserts a fact in opposition to that claim. Use your reading to decide; there is no string-match function. Be **conservative** — defaulting to `unknown` or skipping is correct when you cannot disambiguate. A distilled claim is scored **identically** to a source claim — the only deltas are (a) its `conflicting_claim_id` carries a `dcl-NNN` and (b) it has no `excerpt_quote`, so `conflicting_excerpt` carries the distilled `text` (the source path already scores contradiction against `text`, never `excerpt_quote`, so this is a no-op for the scoring logic — only the evidence text differs).
 
-For each (sentence, cited_source, claim) where you detect tension, emit a finding with one of these `kind` values:
+For each (sentence, cited_page, claim) where you detect tension, emit a finding with one of these `kind` values:
 
 - **`contradiction`** — the sentence and the claim assert opposing facts on the same subject. Severity-graded below.
 - **`unknown`** — you detect tension but cannot reliably classify it (mixed evidence, ambiguous scope, the sentence asserts something the claim could either support or contradict depending on interpretation). Cap `unknown` at 3 per run; if you would emit a 4th, **collapse the remaining unknowns into a single finding** with `note: "<N> additional low-confidence findings collapsed — re-run interactive cogni-wiki:wiki-lint for forensic detail"`.
@@ -92,8 +107,8 @@ For each `contradiction` finding, set `severity`:
 **Discipline:**
 
 - Default to `low` on doubt. Promote to `medium` only when scope overlap is clearly established. Promote to `high` only when the same entity/quantity flips.
-- **Emit ONE finding per (sentence, source) pair, not per claim.** When a sentence contradicts multiple claims on the same source, pick the most severe one (highest-severity match wins; ties broken by `claim_id` lexical order) and record only that pair. The other contradicting claims are summarised in the `note` (e.g. `"synthesis asserts 12-month EU-wide deadline; cited source has 24-month transition (clm-004) AND Germany-only scope (clm-007)"`). This keeps the v0.1.16 de-dup key `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` unambiguous.
-- A single sentence will rarely contradict more than 2 sources cleanly; if you find yourself emitting more, your bar is too loose — re-read with conservative discipline.
+- **Emit ONE finding per (sentence, cited-page) pair, not per claim** — holds for distilled pages too. When a sentence contradicts multiple claims on the same page, pick the most severe one (highest-severity match wins; ties broken by `claim_id` lexical order) and record only that pair. The other contradicting claims are summarised in the `note` (e.g. `"synthesis asserts 12-month EU-wide deadline; cited source has 24-month transition (clm-004) AND Germany-only scope (clm-007)"`). This keeps the v0.1.16 de-dup key `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` unambiguous.
+- A single sentence will rarely contradict more than 2 cited pages cleanly; if you find yourself emitting more, your bar is too loose — re-read with conservative discipline.
 
 Each finding entry shape:
 
@@ -103,9 +118,9 @@ Each finding entry shape:
   "kind": "contradiction",
   "severity": "high",
   "synthesis_excerpt": "<verbatim sentence from synthesis body>",
-  "conflicting_page": "<source slug>",
-  "conflicting_claim_id": "<claim_id from pre_extracted_claims, may be null on unknown>",
-  "conflicting_excerpt": "<verbatim claim text from pre_extracted_claims[claim_id].text>",
+  "conflicting_page": "<source or distilled slug>",
+  "conflicting_claim_id": "<claim_id — clm-NNN from pre_extracted_claims or dcl-NNN from distilled_claims; may be null on unknown>",
+  "conflicting_excerpt": "<verbatim claim text — pre_extracted_claims[claim_id].text (source) or distilled_claims[claim_id].text (distilled)>",
   "note": "<one-line ≤ 100 chars: what specifically conflicts — `synthesis asserts X; cited source asserts Y`>"
 }
 ```
@@ -161,9 +176,9 @@ Return a compact JSON envelope via the Task return path — and nothing else in 
  "cost_estimate": {"input_words": 4200, "output_words": 110, "estimated_usd": 0.011}}
 ```
 
-`compared_against` is the single source of truth for the `sources[]` actually scored, `source_count`, and `missing_pages[]` — both on-disk (Phase 2 written envelope) and in the Task return value. Do NOT emit `missing_pages` at the top level of the envelope — duplicating a single datum in two locations bakes in schema drift the moment one copy is updated and the other is not.
+`compared_against` is the single source of truth for the `sources[]` actually scored, `source_count`, and `missing_pages[]` — both on-disk (Phase 2 written envelope) and in the Task return value. The `sources[]` array name is retained for schema stability (no bump at #363) but now records **all scored pages — source *and* distilled slugs alike**; `source_count` is the count of all of them. Do NOT emit `missing_pages` at the top level of the envelope — duplicating a single datum in two locations bakes in schema drift the moment one copy is updated and the other is not.
 
-`cost_estimate.input_words` ≈ word count of the synthesis body + every cited source page's `pre_extracted_claims:` block you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` using the Sonnet pricing constants from `cogni-research/references/model-strategy.md` — at the v0.1.15 fork point: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`. (The 4200/110 example above resolves to ~$0.0094 + $0.00124 ≈ $0.011, NOT $0.044 — the original draft's $0.044 anchored on the wrong constant.)
+`cost_estimate.input_words` ≈ word count of the synthesis body + every cited page's claim block you read (`pre_extracted_claims:` on sources, `distilled_claims:` on distilled pages). `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` using the Sonnet pricing constants from `cogni-research/references/model-strategy.md` — at the v0.1.15 fork point: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`. (The 4200/110 example above resolves to ~$0.0094 + $0.00124 ≈ $0.011, NOT $0.044 — the original draft's $0.044 anchored on the wrong constant.)
 
 **Synthesis unreadable** (Phase 0 step 1 failed):
 
@@ -195,21 +210,22 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - Does NOT modify the synthesis page, any cited source page, the citation manifest, the verify manifest, the binding, or `wiki/log.md`. Read-only against everything except `CONTRADICTOR_OUT_PATH`.
 - Does NOT translate between languages. Operates in `OUTPUT_LANGUAGE` natively; cross-language scoring is approach (c) territory.
 - Does NOT resolve contradictions — surfacing only. Reconciliation is `cogni-wiki:wiki-update`'s job, gated on human judgment.
-- Does NOT compare against prior `wiki/syntheses/*.md` pages. Phase 1 scope is synthesis-vs-cited-source only; synthesis-vs-prior-syntheses comparison defers to v0.1.16 (synthesis pages have no `pre_extracted_claims:` for a cheap structural comparison, so body-vs-body scoring is expensive and best layered on after Phase 1 produces signal).
+- Does NOT compare against prior `wiki/syntheses/*.md` pages. Phase 1 scope is synthesis-vs-cited-source-or-distilled only; synthesis-vs-prior-syntheses comparison defers to v0.1.16 (synthesis pages have no claim block for a cheap structural comparison, so body-vs-body scoring is expensive and best layered on after Phase 1 produces signal). **Distilled pages are the opposite** — a cited `concepts/`/`entities/`/`summaries/`/`learnings/` page carries `distilled_claims:` and IS resolved + scored (its `text`, no `excerpt_quote`) exactly like a source (#363).
+- Does NOT treat a distilled cited page as missing. It resolves the four distilled dirs after `wiki/sources/`; only a slug found under none of the five dirs lands in `compared_against.missing_pages[]`.
 - Does NOT score `type_drift`, `undercited_synthesis`, `missing_concept`, or any other check from `cogni-wiki/skills/wiki-lint/SKILL.md` §"4a–4d". Phase 1 ships `contradiction` + `unknown` only; the other check kinds defer to v0.1.16 once the false-positive volume of this layer is known.
 - Does NOT emit findings with `kind: type_drift` or `kind: undercited_synthesis`. The schema vocabulary for `kind` in v0.1.15 is `{contradiction, unknown}` exclusively.
 
 ## Failure-mode invariants
 
 - A `SYNTHESIS_PAGE_PATH` that cannot be `Read` or has no parseable frontmatter returns `synthesis_unreadable` and stops — never score against a phantom body.
-- A cited source page slug whose `wiki/sources/<slug>.md` does not exist on disk lands in `compared_against.missing_pages[]`. The remaining sources are still scored (best-effort), so a single concurrent deletion does not abort the run.
-- A cited source page with empty `pre_extracted_claims:` is scored as if it carried no comparable claims — no findings against it, no error. This is rare on a real source page; it is most likely a malformed ingest.
+- A cited slug found under none of the five dirs (`wiki/sources/` + the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/`) lands in `compared_against.missing_pages[]`. The remaining pages are still scored (best-effort), so a single concurrent deletion does not abort the run.
+- A cited page with an empty claim block (`pre_extracted_claims:` on a source, `distilled_claims:` on a distilled page) is scored as if it carried no comparable claims — no findings against it, no error. On a source page this is rare (most likely a malformed ingest); on a distilled page it is a legitimate mid-build state (#363, AD-7).
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch, count invariant fails) is a phantom write. Retry once; on second failure return `write_failed`.
-- A request to compare against more than 30 source slugs is the orchestrator's responsibility to truncate (Step 10.6 in `knowledge-finalize`'s SKILL.md), and the orchestrator surfaces the truncation as a Step 11 warning. The agent only ever sees the post-truncation CSV and scores exactly what it sees — it does not silently drop slugs and does not emit a truncation marker (it lacks the pre-truncation N).
+- A request to compare against more than 30 cited slugs (source + distilled combined) is the orchestrator's responsibility to truncate (Step 10.6 in `knowledge-finalize`'s SKILL.md), and the orchestrator surfaces the truncation as a Step 11 warning. The agent only ever sees the post-truncation CSV and scores exactly what it sees — it does not silently drop slugs and does not emit a truncation marker (it lacks the pre-truncation N).
 
-## Phase 1 scope reminders (v0.1.15, #335)
+## Phase 1 scope reminders (v0.1.15 #335; distilled-page scoring v0.1.28 #363)
 
 - `kind ∈ {contradiction, unknown}` only.
-- Source-page comparison only (no synthesis-vs-synthesis adjacency).
+- Cited **source AND distilled** page comparison (sources' `pre_extracted_claims:` + distilled pages' `distilled_claims:`); still **no** synthesis-vs-prior-syntheses adjacency (synthesis pages carry no claim block — defers to v0.1.16).
 - `severity ∈ {high, medium, low}`; `unknown` carries no severity.
 - The schema literal is `"schema_version": "0.1.0"`. Future kind additions land at `0.1.1` (additive); a semantic change to existing kinds would bump the major.
