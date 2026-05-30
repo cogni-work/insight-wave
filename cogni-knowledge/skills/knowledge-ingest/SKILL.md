@@ -30,7 +30,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4 — `kno
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. |
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
-| `--batch-size` | No | Number of fetched sources each batch dispatches. Default 8. Advisory. |
+| `--batch-size` | No | Advisory cap on how many fetched sources one dispatch wave covers (a sub-batch of the full set). Ingesters in a wave fan out in a single message; Claude Code — not this cap — throttles actual concurrency. Default 25 (calibrated from the #311 live run — see `references/fan-out-concurrency.md`). |
 | `--dry-run` | No | Print the dispatch plan (batch count, total sources, expected new pages) without running ingesters. |
 
 ## Workflow
@@ -111,7 +111,7 @@ Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by
    If the result is empty (title was non-alnum / whitespace / missing), fall back to `src-<first-12-of-sha256(normalize_url(URL))>` via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url <URL> --bare` (take the first 12 hex chars). The ingester does NOT re-derive — it only sanity-checks `[a-z0-9][a-z0-9-]{0,79}`. `slugify()` lives in `_knowledge_lib.py` alongside `normalize_url` and the `atomic_write*` helpers — single source of truth.
 3. **Skip already-ingested.** Read `ingest-manifest.json` (if it exists) and drop any `fetched[]` entry whose URL appears in `ingested[]` already. This is the re-run no-op contract: a second `knowledge-ingest` run on the same project should not re-dispatch `source-ingester` / `claim-extractor` for sources already on the wiki. The agent-side slug-collision check (`agents/source-ingester.md` Phase 3) is defence-in-depth for the cross-process race; the orchestrator-side skip is what saves cost on the common re-run path.
 4. **Dedupe by slug within this run.** If two not-yet-ingested URLs map to the same slug (rare; URL dedup should have caught it upstream), keep the first occurrence and surface the collision as a non-blocking warning. Continue.
-5. Split into batches of size `--batch-size` (default 8).
+5. Split into batches of size `--batch-size` (default 25). Each batch dispatches as **one wave** (Step 3), so a run with ≤ `--batch-size` sources is a single wave — one barrier, not many. The default 25 is calibrated from the #311 live run (67 ingesters ran clean as waves of 25/26); see `references/fan-out-concurrency.md`.
 
 If `--dry-run`: print the batch count, total sources after skip-filter, expected new pages, and stop.
 
@@ -129,7 +129,7 @@ Create `<project_path>/.metadata/ingest-manifest.json` if absent:
 
 If it exists, leave it — the orchestrator appends to the existing arrays on a re-run.
 
-### 3. Dispatch source-ingester per batch (parallel within batch, sequential across batches)
+### 3. Dispatch source-ingester per batch (one wave per batch)
 
 For each batch:
 
@@ -150,7 +150,7 @@ For each batch:
 
    `source-ingester` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched via `Task`, not `Skill`.
 
-3. **Parallel within batch.** Issue all 8 (or `--batch-size`) `source-ingester` dispatches in a **single message with multiple tool calls** so they run concurrently. Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the merge in Step 4 below is sequential.
+3. **One wave per batch.** Issue all sources in the batch (`--batch-size`, default 25) as `source-ingester` dispatches in a **single message with multiple tool calls** so they fan out in one wave. Claude Code self-throttles the actual concurrency inside a single-message fan-out — dispatches beyond its internal ceiling queue and run as slots free, but all of them complete and return — so a wave of 25 is safe (the calibration is in Step 1.5 and `references/fan-out-concurrency.md`). The per-batch barrier is **not** a concurrency limiter; it exists only so the Step 3.4 merge stays incremental and re-runnable (a crashed wave re-runs from `ingested[]`). This mirrors the `knowledge-curate` one-wave precedent (#299). Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the Step 3.4 merge runs once per batch.
 
 4. After all ingesters in this batch return, merge the per-source batch JSONs into `ingest-manifest.json`:
    - For each batch JSON file: on `ok: true` append to `ingested[]`; on `ok: false` / skipped append to `skipped[]` with the `reason`.
@@ -285,6 +285,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 4 contract
+- `${CLAUDE_PLUGIN_ROOT}/references/fan-out-concurrency.md` — why `--batch-size` defaults to 25; the cross-phase fan-out posture (#323)
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — why claims at ingest, claim shape
 - `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched agent
 - `${CLAUDE_PLUGIN_ROOT}/agents/claim-extractor.md` — dispatched by source-ingester

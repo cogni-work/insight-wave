@@ -1,5 +1,37 @@
 # cogni-knowledge changelog
 
+## 0.1.23 — 2026-05-30 — knowledge-ingest one-wave fan-out (closes #323)
+
+`knowledge-ingest` Step 3 (Phase 4) dispatched ingesters "parallel within batch,
+**sequential across batches**" with a conservative `--batch-size 8`. A 67-source run was
+therefore 9 sequential waves, each gated by its slowest ingester — a per-wave **barrier**
+paid 9 times. The #311 German bake-in (`references/alpha-findings.md` F30/#323) had already
+dispatched those 67 ingesters live as **two waves of 25/26 with no issue**: ~25 concurrent
+ran clean, so the barrier — not the concurrency — was the wall-clock cost.
+
+This reframes the cadence to **one wave per batch** and raises the `--batch-size` default
+**8 → 25** (the proven live wave). `--batch-size` is now an *advisory cap on per-wave return
+volume*, not a concurrency limiter — Claude Code self-throttles the actual concurrency inside
+a single-message fan-out, so a wave of 25 is safe. The per-wave barrier is retained only so
+the Step 3.4 merge stays incremental and a crashed wave re-runs from `ingested[]` (the re-run
+no-op is unchanged). Common runs (≤ 25 sources) collapse to a single wave / single barrier; a
+67-source run drops from ~9 barriers to ~3.
+
+The default is **live-observation-calibrated** — ingest's N (fetched sources) is *unbounded*,
+so unlike `knowledge-curate` (plan-cap-derived, N ≤ 7, #299) or `knowledge-verify`
+(wall-clock-calibrated, `--shard-size 40`) it cannot be capped from the plan; 25 is the honest
+closest analog. The cross-phase fan-out posture is now documented once in the new
+`references/fan-out-concurrency.md`.
+
+**Prose-contract + default-constant change only** — Step 2, the Step 3.4 merge, Step 4
+(`config_bump`/index/backlink), and every #302/#307/#308/#324 contract are byte-stable.
+No pipeline behaviour beyond dispatch cadence changes; no fresh benchmark (the existing #311
+live data point is the basis). Contract guards added to `tests/test_ingest_contract.sh`:
+assert the one-wave wording + the `25` default + the `fan-out-concurrency.md` cross-reference;
+`assert_not_grep` the dropped "sequential across batches" barrier wording and the old
+`Default 8`. Files: `skills/knowledge-ingest/SKILL.md`, `references/fan-out-concurrency.md`,
+`tests/test_ingest_contract.sh`, `CLAUDE.md`.
+
 ## 0.1.22 — 2026-05-29 — Re-narrate concept/entity `## Summary` across runs (closes #341)
 
 Phase-4.5 distillation (#336) compounded the wiki **structurally** — across runs the
