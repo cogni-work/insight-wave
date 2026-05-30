@@ -6,7 +6,11 @@ allowed-tools: Read, Write, Bash, Task
 
 # Knowledge Compose
 
-Phase 5 of the inverted pipeline. Reads the per-project `plan.json` + `ingest-manifest.json` + the populated wiki at `<binding.wiki_path>/wiki/`, dispatches `wiki-composer` once, and verifies the two output files land on disk. The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md` — and, since the distillation interphase (`knowledge-distill`), the distilled `wiki/concepts/*.md` + `wiki/entities/*.md` pages as **framing context only** (topic-matched, lazily). Concept/entity pages shape the narrative but are **never cited**: they carry `distilled_claims:` (not `pre_extracted_claims:`), are absent from the citation manifest, and the verifier does not score them — so Phases 5/6/7 stay byte-stable whether or not distill ran. The composer then writes:
+Phase 5 of the inverted pipeline. Reads the per-project `plan.json` + `ingest-manifest.json` + the populated wiki at `<binding.wiki_path>/wiki/`, dispatches `wiki-composer` once, and verifies the output files land on disk.
+
+The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md`. Since the distillation interphase (`knowledge-distill`), it also reads the distilled `wiki/{concepts,entities,summaries,learnings}/*.md` pages (topic-matched, lazily) — these serve **both** as narrative framing **and** as citable cross-source evidence: when ≥2 sources converge on a fact the distilled page already captures, the composer cites the distilled page itself via its `dcl-NNN` claim id, so the convergence carries epistemic weight rather than a row of source markers. Distilled pages carry `distilled_claims:` (not `pre_extracted_claims:`), and a distilled-page citation is scored by the verifier against that claim's `text`. Distillation stays optional and fail-soft: when it hasn't run, the composer simply has no distilled pages to draw on and composes from sources + syntheses alone.
+
+The composer then writes:
 
 - `<project>/output/draft-v{N}.md` — the draft, with clickable numbered `[N]` inline citations (wikilinks confined to the reference list).
 - `<project>/.metadata/citation-records-v{N}.txt` — one raw-text record per citation (the composer writes this; it never hand-builds JSON). This skill then runs `citation-store.py build` to serialize and validate `<project>/.metadata/citation-manifest.json` (schema `0.1.0`, one `{id, draft_position, draft_sentence, wiki_slug, claim_id}` entry per citation). Escaping is owned by `json.dumps`, never the LLM — a straight `"` in a `draft_sentence` would otherwise break a hand-built manifest's `json.loads` and kill the verify phase.
@@ -240,7 +244,7 @@ Print ≤ 10 lines:
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Cost: `$X.XXX` (from composer return)
-- Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's `pre_extracted_claims[]`.
+- Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, or `distilled_claims[]` on a cited distilled page.
 
 If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ Below target (N/TARGET)` warning line — but do not auto-retry.
 
@@ -249,7 +253,7 @@ If the composer returned a word-count well below `TARGET_WORDS`, surface a `⚠ 
 - **Outline recovery in action.** The outline file exists from a prior crashed run. The composer skips Phase 1 (saves model time and avoids re-deriving the section plan), runs Phase 2 fresh, and writes the draft + citation manifest. The outline's `drafted_words` placeholders get filled by the resume pass. Surface "RESUME_FROM_OUTLINE=true (outline recovery)" in the summary so the operator sees what happened.
 - **Re-run with same N.** The user explicitly passes `--draft-version <N>` against an existing draft. The composer overwrites `draft-v<N>.md` and `citation-manifest.json` (and re-writes the outline — Phase 1 runs unless `writer-outline-v<N>.json` is present and `RESUME_FROM_OUTLINE=true` was inferred). No automatic backup — the user asked for it.
 - **Empty `ingested[]` after a re-ingest cleanup.** Step 0 aborts with the "no ingested sources" message; do not dispatch the composer against an empty manifest.
-- **Citation manifest empty.** If the composer returns `ok: true` but `citations[] == 0` (every page had zero `pre_extracted_claims:` — unusual but possible if the claim-extractor failed across the board), surface as `⚠ Zero citations — every cited statement will fail verification`. Do not block — that's an upstream-data issue, not a composer bug.
+- **Citation manifest empty.** If the composer returns `ok: true` but `citations[] == 0` (every cited page had zero claims — no source `pre_extracted_claims:` and no distilled `distilled_claims:` — unusual but possible if the claim-extractor failed across the board), surface as `⚠ Zero citations — every cited statement will fail verification`. Do not block — that's an upstream-data issue, not a composer bug.
 - **Plan changed between ingest and compose.** Step 1.2 of the composer aligns `covers_sub_questions` from `ingest-manifest.json` (resolved sources carry `sub_question_refs[]`), so a sub-question added to `plan.json` after `knowledge-ingest` ran will have no sources mapped to it. The introduction and conclusion still list it (synthesis sections list all `plan.json` sub-question ids), but a topical section for that sub-question won't have evidence. Surface in the summary as `⚠ Sub-question <id> has no ingested sources`.
 
 ## Out of scope

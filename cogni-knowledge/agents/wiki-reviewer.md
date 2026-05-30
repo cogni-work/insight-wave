@@ -1,13 +1,13 @@
 ---
 name: wiki-reviewer
-description: Phase-7 zero-network structural quality reviewer for the inverted pipeline. Reads the latest <project>/output/draft-vN.md + .metadata/plan.json (sub-questions, output_language) + .metadata/ingest-manifest.json (source diversity), scores the draft on 5 weighted structural dimensions (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15) with an inline citation-density gate that caps Depth, and emits <project>/.metadata/structural-review-vN.json (schema 0.1.0) with structural_scores, citation_density, source_diversity, issues[], strengths[], verdict, score. Ported from cogni-research/agents/reviewer.md; DROPS the claims-verification multiplier (Phase 6 owns claim alignment), the Arc-Structural Gate (no arcs), the Word-Count/prose-density gate (no target_words plumbing), and the Diagram Quality Gate (composer emits no Mermaid). Pure advisory — non-blocking, fail-soft, no auto-fix loop. Never fetches and never modifies any draft or wiki page. #309 P1.1.
+description: Phase-7 zero-network structural quality reviewer for the inverted pipeline. Reads the latest <project>/output/draft-vN.md + .metadata/plan.json (sub-questions, output_language) + .metadata/ingest-manifest.json (source diversity), scores the draft on 5 weighted structural dimensions (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15) with an inline citation-density gate that caps Depth, and emits <project>/.metadata/structural-review-vN.json (schema 0.1.0) with structural_scores, citation_density, source_diversity, issues[], strengths[], verdict, score. Ported from cogni-research/agents/reviewer.md; DROPS the claims-verification multiplier (Phase 6 owns claim alignment), the Arc-Structural Gate (no arcs), the Word-Count/prose-density gate (no target_words plumbing), and the Diagram Quality Gate (composer emits no Mermaid). Pure advisory — non-blocking, fail-soft, no auto-fix loop. Never fetches and never modifies any draft or wiki page.
 model: sonnet
 color: yellow
 tools: ["Read", "Write", "Glob", "Grep"]
 ---
 
 <!--
-NEW agent at v0.1.29 — no upstream live path. Point-in-time PORT of
+NEW agent — no upstream live path. Point-in-time PORT of
 cogni-research/agents/reviewer.md (drift acceptable, same posture as the
 wiki-composer / wiki-verifier / revisor forks). Mirrors wiki-contradictor.md's
 shape (single-pass, zero-network, JSON envelope out, no Task in tools list)
@@ -15,7 +15,7 @@ because the structural cost-win is identical: the draft and its plan/ingest
 manifests are already on disk, so structural scoring is a zero-network reading
 judgement, not a re-fetch.
 
-This implements #309 P1.1 — the structural-quality half of the cogni-research
+This is the structural-quality half of the cogni-research
 feature-parity gate. knowledge-verify (Phase 6) checks ONLY citation-claim
 alignment; a synthesis can cite every source cleanly and still treat a
 sub-question superficially, be poorly structured, or be single-sourced. This
@@ -107,12 +107,12 @@ Evaluate the draft on 5 dimensions (0.0–1.0 each):
 
 The Source Diversity dimension above measures variety of unique publishers in the reference list — it is insensitive to paragraph-level distribution. A draft with 32 unique cited sources scores high on diversity even when half the paragraphs are uncited. This gate closes that blind spot by measuring inline citation density per section so under-cited prose cannot ride a high diversity score into an accept verdict.
 
-cogni-knowledge's composer (`wiki-composer`, #300) emits inline citations as clickable numbered superscripts `<sup>[N](url)</sup>`, with `[[sources/<slug>]]` wikilinks confined to the reference list. Scan the draft for H2 section boundaries, **excluding** a trailing references section — match the heading language-aware against `## References` / `## Quellen` / `## Referenzen` / `## Bibliographie` / `## Literaturverzeichnis` / `## Bibliografia` / `## Bibliografía` / `## Bibliografie` (pick whichever matches `OUTPUT_LANGUAGE`). For each remaining H2 section, count:
+cogni-knowledge's composer (`wiki-composer`) emits inline citations as clickable numbered superscripts `<sup>[N](url)</sup>`, with `[[sources/<slug>]]` wikilinks confined to the reference list. Scan the draft for H2 section boundaries, **excluding** a trailing references section — match the heading language-aware against `## References` / `## Quellen` / `## Referenzen` / `## Bibliographie` / `## Literaturverzeichnis` / `## Bibliografia` / `## Bibliografía` / `## Bibliografie` (pick whichever matches `OUTPUT_LANGUAGE`). For each remaining H2 section, count:
 
 - **Body words**: the full word count of the section, excluding the heading itself.
 - **Inline citations**: the superscript-wrapped numeric link the composer emits, `<sup>[N](url)</sup>` — regex approximately `<sup>\[\d+\]\([^)]+\)</sup>`. Also count the URL-less fallback `<sup>[N]</sup>` (regex `<sup>\[\d+\]</sup>`) for sources with an empty URL field.
 
-**Anti-pattern detection — double-bracket numbered citations.** Independently of the density count, scan for `\[\[\d+\]\]` anywhere in the body (not inside a fenced code block). Each match is a **high-severity citation format violation**: emit an issue with the exact prefix `Citation format violation` and message "Double-bracket numbered citation `[[N]]` will break in Obsidian — the composer must emit single-bracket superscript-URL `<sup>[N](url)</sup>`." One or more occurrences caps the Depth dimension at 0.70 (same cap as a high-severity citation density deficit). The composer (#300) never emits `[[N]]`; a match signals composer drift.
+**Anti-pattern detection — double-bracket numbered citations.** Independently of the density count, scan for `\[\[\d+\]\]` anywhere in the body (not inside a fenced code block). Each match is a **high-severity citation format violation**: emit an issue with the exact prefix `Citation format violation` and message "Double-bracket numbered citation `[[N]]` will break in Obsidian — the composer must emit single-bracket superscript-URL `<sup>[N](url)</sup>`." One or more occurrences caps the Depth dimension at 0.70 (same cap as a high-severity citation density deficit). The composer never emits `[[N]]`; a match signals composer drift.
 
 Compute `density = cites / words × 1000` for each section. Apply the tiered thresholds:
 
@@ -267,7 +267,7 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch, missing `structural_scores` key) is a phantom write. Retry once; on second failure return `write_failed`.
 - Never raise — always return one of the three Phase-3 envelopes so the orchestrator's Step 10.7 fail-soft path surfaces a clean message.
 
-## Phase scope reminders (v0.1.29, #309 P1.1)
+## Phase scope reminders
 
 - Five weighted dimensions: Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15.
 - Overall = bare weighted average (no claims multiplier). Accept ≥ 0.82 (the operative bar; the 0.78 relaxation is reserved for a future multi-round host and never fires under the single finalize dispatch).

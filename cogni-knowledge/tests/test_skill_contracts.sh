@@ -277,12 +277,12 @@ if [ $errors -eq 0 ]; then
   green "PASS: clean-break — no cogni-research/cogni-claims/cogni-wiki skill dispatch in new files"
 fi
 
-# --- #337 wiki-verifier agent honesty bullets ----------------------------
+# --- wiki-verifier agent honesty bullets ---------------------------------
 # Two prose bullets close the loop between the agent's internal honesty and
 # the operator-facing surfaces. No behaviour-level change — the regression
 # guard below proves the load-bearing zero-network invariant survived the edit.
-assert_grep '#337' "$VERIFIER" "wiki-verifier: references #337 (the verbatim/paraphrase confidence-signal + resweep cross-ref)"
-assert_grep 'knowledge-refresh --resweep' "$VERIFIER" "wiki-verifier: names knowledge-refresh --resweep as the live-source path (#337)"
+assert_grep 'verbatim/paraphrase' "$VERIFIER" "wiki-verifier: surfaces the verbatim/paraphrase ratio as the operator confidence signal"
+assert_grep 'knowledge-refresh --resweep' "$VERIFIER" "wiki-verifier: names knowledge-refresh --resweep as the live-source path"
 # Regression guard: the strengthened 'does NOT' bullet must NOT drop the
 # original load-bearing zero-network assertion.
 assert_grep 'Does NOT WebFetch or WebSearch' "$VERIFIER" "wiki-verifier: retains the 'Does NOT WebFetch or WebSearch' invariant (#337 must not erode it)"

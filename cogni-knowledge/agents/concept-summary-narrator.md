@@ -1,13 +1,13 @@
 ---
 name: concept-summary-narrator
-description: Phase-4.5 summary re-narrator for the inverted pipeline (#341). For each distilled page (concept / entity / summary / learning) that gained claims this run, rewrites the ## Summary prose from the merged distilled_claims so the wiki compounds NARRATIVELY (the entry-point prose integrates new evidence), not just structurally (claim lists accrete). Reads a per-slug bundle (current summary + merged claim texts), writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py renarrate. Pure proposal — never writes wiki pages, never builds JSON/YAML, never touches any block but the summary.
+description: Phase-4.5 summary re-narrator for the inverted pipeline. For each distilled page (concept / entity / summary / learning) that gained claims this run, rewrites the ## Summary prose from the merged distilled_claims so the wiki compounds NARRATIVELY (the entry-point prose integrates new evidence), not just structurally (claim lists accrete). Reads a per-slug bundle (current summary + merged claim texts), writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py renarrate. Pure proposal — never writes wiki pages, never builds JSON/YAML, never touches any block but the summary.
 model: sonnet
 color: yellow
 tools: ["Read", "Write"]
 ---
 
 <!--
-NEW agent (#341) — no upstream. Phase 4.5's concept-store.py keeps the `##
+NEW agent (no upstream). Phase 4.5's concept-store.py keeps the `##
 Summary` block first-writer-wins on update: run N+1's new evidence enriches the
 `## Claims` / `## Related` / `## Sources` blocks but never refreshes the prose
 entry point. A page can list 20 distilled claims under a summary that still
@@ -15,11 +15,11 @@ reflects run-1's framing. This agent re-narrates that summary from the MERGED
 claims so the prose compounds too. See `cogni-knowledge/references/inverted-pipeline.md`
 Phase 4.5 contract and `references/differentiation-thesis.md`.
 
-Division of labour (the #325 + "script owns the write" discipline, identical to
+Division of labour (the "script owns the write" discipline, identical to
 concept-distiller):
  - You PROPOSE the new summary prose. You write RAW TEXT only — never JSON/YAML.
-   A straight `"` in a German „…" summary would break a hand-built structure
-   (#325). concept-store.py owns all serialization AND the page write.
+   A straight `"` in a German „…" summary would break a hand-built structure.
+   concept-store.py owns all serialization AND the page write.
  - You touch NOTHING but the summary. The `## Claims` / `## Related` / `##
    Sources` machine blocks are deterministic (concept-store.py's), and the human
    `## Notes` tail is preserved by sentinel splice. You never see or alter them.
@@ -118,7 +118,7 @@ Format rules:
   JSON. The `Write` tool persists your bytes exactly, so a straight `"` is safe
   here precisely because you are not building JSON. `concept-store.py` `json.dumps`
   nothing for the body — it splices your prose into the page between sentinels and
-  serializes only the frontmatter (#325).
+  serializes only the frontmatter.
 - Emit a block for **every** slug in the bundle (even if unchanged — emit the
   current summary verbatim so the script can no-op it). Omit a slug only if you
   have no prose at all for it.
@@ -147,7 +147,7 @@ do not estimate. On a write failure, return `{"ok": false, "error": "<message>",
 - Does NOT build JSON/YAML or escape anything — it writes raw text; `concept-store.py` serializes.
 - Does NOT touch the `## Claims` / `## Related` / `## Sources` blocks or the human `## Notes` tail — only the summary.
 - Does NOT add citations, `[[wikilinks]]`, or a claim list inside the summary.
-- Does NOT hunt for contradictions or add a contradiction pass (#335 is closed; out of scope).
+- Does NOT hunt for contradictions or add a contradiction pass — that is out of scope.
 - Does NOT compute slugs, decide dedup, fetch URLs, WebSearch, or read source/page bodies — the bundle is its only evidence.
 - Does NOT compose the report (Phase 5) or verify claims (Phase 6).
 

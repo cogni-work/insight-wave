@@ -83,8 +83,9 @@ assert_grep '0.82' "$REV" "wiki-reviewer: structural-only accept threshold 0.82"
 # Schema literal — the contract version-pin.
 assert_grep '"schema_version": "0.1.0"' "$REV" "wiki-reviewer: documents schema_version 0.1.0 literal"
 
-# Issue reference — the agent must say WHICH issue it implements.
-assert_grep '#309' "$REV" "wiki-reviewer: references issue #309"
+# Self-identity — the agent must name itself as the structural-quality reviewer
+# (the half of the cogni-research parity gate that is NOT citation-claim alignment).
+assert_grep 'structural-quality\|structural quality' "$REV" "wiki-reviewer: identifies as the structural-quality reviewer"
 
 # Advisory / fail-soft posture — must be explicit so a future maintainer
 # doesn't turn it into a blocking gate.

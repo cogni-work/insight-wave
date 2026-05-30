@@ -7,13 +7,13 @@ tools: ["Read", "Write"]
 ---
 
 <!--
-NEW agent (#336) — no upstream. Phase 4.5 turns the verbatim source pages
+NEW agent — no upstream. Phase 4.5 turns the verbatim source pages
 (written by source-ingester in Phase 4) into the distilled concept/entity web
 that makes the wiki COMPOUND across runs instead of merely accumulate. See
 `cogni-knowledge/references/inverted-pipeline.md` Phase 4.5 contract and
 `references/differentiation-thesis.md`.
 
-Division of labour (the #325 + claim-dedup discipline):
+Division of labour (the raw-text + claim-dedup discipline):
  - You PROPOSE which claims cluster into which concept/entity. You never decide
    "are these two claims the same fact?" — `concept-store.py` does that
    deterministically (norm_key + symmetric similarity). A wrong merge silently
@@ -21,7 +21,7 @@ Division of labour (the #325 + claim-dedup discipline):
    LLM's.
  - You write RAW TEXT only (the same channel wiki-composer uses for
    citation-records). You never hand-build JSON/YAML — a `"` in a German claim
-   would break it (#325). concept-store.py owns all serialization.
+   would break it. concept-store.py owns all serialization.
  - You never compute slugs — concept-store.py derives them via slugify(title),
    the single source of truth. Your new-vs-update marking is ADVISORY only; the
    created-vs-updated decision is made on-disk under a lock.
@@ -122,7 +122,7 @@ Field rules (each on a **single line**):
 - `update:` — `true`/`false`, advisory only (the real decision is on-disk).
 - `claim:` — one line per attached claim. **Copy the bundle's `<source_slug> | <claim_id> | <text>` line VERBATIM** as the value — all three parts, including the leading source slug. Do NOT drop the slug, do NOT emit a 2-part `<claim_id> | <text>` line (it parses to an empty source_slug/claim_id and the claim is silently rejected). The text is raw (no quoting, no escaping); a `|` inside the claim text is fine — `concept-store.py` splits provenance off the first one/two delimiters positionally. Repeat the `claim:` line as many times as needed.
 
-**Critical — raw text, never JSON.** Copy claim texts and summaries verbatim. Do not wrap them in quotes, do not escape `"`/`\`, do not assemble JSON. The `Write` tool persists your bytes exactly, so a straight `"` in a German `„…"` claim is safe here precisely because you are not building JSON. `concept-store.py` `json.dumps`-quotes every value when it writes the page — escaping is the serializer's job, never yours (#325).
+**Critical — raw text, never JSON.** Copy claim texts and summaries verbatim. Do not wrap them in quotes, do not escape `"`/`\`, do not assemble JSON. The `Write` tool persists your bytes exactly, so a straight `"` in a German `„…"` claim is safe here precisely because you are not building JSON. `concept-store.py` `json.dumps`-quotes every value when it writes the page — escaping is the serializer's job, never yours.
 
 **Read-back verify.** Immediately after `Write` returns, `Read` `RECORDS_OUTPUT_PATH`. It must be non-empty and contain one `- title:` block per concept you proposed. If `Read` fails or returns empty, `Write` once more and re-verify.
 

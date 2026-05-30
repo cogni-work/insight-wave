@@ -110,9 +110,9 @@ assert_grep 'RECORDS_OUTPUT_PATH' "$NARRATOR" "concept-summary-narrator: writes 
 assert_grep 'OUTPUT_LANGUAGE' "$NARRATOR" "concept-summary-narrator: re-narrates in OUTPUT_LANGUAGE"
 assert_grep '<<<SUMMARY' "$NARRATOR" "concept-summary-narrator: sentinel-fenced records idiom"
 assert_grep 'raw text' "$NARRATOR" "concept-summary-narrator: writes raw text, never JSON/YAML (#325)"
-# Summary-only discipline + scope guard (no contradiction pass — #335 is closed).
+# Summary-only discipline + scope guard (a contradiction pass stays out of scope).
 assert_grep 'only the summary\|only the SUMMARY\|touch .*only\|Summary-only\|summary-only' "$NARRATOR" "concept-summary-narrator: touches only the summary block"
-assert_grep '#335' "$NARRATOR" "concept-summary-narrator: names #335 as out-of-scope (no contradiction pass)"
+assert_grep 'contradiction pass' "$NARRATOR" "concept-summary-narrator: names a contradiction pass as out-of-scope"
 assert_grep 'tools: \["Read", "Write"\]' "$NARRATOR" "concept-summary-narrator: tools Read + Write only"
 
 # --- cross-lingual-claim-merger agent (#345) ---------------------------------

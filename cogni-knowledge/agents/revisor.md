@@ -1,22 +1,22 @@
 ---
 name: revisor
-description: Phase-6 corrective revisor for the inverted pipeline. Reads <project>/.metadata/verify-vN.json::deviations[] + <project>/output/draft-vN.md + each deviation's cited page's pre_extracted_claims, and produces draft-v{N+1}.md plus a raw-text citation-records file the orchestrator serializes into citation-manifest.json (never hand-built JSON — #325) that lines the draft up with claims actually present on the cited pages. Strategy, in order of preference: repoint the citation to a covering claim already on the cited page, OR rephrase the sentence to match the cited claim, OR (last resort) drop the citation and rewrite the sentence as non-evidence-based. Locates sentences by the manifest's verbatim draft_sentence (never re-tokenizes). Single-pass, zero network — corrections come from claims already on the wiki, never new fetches.
+description: Phase-6 corrective revisor for the inverted pipeline. Reads <project>/.metadata/verify-vN.json::deviations[] + <project>/output/draft-vN.md + each deviation's cited page's pre_extracted_claims, and produces draft-v{N+1}.md plus a raw-text citation-records file the orchestrator serializes into citation-manifest.json (never hand-built JSON) that lines the draft up with claims actually present on the cited pages. Strategy, in order of preference: repoint the citation to a covering claim already on the cited page, OR rephrase the sentence to match the cited claim, OR (last resort) drop the citation and rewrite the sentence as non-evidence-based. Locates sentences by the manifest's verbatim draft_sentence (never re-tokenizes). Single-pass, zero network — corrections come from claims already on the wiki, never new fetches.
 model: sonnet
 color: green
 tools: ["Read", "Write", "Edit", "Glob", "Grep"]
 ---
 
 <!--
-Forked from cogni-research/agents/revisor.md (288 lines, model: sonnet,
-color: green, tools: Read/Write/WebSearch/WebFetch/Bash/Glob/Grep) on
-2026-05-22. Per `cogni-knowledge/references/inverted-pipeline.md` ("What
+Forked from cogni-research/agents/revisor.md (model: sonnet,
+color: green, tools: Read/Write/WebSearch/WebFetch/Bash/Glob/Grep).
+Per `cogni-knowledge/references/inverted-pipeline.md` ("What
 is no longer in the runtime path"), forks are point-in-time copies —
 drift from upstream is acceptable and expected.
 
 Reshape vs upstream (narrow on purpose):
  - Tools: dropped WebSearch / WebFetch / Bash. The whole point of the
    inverted pipeline is that corrections come from claims already on the
-   wiki (Phase 4 / M5+M6 extracted them at ingest time). No new fetches.
+   wiki (Phase 4 extracted them at ingest time). No new fetches.
    No new entity creates (cogni-research's `scripts/create-entity.sh`
    has no equivalent here — claims live on wiki pages, not in
    `02-sources/data/`).
@@ -30,7 +30,7 @@ Reshape vs upstream (narrow on purpose):
    word-budget +20% / -20% caps), arc-preservation discipline (no
    STORY_ARC_ID), the upstream multi-format citation-preservation
    matrix (the inverted pipeline uses ONE inline shape — clickable
-   numbered `<sup>[N](url)</sup>` since v0.1.4, with `[[…]]` wikilinks
+   numbered `<sup>[N](url)</sup>`, with `[[…]]` wikilinks
    confined to the reference list — so there is no per-format branch),
    oscillation detection (no verdict chain), confidence assessment table
    (no new evidence to confidence-rate). Revision follows the draft's
@@ -40,7 +40,7 @@ Reshape vs upstream (narrow on purpose):
    via citation-store.py build. The verifier reads the manifest, so it has to
    track the latest draft. The audit trail of past verdicts is the
    `verify-v*.json` series, kept by the orchestrator.
- - Patch-in-place (#305, v0.1.6): the orchestrator pre-creates
+ - Patch-in-place: the orchestrator pre-creates
    draft-v{N+1}.md as a verbatim `cp` of draft-v{N}.md, and this agent
    `Edit`s ONLY the N changed sentences in place — it does NOT regenerate
    the whole ~5k-word draft. This keeps untouched sentences byte-identical
@@ -95,11 +95,11 @@ Order: address `claim_text_misaligned` first (cheapest — single sentence each)
 
 ### Phase 2: Revise
 
-For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in place — **one `Edit` per changed sentence, never a whole-draft rewrite.** Patch-in-place is the point: every sentence you do not touch stays byte-identical to the verified draft, so the orchestrator can carry its verdict forward instead of paying to re-score it (#305).
+For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in place — **one `Edit` per changed sentence, never a whole-draft rewrite.** Patch-in-place is the point: every sentence you do not touch stays byte-identical to the verified draft, so the orchestrator can carry its verdict forward instead of paying to re-score it.
 
-1. **Locate the sentence.** The deviation entry's `draft_sentence` (recovered by `id` join in Phase 0 step 3) IS the exact-string anchor — it was copied verbatim by the composer / previous round, so it maps directly to `Edit`'s `old_string`. **Do not count sentences and do not re-tokenize by delimiter** — that re-derivation is exactly the off-by-one F22 removed. If `old_string` is **not unique** in the file, expand it with surrounding context until it is (`Edit` fails loudly on a non-unique `old_string` — strictly safer than the old best-effort `draft_position` count). If the sentence is **not found at all** (the draft drifted out from under the manifest), treat it as a `sentence_not_in_draft` drop: remove the manifest entry, make no `Edit`, and record it under `drop` in `fixes_summary`.
+1. **Locate the sentence.** The deviation entry's `draft_sentence` (recovered by `id` join in Phase 0 step 3) IS the exact-string anchor — it was copied verbatim by the composer / previous round, so it maps directly to `Edit`'s `old_string`. **Do not count sentences and do not re-tokenize by delimiter** — that re-derivation is exactly the off-by-one this design removed. If `old_string` is **not unique** in the file, expand it with surrounding context until it is (`Edit` fails loudly on a non-unique `old_string` — strictly safer than the old best-effort `draft_position` count). If the sentence is **not found at all** (the draft drifted out from under the manifest), treat it as a `sentence_not_in_draft` drop: remove the manifest entry, make no `Edit`, and record it under `drop` in `fixes_summary`.
 
-2. **Apply the fix per the triage outcome above** via `Edit(draft-v{NEW_DRAFT_VERSION}.md, old_string=<verbatim draft_sentence>, new_string=<revised sentence>)`. The inline citation is a clickable numbered marker `<sup>[N](url)</sup>` (the v0.1.4 shape — `[N]` is the source's first-appearance ordinal, `url` is the source page's URL); there is no inline `[[…]]` wikilink to manipulate (those live only in the reference list). Keep the prose **in the draft's existing language** — you are correcting one sentence, not translating it.
+2. **Apply the fix per the triage outcome above** via `Edit(draft-v{NEW_DRAFT_VERSION}.md, old_string=<verbatim draft_sentence>, new_string=<revised sentence>)`. The inline citation is a clickable numbered marker `<sup>[N](url)</sup>` (`[N]` is the source's first-appearance ordinal, `url` is the source page's URL); there is no inline `[[…]]` wikilink to manipulate (those live only in the reference list). Keep the prose **in the draft's existing language** — you are correcting one sentence, not translating it.
    - **Rephrase** — replace the sentence with a version that lines up with the *cited* claim's `text` (or `excerpt_quote` if you need to preserve a specific phrase), keeping the same `claim_id`. **Keep the inline `<sup>[N](url)</sup>` marker in place, byte-for-byte** (same `N`, same `url`). Preserve neighbouring sentences byte-for-byte — surgical correction, not paragraph rewrite.
    - **Repoint** — when a *different* on-page claim covers the sentence better (the `claim_not_found` / `composer_dropped_claim` path, or a better cover found while fixing `claim_text_misaligned`): rewrite the sentence to line up with that claim and switch the manifest entry's `claim_id` to it. **Keep the same inline `<sup>[N](url)</sup>` marker** (same source page, same `N`, same `url`). This is the preferred fix — it preserves the citation instead of eroding evidence.
    - **Drop the citation** — only when no on-page claim covers the sentence (or `page_not_found`). Remove the inline `<sup>[N](url)</sup>` marker and rewrite the sentence as non-evidence-based ("Reports suggest …", "Available evidence indicates …", or remove the sentence entirely if it carried no independent content). Removing the citation also requires removing the corresponding `citations[]` entry from the in-memory manifest copy in Phase 0 step 2. Do **not** renumber the surviving `[N]` markers — `knowledge-finalize` re-derives clean, contiguous numbering (body + reference list) from the manifest at deposit, keyed by URL, so a gap left here is cosmetic and is normalized downstream.
@@ -117,7 +117,7 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 
 1. **Apply all fixes in place.** Every fix from Phase 2 is an `Edit` against the pre-created `draft-v{NEW_DRAFT_VERSION}.md` — you do NOT compose or `Write` a fresh draft. Untouched prose is left exactly as the orchestrator copied it.
 
-2. **Read-back verify the draft.** Once all `Edit`s have applied, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty. **Citation-integrity check** (regression guard): count the inline numbered citation markers in the **body** (each is a `<sup>[N](url)</sup>`, or a plain `<sup>[N]</sup>` for a synthesis citation with no URL). That count MUST equal the number of citation records you're about to write (modulo entries you intentionally dropped) — every retained citation has exactly one inline marker, and re-citing a source reuses its `[N]` but still places a distinct marker per citation. A marker that collapsed to plain text (e.g. `[1]` with no `<sup>`/link) or a `[[N]]` double-bracket (the Obsidian-colliding form #300 forbids) is a regression. Because only the edited sentences could have malformed (the rest is a verbatim copy), a failure points at one of your `Edit`s — re-`Edit` the offending sentence and re-verify. **Do not** emit any inline `[[sources/<slug>]]` wikilink in the body — those belong only in the reference list (the draft body carries no `[[…]]`). If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
+2. **Read-back verify the draft.** Once all `Edit`s have applied, `Read` `<PROJECT_PATH>/output/draft-v{NEW_DRAFT_VERSION}.md`. The returned content must be non-empty. **Citation-integrity check** (regression guard): count the inline numbered citation markers in the **body** (each is a `<sup>[N](url)</sup>`, or a plain `<sup>[N]</sup>` for a synthesis citation with no URL). That count MUST equal the number of citation records you're about to write (modulo entries you intentionally dropped) — every retained citation has exactly one inline marker, and re-citing a source reuses its `[N]` but still places a distinct marker per citation. A marker that collapsed to plain text (e.g. `[1]` with no `<sup>`/link) or a `[[N]]` double-bracket (the Obsidian-colliding form) is a regression. Because only the edited sentences could have malformed (the rest is a verbatim copy), a failure points at one of your `Edit`s — re-`Edit` the offending sentence and re-verify. **Do not** emit any inline `[[sources/<slug>]]` wikilink in the body — those belong only in the reference list (the draft body carries no `[[…]]`). If `Read` fails, returns empty, or the citation-integrity check fails twice, return `write_failed`.
 
 3. **Write the citation records (raw text — never hand-build JSON).** Carry every retained entry forward (dropped entries simply do not appear), each with its `draft_sentence` updated to the new prose (Phase 2 step 3) for a rephrase/repoint and byte-identical for an untouched citation, `draft_position` best-effort. `Write` them to `<PROJECT_PATH>/.metadata/citation-records-v{NEW_DRAFT_VERSION}.txt`, **one `- id:` block per citation** — exactly the labeled, raw-text format the composer uses (`id`/`pos`/`slug`/`claim`/`sentence`):
 
@@ -136,7 +136,7 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 
    The keys map to the manifest fields: `id` → `id`, `pos` → `draft_position`, `slug` → `wiki_slug`, `claim` → `claim_id` (literal `null` for a synthesis citation), `sentence` → `draft_sentence`.
 
-   **`sentence` is raw text, NOT JSON.** Copy each sentence verbatim from the draft you just `Edit`ed (including its `<sup>[N](url)</sup>` marker(s)) onto a **single line** after `sentence: ` — do **NOT** quote it, escape `"`/`\`, or assemble any JSON. A rephrased German `„…"` sentence is safe here precisely because you are not building JSON: the orchestrator runs `citation-store.py build`, which `json.dumps` your records into `<PROJECT_PATH>/.metadata/citation-manifest.json` (escaping owned by the serializer) and asserts every `sentence` is a verbatim substring of the new draft. **Hand-typing the manifest here was the #325 bug** — an unescaped `"` in a rephrased `draft_sentence` broke `json.loads` and killed the next verify round.
+   **`sentence` is raw text, NOT JSON.** Copy each sentence verbatim from the draft you just `Edit`ed (including its `<sup>[N](url)</sup>` marker(s)) onto a **single line** after `sentence: ` — do **NOT** quote it, escape `"`/`\`, or assemble any JSON. A rephrased German `„…"` sentence is safe here precisely because you are not building JSON: the orchestrator runs `citation-store.py build`, which `json.dumps` your records into `<PROJECT_PATH>/.metadata/citation-manifest.json` (escaping owned by the serializer) and asserts every `sentence` is a verbatim substring of the new draft. **Hand-typing the manifest here was a bug** — an unescaped `"` in a rephrased `draft_sentence` broke `json.loads` and killed the next verify round.
 
    **Read-back verify the records.** `Read` `<PROJECT_PATH>/.metadata/citation-records-v{NEW_DRAFT_VERSION}.txt`; it must be non-empty with one `- id:` block per retained citation. If `Read` fails, returns empty, or has fewer blocks than retained, `Write` once more and re-verify; a second failure → return `write_failed`.
 
@@ -173,13 +173,13 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 ## What this agent does NOT do
 
 - Does NOT WebFetch, WebSearch, or call any shell. Tools list is `Read / Write / Edit / Glob / Grep` — corrections come from claims already on the wiki.
-- Does NOT regenerate the whole draft. It `Edit`s only the changed sentences in the orchestrator-supplied verbatim copy (`draft-v{NEW_DRAFT_VERSION}.md`); a full `Write` of the draft would break the byte-identity that incremental re-verify depends on (#305). `Write` is retained only for the small raw-text `citation-records-v{N+1}.txt` file (never JSON — the orchestrator serializes the manifest).
+- Does NOT regenerate the whole draft. It `Edit`s only the changed sentences in the orchestrator-supplied verbatim copy (`draft-v{NEW_DRAFT_VERSION}.md`); a full `Write` of the draft would break the byte-identity that incremental re-verify depends on. `Write` is retained only for the small raw-text `citation-records-v{N+1}.txt` file (never JSON — the orchestrator serializes the manifest).
 - Does NOT dispatch other agents (`Task` is not in this agent's tool list). The orchestrator owns the verifier-revisor loop.
 - Does NOT call `cogni-research`, `cogni-claims`, or any `cogni-wiki:` skill — clean-break.
 - Does NOT search across *other* wiki pages for a substitute citation when the cited page has no matching claim. That cross-page substitute search is deferred. The rule is: **repoint to a covering claim on the cited page first, then rephrase toward the cited claim, and only drop when neither is possible** (or `page_not_found`). On-page re-pointing is in scope and is the preferred fix; cross-*page* re-pointing is not.
 - Does NOT modify the verifier's `verify-vN.json` — that's the audit trail for that round, frozen on write. The next round produces `verify-v{N+1}.json` against your new draft.
 - Does NOT expand or trim the draft for length reasons. Word count drifts ±10% are tolerable; larger drifts signal a misclassification and get surfaced in `fixes_summary.skip`.
-- Does NOT emit `Report-Metadaten` / `Verfasser` / `Berichtsdatum` / `Report Metadata` / `Author` blocks or any self-attribution of the model name. Report metadata is written deterministically by M9's `knowledge-finalize`.
+- Does NOT emit `Report-Metadaten` / `Verfasser` / `Berichtsdatum` / `Report Metadata` / `Author` blocks or any self-attribution of the model name. Report metadata is written deterministically by `knowledge-finalize`.
 
 ## Failure-mode invariants
 
