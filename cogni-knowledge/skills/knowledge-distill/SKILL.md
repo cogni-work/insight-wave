@@ -270,7 +270,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py crossmerge \
 
 Phase 4.5 compounds the `## Claims` / `## Related` / `## Sources` blocks across runs, but `concept-store.py merge` keeps the `## Summary` block **first-writer-wins** on update — so an `updated` page can list 20 distilled claims under prose that still reflects only run 1's framing. This step re-narrates the summary of each **updated** page from its *merged* claims so the wiki compounds **narratively**, not just structurally. **Summary-only**: every other machine block + the human `## Notes` tail stay byte-identical.
 
-**Skip cleanly when:** `--no-renarrate` was passed, OR `updated_slugs[]` (from Step 6) is empty (`created` pages already carry a fresh distiller summary; pure re-runs have no updated pages). In either case jump straight to Step 7 — re-narration is purely additive enrichment.
+**Skip cleanly when:** `--no-renarrate` was passed, OR `updated_slugs[]` (from Step 6, **possibly grown by Step 6.6's `merged_slugs[]` fold** so crossmerged pages get re-narrated too) is empty (`created` pages already carry a fresh distiller summary; pure re-runs have no updated pages). In either case jump straight to Step 7 — re-narration is purely additive enrichment.
 
 Otherwise:
 
