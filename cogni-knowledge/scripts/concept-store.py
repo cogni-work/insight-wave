@@ -41,6 +41,17 @@ Subcommands:
                   byte-identical; updated: bumped iff the prose changed). #341 —
                   makes the wiki compound NARRATIVELY (summary integrates new
                   evidence), not just structurally (claim lists accrete).
+  xlingual-candidates
+                  Scan the run's touched pages' distilled_claims[] and emit the
+                  cross-lingual (DE↔EN) merge CANDIDATE pairs (#345): two claims
+                  on one page that share an article-number digit anchor but did
+                  NOT auto-merge (low overlap). Read-only. The cross-lingual-
+                  claim-merger agent may only CONFIRM a pair this command flags.
+  crossmerge      Parse the cross-lingual-claim-merger's --records file and, under
+                  the lock, UNION each confirmed twin's provenance onto its
+                  survivor claim (#345). Re-validates the candidate gate
+                  server-side so the LLM can never widen scope; never drops a
+                  source_claim_ref or backlink — only the duplicate dcl-id goes.
   read            Emit the current distill-manifest.json content.
 
 `--wiki-scripts-dir` points at cogni-wiki's `wiki-ingest/scripts/` (resolved by
@@ -75,11 +86,15 @@ from _knowledge_lib import (  # noqa: E402
     atomic_write,
     atomic_write_text,
     claim_similarity,
+    digit_anchor_tokens,
     extract_machine_block,
     norm_key,
     parse_concept_records,
+    parse_crossmerge_records,
     parse_renarrate_records,
     slugify,
+    token_weight,
+    tokenize,
 )
 
 SCHEMA_VERSION = "0.1.1"
@@ -99,6 +114,15 @@ SIMILARITY_THRESHOLD = 0.85
 # than SIMILARITY_THRESHOLD because titles are short (2-3 tokens). Pure
 # observability; tuning is cheap and reversible.
 NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65
+
+# #345 cross-lingual candidate gate — the non-digit-token Jaccard CEILING above
+# which a digit-anchor-sharing pair is rejected as a candidate. A genuine DE↔EN
+# twin shares ~nothing but the article number (German and English tokens never
+# string-match), so its non-digit Jaccard is ~0. Two *different* facts about the
+# same article (Art. 99 §1 vs §5) share wording → high non-digit Jaccard → kept
+# OUT of the candidate set. Low on purpose (fail-safe bias: a narrower candidate
+# set means fewer pairs the LLM could wrongly confirm). Reversible.
+XLINGUAL_NONDIGIT_JACCARD_CEILING = 0.30
 
 # concept type -> wiki subdirectory. Mirrors cogni-wiki PAGE_TYPE_DIRS for the
 # four types the distiller emits: concept + entity (#336) and the cross-source
@@ -354,6 +378,50 @@ def _merge_claims(existing: list[dict], incoming: list[dict], today: str) -> tup
             stats["new"] += 1
 
     return merged, stats
+
+
+# --- #345 cross-lingual candidate gate (deterministic, one source of truth) --
+# The Phase-1 dedup deliberately under-merges across languages: the only DE↔EN
+# bridge is the article-number digit anchor (×3.0), so a German claim and its
+# English twin survive as two `distilled_claims[]` entries (the SAFE direction —
+# a wrong cross-language merge silently destroys a fact). This gate flags the
+# pairs an LLM is ALLOWED to judge; `crossmerge` re-checks the SAME predicate
+# before unioning, so the agent can only confirm a pair the script already chose.
+
+
+def _nondigit_weighted_tokens(text: str) -> set:
+    """The discriminative (weight > 0) NON-digit tokens of a claim — the
+    language-bearing signal. Two genuine DE↔EN twins share ~none of these (German
+    vs English wording never string-matches); two different facts about the same
+    article share many."""
+    return {t for t in tokenize(text) if token_weight(t) > 0.0 and not t.isdigit()}
+
+
+def _xlingual_candidate(a_text: str, b_text: str) -> list | None:
+    """Return the sorted shared digit-anchor list if (a_text, b_text) is a
+    cross-lingual merge candidate, else None. The single predicate both
+    `xlingual-candidates` (generation) and `crossmerge` (server-side
+    re-validation) call, so the gate is computed identically in one place.
+
+    Candidate iff ALL hold:
+      1. they share >= 1 article-number digit anchor (the DE↔EN bridge);
+      2. they did NOT already auto-merge — `claim_similarity` < SIMILARITY_THRESHOLD
+         (a >= match would have collapsed them in `_merge_claims` already);
+      3. their non-digit discriminative tokens are near-disjoint
+         (Jaccard < XLINGUAL_NONDIGIT_JACCARD_CEILING) — the precision floor that
+         keeps two different facts about the same article out of the set."""
+    shared = digit_anchor_tokens(a_text) & digit_anchor_tokens(b_text)
+    if not shared:
+        return None
+    if claim_similarity(a_text, b_text) >= SIMILARITY_THRESHOLD:
+        return None
+    ta = _nondigit_weighted_tokens(a_text)
+    tb = _nondigit_weighted_tokens(b_text)
+    if ta and tb:
+        union = len(ta | tb)
+        if union and (len(ta & tb) / union) >= XLINGUAL_NONDIGIT_JACCARD_CEILING:
+            return None
+    return sorted(shared)
 
 
 # --- page rendering ----------------------------------------------------------
@@ -938,6 +1006,193 @@ def cmd_renarrate(args: argparse.Namespace) -> int:
     })
 
 
+# --- #345 cross-lingual candidate generation + crossmerge --------------------
+
+
+def _resolve_distilled_page(wiki_root: Path, slug: str):
+    """Resolve a distilled slug to `(page_path, ptype)` across the four type
+    dirs (slugs are globally unique), or `(None, None)` if absent."""
+    for ptype, sub in _TYPE_DIRS.items():
+        cand = wiki_root / "wiki" / sub / f"{slug}.md"
+        if cand.is_file():
+            return cand, ptype
+    return None, None
+
+
+def cmd_xlingual_candidates(args: argparse.Namespace) -> int:
+    """Emit the cross-lingual (DE↔EN) merge candidate pairs across the run's
+    touched pages (#345). Read-only — the LLM may only confirm a pair flagged
+    here. Held under the wiki lock so the scan is consistent with concurrent
+    ingest/merge writes (same posture as `merge`/`renarrate`)."""
+    wiki_scripts = Path(args.wiki_scripts_dir).resolve()
+    if not wiki_scripts.is_dir():
+        return _emit(False, error=f"--wiki-scripts-dir does not exist: {wiki_scripts}")
+    sys.path.insert(0, str(wiki_scripts))
+    try:
+        from _wikilib import _wiki_lock  # noqa: E402
+    except ImportError as exc:
+        return _emit(False, error=f"could not import cogni-wiki _wikilib from {wiki_scripts}: {exc}")
+
+    wiki_root = Path(args.wiki_root).resolve()
+    if not (wiki_root / "wiki").is_dir():
+        return _emit(False, error=f"wiki_root has no wiki/ dir: {wiki_root}")
+    slugs = _dedup_keep_order(s.strip() for s in (args.slugs or "").split(",") if s.strip())
+
+    candidates: list[dict] = []
+    with _wiki_lock(wiki_root):
+        for slug in slugs:
+            page_path, _ = _resolve_distilled_page(wiki_root, slug)
+            if page_path is None:
+                continue
+            claims = _parse_distilled_claims(page_path.read_text(encoding="utf-8"))
+            for i in range(len(claims)):
+                for j in range(i + 1, len(claims)):
+                    a, b = claims[i], claims[j]
+                    shared = _xlingual_candidate(a.get("text", ""), b.get("text", ""))
+                    if shared is None:
+                        continue
+                    candidates.append({
+                        "slug": slug,
+                        "a_id": a.get("claim_id", ""), "a_text": a.get("text", ""),
+                        "b_id": b.get("claim_id", ""), "b_text": b.get("text", ""),
+                        "shared_anchors": shared,
+                    })
+
+    return _emit(True, data={"candidates": candidates, "n_candidates": len(candidates)})
+
+
+def _crossmerge_one(record: dict, wiki_root: Path, today: str, parse_frontmatter) -> dict:
+    """Apply one confirmed cross-lingual union under the lock. UNION-only: the
+    absorbed claim's backlinks + source_claim_refs fold onto the survivor, and the
+    absorbed dcl entry is removed — NO provenance is ever dropped. Re-validates the
+    candidate gate server-side, so the LLM can never widen scope. Returns a compact
+    per-record result `{slug, action, reason, survivor_id, absorbed_id}` (action ∈
+    merged / skipped / write_failed)."""
+    slug = (record.get("slug") or "").strip()
+    survivor_id = (record.get("survivor_id") or "").strip()
+    absorbed_id = (record.get("absorbed_id") or "").strip()
+    res = {"slug": slug, "action": "skipped", "reason": "", "page_path": "",
+           "survivor_id": survivor_id, "absorbed_id": absorbed_id}
+
+    page_path, ptype = _resolve_distilled_page(wiki_root, slug)
+    if page_path is None:
+        res["reason"] = "page_not_found"
+        return res
+    res["page_path"] = str(page_path)
+    text = page_path.read_text(encoding="utf-8")
+    if "MACHINE-OWNED" not in text:
+        # A page we did NOT author — never touch it (same guard as _merge_one).
+        res["reason"] = "no_sentinels_human_page"
+        return res
+
+    claims = _parse_distilled_claims(text)
+    by_id = {c.get("claim_id"): c for c in claims}
+    if survivor_id == absorbed_id or survivor_id not in by_id or absorbed_id not in by_id:
+        res["reason"] = "claim_not_found"
+        return res
+    surv, absb = by_id[survivor_id], by_id[absorbed_id]
+
+    # Server-side re-validation — the load-bearing fail-safe. The records file is
+    # LLM-authored; if the pair no longer satisfies the deterministic candidate
+    # gate, refuse the union rather than trust the agent to have stayed in scope.
+    if _xlingual_candidate(surv.get("text", ""), absb.get("text", "")) is None:
+        res["reason"] = "not_a_candidate"
+        return res
+
+    # UNION absorbed → survivor. Order-preserving dedup; never drop a ref/backlink.
+    for b in absb.get("backlinks", []):
+        if b not in surv.setdefault("backlinks", []):
+            surv["backlinks"].append(b)
+    for r in absb.get("source_claim_refs", []):
+        if r not in surv.setdefault("source_claim_refs", []):
+            surv["source_claim_refs"].append(r)
+    surv["updated"] = today
+    merged_claims = [c for c in claims if c.get("claim_id") != absorbed_id]
+
+    # Re-render from the existing page's frontmatter + body (same reconstruction
+    # `_merge_one`'s update path uses), swapping in the post-union claim list.
+    fm = parse_frontmatter(text)
+    title = _read_page_title(page_path) or slug
+    created = _scalar_str(fm.get("created")) or today
+    tags = _existing_tags(fm) or [ptype, "distilled"]
+    related = _as_list(fm.get("related"))
+    distilled_from = _as_list(fm.get("distilled_from_research"))
+    summary_inner = _extract_machine_block(text, "SUMMARY") or _default_summary(record)
+    human_tail = _human_tail(text)
+    sources = _dedup_keep_order(b for c in merged_claims for b in c.get("backlinks", []))
+
+    page_text = _render_page(
+        slug=slug, title=title, ptype=ptype, tags=tags, created=created, today=today,
+        sources=sources, related=related, distilled_from=distilled_from,
+        claims=merged_claims, summary_block_inner=summary_inner, human_tail=human_tail,
+        wiki_root=wiki_root,
+    )
+
+    reparsed = _parse_distilled_claims(page_text)
+    if _claims_fingerprint(reparsed) != _claims_fingerprint(merged_claims):
+        res["action"] = "write_failed"
+        res["reason"] = "claims_round_trip_mismatch"
+        return res
+
+    atomic_write_text(page_path, page_text)
+    res["action"] = "merged"
+    return res
+
+
+def cmd_crossmerge(args: argparse.Namespace) -> int:
+    """Apply the cross-lingual-claim-merger's confirmed unions (#345). Under the
+    SAME `_wiki_lock` as `merge`, UNIONs each twin's provenance onto its survivor
+    claim — re-validating the candidate gate server-side so the LLM can never
+    widen scope, and never dropping a source_claim_ref or backlink."""
+    wiki_scripts = Path(args.wiki_scripts_dir).resolve()
+    if not wiki_scripts.is_dir():
+        return _emit(False, error=f"--wiki-scripts-dir does not exist: {wiki_scripts}")
+    sys.path.insert(0, str(wiki_scripts))
+    try:
+        from _wikilib import _wiki_lock, parse_frontmatter  # noqa: E402
+    except ImportError as exc:
+        return _emit(False, error=f"could not import cogni-wiki _wikilib from {wiki_scripts}: {exc}")
+
+    wiki_root = Path(args.wiki_root).resolve()
+    if not (wiki_root / "wiki").is_dir():
+        return _emit(False, error=f"wiki_root has no wiki/ dir: {wiki_root}")
+    records_path = Path(args.records).resolve()
+    try:
+        records_text = records_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return _emit(False, data={"path": str(records_path)}, error="records_not_found")
+    except OSError as exc:
+        return _emit(False, error=f"records file is not readable: {exc}")
+
+    records = parse_crossmerge_records(records_text)
+    today = _today()
+    merged: list[dict] = []
+    skipped: list[dict] = []
+
+    with _wiki_lock(wiki_root):
+        for record in records:
+            try:
+                res = _crossmerge_one(record, wiki_root, today, parse_frontmatter)
+            except Exception as exc:  # noqa: BLE001 — one bad record must not abort the batch
+                skipped.append({"slug": record.get("slug", ""), "reason": f"exception: {exc}"})
+                continue
+            if res["action"] == "merged":
+                merged.append({"slug": res["slug"], "survivor_id": res["survivor_id"],
+                               "absorbed_id": res["absorbed_id"]})
+            else:
+                skipped.append({"slug": res["slug"], "reason": res["reason"]})
+
+    merged_slugs = _dedup_keep_order(m["slug"] for m in merged)
+    return _emit(True, data={
+        "merged": merged,
+        "merged_slugs": merged_slugs,
+        "skipped": skipped,
+        "n_merged": len(merged),
+        "n_skipped": len(skipped),
+        "claims_crossmerged_total": len(merged),
+    })
+
+
 def cmd_read(args: argparse.Namespace) -> int:
     project_path = Path(args.project_path).resolve()
     target = _manifest_path(project_path)
@@ -986,6 +1241,32 @@ def main(argv: list[str]) -> int:
     p_renarrate.add_argument("--wiki-scripts-dir", required=True,
                              help="Path to cogni-wiki wiki-ingest/scripts (for _wiki_lock)")
     p_renarrate.set_defaults(func=cmd_renarrate)
+
+    p_xlc = sub.add_parser(
+        "xlingual-candidates",
+        help="Emit cross-lingual (DE↔EN) merge candidate pairs across the run's touched pages (#345)",
+    )
+    p_xlc.add_argument("--wiki-root", required=True, help="Absolute path to the bound wiki root")
+    p_xlc.add_argument("--slugs", required=True,
+                       help="Comma-separated distilled slugs to scan (the run's created+updated slugs)")
+    p_xlc.add_argument("--wiki-scripts-dir", required=True,
+                       help="Path to cogni-wiki wiki-ingest/scripts (for _wiki_lock)")
+    p_xlc.set_defaults(func=cmd_xlingual_candidates)
+
+    p_xm = sub.add_parser(
+        "crossmerge",
+        help="Apply the cross-lingual-claim-merger's confirmed unions under the lock (#345)",
+    )
+    p_xm.add_argument("--records", required=True,
+                      help="Path to the cross-lingual-claim-merger's raw-text records file")
+    p_xm.add_argument("--wiki-root", required=True, help="Absolute path to the bound wiki root")
+    p_xm.add_argument("--project-path", required=False, default="",
+                      help="Absolute path to the project directory (accepted for call-site symmetry; unused)")
+    p_xm.add_argument("--project-slug", required=False, default="",
+                      help="Research project slug (accepted for call-site symmetry; unused)")
+    p_xm.add_argument("--wiki-scripts-dir", required=True,
+                      help="Path to cogni-wiki wiki-ingest/scripts (for _wiki_lock / parse_frontmatter)")
+    p_xm.set_defaults(func=cmd_crossmerge)
 
     p_read = sub.add_parser("read", help="Emit distill-manifest.json content")
     p_read.add_argument("--project-path", required=True)

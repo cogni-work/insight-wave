@@ -705,6 +705,18 @@ def claim_similarity(a: str, b: str) -> float:
     return inter / union
 
 
+def digit_anchor_tokens(text: str) -> set:
+    """The cross-lingual article-number anchors in a claim text: pure-numeric
+    tokens that still carry weight (so the GENERIC_DENYLIST years 2024–2026 are
+    excluded — `token_weight` zeroes them BEFORE the digit ×3.0 boost). These are
+    the only deterministic DE↔EN bridge — "Artikel 99" and "Article 99" share the
+    token `99` and nothing else. concept-store.py's cross-lingual candidate gate
+    (#345) uses this on BOTH sides — candidate generation AND the server-side
+    re-validation that bounds the LLM to script-flagged pairs — so the anchor
+    predicate is computed in exactly one place."""
+    return {t for t in tokenize(text) if t.isdigit() and token_weight(t) > 0.0}
+
+
 # --- concept-records parser (used by concept-store.py / knowledge-distill) -----
 # The `concept-distiller` agent has no Bash and MUST NOT hand-build JSON/YAML
 # (same #325 constraint as wiki-composer). It writes raw-text concept records;
@@ -970,6 +982,48 @@ def _dedent_join(lines: list[str]) -> str:
     margins = [len(ln) - len(ln.lstrip()) for ln in body if ln.strip()]
     cut = min(margins) if margins else 0
     return "\n".join(ln[cut:] if len(ln) >= cut else ln for ln in body)
+
+
+# --- crossmerge-records parser (used by concept-store.py crossmerge, #345) -----
+# The cross-lingual-claim-merger agent (#345) has no Bash and writes RAW TEXT only
+# — same #325 constraint as every other Phase-4.5 agent. It confirms cross-lingual
+# (DE↔EN) twin claims the script already flagged as candidates; each confirmation
+# is ONE line. concept-store.py `crossmerge` parses these, re-validates the
+# candidate gate server-side (so the LLM can never widen scope), and UNIONs the
+# absorbed claim's provenance onto the survivor under the lock.
+
+_CROSSMERGE_RE = re.compile(r"^\s*merge\s*:\s*(.+)$")
+
+
+def parse_crossmerge_records(text: str) -> list[dict]:
+    """Parse a cross-lingual-claim-merger records file into a list of
+    `{slug, survivor_id, absorbed_id}` dicts.
+
+    Format — one confirmed union per line::
+
+        merge: high-risk-classification | dcl-003 | dcl-007
+
+    Three pipe-delimited fields after the `merge:` label: the page slug, the
+    survivor claim id (kept), and the absorbed claim id (folds into the survivor
+    and is removed). Blank and `#`-comment lines are skipped. A line with the
+    wrong arity or an empty field is dropped silently — `crossmerge` re-validates
+    every id against the on-disk page anyway, so a malformed line must never abort
+    the batch. CRLF-tolerant; split on `\\n` only."""
+    out: list[dict] = []
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = _CROSSMERGE_RE.match(line)
+        if not m:
+            continue
+        parts = [p.strip() for p in m.group(1).split("|")]
+        if len(parts) != 3 or not all(parts):
+            continue
+        out.append({"slug": parts[0], "survivor_id": parts[1], "absorbed_id": parts[2]})
+    return out
 
 
 def is_pdf_response(content_type: str | None, url: str) -> bool:

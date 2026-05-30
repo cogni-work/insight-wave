@@ -402,6 +402,69 @@ echo "$OUT" | grep -q '"near_existing_total": 1' && green "PASS: cross-type matc
 echo "$OUT" | grep -q '"near_type": "entity"' && green "PASS: cross-type near_type reports entity" || { red "FAIL: near_type not 'entity' on cross-type match"; errors=$((errors+1)); }
 echo "$OUT" | grep -q '"near_slug": "european-commission"' && green "PASS: cross-type near_slug points at the entity page" || { red "FAIL: cross-type near_slug wrong"; errors=$((errors+1)); }
 
+# --- 16. CROSS-LINGUAL candidate gate + crossmerge (#345) --------------------
+# Build a concept page carrying a German claim and its English twin that share
+# the article-number anchor `99` (the only DE↔EN bridge) plus an unrelated DE
+# claim. xlingual-candidates must flag EXACTLY the DE↔EN pair; crossmerge must
+# UNION the twin's provenance onto the survivor (3 claims → 2) and drop NO ref.
+PROJX="$WORK/projectX"; mkdir -p "$PROJX/.metadata"
+cat > "$PROJX/.metadata/recxl.txt" <<'EOF'
+- title: Sanctions Regime
+  type: concept
+  summary: Penalty rules.
+  claim: src-a#clm-200 | Verstöße gegen Artikel 99 werden mit Bußgeldern geahndet.
+  claim: src-b#clm-201 | Infringements under Article 99 are punished with administrative fines.
+  claim: src-c#clm-202 | Die nationale Aufsichtsbehörde überwacht die Marktteilnehmer.
+EOF
+python3 "$SCRIPT" merge --records "$PROJX/.metadata/recxl.txt" --wiki-root "$WIKI" --project-path "$PROJX" --project-slug proj-xl --wiki-scripts-dir "$WSD" >/dev/null
+XLPAGE="$WIKI/wiki/concepts/sanctions-regime.md"
+CAND=$(python3 "$SCRIPT" xlingual-candidates --wiki-root "$WIKI" --slugs "sanctions-regime" --wiki-scripts-dir "$WSD")
+NC=$(echo "$CAND" | field '["data"]["n_candidates"]')
+[ "$NC" = "1" ] && green "PASS: xlingual-candidates flags exactly the DE↔EN twin pair" || { red "FAIL: expected 1 candidate, got $NC"; errors=$((errors+1)); }
+echo "$CAND" | grep -q '"shared_anchors"' && echo "$CAND" | grep -q '"99"' && green "PASS: candidate carries the shared article-number anchor 99" || { red "FAIL: candidate missing anchor 99"; errors=$((errors+1)); }
+
+# Confirm dcl-001 (DE survivor) absorbs dcl-002 (EN twin).
+printf 'merge: sanctions-regime | dcl-001 | dcl-002\n' > "$PROJX/.metadata/xmrec.txt"
+XM=$(python3 "$SCRIPT" crossmerge --records "$PROJX/.metadata/xmrec.txt" --wiki-root "$WIKI" --wiki-scripts-dir "$WSD")
+echo "$XM" | grep -q '"claims_crossmerged_total": 1' && green "PASS: crossmerge reports 1 union" || { red "FAIL: crossmerge total != 1"; errors=$((errors+1)); }
+NLEFT=$(grep -c 'claim_id: dcl-' "$XLPAGE")
+[ "$NLEFT" = "2" ] && green "PASS: crossmerge collapsed 3 claims → 2 (absorbed dcl removed)" || { red "FAIL: expected 2 claims after crossmerge, got $NLEFT"; errors=$((errors+1)); }
+# Survivor must carry BOTH source refs — no provenance dropped.
+SURV=$(awk '/claim_id: dcl-001$/{f=1} f{print} /source_claim_refs:/{if(f){print; exit}}' "$XLPAGE")
+echo "$SURV" | grep -q 'src-a#clm-200' && echo "$SURV" | grep -q 'src-b#clm-201' && green "PASS: survivor unions both DE+EN source_claim_refs (no fact dropped)" || { red "FAIL: survivor lost a provenance ref"; errors=$((errors+1)); }
+
+# --- 16b. crossmerge BYTE-STABLE re-run (absorbed id already gone) -----------
+BEFORE_XL=$(cat "$XLPAGE")
+python3 "$SCRIPT" crossmerge --records "$PROJX/.metadata/xmrec.txt" --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" >/dev/null
+AFTER_XL=$(cat "$XLPAGE")
+[ "$BEFORE_XL" = "$AFTER_XL" ] && green "PASS: crossmerge re-run is byte-stable (absorbed id gone → claim_not_found)" || { red "FAIL: crossmerge re-run changed the page"; errors=$((errors+1)); }
+
+# --- 16c. crossmerge REJECTS a non-candidate proposal (LLM can't widen scope)
+# dcl-001 (Artikel 99) vs dcl-003 (Aufsichtsbehörde, no shared anchor) are both
+# real claims but NOT a candidate — crossmerge must skip reason=not_a_candidate
+# and leave the page byte-unchanged.
+BEFORE_NC=$(cat "$XLPAGE")
+printf 'merge: sanctions-regime | dcl-001 | dcl-003\n' > "$PROJX/.metadata/xmbad.txt"
+XB=$(python3 "$SCRIPT" crossmerge --records "$PROJX/.metadata/xmbad.txt" --wiki-root "$WIKI" --wiki-scripts-dir "$WSD")
+echo "$XB" | grep -q '"reason": "not_a_candidate"' && green "PASS: crossmerge rejects a non-candidate pair (server-side gate)" || { red "FAIL: non-candidate not rejected"; errors=$((errors+1)); }
+AFTER_NC=$(cat "$XLPAGE")
+[ "$BEFORE_NC" = "$AFTER_NC" ] && green "PASS: rejected crossmerge leaves the page byte-unchanged" || { red "FAIL: rejected crossmerge mutated the page"; errors=$((errors+1)); }
+
+# --- 16d. single-language page yields ZERO candidates (the auto-skip) --------
+# Two English claims sharing anchor 99 but ALSO high overlap would auto-merge in
+# Step 6; two SAME-language distinct claims sharing only a year are not anchors.
+# Assert a same-language page with no shared article number → 0 candidates.
+PROJY="$WORK/projectY"; mkdir -p "$PROJY/.metadata"
+cat > "$PROJY/.metadata/recmono.txt" <<'EOF'
+- title: Monolingual Probe
+  type: concept
+  claim: src-a#clm-300 | In 2025 providers must register high-risk systems.
+  claim: src-b#clm-301 | National authorities supervise market participants closely.
+EOF
+python3 "$SCRIPT" merge --records "$PROJY/.metadata/recmono.txt" --wiki-root "$WIKI" --project-path "$PROJY" --project-slug proj-mono --wiki-scripts-dir "$WSD" >/dev/null
+MC=$(python3 "$SCRIPT" xlingual-candidates --wiki-root "$WIKI" --slugs "monolingual-probe" --wiki-scripts-dir "$WSD" | field '["data"]["n_candidates"]')
+[ "$MC" = "0" ] && green "PASS: single-language page (year 2025 not an anchor) → 0 candidates (auto-skip)" || { red "FAIL: expected 0 candidates on monolingual page, got $MC"; errors=$((errors+1)); }
+
 echo ""
 if [ "$errors" -eq 0 ]; then
   green "concept-store.py contract: all pass."

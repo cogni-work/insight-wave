@@ -60,10 +60,18 @@ assert_grep 'Task' "$SKILL" "knowledge-distill: Task in allowed-tools"
 assert_grep 'Task(concept-summary-narrator' "$SKILL" "knowledge-distill: dispatches concept-summary-narrator via Task (#341)"
 assert_grep 'concept-store.py renarrate' "$SKILL" "knowledge-distill: calls concept-store.py renarrate (#341)"
 assert_grep 'no-renarrate' "$SKILL" "knowledge-distill: documents the --no-renarrate opt-out (#341)"
-assert_grep 'updated_slugs' "$SKILL" "knowledge-distill: Step 6.5 keys on updated_slugs (created pages keep distiller summary)"
+assert_grep 'updated_slugs' "$SKILL" "knowledge-distill: Step 6.7 keys on updated_slugs (created pages keep distiller summary)"
 assert_grep 'RENARRATE_BUNDLE_PATH' "$SKILL" "knowledge-distill: threads the renarrate bundle path"
 assert_grep 'summaries re-narrated\|Summaries re-narrated' "$SKILL" "knowledge-distill: Step 9 surfaces the re-narration tally"
-assert_grep 'extract_machine_block' "$SKILL" "knowledge-distill: Step 6.5 reads the SUMMARY block via the shared helper"
+assert_grep 'extract_machine_block' "$SKILL" "knowledge-distill: Step 6.7 reads the SUMMARY block via the shared helper"
+# #345 Step 6.6 — cross-lingual DE↔EN claim merge (default-on, fail-soft, auto-skip).
+assert_grep 'Task(cross-lingual-claim-merger' "$SKILL" "knowledge-distill: dispatches cross-lingual-claim-merger via Task (#345)"
+assert_grep 'concept-store.py xlingual-candidates' "$SKILL" "knowledge-distill: generates candidates via xlingual-candidates (#345)"
+assert_grep 'concept-store.py crossmerge' "$SKILL" "knowledge-distill: applies unions via concept-store.py crossmerge (#345)"
+assert_grep 'no-crosslingual' "$SKILL" "knowledge-distill: documents the --no-crosslingual opt-out (#345)"
+assert_grep 'CANDIDATES_PATH' "$SKILL" "knowledge-distill: threads the candidates bundle path (#345)"
+assert_grep 'auto-skip' "$SKILL" "knowledge-distill: Step 6.6 auto-skips on single-language bases (#345)"
+assert_grep 'merged_slugs' "$SKILL" "knowledge-distill: folds crossmerge merged_slugs into updated_slugs (#345)"
 
 # --- concept-distiller agent -------------------------------------------------
 AGENT="$PLUGIN_ROOT/agents/concept-distiller.md"
@@ -108,11 +116,29 @@ assert_grep 'only the summary\|only the SUMMARY\|touch .*only\|Summary-only\|sum
 assert_grep '#335' "$NARRATOR" "concept-summary-narrator: names #335 as out-of-scope (no contradiction pass)"
 assert_grep 'tools: \["Read", "Write"\]' "$NARRATOR" "concept-summary-narrator: tools Read + Write only"
 
+# --- cross-lingual-claim-merger agent (#345) ---------------------------------
+MERGER="$PLUGIN_ROOT/agents/cross-lingual-claim-merger.md"
+if [ ! -f "$MERGER" ]; then
+  red "FAIL: agents/cross-lingual-claim-merger.md not found"
+  exit 1
+fi
+assert_grep 'name: cross-lingual-claim-merger' "$MERGER" "cross-lingual-claim-merger: frontmatter name"
+assert_grep 'model: sonnet' "$MERGER" "cross-lingual-claim-merger: model sonnet"
+assert_grep 'CANDIDATES_PATH' "$MERGER" "cross-lingual-claim-merger: reads the candidate pairs bundle"
+assert_grep 'RECORDS_OUTPUT_PATH' "$MERGER" "cross-lingual-claim-merger: writes raw-text records"
+assert_grep 'merge: ' "$MERGER" "cross-lingual-claim-merger: documents the merge: record idiom"
+assert_grep 'raw text' "$MERGER" "cross-lingual-claim-merger: writes raw text, never JSON/YAML (#325)"
+# Scope-bound + fail-safe discipline — the load-bearing invariants of approach (a).
+assert_grep 'only CONFIRM\|only confirm\|may only CONFIRM\|may only confirm' "$MERGER" "cross-lingual-claim-merger: may only confirm script-flagged pairs (never invents a merge)"
+assert_grep 'crossmerge' "$MERGER" "cross-lingual-claim-merger: defers the union to concept-store.py crossmerge"
+assert_grep 'same.*language\|two languages\|cross-lingual' "$MERGER" "cross-lingual-claim-merger: judges same-fact-two-languages only"
+assert_grep 'tools: \["Read", "Write"\]' "$MERGER" "cross-lingual-claim-merger: tools Read + Write only"
+
 if [ "$errors" -eq 0 ]; then
   green ""
-  green "knowledge-distill + concept-distiller + concept-summary-narrator contract: all pass."
+  green "knowledge-distill + concept-distiller + concept-summary-narrator + cross-lingual-claim-merger contract: all pass."
   exit 0
 else
-  red "knowledge-distill + concept-distiller + concept-summary-narrator contract: $errors failure(s)."
+  red "knowledge-distill + concept-distiller + concept-summary-narrator + cross-lingual-claim-merger contract: $errors failure(s)."
   exit 1
 fi
