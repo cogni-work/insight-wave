@@ -1,12 +1,12 @@
 ---
 name: knowledge-fetch
-description: "Phase 3 of the v0.1.0 inverted pipeline. Builds fetch-manifest.json from the fetch results the curators already produced in Phase 2 (Option B, #292 — bodies are fetched during curate). Cobrowse recovery of WebFetch misses is OPT-IN (--cobrowse): the skill walks the user through enabling the Claude-in-Chrome extension, then dispatches source-fetcher (cobrowse-only) sequentially. Use this skill whenever the user says 'fetch candidates for project X', 'build the fetch manifest', 'phase 3 of the knowledge pipeline', 'recover the failed sources', 'knowledge fetch'. After fetch, run knowledge-ingest to deposit per-URL wiki pages."
+description: "Phase 3 of the inverted pipeline. Builds fetch-manifest.json from the fetch results the curators already produced in Phase 2 (bodies are already fetched during curate). Cobrowse recovery of WebFetch misses is OPT-IN (--cobrowse): the skill walks the user through enabling the Claude-in-Chrome extension, then dispatches source-fetcher (cobrowse-only) sequentially. Use this skill whenever the user says 'fetch candidates for project X', 'build the fetch manifest', 'phase 3 of the knowledge pipeline', 'recover the failed sources', 'knowledge fetch'. After fetch, run knowledge-ingest to deposit per-URL wiki pages."
 allowed-tools: Read, Write, Bash, Glob, Skill, Task, AskUserQuestion
 ---
 
 # Knowledge Fetch
 
-Phase 3 of the v0.1.0 inverted pipeline. Under Option B (#292) the WebFetch body-pull happens inside the Phase-2 curators, so this skill no longer fetches by default — it reads each candidate's `fetch` sub-object from `<project>/.metadata/candidates.json` and assembles the canonical `<project>/.metadata/fetch-manifest.json` directly. Its remaining active job is **opt-in cobrowse reconcile**: when the user passes `--cobrowse` (or accepts the interactive prompt), it walks them through enabling the Claude-in-Chrome browser extension and dispatches `source-fetcher` (cobrowse-only) **sequentially** over the WebFetch misses, merging any rescues back into the manifest.
+Phase 3 of the inverted pipeline. The WebFetch body-pull happens inside the Phase-2 curators, so this skill no longer fetches by default — it reads each candidate's `fetch` sub-object from `<project>/.metadata/candidates.json` and assembles the canonical `<project>/.metadata/fetch-manifest.json` directly. Its remaining active job is **opt-in cobrowse reconcile**: when the user passes `--cobrowse` (or accepts the interactive prompt), it walks them through enabling the Claude-in-Chrome browser extension and dispatches `source-fetcher` (cobrowse-only) **sequentially** over the WebFetch misses, merging any rescues back into the manifest.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 3 — `knowledge-fetch`" and `references/fetch-cache-design.md` once to anchor on the contract.
 
@@ -30,7 +30,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 3 — `kno
 | `--max-age-days` | No | Cache freshness window in days. Default: from `binding.curator_defaults.fetch_cache_max_age_days` (30). Forwarded to the cobrowse `source-fetcher`. |
 | `--cobrowse` | No | Opt in to browser-assisted recovery of WebFetch misses. Default OFF (autonomous runs stay browser-free). |
 | `--no-cobrowse` | No | Force cobrowse off even in an interactive session (suppresses the prompt). |
-| `--batch-size` | No | Vestigial under Option B — the default WebFetch path no longer dispatches per batch (the curators already fetched). Cobrowse recovery is per-URL sequential through the single shared browser tab. Kept for backward-compat; ignored. |
+| `--batch-size` | No | Vestigial — the default WebFetch path no longer dispatches per batch (the curators already fetched). Cobrowse recovery is per-URL sequential through the single shared browser tab. Kept for backward-compat; ignored. |
 | `--tier` | No | Restrict the cobrowse-retry set to a single tier (`primary`, `secondary`, `supporting`). Default: all tiers. No longer bounds WebFetch cost — that is the curator's `max_candidates_per_sq` (Phase 2). |
 | `--dry-run` | No | Print the manifest plan (fetched / unavailable counts from the candidates' `fetch` sub-objects, cobrowse-eligible miss count) without dispatching cobrowse. |
 
@@ -78,13 +78,13 @@ If `--dry-run`: print fetched / unavailable counts and the cobrowse-eligible mis
 
 ### 2. Cobrowse opt-in gate (default OFF)
 
-Cobrowse is **never** auto-attempted — autonomous runs (the M12 gate re-run, `knowledge-refresh --mode push`) must stay deterministic and browser-free.
+Cobrowse is **never** auto-attempted — autonomous runs (`knowledge-refresh --mode push`) must stay deterministic and browser-free.
 
 - No cobrowse-eligible misses → nothing to recover; go to Step 4 (regardless of flags).
 - `--no-cobrowse` → skip cobrowse entirely; go to Step 4.
 - `--cobrowse` → opt in; go to Step 3.
 - Neither flag, **and** there are cobrowse-eligible misses, **and** the session is interactive → ask once via `AskUserQuestion`: "N source(s) failed WebFetch. Recover them via cobrowse? This opens your browser." (Yes → Step 3; No → Step 4.) Optionally persist the answer as `binding.curator_defaults.cobrowse_enabled` so future runs honour it without re-prompting (a persisted `true`/`false` is treated exactly like `--cobrowse`/`--no-cobrowse`).
-- **Otherwise** (neither flag, misses exist, but the session is non-interactive — the autonomous path: the M12 gate re-run, `knowledge-refresh --mode push`) → **default OFF**: do NOT call `AskUserQuestion` (there is no one to answer), go to Step 4. The misses stay unavailable and the summary prints the `--cobrowse` hint. This is the catch-all that keeps autonomous runs browser-free and non-blocking.
+- **Otherwise** (neither flag, misses exist, but the session is non-interactive — the autonomous path: `knowledge-refresh --mode push`) → **default OFF**: do NOT call `AskUserQuestion` (there is no one to answer), go to Step 4. The misses stay unavailable and the summary prints the `--cobrowse` hint. This is the catch-all that keeps autonomous runs browser-free and non-blocking.
 
 ### 3. Cobrowse setup + recovery (when opted in)
 
@@ -137,7 +137,7 @@ If `unavailable_count / total_candidates > 0.3`, emit a non-blocking warning: "h
 
 ## Out of scope
 
-- Does NOT WebFetch — the body-pull moved to Phase 2's `source-curator` (Option B, #292). This skill only assembles the manifest and offers opt-in cobrowse recovery.
+- Does NOT WebFetch — the body-pull moved to Phase 2's `source-curator`. This skill only assembles the manifest and offers opt-in cobrowse recovery.
 - Does NOT extract claims from fetched bodies — that is Phase 4 (`source-ingester`).
 - Does NOT touch the wiki — Phase 4 (`knowledge-ingest`).
 - Does NOT evict cache entries — that is `fetch-cache.py evict` (manual or via a future `knowledge-refresh --vacuum`).

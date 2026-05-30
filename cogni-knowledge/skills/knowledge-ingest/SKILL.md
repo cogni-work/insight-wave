@@ -1,14 +1,14 @@
 ---
 name: knowledge-ingest
-description: "Phase 4 of the v0.1.0 inverted pipeline. Reads fetch-manifest.json, dispatches source-ingester per fetched source to write wiki/sources/<slug>.md pages with pre_extracted_claims:, merges per-source results into ingest-manifest.json, then runs cogni-wiki's backlink_audit.py + wiki_index_update.py per new slug. The wiki becomes populated before any draft runs — the F6 fix from the alpha. Use this skill whenever the user says 'ingest the fetched sources', 'deposit fetched pages into the wiki', 'phase 4 of the knowledge pipeline', 'run the ingesters', 'knowledge ingest'. After ingest, the next slice (M7) will run knowledge-compose to draft the report."
+description: "Phase 4 of the inverted pipeline. Reads fetch-manifest.json, dispatches source-ingester per fetched source to write wiki/sources/<slug>.md pages with pre_extracted_claims:, merges per-source results into ingest-manifest.json, then runs cogni-wiki's backlink_audit.py + wiki_index_update.py per new slug. The wiki becomes populated before any draft runs. Use this skill whenever the user says 'ingest the fetched sources', 'deposit fetched pages into the wiki', 'phase 4 of the knowledge pipeline', 'run the ingesters', 'knowledge ingest'. After ingest, knowledge-compose drafts the report."
 allowed-tools: Read, Write, Bash, Task
 ---
 
 # Knowledge Ingest
 
-Phase 4 of the v0.1.0 inverted pipeline. Reads `<project>/.metadata/fetch-manifest.json`, dispatches `source-ingester` per fetched source to write `wiki/sources/<slug>.md` pages, and merges per-source results into the canonical `<project>/.metadata/ingest-manifest.json`. After per-source emission, runs cogni-wiki's `backlink_audit.py` + `wiki_index_update.py` directly at script level per new slug, and appends one ingest summary line to `wiki/log.md`.
+Phase 4 of the inverted pipeline. Reads `<project>/.metadata/fetch-manifest.json`, dispatches `source-ingester` per fetched source to write `wiki/sources/<slug>.md` pages, and merges per-source results into the canonical `<project>/.metadata/ingest-manifest.json`. After per-source emission, runs cogni-wiki's `backlink_audit.py` + `wiki_index_update.py` directly at script level per new slug, and appends one ingest summary line to `wiki/log.md`.
 
-By the end of this phase the wiki is populated with one `type: source` page per `fetched[]` entry, each carrying `pre_extracted_claims:` in its frontmatter. The composer (M7) reads these pages; verification (M8) string-matches draft sentences against the pre-extracted claims with **zero network calls** — the structural win.
+By the end of this phase the wiki is populated with one `type: source` page per `fetched[]` entry, each carrying `pre_extracted_claims:` in its frontmatter. The composer reads these pages; verification string-matches draft sentences against the pre-extracted claims with **zero network calls** — the structural win.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4 — `knowledge-ingest`" and `references/claim-at-ingest.md` once to anchor on the contract.
 
@@ -30,7 +30,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4 — `kno
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. |
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
-| `--batch-size` | No | Advisory cap on how many fetched sources one dispatch wave covers (a sub-batch of the full set). Ingesters in a wave fan out in a single message; Claude Code — not this cap — throttles actual concurrency. Default 25 (calibrated from the #311 live run — see `references/fan-out-concurrency.md`). |
+| `--batch-size` | No | Advisory cap on how many fetched sources one dispatch wave covers (a sub-batch of the full set). Ingesters in a wave fan out in a single message; Claude Code — not this cap — throttles actual concurrency. Default 25 (see `references/fan-out-concurrency.md`). |
 | `--dry-run` | No | Print the dispatch plan (batch count, total sources, expected new pages) without running ingesters. |
 
 ## Workflow
@@ -60,7 +60,7 @@ resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki
   local skill="$1"
   local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
-  # F26: pick the NEWEST cached version, not the lexically-first. Consider ONLY
+  # pick the NEWEST cached version, not the lexically-first. Consider ONLY
   # numeric version dirs — sort -V ranks a non-numeric name (main/latest/a
   # branch checkout) ABOVE every real version, so a stray dir would otherwise
   # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.46).
@@ -92,7 +92,7 @@ Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/
 
 Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --project-path <project_path>` so each fetched URL's `sub_question_refs[]`, `title`, and `publisher` are available to pass into the ingester. Keep the URL → `sub_question_refs[]` mapping around — Step 4 reuses it to pick each source's index category.
 
-Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by sub-question id (`{"sq-01": "<theme_label>", ...}` from `plan.sub_questions[]`). Step 4's index update files each source under its **first-listed** sub-question's `theme_label` (`sub_question_refs[0]`; #307). Note `candidate-store.py` unions `sub_question_refs[]` (existing-first) on a cross-SQ dedup, so for a source matched by several sub-questions `[0]` is the first that discovered it, not a ranked "primary" — the thematic grouping is best-effort, not authoritative. Older plans (pre-Slice-16) have no `theme_label`; the map is then empty and Step 4 falls back to the `"Sources"` category. (`plan.json` is also read for `TOPIC` in Step 5.)
+Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by sub-question id (`{"sq-01": "<theme_label>", ...}` from `plan.sub_questions[]`). Step 4's index update files each source under its **first-listed** sub-question's `theme_label` (`sub_question_refs[0]`). Note `candidate-store.py` unions `sub_question_refs[]` (existing-first) on a cross-SQ dedup, so for a source matched by several sub-questions `[0]` is the first that discovered it, not a ranked "primary" — the thematic grouping is best-effort, not authoritative. Older plans have no `theme_label`; the map is then empty and Step 4 falls back to the `"Sources"` category. (`plan.json` is also read for `TOPIC` in Step 5.)
 
 ### 1. Build batch plan
 
@@ -111,7 +111,7 @@ Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by
    If the result is empty (title was non-alnum / whitespace / missing), fall back to `src-<first-12-of-sha256(normalize_url(URL))>` via `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url <URL> --bare` (take the first 12 hex chars). The ingester does NOT re-derive — it only sanity-checks `[a-z0-9][a-z0-9-]{0,79}`. `slugify()` lives in `_knowledge_lib.py` alongside `normalize_url` and the `atomic_write*` helpers — single source of truth.
 3. **Skip already-ingested.** Read `ingest-manifest.json` (if it exists) and drop any `fetched[]` entry whose URL appears in `ingested[]` already. This is the re-run no-op contract: a second `knowledge-ingest` run on the same project should not re-dispatch `source-ingester` / `claim-extractor` for sources already on the wiki. The agent-side slug-collision check (`agents/source-ingester.md` Phase 3) is defence-in-depth for the cross-process race; the orchestrator-side skip is what saves cost on the common re-run path.
 4. **Dedupe by slug within this run.** If two not-yet-ingested URLs map to the same slug (rare; URL dedup should have caught it upstream), keep the first occurrence and surface the collision as a non-blocking warning. Continue.
-5. Split into batches of size `--batch-size` (default 25). Each batch dispatches as **one wave** (Step 3), so a run with ≤ `--batch-size` sources is a single wave — one barrier, not many. The default 25 is calibrated from the #311 live run (67 ingesters ran clean as waves of 25/26); see `references/fan-out-concurrency.md`.
+5. Split into batches of size `--batch-size` (default 25). Each batch dispatches as **one wave** (Step 3), so a run with ≤ `--batch-size` sources is a single wave — one barrier, not many. The default 25 is calibrated so a wave of 25/26 ingesters runs clean; see `references/fan-out-concurrency.md`.
 
 If `--dry-run`: print the batch count, total sources after skip-filter, expected new pages, and stop.
 
@@ -150,7 +150,7 @@ For each batch:
 
    `source-ingester` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched via `Task`, not `Skill`.
 
-3. **One wave per batch.** Issue all sources in the batch (`--batch-size`, default 25) as `source-ingester` dispatches in a **single message with multiple tool calls** so they fan out in one wave. Claude Code self-throttles the actual concurrency inside a single-message fan-out — dispatches beyond its internal ceiling queue and run as slots free, but all of them complete and return — so a wave of 25 is safe (the calibration is in Step 1.5 and `references/fan-out-concurrency.md`). The per-batch barrier is **not** a concurrency limiter; it exists only so the Step 3.4 merge stays incremental and re-runnable (a crashed wave re-runs from `ingested[]`). This mirrors the `knowledge-curate` one-wave precedent (#299). Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the Step 3.4 merge runs once per batch.
+3. **One wave per batch.** Issue all sources in the batch (`--batch-size`, default 25) as `source-ingester` dispatches in a **single message with multiple tool calls** so they fan out in one wave. Claude Code self-throttles the actual concurrency inside a single-message fan-out — dispatches beyond its internal ceiling queue and run as slots free, but all of them complete and return — so a wave of 25 is safe (the calibration is in Step 1.5 and `references/fan-out-concurrency.md`). The per-batch barrier is **not** a concurrency limiter; it exists only so the Step 3.4 merge stays incremental and re-runnable (a crashed wave re-runs from `ingested[]`). This mirrors the `knowledge-curate` one-wave precedent. Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the Step 3.4 merge runs once per batch.
 
 4. After all ingesters in this batch return, merge the per-source batch JSONs into `ingest-manifest.json`:
    - For each batch JSON file: on `ok: true` append to `ingested[]`; on `ok: false` / skipped append to `skipped[]` with the `reason`.
@@ -196,7 +196,7 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
    ```
    The plan shape is `{"targets": [{"slug": "<target>", "sentence": "... [[<slug>]] ..."}, ...]}`; each `sentence` MUST contain `[[<slug>]]` or the script rejects that target. `apply_plan` is **idempotent** (skips a target that already links to `[[<slug>]]`) and **fail-soft per target** (per-target errors land in `data.failed[]`, never abort the batch). Writing these inbound links is what keeps an ingested-but-never-cited source from showing up as an `orphan_page` in `wiki-lint` (the synthesis only links the sources it cites; finalize de-orphans those — see `knowledge-finalize`). Surface `applied[]` / `failed[]` counts in the Step 6 summary. If you find no genuine relation for a slug, skip apply for it (write no backlink for that slug) — never invent a backlink.
 
-2. **Index update (thematic category, #307):**
+2. **Index update (thematic category):**
    Resolve the category: take the source's first-listed sub-question ref `sub_question_refs[0]` (from the candidates map built in Step 0), look it up in the `theme_label` map; use that label. Fall back to `"Sources"` only when the ref is missing or the map has no `theme_label` for it (legacy plans).
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
@@ -206,8 +206,8 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
        --category "<theme_label, or Sources fallback>" \
        --max-summary 240
    ```
-   The `--max-summary 240` is a defensive backstop (cogni-wiki v0.0.47+): the helper clamps the one-liner on a word boundary and appends `…` **only** if the authored sentence runs long; a normal one-sentence summary passes through untouched. It guards `wiki/index.md` against the #324 mid-word artifact — the summary itself is authored as one crisp, complete sentence (no character count), not sliced to a length.
-   `wiki_index_update.py` creates a `## <theme_label>` heading in `wiki/index.md` on first use and appends to it afterwards, so sources group thematically (per sub-question) instead of under one flat `## Sources` (#307). As of cogni-wiki v0.0.46 the first real insert also sheds the wiki-setup `## Categories` / `_No pages yet…_` seed placeholder (#306). Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
+   The `--max-summary 240` is a defensive backstop: the helper clamps the one-liner on a word boundary and appends `…` **only** if the authored sentence runs long; a normal one-sentence summary passes through untouched. It guards `wiki/index.md` against a mid-word artifact — the summary itself is authored as one crisp, complete sentence (no character count), not sliced to a length.
+   `wiki_index_update.py` creates a `## <theme_label>` heading in `wiki/index.md` on first use and appends to it afterwards, so sources group thematically (per sub-question) instead of under one flat `## Sources`. The first real insert also sheds the wiki-setup `## Categories` / `_No pages yet…_` seed placeholder. Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
 
    Capture the JSON envelope. When `success == true` **and** `data.action == "inserted"`, increment an in-loop counter `n_new` (initialised to `0` before the loop) — a brand-new index row means a brand-new page. When `data.action == "updated"`, a row for this slug already existed → do **not** count it (this is the re-ingest / pre-existing-page case; counting it would over-count `entries_count`).
 
@@ -224,7 +224,7 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
     --delta <n_new>
 ```
 
-Same call shape and script `knowledge-finalize` Step 8 uses (`config_bump.py` already supports a signed `--delta`); lock-wrapped at its own write site. **Non-fatal on failure** — if the bump fails, the source pages are already on disk and discoverable; surface the failure in the Step 6 summary and let the operator reconcile via `wiki-lint --fix=entries_count_drift` (the same posture finalize takes). Without this bump, `wiki-health` / `wiki-resume` report an `entries_count_drift` equal to the number of ingested source pages (#302).
+Same call shape and script `knowledge-finalize` Step 8 uses (`config_bump.py` already supports a signed `--delta`); lock-wrapped at its own write site. **Non-fatal on failure** — if the bump fails, the source pages are already on disk and discoverable; surface the failure in the Step 6 summary and let the operator reconcile via `wiki-lint --fix=entries_count_drift` (the same posture finalize takes). Without this bump, `wiki-health` / `wiki-resume` report an `entries_count_drift` equal to the number of ingested source pages.
 
 ### 5. Append wiki/log.md
 
@@ -252,7 +252,7 @@ Print ≤ 10 lines:
 - Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
-- Next: M7 will land `knowledge-compose`. For v0.0.20, end here — `wiki/sources/*.md` populated + `ingest-manifest.json` is this slice's deliverable.
+- Next: `knowledge-compose` reads the populated `wiki/sources/*.md` + `ingest-manifest.json` to draft the report.
 
 If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages written this run — every fetched source was already in ingest-manifest.json or skipped; check the skipped breakdown".
 
@@ -261,23 +261,23 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - **Re-ingest of an existing project.** `ingest-manifest.json` already exists; the orchestrator skips entries already in `ingested[]` (URL-keyed). Manual cleanup (delete page + remove from manifest) is the path to force a re-ingest of a specific URL.
 - **Cache file gone missing between fetch and ingest.** Surface in `skipped[]` with `reason: cache_miss` and continue. The user can re-run `knowledge-fetch` to repopulate.
 - **Slug collision across batches.** Step 1.3 dedupes before dispatch; defence-in-depth check inside `source-ingester` refuses to overwrite an existing page. Surfaces as `reason: slug_collision` in `skipped[]`.
-- **First ingest into an empty wiki.** `wiki/index.md` may exist with only the wiki-setup header + the `## Categories` / `_No pages yet…_` seed placeholder. The first `wiki_index_update.py` call creates the first `## <theme_label>` category and (cogni-wiki v0.0.46+) sheds the seed placeholder; subsequent calls append. On a brand-new base the backlink apply step has few or no sibling pages to link from — that's expected; the synthesis (finalize) and later ingests fill the graph in.
-- **Wiki schema < 0.0.6 (`type: source` not yet allowlisted).** cogni-wiki v0.0.44's `_wikilib.PAGE_TYPE_DIRS` includes `"source": "sources"`; older wikis hard-fail in `wiki-health` until migrated. The skill does not auto-migrate; surface the error and direct the user to upgrade cogni-wiki.
+- **First ingest into an empty wiki.** `wiki/index.md` may exist with only the wiki-setup header + the `## Categories` / `_No pages yet…_` seed placeholder. The first `wiki_index_update.py` call creates the first `## <theme_label>` category and sheds the seed placeholder; subsequent calls append. On a brand-new base the backlink apply step has few or no sibling pages to link from — that's expected; the synthesis (finalize) and later ingests fill the graph in.
+- **Wiki schema with `type: source` not yet allowlisted.** A current cogni-wiki `_wikilib.PAGE_TYPE_DIRS` includes `"source": "sources"`; older wikis hard-fail in `wiki-health` until migrated. The skill does not auto-migrate; surface the error and direct the user to upgrade cogni-wiki.
 
 ## Out of scope
 
-- Does NOT compose the draft — that is Phase 5 (`knowledge-compose`, M7).
-- Does NOT verify claims — Phase 6 (`knowledge-verify`, M8).
-- Does NOT auto-select backlink targets — `backlink_audit.py` never invents links; the orchestrator curates the `targets[]` plan from the audit candidates and only then applies it (Slice 16, #308).
+- Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
+- Does NOT verify claims — Phase 6 (`knowledge-verify`).
+- Does NOT auto-select backlink targets — `backlink_audit.py` never invents links; the orchestrator curates the `targets[]` plan from the audit candidates and only then applies it.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
 - Does NOT re-run fetch — that is `knowledge-fetch`.
 
 ## Output
 
 - `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry).
-- `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (#307; falls back to `## Sources` for legacy plans); the wiki-setup seed placeholder is shed on the first real insert (cogni-wiki v0.0.46, #306).
+- `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (falls back to `## Sources` for legacy plans); the wiki-setup seed placeholder is shed on the first real insert.
 - Existing `wiki/<type>/<target>.md` pages gain a curated `[[<slug>]]` backlink to each new source (via `backlink_audit.py --apply-plan`), so ingested sources are not orphans.
-- `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` (the count of newly-indexed source pages this run; #302).
+- `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` (the count of newly-indexed source pages this run).
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] ingest | …` line.
 - `<project_path>/.metadata/ingest-manifest.json` (schema 0.1.0).
 - `<project_path>/.metadata/.ingest.batch.<NNN>.<NN>.json` per ingester dispatch (intermediate; kept for debugging).
@@ -285,7 +285,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 4 contract
-- `${CLAUDE_PLUGIN_ROOT}/references/fan-out-concurrency.md` — why `--batch-size` defaults to 25; the cross-phase fan-out posture (#323)
+- `${CLAUDE_PLUGIN_ROOT}/references/fan-out-concurrency.md` — why `--batch-size` defaults to 25; the cross-phase fan-out posture
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — why claims at ingest, claim shape
 - `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched agent
 - `${CLAUDE_PLUGIN_ROOT}/agents/claim-extractor.md` — dispatched by source-ingester

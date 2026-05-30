@@ -1,14 +1,14 @@
 ---
 name: knowledge-finalize
-description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md, runs a conformance gate (wiki-lint --fix=all + wiki-health) so the deposited base passes cogni-wiki's own checks — reference backlinks are bare [[slug]] so the synthesis de-orphans its cited sources — dispatches the wiki-contradictor agent for a zero-network contradiction tripwire against each cited source page's pre_extracted_claims and each cited distilled page's distilled_claims (#335 v0.1.15; distilled-page scoring #363 v0.1.28; fail-soft observability — no auto-resolution, no rollback), and dispatches the wiki-reviewer agent for an advisory structural-quality score of the draft on 5 weighted dimensions (#309 P1.1, v0.1.29, fail-soft observability — non-blocking, no auto-fix). Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
+description: "Phase 7 of the inverted pipeline — deposits the verified draft as a wiki synthesis page, closing the compounding loop. Reads the latest verified draft + its verify manifest + citation manifest, runs cycle-guard.py to refuse self-citing loops, atomically writes the draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research), updates wiki/index.md, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json and a finalize line to wiki/log.md, and runs a conformance gate (wiki-lint --fix=all + wiki-health) with bare [[slug]] backlinks that de-orphan the cited sources. Then dispatches the wiki-contradictor agent for a zero-network contradiction tripwire and the wiki-reviewer agent for an advisory structural-quality score — both fail-soft, non-blocking observability. The deposited synthesis becomes visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'."
 allowed-tools: Read, Write, Bash, Task
 ---
 
 # Knowledge Finalize
 
-Phase 7 of the v0.1.0 inverted pipeline. Reads `<project>/output/draft-vN.md` + `<project>/.metadata/verify-vN.json` + `<project>/.metadata/citation-manifest.json`, runs `cycle-guard.py` to refuse self-citing loops, deposits the verified draft as `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md`, runs three cogni-wiki helpers (`wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`) directly at script level, appends a `research_projects[]` entry to `binding.json`, writes one `## [YYYY-MM-DD] finalize | …` line to `wiki/log.md`, and runs a Step 10.5 conformance gate (`lint_wiki.py --fix=all` + `health.py`) so the deposited base passes cogni-wiki's own structural checks.
+Phase 7 of the inverted pipeline. Reads `<project>/output/draft-vN.md` + `<project>/.metadata/verify-vN.json` + `<project>/.metadata/citation-manifest.json`, runs `cycle-guard.py` to refuse self-citing loops, deposits the verified draft as `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md`, runs three cogni-wiki helpers (`wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`) directly at script level, appends a `research_projects[]` entry to `binding.json`, writes one `## [YYYY-MM-DD] finalize | …` line to `wiki/log.md`, and runs a Step 10.5 conformance gate (`lint_wiki.py --fix=all` + `health.py`) so the deposited base passes cogni-wiki's own structural checks.
 
-This is the **inverted-pipeline closing step**. Without it, every verified draft from M8 lives forever in `<project>/output/` and the wiki cannot accumulate cross-source framing — the compounding property that differentiates cogni-knowledge from one-shot deep-research tools requires future `knowledge-compose` runs to read `wiki/syntheses/*.md` as prior context. M9 is what makes that read non-empty.
+This is the **inverted-pipeline closing step**. Without it, every verified draft lives forever in `<project>/output/` and the wiki cannot accumulate cross-source framing — the compounding property that differentiates cogni-knowledge from one-shot deep-research tools requires future `knowledge-compose` runs to read `wiki/syntheses/*.md` as prior context. Finalize is what makes that read non-empty.
 
 Synthesis-page frontmatter shape (matches cogni-wiki SCHEMA for `type: synthesis` per `cogni-wiki/CLAUDE.md` §"Page Frontmatter"):
 
@@ -28,7 +28,7 @@ draft_revision_round: <verify.revision_round>
 ---
 ```
 
-`derived_from_research` is stamped inline (no `lineage-stamp.py` dispatch — that helper walks `raw/research-<slug>/`, which v0.1.0 projects don't write to). `draft_revision_round` is informational; cogni-wiki's lint allows arbitrary additive frontmatter keys.
+`derived_from_research` is stamped inline (no `lineage-stamp.py` dispatch — that helper walks `raw/research-<slug>/`, which inverted-pipeline projects don't write to). `draft_revision_round` is informational; cogni-wiki's lint allows arbitrary additive frontmatter keys.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `knowledge-finalize`" once to anchor on the contract.
 
@@ -55,10 +55,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--synthesis-slug` | No | Override the auto-derived synthesis slug (default: `_knowledge_lib.slugify(plan.topic)`). |
 | `--overwrite` | No | Replace an existing `wiki/syntheses/<slug>.md`. Default: refuse. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, SYNTHESIS_SLUG, citation count) without writing anything or dispatching cycle-guard. |
-| `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire (#335). Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
-| `--no-reviewer` | No | Skip the Step 10.7 structural-quality review (#309 P1.1). Default: OFF (reviewer runs). Pass to suppress the advisory structural score on a run where you only want the deposit + conformance gate; the synthesis is still deposited and every other step still runs. Mirrors `--no-contradictor`. |
-| `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh (#338). Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
-| `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md` (#354). Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
+| `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire. Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
+| `--no-reviewer` | No | Skip the Step 10.7 structural-quality review. Default: OFF (reviewer runs). Pass to suppress the advisory structural score on a run where you only want the deposit + conformance gate; the synthesis is still deposited and every other step still runs. Mirrors `--no-contradictor`. |
+| `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh. Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
+| `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md`. Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
 
 ## Workflow
 
@@ -92,7 +92,7 @@ resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki
   local skill="$1"
   local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
-  # F26: pick the NEWEST cached version, not the lexically-first. Consider ONLY
+  # pick the NEWEST cached version, not the lexically-first. Consider ONLY
   # numeric version dirs — sort -V ranks a non-numeric name (main/latest/a
   # branch checkout) ABOVE every real version, so a stray dir would otherwise
   # win. sort -V handles multi-digit segments (0.0.9 < 0.0.16 < 0.0.46).
@@ -169,7 +169,7 @@ print(json.dumps({
 '
 ```
 
-Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, and the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`) — they feed both the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key, #337) and the Step 11 summary's verbatim/paraphrase ratio line. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
+Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, and the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`) — they feed both the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key) and the Step 11 summary's verbatim/paraphrase ratio line. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
 
 ### 3. Resolve synthesis slug + abort on collision
 
@@ -230,16 +230,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cycle-guard.py \
     --report-source wiki
 ```
 
-`<project-slug>` is the slug field from `<project_path>/.metadata/project-config.json::slug` (the cogni-research project slug recorded at compose time). `--report-source wiki` is hard-coded — the v0.1.0 inverted pipeline only ever produces wiki-mode deposits, so the legacy `_read_report_source` fallback isn't relevant here.
+`<project-slug>` is the slug field from `<project_path>/.metadata/project-config.json::slug` (the cogni-research project slug recorded at compose time). `--report-source wiki` is hard-coded — the inverted pipeline only ever produces wiki-mode deposits, so the legacy `_read_report_source` fallback isn't relevant here.
 
-The script's manifest-shape fallback (added in v0.0.24) walks `<project>/.metadata/citation-manifest.json` when the legacy `02-sources/data/src-*.md` glob is empty. Confirm `data.input_shape == "citation-manifest"` in the JSON envelope as a positive signal the adapter ran (informational; not a gate).
+The script's manifest-shape fallback walks `<project>/.metadata/citation-manifest.json` when the legacy `02-sources/data/src-*.md` glob is empty. Confirm `data.input_shape == "citation-manifest"` in the JSON envelope as a positive signal the adapter ran (informational; not a gate).
 
 Interpret return:
 
 - **Exit 0, `status: clear`** — proceed. `cross_lineage_overlap[]` may be non-empty; surface count in Step 11.
 - **Exit 0, `status: not_applicable`** — should not happen (`--report-source wiki` is explicit). Treat as defence-in-depth; proceed.
 - **Exit 1, `status: cycle_detected`** — abort. Print `direct_self_cycles[]` + remediation: "The synthesis would cite a wiki page derived from this same project — that's a self-citing loop. Rename the synthesis (`--synthesis-slug <other>`), narrow the topic, or hand-edit the draft to drop the self-referential citations."
-- **Exit 1, `status: manifest_unreadable`** — added v0.0.24. The citation manifest at `.metadata/citation-manifest.json` cannot be parsed (corrupt JSON, I/O error). Abort with the script's `error` field verbatim; remediate by re-running `knowledge-compose` to regenerate the manifest. **Do not proceed** — depositing a synthesis whose lineage cannot be checked is the exact failure mode the guard exists to prevent.
+- **Exit 1, `status: manifest_unreadable`** — the citation manifest at `.metadata/citation-manifest.json` cannot be parsed (corrupt JSON, I/O error). Abort with the script's `error` field verbatim; remediate by re-running `knowledge-compose` to regenerate the manifest. **Do not proceed** — depositing a synthesis whose lineage cannot be checked is the exact failure mode the guard exists to prevent.
 
 ### 5. Compose + 6. Atomic write
 
@@ -273,7 +273,7 @@ project_slug = os.environ["PROJECT_SLUG"]
 synthesis_slug = os.environ["SYNTHESIS_SLUG"]
 n = int(os.environ["DRAFT_VERSION"])
 revision_round = int(os.environ["REVISION_ROUND"])
-# #337 verification-honesty: the four verdict counts already captured at Step 2
+# the four verdict counts already captured at Step 2
 # (verify-vN.json::counts) are threaded in so the synthesis-page frontmatter
 # carries a machine-readable record of WHAT verification ran. These describe a
 # citation-consistent (zero-network) check — see verification: key below.
@@ -312,8 +312,8 @@ for c in manifest.get("citations", []) or []:
 # Lookup each cited pages kind + title + publisher. Try wiki/sources/ first
 # (the common case — Phase-4 source ingest); fall back to wiki/syntheses/
 # (wiki-composer cites prior syntheses with claim_id: null), then the four
-# distilled dirs (concepts/entities/summaries/learnings — citable since #344;
-# the composer cites them with a dcl-NNN claim_id, no external URL). page_kind
+# distilled dirs (concepts/entities/summaries/learnings — the composer cites
+# them with a dcl-NNN claim_id, no external URL). page_kind
 # gates whether the reference row gets a bare [[<slug>]] backlink below: a page
 # that exists (source / synthesis / distilled) does; a missing page (page_kind
 # None) does not.
@@ -438,7 +438,7 @@ frontmatter = (
     + sources_block + "\n"
     "derived_from_research: " + project_slug + "\n"
     "draft_revision_round: " + str(revision_round) + "\n"
-    # #337: declare WHAT "verified" means on the durable artefact. verification
+    # declare WHAT "verified" means on the durable artefact. verification
     # is a fixed enum — the Phase 6 verifier scored each citation's draft_sentence
     # against the cited page's ingest-time pre_extracted_claims:, zero-network, no
     # live-source re-fetch. verification_ratio is the same verify-vN.json::counts
@@ -462,7 +462,7 @@ if body.startswith("# "):
 
 # Strip the composer's own reference section (it re-emits below) so the page
 # never carries two; LANGUAGE-INDEPENDENT (localized heading + English, anchored
-# so a heading on the first/last body line still matches — the #301 fix) with a
+# so a heading on the first/last body line still matches) with a
 # content-preserving safety net. Then renumber the body's inline `<sup>[N]`
 # markers to a contiguous 1..K matching the re-derived reference list (closes a
 # gap left by a revisor full-source-drop). Both transforms are unit-tested in
@@ -486,18 +486,17 @@ atomic_write_text(out_path, page_text)
 
 # Surface counts the orchestrator needs for Steps 7-11.
 n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
-# Step 10.6 (#335 contradiction tripwire) reuses the page_kind resolution
+# Step 10.6 (contradiction tripwire) reuses the page_kind resolution
 # this subprocess already did — passing the filtered claim-bearing slug
 # list through avoids a second pass over the citation manifest in the
 # orchestrator and keeps the page-kind decision in one place. The
 # contradictor compares against any page with a claim block:
 # pre_extracted_claims: (sources) or distilled_claims: (the four distilled
-# kinds — concept/entity/summary/learning, citable since #344, scored
-# since #363). Synthesis-page citations are excluded (synthesis pages carry
-# no claim block — synthesis-vs-synthesis is v0.1.16 work); missing pages
+# kinds — concept/entity/summary/learning). Synthesis-page citations are
+# excluded (synthesis pages carry no claim block); missing pages
 # (page_kind None) are excluded here and reported via missing_pages[].
 # Var name kept (CITED_SOURCE_SLUGS) for input-contract stability; the
-# semantics widened at #363 (now source + distilled slugs).
+# semantics cover source + distilled slugs.
 _CLAIM_BEARING_KINDS = {"source", "concept", "entity", "summary", "learning"}
 cited_source_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS]
 print(json.dumps({
@@ -525,7 +524,7 @@ python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
     --max-summary 240
 ```
 
-Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. Write the summary as one crisp, complete sentence (no character count); the `--max-summary 240` defensive backstop (cogni-wiki v0.0.47+) clamps on a word boundary with `…` only if it runs long, guarding `wiki/index.md` against the #324 mid-word artifact. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
+Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. Write the summary as one crisp, complete sentence (no character count); the `--max-summary 240` defensive backstop clamps on a word boundary with `…` only if it runs long, guarding `wiki/index.md` against a mid-word artifact. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
 
 Capture the JSON envelope. On `success: true`, set `INDEX_OK=yes` and continue to Step 8. On `success: false` OR a non-zero exit, set `INDEX_OK=no`, surface the error in the final summary, and **skip Step 8** (do not bump `entries_count` when the index didn't actually get a new row — keeping the counter and the filesystem in lockstep is the structural invariant `wiki-lint --fix=entries_count_drift` is supposed to reconcile, not a hazard for finalize to create).
 
@@ -576,7 +575,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
     --allow-update
 ```
 
-`--report-source wiki` is hard-coded — the v0.1.0 inverted pipeline only ever produces wiki-mode deposits (the legacy archived `report_source` shellout is not used). Without `--allow-update`, a duplicate `research_slug` aborts the script — surface a **loud** warning so the operator can't miss the binding/wiki desync:
+`--report-source wiki` is hard-coded — the inverted pipeline only ever produces wiki-mode deposits (the legacy archived `report_source` shellout is not used). Without `--allow-update`, a duplicate `research_slug` aborts the script — surface a **loud** warning so the operator can't miss the binding/wiki desync:
 
 ```
 ⚠ Binding append SKIPPED: project '<project-slug>' already bound; re-run with --overwrite to refresh the binding entry, or accept that this finalize landed the synthesis page on the wiki without updating binding.json::research_projects[]. The synthesis page IS on disk — re-running finalize without --overwrite will refuse on the existing page; re-run with --overwrite + --allow-update to reconcile both.
@@ -607,7 +606,7 @@ DATE_STAMP=$(date -u +%F)
 TOPIC_RAW=<topic from Step 5 subprocess output>
 TOPIC=$(printf '%s' "$TOPIC_RAW" | tr '\r\n' '  ')
 
-# sqs= suffix (#354): the bare sq_id list (no `sq:` prefix) of the
+# sqs= suffix: the bare sq_id list (no `sq:` prefix) of the
 # sub-questions scored uncovered/partial in this project's pre-finalize
 # wiki-coverage.json — the research-time gaps this synthesis presumably now
 # covers. Empty (suffix omitted) when no coverage manifest exists.
@@ -629,9 +628,9 @@ else
 fi
 ```
 
-`KNOWLEDGE_SCRIPTS` is `${CLAUDE_PLUGIN_ROOT}/scripts` (the cogni-knowledge scripts dir holding `_knowledge_lib.py`). The `sqs=` suffix is additive: cogni-wiki's `LOG_LINE_RE` parses `## [date] op | rest` and treats `rest` as opaque, so pre-existing readers ignore it. It is what cogni-wiki's `rebuild_open_questions.py::attribute_close` substring-scans (after stripping the `sq:` prefix from the checklist id) to credit-close a research-time gap `closed … by finalize` (#354).
+`KNOWLEDGE_SCRIPTS` is `${CLAUDE_PLUGIN_ROOT}/scripts` (the cogni-knowledge scripts dir holding `_knowledge_lib.py`). The `sqs=` suffix is additive: cogni-wiki's `LOG_LINE_RE` parses `## [date] op | rest` and treats `rest` as opaque, so pre-existing readers ignore it. It is what cogni-wiki's `rebuild_open_questions.py::attribute_close` substring-scans (after stripping the `sq:` prefix from the checklist id) to credit-close a research-time gap `closed … by finalize`.
 
-`finalize` is a new operation prefix. Same additive-prefix posture as M7's `compose` and M8's `verify` — pre-v0.0.35 cogni-wiki readers count unknown prefixes in their catch-all bucket without crashing (`cogni-wiki/CLAUDE.md` §"Key Conventions"). Formalising the prefix into the enum lands in M10 when query / dashboard rebuild on the new manifests.
+`finalize` is a new operation prefix. Same additive-prefix posture as `compose` and `verify` — cogni-wiki readers count unknown prefixes in their catch-all bucket without crashing (`cogni-wiki/CLAUDE.md` §"Key Conventions").
 
 ### 10.5 Conformance gate (run cogni-wiki's own gates)
 
@@ -654,11 +653,11 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    - `health.py` `data.errors == []` → on any error: `⚠ wiki-health: <N> error(s) after finalize: <class> on <page>, …`.
    - `lint_wiki.py` `data.warnings` has **no `orphan_page`** entry → on any: `⚠ wiki-lint: <N> orphan page(s) after finalize: <page>, …`.
 
-   The orphan assertion is what actually covers the slice's stated metric — `orphan_page` is a **lint warning, not a health error**, and is **not** a `--fix` class, so the `--fix=all` in sub-step 1 de-orphans by *writing inbound links* (bare refs + the `reverse_link_missing` backfill), and this read-only re-lint verifies it worked. Without this check the gate could report "health clean" while a synthesis was left orphaned (e.g. if the de-orphaning was undone). Residual orphans are expected and acceptable in two documented cases (surface, don't fail): an ingested source no synthesis ever cited and no sibling backlinks (cold-start), and a synthesis that cites zero existing pages (empty/all-missing manifest → it has no outbound links for `reverse_link_missing` to mirror). The live `0 errors` + `0 orphan_page` proof on a fresh German base is #311's job.
+   The orphan assertion is what actually covers the slice's stated metric — `orphan_page` is a **lint warning, not a health error**, and is **not** a `--fix` class, so the `--fix=all` in sub-step 1 de-orphans by *writing inbound links* (bare refs + the `reverse_link_missing` backfill), and this read-only re-lint verifies it worked. Without this check the gate could report "health clean" while a synthesis was left orphaned (e.g. if the de-orphaning was undone). Residual orphans are expected and acceptable in two documented cases (surface, don't fail): an ingested source no synthesis ever cited and no sibling backlinks (cold-start), and a synthesis that cites zero existing pages (empty/all-missing manifest → it has no outbound links for `reverse_link_missing` to mirror).
 
    **Caveat — foundation pages.** `reverse_link_missing` has no `foundation: true` exemption, so if this synthesis cites a prefilled foundation concept, the fixer appends a `## See also` backlink onto that curated page (bypassing `wiki-update`'s `--force` guard). In the inverted pipeline the composer cites `wiki/sources/*` + prior `wiki/syntheses/*`, not `wiki/concepts/`, so this is not expected; noted so a future foundation-citing path is aware.
 
-3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale (#308). Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and refresh a single bullet for this synthesis (idempotent on the slug). The dedup removes only this slug's prior **bullet** (a `- … [[slug]] …` list item), never prose that merely mentions `[[slug]]`; the heading is matched by exact line, never substring. `overview.md` is not graph-scanned, so this is purely freshness:
+3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale. Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and refresh a single bullet for this synthesis (idempotent on the slug). The dedup removes only this slug's prior **bullet** (a `- … [[slug]] …` list item), never prose that merely mentions `[[slug]]`; the heading is matched by exact line, never substring. `overview.md` is not graph-scanned, so this is purely freshness:
    ```
    WIKI_ROOT="<wiki_root>" SYNTHESIS_SLUG="<slug>" TOPIC_RAW="<topic>" DATE_STAMP="$(date -u +%F)" \
    python3 -c '
@@ -692,16 +691,16 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ```
    Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
 
-5. **Refresh `wiki/open_questions.md` (#338).** The persistent, cross-session data-gap backlog. cogni-wiki maintains this file as part of `wiki-lint` Step 8.5 — every lint dispatch reconciles the checklist (items that disappear from the current lint output flip to `- [x]` with today's date; closed items > 90 days old are trimmed; new findings append as `- [ ]`). The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-lint` never runs as a gate here — sub-step 5 backfills the rebuild on the finalize path so the backlog tracks finalize-time state instead of going stale until the next interactive `wiki-lint`. It is the tail of the conformance gate: it reads the *post-fix*, *post-overview-refresh* on-disk state (the same state sub-step 2's read-only re-lint asserted), so it belongs after sub-step 4.
+5. **Refresh `wiki/open_questions.md`.** The persistent, cross-session data-gap backlog. cogni-wiki maintains this file as part of `wiki-lint` Step 8.5 — every lint dispatch reconciles the checklist (items that disappear from the current lint output flip to `- [x]` with today's date; closed items > 90 days old are trimmed; new findings append as `- [ ]`). The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-lint` never runs as a gate here — sub-step 5 backfills the rebuild on the finalize path so the backlog tracks finalize-time state instead of going stale until the next interactive `wiki-lint`. It is the tail of the conformance gate: it reads the *post-fix*, *post-overview-refresh* on-disk state (the same state sub-step 2's read-only re-lint asserted), so it belongs after sub-step 4.
 
    Skip conditions (evaluated in order):
 
    1. `--dry-run` was passed — silent skip (same posture as Step 10.6; finalize already exits at Step 3 on `--dry-run`, so reaching sub-step 5 under `--dry-run` should never happen — this guard is defence-in-depth).
    2. `--no-open-questions` was passed — log `Open questions rebuild skipped: --no-open-questions` and continue.
 
-   `--no-research-gaps` (#354) does **not** skip the sub-step — it narrows the payload. Set `NO_RESEARCH_GAPS=1` when the flag is present (else leave it unset) so the invocation below appends `--no-research-gaps` to the payload builder and only the lint findings stream.
+   `--no-research-gaps` does **not** skip the sub-step — it narrows the payload. Set `NO_RESEARCH_GAPS=1` when the flag is present (else leave it unset) so the invocation below appends `--no-research-gaps` to the payload builder and only the lint findings stream.
 
-   The rebuild now consumes a **merged** findings payload (#354): cogni-wiki's `lint_wiki.py` output (the seven existing classes about *existing* pages) **plus** this project's research-time gaps (`research_uncovered` / `research_partial`) read from `<project>/.metadata/wiki-coverage.json`. `build_open_questions_payload.py` (cogni-knowledge) does the merge in one process and emits a `{success, data: {errors, warnings, info}, meta}` envelope; `rebuild_open_questions.py --findings -` unwraps `data` and reconciles. The research gaps render as two new tail sections (`## Research-time gaps — uncovered` / `## Research-time gaps — partial`).
+   The rebuild consumes a **merged** findings payload: cogni-wiki's `lint_wiki.py` output (the seven existing classes about *existing* pages) **plus** this project's research-time gaps (`research_uncovered` / `research_partial`) read from `<project>/.metadata/wiki-coverage.json`. `build_open_questions_payload.py` (cogni-knowledge) does the merge in one process and emits a `{success, data: {errors, warnings, info}, meta}` envelope; `rebuild_open_questions.py --findings -` unwraps `data` and reconciles. The research gaps render as two new tail sections (`## Research-time gaps — uncovered` / `## Research-time gaps — partial`).
 
    ```
    # Run ONLY after the two skip conditions above are evaluated (--dry-run,
@@ -728,19 +727,19 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    `build_open_questions_payload.py` is **fail-soft**: a `lint_wiki.py` crash degrades to a research-only payload (recorded in `meta.degraded`) rather than blocking the gap stream, and the envelope is always valid JSON. `rebuild_open_questions.py` then emits a single-line `{success, data, error}` envelope on stdout (stdlib-only, `_wikilib.atomic_write`-backed). On a fresh wiki where `wiki/open_questions.md` does not yet exist, the script creates it (the reconcile starts from an empty checklist). Parse and surface in Step 11:
 
-   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`, plus `data.opened_by_class` (the per-class split #354 added) so Step 11 can break opens into lint vs research. Step 11 surfaces `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` matches the `✓ wiki-health clean` marker on the adjacent conformance-gate line so an operator scanning the summary need not grep for the absence of `⚠`).
+   - `success: true` — capture `data.opened` / `data.closed` / `data.trimmed`, plus `data.opened_by_class` (the per-class split) so Step 11 can break opens into lint vs research. Step 11 surfaces `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` matches the `✓ wiki-health clean` marker on the adjacent conformance-gate line so an operator scanning the summary need not grep for the absence of `⚠`).
    - `success: false` — surface `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` and continue.
    - `OPEN_Q_EXIT != 0` or malformed JSON — same template, `<error>` substituted by `script exit <code>` / `malformed JSON envelope`.
 
-   **Close-attribution (#354).** `finalize` is now one of `rebuild_open_questions.py`'s `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`, `finalize`). The credit-close flow spans two dispatches and is self-attributing via the Step 10 `sqs=` log line: in *this* dispatch the gap sub-questions are still scored `uncovered`/`partial` in `wiki-coverage.json` (that scan predates this synthesis), so they render **open** as `- [ ] \`sq:<sq_id>\` — …` AND the Step 10 line records `sqs=<sq_id>,…`. After the next `knowledge-curate` re-scores them `covered` (the synthesis is now queryable), the *next* finalize's merged payload no longer lists them as gaps → `reconcile` closes them, and `attribute_close` finds the bare `<sq_id>` inside the earlier finalize line's `sqs=` suffix → `- [x] ~~\`sq:<sq_id>\` — …~~ — closed <date> by finalize`. No second `wiki/log.md` line is written here: the script never logs (that is the SKILL's job), and the Step 10 line is already on disk. A revisor pass that drops a sub-question's coverage is self-correcting — the next curate's `wiki-coverage.json` reopens the gap per `reconcile`'s re-appearing-key semantics.
+   **Close-attribution.** `finalize` is now one of `rebuild_open_questions.py`'s `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`, `finalize`). The credit-close flow spans two dispatches and is self-attributing via the Step 10 `sqs=` log line: in *this* dispatch the gap sub-questions are still scored `uncovered`/`partial` in `wiki-coverage.json` (that scan predates this synthesis), so they render **open** as `- [ ] \`sq:<sq_id>\` — …` AND the Step 10 line records `sqs=<sq_id>,…`. After the next `knowledge-curate` re-scores them `covered` (the synthesis is now queryable), the *next* finalize's merged payload no longer lists them as gaps → `reconcile` closes them, and `attribute_close` finds the bare `<sq_id>` inside the earlier finalize line's `sqs=` suffix → `- [x] ~~\`sq:<sq_id>\` — …~~ — closed <date> by finalize`. No second `wiki/log.md` line is written here: the script never logs (that is the SKILL's job), and the Step 10 line is already on disk. A revisor pass that drops a sub-question's coverage is self-correcting — the next curate's `wiki-coverage.json` reopens the gap per `reconcile`'s re-appearing-key semantics.
 
    **Fail-soft posture (explicit).** Sub-step 5 is a backlog refresh. A non-zero exit, malformed envelope, or `_wiki_lock` contention **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–4 are all already on disk. The summary surfaces the failure loudly so the operator can run `cogni-wiki:wiki-lint` manually; the next finalize dispatch reconciles. (Verbatim mirror of cogni-wiki Step 8.5's failure-isolation contract; matches Step 10.6's posture.)
 
    **Concurrency note.** `rebuild_open_questions.py` wraps the parse + reconcile + render + atomic write in `_wikilib._wiki_lock(wiki_root)`, so a concurrent `cogni-wiki:wiki-lint` dispatch from another session serialises rather than corrupts — the two dispatches converge on the on-disk lint findings only (which is the contract).
 
-### 10.6 Contradiction tripwire (#335)
+### 10.6 Contradiction tripwire
 
-Phase 1 of approach **(a)** from #335 — observability-only. Dispatches the `wiki-contradictor` agent to compare the just-deposited synthesis sentence-by-sentence against each cited *source or distilled* page's claim frontmatter (`pre_extracted_claims:` on `wiki/sources/<slug>.md`; `distilled_claims:` on the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/<slug>.md` — citable since #344, scored since #363) and emit a per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0` — unchanged; a distilled finding is shape-identical, carrying a `dcl-NNN` `conflicting_claim_id`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`. **Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time;** the thesis's literal "wiki-ingest writes page B" framing — per-source ingest-time check — is approach **(b)**, deferred. Synthesis-vs-prior-syntheses comparison, `type_drift`, and `undercited_synthesis` defer to v0.1.16.
+Observability-only. Dispatches the `wiki-contradictor` agent to compare the just-deposited synthesis sentence-by-sentence against each cited *source or distilled* page's claim frontmatter (`pre_extracted_claims:` on `wiki/sources/<slug>.md`; `distilled_claims:` on the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/<slug>.md`) and emit a per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0`; a distilled finding is shape-identical, carrying a `dcl-NNN` `conflicting_claim_id`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`. **Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time.**
 
 **Fail-soft posture (explicit).** Step 10.6 is observability-only. A Task failure, schema mismatch, or malformed envelope **never rolls back the synthesis** — surfaces in Step 11 as `⚠ contradiction tripwire FAILED — synthesis on disk; re-run interactive cogni-wiki:wiki-lint for forensic detail`. The synthesis already landed at Steps 6–10; the contradictor is a read-only observation layer.
 
@@ -748,7 +747,7 @@ Phase 1 of approach **(a)** from #335 — observability-only. Dispatches the `wi
 
 1. `--dry-run` was passed — same posture as Step 4's cycle-guard dry-run skip. Silent.
 2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue.
-3. `len(cited_source_slugs) == 0` — the citation manifest had zero **source-or-distilled-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning}`). Log `Contradiction tripwire skipped: empty citation manifest (no claim-bearing peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis pages carry no claim block, so synthesis-vs-synthesis comparison is v0.1.16 work.
+3. `len(cited_source_slugs) == 0` — the citation manifest had zero **source-or-distilled-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning}`). Log `Contradiction tripwire skipped: empty citation manifest (no claim-bearing peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis pages carry no claim block.
 
 **Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it into a **heredoc-quoted assignment** so a `topic` containing apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell. Then extract the contradictor inputs by piping through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
 
@@ -780,7 +779,7 @@ Slugs are kebab-case-only by `_knowledge_lib.slugify` (transliterated, NFKD-fold
 
 `N_CITED_PRE_TRUNCATION` is the pre-truncation count Step 11 needs to render `truncated at 30/<N>`; `CITED_SOURCE_SLUGS_CSV` is the post-truncation CSV the agent receives. Both stay shell variables for the dispatch + summary.
 
-**Input cap surface.** If `N_CITED_PRE_TRUNCATION > 30`, the CSV above is already truncated; Step 11 surfaces `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages`. The cap counts source + distilled slugs combined (#363). The agent never sees the dropped slugs and does NOT emit a `truncated_at` field — truncation is observable only via the Step 11 line (envelope `compared_against.sources[]` records exactly what was scored — now source + distilled slugs, key name retained for schema stability).
+**Input cap surface.** If `N_CITED_PRE_TRUNCATION > 30`, the CSV above is already truncated; Step 11 surfaces `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages`. The cap counts source + distilled slugs combined. The agent never sees the dropped slugs and does NOT emit a `truncated_at` field — truncation is observable only via the Step 11 line (envelope `compared_against.sources[]` records exactly what was scored — now source + distilled slugs, key name retained for schema stability).
 
 **Dispatch.**
 
@@ -795,7 +794,7 @@ Task(wiki-contradictor,
      CONTRADICTOR_OUT_PATH=$PROJECT_PATH/.metadata/contradictor-v$DRAFT_VERSION.json)
 ```
 
-`OUTPUT_LANGUAGE` is the same value Step 5/6 already threaded from `plan.json::output_language` via the subprocess JSON line (so the agent operates in the synthesis's language and never translates — bilingual coverage is approach (c) territory from #335 and #345).
+`OUTPUT_LANGUAGE` is the same value Step 5/6 already threaded from `plan.json::output_language` via the subprocess JSON line (so the agent operates in the synthesis's language and never translates — bilingual coverage is out of scope).
 
 **Interpret return.**
 
@@ -804,11 +803,11 @@ Task(wiki-contradictor,
 - **`ok: false, error: write_failed`** — surface `⚠ contradiction tripwire FAILED — write_failed (output token budget likely exhausted); synthesis on disk; re-run cogni-wiki:wiki-lint manually` in Step 11. Never block.
 - **Task dispatch error / no envelope returned** — same fail-soft posture: surface `⚠ contradiction tripwire FAILED — Task dispatch did not return; synthesis on disk` and continue to Step 11.
 
-**Idempotency.** Re-finalize on the same `draft_version` overwrites `contradictor-v<N>.json` — see `## Edge cases` for the full rule (`Re-finalize on the same draft (#335 idempotency)`).
+**Idempotency.** Re-finalize on the same `draft_version` overwrites `contradictor-v<N>.json` — see `## Edge cases` for the full rule (`Re-finalize on the same draft (contradictor idempotency)`).
 
-### 10.7 Structural-quality review (#309 P1.1)
+### 10.7 Structural-quality review
 
-The structural-quality half of the cogni-research feature-parity gate (#309). Step 10.6 (and Phase 6) check **citation-claim alignment** — does each cited sentence match the cited page's claims. This step checks **structural quality** — does the draft address every sub-question, flow coherently, draw on diverse publishers, go deep, and read cleanly in its output language. A synthesis can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph). Dispatches the `wiki-reviewer` agent to score the draft on the same 5 weighted dimensions cogni-research's reviewer scores (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15, with an inline citation-density gate that caps Depth) and emit `<project_path>/.metadata/structural-review-v<N>.json` (schema `0.1.0`).
+The structural-quality half of the cogni-research feature-parity gate. Step 10.6 (and Phase 6) check **citation-claim alignment** — does each cited sentence match the cited page's claims. This step checks **structural quality** — does the draft address every sub-question, flow coherently, draw on diverse publishers, go deep, and read cleanly in its output language. A synthesis can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph). Dispatches the `wiki-reviewer` agent to score the draft on the same 5 weighted dimensions cogni-research's reviewer scores (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15, with an inline citation-density gate that caps Depth) and emit `<project_path>/.metadata/structural-review-v<N>.json` (schema `0.1.0`).
 
 **Advisory-only, fail-soft posture (explicit).** Step 10.7 is observability-only. The reviewer's verdict is **advisory** — the composer is single-pass and the revisor is zero-network/citation-only, so a `revise` verdict drives **no** automated content-expansion fix loop and **never rolls back the synthesis**. A Task failure, schema mismatch, or malformed envelope surfaces in Step 11 as `⚠ structural review FAILED — synthesis on disk; advisory only` and never blocks. The synthesis already landed at Steps 6–10; the reviewer is a read-only scoring layer (same posture as Step 10.6).
 
@@ -860,14 +859,14 @@ The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited
 
 ### 11. Final summary
 
-Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire block, and the structural-review block are all conditional — the common-case base summary is ~10 lines, both #337 lines included; the #338 open-questions line adds one; a clean-`accept` structural review is silent):
+Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire block, and the structural-review block are all conditional — the common-case base summary is ~10 lines, both verification lines included; the open-questions line adds one; a clean-`accept` structural review is silent):
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Synthesis page: `wiki/syntheses/<slug>.md` (sources cited: `<N_SOURCES>`)
 - Cycle-guard: `input_shape=citation-manifest`, `direct_self_cycles=0`, `cross_lineage_overlap=<N>`
 - Verify lineage: `verify-v<N>.json` — verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (round `<R>` of 2)
-- Verification: citation-consistent (zero-network, no live-source re-check; #337). The synthesis-page frontmatter carries `verification: citation_consistent_zero_network` + `verification_ratio:`. For live-source ground-truth, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in).
+- Verification: citation-consistent (zero-network, no live-source re-check). The synthesis-page frontmatter carries `verification: citation_consistent_zero_network` + `verification_ratio:`. For live-source ground-truth, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in).
 - Verbatim/paraphrase ratio (print this line **only when `verbatim + paraphrase > 0`** — no divide-by-zero on a deviation-only run): `<V>/<P> = <pct>% verbatim`, where `pct = round(100 * V / (V + P), 1)`. Append ` (high copy-paste — consider revising for synthesis density)` **only when `V / (V + P) > 0.5`** — i.e. a *majority* of scored citations are verbatim, the point at which copy-paste outweighs synthesis (informational nudge, no gate; tune the 0.5 majority threshold here if real runs prove it noisy). When `verbatim + paraphrase == 0`, print `Verbatim/paraphrase ratio: (no scored verdicts)` instead.
 - Binding: total deposited projects now `<count>`
 - Wiki updates (conditional on Step 7 + Step 8 outcomes):
@@ -875,10 +874,10 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
-- Open questions (Step 10.5 sub-step 5, #338 / #354): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0` (backward-compatible with #338's terse line). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
-- Contradiction tripwire (Step 10.6, #335): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
+- Open questions (Step 10.5 sub-step 5): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0`. On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
+- Contradiction tripwire (Step 10.6): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
-  ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown (#335)
+  ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown
     - <sanitized_synthesis_excerpt[:80]>...
       ~ <conflicting_page> (high) — <sanitized_note[:60]>
     - <sanitized_synthesis_excerpt[:80]>...
@@ -891,12 +890,12 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
 
   Independent branches (not gated on `high`/`unknown`):
   - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> cited page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors; the operator may want to investigate concurrent wiki maintenance.
-  - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages (Phase 1 hard cap; lifting is v0.1.16 work)`.
+  - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages (hard cap)`.
   - On `--no-contradictor` / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
   - On `ok: false`, print `⚠ contradiction tripwire FAILED — <reason>; synthesis on disk` (loud, non-fatal — same posture as the wiki-health failure path).
-- Structural review (Step 10.7, #309 P1.1): print this block **only on `ok: true` AND (`verdict == "revise"` OR `high_severity_count > 0`)** — a clean `accept` with no high-severity issues is silent (no noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch:
+- Structural review (Step 10.7): print this block **only on `ok: true` AND (`verdict == "revise"` OR `high_severity_count > 0`)** — a clean `accept` with no high-severity issues is silent (no noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch:
   ```
-  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity of <issue_count> issue(s); advisory only (#309 P1.1)
+  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity of <issue_count> issue(s); advisory only
     completeness=<c> coherence=<co> source_diversity=<sd> depth=<d> clarity=<cl>
   Detail in <project_path>/.metadata/structural-review-v<N>.json. Advisory — finalize did not block; re-run cogni-knowledge:knowledge-compose to address, or accept as-is.
   Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
@@ -906,7 +905,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   Independent branches:
   - On `--no-reviewer` skip, print the corresponding skip message verbatim (per Step 10.7).
   - On `ok: false`, print `⚠ structural review FAILED — <reason>; synthesis on disk; advisory only` (loud, non-fatal — same posture as the contradiction-tripwire failure path).
-- Next: M10 will rebuild `knowledge-query` / `knowledge-dashboard` / `knowledge-resume` / `knowledge-refresh` on the new manifests. Today, `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
+- Next: `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
 
 If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsupported citations` warning so the audit trail is on-screen.
 
@@ -917,22 +916,22 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - **Plan.json missing topic.** Step 3 falls back to `--synthesis-slug` if passed, else aborts cleanly.
 - **Cited source page missing on disk.** Step 5's reference-row falls back to the slug as the title AND emits **no** `[[<slug>]]` backlink (a bare link to a missing page would be a `broken_wikilink` error that fails the Step 10.5 health gate). cycle-guard's `wiki_pages_cited_missing` will list the slug; surface in Step 11 as `⚠ Missing pages: <slug1>, <slug2>` so the operator knows the wiki was modified between ingest and finalize.
 - **Duplicate binding entry without `--overwrite`.** Step 9's `append-project` returns `existing_slug` (the SKILL did NOT pass `--allow-update` because `--overwrite` was off). Steps 6–8 already landed the synthesis page → the wiki has the new page but `binding.json::research_projects[]` still records the prior deposit's `report_path` / `deposited_at`. Step 11 surfaces the loud `⚠ Binding append SKIPPED` warning verbatim from Step 9. Reconcile via `--overwrite` re-run (which passes `--allow-update` per Step 9's contract), or accept the asymmetric state — both are valid operator decisions.
-- **Re-finalize on the same draft (#335 idempotency).** Re-running finalize with `--overwrite` against the same `draft_version` overwrites `<project_path>/.metadata/contradictor-v<N>.json` (same convention as `verify-v<N>.json`). The agent is non-deterministic across runs at two distinct layers: (1) `findings[].id` (`ctr-NNN`) is stable WITHIN one envelope but may renumber across re-runs (emission order ≠ index order); (2) the **finding set itself may differ** — a re-run can legitimately surface a contradiction the prior run missed, or drop one the prior run flagged as `low` on doubt. The "same contradictions re-surface on each re-run" guidance applies to clear-cut `high` flips; `medium`/`low`/`unknown` carry expected cross-run variance. De-dup across runs defers to v0.1.16 and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` (not `id`) precisely so the deferred consumer joins on content, not on the unstable id.
-- **Re-finalize on the same draft (#338 open-questions idempotency).** `rebuild_open_questions.py` is a locked read-modify-write that reconciles against the existing checklist — a re-finalize produces a delta but is never net-destructive. Items closed by a prior dispatch keep their original `closed_on` date; only items closed > 90 days ago are trimmed. The lock at `<WIKI_ROOT>/.cogni-wiki/.lock` is the same one cogni-wiki's `wiki-lint` Step 8.5 acquires.
+- **Re-finalize on the same draft (contradictor idempotency).** Re-running finalize with `--overwrite` against the same `draft_version` overwrites `<project_path>/.metadata/contradictor-v<N>.json` (same convention as `verify-v<N>.json`). The agent is non-deterministic across runs at two distinct layers: (1) `findings[].id` (`ctr-NNN`) is stable WITHIN one envelope but may renumber across re-runs (emission order ≠ index order); (2) the **finding set itself may differ** — a re-run can legitimately surface a contradiction the prior run missed, or drop one the prior run flagged as `low` on doubt. The "same contradictions re-surface on each re-run" guidance applies to clear-cut `high` flips; `medium`/`low`/`unknown` carry expected cross-run variance.
+- **Re-finalize on the same draft (open-questions idempotency).** `rebuild_open_questions.py` is a locked read-modify-write that reconciles against the existing checklist — a re-finalize produces a delta but is never net-destructive. Items closed by a prior dispatch keep their original `closed_on` date; only items closed > 90 days ago are trimmed. The lock at `<WIKI_ROOT>/.cogni-wiki/.lock` is the same one cogni-wiki's `wiki-lint` Step 8.5 acquires.
 
 ## Out of scope
 
-- Does NOT re-run the verifier, the composer, or the ingester. M9 reads the latest verified draft + manifest as-is.
-- Renders an IEEE-style numbered reference list (`**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]`, first-appearance order matching the composer's inline `[N]`; #300/#301, v0.1.4). The reference backlink is a **bare** `[[<slug>]]` (not path-prefixed `[[sources/<slug>]]`) so the synthesis→source edge registers in cogni-wiki's link graph (#308, Slice 16). Does NOT support APA / MLA / Chicago rendering — those can be derived from the same citation-manifest if a bibliography skill ships.
-- Does NOT update `topic_lineage.covered_themes[]` in the binding — that field is reserved for M10's manifest-aware dashboard rebuild.
-- Does NOT support cross-page substitute-citation search or transitive cycle detection on the new manifest shape (the adapter handles direct cycles only — same posture as M9's "smallest necessary change" framing).
-- **Localizes the reference-section heading** per `plan.json::output_language` via `_knowledge_lib.ref_heading` (`de→Referenzen`, default→English; #301, v0.1.4), and strips the composer's heading language-independently. Does NOT itself translate body content — the draft body language is the composer's responsibility (it honours `OUTPUT_LANGUAGE`); finalize deposits the verified body verbatim.
-- Does NOT dispatch the `lineage-stamp.py` helper — v0.1.0 projects do not write `raw/research-<slug>/`, so the stamp helper has no work to do; the `derived_from_research` field is set inline in Step 5's frontmatter.
-- Does NOT re-fetch any source URL. The `verification:` semantics stamped here are **citation-consistent (zero-network)** per the Phase 6 contract — the verifier scored each `draft_sentence` against the cited page's ingest-time `pre_extracted_claims:`, not against the live source. For live-source re-verification (the long-tail drift problem), run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; dispatches `cogni-wiki:wiki-claims-resweep`) — #337.
+- Does NOT re-run the verifier, the composer, or the ingester. Finalize reads the latest verified draft + manifest as-is.
+- Renders an IEEE-style numbered reference list (`**[N]** Publisher, "Title". [URL](URL) — [[<slug>]]`, first-appearance order matching the composer's inline `[N]`). The reference backlink is a **bare** `[[<slug>]]` (not path-prefixed `[[sources/<slug>]]`) so the synthesis→source edge registers in cogni-wiki's link graph. Does NOT support APA / MLA / Chicago rendering — those can be derived from the same citation-manifest if a bibliography skill ships.
+- Does NOT update `topic_lineage.covered_themes[]` in the binding.
+- Does NOT support cross-page substitute-citation search or transitive cycle detection on the new manifest shape (the adapter handles direct cycles only).
+- **Localizes the reference-section heading** per `plan.json::output_language` via `_knowledge_lib.ref_heading` (`de→Referenzen`, default→English), and strips the composer's heading language-independently. Does NOT itself translate body content — the draft body language is the composer's responsibility (it honours `OUTPUT_LANGUAGE`); finalize deposits the verified body verbatim.
+- Does NOT dispatch the `lineage-stamp.py` helper — inverted-pipeline projects do not write `raw/research-<slug>/`, so the stamp helper has no work to do; the `derived_from_research` field is set inline in Step 5's frontmatter.
+- Does NOT re-fetch any source URL. The `verification:` semantics stamped here are **citation-consistent (zero-network)** per the Phase 6 contract — the verifier scored each `draft_sentence` against the cited page's ingest-time `pre_extracted_claims:`, not against the live source. For live-source re-verification (the long-tail drift problem), run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; dispatches `cogni-wiki:wiki-claims-resweep`).
 
 ## Output
 
-- `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md` — the deposited synthesis page (frontmatter + verified draft body + `## References` list). Frontmatter carries the two additive `verification:` + `verification_ratio:` keys (#337) — a durable, machine-readable record that the citations were scored citation-consistent (zero-network) plus the verbatim/paraphrase/synthesis/unsupported counts.
+- `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md` — the deposited synthesis page (frontmatter + verified draft body + `## References` list). Frontmatter carries the two additive `verification:` + `verification_ratio:` keys — a durable, machine-readable record that the citations were scored citation-consistent (zero-network) plus the verbatim/paraphrase/synthesis/unsupported counts.
 - `<WIKI_ROOT>/wiki/index.md` — updated with a new entry under `## Syntheses` (or the category created on first finalize).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by 1.
 - `<WIKI_ROOT>/wiki/context_brief.md` — refreshed.
@@ -940,16 +939,16 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<knowledge-root>/.cogni-knowledge/binding.json` — one new entry in `research_projects[]` with `report_source: "wiki"`.
 - `<WIKI_ROOT>/wiki/<type>/<cited-slug>.md` — each cited page gains a reverse `[[<synthesis-slug>]]` backlink (Step 10.5 `lint --fix=reverse_link_missing`), de-orphaning the synthesis.
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
-- `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5, #338; deterministic-only — research-time gaps from `wiki-coverage.json::uncovered`/`partial` deferred to follow-up #354). Skipped on `--dry-run` / `--no-open-questions`.
-- `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 (#335) contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
-- `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 (#309 P1.1) structural-quality verdict (schema `0.1.0`): per-dimension `structural_scores`, `citation_density`, `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
+- `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
+- `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
+- `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.0`): per-dimension `structural_scores`, `citation_density`, `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
 
 No files are written outside the workspace root or the bound knowledge base.
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 7 contract
-- `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — Slice 5 / M9 deliverable list
+- `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — finalize deliverable list
 - `${CLAUDE_PLUGIN_ROOT}/scripts/cycle-guard.py --help` — citation-manifest fallback documented in the docstring
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/_knowledge_lib.py` — `slugify` + `atomic_write_text` reused
@@ -958,5 +957,5 @@ No files are written outside the workspace root or the bound knowledge base.
 - `cogni-wiki/skills/wiki-ingest/scripts/rebuild_context_brief.py --help`
 - `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py --help` — Step 10.5 conformance gate (`--fix=all`)
 - `cogni-wiki/skills/wiki-health/scripts/health.py --help` — Step 10.5 structural assertion
-- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-contradictor.md` — Step 10.6 contradiction tripwire (#335)
-- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-reviewer.md` — Step 10.7 structural-quality review (#309 P1.1)
+- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-contradictor.md` — Step 10.6 contradiction tripwire
+- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-reviewer.md` — Step 10.7 structural-quality review

@@ -1,6 +1,6 @@
 ---
 name: knowledge-query
-description: "Ask a question against a bound cogni-knowledge base — resolves the wiki path from .cogni-knowledge/binding.json so the user does not need to remember it, then dispatches cogni-wiki:wiki-query against the bound wiki. Use this skill whenever the user says 'query my <slug> knowledge base', 'ask the eu-ai-act base about X', 'knowledge query on Y', 'what does my <slug> base know about Z', 'knowledge-query <slug>'. Read-only — never writes to the binding. The upstream wiki-query may file the answer back as a `type: synthesis` page; that decision belongs to wiki-query, not this skill."
+description: "Ask a question against a bound cogni-knowledge base — resolves the wiki path from .cogni-knowledge/binding.json so the user does not need to remember it, then dispatches cogni-wiki:wiki-query against the bound wiki. Use this skill whenever the user says 'query my <slug> knowledge base', 'ask the eu-ai-act base about X', 'knowledge query on Y', 'what does my <slug> base know about Z', 'knowledge-query <slug>'. Read-only — never writes to the binding."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 ---
 
@@ -42,7 +42,7 @@ If `--question` is missing, ask the user once via `AskUserQuestion` (single free
 
 ### 0. Pre-flight
 
-**Required plugins.** This skill dispatches `cogni-wiki:wiki-query` and reads the bound wiki — it never reaches cogni-research, so it probes only `cogni-wiki` (the v0.1.0 clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required plugins.** This skill dispatches `cogni-wiki:wiki-query` and reads the bound wiki — it never reaches cogni-research, so it probes only `cogni-wiki` (the clean break: cogni-research is 0% of the runtime path — same posture as `knowledge-plan`). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
 
 ```
 probe_plugin() {
@@ -85,7 +85,7 @@ Skill("cogni-wiki:wiki-query",
       args="--wiki-root <wiki_path> --question '<question>' [--file-back <val>] [--max-pages <N>]")
 ```
 
-`--wiki-root` was added in cogni-wiki v0.0.41 — it pins the upstream skill to the bound wiki, bypassing the cwd-walk fallback. Forward `--file-back` and `--max-pages` only if the caller passed them.
+`--wiki-root` pins the upstream skill to the bound wiki, bypassing the cwd-walk fallback. Forward `--file-back` and `--max-pages` only if the caller passed them.
 
 ### 2. Print the answer + footer
 
@@ -118,7 +118,7 @@ This skill never modifies the binding. `cogni-wiki:wiki-query` may file the answ
 
 ## Out of scope
 
-- **Multi-question scoping.** Phase 3 takes one question per run; chaining is a future enhancement.
+- **Multi-question scoping.** This skill takes one question per run; chaining is a future enhancement.
 - **Modifying the binding.** Read-only by design.
 
 ## Output

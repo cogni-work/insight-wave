@@ -48,13 +48,12 @@ assert_grep 'binding.wiki_path' "$REFRESH" "knowledge-refresh: resweep targets b
 assert_grep 'opt-in' "$REFRESH" "knowledge-refresh: resweep documented as opt-in (#337)"
 assert_grep 'never auto-run\|Never auto-runs\|never auto-dispatch' "$REFRESH" "knowledge-refresh: resweep documented as never-auto-run (#337)"
 
-# --- 5) Out of scope names the synthesis-extractor underyield deferral -----
+# --- 5) Out of scope names the synthesis-extractor underyield -----
 assert_grep 'extract_page_claims.py' "$REFRESH" "knowledge-refresh: Out of scope names the upstream inline-URL extractor (#337)"
 assert_grep 'underyield' "$REFRESH" "knowledge-refresh: Out of scope documents synthesis-page underyield (#337)"
-assert_grep 'v0.1.17' "$REFRESH" "knowledge-refresh: Out of scope defers the synthesis-extractor adapter to v0.1.17+ (#337)"
 
 # --- 6) When/Never/References surfaces -------------------------------------
-assert_grep '#337' "$REFRESH" "knowledge-refresh: references #337"
+assert_grep 'wiki-claims-resweep' "$REFRESH" "knowledge-refresh: delegates the resweep to cogni-wiki:wiki-claims-resweep"
 # When to run gains the opt-in resweep bullet.
 if grep -qE 'live source URLs.*--resweep|--resweep.*live' "$REFRESH"; then
   green "PASS: knowledge-refresh: 'When to run' surfaces the --resweep opt-in"

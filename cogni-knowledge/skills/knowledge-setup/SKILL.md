@@ -39,7 +39,7 @@ If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with 
 
 ### 0. Pre-flight: required plugins
 
-cogni-knowledge is a thin orchestrator over `cogni-wiki` (the v0.1.0 inverted pipeline forks the agents it needs locally — see `agents/`); without it, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe the cogni-wiki sibling plugin dir before touching anything else. The probe tries both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`) so a marketplace-installed user gets the same abort as a dev-repo user:
+cogni-knowledge is a thin orchestrator over `cogni-wiki` (the inverted pipeline forks the agents it needs locally — see `agents/`); without it, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe the cogni-wiki sibling plugin dir before touching anything else. The probe tries both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`) so a marketplace-installed user gets the same abort as a dev-repo user:
 
 ```
 probe_plugin() {
@@ -62,7 +62,7 @@ If it is `no`, report the missing plugin and abort:
 
 Do not attempt to install or auto-recover — surface the missing dependency and let the user install it explicitly.
 
-The same probe runs in every other `knowledge-*` skill (rolled out at v0.0.14, alpha finding A4). Setup is still the canonical gate because it creates the binding; downstream skills additionally rely on the binding's existence as a soft proxy. A user who somehow reaches a downstream skill without going through setup gets the same clean abort.
+The same probe runs in every other `knowledge-*` skill. Setup is still the canonical gate because it creates the binding; downstream skills additionally rely on the binding's existence as a soft proxy. A user who somehow reaches a downstream skill without going through setup gets the same clean abort.
 
 ### 1. Resolve the knowledge root
 

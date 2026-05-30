@@ -1,16 +1,16 @@
 ---
 name: knowledge-verify
-description: "Phase 6 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json, shards the citations and dispatches wiki-verifier in parallel (via verify-store.py) to score every citation against each cited page's pre_extracted_claims (zero network), then loops with revisor on unsupported deviations — capped at 2 iterations per references/inverted-pipeline.md Phase 6. Writes <project>/.metadata/verify-vN.json per round and (when the revisor fires) draft-v{N+1}.md plus a citation-records file the orchestrator serializes into citation-manifest.json via citation-store.py build (never hand-built JSON — #325). The structural cost win versus cogni-claims (20–30 min verify → < 5 min). Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, M9 (knowledge-finalize) deposits the verified draft as a synthesis page."
+description: "Phase 6 of the inverted pipeline. Reads the draft and citation manifest, shards the citations, and dispatches wiki-verifier in parallel to score every citation against each cited page's pre_extracted_claims (zero network), then loops with the revisor on unsupported deviations — capped at 2 iterations. Writes verify-vN.json per round and, when the revisor fires, draft-v{N+1}.md plus a citation-records file the orchestrator serializes into the manifest. Use this skill whenever the user says 'verify the draft', 'phase 6 of the knowledge pipeline', 'knowledge verify', 'check the citations', or 'run the claim alignment'. After verify, knowledge-finalize deposits the verified draft as a synthesis page."
 allowed-tools: Read, Write, Bash, Task
 ---
 
 # Knowledge Verify
 
-Phase 6 of the v0.1.0 inverted pipeline. Reads `<project>/output/draft-vN.md` + `<project>/.metadata/citation-manifest.json`, dispatches `wiki-verifier` once per round to score every citation against each cited page's `pre_extracted_claims:`, and loops with `revisor` on `unsupported` deviations — capped at **2 revisor iterations** per `references/inverted-pipeline.md` Phase 6.
+Phase 6 of the inverted pipeline. Reads `<project>/output/draft-vN.md` + `<project>/.metadata/citation-manifest.json`, dispatches `wiki-verifier` once per round to score every citation against each cited page's `pre_extracted_claims:`, and loops with `revisor` on `unsupported` deviations — capped at **2 revisor iterations** per `references/inverted-pipeline.md` Phase 6.
 
 Verifier verdicts: `verbatim` / `paraphrase` (evidence-aligned) and `synthesis` (informational, for `claim_id: null` citations to synthesis pages) go to `verified[]`. Only `unsupported` goes to `deviations[]` — that is the revisor's trigger. The loop terminates either when `deviations[].verdict == "unsupported"` is empty OR when `revision_round == 2` is reached, whichever fires first.
 
-This is the **zero-network claim-alignment gate**. The wiki has every source body verbatim under `wiki/sources/<slug>.md` with `pre_extracted_claims:` in frontmatter (M5/M6 wrote them at ingest time). The verifier does string-match scoring against those claims — no WebFetch, no re-extraction, no claims.json store.
+This is the **zero-network claim-alignment gate**. The wiki has every source body verbatim under `wiki/sources/<slug>.md` with `pre_extracted_claims:` in frontmatter (the ingest phase wrote them at ingest time). The verifier does string-match scoring against those claims — no WebFetch, no re-extraction, no claims.json store.
 
 `verify-vN.json` shape (written per round by `wiki-verifier`):
 
@@ -135,14 +135,14 @@ assert manifest_v == expected_v, (
     "manifest draft_version=" + repr(manifest_v)
     + " but draft on disk is v" + str(expected_v)
 )
-# F22/#291: id + draft_sentence are required per entry since v0.0.28 but the
-# schema_version stayed 0.1.0 (additive), so a pre-0.0.28 manifest slips the
-# schema assert above. Reject it here rather than mass-drop every citation.
+# id + draft_sentence are required per entry but the schema_version stayed
+# 0.1.0 (additive), so an older manifest missing them slips the schema assert
+# above. Reject it here rather than mass-drop every citation.
 citations = m.get("citations", [])
 stale = [i for i, c in enumerate(citations)
          if not isinstance(c, dict) or "id" not in c or "draft_sentence" not in c]
 assert not stale, (
-    "citation-manifest predates v0.0.28 (entries missing id/draft_sentence) "
+    "citation-manifest is stale (entries missing id/draft_sentence) "
     "— re-run knowledge-compose"
 )
 n_cites = len(citations)
@@ -151,7 +151,7 @@ print(n_cites)
 '
 ```
 
-If the schema/version assertion fires, abort with "citation manifest is stale — re-run knowledge-compose". If the pre-0.0.28 guard fires (entries missing `id`/`draft_sentence`), abort with "manifest predates v0.0.28 — re-run knowledge-compose". If the zero-citations assertion fires, abort with "the draft has no sourced citations — nothing to verify" (consistent with the non-empty-`citations[]` precondition in "When to run"; a zero-citation manifest would otherwise shard into nothing). The trailing print is captured as `INITIAL_CITATION_COUNT` for the final summary.
+If the schema/version assertion fires, abort with "citation manifest is stale — re-run knowledge-compose". If the staleness guard fires (entries missing `id`/`draft_sentence`), abort with "manifest is stale — re-run knowledge-compose". If the zero-citations assertion fires, abort with "the draft has no sourced citations — nothing to verify" (consistent with the non-empty-`citations[]` precondition in "When to run"; a zero-citation manifest would otherwise shard into nothing). The trailing print is captured as `INITIAL_CITATION_COUNT` for the final summary.
 
 If `--dry-run`, print the resolved inputs and stop:
 
@@ -172,10 +172,10 @@ Initialise `CURRENT_DRAFT_VERSION=N`, `REVISION_ROUND=0`, `TOTAL_PRUNED=0`. The 
 
 Verification is embarrassingly parallel — each citation's verdict reads one cited page's `pre_extracted_claims` and one `draft_sentence`, with no cross-citation dependency. The pass has four stages: a deterministic substring **pre-filter** (zero LLM), then **shard** the remainder, dispatch one `wiki-verifier` per shard **in parallel**, then **merge**. (The composer and revisor stay single-dispatch — they need whole-draft coherence; only the verifier shards.)
 
-**Round split (#305).** Re-verify is incremental after the first round:
+**Round split.** Re-verify is incremental after the first round:
 
 - **Round 0** (`REVISION_ROUND == 0`): the candidate id-set is the **full** manifest. Merge with `--manifest` only.
-- **Round ≥1**: the candidate id-set is `DELTA_IDS` — the ids the revisor actually changed, captured from its return in Step 3.3 (`action ∈ {rephrase, repoint}`). Drops were removed from the manifest and skips are byte-identical, so neither needs re-scoring. Merge with `--manifest` **and** `--carry-forward-from` so untouched verdicts fold in and the canonical file stays complete. This is sound because patch-in-place (revisor #305) keeps untouched `(draft_sentence, claim_id)` pairs byte-identical, so their verdict is guaranteed-identical.
+- **Round ≥1**: the candidate id-set is `DELTA_IDS` — the ids the revisor actually changed, captured from its return in Step 3.3 (`action ∈ {rephrase, repoint}`). Drops were removed from the manifest and skips are byte-identical, so neither needs re-scoring. Merge with `--manifest` **and** `--carry-forward-from` so untouched verdicts fold in and the canonical file stays complete. This is sound because the revisor's patch-in-place keeps untouched `(draft_sentence, claim_id)` pairs byte-identical, so their verdict is guaranteed-identical.
 
 Set `CANDIDATE_IDS` accordingly (round 0 → all; round ≥1 → `DELTA_IDS`). The `--only-ids <csv>` arguments below take the comma-joined `CANDIDATE_IDS`.
 
@@ -288,13 +288,13 @@ The trailing print captures both counts. `UNSUPPORTED_COUNT = repairable` (the d
 
 If `UNSUPPORTED_COUNT == 0` → loop terminates SUCCESS. Skip to Step 4.
 
-If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND >= MAX_ROUNDS` → loop terminates EXHAUSTED. Skip to Step 4 with a `⚠ Loop exhausted` warning for the final summary; the operator decides whether to ship the draft anyway or invoke M9 against the highest verify-vN.
+If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND >= MAX_ROUNDS` → loop terminates EXHAUSTED. Skip to Step 4 with a `⚠ Loop exhausted` warning for the final summary; the operator decides whether to ship the draft anyway or run `knowledge-finalize` against the highest verify-vN.
 
 If `UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND < MAX_ROUNDS` → continue to 3.3.
 
 #### 3.3 Dispatch revisor (single Task call per round)
 
-**Pre-create the draft substrate + snapshot the manifest (#305).** The revisor now **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version AND snapshots the current manifest before the revise round overwrites it (the build in the `ok: true` branch below rebuilds it from the revisor's records; the snapshot is what lets `DELTA_IDS` be derived deterministically against that rebuild, instead of trusting the revisor's self-reported `fixes_applied`):
+**Pre-create the draft substrate + snapshot the manifest.** The revisor **patches in place** rather than regenerating the draft, so the orchestrator first copies the verified draft to the new version AND snapshots the current manifest before the revise round overwrites it (the build in the `ok: true` branch below rebuilds it from the revisor's records; the snapshot is what lets `DELTA_IDS` be derived deterministically against that rebuild, instead of trusting the revisor's self-reported `fixes_applied`):
 
 ```
 NEW_DRAFT_VERSION=$((CURRENT_DRAFT_VERSION + 1))
@@ -314,11 +314,11 @@ Task(revisor,
      NEW_DRAFT_VERSION=<NEW_DRAFT_VERSION>)
 ```
 
-`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md` and writes a raw-text `citation-records-v<NEW_DRAFT_VERSION>.txt` (updated `draft_sentence`/`claim_id` for changed citations, dropped entries removed) — it never hand-builds the manifest JSON (#325); the orchestrator serializes it below.
+`revisor` lives at `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched via `Task`, not `Skill`. Forked from cogni-research's revisor (drift acceptable per `references/inverted-pipeline.md` "What is no longer in the runtime path"). Zero-network — corrections come from claims already on the wiki. It `Edit`s only the changed sentences in the pre-created `draft-v<NEW_DRAFT_VERSION>.md` and writes a raw-text `citation-records-v<NEW_DRAFT_VERSION>.txt` (updated `draft_sentence`/`claim_id` for changed citations, dropped entries removed) — it never hand-builds the manifest JSON; the orchestrator serializes it below.
 
 Parse the return envelope:
 
-- `ok: true` → **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads` — #325). Serialize + self-check it exactly as Phase 5 does (paths via env vars):
+- `ok: true` → **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads`). Serialize + self-check it exactly as Phase 5 does (paths via env vars):
 
   ```
   RECORDS_PATH="<project_path>/.metadata/citation-records-v<NEW_DRAFT_VERSION>.txt" \
@@ -379,7 +379,7 @@ counts = v.get("counts", {})
 total = counts.get("total")
 expected = len(v.get("verified", [])) + len(v.get("deviations", []))
 assert total == expected, "counts.total=" + repr(total) + " != verified+deviations=" + str(expected)
-# Authoritative citation count (F24): len of the post-verify citation manifest for
+# Authoritative citation count: len of the post-verify citation manifest for
 # this draft version. counts.total is verdicts scored for draft-vN at the round
 # start (before the §3.2 sentence_not_in_draft prune + any revisor drop), which is
 # NOT the citation count — read the manifest itself for the pin.
@@ -416,7 +416,7 @@ N_UNSUPPORTED=<counts.unsupported from final verify>
 echo "## [${DATE_STAMP}] verify | project=${TOPIC} draft=v${CURRENT_DRAFT_VERSION} round=${REVISION_ROUND} verbatim=${N_VERBATIM} paraphrase=${N_PARAPHRASE} unsupported=${N_UNSUPPORTED}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
-Note on the `verify` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `verify`, but the same paragraph notes that "pre-v0.0.35 readers count unknown prefixes in their catch-all bucket without crashing" — `verify` is additive and safe. Same additive-prefix posture as M7's `compose` line. Formalising both prefixes lands in Slice 5/M9 when the dashboard gets rebuilt on the new manifests.
+Note on the `verify` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `verify`, but readers count unknown prefixes in their catch-all bucket without crashing — `verify` is additive and safe. Same additive-prefix posture as the `compose` line.
 
 ### 6. Final summary
 
@@ -424,14 +424,14 @@ Print ≤ 10 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
-- Verification scope: citation-consistent vs ingest-time `pre_extracted_claims` (zero-network; #337). Live-source re-check opt-in via `knowledge-refresh --resweep`.
+- Verification scope: citation-consistent vs ingest-time `pre_extracted_claims` (zero-network). Live-source re-check opt-in via `knowledge-refresh --resweep`.
 - Draft: `output/draft-v<CURRENT_DRAFT_VERSION>.md` (revisor rounds: `<REVISION_ROUND>` of `<MAX_ROUNDS>`)
 - Citations: `<manifest_citations>` (authoritative count = `len(citation-manifest.json::citations)` for draft-v`<CURRENT_DRAFT_VERSION>`; `<TOTAL_PRUNED>` pruned as `sentence_not_in_draft`)
 - Verdicts scored on draft-v`<CURRENT_DRAFT_VERSION>` (round `<REVISION_ROUND>`): verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (total scored=`<N>`) — a per-round verdict tally, not the citation count
 - Verbatim/paraphrase ratio (print **only when `verbatim + paraphrase > 0`**): `<V>/<P> = <pct>% verbatim` (`pct = round(100 * V / (V + P), 1)`) — the operator's confidence signal; high copy-paste signals weak synthesis. Suppressed when `verbatim + paraphrase == 0`.
 - Latest verify: `.metadata/verify-v<CURRENT_DRAFT_VERSION>.json`
 - Cost: `$X.XXX` (sum of `cost_estimate.estimated_usd` across all verifier + revisor dispatches)
-- Next: M9 (`knowledge-finalize`) deposits the verified draft as `wiki/syntheses/<slug>.md`. For v0.0.23, end here — `verify-v<N>.json` + an aligned draft is this slice's deliverable.
+- Next: `knowledge-finalize` deposits the verified draft as `wiki/syntheses/<slug>.md`.
 
 If the loop terminated EXHAUSTED (`UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND == MAX_ROUNDS`), surface a `⚠ Loop exhausted — <N> unsupported citations remain after <MAX_ROUNDS> revisor rounds` warning line. Do not block — the operator decides whether to ship the partial draft, re-ingest more sources, or hand-edit.
 
@@ -439,27 +439,27 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 
 ## Edge cases
 
-- **Zero deviations on first verifier pass.** Loop terminates immediately after `REVISION_ROUND=0`. `CURRENT_DRAFT_VERSION` stays at N; the draft on disk is unchanged. `verify-vN.json` records the clean verdict for M9 to consume.
+- **Zero deviations on first verifier pass.** Loop terminates immediately after `REVISION_ROUND=0`. `CURRENT_DRAFT_VERSION` stays at N; the draft on disk is unchanged. `verify-vN.json` records the clean verdict for `knowledge-finalize` to consume.
 - **Verifier reports `manifest_mismatch`.** Step 3.1's error branch fires. The most common cause is the user editing the draft by hand between compose and verify (or running compose, then deleting + re-creating draft-vN.md). Direct the user to re-run `knowledge-compose`.
 - **Revisor returns `fixes_summary.skip > 0`.** Some deviations were misclassified or had no fix path. Surface in the summary as `⚠ <N> deviations skipped by revisor — see verify-v<N>.json for details`. The next round's verifier will re-score; if those deviations persist, the operator gets a clean signal.
 - **`--max-rounds 0`.** Operator wants verifier output only, no revision attempt. Loop runs Step 3.1 once, skips 3.3 unconditionally, terminates as EXHAUSTED if `UNSUPPORTED_COUNT > 0` or SUCCESS if `0`. Surface the value in the summary so it's clear no revision was attempted.
-- **Concurrent edits.** Another session writing to `draft-vN.md` or the manifest mid-run isn't guarded against. Same posture as M7 — single-user-per-project assumption holds at v0.0.23.
-- **Missing prior `verify-v<N-1>.json` on an incremental round (#305).** Round ≥1's `merge --carry-forward-from` needs the previous round's file. If it was manually deleted (so untouched verdicts cannot be carried), fall back to a **full re-shard** for that round: run Step 3.1 (a) `prefilter` over the **full** manifest (omit `--only-ids`), shard the remainder, dispatch, and `merge --manifest` **without** `--carry-forward-from`. Correctness is unchanged — only the wall-clock saving is forfeited for that one round.
+- **Concurrent edits.** Another session writing to `draft-vN.md` or the manifest mid-run isn't guarded against. Single-user-per-project assumption holds.
+- **Missing prior `verify-v<N-1>.json` on an incremental round.** Round ≥1's `merge --carry-forward-from` needs the previous round's file. If it was manually deleted (so untouched verdicts cannot be carried), fall back to a **full re-shard** for that round: run Step 3.1 (a) `prefilter` over the **full** manifest (omit `--only-ids`), shard the remainder, dispatch, and `merge --manifest` **without** `--carry-forward-from`. Correctness is unchanged — only the wall-clock saving is forfeited for that one round.
 
 ## Out of scope
 
-- Does NOT finalize the draft as a synthesis page — Phase 7 (`knowledge-finalize`, M9).
+- Does NOT finalize the draft as a synthesis page — Phase 7 (`knowledge-finalize`).
 - Does NOT modify `binding.json` — Phase 7 appends the project entry.
 - Does NOT re-run any earlier phase. A stale citation manifest aborts cleanly with a "re-run knowledge-compose" message.
-- Does NOT support cross-page substitute-citation search in the revisor (deferred per `references/absorption-roadmap.md` Slice 4 notes).
-- Does NOT support multilingual verification, executive density, or arc-aware revision — deferred (matches M7's Slice 3 deferrals).
-- Does NOT re-fetch any URL. The whole point of the inverted pipeline is that verification is zero-network — re-introducing fetches would defeat the < 5 min cost target. Verdicts are therefore **citation-consistent**, not live-ground-truthed. For live-source re-verification on a cadence, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; delegates to `cogni-wiki:wiki-claims-resweep`) — #337.
+- Does NOT support cross-page substitute-citation search in the revisor.
+- Does NOT support multilingual verification, executive density, or arc-aware revision.
+- Does NOT re-fetch any URL. The whole point of the inverted pipeline is that verification is zero-network — re-introducing fetches would defeat the < 5 min cost target. Verdicts are therefore **citation-consistent**, not live-ground-truthed. For live-source re-verification on a cadence, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; delegates to `cogni-wiki:wiki-claims-resweep`).
 
 ## Output
 
 - `<project_path>/.metadata/verify-v<N>.json` per round (schema 0.1.0), assembled by `verify-store.py merge`. One file per draft version; the round number is recorded inside the file as `revision_round`.
 - `<project_path>/.metadata/verify-shards/` — per-round shard inputs (`shard-NN-v<N>.json`), verifier fragments (`verify-shard-NN-v<N>.json`), and the deterministic pre-filter fragment (`verify-shard-prefilter-v<N>.json`). Intermediate fan-out artifacts; the merged `verify-v<N>.json` is the canonical output.
-- `<project_path>/output/draft-v<N+K>.md` per revisor round (K = 1 or 2). The latest is the verified-aligned draft M9 consumes.
+- `<project_path>/output/draft-v<N+K>.md` per revisor round (K = 1 or 2). The latest is the verified-aligned draft `knowledge-finalize` consumes.
 - `<project_path>/.metadata/citation-manifest.json` — rewritten in place by every revisor round to track the latest `draft_version`.
 - One new `## [YYYY-MM-DD] verify | …` line in `<WIKI_ROOT>/wiki/log.md`.
 
@@ -467,8 +467,8 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 6 contract (max-2-iterations cap, zero-network invariant)
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — verdict definitions (verbatim / paraphrase / unsupported)
-- `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — Slice 4 deferrals (cross-page substitute, multilingual, arcs)
+- `${CLAUDE_PLUGIN_ROOT}/references/absorption-roadmap.md` — deferrals (cross-page substitute, multilingual, arcs)
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched agent (verifier; sharded via `CITATIONS_PATH` / `VERIFY_OUT_PATH`)
 - `${CLAUDE_PLUGIN_ROOT}/agents/revisor.md` — dispatched agent (revisor fork; repoint-before-drop)
-- `${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py --help` — `shard` / `prefilter` / `merge` fan-out plumbing (incremental re-verify via `shard --only-ids` + `merge --manifest --carry-forward-from`, #305)
+- `${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py --help` — `shard` / `prefilter` / `merge` fan-out plumbing (incremental re-verify via `shard --only-ids` + `merge --manifest --carry-forward-from`)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

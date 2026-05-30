@@ -43,7 +43,7 @@ assert_grep 'wiki/log.md' "$COMPOSE" "knowledge-compose: appends to wiki/log.md"
 # Step-5 validator re-asserts every draft_sentence is in the draft (authoritative
 # gate, issue #4). The '#325' marker tags the substring guard line.
 assert_grep 'citation-store.py' "$COMPOSE" "knowledge-compose: builds the manifest via citation-store.py (#325)"
-assert_grep '#325' "$COMPOSE" "knowledge-compose: Step-5 draft_sentence-in-draft guard tagged #325"
+assert_grep 'verbatim substring of the draft' "$COMPOSE" "knowledge-compose: Step-5 asserts every draft_sentence is a verbatim substring of the draft"
 # Match the actual log-line shape Step 6 emits (`## [DATE] compose | project=...`)
 # rather than the bare word `compose`, which would also match the filename,
 # skill name, and every doc paragraph.
