@@ -528,12 +528,52 @@ def assert_parse_renarrate_records():
     assert kl.parse_renarrate_records("") == {}
 
 
+def assert_digit_anchor_tokens():
+    # Article numbers are the cross-lingual anchors; "Artikel 99" and "Article 99"
+    # both yield {"99"} — the only deterministic DE↔EN bridge (#345).
+    assert kl.digit_anchor_tokens("Verstöße gegen Artikel 99 ...") == {"99"}
+    assert kl.digit_anchor_tokens("Infringements under Article 99 ...") == {"99"}
+    # Multiple anchors are all kept.
+    assert kl.digit_anchor_tokens("Artikel 6 und Anhang 99 zusammen") == {"6", "99"}
+    # GENERIC_DENYLIST years are NOT anchors (token_weight zeroes them before the
+    # digit ×3.0 boost) — guards against a year masquerading as an article number.
+    assert kl.digit_anchor_tokens("In 2025 the rule applies") == set(), \
+        kl.digit_anchor_tokens("In 2025 the rule applies")
+    # No digits → empty.
+    assert kl.digit_anchor_tokens("Die nationale Aufsichtsbehörde überwacht.") == set()
+    assert kl.digit_anchor_tokens("") == set()
+
+
+def assert_parse_crossmerge_records():
+    text = (
+        "# a comment line is ignored\n"
+        "merge: sanctions-regime | dcl-001 | dcl-002\n"
+        "\n"
+        "merge:  high-risk  |  dcl-003  |  dcl-009 \n"   # surrounding whitespace stripped
+        "merge: bad | only-two-fields\n"                  # wrong arity → dropped
+        "merge: empty | dcl-1 | \n"                       # empty field → dropped
+        "not-a-merge-line\n"                              # no `merge:` → dropped
+    )
+    r = kl.parse_crossmerge_records(text)
+    assert r == [
+        {"slug": "sanctions-regime", "survivor_id": "dcl-001", "absorbed_id": "dcl-002"},
+        {"slug": "high-risk", "survivor_id": "dcl-003", "absorbed_id": "dcl-009"},
+    ], r
+    # CRLF tolerance.
+    crlf = kl.parse_crossmerge_records("merge: z | dcl-1 | dcl-2\r\n")
+    assert crlf == [{"slug": "z", "survivor_id": "dcl-1", "absorbed_id": "dcl-2"}], crlf
+    # Empty input → [].
+    assert kl.parse_crossmerge_records("") == []
+
+
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("claim_similarity", assert_claim_similarity)
 check("parse_concept_records", assert_parse_concept_records)
 check("extract_machine_block", assert_extract_machine_block)
 check("parse_renarrate_records", assert_parse_renarrate_records)
+check("digit_anchor_tokens", assert_digit_anchor_tokens)
+check("parse_crossmerge_records", assert_parse_crossmerge_records)
 check("strip_inline_citation_markers", assert_strip_inline_citation_markers)
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
@@ -583,6 +623,8 @@ grade claim_similarity        "claim_similarity — symmetric weighted-Jaccard, 
 grade parse_concept_records   "parse_concept_records — concept/entity records, repeatable claim: lines, colon-in-summary, first-pipe split (#336)"
 grade extract_machine_block   "extract_machine_block — verbatim inner incl. heading, absent→None, CRLF, concept-store delegate parity (#341)"
 grade parse_renarrate_records "parse_renarrate_records — multi-line dedented prose, empty-prose omitted, last-slug-wins, unterminated-to-EOF, CRLF (#341)"
+grade digit_anchor_tokens     "digit_anchor_tokens — Artikel/Article 99 → {99}, multi-anchor, GENERIC_DENYLIST years excluded, no-digit→∅ (#345)"
+grade parse_crossmerge_records "parse_crossmerge_records — merge: slug|survivor|absorbed, whitespace strip, wrong-arity/empty-field dropped, comments, CRLF, ''→[] (#345)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

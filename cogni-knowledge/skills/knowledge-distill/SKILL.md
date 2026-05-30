@@ -1,6 +1,6 @@
 ---
 name: knowledge-distill
-description: "Phase 4.5 of the v0.1.0 inverted pipeline (between ingest and compose). Reads the run's source pages + their pre_extracted_claims, dispatches concept-distiller to propose recurring type:concept / type:entity pages (and, conservatively, cross-source type:summary / run-level type:learning pages), then runs concept-store.py to create-or-merge those pages under a lock with claim-level dedup — so the bound wiki COMPOUNDS across runs (distilled pages get enriched, not duplicated) and duplicate facts merge at deposit. Fail-soft and optional: a distill failure never blocks compose. Writes wiki/{concepts,entities,summaries,learnings}/*.md + distill-manifest.json. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
+description: "Phase 4.5 of the v0.1.0 inverted pipeline (between ingest and compose). Reads the run's source pages + their pre_extracted_claims, dispatches concept-distiller to propose recurring type:concept / type:entity pages (and, conservatively, cross-source type:summary / run-level type:learning pages), then runs concept-store.py to create-or-merge those pages under a lock with claim-level dedup — so the bound wiki COMPOUNDS across runs (distilled pages get enriched, not duplicated) and duplicate facts merge at deposit. An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Writes wiki/{concepts,entities,summaries,learnings}/*.md + distill-manifest.json. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Read, Write, Bash, Task
 
 Phase 4.5 of the v0.1.0 inverted pipeline — it sits **between** `knowledge-ingest` (Phase 4) and `knowledge-compose` (Phase 5): `plan → curate → fetch → ingest → **distill** → compose → verify → finalize`.
 
-Phase 4 deposits one `type: source` page per fetched URL (verbatim body + `pre_extracted_claims:`). That makes the wiki a **citation store**. This phase turns those source claims into the distilled **concept/entity web** that makes a Karpathy wiki *compound* across runs: `type: concept` / `type: entity` pages that successive runs **enrich** (new claims appended, source backlinks unioned) rather than duplicate, with **claim-level dedup** at deposit (the Finding-H fix, #336) and **per-run re-narration of updated summaries** (#341, Step 6.5) so the wiki compounds *narratively* — the entry-point prose integrates new evidence — as well as structurally. The differentiation thesis's compounding loop + claims-dedup metric become real here.
+Phase 4 deposits one `type: source` page per fetched URL (verbatim body + `pre_extracted_claims:`). That makes the wiki a **citation store**. This phase turns those source claims into the distilled **concept/entity web** that makes a Karpathy wiki *compound* across runs: `type: concept` / `type: entity` pages that successive runs **enrich** (new claims appended, source backlinks unioned) rather than duplicate, with **claim-level dedup** at deposit (the Finding-H fix, #336) and **per-run re-narration of updated summaries** (#341, Step 6.7) so the wiki compounds *narratively* — the entry-point prose integrates new evidence — as well as structurally. The differentiation thesis's compounding loop + claims-dedup metric become real here.
 
 **Optional + fail-soft.** A distill failure must NEVER block `knowledge-compose`. Same posture as the `knowledge-curate` Step 0.5 coverage pre-step: warn loudly, exit cleanly, let the pipeline continue. The concept/entity pages are an enrichment layer, not a correctness gate.
 
@@ -32,7 +32,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4.5 — `k
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. |
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
-| `--no-renarrate` | No | Skip Step 6.5 (summary re-narration). Default is **on** — narrative compounding is the point of Phase 4.5; this opt-out exists for byte-stable re-runs / cost control. |
+| `--no-renarrate` | No | Skip Step 6.7 (summary re-narration). Default is **on** — narrative compounding is the point of Phase 4.5; this opt-out exists for byte-stable re-runs / cost control. |
+| `--no-crosslingual` | No | Skip Step 6.6 (cross-lingual DE↔EN claim merge, #345). Default is **on** but **auto-skips** with zero LLM cost when no candidate pairs exist (every single-language base); this opt-out forces it off even on a mixed-language base. |
 | `--dry-run` | No | Print the resolved inputs (bundle source count, existing distilled-page count, bundle hash, resume verdict) without dispatching the distiller. |
 
 ## Workflow
@@ -197,11 +198,79 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py merge \
 
 `--bundle-hash "$SHA"` (the Step-1 content hash) is written into the manifest by `concept-store.py` itself — it is the single writer, so Step 3's resume check reads it back with no fragile second-process patch. Parse `data`: `created_slugs[]`, `updated_slugs[]` (disjoint), `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, claims_rejected, near_existing_slug, ...}`), `claims_attached_total`, `claims_deduped_total`, `claims_rejected_total`, `near_existing_total`, `near_existing_slugs[]` (`{slug, near_slug, near_title, near_type, score}`). On `success: false` → warn + exit cleanly. **If `claims_rejected_total > 0`, surface it loudly** — it means the distiller emitted malformed claim lines (e.g. dropped the `<slug> | <id> |` provenance), which would otherwise silently shrink the concept web; check the records file format. **`near_existing_total` / `near_existing_slugs[]` are the #340 observable tripwire** — see Step 9.
 
-### 6.5. Re-narrate updated summaries (default-on, fail-soft) — #341
+### 6.6. Cross-lingual claim merge (DE↔EN, default-on, fail-soft, auto-skip) — #345
+
+Phase-1 dedup (Step 6) deliberately **under-merges across languages**: the only deterministic DE↔EN bridge is the article-number digit anchor (×3.0), so a German claim and its English twin survive as two `distilled_claims[]` entries. That is the **safe** direction (a wrong cross-language merge silently destroys a distinct fact and is unrecoverable) but on a **mixed-language base** (EN+DE sources) it is lossy — a concept page lists each fact twice and the dedup ratio under-reports the real overlap. This step has an LLM confirm which **script-flagged** candidate pairs are the *same fact stated in two languages*, then unions them. **It NEVER fires on a single-language base** — the candidate generator emits nothing there (same-language twins already collapsed in Step 6), so this step self-skips with zero LLM cost (the auto-skip).
+
+**Skip cleanly when:** `--no-crosslingual` was passed, OR `created_slugs[] + updated_slugs[]` (from Step 6) is empty. Jump to Step 6.7.
+
+**a. Generate candidates (deterministic, read-only).** `xlingual-candidates` pairs each touched page's `distilled_claims[]` and flags those that share an article-number digit anchor but did NOT auto-merge (low overlap) — the signature of a DE↔EN twin. Save the envelope, then transform it into the agent's bundle:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py xlingual-candidates \
+    --wiki-root <WIKI_ROOT> \
+    --slugs "<comma-separated created_slugs + updated_slugs>" \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    > <project_path>/.metadata/xlingual-candidates.json
+```
+
+On `success: false` → warn + continue to Step 6.7 (this step never blocks). Otherwise build the per-pair bundle (env-var paths so quotes can't break the literal):
+
+```
+CAND_JSON="<project_path>/.metadata/xlingual-candidates.json" \
+BUNDLE_PATH="<project_path>/.metadata/xlingual-candidates.txt" \
+python3 -c '
+import json, os
+from pathlib import Path
+d = json.loads(Path(os.environ["CAND_JSON"]).read_text(encoding="utf-8"))
+cands = d.get("data", {}).get("candidates", []) if d.get("success") else []
+out = []
+for c in cands:
+    out.append("## candidate: " + c.get("slug", ""))
+    out.append("a_id: " + c.get("a_id", ""))
+    out.append("a_text: " + " ".join(str(c.get("a_text", "")).split()))
+    out.append("b_id: " + c.get("b_id", ""))
+    out.append("b_text: " + " ".join(str(c.get("b_text", "")).split()))
+    out.append("shared_anchors: " + ", ".join(c.get("shared_anchors", [])))
+    out.append("")
+Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(out) + ("\n" if out else ""), encoding="utf-8")
+print(len(cands))
+'
+```
+
+**If the printed candidate count is `0` → skip cleanly to Step 6.7** (the auto-skip; report `n/a (no cross-lingual candidates)`).
+
+**b. Dispatch the merger (single Task call).**
+
+```
+Task(cross-lingual-claim-merger,
+     CANDIDATES_PATH=<project_path>/.metadata/xlingual-candidates.txt,
+     RECORDS_OUTPUT_PATH=<project_path>/.metadata/xlingual-records.txt,
+     OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
+```
+
+`cross-lingual-claim-merger` lives at `${CLAUDE_PLUGIN_ROOT}/agents/cross-lingual-claim-merger.md` — dispatched via `Task`, not `Skill`. It judges each candidate "same fact, two languages?" and writes a raw-text `merge: <slug> | <survivor> | <absorbed>` line per confirmed twin. Parse the return: `ok: true` → continue to 6.6c; `ok: false` or `pairs_confirmed: 0` → warn/continue to Step 6.7 (no unions to apply).
+
+**c. Apply the unions (locked, fail-safe).**
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py crossmerge \
+    --records <project_path>/.metadata/xlingual-records.txt \
+    --wiki-root <WIKI_ROOT> \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+```
+
+`crossmerge` parses the records and, under the SAME `_wiki_lock` as `merge`, **re-validates the candidate gate server-side for every record** (both ids must still be on the page AND the pair must still satisfy the deterministic candidate predicate — so the LLM can never widen scope) and UNIONs the absorbed claim's `backlinks` + `source_claim_refs` onto its survivor — **never dropping a provenance ref**, only removing the duplicate dcl-id. Parse `data`: `merged[]` (`{slug, survivor_id, absorbed_id}`), `merged_slugs[]`, `skipped[]` (`{slug, reason}`; reasons `page_not_found`/`no_sentinels_human_page`/`claim_not_found`/`not_a_candidate`/`claims_round_trip_mismatch`), `n_merged`, `n_skipped`, `claims_crossmerged_total`. On `success: false` → warn + continue to Step 6.7.
+
+**Fold `merged_slugs[]` into `updated_slugs[]`** so Step 6.7 re-narrates the now-shorter claim list and Step 7's wiki integration covers the page. Capture `n_merged` / `n_skipped` for Step 9.
+
+**Fail-soft at every hop.** A failed candidate scan, a merger `ok:false`, a missing/empty records file, or a non-zero `crossmerge` exit must each **warn and continue** to Step 6.7 with claims intact. This pass is enrichment, never a gate. (Re-running on the same claim set is byte-stable: an already-absorbed `dcl` id is gone, so the record re-validates to `claim_not_found` and the page is untouched.)
+
+### 6.7. Re-narrate updated summaries (default-on, fail-soft) — #341
 
 Phase 4.5 compounds the `## Claims` / `## Related` / `## Sources` blocks across runs, but `concept-store.py merge` keeps the `## Summary` block **first-writer-wins** on update — so an `updated` page can list 20 distilled claims under prose that still reflects only run 1's framing. This step re-narrates the summary of each **updated** page from its *merged* claims so the wiki compounds **narratively**, not just structurally. **Summary-only**: every other machine block + the human `## Notes` tail stay byte-identical.
 
-**Skip cleanly when:** `--no-renarrate` was passed, OR `updated_slugs[]` (from Step 6) is empty (`created` pages already carry a fresh distiller summary; pure re-runs have no updated pages). In either case jump straight to Step 7 — re-narration is purely additive enrichment.
+**Skip cleanly when:** `--no-renarrate` was passed, OR `updated_slugs[]` (from Step 6, **possibly grown by Step 6.6's `merged_slugs[]` fold** so crossmerged pages get re-narrated too) is empty (`created` pages already carry a fresh distiller summary; pure re-runs have no updated pages). In either case jump straight to Step 7 — re-narration is purely additive enrichment.
 
 Otherwise:
 
@@ -260,7 +329,7 @@ Task(concept-summary-narrator,
      OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
 ```
 
-`concept-summary-narrator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched via `Task`, not `Skill`. Parse the return envelope: `ok: true` → continue to Step 6.5c; `ok: false` → **warn (surface the error) and jump to Step 7 with summaries unchanged** (re-narration never blocks the pipeline).
+`concept-summary-narrator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched via `Task`, not `Skill`. Parse the return envelope: `ok: true` → continue to Step 6.7c; `ok: false` → **warn (surface the error) and jump to Step 7 with summaries unchanged** (re-narration never blocks the pipeline).
 
 **c. Apply the re-narration (locked, summary-only).**
 
@@ -330,7 +399,8 @@ Print ≤ 12 lines:
 - Distilled pages created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
   - By type (created): concepts `<c>` / entities `<e>` / summaries `<s>` / learnings `<l>` — count each from the merge result's per-slug `type` (omit a type's tally when it is `0`)
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
-- Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.5 did not run
+- Cross-lingual merges (#345): `<n_merged>` (`<n_skipped>` skipped) — or `skipped (--no-crosslingual)` / `n/a (no cross-lingual candidates)` when Step 6.6 did not fire (the single-language norm — no DE↔EN twins to merge)
+- Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.7 did not run
 - **#340 title→slug tripwire** — if `near_existing_total > 0`, surface a warning block:
   - Header: `⚠ <near_existing_total> concepts created near an existing slug — check title stability (#340)`
   - One line per entry from `near_existing_slugs[]` (deterministic order, score-sorted desc): `  <slug> ~ <near_slug> (<near_type>, score=<score>)`
@@ -347,16 +417,18 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 ## Edge cases
 
 - **Fresh base (run 1).** Every concept/entity is `created`; `claims_deduped_total` may be 0 (nothing prior to dedup against — same-run near-dupes still merge). Compounding shows from run 2 onward.
-- **Re-run on the same claim set.** Step 3 skips re-dispatch when `bundle_hash` is unchanged; even without the skip, `concept-store.py merge` is byte-stable (re-merge → all `unchanged`, `n_new == 0`, no bump); `updated_slugs[]` is then empty, so Step 6.5 re-narration also no-ops.
+- **Re-run on the same claim set.** Step 3 skips re-dispatch when `bundle_hash` is unchanged; even without the skip, `concept-store.py merge` is byte-stable (re-merge → all `unchanged`, `n_new == 0`, no bump); `updated_slugs[]` is then empty, so Step 6.7 re-narration also no-ops.
 - **A concept slug collides with a `foundation: true` page.** `concept-store.py` refuses to merge (`skipped`, `reason: foundation_collision`) — never overwrites a curated foundation.
 - **A concept slug collides with a hand-authored page (no MACHINE-OWNED sentinels).** `concept-store.py` skips it (`reason: no_sentinels_human_page`) and leaves the page untouched — we never clobber a page we did not author.
 - **Distiller proposed a concept but every claim was a re-run duplicate.** The page is `unchanged`; no index churn, no `entries_count` bump.
 - **Empty / claim-less sources.** Sources with no `pre_extracted_claims:` are omitted from the bundle; if the whole bundle is empty, the phase no-ops cleanly.
+- **Single-language base (the norm).** Step 6.6's `xlingual-candidates` finds no pairs (same-language twins already collapsed in Step 6), so the cross-lingual pass self-skips with zero LLM cost — `n/a (no cross-lingual candidates)`. The feature only does work on a mixed DE↔EN base.
 
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
-- Re-narrates the `## Summary` body of **updated** distilled pages (any of the four types) from the merged claims (Step 6.5, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
+- Re-narrates the `## Summary` body of **updated** distilled pages (any of the four types) from the merged claims (Step 6.7, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
+- Merges **cross-lingual (DE↔EN) twin claims** on a mixed-language base (Step 6.6, #345, default-on, fail-soft, auto-skip; `--no-crosslingual` opts out). An LLM only **confirms** pairs the script flagged (shared article-number anchor + low overlap); `concept-store.py crossmerge` re-validates the gate and UNIONs provenance onto the survivor — **never dropping a fact**. It does NOT touch single-language dedup (Step 6's job), and it explicitly does NOT use embedding/vector similarity (approach (c), rejected by the differentiation thesis).
 - Emits four page types — `concept` / `entity` plus, conservatively, the cross-source `summary` and run-level `learning` (#342, v0.1.24); the distiller defaults to `concept`/`entity` and reaches for the new types only when a cluster fits neither. It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
 - Does NOT run the `lint_wiki.py --fix=all` / `health.py` conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
@@ -369,14 +441,15 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
-- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.5 runs) `renarrate-bundle.txt` / `renarrate-records.txt`.
-- Updated distilled pages (any of the four types) get their `## Summary` body re-narrated from the merged claims (Step 6.5, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
+- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`.
+- Updated distilled pages (any of the four types) get their `## Summary` body re-narrated from the merged claims (Step 6.7, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 4.5 contract
 - `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` — the compounding loop + claims-dedup metric this phase realizes
 - `${CLAUDE_PLUGIN_ROOT}/agents/concept-distiller.md` — dispatched agent (Phase 1 proposals)
-- `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched agent (Step 6.5 summary re-narration, #341)
-- `${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py --help` — locked create-or-merge + claim-dedup engine
+- `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched agent (Step 6.7 summary re-narration, #341)
+- `${CLAUDE_PLUGIN_ROOT}/agents/cross-lingual-claim-merger.md` — dispatched agent (Step 6.6 cross-lingual DE↔EN claim merge, #345)
+- `${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py --help` — locked create-or-merge + claim-dedup engine (incl. `xlingual-candidates` / `crossmerge`, #345)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

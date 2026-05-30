@@ -142,7 +142,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-curate | Skill | Phase 2 — resolve wiki coverage once (`wiki-coverage.py`, read-before-web #309) then fan out one `source-curator` per sub-question (WebSearch + score + WebFetch bodies); merge candidates (each with a `fetch` sub-object) into `candidates.json` |
 | knowledge-fetch | Skill | Phase 3 — build `fetch-manifest.json` from the curators' fetch results; opt-in (`--cobrowse`) `source-fetcher` reconcile of WebFetch misses |
 | knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter; writes curated backlinks (`backlink_audit.py --apply-plan`) and files each source under its sub-question's thematic index category |
-| knowledge-distill | Skill | Phase 4.5 (optional, fail-soft, #336) — `concept-distiller` proposes recurring `concept`/`entity` pages; `concept-store.py` create-or-merges them under a lock with **claim-level dedup**, so successive runs enrich the concept web rather than duplicate it (the compounding mechanism) |
+| knowledge-distill | Skill | Phase 4.5 (optional, fail-soft, #336) — `concept-distiller` proposes recurring `concept`/`entity` pages; `concept-store.py` create-or-merges them under a lock with **claim-level dedup**, so successive runs enrich the concept web rather than duplicate it (the compounding mechanism); an optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (#345) |
 | knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki (concept/entity pages as framing *and* citable cross-source evidence — #344) and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
 | knowledge-verify | Skill | Phase 6 — zero-network claim alignment, fanned out across parallel `wiki-verifier` shards (`verify-store.py`) + revisor loop on `unsupported` deviations (max 2 iterations) |
 | knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage + bare `[[<slug>]]` reference backlinks; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append, then a `wiki-lint --fix=all` + `wiki-health` conformance gate (closes the inverted-pipeline loop) |
@@ -153,10 +153,13 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | source-fetcher | Agent | Phase 3 NEW — cobrowse-only recovery of WebFetch misses via the `claude-in-chrome` extension; reads/writes through `fetch-cache.py` |
 | claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
 | source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
-| concept-distiller | Agent | Phase 4.5 NEW (#336) — reads the run's source-claim bundle + an existing-slug index, clusters recurring facts into `concept`/`entity` proposals, writes a raw-text records file (never builds JSON/YAML, never computes slugs, never decides dedup) |
+| concept-distiller | Agent | Phase 4.5 NEW (#336) — reads the run's source-claim bundle + an existing-slug index, clusters recurring facts into `concept`/`entity`/`summary`/`learning` proposals, writes a raw-text records file (never builds JSON/YAML, never computes slugs, never decides dedup) |
+| concept-summary-narrator | Agent | Phase 4.5 Step 6.7 NEW (#341) — re-narrates the `## Summary` of each updated distilled page from its merged claims so the wiki compounds narratively; raw-text records, touches only the summary block |
+| cross-lingual-claim-merger | Agent | Phase 4.5 Step 6.6 NEW (#345) — confirms which script-flagged DE↔EN candidate pairs are the same fact in two languages; raw-text `merge:` records the orchestrator applies via `concept-store.py crossmerge` (may only confirm, never invents a merge) |
 | wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with clickable numbered `[N]` citations (localized per `output_language`) plus a raw-text citation-records file the orchestrator serializes into the manifest via `citation-store.py` (#325) |
 | wiki-verifier | Agent | Phase 6 NEW — scores each citation's verbatim `draft_sentence` as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network, never re-tokenizes; shardable via `CITATIONS_PATH`) |
 | revisor | Agent | Phase 6 fork — re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
+| wiki-contradictor | Agent | Phase 7 Step 10.6 NEW (#335) — zero-network scorer comparing the just-deposited synthesis against each cited source's claims; emits a `contradictor-vN.json` observability report (no auto-resolution) |
 
 ## Architecture
 
@@ -168,7 +171,7 @@ cogni-knowledge/
 ├── CHANGELOG.md                  Version history
 ├── LICENSE                       AGPL-3.0
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
-├── agents/                       8 forked + new pipeline agents
+├── agents/                       11 forked + new pipeline agents
 ├── references/                   7 framework + design docs
 ├── scripts/                      9 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, citation-store, concept-store, pipeline-summary, verify-store, wiki-coverage) + _knowledge_lib helper
 ├── skills/                       13 knowledge-* skills

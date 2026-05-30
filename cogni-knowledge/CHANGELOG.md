@@ -1,5 +1,49 @@
 # cogni-knowledge changelog
 
+## 0.1.27 — 2026-05-30 — distill: cross-lingual (DE↔EN) claim merge (closes #345)
+
+Phase-1 claim dedup (`concept-store.py`, #336) deliberately **under-merges across languages**:
+the only deterministic DE↔EN bridge is the article-number digit anchor (`token_weight` ×3.0),
+so a German claim and its English twin survive as two `distilled_claims[]` entries. That is the
+**safe** direction (a wrong cross-language merge silently destroys a distinct fact and is
+unrecoverable) but on a **mixed-language base** (a DACH project ingesting EN+DE sources) it is
+lossy — a concept page lists each fact twice and the `claims_deduped_total/claims_attached_total`
+ratio under-reports the real overlap. On a single-language base it never fires (`norm_key` already
+collapses same-language twins).
+
+This adds **approach (a)** from #345 — an optional, fail-soft, **auto-skipping** cross-lingual pass
+that fits the differentiation thesis (LLM *judgment*, not embedding similarity — approach (c) stays
+rejected) and the #325 division of labour (the agent **proposes**, the script **decides + executes**
+deterministically with fail-safe gates). Three pieces, mirroring the #341 renarrate slice:
+
+- **`concept-store.py xlingual-candidates`** (new subcommand): scans the run's touched pages and
+  emits the DE↔EN merge **candidate pairs** — two `distilled_claims[]` on one page that share an
+  article-number digit anchor (the new shared `_knowledge_lib.digit_anchor_tokens`, years excluded)
+  but did NOT auto-merge (`claim_similarity` < threshold AND near-disjoint non-digit tokens). The
+  LLM may only confirm a pair the script already flagged. Read-only, under the wiki lock.
+- **`cross-lingual-claim-merger`** (new agent, `model: sonnet`, tools `Read`/`Write`): judges each
+  candidate "same fact, two languages?" and writes a raw-text `merge: <slug> | <survivor> | <absorbed>`
+  line per confirmed twin. Conservative — when in doubt, keep both (the fail-safe default). No Bash,
+  no network, never builds JSON/YAML (#325).
+- **`concept-store.py crossmerge`** (new subcommand): under the SAME `_wiki_lock` as `merge`,
+  **re-validates the candidate gate server-side** for every record (so the LLM can never widen
+  scope) and **UNIONs** the absorbed claim's `backlinks` + `source_claim_refs` onto its survivor —
+  **never dropping a provenance ref**, only removing the duplicate dcl-id. Same pre-write round-trip
+  self-check as `merge`. New parser `_knowledge_lib.parse_crossmerge_records`.
+
+`knowledge-distill` gains **Step 6.6** (between merge and the renarrate, now Step 6.7) — generate
+candidates → dispatch the merger → `crossmerge`, folding merged slugs into `updated_slugs[]` so the
+re-narration + wiki integration cover them. **Default-on but auto-skips with zero LLM cost** when no
+candidates exist (every single-language base); `--no-crosslingual` forces it off. Fail-soft at every
+hop — it never blocks compose. Re-runs are byte-stable (an already-absorbed dcl id re-validates to
+`claim_not_found`).
+
+Tests: `test_concept_store.sh` (candidate gate fires on the DE↔EN twin, year-not-an-anchor,
+crossmerge unions-never-drops, server-side rejection of a non-candidate, byte-stable re-run,
+single-language → 0 candidates); `test_knowledge_lib.sh` (`digit_anchor_tokens` + `parse_crossmerge_records`);
+`test_distill_contract.sh` (Step 6.6 surface + the new agent). Closes the #342 "Deferred:
+cross-lingual claim merge" item.
+
 ## 0.1.24 — 2026-05-30 — distill: add summary + learning page types (closes #342)
 
 Phase-4.5 distillation (`knowledge-distill`, #336) compounded only two of cogni-wiki's
