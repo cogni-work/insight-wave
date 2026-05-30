@@ -327,10 +327,11 @@ def renumber_inline_citations(body: str) -> str:
 # (the verify prefilter) only ever uses a successful parse to ADD a `verbatim`
 # verdict it is certain of; a parse miss simply leaves the citation for the LLM
 # verifier. Correctness is therefore independent of this parser's completeness.
-# The same parser (`_parse_claim_block`) also backs `parse_distilled_claims` for
-# the `distilled_claims:` block on concept/entity pages — there only the `text`
-# field is wanted, because the coverage scorer (its single outside reader) does not
-# need the writer-side metadata that concept-store.py keeps private.
+# The same parser (`_parse_claim_block`) also backs `parse_distilled_claims` /
+# `parse_distilled_claims_with_id` for the `distilled_claims:` block on
+# concept/entity/summary/learning pages — the coverage scorer wants only `text`,
+# the verify-store prefilter (#362) also wants `claim_id` to key the claim; neither
+# needs the rest of the writer-side metadata that concept-store.py keeps private.
 
 _FRONTMATTER_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 _CLAIMS_KEY_RE = re.compile(r"^pre_extracted_claims[ \t]*:[ \t]*$")
@@ -339,6 +340,10 @@ _WANTED_CLAIM_KEYS = ("id", "text", "excerpt_quote")
 # instead — the coverage scorer reads only `text` from it (see parse_distilled_claims).
 _DISTILLED_KEY_RE = re.compile(r"^distilled_claims[ \t]*:[ \t]*$")
 _DISTILLED_WANTED_KEYS = ("text",)
+# verify-store.py's prefilter (#362) also needs the `claim_id` to KEY a distilled
+# citation to its claim — `parse_distilled_claims_with_id` adds it. A distilled
+# claim has NO `excerpt_quote`, so the prefilter needle is `text` only.
+_DISTILLED_ID_WANTED_KEYS = ("claim_id", "text")
 # A YAML block-scalar header: `|` / `>` with an optional indent digit and/or
 # chomping indicator (`-`/`+`). The actual text lives on the following indented
 # lines, which this single-line parser does not assemble.
@@ -458,6 +463,18 @@ def parse_distilled_claims(page_text: str) -> list[dict]:
     []` empty form, which `_DISTILLED_KEY_RE` (key-on-its-own-line) deliberately does
     not match."""
     return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_WANTED_KEYS)
+
+
+def parse_distilled_claims_with_id(page_text: str) -> list[dict]:
+    """Extract `[{claim_id, text}, …]` from a distilled page's `distilled_claims:`
+    block. Same block as `parse_distilled_claims`, but also absorbs `claim_id`
+    (`dcl-NNN`) so a reader can KEY a claim by id — verify-store.py's prefilter
+    (#362) needs this to look up the cited distilled claim. The remaining
+    writer-side metadata (norm_key / backlinks / source_claim_refs / dates) stays
+    concept-store-private and is ignored. A distilled claim has no `excerpt_quote`,
+    so callers using this for substring matching must take `text` as the needle.
+    Returns [] for any page without a parseable block (same fail-safe contract)."""
+    return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS)
 
 
 # --- machine-owned body blocks ------------------------------------------------

@@ -19,9 +19,13 @@ agent; this script only partitions and recombines.
   prefilter Deterministic substring pre-filter (#305): for each citation, if the
             manifest's `draft_sentence` contains the cited page's claim
             `excerpt_quote` (fallback `text`) as an exact substring, classify it
-            `verbatim` without an LLM call. Writes a `verify-shard-prefilter`
-            fragment and returns {matched_ids, remaining_ids}. Fail-safe — a page
-            it cannot parse simply leaves its citations in `remaining_ids`.
+            `verbatim` without an LLM call. Resolves both evidence families —
+            source/synthesis pages (`pre_extracted_claims:`) and the four distilled
+            kinds (`distilled_claims:`, `text`-only needle; #362) — mirroring the
+            `wiki-verifier` Phase-0 page-kind resolution. Writes a
+            `verify-shard-prefilter` fragment and returns {matched_ids,
+            remaining_ids}. Fail-safe — a page it cannot parse simply leaves its
+            citations in `remaining_ids`.
   merge     Concatenate the per-shard `verify-shard-*-v{N}.json` fragments
             into the canonical `verify-vN.json`, recompute `counts`, and
             enforce `counts.total == len(verified) + len(deviations)`.
@@ -56,9 +60,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write,
+    parse_distilled_claims_with_id,
     parse_pre_extracted_claims,
     strip_inline_citation_markers,
 )
+
+# Wiki sub-dirs whose pages carry first-class claim evidence the prefilter can
+# fast-path. `pre_extracted_claims:` on source/synthesis pages (keyed `id`);
+# `distilled_claims:` on the four distilled page kinds (keyed `claim_id`, no
+# `excerpt_quote`) — citable + scored since #344, fast-pathed since #362. Order
+# mirrors `wiki-verifier` Phase-0: sources/syntheses first, then distilled.
+_SOURCE_SUBDIRS = ("sources", "syntheses")
+_DISTILLED_SUBDIRS = ("concepts", "entities", "summaries", "learnings")
 
 SCHEMA_VERSION = "0.1.0"
 SHARD_DIRNAME = "verify-shards"
@@ -221,8 +234,15 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
     def claims_for(slug: str) -> dict:
         if slug in claims_cache:
             return claims_cache[slug]
+        # Resolve the page across both evidence families, mirroring wiki-verifier
+        # Phase-0: source/synthesis pages (`pre_extracted_claims:`, keyed `id`)
+        # first, then the four distilled kinds (`distilled_claims:`, keyed
+        # `claim_id`, no `excerpt_quote`) — citable + scored since #344, fast-pathed
+        # here since #362. First file found wins; slugs are unique across dirs.
         text = ""
-        for sub in ("sources", "syntheses"):
+        parser = parse_pre_extracted_claims
+        id_key = "id"
+        for sub in _SOURCE_SUBDIRS:
             page = wiki_root / "wiki" / sub / f"{slug}.md"
             if page.is_file():
                 try:
@@ -230,14 +250,25 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
                 except OSError:
                     text = ""
                 break
-        # A duplicate claim_id on one page is ambiguous — the citation could mean
+        else:
+            for sub in _DISTILLED_SUBDIRS:
+                page = wiki_root / "wiki" / sub / f"{slug}.md"
+                if page.is_file():
+                    try:
+                        text = page.read_text(encoding="utf-8")
+                    except OSError:
+                        text = ""
+                    parser = parse_distilled_claims_with_id
+                    id_key = "claim_id"
+                    break
+        # A duplicate claim id on one page is ambiguous — the citation could mean
         # either claim, so we cannot safely pick one. Drop ambiguous ids so the
         # citation falls through to the LLM rather than being scored against an
-        # arbitrary (parse-order) excerpt.
+        # arbitrary (parse-order) claim.
         by_id: dict = {}
         ambiguous: set = set()
-        for c in parse_pre_extracted_claims(text):
-            cid2 = c.get("id")
+        for c in parser(text):
+            cid2 = c.get(id_key)
             if not cid2 or cid2 in ambiguous:
                 continue
             if cid2 in by_id:
@@ -262,6 +293,8 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
         if cid and slug and claim_id and draft_sentence and draft_sentence in draft_text:
             claim = claims_for(slug).get(claim_id)
             if claim:
+                # Source/synthesis claims prefer `excerpt_quote`; distilled claims
+                # (#362) carry only `text`, so the `or` falls back to it cleanly.
                 needle = _nfc(claim.get("excerpt_quote") or claim.get("text") or "").strip()
                 # `verbatim` must mean the sentence IS the quote, not merely
                 # CONTAINS it: a sentence embedding the excerpt but adding an

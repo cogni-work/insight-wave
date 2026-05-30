@@ -326,6 +326,40 @@ def assert_parse_distilled_claims():
         assert "text" not in one[0], "block-scalar " + pipe + " leaked: " + repr(one)
 
 
+def assert_parse_distilled_claims_with_id():
+    # verify-store.py's prefilter (#362) keys a distilled citation by claim_id, so
+    # this variant absorbs `claim_id` AND `text` (distilled claims have no
+    # `excerpt_quote`); the rest of the writer-side metadata stays ignored.
+    page = (
+        "---\n"
+        "type: concept\n"
+        "distilled_claims:\n"
+        "  - claim_id: dcl-001\n"
+        '    text: "Artikel 6: Hochrisiko-Einstufung kombiniert mehrere Quellen."\n'
+        '    norm_key: "k1"\n'
+        '    backlinks: ["src-a","src-b"]\n'
+        '    source_claim_refs: ["src-a#c1"]\n'
+        "    created: 2026-05-29\n"
+        "    updated: 2026-05-29\n"
+        "  - claim_id: dcl-002\n"
+        '    text: "Zweite distillierte Aussage."\n'
+        "---\n\n# body\n"
+    )
+    claims = kl.parse_distilled_claims_with_id(page)
+    assert len(claims) == 2, claims
+    assert claims[0] == {"claim_id": "dcl-001",
+                         "text": "Artikel 6: Hochrisiko-Einstufung kombiniert mehrere Quellen."}, claims[0]
+    assert set(claims[0]) == {"claim_id", "text"}, "only claim_id+text wanted: " + repr(claims[0])
+    assert claims[1] == {"claim_id": "dcl-002", "text": "Zweite distillierte Aussage."}, claims[1]
+    # Same fail-safe contract as the text-only sibling: inline [] / no bullets /
+    # no key / empty / no-frontmatter / unterminated → [] (never raises).
+    assert kl.parse_distilled_claims_with_id("---\ntype: concept\ndistilled_claims: []\n---\n# body\n") == []
+    assert kl.parse_distilled_claims_with_id("---\ndistilled_claims:\ntype: concept\n---\n") == []
+    assert kl.parse_distilled_claims_with_id("---\ntype: concept\n---\n# body\n") == []
+    assert kl.parse_distilled_claims_with_id("") == []
+    assert kl.parse_distilled_claims_with_id("---\ndistilled_claims:\n  - claim_id: dcl-x\n\n# no close\n") == []
+
+
 def assert_strip_inline_citation_markers():
     # Strips the whole marker (with or without a URL), leaving the prose; the
     # verify prefilter uses this to compare a sentence's text against a claim.
@@ -512,6 +546,7 @@ check("strip_reference_section", assert_strip_reference_section)
 check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 check("parse_distilled_claims", assert_parse_distilled_claims)
+check("parse_distilled_claims_with_id", assert_parse_distilled_claims_with_id)
 PY
 )
 
@@ -540,6 +575,7 @@ grade strip_reference_section "strip_reference_section — language-independent 
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
 grade parse_distilled_claims  "parse_distilled_claims — text-only extraction, writer metadata ignored, inline []/no-bullets/malformed→[], block-scalar no-leak (#343)"
+grade parse_distilled_claims_with_id "parse_distilled_claims_with_id — claim_id+text extraction for the prefilter key, rest of metadata ignored, same fail-safe→[] contract (#362)"
 grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
 grade tokenization_primitives "tokenization primitives (#336 lift) — fold/tokenize/token_weight/compound_match preserved from wiki-coverage.py"
 grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"
