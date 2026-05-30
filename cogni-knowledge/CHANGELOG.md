@@ -1,8 +1,8 @@
 # cogni-knowledge changelog
 
-## 0.1.23 — 2026-05-29 — knowledge-ingest one-wave fan-out (closes #323)
+## 0.1.23 — 2026-05-30 — knowledge-ingest one-wave fan-out (closes #323)
 
-`knowledge-ingest` Step 4 (Phase 4) dispatched ingesters "parallel within batch,
+`knowledge-ingest` Step 3 (Phase 4) dispatched ingesters "parallel within batch,
 **sequential across batches**" with a conservative `--batch-size 8`. A 67-source run was
 therefore 9 sequential waves, each gated by its slowest ingester — a per-wave **barrier**
 paid 9 times. The #311 German bake-in (`references/alpha-findings.md` F30/#323) had already
