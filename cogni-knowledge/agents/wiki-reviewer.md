@@ -7,7 +7,7 @@ tools: ["Read", "Write", "Glob", "Grep"]
 ---
 
 <!--
-NEW agent at v0.1.28 — no upstream live path. Point-in-time PORT of
+NEW agent at v0.1.29 — no upstream live path. Point-in-time PORT of
 cogni-research/agents/reviewer.md (drift acceptable, same posture as the
 wiki-composer / wiki-verifier / revisor forks). Mirrors wiki-contradictor.md's
 shape (single-pass, zero-network, JSON envelope out, no Task in tools list)
@@ -267,7 +267,7 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch, missing `structural_scores` key) is a phantom write. Retry once; on second failure return `write_failed`.
 - Never raise — always return one of the three Phase-3 envelopes so the orchestrator's Step 10.7 fail-soft path surfaces a clean message.
 
-## Phase scope reminders (v0.1.28, #309 P1.1)
+## Phase scope reminders (v0.1.29, #309 P1.1)
 
 - Five weighted dimensions: Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15.
 - Overall = bare weighted average (no claims multiplier). Accept ≥ 0.82 (the operative bar; the 0.78 relaxation is reserved for a future multi-round host and never fires under the single finalize dispatch).

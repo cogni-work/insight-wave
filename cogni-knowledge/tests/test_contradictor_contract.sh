@@ -60,6 +60,16 @@ assert_grep '"schema_version": "0.1.0"' "$CTR" "wiki-contradictor: documents sch
 
 # Issue reference — the agent must say WHICH issue it implements.
 assert_grep '#335' "$CTR" "wiki-contradictor: references issue #335"
+# #363 — distilled-page scoring extension.
+assert_grep '#363' "$CTR" "wiki-contradictor: references issue #363 (distilled-page scoring)"
+
+# #363: cited-page resolution must probe the four distilled dirs after
+# wiki/sources/ and parse distilled_claims (no excerpt_quote) — mirrors the
+# wiki-verifier #344/#362 pattern. A revert to source-only resolution is loud.
+assert_grep 'distilled_claims' "$CTR" "wiki-contradictor: parses distilled_claims (#363/#344)"
+assert_grep 'concepts,entities,summaries,learnings\|concepts/\|entities/\|summaries/\|learnings/' "$CTR" "wiki-contradictor: resolves the four distilled dirs (#363)"
+# Distilled claims carry no excerpt_quote — the agent must say so.
+assert_grep 'no `excerpt_quote`\|no excerpt_quote\|has no excerpt_quote' "$CTR" "wiki-contradictor: distilled claims have no excerpt_quote (#363)"
 
 # Zero-network invariant — verbatim, so a drift toward re-fetch is loud.
 assert_grep 'never fetch' "$CTR" "wiki-contradictor: explicitly states 'never fetch' (zero-network invariant)"
