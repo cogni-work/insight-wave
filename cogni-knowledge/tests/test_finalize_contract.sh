@@ -194,6 +194,17 @@ assert_grep 'Cost: \$' "$FIN" "knowledge-finalize: Step 11 surfaces tripwire Cos
 # Step 5/6 subprocess must emit cited_source_slugs — the orchestrator
 # reuses page_kind_by_slug from there rather than re-resolving pages.
 assert_grep 'cited_source_slugs' "$FIN" "knowledge-finalize: Step 5/6 subprocess emits cited_source_slugs for Step 10.6 (#335)"
+# #363 filter-regression guard: the Step 5/6 filter that selects which cited
+# slugs flow to the contradictor MUST include the four distilled kinds, not
+# just "source" — otherwise distilled-cited slugs never reach the agent and
+# the #363 extension ships a no-op (R1). Reverting the filter to source-only
+# trips this assertion.
+assert_grep '"concept", "entity", "summary", "learning"' "$FIN" "knowledge-finalize: Step 5/6 filter includes distilled kinds for the contradictor (#363, R1 no-op guard)"
+# …AND the comprehension that builds cited_source_slugs must actually apply
+# that widened set (membership test, not == "source"). This catches a revert
+# of ONLY the comprehension line while the set definition lingers.
+assert_grep 'cited_source_slugs = \[s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS\]' "$FIN" "knowledge-finalize: cited_source_slugs filter uses the widened claim-bearing set (#363, R1 no-op guard)"
+assert_not_grep 'page_kind_by_slug.get(s) == "source"' "$FIN" "knowledge-finalize: contradictor filter is NOT reverted to source-only (#363, R1 no-op guard)"
 # Pillar 2 framing — the SKILL must be honest about partial defense.
 assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
 # References block must include the new agent.

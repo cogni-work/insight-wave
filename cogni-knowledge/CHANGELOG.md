@@ -1,5 +1,40 @@
 # cogni-knowledge changelog
 
+## 0.1.28 — 2026-05-30 — contradictor: score distilled-page citations (closes #363)
+
+The Step 10.6 contradiction tripwire (`wiki-contradictor`, #335) scored synthesis
+sentences only against cited **source** pages' `pre_extracted_claims:`. Since #344 a
+synthesis can cite a **distilled** page (concept/entity/summary/learning) carrying
+`distilled_claims:` — those sentences were compared against **no claims** and silently
+escaped the Pillar-2 tripwire. #362 already taught the *verifier* to resolve + score
+those distilled pages; this ports the same proven pattern to the *contradictor*, closing
+the observability gap #344 deferred.
+
+The change is **two-sided** (the load-bearing detail — an agent-only change would be a
+no-op, since the orchestrator never hands the agent a distilled slug):
+
+- **`agents/wiki-contradictor.md`** — Phase 0 resolution now probes the four distilled
+  dirs (`wiki/{concepts,entities,summaries,learnings}/<slug>.md`) after `wiki/sources/`,
+  and parses `distilled_claims[].text` (no `excerpt_quote`, stdlib line-by-line — never
+  `import yaml`) into `claims_by_slug`. A distilled claim is scored **identically** to a
+  source claim; the finding carries a `dcl-NNN` `conflicting_claim_id` and the distilled
+  `text` as `conflicting_excerpt`. A slug under none of the five dirs still lands in
+  `missing_pages[]`; an empty `distilled_claims:` block yields no findings, no error.
+- **`skills/knowledge-finalize/SKILL.md`** — the Step 5/6 `cited_source_slugs` filter
+  broadened from `page_kind == "source"` to `∈ {source, concept, entity, summary,
+  learning}` (synthesis still excluded — no claim block). Step 10.6 / skip-condition /
+  Step 11 prose updated to "source or distilled" and the truncation/missing-page labels
+  widened from "source pages" to "pages".
+
+Fail-soft posture is unchanged: **no schema bump** (`contradictor-v<N>.json` stays
+`0.1.0`; `compared_against.sources[]`/`source_count` keys retained, now widened to
+source + distilled), no new `kind`/`severity`, no downstream consumer change. The #335
+invariants all hold — zero-network, single-pass (`Read`/`Write`/`Glob`/`Grep`),
+monolingual, conservative bias (`low` on doubt), `unknown` cap 3, 30-slug truncation (now
+over source + distilled combined), `--no-contradictor` opt-out. Contract tests gained a
+distilled-resolution assertion on the agent and an R1 no-op filter-regression guard on the
+finalize SKILL (a revert to source-only trips it).
+
 ## 0.1.27 — 2026-05-30 — distill: cross-lingual (DE↔EN) claim merge (closes #345)
 
 Phase-1 claim dedup (`concept-store.py`, #336) deliberately **under-merges across languages**:
