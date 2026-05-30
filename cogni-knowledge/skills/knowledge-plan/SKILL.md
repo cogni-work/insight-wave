@@ -90,7 +90,7 @@ Verify the binding's `knowledge_slug` matches `--knowledge-slug` — mismatch me
    (e.g. `dach`→`de`, `fr`→`fr`, `eu`→`en`.)
 4. Else `en`.
 
-**Interactive fallback.** Only when `output_language` is *still* unresolved after the chain above **and** the run is interactive — i.e. neither `--output-language` was passed nor a binding default exists — ask the user once with `AskUserQuestion`: option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others; the auto-added "Other" takes a two-letter code. A `--dry-run` or any flagged run never prompts — it takes the resolved default silently. Skipping the question falls back to the market default.
+**Interactive fallback.** The trigger is **no `--output-language` flag AND no binding `research_defaults.output_language`** — i.e. steps 1 and 2 both missed (only reachable on a pre-0.1.1 base, since `knowledge-setup` Step 2.5 persists a binding default). In that case interactivity decides ask-vs-silent: on an **interactive** run, ask the user once with `AskUserQuestion` — option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others; the auto-added "Other" takes a two-letter code. On a **non-interactive** run (`--dry-run`, or any run driven by flags/automation), do **not** prompt — silently take step 3's market `default_output_language` (then `en`). Skipping the question also falls back to the market default.
 
 Carry the resolved `market` + `output_language` into Step 2 (candidate domains, `theme_label` language) and Step 3 (plan.json).
 
@@ -115,7 +115,7 @@ Reason about the topic. Decompose it into 3-7 sub-questions that together cover 
   ```
   python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <resolved market>
   ```
-  Same path cogni-portfolio's agents use; the helper joins the canonical registry (`cogni-workspace/references/supported-markets-registry.json`) with the research overlay so cogni-knowledge never reaches into cogni-research's filesystem. **Reuse the envelope already fetched in Step 0.5** (it called the same helper for `default_output_language`) — `authority_sources` and `default_output_language` come from the one invocation; do not call it twice.
+  Same path cogni-portfolio's agents use; the helper joins the canonical registry (`cogni-workspace/references/supported-markets-registry.json`) with the research overlay so cogni-knowledge never reaches into cogni-research's filesystem. **Call the helper at most once per run:** Step 0.5 invokes it only as its third fallback (no language flag and no binding default), so if it already fetched the envelope, reuse it here (`authority_sources` and `default_output_language` come from that one call); otherwise — the common case, where a flag or binding default resolved the language and Step 0.5 skipped the helper — Step 2 makes the single call here. Never call it twice.
 
 If `--sub-question-hints` was passed, ensure each hint maps to at least one sub-question — but you may rephrase, split, or merge as needed for coherence.
 
