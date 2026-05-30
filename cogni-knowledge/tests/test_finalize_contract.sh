@@ -45,6 +45,11 @@ assert_grep 'wiki_index_update.py' "$FIN" "knowledge-finalize: calls cogni-wiki 
 assert_grep 'config_bump.py' "$FIN" "knowledge-finalize: calls cogni-wiki config_bump.py at script level"
 assert_grep 'rebuild_context_brief.py' "$FIN" "knowledge-finalize: calls cogni-wiki rebuild_context_brief.py at script level"
 assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: indexes synthesis under Syntheses category"
+# #344: cited-page kind lookup resolves the distilled dirs so concept/entity/
+# summary/learning citations get a title + bare [[<slug>]] backlink + wiki://<slug>
+# source, not page_kind=None (which would drop them from the reference list / graph).
+assert_grep '("concept", "concepts")' "$FIN" "knowledge-finalize: resolves cited concept pages (#344)"
+assert_grep '("entity", "entities")' "$FIN" "knowledge-finalize: resolves cited entity pages (#344)"
 # #324: Step 7 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "truncated to 180 chars" instruction that caused the mid-word
 # artifact is gone (the summary is authored as one crisp, complete sentence).

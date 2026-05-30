@@ -11,6 +11,12 @@ closes through one or more intermediate projects recorded in
 `binding.research_projects[]` — the citation chain hops candidate → P → … →
 candidate.
 
+Distilled pages (concept/entity/summary/learning) are citable since #344 but
+carry no `derived_from_research` stamp of their own. When a citation resolves to
+one, the walk "sees through" it to the SOURCE pages its `distilled_claims:` were
+distilled from (page-level `sources:`) and runs the lineage check on each. Cited
+distilled pages are surfaced in `data.cited_distilled_pages[]`.
+
 Two citation input shapes are supported:
 
   legacy-source-entities  — the cogni-research v0.0.x layout. Walks
@@ -85,6 +91,10 @@ DEFAULT_MAX_DEPTH = 5
 WIKI_URL_RE = re.compile(r"^wiki://([a-z0-9-]+)/([a-z0-9-]+)$")
 REPORT_SOURCES_NEEDS_GUARD = {"wiki", "hybrid"}
 REPORT_SOURCES_TRIVIAL = {"web", "local"}
+# The four distilled page kinds (Phase 4.5, #336/#342). Citable since #344, so
+# cycle-guard must "see through" a cited distilled page to the SOURCE pages its
+# `distilled_claims:` were distilled from and run the lineage check on those.
+_DISTILLED_PAGE_TYPES = {"concept", "entity", "summary", "learning"}
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> dict:
@@ -181,6 +191,30 @@ def _read_report_source(project_path: Path) -> str:
         return json.loads(cfg.read_text(encoding="utf-8")).get("report_source", "web")
     except json.JSONDecodeError:
         return "web"
+
+
+def _distilled_backing_slugs(page_fm: dict) -> list[str]:
+    """Backing SOURCE slugs of a distilled (concept/entity/summary/learning)
+    page, read from its page-level `sources:` block. concept-store.py's
+    `_render_page` writes that block as `  - wiki://<source-slug>` lines (the
+    union of every distilled claim's backlinks), which `_parse_frontmatter`
+    already captures as a list. These are the source pages the distilled claims
+    were distilled from; cycle-guard traces through them so a synthesis citing a
+    distilled page is checked against the lineage of that page's underlying
+    sources (#344). Deduplicated, order-preserving."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in page_fm.get("sources", []) or []:
+        s = _strip_quotes(str(raw)).strip()
+        if s.startswith("wiki://"):
+            s = s[len("wiki://"):]
+        # A bare `wiki://<slug>` has no slash; a `wiki://<wiki>/<page>` composite
+        # collapses to its trailing page slug. Either way take the last segment.
+        s = s.split("/")[-1].strip()
+        if s and s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out
 
 
 def _build_slug_index(wiki_path: Path) -> dict[str, tuple[Path, list[str]]]:
@@ -304,6 +338,8 @@ def _walk_lineage(
         cited_page_ids        list of page ids the candidate cites
         missing_pages         list of cited ids not present in the wiki
         collisions            list of {slug, additional_paths} entries
+        cited_distilled_pages list of {page, type} — citable concept/entity/
+                              summary/learning pages the candidate cites (#344)
         direct_self_cycles    list of {page, derived_from_research}
         transitive_self_cycles list of {page, derived_from_research, via_chain}
         cross_lineage_overlap list of {page, derived_from_research}
@@ -314,11 +350,21 @@ def _walk_lineage(
     into P at depth+1, bounded by `visited` (keyed by project slug, seeded
     with candidate_slug) and `max_depth`. The first chain that closes back to
     candidate_slug populates `cycle_path` and short-circuits the search.
+
+    A cited **distilled** page (concept/entity/summary/learning, citable since
+    #344) carries no `derived_from_research` of its own — it stamps
+    `distilled_from_research:` instead. The walk "sees through" it to the SOURCE
+    pages its `distilled_claims:` were distilled from (page-level `sources:`,
+    via `_distilled_backing_slugs`) and runs the same lineage check on each. In
+    today's data those sources carry no lineage stamp, so a distilled citation
+    bottoms out `clear`; the explicit trace is forward-defensive (a future
+    lineage-bearing backing page would be caught, not silently skipped).
     """
     out: dict = {
         "cited_page_ids": [],
         "missing_pages": [],
         "collisions": [],
+        "cited_distilled_pages": [],
         "direct_self_cycles": [],
         "transitive_self_cycles": [],
         "cross_lineage_overlap": [],
@@ -355,6 +401,58 @@ def _walk_lineage(
         except (OSError, ValueError):
             continue
 
+    def check_hop(
+        page_file: Path, page_fm: dict, chain: list[str], depth: int
+    ) -> bool:
+        """Run the `derived_from_research` lineage check on one resolved page
+        (a directly-cited page, or a distilled page's backing source). Records
+        direct / transitive cycles and cross-lineage overlap, and recurses into
+        the deriving project when applicable. Returns True iff the candidate
+        cycle has closed (caller short-circuits)."""
+        derived = _strip_quotes(str(page_fm.get("derived_from_research", "")))
+        if not derived:
+            return False
+
+        rel_path = page_file.relative_to(wiki_path).as_posix()
+
+        if derived == candidate_slug:
+            if depth == 0:
+                # Direct cycle — candidate cites its own past deposit.
+                out["direct_self_cycles"].append(
+                    {"page": rel_path, "derived_from_research": derived}
+                )
+                if not out["cycle_path"]:
+                    out["cycle_path"] = [candidate_slug, candidate_slug]
+                return False
+            # Transitive cycle — the chain closes back to candidate.
+            via_chain = chain + [derived]
+            out["transitive_self_cycles"].append(
+                {
+                    "page": rel_path,
+                    "derived_from_research": derived,
+                    "via_chain": via_chain,
+                }
+            )
+            if not out["cycle_path"]:
+                out["cycle_path"] = via_chain
+            return True  # short-circuit
+
+        # Not a cycle into candidate; record at depth 0 and consider recursion.
+        if depth == 0:
+            out["cross_lineage_overlap"].append(
+                {"page": rel_path, "derived_from_research": derived}
+            )
+
+        if depth >= max_depth:
+            return False
+        if derived in visited:
+            return False
+        if derived not in project_paths:
+            # Not a deposited project we can walk into; informational only.
+            return False
+        visited.add(derived)
+        return dfs(derived, project_paths[derived], chain + [derived], depth + 1)
+
     def dfs(project_slug: str, project_path: Path, chain: list[str], depth: int) -> bool:
         """Walk `project_path`'s citations. Returns True if the candidate
         cycle has been closed (in which case `out["cycle_path"]` is set and
@@ -382,50 +480,45 @@ def _walk_lineage(
                 if depth == 0:
                     out["missing_pages"].append(page_id)
                 continue
-            derived = _strip_quotes(str(page_fm.get("derived_from_research", "")))
-            if not derived:
-                continue
 
-            rel_path = page_file.relative_to(wiki_path).as_posix()
-
-            if derived == candidate_slug:
+            # A page carrying its own `derived_from_research` is a deposited
+            # synthesis-like page — run the normal lineage check regardless of
+            # which directory it lives in (check_hop, below). The distilled
+            # see-through applies ONLY to a page with NO `derived_from_research`
+            # that is identifiably distilled (real concept/entity/summary/
+            # learning pages stamp `distilled_from_research:`, never
+            # `derived_from_research:`).
+            has_derived = bool(
+                _strip_quotes(str(page_fm.get("derived_from_research", "")))
+            )
+            page_type = _strip_quotes(str(page_fm.get("type", "")))
+            is_distilled = (not has_derived) and (
+                page_type in _DISTILLED_PAGE_TYPES or "distilled_claims" in page_fm
+            )
+            if is_distilled:
+                # Citable distilled page (#344). See through it to the SOURCE
+                # pages its claims were distilled from and run the same lineage
+                # check on each.
                 if depth == 0:
-                    # Direct cycle — candidate cites its own past deposit.
-                    out["direct_self_cycles"].append(
-                        {"page": rel_path, "derived_from_research": derived}
-                    )
-                    if not out["cycle_path"]:
-                        out["cycle_path"] = [candidate_slug, candidate_slug]
-                else:
-                    # Transitive cycle — the chain closes back to candidate.
-                    via_chain = chain + [derived]
-                    out["transitive_self_cycles"].append(
+                    out["cited_distilled_pages"].append(
                         {
-                            "page": rel_path,
-                            "derived_from_research": derived,
-                            "via_chain": via_chain,
+                            "page": page_file.relative_to(wiki_path).as_posix(),
+                            "type": page_type,
                         }
                     )
-                    if not out["cycle_path"]:
-                        out["cycle_path"] = via_chain
-                    return True  # short-circuit
+                for src_slug in _distilled_backing_slugs(page_fm):
+                    src_file, _src_collisions = _resolve_wiki_page(slug_index, src_slug)
+                    if src_file is None:
+                        continue
+                    try:
+                        src_fm = _parse_frontmatter(src_file.read_text(encoding="utf-8"))
+                    except OSError:
+                        continue
+                    if check_hop(src_file, src_fm, chain, depth):
+                        return True
                 continue
 
-            # Not a cycle into candidate; record at depth 0 and consider recursion.
-            if depth == 0:
-                out["cross_lineage_overlap"].append(
-                    {"page": rel_path, "derived_from_research": derived}
-                )
-
-            if depth >= max_depth:
-                continue
-            if derived in visited:
-                continue
-            if derived not in project_paths:
-                # Not a deposited project we can walk into; informational only.
-                continue
-            visited.add(derived)
-            if dfs(derived, project_paths[derived], chain + [derived], depth + 1):
+            if check_hop(page_file, page_fm, chain, depth):
                 return True
         return False
 
@@ -504,6 +597,7 @@ def main(argv: list[str]) -> int:
         "wiki_pages_cited": [],
         "wiki_pages_cited_missing": [],
         "wiki_slug_collisions": [],
+        "cited_distilled_pages": [],
         "direct_self_cycles": [],
         "transitive_self_cycles": [],
         "cross_lineage_overlap": [],
@@ -535,6 +629,7 @@ def main(argv: list[str]) -> int:
     base_data["wiki_pages_cited"] = walk["cited_page_ids"]
     base_data["wiki_pages_cited_missing"] = walk["missing_pages"]
     base_data["wiki_slug_collisions"] = walk["collisions"]
+    base_data["cited_distilled_pages"] = walk["cited_distilled_pages"]
     base_data["direct_self_cycles"] = walk["direct_self_cycles"]
     base_data["transitive_self_cycles"] = walk["transitive_self_cycles"]
     base_data["cross_lineage_overlap"] = walk["cross_lineage_overlap"]

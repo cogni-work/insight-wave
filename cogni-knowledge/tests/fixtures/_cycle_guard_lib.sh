@@ -17,6 +17,10 @@
 #                                                   plan.json + output/draft-v1.md)
 #   set_report_source <PROJ> <source>             - rewrite report_source in config
 #   mk_wiki_page <KB> <type> <slug> <derived_from> - wiki page with frontmatter
+#   mk_distilled_page <KB> <dir> <type> <slug> <distilled_from> <backing>...
+#                                                  - real Phase-4.5 distilled page
+#                                                    (distilled_claims: + sources:,
+#                                                    no derived_from_research; #344)
 #   add_wiki_citation <PROJ> <src-id> <wiki-slug> <page-slug>
 #                                                  - add 02-sources entry citing
 #                                                    wiki://<wiki-slug>/<page-slug> (legacy)
@@ -89,6 +93,55 @@ updated: 2026-05-20
 sources: []$stamp
 ---
 Body.
+EOF
+}
+
+mk_distilled_page() {
+  # mk_distilled_page <KB> <dir> <type> <slug> <distilled_from_project> <backing_slug>...
+  # A real Phase-4.5 distilled page (#336/#342): carries `distilled_claims:` +
+  # `distilled_from_research:` and a page-level `sources:` block of
+  # `wiki://<backing-slug>` lines (the union of its claims' backlinks).
+  # Crucially it has NO `derived_from_research:` of its own — that is what marks
+  # it for cycle-guard's #344 see-through trace. Mirrors
+  # scripts/concept-store.py::_render_page closely enough for cycle-guard's
+  # frontmatter parser (which reads the page-level `sources:` block).
+  local kb="$1" dir="$2" type="$3" slug="$4" dfr="$5"; shift 5
+  mkdir -p "$kb/wiki/$dir"
+  local sources_block="sources:"
+  local refs="" backlinks="" first=1
+  for b in "$@"; do
+    sources_block="$sources_block"$'\n'"  - wiki://$b"
+    if [ "$first" -eq 1 ]; then
+      refs="\"$b#clm-001\""; backlinks="\"$b\""; first=0
+    else
+      refs="$refs, \"$b#clm-001\""; backlinks="$backlinks, \"$b\""
+    fi
+  done
+  cat > "$kb/wiki/$dir/$slug.md" <<EOF
+---
+id: $slug
+title: $slug
+type: $type
+tags: [$type]
+created: 2026-05-20
+updated: 2026-05-20
+$sources_block
+related: []
+status: distilled
+distilled_from_research:
+  - $dfr
+distilled_claims:
+  - claim_id: dcl-001
+    text: "A cross-source distilled fact about $slug."
+    norm_key: "distilled fact $slug"
+    backlinks: [$backlinks]
+    source_claim_refs: [$refs]
+    created: 2026-05-20
+    updated: 2026-05-20
+---
+<!-- MACHINE-OWNED:SUMMARY:START -->
+Summary.
+<!-- MACHINE-OWNED:SUMMARY:END -->
 EOF
 }
 
