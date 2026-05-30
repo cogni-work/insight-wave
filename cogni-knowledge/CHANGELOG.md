@@ -1,5 +1,36 @@
 # cogni-knowledge changelog
 
+## 0.1.24 — 2026-05-30 — distill: add summary + learning page types (closes #342)
+
+Phase-4.5 distillation (`knowledge-distill`, #336) compounded only two of cogni-wiki's
+ten page types: `concept` and `entity`. Some recurring run outputs are neither — a
+**cross-source topical summary** (a region overview, a market sketch — distinct from the
+per-run `synthesis`) or a **run-level learning** (a methodological lesson the evidence
+surfaced). These had no home and were folded into a concept page where they don't belong,
+or lost.
+
+This extends the distiller to emit four page types. The change is purely additive —
+cogni-wiki already supports `summary`/`learning` end-to-end (`PAGE_TYPE_DIRS`, uniform
+frontmatter):
+
+- **`concept-store.py`:** `_TYPE_DIRS` gains `summary → summaries` / `learning → learnings`;
+  the two engine spots that hard-coded the binary concept/entity world — the
+  `_build_title_index` snapshot (feeds the #340 title→slug tripwire) and the slug-type
+  collision check — now iterate **all** `_TYPE_DIRS`, so cross-type dedup and global
+  slug-uniqueness span every distilled type. `_page_exists` was already type-agnostic.
+- **`concept-distiller`:** learns the two new types with a **conservative selection rule** —
+  most clusters stay `concept`/`entity`; the new types are used only when a cluster genuinely
+  fits neither (honouring #342's "premature if shipped on speculation" caution).
+- **`knowledge-distill`:** the slug-index + renarrate-bundle loops, the Step-7.2 index-category
+  map (`Summaries`/`Learnings`), and the Step-9 per-type breakdown extend to all four types.
+- **`wiki-composer`:** also reads `wiki/{summaries,learnings}/*.md` as framing context —
+  never cited, same discipline as concepts/entities (user-chosen scope).
+
+Tests: `test_concept_store.sh` (summary/learning routing + generalized cross-type collision),
+`test_distill_contract.sh` (Summaries/Learnings categories + summary/learning + conservative
+rule). Deferred (still #264): feeding distilled pages into `wiki-coverage.py`, entity
+disambiguation, cross-lingual claim merge.
+
 ## 0.1.23 — 2026-05-30 — knowledge-ingest one-wave fan-out (closes #323)
 
 `knowledge-ingest` Step 3 (Phase 4) dispatched ingesters "parallel within batch,

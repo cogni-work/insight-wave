@@ -43,6 +43,10 @@ assert_grep 'claims_deduped_total' "$SKILL" "knowledge-distill: surfaces the cla
 assert_grep 'bundle_hash' "$SKILL" "knowledge-distill: resume no-op via bundle hash"
 assert_grep 'Concepts' "$SKILL" "knowledge-distill: Concepts index category"
 assert_grep 'Entities' "$SKILL" "knowledge-distill: Entities index category"
+# #342 — summary + learning page types route to their own index categories.
+assert_grep 'Summaries' "$SKILL" "knowledge-distill: Summaries index category (#342)"
+assert_grep 'Learnings' "$SKILL" "knowledge-distill: Learnings index category (#342)"
+assert_grep 'summaries,learnings\|summaries", "learnings\|summaries"), ("learning' "$SKILL" "knowledge-distill: type-iterating loops include the new dirs (#342)"
 # #340 observable title→slug tripwire — Step-9 warning surfaces near_existing_*.
 assert_grep 'near_existing_total' "$SKILL" "knowledge-distill: reads near_existing_total from merge output (#340)"
 assert_grep 'near_existing_slugs' "$SKILL" "knowledge-distill: reads near_existing_slugs[] from merge output (#340)"
@@ -74,6 +78,10 @@ assert_grep 'SLUG_INDEX_PATH' "$AGENT" "concept-distiller: reads the existing-sl
 assert_grep 'RECORDS_OUTPUT_PATH' "$AGENT" "concept-distiller: writes raw-text records"
 assert_grep 'concept' "$AGENT" "concept-distiller: proposes concept pages"
 assert_grep 'entity' "$AGENT" "concept-distiller: proposes entity pages"
+# #342 — the agent learns the two new page types + the conservative selection rule.
+assert_grep 'summary' "$AGENT" "concept-distiller: knows the summary page type (#342)"
+assert_grep 'learning' "$AGENT" "concept-distiller: knows the learning page type (#342)"
+assert_grep 'conservative' "$AGENT" "concept-distiller: conservative type-selection rule (prefer concept/entity, #342)"
 # Pure-proposal invariants — the #325 + claim-dedup discipline.
 assert_grep 'never compute slugs\|never computes slugs\|do not compute slugs\|does NOT compute slugs\|never compute' "$AGENT" "concept-distiller: never computes slugs"
 assert_grep 'raw text' "$AGENT" "concept-distiller: writes raw text, never JSON/YAML (#325)"

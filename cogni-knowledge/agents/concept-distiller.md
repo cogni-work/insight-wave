@@ -1,6 +1,6 @@
 ---
 name: concept-distiller
-description: Phase-4.5 concept/entity distiller for the inverted pipeline. Reads the run's source-claim bundle plus an index of the concept/entity pages already on the wiki, clusters recurring facts into a small set of concept and entity proposals, and writes a raw-text concept-records file the knowledge-distill orchestrator feeds to concept-store.py. Pure proposal — never writes wiki pages, never builds JSON/YAML, never computes slugs or decides claim-dedup.
+description: Phase-4.5 distiller for the inverted pipeline. Reads the run's source-claim bundle plus an index of the distilled pages already on the wiki, clusters recurring facts into a small set of concept / entity proposals (and, conservatively, cross-source summary / run-level learning proposals), and writes a raw-text concept-records file the knowledge-distill orchestrator feeds to concept-store.py. Pure proposal — never writes wiki pages, never builds JSON/YAML, never computes slugs or decides claim-dedup.
 model: sonnet
 color: yellow
 tools: ["Read", "Write"]
@@ -67,10 +67,14 @@ Phase 0 (load) → Phase 1 (cluster) → Phase 2 (write records) → Phase 3 (re
 
 ### Phase 1: Cluster claims into concepts and entities
 
-Scan the claims for the **recurring subjects** they assert facts about. Two page types only (Phase-1 scope):
+Scan the claims for the **recurring subjects** they assert facts about. Four page types:
 
 - **`concept`** — a framework, mechanism, obligation, rule, regime, or idea you can describe without naming one specific instance (e.g. "High-risk classification", "Conformity assessment", "Transparency obligations").
 - **`entity`** — a specific named person, organization, product, body, or instrument (e.g. "European Commission", "AI Office", "GPAI Code of Practice").
+- **`summary`** — a **cross-source topical overview** that synthesizes a *theme* across several sources rather than naming one concept or entity (e.g. "DACH AI-adoption landscape", "EU enforcement timeline at a glance"). Distinct from a `synthesis` (the per-run report) and from cogni-wiki's one-source-condensation sense of `summary` — here it is the run's cross-source sketch of a region, market, or topic.
+- **`learning`** — a **run-level methodological lesson or decision** the evidence surfaced about *how the topic behaves* (e.g. "Member-state transposition lags the EU deadline by 12–18 months", "Vendor self-assessment claims diverge from notified-body findings"). A generalizable takeaway, not a fact about one named thing.
+
+**Type selection is conservative.** Most clusters are `concept` or `entity` — reach for those first. Only use `summary` when a cluster is genuinely a cross-source topical overview that no single concept/entity captures, and `learning` only for a run-level lesson neither concept nor entity fits. When in doubt, prefer `concept`/`entity` (a forced `summary`/`learning` is worse than a slightly broad concept).
 
 Rules:
 
@@ -96,12 +100,23 @@ Rules:
   type: entity
   summary: The EU executive body that issued the GPAI Code of Practice.
   claim: gpai-code-of-practice | clm-002 | The European Commission published the GPAI Code of Practice in 2025.
+- title: EU Enforcement Timeline At A Glance
+  type: summary
+  summary: How the AI Act's obligations phase in across 2025-2027 as seen across the cited sources.
+  claim: eu-ai-act-article-113 | clm-007 | Most obligations apply 24 months after entry into force.
+  claim: gpai-code-of-practice | clm-009 | GPAI provider duties begin 12 months after entry into force.
+- title: Transposition Lags The EU Deadline
+  type: learning
+  summary: Member-state implementation consistently trails the EU statutory deadline by 12-18 months.
+  claim: de-implementation-act | clm-011 | Germany's implementing act was tabled 14 months after the EU deadline.
 ```
+
+(The `summary` and `learning` blocks above are illustrative — emit them only when the conservative rule in Phase 1 genuinely applies. The field idiom is identical for all four types.)
 
 Field rules (each on a **single line**):
 
 - `title:` — the concept/entity name. Reuse an existing page's title verbatim when your cluster matches it.
-- `type:` — `concept` or `entity` (lowercase).
+- `type:` — `concept`, `entity`, `summary`, or `learning` (lowercase). Default to `concept`/`entity`; use the latter two only per the conservative rule above.
 - `summary:` — one crisp sentence in `OUTPUT_LANGUAGE`. May contain colons/commas/quotes — write them raw (do NOT quote or escape the value; `concept-store.py` serializes it safely).
 - `related:` — optional comma-separated list of other concept titles (best-effort cross-references; `concept-store.py` slugifies them and only links the ones that resolve to a real page).
 - `update:` — `true`/`false`, advisory only (the real decision is on-disk).
@@ -120,21 +135,22 @@ Return a compact JSON summary (and nothing else in your response body):
  "records_file": "<RECORDS_OUTPUT_PATH>",
  "concepts_proposed": 7,
  "entities_proposed": 3,
+ "summaries_proposed": 1,
+ "learnings_proposed": 0,
  "claims_attached": 41,
  "cost_estimate": {"input_words": 8200, "output_words": 1400, "estimated_usd": 0.031}}
 ```
 
-`concepts_proposed` / `entities_proposed` / `claims_attached` are exact counts of what you wrote — count them, do not estimate. On a write failure, return `{"ok": false, "error": "<message>", "concepts_proposed": 0}`.
+`concepts_proposed` / `entities_proposed` / `summaries_proposed` / `learnings_proposed` / `claims_attached` are exact counts of what you wrote — count them, do not estimate (omit `summaries_proposed`/`learnings_proposed` or set them to `0` when you proposed none; they are advisory, the orchestrator's authoritative per-type counts come from the merge result). On a write failure, return `{"ok": false, "error": "<message>", "concepts_proposed": 0}`.
 
 ## What this agent does NOT do
 
-- Does NOT write wiki pages — `concept-store.py` (run by the orchestrator) writes `wiki/concepts/<slug>.md` / `wiki/entities/<slug>.md`.
+- Does NOT write wiki pages — `concept-store.py` (run by the orchestrator) writes `wiki/{concepts,entities,summaries,learnings}/<slug>.md` per the record's `type:`.
 - Does NOT build JSON/YAML or escape anything — it writes raw text; `concept-store.py` serializes.
 - Does NOT compute slugs — `concept-store.py` derives them from your titles via `slugify`.
 - Does NOT decide claim-dedup — `concept-store.py` decides "same fact?" deterministically (`norm_key` + symmetric similarity), fail-safe to keep-both.
 - Does NOT fetch URLs, WebSearch, or read source bodies — the claim bundle is your only evidence.
 - Does NOT compose the report (Phase 5) or verify claims (Phase 6).
-- Does NOT emit `summary` or `learning` page types — Phase-1 ships `concept` + `entity` only.
 
 ## Cost estimation
 
