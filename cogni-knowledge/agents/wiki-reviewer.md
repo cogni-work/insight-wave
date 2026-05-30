@@ -182,7 +182,7 @@ The verdict is **advisory**. A `revise` verdict does NOT re-dispatch the compose
        "per_section": [
          {"heading": "Synthese und Handlungsempfehlungen", "words": 883, "cites": 1, "density": 1.1, "severity": "high"},
          {"heading": "Strukturelle Hemmnisse", "words": 897, "cites": 4, "density": 4.5, "severity": "low"},
-         {"heading": "Post-Quantum-Standards", "words": 1240, "cites": 11, "density": 8.9, "severity": "none"}
+         {"heading": "Risikoklassifizierung von KI-Systemen", "words": 1240, "cites": 11, "density": 8.9, "severity": "none"}
        ],
        "degraded_sections": ["Synthese und Handlungsempfehlungen", "Strukturelle Hemmnisse"],
        "applied_depth_cap": 0.70,

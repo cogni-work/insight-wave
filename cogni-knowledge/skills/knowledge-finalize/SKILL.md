@@ -892,11 +892,11 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   Independent branches (not gated on `high`/`unknown`):
   - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> cited page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors; the operator may want to investigate concurrent wiki maintenance.
   - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages (Phase 1 hard cap; lifting is v0.1.16 work)`.
-  - On `--no-contradictor` / dry-run / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
+  - On `--no-contradictor` / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
   - On `ok: false`, print `⚠ contradiction tripwire FAILED — <reason>; synthesis on disk` (loud, non-fatal — same posture as the wiki-health failure path).
 - Structural review (Step 10.7, #309 P1.1): print this block **only on `ok: true` AND (`verdict == "revise"` OR `high_severity_count > 0`)** — a clean `accept` with no high-severity issues is silent (no noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch:
   ```
-  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity issue(s); advisory only (#309 P1.1)
+  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity of <issue_count> issue(s); advisory only (#309 P1.1)
     completeness=<c> coherence=<co> source_diversity=<sd> depth=<d> clarity=<cl>
   Detail in <project_path>/.metadata/structural-review-v<N>.json. Advisory — finalize did not block; re-run cogni-knowledge:knowledge-compose to address, or accept as-is.
   Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
@@ -904,7 +904,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   The per-dimension line reads the five `structural_scores` values. `<estimated_usd>` / `<input_words>` / `<output_words>` come from the `cost_estimate` captured at Step 10.7.
 
   Independent branches:
-  - On `--no-reviewer` / dry-run skip, print the corresponding skip message verbatim (per Step 10.7).
+  - On `--no-reviewer` skip, print the corresponding skip message verbatim (per Step 10.7).
   - On `ok: false`, print `⚠ structural review FAILED — <reason>; synthesis on disk; advisory only` (loud, non-fatal — same posture as the contradiction-tripwire failure path).
 - Next: M10 will rebuild `knowledge-query` / `knowledge-dashboard` / `knowledge-resume` / `knowledge-refresh` on the new manifests. Today, `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
 
