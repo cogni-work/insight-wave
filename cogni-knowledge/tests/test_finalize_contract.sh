@@ -199,6 +199,29 @@ assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-fi
 # References block must include the new agent.
 assert_grep 'agents/wiki-contradictor.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-contradictor.md (#335)"
 
+# --- #309 P1.1 structural reviewer (Step 10.7, v0.1.28) ------------------
+# Advisory structural-quality tripwire — fail-soft, never blocks finalize.
+# The structural-quality half of the cogni-research feature-parity gate;
+# Phase 6 owns citation-claim alignment, this owns structural quality.
+# Step 10.7 lands after Step 10.6 (contradiction tripwire), before Step 11.
+assert_grep '### 10.7 Structural-quality review' "$FIN" "knowledge-finalize: Step 10.7 heading present (#309 P1.1)"
+assert_grep 'wiki-reviewer' "$FIN" "knowledge-finalize: Step 10.7 dispatches wiki-reviewer agent (#309 P1.1)"
+# Anchor the literal dispatch, not just a prose mention (the bare token also
+# appears in description/Output/References blocks).
+assert_grep 'Task(wiki-reviewer' "$FIN" "knowledge-finalize: Step 10.7 contains the literal Task(wiki-reviewer ...) dispatch (#309 P1.1)"
+assert_grep 'structural-review-v' "$FIN" "knowledge-finalize: Step 10.7 writes structural-review-v<N>.json output artifact (#309 P1.1)"
+assert_grep '\-\-no-reviewer' "$FIN" "knowledge-finalize: --no-reviewer opt-out flag documented in Parameters table (#309 P1.1)"
+assert_grep '#309' "$FIN" "knowledge-finalize: Step 10.7 references issue #309"
+# Fail-soft / advisory framing — must be explicit so a future maintainer
+# doesn't tighten Step 10.7 into a blocking gate.
+assert_grep 'advisory\|Advisory\|never rolls back\|never blocks' "$FIN" "knowledge-finalize: Step 10.7 documented as advisory / fail-soft (#309 P1.1)"
+# Skip condition — the --no-reviewer skip path must be documented.
+assert_grep 'Structural review skipped: --no-reviewer' "$FIN" "knowledge-finalize: Step 10.7 documents --no-reviewer skip path (#309 P1.1)"
+# Step 11 surfaces the structural-review line (operator-visible warning shape).
+assert_grep 'Structural review: score=' "$FIN" "knowledge-finalize: Step 11 final summary surfaces Structural review line (#309 P1.1)"
+# References block must include the new agent.
+assert_grep 'agents/wiki-reviewer.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-reviewer.md (#309 P1.1)"
+
 # --- #338 open-questions refresh (Step 10.5 sub-step 5, v0.1.19) ----------
 # Fail-soft refresh of the persistent data-gap backlog the inverted pipeline
 # leaves stale. Same posture as cogni-wiki wiki-lint Step 8.5: never rolls

@@ -1,5 +1,61 @@
 # cogni-knowledge changelog
 
+## 0.1.28 — 2026-05-30 — #309 P1.1: structural quality reviewer (Slice 20)
+
+Second increment of the **#309 Phase-6-readiness gate** (P1.3 read-before-web shipped v0.1.8;
+the blocking bugs #325 + #326 are both CLOSED). **#309 stays open** — this ships P1.1 only;
+P1.2-rest (cross-lingual language-config UX) and P2 remain.
+
+**The gap.** `knowledge-verify` (Phase 6) checks **only** citation-claim alignment — does each
+cited sentence match the cited page's `pre_extracted_claims:`. A synthesis can pass verify with
+every citation aligned and still treat a sub-question in one shallow paragraph, jump incoherently
+between sections, or lean on a single publisher — none of which verify catches. cogni-research's
+`agents/reviewer.md` scores the draft on 5 weighted structural dimensions; cogni-knowledge had no
+equivalent, so the downstream cogni-research consumers (cogni-trends / -narrative / -portfolio)
+would lose structural review quality at the Phase-6 cutover.
+
+**The fix — a new `wiki-reviewer` agent dispatched by `knowledge-finalize` Step 10.7**, mirroring
+the #335 `wiki-contradictor` advisory tripwire byte-for-byte (single-pass, zero-network,
+`model: sonnet`, tools `Read`/`Write`/`Glob`/`Grep`, fail-soft, `--no-X` opt-out):
+
+- **`agents/wiki-reviewer.md`** (NEW; point-in-time PORT of `cogni-research/agents/reviewer.md`).
+  Reads `output/draft-v<N>.md` + `plan.json` (`sub_questions[]` for completeness, `output_language`
+  for clarity) + `ingest-manifest.json` (`ingested[].publisher` for source diversity). Scores the
+  5 weighted dimensions (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20,
+  Clarity 0.15) with an inline citation-density gate — keyed on the composer's `<sup>[N](url)</sup>`
+  shape (#300) — that caps Depth (0.85 / 0.70). Language-aware Clarity (DE ä/ö/ü/ß, FR, IT, PL, NL,
+  ES). Emits `<project>/.metadata/structural-review-v<N>.json` (schema `0.1.0`) with
+  `structural_scores` / `citation_density` / `source_diversity` / `issues[]` / `strengths[]` /
+  `verdict` / `score`. Overall = bare weighted average (accept ≥ 0.82, structural-only).
+- **`knowledge-finalize` Step 10.7** dispatches it after Step 10.6, fail-soft, with a `--no-reviewer`
+  opt-out. Step 11 surfaces `⚠ Structural review: score=<S> (verdict=<V>) — <H> high-severity
+  issue(s); advisory only` only when `verdict == revise OR high_severity_count > 0`; clean `accept`
+  runs are silent. Cost accumulates into the finalize total.
+
+**Advisory-only by design.** The composer is single-pass and the revisor is zero-network/
+patch-in-place (citation fixes only), so a structural `revise` verdict drives **no** automated
+content-expansion fix loop and **never blocks** the deposit — the synthesis already landed at
+Steps 6–10. The operator re-runs `knowledge-compose` or accepts as-is.
+
+**What the fork DROPS** from the upstream reviewer (each named in the agent's comment block +
+"does NOT" section): the claims-verification multiplier (Phase 6 owns alignment — overall score
+is the bare weighted average), the Arc-Structural Gate (cogni-knowledge is story-arc agnostic),
+the Word-Count / prose-density gate (composer is single-pass standard-density — no `target_words`
+floor to cap against, no expansion loop a cap could drive), and the Diagram Quality Gate (composer
+emits no Mermaid).
+
+Tests: new `tests/test_reviewer_contract.sh` (frontmatter / tools-no-Task-no-Bash / 5 dims +
+weights / density gate + superscript regex / schema `0.1.0` / `synthesis_unreadable` +
+`write_failed` envelopes / ≥8 "does NOT" invariants / the three explicit drops / clean-break);
+extended `tests/test_finalize_contract.sh` (Step 10.7 `Task(wiki-reviewer ...)` dispatch +
+`--no-reviewer` + Step 11 line + References); extended `tests/test_skill_contracts.sh` (clean-break
+file lists). All cogni-knowledge contract tests green.
+
+Files: `agents/wiki-reviewer.md`, `skills/knowledge-finalize/SKILL.md`, `references/inverted-pipeline.md`,
+`references/absorption-roadmap.md`, `CLAUDE.md`, `tests/test_reviewer_contract.sh`,
+`tests/test_finalize_contract.sh`, `tests/test_skill_contracts.sh`,
+`.claude-plugin/plugin.json` (0.1.27 → 0.1.28), `../.claude-plugin/marketplace.json`.
+
 ## 0.1.27 — 2026-05-30 — distill: cross-lingual (DE↔EN) claim merge (closes #345)
 
 Phase-1 claim dedup (`concept-store.py`, #336) deliberately **under-merges across languages**:

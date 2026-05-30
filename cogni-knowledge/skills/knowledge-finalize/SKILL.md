@@ -1,6 +1,6 @@
 ---
 name: knowledge-finalize
-description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md, runs a conformance gate (wiki-lint --fix=all + wiki-health) so the deposited base passes cogni-wiki's own checks — reference backlinks are bare [[slug]] so the synthesis de-orphans its cited sources — and dispatches the wiki-contradictor agent for a zero-network contradiction tripwire against each cited source page's pre_extracted_claims (#335, v0.1.15, fail-soft observability — no auto-resolution, no rollback). Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
+description: "Phase 7 of the v0.1.0 inverted pipeline. Reads <project>/output/draft-vN.md (the latest verified draft) + <project>/.metadata/verify-vN.json + <project>/.metadata/citation-manifest.json, runs cycle-guard.py to refuse self-citing loops, atomically writes the verified draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research: <project-slug>), updates wiki/index.md under the Syntheses category, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json, appends one '## [YYYY-MM-DD] finalize | …' line to wiki/log.md, runs a conformance gate (wiki-lint --fix=all + wiki-health) so the deposited base passes cogni-wiki's own checks — reference backlinks are bare [[slug]] so the synthesis de-orphans its cited sources — and dispatches the wiki-contradictor agent for a zero-network contradiction tripwire against each cited source page's pre_extracted_claims (#335, v0.1.15, fail-soft observability — no auto-resolution, no rollback), and dispatches the wiki-reviewer agent for an advisory structural-quality score of the draft on 5 weighted dimensions (#309 P1.1, v0.1.28, fail-soft observability — non-blocking, no auto-fix). Closes the inverted-pipeline loop — the synthesis is now visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'. After finalize, M10 will rebuild query/dashboard/resume/refresh on the new manifests."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -56,6 +56,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--overwrite` | No | Replace an existing `wiki/syntheses/<slug>.md`. Default: refuse. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, SYNTHESIS_SLUG, citation count) without writing anything or dispatching cycle-guard. |
 | `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire (#335). Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
+| `--no-reviewer` | No | Skip the Step 10.7 structural-quality review (#309 P1.1). Default: OFF (reviewer runs). Pass to suppress the advisory structural score on a run where you only want the deposit + conformance gate; the synthesis is still deposited and every other step still runs. Mirrors `--no-contradictor`. |
 | `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh (#338). Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
 | `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md` (#354). Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
 
@@ -800,9 +801,61 @@ Task(wiki-contradictor,
 
 **Idempotency.** Re-finalize on the same `draft_version` overwrites `contradictor-v<N>.json` — see `## Edge cases` for the full rule (`Re-finalize on the same draft (#335 idempotency)`).
 
+### 10.7 Structural-quality review (#309 P1.1)
+
+The structural-quality half of the cogni-research feature-parity gate (#309). Step 10.6 (and Phase 6) check **citation-claim alignment** — does each cited sentence match the cited page's claims. This step checks **structural quality** — does the draft address every sub-question, flow coherently, draw on diverse publishers, go deep, and read cleanly in its output language. A synthesis can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph). Dispatches the `wiki-reviewer` agent to score the draft on the same 5 weighted dimensions cogni-research's reviewer scores (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15, with an inline citation-density gate that caps Depth) and emit `<project_path>/.metadata/structural-review-v<N>.json` (schema `0.1.0`).
+
+**Advisory-only, fail-soft posture (explicit).** Step 10.7 is observability-only. The reviewer's verdict is **advisory** — the composer is single-pass and the revisor is zero-network/citation-only, so a `revise` verdict drives **no** automated content-expansion fix loop and **never rolls back the synthesis**. A Task failure, schema mismatch, or malformed envelope surfaces in Step 11 as `⚠ structural review FAILED — synthesis on disk; advisory only` and never blocks. The synthesis already landed at Steps 6–10; the reviewer is a read-only scoring layer (same posture as Step 10.6).
+
+**Skip conditions (evaluated in order).** The orchestrator skips dispatch (and writes no JSON) when any of these hold:
+
+1. `--dry-run` was passed — finalize already exits at Step 3 on `--dry-run`, so this is defence-in-depth. Silent.
+2. `--no-reviewer` was passed — log `Structural review skipped: --no-reviewer` and continue.
+
+(There is no empty-manifest skip — the reviewer scores the draft prose, which exists even when the citation manifest is empty.)
+
+**Resolve `OUTPUT_LANGUAGE` (self-contained, independent of Step 10.6).** Read it directly from `plan.json` so this step does not depend on whether the contradictor ran:
+
+```
+OUTPUT_LANGUAGE=$(PLAN_PATH="$PROJECT_PATH/.metadata/plan.json" python3 -c '
+import json, os
+from pathlib import Path
+try:
+    p = json.loads(Path(os.environ["PLAN_PATH"]).read_text(encoding="utf-8"))
+    print((p.get("output_language") or "en"))
+except Exception:
+    print("en")
+')
+```
+
+**Dispatch.**
+
+```
+Task(wiki-reviewer,
+     PROJECT_PATH=$PROJECT_PATH,
+     DRAFT_PATH=$PROJECT_PATH/output/draft-v$DRAFT_VERSION.md,
+     PLAN_PATH=$PROJECT_PATH/.metadata/plan.json,
+     INGEST_MANIFEST_PATH=$PROJECT_PATH/.metadata/ingest-manifest.json,
+     OUTPUT_LANGUAGE=$OUTPUT_LANGUAGE,
+     REVIEW_ITERATION=1,
+     DRAFT_VERSION=$DRAFT_VERSION,
+     REVIEW_OUT_PATH=$PROJECT_PATH/.metadata/structural-review-v$DRAFT_VERSION.json)
+```
+
+The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited synthesis differs only by frontmatter + reference renumber, and the structural dimensions are draft-level. `OUTPUT_LANGUAGE` makes the agent score Clarity natively and exclude the right reference heading from the density gate (never translates — bilingual scoring is out of scope here, same posture as Step 10.6).
+
+**Interpret return.**
+
+- **`ok: true`** — capture `verdict`, `score`, `issue_count`, `high_severity_count`, the per-dimension `structural_scores`, and the full `cost_estimate` object (`input_words`, `output_words`, `estimated_usd`) for Step 11.
+- **`ok: false, error: synthesis_unreadable`** — surface `⚠ structural review FAILED — synthesis_unreadable: <reason>; synthesis on disk; advisory only` in Step 11. Never block. (Most common cause: a draft below the 200-word floor.)
+- **`ok: false, error: write_failed`** — surface `⚠ structural review FAILED — write_failed (output token budget likely exhausted); synthesis on disk; advisory only` in Step 11. Never block.
+- **Task dispatch error / no envelope returned** — same fail-soft posture: surface `⚠ structural review FAILED — Task dispatch did not return; synthesis on disk` and continue to Step 11.
+
+**Idempotency.** Re-finalize on the same `draft_version` overwrites `structural-review-v<N>.json` (same convention as `verify-v<N>.json` / `contradictor-v<N>.json`). The reviewer's scores may vary slightly across re-runs (LLM judgement); the verdict is advisory, so cross-run variance carries no downstream consequence.
+
 ### 11. Final summary
 
-Print ≤ 13 lines (the verbatim/paraphrase ratio and the contradiction-tripwire block are conditional — the common-case base summary is ~10 lines, both #337 lines included; the #338 open-questions line adds one):
+Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire block, and the structural-review block are all conditional — the common-case base summary is ~10 lines, both #337 lines included; the #338 open-questions line adds one; a clean-`accept` structural review is silent):
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
@@ -836,6 +889,18 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio and the contradiction-tripwire
   - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION source pages (Phase 1 hard cap; lifting is v0.1.16 work)`.
   - On `--no-contradictor` / dry-run / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
   - On `ok: false`, print `⚠ contradiction tripwire FAILED — <reason>; synthesis on disk` (loud, non-fatal — same posture as the wiki-health failure path).
+- Structural review (Step 10.7, #309 P1.1): print this block **only on `ok: true` AND (`verdict == "revise"` OR `high_severity_count > 0`)** — a clean `accept` with no high-severity issues is silent (no noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch:
+  ```
+  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity issue(s); advisory only (#309 P1.1)
+    completeness=<c> coherence=<co> source_diversity=<sd> depth=<d> clarity=<cl>
+  Detail in <project_path>/.metadata/structural-review-v<N>.json. Advisory — finalize did not block; re-run cogni-knowledge:knowledge-compose to address, or accept as-is.
+  Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
+  ```
+  The per-dimension line reads the five `structural_scores` values. `<estimated_usd>` / `<input_words>` / `<output_words>` come from the `cost_estimate` captured at Step 10.7.
+
+  Independent branches:
+  - On `--no-reviewer` / dry-run skip, print the corresponding skip message verbatim (per Step 10.7).
+  - On `ok: false`, print `⚠ structural review FAILED — <reason>; synthesis on disk; advisory only` (loud, non-fatal — same posture as the contradiction-tripwire failure path).
 - Next: M10 will rebuild `knowledge-query` / `knowledge-dashboard` / `knowledge-resume` / `knowledge-refresh` on the new manifests. Today, `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
 
 If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsupported citations` warning so the audit trail is on-screen.
@@ -872,6 +937,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5, #338; deterministic-only — research-time gaps from `wiki-coverage.json::uncovered`/`partial` deferred to follow-up #354). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 (#335) contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
+- `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 (#309 P1.1) structural-quality verdict (schema `0.1.0`): per-dimension `structural_scores`, `citation_density`, `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
 
 No files are written outside the workspace root or the bound knowledge base.
 
@@ -888,3 +954,4 @@ No files are written outside the workspace root or the bound knowledge base.
 - `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py --help` — Step 10.5 conformance gate (`--fix=all`)
 - `cogni-wiki/skills/wiki-health/scripts/health.py --help` — Step 10.5 structural assertion
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-contradictor.md` — Step 10.6 contradiction tripwire (#335)
+- `${CLAUDE_PLUGIN_ROOT}/agents/wiki-reviewer.md` — Step 10.7 structural-quality review (#309 P1.1)
