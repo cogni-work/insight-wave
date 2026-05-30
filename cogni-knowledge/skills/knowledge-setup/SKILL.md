@@ -32,6 +32,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). Both the wiki and the binding live inside this directory. |
 | `--description` | No | One-sentence description forwarded to `cogni-wiki:wiki-setup --description`. |
 | `--publisher-base-url` | No | Forwarded to `cogni-wiki:wiki-setup --publisher-base-url`. Used as last-resort fallback URL when wiki pages have no per-page publisher URL. |
+| `--market` | No | Default market for this knowledge base. One of: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Persisted to `binding.json::research_defaults.market`; inherited by every `knowledge-plan` run. Resolved interactively in Step 2.5 when omitted (default `dach`). |
+| `--output-language` | No | Default output language (two-letter code) for this knowledge base. Persisted to `binding.json::research_defaults.output_language`; inherited by every `knowledge-plan` run. Resolved interactively in Step 2.5 when omitted — defaults to the chosen market's registry `default_output_language` (e.g. `dach`→`de`, `fr`→`fr`, `eu`→`en`). |
 
 If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with AskUserQuestion (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed). Do not invent slugs or titles silently.
 
@@ -79,6 +81,25 @@ Check `<knowledge_root>/.cogni-wiki/config.json`:
 
 If `<knowledge_root>` exists but contains foreign files (no `.cogni-wiki/`, but non-empty subdirs that are not the standard cogni-wiki layout — `raw/`, `wiki/`, `assets/`), abort: "path exists but is not a wiki — choose a different `--knowledge-root` or move the existing files."
 
+### 2.5. Resolve language defaults (market + output language)
+
+The knowledge base records a default `market` + `output_language` so every downstream `knowledge-plan` run inherits them — a knowledge base is almost always single-market/single-language, so asking once here (and letting `knowledge-plan` override per-run) beats re-deriving on every plan or silently emitting English on a German base. This mirrors `cogni-research`'s `research-setup` Phase 0.1 (language defaults from the market, fallback `en`).
+
+Resolve `market` and `output_language`:
+
+1. If **both** `--market` and `--output-language` were passed, use them as-is — skip the prompt.
+2. Otherwise, derive the suggested language default from the market via the canonical workspace helper (the same path `knowledge-plan` uses for `candidate_domains`):
+   ```
+   python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <market-or-default-dach>
+   ```
+   Read `data.default_output_language` from the envelope (e.g. `dach`→`de`, `fr`→`fr`, `eu`→`en`).
+3. Ask the user once with `AskUserQuestion` (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed) — one turn with up to two questions:
+   - **Market** (only if `--market` was not passed): the supported codes; default `dach` *(Recommended)*.
+   - **Output language** (only if `--output-language` was not passed): option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others (`de`/`fr`); the auto-added "Other" covers the long tail (two-letter code).
+   Both questions are skippable — "I'll decide later" falls back to the resolved default (market `dach`, language = market's `default_output_language`). If both flags were passed, do not ask.
+
+Carry the resolved `market` + `output_language` into Step 4.
+
 ### 3. Dispatch `cogni-wiki:wiki-setup` (only if no wiki exists)
 
 ```
@@ -97,10 +118,12 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py init \
     --knowledge-root <knowledge_root> \
     --knowledge-slug <knowledge_slug> \
     --knowledge-title "<knowledge_title>" \
-    --wiki-path <knowledge_root>
+    --wiki-path <knowledge_root> \
+    --market <resolved market> \
+    --output-language <resolved output_language>
 ```
 
-The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
+`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.1; omitted flags fall back to `dach`/`en` script-side). The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
 
 ### 5. Final summary
 
@@ -110,6 +133,7 @@ Print a short summary, ≤ 8 lines:
 - Knowledge slug and title
 - Wiki path (`<knowledge_root>` — they are the same in the default layout)
 - Binding file path (`<knowledge_root>/.cogni-knowledge/binding.json`)
+- Defaults: market `<resolved market>`, output language `<resolved output_language>` (inherited by `knowledge-plan`; overridable per run)
 - Suggested next action: `cogni-knowledge:knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`
 
 Do not print the full binding JSON in the summary — point at the file path and let the user inspect it if they want.
@@ -125,6 +149,7 @@ Do not print the full binding JSON in the summary — point at the file path and
 - Does NOT write wiki pages — that is `cogni-wiki:wiki-ingest`'s job (transitively via `knowledge-ingest`).
 - Does NOT pre-fill the wiki with cogni-wiki foundations — `--skip-prefill-prompt` is set deliberately.
 - Does NOT configure source mode — that happens during `knowledge-plan`, where the topic is known.
+- Records only the knowledge-base **default** `market`/`output_language` in `binding.json::research_defaults` (Step 2.5). The per-run choice still lives in `knowledge-plan` — a single plan can override the base default with its own `--market`/`--output-language` (e.g. an English report about a German market).
 
 ## Output
 

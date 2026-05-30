@@ -27,8 +27,12 @@ from pathlib import Path
 # additive bump that added curator_defaults on top of v0.0.2's project_path.
 # The bump to 0.1.0 landed at v0.1.0 M12 alongside plugin.json so the two
 # version surfaces re-align there (no field change — a deliberate milestone
-# re-alignment per references/absorption-roadmap.md M12).
-SCHEMA_VERSION = "0.1.0"
+# re-alignment per references/absorption-roadmap.md M12). 0.1.1 is the next
+# additive bump — it adds research_defaults (knowledge-base-level market +
+# output_language inherited by knowledge-plan; #309 P1.2-rest). Pre-0.1.1
+# bindings have no research_defaults; consumers MUST read it with
+# .get("research_defaults", DEFAULT_RESEARCH_DEFAULTS).
+SCHEMA_VERSION = "0.1.1"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -39,6 +43,16 @@ DEFAULT_CURATOR_DEFAULTS = {
     "max_candidates_per_sq": 12,
     "score_threshold": 0.5,
     "fetch_cache_max_age_days": 30,
+}
+# research_defaults (schema 0.1.1, #309 P1.2-rest) records the knowledge
+# base's default market + output language so every knowledge-plan run
+# inherits them instead of re-deriving (or silently defaulting English on a
+# German base). An output concern, not a curator one — kept as a sibling
+# block. knowledge-plan's resolution precedence: explicit flag > this block >
+# the market's registry default_output_language > "en".
+DEFAULT_RESEARCH_DEFAULTS = {
+    "market": "dach",
+    "output_language": "en",
 }
 
 
@@ -129,6 +143,12 @@ def cmd_init(args: argparse.Namespace) -> int:
         "research_projects": [],
         "topic_lineage": {"covered_themes": [], "open_themes": []},
         "curator_defaults": dict(DEFAULT_CURATOR_DEFAULTS),
+        "research_defaults": {
+            "market": args.market or DEFAULT_RESEARCH_DEFAULTS["market"],
+            "output_language": (
+                args.output_language or DEFAULT_RESEARCH_DEFAULTS["output_language"]
+            ),
+        },
         "created": _today(),
         "schema_version": SCHEMA_VERSION,
     }
@@ -236,6 +256,20 @@ def main(argv: list[str]) -> int:
     p_init.add_argument("--knowledge-slug", required=True)
     p_init.add_argument("--knowledge-title", required=True)
     p_init.add_argument("--wiki-path", required=True)
+    p_init.add_argument(
+        "--market",
+        required=False,
+        default="",
+        help="Default market for this knowledge base (research_defaults.market). "
+             "Falls back to 'dach' when omitted.",
+    )
+    p_init.add_argument(
+        "--output-language",
+        required=False,
+        default="",
+        help="Default output language for this knowledge base "
+             "(research_defaults.output_language). Falls back to 'en' when omitted.",
+    )
     p_init.set_defaults(func=cmd_init)
 
     p_append = sub.add_parser("append-project", help="Record a deposited research project")
