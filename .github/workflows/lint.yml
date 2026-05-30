@@ -15,9 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          # Full history so `git ls-files` sees every tracked SKILL.md / agent file.
-          fetch-depth: 0
+        # Default shallow checkout is sufficient: the guard reads the working
+        # tree via `git ls-files` (the index at this commit), not git history.
 
       - name: Check for maintainer breadcrumbs in SKILL.md + agents
         run: |

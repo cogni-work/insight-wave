@@ -39,6 +39,11 @@ import sys
 
 DEFAULT_GLOBS = ["*/skills/*/SKILL.md", "*/agents/*.md"]
 
+# A line carrying this marker is skipped entirely — the per-line escape hatch
+# for a deterministic false positive (an Apple M-series chip name, a function
+# key like F12, etc.) so it need not be parked in the baseline.
+ALLOW_MARKER = "breadcrumb-guard:allow"
+
 # Version/issue/milestone/slice/finding matchers. issue_ref is handled
 # specially (hex-color disambiguation); the rest are plain regexes.
 VERSION_RE = re.compile(r"\bv[0-9]+\.[0-9]+\.[0-9]+\b")
@@ -113,6 +118,11 @@ def scan_file(abs_path, rel_path):
         raise RuntimeError("cannot read {}: {}".format(rel_path, exc))
     for lineno, raw in enumerate(lines, start=1):
         line = raw.rstrip("\n")
+        if ALLOW_MARKER in line:
+            # Per-line escape hatch for a genuine false positive (e.g. an Apple
+            # M-series chip name "M2 Mac", a function key "F12"). Keeps the
+            # baseline reserved for real-but-grandfathered breadcrumbs.
+            continue
         for pattern, token in find_matches(line):
             yield {
                 "file": rel_path,
@@ -132,6 +142,13 @@ def collect(root, explicit_files):
         for f in explicit_files:
             abs_path = f if os.path.isabs(f) else os.path.join(root, f)
             rel = os.path.relpath(abs_path, root)
+            if rel == os.pardir or rel.startswith(os.pardir + os.sep):
+                # An explicit file outside --root would produce a machine-specific
+                # "../../.." baseline key that never matches the git ls-files key.
+                # Refuse rather than silently poison the baseline / false-flag.
+                raise RuntimeError(
+                    "file {!r} is outside --root {!r}; pass paths under the "
+                    "repo root".format(f, root))
             pairs.append((abs_path, rel))
     else:
         pairs = [(os.path.join(root, rel), rel) for rel in discover_files(root)]
@@ -214,6 +231,14 @@ def main(argv):
             "error": "",
         }))
         return 0
+
+    # A mistyped explicit --baseline must not be silently read as "empty"
+    # (which would flag the whole tree). The default baseline legitimately may
+    # not exist on a first run, so only an EXPLICIT missing path is an error.
+    if args.baseline is not None and not os.path.exists(baseline_path):
+        print(json.dumps({"success": False, "data": {},
+                          "error": "baseline not found: {}".format(baseline_path)}))
+        return 2
 
     try:
         baseline = load_baseline(baseline_path)

@@ -5,7 +5,11 @@
 #   1. Negative controls (hex color, F1 formula, bare schema version) -> exit 0.
 #   2. Breadcrumb-laden fixture (#999, v9.9.9, M9, Slice 9, F99) -> exit 1,
 #      with the offending file + line reported (issue #377 acceptance test).
-#   3. Real tree against the committed baseline -> exit 0 (ratchet passes today).
+#   3. Inline-allow escape hatch -> the flagged line is skipped.
+#   4. Real tree against the committed baseline -> exit 0 (ratchet passes today).
+#
+# Note: case 4 reads the working tree via `git ls-files`, so an uncommitted
+# edit that adds a NEW breadcrumb to a tracked file will (correctly) fail it.
 #
 # bash 3.2 + stdlib python3 only.
 
@@ -28,13 +32,24 @@ check() {  # check <label> <condition-exit-code>
   fi
 }
 
+# Run a python assertion block on stdin without letting `set -e` abort the
+# harness — capture the exit code, then report it through check().
+assert_json() {  # assert_json <label> <json> <python-asserts>
+  set +e
+  printf '%s' "$2" | python3 -c "$3"
+  local _code=$?
+  set -e
+  check "$1" "$_code"
+}
+
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-# A baseline path that does not exist -> guard treats the baseline as empty, so
-# every detected occurrence counts as a (new) violation. This is what lets the
-# breadcrumb fixture fail deterministically without depending on the real baseline.
-EMPTY_BASELINE="$WORK/no-such-baseline.json"
+# A real, explicitly-empty baseline -> every detected occurrence is a (new)
+# violation. (An explicitly-passed *missing* path is now a hard error, so the
+# test must materialise the empty baseline rather than rely on a nonexistent one.)
+EMPTY_BASELINE="$WORK/empty-baseline.json"
+printf '{"entries": []}\n' > "$EMPTY_BASELINE"
 
 # ---------------------------------------------------------------------------
 # Case 1 — negative controls: nothing here may trip the guard.
@@ -56,13 +71,12 @@ OUT=$(python3 "$GUARD" --root "$WORK/clean" --baseline "$EMPTY_BASELINE" \
 CODE=$?
 set -e
 check "negative controls exit 0" "$([ "$CODE" -eq 0 ] && echo 0 || echo 1)"
-echo "$OUT" | python3 -c "
+assert_json "negative controls report zero violations" "$OUT" "
 import json,sys
 d=json.load(sys.stdin)
 assert d['success'] is True, d
 assert d['data']['summary']['total']==0, d['data']['summary']
 "
-check "negative controls report zero violations" "$?"
 
 # ---------------------------------------------------------------------------
 # Case 2 — breadcrumb-laden fixture: must fail, naming file + lines.
@@ -81,7 +95,7 @@ OUT=$(python3 "$GUARD" --root "$WORK/dirty" --baseline "$EMPTY_BASELINE" \
 CODE=$?
 set -e
 check "breadcrumb fixture exits 1" "$([ "$CODE" -eq 1 ] && echo 0 || echo 1)"
-echo "$OUT" | python3 -c "
+assert_json "breadcrumb fixture names every token with correct file+line" "$OUT" "
 import json,sys
 d=json.load(sys.stdin)
 v=d['data']['violations']
@@ -98,10 +112,29 @@ assert not missing, 'missing: %r (got %r)' % (missing, got)
 assert all(x['file']=='agents/bad.md' for x in v), v
 assert d['success'] is False, d
 "
-check "breadcrumb fixture names every token with correct file+line" "$?"
 
 # ---------------------------------------------------------------------------
-# Case 3 — real tree against the committed baseline: ratchet passes.
+# Case 3 — inline-allow escape hatch skips an otherwise-flagged line.
+# ---------------------------------------------------------------------------
+mkdir -p "$WORK/allow/agents"
+cat > "$WORK/allow/agents/ok.md" <<'EOF'
+Runs great on the M2 Mac.  <!-- breadcrumb-guard:allow -->
+EOF
+
+set +e
+OUT=$(python3 "$GUARD" --root "$WORK/allow" --baseline "$EMPTY_BASELINE" \
+        "agents/ok.md" 2>/dev/null)
+CODE=$?
+set -e
+check "inline-allow line exits 0" "$([ "$CODE" -eq 0 ] && echo 0 || echo 1)"
+assert_json "inline-allow suppresses the M2 match" "$OUT" "
+import json,sys
+d=json.load(sys.stdin)
+assert d['data']['summary']['total']==0, d['data']['summary']
+"
+
+# ---------------------------------------------------------------------------
+# Case 4 — real tree against the committed baseline: ratchet passes.
 # ---------------------------------------------------------------------------
 set +e
 python3 "$GUARD" >/dev/null 2>&1
