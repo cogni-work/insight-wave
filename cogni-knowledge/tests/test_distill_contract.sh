@@ -56,7 +56,7 @@ assert_grep 'observability' "$SKILL" "knowledge-distill: documents the tripwire 
 # Must NOT run the conformance gate (finalize Step 10.5 owns it once).
 assert_not_grep 'health.py asserts' "$SKILL" "knowledge-distill: does NOT run the conformance gate itself"
 assert_grep 'Task' "$SKILL" "knowledge-distill: Task in allowed-tools"
-# #341 Step 6.5 — re-narrate the ## Summary of updated pages from merged claims.
+# #341 Step 6.7 — re-narrate the ## Summary of updated pages from merged claims.
 assert_grep 'Task(concept-summary-narrator' "$SKILL" "knowledge-distill: dispatches concept-summary-narrator via Task (#341)"
 assert_grep 'concept-store.py renarrate' "$SKILL" "knowledge-distill: calls concept-store.py renarrate (#341)"
 assert_grep 'no-renarrate' "$SKILL" "knowledge-distill: documents the --no-renarrate opt-out (#341)"
