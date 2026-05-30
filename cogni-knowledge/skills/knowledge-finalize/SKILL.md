@@ -875,7 +875,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
-- Open questions (Step 10.5 sub-step 5, #338 / #354): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0` (backward-compatible with #338's terse line). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` / `--dry-run` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
+- Open questions (Step 10.5 sub-step 5, #338 / #354): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0` (backward-compatible with #338's terse line). On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6, #335): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
   ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown (#335)
@@ -892,11 +892,11 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   Independent branches (not gated on `high`/`unknown`):
   - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> cited page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors; the operator may want to investigate concurrent wiki maintenance.
   - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages (Phase 1 hard cap; lifting is v0.1.16 work)`.
-  - On `--no-contradictor` / dry-run / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
+  - On `--no-contradictor` / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
   - On `ok: false`, print `⚠ contradiction tripwire FAILED — <reason>; synthesis on disk` (loud, non-fatal — same posture as the wiki-health failure path).
 - Structural review (Step 10.7, #309 P1.1): print this block **only on `ok: true` AND (`verdict == "revise"` OR `high_severity_count > 0`)** — a clean `accept` with no high-severity issues is silent (no noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch:
   ```
-  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity issue(s); advisory only (#309 P1.1)
+  ⚠ Structural review: score=<score> (verdict=<verdict>) — <high_severity_count> high-severity of <issue_count> issue(s); advisory only (#309 P1.1)
     completeness=<c> coherence=<co> source_diversity=<sd> depth=<d> clarity=<cl>
   Detail in <project_path>/.metadata/structural-review-v<N>.json. Advisory — finalize did not block; re-run cogni-knowledge:knowledge-compose to address, or accept as-is.
   Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
@@ -904,7 +904,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   The per-dimension line reads the five `structural_scores` values. `<estimated_usd>` / `<input_words>` / `<output_words>` come from the `cost_estimate` captured at Step 10.7.
 
   Independent branches:
-  - On `--no-reviewer` / dry-run skip, print the corresponding skip message verbatim (per Step 10.7).
+  - On `--no-reviewer` skip, print the corresponding skip message verbatim (per Step 10.7).
   - On `ok: false`, print `⚠ structural review FAILED — <reason>; synthesis on disk; advisory only` (loud, non-fatal — same posture as the contradiction-tripwire failure path).
 - Next: M10 will rebuild `knowledge-query` / `knowledge-dashboard` / `knowledge-resume` / `knowledge-refresh` on the new manifests. Today, `cogni-wiki:wiki-query --wiki-root <WIKI_ROOT>` already reads the new synthesis as part of the corpus.
 
