@@ -1,6 +1,6 @@
 ---
 name: knowledge-distill
-description: "Phase 4.5 of the v0.1.0 inverted pipeline (between ingest and compose). Reads the run's source pages + their pre_extracted_claims, dispatches concept-distiller to propose recurring type:concept / type:entity pages, then runs concept-store.py to create-or-merge those pages under a lock with claim-level dedup — so the bound wiki COMPOUNDS across runs (concept pages get enriched, not duplicated) and duplicate facts merge at deposit. Fail-soft and optional: a distill failure never blocks compose. Writes wiki/concepts/*.md + wiki/entities/*.md + distill-manifest.json. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', or 'dedupe claims'. After distill, knowledge-compose reads the concept/entity pages as framing context."
+description: "Phase 4.5 of the v0.1.0 inverted pipeline (between ingest and compose). Reads the run's source pages + their pre_extracted_claims, dispatches concept-distiller to propose recurring type:concept / type:entity pages (and, conservatively, cross-source type:summary / run-level type:learning pages), then runs concept-store.py to create-or-merge those pages under a lock with claim-level dedup — so the bound wiki COMPOUNDS across runs (distilled pages get enriched, not duplicated) and duplicate facts merge at deposit. Fail-soft and optional: a distill failure never blocks compose. Writes wiki/{concepts,entities,summaries,learnings}/*.md + distill-manifest.json. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -33,7 +33,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4.5 — `k
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--no-renarrate` | No | Skip Step 6.5 (summary re-narration). Default is **on** — narrative compounding is the point of Phase 4.5; this opt-out exists for byte-stable re-runs / cost control. |
-| `--dry-run` | No | Print the resolved inputs (bundle source count, existing concept/entity count, bundle hash, resume verdict) without dispatching the distiller. |
+| `--dry-run` | No | Print the resolved inputs (bundle source count, existing distilled-page count, bundle hash, resume verdict) without dispatching the distiller. |
 
 ## Workflow
 
@@ -132,7 +132,8 @@ import re
 wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
 title_re = re.compile(r"^title[ \t]*:[ \t]*(.+?)[ \t]*$")
 out = []
-for ptype, sub in (("concept", "concepts"), ("entity", "entities")):
+# keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/summary/learning)
+for ptype, sub in (("concept", "concepts"), ("entity", "entities"), ("summary", "summaries"), ("learning", "learnings")):
     d = wiki / sub
     if not d.is_dir():
         continue
@@ -156,7 +157,7 @@ If `<project_path>/.metadata/distill-manifest.json` exists AND it records the sa
 
 (The orchestrator stores `SHA` by reading it back from the manifest's `bundle_hash` field — Step 6 threads it in. On the first run the manifest has no `bundle_hash`, so the check fails and the distiller runs.)
 
-If `--dry-run`: print the source count, existing concept/entity count, `SHA`, and the resume verdict, then stop.
+If `--dry-run`: print the source count, existing distilled-page count, `SHA`, and the resume verdict, then stop.
 
 ### 4. Initialize distill-manifest.json
 
@@ -220,7 +221,8 @@ wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
 out = []
 for slug in os.environ["UPDATED_SLUGS"].split():
     page = None
-    for sub in ("concepts", "entities"):
+    # keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/summary/learning)
+    for sub in ("concepts", "entities", "summaries", "learnings"):
         cand = wiki / sub / (slug + ".md")
         if cand.is_file():
             page = cand; break
@@ -287,11 +289,11 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
    ```
    `apply_plan` is idempotent + fail-soft per target. If no genuine relation, skip apply for that slug (never invent a backlink). The concept page already carries bare `[[<source-slug>]]` links in its `## Sources` block (written by `concept-store.py`), so its concept→source edges exist; this step adds the inbound source→concept / concept→concept edges.
 
-2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title). Every flag is on a continued line (trailing `\`); do not put a shell comment on an argument line, or `--max-summary` is dropped and the #324 mid-word clamp is lost:
+2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`, `--category "Summaries"` for `type: summary`, `--category "Learnings"` for `type: learning`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title). Every flag is on a continued line (trailing `\`); do not put a shell comment on an argument line, or `--max-summary` is dropped and the #324 mid-word clamp is lost:
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" --wiki-root <WIKI_ROOT> --slug <slug> \
-       --summary "<the concept's summary from the merge result>" \
-       --category "<Concepts|Entities per the merge result's type>" \
+       --summary "<the page's summary from the merge result>" \
+       --category "<Concepts|Entities|Summaries|Learnings per the merge result's type>" \
        --max-summary 240
    ```
    Capture the envelope. When `success == true` **and** `data.action == "inserted"`, increment `n_new` (init `0` before the loop). `data.action == "updated"` (a row already existed) does NOT count — same lockstep as `knowledge-ingest` Step 4.
@@ -325,7 +327,8 @@ Print ≤ 12 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
-- Concepts created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
+- Distilled pages created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
+  - By type (created): concepts `<c>` / entities `<e>` / summaries `<s>` / learnings `<l>` — count each from the merge result's per-slug `type` (omit a type's tally when it is `0`)
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
 - Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.5 did not run
 - **#340 title→slug tripwire** — if `near_existing_total > 0`, surface a warning block:
@@ -335,7 +338,7 @@ Print ≤ 12 lines:
   - When `near_existing_total == 0` print nothing (no false-alarm noise on clean runs).
 - Wiki entries_count: `+<n_new>` (or `⚠ bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0`)
 - Cost: `$X.XXX` (from the distiller return)
-- Next: `knowledge-compose` reads the concept/entity pages as framing context (not citable evidence).
+- Next: `knowledge-compose` reads the distilled pages (concept/entity/summary/learning) as framing context (not citable evidence).
 
 The dedup ratio is the Finding-H success metric (`differentiation-thesis.md`): of the new facts proposed this run, the fraction that merged into an existing claim instead of adding a duplicate line.
 
@@ -353,21 +356,21 @@ The #340 tripwire is **pure observability** — it never blocks the pipeline, ne
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
-- Re-narrates the `## Summary` body of **updated** pages from the merged claims (Step 6.5, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
-- Does NOT emit `summary` / `learning` page types — Phase-1 ships `concept` + `entity` only.
+- Re-narrates the `## Summary` body of **updated** distilled pages (any of the four types) from the merged claims (Step 6.5, #341, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass (#335 is closed — out of scope).
+- Emits four page types — `concept` / `entity` plus, conservatively, the cross-source `summary` and run-level `learning` (#342, v0.1.24); the distiller defaults to `concept`/`entity` and reaches for the new types only when a cluster fits neither. It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
 - Does NOT run the `lint_wiki.py --fix=all` / `health.py` conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
 - Does NOT block the pipeline — every failure path warns and exits cleanly.
 
 ## Output
 
-- `<WIKI_ROOT>/wiki/concepts/<slug>.md` / `<WIKI_ROOT>/wiki/entities/<slug>.md` — created or enriched, with `distilled_claims:` frontmatter, MACHINE-OWNED body sentinels, and bare `[[<source-slug>]]` backlinks. A human `## Notes` region is preserved byte-for-byte across runs.
-- `<WIKI_ROOT>/wiki/index.md` — each page filed under `## Concepts` / `## Entities`.
+- `<WIKI_ROOT>/wiki/{concepts,entities,summaries,learnings}/<slug>.md` — created or enriched per the proposal's `type:`, with `distilled_claims:` frontmatter, MACHINE-OWNED body sentinels, and bare `[[<source-slug>]]` backlinks. A human `## Notes` region is preserved byte-for-byte across runs.
+- `<WIKI_ROOT>/wiki/index.md` — each page filed under `## Concepts` / `## Entities` / `## Summaries` / `## Learnings`.
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
 - `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.5 runs) `renarrate-bundle.txt` / `renarrate-records.txt`.
-- Updated concept/entity pages get their `## Summary` body re-narrated from the merged claims (Step 6.5, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
+- Updated distilled pages (any of the four types) get their `## Summary` body re-narrated from the merged claims (Step 6.5, #341); all other machine blocks + the `## Notes` tail stay byte-identical.
 
 ## References
 

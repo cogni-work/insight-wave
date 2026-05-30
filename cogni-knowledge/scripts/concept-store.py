@@ -30,7 +30,8 @@ between page-write and manifest-write cannot double-create.
 Subcommands:
   init            Create an empty distill-manifest.json (schema 0.1.1). Idempotent.
   merge           Parse the distiller's --records file, merge each proposal into
-                  its concept/entity page under the lock (slug derived here via
+                  its distilled page (concept/entity/summary/learning) under the
+                  lock (slug derived here via
                   _knowledge_lib.slugify — orchestrator-owns-slug discipline), and
                   rewrite <project>/.metadata/distill-manifest.json reflecting
                   this run. Returns per-slug actions + the dedup totals.
@@ -99,9 +100,16 @@ SIMILARITY_THRESHOLD = 0.85
 # observability; tuning is cheap and reversible.
 NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65
 
-# concept type -> wiki subdirectory. Phase-1 ships concept + entity only
-# (summary / learning deferred). Mirrors cogni-wiki PAGE_TYPE_DIRS for these two.
-_TYPE_DIRS = {"concept": "concepts", "entity": "entities"}
+# concept type -> wiki subdirectory. Mirrors cogni-wiki PAGE_TYPE_DIRS for the
+# four types the distiller emits: concept + entity (#336) and the cross-source
+# `summary` + run-level `learning` types added at #342. Every type-iterating
+# helper below derives from this dict — it is the single source of truth.
+_TYPE_DIRS = {
+    "concept": "concepts",
+    "entity": "entities",
+    "summary": "summaries",
+    "learning": "learnings",
+}
 
 # Machine-owned body regions. Each is regenerated on every run; anything AFTER
 # the last END sentinel (the `## Notes` human region) is spliced back verbatim.
@@ -458,7 +466,8 @@ def _dedup_keep_order(seq) -> list:
 
 
 def _page_exists(wiki_root: Path, slug: str) -> bool:
-    """True if `slug` already addresses a concept OR entity page on disk."""
+    """True if `slug` already addresses a distilled page (concept / entity /
+    summary / learning) on disk — checks every `_TYPE_DIRS` subdir."""
     for sub in _TYPE_DIRS.values():
         if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
             return True
@@ -519,10 +528,11 @@ def _read_page_title(page_path: Path) -> str:
 
 
 def _build_title_index(wiki_root: Path) -> list[tuple]:
-    """Snapshot every existing concept/entity page as (slug, title, type).
-    Called once under the wiki lock so the view is consistent with disk."""
+    """Snapshot every existing distilled page as (slug, title, type) across all
+    `_TYPE_DIRS` (concept/entity/summary/learning). Called once under the wiki
+    lock so the view is consistent with disk."""
     out: list[tuple] = []
-    for ptype, sub in (("concept", "concepts"), ("entity", "entities")):
+    for ptype, sub in _TYPE_DIRS.items():
         d = wiki_root / "wiki" / sub
         if not d.is_dir():
             continue
@@ -575,14 +585,17 @@ def _merge_one(
     incoming_claims = record.get("claims", [])
     near_existing: dict = {}
 
-    # Slug-type collision: the same slug already addresses a page in the OTHER
-    # type dir (e.g. a `concept` slug that a prior — or same-run — `entity`
-    # proposal already created). cogni-wiki slugs are GLOBALLY unique, so refuse
-    # to write a second page at the same slug under a different type. Sequential
-    # writes under the lock mean a same-run sibling is already on disk here.
-    other_type = "entity" if ptype == "concept" else "concept"
-    if (wiki_root / "wiki" / _TYPE_DIRS[other_type] / f"{slug}.md").is_file():
-        return _result(slug, ptype, "skipped", reason="slug_type_collision")
+    # Slug-type collision: the same slug already addresses a page in ANY OTHER
+    # type dir (e.g. a `concept` slug that a prior — or same-run — `entity` /
+    # `summary` / `learning` proposal already created). cogni-wiki slugs are
+    # GLOBALLY unique, so refuse to write a second page at the same slug under a
+    # different type. Sequential writes under the lock mean a same-run sibling is
+    # already on disk here.
+    for other_type, other_sub in _TYPE_DIRS.items():
+        if other_type == ptype:
+            continue
+        if (wiki_root / "wiki" / other_sub / f"{slug}.md").is_file():
+            return _result(slug, ptype, "skipped", reason="slug_type_collision")
 
     if page_path.is_file():
         existing_text = page_path.read_text(encoding="utf-8")
@@ -939,7 +952,7 @@ def cmd_read(args: argparse.Namespace) -> int:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
-        description="Locked create-or-merge engine for distilled concept/entity pages (Phase 4.5).",
+        description="Locked create-or-merge engine for distilled pages — concept/entity/summary/learning (Phase 4.5).",
         allow_abbrev=False,
     )
     sub = parser.add_subparsers(dest="action", required=True)
