@@ -35,6 +35,12 @@ convergence, plus a per-run measurement of the resulting `dcl-` rate:
 - **`skills/knowledge-compose/SKILL.md`** — captures `data.claim_kinds`, surfaces
   `Distilled citations: X of Y` in the run summary, and records `dcl=<n>` on the `wiki/log.md` compose
   line for a cross-run record of the rate.
+- **`scripts/_knowledge_lib.py` + `scripts/pipeline-summary.py`** — the `claim_id`-prefix classifier is
+  a shared `classify_claim_kind` helper (the prefix is the single-mint discriminator already canonical
+  in `concept-store.py` / the claim pipeline), and the read-side `project` summary now derives the same
+  `citation_kinds` breakdown from the persisted `citation-manifest.json`, so `knowledge-resume` /
+  `knowledge-dashboard` expose the distilled-citation rate **across runs** (the issue explicitly
+  motivates measuring the rate across runs), not just in the ephemeral compose summary.
 - **Tests** — `tests/test_citation_store.sh` gains a deterministic case proving the `dcl-` count path
   fires end-to-end through the serializer (distilled=1 / source=2 / null=1); `tests/test_compose_contract.sh`
   asserts the strengthened preference language + the surfaced measurement.

@@ -52,6 +52,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write,
+    classify_claim_kind,
     extract_inline_citation_urls,
     normalize_url,
     parse_citation_records,
@@ -68,20 +69,6 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
 
 def _nfc(s: str) -> str:
     return unicodedata.normalize("NFC", s) if s else s
-
-
-def _claim_kind(claim_id: str | None) -> str:
-    """Classify a citation by its `claim_id` prefix for the #385 breakdown:
-    `dcl-NNN` → `distilled` (cross-source convergence cited directly, #344),
-    `clm-NNN` → `source` (a single source/synthesis page's claim), empty/None →
-    `null` (a synthesis-page citation with no claim), anything else → `other`."""
-    if not claim_id:
-        return "null"
-    if claim_id.startswith("dcl-"):
-        return "distilled"
-    if claim_id.startswith("clm-"):
-        return "source"
-    return "other"
 
 
 def cmd_build(args: argparse.Namespace) -> int:
@@ -297,14 +284,14 @@ def cmd_build(args: argparse.Namespace) -> int:
     # `dcl-` rate every run: a distilled-page citation (`dcl-NNN`) is the
     # cross-source-convergence evidence #344 made citable, and 0 distilled
     # citations on a base with converging distilled pages is the #385 symptom.
-    breakdown: Counter[str] = Counter(_claim_kind(c["claim_id"]) for c in citations)
+    breakdown = Counter(classify_claim_kind(c["claim_id"]) for c in citations)
 
     return _emit(
         True,
         data={
             "path": str(out_path),
             "citations_count": len(citations),
-            "claim_kinds": dict(breakdown),
+            "claim_kinds": breakdown,
         },
     )
 

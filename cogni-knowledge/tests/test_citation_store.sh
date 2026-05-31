@@ -630,11 +630,8 @@ import sys, json
 d = json.load(sys.stdin)
 assert d['success'] is True, d
 assert d['data']['citations_count'] == 4, d
-k = d['data']['claim_kinds']
-assert k.get('distilled') == 1, ('distilled', k)
-assert k.get('source') == 2, ('source', k)
-assert k.get('null') == 1, ('null', k)
-assert 'other' not in k, ('unexpected other', k)
+# Single dict-equality also pins the absence of an 'other' bucket.
+assert d['data']['claim_kinds'] == {'distilled': 1, 'source': 2, 'null': 1}, d
 " 2>/dev/null; then
   green "PASS: build reports claim_kinds breakdown (distilled=1 source=2 null=1) — the #385 dcl- measurement"
 else
