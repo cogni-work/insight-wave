@@ -48,16 +48,19 @@ records = (
     "  pos: 02:03\n"
     "  slug: eu-ai-act-article-6\n"
     "  claim: clm-001\n"
+    "  url: https://x.eu/a\n"
     '  sentence: She said "high-risk" applies here<sup>[1](https://x.eu/a)</sup>.\n'
     "- id: cit-002\n"
     "  pos: 02:05\n"
     "  slug: eu-ai-act-article-6\n"
     "  claim: null\n"
+    "  url: https://x.eu/c\n"
     '  sentence: bei Systemen, die ein „Profiling natürlicher Personen" durchführen<sup>[3](https://x.eu/c)</sup>.\n'
     "- id: cit-003\n"
     "  pos: 03:01\n"
     "  slug: regex-page\n"
     "  claim: clm-009\n"
+    "  url: https://x.eu/b\n"
     '  sentence: The pattern \\d+ matches one or more digits<sup>[2](https://x.eu/b)</sup>.\n'
 )
 draft = (
@@ -100,7 +103,7 @@ if python3 - "$WORK" <<'PY' > /dev/null
 import sys, json, pathlib
 work = pathlib.Path(sys.argv[1])
 m = json.loads((work / "citation-manifest.json").read_text(encoding="utf-8"))
-assert m["schema_version"] == "0.1.0" and m["draft_version"] == 1, m
+assert m["schema_version"] == "0.1.1" and m["draft_version"] == 1, m
 cites = m["citations"]
 assert len(cites) == 3, cites
 expected = json.loads((work / "expected.json").read_text(encoding="utf-8"))
@@ -108,6 +111,9 @@ for c, exp in zip(cites, expected):
     # Byte-equal round-trip of the verbatim sentence through json.dumps/json.loads.
     assert c["draft_sentence"] == exp, (c["draft_sentence"], exp)
     assert "id" in c and "wiki_slug" in c and "claim_id" in c and "draft_position" in c, c
+    # #395: the structured per-citation url field rides through the build verbatim.
+    assert "url" in c, c
+assert [c["url"] for c in cites] == ["https://x.eu/a", "https://x.eu/c", "https://x.eu/b"], cites
 # claim: null → JSON null (synthesis citation).
 assert cites[1]["claim_id"] is None, cites[1]
 assert cites[0]["claim_id"] == "clm-001" and cites[2]["claim_id"] == "clm-009", cites
@@ -181,7 +187,7 @@ fi
 OUT=$(python3 "$SCRIPT" build --records "$WORK/empty-records.txt" --draft "$WORK/draft-v1.md" \
   --out "$WORK/empty-manifest.json" --draft-version 1)
 if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==0, d" 2>/dev/null \
-   && python3 -c "import json; m=json.load(open('$WORK/empty-manifest.json')); assert m['citations']==[] and m['schema_version']=='0.1.0', m" 2>/dev/null; then
+   && python3 -c "import json; m=json.load(open('$WORK/empty-manifest.json')); assert m['citations']==[] and m['schema_version']=='0.1.1', m" 2>/dev/null; then
   green "PASS: empty records → valid empty manifest (success, count 0)"
 else
   red "FAIL: empty records did not yield a valid empty manifest"
@@ -423,6 +429,161 @@ if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['
   green "PASS: no --ingest-manifest → URL gate is opt-in (slug-derived URL builds clean)"
 else
   red "FAIL: omitting --ingest-manifest unexpectedly ran the URL gate"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 11. Per-citation slug→URL binding gate (#395). The #383 set-membership gate
+#     above can't catch a REAL-but-mis-attributed URL: a record citing source A's
+#     claim while linking source B's genuinely-INGESTED URL passes set-membership
+#     (B is in `ingested[]`). The structured per-record `url` field + the ingest
+#     manifest's per-slug `url` close this — `record.url` must equal the cited
+#     slug's ingested `sources:` URL AND appear in its own sentence's marker.
+python3 - "$WORK" <<'PY'
+import sys, pathlib, json
+work = pathlib.Path(sys.argv[1])
+url_a = "https://a.eu/page-a"          # source-a's real ingested sources: URL
+url_b = "https://b.eu/page-b"          # source-b's real ingested sources: URL
+# Mis-attribution: record cites slug source-a but its url + inline marker are B's
+# (real, ingested) URL — exactly the source-A-text-with-source-B-URL case.
+(work / "misattr-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: source-a\n  claim: clm-001\n"
+    "  url: " + url_b + "\n"
+    "  sentence: Fact attributed to source A<sup>[1](" + url_b + ")</sup>.\n",
+    encoding="utf-8")
+(work / "misattr-draft.md").write_text(
+    "# R\n\nFact attributed to source A<sup>[1](" + url_b + ")</sup>.\n\n"
+    "## References\n[[sources/source-a]]\n",
+    encoding="utf-8")
+# Correctly-bound: record cites slug source-a with A's url + inline marker.
+(work / "bound-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: source-a\n  claim: clm-001\n"
+    "  url: " + url_a + "\n"
+    "  sentence: Fact attributed to source A<sup>[1](" + url_a + ")</sup>.\n",
+    encoding="utf-8")
+(work / "bound-draft.md").write_text(
+    "# R\n\nFact attributed to source A<sup>[1](" + url_a + ")</sup>.\n\n"
+    "## References\n[[sources/source-a]]\n",
+    encoding="utf-8")
+# ingest manifest carries BOTH slug+url pairs (both URLs are genuinely ingested).
+(work / "ingest-slug.json").write_text(
+    json.dumps({"schema_version": "0.1.0", "ingested": [
+        {"slug": "source-a", "url": url_a},
+        {"slug": "source-b", "url": url_b},
+    ], "skipped": []}),
+    encoding="utf-8")
+PY
+
+# 11a. Negative: source-A text linking source-B's (real, ingested) URL → the
+#      set-membership gate passes (url_b IS ingested) but the binding gate fires.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/misattr-records.txt" --draft "$WORK/misattr-draft.md" \
+  --out "$WORK/misattr-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest-slug.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_slug_mismatch', d
+ids = [m['id'] for m in d['data']['mismatches']]
+assert ids == ['cit-001'], d
+" 2>/dev/null && [ ! -f "$WORK/misattr-manifest.json" ]; then
+  green "PASS: source-A text with source-B (real, ingested) URL → url_slug_mismatch, no manifest"
+else
+  red "FAIL: binding gate did not catch the real-but-mis-attributed URL"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 11b. Positive: record.url == cited slug's ingested URL == inline marker → success,
+#      and the structured url rides through into the manifest.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/bound-records.txt" --draft "$WORK/bound-draft.md" \
+  --out "$WORK/bound-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest-slug.json")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==1, d" 2>/dev/null \
+   && python3 -c "import json,pathlib; m=json.loads(pathlib.Path('$WORK/bound-manifest.json').read_text()); assert m['citations'][0]['url']=='https://a.eu/page-a', m" 2>/dev/null; then
+  green "PASS: correctly-bound record (url == slug's ingested URL == marker) → success, url in manifest"
+else
+  red "FAIL: correctly-bound record rejected (or url not persisted)"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 11c. Slug not in ingest manifest → slug leg skipped (e.g. a synthesis-page or
+#      prior-run citation has no ingest entry to bind against). Marker matches the
+#      record url, so the prose leg is clean → build succeeds (no false positive).
+python3 - "$WORK" <<'PY'
+import sys, pathlib, json
+work = pathlib.Path(sys.argv[1])
+url_x = "https://x.eu/prior-run"
+(work / "noslug-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: prior-run-slug\n  claim: clm-001\n"
+    "  url: " + url_x + "\n"
+    "  sentence: A fact from a prior-run source<sup>[1](" + url_x + ")</sup>.\n",
+    encoding="utf-8")
+(work / "noslug-draft.md").write_text(
+    "# R\n\nA fact from a prior-run source<sup>[1](" + url_x + ")</sup>.\n\n"
+    "## References\n[[sources/prior-run-slug]]\n", encoding="utf-8")
+# ingest manifest knows url_x as a source (so set-membership passes) but under a
+# DIFFERENT slug — the cited slug `prior-run-slug` itself is absent, so the slug
+# leg is skipped.
+(work / "ingest-noslug.json").write_text(
+    json.dumps({"schema_version": "0.1.0", "ingested": [
+        {"slug": "some-other-slug", "url": url_x},
+    ], "skipped": []}), encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/noslug-records.txt" --draft "$WORK/noslug-draft.md" \
+  --out "$WORK/noslug-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest-noslug.json")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==1, d" 2>/dev/null; then
+  green "PASS: cited slug absent from ingest manifest → slug leg skipped, build succeeds"
+else
+  red "FAIL: binding gate false-positived on a slug with no ingest entry"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 11d. Legacy records (no url: line) + an ingest manifest carrying slugs → the
+#      binding gate is per-record skipped (record.url empty); only the #383
+#      set-membership gate applies. Proves the new field is additive.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/url-records-ok.txt" --draft "$WORK/url-draft-ok.md" \
+  --out "$WORK/legacy-bind.json" --draft-version 1 --ingest-manifest "$WORK/ingest.json")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==1, d" 2>/dev/null; then
+  green "PASS: legacy records without url: → binding gate skipped per-record (additive field)"
+else
+  red "FAIL: legacy url-less records broke under the binding gate"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 11e. Prose leg in ISOLATION: record.url == the cited slug's ingested URL (slug
+#      leg clean), but the sentence's only marker is a DIFFERENT (real, ingested)
+#      URL, so record.url is absent from its own markers → prose_bad alone fires.
+#      Locks the membership semantics: the set-membership gate passes (both URLs
+#      ingested) and the slug leg passes, yet the binding gate still rejects.
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+url_a = "https://a.eu/page-a"   # source-a's ingested URL == record.url (slug leg clean)
+url_b = "https://b.eu/page-b"   # source-b's ingested URL — the only marker in the sentence
+(work / "prose-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: source-a\n  claim: clm-001\n"
+    "  url: " + url_a + "\n"
+    "  sentence: Fact attributed to source A<sup>[1](" + url_b + ")</sup>.\n",
+    encoding="utf-8")
+(work / "prose-draft.md").write_text(
+    "# R\n\nFact attributed to source A<sup>[1](" + url_b + ")</sup>.\n\n"
+    "## References\n[[sources/source-a]]\n", encoding="utf-8")
+PY
+# Reuses ingest-slug.json from 11 (carries both source-a→url_a and source-b→url_b).
+OUT=$(python3 "$SCRIPT" build --records "$WORK/prose-records.txt" --draft "$WORK/prose-draft.md" \
+  --out "$WORK/prose-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest-slug.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_slug_mismatch', d
+assert [m['id'] for m in d['data']['mismatches']] == ['cit-001'], d
+" 2>/dev/null && [ ! -f "$WORK/prose-manifest.json" ]; then
+  green "PASS: record.url absent from its own marker (slug leg clean) → prose leg fires alone"
+else
+  red "FAIL: prose-leg-only mismatch not caught (membership semantics regressed)"
   red "  got: $OUT"
   errors=$((errors + 1))
 fi

@@ -48,7 +48,7 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
 
 ### Phase 0: Load context
 
-1. `Read` the citation manifest at `CITATIONS_PATH` (default `<PROJECT_PATH>/.metadata/citation-manifest.json`; in fan-out mode a shard file). Confirm `schema_version == "0.1.0"` and `draft_version == DRAFT_VERSION`. On mismatch, return the `manifest_mismatch` envelope (Phase 2) — do not attempt scoring against a stale manifest. Each `citations[]` entry carries `{id, draft_position, draft_sentence, wiki_slug, claim_id}`.
+1. `Read` the citation manifest at `CITATIONS_PATH` (default `<PROJECT_PATH>/.metadata/citation-manifest.json`; in fan-out mode a shard file). Confirm `schema_version ∈ {"0.1.0", "0.1.1"}` and `draft_version == DRAFT_VERSION`. On mismatch, return the `manifest_mismatch` envelope (Phase 2) — do not attempt scoring against a stale manifest. Each `citations[]` entry carries `{id, draft_position, draft_sentence, wiki_slug, claim_id, url}` (the `url` field is additive at schema 0.1.1 — the cited page's `sources:` URL; you do not score against it, the build-time slug→URL binding gate owns it).
 2. `Read` `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md`. You need it for **one purpose only**: a staleness check — confirming each entry's `draft_sentence` still appears in the draft (a plain substring presence test against the text you just read). **Do not** build a `section:sentence` tokenization and **do not** re-derive any `draft_position` — the off-by-one that produced spurious `unsupported` verdicts came from exactly that re-tokenization. The alignment surface is the manifest's `draft_sentence`, scored directly in Phase 1.
 3. Build the set of distinct `wiki_slug` values referenced in the manifest. For each slug, locate the page **and record which directory it resolved under** in a `page_kind_by_slug` map (try these directories in order; first hit wins):
    - `<WIKI_ROOT>/wiki/sources/<slug>.md` → `page_kind_by_slug[slug] = "source"`.
@@ -150,7 +150,7 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 
 ## Failure-mode invariants
 
-- A `citation-manifest.json` with `schema_version != "0.1.0"` or `draft_version != DRAFT_VERSION` returns `manifest_mismatch` and stops — never score against a stale manifest.
+- A `citation-manifest.json` with `schema_version ∉ {"0.1.0", "0.1.1"}` or `draft_version != DRAFT_VERSION` returns `manifest_mismatch` and stops — never score against a stale manifest.
 - A missing wiki page (slug in none of the source / synthesis / distilled directories) produces `unsupported` + `reason: "page_not_found"` for every citation that points at it. The slug also appears in `missing_pages[]` so the orchestrator can surface it.
 - A page with an empty claim block (`pre_extracted_claims:` on a source, `distilled_claims:` on a distilled page) AND `claim_id != null` produces `unsupported` + `reason: "claim_not_found"` for citations targeting it. (This is the upstream-data symptom the composer warned about in its `⚠ Zero citations` line.)
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch) is a phantom write. Retry once; on second failure return `write_failed`.

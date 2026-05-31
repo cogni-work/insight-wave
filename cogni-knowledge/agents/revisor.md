@@ -126,15 +126,17 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
      pos: 02:03
      slug: eu-ai-act-article-6
      claim: clm-001
+     url: https://artificialintelligenceact.eu/article/6/
      sentence: Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.
    - id: cit-002
      pos: 02:05
      slug: eu-ai-act-article-6
      claim: clm-002
+     url: https://artificialintelligenceact.eu/article/6/
      sentence: Stand-alone systems listed in Annex III are also in scope<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.
    ```
 
-   The keys map to the manifest fields: `id` → `id`, `pos` → `draft_position`, `slug` → `wiki_slug`, `claim` → `claim_id` (literal `null` for a synthesis citation), `sentence` → `draft_sentence`.
+   The keys map to the manifest fields: `id` → `id`, `pos` → `draft_position`, `slug` → `wiki_slug`, `claim` → `claim_id` (literal `null` for a synthesis citation), `url` → `url`, `sentence` → `draft_sentence`. Carry each retained citation's `url` forward unchanged from the manifest you read in Phase 1 — it is the cited page's `sources:` value, the **same byte-for-byte literal** inside that sentence's `<sup>[N](url)</sup>` marker (empty for a synthesis/distilled citation). The orchestrator's `citation-store.py build` re-asserts the per-citation slug→URL binding after this revise round, so a rephrase that accidentally swapped a real-but-wrong URL onto the sentence is rejected (`failed_check: url_slug_mismatch`).
 
    **`sentence` is raw text, NOT JSON.** Copy each sentence verbatim from the draft you just `Edit`ed (including its `<sup>[N](url)</sup>` marker(s)) onto a **single line** after `sentence: ` — do **NOT** quote it, escape `"`/`\`, or assemble any JSON. A rephrased German `„…"` sentence is safe here precisely because you are not building JSON: the orchestrator runs `citation-store.py build`, which `json.dumps` your records into `<PROJECT_PATH>/.metadata/citation-manifest.json` (escaping owned by the serializer) and asserts every `sentence` is a verbatim substring of the new draft. **Hand-typing the manifest here was a bug** — an unescaped `"` in a rephrased `draft_sentence` broke `json.loads` and killed the next verify round.
 

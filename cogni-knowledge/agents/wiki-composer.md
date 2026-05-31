@@ -112,9 +112,11 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
        "draft_position": "<section-index>:<sentence-index>",
        "draft_sentence": "<the exact sentence carrying this citation, copied verbatim from the draft — including the inline [N] marker(s)>",
        "wiki_slug": "<slug>",
-       "claim_id": "<id from pre_extracted_claims[]>"}
+       "claim_id": "<id from pre_extracted_claims[]>",
+       "url": "<the cited page's sources: URL, copied byte-for-byte — empty for a synthesis/distilled citation>"}
       ```
       - `id` is a stable per-citation identifier — assign them in the order you emit citations: `cit-001`, `cit-002`, …. It is the join key the verifier, the orchestrator's prune step, and the revisor all reference; never reuse or renumber it within a draft. (`id` is distinct from the visible `[N]`: `id` is per-citation and never reused; `[N]` is per-source and reused on every re-cite.)
+      - `url` is the cited page's `sources:` URL — **the same byte-for-byte literal you put inside this sentence's `<sup>[N](url)</sup>` marker**, never slug-derived (step 3). It is the structured per-citation slug→URL binding: the orchestrator's `citation-store.py build` asserts `url` agrees with both your inline marker and the cited slug's ingested `sources:` URL, so a real-but-mis-attributed URL (source A's claim linking source B's URL) is rejected (`failed_check: url_slug_mismatch`). A synthesis/distilled citation has no external URL — leave `url` empty (the `<sup>[N]</sup>` marker carries no link either).
       - `draft_sentence` is the **load-bearing alignment surface**: copy the sentence that carries this citation **verbatim** from the prose you just wrote — the full sentence, **including the inline `[N]` marker(s) exactly as written** (e.g. `<sup>[2](https://…)</sup>`). The verifier scores this string directly against the cited claim and never re-tokenizes the draft to find it, so the stored string must match the draft byte-for-byte. Two adjacent citations on the same sentence share the same `draft_sentence` but get distinct `id`s and `claim_id`s.
       - `draft_position` is `"<two-digit section index>:<one-based sentence index within the section>"`, e.g. `"02:07"` — emit it **best-effort** as a human-facing locator. It is no longer load-bearing for any verdict (the off-by-one in abbreviation-heavy prose is why `draft_sentence` exists); do not agonize over the exact count.
       - `claim_id` is the id of the claim your sentence paraphrases — a `pre_extracted_claims[].id` (`clm-NNN`) when `wiki_slug` is a source page, or a `distilled_claims[].claim_id` (`dcl-NNN`) when `wiki_slug` is a distilled page (concept/entity/summary/learning). If you cannot identify a matching claim id on the cited page (no claim aligns), **skip the citation** rather than fabricate one — the verifier would flag a citation-without-claim as `unsupported` anyway, and the cleaner signal is "the writer didn't cite a paraphrase that wasn't in the claim set". Synthesis pages may have no `pre_extracted_claims:`; cite them but record `claim_id: null` (still assign an `id` + `draft_sentence`). A distilled-page citation MUST carry its `dcl-NNN` (distilled pages always have claim ids) — never `null`.
@@ -152,15 +154,17 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
      pos: 02:03
      slug: eu-ai-act-article-6
      claim: clm-001
+     url: https://artificialintelligenceact.eu/article/6/
      sentence: Article 6 classifies a system as high-risk when it is a safety component of a product covered by Annex I<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.
    - id: cit-002
      pos: 02:05
      slug: eu-ai-act-article-6
      claim: null
+     url: https://artificialintelligenceact.eu/article/6/
      sentence: The same article also captures stand-alone systems listed in Annex III<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.
    ```
 
-   The five keys map one-to-one to the citation entry you built in Phase 2 step 1.4: `id` → `id`, `pos` → `draft_position`, `slug` → `wiki_slug`, `claim` → `claim_id` (write the literal `null` for a synthesis citation with no claim), `sentence` → `draft_sentence`. The `(url)` inside each `sentence:` marker is the cited page's real `sources:` URL (Phase 2 step 3) — never the slug-derived guess. The orchestrator's `citation-store.py build` cross-checks every inline URL against `ingest-manifest.json`'s ingested-source URLs and **rejects the whole manifest** (`failed_check: url_not_in_sources`) if any URL is not a real ingested source, so a slug-derived URL fails the build outright.
+   The six keys map one-to-one to the citation entry you built in Phase 2 step 1.4: `id` → `id`, `pos` → `draft_position`, `slug` → `wiki_slug`, `claim` → `claim_id` (write the literal `null` for a synthesis citation with no claim), `url` → `url`, `sentence` → `draft_sentence`. Write the `url:` line as the cited page's real `sources:` URL — the **same byte-for-byte literal** that appears inside that sentence's `<sup>[N](url)</sup>` marker (Phase 2 step 3), never the slug-derived guess; leave it empty for a synthesis/distilled citation (no external URL). The orchestrator's `citation-store.py build` cross-checks every inline URL against `ingest-manifest.json`'s ingested-source URLs (`failed_check: url_not_in_sources` for a fabricated/slug-derived URL) **and** asserts each record's `url` binds to its own marker and its cited slug's ingested `sources:` URL (`failed_check: url_slug_mismatch` for a real-but-mis-attributed URL) — either failure **rejects the whole manifest**.
 
    **Critical — `sentence` is raw text, NOT JSON.** Copy the cited sentence verbatim (including its inline `<sup>[N](url)</sup>` marker(s)) onto a **single line** after `sentence: `. Do **NOT** wrap it in quotes, do **NOT** escape `"`, `\`, or any other character, and do **NOT** assemble JSON yourself. The `Write` tool persists your text byte-for-byte, so a straight `"` closing a German `„…"` pair (or any quoted English term) is safe here precisely because you are not building JSON. The orchestrator (`knowledge-compose`) then runs `citation-store.py build`, which `json.dumps` your records into `<PROJECT_PATH>/.metadata/citation-manifest.json` — escaping is the serializer's job, never yours. That script self-checks by re-parsing the manifest it wrote and asserting every `sentence` is a verbatim substring of the draft, so a hand-built-JSON regression can no longer ship a broken `citation-manifest.json` (a straight `"` in a `draft_sentence` used to break `json.loads` downstream and kill the verify phase).
 
@@ -170,10 +174,10 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
 
    ```json
    {
-     "schema_version": "0.1.0",
+     "schema_version": "0.1.1",
      "draft_version": 1,
      "citations": [
-       {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk…<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001"}
+       {"id": "cit-001", "draft_position": "02:03", "draft_sentence": "Article 6 classifies a system as high-risk…<sup>[1](https://artificialintelligenceact.eu/article/6/)</sup>.", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "url": "https://artificialintelligenceact.eu/article/6/"}
      ]
    }
    ```

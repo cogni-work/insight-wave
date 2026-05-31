@@ -19,13 +19,17 @@ those records and `json.dump` the manifest, then self-checks it.
 
   build   Parse --records via `_knowledge_lib.parse_citation_records`, assert
           every draft_sentence is an NFC substring of --draft (the verbatim
-          alignment surface the verifier scores against), optionally assert every
-          inline citation URL is a known ingested-source URL (when
-          --ingest-manifest is given — the #383 slug-derived-URL gate), `json.dump`
-          the manifest to --out (`ensure_ascii=False`), and round-trip it (re-read
-          + `json.loads` + count assert — the read-back the composer's old Step 3
-          never actually parsed). Any failure → `success:false` so the
-          orchestrator stops rather than shipping a broken manifest.
+          alignment surface the verifier scores against), optionally (when
+          --ingest-manifest is given) assert every inline citation URL is a known
+          ingested-source URL (the #383 slug-derived-URL gate) AND assert the
+          per-citation slug→URL binding (#395) — each record's structured `url`
+          field must agree with both its own inline marker and the cited slug's
+          ingested `sources:` URL, catching a real-but-mis-attributed URL the
+          set-membership gate can't. Then `json.dump` the manifest to --out
+          (`ensure_ascii=False`) and round-trip it (re-read + `json.loads` + count
+          assert — the read-back the composer's old Step 3 never actually parsed).
+          Any failure → `success:false` so the orchestrator stops rather than
+          shipping a broken manifest.
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -53,7 +57,7 @@ from _knowledge_lib import (  # noqa: E402
     parse_citation_records,
 )
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.1.1"
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -117,6 +121,7 @@ def cmd_build(args: argparse.Namespace) -> int:
             "draft_sentence": r.get("draft_sentence", ""),
             "wiki_slug": r.get("wiki_slug", ""),
             "claim_id": r.get("claim_id"),
+            "url": r.get("url", ""),
         }
         for r in records
     ]
@@ -144,26 +149,39 @@ def cmd_build(args: argparse.Namespace) -> int:
     # hard-fail mode on edge manifests). normalize_url is applied symmetrically to
     # both sides, so trailing-slash / host-case differences never false-positive.
     if args.ingest_manifest:
-        known = set()
+        # Parse the ingest manifest once into the two indices the URL gates need:
+        # `known` (every ingested URL, for the #383 set-membership gate) and
+        # `slug_url` (slug → its ingested `sources:` URL, the third leg of the #395
+        # binding gate). One pass builds both. Both stay empty on degenerate input
+        # (missing / unreadable / malformed manifest, or one yielding no usable
+        # entries), and the except resets them so a TypeError part-way through the
+        # loop can't leave a half-built index — the gates below then fail-soft / skip.
+        known: set[str] = set()
+        slug_url: dict[str, str] = {}
         try:
             manifest = json.loads(Path(args.ingest_manifest).read_text(encoding="utf-8"))
             if isinstance(manifest, dict):
-                known = {
-                    normalize_url(e["url"])
-                    for e in manifest.get("ingested", [])
-                    if isinstance(e, dict) and e.get("url")
-                }
+                for e in manifest.get("ingested", []):
+                    if isinstance(e, dict) and e.get("url"):
+                        nu = normalize_url(e["url"])
+                        known.add(nu)
+                        if e.get("slug"):
+                            slug_url[e["slug"]] = nu
         except (OSError, json.JSONDecodeError, TypeError):
             known = set()
+            slug_url = {}
+
+        # Extract each record's inline citation URLs once — both gates below consume
+        # them, so the regex parse of `draft_sentence` runs a single time per record.
+        record_inlines = [
+            extract_inline_citation_urls(r.get("draft_sentence") or "") for r in records
+        ]
+
         if known:
             # Dedup the raw inline URLs first (order-preserving) so each distinct
             # URL is normalized + checked once — a draft re-cites the same source
             # many times. `bad` reports each offending URL once, in first-seen order.
-            inline_urls = dict.fromkeys(
-                url
-                for r in records
-                for url in extract_inline_citation_urls(r.get("draft_sentence") or "")
-            )
+            inline_urls = dict.fromkeys(u for urls in record_inlines for u in urls)
             bad = [u for u in inline_urls if normalize_url(u) not in known]
             if bad:
                 return _emit(
@@ -171,6 +189,56 @@ def cmd_build(args: argparse.Namespace) -> int:
                     data={"failed_check": "url_not_in_sources", "urls": bad},
                     error="write_failed",
                 )
+
+        # Per-citation slug→URL binding gate (#395): the set-membership check above
+        # kills a fabricated / slug-derived URL, but a REAL-but-mis-attributed URL
+        # (cite source A's claim, link source B's genuinely-ingested URL) passes it —
+        # both URLs are in the ingested set. The structured per-record `url` field
+        # (copied by the composer from the cited page's `sources:`) lets us assert
+        # the three-way agreement the issue specifies, per citation:
+        #
+        #   record.url == url_in(record.draft_sentence) == sources:(record.wiki_slug)
+        #
+        # The third leg, `sources:(wiki_slug)`, is resolved from the ingest manifest:
+        # each `ingested[]` entry already carries both `slug` and its `sources:`-derived
+        # `url`, so no page-file I/O is needed. The gate is additive + fail-soft per
+        # record: it only fires when `record.url` is non-empty (legacy records and
+        # synthesis/distilled citations have no external URL and are skipped), and the
+        # slug leg is skipped when the cited slug is not in the ingest manifest (e.g. a
+        # synthesis-page citation, or a slug ingested in a prior run) — nothing to bind
+        # against, so absence is not a mismatch.
+        mismatches = []
+        for r, raw_inlines in zip(records, record_inlines):
+            rec_url = (r.get("url") or "").strip()
+            if not rec_url:
+                continue  # no structured URL on this record → nothing to bind
+            rec_n = normalize_url(rec_url)
+            inline = {normalize_url(u) for u in raw_inlines}
+            page_n = slug_url.get(r.get("wiki_slug", ""))
+            # Prose leg: the record's `url` must appear among its own sentence's
+            # marker(s). Membership (not equality) because one sentence can carry two
+            # adjacent markers for two different slugs — each record's `url` must be one
+            # of them. A record whose sentence carries no external-URL marker (a plain
+            # `<sup>[N]</sup>` synthesis marker) has nothing to bind on the prose side.
+            prose_bad = bool(inline) and rec_n not in inline
+            # Slug leg: the record's `url` must equal the cited page's ingested
+            # `sources:` URL. Skipped when the slug is not in the ingest manifest.
+            slug_bad = page_n is not None and rec_n != page_n
+            if prose_bad or slug_bad:
+                mismatches.append(
+                    {
+                        "id": r.get("id", ""),
+                        "wiki_slug": r.get("wiki_slug", ""),
+                        "url": rec_url,
+                        "expected": page_n,
+                    }
+                )
+        if mismatches:
+            return _emit(
+                False,
+                data={"failed_check": "url_slug_mismatch", "mismatches": mismatches},
+                error="write_failed",
+            )
 
     try:
         atomic_write(

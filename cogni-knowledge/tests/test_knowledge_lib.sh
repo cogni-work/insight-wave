@@ -475,6 +475,36 @@ def assert_parse_concept_records():
     assert kl.parse_concept_records("") == []
 
 
+def assert_parse_citation_records():
+    # #395: the optional `url:` line parses into a structured per-citation field;
+    # a record without it (legacy / synthesis) defaults url to "".
+    text = (
+        "- id: cit-001\n"
+        "  pos: 02:03\n"
+        "  slug: source-a\n"
+        "  claim: clm-001\n"
+        "  url: https://a.eu/page\n"
+        "  sentence: Fact from A<sup>[1](https://a.eu/page)</sup>.\n"
+        "- id: cit-002\n"
+        "  pos: 02:05\n"
+        "  slug: a-synthesis\n"
+        "  claim: null\n"
+        "  sentence: A synthesis draw<sup>[2]</sup>.\n"
+    )
+    recs = kl.parse_citation_records(text)
+    assert len(recs) == 2, recs
+    r0 = recs[0]
+    assert r0["id"] == "cit-001" and r0["wiki_slug"] == "source-a", r0
+    assert r0["claim_id"] == "clm-001" and r0["draft_position"] == "02:03", r0
+    # The url: line is captured; the `://` survives the first-colon partition.
+    assert r0["url"] == "https://a.eu/page", r0["url"]
+    assert r0["draft_sentence"] == "Fact from A<sup>[1](https://a.eu/page)</sup>.", r0["draft_sentence"]
+    # Synthesis record: claim null → None, and the absent url: line defaults to "".
+    assert recs[1]["claim_id"] is None and recs[1]["url"] == "", recs[1]
+    # Empty input → [].
+    assert kl.parse_citation_records("") == []
+
+
 def assert_extract_machine_block():
     page = ("x\n<!-- MACHINE-OWNED:SUMMARY:START -->\n## Summary\n\nHello.\n"
             "<!-- MACHINE-OWNED:SUMMARY:END -->\ntail\n")
@@ -598,6 +628,7 @@ check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("claim_similarity", assert_claim_similarity)
 check("parse_concept_records", assert_parse_concept_records)
+check("parse_citation_records", assert_parse_citation_records)
 check("extract_machine_block", assert_extract_machine_block)
 check("parse_renarrate_records", assert_parse_renarrate_records)
 check("digit_anchor_tokens", assert_digit_anchor_tokens)
@@ -650,6 +681,7 @@ grade tokenization_primitives "tokenization primitives (#336 lift) — fold/toke
 grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"
 grade claim_similarity        "claim_similarity — symmetric weighted-Jaccard, reworded-same≥0.85, distinct<0.85, all-boilerplate→0.0 (#336)"
 grade parse_concept_records   "parse_concept_records — concept/entity records, repeatable claim: lines, colon-in-summary, first-pipe split (#336)"
+grade parse_citation_records  "parse_citation_records — url: line parsed (#395, :// survives first-colon partition), absent url:→'', claim null→None"
 grade extract_machine_block   "extract_machine_block — verbatim inner incl. heading, absent→None, CRLF, concept-store delegate parity (#341)"
 grade parse_renarrate_records "parse_renarrate_records — multi-line dedented prose, empty-prose omitted, last-slug-wins, unterminated-to-EOF, CRLF (#341)"
 grade digit_anchor_tokens     "digit_anchor_tokens — Artikel/Article 99 → {99}, multi-anchor, GENERIC_DENYLIST years excluded, no-digit→∅ (#345)"
