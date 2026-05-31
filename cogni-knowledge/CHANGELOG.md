@@ -1,5 +1,47 @@
 # cogni-knowledge changelog
 
+## 0.1.41 — 2026-05-31 — feat: per-citation slug→URL binding catches a mis-attributed URL (closes #395)
+
+The deeper follow-up to #383 (v0.1.40). #383's `citation-store.py build --ingest-manifest` gate is
+**set-membership**: it asserts every inline citation URL ∈ the ingested-source URL set. That kills a
+**fabricated / slug-derived** URL, but **not** a **real-but-mis-attributed** one — citing source A's
+claim while linking source B's *genuinely ingested* URL passes set-membership (both are in the set).
+The citation record carried the URL only inside `draft_sentence` prose, with no structured
+`[N] → wiki_slug → url` map, so the gate could not verify that *this* citation's URL belongs to
+*this* citation's `wiki_slug`.
+
+This adds a structured per-citation `url` field and a deterministic three-way binding assertion:
+
+- **`scripts/_knowledge_lib.py`** — `parse_citation_records` now parses an optional `url:` line
+  (`_CITATION_RECORD_KEYS` + `_finalize_citation_record`); it defaults to `""` for legacy records
+  and synthesis/distilled citations (no external URL). The `://` survives the existing first-colon
+  partition.
+- **`scripts/citation-store.py`** — emits `url` per citation, bumps the citation-manifest
+  `schema_version` `0.1.0 → 0.1.1` (additive), and — inside the existing `--ingest-manifest` block —
+  asserts `record.url == url_in(record.draft_sentence) == sources:(record.wiki_slug)` per citation.
+  The third leg is resolved from the ingest manifest's per-slug `url` (each `ingested[]` entry already
+  carries both `slug` and `url` — no page-file I/O). A violation → `failed_check: url_slug_mismatch`,
+  no manifest written. Additive + per-record fail-soft: fires only when `record.url` is non-empty, and
+  the slug leg is skipped when the cited slug is not in the ingest manifest (synthesis-page / prior-run
+  citation). The #383 set-membership gate is unchanged and still runs first.
+- **`agents/wiki-composer.md`** + **`agents/revisor.md`** — emit a `url:` line per raw citation
+  record, copied byte-for-byte from the cited page's `sources:` (the same literal already inside the
+  `<sup>[N](url)</sup>` marker); empty for synthesis/distilled citations.
+- **Consumers tolerate the bump.** `verify-store.py` reads citations via `.get()` and now accepts
+  citation-manifest `schema_version ∈ {0.1.0, 0.1.1}` (`ACCEPTED_MANIFEST_SCHEMAS`), with shards
+  mirroring the source manifest's version; its own verify-output schema is unchanged. The
+  `knowledge-compose` / `knowledge-verify` schema asserts and the `wiki-verifier` record-shape doc
+  widen to accept `0.1.1`.
+- **Tests** — `tests/test_citation_store.sh` gains the acceptance fixture (source-A text with
+  source-B's real-ingested URL → `url_slug_mismatch`), a correctly-bound positive, a slug-not-in-ingest
+  skip, and a legacy-records (no `url:`) additive-compat case; the positive build now asserts schema
+  `0.1.1` + the `url` field. `tests/test_knowledge_lib.sh` adds a `parse_citation_records` `url:` case.
+  Full suite green (35/35 suites).
+
+`knowledge-finalize` needs no change — its reference-list URL already reads the cited page's own
+`sources:` via `_knowledge_lib.first_url`. Version bumped `0.1.40 → 0.1.41` (plugin.json +
+marketplace.json).
+
 ## 0.1.40 — 2026-05-31 — fix: cite the page's real `sources:` URL, not a slug-derived one (closes #383)
 
 `wiki-composer` sometimes built each inline citation's URL by **reconstructing it from the page

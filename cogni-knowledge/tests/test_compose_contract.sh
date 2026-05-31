@@ -29,7 +29,7 @@ assert_grep 'plan.json' "$COMPOSE" "knowledge-compose: reads plan.json"
 assert_grep 'ingest-manifest.json' "$COMPOSE" "knowledge-compose: reads ingest-manifest.json"
 assert_grep 'draft-v' "$COMPOSE" "knowledge-compose: writes draft-vN.md"
 assert_grep 'citation-manifest.json' "$COMPOSE" "knowledge-compose: writes citation-manifest.json"
-assert_grep '"schema_version": "0.1.0"' "$COMPOSE" "knowledge-compose: citation-manifest schema 0.1.0"
+assert_grep '"schema_version": "0.1.1"' "$COMPOSE" "knowledge-compose: citation-manifest schema 0.1.1 (#395 url field)"
 # #383: Step 4.5's citation-store.py build cross-checks inline URLs against the ingest manifest.
 assert_grep 'ingest-manifest' "$COMPOSE" "knowledge-compose: Step 4.5 passes --ingest-manifest to the build (#383 URL gate)"
 assert_grep 'url_not_in_sources' "$COMPOSE" "knowledge-compose: documents the url_not_in_sources failed_check (#383)"

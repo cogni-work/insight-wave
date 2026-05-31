@@ -74,6 +74,14 @@ _SOURCE_SUBDIRS = ("sources", "syntheses")
 _DISTILLED_SUBDIRS = ("concepts", "entities", "summaries", "learnings")
 
 SCHEMA_VERSION = "0.1.0"
+# Citation-manifest schema versions this store reads (shard / prefilter / merge).
+# Distinct from SCHEMA_VERSION, which is the schema of the verify-vN.json / shard
+# files this store WRITES (unchanged). #395 added an additive per-citation `url`
+# field and bumped the citation-manifest to 0.1.1; the entries this store needs
+# (`id`, `draft_sentence`, `wiki_slug`, `claim_id`) are untouched, so both
+# versions are read transparently. The shard copy mirrors its source manifest's
+# own schema_version so a 0.1.1 manifest's `url` fields ride through to the verifier.
+ACCEPTED_MANIFEST_SCHEMAS = ("0.1.0", "0.1.1")
 SHARD_DIRNAME = "verify-shards"
 VERDICTS = ("verbatim", "paraphrase", "synthesis", "unsupported")
 # Minimum needle length for the deterministic prefilter to assert `verbatim`. A
@@ -103,8 +111,11 @@ def _load_manifest(path: Path, expected_version: int) -> tuple[dict | None, str]
     if not isinstance(manifest, dict):
         return None, f"manifest top-level must be a JSON object, got {type(manifest).__name__}"
     schema = manifest.get("schema_version")
-    if schema != SCHEMA_VERSION:
-        return None, f"manifest schema_version must be {SCHEMA_VERSION!r}, got {schema!r}"
+    if schema not in ACCEPTED_MANIFEST_SCHEMAS:
+        return None, (
+            f"manifest schema_version must be one of {ACCEPTED_MANIFEST_SCHEMAS!r}, "
+            f"got {schema!r}"
+        )
     draft_v = manifest.get("draft_version")
     if draft_v != expected_version:
         return None, (
@@ -169,7 +180,10 @@ def cmd_shard(args: argparse.Namespace) -> int:
         atomic_write(
             citations_path,
             {
-                "schema_version": SCHEMA_VERSION,
+                # Mirror the source manifest's schema (#395): a shard is a slice of
+                # the same citation-manifest, so it must declare the same version —
+                # not this store's verify-output SCHEMA_VERSION.
+                "schema_version": manifest.get("schema_version", SCHEMA_VERSION),
                 "draft_version": draft_version,
                 "shard_index": index,
                 "citations": chunk,

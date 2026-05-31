@@ -128,7 +128,7 @@ import json, os, sys
 from pathlib import Path
 m = json.loads(Path(os.environ["MANIFEST_PATH"]).read_text(encoding="utf-8"))
 schema = m.get("schema_version")
-assert schema == "0.1.0", "bad schema: " + repr(schema)
+assert schema in ("0.1.0", "0.1.1"), "bad schema: " + repr(schema)
 manifest_v = m.get("draft_version")
 expected_v = int(os.environ["EXPECTED_VERSION"])
 assert manifest_v == expected_v, (

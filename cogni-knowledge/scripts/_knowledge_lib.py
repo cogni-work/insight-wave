@@ -960,6 +960,7 @@ _CITATION_RECORD_KEYS = {
     "wiki_slug": "wiki_slug",
     "claim": "claim_id",
     "claim_id": "claim_id",
+    "url": "url",
     "sentence": "draft_sentence",
     "draft_sentence": "draft_sentence",
 }
@@ -984,21 +985,30 @@ def _absorb_citation_kv(item: dict, kv: str) -> None:
 def _finalize_citation_record(item: dict) -> dict:
     claim = item.get("claim_id")
     claim_id = None if claim in (None, "", "null") else claim
+    # `url` (#395) is the cited page's `sources:` value, copied byte-for-byte by
+    # the composer/revisor. It defaults to "" — synthesis/distilled citations carry
+    # no external URL, and legacy records (pre-#395) omit the `url:` line entirely,
+    # so the structured per-citation slug→URL binding gate in citation-store.py only
+    # fires when this is non-empty.
     return {
         "id": item.get("id", ""),
         "draft_position": item.get("draft_position", ""),
         "draft_sentence": item.get("draft_sentence", ""),
         "wiki_slug": item.get("wiki_slug", ""),
         "claim_id": claim_id,
+        "url": item.get("url", ""),
     }
 
 
 def parse_citation_records(text: str) -> list[dict]:
     """Parse a wiki-composer citation-records file into a list of
-    `{id, draft_position, draft_sentence, wiki_slug, claim_id}` dicts.
+    `{id, draft_position, draft_sentence, wiki_slug, claim_id, url}` dicts.
 
     Each record is a `- id:` bullet followed by `pos:` / `slug:` / `claim:` /
-    `sentence:` lines (indent-tolerant). `sentence` is the LAST field and its
+    `url:` (optional, #395) / `sentence:` lines (indent-tolerant). `url` is the
+    cited page's `sources:` value, copied byte-for-byte; it defaults to "" when
+    the line is absent (legacy records) or empty (synthesis/distilled citations).
+    `sentence` is the LAST field and its
     value is the rest of the line VERBATIM — raw text (quotes, backslashes,
     colons, Unicode) passes through unescaped; `citation-store.py build` then
     `json.dumps` it, so escaping is owned by the serializer, never the agent.
