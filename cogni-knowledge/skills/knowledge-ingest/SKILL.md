@@ -198,15 +198,29 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
 
 2. **Index update (thematic category):**
    Resolve the category: take the source's first-listed sub-question ref `sub_question_refs[0]` (from the candidates map built in Step 0), look it up in the `theme_label` map; use that label. Fall back to `"Sources"` only when the ref is missing or the map has no `theme_label` for it (legacy plans).
+
+   First **sanitize the ingester-authored summary** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009 an LLM emitted where a normal space belongs — `§†30`, `Dezember†2025`) never reaches the reader-facing `wiki/index.md` one-liner. Mirror the Step 1.2 `slugify` pattern — pass the raw value via an env var, never interpolate untrusted text into a Python literal:
+   ```
+   CLEAN_SUMMARY=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+   RAW_SUMMARY="<the source's one-sentence summary>" \
+   python3 -c '
+   import os, sys
+   sys.stdout.reconfigure(encoding="utf-8")
+   sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
+   from _knowledge_lib import sanitize_summary
+   print(sanitize_summary(os.environ["RAW_SUMMARY"]))
+   ')
+   ```
+   Then pass `$CLEAN_SUMMARY` (not the raw value) to `--summary`:
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
        --wiki-root <WIKI_ROOT> \
        --slug <slug> \
-       --summary "<the source's one-sentence summary>" \
+       --summary "$CLEAN_SUMMARY" \
        --category "<theme_label, or Sources fallback>" \
        --max-summary 240
    ```
-   The `--max-summary 240` is a defensive backstop: the helper clamps the one-liner on a word boundary and appends `…` **only** if the authored sentence runs long; a normal one-sentence summary passes through untouched. It guards `wiki/index.md` against a mid-word artifact — the summary itself is authored as one crisp, complete sentence (no character count), not sliced to a length.
+   `sanitize_summary` (the typographic-substitute guard) and `--max-summary 240` (the mid-word clamp) are orthogonal backstops — the first normalizes stray glyphs to regular spaces, the second clamps a run-on on a word boundary. The `--max-summary 240` is a defensive backstop: the helper clamps the one-liner on a word boundary and appends `…` **only** if the authored sentence runs long; a normal one-sentence summary passes through untouched. It guards `wiki/index.md` against a mid-word artifact — the summary itself is authored as one crisp, complete sentence (no character count), not sliced to a length.
    `wiki_index_update.py` creates a `## <theme_label>` heading in `wiki/index.md` on first use and appends to it afterwards, so sources group thematically (per sub-question) instead of under one flat `## Sources`. The first real insert also sheds the wiki-setup `## Categories` / `_No pages yet…_` seed placeholder. Both helpers are lock-wrapped at their own write sites (`_wiki_lock` on `<WIKI_ROOT>/.cogni-wiki/.lock`), so concurrent `wiki-*` invocations from other sessions are safely serialised.
 
    Capture the JSON envelope. When `success == true` **and** `data.action == "inserted"`, increment an in-loop counter `n_new` (initialised to `0` before the loop) — a brand-new index row means a brand-new page. When `data.action == "updated"`, a row for this slug already existed → do **not** count it (this is the re-ingest / pre-existing-page case; counting it would over-count `entries_count`).

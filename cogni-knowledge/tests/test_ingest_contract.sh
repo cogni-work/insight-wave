@@ -78,6 +78,10 @@ assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded 
 # artifact is gone (the summary is authored as one crisp, complete sentence).
 assert_grep 'max-summary' "$INGEST" "knowledge-ingest: Step 4.2 passes --max-summary clamp backstop (#324)"
 assert_not_grep '180' "$INGEST" "knowledge-ingest: no '≤180 chars' authoring contract remains (#324)"
+# #387: Step 4.2 sanitizes the authored summary (typographic-substitute guard:
+# stray U+2020 dagger / NBSP -> regular space) before the index update.
+assert_grep 'sanitize_summary' "$INGEST" "knowledge-ingest: Step 4.2 sanitizes the summary before the index update (#387)"
+assert_grep 'CLEAN_SUMMARY' "$INGEST" "knowledge-ingest: Step 4.2 passes the sanitized \$CLEAN_SUMMARY to --summary (#387)"
 # #323 (one-wave fan-out): Step 3 dispatches each batch as ONE wave (mirroring the
 # knowledge-curate #299 one-wave precedent), and --batch-size is an advisory cap
 # raised 8 -> 25 (the proven #311 live wave). Guard the new cadence wording, the
@@ -123,6 +127,10 @@ assert_not_grep 'tags: \[\]' "$INGESTER" "source-ingester: no empty tags: [] rem
 # #324: the summary field is semantic (one self-contained sentence), no char count.
 assert_grep 'self-contained sentence' "$INGESTER" "source-ingester: summary authored as one self-contained sentence (#324)"
 assert_not_grep '180' "$INGESTER" "source-ingester: no character-count contract remains in the summary field (#324)"
+# #387: the summary field documents the regular-space authoring guard + names the
+# orchestrator-side sanitize_summary normalization (no stray U+2020 dagger / NBSP).
+assert_grep 'regular space' "$INGESTER" "source-ingester: summary contract requires regular spaces (#387)"
+assert_grep 'sanitize_summary' "$INGESTER" "source-ingester: names the orchestrator's sanitize_summary normalization (#387)"
 # Frontmatter tools must not include WebFetch (re-fetch is forbidden in Phase 4).
 INGESTER_TOOLS_LINE=$(grep '^tools:' "$INGESTER" || true)
 if ! echo "$INGESTER_TOOLS_LINE" | grep -q WebFetch; then
@@ -190,6 +198,7 @@ LIB="$PLUGIN_ROOT/scripts/_knowledge_lib.py"
 assert_grep 'def is_pdf_response' "$LIB" "_knowledge_lib: defines is_pdf_response"
 assert_grep 'def atomic_write_text' "$LIB" "_knowledge_lib: defines atomic_write_text"
 assert_grep 'def slugify' "$LIB" "_knowledge_lib: defines slugify (lifted from inline SKILL prose)"
+assert_grep 'def sanitize_summary' "$LIB" "_knowledge_lib: defines sanitize_summary (#387 index-one-liner guard)"
 
 # --- fetch-cache.py VALID_REASONS constant -------------------------------
 FETCH_CACHE="$PLUGIN_ROOT/scripts/fetch-cache.py"
@@ -261,9 +270,33 @@ def test_slugify():
     assert kl.slugify("!@#$%^&*") == ""
 
 
+def test_sanitize_summary():
+    # The exact #387 case: U+2020 DAGGER where a space belongs (\u00a730, Dezember2025).
+    # \u escapes keep the substitute codepoints unambiguous in ASCII source.
+    raw = (
+        "\u2026 die 10 verpflichtenden Mindestma\u00dfnahmen nach "
+        "\u00a7\u202030 BSIG, die seit Dezember\u20202025 ohne "
+        "\u00dcbergangsfrist \u2026"
+    )
+    out = kl.sanitize_summary(raw)
+    # Every targeted substitute codepoint is gone.
+    for cp in ("\u2020", "\u2021", "\u00a0", "\u202f", "\u2009"):
+        assert cp not in out, (hex(ord(cp)), repr(out))
+    assert "\u00a7 30 BSIG" in out, repr(out)   # \u00a7 30, single regular space
+    assert "Dezember 2025" in out, repr(out)
+    # Exotic spaces (NBSP / NNBSP / THIN SPACE) collapse to a single regular space.
+    assert kl.sanitize_summary("Artikel\u00a09\u202fund\u2009Absatz 2") == "Artikel 9 und Absatz 2"
+    # NOT slugify - accents / non-ASCII letters preserved verbatim, no transliteration.
+    assert kl.sanitize_summary("Mindestma\u00dfnahmen f\u00fcr \u00dcbergangsfrist") == "Mindestma\u00dfnahmen f\u00fcr \u00dcbergangsfrist"
+    # Falsy passthrough (callers surface a bad value rather than coalescing to "").
+    assert kl.sanitize_summary("") == ""
+    assert kl.sanitize_summary(None) is None
+
+
 check("is_pdf_response", test_is_pdf_response)
 check("atomic_write_text", test_atomic_write_text)
 check("slugify", test_slugify)
+check("sanitize_summary", test_sanitize_summary)
 PY
 )
 
@@ -284,6 +317,7 @@ grade() {
 grade is_pdf_response   "is_pdf_response — Content-Type and .pdf suffix detection"
 grade atomic_write_text "atomic_write_text round-trips text and leaves no .tmp debris"
 grade slugify           "slugify — lower-kebab, dash-collapse, length cap, empty-on-non-alnum"
+grade sanitize_summary  "sanitize_summary — U+2020 dagger / NBSP -> regular space, accents preserved (#387)"
 
 if [ $errors -eq 0 ]; then
   green ""

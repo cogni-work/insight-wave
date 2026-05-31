@@ -182,7 +182,7 @@ For the skip cases (cache miss / unavailable / empty body / slug collision):
 }
 ```
 
-`summary` is one crisp, self-contained sentence describing what the page is about, derived from the body — a complete thought, never truncated mid-word, no leading/trailing whitespace. The orchestrator passes it to `wiki_index_update.py --summary`, which applies a defensive word-boundary clamp as a backstop.
+`summary` is one crisp, self-contained sentence describing what the page is about, derived from the body — a complete thought, never truncated mid-word, no leading/trailing whitespace. Use **regular spaces** between words — never a typographic dagger (`†` U+2020 / `‡` U+2021) or a non-breaking/exotic space (U+00A0/U+202F/U+2009) where a normal space belongs (these render oddly as `§†30` / `Dezember†2025` in the index one-liner). The orchestrator runs `_knowledge_lib.sanitize_summary` to normalize any such stray glyph before storage and passes the result to `wiki_index_update.py --summary`, which applies a defensive word-boundary clamp as a backstop — but clean authoring keeps the batch envelope itself clean.
 
 Return a compact summary to the calling Task:
 

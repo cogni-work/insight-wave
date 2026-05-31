@@ -358,10 +358,22 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
    ```
    `apply_plan` is idempotent + fail-soft per target. If no genuine relation, skip apply for that slug (never invent a backlink). The concept page already carries bare `[[<source-slug>]]` links in its `## Sources` block (written by `concept-store.py`), so its concept→source edges exist; this step adds the inbound source→concept / concept→concept edges.
 
-2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`, `--category "Summaries"` for `type: summary`, `--category "Learnings"` for `type: learning`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title). Every flag is on a continued line (trailing `\`); do not put a shell comment on an argument line, or `--max-summary` is dropped and the mid-word clamp is lost:
+2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`, `--category "Summaries"` for `type: summary`, `--category "Learnings"` for `type: learning`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title), but first **sanitize it** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009) never reaches the reader-facing `wiki/index.md` one-liner — same guard `knowledge-ingest` Step 4.2 applies, pass the raw value via an env var:
+   ```
+   CLEAN_SUMMARY=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+   RAW_SUMMARY="<the page's summary from the merge result>" \
+   python3 -c '
+   import os, sys
+   sys.stdout.reconfigure(encoding="utf-8")
+   sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
+   from _knowledge_lib import sanitize_summary
+   print(sanitize_summary(os.environ["RAW_SUMMARY"]))
+   ')
+   ```
+   Then pass `$CLEAN_SUMMARY` to `--summary`. Every flag is on a continued line (trailing `\`); do not put a shell comment on an argument line, or `--max-summary` is dropped and the mid-word clamp is lost:
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" --wiki-root <WIKI_ROOT> --slug <slug> \
-       --summary "<the page's summary from the merge result>" \
+       --summary "$CLEAN_SUMMARY" \
        --category "<Concepts|Entities|Summaries|Learnings per the merge result's type>" \
        --max-summary 240
    ```
