@@ -84,6 +84,9 @@ assert x['unavailable'] == 1, x
 assert x['ingested'] == 2, x
 assert x['skipped'] == 1, x
 assert x['citations'] == 2, x
+# #385 cross-run measurement: the read-side derives the per-kind breakdown
+# (distilled=dcl- / source=clm-) from the persisted citation manifest.
+assert x['citation_kinds'] == {'distilled': 1, 'source': 1}, x
 assert x['draft_version'] == 2, x
 assert x['phase_reached'] == 'verify', x
 # Distill (Phase 4.5, #336) read-side counts.
