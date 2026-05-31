@@ -248,7 +248,7 @@ N_DCL=<data.claim_kinds.distilled from Step 4.5, default 0>
 echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES} dcl=${N_DCL}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
-The `dcl=<n>` suffix is the cross-run record of the distilled-citation rate (#385) — the cross-source-convergence loop firing (or not) shows up directly in `wiki/log.md`.
+The `dcl=<n>` suffix is the cross-run record of the distilled-citation rate — the cross-source-convergence loop firing (or not) shows up directly in `wiki/log.md`.
 
 Note on the `compose` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `compose`, but readers count unknown prefixes in their catch-all bucket without crashing — `compose` is additive and safe.
 
@@ -260,7 +260,7 @@ Print ≤ 10 lines:
 - Wiki: `<WIKI_ROOT>`
 - Draft: `output/draft-v<N>.md` (`<N_WORDS>` words across `<N_SECTIONS>` sections)
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
-- Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the #385 inert-loop symptom the operator should notice.
+- Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Cost: `$X.XXX` (from composer return)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, or `distilled_claims[]` on a cited distilled page.
