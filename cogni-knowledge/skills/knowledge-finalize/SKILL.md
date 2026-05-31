@@ -452,8 +452,8 @@ frontmatter = (
     # YAML mapping when unquoted ("mapping values are not allowed here"), breaking
     # Obsidian / yaml.safe_load / yq even though cogni-wiki's lenient first-colon
     # parser tolerates it. json.dumps handles colons, embedded quotes, and unicode
-    # in one shot — the same serializer source-ingester + concept-store already use,
-    # and the #325 lesson on why a straight " must not be hand-wrapped.
+    # in one shot — the same serializer source-ingester + concept-store already
+    # use. A hand-wrapped "..." would re-break on a topic that itself contains a ".
     "title: " + json.dumps(topic, ensure_ascii=False) + "\n"
     "type: synthesis\n"
     "tags: [synthesis]\n"
