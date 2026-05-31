@@ -235,25 +235,32 @@ CITATION_FAMILY = {
 }
 
 
+def _normalize_choice(value: str | None, valid: frozenset, default: str) -> str:
+    """Lowercase + strip a free-text choice and validate it against `valid`;
+    unknown/empty → `default`. The shared rule behind the writer-quality
+    string normalizers below."""
+    v = str(value or "").strip().lower()
+    return v if v in valid else default
+
+
 def normalize_tone(value: str | None) -> str:
     """Lowercase + validate a tone against VALID_TONES; unknown/empty → objective."""
-    v = str(value or "").strip().lower()
-    return v if v in VALID_TONES else "objective"
+    return _normalize_choice(value, VALID_TONES, "objective")
 
 
 def normalize_prose_density(value: str | None) -> str:
     """Lowercase + validate a prose density; unknown/empty → standard."""
-    v = str(value or "").strip().lower()
-    return v if v in VALID_PROSE_DENSITIES else "standard"
+    return _normalize_choice(value, VALID_PROSE_DENSITIES, "standard")
 
 
 def normalize_citation_format(value: str | None) -> str:
     """Lowercase + validate a citation format; `wikilink` aliases to `ieee`;
-    unknown/empty → ieee (the numbered default the pipeline renders end-to-end)."""
-    v = str(value or "").strip().lower()
-    if v == "wikilink":
+    unknown/empty → ieee (the numbered default the pipeline renders end-to-end).
+    The alias is mapped explicitly so it survives any future change to the
+    default or the valid set, even though `wikilink` would also fall through."""
+    if str(value or "").strip().lower() == "wikilink":
         return "ieee"
-    return v if v in VALID_CITATION_FORMATS else "ieee"
+    return _normalize_choice(value, VALID_CITATION_FORMATS, "ieee")
 
 
 def normalize_target_words(value, default: int = 5000) -> int:

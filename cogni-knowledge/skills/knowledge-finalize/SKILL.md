@@ -265,6 +265,7 @@ sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from _knowledge_lib import (
     atomic_write_text, ref_heading, first_url, md_link_dest,
     strip_reference_section, renumber_inline_citations,
+    normalize_citation_format,
 )
 
 wiki_root = Path(os.environ["WIKI_ROOT"])
@@ -300,10 +301,10 @@ heading = ref_heading(output_language)
 # `Publisher, "Title"`; chicago: `Publisher. "Title."`). apa/mla/harvard are the
 # staged author-date follow-up: the composer renders them as numbered, so they
 # fall through to the ieee string here too (no author-date reference rows until
-# the format-aware finalize rework lands). wikilink aliases to ieee.
-citation_format = (plan.get("citation_format") or "ieee").strip().lower()
-if citation_format == "wikilink":
-    citation_format = "ieee"
+# the format-aware finalize rework lands). Validation (lowercase, wikilink→ieee,
+# unknown→ieee) lives once in _knowledge_lib.normalize_citation_format — the
+# single source of truth the composer/plan also resolve through.
+citation_format = normalize_citation_format(plan.get("citation_format"))
 # UTC date so frontmatter created/updated align with Step 10s `date -u +%F` log
 # stamp. Mixed local/UTC across midnight produced cross-artifact date skew.
 today = _dt.datetime.now(_dt.timezone.utc).date().isoformat()
