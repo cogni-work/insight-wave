@@ -552,6 +552,42 @@ else
   errors=$((errors + 1))
 fi
 
+# 11e. Prose leg in ISOLATION: record.url == the cited slug's ingested URL (slug
+#      leg clean), but the sentence's only marker is a DIFFERENT (real, ingested)
+#      URL, so record.url is absent from its own markers → prose_bad alone fires.
+#      Locks the membership semantics: the set-membership gate passes (both URLs
+#      ingested) and the slug leg passes, yet the binding gate still rejects.
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+url_a = "https://a.eu/page-a"   # source-a's ingested URL == record.url (slug leg clean)
+url_b = "https://b.eu/page-b"   # source-b's ingested URL — the only marker in the sentence
+(work / "prose-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: source-a\n  claim: clm-001\n"
+    "  url: " + url_a + "\n"
+    "  sentence: Fact attributed to source A<sup>[1](" + url_b + ")</sup>.\n",
+    encoding="utf-8")
+(work / "prose-draft.md").write_text(
+    "# R\n\nFact attributed to source A<sup>[1](" + url_b + ")</sup>.\n\n"
+    "## References\n[[sources/source-a]]\n", encoding="utf-8")
+PY
+# Reuses ingest-slug.json from 11 (carries both source-a→url_a and source-b→url_b).
+OUT=$(python3 "$SCRIPT" build --records "$WORK/prose-records.txt" --draft "$WORK/prose-draft.md" \
+  --out "$WORK/prose-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest-slug.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_slug_mismatch', d
+assert [m['id'] for m in d['data']['mismatches']] == ['cit-001'], d
+" 2>/dev/null && [ ! -f "$WORK/prose-manifest.json" ]; then
+  green "PASS: record.url absent from its own marker (slug leg clean) → prose leg fires alone"
+else
+  red "FAIL: prose-leg-only mismatch not caught (membership semantics regressed)"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0
