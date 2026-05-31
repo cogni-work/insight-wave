@@ -681,6 +681,35 @@ def tokenize(*parts: str) -> set:
     return out
 
 
+# Typographic substitutes an LLM may emit where a normal space belongs. They
+# render oddly in the reader-facing wiki/index.md one-liner (§†30, Dezember†2025)
+# and dirty the German-text quality bar (#387). Map each back to U+0020.
+#   U+2020 DAGGER, U+2021 DOUBLE DAGGER, U+00A0 NBSP, U+202F NARROW NBSP, U+2009 THIN SPACE
+_SUMMARY_SPACE_SUBSTITUTES = "†‡   "
+_SUMMARY_SUBSTITUTE_RE = re.compile("[" + _SUMMARY_SPACE_SUBSTITUTES + "]")
+
+
+def sanitize_summary(text: str) -> str:
+    """Normalize stray typographic substitutes in an LLM-authored index one-liner
+    back to regular spaces before it reaches wiki/index.md (#387).
+
+    Maps U+2020/U+2021 (daggers, emitted where a space belongs) and the exotic
+    spaces U+00A0/U+202F/U+2009 to U+0020, then collapses the resulting whitespace
+    runs and strips the ends. Cosmetic, deterministic, valid-UTF-8 in/out. This is
+    NOT slugify — accents and non-ASCII letters are preserved verbatim; only the
+    substitute glyphs change.
+
+    The daggers are not whitespace, so the explicit regex sub is load-bearing; the
+    exotic spaces are belt-and-suspenders (str.split() already treats them as
+    separators). Empty/falsy input returns unchanged so callers surface a bad value
+    rather than coalescing it to "".
+    """
+    if not text:
+        return text
+    swapped = _SUMMARY_SUBSTITUTE_RE.sub(" ", text)
+    return " ".join(swapped.split())
+
+
 def token_weight(token: str) -> float:
     """Deterministic discriminativeness weight in [0, 3.0].
 

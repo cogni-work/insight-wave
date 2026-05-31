@@ -36,6 +36,7 @@ assert_grep 'backlink_audit.py' "$SKILL" "knowledge-distill: forms edges via bac
 assert_grep 'apply-plan' "$SKILL" "knowledge-distill: curated backlink apply-plan (LLM-curated targets)"
 assert_grep 'wiki_index_update.py' "$SKILL" "knowledge-distill: files pages under Concepts/Entities"
 assert_grep 'max-summary 240' "$SKILL" "knowledge-distill: --max-summary 240 backstop (#324 posture)"
+assert_grep 'sanitize_summary' "$SKILL" "knowledge-distill: sanitizes the summary before the index update (#387)"
 assert_grep 'config_bump.py' "$SKILL" "knowledge-distill: entries_count lockstep bump"
 assert_grep 'action == "inserted"' "$SKILL" "knowledge-distill: counts only inserted rows (n_new lockstep, #302 posture)"
 assert_grep 'distill | project=' "$SKILL" "knowledge-distill: appends a distill log line"

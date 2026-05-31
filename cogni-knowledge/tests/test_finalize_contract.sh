@@ -55,6 +55,9 @@ assert_grep '("entity", "entities")' "$FIN" "knowledge-finalize: resolves cited 
 # artifact is gone (the summary is authored as one crisp, complete sentence).
 assert_grep 'max-summary' "$FIN" "knowledge-finalize: Step 7 passes --max-summary clamp backstop (#324)"
 assert_not_grep '180' "$FIN" "knowledge-finalize: no 'truncated to 180 chars' instruction remains (#324)"
+# #387: Step 7 sanitizes the authored summary (stray U+2020 dagger / NBSP -> space)
+# before the index update, same guard knowledge-ingest Step 4.2 applies.
+assert_grep 'sanitize_summary' "$FIN" "knowledge-finalize: Step 7 sanitizes the summary before the index update (#387)"
 assert_grep 'append-project' "$FIN" "knowledge-finalize: appends to binding via knowledge-binding.py append-project"
 assert_grep 'report-source wiki' "$FIN" "knowledge-finalize: hard-codes --report-source wiki on binding append"
 assert_grep 'wiki/log.md' "$FIN" "knowledge-finalize: appends to wiki/log.md"
