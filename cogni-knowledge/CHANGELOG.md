@@ -1,5 +1,26 @@
 # cogni-knowledge changelog
 
+## 0.1.37 — 2026-05-31 — docs: commit to the single-installable-plugin FMO (absorb cogni-wiki too)
+
+Roadmap/strategy docs only — **zero runtime/skill/agent/script change**. Records the maintainer
+decision to converge the ecosystem on **one installable plugin**: cogni-knowledge absorbs and retires
+**both** cogni-research (Phase 6, v1.0) **and** cogni-wiki (new Phases 7–9, v2.0). Driver is
+commercial/packaging (ship one plugin, not a stack), which is why the engine↔orchestrator layering is
+collapsed rather than repositioned. Surfaced by the 2026-05-31 NIS2 Phase-6 readiness bake-in.
+
+- **`references/absorption-roadmap.md`** — intro reframed to the FMO; the *"out of scope for the entire
+  epic — keep separate"* cogni-wiki line **reversed** into **Phase 7** (vendor the wiki engine, no UX
+  change) → **Phase 8** (re-home the standalone Karpathy surface, superset-preserving; migrate the
+  `cogni-wiki:` callers `cogni-trends` + `cogni-workspace`) → **Phase 9** (archive cogni-wiki at v2.0,
+  Established), gated on a new **cogni-wiki parity gate** mirroring #309. Open questions updated.
+- **`references/delegation-contract.md`** — the "always delegate to cogni-wiki, forking is a design
+  error" hard rule gains a **terminal-arc reversal**: holds through v1.0, then inverts from Phase 7
+  (vendor, don't delegate); "until Phase 7 lands, this is intent, not licence."
+- **`CLAUDE.md`** — Future phases extended with Phases 7–9 + the FMO.
+
+Tracked by **epic #388** (`Depends on #264`). Research-side bake-in follow-ups from the same run:
+#382–#387, #389.
+
 ## 0.1.36 — 2026-05-30 — #309 P2: writer-quality & usability knobs
 
 Closes the **last open increment** of the #309 Phase-6-readiness gate (P1.3 read-before-web
