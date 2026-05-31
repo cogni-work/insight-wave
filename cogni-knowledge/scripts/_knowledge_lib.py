@@ -297,6 +297,33 @@ def strip_inline_citation_markers(text: str) -> str:
     return _SUP_MARKER_RE.sub("", text)
 
 
+# The http(s) link target inside a numbered inline marker `<sup>[N](url)</sup>`.
+# Two shapes are emitted by the composer: a plain `(url)` and the angle-bracketed
+# `(<url>)` that `md_link_dest` produces when the URL itself contains `(`/`)`/
+# space. The alternation captures the bracketed form FIRST (so a URL legitimately
+# containing `)` — the exact reason `md_link_dest` brackets it — is not truncated
+# at that inner `)`); the unbracketed branch stops at the first `)`. A bare
+# `<sup>[N]</sup>` marker (synthesis / distilled page, no external URL) has no
+# `(...)` and matches neither branch → it contributes no URL.
+_INLINE_CITATION_URL_RE = re.compile(
+    r"<sup>\[\d+\]\((?:<(https?://[^>]+)>|(https?://[^)]+?))\)</sup>"
+)
+
+
+def extract_inline_citation_urls(text: str) -> list[str]:
+    """Every http(s) URL inside a `<sup>[N](url)</sup>` inline citation marker in
+    `text`, in appearance order (raw — the caller normalizes for comparison).
+
+    Handles both the plain `(url)` and the angle-bracketed `(<url>)` forms; a bare
+    `<sup>[N]</sup>` marker (no external URL) contributes nothing. Used by
+    `citation-store.py build`'s `--ingest-manifest` gate (#383) to assert every
+    inline URL is a known ingested-source URL, catching a slug-derived URL the
+    composer reconstructed instead of copying the cited page's `sources:` value."""
+    if not text:
+        return []
+    return [a or b for a, b in _INLINE_CITATION_URL_RE.findall(text)]
+
+
 def first_url(fm_value: str) -> str:
     """First http(s) URL in a frontmatter `sources:` value, else "".
 

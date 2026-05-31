@@ -329,6 +329,104 @@ else
   errors=$((errors + 1))
 fi
 
+# 10. --ingest-manifest URL gate (#383). The composer must copy each cited page's
+#     real `sources:` URL; a slug-derived URL diverges from the real path tail and
+#     ships a broken link. The gate cross-checks every inline `<sup>[N](url)</sup>`
+#     URL against `ingest-manifest.json::ingested[].url`. Fixtures use a real
+#     slug≠URL-tail case (the #383 NIS2 Artikel 3 / Mindestmaßnahmen divergence).
+python3 - "$WORK" <<'PY'
+import sys, pathlib, json
+work = pathlib.Path(sys.argv[1])
+good = "https://nis.de/artikel-3-wesentliche-und-wichtige-einrichtungen/"        # trailing slash
+goodbase = "https://nis.de/artikel-3-wesentliche-und-wichtige-einrichtungen"      # ingested w/o slash
+bad = "https://nis.de/nis-2-mindestmassnahmen-nach-30-bsig"                       # slug-derived (wrong)
+real2 = "https://nis.de/nis-2-mindestmassnahmen-paragraph-30-bsig/"               # real ingested URL
+# url-records: cit-001 good (trailing-slash variant of an ingested URL), cit-002 slug-derived/wrong.
+(work / "url-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: artikel-3\n  claim: clm-001\n"
+    "  sentence: Artikel 3 definiert die Einrichtungen<sup>[1](" + good + ")</sup>.\n"
+    "- id: cit-002\n  pos: 1:2\n  slug: mindestmassnahmen\n  claim: clm-002\n"
+    "  sentence: Die Mindestmassnahmen folgen<sup>[2](" + bad + ")</sup>.\n",
+    encoding="utf-8")
+(work / "url-draft.md").write_text(
+    "# R\n\nArtikel 3 definiert die Einrichtungen<sup>[1](" + good + ")</sup>.\n"
+    "Die Mindestmassnahmen folgen<sup>[2](" + bad + ")</sup>.\n\n## References\n[[sources/artikel-3]]\n",
+    encoding="utf-8")
+# good-only records (both inline URLs ARE ingested — the positive path).
+(work / "url-records-ok.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: artikel-3\n  claim: clm-001\n"
+    "  sentence: Artikel 3 definiert die Einrichtungen<sup>[1](" + good + ")</sup>.\n",
+    encoding="utf-8")
+(work / "url-draft-ok.md").write_text(
+    "# R\n\nArtikel 3 definiert die Einrichtungen<sup>[1](" + good + ")</sup>.\n\n## References\n[[sources/artikel-3]]\n",
+    encoding="utf-8")
+# ingest manifest: the two REAL source URLs.
+(work / "ingest.json").write_text(
+    json.dumps({"schema_version": "0.1.0", "ingested": [{"url": goodbase}, {"url": real2}], "skipped": []}),
+    encoding="utf-8")
+# empty ingested[] → gate skips (fail-soft on degenerate input).
+(work / "ingest-empty.json").write_text(
+    json.dumps({"schema_version": "0.1.0", "ingested": [], "skipped": []}), encoding="utf-8")
+PY
+
+# 10a. Negative: a slug-derived inline URL not in ingested[] → url_not_in_sources,
+#      no manifest. The good cit-001 (trailing-slash variant) must NOT be flagged
+#      (normalize_url is applied symmetrically — proves no false positive).
+OUT=$(python3 "$SCRIPT" build --records "$WORK/url-records.txt" --draft "$WORK/url-draft.md" \
+  --out "$WORK/url-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_not_in_sources', d
+assert d['data']['urls'] == ['https://nis.de/nis-2-mindestmassnahmen-nach-30-bsig'], d
+" 2>/dev/null && [ ! -f "$WORK/url-manifest.json" ]; then
+  green "PASS: slug-derived inline URL → url_not_in_sources, no manifest (good URL not false-flagged)"
+else
+  red "FAIL: --ingest-manifest gate did not flag the slug-derived URL (or false-flagged the good one)"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 10b. Positive: every inline URL is a known ingested source (trailing-slash
+#      variant matches via normalize_url symmetry) → success.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/url-records-ok.txt" --draft "$WORK/url-draft-ok.md" \
+  --out "$WORK/url-manifest-ok.json" --draft-version 1 --ingest-manifest "$WORK/ingest.json")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==1, d" 2>/dev/null; then
+  green "PASS: all inline URLs in ingested set (trailing-slash normalized) → success"
+else
+  red "FAIL: positive --ingest-manifest case rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 10c. Fail-soft: an empty ingested[] (or missing manifest) yields zero known URLs
+#      → the gate is skipped, build succeeds (hardening, not a new hard-fail mode).
+OK_EMPTY=$(python3 "$SCRIPT" build --records "$WORK/url-records.txt" --draft "$WORK/url-draft.md" \
+  --out "$WORK/url-fs1.json" --draft-version 1 --ingest-manifest "$WORK/ingest-empty.json" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['success'])" 2>/dev/null || true)
+OK_MISSING=$(python3 "$SCRIPT" build --records "$WORK/url-records.txt" --draft "$WORK/url-draft.md" \
+  --out "$WORK/url-fs2.json" --draft-version 1 --ingest-manifest "$WORK/does-not-exist.json" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['success'])" 2>/dev/null || true)
+if [ "$OK_EMPTY" = "True" ] && [ "$OK_MISSING" = "True" ]; then
+  green "PASS: empty / missing ingest-manifest → gate skipped, build succeeds (fail-soft)"
+else
+  red "FAIL: fail-soft degenerate-input contract broken (empty=$OK_EMPTY missing=$OK_MISSING)"
+  errors=$((errors + 1))
+fi
+
+# 10d. Backward compat: omitting --ingest-manifest entirely → no URL check; the
+#      slug-derived-URL records build clean (the gate is strictly opt-in).
+OUT=$(python3 "$SCRIPT" build --records "$WORK/url-records.txt" --draft "$WORK/url-draft.md" \
+  --out "$WORK/url-noflag.json" --draft-version 1)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==2, d" 2>/dev/null; then
+  green "PASS: no --ingest-manifest → URL gate is opt-in (slug-derived URL builds clean)"
+else
+  red "FAIL: omitting --ingest-manifest unexpectedly ran the URL gate"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

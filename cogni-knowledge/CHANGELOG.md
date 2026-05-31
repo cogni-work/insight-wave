@@ -1,5 +1,38 @@
 # cogni-knowledge changelog
 
+## 0.1.40 — 2026-05-31 — fix: cite the page's real `sources:` URL, not a slug-derived one (closes #383)
+
+`wiki-composer` sometimes built each inline citation's URL by **reconstructing it from the page
+slug** instead of copying the cited page's real `sources:` frontmatter value. Slugs are
+title-derived and transliterated (`_knowledge_lib.slugify`), so their path tail routinely diverges
+from the real URL — shipping a **broken 404 link** into the draft body, the citation manifest, and
+(verbatim) the deposited synthesis body. The `citation-store.py build` record==draft substring gate
+could not catch a *consistently*-wrong URL (record and draft agreed on the slug-derived value). A
+#311-class German bake-in finding (NIS2: 2 of 40 distinct inline URLs wrong).
+
+Two complementary layers:
+
+- **`agents/wiki-composer.md`** — the composer is now explicitly instructed to copy each cited
+  page's `sources:` frontmatter URL **byte-for-byte** and **never** reconstruct / transliterate /
+  derive it from the slug, title, or `[[sources/<slug>]]` wikilink (Phase 2 steps 1.2 + 3, Phase 3
+  records note).
+- **`scripts/citation-store.py`** — new optional `--ingest-manifest` arg adds a deterministic gate:
+  every inline citation URL (extracted via the new `_knowledge_lib.extract_inline_citation_urls`,
+  which handles plain `(url)` and angle-bracketed `(<url>)` markers) must be a known ingested-source
+  URL (`ingested[].url`, both sides `normalize_url`-canonicalized), else `failed_check:
+  url_not_in_sources` and **no manifest is written**. Fail-soft on a missing / empty manifest (gate
+  skipped) — hardening, not a new hard-fail mode.
+- Wired at **both** build call sites: `knowledge-compose` Step 4.5 and `knowledge-verify`'s
+  revisor-round rebuild (so a revisor can't re-introduce a bad URL on a rephrase round).
+  `knowledge-finalize` needed no change — its reference-list URL already reads the page's own
+  `sources:` via `_knowledge_lib.first_url`; the residual exposure was the draft *body* inline URL,
+  which the gate now keeps clean upstream.
+
+Tests: `tests/test_citation_store.sh` (positive / `url_not_in_sources` negative with a slug≠URL-tail
+fixture / fail-soft / opt-in backward-compat), `tests/test_knowledge_lib.sh`
+(`extract_inline_citation_urls` unit cases), and the `--ingest-manifest` contract assertions in
+`tests/test_compose_contract.sh` + `tests/test_verify_contract.sh`. Version `0.1.39 → 0.1.40`.
+
 ## 0.1.37 — 2026-05-31 — docs: commit to the single-installable-plugin FMO (absorb cogni-wiki too)
 
 Roadmap/strategy docs only — **zero runtime/skill/agent/script change**. Records the maintainer

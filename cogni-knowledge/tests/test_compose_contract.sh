@@ -30,6 +30,9 @@ assert_grep 'ingest-manifest.json' "$COMPOSE" "knowledge-compose: reads ingest-m
 assert_grep 'draft-v' "$COMPOSE" "knowledge-compose: writes draft-vN.md"
 assert_grep 'citation-manifest.json' "$COMPOSE" "knowledge-compose: writes citation-manifest.json"
 assert_grep '"schema_version": "0.1.0"' "$COMPOSE" "knowledge-compose: citation-manifest schema 0.1.0"
+# #383: Step 4.5's citation-store.py build cross-checks inline URLs against the ingest manifest.
+assert_grep 'ingest-manifest' "$COMPOSE" "knowledge-compose: Step 4.5 passes --ingest-manifest to the build (#383 URL gate)"
+assert_grep 'url_not_in_sources' "$COMPOSE" "knowledge-compose: documents the url_not_in_sources failed_check (#383)"
 assert_grep 'Task(wiki-composer' "$COMPOSE" "knowledge-compose: dispatches wiki-composer via Task"
 # Slice 13 (#300): threads the project's output_language into the composer dispatch.
 assert_grep 'OUTPUT_LANGUAGE=' "$COMPOSE" "knowledge-compose: threads OUTPUT_LANGUAGE into the wiki-composer dispatch (#300)"

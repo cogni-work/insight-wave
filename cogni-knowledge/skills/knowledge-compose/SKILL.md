@@ -183,14 +183,16 @@ The composer wrote a raw-text **citation-records** file (`<project_path>/.metada
 RECORDS_PATH="<project_path>/.metadata/citation-records-v<N>.txt" \
 DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
 OUT_PATH="<project_path>/.metadata/citation-manifest.json" \
+INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
-    --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <N>
+    --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <N> \
+    --ingest-manifest "$INGEST_PATH"
 ```
 
-`citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, and round-trips the file it wrote (`json.loads` + count). Parse the envelope:
+`citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, **asserts every inline citation URL is a known ingested-source URL** (the `--ingest-manifest` gate; the composer must copy each cited page's real `sources:` URL, never reconstruct it from the slug), and round-trips the file it wrote (`json.loads` + count). Parse the envelope:
 
 - `success: true` → capture `data.citations_count` (the authoritative count) and continue to Step 5.
-- `success: false, error: "write_failed"` → surface `error` + `data` (e.g. `failed_check: "sentence_not_in_draft"` with the offending `ids`) verbatim and **stop** — do not auto-retry. A sentence the composer claims to have written verbatim is not in the draft it just wrote, or the manifest did not round-trip.
+- `success: false, error: "write_failed"` → surface `error` + `data` (e.g. `failed_check: "sentence_not_in_draft"` with the offending `ids`; or `failed_check: "url_not_in_sources"` with the offending `urls` — an inline citation URL the composer slug-derived instead of copying the cited page's `sources:` value) verbatim and **stop** — do not auto-retry. A sentence the composer claims to have written verbatim is not in the draft it just wrote, the manifest did not round-trip, or a cited URL is not a real ingested source (re-compose).
 - `success: false, error: "records_not_found"` / `"draft_not_found"` → surface and stop; the composer's write did not land (re-run the composer).
 
 **Reconcile the count.** Compare the composer's returned `citations` (its own tally) against `data.citations_count` (the authoritative manifest length). If they differ, surface a `⚠ citation count mismatch: composer claimed <X>, manifest built <Y>` line — a smaller manifest count points at a phantom/truncated records write (records the composer thought it wrote but didn't land), which would otherwise sail through as a silently-undersized manifest. Do not hard-fail (the composer's count is an LLM tally and may be slightly off), but the operator must see the discrepancy.

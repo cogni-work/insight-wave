@@ -324,11 +324,13 @@ Parse the return envelope:
   RECORDS_PATH="<project_path>/.metadata/citation-records-v<NEW_DRAFT_VERSION>.txt" \
   DRAFT_PATH="<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md" \
   OUT_PATH="<project_path>/.metadata/citation-manifest.json" \
+  INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
-      --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <NEW_DRAFT_VERSION>
+      --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <NEW_DRAFT_VERSION> \
+      --ingest-manifest "$INGEST_PATH"
   ```
 
-  `build` `json.dumps` the records into `citation-manifest.json` and asserts every `draft_sentence` is a verbatim substring of `draft-v<NEW_DRAFT_VERSION>.md` (which doubly catches a revisor whose `Edit` didn't land the rephrased sentence verbatim). On `success: false` — e.g. `error: "write_failed"` with `failed_check: "sentence_not_in_draft"` (a revised sentence is not in the draft) or `duplicate_id` — surface `error` + `data` verbatim and **stop**; the prior `verify-v<CURRENT_DRAFT_VERSION>.json` remains the latest valid audit trail. On `success: true`, continue.
+  `build` `json.dumps` the records into `citation-manifest.json`, asserts every `draft_sentence` is a verbatim substring of `draft-v<NEW_DRAFT_VERSION>.md` (which doubly catches a revisor whose `Edit` didn't land the rephrased sentence verbatim), and — via the `--ingest-manifest` gate — asserts every inline citation URL is a known ingested-source URL (so a revisor that re-introduced a slug-derived URL on a rephrase round can't ship it). On `success: false` — e.g. `error: "write_failed"` with `failed_check: "sentence_not_in_draft"` (a revised sentence is not in the draft), `duplicate_id`, or `url_not_in_sources` (an inline URL is not a real ingested source) — surface `error` + `data` verbatim and **stop**; the prior `verify-v<CURRENT_DRAFT_VERSION>.json` remains the latest valid audit trail. On `success: true`, continue.
 
   Then **derive `DELTA_IDS` deterministically from the manifest diff** (NOT from the revisor's self-reported `fixes_applied`, which an LLM could under-report — that would carry a stale verdict forward with no cross-check). `DELTA_IDS` = the ids present in the **rebuilt** manifest whose `(draft_sentence, claim_id)` pair differs from the pre-revisor snapshot. Dropped ids are absent from the new manifest (not re-scored, not carried — correct); untouched ids match the snapshot (carried forward). Compute it:
 

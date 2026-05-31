@@ -33,6 +33,9 @@ assert_grep 'Task(revisor' "$VERIFY" "knowledge-verify: dispatches revisor via T
 # F21 fan-out: shard the manifest, dispatch N verifiers in parallel, merge fragments.
 assert_grep 'verify-store.py shard' "$VERIFY" "knowledge-verify: shards the manifest via verify-store.py shard"
 assert_grep 'verify-store.py merge' "$VERIFY" "knowledge-verify: merges fragments via verify-store.py merge"
+# #383: the revisor-round manifest rebuild cross-checks inline URLs against the ingest manifest.
+assert_grep 'citation-store.py build' "$VERIFY" "knowledge-verify: rebuilds the manifest via citation-store.py build"
+assert_grep 'ingest-manifest' "$VERIFY" "knowledge-verify: revisor-round build passes --ingest-manifest (#383 URL gate)"
 assert_grep 'CITATIONS_PATH' "$VERIFY" "knowledge-verify: passes CITATIONS_PATH shard subset to each verifier"
 assert_grep 'VERIFY_OUT_PATH' "$VERIFY" "knowledge-verify: passes VERIFY_OUT_PATH fragment path to each verifier"
 # Completeness guard: merge must catch a crashed/under-populated shard rather
