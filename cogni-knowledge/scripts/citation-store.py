@@ -19,9 +19,11 @@ those records and `json.dump` the manifest, then self-checks it.
 
   build   Parse --records via `_knowledge_lib.parse_citation_records`, assert
           every draft_sentence is an NFC substring of --draft (the verbatim
-          alignment surface the verifier scores against), `json.dump` the
-          manifest to --out (`ensure_ascii=False`), and round-trip it (re-read +
-          `json.loads` + count assert — the read-back the composer's old Step 3
+          alignment surface the verifier scores against), optionally assert every
+          inline citation URL is a known ingested-source URL (when
+          --ingest-manifest is given — the #383 slug-derived-URL gate), `json.dump`
+          the manifest to --out (`ensure_ascii=False`), and round-trip it (re-read
+          + `json.loads` + count assert — the read-back the composer's old Step 3
           never actually parsed). Any failure → `success:false` so the
           orchestrator stops rather than shipping a broken manifest.
 
@@ -46,6 +48,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write,
+    extract_inline_citation_urls,
+    normalize_url,
     parse_citation_records,
 )
 
@@ -128,6 +132,43 @@ def cmd_build(args: argparse.Namespace) -> int:
     if dup_ids:
         return _emit(False, data={"failed_check": "duplicate_id", "ids": dup_ids}, error="write_failed")
 
+    # Inline-URL gate (#383): when --ingest-manifest is given, assert every inline
+    # citation URL in the records is a known ingested-source URL. The composer must
+    # copy the cited page's real `sources:` value verbatim; when it instead
+    # reconstructs the URL from the (title-derived, transliterated) slug, the path
+    # tail diverges and a broken link ships. The substring check above can't catch
+    # a CONSISTENTLY-wrong URL (record and draft agree on the slug-derived value),
+    # so this cross-checks the inline URLs against `ingest-manifest.json::ingested[]`.
+    # Fail-soft on degenerate input: a missing / unreadable / malformed manifest, or
+    # one yielding zero source URLs, skips the check (this is hardening, not a new
+    # hard-fail mode on edge manifests). normalize_url is applied symmetrically to
+    # both sides, so trailing-slash / host-case differences never false-positive.
+    if args.ingest_manifest:
+        known = set()
+        try:
+            manifest = json.loads(Path(args.ingest_manifest).read_text(encoding="utf-8"))
+            if isinstance(manifest, dict):
+                for entry in manifest.get("ingested", []):
+                    url = entry.get("url") if isinstance(entry, dict) else None
+                    if url:
+                        known.add(normalize_url(url))
+        except (OSError, json.JSONDecodeError, TypeError):
+            known = set()
+        if known:
+            bad = []
+            seen = set()
+            for r in records:
+                for url in extract_inline_citation_urls(r.get("draft_sentence") or ""):
+                    if normalize_url(url) not in known and url not in seen:
+                        seen.add(url)
+                        bad.append(url)
+            if bad:
+                return _emit(
+                    False,
+                    data={"failed_check": "url_not_in_sources", "urls": bad},
+                    error="write_failed",
+                )
+
     try:
         atomic_write(
             out_path,
@@ -186,6 +227,13 @@ def main(argv: list[str]) -> int:
     p_build.add_argument("--draft", required=True, help="Path to the just-written draft-vN.md (substring check)")
     p_build.add_argument("--out", required=True, help="Path to write citation-manifest.json")
     p_build.add_argument("--draft-version", required=True, type=int)
+    p_build.add_argument(
+        "--ingest-manifest",
+        required=False,
+        default=None,
+        help="Optional path to ingest-manifest.json; when given, every inline "
+        "citation URL must be a known ingested-source URL (#383 slug-derived-URL gate).",
+    )
     p_build.set_defaults(func=cmd_build)
 
     args = parser.parse_args(argv)
