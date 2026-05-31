@@ -60,7 +60,7 @@ plant "$FULL/distill-manifest.json" <<'JSON'
 {"schema_version":"0.1.0","concepts":[{"slug":"x","action":"created"},{"slug":"y","action":"created"},{"slug":"z","action":"updated"}],"claims_attached_total":9,"claims_deduped_total":2}
 JSON
 plant "$FULL/citation-manifest.json" <<'JSON'
-{"schema_version":"0.1.0","draft_version":2,"citations":[{"draft_position":"01:01"},{"draft_position":"02:03"}]}
+{"schema_version":"0.1.0","draft_version":2,"citations":[{"draft_position":"01:01","claim_id":"dcl-003"},{"draft_position":"02:03","claim_id":"clm-001"}]}
 JSON
 # v0 first, then v1 with different counts — v1 must win.
 plant "$FULL/verify-v0.json" <<'JSON'
