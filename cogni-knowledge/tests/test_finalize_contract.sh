@@ -65,6 +65,11 @@ assert_grep 'verify-shards' "$FIN" "knowledge-finalize: Step 9.5 sweeps verify-s
 assert_grep '\] finalize | project=' "$FIN" "knowledge-finalize: emits the '## [DATE] finalize | project=...' log-line shape"
 assert_grep 'slugify' "$FIN" "knowledge-finalize: reuses _knowledge_lib.slugify for default slug"
 assert_grep 'atomic_write_text' "$FIN" "knowledge-finalize: writes synthesis page via _knowledge_lib.atomic_write_text"
+# #389: the synthesis-page frontmatter title MUST be quoted via json.dumps (the same
+# serializer source-ingester + concept-store use) so a colon-containing topic deposits
+# valid YAML — an unquoted "title: X: Y" parses as a nested mapping and breaks
+# Obsidian / yaml.safe_load / yq (masked by cogni-wiki's lenient first-colon parser).
+assert_grep 'title: " + json.dumps(topic' "$FIN" "knowledge-finalize: synthesis title quoted via json.dumps (#389 — valid YAML on colon-containing topics)"
 # Cycle-guard adapter signal — the skill notes citation-manifest as the expected input_shape.
 assert_grep 'citation-manifest' "$FIN" "knowledge-finalize: notes citation-manifest as cycle-guard's input_shape"
 # Defence-in-depth: no Skill() dispatches to cogni-research / cogni-claims / cogni-wiki.

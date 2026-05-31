@@ -446,7 +446,15 @@ else:
 frontmatter = (
     "---\n"
     "id: " + synthesis_slug + "\n"
-    "title: " + topic + "\n"
+    # Quote the title via json.dumps (NOT a hand-wrapped "..."): a topic with a
+    # colon-space ("X: Y" — routine for regulatory/subtitled topics like
+    # "NIS2-Richtlinie (NIS2UmsuCG): Anwendungsbereich …") parses as a nested
+    # YAML mapping when unquoted ("mapping values are not allowed here"), breaking
+    # Obsidian / yaml.safe_load / yq even though cogni-wiki's lenient first-colon
+    # parser tolerates it. json.dumps handles colons, embedded quotes, and unicode
+    # in one shot — the same serializer source-ingester + concept-store already use,
+    # and the #325 lesson on why a straight " must not be hand-wrapped.
+    "title: " + json.dumps(topic, ensure_ascii=False) + "\n"
     "type: synthesis\n"
     "tags: [synthesis]\n"
     "created: " + today + "\n"
