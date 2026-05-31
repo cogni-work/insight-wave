@@ -10,6 +10,8 @@ If a behavior already exists in `cogni-wiki` or `cogni-research`, cogni-knowledg
 2. **Clean absorption boundary.** cogni-research is being absorbed — runtime reached zero at v0.1.0; formal deprecation is Phase 6. The boundary stays clean only if we never duplicate `cogni-wiki` logic; the forked v0.1.0 agents under `agents/` are the one intentional, documented exception.
 3. **Version skew.** `cogni-wiki` and `cogni-research` are released independently. Forked logic drifts; delegated logic tracks the upstream automatically.
 
+> **Terminal-arc reversal (Phase 7+).** The hard rule above holds for the **entire research-absorption arc through v1.0** — keep delegating to `cogni-wiki`, do not fork it. It **inverts** for the cogni-wiki absorption arc (Phases 7–9, see `references/absorption-roadmap.md`): the committed single-installable-plugin FMO requires **internalizing** cogni-wiki, not delegating to it. From Phase 7 the wiki engine is **vendored** into `cogni-knowledge/scripts/` and that vendored copy becomes the single source of truth; by Phase 9 cogni-wiki is archived. **Until Phase 7 actually lands, this reversal is intent, not licence** — do not pre-emptively fork cogni-wiki logic into cogni-knowledge ahead of the planned vendoring (it would re-introduce exactly the drift reasons 1–3 warn about, with no upstream to track). The reasons above are not "wrong"; they are the cost the FMO knowingly accepts in exchange for one shippable plugin.
+
 ## What cogni-knowledge owns
 
 - **`binding.json`.** The single new artifact. Records knowledge_slug, wiki path, deposited research_projects[]. Read/written by `scripts/knowledge-binding.py`.

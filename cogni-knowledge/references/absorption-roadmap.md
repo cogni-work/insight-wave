@@ -1,6 +1,8 @@
 # Absorption roadmap
 
-cogni-knowledge is structured around a committed endgame: if the alpha proves positive, `cogni-research` is absorbed into this plugin. The Phase 4 alpha closed positive (GO recommendation in v0.0.16) and the absorption is now in flight, restructured as **a single v0.1.0 inverted-pipeline clean break** rather than the original two-step Phase 5 → Phase 6 sequence. The phases below trace the path from "Phase 1 MVP scaffold" to "cogni-research deprecated, cogni-knowledge v1.0".
+cogni-knowledge is structured around a committed endgame: if the alpha proves positive, `cogni-research` is absorbed into this plugin. The Phase 4 alpha closed positive (GO recommendation in v0.0.16) and the absorption is now in flight, restructured as **a single v0.1.0 inverted-pipeline clean break** rather than the original two-step Phase 5 → Phase 6 sequence.
+
+**Committed Future Mode of Operation (FMO).** The endgame is **one installable plugin** — `cogni-knowledge` (rename TBD) that is *both* a standalone Karpathy knowledge engine *and* the research orchestrator, with **both `cogni-research` and `cogni-wiki` archived** (source kept, not installable). The driver is commercial/packaging — ship one plugin, not a stack — which is why the engine↔orchestrator layering is deliberately collapsed rather than merely repositioned. The path runs in two absorption arcs: **cogni-research first** (Phase 6, v1.0 — research is *redundant* with cogni-knowledge, fork-then-cut), then **cogni-wiki** (Phases 7–9, v2.0 — the *substrate*, a ~4–5× larger swallow), each opened only when its parity gate passes. The phases below trace the path from "Phase 1 MVP scaffold" to that single-plugin FMO.
 
 Reading order: this file, then `inverted-pipeline.md` (the v0.1.0 technical contract), then `differentiation-thesis.md`, then `delegation-contract.md`.
 
@@ -203,10 +205,50 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 3. **Top-level docs.** Update `/insight-wave/CLAUDE.md` data-flow diagram to remove cogni-research from the runtime graph.
 4. **Maturity flip.** Bump cogni-knowledge to 1.0.0, flip README callout from Preview to Released.
 
-**Out of scope for the entire epic.** Absorbing cogni-wiki itself — it is a general-purpose Karpathy-pattern knowledge engine usable standalone (interview notes, PDFs, raw drops). Keep separate.
+**Note on scope.** Earlier revisions of this roadmap declared cogni-wiki absorption *"out of scope for the entire epic — keep separate"* (cogni-wiki is a general-purpose Karpathy engine usable standalone). **That decision is reversed** by the committed single-installable-plugin FMO (see the intro). cogni-wiki absorption is now the terminal arc, Phases 7–9 below — superset-preserving (no standalone capability dropped) and gated on the cogni-wiki parity gate.
+
+### Phase 7 — cogni-wiki engine internalization (cogni-knowledge v1.x; Released)
+
+**Goal.** Make cogni-knowledge self-contained on the *engine* without any user-facing change. Today cogni-knowledge calls cogni-wiki's scripts via a `resolve_wiki_scripts()` probe that picks the newest *installed* cogni-wiki; Phase 7 flips that to a **vendored copy**.
+
+**Deliverables.**
+1. Vendor `_wikilib.py` (the `_wiki_lock` fcntl RMW + `parse_frontmatter` + `build_slug_index` + `atomic_write` + page-type constants) and the ~20 stdlib scripts under `cogni-wiki/skills/wiki-ingest/scripts/` (`lint_wiki.py`, `health.py`, `wiki_index_update.py`, `backlink_audit.py`, `config_bump.py`, `rebuild_context_brief.py`, `rebuild_open_questions.py`, `wiki_queue.py`, `render_dashboard.py`, `build_graph.py`, `prefill_foundations.py`, `convert_to_md.py`, `extract_page_claims.py`, `resweep_planner.py`, …) into `cogni-knowledge/scripts/` (e.g. a `scripts/wikilib/` subpackage). Move the 11 foundation pages from `cogni-wiki/foundations/`.
+2. Flip `resolve_wiki_scripts()` (used by `knowledge-ingest` / `knowledge-distill` / `knowledge-finalize`) and the `_wiki_lock` import in `scripts/concept-store.py` to the vendored copy.
+3. **No user-facing change**; both plugins still installable; cogni-wiki remains the source of truth until Phase 9. The existing cogni-knowledge contract suites must pass byte-identically against the vendored engine.
+
+**Out of scope.** Re-homing user-facing skills (that is Phase 8); archiving cogni-wiki (Phase 9).
+
+### Phase 8 — standalone-surface parity (cogni-knowledge v1.x)
+
+**Goal.** Reproduce every cogni-wiki *standalone* (non-research) use case inside cogni-knowledge, so a user can run a Karpathy wiki — interview notes, PDF drops, manual curation — **without cogni-wiki installed**. This is the bulk of the work and where the cogni-wiki parity gate is proven.
+
+**Deliverables.**
+1. Single-source non-research ingest: extend `knowledge-ingest` (or a sibling) to accept a file / URL / paste / PDF / interview note directly (today it is research-batch-only). Reuse the vendored `convert_to_md.py` + `wiki_queue.py`.
+2. Re-home the user-facing skills as cogni-knowledge skills: `knowledge-query` / `-dashboard` / `-health` / `-lint` / `-update` (manual curation, diff-before-write + citation discipline) / `-resume` / `-prefill` / graph. (`knowledge-query` / `-dashboard` / `-resume` today *dispatch* to the cogni-wiki skills — internalize them.)
+3. **Migrate the external `cogni-wiki:` callers** off cogni-wiki: `cogni-trends` (value-modeler Phase 2 `wiki-query`) and `cogni-workspace` (the `ask` skill + its vendored wiki query path). These are the only non-cogni-knowledge consumers.
+
+**Out of scope.** Archiving cogni-wiki + the maturity flip (Phase 9).
+
+### Phase 9 — cogni-wiki retirement + FMO cutover (cogni-knowledge v2.0; cogni-wiki → archived)
+
+**Goal.** Cross the Released → Established boundary as the single-plugin FMO lands.
+
+**Deliverables.**
+1. **Archive cogni-wiki.** `"archived": true` in `cogni-wiki/.claude-plugin/plugin.json` + mirror in `marketplace.json`; source kept for reference; no longer installable.
+2. **Assert zero `cogni-wiki:` dispatches repo-wide** (a CI grep guard, mirroring cogni-knowledge's M11 cogni-research audit-grep).
+3. **Top-level docs.** Update `/insight-wave/CLAUDE.md` data-flow diagram to drop **both** cogni-wiki and cogni-research from the runtime graph.
+4. **Maturity flip + rename.** Bump cogni-knowledge to 2.0.0 (Established); resolve the rename open question.
+
+**cogni-wiki parity gate (must pass before Phase 9 opens).** Mirrors the #309 cogni-research parity gate — a concrete, testable checklist:
+
+1. **Every standalone use case reproducible** in cogni-knowledge: raw/ PDF·URL·paste ingest; the `interview` page type; manual curation with diff-before-write + citation discipline (the `wiki-update` contract); `query` / `dashboard` / `health` / `lint` / `resume` / `prefill` / graph / claims-resweep equivalents; the persistent ingest queue (`wiki_queue.py`).
+2. **Schema + portability preserved:** `SCHEMA.md` ships in every base; the base stays Obsidian/grep-readable with cogni-knowledge uninstalled; the `_wiki_lock` concurrency invariant holds under the vendored engine (two concurrent ingests from separate sessions serialise, not corrupt).
+3. **Zero external `cogni-wiki:` callers** anywhere in the repo (the CI grep guard above).
+4. **≥ N clean standalone (non-research) real-usage runs** — mirror the cogni-research "≥ 2 minor versions of clean usage" bake discipline, applied to the standalone surface.
 
 ## Open questions (revisit at Phase 6)
 
-- **Rename at v1.0?** Does `cogni-knowledge` keep its name once it owns the full research surface, or does it rename to something cleaner? Defer until v0.1.x usage signal lands.
-- **Backwards-compat alias.** Should we ship a `cogni-research:` alias inside cogni-knowledge during the sunset window, or just rely on downstream consumers cutting over? Defer to Phase 6 planning.
+- **Rename at the FMO?** Does `cogni-knowledge` keep its name once it owns *both* the full research surface (v1.0) and the standalone Karpathy engine (v2.0), or rename to something that reads as "the one knowledge plugin"? The decision now spans both absorptions — resolve at the Phase 9 cutover, informed by v0.1.x/v1.x usage signal.
+- **Backwards-compat aliases.** Ship a `cogni-research:` alias during its sunset (Phase 6) and/or a `cogni-wiki:` alias during its sunset (Phase 9), or rely on consumers cutting over? Defer to each phase's planning.
+- **Standalone identity post-absorption.** Once cogni-wiki is archived (Phase 9), does its standalone Karpathy-wiki identity survive as a documented *mode* of cogni-knowledge (so "I just want a wiki for my notes" users still have a clear front door), or is it folded silently into the superset? Decide alongside the Phase 8 standalone-surface work.
 - **Multi-wiki knowledge bases.** Today's binding records exactly one `wiki_path`. A future extension could allow `wiki_paths[]` for federated bases. Defer until a user explicitly asks for it — premature now.
