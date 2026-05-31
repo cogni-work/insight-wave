@@ -148,20 +148,23 @@ def cmd_build(args: argparse.Namespace) -> int:
         try:
             manifest = json.loads(Path(args.ingest_manifest).read_text(encoding="utf-8"))
             if isinstance(manifest, dict):
-                for entry in manifest.get("ingested", []):
-                    url = entry.get("url") if isinstance(entry, dict) else None
-                    if url:
-                        known.add(normalize_url(url))
+                known = {
+                    normalize_url(e["url"])
+                    for e in manifest.get("ingested", [])
+                    if isinstance(e, dict) and e.get("url")
+                }
         except (OSError, json.JSONDecodeError, TypeError):
             known = set()
         if known:
-            bad = []
-            seen = set()
-            for r in records:
-                for url in extract_inline_citation_urls(r.get("draft_sentence") or ""):
-                    if normalize_url(url) not in known and url not in seen:
-                        seen.add(url)
-                        bad.append(url)
+            # Dedup the raw inline URLs first (order-preserving) so each distinct
+            # URL is normalized + checked once — a draft re-cites the same source
+            # many times. `bad` reports each offending URL once, in first-seen order.
+            inline_urls = dict.fromkeys(
+                url
+                for r in records
+                for url in extract_inline_citation_urls(r.get("draft_sentence") or "")
+            )
+            bad = [u for u in inline_urls if normalize_url(u) not in known]
             if bad:
                 return _emit(
                     False,
