@@ -149,36 +149,39 @@ def cmd_build(args: argparse.Namespace) -> int:
     # hard-fail mode on edge manifests). normalize_url is applied symmetrically to
     # both sides, so trailing-slash / host-case differences never false-positive.
     if args.ingest_manifest:
-        known = set()
-        # slug → normalized `sources:` URL, the third leg of the #395 binding gate.
-        # Built from the same parsed manifest as `known`; empty on degenerate input.
+        # Parse the ingest manifest once into the two indices the URL gates need:
+        # `known` (every ingested URL, for the #383 set-membership gate) and
+        # `slug_url` (slug → its ingested `sources:` URL, the third leg of the #395
+        # binding gate). One pass builds both. Both stay empty on degenerate input
+        # (missing / unreadable / malformed manifest, or one yielding no usable
+        # entries), and the except resets them so a TypeError part-way through the
+        # loop can't leave a half-built index — the gates below then fail-soft / skip.
+        known: set[str] = set()
         slug_url: dict[str, str] = {}
         try:
             manifest = json.loads(Path(args.ingest_manifest).read_text(encoding="utf-8"))
             if isinstance(manifest, dict):
-                ingested = manifest.get("ingested", [])
-                known = {
-                    normalize_url(e["url"])
-                    for e in ingested
-                    if isinstance(e, dict) and e.get("url")
-                }
-                slug_url = {
-                    e["slug"]: normalize_url(e["url"])
-                    for e in ingested
-                    if isinstance(e, dict) and e.get("slug") and e.get("url")
-                }
+                for e in manifest.get("ingested", []):
+                    if isinstance(e, dict) and e.get("url"):
+                        nu = normalize_url(e["url"])
+                        known.add(nu)
+                        if e.get("slug"):
+                            slug_url[e["slug"]] = nu
         except (OSError, json.JSONDecodeError, TypeError):
             known = set()
             slug_url = {}
+
+        # Extract each record's inline citation URLs once — both gates below consume
+        # them, so the regex parse of `draft_sentence` runs a single time per record.
+        record_inlines = [
+            extract_inline_citation_urls(r.get("draft_sentence") or "") for r in records
+        ]
+
         if known:
             # Dedup the raw inline URLs first (order-preserving) so each distinct
             # URL is normalized + checked once — a draft re-cites the same source
             # many times. `bad` reports each offending URL once, in first-seen order.
-            inline_urls = dict.fromkeys(
-                url
-                for r in records
-                for url in extract_inline_citation_urls(r.get("draft_sentence") or "")
-            )
+            inline_urls = dict.fromkeys(u for urls in record_inlines for u in urls)
             bad = [u for u in inline_urls if normalize_url(u) not in known]
             if bad:
                 return _emit(
@@ -205,15 +208,12 @@ def cmd_build(args: argparse.Namespace) -> int:
         # synthesis-page citation, or a slug ingested in a prior run) — nothing to bind
         # against, so absence is not a mismatch.
         mismatches = []
-        for r in records:
+        for r, raw_inlines in zip(records, record_inlines):
             rec_url = (r.get("url") or "").strip()
             if not rec_url:
                 continue  # no structured URL on this record → nothing to bind
             rec_n = normalize_url(rec_url)
-            inline = {
-                normalize_url(u)
-                for u in extract_inline_citation_urls(r.get("draft_sentence") or "")
-            }
+            inline = {normalize_url(u) for u in raw_inlines}
             page_n = slug_url.get(r.get("wiki_slug", ""))
             # Prose leg: the record's `url` must appear among its own sentence's
             # marker(s). Membership (not equality) because one sentence can carry two
