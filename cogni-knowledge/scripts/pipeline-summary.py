@@ -33,7 +33,11 @@ import json
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _knowledge_lib import classify_claim_kind  # noqa: E402
 
 METADATA_DIRNAME = ".metadata"
 BINDING_DIRNAME = ".cogni-knowledge"
@@ -166,6 +170,19 @@ def cmd_project(args: argparse.Namespace) -> int:
         if a in distill_actions:
             distill_actions[a] += 1
 
+    # Per-kind citation breakdown across runs (#385): derive the distilled (dcl-) /
+    # source (clm-) / null split from the persisted manifest so the read-side
+    # summary (knowledge-resume / knowledge-dashboard) surfaces the distilled-
+    # citation rate over time, not just in the ephemeral compose summary. Uses the
+    # same `classify_claim_kind` the write-side `citation-store.py build` reports,
+    # so both sides bucket identically. Degrades to {} on a missing/legacy manifest.
+    cits = (citation or {}).get("citations", [])
+    citation_kinds = (
+        Counter(classify_claim_kind(c.get("claim_id")) for c in cits if isinstance(c, dict))
+        if isinstance(cits, list)
+        else Counter()
+    )
+
     data = {
         "project_path": str(project_path),
         "topic": (plan or {}).get("topic", ""),
@@ -181,6 +198,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         "claims_attached": _as_int((distill or {}).get("claims_attached_total", 0)),
         "claims_deduped": _as_int((distill or {}).get("claims_deduped_total", 0)),
         "citations": _count(citation, "citations"),
+        "citation_kinds": citation_kinds,
         "draft_version": (citation or {}).get("draft_version", 0),
         "verify_version": verify_version,
         "verify_counts": verify_counts,

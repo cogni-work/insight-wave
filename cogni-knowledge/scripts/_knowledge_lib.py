@@ -586,6 +586,28 @@ def parse_distilled_claims_with_id(page_text: str) -> list[dict]:
     return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS)
 
 
+def classify_claim_kind(claim_id: str | None) -> str:
+    """Classify a citation by its `claim_id` prefix — the per-kind measurement
+    behind the distilled-citation rate. The prefix is the established, single-mint
+    discriminator in this codebase: `concept-store.py` is the only producer of
+    `dcl-NNN` ids (distilled cross-source claims, citable since #344), and source
+    pages carry `clm-NNN` from the claim extractor; a synthesis citation has no
+    claim. Shared by `citation-store.py build` (write-time, on its return envelope)
+    and `pipeline-summary.py` (read-time, across runs) so both report the same
+    breakdown buckets:
+
+      - `dcl-…` → `distilled`   - `clm-…` → `source`
+      - empty/None → `null`     - anything else → `other`
+    """
+    if not claim_id:
+        return "null"
+    if claim_id.startswith("dcl-"):
+        return "distilled"
+    if claim_id.startswith("clm-"):
+        return "source"
+    return "other"
+
+
 # --- machine-owned body blocks ------------------------------------------------
 # concept/entity pages (written by concept-store.py) wrap each regenerated body
 # region in `<!-- MACHINE-OWNED:NAME:START/END -->` sentinels (SUMMARY / CLAIMS /

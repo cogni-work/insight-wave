@@ -15,6 +15,9 @@
 #      records file → a valid EMPTY manifest (success, count 0).
 #   5. The built manifest is accepted by verify-store.py shard (the downstream
 #      consumer #325 broke — every entry carries id + draft_sentence).
+#  12. build reports a per-kind `claim_kinds` breakdown (#385) keyed on the
+#      claim_id prefix — distilled (dcl-) / source (clm-) / null — the per-run
+#      measurement of the distilled-citation rate.
 #
 # Fixtures are written by python3 heredocs so the bytes (Unicode, quotes,
 # backslash) are exact and the test exercises the SCRIPT, not bash quoting.
@@ -584,6 +587,55 @@ assert [m['id'] for m in d['data']['mismatches']] == ['cit-001'], d
   green "PASS: record.url absent from its own marker (slug leg clean) → prose leg fires alone"
 else
   red "FAIL: prose-leg-only mismatch not caught (membership semantics regressed)"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 12. Per-kind citation breakdown (#385). `build` classifies each citation by its
+#     `claim_id` prefix and reports `data.claim_kinds` — the per-run measurement of
+#     the distilled-citation (`dcl-NNN`) rate the #344 cross-source-convergence loop
+#     produces. This is the deterministic fixture proving the dcl- count path fires
+#     end-to-end through the serializer (0 dcl- citations on a converging base was the
+#     #385 inert-loop symptom). Records mix a distilled (dcl-), two source (clm-), and
+#     a null (synthesis) citation.
+python3 - "$WORK" <<'PY'
+import sys, pathlib
+work = pathlib.Path(sys.argv[1])
+# A distilled citation has an empty url (no external URL — plain <sup>[N]</sup>).
+records = (
+    "- id: cit-001\n  pos: 1:1\n  slug: nis2-meldepflichten\n  claim: dcl-003\n  url: \n"
+    "  sentence: Die Meldepflicht folgt der 24h/72h/1-Monats-Kaskade<sup>[1]</sup>.\n"
+    "- id: cit-002\n  pos: 1:2\n  slug: bsig-30\n  claim: clm-001\n  url: https://nis.de/a\n"
+    "  sentence: Paragraph 30 BSIG listet die Mindestmassnahmen<sup>[2](https://nis.de/a)</sup>.\n"
+    "- id: cit-003\n  pos: 1:3\n  slug: bsig-30\n  claim: clm-002\n  url: https://nis.de/a\n"
+    "  sentence: Die Geldbussen erreichen 10 Mio EUR oder 2 Prozent<sup>[2](https://nis.de/a)</sup>.\n"
+    "- id: cit-004\n  pos: 1:4\n  slug: prior-synthesis\n  claim: null\n  url: \n"
+    "  sentence: Eine fruehere Synthese rahmt den Anwendungsbereich<sup>[3]</sup>.\n"
+)
+draft = (
+    "# Bericht\n\n"
+    "Die Meldepflicht folgt der 24h/72h/1-Monats-Kaskade<sup>[1]</sup>.\n"
+    "Paragraph 30 BSIG listet die Mindestmassnahmen<sup>[2](https://nis.de/a)</sup>.\n"
+    "Die Geldbussen erreichen 10 Mio EUR oder 2 Prozent<sup>[2](https://nis.de/a)</sup>.\n"
+    "Eine fruehere Synthese rahmt den Anwendungsbereich<sup>[3]</sup>.\n\n"
+    "## Referenzen\n[[concepts/nis2-meldepflichten]]\n[[sources/bsig-30]]\n[[syntheses/prior-synthesis]]\n"
+)
+(work / "kinds-records.txt").write_text(records, encoding="utf-8")
+(work / "kinds-draft.md").write_text(draft, encoding="utf-8")
+PY
+OUT=$(python3 "$SCRIPT" build --records "$WORK/kinds-records.txt" --draft "$WORK/kinds-draft.md" \
+  --out "$WORK/kinds-manifest.json" --draft-version 1)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['citations_count'] == 4, d
+# Single dict-equality also pins the absence of an 'other' bucket.
+assert d['data']['claim_kinds'] == {'distilled': 1, 'source': 2, 'null': 1}, d
+" 2>/dev/null; then
+  green "PASS: build reports claim_kinds breakdown (distilled=1 source=2 null=1) — the #385 dcl- measurement"
+else
+  red "FAIL: claim_kinds breakdown wrong"
   red "  got: $OUT"
   errors=$((errors + 1))
 fi

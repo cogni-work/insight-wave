@@ -52,6 +52,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write,
+    classify_claim_kind,
     extract_inline_citation_urls,
     normalize_url,
     parse_citation_records,
@@ -277,9 +278,21 @@ def cmd_build(args: argparse.Namespace) -> int:
             error="write_failed",
         )
 
+    # Per-kind citation breakdown (#385) — purely a measurement on the return
+    # envelope (the manifest JSON + its schema are unchanged). Classify each
+    # citation by its `claim_id` prefix so `knowledge-compose` can surface the
+    # `dcl-` rate every run: a distilled-page citation (`dcl-NNN`) is the
+    # cross-source-convergence evidence #344 made citable, and 0 distilled
+    # citations on a base with converging distilled pages is the #385 symptom.
+    breakdown = Counter(classify_claim_kind(c["claim_id"]) for c in citations)
+
     return _emit(
         True,
-        data={"path": str(out_path), "citations_count": len(citations)},
+        data={
+            "path": str(out_path),
+            "citations_count": len(citations),
+            "claim_kinds": breakdown,
+        },
     )
 
 

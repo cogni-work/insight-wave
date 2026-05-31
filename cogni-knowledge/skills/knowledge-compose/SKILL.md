@@ -191,7 +191,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
 
 `citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, **asserts every inline citation URL is a known ingested-source URL** (the `--ingest-manifest` gate; the composer must copy each cited page's real `sources:` URL, never reconstruct it from the slug), and round-trips the file it wrote (`json.loads` + count). Parse the envelope:
 
-- `success: true` → capture `data.citations_count` (the authoritative count) and continue to Step 5.
+- `success: true` → capture `data.citations_count` (the authoritative count) **and `data.claim_kinds`** (the per-kind breakdown — `{distilled, source, null, other}`, keyed by `claim_id` prefix; `distilled` is the `dcl-NNN` cross-source-convergence count surfaced in Step 6 + Step 7) and continue to Step 5.
 - `success: false, error: "write_failed"` → surface `error` + `data` (e.g. `failed_check: "sentence_not_in_draft"` with the offending `ids`; or `failed_check: "url_not_in_sources"` with the offending `urls` — an inline citation URL the composer slug-derived instead of copying the cited page's `sources:` value) verbatim and **stop** — do not auto-retry. A sentence the composer claims to have written verbatim is not in the draft it just wrote, the manifest did not round-trip, or a cited URL is not a real ingested source (re-compose).
 - `success: false, error: "records_not_found"` / `"draft_not_found"` → surface and stop; the composer's write did not land (re-run the composer).
 
@@ -244,8 +244,11 @@ DATE_STAMP=$(date -u +%F)
 TOPIC=<topic from plan.json>
 N_WORDS=<words from composer return>
 N_CITES=<the script-derived count from Step 5's print(len(cites)) — NOT the composer return's "citations" field>
-echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES}" >> "${WIKI_ROOT}/wiki/log.md"
+N_DCL=<data.claim_kinds.distilled from Step 4.5, default 0>
+echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES} dcl=${N_DCL}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
+
+The `dcl=<n>` suffix is the cross-run record of the distilled-citation rate — the cross-source-convergence loop firing (or not) shows up directly in `wiki/log.md`.
 
 Note on the `compose` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `compose`, but readers count unknown prefixes in their catch-all bucket without crashing — `compose` is additive and safe.
 
@@ -257,6 +260,7 @@ Print ≤ 10 lines:
 - Wiki: `<WIKI_ROOT>`
 - Draft: `output/draft-v<N>.md` (`<N_WORDS>` words across `<N_SECTIONS>` sections)
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
+- Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Cost: `$X.XXX` (from composer return)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, or `distilled_claims[]` on a cited distilled page.
