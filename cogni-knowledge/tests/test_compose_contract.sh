@@ -47,6 +47,12 @@ assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogn
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
 assert_grep 'writer-outline-v' "$COMPOSE" "knowledge-compose: F11 — detects writer-outline-vN.json for recovery"
 assert_grep 'wiki/log.md' "$COMPOSE" "knowledge-compose: appends to wiki/log.md"
+# #385: the skill captures the per-kind citation breakdown from citation-store.py
+# build and surfaces the distilled-citation (dcl-) rate — the measurement the
+# inert-loop issue asked for (0 dcl- on a converging base is the symptom).
+assert_grep 'claim_kinds' "$COMPOSE" "knowledge-compose: captures data.claim_kinds from the build (#385 dcl- measurement)"
+assert_grep 'Distilled citations' "$COMPOSE" "knowledge-compose: Step 7 summary surfaces the distilled-citation rate (#385)"
+assert_grep 'dcl=' "$COMPOSE" "knowledge-compose: Step 6 log line records dcl=<n> for cross-run measurement (#385)"
 # #325: the orchestrator builds citation-manifest.json from the composer's raw
 # records via citation-store.py (json.dumps, not LLM-hand-built JSON), and the
 # Step-5 validator re-asserts every draft_sentence is in the draft (authoritative
@@ -146,6 +152,18 @@ assert_grep 'first-appearance order' "$COMPOSER" "wiki-composer: numbers [N] in 
 assert_grep '\[\[N\]\]' "$COMPOSER" "wiki-composer: forbids the Obsidian-colliding [[N]] form (#300)"
 assert_grep 'reference list, never in prose' "$COMPOSER" "wiki-composer: wikilinks confined to the reference list, not prose (#300)"
 assert_grep 'OUTPUT_LANGUAGE' "$COMPOSER" "wiki-composer: honours OUTPUT_LANGUAGE for output + headings (#300)"
+# #385: distilled-page citation must be PREFERRED on ≥2-source convergence, and the
+# convergence trigger (backlinks[] / source_claim_refs[]) must be DISCOVERABLE — the
+# pre-#385 prompt told the composer those were "writer-side metadata you can ignore",
+# which is exactly the data that signals ≥2-source convergence, so dcl- citations
+# never fired. Assert the metadata is now read, the preference is explicit, and the
+# old ignore instruction is gone.
+assert_grep 'backlinks' "$COMPOSER" "wiki-composer: reads distilled-claim backlinks[] (the ≥2-source convergence signal, #385)"
+assert_grep 'source_claim_refs' "$COMPOSER" "wiki-composer: reads source_claim_refs[] to count distinct backing sources (#385)"
+assert_grep 'dcl-NNN' "$COMPOSER" "wiki-composer: cites a distilled page via its dcl-NNN claim_id (#344/#385)"
+assert_grep '≥2 distinct backlinks\|≥2 distinct sources\|≥2 sources converge' "$COMPOSER" "wiki-composer: ≥2-source convergence is the distilled-citation trigger (#385)"
+assert_grep 'PREFER\|prefer the\|prefer a\|prefer ONE\|prefer one' "$COMPOSER" "wiki-composer: PREFERS a distilled-page citation over stacking source markers on convergence (#385)"
+assert_not_grep 'writer-side metadata you can ignore' "$COMPOSER" "wiki-composer: no longer tells the composer to IGNORE the convergence metadata (#385 root cause)"
 # `aggregated-context.json` is cogni-research's input shape. The fork
 # header explains it was dropped; the composer must not READ it. The
 # read-input contract lives in Phase 0 — assert the workflow phase

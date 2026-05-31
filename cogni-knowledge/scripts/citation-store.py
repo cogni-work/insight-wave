@@ -70,6 +70,20 @@ def _nfc(s: str) -> str:
     return unicodedata.normalize("NFC", s) if s else s
 
 
+def _claim_kind(claim_id: str | None) -> str:
+    """Classify a citation by its `claim_id` prefix for the #385 breakdown:
+    `dcl-NNN` → `distilled` (cross-source convergence cited directly, #344),
+    `clm-NNN` → `source` (a single source/synthesis page's claim), empty/None →
+    `null` (a synthesis-page citation with no claim), anything else → `other`."""
+    if not claim_id:
+        return "null"
+    if claim_id.startswith("dcl-"):
+        return "distilled"
+    if claim_id.startswith("clm-"):
+        return "source"
+    return "other"
+
+
 def cmd_build(args: argparse.Namespace) -> int:
     records_path = Path(args.records).resolve()
     draft_path = Path(args.draft).resolve()
@@ -277,9 +291,21 @@ def cmd_build(args: argparse.Namespace) -> int:
             error="write_failed",
         )
 
+    # Per-kind citation breakdown (#385) — purely a measurement on the return
+    # envelope (the manifest JSON + its schema are unchanged). Classify each
+    # citation by its `claim_id` prefix so `knowledge-compose` can surface the
+    # `dcl-` rate every run: a distilled-page citation (`dcl-NNN`) is the
+    # cross-source-convergence evidence #344 made citable, and 0 distilled
+    # citations on a base with converging distilled pages is the #385 symptom.
+    breakdown: Counter[str] = Counter(_claim_kind(c["claim_id"]) for c in citations)
+
     return _emit(
         True,
-        data={"path": str(out_path), "citations_count": len(citations)},
+        data={
+            "path": str(out_path),
+            "citations_count": len(citations),
+            "claim_kinds": dict(breakdown),
+        },
     )
 
 

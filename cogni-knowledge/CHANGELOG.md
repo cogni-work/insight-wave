@@ -1,5 +1,48 @@
 # cogni-knowledge changelog
 
+## 0.1.42 — 2026-05-31 — fix: make wiki-composer actually cite distilled pages on convergence (closes #385)
+
+`#344` shipped the capability for `wiki-composer` to cite a distilled page (concept/entity/summary/
+learning) directly via its `dcl-NNN` claim_id when ≥2 sources converge — convergence carrying
+epistemic weight instead of a row of parallel source markers. But a real 60-source NIS2 bake-in
+produced **0 `dcl-` citations / 97**: the capability shipped but never fired, so the compounding-
+*evidence* loop (the structural realization of the differentiation thesis) was inert. Root cause, in
+the `wiki-composer.md` prompt:
+
+1. **The convergence trigger was told to be ignored.** A distilled claim's `backlinks[]` /
+   `source_claim_refs[]` are exactly the ≥2-source signal — but Phase 0 step 5 + Phase 2 step 1.2
+   called them "writer-side metadata you can ignore". The composer was instructed to skip the very
+   data that signals convergence.
+2. **Framing-first framing** — distilled pages were introduced as narrative framing, with citation an
+   optional afterthought; no default preference.
+3. **The default `standard` cadence competed and won** — "When two pages converge, cite both inline
+   (two adjacent markers)" is the explicit instruction for the convergence case, and it says enumerate
+   source markers, the anti-pattern #344 exists to replace.
+
+Acceptance path (b) — strengthen the prompt to *prefer* a distilled-page citation on ≥2-source
+convergence, plus a per-run measurement of the resulting `dcl-` rate:
+
+- **`agents/wiki-composer.md`** — the convergence signal is now read, not ignored: the composer counts
+  the distinct `backlinks[]` / `source_claim_refs[]` of each distilled claim, and a claim with ≥2
+  backlinks is a converged fact whose **preferred** citation is the distilled page (`dcl-NNN`), once,
+  over stacking source markers. Reworked across the `description`, Phase 0 step 5, Phase 2 step 1.2,
+  and the Phase 2 step 2 citation cadence (both `standard` and `executive`). All existing invariants
+  hold (wording from `distilled_claims[].text`, plain `<sup>[N]</sup>` marker, wikilink in the
+  reference list only, `dcl-NNN` never `null`).
+- **`scripts/citation-store.py`** — `build` now reports a per-kind `claim_kinds` breakdown
+  (`{distilled, source, null, other}`, keyed on the `claim_id` prefix) on the **return envelope**. The
+  manifest JSON + schema are unchanged — this is purely a measurement.
+- **`skills/knowledge-compose/SKILL.md`** — captures `data.claim_kinds`, surfaces
+  `Distilled citations: X of Y` in the run summary, and records `dcl=<n>` on the `wiki/log.md` compose
+  line for a cross-run record of the rate.
+- **Tests** — `tests/test_citation_store.sh` gains a deterministic case proving the `dcl-` count path
+  fires end-to-end through the serializer (distilled=1 / source=2 / null=1); `tests/test_compose_contract.sh`
+  asserts the strengthened preference language + the surfaced measurement.
+
+A real 60-source LLM re-run (path (a)) is not reproducible in CI (the `.alpha/` base is gitignored),
+so (b) is the resolvable path; the live `Distilled citations: X of Y` summary line is the operator's
+proof the loop fires (or the renewed symptom if it does not).
+
 ## 0.1.41 — 2026-05-31 — feat: per-citation slug→URL binding catches a mis-attributed URL (closes #395)
 
 The deeper follow-up to #383 (v0.1.40). #383's `citation-store.py build --ingest-manifest` gate is
