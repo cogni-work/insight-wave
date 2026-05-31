@@ -539,7 +539,7 @@ The trailing JSON line is captured for the final summary. Steps 5 and 6 are bund
 
 ### 7. Update wiki/index.md (cogni-wiki helper)
 
-First **sanitize the authored summary** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009) never reaches the reader-facing `wiki/index.md` one-liner (#387) — same guard `knowledge-ingest` Step 4.2 applies, pass the raw value via an env var:
+First **sanitize the authored summary** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009) never reaches the reader-facing `wiki/index.md` one-liner — same guard `knowledge-ingest` Step 4.2 applies, pass the raw value via an env var:
 
 ```
 CLEAN_SUMMARY=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
@@ -563,7 +563,7 @@ python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
     --max-summary 240
 ```
 
-Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. Write the summary as one crisp, complete sentence (no character count); `sanitize_summary` (typographic-substitute guard, #387) normalizes stray glyphs to regular spaces, and the `--max-summary 240` defensive backstop clamps on a word boundary with `…` only if it runs long, guarding `wiki/index.md` against a mid-word artifact. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
+Same call shape as `knowledge-ingest/SKILL.md` Step 4.2, with `--category "Syntheses"` instead of `"Sources"`. Write the summary as one crisp, complete sentence (no character count); `sanitize_summary` (the typographic-substitute guard) normalizes stray glyphs to regular spaces, and the `--max-summary 240` defensive backstop clamps on a word boundary with `…` only if it runs long, guarding `wiki/index.md` against a mid-word artifact. The helper is lock-wrapped (`_wiki_lock` at `<WIKI_ROOT>/.cogni-wiki/.lock`).
 
 Capture the JSON envelope. On `success: true`, set `INDEX_OK=yes` and continue to Step 8. On `success: false` OR a non-zero exit, set `INDEX_OK=no`, surface the error in the final summary, and **skip Step 8** (do not bump `entries_count` when the index didn't actually get a new row — keeping the counter and the filesystem in lockstep is the structural invariant `wiki-lint --fix=entries_count_drift` is supposed to reconcile, not a hazard for finalize to create).
 
