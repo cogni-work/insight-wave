@@ -205,6 +205,7 @@ For each entry in `ingested[]` written this run, in deterministic slug order:
    RAW_SUMMARY="<the source's one-sentence summary>" \
    python3 -c '
    import os, sys
+   sys.stdout.reconfigure(encoding="utf-8")
    sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
    from _knowledge_lib import sanitize_summary
    print(sanitize_summary(os.environ["RAW_SUMMARY"]))

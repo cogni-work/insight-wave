@@ -364,6 +364,7 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
    RAW_SUMMARY="<the page's summary from the merge result>" \
    python3 -c '
    import os, sys
+   sys.stdout.reconfigure(encoding="utf-8")
    sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
    from _knowledge_lib import sanitize_summary
    print(sanitize_summary(os.environ["RAW_SUMMARY"]))

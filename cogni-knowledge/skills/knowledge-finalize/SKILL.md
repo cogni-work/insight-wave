@@ -546,6 +546,7 @@ CLEAN_SUMMARY=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
 RAW_SUMMARY="<a crisp one-line description of the synthesis topic>" \
 python3 -c '
 import os, sys
+sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from _knowledge_lib import sanitize_summary
 print(sanitize_summary(os.environ["RAW_SUMMARY"]))
