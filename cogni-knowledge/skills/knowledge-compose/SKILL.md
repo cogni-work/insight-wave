@@ -284,9 +284,27 @@ Task(wiki-composer,
      OUTPUT_LANGUAGE=<resolved>)
 ```
 
-On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. If both pass, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it.
+**Snapshot the canonical manifest before the re-dispatch.** A successful `N+1` build overwrites `citation-manifest.json` (to describe `v<N+1>`) *before* Step 5 runs, so a copy of the current (`vN`) manifest is the only way a failed expansion can restore consistent `vN` state — the same discipline `knowledge-verify` uses before a revise round (`.citation-manifest.pre-r<round>.json`):
 
-**Cap = 1; fail-soft (the orchestrator must leave `vN` as the latest on any failure):** if the expansion dispatch returns `ok: false`, OR its Step-4.5 manifest build is rejected, OR its Step-5 on-disk verify fails — **remove the partial `v<N+1>` artifacts** (`output/draft-v<N+1>.md`, `.metadata/citation-records-v<N+1>.txt`, `.metadata/writer-outline-v<N+1>.json`) so the latest-draft resolver lands back on `vN`, then log `⚠ expansion failed — kept draft-vN` and proceed to Step 6 with `vN`. (`citation-store.py build` only writes `citation-manifest.json` on success, so the canonical manifest still reflects `vN` after a rejected `N+1` build; the artifact removal is what stops a stray `draft-v<N+1>.md` from being picked up as "latest" by verify/finalize.)
+```
+cp "<project_path>/.metadata/citation-manifest.json" \
+   "<project_path>/.metadata/.citation-manifest.pre-expand.json"
+```
+
+On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. Keep `v<N+1>` only when **both pass AND it grew the draft** (`words<N+1> > words<N>` — a re-roll that did not add words is treated as a failure below). On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it, then drop the now-stale snapshot:
+
+```
+rm -f "<project_path>/.metadata/.citation-manifest.pre-expand.json"
+```
+
+**Cap = 1; fail-soft (the orchestrator must leave `vN` AND its matching manifest as the canonical state on any failure):** if the expansion dispatch returns `ok: false`, OR its Step-4.5 manifest build is rejected, OR its Step-5 on-disk verify fails, OR it did not grow the draft (`words<N+1> ≤ words<N>`) — **remove the partial `v<N+1>` artifacts** (`output/draft-v<N+1>.md`, `.metadata/citation-records-v<N+1>.txt`, `.metadata/writer-outline-v<N+1>.json`) so the latest-draft resolver lands back on `vN`, **and restore the snapshot** so the canonical `citation-manifest.json` describes `vN` again:
+
+```
+mv "<project_path>/.metadata/.citation-manifest.pre-expand.json" \
+   "<project_path>/.metadata/citation-manifest.json"
+```
+
+then log `⚠ expansion failed — kept draft-vN (manifest restored)` (or `⚠ expansion did not grow the draft — kept draft-vN (manifest restored)` on the no-growth branch) and proceed to Step 6 with `vN`. The restore is load-bearing precisely in the build-OK-but-verify-fail (and no-growth) window: a successful `N+1` build has *already* overwritten `citation-manifest.json` to describe the about-to-be-removed `draft-v<N+1>`, so removing the artifacts alone would leave a stale manifest pointing at a deleted draft (its `draft_sentence`s no longer verbatim substrings of `vN`), breaking the downstream `knowledge-verify`/`knowledge-finalize` read. (After a *rejected* `N+1` build the manifest is still the `vN` one — `citation-store.py build` writes only on success — but the unconditional restore is correct there too: it simply moves the snapshot back over an identical file.)
 
 ### 6. Append wiki/log.md
 
@@ -315,7 +333,7 @@ Print ≤ 10 lines:
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
-- Expansion (standard density only): one of `floor-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN` — from Step 5.5; omit the line on a non-`standard` density run.
+- Expansion (standard density only): one of `floor-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion did not grow the draft — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, or `distilled_claims[]` on a cited distilled page.
 

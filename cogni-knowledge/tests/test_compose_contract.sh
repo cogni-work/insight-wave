@@ -209,6 +209,15 @@ assert_grep 'EXPAND_SECTIONS=' "$COMPOSE" "knowledge-compose: Step 5.5 threads E
 assert_grep 'BASELINE_DRAFT_VERSION=' "$COMPOSE" "knowledge-compose: Step 5.5 threads BASELINE_DRAFT_VERSION (#384)"
 assert_grep 'ceiling_hit' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on the composer's ceiling_hit (#384)"
 assert_grep 'kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft keeps draft-vN as latest (#384)"
+# Fail-soft must keep the canonical manifest consistent with vN: a successful N+1
+# build overwrites citation-manifest.json BEFORE Step 5 verify runs, so a
+# build-OK-but-verify-fail (or no-growth) outcome must snapshot vN's manifest
+# first and restore it — else verify/finalize read a stale manifest pointing at a
+# deleted draft-v(N+1).
+assert_grep 'citation-manifest.pre-expand' "$COMPOSE" "knowledge-compose: Step 5.5 snapshots the manifest before the expansion build (#384)"
+assert_grep 'manifest restored\|restore the snapshot\|restore the manifest' "$COMPOSE" "knowledge-compose: Step 5.5 restores the vN manifest on expansion failure (#384)"
+# Regression guard: keep v(N+1) only if it actually grew the draft.
+assert_grep 'did not grow\|words<N+1> > words<N>\|words<N+1> ≤ words<N>\|grew the draft' "$COMPOSE" "knowledge-compose: Step 5.5 keeps vN when the expansion did not grow the draft (#384)"
 # The cap is exactly ONE expansion — the skill must say so (defends against a
 # future edit re-introducing an unbounded loop).
 assert_grep 'capped at ONE\|capped at one\|cap = 1\|ONE bounded\|one bounded\|ONE expansion\|once in' "$COMPOSE" "knowledge-compose: Step 5.5 is capped at ONE expansion (#384)"
