@@ -17,6 +17,7 @@ set -eu
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FIXTURES="$PLUGIN_ROOT/tests/fixtures"
 LINT="$PLUGIN_ROOT/skills/wiki-lint/scripts/lint_wiki.py"
+HEALTH="$PLUGIN_ROOT/skills/wiki-health/scripts/health.py"
 MIGRATE="$PLUGIN_ROOT/skills/wiki-setup/scripts/migrate_layout.py"
 WORKDIR="$(mktemp -d)"
 WIKI="$WORKDIR/test-wiki"
@@ -471,5 +472,74 @@ esac
 orphans=$(python3 "$LINT" --wiki-root "$CLOB" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([w for w in d['warnings'] if w['class']=='orphan_page']))")
 [ "$orphans" = "0" ] || fail "clobber: expected 0 orphan_page after --fix=all, got $orphans"
 green "  --fix=all applies reverse_link_missing AND frontmatter_defaults to one page without clobber"
+
+# ---------- 7) frontmatter_defaults reconciles a CROSSED id: (#415) ----------
+# A source page whose frontmatter `id:` is a *different* source's slug. The
+# filename stem is authoritative; health.py flags id_mismatch (a hard error
+# that blocks wiki-lint without --ignore-health). frontmatter_defaults must
+# rewrite id: -> filename stem, not just backfill a missing id:.
+TODAY=$(date +%Y-%m-%d)
+XID="$WORKDIR/crossed-id-wiki"
+mkdir -p "$XID/wiki/sources" "$XID/.cogni-wiki"
+cat > "$XID/.cogni-wiki/config.json" <<EOF
+{"name":"x","slug":"x","created":"$TODAY","entries_count":1,"last_lint":null,"schema_version":"0.0.6"}
+EOF
+cat > "$XID/wiki/index.md" <<EOF
+# Index
+
+## Sources
+
+- [[overview-source]] — o
+EOF
+# id: carries a DIFFERENT source's slug than the filename stem.
+cat > "$XID/wiki/sources/overview-source.md" <<EOF
+---
+id: tuv-other-source
+title: "Overview Source"
+type: source
+tags: [source]
+created: $TODAY
+updated: $TODAY
+sources: ["https://example.org/overview"]
+---
+# Overview Source
+Body text comfortably beyond the fifty-character stub threshold so no stub warning.
+EOF
+
+# Sanity: health reports the crossed id as an id_mismatch error before the fix.
+before_mm=$(python3 "$HEALTH" --wiki-root "$XID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
+[ "$before_mm" = "1" ] || fail "crossed-id: expected 1 id_mismatch before fix, got $before_mm"
+
+# Dry-run: plan the change, write nothing (on-disk id: still the wrong slug).
+out=$(python3 "$LINT" --wiki-root "$XID" --fix=frontmatter_defaults --dry-run)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+planned = [f for f in d['fixed'] if f['class']=='frontmatter_defaults' and f['page']=='overview-source']
+assert planned, 'crossed-id: no frontmatter_defaults plan emitted'
+assert all(f['applied'] is False for f in planned), 'crossed-id: dry-run applied=true'
+assert any('tuv-other-source' in f.get('change','') and 'overview-source' in f.get('change','') for f in planned), f'crossed-id: change text missing rename: {planned}'
+" || fail "crossed-id: dry-run plan check"
+grep -q '^id: tuv-other-source$' "$XID/wiki/sources/overview-source.md" \
+  || fail "crossed-id: dry-run mutated id: on disk"
+
+# Wet: id: rewritten to the filename stem.
+python3 "$LINT" --wiki-root "$XID" --fix=frontmatter_defaults >/dev/null
+grep -q '^id: overview-source$' "$XID/wiki/sources/overview-source.md" \
+  || fail "crossed-id: wet fix did not rewrite id: to filename stem"
+
+# Idempotent: a second wet run plans no further frontmatter_defaults change.
+out=$(python3 "$LINT" --wiki-root "$XID" --fix=frontmatter_defaults)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+again = [f for f in d['fixed'] if f['class']=='frontmatter_defaults' and f['page']=='overview-source']
+assert not again, f'crossed-id: fixer not idempotent: {again}'
+" || fail "crossed-id: fixer not idempotent on re-run"
+
+# End-to-end unblock: health now reports 0 id_mismatch errors.
+after_mm=$(python3 "$HEALTH" --wiki-root "$XID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
+[ "$after_mm" = "0" ] || fail "crossed-id: expected 0 id_mismatch after fix, got $after_mm"
+green "  frontmatter_defaults reconciles a crossed id: -> filename (health id_mismatch cleared)"
 
 green "ALL TESTS PASS"

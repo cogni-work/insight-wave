@@ -837,9 +837,9 @@ def fix_synthesis_no_wiki_source(
 def fix_frontmatter_defaults(
     all_pages: dict, slug_index: dict, dry_run: bool
 ) -> tuple:
-    """Backfill missing `id:` (= filename stem) and normalise non-ISO
-    `updated:` dates. Pages without frontmatter at all are left to
-    `health.py`'s `missing_frontmatter` error.
+    """Backfill missing **or reconcile a mismatched** `id:` (= filename stem)
+    and normalise non-ISO `updated:` dates. Pages without frontmatter at all
+    are left to `health.py`'s `missing_frontmatter` error.
     """
     fixed: list = []
     failed: list = []
@@ -868,9 +868,18 @@ def fix_frontmatter_defaults(
             new_fm = list(fm_lines)
             changes: list = []
 
-            if not any(ID_LINE_RE.match(L) for L in new_fm):
+            id_idx = next(
+                (i for i, L in enumerate(new_fm) if ID_LINE_RE.match(L)), None
+            )
+            if id_idx is None:
                 new_fm = ["id: " + slug] + new_fm
                 changes.append("+id")
+            else:
+                # ID_LINE_RE has no value capture group; parse it off the colon.
+                old = new_fm[id_idx].split(":", 1)[1].strip().strip("'\"")
+                if old != slug:
+                    new_fm[id_idx] = "id: " + slug
+                    changes.append(f"id: {old} → {slug}")
 
             for i, L in enumerate(new_fm):
                 m = UPDATED_LINE_RE.match(L)
