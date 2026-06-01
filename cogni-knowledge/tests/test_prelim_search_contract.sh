@@ -35,19 +35,23 @@ assert_grep 'reliminary scoping scan' "$PLAN" "knowledge-plan: documents the pre
 assert_grep 'no-prelim-search' "$PLAN" "knowledge-plan: --no-prelim-search opt-out is documented"
 assert_grep '[Ff]ail-soft' "$PLAN" "knowledge-plan: the scan is fail-soft"
 assert_grep 'rides framing' "$PLAN" "knowledge-plan: the scan rides framing's engage decision (opt-in, no new decision point)"
-# The scan must not fire on the non-interactive / opt-out paths.
-assert_grep 'no-framing.*--dry-run\|--dry-run.*no-prelim-search\|never runs on a sharp topic' "$PLAN" "knowledge-plan: the scan is skipped on sharp / --no-framing / --dry-run / --no-prelim-search"
+# The scan must not fire on the non-interactive paths — one stable phrase anchors
+# the whole "sharp topic / --no-framing / --dry-run" sentence (--no-prelim-search
+# is asserted separately above).
+assert_grep 'never runs on a sharp topic' "$PLAN" "knowledge-plan: the scan never fires on a sharp topic / --no-framing / --dry-run"
 
 # --- the WebSearch loosening must NOT erode the WebFetch ban ---------------
 # Out of scope used to flatly forbid both; it now allows the opt-in scan but
 # keeps WebFetch forbidden outright.
 assert_not_grep 'Does NOT call WebSearch or WebFetch' "$PLAN" "knowledge-plan: the flat 'no WebSearch or WebFetch' forbiddance is replaced (scan is now allowed)"
-assert_grep 'WebSearch \*\*by default\*\*' "$PLAN" "knowledge-plan: WebSearch is forbidden only 'by default' (the scan is the exception)"
-assert_grep 'Never\*\* calls WebFetch' "$PLAN" "knowledge-plan: WebFetch is still forbidden outright"
+# Match the semantic contract, not the markdown emphasis, so a reword that drops
+# the bold doesn't silently break the guard.
+assert_grep 'WebSearch.*by default' "$PLAN" "knowledge-plan: WebSearch is forbidden only by default (the scan is the exception)"
+assert_grep '[Nn]ever.*calls WebFetch' "$PLAN" "knowledge-plan: WebFetch is still forbidden outright"
 
 # --- topic-framing playbook: the scan move is wired in ---------------------
 assert_grep 'Step 0.2b' "$FRAMING" "topic-framing: has the Step 0.2b preliminary scan move"
-assert_grep 'ground → scan → sharpen' "$FRAMING" "topic-framing: spine updated to ground → scan → sharpen"
+assert_grep 'ground.*scan.*sharpen' "$FRAMING" "topic-framing: spine updated to ground → scan → sharpen"
 assert_grep '[Pp]reliminary scoping scan' "$FRAMING" "topic-framing: names the preliminary scoping scan"
 assert_grep 'no-prelim-search' "$FRAMING" "topic-framing: documents the --no-prelim-search opt-out"
 
