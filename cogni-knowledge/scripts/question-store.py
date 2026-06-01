@@ -86,9 +86,18 @@ def cmd_emit(args: argparse.Namespace) -> int:
     }
 
     # sub_question_id -> ordered, de-duped list of answering source slugs.
+    # A source whose ingested URL matches no candidate sub_question_ref (e.g. a
+    # redirect / PDF canonicalization diverged the ingested URL from the
+    # candidate URL) maps to no question node and is recorded in
+    # `sources_unmapped` rather than dropping silently (observability).
     sq_findings: dict[str, list[str]] = {}
+    sources_unmapped: list[str] = []
     for nurl, slug in url_to_slug.items():
-        for ref in url_to_refs.get(nurl, []):
+        refs = url_to_refs.get(nurl, [])
+        if not refs:
+            sources_unmapped.append(slug)
+            continue
+        for ref in refs:
             bucket = sq_findings.setdefault(ref, [])
             if slug not in bucket:
                 bucket.append(slug)
@@ -101,12 +110,24 @@ def cmd_emit(args: argparse.Namespace) -> int:
                 return ptype
         return None
 
+    emitted_slugs: dict[str, str] = {}  # slug -> sub_question_id written this run
+
     def resolve_slug(base: str):
-        """Free slug, or an existing QUESTION page -> reuse (merge). A collision
-        with a different page type -> -q / -q-N disambiguation."""
+        """Free slug, or an existing QUESTION page from a PRIOR run -> reuse
+        (merge). Disambiguate with -q / -q-N when the base slug collides with a
+        different page type OR with a question page already written *this run*
+        for a different sub-question — two distinct sub-questions whose
+        theme_label slugifies identically must not conflate into one node, while
+        the cross-run enrich-on-collision merge stays intact."""
         cand = base
         n = 2
         while True:
+            if cand in emitted_slugs:
+                # Already written this run (different sub-question; each id is
+                # processed once) -> never a merge target, disambiguate.
+                cand = f"{base}-q" if n == 2 else f"{base}-q-{n}"
+                n += 1
+                continue
             existing = slug_exists_as(cand)
             if existing in (None, "question"):
                 return cand, existing == "question"
@@ -157,7 +178,7 @@ def cmd_emit(args: argparse.Namespace) -> int:
             f"theme_label: {json.dumps(theme, ensure_ascii=False)}",
             f"sub_question_id: {sqid}",
             f"search_guidance: {json.dumps(sq.get('search_guidance', ''), ensure_ascii=False)}",
-            f"candidate_domains: [{', '.join(str(d) for d in domains)}]",
+            f"candidate_domains: [{', '.join(json.dumps(str(d), ensure_ascii=False) for d in domains)}]",
             f"sources_answering: [{', '.join(findings)}]",
             "---",
         ]
@@ -167,6 +188,7 @@ def cmd_emit(args: argparse.Namespace) -> int:
         page = "\n".join(fm_lines) + "\n" + "\n".join(body_lines).rstrip() + "\n"
 
         atomic_write_text(path, page)
+        emitted_slugs[slug] = sqid
         questions_out.append({
             "slug": slug,
             "sub_question_id": sqid,
@@ -178,6 +200,7 @@ def cmd_emit(args: argparse.Namespace) -> int:
     return _emit(True, data={
         "questions": questions_out,
         "skipped_no_findings": skipped_no_findings,
+        "sources_unmapped": sources_unmapped,
         "questions_written": len(questions_out),
     })
 

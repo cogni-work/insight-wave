@@ -15,6 +15,10 @@
 #   5. Cross-type slug collision (a source page already owns the theme slug)
 #      disambiguates with a -q suffix rather than shadowing the source page.
 #   6. Legacy plan with no theme_label falls back to the sq-NN slug.
+#   7. Within-run collision: two DISTINCT sub-questions whose theme_label
+#      slugifies identically split into two -q-disambiguated nodes (own
+#      sub_question_id + findings) rather than conflating onto the last writer.
+#   8. wiki/questions/ is created on demand by the first emit (not pre-made).
 #
 # bash 3.2 + python3 stdlib only. Exits non-zero on any failure.
 
@@ -39,7 +43,9 @@ trap cleanup EXIT
 
 WIKI="$WORK/wiki-root"
 PROJ="$WORK/project"
-mkdir -p "$WIKI/wiki/questions" "$WIKI/wiki/sources" "$WIKI/.cogni-wiki" "$PROJ/.metadata"
+# NB: wiki/questions/ is deliberately NOT pre-created — the first emit must
+# mkdir it on demand (atomic_write_text -> path.parent.mkdir), asserted below.
+mkdir -p "$WIKI/wiki/sources" "$WIKI/.cogni-wiki" "$PROJ/.metadata"
 echo '{"schema_version":"0.0.7","entries_count":0}' > "$WIKI/.cogni-wiki/config.json"
 
 # --- synthetic findings on disk (the Step 3/4 source pages) ----------------
@@ -113,6 +119,11 @@ OUT="$(emit)"
 echo "$OUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] else 1)' \
   && green "PASS: emit returns success" || { red "FAIL: emit not success"; echo "$OUT"; errors=$((errors+1)); }
 
+# 0) questions/ was created on demand by the first emit (not pre-made above).
+[ -d "$WIKI/wiki/questions" ] \
+  && green "PASS: wiki/questions/ created on demand by first emit" \
+  || { red "FAIL: wiki/questions/ not created on demand"; errors=$((errors+1)); }
+
 # 1) sq-01 + sq-03 pages exist; sq-02 (no findings) does not.
 SQ1="$WIKI/wiki/questions/records-of-processing-scope.md"
 SQ3="$WIKI/wiki/questions/pflichten-fuer-risikoklassen.md"
@@ -178,12 +189,56 @@ assert_grep 'type: source' "$WIKI/wiki/sources/court-interpretation.md" \
   && green "PASS: did not write a question at the colliding bare slug" \
   || { red "FAIL: question shadowed the source slug"; errors=$((errors+1)); }
 
+# ===== Within-run collision: two DISTINCT sub-questions, identical slug ======
+# Two sub-questions whose theme_label slugifies to the same base must NOT
+# conflate into one node — the second disambiguates with -q and keeps its own
+# sub_question_id + findings (regression guard for the same-run merge bug).
+cat > "$PROJ/.metadata/plan.json" <<'EOF'
+{"sub_questions":[
+  {"id":"sq-31","query":"Retention under Art 5?","search_guidance":"x","theme_label":"Data Retention","candidate_domains":["europa.eu"]},
+  {"id":"sq-32","query":"Retention under sector rules?","search_guidance":"x","theme_label":"Data Retention","candidate_domains":["bfdi.bund.de"]}
+]}
+EOF
+cat > "$PROJ/.metadata/candidates.json" <<'EOF'
+{"schema_version":"0.1.0","candidates":[
+  {"url":"https://europa.eu/retain-a","sub_question_refs":["sq-31"]},
+  {"url":"https://europa.eu/retain-b","sub_question_refs":["sq-32"]}
+]}
+EOF
+cat > "$PROJ/.metadata/ingest-manifest.json" <<'EOF'
+{"schema_version":"0.1.0","ingested":[
+  {"url":"https://europa.eu/retain-a","slug":"retain-a"},
+  {"url":"https://europa.eu/retain-b","slug":"retain-b"}
+],"skipped":[]}
+EOF
+OUTC="$(emit)"
+DR1="$WIKI/wiki/questions/data-retention.md"
+DR2="$WIKI/wiki/questions/data-retention-q.md"
+{ [ -f "$DR1" ] && [ -f "$DR2" ]; } \
+  && green "PASS: two same-slug sub-questions wrote two distinct pages (-q disambiguation)" \
+  || { red "FAIL: within-run collision did not split into two pages"; echo "$OUTC"; errors=$((errors+1)); }
+# Distinct sub_question_ids, not conflated onto the last writer.
+DR1ID="$(grep '^sub_question_id:' "$DR1" | awk '{print $2}')"
+DR2ID="$(grep '^sub_question_id:' "$DR2" | awk '{print $2}')"
+[ "$DR1ID" != "$DR2ID" ] \
+  && green "PASS: each page kept its own sub_question_id ($DR1ID / $DR2ID)" \
+  || { red "FAIL: sub_question_id conflated ($DR1ID == $DR2ID)"; errors=$((errors+1)); }
+# No finding bleed: the base page links only its own source, not both.
+if grep -q '\[\[retain-a\]\]' "$DR1" && ! grep -q '\[\[retain-b\]\]' "$DR1"; then
+  green "PASS: base page lists only its own finding (no finding conflation)"
+else
+  red "FAIL: findings conflated across the two same-slug sub-questions"; errors=$((errors+1))
+fi
+
 # ===== Legacy plan: no theme_label -> sq-NN slug fallback ====================
 cat > "$PROJ/.metadata/plan.json" <<'EOF'
 {"sub_questions":[{"id":"sq-09","query":"Legacy plan question?","search_guidance":"x"}]}
 EOF
 cat > "$PROJ/.metadata/candidates.json" <<'EOF'
 {"schema_version":"0.1.0","candidates":[{"url":"https://europa.eu/records","sub_question_refs":["sq-09"]}]}
+EOF
+cat > "$PROJ/.metadata/ingest-manifest.json" <<'EOF'
+{"schema_version":"0.1.0","ingested":[{"url":"https://europa.eu/records","slug":"records-scope"}],"skipped":[]}
 EOF
 OUT4="$(emit)"
 [ -f "$WIKI/wiki/questions/sq-09.md" ] \
