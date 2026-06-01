@@ -134,7 +134,7 @@ REVERSE_LINK_SOURCE_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\] links here")
 TAG_TYPO_MSG_RE = re.compile(
     r"^'(?P<bad>[^']+)' \(\d+x\) likely typo of '(?P<good>[^']+)'"
 )
-ID_LINE_RE = re.compile(r"^id\s*:")
+ID_LINE_RE = re.compile(r"^id\s*:\s*(.*?)\s*$")
 UPDATED_LINE_RE = re.compile(r"^updated\s*:\s*(.*?)\s*$")
 SOURCES_LINE_RE = re.compile(r"^sources\s*:(.*)$")
 
@@ -837,9 +837,9 @@ def fix_synthesis_no_wiki_source(
 def fix_frontmatter_defaults(
     all_pages: dict, slug_index: dict, dry_run: bool
 ) -> tuple:
-    """Backfill missing `id:` (= filename stem) and normalise non-ISO
-    `updated:` dates. Pages without frontmatter at all are left to
-    `health.py`'s `missing_frontmatter` error.
+    """Backfill missing **or reconcile a mismatched** `id:` (= filename stem)
+    and normalise non-ISO `updated:` dates. Pages without frontmatter at all
+    are left to `health.py`'s `missing_frontmatter` error.
     """
     fixed: list = []
     failed: list = []
@@ -868,9 +868,17 @@ def fix_frontmatter_defaults(
             new_fm = list(fm_lines)
             changes: list = []
 
-            if not any(ID_LINE_RE.match(L) for L in new_fm):
+            id_idx = next(
+                (i for i, L in enumerate(new_fm) if ID_LINE_RE.match(L)), None
+            )
+            if id_idx is None:
                 new_fm = ["id: " + slug] + new_fm
                 changes.append("+id")
+            else:
+                old = ID_LINE_RE.match(new_fm[id_idx]).group(1).strip("'\"")
+                if old != slug:
+                    new_fm[id_idx] = "id: " + slug
+                    changes.append(f"id: {old} → {slug}")
 
             for i, L in enumerate(new_fm):
                 m = UPDATED_LINE_RE.match(L)
