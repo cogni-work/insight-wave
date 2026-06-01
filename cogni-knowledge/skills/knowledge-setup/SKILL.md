@@ -104,7 +104,7 @@ Resolve `market` and `output_language`:
 
 Carry the resolved `market` + `output_language` into Step 4.
 
-**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`; #309 P2) are flag-or-default — NOT prompted here.** Unlike `market`/`output_language` (where a wrong language mis-languages the whole base, so asking once is worth it), each writer-quality knob has a safe default and is primarily a per-run choice on `knowledge-plan`. So Step 2.5's `AskUserQuestion` stays scoped to market + language; the four knobs are persisted from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`4000`). The base default is overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`) are flag-or-default — NOT prompted here.** Unlike `market`/`output_language` (where a wrong language mis-languages the whole base, so asking once is worth it), each writer-quality knob has a safe default and is primarily a per-run choice on `knowledge-plan`. So Step 2.5's `AskUserQuestion` stays scoped to market + language; the four knobs are persisted from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`4000`). The base default is overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
 
 ### 3. Dispatch `cogni-wiki:wiki-setup` (only if no wiki exists)
 
