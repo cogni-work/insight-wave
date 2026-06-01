@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1.1",
+  "draft_version": 1,
+  "citations": [
+    {
+      "id": "cit-001",
+      "draft_position": "02:01",
+      "draft_sentence": "Under the NIS2 regime, authorities may impose fines even without a preceding security incident, and affected entities must maintain documented governance structures.<sup>[1](https://www.activemind.de/nis2)</sup><sup>[2](https://www.bsi.bund.de/nis2-pflichten)</sup>",
+      "wiki_slug": "activemind-nis2",
+      "claim_id": "clm-003",
+      "url": "https://www.activemind.de/nis2"
+    },
+    {
+      "id": "cit-002",
+      "draft_position": "02:01",
+      "draft_sentence": "Under the NIS2 regime, authorities may impose fines even without a preceding security incident, and affected entities must maintain documented governance structures.<sup>[1](https://www.activemind.de/nis2)</sup><sup>[2](https://www.bsi.bund.de/nis2-pflichten)</sup>",
+      "wiki_slug": "bsi-nis2-pflichten",
+      "claim_id": "clm-004",
+      "url": "https://www.bsi.bund.de/nis2-pflichten"
+    },
+    {
+      "id": "cit-003",
+      "draft_position": "02:02",
+      "draft_sentence": "Essential and important entities across eighteen regulated sectors fall within the directive's scope.<sup>[2](https://www.bsi.bund.de/nis2-pflichten)</sup>",
+      "wiki_slug": "bsi-nis2-pflichten",
+      "claim_id": "clm-001",
+      "url": "https://www.bsi.bund.de/nis2-pflichten"
+    }
+  ]
+}
