@@ -849,7 +849,7 @@ Task(wiki-contradictor,
 
 The structural-quality half of the cogni-research feature-parity gate. Step 10.6 (and Phase 6) check **citation-claim alignment** — does each cited sentence match the cited page's claims. This step checks **structural quality** — does the draft address every sub-question, flow coherently, draw on diverse publishers, go deep, and read cleanly in its output language. A synthesis can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph). Dispatches the `wiki-reviewer` agent to score the draft on the same 5 weighted dimensions cogni-research's reviewer scores (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15, with an inline citation-density gate that caps Depth and — #309 P2 — an advisory Word Count Gate that caps Completeness on a `standard`-density deficit / `executive`-density excess) and emit `<project_path>/.metadata/structural-review-v<N>.json` (schema `0.1.1`).
 
-**Advisory-only, fail-soft posture (explicit).** Step 10.7 is observability-only. The reviewer's verdict is **advisory** — the composer is single-pass and the revisor is zero-network/citation-only, so a `revise` verdict drives **no** automated content-expansion fix loop and **never rolls back the synthesis**. A Task failure, schema mismatch, or malformed envelope surfaces in Step 11 as `⚠ structural review FAILED — synthesis on disk; advisory only` and never blocks. The synthesis already landed at Steps 6–10; the reviewer is a read-only scoring layer (same posture as Step 10.6).
+**Advisory-only, fail-soft posture (explicit).** Step 10.7 is observability-only. The reviewer's verdict is **advisory** — a `revise` verdict here drives **no** content-expansion fix loop *from finalize* and **never rolls back the synthesis**. The bounded zero-network floor-expansion runs **earlier, in `knowledge-compose` Step 5.5** (before verify), so under `standard` density a real word-floor deficit has typically already been closed by deposit time; this reviewer is the advisory **backstop** that records whether the draft cleared the floor, not the actuator. A Task failure, schema mismatch, or malformed envelope surfaces in Step 11 as `⚠ structural review FAILED — synthesis on disk; advisory only` and never blocks. The synthesis already landed at Steps 6–10; the reviewer is a read-only scoring layer (same posture as Step 10.6).
 
 **Skip conditions (evaluated in order).** The orchestrator skips dispatch (and writes no JSON) when any of these hold:
 
@@ -869,14 +869,14 @@ try:
 except Exception:
     p = {}
 # target_words coercion is guarded separately so a hand-edited non-numeric value
-# falls back to 5000 instead of crashing this resolution subprocess (the reviewer
+# falls back to 4000 instead of crashing this resolution subprocess (the reviewer
 # also defaults it, but a crash here would blank all three shell vars).
 try:
-    tw = int(p.get("target_words") or 5000)
+    tw = int(p.get("target_words") or 4000)
     if tw <= 0:
-        tw = 5000
+        tw = 4000
 except (TypeError, ValueError):
-    tw = 5000
+    tw = 4000
 print(json.dumps({
     "output_language": (p.get("output_language") or "en"),
     "target_words": tw,
@@ -904,7 +904,7 @@ Task(wiki-reviewer,
      REVIEW_OUT_PATH=$PROJECT_PATH/.metadata/structural-review-v$DRAFT_VERSION.json)
 ```
 
-The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited synthesis differs only by frontmatter + reference renumber, and the structural dimensions are draft-level. `OUTPUT_LANGUAGE` makes the agent score Clarity natively and exclude the right reference heading from the density gate (never translates — bilingual scoring is out of scope here, same posture as Step 10.6). `TARGET_WORDS` + `PROSE_DENSITY` drive the **advisory** Word Count Gate (deficit under standard / excess under executive) — which caps Completeness and emits a `Word deficit`/`Word excess` issue but never blocks (the composer is single-pass; there is no expansion loop).
+The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited synthesis differs only by frontmatter + reference renumber, and the structural dimensions are draft-level. `OUTPUT_LANGUAGE` makes the agent score Clarity natively and exclude the right reference heading from the density gate (never translates — bilingual scoring is out of scope here, same posture as Step 10.6). `TARGET_WORDS` + `PROSE_DENSITY` drive the **advisory** Word Count Gate (deficit under standard / excess under executive) — which caps Completeness and emits a `Word deficit`/`Word excess` issue but never blocks. There is no expansion loop *from finalize*; under `standard` density the bounded floor-expansion already ran earlier, in `knowledge-compose` Step 5.5, so this gate is the advisory backstop.
 
 **Interpret return.**
 

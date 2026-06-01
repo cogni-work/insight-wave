@@ -91,7 +91,7 @@ assert rd.get('output_language') == 'en', rd
 assert rd.get('prose_density') == 'standard', rd
 assert rd.get('tone') == 'objective', rd
 assert rd.get('citation_format') == 'ieee', rd
-assert rd.get('target_words') == 5000, rd
+assert rd.get('target_words') == 4000, rd  # #384: default retuned 5000 -> 4000
 print('OK')
 " | grep -q OK; then
   green "PASS: init without flags falls back to full default research_defaults block (back-compat)"
