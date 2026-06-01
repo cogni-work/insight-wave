@@ -247,6 +247,8 @@ A `standard`-density draft that lands well under its word floor is thin in *trea
 
 **Gate (fire only when BOTH hold):** the composer's returned `words < TARGET_WORDS × 0.85` **AND** the composer's returned `ceiling_hit == false`. If `words ≥ TARGET_WORDS × 0.85`, skip silently (the floor is effectively met). If `ceiling_hit == true`, skip with `expansion skipped: at single-call ceiling — raise coverage via more ingestion (knowledge-curate/-fetch)` — re-rolling the composer cannot fit more words in one call; the fix is more wiki coverage.
 
+This `0.85` is the **real-deficit actuator trigger** and is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate's tiered completeness caps (finalize Step 10.7, which scores the *post*-expansion draft): the two thresholds serve different roles — actuator vs advisory backstop — and a future tweak to one need not track the other.
+
 **Derive the thin sections** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections whose `drafted_words < budget × 0.9`, excluding the References section (`covers_sub_questions: []`). Paths via env vars:
 
 ```
@@ -255,16 +257,29 @@ python3 -c '
 import json, os
 from pathlib import Path
 o = json.loads(Path(os.environ["OUTLINE_PATH"]).read_text(encoding="utf-8"))
-thin = [s["index"] for s in o.get("sections", [])
-        if s.get("covers_sub_questions")  # topical, not References/structural
-        and isinstance(s.get("drafted_words"), int)
-        and isinstance(s.get("budget"), int)
+# Evidence-bearing sections = any section covering ≥1 sub-question (this excludes
+# only the structural References section, covers_sub_questions: []). Synthesis
+# sections (Introduction / cross-cutting / Conclusion) also cover sub-questions,
+# so they remain eligible — but their budgets (400–800w) run smaller than topical
+# body sections (600–1200w), so the budget-ordered fallback below naturally
+# prefers the body sections without a fragile heading/cluster-count heuristic.
+topical = [s for s in o.get("sections", [])
+           if s.get("covers_sub_questions")
+           and isinstance(s.get("budget"), int)]
+thin = [s for s in topical
+        if isinstance(s.get("drafted_words"), int)
         and s["drafted_words"] < s["budget"] * 0.9]
-print(",".join(thin))
+# Fallback: the Step-5.5 gate already established a real TOTAL deficit, but no
+# section is individually flagged thin — deepen the largest-budget sections so a
+# real deficit still gets an expansion attempt. This covers the RESUME_FROM_OUTLINE
+# path (and any composer that under-reports per-section drafted_words), where
+# drafted_words may be null/unfilled and thin comes back empty on a genuine shortfall.
+chosen = thin if thin else sorted(topical, key=lambda s: s["budget"], reverse=True)[:3]
+print(",".join(str(s["index"]) for s in chosen))
 '
 ```
 
-Capture this as `EXPAND_SECTIONS` and compute `WORD_DEFICIT = TARGET_WORDS - words`. If `EXPAND_SECTIONS` is empty (no topical section is individually under-budget though the total is short), skip with `expansion skipped: no under-budget topical section to deepen` — there is no thin section to target.
+Capture this as `EXPAND_SECTIONS` and compute `WORD_DEFICIT = TARGET_WORDS - words`. The fallback to the largest topical sections by budget means a real total deficit normally yields a non-empty `EXPAND_SECTIONS` even when no section is individually under-budget (the actuator's effectiveness no longer depends on the composer reliably populating every `sections[].drafted_words`). If `EXPAND_SECTIONS` is still empty — the degenerate case where the outline carries no topical section with a valid integer `budget` — skip with `expansion skipped: no topical section in the outline to deepen` — there is nothing to target.
 
 **Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4):
 
@@ -278,7 +293,7 @@ Task(wiki-composer,
      EXPAND_SECTIONS=<comma-list>,
      WORD_DEFICIT=<TARGET_WORDS - words>,
      TARGET_WORDS=<resolved>,
-     PROSE_DENSITY=standard,
+     PROSE_DENSITY=<resolved>,
      TONE=<resolved>,
      CITATION_FORMAT=<resolved>,
      OUTPUT_LANGUAGE=<resolved>)

@@ -206,6 +206,11 @@ assert_grep 'no-expand' "$COMPOSE" "knowledge-compose: --no-expand opt-out flag 
 assert_grep '5.5' "$COMPOSE" "knowledge-compose: Step 5.5 bounded floor-expansion present (#384)"
 assert_grep 'EXPANSION_MODE=true' "$COMPOSE" "knowledge-compose: Step 5.5 re-dispatches with EXPANSION_MODE=true (#384)"
 assert_grep 'EXPAND_SECTIONS=' "$COMPOSE" "knowledge-compose: Step 5.5 threads EXPAND_SECTIONS into the re-dispatch (#384)"
+# #401 note 1: EXPAND_SECTIONS must fall back to the largest topical sections by
+# budget when a real total deficit holds but no section is individually flagged
+# (the RESUME_FROM_OUTLINE / null drafted_words path) — else a genuine deficit
+# silently skips. Guard the fallback so it can't regress to thin-only.
+assert_grep 'largest topical sections by budget' "$COMPOSE" "knowledge-compose: Step 5.5 falls back to the largest topical sections by budget when none is individually thin (#401)"
 assert_grep 'BASELINE_DRAFT_VERSION=' "$COMPOSE" "knowledge-compose: Step 5.5 threads BASELINE_DRAFT_VERSION (#384)"
 assert_grep 'ceiling_hit' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on the composer's ceiling_hit (#384)"
 assert_grep 'kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft keeps draft-vN as latest (#384)"
