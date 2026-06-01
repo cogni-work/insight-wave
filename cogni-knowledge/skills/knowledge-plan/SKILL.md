@@ -1,7 +1,7 @@
 ---
 name: knowledge-plan
-description: "Phase 1 of the inverted pipeline. Decomposes a research topic into 3-7 sub-questions with per-sub-question candidate-domain hints, writes plan.json into a fresh project directory under the bound knowledge base. No web access at this phase — pure decomposition. Use this skill whenever the user says 'plan a new research topic', 'decompose topic X into sub-questions', 'start a knowledge-pipeline run on X', 'knowledge plan for X', 'create sub-questions for X under the eu-ai-act base'. After plan, the user runs knowledge-curate to discover candidate sources."
-allowed-tools: Read, Write, Bash, Glob, AskUserQuestion, Skill
+description: "Phase 1 of the inverted pipeline. Decomposes a research topic into 3-7 sub-questions with per-sub-question candidate-domain hints, writes plan.json into a fresh project directory under the bound knowledge base. Pure decomposition by default (no web); an optional, fail-soft preliminary scoping search engages only inside topic-framing (vague topics or --frame) to ground sub-questions in what's actually searchable. Use this skill whenever the user says 'plan a new research topic', 'decompose topic X into sub-questions', 'start a knowledge-pipeline run on X', 'knowledge plan for X', 'create sub-questions for X under the eu-ai-act base'. After plan, the user runs knowledge-curate to discover candidate sources."
+allowed-tools: Read, Write, Bash, Glob, AskUserQuestion, Skill, WebSearch
 ---
 
 # Knowledge Plan
@@ -33,8 +33,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` once at the start o
 | `--tone` | No | Writing tone (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`; one of 15). Resolved in Step 0.5: flag > binding `research_defaults.tone` > framing suggestion > `objective`. |
 | `--citation-format` | No | `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged author-date — see `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md`). Resolved in Step 0.5: flag > binding > framing suggestion > `ieee`. `wikilink` aliases to `ieee`. |
 | `--target-words` | No | Positive int. Soft target (floor under `standard`, ceiling under `executive`). Resolved in Step 0.5: flag > binding > framing suggestion > `5000`. Written into `plan.json::target_words` (which `knowledge-compose`/`-reviewer` read). |
-| `--frame` | No | Force the optional Step 0 topic-framing pass even when the topic looks sharp. |
+| `--frame` | No | Force the optional Step 0 topic-framing pass even when the topic looks sharp. Forcing framing also engages the preliminary scoping scan (Step 0.4), so a sharp-topic user who wants scoping just passes `--frame`. |
 | `--no-framing` | No | Skip Step 0 topic-framing entirely (also implied by `--dry-run`). |
+| `--no-prelim-search` | No | Keep framing's sharpening but skip the preliminary scoping scan inside Step 0.4 — stays offline while still asking the framing questions. |
 | `--sub-question-hints` | No | Pipe-separated list of sub-question seeds the user wants reflected, e.g. `"records of processing scope|controller vs processor obligations"`. |
 | `--dry-run` | No | Print the resolved plan + target paths without writing. Also skips Step 0 framing (non-interactive). |
 
@@ -86,7 +87,9 @@ Turn a fuzzy `--topic` into a sharp, scope-tested research prompt **before** dec
 - **Skip** when `--no-framing` or `--dry-run` was passed (non-interactive), or when the `--topic` is already sharp (≥ 3 of: explicit audience, named thesis/status-quo belief, defined scope, clear deliverable shape).
 - **Engage** when `--frame` was passed, or the topic is short/vague (≤ ~15 words, no audience/thesis/scope cue), or the user used explicit verbs ("frame", "sharpen", "scope", "rahmen", "schärfen").
 
-When engaged: **ground** (ask for optional context — a path/blob/URL — read conservatively, ≤ 50 KB, no network), **sharpen** (one `AskUserQuestion` turn, ≤ 4 questions: audience, status-quo belief/thesis, register preference → `tone`+`prose_density`, deliverable horizon → `target_words`), **right-size** (aggregate ≥ 8-leaf themes; keep total sub-questions within the 3–7 cap against `target_words`), and **hold** the sharpened prompt text + a `## Suggested configuration` block (suggested `market`/`output_language`/`tone`/`prose_density`/`target_words`/`citation_format`) in working context. The sharpened prompt is written to `<project_path>/.metadata/framing.md` in Step 3 (the project path is not resolved until Step 1).
+When engaged: **ground** (ask for optional context — a path/blob/URL — read conservatively, ≤ 50 KB, no network), **scan** (the optional preliminary scoping search — see below), **sharpen** (one `AskUserQuestion` turn, ≤ 4 questions: audience, status-quo belief/thesis, register preference → `tone`+`prose_density`, deliverable horizon → `target_words`), **right-size** (aggregate ≥ 8-leaf themes; keep total sub-questions within the 3–7 cap against `target_words`), and **hold** the sharpened prompt text + a `## Suggested configuration` block (suggested `market`/`output_language`/`tone`/`prose_density`/`target_words`/`citation_format`) in working context. The sharpened prompt is written to `<project_path>/.metadata/framing.md` in Step 3 (the project path is not resolved until Step 1).
+
+**Preliminary scoping scan (optional, fail-soft).** When framing has engaged and `--no-prelim-search` was *not* passed, run the scan *after* grounding and *before* sharpening — pure decomposition in a vacuum can target angles that have no searchable content, wasting the downstream curators on dead ends. Issue **2–3 broad `WebSearch` queries** on the grounded topic (in the topic's own language — this runs before Step 0.5 resolves the market, so it needs no resolved market), review the top result snippets, and note **dominant angles**, **key organizations**, **recent developments**, and **terminology**. Feed those observations into the sharpening turn (they shape the options you surface) and carry them into Step 2 decomposition. **Fail-soft:** any error (no results, tool failure) → skip silently and fall through to today's pure-reasoning path. The scan rides framing's engage decision — it never runs on a sharp topic, `--no-framing`, or `--dry-run` (so run-1 / automation paths stay zero-web). Full playbook: the *scan* move in `${CLAUDE_PLUGIN_ROOT}/references/topic-framing.md`.
 
 The framing's suggested config feeds Step 0.5 as a **new lowest-precedence tier** (below an explicit flag and below the binding's `research_defaults`, above the global/market default). When framing is skipped, there is no suggestion tier and Step 0.5 resolves exactly as before.
 
@@ -111,7 +114,7 @@ The framing's suggested config feeds Step 0.5 as a **new lowest-precedence tier*
 
 **Interactive fallback.** The trigger is **no `--output-language` flag AND no binding `research_defaults.output_language`** — i.e. steps 1 and 2 both missed (only reachable on a pre-0.1.1 base, since `knowledge-setup` Step 2.5 persists a binding default). In that case interactivity decides ask-vs-silent: on an **interactive** run, ask the user once with `AskUserQuestion` — option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others; the auto-added "Other" takes a two-letter code. On a **non-interactive** run (`--dry-run`, or any run driven by flags/automation), do **not** prompt — silently take step 3's market `default_output_language` (then `en`). Skipping the question also falls back to the market default.
 
-**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`; #309 P2).** Resolve each independently by the same precedence shape, now with the optional Step 0.4 framing suggestion as a tier between the binding default and the hard default:
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`).** Resolve each independently by the same precedence shape, now with the optional Step 0.4 framing suggestion as a tier between the binding default and the hard default:
 
 ```
 flag > binding research_defaults.<knob> > framing suggestion (Step 0.4) > hard default
@@ -149,6 +152,8 @@ Reason about the topic. Decompose it into 3-7 sub-questions that together cover 
   ```
   Same path cogni-portfolio's agents use; the helper joins the canonical registry (`cogni-workspace/references/supported-markets-registry.json`) with the research overlay so cogni-knowledge never reaches into cogni-research's filesystem. **Call the helper at most once per run:** Step 0.5 invokes it only as its third fallback (no language flag and no binding default), so if it already fetched the envelope, reuse it here (`authority_sources` and `default_output_language` come from that one call); otherwise — the common case, where a flag or binding default resolved the language and Step 0.5 skipped the helper — Step 2 makes the single call here. Never call it twice.
 
+If a preliminary scoping scan ran in Step 0.4, ground each sub-question's `query` and `theme_label` in the observed terminology and dominant angles, so they target content that actually exists rather than dead-end angles the topic looks like it *should* cover.
+
 If `--sub-question-hints` was passed, ensure each hint maps to at least one sub-question — but you may rephrase, split, or merge as needed for coherence.
 
 ### 3. Write plan.json
@@ -181,11 +186,11 @@ Write `<project_path>/.metadata/plan.json` with the schema below (per `reference
 }
 ```
 
-Use the Write tool. JSON must be valid (no trailing commas, double quotes). The four writer-quality fields (`prose_density`, `tone`, `citation_format`, `target_words`) are additive at schema `0.1.1` (#309 P2); pre-0.1.1 consumers read them with `.get(..., DEFAULT)`, so a plan that predates the bump falls straight through to the composer's defaults. `target_words` is now **written** here (it was previously read opportunistically by `knowledge-compose` but never persisted by plan).
+Use the Write tool. JSON must be valid (no trailing commas, double quotes). The four writer-quality fields (`prose_density`, `tone`, `citation_format`, `target_words`) are additive at schema `0.1.1`; pre-0.1.1 consumers read them with `.get(..., DEFAULT)`, so a plan that predates the bump falls straight through to the composer's defaults. `target_words` is now **written** here (it was previously read opportunistically by `knowledge-compose` but never persisted by plan).
 
-**If Step 0.4 framing engaged**, also write the sharpened prompt to `<project_path>/.metadata/framing.md` (the project path is resolved at Step 1) — a durable record of the framing, mirroring cogni-research's `research-prompt.md`.
+**If Step 0.4 framing engaged**, also write the sharpened prompt to `<project_path>/.metadata/framing.md` (the project path is resolved at Step 1) — a durable record of the framing, mirroring cogni-research's `research-prompt.md`. **If the preliminary scoping scan ran**, append a short `## Preliminary scan` note to `framing.md` recording the queries issued and the observed angles — a provenance record of what grounded the decomposition.
 
-`cost_estimate_usd` is 0.0 at Phase 1 since this skill does not call WebSearch/WebFetch. Downstream phases accumulate cost into their own manifests.
+`cost_estimate_usd` is `0.0` at Phase 1 unless the optional Step 0.4 scoping scan ran; the scan's handful of `WebSearch` queries cost a small amount, so set a small nonzero estimate (~`0.02` for 2–3 queries) in that case. The `plan.json` schema is unchanged (`0.1.1`) — the scan output is ephemeral working context, not a persisted field. Downstream phases accumulate cost into their own manifests.
 
 ### 4. Binding is NOT touched
 
@@ -213,7 +218,7 @@ Print ≤ 6 lines:
 
 ## Out of scope
 
-- Does NOT call WebSearch or WebFetch (Phase 1 is decomposition only).
+- Does NOT call WebSearch **by default** (Phase 1 is decomposition). The only web call is the opt-in, fail-soft preliminary scoping scan inside Step 0.4 framing — skipped on sharp topics, `--no-framing`, `--dry-run`, or `--no-prelim-search`. **Never** calls WebFetch.
 - Does NOT touch the wiki — wiki ingest is Phase 4 (`knowledge-ingest`).
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends.
 - Does NOT support `--source-mode local|hybrid|wiki` — the inverted pipeline is web-only.
