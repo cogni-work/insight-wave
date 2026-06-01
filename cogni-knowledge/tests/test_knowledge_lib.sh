@@ -616,11 +616,11 @@ def assert_writer_quality_normalizers():
     # CITATION_FAMILY: numbered (ieee/chicago) vs author_date (apa/mla/harvard).
     assert kl.CITATION_FAMILY["ieee"] == "numbered" and kl.CITATION_FAMILY["chicago"] == "numbered"
     assert kl.CITATION_FAMILY["apa"] == "author_date"
-    # target_words: positive int; non-positive/unparseable → default 5000 (or given default).
+    # target_words: positive int; non-positive/unparseable → default 4000 (#384) (or given default).
     assert kl.normalize_target_words(4000) == 4000
     assert kl.normalize_target_words("8000") == 8000, "string coerces"
-    assert kl.normalize_target_words(0) == 5000 and kl.normalize_target_words(-3) == 5000
-    assert kl.normalize_target_words("abc") == 5000 and kl.normalize_target_words(None) == 5000
+    assert kl.normalize_target_words(0) == 4000 and kl.normalize_target_words(-3) == 4000
+    assert kl.normalize_target_words("abc") == 4000 and kl.normalize_target_words(None) == 4000
     assert kl.normalize_target_words(0, default=3000) == 3000, "custom default honoured"
 
 

@@ -37,7 +37,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | `--prose-density` | No | Default prose density (`standard`/`executive`) persisted to `binding.json::research_defaults.prose_density`. **Flag-or-default** — not prompted in Step 2.5 (safe default `standard`). |
 | `--tone` | No | Default writing tone persisted to `binding.json::research_defaults.tone` (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`). **Flag-or-default** — not prompted (safe default `objective`). |
 | `--citation-format` | No | Default citation format persisted to `binding.json::research_defaults.citation_format` (`ieee`/`chicago` wired; `apa`/`mla`/`harvard` staged). **Flag-or-default** — not prompted (safe default `ieee`). |
-| `--target-words` | No | Default soft target word count persisted to `binding.json::research_defaults.target_words`. **Flag-or-default** — not prompted (safe default `5000`). |
+| `--target-words` | No | Default soft target word count persisted to `binding.json::research_defaults.target_words`. **Flag-or-default** — not prompted (safe default `4000`). |
 
 If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with AskUserQuestion (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed). Do not invent slugs or titles silently.
 
@@ -104,7 +104,7 @@ Resolve `market` and `output_language`:
 
 Carry the resolved `market` + `output_language` into Step 4.
 
-**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`; #309 P2) are flag-or-default — NOT prompted here.** Unlike `market`/`output_language` (where a wrong language mis-languages the whole base, so asking once is worth it), each writer-quality knob has a safe default and is primarily a per-run choice on `knowledge-plan`. So Step 2.5's `AskUserQuestion` stays scoped to market + language; the four knobs are persisted from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`5000`). The base default is overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`) are flag-or-default — NOT prompted here.** Unlike `market`/`output_language` (where a wrong language mis-languages the whole base, so asking once is worth it), each writer-quality knob has a safe default and is primarily a per-run choice on `knowledge-plan`. So Step 2.5's `AskUserQuestion` stays scoped to market + language; the four knobs are persisted from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`4000`). The base default is overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
 
 ### 3. Dispatch `cogni-wiki:wiki-setup` (only if no wiki exists)
 
@@ -130,7 +130,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py init \
     [--prose-density <flag>] [--tone <flag>] [--citation-format <flag>] [--target-words <flag>]
 ```
 
-`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.2). The four writer-quality flags are passed through only when the user supplied them; **omitted flags fall back script-side** to the `DEFAULT_RESEARCH_DEFAULTS` block (`dach`/`en`/`standard`/`objective`/`ieee`/`5000`), so a plain `init` still writes a complete schema-0.1.2 `research_defaults` block. The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
+`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.2). The four writer-quality flags are passed through only when the user supplied them; **omitted flags fall back script-side** to the `DEFAULT_RESEARCH_DEFAULTS` block (`dach`/`en`/`standard`/`objective`/`ieee`/`4000`), so a plain `init` still writes a complete schema-0.1.2 `research_defaults` block. The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
 
 ### 5. Final summary
 

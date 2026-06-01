@@ -89,7 +89,7 @@ Map the implied scope to the 3–7 sub-question cap:
 |---------------:|:-------------:|
 | 1500           | 3             |
 | 3000           | 3–5           |
-| 5000           | 5–6           |
+| 4000           | 5–6           |
 | 8000           | 6–7           |
 
 If the implied scope exceeds the budget, propose **two cuts**: a **preferred** cut (drop or aggregate one whole theme of secondary value) and a **minimum** cut (keep all themes but cap each).
