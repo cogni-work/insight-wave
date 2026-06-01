@@ -22,6 +22,7 @@ Detailed semantics for every file and directory created by `wiki-setup`. Skills 
 | `<wiki-root>/wiki/syntheses/*.md` | Pages with `type: synthesis` — filed-back query answers | `wiki-query --file-back` |
 | `<wiki-root>/wiki/notes/*.md` | Pages with `type: note` — loose observations | `wiki-ingest`, `wiki-update` |
 | `<wiki-root>/wiki/sources/*.md` | Pages with `type: source` — ingested source bodies (typically written by `cogni-knowledge:knowledge-ingest`; generic enough that any external ingestor can produce them) | `cogni-knowledge:knowledge-ingest` (or any external ingestor following the `type: source` contract) |
+| `<wiki-root>/wiki/questions/*.md` | Pages with `type: question` — research-question nodes (one per sub-question of a research run; body `[[links]]` the source findings that answer it) | `cogni-knowledge:knowledge-ingest` (or any external ingestor following the `type: question` contract) |
 | `<wiki-root>/wiki/audits/*.md` | Audit reports — `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` (R3-exempt from forward→reverse links) | `wiki-lint` (writes `lint-*.md`); `wiki-health` log line only today |
 | `<wiki-root>/.cogni-wiki/config.json` | Plugin-managed metadata | `wiki-setup` (create), every other skill (update counts) |
 | `<wiki-root>/.cogni-wiki/queue/pending/<id>.json` | Persistent ingest-queue job awaiting `--next` (v0.0.35+, T3.1) | `wiki-ingest --enqueue` writes; `--next` atomically moves to `running/` |
@@ -39,14 +40,14 @@ Detailed semantics for every file and directory created by `wiki-setup`. Skills 
   "created": "2026-04-12",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.6",
+  "schema_version": "0.0.7",
   "publisher_base_url": "https://www.smarter-service.com/studien/"
 }
 ```
 
 - `entries_count` is a cached count of knowledge pages across the per-type dirs (excludes `wiki/audits/`). Each `wiki-ingest` and `wiki-update` increments or recalculates it.
 - `last_lint` is the ISO date of the most recent `wiki-lint` run, or `null`. `wiki-resume` uses it to surface "wiki has not been linted in N days" reminders.
-- `schema_version` tracks the frontmatter and layout contract version. Migrations detect old wikis and upgrade them. `0.0.6` (v0.0.44+) is the additive `type: source` extension — `wiki/sources/<slug>.md` is now a recognised per-type directory; pre-0.0.6 wikis are read forward without filesystem migration because `iter_pages` silently skips a missing `wiki/sources/` directory. Only freshly-created wikis (via `wiki-setup`) advertise `"0.0.6"` in their config; existing 0.0.5 wikis stay at 0.0.5 unchanged — the `type: source` allowlist applies to them too because recognition lives in `PAGE_TYPE_DIRS`, not in the config field. `0.0.5` (v0.0.28+) promoted page types from a frontmatter field into per-type directories (`wiki/concepts/`, `wiki/decisions/`, …) plus `wiki/audits/` for R3-exempt audit reports — apply via `wiki-setup/scripts/migrate_layout.py`. `0.0.4` added the `synthesis` and `health` log prefixes plus the broadened `R3_audit_report` exemption. `0.0.3` codified the SCHEMA forward→reverse link contract. `0.0.2` added `publisher_base_url`. `0.0.1` configs remain valid on read.
+- `schema_version` tracks the frontmatter and layout contract version. Migrations detect old wikis and upgrade them. `0.0.7` (v0.0.50+) is the additive `type: question` extension — `wiki/questions/<slug>.md` is now a recognised per-type directory; pre-0.0.7 wikis are read forward without filesystem migration because `iter_pages` silently skips a missing `wiki/questions/` directory. Only freshly-created wikis (via `wiki-setup`) advertise `"0.0.7"` in their config; existing 0.0.5/0.0.6 wikis stay unchanged — the `type: question` allowlist applies to them too because recognition lives in `PAGE_TYPE_DIRS`, not in the config field. `0.0.6` (v0.0.44+) is the additive `type: source` extension — `wiki/sources/<slug>.md` is now a recognised per-type directory; pre-0.0.6 wikis are read forward without filesystem migration because `iter_pages` silently skips a missing `wiki/sources/` directory. Only freshly-created wikis (via `wiki-setup`) advertise `"0.0.6"` in their config; existing 0.0.5 wikis stay at 0.0.5 unchanged — the `type: source` allowlist applies to them too because recognition lives in `PAGE_TYPE_DIRS`, not in the config field. `0.0.5` (v0.0.28+) promoted page types from a frontmatter field into per-type directories (`wiki/concepts/`, `wiki/decisions/`, …) plus `wiki/audits/` for R3-exempt audit reports — apply via `wiki-setup/scripts/migrate_layout.py`. `0.0.4` added the `synthesis` and `health` log prefixes plus the broadened `R3_audit_report` exemption. `0.0.3` codified the SCHEMA forward→reverse link contract. `0.0.2` added `publisher_base_url`. `0.0.1` configs remain valid on read.
 - `publisher_base_url` is optional. Set it to the publisher's landing URL when every source in the wiki comes from the same publisher (e.g. an analyst firm's study catalog). **cogni-research wiki-researcher** uses it as a last-resort fallback when a cited page has no per-page `publisher_url` in its frontmatter and no `https://` URL in its `sources:` array — so citations still resolve to the publisher's site rather than landing unlinked. Leave the field unset for wikis that span multiple publishers (fabricating a shared landing page there would mislead readers).
 
 ## Slug derivation rule
@@ -62,8 +63,8 @@ A directory is a wiki if and only if `.cogni-wiki/config.json` exists. All other
 Immediately after `wiki-setup`:
 - `raw/` — empty
 - `assets/` — empty
-- All eleven of `wiki/{concepts,entities,summaries,decisions,interviews,meetings,learnings,syntheses,notes,sources,audits}/` — present and empty (fresh wikis only; wikis migrated from < 0.0.5 will not have `sources/` until the first `type: source` page is written there by an ingestor)
+- All twelve of `wiki/{concepts,entities,summaries,decisions,interviews,meetings,learnings,syntheses,notes,sources,questions,audits}/` — present and empty (fresh wikis only; wikis migrated from < 0.0.5 will not have `sources/`/`questions/` until the first `type: source`/`type: question` page is written there by an ingestor)
 - `wiki/index.md` — present, contains only the "no pages yet" placeholder
 - `wiki/log.md` — present, contains only the setup log line
 - `wiki/overview.md` — present, contains only the placeholder
-- `.cogni-wiki/config.json` — present, `entries_count: 0`, `last_lint: null`, `schema_version: "0.0.6"`
+- `.cogni-wiki/config.json` — present, `entries_count: 0`, `last_lint: null`, `schema_version: "0.0.7"`

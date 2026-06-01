@@ -61,13 +61,14 @@ Create (with `mkdir -p`):
 │   ├── syntheses/
 │   ├── notes/
 │   ├── sources/
+│   ├── questions/
 │   └── audits/
 └── .cogni-wiki/
 ```
 
-The ten type directories mirror the `type:` frontmatter enum (concept,
+The eleven type directories mirror the `type:` frontmatter enum (concept,
 entity, summary, decision, interview, meeting, learning, synthesis, note,
-source).
+source, question).
 `audits/` holds the `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` reports
 that are exempt from the forward→reverse link contract (SCHEMA.md R3). Each
 type dir is created empty; `wiki-ingest` writes new pages directly into the
@@ -121,12 +122,12 @@ Write `<wiki-root>/.cogni-wiki/config.json` with JSON:
   "created": "{{YYYY-MM-DD}}",
   "entries_count": 0,
   "last_lint": null,
-  "schema_version": "0.0.6",
+  "schema_version": "0.0.7",
   "publisher_base_url": "{{publisher_base_url_or_empty}}"
 }
 ```
 
-Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.6"` (v0.0.44+) added `type: source` to the allowlist; `"0.0.5"` (v0.0.28+) introduced the per-type-directory layout — the hard-fail boundary that the migrator enforces. Pre-0.0.6 wikis are read forward without filesystem migration. See `references/directory-layout.md`'s schema_version block for the full history.
+Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.7"` (v0.0.50+) added `type: question` to the allowlist; `"0.0.6"` (v0.0.44+) added `type: source`; `"0.0.5"` (v0.0.28+) introduced the per-type-directory layout — the hard-fail boundary that the migrator enforces. Pre-0.0.7 wikis are read forward without filesystem migration. See `references/directory-layout.md`'s schema_version block for the full history.
 
 ### 5. Migrate an existing wiki (schema_version < 0.0.5)
 
@@ -153,6 +154,7 @@ For wikis at `schema_version < 0.0.4`, the `SCHEMA.md` body inside the wiki is a
 - **`< 0.0.4`:** in the `## Log format` block, broaden the operation enum to `{ingest|query|synthesis|lint|health|update|setup|migrate}`. In the forward→reverse contract table, rename row `R3_lint_report` to `R3_audit_report` and broaden its exemption text to cover both `[[lint-YYYY-MM-DD]]` and `[[health-YYYY-MM-DD]]` filenames.
 - **`< 0.0.5`:** update the directory-layout block to show the per-type directories (concepts/, entities/, summaries/, decisions/, interviews/, meetings/, learnings/, syntheses/, notes/, audits/) in place of the single `wiki/pages/` line.
 - **`< 0.0.6`:** purely additive — `type: source` was added to the type enum and `wiki/sources/` was added to the per-type directory list. No filesystem migration is needed: `iter_pages` silently skips the missing dir, and the first ingestor that needs it (`cogni-knowledge:knowledge-ingest`) `mkdir -p`'s it on demand. Pre-0.0.6 wikis read forward unchanged.
+- **`< 0.0.7`:** purely additive — `type: question` was added to the type enum and `wiki/questions/` was added to the per-type directory list. No filesystem migration is needed: `iter_pages` silently skips the missing dir, and the first ingestor that needs it (`cogni-knowledge:knowledge-ingest`) `mkdir -p`'s it on demand. Pre-0.0.7 wikis read forward unchanged.
 
 The SCHEMA.md edits are idempotent and offline-safe. `wiki-lint`'s deterministic checks work whether or not the SCHEMA sections match the in-plugin template — the edits only ensure the contract is auditable when reading the wiki on its own.
 

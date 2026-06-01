@@ -32,10 +32,14 @@ from pathlib import Path
 
 
 # Ordered so iter_pages() yields a stable per-type traversal regardless of
-# filesystem listing order. The 10 valid `type:` values plus the audit dir.
+# filesystem listing order. The 11 valid `type:` values plus the audit dir.
 # `source` (v0.0.44+) is an ingested source body — typically written by
 # `cogni-knowledge:knowledge-ingest`, generic enough that any external
-# ingestor can produce them. Additive over the v0.0.28 per-type-dirs layout.
+# ingestor can produce them. `question` (v0.0.50+, schema_version 0.0.7) is a
+# first-class research-question node — one per sub-question of an inverted-
+# pipeline run, written by `cogni-knowledge:knowledge-ingest`; it backlinks the
+# source findings that answer it so the question→finding relation joins the
+# Karpathy graph. Both are additive over the v0.0.28 per-type-dirs layout.
 PAGE_TYPE_DIRS = {
     "concept": "concepts",
     "entity": "entities",
@@ -47,6 +51,7 @@ PAGE_TYPE_DIRS = {
     "synthesis": "syntheses",
     "note": "notes",
     "source": "sources",
+    "question": "questions",
 }
 
 # `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` audit reports live here.

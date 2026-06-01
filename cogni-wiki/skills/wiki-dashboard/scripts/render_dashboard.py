@@ -53,6 +53,7 @@ TYPE_COLORS = {
     "learning": "#7c3aed",
     "synthesis": "#0891b2",
     "note": "#64748b",
+    "question": "#be123c",
 }
 
 
