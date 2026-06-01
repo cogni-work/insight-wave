@@ -48,16 +48,6 @@ def _load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _fm_list(value) -> list:
-    """Coerce a parsed-frontmatter value into a list of strings.
-
-    `parse_frontmatter` returns inline lists as Python lists already, but an
-    empty/absent key may surface as "" or []; be tolerant either way."""
-    if isinstance(value, list):
-        return [str(v).strip() for v in value if str(v).strip()]
-    return []
-
-
 def cmd_emit(args: argparse.Namespace) -> int:
     wiki_scripts = Path(args.wiki_scripts_dir).resolve()
     if not wiki_scripts.is_dir():
@@ -114,15 +104,14 @@ def cmd_emit(args: argparse.Namespace) -> int:
     def resolve_slug(base: str):
         """Free slug, or an existing QUESTION page -> reuse (merge). A collision
         with a different page type -> -q / -q-N disambiguation."""
-        existing = slug_exists_as(base)
-        if existing in (None, "question"):
-            return base, existing == "question"
-        cand = f"{base}-q"
+        cand = base
         n = 2
-        while slug_exists_as(cand) not in (None, "question"):
-            cand = f"{base}-q-{n}"
+        while True:
+            existing = slug_exists_as(cand)
+            if existing in (None, "question"):
+                return cand, existing == "question"
+            cand = f"{base}-q" if n == 2 else f"{base}-q-{n}"
             n += 1
-        return cand, slug_exists_as(cand) == "question"
 
     questions_out: list[dict] = []
     skipped_no_findings: list[str] = []
@@ -146,12 +135,13 @@ def cmd_emit(args: argparse.Namespace) -> int:
             pfm, pbody = split_frontmatter(prior_text)
             created = pfm.get("created") or today
             # Union prior answering sources (idempotent enrich-on-collision).
-            for s in _fm_list(pfm.get("sources_answering")):
+            # split_frontmatter returns inline lists already parsed as lists.
+            for s in (pfm.get("sources_answering") or []):
                 if s not in findings:
                     findings.append(s)
             # Preserve the human-owned ## Notes tail verbatim.
-            marker = "## Notes"
-            idx = pbody.find(f"\n{marker}")
+            marker = "\n## Notes"
+            idx = pbody.find(marker)
             if idx != -1:
                 notes_block = pbody[idx + 1:].rstrip() + "\n"
 
