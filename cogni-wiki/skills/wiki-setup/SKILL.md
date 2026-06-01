@@ -127,7 +127,7 @@ Write `<wiki-root>/.cogni-wiki/config.json` with JSON:
 }
 ```
 
-Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.7"` (v0.0.50+) added `type: question` to the allowlist; `"0.0.6"` (v0.0.44+) added `type: source`; `"0.0.5"` (v0.0.28+) introduced the per-type-directory layout — the hard-fail boundary that the migrator enforces. Pre-0.0.7 wikis are read forward without filesystem migration. See `references/directory-layout.md`'s schema_version block for the full history.
+Use the current date via `date +%Y-%m-%d`. Omit `publisher_base_url` (do not emit the key at all) when `--publisher-base-url` was not provided — an empty string is acceptable but a missing key reads more cleanly in single-publisher wikis where the field is unused. `schema_version` `"0.0.7"` added `type: question` to the allowlist; `"0.0.6"` added `type: source`; `"0.0.5"` introduced the per-type-directory layout — the hard-fail boundary that the migrator enforces. Pre-0.0.7 wikis are read forward without filesystem migration. See `references/directory-layout.md`'s schema_version block for the full history.
 
 ### 5. Migrate an existing wiki (schema_version < 0.0.5)
 
