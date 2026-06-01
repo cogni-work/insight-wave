@@ -183,7 +183,7 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 
 **Out of scope for v0.1.0** (deferred to v0.2 or later, not blocking).
 
-- Local + wiki + hybrid source modes. v0.1.0 is web-only.
+- Local + wiki + hybrid source modes. v0.1.0 is web-only. **(Deferred *to a Phase 6 decision*, not open-ended — see Phase 6 deliverable 5 "Source-mode parity decision" + the "Query ↔ research: one surface, graduated depth" note. Once cogni-research is archived, a report grounded only in the existing wiki — the retired `research-report --source wiki` — has no home unless this rung is consciously re-promoted or its loss documented.)**
 - Multi-market fan-out. v0.1.0 is single-market.
 - Federated wikis (`wiki_paths[]`).
 - Knowledge-graph visualization in dashboard.
@@ -204,6 +204,7 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
    - `cogni-wiki:wiki-from-research`: rotate from `cogni-research:research-setup` to a cogni-knowledge dispatch (or deprecate the skill entirely if all callers have migrated).
 3. **Top-level docs.** Update `/insight-wave/CLAUDE.md` data-flow diagram to remove cogni-research from the runtime graph.
 4. **Maturity flip.** Bump cogni-knowledge to 1.0.0, flip README callout from Preview to Released.
+5. **Source-mode parity decision.** Resolve what happens to `research-report`'s wiki/local/hybrid source modes — deferred "out of scope for v0.1.0" (the inverted pipeline is web-first: `knowledge-curate` WebSearches, and #309 P1.3 only *narrows* queries on already-covered sub-questions, never going zero-web) and never re-promoted since. Archiving cogni-research (deliverable 1) removes the last home of a structured report grounded *only* in the existing wiki — `knowledge-query` answers shallowly (≤ 12 pages, no verify, no web) and the pipeline always reaches the web. **Decide, do not let it vanish by omission:** either **(a) preserve** the rung — a `knowledge-compose --source wiki` (and `local`/`hybrid`) path that composes from the bound wiki + fetch-cache and *skips* curate's web crawl — **or (b) declare** `knowledge-query` (shallow) + the web-first pipeline (deep) the accepted replacement and document the depth loss. Reconcile #264's architectural commitment #3 ("No web-only one-shot mode — casual reports stay on cogni-research directly") with this archive in the same breath. Co-owned with #388 Phase 8; see the "Query ↔ research: one surface, graduated depth" note below.
 
 **Note on scope.** Earlier revisions of this roadmap declared cogni-wiki absorption *"out of scope for the entire epic — keep separate"* (cogni-wiki is a general-purpose Karpathy engine usable standalone). **That decision is reversed** by the committed single-installable-plugin FMO (see the intro). cogni-wiki absorption is now the terminal arc, Phases 7–9 below — superset-preserving (no standalone capability dropped) and gated on the cogni-wiki parity gate.
 
@@ -224,7 +225,7 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 
 **Deliverables.**
 1. Single-source non-research ingest: extend `knowledge-ingest` (or a sibling) to accept a file / URL / paste / PDF / interview note directly (today it is research-batch-only). Reuse the vendored `convert_to_md.py` + `wiki_queue.py`.
-2. Re-home the user-facing skills as cogni-knowledge skills: `knowledge-query` / `-dashboard` / `-health` / `-lint` / `-update` (manual curation, diff-before-write + citation discipline) / `-resume` / `-prefill` / graph. (`knowledge-query` / `-dashboard` / `-resume` today *dispatch* to the cogni-wiki skills — internalize them.)
+2. Re-home the user-facing skills as cogni-knowledge skills: `knowledge-query` / `-dashboard` / `-health` / `-lint` / `-update` (manual curation, diff-before-write + citation discipline) / `-resume` / `-prefill` / graph. (`knowledge-query` / `-dashboard` / `-resume` today *dispatch* to the cogni-wiki skills — internalize them.) **Do not re-home `knowledge-query` as an isolated wrapper:** internalize `wiki-query`'s index→select→read→synthesize discovery as a **shared wiki-grounding primitive** consumed by *both* the re-homed query skill *and* the inverted-pipeline read-side (`wiki-coverage.py` Step 0.5 + `source-curator` Phase 0/1, which today reimplement the same "find the relevant wiki pages" job as a separate token-overlap scorer). Position `knowledge-query` as the **shallow rung of a documented query↔research depth ladder** (see the note below), not a standalone skill; the deep wiki-only report rung is resolved as part of the Phase 6 source-mode parity decision.
 3. **Migrate the external `cogni-wiki:` callers** off cogni-wiki: `cogni-trends` (value-modeler Phase 2 `wiki-query`) and `cogni-workspace` (the `ask` skill + its vendored wiki query path). These are the only non-cogni-knowledge consumers.
 
 **Out of scope.** Archiving cogni-wiki + the maturity flip (Phase 9).
@@ -245,6 +246,21 @@ This squashes the original Phase 5 (hardening) and Phase 6 (absorption migration
 2. **Schema + portability preserved:** `SCHEMA.md` ships in every base; the base stays Obsidian/grep-readable with cogni-knowledge uninstalled; the `_wiki_lock` concurrency invariant holds under the vendored engine (two concurrent ingests from separate sessions serialise, not corrupt).
 3. **Zero external `cogni-wiki:` callers** anywhere in the repo (the CI grep guard above).
 4. **≥ N clean standalone (non-research) real-usage runs** — mirror the cogni-research "≥ 2 minor versions of clean usage" bake discipline, applied to the standalone surface.
+5. **The wiki-grounding discovery primitive is shared, not duplicated** between `knowledge-query` and the inverted-pipeline read-side — `wiki-query`'s index→select→read→synthesize discovery is internalized once (Phase 8 deliverable 2) and consumed by both the re-homed shallow query skill and `wiki-coverage.py` / `source-curator`, not reimplemented per surface.
+
+### Query ↔ research: one surface, graduated depth
+
+`knowledge-query` and the inverted pipeline answer the *same job* — "tell me what the bound wiki knows (or can know) about X" — at two different depths. The FMO should ship them as one graduated-depth surface, not two unrelated skills. The relationship, made explicit here so it survives the cogni-wiki absorption:
+
+| Rung | Surface | Depth | Web | Verify | Provenance |
+|------|---------|-------|-----|--------|------------|
+| **Shallow** | `knowledge-query` (wraps `cogni-wiki:wiki-query`) | 1 question, ≤ 12 pages, index-first read + synthesize | none | none | `[[wikilink]]` to existing pages |
+| **Deep** | the inverted pipeline (`plan→curate→fetch→ingest→distill→compose→verify→finalize`) | full multi-section report | **web-first** (#309 P1.3 narrows, never zero) | zero-network claim alignment + revisor loop | per-citation manifest + deposited synthesis |
+| **Missing rung** | the retired `research-report --source wiki` | structured report grounded **only** in the existing wiki, no web | **none** | — | — |
+
+All three share **one discovery mechanism** — `wiki-query`'s index→select→read→synthesize, which `research-report`'s wiki mode reused via the `wiki-researcher` agent (it "follows wiki-query's index-first discovery pattern") and which the pipeline read-side currently re-implements *separately* as `wiki-coverage.py`'s token-overlap scorer. Phase 8 internalizes that mechanism **once** as the shared wiki-grounding primitive (parity-gate item 5 above).
+
+The **missing rung** is the open decision. `research-report --source wiki` produced a structured report from the wiki with no web calls; cogni-knowledge archived its equivalent (`knowledge-report`, M11 / v0.0.27) into the web-first pipeline and deferred wiki/local/hybrid source modes "out of scope for v0.1.0". The shallow rung (`knowledge-query`) is too thin to replace it, and the deep rung always reaches the web — so after cogni-research is archived (Phase 6 deliverable 1) the rung has no home. The **Phase 6 source-mode parity decision** (deliverable 5) chooses between reinstating it (a `--source wiki` compose path that skips the web crawl) and accepting `knowledge-query` + the web-first pipeline as the replacement with the depth loss documented. Until then the ladder has a known hole — named here, not left implicit.
 
 ## Open questions (revisit at Phase 6)
 
