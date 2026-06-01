@@ -114,7 +114,7 @@ The framing's suggested config feeds Step 0.5 as a **new lowest-precedence tier*
 
 **Interactive fallback.** The trigger is **no `--output-language` flag AND no binding `research_defaults.output_language`** — i.e. steps 1 and 2 both missed (only reachable on a pre-0.1.1 base, since `knowledge-setup` Step 2.5 persists a binding default). In that case interactivity decides ask-vs-silent: on an **interactive** run, ask the user once with `AskUserQuestion` — option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others; the auto-added "Other" takes a two-letter code. On a **non-interactive** run (`--dry-run`, or any run driven by flags/automation), do **not** prompt — silently take step 3's market `default_output_language` (then `en`). Skipping the question also falls back to the market default.
 
-**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`; #309 P2).** Resolve each independently by the same precedence shape, now with the optional Step 0.4 framing suggestion as a tier between the binding default and the hard default:
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`).** Resolve each independently by the same precedence shape, now with the optional Step 0.4 framing suggestion as a tier between the binding default and the hard default:
 
 ```
 flag > binding research_defaults.<knob> > framing suggestion (Step 0.4) > hard default
@@ -186,11 +186,11 @@ Write `<project_path>/.metadata/plan.json` with the schema below (per `reference
 }
 ```
 
-Use the Write tool. JSON must be valid (no trailing commas, double quotes). The four writer-quality fields (`prose_density`, `tone`, `citation_format`, `target_words`) are additive at schema `0.1.1` (#309 P2); pre-0.1.1 consumers read them with `.get(..., DEFAULT)`, so a plan that predates the bump falls straight through to the composer's defaults. `target_words` is now **written** here (it was previously read opportunistically by `knowledge-compose` but never persisted by plan).
+Use the Write tool. JSON must be valid (no trailing commas, double quotes). The four writer-quality fields (`prose_density`, `tone`, `citation_format`, `target_words`) are additive at schema `0.1.1`; pre-0.1.1 consumers read them with `.get(..., DEFAULT)`, so a plan that predates the bump falls straight through to the composer's defaults. `target_words` is now **written** here (it was previously read opportunistically by `knowledge-compose` but never persisted by plan).
 
 **If Step 0.4 framing engaged**, also write the sharpened prompt to `<project_path>/.metadata/framing.md` (the project path is resolved at Step 1) — a durable record of the framing, mirroring cogni-research's `research-prompt.md`. **If the preliminary scoping scan ran**, append a short `## Preliminary scan` note to `framing.md` recording the queries issued and the observed angles — a provenance record of what grounded the decomposition.
 
-`cost_estimate_usd` is `0.0` at Phase 1 unless the optional Step 0.4 scoping scan ran; the scan's handful of `WebSearch` queries cost a small amount, so set a small estimate (e.g. `0.02`) in that case. The `plan.json` schema is unchanged (`0.1.1`) — the scan output is ephemeral working context, not a persisted field. Downstream phases accumulate cost into their own manifests.
+`cost_estimate_usd` is `0.0` at Phase 1 unless the optional Step 0.4 scoping scan ran; the scan's handful of `WebSearch` queries cost a small amount, so set a small nonzero estimate (~`0.02` for 2–3 queries) in that case. The `plan.json` schema is unchanged (`0.1.1`) — the scan output is ephemeral working context, not a persisted field. Downstream phases accumulate cost into their own manifests.
 
 ### 4. Binding is NOT touched
 
