@@ -134,7 +134,7 @@ REVERSE_LINK_SOURCE_RE = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)\]\] links here")
 TAG_TYPO_MSG_RE = re.compile(
     r"^'(?P<bad>[^']+)' \(\d+x\) likely typo of '(?P<good>[^']+)'"
 )
-ID_LINE_RE = re.compile(r"^id\s*:")
+ID_LINE_RE = re.compile(r"^id\s*:\s*(.*?)\s*$")
 UPDATED_LINE_RE = re.compile(r"^updated\s*:\s*(.*?)\s*$")
 SOURCES_LINE_RE = re.compile(r"^sources\s*:(.*)$")
 
@@ -875,8 +875,7 @@ def fix_frontmatter_defaults(
                 new_fm = ["id: " + slug] + new_fm
                 changes.append("+id")
             else:
-                # ID_LINE_RE has no value capture group; parse it off the colon.
-                old = new_fm[id_idx].split(":", 1)[1].strip().strip("'\"")
+                old = ID_LINE_RE.match(new_fm[id_idx]).group(1).strip("'\"")
                 if old != slug:
                     new_fm[id_idx] = "id: " + slug
                     changes.append(f"id: {old} → {slug}")
