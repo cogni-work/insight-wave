@@ -103,6 +103,11 @@ assert_grep 'ingest-integrity.py' "$INGEST" "knowledge-ingest: calls ingest-inte
 assert_grep '.ingest.dispatch.' "$INGEST" "knowledge-ingest: persists the authoritative dispatch record (#413)"
 assert_grep 'quarantine' "$INGEST" "knowledge-ingest: quarantines contaminated pages (#413)"
 assert_grep 'integrity_mismatch' "$INGEST" "knowledge-ingest: skip reason integrity_mismatch (#413)"
+# #413 follow-up: the Step 3.5 sweep input must be keyed by per-source dispatch
+# INDEX (contamination-proof), never by agent-returned URL membership in
+# ingested[] — a contaminated source that echoes a sibling's URL would otherwise
+# filter its own slug out of the sweep and escape detection.
+assert_grep 'per-source index' "$INGEST" "knowledge-ingest: Step 3.5 keys the sweep input by per-source index, not agent-returned url (#413)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
