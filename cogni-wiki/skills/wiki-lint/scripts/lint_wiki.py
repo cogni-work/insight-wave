@@ -837,9 +837,14 @@ def fix_synthesis_no_wiki_source(
 def fix_frontmatter_defaults(
     all_pages: dict, slug_index: dict, dry_run: bool
 ) -> tuple:
-    """Backfill missing **or reconcile a mismatched** `id:` (= filename stem)
-    and normalise non-ISO `updated:` dates. Pages without frontmatter at all
-    are left to `health.py`'s `missing_frontmatter` error.
+    """Backfill missing **or reconcile a non-canonical** `id:` (= filename
+    stem) and normalise non-ISO `updated:` dates. The id branch rewrites
+    whenever the on-disk line is not byte-for-byte `id: <slug>` — this
+    covers a mismatched id (#415), a quoted-but-stem-correct id that
+    `health.py` still flags because `parse_frontmatter` keeps the quotes
+    (#418), and incidental whitespace variants — normalising to the
+    unquoted canonical form `health.py` accepts. Pages without frontmatter
+    at all are left to `health.py`'s `missing_frontmatter` error.
     """
     fixed: list = []
     failed: list = []
@@ -875,10 +880,11 @@ def fix_frontmatter_defaults(
                 new_fm = ["id: " + slug] + new_fm
                 changes.append("+id")
             else:
-                old = ID_LINE_RE.match(new_fm[id_idx]).group(1).strip("'\"")
-                if old != slug:
-                    new_fm[id_idx] = "id: " + slug
-                    changes.append(f"id: {old} → {slug}")
+                raw = ID_LINE_RE.match(new_fm[id_idx]).group(1)
+                canonical = "id: " + slug
+                if new_fm[id_idx] != canonical:
+                    new_fm[id_idx] = canonical
+                    changes.append(f"id: {raw} → {slug}")
 
             for i, L in enumerate(new_fm):
                 m = UPDATED_LINE_RE.match(L)
