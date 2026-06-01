@@ -219,6 +219,17 @@ assert_grep 'pre-created' "$REVISOR" "revisor: notes the orchestrator pre-create
 # The old whole-draft compose-and-Write instruction must be gone — a global
 # rewrite would break the byte-identity incremental re-verify depends on.
 assert_not_grep 'Compose the revised draft' "$REVISOR" "revisor: dropped the whole-draft compose-and-Write step (#305)"
+# #386 redundant-marker drop: when a same-sentence sibling is already aligned,
+# the unsupported marker is surplus -> DROP it (don't hunt for a repoint target).
+# These greps catch the precondition surface silently disappearing from the
+# contract; they do not run the LLM.
+assert_grep 'verified\[\]' "$REVISOR" "revisor: parses verify-vN.json verified[] to detect aligned siblings (#386)"
+assert_grep 'aligned_ids' "$REVISOR" "revisor: builds the aligned_ids set from verbatim/paraphrase verdicts (#386)"
+assert_grep 'redundant-marker' "$REVISOR" "revisor: documents the redundant-marker drop precondition (#386)"
+assert_grep 'aligned sibling' "$REVISOR" "revisor: keys the precondition on an aligned same-sentence sibling (#386)"
+# The surviving-sibling draft_sentence update is the stale-sibling regression guard:
+# without it the next verify round prunes the sentence's only valid citation.
+assert_grep 'Surviving-sibling bookkeeping' "$REVISOR" "revisor: updates the surviving sibling's draft_sentence after a redundant drop (#386 regression guard)"
 # Zero-network: tools list must not include WebFetch, WebSearch, Bash, or Task.
 # Edit IS required now (patch-in-place); Write stays for the manifest rewrite.
 REVISOR_TOOLS_LINE=$(grep '^tools:' "$REVISOR" || true)
