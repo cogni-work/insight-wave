@@ -542,4 +542,44 @@ after_mm=$(python3 "$HEALTH" --wiki-root "$XID" | python3 -c "import json,sys;d=
 [ "$after_mm" = "0" ] || fail "crossed-id: expected 0 id_mismatch after fix, got $after_mm"
 green "  frontmatter_defaults reconciles a crossed id: -> filename (health id_mismatch cleared)"
 
+# ---------- 8) frontmatter_defaults rewrites a QUOTED-but-stem-correct id: ----
+# `id: "<slug>"` (quoted, stem matches the filename) is still an id_mismatch:
+# _wikilib.parse_frontmatter keeps surrounding quotes, so health.py:162
+# compares "<slug>" != <slug>. The fixer must normalise it to the unquoted
+# canonical form to clear the error, not skip it as already-correct.
+QID="$WORKDIR/quoted-id-wiki"
+mkdir -p "$QID/wiki/sources" "$QID/.cogni-wiki"
+cat > "$QID/.cogni-wiki/config.json" <<EOF
+{"name":"q","slug":"q","created":"$TODAY","entries_count":1,"last_lint":null,"schema_version":"0.0.6"}
+EOF
+cat > "$QID/wiki/index.md" <<EOF
+# Index
+
+## Sources
+
+- [[quoted-source]] — q
+EOF
+cat > "$QID/wiki/sources/quoted-source.md" <<EOF
+---
+id: "quoted-source"
+title: "Quoted Source"
+type: source
+tags: [source]
+created: $TODAY
+updated: $TODAY
+sources: ["https://example.org/quoted"]
+---
+# Quoted Source
+Body text comfortably beyond the fifty-character stub threshold so no stub warning.
+EOF
+
+q_before=$(python3 "$HEALTH" --wiki-root "$QID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
+[ "$q_before" = "1" ] || fail "quoted-id: expected 1 id_mismatch before fix, got $q_before"
+python3 "$LINT" --wiki-root "$QID" --fix=frontmatter_defaults >/dev/null
+grep -q '^id: quoted-source$' "$QID/wiki/sources/quoted-source.md" \
+  || fail "quoted-id: fixer did not normalise id: \"quoted-source\" to unquoted form"
+q_after=$(python3 "$HEALTH" --wiki-root "$QID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
+[ "$q_after" = "0" ] || fail "quoted-id: expected 0 id_mismatch after fix, got $q_after"
+green "  frontmatter_defaults normalises a quoted-but-stem-correct id: (health id_mismatch cleared)"
+
 green "ALL TESTS PASS"

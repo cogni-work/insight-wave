@@ -875,7 +875,11 @@ def fix_frontmatter_defaults(
                 new_fm = ["id: " + slug] + new_fm
                 changes.append("+id")
             else:
-                old = ID_LINE_RE.match(new_fm[id_idx]).group(1).strip("'\"")
+                # Compare the raw captured value (quotes intact). health.py's
+                # id_mismatch keys on the unstripped parsed value, so a
+                # quoted-but-stem-correct `id: "<slug>"` must also be rewritten
+                # to the canonical unquoted form to clear the error.
+                old = ID_LINE_RE.match(new_fm[id_idx]).group(1)
                 if old != slug:
                     new_fm[id_idx] = "id: " + slug
                     changes.append(f"id: {old} → {slug}")
