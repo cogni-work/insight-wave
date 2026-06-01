@@ -92,6 +92,22 @@ assert_grep 'default 25' "$INGEST" "knowledge-ingest: --batch-size default is 25
 assert_grep 'fan-out-concurrency' "$INGEST" "knowledge-ingest: cross-references references/fan-out-concurrency.md (#323)"
 assert_not_grep 'sequential across batches' "$INGEST" "knowledge-ingest: dropped the 'sequential across batches' per-wave-barrier wording (#323)"
 assert_not_grep '[Dd]efault 8' "$INGEST" "knowledge-ingest: no 'Default 8'/'default 8' --batch-size default remains (#323)"
+# #413: Step 3.5 post-wave integrity sweep. The orchestrator persists an
+# authoritative per-batch dispatch record (.ingest.dispatch.<NNN>.json), runs
+# ingest-integrity.py sweep against it, quarantines cross-contaminated pages,
+# and drops them from ingested[] with reason: integrity_mismatch. Guard the
+# step, the script call, the quarantine move, and the skip reason — but NOT a
+# #NNN ref in the SKILL prose (feedback_no_issue_refs_in_skills).
+assert_grep 'Step 3.5' "$INGEST" "knowledge-ingest: names the Step 3.5 integrity sweep (#413)"
+assert_grep 'ingest-integrity.py' "$INGEST" "knowledge-ingest: calls ingest-integrity.py sweep (#413)"
+assert_grep '.ingest.dispatch.' "$INGEST" "knowledge-ingest: persists the authoritative dispatch record (#413)"
+assert_grep 'quarantine' "$INGEST" "knowledge-ingest: quarantines contaminated pages (#413)"
+assert_grep 'integrity_mismatch' "$INGEST" "knowledge-ingest: skip reason integrity_mismatch (#413)"
+# #413 follow-up: the Step 3.5 sweep input must be keyed by per-source dispatch
+# INDEX (contamination-proof), never by agent-returned URL membership in
+# ingested[] — a contaminated source that echoes a sibling's URL would otherwise
+# filter its own slug out of the sweep and escape detection.
+assert_grep 'per-source index' "$INGEST" "knowledge-ingest: Step 3.5 keys the sweep input by per-source index, not agent-returned url (#413)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
@@ -131,6 +147,12 @@ assert_not_grep '180' "$INGESTER" "source-ingester: no character-count contract 
 # orchestrator-side sanitize_summary normalization (no stray U+2020 dagger / NBSP).
 assert_grep 'regular space' "$INGESTER" "source-ingester: summary contract requires regular spaces (#387)"
 assert_grep 'sanitize_summary' "$INGESTER" "source-ingester: names the orchestrator's sanitize_summary normalization (#387)"
+# #413: Phase 3 pre-write integrity assertion — the wrapper asserts the composed
+# page's id/sources match the dispatched SLUG/URL (the ground truth) and exits 3
+# on mismatch, writing nothing; the agent then emits integrity_mismatch.
+assert_grep 'integrity' "$INGESTER" "source-ingester: documents the pre-write integrity assertion (#413)"
+assert_grep 'sys.exit(3)' "$INGESTER" "source-ingester: pre-write guard exits 3 on mismatch, writes nothing (#413)"
+assert_grep 'integrity_mismatch' "$INGESTER" "source-ingester: emits skip reason integrity_mismatch (#413)"
 # Frontmatter tools must not include WebFetch (re-fetch is forbidden in Phase 4).
 INGESTER_TOOLS_LINE=$(grep '^tools:' "$INGESTER" || true)
 if ! echo "$INGESTER_TOOLS_LINE" | grep -q WebFetch; then
@@ -199,6 +221,9 @@ assert_grep 'def is_pdf_response' "$LIB" "_knowledge_lib: defines is_pdf_respons
 assert_grep 'def atomic_write_text' "$LIB" "_knowledge_lib: defines atomic_write_text"
 assert_grep 'def slugify' "$LIB" "_knowledge_lib: defines slugify (lifted from inline SKILL prose)"
 assert_grep 'def sanitize_summary' "$LIB" "_knowledge_lib: defines sanitize_summary (#387 index-one-liner guard)"
+# #413: the frontmatter id+sources extractor is shared by ingest-integrity.py
+# (sweep) and source-ingester's Phase 3 pre-write assertion — one impl, no drift.
+assert_grep 'def extract_page_id_and_url' "$LIB" "_knowledge_lib: defines extract_page_id_and_url shared by sweep + agent (#413)"
 
 # --- fetch-cache.py VALID_REASONS constant -------------------------------
 FETCH_CACHE="$PLUGIN_ROOT/scripts/fetch-cache.py"

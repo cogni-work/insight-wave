@@ -481,6 +481,43 @@ def _unquote_scalar(v: str) -> str:
     return v
 
 
+_PAGE_ID_RE = re.compile(r"^id[ \t]*:[ \t]*(.+?)[ \t]*$")
+_PAGE_SOURCES_RE = re.compile(r"^sources[ \t]*:[ \t]*(.+?)[ \t]*$")
+
+
+def extract_page_id_and_url(page_text: str) -> tuple[str, str]:
+    """Pull frontmatter `id` + the first `sources:` URL from a wiki source page.
+
+    The single frontmatter read behind the ingest integrity check — shared by
+    `ingest-integrity.py` (the post-wave sweep) and `source-ingester`'s Phase 3
+    pre-write assertion so the two can never drift. Mirrors `wiki-coverage.py::
+    _page_title_tags`: reuses `_FRONTMATTER_RE` for the block, strips a YAML inline
+    comment from an UNQUOTED scalar, `_unquote_scalar` for quoted values, and hands
+    the raw `sources:` value to `first_url`. Returns ("", "") for anything it cannot
+    read — the caller surfaces the mismatch rather than masking it."""
+    observed_id = ""
+    observed_url = ""
+    m = _FRONTMATTER_RE.match(page_text or "")
+    if not m:
+        return observed_id, observed_url
+    for line in m.group(1).splitlines():
+        im = _PAGE_ID_RE.match(line)
+        if im and not observed_id:
+            raw = im.group(1).strip()
+            # Strip a YAML inline comment from an UNQUOTED scalar only — mirrors
+            # _absorb_claim_kv / wiki-coverage._page_title_tags.
+            if raw[:1] not in ('"', "'"):
+                hash_pos = raw.find(" #")
+                if hash_pos != -1:
+                    raw = raw[:hash_pos].rstrip()
+            observed_id = _unquote_scalar(raw)
+            continue
+        sm = _PAGE_SOURCES_RE.match(line)
+        if sm and not observed_url:
+            observed_url = first_url(sm.group(1).strip())
+    return observed_id, observed_url
+
+
 def _absorb_claim_kv(item: dict, kv: str, wanted_keys: tuple) -> None:
     if ":" not in kv:
         return
