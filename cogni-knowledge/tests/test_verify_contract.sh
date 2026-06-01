@@ -230,6 +230,10 @@ assert_grep 'aligned sibling' "$REVISOR" "revisor: keys the precondition on an a
 # The surviving-sibling draft_sentence update is the stale-sibling regression guard:
 # without it the next verify round prunes the sentence's only valid citation.
 assert_grep 'Surviving-sibling bookkeeping' "$REVISOR" "revisor: updates the surviving sibling's draft_sentence after a redundant drop (#386 regression guard)"
+# #404 doc-completeness: when the surplus and aligned markers point to the SAME
+# source URL they render byte-identical, so a bare marker-string old_string is
+# non-unique -> the drop MUST be a sentence-level Edit (whole-sentence old_string).
+assert_grep 'sentence-level' "$REVISOR" "revisor: prescribes a sentence-level Edit for the identical same-source marker (#404)"
 # Zero-network: tools list must not include WebFetch, WebSearch, Bash, or Task.
 # Edit IS required now (patch-in-place); Write stays for the manifest rewrite.
 REVISOR_TOOLS_LINE=$(grep '^tools:' "$REVISOR" || true)
