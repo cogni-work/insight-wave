@@ -49,3 +49,17 @@ Each fan-out phase sizes its wave from the most honest basis available to it:
 
 Ingest is the only phase with an unbounded N and no natural per-unit time budget, so live observation is
 its closest honest analog to curate's "derived, not guessed" — hence 25, with this doc as the record.
+
+## 5. The correctness counterweight to a wider wave
+
+A wider wave widens one risk the barrier was incidentally masking: with many `source-ingester` dispatches
+live in a single message, two can cross-talk and one composes its page from a sibling's fetched body, so a
+page lands on disk carrying the wrong source's `id:` / `sources:` URL / claims. This is non-deterministic
+LLM attention cross-talk, not a code path, so it cannot be prompted away or sized away. It is held by a
+deterministic post-wave check, not by shrinking the wave back to 8: `knowledge-ingest` Step 3.5 runs an
+integrity sweep (`ingest-integrity.py`) after each batch's merge, comparing every on-disk page against the
+orchestrator's authoritative dispatch record (`(slug, url)` assigned at dispatch time), and quarantines any
+page whose `id:` ≠ slug or whose `sources:` URL ≠ the dispatched URL before Step 4 indexes it (a
+`source-ingester` Phase 3 pre-write assertion is the cheap in-agent first line). The sweep is what keeps
+batch-size 25 safe: throughput from the wider wave, correctness from the deterministic check — the two are
+orthogonal, so neither has to be traded for the other.

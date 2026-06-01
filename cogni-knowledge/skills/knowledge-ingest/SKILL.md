@@ -135,6 +135,8 @@ For each batch:
 
 1. Per-source batch output paths: `<project_path>/.metadata/.ingest.batch.<NNN>.<NN>.json` (batch index + per-source index inside the batch).
 
+1b. **Persist the authoritative dispatch table for this batch** to `<project_path>/.metadata/.ingest.dispatch.<NNN>.json` as a JSON array `[{"slug": "<Step 1.2 slug>", "url": "<fetch-manifest URL>"}, ...]`, built from the orchestrator's own Step 1.2 slug map + fetch-manifest URL — **at dispatch time, before any agent returns**. This is the ground truth the Step 3.5 sweep verifies against: it is written from what was *dispatched*, independent of what the agents *return* (an agent-returned slug/url can itself be cross-contaminated, so it cannot be trusted as the reference). Each ingester resolves its `SLUG`/`URL` strictly from its dispatch parameters; this record captures that pairing so a post-wave check can prove the on-disk page kept it.
+
 2. Dispatch via the `Task` tool (matches the upstream `knowledge-curate` / `knowledge-fetch` agent-dispatch convention):
    ```
    Task(source-ingester,
@@ -175,9 +177,31 @@ For each batch:
 
 5. On a per-source dispatcher failure (no batch file written, or summary `ok: false`), record the source URL in `failed_ingesters[]` and continue with the rest of the batch. Re-runnable by re-invoking the skill (Step 1.3 skips entries already in `ingested[]`).
 
+### 3.5. Post-wave integrity sweep (after the Step 3.4 merge, before Step 4)
+
+The ingesters fan out in one single-message wave (Step 3.3). That wave is where two `source-ingester` dispatches can cross-talk: the agent handling source A composes its page from source B's fetched body + frontmatter, so A's on-disk `wiki/sources/<A-slug>.md` ends up carrying B's `id:`, `sources:` URL, claims, and body. This is non-deterministic LLM attention cross-talk — not a code path — so it cannot be prompted away. The in-agent pre-write assertion (`source-ingester` Phase 3) stops most of it before disk; this sweep is the deterministic, load-bearing backstop the LLM cannot defeat. It runs **per batch**, immediately after the Step 3.4 merge, so a contaminated page is caught **before** Step 4 indexes/backlinks it and before Step 4.5 builds question nodes from it (and therefore before compose/verify ever see it).
+
+1. **Build the sweep input.** Take this batch's persisted dispatch table (`<project_path>/.metadata/.ingest.dispatch.<NNN>.json`) and keep only the entries whose URL the Step 3.4 merge just landed in `ingested[]` this run (the **ok-true** subset) — a legitimately-skipped source (`cache_miss` etc.) wrote no page, so checking it would surface a false `page_missing`.
+
+2. **Run the sweep** against the authoritative dispatch record (the filtered table), piping it on stdin:
+   ```
+   printf '%s' "$OK_DISPATCH_JSON" | python3 "${CLAUDE_PLUGIN_ROOT}/scripts/ingest-integrity.py" sweep \
+       --wiki-root <WIKI_ROOT> \
+       --dispatch -
+   ```
+   The detector reads each `<WIKI_ROOT>/wiki/sources/<slug>.md`, extracts its frontmatter `id:` + first `sources:` URL, and asserts `id == <dispatched slug>` AND `normalize_url(observed_url) == normalize_url(<dispatched url>)`. It is **read-only** — it never mutates the wiki; the orchestrator owns the side effects below (the established detect-in-script / act-in-orchestrator split, cf. `backlink_audit.py` audit mode). It returns `data.violations[]` with `{slug, expected_url, observed_id, observed_url, page_path, id_ok, url_ok, reason}` where `reason ∈ {id_mismatch, url_mismatch, page_missing}`.
+
+3. **Quarantine each violation:**
+   - `mkdir -p <project_path>/.metadata/quarantine/` and `mv <WIKI_ROOT>/wiki/sources/<slug>.md <project_path>/.metadata/quarantine/<slug>.md` — frees the slug so a re-run recreates the page, and preserves the bad file for inspection. (A `page_missing` violation has no file to move — record it only.)
+   - Remove the entry from `ingested[]` and append it to `skipped[]` with `reason: integrity_mismatch` plus `observed_id` / `observed_url` / `expected_url`. Atomic re-write of `ingest-manifest.json` via the same `_knowledge_lib.atomic_write` helper Step 3.4 uses.
+   - **Exclude the slug from Step 4** (backlink/index/`n_new`) and **Step 4.5** (question-node emission) — it is not a valid page this run, so it must not be indexed, backlinked, or joined into a question's finding set.
+   - Because the URL is no longer in `ingested[]`, the Step 1.3 re-run skip-filter leaves it **re-dispatchable** on the next `knowledge-ingest` run.
+
+4. Track the quarantined count for the Step 6 summary. A clean wave has zero violations and this step is a silent no-op.
+
 ### 4. Per-new-slug cogni-wiki integration (sequential, after all ingesters return)
 
-For each entry in `ingested[]` written this run, in deterministic slug order:
+For each entry in `ingested[]` written this run, in deterministic slug order (Step 3.5 has already dropped any integrity-quarantined slug from `ingested[]`, so a contaminated page is never indexed or backlinked here):
 
 1. **Backlink audit + apply (de-orphans ingested sources).** First audit:
    ```
@@ -319,7 +343,8 @@ Print ≤ 10 lines:
 - Wiki: `<WIKI_ROOT>`
 - Batches: `<count>` dispatched (failed: `<failed_count>`)
 - Ingested: `<count>` new pages (`<total_claims>` total claims extracted)
-- Skipped: `<count>` (reason breakdown: `cache_miss=<n>, unavailable=<n>, slug_collision=<n>`)
+- Skipped: `<count>` (reason breakdown: `cache_miss=<n>, unavailable=<n>, slug_collision=<n>, integrity_mismatch=<n>`)
+- `⚠ Integrity: <n> contaminated page(s) quarantined (re-run knowledge-ingest to re-ingest)` — **print only when `n > 0`** (the count of Step 3.5 violations quarantined this run); a clean run omits this line.
 - Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
@@ -332,6 +357,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - **Re-ingest of an existing project.** `ingest-manifest.json` already exists; the orchestrator skips entries already in `ingested[]` (URL-keyed). Manual cleanup (delete page + remove from manifest) is the path to force a re-ingest of a specific URL.
 - **Cache file gone missing between fetch and ingest.** Surface in `skipped[]` with `reason: cache_miss` and continue. The user can re-run `knowledge-fetch` to repopulate.
 - **Slug collision across batches.** Step 1.3 dedupes before dispatch; defence-in-depth check inside `source-ingester` refuses to overwrite an existing page. Surfaces as `reason: slug_collision` in `skipped[]`.
+- **Cross-contaminated page (ingest-wave attention cross-talk).** A page that lands on disk carrying another source's `id:` / `sources:` URL (one `source-ingester` composed its page from a sibling's fetched body in the same fan-out wave) is caught by the Step 3.5 sweep against the dispatch record, moved to `<project_path>/.metadata/quarantine/<slug>.md`, dropped from `ingested[]`, and recorded in `skipped[]` with `reason: integrity_mismatch`. The freed slug + the URL's absence from `ingested[]` leave it re-dispatchable — a plain `knowledge-ingest` re-run re-ingests it. The quarantined file is kept (not deleted) for inspection.
 - **First ingest into an empty wiki.** `wiki/index.md` may exist with only the wiki-setup header + the `## Categories` / `_No pages yet…_` seed placeholder. The first `wiki_index_update.py` call creates the first `## <theme_label>` category and sheds the seed placeholder; subsequent calls append. On a brand-new base the backlink apply step has few or no sibling pages to link from — that's expected; the synthesis (finalize) and later ingests fill the graph in.
 - **Wiki schema with `type: source` / `type: question` not yet allowlisted.** A current cogni-wiki `_wikilib.PAGE_TYPE_DIRS` includes `"source": "sources"` and `"question": "questions"`; older wikis hard-fail in `wiki-health` until upgraded. The skill does not auto-migrate; surface the error and direct the user to upgrade cogni-wiki. `question-store.py` `mkdir -p`'s `wiki/questions/` on demand.
 - **Step 4.5 legacy plan with no `theme_label`.** `question-store.py` falls back to the `sq-NN` slug (and the index category is the single `## Research questions` heading regardless), so a pre-`theme_label` plan still produces well-named question nodes.
@@ -356,6 +382,8 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] ingest | …` line.
 - `<project_path>/.metadata/ingest-manifest.json` (schema 0.1.0).
 - `<project_path>/.metadata/.ingest.batch.<NNN>.<NN>.json` per ingester dispatch (intermediate; kept for debugging).
+- `<project_path>/.metadata/.ingest.dispatch.<NNN>.json` per batch — the authoritative `[{slug, url}]` dispatch record the Step 3.5 sweep verifies against (intermediate; kept for debugging).
+- `<project_path>/.metadata/quarantine/<slug>.md` per Step 3.5 integrity violation — the contaminated page, moved off the wiki and preserved for inspection; the slug is freed and the URL stays re-dispatchable.
 
 ## References
 
@@ -368,3 +396,4 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/candidate-store.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — Step 4.5 per-sub-question node emitter
+- `${CLAUDE_PLUGIN_ROOT}/scripts/ingest-integrity.py --help` — Step 3.5 post-wave integrity sweep
