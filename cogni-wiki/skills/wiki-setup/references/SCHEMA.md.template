@@ -44,7 +44,7 @@ Every page file begins with YAML frontmatter:
 ---
 id: <slug>                       # Must match filename without .md
 title: <human-readable title>
-type: concept | entity | summary | decision | interview | meeting | learning | synthesis | note | source
+type: concept | entity | summary | decision | interview | meeting | learning | synthesis | note | source | question
 tags: [tag1, tag2]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -68,6 +68,7 @@ The `type:` value MUST match the directory the page lives in (e.g. `type: concep
 - **synthesis** — an LLM-derived answer filed back into the wiki by `wiki-query --file-back yes`; cites its wiki provenance via `wiki://<slug>` entries in `sources:`
 - **note** — a loose observation that hasn't crystallized into a concept yet
 - **source** — an ingested source body. Written by `cogni-knowledge:knowledge-ingest` (or any future generic ingestor) as the substrate downstream writers compose from. Per-type semantics (e.g. `pre_extracted_claims:` frontmatter) are owned by the ingestor; cogni-wiki only recognises the type and routes the page to `wiki/sources/`
+- **question** — a research-question node — one per sub-question of a research run. Written by `cogni-knowledge:knowledge-ingest`; its body `[[links]]` the source findings that answer it, and each answering source links back, so the question→finding relation joins the backlink graph. Per-type semantics (`theme_label:`, `sub_question_id:`, `## Findings` body) are owned by the ingestor; cogni-wiki only recognises the type and routes the page to `wiki/questions/`
 
 ## Linking
 
@@ -87,7 +88,7 @@ Wikilinks are bidirectional. Every forward `[[link]]` from page A to page B impl
 
 Notes:
 
-- All current `type:` values (concept, entity, summary, decision, interview, meeting, learning, synthesis, note, source) participate in `R1` symmetrically. There are no per-type asymmetries today; the per-type page directory layout (v0.0.28+, schema_version `0.0.5`) is purely a filesystem reorganisation — every slug remains globally unique and every `[[wikilink]]` continues to address pages by slug alone. The `source` type (schema_version `0.0.6`, v0.0.44+) is an additive extension under the same layout rule — pages live at `wiki/sources/<slug>.md` and participate in `R1` like every other type.
+- All current `type:` values (concept, entity, summary, decision, interview, meeting, learning, synthesis, note, source, question) participate in `R1` symmetrically. There are no per-type asymmetries today; the per-type page directory layout (v0.0.28+, schema_version `0.0.5`) is purely a filesystem reorganisation — every slug remains globally unique and every `[[wikilink]]` continues to address pages by slug alone. The `source` type (schema_version `0.0.6`, v0.0.44+) and the `question` type (schema_version `0.0.7`, v0.0.50+) are additive extensions under the same layout rule — pages live at `wiki/sources/<slug>.md` / `wiki/questions/<slug>.md` and participate in `R1` like every other type.
 - A backlink should read like prose, not a dumped list. The reverse `[[A]]` typically lives next to a sentence that earns its presence on B — see `wiki-update`'s diff-before-write discipline.
 - `R3` exempts pages whose filename starts with `lint-` or `health-` on both ends. Such reports live under `wiki/audits/` (v0.0.28+). As of v0.0.27, `wiki-health` only writes a log line and does not yet create `health-*.md` page files; the exemption + directory are forward-compatible plumbing for a future health-report-as-page feature.
 - `wiki-lint reverse_link_missing` is a warning, not an error: it surfaces missing reverses but never auto-fixes them, mirroring the "lint reports, never auto-fixes" rule. Apply via `wiki-update` or, for fresh ingests, via `wiki-ingest`'s backlink-audit step.

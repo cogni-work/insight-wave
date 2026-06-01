@@ -65,6 +65,13 @@ namespacing / byte-stable re-run / foundation + no-sentinel skips), and
 `test_knowledge_lib.sh` covers the lifted tokenization primitives + `norm_key` /
 `claim_similarity` / `parse_concept_records`.
 
+Phase 4 Step 4.5 (`knowledge-ingest` per-sub-question nodes, #407) is covered by
+`test_question_store.sh`, which executes the actual `question-store.py emit` against a
+synthetic wiki + plan/candidates/manifest fixtures: one `wiki/questions/<slug>.md` per
+sub-question with ≥1 finding, transliterated `theme_label` slug, zero-finding skip,
+idempotent merge preserving the human `## Notes` tail, cross-type `-q` disambiguation,
+and the legacy-plan `sq-NN` slug fallback.
+
 ## Maintenance note
 
 Grep patterns assert exact layout (e.g. `| `--bare` | No |` for parameter
