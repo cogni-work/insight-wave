@@ -542,4 +542,73 @@ after_mm=$(python3 "$HEALTH" --wiki-root "$XID" | python3 -c "import json,sys;d=
 [ "$after_mm" = "0" ] || fail "crossed-id: expected 0 id_mismatch after fix, got $after_mm"
 green "  frontmatter_defaults reconciles a crossed id: -> filename (health id_mismatch cleared)"
 
+# ---------- 8) frontmatter_defaults normalises a QUOTED-correct id: (#418) ----------
+# A source page whose frontmatter `id:` is the right stem but quoted. The fixer
+# compared quote-stripped values, so it saw no change; health.py compares the
+# raw parsed value (parse_frontmatter keeps the quotes), so it still flagged
+# id_mismatch -> an unclearable error. The fixer must rewrite to the unquoted
+# canonical `id: <slug>` form health.py accepts.
+QID="$WORKDIR/quoted-id-wiki"
+mkdir -p "$QID/wiki/sources" "$QID/.cogni-wiki"
+cat > "$QID/.cogni-wiki/config.json" <<EOF
+{"name":"q","slug":"q","created":"$TODAY","entries_count":1,"last_lint":null,"schema_version":"0.0.6"}
+EOF
+cat > "$QID/wiki/index.md" <<EOF
+# Index
+
+## Sources
+
+- [[overview-source]] — o
+EOF
+# id: is the correct stem but QUOTED.
+cat > "$QID/wiki/sources/overview-source.md" <<EOF
+---
+id: "overview-source"
+title: "Overview Source"
+type: source
+tags: [source]
+created: $TODAY
+updated: $TODAY
+sources: ["https://example.org/overview"]
+---
+# Overview Source
+Body text comfortably beyond the fifty-character stub threshold so no stub warning.
+EOF
+
+# Sanity: health reports the quoted-correct id as an id_mismatch error before the fix.
+before_mm=$(python3 "$HEALTH" --wiki-root "$QID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
+[ "$before_mm" = "1" ] || fail "quoted-id: expected 1 id_mismatch before fix, got $before_mm"
+
+# Dry-run: plan the change, write nothing (on-disk id: still quoted).
+out=$(python3 "$LINT" --wiki-root "$QID" --fix=frontmatter_defaults --dry-run)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+planned = [f for f in d['fixed'] if f['class']=='frontmatter_defaults' and f['page']=='overview-source']
+assert planned, 'quoted-id: no frontmatter_defaults plan emitted'
+assert all(f['applied'] is False for f in planned), 'quoted-id: dry-run applied=true'
+assert any('\"overview-source\"' in f.get('change','') and 'overview-source' in f.get('change','') for f in planned), f'quoted-id: change text missing quoted->unquoted: {planned}'
+" || fail "quoted-id: dry-run plan check"
+grep -q '^id: "overview-source"$' "$QID/wiki/sources/overview-source.md" \
+  || fail "quoted-id: dry-run mutated id: on disk"
+
+# Wet: id: rewritten to the unquoted canonical form.
+python3 "$LINT" --wiki-root "$QID" --fix=frontmatter_defaults >/dev/null
+grep -q '^id: overview-source$' "$QID/wiki/sources/overview-source.md" \
+  || fail "quoted-id: wet fix did not rewrite id: to unquoted canonical form"
+
+# Idempotent: a second wet run plans no further frontmatter_defaults change.
+out=$(python3 "$LINT" --wiki-root "$QID" --fix=frontmatter_defaults)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+again = [f for f in d['fixed'] if f['class']=='frontmatter_defaults' and f['page']=='overview-source']
+assert not again, f'quoted-id: fixer not idempotent: {again}'
+" || fail "quoted-id: fixer not idempotent on re-run"
+
+# End-to-end unblock: health now reports 0 id_mismatch errors.
+after_mm=$(python3 "$HEALTH" --wiki-root "$QID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
+[ "$after_mm" = "0" ] || fail "quoted-id: expected 0 id_mismatch after fix, got $after_mm"
+green "  frontmatter_defaults normalises a quoted-correct id: -> unquoted (health id_mismatch cleared)"
+
 green "ALL TESTS PASS"
