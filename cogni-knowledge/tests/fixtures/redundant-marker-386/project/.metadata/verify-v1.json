@@ -1,0 +1,13 @@
+{
+  "schema_version": "0.1.0",
+  "draft_version": 1,
+  "revision_round": 0,
+  "verified": [
+    {"id": "cit-001", "draft_position": "02:01", "wiki_slug": "activemind-nis2", "claim_id": "clm-003", "verdict": "paraphrase"},
+    {"id": "cit-003", "draft_position": "02:02", "wiki_slug": "bsi-nis2-pflichten", "claim_id": "clm-001", "verdict": "paraphrase"}
+  ],
+  "deviations": [
+    {"id": "cit-002", "draft_position": "02:01", "wiki_slug": "bsi-nis2-pflichten", "claim_id": "clm-004", "verdict": "unsupported", "reason": "claim_not_found", "note": "cited clm-004 is absent on the BSI page; no on-page claim covers the fines-without-incident / governance-structures assertion (clm-001 = sector scope, clm-002 = registration deadline, clm-005 = sanctions set by authorities — near-miss). The sentence is already covered by the adjacent activeMind citation cit-001 (clm-003, paraphrase)."}
+  ],
+  "counts": {"verbatim": 0, "paraphrase": 2, "synthesis": 0, "unsupported": 1, "total": 3}
+}

@@ -10,6 +10,10 @@ stdlib, no pytest, no pip dependencies — matches the convention used by
 tests/
 ├── README.md
 ├── fixtures/                              Shared test fixtures
+│   └── redundant-marker-386/              Agent-driven (not bash-CI) acceptance
+│                                          fixture for the #386 redundant-marker
+│                                          drop — see its README to re-run the
+│                                          revisor + wiki-verifier by hand
 ├── test_knowledge_setup_probe.sh          F1 + A4: probe handles dev-repo
 │                                          and marketplace cache layouts,
 │                                          present in every gating knowledge-*
