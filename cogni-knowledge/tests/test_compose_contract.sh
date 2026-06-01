@@ -117,11 +117,13 @@ assert_not_grep '01-contexts/data' "$COMPOSER" "wiki-composer: does NOT referenc
 assert_not_grep '02-sources/data' "$COMPOSER" "wiki-composer: does NOT reference cogni-research's 02-sources/data"
 # Slice 13 (#300): OUTPUT_LANGUAGE + CITATION_FORMAT are LIVE parameter rows.
 # #309 P2: TONE + PROSE_DENSITY are now ALSO live (the composer honours the
-# project's tone register and standard/executive density). EXPANSION_NOTES and
-# STORY_ARC_ID stay deferred — cogni-knowledge has no expansion loop (the
-# advisory floor/ceiling is surfaced by wiki-reviewer, not re-dispatched) and no
-# story arcs.
-for token in OUTPUT_LANGUAGE CITATION_FORMAT TONE PROSE_DENSITY; do
+# project's tone register and standard/executive density).
+# #384 (v0.1.44): EXPANSION_MODE is a NEW live parameter — the orchestrator may
+# re-dispatch the composer ONCE to deepen thin sections from not-yet-cited wiki
+# claims (bounded, fail-soft, ZERO-NETWORK). This is a DISTINCT token from the
+# upstream web-backed EXPANSION_NOTES / STORY_ARC_ID, which stay deferred (the
+# negative loop below still guards them — that is the non-port boundary).
+for token in OUTPUT_LANGUAGE CITATION_FORMAT TONE PROSE_DENSITY EXPANSION_MODE; do
   if grep -q "| \`${token}\` |" "$COMPOSER"; then
     green "PASS: wiki-composer: ${token} parameter row present (live writer-quality input)"
   else
@@ -194,6 +196,35 @@ if echo "$COMPOSER_TOOLS_LINE" | grep -qE 'WebFetch|"Task"'; then
 else
   green "PASS: wiki-composer: frontmatter tools: no WebFetch, no Task (single-pass, read-the-wiki only)"
 fi
+
+# --- #384 bounded floor-expansion (Step 5.5) contract --------------------
+# knowledge-compose gained a Step 5.5 that re-dispatches wiki-composer ONCE in
+# EXPANSION_MODE on a standard-density floor deficit (zero-network, capped,
+# fail-soft). Guard the contract surface so a path/flag/branch can't silently
+# disappear.
+assert_grep 'no-expand' "$COMPOSE" "knowledge-compose: --no-expand opt-out flag present (#384)"
+assert_grep '5.5' "$COMPOSE" "knowledge-compose: Step 5.5 bounded floor-expansion present (#384)"
+assert_grep 'EXPANSION_MODE=true' "$COMPOSE" "knowledge-compose: Step 5.5 re-dispatches with EXPANSION_MODE=true (#384)"
+assert_grep 'EXPAND_SECTIONS=' "$COMPOSE" "knowledge-compose: Step 5.5 threads EXPAND_SECTIONS into the re-dispatch (#384)"
+assert_grep 'BASELINE_DRAFT_VERSION=' "$COMPOSE" "knowledge-compose: Step 5.5 threads BASELINE_DRAFT_VERSION (#384)"
+assert_grep 'ceiling_hit' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on the composer's ceiling_hit (#384)"
+assert_grep 'kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft keeps draft-vN as latest (#384)"
+# The cap is exactly ONE expansion — the skill must say so (defends against a
+# future edit re-introducing an unbounded loop).
+assert_grep 'capped at ONE\|capped at one\|cap = 1\|ONE bounded\|one bounded\|ONE expansion\|once in' "$COMPOSE" "knowledge-compose: Step 5.5 is capped at ONE expansion (#384)"
+
+# wiki-composer must declare the EXPANSION_MODE input parameters + the ceiling_hit
+# return field. (The EXPANSION_MODE param-row presence is asserted in the live-token
+# loop above; here we check the companion params + the return contract.)
+assert_grep 'BASELINE_DRAFT_VERSION' "$COMPOSER" "wiki-composer: declares BASELINE_DRAFT_VERSION input (#384)"
+assert_grep 'EXPAND_SECTIONS' "$COMPOSER" "wiki-composer: declares EXPAND_SECTIONS input (#384)"
+assert_grep 'ceiling_hit' "$COMPOSER" "wiki-composer: reports ceiling_hit in the return JSON (#384)"
+# Zero-network non-port: the expansion deepens from EXISTING wiki claims only —
+# it must say 'not yet cited' / 'not-yet-cited', and must NOT gain WebFetch/WebSearch
+# (the single-pass tools check above already forbids those; this asserts the prose).
+assert_grep 'not-yet-cited\|not yet cited' "$COMPOSER" "wiki-composer: expansion deepens from not-yet-cited wiki claims (zero-network non-port, #384)"
+# Single-pass-per-dispatch invariant must survive: the agent never self-loops.
+assert_grep 'single pass per dispatch\|Single pass per dispatch\|single-pass per dispatch\|single pass: read baseline\|once in .EXPANSION_MODE.\|re-dispatch you exactly ONCE\|re-dispatch you ONCE\|re-dispatch you once' "$COMPOSER" "wiki-composer: stays single-pass per dispatch under EXPANSION_MODE (orchestrator drives the one re-dispatch, #384)"
 
 # --- Phase 5 contract token match ----------------------------------------
 # The inverted-pipeline.md Phase 5 contract names three reads and two

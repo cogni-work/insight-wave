@@ -263,7 +263,7 @@ def normalize_citation_format(value: str | None) -> str:
     return _normalize_choice(value, VALID_CITATION_FORMATS, "ieee")
 
 
-def normalize_target_words(value, default: int = 5000) -> int:
+def normalize_target_words(value, default: int = 4000) -> int:
     """Coerce a target-word value to a positive int; non-positive/unparseable →
     `default`. Tolerates a string from a flag or a number from a binding/plan."""
     try:

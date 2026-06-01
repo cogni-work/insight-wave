@@ -63,7 +63,7 @@ DEFAULT_RESEARCH_DEFAULTS = {
     "prose_density": "standard",
     "tone": "objective",
     "citation_format": "ieee",
-    "target_words": 5000,
+    "target_words": 4000,
 }
 
 
@@ -165,7 +165,7 @@ def cmd_init(args: argparse.Namespace) -> int:
                 args.citation_format or DEFAULT_RESEARCH_DEFAULTS["citation_format"]
             ),
             # --target-words defaults to 0 (unset sentinel) so a positive int wins
-            # and 0/omitted falls through to the 5000 default.
+            # and 0/omitted falls through to the 4000 default.
             "target_words": args.target_words or DEFAULT_RESEARCH_DEFAULTS["target_words"],
         },
         "created": _today(),
@@ -322,7 +322,7 @@ def main(argv: list[str]) -> int:
         type=int,
         default=0,
         help="Default soft target word count (floor under standard density, "
-             "ceiling under executive). Positive int; falls back to 5000 when "
+             "ceiling under executive). Positive int; falls back to 4000 when "
              "omitted or 0.",
     )
     p_init.set_defaults(func=cmd_init)
