@@ -43,7 +43,9 @@ Each phase is a separate skill so the operator can pause and inspect between pha
 
 ### Phase 1 — `knowledge-plan`
 
-Reads the topic, decomposes into 3–7 sub-questions, identifies candidate authority domains per sub-question, computes a cost estimate. No web access. Each sub-question also carries a `theme_label` — a short thematic label (in `output_language`) that Phase 4 uses as the source page's `wiki/index.md` category so the index reads thematically rather than by page type (#307).
+Reads the topic, decomposes into 3–7 sub-questions, identifies candidate authority domains per sub-question, computes a cost estimate. No web access by default. Each sub-question also carries a `theme_label` — a short thematic label (in `output_language`) that Phase 4 uses as the source page's `wiki/index.md` category so the index reads thematically rather than by page type (#307).
+
+**Preliminary scoping scan (optional, fail-soft).** The one web call this phase can make is an opt-in 2–3-query `WebSearch` scan folded into the optional Step 0.4 topic-framing pass (`references/topic-framing.md`, the *scan* move): it grounds decomposition in what's actually searchable (dominant angles, key organizations, recent developments, terminology) so sub-questions don't target dead-end angles. It **engages only when framing does** — a vague topic or `--frame`, never on a sharp topic, `--no-framing`, `--dry-run`, or `--no-prelim-search` — and is **fail-soft** (any error degrades to the pure-reasoning path). This mirrors the read-before-web pre-step's posture (Phase 2 below): the enrichment is opt-in and never blocks, so a run that skips it is byte-identical to pre-scan behaviour. The scan output is ephemeral working context (an optional `## Preliminary scan` note in `framing.md`); `plan.json` is unchanged.
 
 Output: `<project>/.metadata/plan.json`:
 

@@ -4,7 +4,7 @@
 
 LLM-facing reference for the **optional Step 0 — Topic Framing** in `knowledge-plan`. Step 0 turns a fuzzy intent into a sharp, scope-tested research prompt before decomposition (Step 2) runs. Framework-agnostic. Context-open. Skippable when the topic is already sharp, or when `--no-framing` / `--dry-run` is passed.
 
-The job is four moves, in order: **ground → sharpen → right-size → emit**.
+The job is five moves, in order: **ground → scan → sharpen → right-size → emit**. (The **scan** move is optional and fail-soft — see Step 0.2b.)
 
 ## When framing engages (and when it gets out of the way)
 
@@ -29,6 +29,23 @@ Ask the user (text output) for any grounding material they want the framing to h
 When the user supplies a path, read it conservatively: `Glob` for the top-level shape, `Read` the manifest / README if present, sample 2–3 representative files. Do **not** load every file — context is for framing, not analysis. **Cap the read at ~50 KB.** No network, no writes outside `<project_path>/.metadata/`.
 
 This step is schema-agnostic by design. Files are files.
+
+## Step 0.2b — Preliminary scoping scan (optional, fail-soft)
+
+Before surfacing the load-bearing variables, ground the framing in what's actually searchable. Decomposition done purely from reasoning can target angles that have no findable content — strong-looking sub-questions that send the downstream curators to dead ends. A heavily-documented topic survives a vacuum decomposition; an emerging or sparse topic is where a quick pre-search earns its keep.
+
+**Engage.** The scan rides framing's engage decision — it runs only when framing has engaged (a vague topic or `--frame`), and it is skipped when `--no-prelim-search` was passed. It therefore never runs on a sharp topic, `--no-framing`, or `--dry-run`, so run-1 / automation paths stay zero-web. No new decision point — if you got here, framing is already engaged.
+
+**Run.** Issue **2–3 broad `WebSearch` queries** on the grounded topic (in the topic's own language — this runs before `knowledge-plan` Step 0.5 resolves the market, so it needs no resolved market). Review the top result snippets and note:
+
+- **dominant angles** — the framings the topic is actually discussed through;
+- **key organizations** — the bodies/authorities that own the conversation;
+- **recent developments** — what changed lately that a decomposition should reflect;
+- **terminology** — the vocabulary real sources use (so sub-questions phrase searchable).
+
+**Feed forward.** These observations inform **both** the sharpening turn (Step 0.3 — they shape the audience/thesis/scope options you surface) **and** `knowledge-plan` Step 2 decomposition (sub-question `query` + `theme_label` ground in the observed terminology). They are ephemeral working context — recorded as an optional `## Preliminary scan` note in `framing.md`, never a persisted plan field.
+
+**Fail-soft.** Any error — no results, tool failure, an empty landscape — means *skip the scan silently* and fall through to today's pure-reasoning path. The scan never blocks framing; it only enriches it when it succeeds.
 
 ## Step 0.3 — Surface the load-bearing variables
 
@@ -144,3 +161,4 @@ After writing `framing.md`, hand back to Step 0.5 with the suggested-config valu
 - ❌ Loading every file in a directory. Sample the manifest + 2–3 files; cap at ~50 KB.
 - ❌ Skipping framing because the topic *looks* sharp at first glance. Apply the three-of-four sharpness test (audience, thesis, scope, deliverable).
 - ❌ Inventing a `target_words` / `tone` instead of surfacing it as a suggestion — every config hint is overridable in Step 0.5.
+- ❌ Running the scan on every topic — it rides framing's engage decision; sharp topics skip it (and so does `--no-prelim-search`).

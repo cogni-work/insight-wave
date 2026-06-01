@@ -53,6 +53,11 @@ assert_grep '"citation_format"' "$PLAN" "knowledge-plan: writes citation_format 
 assert_grep '"target_words"' "$PLAN" "knowledge-plan: writes target_words into plan.json (#309 P2)"
 assert_grep '0.4. Topic framing' "$PLAN" "knowledge-plan: has the optional Step 0.4 topic-framing pass (#309 P2.5)"
 assert_grep 'no-framing' "$PLAN" "knowledge-plan: documents --no-framing skip for Step 0.4 (#309 P2.5)"
+# #382: the opt-in, fail-soft preliminary scoping scan folded into Step 0.4 framing —
+# knowledge-plan gains WebSearch and a --no-prelim-search opt-out.
+assert_grep 'allowed-tools:.*WebSearch' "$PLAN" "knowledge-plan: allowed-tools includes WebSearch for the preliminary scan (#382)"
+assert_grep 'no-prelim-search' "$PLAN" "knowledge-plan: documents --no-prelim-search opt-out (#382)"
+assert_grep 'reliminary scoping scan' "$PLAN" "knowledge-plan: documents the preliminary scoping scan inside Step 0.4 (#382)"
 assert_grep 'probe_plugin cogni-wiki wiki-setup' "$PLAN" "knowledge-plan: probes cogni-wiki"
 assert_grep 'knowledge-finalize' "$PLAN" "knowledge-plan: defers binding append to M9 knowledge-finalize"
 assert_not_grep 'probe_plugin cogni-research' "$PLAN" "knowledge-plan: does NOT probe cogni-research (clean break)"

@@ -1,5 +1,32 @@
 # cogni-knowledge changelog
 
+## 0.1.43 — 2026-06-01 — feat: port cogni-research's preliminary/scoping search into knowledge-plan (closes #382)
+
+cogni-research's `research-report` runs a **Phase 0.5 preliminary search** — 2–3 broad `WebSearch`
+queries before sub-question generation — so decomposition is grounded in what's actually searchable
+(dominant angles, key organizations, recent developments, terminology) rather than targeting
+dead-end angles. `knowledge-plan` was deliberately the opposite ("no web — pure decomposition"). This
+is a fourth un-ported cogni-research capability the #309 feature-parity audit never named (it covered
+the reviewer, multilingual, and read-before-web increments only); since the absorption roadmap
+archives cogni-research after Phase 6, a migrating consumer would silently lose scoping at cutover.
+
+Ported as a **fail-soft, opt-in preliminary scan folded into the existing Step 0.4 topic-framing
+pass** — a new *scan* move between *ground* and *sharpen*. More disciplined than the upstream it
+ports: cogni-research scans unconditionally, this engages the scan **only on the vague/emerging
+topics where framing already engages**, and keeps the zero-web default for sharp topics.
+
+- **`skills/knowledge-plan/SKILL.md`** — `WebSearch` added to `allowed-tools`; Step 0.4 gains the
+  scan (2–3 broad queries on the grounded topic, observations feed the sharpening turn + Step 2
+  decomposition); new `--no-prelim-search` opts out; `--frame` forces framing and therefore the scan
+  (no separate force-flag); fail-soft on any error; output is an optional `## Preliminary scan` note
+  in `framing.md` (`plan.json` unchanged at schema `0.1.1`); `cost_estimate_usd` softened (small iff
+  the scan ran); Out-of-scope keeps the WebFetch ban while allowing the opt-in scan.
+- **`references/topic-framing.md`** — spine `ground → scan → sharpen → right-size → emit`; new
+  Step 0.2b documents the scan; anti-pattern against running it on every topic.
+- **`references/inverted-pipeline.md`** — Phase 1 contract is now "no web access by default" + a
+  fail-soft scan paragraph mirroring the read-before-web pre-step.
+- **Tests** — new `tests/test_prelim_search_contract.sh`; extended `tests/test_skill_contracts.sh`.
+
 ## 0.1.42 — 2026-05-31 — fix: make wiki-composer actually cite distilled pages on convergence (closes #385)
 
 `#344` shipped the capability for `wiki-composer` to cite a distilled page (concept/entity/summary/

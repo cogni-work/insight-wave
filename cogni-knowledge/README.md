@@ -31,7 +31,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 ## What it does
 
 1. **Setup** a knowledge base — one cogni-wiki + a `binding.json` manifest that records every research project deposited
-2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web yet) — Phase 1 of the v0.1.0 inverted pipeline
+2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web by default; an optional, fail-soft preliminary scoping search engages only inside topic-framing on vague topics / `--frame`) — Phase 1 of the v0.1.0 inverted pipeline
 3. **Curate** candidate sources per sub-question via WebSearch + scoring, then fetch each survivor's body via WebFetch into a shared fetch-cache (Option B — the fetch rides the parallel curators) — Phase 2
 4. **Fetch** assembles the fetch-manifest from the curators' results; cobrowse recovery of WebFetch misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`) — Phase 3
 5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
