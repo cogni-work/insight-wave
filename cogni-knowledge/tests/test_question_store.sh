@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+# test_question_store.sh — functional test for scripts/question-store.py
+# (the #407 knowledge-ingest Step 4.5 engine that emits per-sub-question
+# `type: question` wiki nodes). Executes the real code path against a
+# synthetic wiki + plan.json + candidates.json + ingest-manifest.json.
+#
+# Covers:
+#   1. One wiki/questions/<slug>.md per sub-question that has ≥1 finding;
+#      slug derived from theme_label via _knowledge_lib.slugify (transliterated).
+#   2. Forward links: ## Findings lists - [[<source-slug>]] for each answering
+#      source; sources_answering[] frontmatter matches.
+#   3. A sub-question with zero findings writes NO page (skipped_no_findings[]).
+#   4. Idempotent re-run: merges in place (action=merged), preserves a human
+#      ## Notes tail, unions findings, no duplicate pages.
+#   5. Cross-type slug collision (a source page already owns the theme slug)
+#      disambiguates with a -q suffix rather than shadowing the source page.
+#   6. Legacy plan with no theme_label falls back to the sq-NN slug.
+#
+# bash 3.2 + python3 stdlib only. Exits non-zero on any failure.
+
+set -eu
+
+PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT="$PLUGIN_ROOT/scripts/question-store.py"
+WSD="$PLUGIN_ROOT/../cogni-wiki/skills/wiki-ingest/scripts"
+
+. "$(dirname "$0")/fixtures/test_helpers.sh"
+
+errors=0
+
+if [ ! -d "$WSD" ]; then
+  red "FAIL: cogni-wiki wiki-ingest scripts not found at $WSD"
+  exit 1
+fi
+
+WORK="$(mktemp -d)"
+cleanup() { rm -rf "$WORK"; }
+trap cleanup EXIT
+
+WIKI="$WORK/wiki-root"
+PROJ="$WORK/project"
+mkdir -p "$WIKI/wiki/questions" "$WIKI/wiki/sources" "$WIKI/.cogni-wiki" "$PROJ/.metadata"
+echo '{"schema_version":"0.0.7","entries_count":0}' > "$WIKI/.cogni-wiki/config.json"
+
+# --- synthetic findings on disk (the Step 3/4 source pages) ----------------
+for s in records-scope controller-obligations risk-classes; do
+  cat > "$WIKI/wiki/sources/$s.md" <<EOF
+---
+id: $s
+title: $s
+type: source
+created: 2026-01-01
+updated: 2026-01-01
+---
+
+Body for $s, long enough to clear the stub threshold for any later health run.
+EOF
+done
+
+# --- plan.json: 3 sub-questions; sq-03 has a German theme_label (für->fuer),
+#     sq-02 will end up with no findings ---------------------------------------
+cat > "$PROJ/.metadata/plan.json" <<'EOF'
+{
+  "sub_questions": [
+    {"id": "sq-01", "query": "What is the scope of records of processing?",
+     "search_guidance": "regulatory text", "theme_label": "Records of Processing Scope",
+     "candidate_domains": ["europa.eu", "bfdi.bund.de"]},
+    {"id": "sq-02", "query": "How do court rulings interpret it?",
+     "search_guidance": "case law", "theme_label": "Court Interpretation",
+     "candidate_domains": ["eur-lex.europa.eu"]},
+    {"id": "sq-03", "query": "Welche Pflichten gelten für Risikoklassen?",
+     "search_guidance": "Gesetzestext", "theme_label": "Pflichten für Risikoklassen",
+     "candidate_domains": ["artificialintelligenceact.eu"]}
+  ]
+}
+EOF
+
+# --- candidates.json: URL -> sub_question_refs --------------------------------
+cat > "$PROJ/.metadata/candidates.json" <<'EOF'
+{
+  "schema_version": "0.1.0",
+  "candidates": [
+    {"url": "https://europa.eu/records", "sub_question_refs": ["sq-01"]},
+    {"url": "https://bfdi.bund.de/obligations", "sub_question_refs": ["sq-01", "sq-03"]},
+    {"url": "https://aia.eu/risk", "sub_question_refs": ["sq-03"]}
+  ]
+}
+EOF
+
+# --- ingest-manifest.json: URL -> slug ---------------------------------------
+cat > "$PROJ/.metadata/ingest-manifest.json" <<'EOF'
+{
+  "schema_version": "0.1.0",
+  "ingested": [
+    {"url": "https://europa.eu/records", "slug": "records-scope"},
+    {"url": "https://bfdi.bund.de/obligations", "slug": "controller-obligations"},
+    {"url": "https://aia.eu/risk", "slug": "risk-classes"}
+  ],
+  "skipped": []
+}
+EOF
+
+emit() {
+  python3 "$SCRIPT" emit \
+    --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+    --plan "$PROJ/.metadata/plan.json" \
+    --candidates "$PROJ/.metadata/candidates.json" \
+    --ingest-manifest "$PROJ/.metadata/ingest-manifest.json"
+}
+
+# ===== Run 1 =================================================================
+OUT="$(emit)"
+echo "$OUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] else 1)' \
+  && green "PASS: emit returns success" || { red "FAIL: emit not success"; echo "$OUT"; errors=$((errors+1)); }
+
+# 1) sq-01 + sq-03 pages exist; sq-02 (no findings) does not.
+SQ1="$WIKI/wiki/questions/records-of-processing-scope.md"
+SQ3="$WIKI/wiki/questions/pflichten-fuer-risikoklassen.md"
+[ -f "$SQ1" ] && green "PASS: sq-01 question page written at slugified theme_label" \
+  || { red "FAIL: missing $SQ1"; errors=$((errors+1)); }
+[ -f "$SQ3" ] && green "PASS: sq-03 page uses transliterated slug (für->fuer)" \
+  || { red "FAIL: missing $SQ3"; errors=$((errors+1)); }
+[ ! -f "$WIKI/wiki/questions/court-interpretation.md" ] \
+  && green "PASS: sq-02 (zero findings) wrote no page" \
+  || { red "FAIL: sq-02 page should not exist"; errors=$((errors+1)); }
+
+echo "$OUT" | grep -q '"sq-02"' && green "PASS: sq-02 reported in skipped_no_findings" \
+  || { red "FAIL: sq-02 not in skipped_no_findings"; errors=$((errors+1)); }
+
+# 2) forward links + frontmatter
+assert_grep 'type: question' "$SQ1" "sq-01 page is type: question"
+assert_grep 'sub_question_id: sq-01' "$SQ1" "sq-01 page carries sub_question_id"
+assert_grep '## Findings' "$SQ1" "sq-01 page has ## Findings section"
+# sq-01 is answered by records-scope (sq-01 ref) AND controller-obligations (sq-01+sq-03 ref)
+assert_grep '\[\[records-scope\]\]' "$SQ1" "sq-01 Findings links its source finding"
+assert_grep 'sources_answering: \[records-scope, controller-obligations\]' "$SQ1" "sq-01 sources_answering lists both findings in order"
+# sq-03 has two findings (controller-obligations via sq-03 ref + risk-classes)
+assert_grep '\[\[controller-obligations\]\]' "$SQ3" "sq-03 links shared finding controller-obligations"
+assert_grep '\[\[risk-classes\]\]' "$SQ3" "sq-03 links risk-classes finding"
+
+# ===== Idempotency: add a human ## Notes tail, re-run ========================
+printf '\n## Notes\n\nHuman annotation that must survive a re-run.\n' >> "$SQ1"
+OUT2="$(emit)"
+echo "$OUT2" | grep -q '"action": "merged"' && green "PASS: re-run reports action=merged" \
+  || { red "FAIL: re-run did not merge"; echo "$OUT2"; errors=$((errors+1)); }
+assert_grep 'Human annotation that must survive' "$SQ1" "## Notes tail preserved across re-run"
+# exactly one page per slug (no duplication)
+N=$(ls "$WIKI/wiki/questions/" | wc -l | tr -d ' ')
+[ "$N" = "2" ] && green "PASS: still exactly 2 question pages after re-run" \
+  || { red "FAIL: expected 2 question pages, found $N"; errors=$((errors+1)); }
+
+# ===== Cross-type collision: a source page owns 'court-interpretation' =======
+# Give sq-02 a finding so it would now want the slug, but plant a same-slug source first.
+cat > "$WIKI/wiki/sources/court-interpretation.md" <<'EOF'
+---
+id: court-interpretation
+title: pre-existing source
+type: source
+created: 2026-01-01
+updated: 2026-01-01
+---
+A pre-existing non-question page that owns the court-interpretation slug.
+EOF
+cat > "$PROJ/.metadata/candidates.json" <<'EOF'
+{"schema_version":"0.1.0","candidates":[
+  {"url":"https://europa.eu/records","sub_question_refs":["sq-01"]},
+  {"url":"https://bfdi.bund.de/obligations","sub_question_refs":["sq-01","sq-03"]},
+  {"url":"https://aia.eu/risk","sub_question_refs":["sq-03","sq-02"]}
+]}
+EOF
+OUT3="$(emit)"
+[ -f "$WIKI/wiki/questions/court-interpretation-q.md" ] \
+  && green "PASS: cross-type collision disambiguated to court-interpretation-q" \
+  || { red "FAIL: expected court-interpretation-q.md"; echo "$OUT3"; errors=$((errors+1)); }
+assert_grep 'type: source' "$WIKI/wiki/sources/court-interpretation.md" \
+  "pre-existing source page left untouched (still type: source)"
+[ ! -f "$WIKI/wiki/questions/court-interpretation.md" ] \
+  && green "PASS: did not write a question at the colliding bare slug" \
+  || { red "FAIL: question shadowed the source slug"; errors=$((errors+1)); }
+
+# ===== Legacy plan: no theme_label -> sq-NN slug fallback ====================
+cat > "$PROJ/.metadata/plan.json" <<'EOF'
+{"sub_questions":[{"id":"sq-09","query":"Legacy plan question?","search_guidance":"x"}]}
+EOF
+cat > "$PROJ/.metadata/candidates.json" <<'EOF'
+{"schema_version":"0.1.0","candidates":[{"url":"https://europa.eu/records","sub_question_refs":["sq-09"]}]}
+EOF
+OUT4="$(emit)"
+[ -f "$WIKI/wiki/questions/sq-09.md" ] \
+  && green "PASS: legacy plan (no theme_label) falls back to sq-NN slug" \
+  || { red "FAIL: expected sq-09.md fallback"; echo "$OUT4"; errors=$((errors+1)); }
+
+if [ "$errors" -eq 0 ]; then
+  green "ALL TESTS PASS"
+  exit 0
+else
+  red "$errors test(s) FAILED"
+  exit 1
+fi

@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Bash, Task
 
 # Knowledge Ingest
 
-Phase 4 of the inverted pipeline. Reads `<project>/.metadata/fetch-manifest.json`, dispatches `source-ingester` per fetched source to write `wiki/sources/<slug>.md` pages, and merges per-source results into the canonical `<project>/.metadata/ingest-manifest.json`. After per-source emission, runs cogni-wiki's `backlink_audit.py` + `wiki_index_update.py` directly at script level per new slug, and appends one ingest summary line to `wiki/log.md`.
+Phase 4 of the inverted pipeline. Reads `<project>/.metadata/fetch-manifest.json`, dispatches `source-ingester` per fetched source to write `wiki/sources/<slug>.md` pages, and merges per-source results into the canonical `<project>/.metadata/ingest-manifest.json`. After per-source emission, runs cogni-wiki's `backlink_audit.py` + `wiki_index_update.py` directly at script level per new slug. Then (Step 4.5) promotes each sub-question into a first-class `type: question` node at `wiki/questions/<slug>.md` whose `## Findings` body `[[links]]` the source findings that answer it, backfilling the reverse `source→question` link (SCHEMA `R1`). Finally appends one ingest summary line to `wiki/log.md`.
 
 By the end of this phase the wiki is populated with one `type: source` page per `fetched[]` entry, each carrying `pre_extracted_claims:` in its frontmatter. The composer reads these pages; verification string-matches draft sentences against the pre-extracted claims with **zero network calls** — the structural win.
 
@@ -240,6 +240,63 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
 
 Same call shape and script `knowledge-finalize` Step 8 uses (`config_bump.py` already supports a signed `--delta`); lock-wrapped at its own write site. **Non-fatal on failure** — if the bump fails, the source pages are already on disk and discoverable; surface the failure in the Step 6 summary and let the operator reconcile via `wiki-lint --fix=entries_count_drift` (the same posture finalize takes). Without this bump, `wiki-health` / `wiki-resume` report an `entries_count_drift` equal to the number of ingested source pages.
 
+### 4.5. Per-sub-question node emission (after all batches)
+
+Runs **once**, after the Step 3/4 batch loop has fully completed (every finding is on disk). It promotes each `plan.sub_questions[]` entry into a first-class `type: question` wiki node at `wiki/questions/<slug>.md` whose body `[[links]]` the source findings that answer it, and backfills the reverse `source→question` link so the question↔finding relation joins the backlink graph (SCHEMA `R1`). The `type: question` page type requires cogni-wiki **≥ v0.0.50** (schema_version `0.0.7`); older wikis hard-fail in `wiki-health` until upgraded — surface the error and direct the user to upgrade cogni-wiki (same posture as the `type: source` edge case below).
+
+The inputs are all already in hand: `plan.sub_questions[]` (read in Step 0 for the `theme_label` map; re-read for `query`/`search_guidance`/`candidate_domains`), the Step 0 URL→`sub_question_refs[]` map, and the final `ingest-manifest.json` (slug per URL).
+
+**1. Write the question pages (deterministic, one auditable pass).** Run `question-store.py` — the stdlib script that joins the three inputs, builds each sub-question's finding set, derives a globally-unique slug (`_knowledge_lib.slugify(theme_label)`, fallback `sq-NN`), writes/merges `wiki/questions/<slug>.md` atomically, and returns a plan JSON the orchestrator consumes in steps 2–4:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py" emit \
+    --wiki-root <WIKI_ROOT> \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    --plan "<project_path>/.metadata/plan.json" \
+    --candidates "<project_path>/.metadata/candidates.json" \
+    --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
+```
+
+It emits `{success, data: {questions: [{slug, sub_question_id, query, sources_answering[], action}], skipped_no_findings[]}, error}`. `action` is `created` (fresh page) or `merged` (an existing `wiki/questions/<slug>.md` was enriched — its `created:` and human `## Notes` tail are preserved, the finding `[[links]]` unioned, `updated:` bumped — the v1 idempotent enrich-on-collision behaviour). A slug colliding with a **non-question** page (source/concept/…) is disambiguated with a `-q` suffix so a question node never shadows another page. Sub-questions with zero findings this run are listed in `skipped_no_findings[]` and get no page. Owns the slug logic, the `type: question` page-type contract, and the merge/preserve semantics — the orchestrator never hand-builds the page.
+
+Each `wiki/questions/<slug>.md` write is **unique-by-construction per slug** (atomic `_knowledge_lib.atomic_write_text`, single writer) — no `_wiki_lock` needed, same posture as the Step 3 source pages. The script imports cogni-wiki's `PAGE_TYPE_DIRS` / `split_frontmatter` from the resolved `--wiki-scripts-dir` (the same DRY posture `concept-store.py` uses for `_wiki_lock`).
+
+**2. Reverse links (R1) — `source→question`.** For each `questions[]` entry above (each has a non-empty `sources_answering[]` — zero-finding sub-questions were skipped), run `backlink_audit.py --apply-plan` exactly as Step 4.1 does, but with `--new-page <question-slug>`. The `targets[]` are the answering source pages (one per `sources_answering[]` slug); each `sentence` inserts a bare `[[<question-slug>]]` under a `## Research questions` heading so it lands in its own section rather than mid-body:
+
+```
+printf '%s' "$PLAN_JSON" | python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" \
+    --wiki-root <WIKI_ROOT> \
+    --new-page <question-slug> \
+    --apply-plan -
+```
+
+where `$PLAN_JSON` is `{"targets": [{"slug": "<source-slug>", "sentence": "Answers research question [[<question-slug>]].", "insert_after_heading": "## Research questions"}, ...]}` — one target per answering source. `apply_plan` rejects any `sentence` not containing `[[<question-slug>]]`, is **idempotent** (skips a source already linking the question), and is **fail-soft per target** (errors land in `data.failed[]`). The forward direction (`question→source`) already lives in the page's `## Findings` body, so both legs of `R1` are present and `wiki-lint` reports no new `reverse_link_missing` for these pairs. Surface `applied`/`failed` counts in the Step 6 summary.
+
+**3. Index update.** For each question, file it under a single new `## Research questions` index category (additive — does not disturb the working per-`theme_label` source grouping). Sanitize the summary first via `_knowledge_lib.sanitize_summary` (the env-var `python3 -c` pattern from Step 4.2), then:
+
+```
+python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
+    --wiki-root <WIKI_ROOT> \
+    --slug <question-slug> \
+    --summary "$CLEAN_SUMMARY" \
+    --category "Research questions" \
+    --max-summary 240
+```
+
+Use the sub-question `query` as the summary source. As in Step 4.2, count `n_new_q` only when `data.action == "inserted"` (a merged re-run returns `updated` → not counted). Record helper failures in `failed_index_updates[]` and continue.
+
+**4. Counts.** After the loop, bump once by the number of newly-inserted question rows:
+
+```
+# Only when n_new_q > 0 — a clean re-run merges in place (action == updated) and reaches here with n_new_q == 0.
+python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
+    --wiki-root "$WIKI_ROOT" \
+    --key entries_count \
+    --delta <n_new_q>
+```
+
+**Non-fatal on failure**, same posture as Step 4 — the pages are already on disk; the operator reconciles any drift via `wiki-lint --fix=entries_count_drift`.
+
 ### 5. Append wiki/log.md
 
 Append one summary line (Bash `>>` append; `wiki/log.md` is append-only by cogni-wiki convention — see `cogni-wiki/CLAUDE.md` §"Key Conventions"):
@@ -276,7 +333,10 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - **Cache file gone missing between fetch and ingest.** Surface in `skipped[]` with `reason: cache_miss` and continue. The user can re-run `knowledge-fetch` to repopulate.
 - **Slug collision across batches.** Step 1.3 dedupes before dispatch; defence-in-depth check inside `source-ingester` refuses to overwrite an existing page. Surfaces as `reason: slug_collision` in `skipped[]`.
 - **First ingest into an empty wiki.** `wiki/index.md` may exist with only the wiki-setup header + the `## Categories` / `_No pages yet…_` seed placeholder. The first `wiki_index_update.py` call creates the first `## <theme_label>` category and sheds the seed placeholder; subsequent calls append. On a brand-new base the backlink apply step has few or no sibling pages to link from — that's expected; the synthesis (finalize) and later ingests fill the graph in.
-- **Wiki schema with `type: source` not yet allowlisted.** A current cogni-wiki `_wikilib.PAGE_TYPE_DIRS` includes `"source": "sources"`; older wikis hard-fail in `wiki-health` until migrated. The skill does not auto-migrate; surface the error and direct the user to upgrade cogni-wiki.
+- **Wiki schema with `type: source` / `type: question` not yet allowlisted.** A current cogni-wiki `_wikilib.PAGE_TYPE_DIRS` includes `"source": "sources"` (≥ v0.0.44) and `"question": "questions"` (≥ v0.0.50); older wikis hard-fail in `wiki-health` until upgraded. The skill does not auto-migrate; surface the error and direct the user to upgrade cogni-wiki. `question-store.py` `mkdir -p`'s `wiki/questions/` on demand.
+- **Step 4.5 legacy plan with no `theme_label`.** `question-store.py` falls back to the `sq-NN` slug (and the index category is the single `## Research questions` heading regardless), so a pre-`theme_label` plan still produces well-named question nodes.
+- **Step 4.5 cross-type slug collision.** When `slugify(theme_label)` resolves to an existing page of a different type (e.g. a `wiki/sources/<slug>.md` that already owns the slug), `question-store.py` appends a `-q` (`-q-2`, …) disambiguator so a question node never overwrites or shadows a non-question page. A collision with an existing *question* page is an intentional merge (enrich-on-collision).
+- **Step 4.5 re-run idempotency.** A second run merges each question page in place (`action: merged`): the human-owned `## Notes` tail is preserved verbatim, the `## Findings` `[[links]]` are unioned, `created:` is preserved, `updated:` bumps. No duplicate index rows (the index update returns `updated`, not counted), and `entries_count` is unchanged on a pure re-run.
 
 ## Out of scope
 
@@ -289,9 +349,10 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 ## Output
 
 - `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry).
-- `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (falls back to `## Sources` for legacy plans); the wiki-setup seed placeholder is shed on the first real insert.
-- Existing `wiki/<type>/<target>.md` pages gain a curated `[[<slug>]]` backlink to each new source (via `backlink_audit.py --apply-plan`), so ingested sources are not orphans.
-- `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` (the count of newly-indexed source pages this run).
+- `<WIKI_ROOT>/wiki/questions/<slug>.md` per sub-question with ≥1 finding this run (Step 4.5) — `type: question`, body `## Findings` listing `- [[<source-slug>]]` per answering source. Requires cogni-wiki ≥ v0.0.50 (schema_version `0.0.7`).
+- `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (falls back to `## Sources` for legacy plans); each question node filed under a single additive `## Research questions` category; the wiki-setup seed placeholder is shed on the first real insert.
+- Existing `wiki/<type>/<target>.md` pages gain a curated `[[<slug>]]` backlink to each new source (via `backlink_audit.py --apply-plan`), so ingested sources are not orphans. Each answering `wiki/sources/<slug>.md` additionally gains a `[[<question-slug>]]` reverse link under a `## Research questions` heading (Step 4.5), satisfying SCHEMA `R1` for the sq↔finding pair.
+- `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` source pages (Step 4) plus `<n_new_q>` question pages (Step 4.5).
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] ingest | …` line.
 - `<project_path>/.metadata/ingest-manifest.json` (schema 0.1.0).
 - `<project_path>/.metadata/.ingest.batch.<NNN>.<NN>.json` per ingester dispatch (intermediate; kept for debugging).
@@ -306,3 +367,4 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/candidate-store.py --help`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — Step 4.5 per-sub-question node emitter
