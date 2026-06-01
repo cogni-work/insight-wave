@@ -880,7 +880,7 @@ def fix_frontmatter_defaults(
                 new_fm = ["id: " + slug] + new_fm
                 changes.append("+id")
             else:
-                raw = ID_LINE_RE.match(new_fm[id_idx]).group(1).strip()
+                raw = ID_LINE_RE.match(new_fm[id_idx]).group(1)
                 canonical = "id: " + slug
                 if new_fm[id_idx] != canonical:
                     new_fm[id_idx] = canonical
