@@ -141,20 +141,13 @@ TMP_PAGE_PATH="<tmp_page_path>" \
 SLUG="<slug>" \
 URL="<URL>" \
 python3 -c '
-import os, re, sys
+import os, sys
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from pathlib import Path
-from _knowledge_lib import atomic_write_text, first_url, normalize_url, _FRONTMATTER_RE, _unquote_scalar
+from _knowledge_lib import atomic_write_text, extract_page_id_and_url, normalize_url
 slug = os.environ["SLUG"]; url = os.environ["URL"]
 page = Path(os.environ["TMP_PAGE_PATH"]).read_text(encoding="utf-8")
-m = _FRONTMATTER_RE.match(page)
-fm = m.group(1) if m else ""
-obs_id = obs_src = ""
-for line in fm.splitlines():
-    im = re.match(r"^id[ \t]*:[ \t]*(.+?)[ \t]*$", line)
-    if im and not obs_id: obs_id = _unquote_scalar(im.group(1).strip())
-    sm = re.match(r"^sources[ \t]*:[ \t]*(.+?)[ \t]*$", line)
-    if sm and not obs_src: obs_src = first_url(sm.group(1).strip())
+obs_id, obs_src = extract_page_id_and_url(page)
 if obs_id != slug or normalize_url(obs_src) != normalize_url(url) or Path(os.environ["PAGE_PATH"]).stem != slug:
     sys.stderr.write(f"integrity_mismatch: id={obs_id!r} slug={slug!r} src={obs_src!r} url={url!r}\n")
     sys.exit(3)

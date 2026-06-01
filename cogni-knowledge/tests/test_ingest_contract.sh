@@ -216,6 +216,9 @@ assert_grep 'def is_pdf_response' "$LIB" "_knowledge_lib: defines is_pdf_respons
 assert_grep 'def atomic_write_text' "$LIB" "_knowledge_lib: defines atomic_write_text"
 assert_grep 'def slugify' "$LIB" "_knowledge_lib: defines slugify (lifted from inline SKILL prose)"
 assert_grep 'def sanitize_summary' "$LIB" "_knowledge_lib: defines sanitize_summary (#387 index-one-liner guard)"
+# #413: the frontmatter id+sources extractor is shared by ingest-integrity.py
+# (sweep) and source-ingester's Phase 3 pre-write assertion — one impl, no drift.
+assert_grep 'def extract_page_id_and_url' "$LIB" "_knowledge_lib: defines extract_page_id_and_url shared by sweep + agent (#413)"
 
 # --- fetch-cache.py VALID_REASONS constant -------------------------------
 FETCH_CACHE="$PLUGIN_ROOT/scripts/fetch-cache.py"

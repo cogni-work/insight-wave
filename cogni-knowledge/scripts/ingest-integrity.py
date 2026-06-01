@@ -32,20 +32,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import (  # noqa: E402
-    _FRONTMATTER_RE,
-    _unquote_scalar,
-    first_url,
-    normalize_url,
-)
-
-_ID_RE = re.compile(r"^id[ \t]*:[ \t]*(.+?)[ \t]*$")
-_SOURCES_RE = re.compile(r"^sources[ \t]*:[ \t]*(.+?)[ \t]*$")
+from _knowledge_lib import extract_page_id_and_url, normalize_url  # noqa: E402
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -54,36 +45,21 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
     return 0 if success else 1
 
 
-def _page_id_and_url(page_text: str) -> tuple[str, str]:
-    """Pull frontmatter `id` + the first `sources:` URL from a wiki page.
-
-    Mirrors `wiki-coverage.py::_page_title_tags` — reuses `_FRONTMATTER_RE` for
-    the block and `_unquote_scalar` for quoted scalars, then hands the raw
-    `sources:` value to `_knowledge_lib.first_url` (which understands both the
-    inline `["<URL>"]` source-page shape and a bare URL). Anything it cannot
-    read returns "" — the sweep then surfaces the mismatch rather than masking
-    it."""
-    observed_id = ""
-    observed_url = ""
-    m = _FRONTMATTER_RE.match(page_text or "")
-    if not m:
-        return observed_id, observed_url
-    for line in m.group(1).splitlines():
-        im = _ID_RE.match(line)
-        if im and not observed_id:
-            raw = im.group(1).strip()
-            # Strip a YAML inline comment from an UNQUOTED scalar only — mirrors
-            # _knowledge_lib._absorb_claim_kv / wiki-coverage._page_title_tags.
-            if raw[:1] not in ('"', "'"):
-                hash_pos = raw.find(" #")
-                if hash_pos != -1:
-                    raw = raw[:hash_pos].rstrip()
-            observed_id = _unquote_scalar(raw)
-            continue
-        sm = _SOURCES_RE.match(line)
-        if sm and not observed_url:
-            observed_url = first_url(sm.group(1).strip())
-    return observed_id, observed_url
+def _violation(wiki_root: Path, slug: str, expected_url: str, reason: str,
+               observed_id: str = "", observed_url: str = "") -> dict:
+    """Assemble one violation record. `id_ok` / `url_ok` are derived from the
+    observed-vs-expected comparison, so a `page_missing` entry (observed "")
+    falls out as both-false without a separate code path."""
+    return {
+        "slug": slug,
+        "expected_url": expected_url,
+        "observed_id": observed_id,
+        "observed_url": observed_url,
+        "page_path": str(wiki_root / "wiki" / "sources" / f"{slug}.md"),
+        "id_ok": observed_id == slug,
+        "url_ok": normalize_url(observed_url) == normalize_url(expected_url),
+        "reason": reason,
+    }
 
 
 def _read_dispatch(path_arg: str) -> list[dict]:
@@ -106,19 +82,10 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         page_path = wiki_root / "wiki" / "sources" / f"{slug}.md"
 
         if not page_path.is_file():
-            violations.append({
-                "slug": slug,
-                "expected_url": expected_url,
-                "observed_id": "",
-                "observed_url": "",
-                "page_path": str(page_path),
-                "id_ok": False,
-                "url_ok": False,
-                "reason": "page_missing",
-            })
+            violations.append(_violation(wiki_root, slug, expected_url, "page_missing"))
             continue
 
-        observed_id, observed_url = _page_id_and_url(page_path.read_text(encoding="utf-8"))
+        observed_id, observed_url = extract_page_id_and_url(page_path.read_text(encoding="utf-8"))
         id_ok = observed_id == slug
         url_ok = normalize_url(observed_url) == normalize_url(expected_url)
         if id_ok and url_ok:
@@ -129,16 +96,8 @@ def cmd_sweep(args: argparse.Namespace) -> int:
         # id_mismatch reason — it is the conformance-gate name (`id_mismatch`)
         # and the loudest signal; url_mismatch covers a swapped sources: only.
         reason = "id_mismatch" if not id_ok else "url_mismatch"
-        violations.append({
-            "slug": slug,
-            "expected_url": expected_url,
-            "observed_id": observed_id,
-            "observed_url": observed_url,
-            "page_path": str(page_path),
-            "id_ok": id_ok,
-            "url_ok": url_ok,
-            "reason": reason,
-        })
+        violations.append(_violation(wiki_root, slug, expected_url, reason,
+                                     observed_id, observed_url))
 
     return _emit(True, data={"checked": len(table), "ok": ok, "violations": violations})
 
