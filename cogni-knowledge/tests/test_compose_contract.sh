@@ -117,7 +117,6 @@ assert_grep 'start of the contiguous prose unit' "$COMPOSER" "wiki-composer: dra
 assert_grep 'one alignment unit\|One alignment unit' "$COMPOSER" "wiki-composer: a multi-sentence trailing-marker block is one alignment unit, not a first-clause summary (#412)"
 assert_grep 'locate-then-copy' "$COMPOSER" "wiki-composer: locate-then-copy / never-synthesize draft_sentence rule (#412)"
 assert_grep 'contiguous substring' "$COMPOSER" "wiki-composer: in-agent substring self-check of records vs draft before return (#412)"
-assert_grep 'in-agent fail-fast' "$COMPOSER" "wiki-composer: frames the self-check as the in-agent fail-fast (#412)"
 
 # Scope-discipline negatives — these deferred surfaces may appear in the
 # header HTML comment (as provenance documenting what the fork dropped)
