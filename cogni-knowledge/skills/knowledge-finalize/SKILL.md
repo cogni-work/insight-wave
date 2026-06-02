@@ -259,8 +259,9 @@ try:
     qs = json.loads(p.read_text(encoding="utf-8"))
 except Exception:
     qs = []
-slugs = [q.get("slug") for q in (qs or []) if isinstance(q, dict) and q.get("slug")]
-print(",".join(s for s in slugs if isinstance(s, str)))
+slugs = [q["slug"] for q in (qs or [])
+         if isinstance(q, dict) and isinstance(q.get("slug"), str) and q["slug"]]
+print(",".join(slugs))
 ' 2>/dev/null || true)
 ```
 
