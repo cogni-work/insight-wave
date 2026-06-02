@@ -55,7 +55,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--synthesis-slug` | No | Override the auto-derived synthesis slug (default: `_knowledge_lib.slugify(plan.topic)`). |
 | `--overwrite` | No | Replace an existing `wiki/syntheses/<slug>.md`. Default: refuse. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, SYNTHESIS_SLUG, citation count) without writing anything or dispatching cycle-guard. |
-| `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire. Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
+| `--no-contradictor` | No | Skip the Step 10.6 contradiction tripwire **entirely** (both the synthesis-vs-cited comparison and the synthesis-vs-prior-syntheses comparison). Default: OFF (tripwire runs). Pass this as cheap insurance against false-positive flooding when sustained `medium`/`low` noise is dominant in real runs; the synthesis is still deposited and the Step 10.5 conformance gate still runs. |
+| `--no-prior-syntheses` | No | Narrow the Step 10.6 tripwire to the cited-evidence comparison only — pass an empty `PRIOR_SYNTHESIS_SLUGS` so the synthesis-vs-cited comparison still runs while the synthesis-vs-prior-syntheses comparison is suppressed. Default: OFF (prior syntheses are compared). Unlike `--no-contradictor` this does not skip the agent; the cited-evidence findings still flow. Useful when a base has many prior syntheses and the prior-comparison noise dominates. |
 | `--no-reviewer` | No | Skip the Step 10.7 structural-quality review. Default: OFF (reviewer runs). Pass to suppress the advisory structural score on a run where you only want the deposit + conformance gate; the synthesis is still deposited and every other step still runs. Mirrors `--no-contradictor`. |
 | `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh. Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
 | `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md`. Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
@@ -846,15 +847,20 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
 ### 10.6 Contradiction tripwire
 
-Observability-only. Dispatches the `wiki-contradictor` agent to compare the just-deposited synthesis sentence-by-sentence against each cited *source or distilled* page's claim frontmatter (`pre_extracted_claims:` on `wiki/sources/<slug>.md`; `distilled_claims:` on the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/<slug>.md`) and emit a per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0`; a distilled finding is shape-identical, carrying a `dcl-NNN` `conflicting_claim_id`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`. **Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time.**
+Observability-only. Dispatches the `wiki-contradictor` agent, which runs TWO comparison passes off one sentence-split of the just-deposited synthesis body and emits a single per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`:
+
+- **Pass A (synthesis-vs-cited)** — the synthesis sentence-by-sentence against each cited *source / distilled / question* page's claim frontmatter (`pre_extracted_claims:` on `wiki/sources/<slug>.md`; `distilled_claims:` on the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/<slug>.md`; `answer_claims:` on `wiki/questions/<slug>.md`). A distilled/answer finding carries a `dcl-NNN`/`acl-NNN` `conflicting_claim_id`. Driven by `CITED_SOURCE_SLUGS`.
+- **Pass B (synthesis-vs-prior-syntheses)** — the same synthesis sentences against the assertive sentences of each prior `wiki/syntheses/<slug>.md` page (its own page excluded). Syntheses carry no claim block, so a Pass B finding carries `conflicting_claim_id: null` and a synthesis-slug `conflicting_page`. Driven by `PRIOR_SYNTHESIS_SLUGS`.
+
+**Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time.**
 
 **Fail-soft posture (explicit).** Step 10.6 is observability-only. A Task failure, schema mismatch, or malformed envelope **never rolls back the synthesis** — surfaces in Step 11 as `⚠ contradiction tripwire FAILED — synthesis on disk; re-run interactive cogni-wiki:wiki-lint for forensic detail`. The synthesis already landed at Steps 6–10; the contradictor is a read-only observation layer.
 
 **Skip conditions (evaluated in order).** The orchestrator skips dispatch (and writes no JSON) when any of these hold:
 
 1. `--dry-run` was passed — same posture as Step 4's cycle-guard dry-run skip. Silent.
-2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue.
-3. `len(cited_source_slugs) == 0` — the citation manifest had zero **claim-bearing-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}`). Log `Contradiction tripwire skipped: empty citation manifest (no claim-bearing peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis pages carry no claim block.
+2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue. (Kills BOTH passes; `--no-prior-syntheses` is the narrower opt-out that suppresses only Pass B.)
+3. **BOTH** `len(cited_source_slugs) == 0` **AND** `len(prior_synthesis_slugs) == 0` — there is nothing to compare on either pass (`cited_source_slugs` is the Step 5/6 filtered claim-bearing list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}`; `prior_synthesis_slugs` is the Step 10.6 enumeration below, empty under `--no-prior-syntheses` or on the first synthesis in a base). Log `Contradiction tripwire skipped: no claim-bearing cited peers and no prior syntheses to compare` and continue. A non-empty *either* list dispatches the agent — a synthesis that cites zero claim-bearing pages but is the 2nd+ synthesis in a base now runs Pass B alone (the agent tolerates an empty `CITED_SOURCE_SLUGS`).
 
 **Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it into a **heredoc-quoted assignment** so a `topic` containing apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell. Then extract the contradictor inputs by piping through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
 
@@ -886,9 +892,45 @@ Slugs are kebab-case-only by `_knowledge_lib.slugify` (transliterated, NFKD-fold
 
 `N_CITED_PRE_TRUNCATION` is the pre-truncation count Step 11 needs to render `truncated at 30/<N>`; `CITED_SOURCE_SLUGS_CSV` is the post-truncation CSV the agent receives. Both stay shell variables for the dispatch + summary.
 
-**Input cap surface.** If `N_CITED_PRE_TRUNCATION > 30`, the CSV above is already truncated; Step 11 surfaces `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages`. The cap counts source + distilled slugs combined. The agent never sees the dropped slugs and does NOT emit a `truncated_at` field — truncation is observable only via the Step 11 line (envelope `compared_against.sources[]` records exactly what was scored — now source + distilled slugs, key name retained for schema stability).
+**Input cap surface.** If `N_CITED_PRE_TRUNCATION > 30`, the CSV above is already truncated; Step 11 surfaces `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages`. The cap counts source + distilled + question slugs combined. The agent never sees the dropped slugs and does NOT emit a `truncated_at` field — truncation is observable only via the Step 11 line (envelope `compared_against.sources[]` records exactly what was scored — source + distilled + question slugs, key name retained for schema stability).
 
-**Dispatch.**
+**Enumerate the prior syntheses (Pass B corpus).** The synthesis was deposited at Step 6, so it is already on disk under `wiki/syntheses/`; glob that dir, exclude the just-deposited page by slug, sort most-recent-first by mtime, and cap at `PRIOR_SYNTHESIS_MAX=20`. The slugs are filename stems (kebab-safe by construction), so the CSV is shell-safe like `CITED_SOURCE_SLUGS_CSV`. Under `--no-prior-syntheses`, force both vars empty/zero (Pass B suppressed; the agent runs Pass A only):
+
+```
+PRIOR_SYNTHESIS_MAX=20
+if [ -n "$NO_PRIOR_SYNTHESES" ]; then
+    PRIOR_SYNTHESIS_SLUGS_CSV=
+    N_PRIOR_PRE_TRUNCATION=0
+else
+    PRIOR_ENUM_JSON=$(WIKI_ROOT="$WIKI_ROOT" SELF_SLUG="$SYNTHESIS_SLUG" CAP="$PRIOR_SYNTHESIS_MAX" python3 -c '
+import json, os
+from pathlib import Path
+syn_dir = Path(os.environ["WIKI_ROOT"]) / "wiki" / "syntheses"
+self_slug = os.environ["SELF_SLUG"]
+cap = int(os.environ["CAP"])
+pages = []
+if syn_dir.is_dir():
+    for p in syn_dir.glob("*.md"):
+        if p.stem == self_slug:
+            continue
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        pages.append((mtime, p.stem))
+# most-recent-first; tie-break on slug for determinism
+pages.sort(key=lambda t: (-t[0], t[1]))
+slugs = [stem for _, stem in pages]
+print(json.dumps({"n_total": len(slugs), "slugs": slugs[:cap]}))
+')
+    N_PRIOR_PRE_TRUNCATION=$(printf '%s' "$PRIOR_ENUM_JSON" | python3 -c 'import json,sys; print(json.loads(sys.stdin.read())["n_total"])')
+    PRIOR_SYNTHESIS_SLUGS_CSV=$(printf '%s' "$PRIOR_ENUM_JSON" | python3 -c 'import json,sys; print(",".join(json.loads(sys.stdin.read())["slugs"]))')
+fi
+```
+
+`NO_PRIOR_SYNTHESES` is set (to `1`) when `--no-prior-syntheses` was passed, else unset. `N_PRIOR_PRE_TRUNCATION` is the pre-cap count Step 11 needs to render `truncated at 20/<N>`; `PRIOR_SYNTHESIS_SLUGS_CSV` is the post-cap CSV the agent receives. If `N_PRIOR_PRE_TRUNCATION > 20`, Step 11 surfaces `⚠ prior-synthesis comparison truncated at 20/$N_PRIOR_PRE_TRUNCATION` (its own independent line, mirroring the cited-cap line).
+
+**Dispatch.** A single `Task` call — the agent runs both passes in one dispatch off one body-split.
 
 ```
 Task(wiki-contradictor,
@@ -896,16 +938,17 @@ Task(wiki-contradictor,
      PROJECT_PATH=$PROJECT_PATH,
      SYNTHESIS_PAGE_PATH=$WIKI_ROOT/wiki/syntheses/$SYNTHESIS_SLUG.md,
      CITED_SOURCE_SLUGS=$CITED_SOURCE_SLUGS_CSV,
+     PRIOR_SYNTHESIS_SLUGS=$PRIOR_SYNTHESIS_SLUGS_CSV,
      OUTPUT_LANGUAGE=$OUTPUT_LANGUAGE,
      DRAFT_VERSION=$DRAFT_VERSION,
      CONTRADICTOR_OUT_PATH=$PROJECT_PATH/.metadata/contradictor-v$DRAFT_VERSION.json)
 ```
 
-`OUTPUT_LANGUAGE` is the same value Step 5/6 already threaded from `plan.json::output_language` via the subprocess JSON line (so the agent operates in the synthesis's language and never translates — bilingual coverage is out of scope).
+`OUTPUT_LANGUAGE` is the same value Step 5/6 already threaded from `plan.json::output_language` via the subprocess JSON line (so the agent operates in the synthesis's language and never translates — bilingual coverage is out of scope). `CITED_SOURCE_SLUGS` may be empty (Pass A skipped) when the manifest had no claim-bearing peers but prior syntheses exist; `PRIOR_SYNTHESIS_SLUGS` may be empty (Pass B skipped) on the first synthesis in a base or under `--no-prior-syntheses`. The skip-condition-3 guarantee is that at least one of the two is non-empty whenever the agent is dispatched.
 
 **Interpret return.**
 
-- **`ok: true`** — capture `counts.high`, `counts.medium`, `counts.low`, `counts.unknown`, `counts.total`, the top-3 `high`-severity findings (or all of them if `counts.high <= 3`), `compared_against.missing_pages[]` (for the optional Step 11 TOCTOU note), and the full `cost_estimate` object (`input_words`, `output_words`, `estimated_usd`) — Step 11's cost template needs all three.
+- **`ok: true`** — capture `counts.high`, `counts.medium`, `counts.low`, `counts.unknown`, `counts.total`, the top-3 `high`-severity findings (or all of them if `counts.high <= 3`), `compared_against.missing_pages[]` (for the optional Step 11 TOCTOU note), `compared_against.prior_synthesis_count` (for the Step 11 split), and the full `cost_estimate` object (`input_words`, `output_words`, `estimated_usd`) — Step 11's cost template needs all three. **Cited-vs-prior split for the Step 11 header:** read the written `contradictor-v<N>.json::findings[]` and partition on `conflicting_claim_id`: a finding with `conflicting_claim_id == null` is a Pass B (prior-synthesis) finding, otherwise Pass A (cited). Derive `n_cited`/`h_cited` (Pass A total / Pass A `severity == high`) and `n_prior`/`h_prior` (Pass B total / Pass B high). This reads the same envelope Step 11 already opens for the top-3 `high` detail bullets — no schema change to `counts`.
 - **`ok: false, error: synthesis_unreadable`** — surface `⚠ contradiction tripwire FAILED — synthesis_unreadable: <reason>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` in Step 11. Never block.
 - **`ok: false, error: write_failed`** — surface `⚠ contradiction tripwire FAILED — write_failed (output token budget likely exhausted); synthesis on disk; re-run cogni-wiki:wiki-lint manually` in Step 11. Never block.
 - **Task dispatch error / no envelope returned** — same fail-soft posture: surface `⚠ contradiction tripwire FAILED — Task dispatch did not return; synthesis on disk` and continue to Step 11.
@@ -1003,7 +1046,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
 - Open questions (Step 10.5 sub-step 5): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0`. On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
-  ⚠ Contradiction tripwire: <H> high, <M> medium, <L> low, <U> unknown
+  ⚠ Contradiction tripwire: <n_cited> vs cited evidence (<h_cited> high), <n_prior> vs prior syntheses (<h_prior> high), <U> unknown — observability-only
     - <sanitized_synthesis_excerpt[:80]>...
       ~ <conflicting_page> (high) — <sanitized_note[:60]>
     - <sanitized_synthesis_excerpt[:80]>...
@@ -1012,12 +1055,13 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   Reconcile via cogni-wiki:wiki-update --page <synthesis-slug> --reason contradiction.
   Cost: $<estimated_usd> (<input_words>w in / <output_words>w out).
   ```
-  Surface only the top 3 `high`-severity findings by name; `medium`/`low` are count-only on the header line (operator reads the JSON for the rest). `<sanitized_synthesis_excerpt>` / `<sanitized_note>` are the agent's verbatim strings with **backtick / pipe / CR / LF** all replaced by a single space — pass each through `tr '\r\n`|' '    '` (four-character set, four spaces — preserves column width) so a sentence containing inline code, a literal pipe (e.g. in a markdown-table fragment), or an embedded newline does not break the bullet structure. Same discipline-shape as the `TOPIC` `tr '\r\n' '  '` already used at Step 10 for the log line — extended to the two additional markdown-break risk characters that Step 11's bullets carry. `<input_words>` / `<output_words>` come from `cost_estimate.input_words` / `cost_estimate.output_words` captured at Step 10.6.
+  The header splits the findings into the two families using the cited-vs-prior partition captured at Step 10.6 (`conflicting_claim_id == null` ⇒ prior-synthesis): `n_cited`/`h_cited` are the Pass A total / high counts, `n_prior`/`h_prior` the Pass B total / high counts, and `U` is the single envelope-wide `counts.unknown`. (When `n_prior == 0` — no prior syntheses compared — the `vs prior syntheses` segment still prints `0 (0 high)`, which an operator reads as "no prior-synthesis conflicts," not as a missing surface.) Surface only the top 3 `high`-severity findings by name (across both families, most-severe-first), each labelled by its `conflicting_page` so a prior-synthesis slug is self-evident; `medium`/`low` are count-only on the header line (operator reads the JSON for the rest). `<sanitized_synthesis_excerpt>` / `<sanitized_note>` are the agent's verbatim strings with **backtick / pipe / CR / LF** all replaced by a single space — pass each through `tr '\r\n`|' '    '` (four-character set, four spaces — preserves column width) so a sentence containing inline code, a literal pipe (e.g. in a markdown-table fragment), or an embedded newline does not break the bullet structure. Same discipline-shape as the `TOPIC` `tr '\r\n' '  '` already used at Step 10 for the log line — extended to the two additional markdown-break risk characters that Step 11's bullets carry. `<input_words>` / `<output_words>` come from `cost_estimate.input_words` / `cost_estimate.output_words` captured at Step 10.6.
 
   Independent branches (not gated on `high`/`unknown`):
-  - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> cited page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors; the operator may want to investigate concurrent wiki maintenance.
+  - On `ok: true` AND `compared_against.missing_pages` is non-empty, append one extra line: `⚠ contradiction tripwire: <K> page(s) missing on disk at compare time (TOCTOU vs Step 6 deposit): <slug1>, <slug2>, …` — the agent best-effort scored the survivors (a missing page may be a cited page or a prior synthesis); the operator may want to investigate concurrent wiki maintenance.
   - On `N_CITED_PRE_TRUNCATION > 30`, append: `⚠ contradiction tripwire truncated at 30/$N_CITED_PRE_TRUNCATION pages (hard cap)`.
-  - On `--no-contradictor` / empty-citation-manifest skip, print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture).
+  - On `N_PRIOR_PRE_TRUNCATION > 20`, append: `⚠ prior-synthesis comparison truncated at 20/$N_PRIOR_PRE_TRUNCATION (hard cap)` — independent of the cited-cap line above; both can fire on a large base.
+  - On `--no-contradictor` / both-empty skip (skip-condition 3), print the corresponding skip message verbatim (per Step 10.6). One skip message per run; if multiple skip conditions hold, the SKILL evaluates them in order and the first-matching message wins (early-exit posture). `--no-prior-syntheses` is NOT a skip — the agent still runs Pass A; it simply produces no `vs prior syntheses` findings (the header segment reads `0 (0 high)`).
   - On `ok: false`, print `⚠ contradiction tripwire FAILED — <reason>; synthesis on disk` (loud, non-fatal — same posture as the wiki-health failure path).
 - Structural review (Step 10.7): print this block **only on `ok: true` AND (`verdict == "revise"` OR `high_severity_count > 0`)** — a clean `accept` with no high-severity issues is silent (no noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch:
   ```
@@ -1067,7 +1111,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/syntheses/<slug>.md` carries a trailing `## Research questions` section of bare `[[<question-slug>]]` forward links (Step 4.7 + Step 6), and each linked `<WIKI_ROOT>/wiki/questions/<question-slug>.md` gains a reverse `[[<synthesis-slug>]]` in its `## See also` (Step 10.5). Absent on `--no-question-links` / an empty-or-missing `question-manifest.json` (legacy project).
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
-- `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.
+- `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Carries Pass A (synthesis-vs-cited) findings (`conflicting_claim_id` `clm`/`dcl`/`acl`-NNN) and Pass B (synthesis-vs-prior-syntheses) findings (`conflicting_claim_id: null`, `conflicting_page` a synthesis slug) merged in one `findings[]`; `compared_against` additionally carries `prior_syntheses[]` + `prior_synthesis_count`. Written when the contradictor agent returns `ok: true` and at least one cited peer OR one prior synthesis was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, the both-empty skip) and on `ok: false` failure paths. `--no-prior-syntheses` still writes the file (Pass A only).
 - `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.1`): per-dimension `structural_scores`, `citation_density`, `word_count` (the advisory Word Count Gate, #309 P2), `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
 
 No files are written outside the workspace root or the bound knowledge base.

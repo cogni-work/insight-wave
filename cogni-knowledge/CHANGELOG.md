@@ -1,5 +1,47 @@
 # cogni-knowledge changelog
 
+## 0.1.62 — 2026-06-02 — feat: synthesis-vs-prior-syntheses contradiction comparison — approach (c) of #431
+
+#431 decomposed the two extensions #335 deferred. v0.1.61 shipped **approach (b)** (the
+`source-contradictor` ingest-time check). This release ships the last half — **approach (c)**,
+the synthesis-vs-prior-syntheses comparison — closing **#444** and letting **#431** close cleanly.
+Cross-language (DE↔EN) scoring stays out of scope (a separate, unshipped extension).
+
+The gap (a)/(b) left open: the finalize-time `wiki-contradictor` (approach (a)) never compared a
+just-deposited synthesis against the **earlier syntheses on the same base**. Synthesis pages carry no
+claim block, so they were out of scope for the cheap claim-vs-claim surface (a)/(b) share. This
+release adds a second comparison pass — **assertive-sentence-vs-assertive-sentence** — to the *same*
+`wiki-contradictor` agent (no new agent, no new dispatch). Pure observability — it never gates,
+rolls back, or changes downstream behaviour.
+
+- **`agents/wiki-contradictor.md`** — gains a new `PRIOR_SYNTHESIS_SLUGS` input and **Pass B**: off
+  the same sentence-split of the new synthesis body it already does for Pass A (synthesis-vs-cited),
+  it now also scores those sentences against the assertive sentences of each prior
+  `wiki/syntheses/<slug>.md` page. Syntheses carry no claim block, so a Pass B finding carries
+  `conflicting_claim_id: null` and a synthesis-slug `conflicting_page`. **No schema change** — the
+  finding shape already allowed a null claim id; `compared_against` gains additive `prior_syntheses[]`
+  + `prior_synthesis_count`. The one `unknown`-cap of 3 spans both passes. It scores ALL the prior
+  slugs it is handed (no title-similarity/theme pre-rank — the conservative assertive-sentence
+  discipline is the relevance filter). The empty-`CITED_SOURCE_SLUGS` contract relaxes: empty is legal
+  when prior syntheses exist (run Pass B alone). The stale "approach (c) territory" cross-language
+  label is dropped (that letter now means this surface).
+- **`skills/knowledge-finalize/SKILL.md`** — Step 10.6 enumerates prior syntheses (glob
+  `wiki/syntheses/*.md`, exclude the just-deposited page, most-recent-first by mtime, cap
+  `PRIOR_SYNTHESIS_MAX=20`) and threads `PRIOR_SYNTHESIS_SLUGS` into the single
+  `Task(wiki-contradictor …)` dispatch. Skip-condition 3 widens: the agent is skipped only when BOTH
+  the cited list AND the prior list are empty. New `--no-prior-syntheses` flag suppresses Pass B only
+  (`--no-contradictor` still kills both). Step 11 splits the contradiction line into
+  `<n_cited> vs cited evidence` + `<n_prior> vs prior syntheses` (partitioned on `conflicting_claim_id`
+  null-ness), plus an independent `prior-synthesis comparison truncated at 20/<N>` cap line.
+- **Tests** — `tests/test_contradictor_contract.sh` flips the synthesis-vs-synthesis assertion to
+  in-scope and adds the `PRIOR_SYNTHESIS_SLUGS` / `prior_syntheses` / null-`conflicting_claim_id` /
+  scores-all / cross-language-relabel asserts; `tests/test_finalize_contract.sh` adds the threading,
+  enumeration (exclude-self, cap 20), `--no-prior-syntheses`, both-empty skip, and Step 11 split
+  asserts. `test_source_contradictor_contract.sh` + `test_contradiction_ingest_store.sh` stay green.
+- **Docs** — `references/inverted-pipeline.md` Phase 7 and `references/differentiation-thesis.md`
+  Pillar 2 flip the deferred-prior-syntheses note to shipped and reconcile the overloaded "(c)"
+  lettering; `CLAUDE.md` updates the `wiki-contradictor` + `knowledge-finalize` rows.
+
 ## 0.1.61 — 2026-06-02 — feat: ingest-time contradiction tripwire — approach (b) of #431
 
 #335 (CLOSED) shipped **approach (a)** — the `wiki-contradictor` agent that, at `knowledge-finalize`
