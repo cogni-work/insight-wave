@@ -145,6 +145,110 @@ assert d["data"]["checked"]==5, d["data"]["checked"]
 ' && green "PASS: --dispatch - reads the table from stdin" \
   || { red "FAIL: stdin dispatch broke"; echo "$OUT_STDIN"; errors=$((errors+1)); }
 
+# --- content_hash leg (--knowledge-root, #421) -------------------------------
+# A separate knowledge-root with its own wiki + fetch-cache, exercising the
+# body-only cross-talk variant: id + sources URL match the dispatch record but
+# the page's frontmatter content_hash diverges from the cached body's hash.
+KR="$WORK/kr"
+KR_WIKI="$KR"                       # wiki-root == knowledge-root here (allowed)
+mkdir -p "$KR_WIKI/wiki/sources"
+mkdir -p "$KR/.cogni-knowledge/fetch-cache"
+
+# page with a content_hash: frontmatter line
+write_page_ch() {  # $1=slug $2=id $3=url $4=content_hash
+  cat > "$KR_WIKI/wiki/sources/$1.md" <<EOF
+---
+id: $2
+title: "Page for $1"
+type: source
+created: 2026-01-01
+updated: 2026-01-01
+sources: ["$3"]
+content_hash: "$4"
+---
+
+# Page for $1
+
+Body long enough to clear any later stub threshold.
+EOF
+}
+
+# write a stub fetch-cache entry keyed exactly like fetch-cache.py::_url_key
+write_cache_entry() {  # $1=url $2=content_hash
+  CH_URL="$1" CH_HASH="$2" CH_DIR="$KR/.cogni-knowledge/fetch-cache" \
+  SCRIPTS_DIR="$PLUGIN_ROOT/scripts" python3 - <<'PY'
+import hashlib, json, os, sys
+sys.path.insert(0, os.environ["SCRIPTS_DIR"])
+from _knowledge_lib import normalize_url
+url = os.environ["CH_URL"]
+key = hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
+entry = {
+    "url": url,
+    "status": "ok",
+    "content_hash": os.environ["CH_HASH"],
+    "fetched_at": "2026-05-30T00:00:00Z",
+    "body": "Body long enough to clear any later stub threshold.",
+}
+path = os.path.join(os.environ["CH_DIR"], key + ".json")
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump(entry, fh)
+PY
+}
+
+CACHED_HASH="sha256:1111111111111111111111111111111111111111111111111111111111111111"
+FOREIGN_HASH="sha256:2222222222222222222222222222222222222222222222222222222222222222"
+
+# ch-good: page hash == cache hash (positive)
+write_page_ch ch-good ch-good "https://europa.eu/ch-good" "$CACHED_HASH"
+write_cache_entry "https://europa.eu/ch-good" "$CACHED_HASH"
+# ch-bad: id + url match dispatch, but page content_hash is a sibling's
+write_page_ch ch-bad ch-bad "https://europa.eu/ch-bad" "$FOREIGN_HASH"
+write_cache_entry "https://europa.eu/ch-bad" "$CACHED_HASH"
+# ch-nocache: page has a hash but there is NO cache entry for its URL (miss)
+write_page_ch ch-nocache ch-nocache "https://europa.eu/ch-nocache" "$FOREIGN_HASH"
+
+CH_DISPATCH="$WORK/ch-dispatch.json"
+cat > "$CH_DISPATCH" <<'EOF'
+[
+  {"slug": "ch-good", "url": "https://europa.eu/ch-good"},
+  {"slug": "ch-bad", "url": "https://europa.eu/ch-bad"},
+  {"slug": "ch-nocache", "url": "https://europa.eu/ch-nocache"}
+]
+EOF
+
+# 7) with --knowledge-root: ch-bad is content_hash_mismatch; ch-good + ch-nocache ok
+OUT_CH="$(python3 "$SCRIPT" sweep --wiki-root "$KR_WIKI" --knowledge-root "$KR" --dispatch "$CH_DISPATCH")"
+echo "$OUT_CH" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)["data"]
+v={x["slug"]:x for x in d["violations"]}
+# positive: matching hash -> ok, not a violation
+assert "ch-good" in d["ok"], d
+assert "ch-good" not in v, v
+# mismatch: id+url ok but content_hash diverges
+e=v["ch-bad"]
+assert e["id_ok"] is True and e["url_ok"] is True, e
+assert e["content_hash_ok"] is False, e
+assert e["reason"]=="content_hash_mismatch", e
+assert e["observed_content_hash"].endswith("2222"), e
+assert e["expected_content_hash"].endswith("1111"), e
+# cache miss: leg skips -> ok despite the foreign page hash
+assert "ch-nocache" in d["ok"], d
+assert "ch-nocache" not in v, v
+' && green "PASS: content_hash leg flags body-only mismatch, skips on cache miss, passes on match" \
+  || { red "FAIL: content_hash leg wrong"; echo "$OUT_CH"; errors=$((errors+1)); }
+
+# 8) backwards compat: SAME wiki WITHOUT --knowledge-root -> content_hash ignored,
+#    so ch-bad is no longer a violation (zero violations across the three pages).
+OUT_NOKR="$(python3 "$SCRIPT" sweep --wiki-root "$KR_WIKI" --dispatch "$CH_DISPATCH")"
+echo "$OUT_NOKR" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)["data"]
+assert d["violations"]==[], d["violations"]
+assert set(d["ok"])=={"ch-good","ch-bad","ch-nocache"}, d["ok"]
+' && green "PASS: no --knowledge-root -> content_hash leg off (today behavior)" \
+  || { red "FAIL: backwards-compat broke"; echo "$OUT_NOKR"; errors=$((errors+1)); }
+
 if [ "$errors" -eq 0 ]; then
   green "ALL TESTS PASS"
   exit 0

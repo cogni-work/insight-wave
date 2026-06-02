@@ -132,7 +132,7 @@ Body rules:
 
 Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/sources/<slug>.md`. Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal.
 
-**Pre-write integrity assertion (fail-fast).** Your dispatch parameters `SLUG` and `URL` are the authoritative identity of the page you are writing. Because many ingesters fan out in one wave, it is possible to compose a page from a sibling source's body/frontmatter by mistake; this guard refuses to let such a cross-written page reach disk. Add `SLUG` and `URL` as env vars and, before calling `atomic_write_text`, parse the composed page's frontmatter and assert the page's `id:` equals `SLUG`, its first `sources:` URL normalizes to `URL`, and the target path stem equals `SLUG`. On any mismatch, write **nothing** and `sys.exit(3)`:
+**Pre-write integrity assertion (fail-fast).** Your dispatch parameters `SLUG` and `URL` are the authoritative identity of the page you are writing, and `entry.content_hash` (read from `fetch-cache.py fetch` in Phase 1) is the authoritative provenance hash of the body you fetched for that URL. Because many ingesters fan out in one wave, it is possible to compose a page from a sibling source's body/frontmatter by mistake; this guard refuses to let such a cross-written page reach disk. Add `SLUG`, `URL`, and `CONTENT_HASH` (the Phase-1 `entry.content_hash`) as env vars and, before calling `atomic_write_text`, parse the composed page's frontmatter and assert the page's `id:` equals `SLUG`, its first `sources:` URL normalizes to `URL`, the target path stem equals `SLUG`, and — when the page emitted a `content_hash:` line — that it equals `CONTENT_HASH`. The content_hash leg catches the narrower variant where you kept your own `id:`/`sources:` but the page's body (and its `content_hash:` line) bled from a sibling: the page frontmatter is freeform output that can diverge under cross-talk, while `CONTENT_HASH` is the deterministic Phase-1 cache value for the dispatched URL, so the comparison is not tautological. On any mismatch, write **nothing** and `sys.exit(3)`:
 
 ```bash
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
@@ -140,16 +140,20 @@ PAGE_PATH="<WIKI_ROOT>/wiki/sources/<slug>.md" \
 TMP_PAGE_PATH="<tmp_page_path>" \
 SLUG="<slug>" \
 URL="<URL>" \
+CONTENT_HASH="<entry.content_hash>" \
 python3 -c '
 import os, sys
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from pathlib import Path
-from _knowledge_lib import atomic_write_text, extract_page_id_and_url, normalize_url
-slug = os.environ["SLUG"]; url = os.environ["URL"]
+from _knowledge_lib import atomic_write_text, extract_page_id_and_url, extract_page_content_hash, normalize_url
+slug = os.environ["SLUG"]; url = os.environ["URL"]; content_hash = os.environ["CONTENT_HASH"]
 page = Path(os.environ["TMP_PAGE_PATH"]).read_text(encoding="utf-8")
 obs_id, obs_src = extract_page_id_and_url(page)
-if obs_id != slug or normalize_url(obs_src) != normalize_url(url) or Path(os.environ["PAGE_PATH"]).stem != slug:
-    sys.stderr.write(f"integrity_mismatch: id={obs_id!r} slug={slug!r} src={obs_src!r} url={url!r}\n")
+obs_ch = extract_page_content_hash(page)
+if (obs_id != slug or normalize_url(obs_src) != normalize_url(url)
+        or Path(os.environ["PAGE_PATH"]).stem != slug
+        or (obs_ch and obs_ch != content_hash)):
+    sys.stderr.write(f"integrity_mismatch: id={obs_id!r} slug={slug!r} src={obs_src!r} url={url!r} ch={obs_ch!r} expected_ch={content_hash!r}\n")
     sys.exit(3)
 atomic_write_text(Path(os.environ["PAGE_PATH"]), page)
 '
@@ -189,7 +193,7 @@ For the skip cases (cache miss / unavailable / empty body / slug collision / int
 }
 ```
 
-`reason: integrity_mismatch` is the value when the Phase 3 pre-write assertion fails (the composed page's `id:` / `sources:` URL did not match the dispatched `SLUG` / `URL`, or the wrapper exited 3) — the page was never written. The orchestrator's Step 3.5 sweep is the deterministic backstop for the same failure; this in-agent fail-fast simply stops most of it before disk.
+`reason: integrity_mismatch` is the value when the Phase 3 pre-write assertion fails (the composed page's `id:` / `sources:` URL / `content_hash:` did not match the dispatched `SLUG` / `URL` / Phase-1 `CONTENT_HASH`, or the wrapper exited 3) — the page was never written. The orchestrator's Step 3.5 sweep is the deterministic backstop for the same failures (including the body-only `content_hash` variant when run with `--knowledge-root`); this in-agent fail-fast simply stops most of it before disk.
 
 `summary` is one crisp, self-contained sentence describing what the page is about, derived from the body — a complete thought, never truncated mid-word, no leading/trailing whitespace. Use **regular spaces** between words — never a typographic dagger (`†` U+2020 / `‡` U+2021) or a non-breaking/exotic space (U+00A0/U+202F/U+2009) where a normal space belongs (these render oddly as `§†30` / `Dezember†2025` in the index one-liner). The orchestrator runs `_knowledge_lib.sanitize_summary` to normalize any such stray glyph before storage and passes the result to `wiki_index_update.py --summary`, which applies a defensive word-boundary clamp as a backstop — but clean authoring keeps the batch envelope itself clean.
 

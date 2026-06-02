@@ -488,6 +488,7 @@ def _unquote_scalar(v: str) -> str:
 
 _PAGE_ID_RE = re.compile(r"^id[ \t]*:[ \t]*(.+?)[ \t]*$")
 _PAGE_SOURCES_RE = re.compile(r"^sources[ \t]*:[ \t]*(.+?)[ \t]*$")
+_PAGE_CONTENT_HASH_RE = re.compile(r"^content_hash[ \t]*:[ \t]*(.+?)[ \t]*$")
 
 
 def extract_page_id_and_url(page_text: str) -> tuple[str, str]:
@@ -521,6 +522,42 @@ def extract_page_id_and_url(page_text: str) -> tuple[str, str]:
         if sm and not observed_url:
             observed_url = first_url(sm.group(1).strip())
     return observed_id, observed_url
+
+
+def extract_page_content_hash(page_text: str) -> str:
+    """Pull the frontmatter `content_hash` (the fetched source body's provenance
+    hash, `sha256:<hex>`) from a wiki source page, or "" when absent.
+
+    The body-only-cross-talk leg of the ingest integrity check — shared by
+    `ingest-integrity.py` (the post-wave sweep) and `source-ingester`'s Phase 3
+    pre-write assertion so the two can never drift, exactly like
+    `extract_page_id_and_url`. The id/sources legs catch a page whose identity
+    frontmatter was crossed wholesale; this catches the narrower variant where a
+    page keeps its own `id:`/`sources:` but carries a sibling's body **and** the
+    sibling's `content_hash:` line. The value is compared against the cache
+    `entry.content_hash` for the dispatched URL — NEVER a recomputed hash of the
+    on-disk markdown, which diverges by design once the `# <title>` H1 and
+    `## See also` backlink trailers are appended.
+
+    Reuses `_FRONTMATTER_RE` for the block and `_unquote_scalar` for the value
+    (the page emits it quoted, `content_hash: "sha256:…"`, via `json.dumps`).
+    Returns "" for anything it cannot read so the caller skips the leg rather
+    than false-flagging."""
+    m = _FRONTMATTER_RE.match(page_text or "")
+    if not m:
+        return ""
+    for line in m.group(1).splitlines():
+        cm = _PAGE_CONTENT_HASH_RE.match(line)
+        if cm:
+            raw = cm.group(1).strip()
+            # Strip a YAML inline comment from an UNQUOTED scalar only — mirrors
+            # the id branch in extract_page_id_and_url.
+            if raw[:1] not in ('"', "'"):
+                hash_pos = raw.find(" #")
+                if hash_pos != -1:
+                    raw = raw[:hash_pos].rstrip()
+            return _unquote_scalar(raw)
+    return ""
 
 
 def _absorb_claim_kv(item: dict, kv: str, wanted_keys: tuple) -> None:
