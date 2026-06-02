@@ -1,5 +1,47 @@
 # cogni-knowledge changelog
 
+## 0.1.57 — 2026-06-02 — feat: composer cites question-node answer claims (Slice 2, closes #434 / #432)
+
+The #432 work was split infra-then-activation, mirroring the distilled-page precedent (#344 made
+distilled pages citable; #385 made the composer *prefer* them on convergence). **Slice 1 (PR #433,
+merged, deliberately inert)** synthesized the citable `answer_claims:` surface on each `type: question`
+node (`acl-NNN` ids, claim-dedup + provenance union via `question-store.py answer-merge`) and taught the
+whole verification chain — `verify-store.py` prefilter, `wiki-verifier`, `wiki-contradictor`,
+`cycle-guard.py`, `knowledge-finalize` — to recognize question nodes as a **4th evidence family**. It
+landed inert: nothing cited the surface.
+
+**This slice (Slice 2, the #385 analog) flips it live** — it lifts the composer's framing-only guard and
+teaches it to cite a question node via its `acl-NNN` claim, preferring the node on ≥2-source convergence
+exactly as it already prefers a distilled page's `dcl-NNN`. `#432` auto-closes when this lands.
+
+This is a **prompt-file + doc change only** — the script side was already forward-ready:
+`_knowledge_lib.classify_claim_kind('acl-…')` returns `"answer"`, and `citation-store.py build` already
+emits `data.claim_kinds.answer` via its `Counter` (it simply read `0` until now). No script, verifier,
+or finalize change.
+
+- **`agents/wiki-composer.md`** — Phase 0 step 6 (the question-node read) replaces "framing-only — NEVER
+  cite" with the `acl-NNN` citation rule: read each node's `answer_claims:` block, count distinct
+  `backlinks[]`, and on a ≥2-source converged answer **PREFER the question node** (`wiki_slug:
+  questions/<slug>`, `claim_id: acl-NNN`, wording from `answer_claims[].text`, plain `<sup>[N]</sup>`,
+  `[[questions/<slug>]]` in the reference list only). A single-source answer or a node with no
+  `answer_claims:` block stays framing-only — cite the backing **source** page, never the node (routing
+  one source through the node would launder it into a false convergence signal — the same anti-pattern
+  the distilled rule guards). The Step 5 verifier-scoring note, Phase 2 step 1's `url`/`claim_id`
+  bullets, the step-2 cadence (standard + executive), and the step-3 reference format gained the parallel
+  `answer_claims[].text` / `acl-NNN` / `[[questions/<slug>]]` clauses.
+
+- **`skills/knowledge-compose/SKILL.md`** — the composer-scope description now frames question nodes as
+  framing **and** a citable answer surface; `claim_kinds` documents the new `answer` kind; Step 6 adds
+  `N_ACL` and an `acl=${N_ACL}` `wiki/log.md` suffix beside `dcl=`; Step 7 gains an "Answer citations:
+  X of Y" summary line (with the same inert-symptom note as the distilled rate) and extends the "Next:"
+  claim-block list with `answer_claims[]`.
+
+The live bake-in on `.alpha/eu-ai-act-sme` (`knowledge-distill → compose → verify → finalize`, expecting
+`acl=<n≥1>` and `verbatim`/`paraphrase` scoring on the answer-claim citation) is deferred to operator
+dogfooding — that base currently carries no `answer_claims:`, distilled pages, or drafts, so proving it
+end-to-end would mutate the dogfood base. Cross-lingual (DE↔EN) answer-claim merge for question nodes is
+out of scope (deferred by #434; its own follow-up if the German alpha shows DE↔EN duplication).
+
 ## 0.1.52 — 2026-06-02 — feat: question nodes compound across runs by theme lineage (closes #409)
 
 `knowledge-ingest` Step 4.5 (#407) promotes each `plan.sub_questions[]` into a `type: question` wiki node
