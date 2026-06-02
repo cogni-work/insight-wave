@@ -24,7 +24,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 
 **IS:** A binding orchestrator that turns `cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
 
-**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
+**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `contradiction-ingest-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
 
 **MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
 
@@ -105,7 +105,7 @@ inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-sl
   → knowledge-plan      decompose T into 3–7 sub-questions → plan.json
   → knowledge-curate    wiki-coverage.py (read-before-web: which sub-questions the wiki already covers) → source-curator per sub-question (narrowed WebSearch + score + WebFetch bodies → shared fetch-cache) → candidates.json
   → knowledge-fetch     build fetch-manifest.json from the curators' results; opt-in cobrowse reconcile of WebFetch misses
-  → knowledge-ingest    source-ingester writes wiki/sources/<slug>.md with pre_extracted_claims:
+  → knowledge-ingest    source-ingester writes wiki/sources/<slug>.md with pre_extracted_claims:; advisory tripwire: source-contradictor scores new source claims vs the base's existing claims (#431)
   → knowledge-distill   (optional) concept-distiller proposes → concept-store.py merges wiki/{concepts,entities}/<slug>.md (claim-dedup, enriched across runs)
   → knowledge-compose   wiki-composer reads the populated wiki (concepts as framing + citable evidence) → draft-vN.md + citation-manifest.json
   → knowledge-verify    wiki-verifier scores citations vs pre_extracted_claims / distilled_claims (zero network); revisor loop on unsupported
@@ -153,6 +153,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | source-fetcher | Agent | Phase 3 NEW — cobrowse-only recovery of WebFetch misses via the `claude-in-chrome` extension; reads/writes through `fetch-cache.py` |
 | claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
 | source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
+| source-contradictor | Agent | Phase 4 Step 4.6 NEW (#431) — zero-network ingest-time scorer comparing this run's freshly-ingested source claims against the related question group's existing claims (prior-run sources + the question node) and each other; emits per-group fragments merged into `contradiction-ingest.json` (observability-only, never gates ingest) |
 | concept-distiller | Agent | Phase 4.5 NEW (#336) — reads the run's source-claim bundle + an existing-slug index, clusters recurring facts into `concept`/`entity`/`summary`/`learning` proposals, writes a raw-text records file (never builds JSON/YAML, never computes slugs, never decides dedup) |
 | concept-summary-narrator | Agent | Phase 4.5 Step 6.7 NEW (#341) — re-narrates the `## Summary` of each updated distilled page from its merged claims so the wiki compounds narratively; raw-text records, touches only the summary block |
 | cross-lingual-claim-merger | Agent | Phase 4.5 Step 6.6 NEW (#345) — confirms which script-flagged DE↔EN candidate pairs are the same fact in two languages; raw-text `merge:` records the orchestrator applies via `concept-store.py crossmerge` (may only confirm, never invents a merge) |
@@ -172,9 +173,9 @@ cogni-knowledge/
 ├── CHANGELOG.md                  Version history
 ├── LICENSE                       AGPL-3.0
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
-├── agents/                       12 forked + new pipeline agents
+├── agents/                       14 forked + new pipeline agents
 ├── references/                   11 framework + design docs
-├── scripts/                      12 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, citation-store, concept-store, question-store, ingest-integrity, pipeline-summary, verify-store, wiki-coverage, build-open-questions) + _knowledge_lib helper
+├── scripts/                      13 utility scripts (binding, cycle-guard, fetch-cache, candidate-store, citation-store, concept-store, question-store, ingest-integrity, contradiction-ingest-store, pipeline-summary, verify-store, wiki-coverage, build-open-questions) + _knowledge_lib helper
 ├── skills/                       13 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```

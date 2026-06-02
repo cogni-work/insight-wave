@@ -1,5 +1,47 @@
 # cogni-knowledge changelog
 
+## 0.1.61 — 2026-06-02 — feat: ingest-time contradiction tripwire — approach (b) of #431
+
+#335 (CLOSED) shipped **approach (a)** — the `wiki-contradictor` agent that, at `knowledge-finalize`
+Step 10.6, scores a just-deposited synthesis against its cited pages' claims (`contradictor-vN.json`,
+zero-network, observability-only). #431 tracks the two extensions #335 deferred. This release ships
+**approach (b) only** — the per-source *ingest-time* contradiction check — and files a follow-up for
+approach (c) (synthesis-vs-prior-syntheses). Cross-language (DE↔EN) scoring stays out of scope.
+
+When new sources land, their freshly-extracted claims are scored against the claims already on the
+related question group's pages, surfacing "this new source disagrees with what the base already holds"
+**at the point of entry**, before the source feeds any draft. Pure observability — it never gates
+ingest, never rolls back a page, drives no downstream behaviour change.
+
+- **`agents/source-contradictor.md`** — NEW agent, the claim-vs-claim ingest-time sibling of
+  `wiki-contradictor`. Identical posture (`model: sonnet`, `Read`/`Write`/`Glob`/`Grep`, zero-network,
+  fail-soft, conservative scoring, `unknown` capped at 3) and the same six-dir slug resolver
+  (`wiki/sources/` `pre_extracted_claims:`; the four distilled dirs' `distilled_claims:`;
+  `wiki/questions/` `answer_claims:`). One dispatch per qualifying question group: it scores each NEW
+  (this run's) source claim against each PEER (prior-run sources + the question node) claim **and** each
+  unordered NEW↔NEW pair — new-vs-new on a first run, new-vs-existing on later runs. Emits a per-group
+  fragment (schema `0.1.0`) with findings carrying the `new_page`/`new_claim_id`/`new_excerpt` triple;
+  failure envelopes `group_unreadable` + `write_failed`. No synthesis body, so no sentence-splitting.
+- **`scripts/contradiction-ingest-store.py`** — NEW stdlib script (the `verify-store.py merge` posture).
+  `init` writes an empty canonical `contradiction-ingest.json`; `merge` reads the per-group fragments,
+  re-ids findings globally `ctr-001..`, recomputes the aggregate `counts`, asserts the count invariants,
+  records `groups_compared[]`, and `atomic_write`s the canonical file (overwritten on re-ingest). A
+  malformed / wrong-schema fragment is skipped fail-soft (`skipped_shards[]`), never aborting the merge.
+- **`skills/knowledge-ingest/SKILL.md`** — new **Step 4.6** (after Step 4.5, before Step 5): reads the
+  just-written `question-manifest.json`, splits each group's `sources_answering[]` (cross-run union) into
+  NEW vs PEER, dispatches one `source-contradictor` per qualifying group (≥2 NEW, or ≥1 NEW + ≥1
+  prior-run source peer — the question node rides in `PEER_SLUGS` but never counts toward the
+  threshold, so a first-run single-new-source group never wastes a no-op dispatch; prior-peers capped
+  at 20) in one fan-out wave, merges via `contradiction-ingest-store.py`. New
+  `--no-contradictor` opt-out (`--dry-run` already skips it). Step 6 adds a conditional
+  `⚠ Ingest contradictions` line (only when `counts.total > 0`). Fail-soft throughout — a failure never
+  rolls back any ingested page.
+- **Tests** — `tests/test_source_contradictor_contract.sh` (agent contract, mirrors the contradictor
+  contract), `tests/test_contradiction_ingest_store.sh` (init + merge + global re-id + invariants +
+  fail-soft skip), and `tests/test_ingest_contract.sh` extended to assert the Step 4.6 surface.
+- **Docs** — `CLAUDE.md` (Agents + Scripts tables, knowledge-ingest row, wiki-contradictor row tail),
+  `references/differentiation-thesis.md` Pillar 2, and the README auto-sections.
+
 ## 0.1.57 — 2026-06-02 — feat: composer cites question-node answer claims (Slice 2, closes #434 / #432)
 
 The #432 work was split infra-then-activation, mirroring the distilled-page precedent (#344 made
