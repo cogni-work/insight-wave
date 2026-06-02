@@ -271,11 +271,11 @@ def _load_theme_bindings(raw: str) -> list[dict]:
     if isinstance(doc, list):
         return doc
     if isinstance(doc, dict):
-        if isinstance(doc.get("theme_bindings"), list):
-            return doc["theme_bindings"]
-        data = doc.get("data")
-        if isinstance(data, dict) and isinstance(data.get("theme_bindings"), list):
-            return data["theme_bindings"]
+        tbs = doc.get("theme_bindings")
+        if not isinstance(tbs, list):
+            tbs = (doc.get("data") or {}).get("theme_bindings")
+        if isinstance(tbs, list):
+            return tbs
     return []
 
 
