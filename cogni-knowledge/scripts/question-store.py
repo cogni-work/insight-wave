@@ -83,9 +83,11 @@ def cmd_emit(args: argparse.Namespace) -> int:
     # NEVER writes binding.json; the orchestrator persists new/updated themes
     # via `knowledge-binding.py upsert-themes` (the single writer). The map is
     # empty when --binding is absent (byte-identical to the pre-#409 path), the
-    # binding is older / has no covered_themes (fail-soft .get chain), or the
-    # binding is corrupt / transiently unreadable (#426 fail-soft read degrade
-    # below — reason surfaced as data.binding_skipped, never aborts emit).
+    # binding is older / has no covered_themes (fail-soft .get chain), the
+    # binding is corrupt / transiently unreadable (#426 fail-soft read degrade),
+    # or the binding parses as valid JSON but is structurally wrong for the
+    # lineage read (#428 fail-soft shape degrade below). In every degrade case
+    # the reason is surfaced as data.binding_skipped and emit never aborts.
     lineage: dict[str, str] = {}
     binding_skipped = ""
     if args.binding:
@@ -97,11 +99,32 @@ def cmd_emit(args: argparse.Namespace) -> int:
             # blocks question-node creation. Reason surfaced for observability.
             binding_skipped = f"could not read --binding: {exc}"
         else:
-            for e in binding.get("topic_lineage", {}).get("covered_themes", []) or []:
-                tk = e.get("theme_key")
-                qs = e.get("question_slug")
-                if tk and qs:
-                    lineage[tk] = qs
+            # #428: a binding that parses as valid JSON but is the wrong shape
+            # (a JSON array/scalar, or a present-but-null / non-dict
+            # topic_lineage — the {} default only fires on an ABSENT key) must
+            # degrade the same way, not raise an AttributeError past the
+            # read-error catch into the top-level guard. An explicit shape guard
+            # keeps the binding_skipped reason accurate (vs widening the except)
+            # and the happy path byte-stable.
+            if not isinstance(binding, dict):
+                binding_skipped = (
+                    f"--binding is not a JSON object "
+                    f"(got {type(binding).__name__}); ignoring lineage"
+                )
+            else:
+                tl = binding.get("topic_lineage", {})
+                if not isinstance(tl, dict):
+                    binding_skipped = (
+                        "--binding topic_lineage is not an object; ignoring lineage"
+                    )
+                    tl = {}
+                for e in tl.get("covered_themes", []) or []:
+                    if not isinstance(e, dict):
+                        continue
+                    tk = e.get("theme_key")
+                    qs = e.get("question_slug")
+                    if tk and qs:
+                        lineage[tk] = qs
 
     today = datetime.date.today().isoformat()
     questions_dir = wiki_root / "wiki" / "questions"

@@ -369,6 +369,39 @@ echo "$OUTMB" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 
   && green "PASS: missing --binding path degrades to success + data.binding_skipped (OSError arm)" \
   || { red "FAIL: missing --binding path did not fail-soft"; echo "$OUTMB"; errors=$((errors+1)); }
 
+# ===== Fail-soft structurally-invalid binding (#428): valid JSON, wrong shape =
+# A binding that PARSES as valid JSON but is the wrong shape for the lineage
+# read (a JSON array/scalar, or a present-but-null topic_lineage) must ALSO
+# degrade to slug-only accumulation + data.binding_skipped, not raise past the
+# (OSError, JSONDecodeError) catch into the top-level guard (failure envelope).
+# Uniform with the #426 read-error arms above. Reuses the same variant
+# plan/candidates/manifest fixtures.
+
+# -- JSON-array arm (binding.get(...) -> AttributeError pre-#428) --
+printf '[]' > "$WORK/array-binding.json"
+OUTAB="$(python3 "$SCRIPT" emit \
+  --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+  --plan "$PROJ/.metadata/plan.json" \
+  --candidates "$PROJ/.metadata/candidates.json" \
+  --ingest-manifest "$PROJ/.metadata/ingest-manifest.json" \
+  --binding "$WORK/array-binding.json")"
+echo "$OUTAB" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] and d["data"].get("binding_skipped") else 1)' \
+  && green "PASS: JSON-array --binding degrades to success + data.binding_skipped (not-a-dict)" \
+  || { red "FAIL: JSON-array --binding did not fail-soft"; echo "$OUTAB"; errors=$((errors+1)); }
+
+# -- topic_lineage: null arm (None.get(...) -> AttributeError pre-#428; the {}
+#    default only fires on an ABSENT key, so a present-but-null is unprotected) --
+printf '{"topic_lineage": null}' > "$WORK/null-tl-binding.json"
+OUTTL="$(python3 "$SCRIPT" emit \
+  --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+  --plan "$PROJ/.metadata/plan.json" \
+  --candidates "$PROJ/.metadata/candidates.json" \
+  --ingest-manifest "$PROJ/.metadata/ingest-manifest.json" \
+  --binding "$WORK/null-tl-binding.json")"
+echo "$OUTTL" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] and d["data"].get("binding_skipped") else 1)' \
+  && green "PASS: topic_lineage:null --binding degrades to success + data.binding_skipped" \
+  || { red "FAIL: topic_lineage:null --binding did not fail-soft"; echo "$OUTTL"; errors=$((errors+1)); }
+
 # ===== Backward compat: emit WITHOUT --binding still works (slug-only) ========
 OUTNB="$(python3 "$SCRIPT" emit \
   --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
