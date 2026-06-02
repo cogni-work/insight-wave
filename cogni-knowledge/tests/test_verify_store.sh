@@ -437,6 +437,51 @@ else
   errors=$((errors + 1))
 fi
 
+# 7b-q. QUESTION FAMILY (#432) — the prefilter resolves a `type: question` node's
+#        `answer_claims:` (acl-NNN, no excerpt_quote → text is the needle) exactly like
+#        a distilled page, fast-pathing a verbatim answer-claim citation.
+QWIKI="$WORK/q-wiki"
+mkdir -p "$QWIKI/wiki/questions"
+cat > "$QWIKI/wiki/questions/q-hr.md" <<'EOF'
+---
+id: q-hr
+type: question
+answer_claims:
+  - claim_id: acl-001
+    text: "Annex III lists eight categories of high-risk AI systems"
+    norm_key: "annex categori eight high iii list risk"
+    backlinks: ["src-a"]
+    source_claim_refs: ["src-a#clm-003"]
+    created: 2026-06-02
+    updated: 2026-06-02
+sources_answering: [src-a]
+---
+
+## Findings
+
+- [[src-a]]
+EOF
+QM="$WORK/q-manifest.json"
+cat > "$QM" <<'EOF'
+{"schema_version":"0.1.0","draft_version":1,"citations":[
+ {"id":"cit-q1","draft_position":"0:1","draft_sentence":"Annex III lists eight categories of high-risk AI systems.","wiki_slug":"q-hr","claim_id":"acl-001"}
+]}
+EOF
+QDRAFT="$WORK/q-draft-v1.md"
+printf 'Annex III lists eight categories of high-risk AI systems.\n' > "$QDRAFT"
+QSH="$WORK/q-shards"
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$QM" --wiki-root "$QWIKI" --draft-version 1 --draft "$QDRAFT" --out-dir "$QSH")
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['matched_ids'] == ['cit-q1'], d['data']
+" 2>/dev/null; then
+  green "PASS: prefilter resolves a question-node answer_claims: (acl-NNN, text needle) → verbatim (#432)"
+else
+  red "FAIL: question-family prefilter did not match"; red "  got: $OUT"; errors=$((errors + 1))
+fi
+
 # 7b-fp. FALSE-POSITIVE GUARDS — the prefilter must NOT mark verbatim on a
 #        block-scalar needle ('>'/'|'), a too-short needle, a sentence that only
 #        CONTAINS the excerpt while adding an unsupported qualifier, or a manifest

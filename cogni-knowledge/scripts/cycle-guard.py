@@ -17,6 +17,11 @@ one, the walk "sees through" it to the SOURCE pages its `distilled_claims:` were
 distilled from (page-level `sources:`) and runs the lineage check on each. Cited
 distilled pages are surfaced in `data.cited_distilled_pages[]`.
 
+A `type: question` node (citable since #432, via its `answer_claims:`) is the
+analog: also unstamped, so the walk sees through it to the SOURCE pages that
+answer it — read from its existing `sources_answering:` list — and surfaces cited
+question pages in `data.cited_question_pages[]`.
+
 Two citation input shapes are supported:
 
   legacy-source-entities  — the cogni-research v0.0.x layout. Walks
@@ -95,6 +100,11 @@ REPORT_SOURCES_TRIVIAL = {"web", "local"}
 # cycle-guard must "see through" a cited distilled page to the SOURCE pages its
 # `distilled_claims:` were distilled from and run the lineage check on those.
 _DISTILLED_PAGE_TYPES = {"concept", "entity", "summary", "learning"}
+# The `type: question` node (Phase 4, #407). Citable since #432 (its `answer_claims:`
+# carry acl-NNN ids). Like a distilled page it has no `derived_from_research` of its
+# own, so cycle-guard "sees through" it to the SOURCE pages that answer it — read from
+# its EXISTING `sources_answering:` list (no new frontmatter key needed).
+_QUESTION_PAGE_TYPE = "question"
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> dict:
@@ -211,6 +221,24 @@ def _distilled_backing_slugs(page_fm: dict) -> list[str]:
         # A bare `wiki://<slug>` has no slash; a `wiki://<wiki>/<page>` composite
         # collapses to its trailing page slug. Either way take the last segment.
         s = s.split("/")[-1].strip()
+        if s and s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out
+
+
+def _question_backing_slugs(page_fm: dict) -> list[str]:
+    """Backing SOURCE slugs of a `type: question` node, read from its EXISTING
+    `sources_answering:` block. question-store.py writes that as an inline list of BARE
+    source slugs (`sources_answering: [src-a, src-b]`), which `_parse_frontmatter`
+    captures as a list — so unlike `_distilled_backing_slugs` there is no `wiki://`
+    prefix to strip. These are the source pages that answer the question; cycle-guard
+    traces through them so a synthesis citing a question node is checked against the
+    lineage of its answering sources (#432). Deduplicated, order-preserving."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in page_fm.get("sources_answering", []) or []:
+        s = _strip_quotes(str(raw)).strip()
         if s and s not in seen:
             seen.add(s)
             out.append(s)
@@ -340,6 +368,8 @@ def _walk_lineage(
         collisions            list of {slug, additional_paths} entries
         cited_distilled_pages list of {page, type} — citable concept/entity/
                               summary/learning pages the candidate cites (#344)
+        cited_question_pages  list of {page, type} — citable type:question nodes
+                              the candidate cites (#432)
         direct_self_cycles    list of {page, derived_from_research}
         transitive_self_cycles list of {page, derived_from_research, via_chain}
         cross_lineage_overlap list of {page, derived_from_research}
@@ -365,6 +395,7 @@ def _walk_lineage(
         "missing_pages": [],
         "collisions": [],
         "cited_distilled_pages": [],
+        "cited_question_pages": [],
         "direct_self_cycles": [],
         "transitive_self_cycles": [],
         "cross_lineage_overlap": [],
@@ -518,6 +549,32 @@ def _walk_lineage(
                         return True
                 continue
 
+            is_question = (not has_derived) and (
+                page_type == _QUESTION_PAGE_TYPE or "answer_claims" in page_fm
+            )
+            if is_question:
+                # Citable question node (#432). See through it to the SOURCE pages that
+                # answer it (its `sources_answering:`) and run the same lineage check on
+                # each — the exact analog of the distilled see-through above.
+                if depth == 0:
+                    out["cited_question_pages"].append(
+                        {
+                            "page": page_file.relative_to(wiki_path).as_posix(),
+                            "type": page_type,
+                        }
+                    )
+                for src_slug in _question_backing_slugs(page_fm):
+                    src_file, _src_collisions = _resolve_wiki_page(slug_index, src_slug)
+                    if src_file is None:
+                        continue
+                    try:
+                        src_fm = _parse_frontmatter(src_file.read_text(encoding="utf-8"))
+                    except OSError:
+                        continue
+                    if check_hop(src_file, src_fm, chain, depth):
+                        return True
+                continue
+
             if check_hop(page_file, page_fm, chain, depth):
                 return True
         return False
@@ -598,6 +655,7 @@ def main(argv: list[str]) -> int:
         "wiki_pages_cited_missing": [],
         "wiki_slug_collisions": [],
         "cited_distilled_pages": [],
+        "cited_question_pages": [],
         "direct_self_cycles": [],
         "transitive_self_cycles": [],
         "cross_lineage_overlap": [],
@@ -630,6 +688,7 @@ def main(argv: list[str]) -> int:
     base_data["wiki_pages_cited_missing"] = walk["missing_pages"]
     base_data["wiki_slug_collisions"] = walk["collisions"]
     base_data["cited_distilled_pages"] = walk["cited_distilled_pages"]
+    base_data["cited_question_pages"] = walk["cited_question_pages"]
     base_data["direct_self_cycles"] = walk["direct_self_cycles"]
     base_data["transitive_self_cycles"] = walk["transitive_self_cycles"]
     base_data["cross_lineage_overlap"] = walk["cross_lineage_overlap"]

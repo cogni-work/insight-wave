@@ -359,10 +359,12 @@ for c in manifest.get("citations", []) or []:
 # (the common case — Phase-4 source ingest); fall back to wiki/syntheses/
 # (wiki-composer cites prior syntheses with claim_id: null), then the four
 # distilled dirs (concepts/entities/summaries/learnings — the composer cites
-# them with a dcl-NNN claim_id, no external URL). page_kind
-# gates whether the reference row gets a bare [[<slug>]] backlink below: a page
-# that exists (source / synthesis / distilled) does; a missing page (page_kind
-# None) does not.
+# them with a dcl-NNN claim_id, no external URL), then wiki/questions/ (a
+# type:question node cited with an acl-NNN claim_id, no external URL — the 4th
+# evidence family; INERT until the composer is taught to cite one).
+# page_kind gates whether the reference row gets a bare [[<slug>]] backlink
+# below: a page that exists (source / synthesis / distilled / question) does;
+# a missing page (page_kind None) does not.
 def _parse_top_level_kv(fm_block):
     out = {}
     for line in fm_block.splitlines():
@@ -402,6 +404,7 @@ for idx, slug in enumerate(cited_slugs):
         ("entity", "entities"),
         ("summary", "summaries"),
         ("learning", "learnings"),
+        ("question", "questions"),  # 4th evidence family — answer_claims:
     ):
         candidate = wiki_root / "wiki" / dirname / (slug + ".md")
         if candidate.is_file():
@@ -576,13 +579,15 @@ n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
 # list through avoids a second pass over the citation manifest in the
 # orchestrator and keeps the page-kind decision in one place. The
 # contradictor compares against any page with a claim block:
-# pre_extracted_claims: (sources) or distilled_claims: (the four distilled
-# kinds — concept/entity/summary/learning). Synthesis-page citations are
-# excluded (synthesis pages carry no claim block); missing pages
-# (page_kind None) are excluded here and reported via missing_pages[].
-# Var name kept (CITED_SOURCE_SLUGS) for input-contract stability; the
-# semantics cover source + distilled slugs.
-_CLAIM_BEARING_KINDS = {"source", "concept", "entity", "summary", "learning"}
+# pre_extracted_claims: (sources), distilled_claims: (the four distilled
+# kinds — concept/entity/summary/learning), or answer_claims: (question
+# nodes). Synthesis-page citations are excluded (synthesis pages
+# carry no claim block); missing pages (page_kind None) are excluded here
+# and reported via missing_pages[]. Var name kept (CITED_SOURCE_SLUGS) for
+# input-contract stability; the semantics cover source + distilled +
+# question slugs. INERT for now — the composer cites no question node yet,
+# so `question` never appears in cited_source_slugs until composer activation.
+_CLAIM_BEARING_KINDS = {"source", "concept", "entity", "summary", "learning", "question"}
 cited_source_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS]
 print(json.dumps({
     "synthesis_path": str(out_path.relative_to(wiki_root).as_posix()),
@@ -849,7 +854,7 @@ Observability-only. Dispatches the `wiki-contradictor` agent to compare the just
 
 1. `--dry-run` was passed — same posture as Step 4's cycle-guard dry-run skip. Silent.
 2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue.
-3. `len(cited_source_slugs) == 0` — the citation manifest had zero **source-or-distilled-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning}`). Log `Contradiction tripwire skipped: empty citation manifest (no claim-bearing peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis pages carry no claim block.
+3. `len(cited_source_slugs) == 0` — the citation manifest had zero **claim-bearing-page** citations (Step 5/6's subprocess emits `cited_source_slugs` from the filtered list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}`). Log `Contradiction tripwire skipped: empty citation manifest (no claim-bearing peers to compare)` and continue. A synthesis that cites only prior syntheses (rare) falls into this branch — synthesis pages carry no claim block.
 
 **Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it into a **heredoc-quoted assignment** so a `topic` containing apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell. Then extract the contradictor inputs by piping through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
 

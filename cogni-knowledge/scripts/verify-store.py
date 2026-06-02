@@ -19,10 +19,11 @@ agent; this script only partitions and recombines.
   prefilter Deterministic substring pre-filter (#305): for each citation, if the
             manifest's `draft_sentence` contains the cited page's claim
             `excerpt_quote` (fallback `text`) as an exact substring, classify it
-            `verbatim` without an LLM call. Resolves both evidence families —
-            source/synthesis pages (`pre_extracted_claims:`) and the four distilled
-            kinds (`distilled_claims:`, `text`-only needle; #362) — mirroring the
-            `wiki-verifier` Phase-0 page-kind resolution. Writes a
+            `verbatim` without an LLM call. Resolves all three claim-bearing
+            families — source/synthesis pages (`pre_extracted_claims:`), the four
+            distilled kinds (`distilled_claims:`, `text`-only needle; #362), and
+            `type: question` nodes (`answer_claims:`, `text`-only needle; #432) —
+            mirroring the `wiki-verifier` Phase-0 page-kind resolution. Writes a
             `verify-shard-prefilter` fragment and returns {matched_ids,
             remaining_ids}. Fail-safe — a page it cannot parse simply leaves its
             citations in `remaining_ids`.
@@ -60,6 +61,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write,
+    parse_answer_claims_with_id,
     parse_distilled_claims_with_id,
     parse_pre_extracted_claims,
     strip_inline_citation_markers,
@@ -68,10 +70,13 @@ from _knowledge_lib import (  # noqa: E402
 # Wiki sub-dirs whose pages carry first-class claim evidence the prefilter can
 # fast-path. `pre_extracted_claims:` on source/synthesis pages (keyed `id`);
 # `distilled_claims:` on the four distilled page kinds (keyed `claim_id`, no
-# `excerpt_quote`) — citable + scored since #344, fast-pathed since #362. Order
-# mirrors `wiki-verifier` Phase-0: sources/syntheses first, then distilled.
+# `excerpt_quote`) — citable + scored since #344, fast-pathed since #362;
+# `answer_claims:` on `type: question` nodes (keyed `claim_id` = `acl-NNN`, no
+# `excerpt_quote`) — the 4th evidence family, citable since #432. Order mirrors
+# `wiki-verifier` Phase-0: sources/syntheses first, then distilled, then questions.
 _SOURCE_SUBDIRS = ("sources", "syntheses")
 _DISTILLED_SUBDIRS = ("concepts", "entities", "summaries", "learnings")
+_QUESTION_SUBDIRS = ("questions",)
 
 SCHEMA_VERSION = "0.1.0"
 # Citation-manifest schema versions this store reads (shard / prefilter / merge).
@@ -267,6 +272,9 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
         for sub in _DISTILLED_SUBDIRS:
             if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
                 hits.append((sub, "distilled"))
+        for sub in _QUESTION_SUBDIRS:
+            if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
+                hits.append((sub, "question"))
         if len(hits) != 1:
             # 0 hits (page absent) or >1 (cross-dir collision) → no claims.
             claims_cache[slug] = {}
@@ -278,6 +286,11 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
             text = ""
         if family == "distilled":
             parser, id_key = parse_distilled_claims_with_id, "claim_id"
+        elif family == "question":
+            # Question nodes carry `answer_claims:` (acl-NNN, no excerpt_quote) — keyed
+            # on claim_id exactly like distilled; the `excerpt_quote or text` needle
+            # below resolves to text cleanly (#432).
+            parser, id_key = parse_answer_claims_with_id, "claim_id"
         else:
             parser, id_key = parse_pre_extracted_claims, "id"
         # A duplicate claim id on one page is ambiguous — the citation could mean

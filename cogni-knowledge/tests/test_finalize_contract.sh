@@ -213,6 +213,12 @@ assert_grep '"concept", "entity", "summary", "learning"' "$FIN" "knowledge-final
 # of ONLY the comprehension line while the set definition lingers.
 assert_grep 'cited_source_slugs = \[s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS\]' "$FIN" "knowledge-finalize: cited_source_slugs filter uses the widened claim-bearing set (#363, R1 no-op guard)"
 assert_not_grep 'page_kind_by_slug.get(s) == "source"' "$FIN" "knowledge-finalize: contradictor filter is NOT reverted to source-only (#363, R1 no-op guard)"
+# #432: the 4th evidence family — the page-kind resolution loop must resolve
+# wiki/questions/ and _CLAIM_BEARING_KINDS must include "question" so a (Slice-2)
+# question-node citation gets a reference row + flows to the contradictor. Inert
+# in Slice 1 (composer cites none yet) but the recognition must be wired.
+assert_grep '("question", "questions")' "$FIN" "knowledge-finalize: page-kind loop resolves wiki/questions/ (4th evidence family, #432)"
+assert_grep '"source", "concept", "entity", "summary", "learning", "question"' "$FIN" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432)"
 # Pillar 2 framing — the SKILL must be honest about partial defense.
 assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
 # References block must include the new agent.

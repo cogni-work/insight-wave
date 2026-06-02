@@ -70,6 +70,11 @@ assert_grep 'distilled_claims' "$CTR" "wiki-contradictor: parses distilled_claim
 assert_grep 'concepts,entities,summaries,learnings\|concepts/\|entities/\|summaries/\|learnings/' "$CTR" "wiki-contradictor: resolves the four distilled dirs (#363)"
 # Distilled claims carry no excerpt_quote — the agent must say so.
 assert_grep 'no `excerpt_quote`\|no excerpt_quote\|has no excerpt_quote' "$CTR" "wiki-contradictor: distilled claims have no excerpt_quote (#363)"
+# #432: the 4th evidence family — a cited type:question node's answer_claims: is
+# resolved (after the distilled dirs) and scored like a source.
+assert_grep 'answer_claims' "$CTR" "wiki-contradictor: parses answer_claims for a question node (#432)"
+assert_grep 'wiki/questions/' "$CTR" "wiki-contradictor: resolves wiki/questions/ in the probe (#432)"
+assert_grep 'acl-NNN' "$CTR" "wiki-contradictor: answer findings carry an acl-NNN conflicting_claim_id (#432)"
 
 # Zero-network invariant — verbatim, so a drift toward re-fetch is loud.
 assert_grep 'never fetch' "$CTR" "wiki-contradictor: explicitly states 'never fetch' (zero-network invariant)"

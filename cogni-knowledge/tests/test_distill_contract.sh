@@ -72,6 +72,30 @@ assert_grep 'no-crosslingual' "$SKILL" "knowledge-distill: documents the --no-cr
 assert_grep 'CANDIDATES_PATH' "$SKILL" "knowledge-distill: threads the candidates bundle path (#345)"
 assert_grep 'auto-skip' "$SKILL" "knowledge-distill: Step 6.6 auto-skips on single-language bases (#345)"
 assert_grep 'merged_slugs' "$SKILL" "knowledge-distill: folds crossmerge merged_slugs into updated_slugs (#345)"
+# #432 Step 6.9 — answer-claim synthesis for question nodes (default-on, fail-soft).
+assert_grep '6.9' "$SKILL" "knowledge-distill: documents Step 6.9 answer-claim synthesis (#432)"
+assert_grep 'Task(answer-distiller' "$SKILL" "knowledge-distill: dispatches answer-distiller via Task (#432)"
+assert_grep 'question-store.py answer-merge' "$SKILL" "knowledge-distill: calls question-store.py answer-merge (#432)"
+assert_grep 'ANSWER_BUNDLE_PATH' "$SKILL" "knowledge-distill: threads the answer bundle path (#432)"
+assert_grep 'sources_answering' "$SKILL" "knowledge-distill: Step 6.9 bundle reads sources_answering (#432)"
+assert_grep 'split_frontmatter' "$SKILL" "knowledge-distill: Step 6.9 reuses split_frontmatter for the inline list (#432)"
+assert_grep 'Question nodes answered' "$SKILL" "knowledge-distill: Step 9 surfaces the answered-questions tally (#432)"
+
+# --- answer-distiller agent (#432) -------------------------------------------
+ADIST="$PLUGIN_ROOT/agents/answer-distiller.md"
+if [ ! -f "$ADIST" ]; then
+  red "FAIL: agents/answer-distiller.md not found"
+  exit 1
+fi
+assert_grep 'name: answer-distiller' "$ADIST" "answer-distiller: frontmatter name"
+assert_grep 'model: sonnet' "$ADIST" "answer-distiller: model sonnet"
+assert_grep 'ANSWER_BUNDLE_PATH' "$ADIST" "answer-distiller: reads the per-question claim bundle"
+assert_grep 'RECORDS_OUTPUT_PATH' "$ADIST" "answer-distiller: writes raw-text records"
+assert_grep 'question:' "$ADIST" "answer-distiller: emits - question: blocks"
+assert_grep 'answer_claim:' "$ADIST" "answer-distiller: repeatable answer_claim: lines"
+assert_grep 'raw text' "$ADIST" "answer-distiller: writes raw text, never JSON/YAML (#325 discipline)"
+assert_grep 'question-store.py' "$ADIST" "answer-distiller: defers dedup/serialization to question-store.py"
+assert_grep 'tools: \["Read", "Write"\]' "$ADIST" "answer-distiller: tools Read + Write only"
 
 # --- concept-distiller agent -------------------------------------------------
 AGENT="$PLUGIN_ROOT/agents/concept-distiller.md"
