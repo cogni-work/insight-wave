@@ -7,7 +7,7 @@
 #      source_claim_refs provenance) into an existing question node, bumps updated:,
 #      and leaves the ## Findings block + the human ## Notes tail BYTE-FOR-BYTE intact.
 #   2. BYTE-STABLE re-run: merging identical records twice leaves the page byte-identical
-#      and reports the question `unchanged` (claims_noop covers every ref).
+#      and reports the question `unchanged` (every incoming ref is already present).
 #   3. CROSS-RUN compounding: a second run with a same-text claim from a NEW source unions
 #      the backlink onto the existing claim (one line, not a duplicate → deduped), and a
 #      genuinely-new claim appends as a fresh acl- id; provenance refs are never dropped.

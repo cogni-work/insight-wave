@@ -300,16 +300,19 @@ def _splice_answer_claims(page_text: str, merged_claims: list[dict], today: str)
     return prefix + bumped + suffix, True
 
 
-def _answer_result(slug: str, action: str, *, reason: str = "", page_path: str = "",
-                   stats: dict | None = None, claims_total: int = 0) -> dict:
-    """Per-question result with a UNIFORM key set (every action carries every field, so
-    no downstream reader hits a KeyError) — mirrors concept-store._result."""
+def _answer_result(slug: str, action: str, *, reason: str = "",
+                   stats: dict | None = None) -> dict:
+    """Per-question result — the UNIFORM key set the distill Step-6.9 summary consumes
+    (`{slug, action, reason, claims_new, claims_deduped, claims_rejected}`). Every action
+    carries the three claim counts so `cmd_answer_merge` can sum across all results
+    (incl. skipped/write_failed) without a KeyError. The merge engine's other internal
+    stats (`in`/`noop`) and the page path are not surfaced — nothing downstream reads
+    them (answer-merge writes no manifest, unlike concept-store)."""
     stats = stats or {}
     return {
-        "slug": slug, "action": action, "reason": reason, "page_path": page_path,
-        "claims_total": claims_total,
-        "claims_in": stats.get("in", 0), "claims_new": stats.get("new", 0),
-        "claims_deduped": stats.get("deduped", 0), "claims_noop": stats.get("noop", 0),
+        "slug": slug, "action": action, "reason": reason,
+        "claims_new": stats.get("new", 0),
+        "claims_deduped": stats.get("deduped", 0),
         "claims_rejected": stats.get("rejected", 0),
     }
 
@@ -339,18 +342,16 @@ def _answer_merge_one(record: dict, wiki_root: Path, today: str,
     new_text, changed = _splice_answer_claims(text, merged, today)
 
     if not changed:
-        return _answer_result(slug, "unchanged", page_path=str(page_path),
-                              stats=stats, claims_total=len(merged))
+        return _answer_result(slug, "unchanged", stats=stats)
 
     # Pre-write round-trip self-check: every persisted claim field must parse back from
     # the text we are about to write (data loss across runs is unrecoverable).
     if _claims_fingerprint(_parse_answer_claims(new_text)) != _claims_fingerprint(merged):
         return _answer_result(slug, "write_failed", reason="claims_round_trip_mismatch",
-                              page_path=str(page_path), stats=stats)
+                              stats=stats)
 
     atomic_write_text(page_path, new_text)
-    return _answer_result(slug, "updated" if had_block else "created_block",
-                          page_path=str(page_path), stats=stats, claims_total=len(merged))
+    return _answer_result(slug, "updated" if had_block else "created_block", stats=stats)
 
 
 def cmd_answer_merge(args: argparse.Namespace) -> int:
