@@ -88,6 +88,8 @@ On `success: false` → abort, offer `knowledge-setup`.
 
 Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/config.json` exists; abort otherwise. Confirm `<WIKI_ROOT>/wiki/` exists and is writeable.
 
+The binding file read here is `<binding_path>` = `<knowledge_root>/.cogni-knowledge/binding.json` — the value sub-step 4.5.1 substitutes for the `--binding <binding_path>` flag (sub-step 4.5.5, the writer, resolves the same file from `--knowledge-root <knowledge_root>`).
+
 **Fetch manifest + candidates.** Read `<project_path>/.metadata/fetch-manifest.json`. Abort with "run knowledge-fetch first" if absent or `fetched[]` is empty.
 
 Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --project-path <project_path>` so each fetched URL's `sub_question_refs[]`, `title`, and `publisher` are available to pass into the ingester. Keep the URL → `sub_question_refs[]` mapping around — Step 4 reuses it to pick each source's index category.
@@ -270,7 +272,7 @@ Runs **once**, after the Step 3/4 batch loop has fully completed (every finding 
 
 The inputs are all already in hand: `plan.sub_questions[]` (read in Step 0 for the `theme_label` map; re-read for `query`/`search_guidance`/`candidate_domains`), the Step 0 URL→`sub_question_refs[]` map, and the final `ingest-manifest.json` (slug per URL).
 
-**1. Write the question pages (deterministic, one auditable pass).** Run `question-store.py` — the stdlib script that joins the three inputs, builds each sub-question's finding set, derives a globally-unique slug (`_knowledge_lib.slugify(theme_label)`, fallback `sq-NN`), writes/merges `wiki/questions/<slug>.md` atomically, and returns a plan JSON the orchestrator consumes in steps 2–4:
+**4.5.1. Write the question pages (deterministic, one auditable pass).** Run `question-store.py` — the stdlib script that joins the three inputs, builds each sub-question's finding set, derives a globally-unique slug (`_knowledge_lib.slugify(theme_label)`, fallback `sq-NN`), writes/merges `wiki/questions/<slug>.md` atomically, and returns a plan JSON the orchestrator consumes in sub-steps 4.5.2–4.5.4:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py" emit \
@@ -282,13 +284,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py" emit \
     --binding "<binding_path>"
 ```
 
-`--binding <binding_path>` (the same `.cogni-knowledge/binding.json` resolved in the "Binding + wiki root" step) couples question-node accumulation to `topic_lineage.covered_themes[]`: a recurring research theme phrased differently across runs (a variant `theme_label` that slugifies differently) is routed by its `_knowledge_lib.theme_norm_key` to the question node a prior run already filed, so it **merges** instead of forking a second node. The flag is **read-only** — `question-store.py` never writes the binding; it returns the new themes in `theme_bindings[]` for sub-step 5 to persist. Omitting `--binding` falls back to slug-only accumulation, so a run still works against an older binding.
+`--binding <binding_path>` (the same `.cogni-knowledge/binding.json` resolved in the "Binding + wiki root" step) couples question-node accumulation to `topic_lineage.covered_themes[]`: a recurring research theme phrased differently across runs (a variant `theme_label` that slugifies differently) is routed by its `_knowledge_lib.theme_norm_key` to the question node a prior run already filed, so it **merges** instead of forking a second node. The flag is **read-only** — `question-store.py` never writes the binding; it returns the new themes in `theme_bindings[]` for sub-step 4.5.5 to persist. Omitting `--binding` falls back to slug-only accumulation, so a run still works against an older binding. A **pre-0.1.3 binding** (no `topic_lineage` block, or `covered_themes: []`) is handled transparently: `emit` reads an empty lineage map and produces slug-only output, and sub-step 4.5.5's `upsert-themes` creates the block on first write.
 
-It emits `{success, data: {questions: [{slug, sub_question_id, query, sources_answering[], action}], theme_bindings: [{theme_key, question_slug, theme_label, action}], skipped_no_findings[], sources_unmapped[]}, error}`. `questions[].action` is `created` (fresh page) or `merged` (an existing `wiki/questions/<slug>.md` was enriched — its `created:` and human `## Notes` tail are preserved, the finding `[[links]]` unioned, `updated:` bumped — the v1 idempotent enrich-on-collision behaviour; a lineage match routes a variant label here too). A slug colliding with a **non-question** page (source/concept/…) is disambiguated with a `-q` suffix so a question node never shadows another page. `theme_bindings[]` carries one record per written question with a non-empty theme key (`action` ∈ `lineage_reused` | `new_theme`; first-writer-wins per theme key within a run) — sub-step 5 feeds these to the binding. Sub-questions with zero findings this run are listed in `skipped_no_findings[]` and get no page. Owns the slug logic, the `type: question` page-type contract, the lineage-resolve, and the merge/preserve semantics — the orchestrator never hand-builds the page.
+It emits `{success, data: {questions: [{slug, sub_question_id, query, sources_answering[], action}], theme_bindings: [{theme_key, question_slug, theme_label, action}], skipped_no_findings[], sources_unmapped[]}, error}`. `questions[].action` is `created` (fresh page) or `merged` (an existing `wiki/questions/<slug>.md` was enriched — its `created:` and human `## Notes` tail are preserved, the finding `[[links]]` unioned, `updated:` bumped — the v1 idempotent enrich-on-collision behaviour; a lineage match routes a variant label here too). A slug colliding with a **non-question** page (source/concept/…) is disambiguated with a `-q` suffix so a question node never shadows another page. `theme_bindings[]` carries one record per written question with a non-empty theme key (`action` ∈ `lineage_reused` | `new_theme`; first-writer-wins per theme key within a run) — sub-step 4.5.5 feeds these to the binding. Sub-questions with zero findings this run are listed in `skipped_no_findings[]` and get no page. Owns the slug logic, the `type: question` page-type contract, the lineage-resolve, and the merge/preserve semantics — the orchestrator never hand-builds the page.
 
 Each `wiki/questions/<slug>.md` write is **unique-by-construction per slug** (atomic `_knowledge_lib.atomic_write_text`, single writer) — no `_wiki_lock` needed, same posture as the Step 3 source pages. The script imports cogni-wiki's `PAGE_TYPE_DIRS` / `split_frontmatter` from the resolved `--wiki-scripts-dir` (the same DRY posture `concept-store.py` uses for `_wiki_lock`).
 
-**2. Reverse links (R1) — `source→question`.** For each `questions[]` entry above (each has a non-empty `sources_answering[]` — zero-finding sub-questions were skipped), run `backlink_audit.py --apply-plan` exactly as Step 4.1 does, but with `--new-page <question-slug>`. The `targets[]` are the answering source pages (one per `sources_answering[]` slug); each `sentence` inserts a bare `[[<question-slug>]]` under a `## Research questions` heading so it lands in its own section rather than mid-body:
+**4.5.2. Reverse links (R1) — `source→question`.** For each `questions[]` entry above (each has a non-empty `sources_answering[]` — zero-finding sub-questions were skipped), run `backlink_audit.py --apply-plan` exactly as Step 4.1 does, but with `--new-page <question-slug>`. The `targets[]` are the answering source pages (one per `sources_answering[]` slug); each `sentence` inserts a bare `[[<question-slug>]]` under a `## Research questions` heading so it lands in its own section rather than mid-body:
 
 ```
 printf '%s' "$PLAN_JSON" | python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" \
@@ -299,7 +301,7 @@ printf '%s' "$PLAN_JSON" | python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" \
 
 where `$PLAN_JSON` is `{"targets": [{"slug": "<source-slug>", "sentence": "Answers research question [[<question-slug>]].", "insert_after_heading": "## Research questions"}, ...]}` — one target per answering source. `apply_plan` rejects any `sentence` not containing `[[<question-slug>]]`, is **idempotent** (skips a source already linking the question), and is **fail-soft per target** (errors land in `data.failed[]`). The forward direction (`question→source`) already lives in the page's `## Findings` body, so both legs of `R1` are present and `wiki-lint` reports no new `reverse_link_missing` for these pairs. Surface `applied`/`failed` counts in the Step 6 summary.
 
-**3. Index update.** For each question, file it under a single new `## Research questions` index category (additive — does not disturb the working per-`theme_label` source grouping). Sanitize the summary first via `_knowledge_lib.sanitize_summary` (the env-var `python3 -c` pattern from Step 4.2), then:
+**4.5.3. Index update.** For each question, file it under a single new `## Research questions` index category (additive — does not disturb the working per-`theme_label` source grouping). Sanitize the summary first via `_knowledge_lib.sanitize_summary` (the env-var `python3 -c` pattern from Step 4.2), then:
 
 ```
 python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
@@ -312,7 +314,7 @@ python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
 
 Use the sub-question `query` as the summary source. As in Step 4.2, count `n_new_q` only when `data.action == "inserted"` (a merged re-run returns `updated` → not counted). Record helper failures in `failed_index_updates[]` and continue.
 
-**4. Counts.** After the loop, bump once by the number of newly-inserted question rows:
+**4.5.4. Counts.** After the loop, bump once by the number of newly-inserted question rows:
 
 ```
 # Only when n_new_q > 0 — a clean re-run merges in place (action == updated) and reaches here with n_new_q == 0.
@@ -324,10 +326,10 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
 
 **Non-fatal on failure**, same posture as Step 4 — the pages are already on disk; the operator reconciles any drift via `wiki-lint --fix=entries_count_drift`.
 
-**5. Record theme lineage.** Persist the `theme_bindings[]` from sub-step 1 into the binding's `topic_lineage.covered_themes[]` so the *next* run's `question-store.py emit --binding …` routes a recurring theme to this run's node instead of forking a new one. Serialize the returned array to a small records file and call the **single binding writer**:
+**4.5.5. Record theme lineage.** Persist the `theme_bindings[]` from sub-step 4.5.1 into the binding's `topic_lineage.covered_themes[]` so the *next* run's `question-store.py emit --binding …` routes a recurring theme to this run's node instead of forking a new one. Serialize the returned array to a small records file and call the **single binding writer**:
 
 ```
-# $THEME_BINDINGS_JSON is data.theme_bindings[] from sub-step 1's envelope.
+# $THEME_BINDINGS_JSON is data.theme_bindings[] from sub-step 4.5.1's envelope.
 printf '%s' "$THEME_BINDINGS_JSON" > "<project_path>/.metadata/theme-bindings.json"
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py" upsert-themes \
     --knowledge-root "<knowledge_root>" \
@@ -362,7 +364,7 @@ Print ≤ 10 lines:
 - `⚠ Integrity: <n> contaminated page(s) quarantined (re-run knowledge-ingest to re-ingest)` — **print only when `n > 0`** (the count of Step 3.5 violations quarantined this run); a clean run omits this line.
 - Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
-- Theme lineage: `<themes_added>` new, `<themes_updated>` updated in `topic_lineage.covered_themes` (Step 4.5 sub-step 5; omit the line when `theme_bindings[]` was empty)
+- Theme lineage: `<themes_added>` new, `<themes_updated>` updated in `topic_lineage.covered_themes` (Step 4.5.5; omit the line when `theme_bindings[]` was empty)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
 - Next: `knowledge-compose` reads the populated `wiki/sources/*.md` + `ingest-manifest.json` to draft the report.
 
@@ -385,7 +387,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
 - Does NOT verify claims — Phase 6 (`knowledge-verify`).
 - Does NOT auto-select backlink targets — `backlink_audit.py` never invents links; the orchestrator curates the `targets[]` plan from the audit candidates and only then applies it.
-- Records **question-node theme lineage** into `binding.json::topic_lineage.covered_themes[]` (Step 4.5 sub-step 5) — the one binding field this skill writes, via `knowledge-binding.py upsert-themes`. `research_projects[]` remains Phase 7 (`knowledge-finalize`)'s job.
+- Records **question-node theme lineage** into `binding.json::topic_lineage.covered_themes[]` (Step 4.5.5) — the one binding field this skill writes, via `knowledge-binding.py upsert-themes`. `research_projects[]` remains Phase 7 (`knowledge-finalize`)'s job.
 - Does NOT re-run fetch — that is `knowledge-fetch`.
 
 ## Output
@@ -400,6 +402,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `<project_path>/.metadata/.ingest.batch.<NNN>.<NN>.json` per ingester dispatch (intermediate; kept for debugging).
 - `<project_path>/.metadata/.ingest.dispatch.<NNN>.json` per batch — the authoritative `[{slug, url}]` dispatch record the Step 3.5 sweep verifies against (intermediate; kept for debugging).
 - `<project_path>/.metadata/quarantine/<slug>.md` per Step 3.5 integrity violation — the contaminated page, moved off the wiki and preserved for inspection; the slug is freed and the URL stays re-dispatchable.
+- `<project_path>/.metadata/theme-bindings.json` — the Step 4.5.1 `theme_bindings[]` serialized for the Step 4.5.5 `upsert-themes` call (intermediate; kept for debugging).
 
 ## References
 
