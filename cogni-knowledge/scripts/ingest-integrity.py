@@ -19,7 +19,12 @@ never against the agent-returned batch JSON (which can itself be contaminated).
 Subcommand:
   sweep   Read each dispatched page and assert its frontmatter `id:` equals the
           dispatched slug AND its `sources:` URL normalizes to the dispatched
-          URL. Emit the violations the orchestrator quarantines.
+          URL. When `--knowledge-root` is given, a third leg also asserts the
+          page's frontmatter `content_hash:` equals the fetch-cache entry's
+          `content_hash` for the dispatched URL — catching the body-only variant
+          where an agent kept its own id/sources but emitted a sibling's body
+          (and the sibling's `content_hash:` line) under wave cross-talk. Emit
+          the violations the orchestrator quarantines.
 
 Pure detector — read-only, never mutates the wiki. The orchestrator owns all
 side effects (quarantine move, manifest edits), the established detect-in-script
@@ -32,11 +37,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import extract_page_id_and_url, normalize_url  # noqa: E402
+from _knowledge_lib import (  # noqa: E402
+    extract_page_content_hash,
+    extract_page_id_and_url,
+    normalize_url,
+)
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -46,20 +56,52 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
 
 
 def _violation(wiki_root: Path, slug: str, expected_url: str, reason: str,
-               observed_id: str = "", observed_url: str = "") -> dict:
+               observed_id: str = "", observed_url: str = "",
+               observed_content_hash: str = "", expected_content_hash: str = "",
+               content_hash_ok: bool = True) -> dict:
     """Assemble one violation record. `id_ok` / `url_ok` are derived from the
     observed-vs-expected comparison, so a `page_missing` entry (observed "")
-    falls out as both-false without a separate code path."""
+    falls out as both-false without a separate code path. `content_hash_ok` is
+    passed in (not derived) because its "leg not checked / cache miss / either
+    side empty" cases must read True regardless of the bare string comparison;
+    its three keys default to the no-`--knowledge-root` shape so that path emits
+    the same record plus harmless extra keys."""
     return {
         "slug": slug,
         "expected_url": expected_url,
         "observed_id": observed_id,
         "observed_url": observed_url,
+        "observed_content_hash": observed_content_hash,
+        "expected_content_hash": expected_content_hash,
         "page_path": str(wiki_root / "wiki" / "sources" / f"{slug}.md"),
         "id_ok": observed_id == slug,
         "url_ok": normalize_url(observed_url) == normalize_url(expected_url),
+        "content_hash_ok": content_hash_ok,
         "reason": reason,
     }
+
+
+def _cache_content_hash(knowledge_root: str, url: str) -> str:
+    """The authoritative `content_hash` (`sha256:<hex>`) for `url` from the
+    knowledge base's fetch-cache, by shelling to `fetch-cache.py fetch` (which
+    owns the cache layout — we never re-inline that, per the delegation
+    contract). Returns "" on any cache miss / non-zero exit / unparseable
+    envelope / missing field, so the content_hash leg simply skips rather than
+    false-flagging. No `--max-age-days` — a stale-but-present entry is still the
+    authoritative body hash; staleness must not suppress the integrity check."""
+    fetch_cache = Path(__file__).resolve().parent / "fetch-cache.py"
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(fetch_cache), "fetch",
+             "--knowledge-root", knowledge_root, "--url", url],
+            capture_output=True, text=True,
+        )
+        if proc.returncode != 0:
+            return ""
+        entry = json.loads(proc.stdout).get("data", {}).get("entry", {})
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return str(entry.get("content_hash", "") or "")
 
 
 def _read_dispatch(path_arg: str) -> list[dict]:
@@ -72,6 +114,7 @@ def _read_dispatch(path_arg: str) -> list[dict]:
 
 def cmd_sweep(args: argparse.Namespace) -> int:
     wiki_root = Path(args.wiki_root)
+    knowledge_root = args.knowledge_root  # optional; None → content_hash leg off
     table = _read_dispatch(args.dispatch)
 
     ok: list[str] = []
@@ -85,19 +128,43 @@ def cmd_sweep(args: argparse.Namespace) -> int:
             violations.append(_violation(wiki_root, slug, expected_url, "page_missing"))
             continue
 
-        observed_id, observed_url = extract_page_id_and_url(page_path.read_text(encoding="utf-8"))
+        page_text = page_path.read_text(encoding="utf-8")
+        observed_id, observed_url = extract_page_id_and_url(page_text)
         id_ok = observed_id == slug
         url_ok = normalize_url(observed_url) == normalize_url(expected_url)
-        if id_ok and url_ok:
+
+        # content_hash leg — additive, only when --knowledge-root is given. Skip
+        # (== ok) on a cache miss / empty hash on either side, so it never
+        # produces a false positive; compares the cache entry's authoritative
+        # body hash against the page's frontmatter content_hash, NOT a recomputed
+        # on-disk hash (which diverges by design once trailers are appended).
+        observed_ch = ""
+        expected_ch = ""
+        content_hash_ok = True
+        if knowledge_root:
+            observed_ch = extract_page_content_hash(page_text)
+            expected_ch = _cache_content_hash(knowledge_root, expected_url)
+            content_hash_ok = (
+                not observed_ch or not expected_ch or observed_ch == expected_ch
+            )
+
+        if id_ok and url_ok and content_hash_ok:
             ok.append(slug)
             continue
 
-        # When both legs are wrong (the cross-contamination signature) prefer the
-        # id_mismatch reason — it is the conformance-gate name (`id_mismatch`)
-        # and the loudest signal; url_mismatch covers a swapped sources: only.
-        reason = "id_mismatch" if not id_ok else "url_mismatch"
+        # Reason precedence: id/url are the loud wholesale signals; content_hash
+        # is the narrow body-only one a page that passes id+url can still fail.
+        # When both id+url are wrong (the cross-contamination signature) prefer
+        # id_mismatch — it is the conformance-gate name and the loudest signal.
+        if not id_ok:
+            reason = "id_mismatch"
+        elif not url_ok:
+            reason = "url_mismatch"
+        else:
+            reason = "content_hash_mismatch"
         violations.append(_violation(wiki_root, slug, expected_url, reason,
-                                     observed_id, observed_url))
+                                     observed_id, observed_url,
+                                     observed_ch, expected_ch, content_hash_ok))
 
     return _emit(True, data={"checked": len(table), "ok": ok, "violations": violations})
 
@@ -108,12 +175,20 @@ def main(argv=None) -> int:
 
     p_sweep = sub.add_parser(
         "sweep",
-        help="Assert each dispatched page's id/sources match the dispatch record",
+        help="Assert each dispatched page's id/sources (and, with "
+             "--knowledge-root, content_hash) match the dispatch record",
     )
     p_sweep.add_argument("--wiki-root", required=True)
     p_sweep.add_argument(
         "--dispatch", required=True,
         help='JSON array [{"slug","url"}, …]; "-" reads it from stdin',
+    )
+    p_sweep.add_argument(
+        "--knowledge-root", default=None,
+        help="Knowledge-base root (the dir holding .cogni-knowledge/). When set, "
+             "enables the content_hash leg: each page's frontmatter content_hash "
+             "is asserted against the fetch-cache entry for the dispatched URL. "
+             "Omit for the id/sources-only sweep (unchanged behavior).",
     )
     p_sweep.set_defaults(func=cmd_sweep)
 

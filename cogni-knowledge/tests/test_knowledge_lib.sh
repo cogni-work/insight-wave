@@ -723,6 +723,35 @@ def assert_writer_quality_normalizers():
     assert kl.normalize_target_words(0, default=3000) == 3000, "custom default honoured"
 
 
+def assert_extract_page_frontmatter():
+    # The two shared parsers behind the ingest integrity check (sweep + the
+    # source-ingester Phase 3 guard read through the SAME functions so they
+    # cannot drift). extract_page_id_and_url: id (unquoted, kebab) + first
+    # sources URL from the JSON-list shape.
+    page = (
+        '---\n'
+        'id: my-source\n'
+        'type: source\n'
+        'sources: ["https://europa.eu/doc?utm_source=x"]\n'
+        'content_hash: "sha256:abc123"\n'
+        '---\n'
+        '# My Source\n\nbody\n'
+    )
+    obs_id, obs_url = kl.extract_page_id_and_url(page)
+    assert obs_id == "my-source", obs_id
+    assert obs_url == "https://europa.eu/doc?utm_source=x", obs_url
+    # extract_page_content_hash: quoted value unquoted via _unquote_scalar.
+    assert kl.extract_page_content_hash(page) == "sha256:abc123", kl.extract_page_content_hash(page)
+    # Unquoted value + a trailing YAML inline comment is stripped (unquoted only).
+    unq = '---\nid: x\ncontent_hash: sha256:bare # provenance\n---\nbody\n'
+    assert kl.extract_page_content_hash(unq) == "sha256:bare", kl.extract_page_content_hash(unq)
+    # Absent key → "" (fail-safe: the leg skips rather than false-flagging).
+    absent = '---\nid: x\nsources: ["https://e.org/a"]\n---\nbody\n'
+    assert kl.extract_page_content_hash(absent) == "", kl.extract_page_content_hash(absent)
+    # No frontmatter at all → "".
+    assert kl.extract_page_content_hash("# just a body\n") == ""
+
+
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("theme_norm_key", assert_theme_norm_key)
@@ -749,6 +778,7 @@ check("parse_distilled_claims_with_id", assert_parse_distilled_claims_with_id)
 check("parse_answer_claims_with_id", assert_parse_answer_claims_with_id)
 check("parse_answer_records", assert_parse_answer_records)
 check("writer_quality_normalizers", assert_writer_quality_normalizers)
+check("extract_page_frontmatter", assert_extract_page_frontmatter)
 PY
 )
 
@@ -792,6 +822,7 @@ grade parse_renarrate_records "parse_renarrate_records — multi-line dedented p
 grade digit_anchor_tokens     "digit_anchor_tokens — Artikel/Article 99 → {99}, multi-anchor, GENERIC_DENYLIST years excluded, no-digit→∅ (#345)"
 grade parse_crossmerge_records "parse_crossmerge_records — merge: slug|survivor|absorbed, whitespace strip, wrong-arity/empty-field dropped, comments, CRLF, ''→[] (#345)"
 grade writer_quality_normalizers "writer-quality normalizers (#309 P2) — normalize_tone/prose_density/citation_format/target_words + CITATION_FAMILY, valid passthrough, unknown→safe default, wikilink→ieee"
+grade extract_page_frontmatter "ingest-integrity frontmatter parsers (#413/#421) — extract_page_id_and_url id+sources, extract_page_content_hash quoted/unquoted-comment/absent/no-frontmatter→'' (shared by sweep + Phase-3 guard)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

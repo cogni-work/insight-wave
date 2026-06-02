@@ -132,6 +132,11 @@ assert_grep 'integrity_mismatch' "$INGEST" "knowledge-ingest: skip reason integr
 # ingested[] — a contaminated source that echoes a sibling's URL would otherwise
 # filter its own slug out of the sweep and escape detection.
 assert_grep 'per-source index' "$INGEST" "knowledge-ingest: Step 3.5 keys the sweep input by per-source index, not agent-returned url (#413)"
+# #421: the Step 3.5 sweep must pass --knowledge-root to enable the content_hash
+# leg (otherwise the body-only cross-talk variant ships); without this guard a
+# future edit could drop the flag and silently disable the leg with CI green.
+assert_grep 'knowledge-root' "$INGEST" "knowledge-ingest: Step 3.5 sweep passes --knowledge-root to enable the content_hash leg (#421)"
+assert_grep 'content_hash_mismatch' "$INGEST" "knowledge-ingest: documents the content_hash_mismatch reason (#421)"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"
@@ -159,6 +164,9 @@ assert_grep 'wiki/sources/' "$INGESTER" "source-ingester: writes wiki/sources/<s
 assert_grep 'type: source' "$INGESTER" "source-ingester: emits type: source frontmatter"
 assert_grep 'pre_extracted_claims' "$INGESTER" "source-ingester: populates pre_extracted_claims frontmatter"
 assert_grep 'atomic_write_text' "$INGESTER" "source-ingester: writes via _knowledge_lib.atomic_write_text"
+# #421: the Phase-3 pre-write guard threads CONTENT_HASH so the in-agent leg
+# mirrors the orchestrator sweep — guard it so the agent leg can't be silently dropped.
+assert_grep 'CONTENT_HASH' "$INGESTER" "source-ingester: Phase 3 guard threads CONTENT_HASH for the content_hash leg (#421)"
 # Slice 16 (#308): id: must be UNQUOTED (quoted form trips wiki-health id_mismatch),
 # and source pages default to a non-empty tags list.
 assert_grep 'UNQUOTED' "$INGESTER" "source-ingester: emits id: unquoted (#308 — quoted id trips health id_mismatch)"
@@ -248,6 +256,7 @@ assert_grep 'def sanitize_summary' "$LIB" "_knowledge_lib: defines sanitize_summ
 # #413: the frontmatter id+sources extractor is shared by ingest-integrity.py
 # (sweep) and source-ingester's Phase 3 pre-write assertion — one impl, no drift.
 assert_grep 'def extract_page_id_and_url' "$LIB" "_knowledge_lib: defines extract_page_id_and_url shared by sweep + agent (#413)"
+assert_grep 'def extract_page_content_hash' "$LIB" "_knowledge_lib: defines extract_page_content_hash shared by sweep + Phase-3 guard (#421)"
 
 # --- fetch-cache.py VALID_REASONS constant -------------------------------
 FETCH_CACHE="$PLUGIN_ROOT/scripts/fetch-cache.py"
