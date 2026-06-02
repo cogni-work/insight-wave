@@ -152,6 +152,18 @@ if obs_id != slug or normalize_url(obs_src) != normalize_url(url) or Path(os.env
     sys.stderr.write(f"integrity_mismatch: id={obs_id!r} slug={slug!r} src={obs_src!r} url={url!r}\n")
     sys.exit(3)
 atomic_write_text(Path(os.environ["PAGE_PATH"]), page)
+# Phase 3.5 post-write read-back — thin guard against a bug in the pre-write
+# assertion's own Python code path. The file is now on disk; re-read and confirm
+# id == SLUG. On mismatch the page IS on disk; Step 3.5 sweep quarantines it on
+# the next wave. Exit 4 is distinct from exit 3 (pre-write mismatch) for diagnosis.
+written_id, _ = extract_page_id_and_url(
+    Path(os.environ["PAGE_PATH"]).read_text(encoding="utf-8")
+)
+if written_id != slug:
+    sys.stderr.write(
+        f"post_write_check_failed: written_id={written_id!r} slug={slug!r}\n"
+    )
+    sys.exit(4)
 '
 ```
 
@@ -191,6 +203,8 @@ For the skip cases (cache miss / unavailable / empty body / slug collision / int
 
 `reason: integrity_mismatch` is the value when the Phase 3 pre-write assertion fails (the composed page's `id:` / `sources:` URL did not match the dispatched `SLUG` / `URL`, or the wrapper exited 3) — the page was never written. The orchestrator's Step 3.5 sweep is the deterministic backstop for the same failure; this in-agent fail-fast simply stops most of it before disk.
 
+`reason: post_write_id_check_failed` is the value when the Phase 3.5 post-write read-back fails: `atomic_write_text` completed but the re-read `id:` on disk does not equal `SLUG` (the wrapper exited 4, distinct from exit 3). Unlike `integrity_mismatch`, the page IS on disk; the orchestrator's Step 3.5 sweep quarantines it on the next run. Emit the Phase 4 envelope as `ok: false` with this reason so the orchestrator accounts for the source.
+
 `summary` is one crisp, self-contained sentence describing what the page is about, derived from the body — a complete thought, never truncated mid-word, no leading/trailing whitespace. Use **regular spaces** between words — never a typographic dagger (`†` U+2020 / `‡` U+2021) or a non-breaking/exotic space (U+00A0/U+202F/U+2009) where a normal space belongs (these render oddly as `§†30` / `Dezember†2025` in the index one-liner). The orchestrator runs `_knowledge_lib.sanitize_summary` to normalize any such stray glyph before storage and passes the result to `wiki_index_update.py --summary`, which applies a defensive word-boundary clamp as a backstop — but clean authoring keeps the batch envelope itself clean.
 
 Return a compact summary to the calling Task:
@@ -213,3 +227,4 @@ Return a compact summary to the calling Task:
 - An exception while ingesting one source must produce an `ok: false` batch envelope, not a crash. The orchestrator continues with the remaining sources.
 - A claim-extractor failure (`{"ok": false, …}`) does NOT block the page write — write the page with an empty `pre_extracted_claims:` list and surface the extractor's error in the batch envelope's `notes` field.
 - Temp files (body, page) are removed at end of dispatch (`trap rm -f "$TMP" EXIT` or equivalent). Leftover `.tmp` is tolerable but unsightly.
+- Exit 4 (post-write `id:` check) complements exit 3 (pre-write integrity mismatch): exit 4 means the page reached disk but its `id:` does not match `SLUG`; Step 3.5 sweep remains the deterministic backstop for both.

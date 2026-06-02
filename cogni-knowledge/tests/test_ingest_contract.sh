@@ -177,6 +177,8 @@ assert_grep 'sanitize_summary' "$INGESTER" "source-ingester: names the orchestra
 assert_grep 'integrity' "$INGESTER" "source-ingester: documents the pre-write integrity assertion (#413)"
 assert_grep 'sys.exit(3)' "$INGESTER" "source-ingester: pre-write guard exits 3 on mismatch, writes nothing (#413)"
 assert_grep 'integrity_mismatch' "$INGESTER" "source-ingester: emits skip reason integrity_mismatch (#413)"
+assert_grep 'sys.exit(4)' "$INGESTER" "source-ingester: post-write read-back exits 4 on id mismatch"
+assert_grep 'post_write_id_check_failed' "$INGESTER" "source-ingester: names post_write_id_check_failed reason"
 # Frontmatter tools must not include WebFetch (re-fetch is forbidden in Phase 4).
 INGESTER_TOOLS_LINE=$(grep '^tools:' "$INGESTER" || true)
 if ! echo "$INGESTER_TOOLS_LINE" | grep -q WebFetch; then
