@@ -260,6 +260,11 @@ assert_grep 'acl-NNN\|acl-' "$COMPOSE" "knowledge-compose: names the acl-NNN ans
 assert_grep 'wiki/questions' "$COMPOSER" "wiki-composer: Phase 0 reads wiki/questions/*.md (#410/#432)"
 assert_grep 'answer_claims' "$COMPOSER" "wiki-composer: reads the question node's answer_claims block (#432)"
 assert_grep 'acl-NNN' "$COMPOSER" "wiki-composer: cites a question node via its acl-NNN claim (#432)"
+# The recorded wiki_slug MUST be bare (the verifier/verify-store resolve it against
+# the fixed wiki/questions/ dir; a directory-prefixed wiki_slug would mis-resolve to
+# wiki/questions/questions/<slug>.md and score unsupported). The [[questions/<slug>]]
+# reference-list wikilink stays prefixed — only the wiki_slug RECORD field is bare.
+assert_not_grep 'wiki_slug: questions/\|wiki_slug=questions/' "$COMPOSER" "wiki-composer: question-node wiki_slug record is BARE, not directory-prefixed (#434)"
 # The >=2-backlink convergence preference must be explicit (PREFER the node).
 assert_grep 'Converged answer\|≥2 backlinks\|converged answer\|PREFER the question node' "$COMPOSER" "wiki-composer: PREFER the question node on >=2-source convergence (#432)"
 # The single-source / no-block anti-laundering guard must survive: a lone source
