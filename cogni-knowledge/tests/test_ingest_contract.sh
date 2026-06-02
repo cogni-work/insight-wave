@@ -137,6 +137,18 @@ assert_grep 'per-source index' "$INGEST" "knowledge-ingest: Step 3.5 keys the sw
 # future edit could drop the flag and silently disable the leg with CI green.
 assert_grep 'knowledge-root' "$INGEST" "knowledge-ingest: Step 3.5 sweep passes --knowledge-root to enable the content_hash leg (#421)"
 assert_grep 'content_hash_mismatch' "$INGEST" "knowledge-ingest: documents the content_hash_mismatch reason (#421)"
+# #431 approach (b): the Step 4.6 ingest-time contradiction tripwire dispatches
+# source-contradictor per qualifying question group and merges the per-group
+# fragments via contradiction-ingest-store.py into contradiction-ingest.json.
+# Pure observability — never gates ingest, never rolls back a page. Guard the
+# step, the agent dispatch, the merge script, the opt-out flag, the artifact,
+# and the fail-soft posture — but NOT a #NNN ref in the SKILL prose (breadcrumb guard).
+assert_grep 'Step 4.6' "$INGEST" "knowledge-ingest: names the Step 4.6 ingest-time contradiction tripwire"
+assert_grep 'source-contradictor' "$INGEST" "knowledge-ingest: dispatches source-contradictor at Step 4.6"
+assert_grep 'contradiction-ingest-store.py' "$INGEST" "knowledge-ingest: merges fragments via contradiction-ingest-store.py"
+assert_grep 'contradiction-ingest.json' "$INGEST" "knowledge-ingest: writes the canonical contradiction-ingest.json artifact"
+assert_grep '\-\-no-contradictor' "$INGEST" "knowledge-ingest: --no-contradictor opts out of Step 4.6"
+assert_grep 'never rolls back\|never gates ingest\|never gate ingest' "$INGEST" "knowledge-ingest: Step 4.6 is fail-soft — never rolls back / never gates ingest"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"

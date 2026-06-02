@@ -32,6 +32,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4 — `kno
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--batch-size` | No | Advisory cap on how many fetched sources one dispatch wave covers (a sub-batch of the full set). Ingesters in a wave fan out in a single message; Claude Code — not this cap — throttles actual concurrency. Default 25 (see `references/fan-out-concurrency.md`). |
 | `--dry-run` | No | Print the dispatch plan (batch count, total sources, expected new pages) without running ingesters. |
+| `--no-contradictor` | No | Skip the Step 4.6 ingest-time contradiction tripwire. (`--dry-run` already skips it.) Default: the tripwire runs whenever a question group has a new source and at least one other claim-bearing page to compare it against. |
 
 ## Workflow
 
@@ -349,6 +350,34 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py" upsert-themes \
 
 `upsert-themes` merges each record by `theme_key` (union `labels[]`, bump `last_seen`, freeze `first_seen`, refresh `question_slug`) or appends a fresh `{theme_key, question_slug, labels, first_seen, last_seen}` entry, and returns `{themes_added, themes_updated, covered_themes_count}`. It bumps the binding schema to `0.1.3` on write (additive — defines the entry shape). `question-store.py` only **reads** the binding; this is the only writer of `covered_themes[]`, preserving the single-writer principle. **Fail-soft** (same posture as the index/count sub-steps — the question pages are already on disk; a binding-write hiccup is reconciled on the next run, which re-emits the same bindings). Skip entirely when `theme_bindings[]` is empty (legacy plans with no `theme_label`). Surface `themes_added`/`themes_updated` in the Step 6 summary.
 
+### 4.6. Ingest-time contradiction tripwire (after Step 4.5, before Step 5)
+
+Score the sources ingested this run against the related pages the base already holds — at the point of entry, before any of them feeds a draft. This is the literal "contradictions surface at ingest" check from `references/differentiation-thesis.md` Pillar 2, the ingest-time sibling of the synthesis-write-time `wiki-contradictor`. **Pure observability** — it never gates ingest, never rolls back a page, never changes any downstream behaviour. The pages already landed at Step 3; a failure here surfaces in the Step 6 summary and nothing else.
+
+**Skip conditions.** Skip silently on `--dry-run`. On `--no-contradictor`, log one line (`Contradiction tripwire skipped (--no-contradictor).`) and continue. Skip when `<project_path>/.metadata/question-manifest.json` is absent (no sub-question had findings this run) or when no question group qualifies (below).
+
+**4.6.1. Build the groups.** Read `<project_path>/.metadata/question-manifest.json` (the `data.questions[]` array Step 4.5.1 persisted). Each entry carries `slug` (the question node) and `sources_answering[]` — the **cross-run union** of every source answering that sub-question (`question-store.py emit` unions prior-run sources into this run's findings on a merge, so this set already spans runs; no need to re-parse the page's `## Findings` block). For each entry, split `sources_answering[]` using the set of source slugs **newly ingested this run** (the same per-new-slug set Step 4 iterated):
+
+- **NEW** = `sources_answering[] ∩ {new-this-run source slugs}` — the freshly-ingested sources.
+- **PEER** = `(sources_answering[] − NEW)` (prior-run sources) **plus the question node's own slug** (`slug`). The question node carries citable `answer_claims:` only on run 2+ (after a prior distill); the agent resolves it if present and contributes nothing if not.
+
+A group **qualifies** when `len(NEW) ≥ 1` AND `len(NEW) + len(PEER) ≥ 2` — so a first run with ≥2 new sources qualifies for intra-run new-vs-new comparison, and later runs qualify on a single new source against prior peers. Cap PEER at 20 (truncate the prior-run source list, keeping the question node; surface the truncation in the Step 6 summary). Drop groups that do not qualify.
+
+**4.6.2. Dispatch (one fan-out wave).** Dispatch one `source-contradictor` per qualifying group in a **single-message fan-out wave** (the Step 3 / Step 4.5 fan-out precedent), threading per group: `WIKI_ROOT`, `PROJECT_PATH`, `QUESTION_SLUG=<slug>`, `NEW_SOURCE_SLUGS=<csv of NEW>`, `PEER_SLUGS=<csv of PEER, may be empty>`, `OUTPUT_LANGUAGE=<plan.output_language>`, and `OUT_PATH=<project_path>/.metadata/.contradiction-ingest.<slug>.json`. Each agent scores each NEW claim against each PEER claim and each other NEW claim, writing its own per-group fragment.
+
+**4.6.3. Merge.** After the wave returns, merge the per-group fragments into one canonical artifact:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-ingest-store.py" merge \
+    --shards "<project_path>/.metadata/.contradiction-ingest.*.json" \
+    --out "<project_path>/.metadata/contradiction-ingest.json" \
+    --output-language <plan.output_language>
+```
+
+`merge` re-ids every finding globally (`ctr-001..`), recomputes the aggregate `counts`, asserts the count invariants, records one `groups_compared[]` row per fragment, and overwrites the canonical file (idempotent on re-ingest — the same posture `knowledge-finalize` uses overwriting `contradictor-vN.json`). A malformed / unreadable / schema-mismatched fragment is skipped fail-soft (recorded in the envelope's `skipped_shards[]`), never aborting the merge.
+
+**Fail-soft, explicit.** A Task failure, schema mismatch, or malformed envelope at any sub-step **never rolls back any ingested page** — it surfaces in Step 6 and nothing else. Capture the merge envelope's `counts` for the Step 6 line.
+
 ### 5. Append wiki/log.md
 
 Append one summary line (Bash `>>` append; `wiki/log.md` is append-only by cogni-wiki convention — see `cogni-wiki/CLAUDE.md` §"Key Conventions"):
@@ -375,6 +404,7 @@ Print ≤ 10 lines:
 - `⚠ Integrity: <n> contaminated page(s) quarantined (re-run knowledge-ingest to re-ingest)` — **print only when `n > 0`** (the count of Step 3.5 violations quarantined this run); a clean run omits this line.
 - Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - `⚠ Unmapped sources: <n> ingested source(s) mapped to no sub-question (URL diverged from candidate — redirect / PDF canonicalization); see sources_unmapped[]` — **print only when `len(data.sources_unmapped) > 0`** (from the Step 4.5.1 `emit` envelope); a clean run omits this line. The source pages are on disk and discoverable — they simply join no question node this run.
+- `⚠ Ingest contradictions: <n> detected (<h> high) — observability-only; see contradiction-ingest.json` — **print only when `counts.total > 0`** (from the Step 4.6.3 merge envelope), where `<n>` is `counts.total` and `<h>` is `counts.high`; a clean run (or a `--no-contradictor` / `--dry-run` run) omits this line. The contradictions are surfaced, never resolved — they do not gate ingest. Append `(peers truncated at 20 for <m> group(s))` when any group hit the PEER cap.
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
 - Theme lineage: `<themes_added>` new, `<themes_updated>` updated in `topic_lineage.covered_themes` (Step 4.5.5; omit the line when `theme_bindings[]` was empty)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
@@ -416,6 +446,8 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `<project_path>/.metadata/quarantine/<slug>.md` per Step 3.5 integrity violation — the contaminated page, moved off the wiki and preserved for inspection; the slug is freed and the URL stays re-dispatchable.
 - `<project_path>/.metadata/theme-bindings.json` — the Step 4.5.1 `theme_bindings[]` serialized for the Step 4.5.5 `upsert-themes` call (intermediate; kept for debugging).
 - `<project_path>/.metadata/question-manifest.json` — the Step 4.5.1 `data.questions[]` array serialized as the phase handoff `knowledge-finalize` reads to forward-link the deposited synthesis to the research-question nodes it answers (written whenever any sub-question had findings this run).
+- `<project_path>/.metadata/contradiction-ingest.json` — the Step 4.6 ingest-time contradiction findings, merged from the per-group fragments (schema 0.1.0; observability-only; overwritten on re-ingest). Absent on a `--no-contradictor` / `--dry-run` run or when no group qualified.
+- `<project_path>/.metadata/.contradiction-ingest.<question-slug>.json` per qualifying group — the Step 4.6 per-group `source-contradictor` fragment (intermediate; kept for debugging).
 
 ## References
 
@@ -429,3 +461,5 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `${CLAUDE_PLUGIN_ROOT}/scripts/candidate-store.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — Step 4.5 per-sub-question node emitter
 - `${CLAUDE_PLUGIN_ROOT}/scripts/ingest-integrity.py --help` — Step 3.5 post-wave integrity sweep
+- `${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-ingest-store.py --help` — Step 4.6 per-group fragment merge
+- `${CLAUDE_PLUGIN_ROOT}/agents/source-contradictor.md` — Step 4.6 dispatched agent (ingest-time contradiction scorer)
