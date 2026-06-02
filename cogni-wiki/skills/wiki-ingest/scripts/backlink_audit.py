@@ -79,8 +79,10 @@ Plan schema (consumed by --apply-plan):
     If `insert_after_heading` is present and matches a heading line in the target
     page body, the sentence is inserted as the first paragraph under that heading.
     If absent (or the heading is not found), the sentence is appended at the end
-    of the body. In every case the frontmatter `updated:` field is rewritten to
-    today's ISO date in the same atomic write.
+    of the body — UNLESS `--create-missing-heading` is set, in which case a
+    missing heading is created as a new end-of-body section and the sentence is
+    placed under it (see the flag below). In every case the frontmatter `updated:`
+    field is rewritten to today's ISO date in the same atomic write.
 
 Layout: as of v0.0.28 pages live under per-type subdirectories
 (`wiki/concepts/`, `wiki/decisions/`, …). Slug → path resolution goes through
@@ -101,6 +103,20 @@ Flags:
                           should prefer --top.
     --min-confidence X    Audit mode: drop candidates below X (low|medium|high).
     --apply-plan <path>   Apply mode: path to plan JSON, or `-` for stdin.
+    --create-missing-heading
+                          Apply mode, opt-in: when a target's
+                          `insert_after_heading` is absent from the page body,
+                          CREATE it as a new end-of-body section and place the
+                          sentence under it (instead of the default bare
+                          end-of-body append). The first writer materialises the
+                          heading; subsequent writes that pass the same heading
+                          find it present and group under it. Off by default, so
+                          `wiki-ingest` callers (which pass a heading the
+                          orchestrator already saw on the page, EOF-append being
+                          a safety net) are byte-for-byte unchanged. Used by
+                          `cogni-knowledge:knowledge-ingest` Step 4.5.2, which
+                          passes `## Research questions` to source pages that
+                          essentially never have it.
 
 Summary counters (only emitted when --top is set):
     total_candidates: <int>
@@ -309,11 +325,20 @@ def _split_frontmatter_body(text: str) -> tuple:
     return m.group(0), text[len(m.group(0)):]
 
 
-def _insert_sentence(body: str, sentence: str, heading: str) -> str:
+def _insert_sentence(body: str, sentence: str, heading: str,
+                     create_missing: bool = False) -> str:
     """Insert `sentence` at the right place in `body`.
 
     If `heading` is truthy and matches a line exactly, insert `sentence` as a
     new paragraph immediately after that heading (with a blank-line separator).
+
+    Otherwise, if `heading` is truthy, not found, AND `create_missing` is True,
+    create the heading as a new end-of-body section and place the sentence under
+    it. The new heading line is written byte-identical to what the found-branch
+    above searches for, so a later insert that passes the same heading groups
+    under it (this is what makes the reverse `source→question` links accumulate
+    in one section rather than scatter as bare appends).
+
     Otherwise append at the end of the body, preceded by a blank line.
     """
     stripped_sentence = sentence.strip()
@@ -330,16 +355,27 @@ def _insert_sentence(body: str, sentence: str, heading: str) -> str:
                 insert_lines = ["", stripped_sentence, ""]
                 new_lines = lines[:rest_start] + insert_lines + lines[rest_start:]
                 return "\n".join(new_lines)
+        if create_missing:
+            # Heading absent and the caller opted in: materialise it as a new
+            # end-of-body section.
+            if not body.endswith("\n"):
+                body = body + "\n"
+            return body + "\n" + heading_line + "\n\n" + stripped_sentence + "\n"
     if not body.endswith("\n"):
         body = body + "\n"
     return body + "\n" + stripped_sentence + "\n"
 
 
-def apply_plan(plan: dict, slug_index: dict, new_slug: str) -> tuple:
+def apply_plan(plan: dict, slug_index: dict, new_slug: str,
+               create_missing_heading: bool = False) -> tuple:
     """Execute an apply-plan over the slug index.
 
     Returns (applied, skipped_existing, failed) lists for the output JSON.
     Each list entry is a small dict the caller embeds under data.*.
+
+    `create_missing_heading` is threaded straight into `_insert_sentence` — when
+    True, a target's absent `insert_after_heading` is created as a new section
+    rather than bare-appended (opt-in; off for `wiki-ingest`).
 
     Semantics:
       - If `[[new_slug]]` already appears in the target body, skip the write
@@ -380,7 +416,8 @@ def apply_plan(plan: dict, slug_index: dict, new_slug: str) -> tuple:
             skipped.append(slug)
             continue
         fm, body = _split_frontmatter_body(text)
-        new_body = _insert_sentence(body, target["sentence"], target.get("insert_after_heading", ""))
+        new_body = _insert_sentence(body, target["sentence"], target.get("insert_after_heading", ""),
+                                    create_missing=create_missing_heading)
         # Bump `updated:` in the frontmatter block only, so we don't touch any
         # other `updated:` string that might appear in the body.
         new_fm = _bump_updated_frontmatter(fm, today) if fm else fm
@@ -416,6 +453,11 @@ def main() -> None:
     parser.add_argument("--apply-plan", default=None,
                         help="Path to a plan JSON (or '-' for stdin). When set, apply the "
                              "plan's backlink writes atomically after running the audit.")
+    parser.add_argument("--create-missing-heading", action="store_true",
+                        help="Apply mode: when a target's insert_after_heading is absent from "
+                             "the page body, create it as a new end-of-body section instead of "
+                             "a bare end-of-body append. Off by default (wiki-ingest unchanged); "
+                             "passed by knowledge-ingest Step 4.5.2.")
     args = parser.parse_args()
 
     wiki_root = Path(args.wiki_root).expanduser().resolve()
@@ -445,7 +487,8 @@ def main() -> None:
             with _wiki_lock(wiki_root):
                 # Refresh slug index inside the lock so reverse lookups see
                 # the latest filesystem state.
-                applied, skipped, failed = apply_plan(plan, build_slug_index(wiki_root), new_slug)
+                applied, skipped, failed = apply_plan(plan, build_slug_index(wiki_root), new_slug,
+                                                      create_missing_heading=args.create_missing_heading)
             out_empty["applied"] = applied
             out_empty["skipped_existing_backlink"] = skipped
             out_empty["failed"] = failed
@@ -547,7 +590,8 @@ def main() -> None:
     if args.apply_plan:
         plan = _load_apply_plan(args.apply_plan)
         with _wiki_lock(wiki_root):
-            applied, skipped, failed = apply_plan(plan, build_slug_index(wiki_root), new_slug)
+            applied, skipped, failed = apply_plan(plan, build_slug_index(wiki_root), new_slug,
+                                                  create_missing_heading=args.create_missing_heading)
         out["applied"] = applied
         out["skipped_existing_backlink"] = skipped
         out["failed"] = failed
