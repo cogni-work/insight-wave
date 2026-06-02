@@ -108,6 +108,16 @@ assert_grep 'draft-v' "$COMPOSER" "wiki-composer: writes output/draft-vN.md"
 # Write it" instruction is the regression that shipped invalid JSON.
 assert_grep 'citation-records' "$COMPOSER" "wiki-composer: writes a raw-text citation-records file (#325)"
 assert_not_grep 'Compose the JSON envelope' "$COMPOSER" "wiki-composer: no longer hand-builds the manifest JSON (#325)"
+# #412: draft_sentence must be the exact span ENDING AT the marker (locate-then-copy),
+# not a first-clause summary — a multi-sentence bold-list item ending in one trailing
+# marker is ONE alignment unit. And the composer self-checks every record is a verbatim
+# contiguous substring of the draft BEFORE returning (the in-agent fail-fast the issue
+# asks for, so citation-store.py build never dead-ends the autonomous chain).
+assert_grep 'start of the contiguous prose unit' "$COMPOSER" "wiki-composer: draft_sentence is the span ending at the marker, copied from the unit's start (#412)"
+assert_grep 'one alignment unit\|One alignment unit' "$COMPOSER" "wiki-composer: a multi-sentence trailing-marker block is one alignment unit, not a first-clause summary (#412)"
+assert_grep 'locate-then-copy' "$COMPOSER" "wiki-composer: locate-then-copy / never-synthesize draft_sentence rule (#412)"
+assert_grep 'contiguous substring' "$COMPOSER" "wiki-composer: in-agent substring self-check of records vs draft before return (#412)"
+assert_grep 'in-agent fail-fast' "$COMPOSER" "wiki-composer: frames the self-check as the in-agent fail-fast (#412)"
 
 # Scope-discipline negatives — these deferred surfaces may appear in the
 # header HTML comment (as provenance documenting what the fork dropped)
