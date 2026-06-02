@@ -278,10 +278,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py" emit \
     --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
     --plan "<project_path>/.metadata/plan.json" \
     --candidates "<project_path>/.metadata/candidates.json" \
-    --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
+    --ingest-manifest "<project_path>/.metadata/ingest-manifest.json" \
+    --binding "<binding_path>"
 ```
 
-It emits `{success, data: {questions: [{slug, sub_question_id, query, sources_answering[], action}], skipped_no_findings[]}, error}`. `action` is `created` (fresh page) or `merged` (an existing `wiki/questions/<slug>.md` was enriched — its `created:` and human `## Notes` tail are preserved, the finding `[[links]]` unioned, `updated:` bumped — the v1 idempotent enrich-on-collision behaviour). A slug colliding with a **non-question** page (source/concept/…) is disambiguated with a `-q` suffix so a question node never shadows another page. Sub-questions with zero findings this run are listed in `skipped_no_findings[]` and get no page. Owns the slug logic, the `type: question` page-type contract, and the merge/preserve semantics — the orchestrator never hand-builds the page.
+`--binding <binding_path>` (the same `.cogni-knowledge/binding.json` resolved in the "Binding + wiki root" step) couples question-node accumulation to `topic_lineage.covered_themes[]` (#409): a recurring research theme phrased differently across runs (a variant `theme_label` that slugifies differently) is routed by its `_knowledge_lib.theme_norm_key` to the question node a prior run already filed, so it **merges** instead of forking a second node. The flag is **read-only** — `question-store.py` never writes the binding; it returns the new themes in `theme_bindings[]` for sub-step 5 to persist. Omitting `--binding` falls back to today's slug-only accumulation (byte-identical to the pre-#409 path), so a run still works against an older binding.
+
+It emits `{success, data: {questions: [{slug, sub_question_id, query, sources_answering[], action}], theme_bindings: [{theme_key, question_slug, theme_label, action}], skipped_no_findings[], sources_unmapped[]}, error}`. `questions[].action` is `created` (fresh page) or `merged` (an existing `wiki/questions/<slug>.md` was enriched — its `created:` and human `## Notes` tail are preserved, the finding `[[links]]` unioned, `updated:` bumped — the v1 idempotent enrich-on-collision behaviour; a lineage match (#409) routes a variant label here too). A slug colliding with a **non-question** page (source/concept/…) is disambiguated with a `-q` suffix so a question node never shadows another page. `theme_bindings[]` carries one record per written question with a non-empty theme key (`action` ∈ `lineage_reused` | `new_theme`; first-writer-wins per theme key within a run) — sub-step 5 feeds these to the binding. Sub-questions with zero findings this run are listed in `skipped_no_findings[]` and get no page. Owns the slug logic, the `type: question` page-type contract, the lineage-resolve, and the merge/preserve semantics — the orchestrator never hand-builds the page.
 
 Each `wiki/questions/<slug>.md` write is **unique-by-construction per slug** (atomic `_knowledge_lib.atomic_write_text`, single writer) — no `_wiki_lock` needed, same posture as the Step 3 source pages. The script imports cogni-wiki's `PAGE_TYPE_DIRS` / `split_frontmatter` from the resolved `--wiki-scripts-dir` (the same DRY posture `concept-store.py` uses for `_wiki_lock`).
 
@@ -321,6 +324,18 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
 
 **Non-fatal on failure**, same posture as Step 4 — the pages are already on disk; the operator reconciles any drift via `wiki-lint --fix=entries_count_drift`.
 
+**5. Record theme lineage (#409).** Persist the `theme_bindings[]` from sub-step 1 into the binding's `topic_lineage.covered_themes[]` so the *next* run's `question-store.py emit --binding …` routes a recurring theme to this run's node instead of forking a new one. Serialize the returned array to a small records file and call the **single binding writer**:
+
+```
+# $THEME_BINDINGS_JSON is data.theme_bindings[] from sub-step 1's envelope.
+printf '%s' "$THEME_BINDINGS_JSON" > "<project_path>/.metadata/theme-bindings.json"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py" upsert-themes \
+    --knowledge-root "<knowledge_root>" \
+    --records "<project_path>/.metadata/theme-bindings.json"
+```
+
+`upsert-themes` merges each record by `theme_key` (union `labels[]`, bump `last_seen`, freeze `first_seen`, refresh `question_slug`) or appends a fresh `{theme_key, question_slug, labels, first_seen, last_seen}` entry, and returns `{themes_added, themes_updated, covered_themes_count}`. It bumps the binding schema to `0.1.3` on write (additive — defines the entry shape). `question-store.py` only **reads** the binding; this is the only writer of `covered_themes[]`, preserving the single-writer principle. **Fail-soft** (same posture as the index/count sub-steps — the question pages are already on disk; a binding-write hiccup is reconciled on the next run, which re-emits the same bindings). Skip entirely when `theme_bindings[]` is empty (legacy plans with no `theme_label`). Surface `themes_added`/`themes_updated` in the Step 6 summary.
+
 ### 5. Append wiki/log.md
 
 Append one summary line (Bash `>>` append; `wiki/log.md` is append-only by cogni-wiki convention — see `cogni-wiki/CLAUDE.md` §"Key Conventions"):
@@ -347,6 +362,7 @@ Print ≤ 10 lines:
 - `⚠ Integrity: <n> contaminated page(s) quarantined (re-run knowledge-ingest to re-ingest)` — **print only when `n > 0`** (the count of Step 3.5 violations quarantined this run); a clean run omits this line.
 - Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
+- Theme lineage: `<themes_added>` new, `<themes_updated>` updated in `topic_lineage.covered_themes` (Step 4.5 sub-step 5; omit the line when `theme_bindings[]` was empty)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
 - Next: `knowledge-compose` reads the populated `wiki/sources/*.md` + `ingest-manifest.json` to draft the report.
 
@@ -369,7 +385,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
 - Does NOT verify claims — Phase 6 (`knowledge-verify`).
 - Does NOT auto-select backlink targets — `backlink_audit.py` never invents links; the orchestrator curates the `targets[]` plan from the audit candidates and only then applies it.
-- Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
+- Records **question-node theme lineage** into `binding.json::topic_lineage.covered_themes[]` (Step 4.5 sub-step 5, #409) — the one binding field this skill writes, via `knowledge-binding.py upsert-themes`. `research_projects[]` remains Phase 7 (`knowledge-finalize`)'s job.
 - Does NOT re-run fetch — that is `knowledge-fetch`.
 
 ## Output

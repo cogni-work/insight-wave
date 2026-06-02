@@ -17,6 +17,15 @@ Subcommand:
          merge `wiki/questions/<slug>.md`, and return the per-question plan the
          orchestrator consumes for backlink / index / count steps.
 
+Cross-run theme accumulation (#409): an optional `--binding` arg reads
+`topic_lineage.covered_themes[]` to map a theme's `_knowledge_lib.theme_norm_key`
+to its recorded `question_slug`, so a recurring theme phrased differently across
+runs (variant `theme_label`) routes to the SAME question node instead of forking
+a second one. Read-only — the script emits `data.theme_bindings[]` and the
+orchestrator persists them via `knowledge-binding.py upsert-themes` (the single
+binding writer). Without `--binding`, behaviour is byte-identical to the pre-#409
+slug-only accumulation.
+
 `--wiki-scripts-dir` points at cogni-wiki's `wiki-ingest/scripts/` (resolved by
 the orchestrator, same `resolve_wiki_scripts` helper knowledge-ingest uses) so
 we import `PAGE_TYPE_DIRS` + `split_frontmatter` from the single source of
@@ -35,7 +44,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import atomic_write_text, normalize_url, slugify  # noqa: E402
+from _knowledge_lib import atomic_write_text, normalize_url, slugify, theme_norm_key  # noqa: E402
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -68,6 +77,24 @@ def cmd_emit(args: argparse.Namespace) -> int:
         manifest = _load_json(Path(args.ingest_manifest))
     except (OSError, json.JSONDecodeError) as exc:
         return _emit(False, error=f"could not read inputs: {exc}")
+
+    # Lineage map (#409): theme_norm_key -> recorded question_slug, from the
+    # binding's topic_lineage.covered_themes[]. Read-only here — this script
+    # NEVER writes binding.json; the orchestrator persists new/updated themes
+    # via `knowledge-binding.py upsert-themes` (the single writer). The map is
+    # empty when --binding is absent (byte-identical to the pre-#409 path) or
+    # the binding is older / has no covered_themes (fail-soft .get chain).
+    lineage: dict[str, str] = {}
+    if args.binding:
+        try:
+            binding = _load_json(Path(args.binding))
+        except (OSError, json.JSONDecodeError) as exc:
+            return _emit(False, error=f"could not read --binding: {exc}")
+        for e in binding.get("topic_lineage", {}).get("covered_themes", []) or []:
+            tk = e.get("theme_key")
+            qs = e.get("question_slug")
+            if tk and qs:
+                lineage[tk] = qs
 
     today = datetime.date.today().isoformat()
     questions_dir = wiki_root / "wiki" / "questions"
@@ -136,6 +163,8 @@ def cmd_emit(args: argparse.Namespace) -> int:
 
     questions_out: list[dict] = []
     skipped_no_findings: list[str] = []
+    theme_bindings: list[dict] = []
+    seen_tkeys: set[str] = set()  # first-writer-wins per theme_key within a run
 
     for sq in plan.get("sub_questions", []) or []:
         sqid = sq.get("id", "")
@@ -145,7 +174,16 @@ def cmd_emit(args: argparse.Namespace) -> int:
             continue
 
         theme = (sq.get("theme_label") or "").strip()
-        base = slugify(theme) or (slugify(sqid) or sqid)  # legacy plans -> sq-NN
+        # Slug-base precedence (#409): a lineage match on the theme_norm_key
+        # reuses the recorded question_slug, so a variant theme_label routes to
+        # the existing prior-run node (resolve_slug then returns is_merge=True
+        # and the union path fires). Otherwise the pre-#409 base derivation.
+        tkey = theme_norm_key(theme)
+        lineage_hit = bool(tkey) and tkey in lineage
+        if lineage_hit:
+            base = lineage[tkey]
+        else:
+            base = slugify(theme) or (slugify(sqid) or sqid)  # legacy plans -> sq-NN
         slug, is_merge = resolve_slug(base)
         path = questions_dir / f"{slug}.md"
 
@@ -197,8 +235,25 @@ def cmd_emit(args: argparse.Namespace) -> int:
             "action": "merged" if is_merge else "created",
         })
 
+        # Theme-lineage binding (#409): one record per written question whose
+        # theme_label has a non-empty norm key, first-writer-wins per theme_key
+        # (a second same-run sub-question that -q-disambiguates to a distinct
+        # node must NOT steal the canonical node's theme_key). An empty tkey
+        # (legacy / stopword-only theme_label) records nothing — that node
+        # accumulates by slug only, as before. The orchestrator feeds these to
+        # `knowledge-binding.py upsert-themes` (the single binding writer).
+        if tkey and tkey not in seen_tkeys:
+            seen_tkeys.add(tkey)
+            theme_bindings.append({
+                "theme_key": tkey,
+                "question_slug": slug,
+                "theme_label": theme,
+                "action": "lineage_reused" if lineage_hit else "new_theme",
+            })
+
     return _emit(True, data={
         "questions": questions_out,
+        "theme_bindings": theme_bindings,
         "skipped_no_findings": skipped_no_findings,
         "sources_unmapped": sources_unmapped,
         "questions_written": len(questions_out),
@@ -216,6 +271,17 @@ def main(argv=None) -> int:
     p_emit.add_argument("--plan", required=True, help="<project>/.metadata/plan.json")
     p_emit.add_argument("--candidates", required=True, help="<project>/.metadata/candidates.json")
     p_emit.add_argument("--ingest-manifest", required=True, help="<project>/.metadata/ingest-manifest.json")
+    p_emit.add_argument(
+        "--binding",
+        required=False,
+        default="",
+        help="Optional .cogni-knowledge/binding.json. When given, "
+             "topic_lineage.covered_themes[] supplies a theme_norm_key -> "
+             "question_slug map so a recurring theme (variant theme_label) "
+             "routes to its existing question node (#409). Read-only; the "
+             "orchestrator persists new/updated themes via knowledge-binding.py "
+             "upsert-themes. Absent -> byte-identical to the pre-#409 path.",
+    )
     p_emit.set_defaults(func=cmd_emit)
 
     args = parser.parse_args(argv)

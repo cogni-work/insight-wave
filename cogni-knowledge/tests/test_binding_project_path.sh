@@ -48,8 +48,9 @@ mkdir -p "$PROJ/.metadata" "$PROJ/output"
 echo '{"slug": "test", "report_source": "web"}' > "$PROJ/.metadata/project-config.json"
 touch "$PROJ/output/report.md"
 
-# 1. init - schema_version should be 0.1.2 (the additive writer-quality knobs
-# bump, #309 P2; on top of 0.1.1 research_defaults and the M12 0.1.0 re-alignment).
+# 1. init - schema_version should be 0.1.3 (the additive topic_lineage
+# covered_themes[] entry-shape bump, #409; on top of 0.1.2 writer-quality knobs,
+# 0.1.1 research_defaults, and the M12 0.1.0 re-alignment).
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" \
   --knowledge-slug test-kb \
@@ -57,10 +58,10 @@ python3 "$SCRIPT" init \
   --wiki-path "$WIKI" >/dev/null
 
 SCHEMA=$(python3 -c "import json; print(json.load(open('$KB/.cogni-knowledge/binding.json'))['schema_version'])")
-if [ "$SCHEMA" = "0.1.2" ]; then
-  green "PASS: init writes schema_version 0.1.2"
+if [ "$SCHEMA" = "0.1.3" ]; then
+  green "PASS: init writes schema_version 0.1.3"
 else
-  red "FAIL: schema_version expected 0.1.2, got '$SCHEMA'"
+  red "FAIL: schema_version expected 0.1.3, got '$SCHEMA'"
   errors=$((errors + 1))
 fi
 

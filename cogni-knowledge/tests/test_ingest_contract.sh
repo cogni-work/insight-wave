@@ -72,6 +72,15 @@ assert_not_grep 'audit-only' "$INGEST" "knowledge-ingest: no 'audit-only' wordin
 assert_not_grep 'No \`--apply-plan\`' "$INGEST" "knowledge-ingest: no 'No --apply-plan' deferral wording remains (#308)"
 assert_grep 'theme_label' "$INGEST" "knowledge-ingest: index category derived from the sub-question theme_label (#307)"
 assert_grep 'sub_question_refs\[0\]' "$INGEST" "knowledge-ingest: joins on sub_question_refs[0] to pick the theme_label (#307)"
+# #409: Step 4.5 sub-step 1 passes --binding to question-store.py (lineage-couple
+# question-node accumulation), and sub-step 5 persists the returned theme_bindings[]
+# into topic_lineage.covered_themes[] via knowledge-binding.py upsert-themes (the
+# single binding writer). Guard the read-side flag, the writer call, and the field.
+assert_grep 'question-store.py' "$INGEST" "knowledge-ingest: Step 4.5 runs question-store.py emit (#407)"
+assert_grep '\-\-binding' "$INGEST" "knowledge-ingest: Step 4.5 passes --binding to question-store.py for theme lineage (#409)"
+assert_grep 'theme_bindings' "$INGEST" "knowledge-ingest: Step 4.5 consumes theme_bindings[] (#409)"
+assert_grep 'upsert-themes' "$INGEST" "knowledge-ingest: Step 4.5 sub-step 5 calls knowledge-binding.py upsert-themes (#409)"
+assert_grep 'covered_themes' "$INGEST" "knowledge-ingest: Step 4.5 persists into topic_lineage.covered_themes[] (#409)"
 assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Sources\" as the only category (#307; Sources is a fallback now)"
 # #324: Step 4.2 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "≤180 chars" authoring contract that caused the mid-word
