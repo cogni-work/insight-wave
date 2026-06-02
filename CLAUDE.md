@@ -158,4 +158,5 @@ Managed by `cogni-workspace:install-mcp`. Plugin `.mcp.json` files reference ins
 - CLA required on first PR to core plugins (CLA Assistant bot prompts on PR)
 - Feature branches from `main`; one feature or fix per PR
 - Validate skill names with `cogni-workspace/scripts/check-skill-names.sh` before PR
+- Keep maintainer breadcrumbs out of SKILL.md / agent files — `scripts/check-breadcrumbs.py` (CI: "Maintainer-breadcrumb guard" in `.github/workflows/lint.yml`) fails on newly introduced issue/PR refs (`#NNN`), version tags, or milestone/slice/finding codes. It ratchets against `scripts/baselines/breadcrumb-baseline.json`, so only *new* breadcrumbs trip it; fix by removing the breadcrumb and stating the rationale semantically (provenance lives in git history, CHANGELOG, and `references/`)
 - Generic skill names (`setup`, `scan`, `resume`, `dashboard`, `verify`) must be prefixed with the domain term
