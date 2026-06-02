@@ -360,6 +360,81 @@ def assert_parse_distilled_claims_with_id():
     assert kl.parse_distilled_claims_with_id("---\ndistilled_claims:\n  - claim_id: dcl-x\n\n# no close\n") == []
 
 
+def assert_parse_answer_claims_with_id():
+    # #432: question nodes carry `answer_claims:` — same per-claim shape as
+    # distilled_claims (acl-NNN ids, no excerpt_quote). verify-store keys an answer
+    # citation by claim_id, so this absorbs claim_id + text only (writer-side metadata
+    # ignored), byte-symmetric with parse_distilled_claims_with_id.
+    page = (
+        "---\n"
+        "id: q-high-risk\n"
+        "type: question\n"
+        "answer_claims:\n"
+        "  - claim_id: acl-001\n"
+        '    text: "Annex III lists eight categories of high-risk AI systems."\n'
+        '    norm_key: "k1"\n'
+        '    backlinks: ["src-a","src-b"]\n'
+        '    source_claim_refs: ["src-a#clm-003"]\n'
+        "    created: 2026-06-02\n"
+        "    updated: 2026-06-02\n"
+        "  - claim_id: acl-002\n"
+        '    text: "High-risk systems must be registered in the EU database."\n'
+        "sources_answering: [src-a, src-b]\n"
+        "---\n\n## Findings\n\n- [[src-a]]\n"
+    )
+    claims = kl.parse_answer_claims_with_id(page)
+    assert len(claims) == 2, claims
+    assert claims[0] == {"claim_id": "acl-001",
+                         "text": "Annex III lists eight categories of high-risk AI systems."}, claims[0]
+    assert set(claims[0]) == {"claim_id", "text"}, "only claim_id+text wanted: " + repr(claims[0])
+    assert claims[1] == {"claim_id": "acl-002",
+                         "text": "High-risk systems must be registered in the EU database."}, claims[1]
+    # Same fail-safe contract as the distilled sibling: inline [] / no key / empty /
+    # unterminated → [] (never raises).
+    assert kl.parse_answer_claims_with_id("---\ntype: question\nanswer_claims: []\n---\n# body\n") == []
+    assert kl.parse_answer_claims_with_id("---\ntype: question\n---\n# body\n") == []
+    assert kl.parse_answer_claims_with_id("") == []
+    assert kl.parse_answer_claims_with_id("---\nanswer_claims:\n  - claim_id: acl-x\n\n# no close\n") == []
+    # The acl- prefix classifies as the `answer` kind (forward-ready, #432).
+    assert kl.classify_claim_kind("acl-007") == "answer", kl.classify_claim_kind("acl-007")
+    assert kl.classify_claim_kind("dcl-1") == "distilled" and kl.classify_claim_kind("clm-1") == "source"
+
+
+def assert_parse_answer_records():
+    # #432: the answer-distiller writes `- question: <slug>` blocks with repeatable
+    # `answer_claim:` lines (same 3-part `<slug> | <id> | <text>` as concept records).
+    text = (
+        "- question: q-high-risk\n"
+        "  answer_claim: src-a | clm-003 | Annex III lists eight categories.\n"
+        "  answer_claim: src-b | clm-001 | Eight categories are enumerated.\n"
+        "- question: q-gpai\n"
+        "  answer_claim: gpai-code | clm-002 | GPAI duties begin 12 months after entry.\n"
+    )
+    recs = kl.parse_answer_records(text)
+    assert len(recs) == 2, recs
+    assert recs[0]["slug"] == "q-high-risk" and len(recs[0]["claims"]) == 2, recs[0]
+    assert recs[0]["claims"][0] == {"source_slug": "src-a", "source_claim_id": "clm-003",
+                                    "text": "Annex III lists eight categories."}, recs[0]["claims"][0]
+    assert recs[1]["slug"] == "q-gpai" and len(recs[1]["claims"]) == 1, recs[1]
+    # 3-part form: a claim text containing a pipe keeps everything after the 2nd ' | '.
+    pipe = kl.parse_answer_records("- question: q\n  answer_claim: s | c | a | b | c\n")
+    assert pipe[0]["claims"][0]["text"] == "a | b | c", pipe[0]["claims"][0]
+    # Tolerated 2-part ref form `<slug>#<id> | <text>` whose text contains ` | `.
+    rp = kl.parse_answer_records("- question: q\n  answer_claim: src-a#clm-001 | Article 6 | paragraph 2\n")
+    assert rp[0]["claims"][0] == {"source_slug": "src-a", "source_claim_id": "clm-001",
+                                  "text": "Article 6 | paragraph 2"}, rp[0]["claims"][0]
+    # `question:` may sit inline after the bullet.
+    inline = kl.parse_answer_records("- question: q-inline\n")
+    assert inline[0]["slug"] == "q-inline" and inline[0]["claims"] == [], inline
+    # A record missing its question: is emitted with an empty slug (NOT dropped).
+    noq = kl.parse_answer_records("- answer_claim: s | c | t\n")
+    assert noq[0]["slug"] == "" and len(noq[0]["claims"]) == 1, noq
+    # CRLF tolerance + empty input → [].
+    crlf = kl.parse_answer_records("- question: z\r\n  answer_claim: s | c | t\r\n")
+    assert crlf[0]["slug"] == "z", crlf
+    assert kl.parse_answer_records("") == []
+
+
 def assert_strip_inline_citation_markers():
     # Strips the whole marker (with or without a URL), leaving the prose; the
     # verify prefilter uses this to compare a sentence's text against a claim.
@@ -671,6 +746,8 @@ check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 check("parse_distilled_claims", assert_parse_distilled_claims)
 check("parse_distilled_claims_with_id", assert_parse_distilled_claims_with_id)
+check("parse_answer_claims_with_id", assert_parse_answer_claims_with_id)
+check("parse_answer_records", assert_parse_answer_records)
 check("writer_quality_normalizers", assert_writer_quality_normalizers)
 PY
 )
@@ -701,6 +778,8 @@ grade renumber_inline_citations "renumber_inline_citations — full-source-drop 
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
 grade parse_distilled_claims  "parse_distilled_claims — text-only extraction, writer metadata ignored, inline []/no-bullets/malformed→[], block-scalar no-leak (#343)"
 grade parse_distilled_claims_with_id "parse_distilled_claims_with_id — claim_id+text extraction for the prefilter key, rest of metadata ignored, same fail-safe→[] contract (#362)"
+grade parse_answer_claims_with_id "parse_answer_claims_with_id — answer_claims: claim_id+text (acl-NNN, no excerpt_quote), classify_claim_kind acl→answer, same fail-safe→[] (#432)"
+grade parse_answer_records    "parse_answer_records — question:/answer_claim: blocks, 3-part + 2-part-ref pipe-in-text split, inline question:, missing-question→empty-slug, CRLF, ''→[] (#432)"
 grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
 grade tokenization_primitives "tokenization primitives (#336 lift) — fold/tokenize/token_weight/compound_match preserved from wiki-coverage.py"
 grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"

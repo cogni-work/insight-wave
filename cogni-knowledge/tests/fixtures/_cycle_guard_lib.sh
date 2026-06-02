@@ -145,6 +145,49 @@ Summary.
 EOF
 }
 
+mk_question_page() {
+  # mk_question_page <KB> <slug> <backing_slug>...
+  # A real Phase-4 question node (#407) with a Phase-4.5 answer surface (#432):
+  # `type: question`, an inline `sources_answering:` list of BARE backing slugs (what
+  # cycle-guard sees through, #432), and an `answer_claims:` block. NO
+  # `derived_from_research:` — that is what marks it for the see-through trace.
+  local kb="$1" slug="$2"; shift 2
+  mkdir -p "$kb/wiki/questions"
+  local answering="" refs="" backlinks="" first=1
+  for b in "$@"; do
+    if [ "$first" -eq 1 ]; then
+      answering="$b"; refs="\"$b#clm-001\""; backlinks="\"$b\""; first=0
+    else
+      answering="$answering, $b"; refs="$refs, \"$b#clm-001\""; backlinks="$backlinks, \"$b\""
+    fi
+  done
+  cat > "$kb/wiki/questions/$slug.md" <<EOF
+---
+id: $slug
+title: "What about $slug?"
+type: question
+tags: [question]
+created: 2026-05-20
+updated: 2026-05-20
+sources_answering: [$answering]
+answer_claims:
+  - claim_id: acl-001
+    text: "A cross-source answer about $slug."
+    norm_key: "answer $slug"
+    backlinks: [$backlinks]
+    source_claim_refs: [$refs]
+    created: 2026-05-20
+    updated: 2026-05-20
+---
+
+## Findings
+
+- [[${1:-}]]
+
+## Notes
+EOF
+}
+
 add_wiki_citation() {
   local proj="$1" src_id="$2" wiki_slug="$3" page_slug="$4"
   cat > "$proj/02-sources/data/$src_id.md" <<EOF

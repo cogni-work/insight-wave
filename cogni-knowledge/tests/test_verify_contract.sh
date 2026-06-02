@@ -152,6 +152,12 @@ assert_not_grep 'draft_position_out_of_range' "$VERIFIER" "wiki-verifier: drops 
 assert_grep 'draft_sentence' "$VERIFIER" "wiki-verifier: scores the manifest's draft_sentence (F22 stable surface)"
 assert_grep 'page_kind_by_slug' "$VERIFIER" "wiki-verifier: tracks page kind from Phase 0 directory resolution (not inferred from claim_id)"
 assert_grep 'claim_id' "$VERIFIER" "wiki-verifier: looks up claims by claim_id"
+# #432: the 4th evidence family — a type:question node's answer_claims: is scored
+# like a source (text-only needle, no excerpt_quote). The directory resolution +
+# the "source-like" verdict set must recognize it.
+assert_grep 'wiki/questions/<slug>.md` → `"question"`\|questions/<slug>.md. → .question' "$VERIFIER" "wiki-verifier: Phase 0 resolves wiki/questions/ → question (#432)"
+assert_grep 'answer_claims' "$VERIFIER" "wiki-verifier: parses answer_claims for a question node (#432)"
+assert_grep 'source, concept, entity, summary, learning, question' "$VERIFIER" "wiki-verifier: 'source-like' set includes question (#432)"
 # F21 fan-out params (optional; default = whole-manifest single dispatch).
 assert_grep 'CITATIONS_PATH' "$VERIFIER" "wiki-verifier: accepts CITATIONS_PATH shard override"
 assert_grep 'VERIFY_OUT_PATH' "$VERIFIER" "wiki-verifier: accepts VERIFY_OUT_PATH fragment override"

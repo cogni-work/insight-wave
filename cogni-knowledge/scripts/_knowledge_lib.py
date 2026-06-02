@@ -453,6 +453,11 @@ _DISTILLED_WANTED_KEYS = ("text",)
 # citation to its claim — `parse_distilled_claims_with_id` adds it. A distilled
 # claim has NO `excerpt_quote`, so the prefilter needle is `text` only.
 _DISTILLED_ID_WANTED_KEYS = ("claim_id", "text")
+# question nodes (written by question-store.py) carry `answer_claims:` — the same
+# per-claim shape as `distilled_claims:` (claim_id `acl-NNN`, text, plus writer-side
+# norm_key/backlinks/source_claim_refs/dates the readers ignore), so the citable
+# answer surface reuses the distilled wanted-keys and block parser wholesale (#432).
+_ANSWER_CLAIMS_KEY_RE = re.compile(r"^answer_claims[ \t]*:[ \t]*$")
 # A YAML block-scalar header: `|` / `>` with an optional indent digit and/or
 # chomping indicator (`-`/`+`). The actual text lives on the following indented
 # lines, which this single-line parser does not assemble.
@@ -623,6 +628,19 @@ def parse_distilled_claims_with_id(page_text: str) -> list[dict]:
     return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS)
 
 
+def parse_answer_claims_with_id(page_text: str) -> list[dict]:
+    """Extract `[{claim_id, text}, …]` from a question node's `answer_claims:`
+    frontmatter block (written by question-store.py, #432). Byte-symmetric with
+    `parse_distilled_claims_with_id` — same block parser, same wanted-keys — only the
+    block key differs (`answer_claims:` vs `distilled_claims:`). The `claim_id` is an
+    `acl-NNN` (distinct from distilled `dcl-NNN` / source `clm-NNN`, so it never
+    collides), and an answer claim has NO `excerpt_quote`, so a caller using this for
+    substring matching takes `text` as the needle. The remaining writer-side metadata
+    (norm_key / backlinks / source_claim_refs / dates) stays question-store-private and
+    is ignored. Returns [] for any page without a parseable block (same fail-safe)."""
+    return _parse_claim_block(page_text, _ANSWER_CLAIMS_KEY_RE, _DISTILLED_ID_WANTED_KEYS)
+
+
 def classify_claim_kind(claim_id: str | None) -> str:
     """Classify a citation by its `claim_id` prefix — the per-kind measurement
     behind the distilled-citation rate. The prefix is the established, single-mint
@@ -634,7 +652,12 @@ def classify_claim_kind(claim_id: str | None) -> str:
     breakdown buckets:
 
       - `dcl-…` → `distilled`   - `clm-…` → `source`
-      - empty/None → `null`     - anything else → `other`
+      - `acl-…` → `answer`      - empty/None → `null`
+      - anything else → `other`
+
+    `acl-NNN` (answer-claim) ids are minted by `question-store.py answer-merge` for the
+    citable question-node answer surface (#432). Forward-ready: no `acl-` citation exists
+    until the composer is taught to prefer them (Slice 2), so this bucket reads 0 today.
     """
     if not claim_id:
         return "null"
@@ -642,6 +665,8 @@ def classify_claim_kind(claim_id: str | None) -> str:
         return "distilled"
     if claim_id.startswith("clm-"):
         return "source"
+    if claim_id.startswith("acl-"):
+        return "answer"
     return "other"
 
 
@@ -943,6 +968,34 @@ def digit_anchor_tokens(text: str) -> set:
 # `<source_slug>#<claim_id> | <claim text>`.
 
 
+def _split_claim_ref(value: str) -> dict:
+    """Split a provenance+text claim-ref line into `{source_slug, source_claim_id,
+    text}`. Two accepted forms, disambiguated by whether the FIRST `|`-segment carries
+    a `#` (slugs/claim-ids never contain `#`, so its presence unambiguously marks the
+    ref form). We split on `#`/`|` positionally — NOT `split("|", 2)` — so a claim text
+    containing ` | ` (common in regulatory prose: "Article 6 | paragraph 2") is
+    preserved verbatim in BOTH forms rather than mis-split into the provenance fields.
+        `<source_slug>#<claim_id> | <text…>`     (2-part ref form)
+        `<source_slug> | <claim_id> | <text…>`   (documented 3-part form)
+    Shared by `_absorb_concept_kv` (`claim:`) and `_absorb_answer_kv` (`answer_claim:`,
+    #432) so the partition discipline lives in exactly one place."""
+    first, sep, rest = value.partition("|")
+    if "#" in first:
+        src_slug, _, cid = first.partition("#")
+        ctext = rest if sep else ""
+    else:
+        src_slug = first
+        cid_part, sep2, ctext = rest.partition("|")
+        cid = cid_part
+        if not sep2:
+            ctext = ""  # only one `|` and no `#` → no text field → reject downstream
+    return {
+        "source_slug": src_slug.strip(),
+        "source_claim_id": cid.strip(),
+        "text": ctext.strip(),
+    }
+
+
 def _absorb_concept_kv(item: dict, kv: str) -> None:
     if ":" not in kv:
         return
@@ -958,29 +1011,7 @@ def _absorb_concept_kv(item: dict, kv: str) -> None:
     elif key == "related":
         item["related"] = [r.strip() for r in value.split(",") if r.strip()]
     elif key == "claim":
-        # Provenance + text. Two accepted forms, disambiguated by whether the
-        # FIRST `|`-segment carries a `#` (slugs/claim-ids never contain `#`, so
-        # its presence unambiguously marks the ref form). We split on `#`/`|`
-        # positionally — NOT `split("|", 2)` — so a claim text containing ` | `
-        # (common in regulatory prose: "Article 6 | paragraph 2") is preserved
-        # verbatim in BOTH forms rather than mis-split into the provenance fields.
-        #   `<source_slug>#<claim_id> | <text…>`     (2-part ref form)
-        #   `<source_slug> | <claim_id> | <text…>`   (documented 3-part form)
-        first, sep, rest = value.partition("|")
-        if "#" in first:
-            src_slug, _, cid = first.partition("#")
-            ctext = rest if sep else ""
-        else:
-            src_slug = first
-            cid_part, sep2, ctext = rest.partition("|")
-            cid = cid_part
-            if not sep2:
-                ctext = ""  # only one `|` and no `#` → no text field → reject downstream
-        item["claims"].append({
-            "source_slug": src_slug.strip(),
-            "source_claim_id": cid.strip(),
-            "text": ctext.strip(),
-        })
+        item["claims"].append(_split_claim_ref(value))
     # Unknown keys (e.g. the advisory `update:` flag) are ignored — the
     # created-vs-updated decision is made on-disk under the lock, not here.
 
@@ -1010,6 +1041,59 @@ def parse_concept_records(text: str) -> list[dict]:
                 _absorb_concept_kv(current, rest)
         elif current is not None:
             _absorb_concept_kv(current, lstripped)
+    if current is not None:
+        records.append(current)
+    return records
+
+
+# --- answer-records parser (used by question-store.py answer-merge, #432) ------
+# The `answer-distiller` agent (like concept-distiller / wiki-composer) has no Bash
+# and MUST NOT hand-build JSON/YAML. It writes raw-text answer records — one
+# `- question: <slug>` bullet per question node, with repeatable `answer_claim:` lines
+# whose value is the same `<source_slug> | <claim_id> | <text>` triple the claim bundle
+# carries. `question-store.py answer-merge` parses them via `parse_answer_records` and
+# owns all serialization + claim-dedup. Mirrors `parse_concept_records` exactly except
+# the grouping key is `question:` (the existing question slug, NOT a title to slugify).
+
+
+def _absorb_answer_kv(item: dict, kv: str) -> None:
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only — claim text contains ':'
+    key = key.strip().lower()
+    value = value.strip()
+    if key == "question":
+        item["slug"] = value
+    elif key == "answer_claim":
+        item["claims"].append(_split_claim_ref(value))
+    # Unknown keys are ignored — the answer slug is the existing question slug
+    # (never derived here) and dedup is question-store.py's job, not the parser's.
+
+
+def parse_answer_records(text: str) -> list[dict]:
+    """Parse an answer-distiller records file into a list of `{slug, claims[]}` dicts
+    (each claim `{source_slug, source_claim_id, text}`). A `- ` bullet starts a record;
+    the `question:` field may sit inline after the bullet. Repeatable `answer_claim:`
+    lines accumulate. Blank and `#`-comment lines are skipped. Indent-tolerant. A record
+    missing its `question:` is emitted with an empty slug (NOT dropped) so
+    `question-store.py` can surface it rather than silently lose an answer (#432)."""
+    records: list[dict] = []
+    current: dict | None = None
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
+        lstripped = raw.lstrip()
+        if not lstripped or lstripped.startswith("#"):
+            continue
+        if lstripped == "-" or lstripped.startswith("- "):
+            if current is not None:
+                records.append(current)
+            current = {"slug": "", "claims": []}
+            rest = lstripped[1:].strip()
+            if rest:
+                _absorb_answer_kv(current, rest)
+        elif current is not None:
+            _absorb_answer_kv(current, lstripped)
     if current is not None:
         records.append(current)
     return records
