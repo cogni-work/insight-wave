@@ -31,8 +31,9 @@ rolls back, or changes downstream behaviour.
   `Task(wiki-contradictor …)` dispatch. Skip-condition 3 widens: the agent is skipped only when BOTH
   the cited list AND the prior list are empty. New `--no-prior-syntheses` flag suppresses Pass B only
   (`--no-contradictor` still kills both). Step 11 splits the contradiction line into
-  `<n_cited> vs cited evidence` + `<n_prior> vs prior syntheses` (partitioned on `conflicting_claim_id`
-  null-ness), plus an independent `prior-synthesis comparison truncated at 20/<N>` cap line.
+  `<n_cited> vs cited evidence` + `<n_prior> vs prior syntheses` (partitioned by `conflicting_page`
+  membership in `compared_against.prior_syntheses[]` — robust against a Pass A `unknown` carrying a
+  null claim id), plus an independent `prior-synthesis comparison truncated at 20/<N>` cap line.
 - **Tests** — `tests/test_contradictor_contract.sh` flips the synthesis-vs-synthesis assertion to
   in-scope and adds the `PRIOR_SYNTHESIS_SLUGS` / `prior_syntheses` / null-`conflicting_claim_id` /
   scores-all / cross-language-relabel asserts; `tests/test_finalize_contract.sh` adds the threading,

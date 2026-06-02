@@ -249,8 +249,11 @@ assert_grep 'BOTH.*cited.*AND\|cited_source_slugs) == 0.*AND\|AND.*prior_synthes
 # Step 11 header splits into the two families.
 assert_grep 'vs prior syntheses' "$FIN" "knowledge-finalize: Step 11 contradiction line splits cited vs prior syntheses (#444)"
 assert_grep 'prior-synthesis comparison truncated at 20' "$FIN" "knowledge-finalize: Step 11 surfaces the prior-synthesis truncation line (#444)"
-# The cited-vs-prior partition is read off conflicting_claim_id null-ness.
-assert_grep 'conflicting_claim_id == null\|conflicting_claim_id` == `null`\|conflicting_claim_id is null' "$FIN" "knowledge-finalize: Step 10.6 partitions findings on conflicting_claim_id null-ness for the Step 11 split (#444)"
+# The cited-vs-prior partition is read off conflicting_page membership in
+# compared_against.prior_syntheses[] (the robust discriminator — a Pass A
+# unknown can carry a null conflicting_claim_id, so null-ness alone would
+# misroute it; the cited/prior slug sets are disjoint by page kind).
+assert_grep 'conflicting_page ∈ compared_against.prior_syntheses\|conflicting_page.*membership\|in `compared_against.prior_syntheses' "$FIN" "knowledge-finalize: Step 10.6 partitions findings by conflicting_page membership in prior_syntheses[] for the Step 11 split (#444)"
 
 # --- #309 P1.1 structural reviewer (Step 10.7, v0.1.28) ------------------
 # Advisory structural-quality tripwire — fail-soft, never blocks finalize.
