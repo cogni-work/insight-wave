@@ -245,6 +245,104 @@ OUT4="$(emit)"
   && green "PASS: legacy plan (no theme_label) falls back to sq-NN slug" \
   || { red "FAIL: expected sq-09.md fallback"; echo "$OUT4"; errors=$((errors+1)); }
 
+# ===== Lineage match (#409): variant theme_label routes to existing node ======
+# A binding pre-seeded with a covered_theme whose theme_key == the norm key of
+# "Records of Processing Scope" and question_slug == an EXISTING prior-run
+# question page. A plan whose theme_label is a VARIANT ("Scope of Processing
+# Records") must route to that same node (merge), NOT fork a second one — and
+# emit theme_bindings[].action == lineage_reused. Backward compat: a run WITHOUT
+# --binding stays byte-identical (slug-only accumulation).
+LINKB="$WORK/kb-binding.json"
+# Compute the canonical theme_key from the SSOT primitive (no hand-coding).
+TKEY="$(python3 -c "import sys; sys.path.insert(0,'$PLUGIN_ROOT/scripts'); from _knowledge_lib import theme_norm_key; print(theme_norm_key('Records of Processing Scope'))")"
+# A prior-run question node already on disk at the recorded slug.
+LSLUG="records-of-processing-scope"
+cat > "$WIKI/wiki/questions/$LSLUG.md" <<EOF
+---
+id: $LSLUG
+title: "Original prior-run question?"
+type: question
+tags: [question]
+created: 2025-12-01
+updated: 2025-12-01
+theme_label: "Records of Processing Scope"
+sub_question_id: sq-prior
+search_guidance: ""
+candidate_domains: []
+sources_answering: [records-scope]
+---
+
+## Findings
+
+- [[records-scope]]
+
+## Notes
+
+Prior-run human note that must survive the lineage merge.
+EOF
+python3 - "$LINKB" "$TKEY" "$LSLUG" <<'PY'
+import json, sys
+path, tkey, qslug = sys.argv[1], sys.argv[2], sys.argv[3]
+binding = {
+    "knowledge_slug": "kb", "topic_lineage": {
+        "covered_themes": [
+            {"theme_key": tkey, "question_slug": qslug,
+             "labels": ["Records of Processing Scope"],
+             "first_seen": "2025-12-01", "last_seen": "2025-12-01"}
+        ],
+        "open_themes": []},
+    "schema_version": "0.1.3",
+}
+json.dump(binding, open(path, "w"))
+PY
+# A plan with the VARIANT phrasing + a new finding (controller-obligations).
+cat > "$PROJ/.metadata/plan.json" <<'EOF'
+{"sub_questions":[
+  {"id":"sq-77","query":"Scope of records of processing, revisited?","search_guidance":"x",
+   "theme_label":"Scope of Processing Records","candidate_domains":["europa.eu"]}
+]}
+EOF
+cat > "$PROJ/.metadata/candidates.json" <<'EOF'
+{"schema_version":"0.1.0","candidates":[
+  {"url":"https://bfdi.bund.de/obligations","sub_question_refs":["sq-77"]}
+]}
+EOF
+cat > "$PROJ/.metadata/ingest-manifest.json" <<'EOF'
+{"schema_version":"0.1.0","ingested":[
+  {"url":"https://bfdi.bund.de/obligations","slug":"controller-obligations"}
+],"skipped":[]}
+EOF
+OUTL="$(python3 "$SCRIPT" emit \
+  --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+  --plan "$PROJ/.metadata/plan.json" \
+  --candidates "$PROJ/.metadata/candidates.json" \
+  --ingest-manifest "$PROJ/.metadata/ingest-manifest.json" \
+  --binding "$LINKB")"
+# Routed to the EXISTING node (merge), did NOT create a scope-of-processing-records page.
+echo "$OUTL" | grep -q '"action": "merged"' \
+  && green "PASS: variant theme_label lineage-merged into the existing node (action=merged)" \
+  || { red "FAIL: variant did not merge into the lineage node"; echo "$OUTL"; errors=$((errors+1)); }
+[ ! -f "$WIKI/wiki/questions/scope-of-processing-records.md" ] \
+  && green "PASS: did NOT fork a second node for the variant theme_label" \
+  || { red "FAIL: variant forked a second question node"; errors=$((errors+1)); }
+echo "$OUTL" | grep -q '"action": "lineage_reused"' \
+  && green "PASS: theme_bindings[] records action=lineage_reused" \
+  || { red "FAIL: no lineage_reused theme_binding emitted"; echo "$OUTL"; errors=$((errors+1)); }
+# created: preserved; human ## Notes tail survived; new finding unioned in.
+assert_grep 'created: 2025-12-01' "$WIKI/wiki/questions/$LSLUG.md" "lineage merge preserves created:"
+assert_grep 'Prior-run human note that must survive' "$WIKI/wiki/questions/$LSLUG.md" "lineage merge preserves human ## Notes tail"
+assert_grep '\[\[controller-obligations\]\]' "$WIKI/wiki/questions/$LSLUG.md" "lineage merge unions the new finding"
+
+# ===== Backward compat: emit WITHOUT --binding still works (slug-only) ========
+OUTNB="$(python3 "$SCRIPT" emit \
+  --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+  --plan "$PROJ/.metadata/plan.json" \
+  --candidates "$PROJ/.metadata/candidates.json" \
+  --ingest-manifest "$PROJ/.metadata/ingest-manifest.json")"
+echo "$OUTNB" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] and "theme_bindings" in d["data"] else 1)' \
+  && green "PASS: no-binding emit succeeds and still carries theme_bindings[] (back-compat)" \
+  || { red "FAIL: no-binding emit broke"; echo "$OUTNB"; errors=$((errors+1)); }
+
 if [ "$errors" -eq 0 ]; then
   green "ALL TESTS PASS"
   exit 0

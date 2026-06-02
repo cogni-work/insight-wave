@@ -1,5 +1,51 @@
 # cogni-knowledge changelog
 
+## 0.1.52 — 2026-06-02 — feat: question nodes compound across runs by theme lineage (closes #409)
+
+`knowledge-ingest` Step 4.5 (#407) promotes each `plan.sub_questions[]` into a `type: question` wiki node
+whose slug base is `slugify(theme_label)`. Cross-run accumulation only fired when two runs produced the
+**identical slug**, so a recurring theme phrased slightly differently across runs ("Records of Processing
+Scope" vs "Scope of Processing Records") slugified differently and forked a **second** question node instead
+of compounding into one — the opposite of the "knowledge compounds across runs" property the distilled
+concept/entity pages already have (#336).
+
+This couples question-node accumulation to `binding.json::topic_lineage.covered_themes[]` — a field that was
+initialized to `[]` at `knowledge-setup` but **read/written for logic nowhere**. The change both establishes
+the matching primitive and populates the field, scoped strictly to question-node lineage (`open_themes`, the
+`synthesis→question` link, question-anchored index grouping, and fuzzy/embedding matching all stay out of
+scope per the issue).
+
+- **`scripts/_knowledge_lib.py`** — new `theme_norm_key()`: an order- and stopword-independent token-set key
+  for a `theme_label`, built on the existing `tokenize()` SSOT (NFD fold, EN+DE `STOPWORDS`, stemming) so
+  DE/FR labels normalize identically. Deliberately **not** `norm_key`, which drops the coverage-tuned
+  `GENERIC_DENYLIST` and would false-merge distinct themes ("AI Act Scope" ≡ "AI System Scope" → "scope").
+  Conservative: exact token-set equality, no fuzzy threshold; empty/stopword-only → `""`.
+- **`scripts/question-store.py`** — optional `--binding` arg. When given, reads `covered_themes[]` into a
+  `theme_norm_key → question_slug` map; a sub-question whose theme key matches reuses the recorded slug as the
+  slug base, so a variant `theme_label` routes to the existing prior-run node (the enrich-on-collision union
+  fires). Slug-base precedence: lineage-match → `slugify(theme_label)` → `slugify(sqid)`/`sqid`. Emits a new
+  `data.theme_bindings[]` (`{theme_key, question_slug, theme_label, action ∈ lineage_reused|new_theme}`,
+  first-writer-wins per `theme_key` within a run, none for an empty key). **Read-only** — never writes the
+  binding. Omitting `--binding` is byte-identical to the pre-#409 path (full back-compat).
+- **`scripts/knowledge-binding.py`** — new `upsert-themes --records <file|->` subcommand (the **single
+  writer** of `covered_themes[]`): merges each `theme_bindings[]` record by `theme_key` (union `labels[]`,
+  bump `last_seen`, freeze `first_seen`, refresh `question_slug`) or appends a fresh entry. Liberal record
+  parsing (bare array / `{theme_bindings}` / full envelope). `SCHEMA_VERSION 0.1.2 → 0.1.3` (additive —
+  defines the `covered_themes` entry shape; pre-0.1.3 bindings carry `[]` and fall straight through).
+- **`skills/knowledge-ingest/SKILL.md`** — Step 4.5 sub-step 1 passes `--binding`; a new sub-step 5 "Record
+  theme lineage" serializes `theme_bindings[]` and calls `upsert-themes` (fail-soft, same posture as the
+  index/count sub-steps). Standing "Does NOT modify binding.json" note updated; theme counts surfaced in the
+  summary.
+- **`skills/knowledge-resume/SKILL.md`** — renders `covered_themes[]` entries by `labels[0]` (the entry shape
+  changed from `[]` to objects).
+- **Docs/version** — `CLAUDE.md` (script rows, binding schema block + 0.1.3 history, Step 4.5 desc);
+  `plugin.json` + `marketplace.json` `0.1.51 → 0.1.52`.
+- **Tests** — `test_knowledge_lib.sh` (`theme_norm_key` units incl. the keep-separate-vs-`norm_key`
+  sentinel); `test_question_store.sh` (lineage variant merges into the same node + no-`--binding` regression);
+  new `test_knowledge_binding.sh` (`upsert-themes` add-then-update, frozen `first_seen`, schema 0.1.3);
+  `test_ingest_contract.sh` (`--binding` + `upsert-themes` wiring); `test_binding_project_path.sh` +
+  `test_language_config_contract.sh` schema assertions bumped to 0.1.3.
+
 ## 0.1.43 — 2026-06-01 — feat: port cogni-research's preliminary/scoping search into knowledge-plan (closes #382)
 
 cogni-research's `research-report` runs a **Phase 0.5 preliminary search** — 2–3 broad `WebSearch`

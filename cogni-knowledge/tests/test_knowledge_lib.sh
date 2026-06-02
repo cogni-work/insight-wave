@@ -407,6 +407,30 @@ def assert_norm_key():
     assert kl.norm_key("") == ""
 
 
+def assert_theme_norm_key():
+    # Order- and stopword-independent token-set equality (#409): a recurring
+    # theme phrased differently across runs maps to ONE key → one question node.
+    assert kl.theme_norm_key("Records of Processing Scope") == \
+        kl.theme_norm_key("Scope of Processing Records"), \
+        (kl.theme_norm_key("Records of Processing Scope"),
+         kl.theme_norm_key("Scope of Processing Records"))
+    # DE transliteration + folding: "für" folds to a stopword, order ignored.
+    assert kl.theme_norm_key("Pflichten für Risikoklassen") == \
+        kl.theme_norm_key("Risikoklassen Pflichten"), \
+        repr(kl.theme_norm_key("Pflichten für Risikoklassen"))
+    # KEEP-SEPARATE guard — the whole reason it is NOT norm_key: the denylisted
+    # boilerplate tokens (act/system) are the discriminator between two distinct
+    # themes, so they MUST be kept. norm_key would collapse both to "scope".
+    assert kl.theme_norm_key("AI Act Scope") != kl.theme_norm_key("AI System Scope"), \
+        repr(kl.theme_norm_key("AI Act Scope"))
+    assert kl.norm_key("AI Act Scope") == kl.norm_key("AI System Scope"), \
+        "regression sentinel: norm_key DOES false-merge these (why theme uses tokenize)"
+    # Empty / stopword-only → "" so the caller falls back to slugify and never
+    # records an empty key that would match every empty-theme label.
+    assert kl.theme_norm_key("of the") == "", repr(kl.theme_norm_key("of the"))
+    assert kl.theme_norm_key("") == ""
+
+
 def assert_claim_similarity():
     # Identical discriminative content → 1.0.
     assert kl.claim_similarity("high-risk classification scope",
@@ -626,6 +650,7 @@ def assert_writer_quality_normalizers():
 
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
+check("theme_norm_key", assert_theme_norm_key)
 check("claim_similarity", assert_claim_similarity)
 check("parse_concept_records", assert_parse_concept_records)
 check("parse_citation_records", assert_parse_citation_records)
@@ -679,6 +704,7 @@ grade parse_distilled_claims_with_id "parse_distilled_claims_with_id — claim_i
 grade strip_inline_citation_markers "strip_inline_citation_markers — removes <sup>[N](url)</sup> / <sup>[N]</sup>, multiple markers, no-op when absent (#305 review)"
 grade tokenization_primitives "tokenization primitives (#336 lift) — fold/tokenize/token_weight/compound_match preserved from wiki-coverage.py"
 grade norm_key                "norm_key — same-fact-different-boilerplate collapse, sorted/deterministic, all-boilerplate→'' (#336)"
+grade theme_norm_key          "theme_norm_key — order/stopword-independent token-set, DE transliteration, KEEP-SEPARATE on denylist tokens (vs norm_key false-merge), empty→'' (#409)"
 grade claim_similarity        "claim_similarity — symmetric weighted-Jaccard, reworded-same≥0.85, distinct<0.85, all-boilerplate→0.0 (#336)"
 grade parse_concept_records   "parse_concept_records — concept/entity records, repeatable claim: lines, colon-in-summary, first-pipe split (#336)"
 grade parse_citation_records  "parse_citation_records — url: line parsed (#395, :// survives first-colon partition), absent url:→'', claim null→None"

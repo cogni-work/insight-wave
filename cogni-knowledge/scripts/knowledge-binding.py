@@ -2,10 +2,13 @@
 """
 knowledge-binding.py — read/write .cogni-knowledge/binding.json
 
-Three actions:
-  --init           create a new binding manifest
-  --append-project record a deposited cogni-research project
-  --read           emit the current binding manifest as JSON
+Four actions:
+  init           create a new binding manifest
+  append-project record a deposited cogni-research project
+  read           emit the current binding manifest as JSON
+  upsert-themes  merge question-node theme-lineage records into
+                 topic_lineage.covered_themes[] (#409; the single writer of
+                 that block — question-store.py only reads it)
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -29,13 +32,19 @@ from pathlib import Path
 # version surfaces re-align there (no field change — a deliberate milestone
 # re-alignment per references/absorption-roadmap.md M12). 0.1.1 added
 # research_defaults (knowledge-base-level market + output_language inherited by
-# knowledge-plan; #309 P1.2-rest). 0.1.2 is the next additive bump — it widens
-# research_defaults with the four writer-quality knobs (prose_density, tone,
-# citation_format, target_words; #309 P2). Pre-0.1.2 bindings have only the two
-# P1.2 keys (or no block at all); consumers MUST read the block with
-# .get("research_defaults", DEFAULT_RESEARCH_DEFAULTS) and each key with a
-# per-key .get(..., DEFAULT) so an older block falls straight through.
-SCHEMA_VERSION = "0.1.2"
+# knowledge-plan; #309 P1.2-rest). 0.1.2 widened research_defaults with the four
+# writer-quality knobs (prose_density, tone, citation_format, target_words;
+# #309 P2). Pre-0.1.2 bindings have only the two P1.2 keys (or no block at all);
+# consumers MUST read the block with .get("research_defaults",
+# DEFAULT_RESEARCH_DEFAULTS) and each key with a per-key .get(..., DEFAULT) so an
+# older block falls straight through. 0.1.3 is the next additive bump — it
+# DEFINES the topic_lineage.covered_themes[] entry shape (#409): the question-node
+# theme-lineage records {theme_key, question_slug, labels[], first_seen, last_seen}
+# written by the new `upsert-themes` subcommand so a recurring theme maps to one
+# persistent question node across runs. Pre-0.1.3 bindings carry covered_themes:
+# [] (init's default), so consumers reading
+# .get("topic_lineage", {}).get("covered_themes", []) fall straight through.
+SCHEMA_VERSION = "0.1.3"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -252,6 +261,97 @@ def cmd_append_project(args: argparse.Namespace) -> int:
     )
 
 
+def _load_theme_bindings(raw: str) -> list[dict]:
+    """Parse the question-store.py theme_bindings payload. Liberal in what it
+    accepts (the orchestrator may pipe the bare array, the `{theme_bindings: []}`
+    object, or question-store's full `{success, data: {theme_bindings: []}}`
+    envelope) so a small serialization choice upstream never silently drops the
+    records. Returns the list of `{theme_key, question_slug, theme_label}` dicts."""
+    doc = json.loads(raw)
+    if isinstance(doc, list):
+        return doc
+    if isinstance(doc, dict):
+        tbs = doc.get("theme_bindings")
+        if not isinstance(tbs, list):
+            tbs = (doc.get("data") or {}).get("theme_bindings")
+        if isinstance(tbs, list):
+            return tbs
+    return []
+
+
+def cmd_upsert_themes(args: argparse.Namespace) -> int:
+    """Merge question-node theme-lineage records into
+    topic_lineage.covered_themes[] (#409). The SOLE writer of that block —
+    question-store.py only reads it to route a recurring theme to its existing
+    node. Per record: find the covered_themes entry by theme_key; if present,
+    union theme_label into labels[] + bump last_seen (+ refresh question_slug);
+    else append a fresh {theme_key, question_slug, labels, first_seen, last_seen}.
+    first_seen is frozen on the original append."""
+    knowledge_root = Path(args.knowledge_root).resolve()
+
+    try:
+        binding = _read_binding(knowledge_root)
+    except FileNotFoundError as exc:
+        return _emit(False, error=str(exc))
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"binding.json is not valid JSON: {exc}")
+
+    try:
+        raw = sys.stdin.read() if args.records == "-" else Path(args.records).read_text(encoding="utf-8")
+    except OSError as exc:
+        return _emit(False, error=f"could not read --records: {exc}")
+    try:
+        records = _load_theme_bindings(raw)
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"--records is not valid JSON: {exc}")
+
+    today = _today()
+    lineage = binding.setdefault("topic_lineage", {})
+    covered = lineage.setdefault("covered_themes", [])
+    by_key = {e.get("theme_key"): e for e in covered if isinstance(e, dict) and e.get("theme_key")}
+
+    themes_added = 0
+    themes_updated = 0
+    for rec in records:
+        if not isinstance(rec, dict):
+            continue
+        tkey = rec.get("theme_key")
+        qslug = rec.get("question_slug")
+        label = rec.get("theme_label", "")
+        if not tkey or not qslug:
+            continue  # malformed record — skip rather than corrupt the block
+        entry = by_key.get(tkey)
+        if entry is None:
+            entry = {
+                "theme_key": tkey,
+                "question_slug": qslug,
+                "labels": [label] if label else [],
+                "first_seen": today,
+                "last_seen": today,
+            }
+            covered.append(entry)
+            by_key[tkey] = entry
+            themes_added += 1
+        else:
+            entry["question_slug"] = qslug
+            labels = entry.setdefault("labels", [])
+            if label and label not in labels:
+                labels.append(label)
+            entry["last_seen"] = today
+            themes_updated += 1
+
+    written = _write_binding(knowledge_root, binding)
+    return _emit(
+        True,
+        data={
+            "path": str(written),
+            "themes_added": themes_added,
+            "themes_updated": themes_updated,
+            "covered_themes_count": len(covered),
+        },
+    )
+
+
 def cmd_read(args: argparse.Namespace) -> int:
     knowledge_root = Path(args.knowledge_root).resolve()
     try:
@@ -356,6 +456,20 @@ def main(argv: list[str]) -> int:
         ),
     )
     p_append.set_defaults(func=cmd_append_project)
+
+    p_upsert = sub.add_parser(
+        "upsert-themes",
+        help="Merge question-node theme-lineage records into topic_lineage.covered_themes[] (#409)",
+    )
+    p_upsert.add_argument("--knowledge-root", required=True)
+    p_upsert.add_argument(
+        "--records",
+        required=True,
+        help="JSON file of question-store.py theme_bindings[] ('-' for stdin). "
+             "Accepts the bare array, {theme_bindings: []}, or the full "
+             "{success, data: {theme_bindings: []}} envelope.",
+    )
+    p_upsert.set_defaults(func=cmd_upsert_themes)
 
     p_read = sub.add_parser("read", help="Emit the binding manifest")
     p_read.add_argument("--knowledge-root", required=True)

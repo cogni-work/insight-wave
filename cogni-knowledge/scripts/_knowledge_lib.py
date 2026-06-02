@@ -871,6 +871,25 @@ def norm_key(text: str) -> str:
     return " ".join(toks)
 
 
+def theme_norm_key(text: str) -> str:
+    """Order- and stopword-independent token-set key for a theme_label.
+
+    The lineage-match key behind question-node cross-run accumulation (#409):
+    two theme_labels with the SAME non-empty key name the same recurring theme,
+    so a variant phrasing routes to the existing question node. Built on
+    `tokenize` (the SSOT fold/stopword/stem path) so DE/FR labels normalize
+    identically ("Pflichten für Risikoklassen" == "Risikoklassen Pflichten").
+
+    Deliberately NOT `norm_key`: that drops GENERIC_DENYLIST tokens (regulatory
+    boilerplate tuned for coverage scoring), which would FALSE-MERGE distinct
+    themes — "AI Act Scope" and "AI System Scope" both collapse to "scope".
+    `tokenize` keeps act/system, so the two stay separate (keep-on-doubt).
+
+    Empty / stopword-only input -> "" so the caller falls back to slugify and
+    NEVER records an empty key (which would match every empty-theme label)."""
+    return " ".join(sorted(tokenize(text)))
+
+
 def claim_similarity(a: str, b: str) -> float:
     """Symmetric weighted-Jaccard similarity of two claim texts in [0.0, 1.0].
 
