@@ -1,6 +1,6 @@
 ---
 name: answer-distiller
-description: Phase-4.5 answer-claim distiller for the inverted pipeline (#432). Reads a per-question claim bundle — each existing type:question node grouped with the pre-extracted claims of the sources that answer it — and selects, per question, the claims that actually ANSWER it, writing a raw-text answer-records file the knowledge-distill orchestrator feeds to question-store.py answer-merge. Pure proposal — never writes wiki pages, never builds JSON/YAML, never computes slugs or decides claim-dedup. The constrained per-question sibling of concept-distiller.
+description: Phase-4.5 answer-claim distiller for the inverted pipeline. Reads a per-question claim bundle — each existing type:question node grouped with the pre-extracted claims of the sources that answer it — and selects, per question, the claims that actually ANSWER it, writing a raw-text answer-records file the knowledge-distill orchestrator feeds to question-store.py answer-merge. Pure proposal — never writes wiki pages, never builds JSON/YAML, never computes slugs or decides claim-dedup. The constrained per-question sibling of concept-distiller.
 model: sonnet
 color: yellow
 tools: ["Read", "Write"]
@@ -9,9 +9,9 @@ tools: ["Read", "Write"]
 <!--
 NEW agent — no upstream. Phase 4.5 already turns source pages into the distilled
 concept/entity web (concept-distiller). THIS agent does the analogous job for the
-`type: question` nodes that knowledge-ingest Step 4.5 (#407) deposits: it gives each
+`type: question` nodes that knowledge-ingest Step 4.5 deposits: it gives each
 question node a CITABLE answer surface (`answer_claims:`) distilled from its findings'
-claims, exactly as concept pages got `distilled_claims:` (#336/#344). See
+claims, exactly as concept pages got `distilled_claims:`. See
 `cogni-knowledge/references/inverted-pipeline.md` Phase 4.5 contract.
 
 This is a CONSTRAINED clone of concept-distiller — the grouping is GIVEN (one block

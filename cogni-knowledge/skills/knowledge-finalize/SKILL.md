@@ -361,7 +361,7 @@ for c in manifest.get("citations", []) or []:
 # distilled dirs (concepts/entities/summaries/learnings — the composer cites
 # them with a dcl-NNN claim_id, no external URL), then wiki/questions/ (a
 # type:question node cited with an acl-NNN claim_id, no external URL — the 4th
-# evidence family, #432; INERT until the composer cites one in Slice 2).
+# evidence family; INERT until the composer is taught to cite one).
 # page_kind gates whether the reference row gets a bare [[<slug>]] backlink
 # below: a page that exists (source / synthesis / distilled / question) does;
 # a missing page (page_kind None) does not.
@@ -404,7 +404,7 @@ for idx, slug in enumerate(cited_slugs):
         ("entity", "entities"),
         ("summary", "summaries"),
         ("learning", "learnings"),
-        ("question", "questions"),  # 4th evidence family — answer_claims:, #432
+        ("question", "questions"),  # 4th evidence family — answer_claims:
     ):
         candidate = wiki_root / "wiki" / dirname / (slug + ".md")
         if candidate.is_file():
@@ -581,12 +581,12 @@ n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
 # contradictor compares against any page with a claim block:
 # pre_extracted_claims: (sources), distilled_claims: (the four distilled
 # kinds — concept/entity/summary/learning), or answer_claims: (question
-# nodes — #432). Synthesis-page citations are excluded (synthesis pages
+# nodes). Synthesis-page citations are excluded (synthesis pages
 # carry no claim block); missing pages (page_kind None) are excluded here
 # and reported via missing_pages[]. Var name kept (CITED_SOURCE_SLUGS) for
 # input-contract stability; the semantics cover source + distilled +
-# question slugs. INERT in Slice 1 — the composer cites no question node
-# until Slice 2, so `question` never appears in cited_source_slugs yet.
+# question slugs. INERT for now — the composer cites no question node yet,
+# so `question` never appears in cited_source_slugs until composer activation.
 _CLAIM_BEARING_KINDS = {"source", "concept", "entity", "summary", "learning", "question"}
 cited_source_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS]
 print(json.dumps({

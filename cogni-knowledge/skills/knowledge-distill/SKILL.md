@@ -346,16 +346,16 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py renarrate \
 
 ### 6.9. Answer-claim synthesis for question nodes (default-on, fail-soft)
 
-Gives each `type: question` node (deposited by `knowledge-ingest` Step 4.5, #407) a
+Gives each `type: question` node (deposited by `knowledge-ingest` Step 4.5) a
 **citable answer surface** — an `answer_claims:` frontmatter block distilled from the
 node's findings' `pre_extracted_claims:`, exactly as concept/entity pages got
-`distilled_claims:` (#336/#344). A question node becomes a first-class cross-source
-*answer unit* the composer can later cite and the verifier can score (#432). This step
+`distilled_claims:`. A question node becomes a first-class cross-source
+*answer unit* the composer can later cite and the verifier can score. This step
 needs **no** index/backlink/`entries_count` work — question nodes already exist and are
 indexed at ingest time; it only enriches their frontmatter.
 
 **Skip cleanly when** `<WIKI_ROOT>/wiki/questions/` does not exist or is empty (a base
-that predates #407, or a run with no question nodes) — jump to Step 7.
+that predates the question-node feature, or a run with no question nodes) — jump to Step 7.
 
 **a. Build the per-question claim bundle.** For each `wiki/questions/<slug>.md`, read its
 `sources_answering:` list and pull each listed source page's `pre_extracted_claims:`,
@@ -548,8 +548,8 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - **A concept slug collides with a hand-authored page (no MACHINE-OWNED sentinels).** `concept-store.py` skips it (`reason: no_sentinels_human_page`) and leaves the page untouched — we never clobber a page we did not author.
 - **Distiller proposed a concept but every claim was a re-run duplicate.** The page is `unchanged`; no index churn, no `entries_count` bump.
 - **Empty / claim-less sources.** Sources with no `pre_extracted_claims:` are omitted from the bundle; if the whole bundle is empty, the phase no-ops cleanly.
-- **No question nodes / base predates #407.** Step 6.9 finds no `wiki/questions/` dir (or no node with answerable claims) and self-skips cleanly (`n/a (no answerable question nodes)`) — no `answer_claims:` work, no error.
-- **Distill skipped entirely.** Question nodes keep only their `## Findings` + `## Notes` (framing-only) — byte-identical to pre-#432 behavior; the composer reads them framing-only either way (the citable path is Slice 2).
+- **No question nodes / base predates the question-node feature.** Step 6.9 finds no `wiki/questions/` dir (or no node with answerable claims) and self-skips cleanly (`n/a (no answerable question nodes)`) — no `answer_claims:` work, no error.
+- **Distill skipped entirely.** Question nodes keep only their `## Findings` + `## Notes` (framing-only) — byte-identical to behavior before the answer surface existed; the composer reads them framing-only either way (the citable path is a later activation step).
 - **Re-ingest before re-distill.** A later run's ingest `emit` re-renders the question frontmatter without `answer_claims:` (it has no such template field); Step 6.9 re-adds it the same run. Transiently framing-only between ingest and distill, restored by distill — never a lost-data state for a completed run.
 - **Single-language base (the norm).** Step 6.6's `xlingual-candidates` finds no pairs (same-language twins already collapsed in Step 6), so the cross-lingual pass self-skips with zero LLM cost — `n/a (no cross-lingual candidates)`. The feature only does work on a mixed DE↔EN base.
 

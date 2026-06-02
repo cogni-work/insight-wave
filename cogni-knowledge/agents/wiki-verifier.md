@@ -54,7 +54,7 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
    - `<WIKI_ROOT>/wiki/sources/<slug>.md` → `page_kind_by_slug[slug] = "source"`.
    - `<WIKI_ROOT>/wiki/syntheses/<slug>.md` → `page_kind_by_slug[slug] = "synthesis"`.
    - `<WIKI_ROOT>/wiki/concepts/<slug>.md` → `"concept"`; `…/entities/<slug>.md` → `"entity"`; `…/summaries/<slug>.md` → `"summary"`; `…/learnings/<slug>.md` → `"learning"` (the four **distilled** page kinds, citable).
-   - `<WIKI_ROOT>/wiki/questions/<slug>.md` → `"question"` (a `type: question` node carrying `answer_claims:` — the 4th evidence family, citable since #432).
+   - `<WIKI_ROOT>/wiki/questions/<slug>.md` → `"question"` (a `type: question` node carrying `answer_claims:` — the 4th evidence family, citable).
    - If none exists, record the slug in a `missing_pages` set — every citation pointing at it gets verdict `unsupported` with `reason: "page_not_found"` in Phase 1.
 
    The directory is the **only** authoritative signal for what a citation targets: first-class source evidence (`sources/`), cross-source framing (`syntheses/`), distilled cross-source evidence (`concepts/`/`entities/`/`summaries/`/`learnings/`), or a cross-source answer unit (`questions/`). Phase 1's `synthesis` verdict depends on this — do not infer page kind from `claim_id == null` alone (the composer emits `claim_id: null` on synthesis-page citations AND when it failed to find a matching claim on a source page; only the directory disambiguates).
