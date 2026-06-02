@@ -199,6 +199,35 @@ else
   red "FAIL: malformed-claim accounting"; echo "$OUT"; errors=$((errors+1))
 fi
 
+# --- 8. EMPTY-then-NONEMPTY: no empty block persisted, no duplicate key -------
+# A question whose distiller emitted NO answer_claim lines on one run, then real
+# claims on a later run. Run 1 must NOT persist an `answer_claims: []` block (which
+# would dodge the key-only regex and fork a SECOND top-level key on run 2's splice).
+write_q q-empty question ""
+cat > "$PROJ/.metadata/recempty.txt" <<'EOF'
+- question: q-empty
+EOF
+OUT=$(run "$PROJ/.metadata/recempty.txt")
+if [ "$(echo "$OUT" | field '["data"]["questions"][0]["action"]')" = "unchanged" ] \
+   && [ "$(echo "$OUT" | field '["data"]["questions"][0]["reason"]')" = "no_claims" ] \
+   && ! grep -q "answer_claims" "$WIKI/wiki/questions/q-empty.md"; then
+  green "PASS: zero-claim question stays framing-only (no empty answer_claims: [] block)"
+else
+  red "FAIL: empty answer_claims block was persisted"; echo "$OUT"; errors=$((errors+1))
+fi
+cat > "$PROJ/.metadata/recempty2.txt" <<'EOF'
+- question: q-empty
+  answer_claim: src-a | clm-001 | A real answer claim arrives on the second run.
+EOF
+OUT=$(run "$PROJ/.metadata/recempty2.txt")
+# Exactly ONE top-level answer_claims key in the frontmatter (no duplicate fork).
+N_KEYS=$(python3 -c 'import re,sys;t=open(sys.argv[1],encoding="utf-8").read();fm=re.match(r"^---\n(.*?)\n---",t,re.S).group(1);print(sum(1 for l in fm.splitlines() if l.startswith("answer_claims")))' "$WIKI/wiki/questions/q-empty.md")
+if [ "$(echo "$OUT" | field '["data"]["questions"][0]["action"]')" = "created_block" ] && [ "$N_KEYS" = "1" ]; then
+  green "PASS: later real claim creates exactly one answer_claims key (no duplicate-key fork)"
+else
+  red "FAIL: duplicate/again-empty answer_claims key (got $N_KEYS)"; echo "$OUT"; errors=$((errors+1))
+fi
+
 if [ $errors -gt 0 ]; then red "$errors case(s) failed."; exit 1; fi
 green ""
 green "All question-store.py answer-merge cases pass."

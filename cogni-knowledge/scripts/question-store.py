@@ -337,8 +337,15 @@ def _answer_merge_one(record: dict, wiki_root: Path, today: str,
         return _answer_result(slug, "skipped", reason="not_a_question_page")
 
     existing = _parse_answer_claims(text)
-    had_block = "answer_claims:" in text  # whether the page already carried the key
+    had_block = "answer_claims" in fm  # frontmatter-scoped (not a raw text scan, so a
+    # literal `answer_claims:` in the human ## Notes tail can't mislabel a first write)
     merged, stats = _merge_answer_claims(existing, record.get("claims", []), today)
+    if not merged:
+        # Nothing to persist. NEVER write an empty `answer_claims: []` block: the
+        # inline-`[]` render dodges the key-only `_ANSWER_CLAIMS_KEY_RE`, so a later
+        # re-splice would not find it and would fork a SECOND top-level `answer_claims`
+        # key (invalid YAML). A claimless question node simply stays framing-only.
+        return _answer_result(slug, "unchanged", reason="no_claims", stats=stats)
     new_text, changed = _splice_answer_claims(text, merged, today)
 
     if not changed:
