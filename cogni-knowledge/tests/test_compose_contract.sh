@@ -249,6 +249,16 @@ assert_grep 'not-yet-cited\|not yet cited' "$COMPOSER" "wiki-composer: expansion
 # Single-pass-per-dispatch invariant must survive: the agent never self-loops.
 assert_grep 'single pass per dispatch\|Single pass per dispatch\|single-pass per dispatch\|single pass: read baseline\|once in .EXPANSION_MODE.\|re-dispatch you exactly ONCE\|re-dispatch you ONCE\|re-dispatch you once' "$COMPOSER" "wiki-composer: stays single-pass per dispatch under EXPANSION_MODE (orchestrator drives the one re-dispatch, #384)"
 
+# --- #410 question-node framing-read (framing-only, never cited) ---------
+# Both the compose SKILL and the wiki-composer agent must document reading
+# wiki/questions/*.md as framing-only with an explicit never-cite guard (a
+# question node has no claim block, so an inline citation would be unsupported).
+assert_grep 'wiki/questions' "$COMPOSE" "knowledge-compose: documents reading wiki/questions/*.md (#410)"
+assert_grep 'framing-only\|framing AND\|framing only' "$COMPOSE" "knowledge-compose: question nodes are framing-only (#410)"
+assert_grep 'wiki/questions' "$COMPOSER" "wiki-composer: Phase 0 reads wiki/questions/*.md (#410)"
+assert_grep 'NEVER cite\|never cite\|never cited' "$COMPOSER" "wiki-composer: explicit never-cite guard on question nodes (#410)"
+assert_grep 'no claim block' "$COMPOSER" "wiki-composer: names the no-claim-block reason question nodes are uncitable (#410)"
+
 # --- Phase 5 contract token match ----------------------------------------
 # The inverted-pipeline.md Phase 5 contract names three reads and two
 # writes; the composer must mention all of them at least once.

@@ -318,6 +318,18 @@ assert_grep 'knowledge-refresh --resweep' "$FIN" "knowledge-finalize: Out of sco
 # Output block must list the two additive frontmatter keys as deliverables.
 assert_grep 'verification_ratio:' "$FIN" "knowledge-finalize: Output block lists the additive verification frontmatter keys (#337)"
 
+# --- #410 synthesis->question forward links ------------------------------
+# New Step 4.7 reads the ingest-time question-manifest.json handoff, builds
+# QUESTION_SLUGS_CSV, and the Step 5/6 subprocess appends a `## Research
+# questions` body section of bare [[slug]] forward links (existence-gated). The
+# reverse link is the existing Step 10.5 reverse_link_missing backfill (no new
+# code). --no-question-links opts out.
+assert_grep 'question-manifest.json' "$FIN" "knowledge-finalize: Step 4.7 reads the question-manifest.json handoff (#410)"
+assert_grep 'QUESTION_SLUGS_CSV' "$FIN" "knowledge-finalize: Step 4.7 builds + threads QUESTION_SLUGS_CSV (#410)"
+assert_grep '## Research questions' "$FIN" "knowledge-finalize: Step 5/6 appends the ## Research questions body section (#410)"
+assert_grep '\-\-no-question-links' "$FIN" "knowledge-finalize: --no-question-links opt-out documented (#410)"
+assert_grep 'n_question_links' "$FIN" "knowledge-finalize: subprocess emits n_question_links for the Step 11 summary (#410)"
+
 # --- Inverted-pipeline.md Phase 7 anchor ---------------------------------
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"
 assert_grep 'Phase 7 — `knowledge-finalize`' "$PIPELINE" "inverted-pipeline.md: Phase 7 section header anchored"

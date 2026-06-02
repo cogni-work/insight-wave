@@ -81,6 +81,10 @@ assert_grep '\-\-binding' "$INGEST" "knowledge-ingest: Step 4.5 passes --binding
 assert_grep 'theme_bindings' "$INGEST" "knowledge-ingest: Step 4.5 consumes theme_bindings[] (#409)"
 assert_grep 'upsert-themes' "$INGEST" "knowledge-ingest: Step 4.5 sub-step 5 calls knowledge-binding.py upsert-themes (#409)"
 assert_grep 'covered_themes' "$INGEST" "knowledge-ingest: Step 4.5 persists into topic_lineage.covered_themes[] (#409)"
+# #410: Step 4.5.1 persists the emit envelope's data.questions[] to
+# question-manifest.json as the phase handoff knowledge-finalize Step 4.7 reads to
+# forward-link the deposited synthesis to the research-question nodes it answers.
+assert_grep 'question-manifest.json' "$INGEST" "knowledge-ingest: Step 4.5.1 persists question-manifest.json handoff (#410)"
 assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Sources\" as the only category (#307; Sources is a fallback now)"
 # #324: Step 4.2 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "≤180 chars" authoring contract that caused the mid-word
