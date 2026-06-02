@@ -152,6 +152,8 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
 
    **Read-back verify the records.** `Read` `<PROJECT_PATH>/.metadata/citation-records-v{NEW_DRAFT_VERSION}.txt`; it must be non-empty with one `- id:` block per retained citation. If `Read` fails, returns empty, or has fewer blocks than retained, `Write` once more and re-verify; a second failure → return `write_failed`.
 
+   **Substring self-check the records against the edited draft (fail-fast before you return).** Using the `draft-v{NEW_DRAFT_VERSION}.md` you read back in step 2, confirm for **each** retained record that its `sentence:` value occurs **verbatim as a contiguous substring** of the edited draft. A rephrase/repoint that you forgot to mirror into the record, or a `sentence:` cut short of the span ending at its `</sup>` marker, is the drift to catch here. For any sentence you are unsure about, `Grep` the draft file for a distinctive slice. If any record's `sentence:` is **not** found contiguously, re-locate the true span (the contiguous prose ending at that record's marker in the draft you just `Edit`ed) and rewrite the record's `sentence:` to the verbatim span, then re-`Write` the records file and re-run this check. This is the in-agent fail-fast: the orchestrator's downstream `citation-store.py build` substring gate stays as the integrity backstop, but you should never be the thing that hard-stops it.
+
 4. **Return compact JSON** via the Task return envelope — and nothing else in your response body:
 
    ```json
