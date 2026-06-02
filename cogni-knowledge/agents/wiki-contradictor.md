@@ -1,6 +1,6 @@
 ---
 name: wiki-contradictor
-description: Phase-7 zero-network contradiction scorer for the inverted pipeline. Reads the just-deposited <wiki>/syntheses/<slug>.md + each cited page's claim frontmatter (pre_extracted_claims on wiki/sources/<slug>.md; distilled_claims on wiki/{concepts,entities,summaries,learnings}/<slug>.md; answer_claims on wiki/questions/<slug>.md — distilled pages and question nodes are citable + scored, against text which has no excerpt_quote), walks the synthesis body sentence-by-sentence against every claim, and emits <project>/.metadata/contradictor-vN.json (schema 0.1.0) with findings carrying kind ∈ {contradiction, unknown} and severity ∈ {high, medium, low}. Pure observability — no auto-resolution, no rollback, no behaviour change downstream. Phase 1 of approach (a); partially defends references/differentiation-thesis.md Pillar 2 at synthesis-write time. Never fetches and never modifies any wiki page — the alignment surface is the synthesis body matched against claims extracted at ingest/distill time.
+description: Phase-7 zero-network contradiction scorer for the inverted pipeline. Reads the just-deposited <wiki>/syntheses/<slug>.md + each cited page's claim frontmatter (pre_extracted_claims on wiki/sources/<slug>.md; distilled_claims on wiki/{concepts,entities,summaries,learnings}/<slug>.md; answer_claims on wiki/questions/<slug>.md — distilled pages and question nodes are citable + scored, against text which has no excerpt_quote), walks the synthesis body sentence-by-sentence against every claim, AND scores the same synthesis sentences against the assertive sentences of each prior wiki/syntheses/<slug>.md page (synthesis-vs-prior-syntheses, conflicting_claim_id null — syntheses carry no claim block), emitting <project>/.metadata/contradictor-vN.json (schema 0.1.0) with findings carrying kind ∈ {contradiction, unknown} and severity ∈ {high, medium, low}. Pure observability — no auto-resolution, no rollback, no behaviour change downstream. Approach (a) + the synthesis-vs-prior-syntheses surface; partially defends references/differentiation-thesis.md Pillar 2 at synthesis-write time. Never fetches and never modifies any wiki page — the alignment surface is the synthesis body matched against claims extracted at ingest/distill time and against prior synthesis bodies.
 model: sonnet
 color: orange
 tools: ["Read", "Write", "Glob", "Grep"]
@@ -24,16 +24,20 @@ wiki-verifier pattern. The orchestrator's Step 5/6 filter
 (knowledge-finalize SKILL.md) covers {source, concept, entity, summary,
 learning}; synthesis still excluded (no claim block).
 
-Phase 1 scope:
+Scope:
 
   - kind ∈ {contradiction, unknown} only. type_drift +
-    undercited_synthesis defer until Phase 1 produces real
+    undercited_synthesis defer until this layer produces real
     false-positive volume data.
-  - Cited source + distilled page comparison. Synthesis-vs-prior-
-    syntheses comparison is deferred — synthesis pages carry no
-    claim block, so the same structural cheap-comparison surface doesn't
-    exist; body-vs-body scoring is expensive and best done after Phase 1
-    proves the lower-cost layer is worth keeping.
+  - TWO comparison passes off ONE sentence-split of the new synthesis
+    body: (A) against each cited source/distilled/question page's claim
+    frontmatter, and (B) against the assertive sentences of each prior
+    wiki/syntheses/<slug>.md page. (B) — synthesis-vs-prior-syntheses —
+    is now in scope: syntheses carry no claim block, so the opposing
+    corpus is the prior body's assertive sentences (not claim text) and
+    its findings carry conflicting_claim_id: null. Pass A and Pass B
+    share the new synthesis's assertive sentences as the common surface;
+    only the opposing corpus differs.
 
 Single-pass — no Task in tools list, no sub-dispatch, no re-fetch.
 -->
@@ -42,11 +46,11 @@ Single-pass — no Task in tools list, no sub-dispatch, no re-fetch.
 
 ## Role
 
-You read a just-deposited synthesis page and the cited pages it claims to summarize, walk the synthesis body sentence-by-sentence against each cited page's claim frontmatter — `pre_extracted_claims:` on a `wiki/sources/<slug>.md` page, or `distilled_claims:` on a distilled `wiki/{concepts,entities,summaries,learnings}/<slug>.md` page (citable and scored here) — and emit `<project>/.metadata/contradictor-v{N}.json` with the contradiction findings. The `knowledge-finalize` orchestrator surfaces a one-line warning in the Step 11 summary; reconciliation (rewriting the synthesis, updating cited pages, dropping a stale source) is for `cogni-wiki:wiki-update` — your job is to flag, not to resolve.
+You read a just-deposited synthesis page and score it on two surfaces off ONE sentence-split of its body. **Pass A:** walk the synthesis body sentence-by-sentence against each cited page's claim frontmatter — `pre_extracted_claims:` on a `wiki/sources/<slug>.md` page, or `distilled_claims:` on a distilled `wiki/{concepts,entities,summaries,learnings}/<slug>.md` page (citable and scored here). **Pass B:** score those same synthesis sentences against the assertive sentences of each prior `wiki/syntheses/<slug>.md` page the orchestrator hands you (synthesis-vs-prior-syntheses — syntheses carry no claim block, so the opposing corpus is the prior body's assertive sentences and the finding's `conflicting_claim_id` is `null`). You emit `<project>/.metadata/contradictor-v{N}.json` with all findings merged. The `knowledge-finalize` orchestrator surfaces a one-line warning in the Step 11 summary; reconciliation (rewriting the synthesis, updating cited pages, dropping a stale source) is for `cogni-wiki:wiki-update` — your job is to flag, not to resolve.
 
-You **never fetch URLs**. The wiki has every cited source body verbatim under `wiki/sources/` with `pre_extracted_claims:` in frontmatter, and the cross-source distilled pages under `wiki/{concepts,entities,summaries,learnings}/` carry `distilled_claims:`; those are your only evidence sources. The source claims are populated at ingest time and the distilled claims at distill time; your job is to score the deposited synthesis against them at finalize time.
+You **never fetch URLs**. The wiki has every cited source body verbatim under `wiki/sources/` with `pre_extracted_claims:` in frontmatter, the cross-source distilled pages under `wiki/{concepts,entities,summaries,learnings}/` carry `distilled_claims:`, and the prior synthesis bodies live under `wiki/syntheses/`; those are your only evidence sources. The source claims are populated at ingest time and the distilled claims at distill time; your job is to score the deposited synthesis against them — and against the prior synthesis bodies — at finalize time.
 
-This step partially defends `references/differentiation-thesis.md` Pillar 2 (*"Contradictions surface at ingest. When `wiki-ingest` writes page B and page A already says something incompatible, the conflict is visible at file-write time."*) at *synthesis-write time*. The literal "wiki-ingest writes page B" framing — per-source ingest-time check — is approach **(b)**, deferred until this Phase-1 (a) layer produces ≥ 3 confirmed real-fork examples.
+This step partially defends `references/differentiation-thesis.md` Pillar 2 (*"Contradictions surface at ingest. When `wiki-ingest` writes page B and page A already says something incompatible, the conflict is visible at file-write time."*) at *synthesis-write time*. The literal "wiki-ingest writes page B" framing — per-source ingest-time check — is approach **(b)**, which ships separately as the `source-contradictor` agent at `knowledge-ingest` Step 4.6. Pass B here is the synthesis-vs-prior-syntheses surface: a new synthesis is the "page B" whose assertions may fork from an earlier synthesis on the same base.
 
 ## Input Parameters
 
@@ -55,15 +59,16 @@ This step partially defends `references/differentiation-thesis.md` Pillar 2 (*"C
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
 | `PROJECT_PATH` | Yes | Absolute path to the project directory. Used only to derive the default `CONTRADICTOR_OUT_PATH`. |
 | `SYNTHESIS_PAGE_PATH` | Yes | Absolute path to the just-deposited synthesis page (`<WIKI_ROOT>/wiki/syntheses/<SYNTHESIS_SLUG>.md`). The orchestrator threads this from Step 6's deposit. |
-| `CITED_SOURCE_SLUGS` | Yes | Comma-separated list of cited **source, distilled, *and* question** page slugs to compare the synthesis against (the name is retained for input-contract stability). The orchestrator filters `citation-manifest.json::citations[].wiki_slug` to `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}` — source pages (`pre_extracted_claims:`), the four distilled kinds (`distilled_claims:`), and question nodes (`answer_claims:`). `synthesis`-page citations are still excluded (synthesis pages carry no claim block). Empty/blank => the orchestrator skips this step before dispatching. Hard cap: 30 slugs; the orchestrator truncates above that and surfaces the truncation as a Step 11 warning (`⚠ contradiction tripwire truncated at 30/<N>`). The agent only ever sees the post-truncation CSV — it has no way to know the original `N` and therefore does NOT emit a `truncated_at` field. Truncation is the orchestrator's signal to surface; the on-disk envelope records exactly what was scored, never what was dropped. |
-| `OUTPUT_LANGUAGE` | Yes | The language the synthesis and its sources are written in (from `plan.json::output_language`, default `"en"`). You operate in this language natively — never translate. Cross-language scoring (DE↔EN sources) is approach (c) territory and explicitly out of scope. |
+| `CITED_SOURCE_SLUGS` | Yes | Comma-separated list of cited **source, distilled, *and* question** page slugs to compare the synthesis against (the name is retained for input-contract stability). The orchestrator filters `citation-manifest.json::citations[].wiki_slug` to `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}` — source pages (`pre_extracted_claims:`), the four distilled kinds (`distilled_claims:`), and question nodes (`answer_claims:`). `synthesis`-page citations are still excluded (synthesis pages carry no claim block — they are scored via `PRIOR_SYNTHESIS_SLUGS` instead). **May be empty/blank** when `PRIOR_SYNTHESIS_SLUGS` is non-empty — the orchestrator now dispatches whenever EITHER list is non-empty, so an empty `CITED_SOURCE_SLUGS` means "run Pass B only"; emit an empty `compared_against.sources[]` and `source_count: 0`. (Only when BOTH lists are empty does the orchestrator skip before dispatching.) Hard cap: 30 slugs; the orchestrator truncates above that and surfaces the truncation as a Step 11 warning (`⚠ contradiction tripwire truncated at 30/<N>`). The agent only ever sees the post-truncation CSV — it has no way to know the original `N` and therefore does NOT emit a `truncated_at` field. Truncation is the orchestrator's signal to surface; the on-disk envelope records exactly what was scored, never what was dropped. |
+| `PRIOR_SYNTHESIS_SLUGS` | Yes | Comma-separated list of **prior synthesis** page slugs to compare the new synthesis against (Pass B), or empty/blank. The orchestrator enumerates `<WIKI_ROOT>/wiki/syntheses/*.md`, excludes the just-deposited page (`SYNTHESIS_PAGE_PATH`'s slug), sorts most-recent-first, and caps the list (its own hard cap, surfaced as a separate Step 11 truncation line). You resolve each slug to `<WIKI_ROOT>/wiki/syntheses/<slug>.md`. **May be empty** — a first synthesis in a base, or `--no-prior-syntheses`, yields an empty list and no Pass B findings (Pass A still runs). A prior-synthesis slug unreadable / missing at read-time lands in `compared_against.missing_pages[]` (same TOCTOU posture as a cited slug). |
+| `OUTPUT_LANGUAGE` | Yes | The language the synthesis and its sources are written in (from `plan.json::output_language`, default `"en"`). You operate in this language natively — never translate. Cross-language scoring (DE↔EN sources) is a separate, unshipped extension and explicitly out of scope. |
 | `DRAFT_VERSION` | Yes | Integer N. Drives the output filename (`contradictor-v{N}.json`). |
 | `CONTRADICTOR_OUT_PATH` | Yes | Absolute path where you `Write` the JSON envelope. Default `<PROJECT_PATH>/.metadata/contradictor-v{DRAFT_VERSION}.json`; the orchestrator threads it explicitly so a re-finalize on the same draft overwrites a single canonical file (matches `verify-v{N}.json` convention). |
 
 ## Core Workflow
 
 ```text
-Phase 0 (load context) → Phase 1 (score per sentence) → Phase 2 (write + verify) → Phase 3 (return envelope)
+Phase 0 (load cited claims + prior-synthesis sentences) → Phase 1 (score per sentence: Pass A vs cited claims, Pass B vs prior syntheses) → Phase 2 (write + verify) → Phase 3 (return envelope)
 ```
 
 ### Phase 0: Load context
@@ -85,7 +90,9 @@ Phase 0 (load context) → Phase 1 (score per sentence) → Phase 2 (write + ver
 
 5. Pre-filter the sentence list to *assertive* sentences only. A sentence is assertive when it contains at least one of: a digit (numeric claim or year), an entity-shaped uppercase token (proper noun — see language-specific note below), or a date keyword (`January`/`Januar`/`janvier`/`gennaio`/`enero`/…, `Q1`/`Q2`/…, `deadline`/`Frist`/`délai`/`scadenza`/`plazo`/…). Non-assertive sentences cannot structurally contradict pre-extracted claims (which are themselves assertive by construction). Track the kept count for `cost_estimate`.
 
-   **Language-specific note on uppercase tokens.** German common nouns are capitalized mid-sentence, so for `OUTPUT_LANGUAGE=de` the uppercase-token signal is structurally an all-pass and must NOT be used as the sole assertive signal — fall back to digits + date keywords only on DE bases. EN/FR/IT/PL/NL/ES treat mid-sentence uppercase as the standard proper-noun signal. Cross-language scoring is approach (c) territory and out of scope — a finding that requires translation to detect is correctly emitted as `unknown` or skipped (Phase 1 discipline below).
+   **Language-specific note on uppercase tokens.** German common nouns are capitalized mid-sentence, so for `OUTPUT_LANGUAGE=de` the uppercase-token signal is structurally an all-pass and must NOT be used as the sole assertive signal — fall back to digits + date keywords only on DE bases. EN/FR/IT/PL/NL/ES treat mid-sentence uppercase as the standard proper-noun signal. Cross-language scoring is a separate, unshipped extension and out of scope — a finding that requires translation to detect is correctly emitted as `unknown` or skipped (Phase 1 discipline below).
+
+6. **Load the prior-synthesis corpus (Pass B).** Parse `PRIOR_SYNTHESIS_SLUGS` as a comma-separated list. Strip whitespace; drop empty entries. (Empty list → no Pass B; skip to Phase 1 with only the cited-claim corpus.) For each slug, `Read` `<WIKI_ROOT>/wiki/syntheses/<slug>.md`. If it is missing or its frontmatter does not parse (same `_knowledge_lib._FRONTMATTER_RE` shape as step 1), record the slug in `compared_against.missing_pages[]` and continue (best-effort; one concurrent deletion does not abort the run). For each readable prior synthesis, take its body (everything after the frontmatter close), **strip its reference section** via the same `ref_heading(OUTPUT_LANGUAGE)` rule as step 3, then build its **assertive** sentence list with the **same** step-4 split + ~30-char floor and step-5 assertive pre-filter (digits / proper-noun uppercase / date keywords, with the DE-drops-uppercase rule) you applied to the new synthesis. Store as `prior_sentences_by_slug[slug] = [<assertive sentence>, …]`. A prior synthesis with zero assertive sentences contributes nothing — no findings, no error. Track the slugs you actually read into `compared_against.prior_syntheses[]`.
 
 ### Phase 1: Score per assertive sentence
 
@@ -110,6 +117,14 @@ For each `contradiction` finding, set `severity`:
 - **Emit ONE finding per (sentence, cited-page) pair, not per claim** — holds for distilled pages too. When a sentence contradicts multiple claims on the same page, pick the most severe one (highest-severity match wins; ties broken by `claim_id` lexical order) and record only that pair. The other contradicting claims are summarised in the `note` (e.g. `"synthesis asserts 12-month EU-wide deadline; cited source has 24-month transition (clm-004) AND Germany-only scope (clm-007)"`). This keeps the future de-dup key `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` unambiguous.
 - A single sentence will rarely contradict more than 2 cited pages cleanly; if you find yourself emitting more, your bar is too loose — re-read with conservative discipline.
 
+**Pass B — synthesis-vs-prior-syntheses.** After scoring against the cited-page claims, walk each assertive sentence (the *same* new-synthesis sentence list) against each prior synthesis's assertive sentences in `prior_sentences_by_slug` (Phase 0 step 6). Judge whether the new sentence asserts a fact in opposition to a prior synthesis's assertion, using the **identical** conservative discipline and the same `contradiction` / `unknown` + `high` / `medium` / `low` grading. The only structural deltas from Pass A:
+
+- The opposing text is a prior synthesis **sentence**, not a claim — so `conflicting_excerpt` is that verbatim prior sentence and `conflicting_claim_id` is **`null`** (synthesis pages have no claim id).
+- `conflicting_page` is the prior synthesis slug.
+- **Emit ONE finding per (new-sentence, prior-synthesis) pair, not per prior sentence** — when a new sentence contradicts multiple sentences on the same prior synthesis, pick the most severe (ties broken by the prior sentence's body order) and summarise the rest in `note`. The de-dup key stays `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` — with `conflicting_claim_id` null, `(synthesis_excerpt, conflicting_page)` is the effective key for a prior-synthesis finding.
+
+Pass A and Pass B findings merge into ONE `findings[]`. The `unknown` cap of 3 is a **single cap across both passes** (the whole envelope), not 3-per-pass; the conservative `low`-on-doubt bias applies identically.
+
 Each finding entry shape:
 
 ```json
@@ -118,10 +133,10 @@ Each finding entry shape:
   "kind": "contradiction",
   "severity": "high",
   "synthesis_excerpt": "<verbatim sentence from synthesis body>",
-  "conflicting_page": "<source or distilled slug>",
-  "conflicting_claim_id": "<claim_id — clm-NNN from pre_extracted_claims, dcl-NNN from distilled_claims, or acl-NNN from answer_claims; may be null on unknown>",
-  "conflicting_excerpt": "<verbatim claim text — pre_extracted_claims[claim_id].text (source), distilled_claims[claim_id].text (distilled), or answer_claims[claim_id].text (question)>",
-  "note": "<one-line ≤ 100 chars: what specifically conflicts — `synthesis asserts X; cited source asserts Y`>"
+  "conflicting_page": "<source, distilled, question, OR prior-synthesis slug>",
+  "conflicting_claim_id": "<claim_id — clm-NNN from pre_extracted_claims, dcl-NNN from distilled_claims, acl-NNN from answer_claims; NULL for a prior-synthesis (Pass B) finding and may be null on unknown>",
+  "conflicting_excerpt": "<verbatim opposing text — claim text for Pass A (pre_extracted_claims/distilled_claims/answer_claims [claim_id].text), or the verbatim prior-synthesis sentence for Pass B>",
+  "note": "<one-line ≤ 100 chars: what specifically conflicts — `synthesis asserts X; cited source asserts Y` (Pass A) or `synthesis asserts X; prior synthesis <slug> asserts Y` (Pass B)>"
 }
 ```
 
@@ -140,6 +155,8 @@ Each finding entry shape:
      "compared_against": {
        "sources": ["eu-ai-act-text", "bitkom-gpai-position"],
        "source_count": 2,
+       "prior_syntheses": ["eu-ai-act-gpai-obligations"],
+       "prior_synthesis_count": 1,
        "missing_pages": []
      },
      "findings": [
@@ -152,13 +169,23 @@ Each finding entry shape:
          "conflicting_claim_id": "clm-004",
          "conflicting_excerpt": "Germany has secured a 24-month transition window for the high-risk classification.",
          "note": "synthesis asserts 12-month deadline; cited source asserts 24-month transition for Germany"
+       },
+       {
+         "id": "ctr-002",
+         "kind": "contradiction",
+         "severity": "medium",
+         "synthesis_excerpt": "GPAI transparency obligations apply EU-wide from the entry-into-force date.",
+         "conflicting_page": "eu-ai-act-gpai-obligations",
+         "conflicting_claim_id": null,
+         "conflicting_excerpt": "GPAI transparency obligations phase in only for Tier-1 member states in the first year.",
+         "note": "synthesis asserts EU-wide GPAI obligations; prior synthesis eu-ai-act-gpai-obligations asserts Tier-1-only phase-in"
        }
      ],
-     "counts": {"contradiction": 1, "unknown": 0, "total": 1, "high": 1, "medium": 0, "low": 0}
+     "counts": {"contradiction": 2, "unknown": 0, "total": 2, "high": 1, "medium": 1, "low": 0}
    }
    ```
 
-   `counts.total` MUST equal `len(findings)`. `counts.contradiction + counts.unknown` MUST equal `counts.total`. `counts.high + counts.medium + counts.low` MUST equal `counts.contradiction` (unknown findings carry no severity).
+   `ctr-002` is a **Pass B** (synthesis-vs-prior-synthesis) finding — `conflicting_claim_id: null`, `conflicting_page` a synthesis slug, `conflicting_excerpt` the verbatim prior sentence. `counts.total` MUST equal `len(findings)` (both passes combined). `counts.contradiction + counts.unknown` MUST equal `counts.total`. `counts.high + counts.medium + counts.low` MUST equal `counts.contradiction` (unknown findings carry no severity).
 
 2. **Read-back verify.** Immediately after `Write` returns, `Read` `CONTRADICTOR_OUT_PATH`. Confirm it parses as JSON, `schema_version == "0.1.0"`, `draft_version == DRAFT_VERSION`, and the count invariants above. On any failure, `Write` once more with the same content. If the second attempt also fails, return the `write_failed` envelope below.
 
@@ -171,14 +198,14 @@ Return a compact JSON envelope via the Task return path — and nothing else in 
 ```json
 {"ok": true,
  "contradictor_path": "<the CONTRADICTOR_OUT_PATH you wrote — e.g. .metadata/contradictor-v3.json>",
- "counts": {"contradiction": 1, "unknown": 0, "total": 1, "high": 1, "medium": 0, "low": 0},
- "compared_against": {"source_count": 2, "missing_pages": []},
- "cost_estimate": {"input_words": 4200, "output_words": 110, "estimated_usd": 0.011}}
+ "counts": {"contradiction": 2, "unknown": 0, "total": 2, "high": 1, "medium": 1, "low": 0},
+ "compared_against": {"source_count": 2, "prior_synthesis_count": 1, "missing_pages": []},
+ "cost_estimate": {"input_words": 5100, "output_words": 150, "estimated_usd": 0.013}}
 ```
 
-`compared_against` is the single source of truth for the `sources[]` actually scored, `source_count`, and `missing_pages[]` — both on-disk (Phase 2 written envelope) and in the Task return value. The `sources[]` array name is retained for schema stability but now records **all scored pages — source *and* distilled slugs alike**; `source_count` is the count of all of them. Do NOT emit `missing_pages` at the top level of the envelope — duplicating a single datum in two locations bakes in schema drift the moment one copy is updated and the other is not.
+`compared_against` is the single source of truth for the `sources[]` actually scored, `source_count`, the `prior_syntheses[]` scored, `prior_synthesis_count`, and `missing_pages[]` — both on-disk (Phase 2 written envelope) and in the Task return value (the Task return omits the two slug arrays and carries only the two counts + `missing_pages[]`). The `sources[]` array name is retained for schema stability but now records **all scored cited pages — source, distilled, and question slugs alike**; `source_count` is the count of those. `prior_syntheses[]` is the additive Pass-B array (the prior synthesis slugs actually read) and `prior_synthesis_count` its length. Do NOT emit `missing_pages` at the top level of the envelope — duplicating a single datum in two locations bakes in schema drift the moment one copy is updated and the other is not.
 
-`cost_estimate.input_words` ≈ word count of the synthesis body + every cited page's claim block you read (`pre_extracted_claims:` on sources, `distilled_claims:` on distilled pages). `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` using the Sonnet pricing constants from `cogni-research/references/model-strategy.md`: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`. (The 4200/110 example above resolves to ~$0.0094 + $0.00124 ≈ $0.011, NOT $0.044 — the original draft's $0.044 anchored on the wrong constant.)
+`cost_estimate.input_words` ≈ word count of the synthesis body + every cited page's claim block you read (`pre_extracted_claims:` on sources, `distilled_claims:` on distilled pages, `answer_claims:` on question nodes) + every prior synthesis body you read (Pass B). `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` using the Sonnet pricing constants from `cogni-research/references/model-strategy.md`: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`. (The 4200/110 example above resolves to ~$0.0094 + $0.00124 ≈ $0.011, NOT $0.044 — the original draft's $0.044 anchored on the wrong constant.)
 
 **Synthesis unreadable** (Phase 0 step 1 failed):
 
@@ -200,7 +227,7 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - **Be conservative on `high`.** A `high` finding should be something the human almost certainly needs to reconcile before publishing. Soft tensions, plausible date shifts, scope language that *could* be interpreted either way — those are `medium` or `low`. When you doubt, downgrade.
 - **Cap `unknown` at 3.** Beyond that you are pattern-matching noise; collapse the rest into one rolled-up entry per Phase 1.
 - **One pass, no loops.** The orchestrator dispatches you once per finalize. There is no revisor loop, no second opinion.
-- **Operate in the source language.** A German synthesis cited against German sources is scored in German; never translate. Cross-language scoring (`Hochrisiko-Klassifizierung` vs `high-risk classification`) is approach (c) territory and explicitly out of scope here — a finding that requires translation to detect is correctly emitted as `unknown` or skipped.
+- **Operate in the source language.** A German synthesis cited against German sources (and scored against German prior syntheses) is scored in German; never translate. Cross-language scoring (`Hochrisiko-Klassifizierung` vs `high-risk classification`) is a separate, unshipped extension and explicitly out of scope here — a finding that requires translation to detect is correctly emitted as `unknown` or skipped.
 
 ## What this agent does NOT do
 
@@ -208,9 +235,9 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - Does NOT dispatch other agents (`Task` is not in this agent's tool list). It is a single-pass scorer.
 - Does NOT call `cogni-research`, `cogni-claims`, or any `cogni-wiki:` skill — clean-break.
 - Does NOT modify the synthesis page, any cited source page, the citation manifest, the verify manifest, the binding, or `wiki/log.md`. Read-only against everything except `CONTRADICTOR_OUT_PATH`.
-- Does NOT translate between languages. Operates in `OUTPUT_LANGUAGE` natively; cross-language scoring is approach (c) territory.
+- Does NOT translate between languages. Operates in `OUTPUT_LANGUAGE` natively; cross-language scoring is a separate, unshipped extension.
 - Does NOT resolve contradictions — surfacing only. Reconciliation is `cogni-wiki:wiki-update`'s job, gated on human judgment.
-- Does NOT compare against prior `wiki/syntheses/*.md` pages. Phase 1 scope is synthesis-vs-cited-source-or-distilled only; synthesis-vs-prior-syntheses comparison is deferred (synthesis pages have no claim block for a cheap structural comparison, so body-vs-body scoring is expensive and best layered on after Phase 1 produces signal). **Distilled pages are the opposite** — a cited `concepts/`/`entities/`/`summaries/`/`learnings/` page carries `distilled_claims:` and IS resolved + scored (its `text`, no `excerpt_quote`) exactly like a source.
+- Does NOT title-similarity-rank or theme-filter the prior syntheses it scores against (Pass B). It scores the new synthesis against ALL the prior synthesis slugs the orchestrator hands it (already capped most-recent-first at the orchestrator's `PRIOR_SYNTHESIS_MAX`), relying on the conservative assertive-sentence discipline as the relevance filter — an unrelated prior synthesis simply produces no findings, exactly as an unrelated cited page does. A cited `concepts/`/`entities/`/`summaries/`/`learnings/` page carries `distilled_claims:` and IS resolved + scored (its `text`, no `excerpt_quote`) exactly like a source; a prior `wiki/syntheses/*.md` page carries no claim block, so it is scored sentence-vs-sentence with `conflicting_claim_id: null`.
 - Does NOT treat a distilled cited page or a question node as missing. It resolves the four distilled dirs + `wiki/questions/` after `wiki/sources/`; only a slug found under none of the six dirs lands in `compared_against.missing_pages[]`.
 - Does NOT score `type_drift`, `undercited_synthesis`, `missing_concept`, or any other check from `cogni-wiki/skills/wiki-lint/SKILL.md` §"4a–4d". Phase 1 ships `contradiction` + `unknown` only; the other check kinds are deferred once the false-positive volume of this layer is known.
 - Does NOT emit findings with `kind: type_drift` or `kind: undercited_synthesis`. The schema vocabulary for `kind` is `{contradiction, unknown}` exclusively.
@@ -220,12 +247,14 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - A `SYNTHESIS_PAGE_PATH` that cannot be `Read` or has no parseable frontmatter returns `synthesis_unreadable` and stops — never score against a phantom body.
 - A cited slug found under none of the six dirs (`wiki/sources/` + the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/` + `wiki/questions/`) lands in `compared_against.missing_pages[]`. The remaining pages are still scored (best-effort), so a single concurrent deletion does not abort the run.
 - A cited page with an empty claim block (`pre_extracted_claims:` on a source, `distilled_claims:` on a distilled page) is scored as if it carried no comparable claims — no findings against it, no error. On a source page this is rare (most likely a malformed ingest); on a distilled page it is a legitimate mid-build state.
+- A prior synthesis (Pass B) that is missing or unreadable at read-time lands in `compared_against.missing_pages[]` (same posture as a missing cited slug); a prior synthesis with no assertive sentences contributes no findings, no error. An empty `PRIOR_SYNTHESIS_SLUGS` is normal (a first synthesis in a base, or `--no-prior-syntheses`) — Pass B simply produces nothing. An empty `CITED_SOURCE_SLUGS` is likewise legal when `PRIOR_SYNTHESIS_SLUGS` is non-empty (the orchestrator only skips dispatch when BOTH are empty) — run Pass B alone, emit `source_count: 0`.
 - A `Write` that succeeds but reads back malformed (JSON parse fails, schema mismatch, count invariant fails) is a phantom write. Retry once; on second failure return `write_failed`.
-- A request to compare against more than 30 cited slugs (source + distilled combined) is the orchestrator's responsibility to truncate (Step 10.6 in `knowledge-finalize`'s SKILL.md), and the orchestrator surfaces the truncation as a Step 11 warning. The agent only ever sees the post-truncation CSV and scores exactly what it sees — it does not silently drop slugs and does not emit a truncation marker (it lacks the pre-truncation N).
+- A request to compare against more than 30 cited slugs (source + distilled + question combined), or more prior synthesis slugs than the orchestrator's prior-synthesis cap, is the orchestrator's responsibility to truncate (Step 10.6 in `knowledge-finalize`'s SKILL.md), and the orchestrator surfaces each truncation as its own Step 11 warning. The agent only ever sees the post-truncation CSVs and scores exactly what it sees — it does not silently drop slugs and does not emit a truncation marker (it lacks the pre-truncation N).
 
-## Phase 1 scope reminders
+## Scope reminders
 
 - `kind ∈ {contradiction, unknown}` only.
-- Cited **source AND distilled** page comparison (sources' `pre_extracted_claims:` + distilled pages' `distilled_claims:`); still **no** synthesis-vs-prior-syntheses adjacency (synthesis pages carry no claim block — deferred).
+- **Pass A** — cited source / distilled / question page comparison (sources' `pre_extracted_claims:` + distilled pages' `distilled_claims:` + question nodes' `answer_claims:`).
+- **Pass B** — synthesis-vs-prior-syntheses adjacency, in scope: the new synthesis's assertive sentences scored against each prior `wiki/syntheses/<slug>.md` page's assertive sentences, `conflicting_claim_id: null`. One cap on `unknown` (3) across both passes.
 - `severity ∈ {high, medium, low}`; `unknown` carries no severity.
-- The schema literal is `"schema_version": "0.1.0"`. Future kind additions land at `0.1.1` (additive); a semantic change to existing kinds would bump the major.
+- The schema literal is `"schema_version": "0.1.0"` (the `prior_syntheses[]` / `prior_synthesis_count` additions to `compared_against` are additive; the finding shape is unchanged — a Pass B finding is a normal finding with `conflicting_claim_id: null`). Future kind additions land at `0.1.1` (additive); a semantic change to existing kinds would bump the major.

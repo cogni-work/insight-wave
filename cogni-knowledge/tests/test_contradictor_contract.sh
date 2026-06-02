@@ -90,13 +90,37 @@ else
   errors=$((errors + 1))
 fi
 
-# Phase 1 scope discipline — the deferred kinds must be EXPLICITLY named
-# as out-of-scope so a future maintainer doesn't quietly add them without
+# Scope discipline — the deferred kinds must be EXPLICITLY named as
+# out-of-scope so a future maintainer doesn't quietly add them without
 # bumping the schema or revisiting cost.
-assert_grep 'type_drift' "$CTR" "wiki-contradictor: names type_drift as deferred (Phase 1 scope discipline)"
-assert_grep 'undercited_synthesis' "$CTR" "wiki-contradictor: names undercited_synthesis as deferred (Phase 1 scope discipline)"
-# Source-only comparison — synthesis-vs-synthesis is out of scope.
-assert_grep 'synthesis-vs-prior-syntheses\|synthesis-vs-synthesis\|prior `wiki/syntheses/' "$CTR" "wiki-contradictor: names synthesis-vs-synthesis as out of scope (Phase 1)"
+assert_grep 'type_drift' "$CTR" "wiki-contradictor: names type_drift as deferred (scope discipline)"
+assert_grep 'undercited_synthesis' "$CTR" "wiki-contradictor: names undercited_synthesis as deferred (scope discipline)"
+
+# --- #444 synthesis-vs-prior-syntheses (approach (c), Pass B) -------------
+# Pass B is now IN scope: the agent scores the new synthesis's assertive
+# sentences against each prior synthesis's assertive sentences. The contract:
+# a new PRIOR_SYNTHESIS_SLUGS input, an additive compared_against.prior_syntheses
+# / prior_synthesis_count, and prior-synthesis findings carrying a NULL
+# conflicting_claim_id (syntheses have no claim block).
+assert_grep 'PRIOR_SYNTHESIS_SLUGS' "$CTR" "wiki-contradictor: documents the PRIOR_SYNTHESIS_SLUGS input (#444)"
+assert_grep 'prior_syntheses' "$CTR" "wiki-contradictor: compared_against carries prior_syntheses[] (#444)"
+assert_grep 'prior_synthesis_count' "$CTR" "wiki-contradictor: compared_against carries prior_synthesis_count (#444)"
+# A Pass B finding's conflicting_claim_id must be null. Match either the JSON
+# example (conflicting_claim_id": null) or the prose ("conflicting_claim_id: null"
+# / "conflicting_claim_id` is `null`").
+assert_grep 'conflicting_claim_id": null\|conflicting_claim_id: null\|conflicting_claim_id` is `null`\|conflicting_claim_id.*null' "$CTR" "wiki-contradictor: prior-synthesis findings carry a null conflicting_claim_id (#444)"
+# The Pass-B corpus is the prior synthesis BODY's assertive sentences (a
+# sentence-vs-sentence comparison), not claim text — name the surface.
+assert_grep 'assertive sentence' "$CTR" "wiki-contradictor: Pass B compares assertive sentence vs assertive sentence (#444)"
+assert_grep 'wiki/syntheses/' "$CTR" "wiki-contradictor: Pass B resolves prior wiki/syntheses/ pages (#444)"
+# Decision: scores ALL prior syntheses (capped), no similarity/theme pre-rank.
+assert_grep 'title-similarity-rank\|theme-filter\|scores.*ALL.*prior' "$CTR" "wiki-contradictor: scores ALL prior syntheses (capped), no title-similarity/theme pre-rank (#444 decision #2)"
+# The old cross-language "(c)" collision must be gone — cross-language scoring
+# is relabelled as a separate/unshipped extension (since (c) now means the
+# prior-synthesis surface). A revert to the "approach (c)" cross-language
+# wording trips this.
+assert_grep 'separate, unshipped extension\|separate.*unshipped\|unshipped extension' "$CTR" "wiki-contradictor: cross-language scoring relabelled (no longer 'approach (c)') (#444 de-collision)"
+assert_not_grep 'approach (c) territory' "$CTR" "wiki-contradictor: no stale 'approach (c) territory' cross-language label remains (#444 de-collision)"
 
 # Pillar 2 framing — the agent must be honest about partial defense.
 assert_grep 'partially defend\|Partially defends\|partial.*defend' "$CTR" "wiki-contradictor: honest about partial Pillar 2 defense"

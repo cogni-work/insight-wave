@@ -188,9 +188,13 @@ assert_grep '### 10.6 Contradiction tripwire' "$FIN" "knowledge-finalize: Step 1
 # Fail-soft framing — must be explicit so a future maintainer doesn't
 # tighten Step 10.6 into a blocking gate.
 assert_grep 'observability-only\|non-fatal\|never rolls back\|never blocks' "$FIN" "knowledge-finalize: Step 10.6 documented as fail-soft / observability-only (#335)"
-# Skip conditions — all three must be documented in the SKILL.
+# Skip conditions — the --no-contradictor + both-empty skip paths must be
+# documented. #444 widened skip-condition 3: the agent is now skipped only when
+# BOTH the cited list AND the prior-synthesis list are empty (a 2nd+ synthesis
+# with no claim-bearing cited peers still runs Pass B), so the empty-manifest
+# message became the both-empty message.
 assert_grep 'Contradiction tripwire skipped: --no-contradictor' "$FIN" "knowledge-finalize: Step 10.6 documents --no-contradictor skip path (#335)"
-assert_grep 'Contradiction tripwire skipped: empty citation manifest' "$FIN" "knowledge-finalize: Step 10.6 documents empty-citation-manifest skip path (#335)"
+assert_grep 'Contradiction tripwire skipped: no claim-bearing cited peers and no prior syntheses' "$FIN" "knowledge-finalize: Step 10.6 documents the both-empty skip path (#444)"
 # Step 11 surfaces the tripwire line — must mention the prefix so the
 # operator-visible warning shape is anchored.
 assert_grep 'Contradiction tripwire: ' "$FIN" "knowledge-finalize: Step 11 final summary surfaces Contradiction tripwire line (#335)"
@@ -223,6 +227,33 @@ assert_grep '"source", "concept", "entity", "summary", "learning", "question"' "
 assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
 # References block must include the new agent.
 assert_grep 'agents/wiki-contradictor.md' "$FIN" "knowledge-finalize: References block points at agents/wiki-contradictor.md (#335)"
+
+# --- #444 synthesis-vs-prior-syntheses (approach (c)) --------------------
+# Step 10.6 now runs TWO comparison passes off one dispatch: Pass A
+# (synthesis-vs-cited, existing) + Pass B (synthesis-vs-prior-syntheses, new).
+# The orchestrator enumerates prior synthesis slugs, threads PRIOR_SYNTHESIS_SLUGS
+# into the single Task(wiki-contradictor ...) call, and splits the Step 11 line.
+# New finer opt-out --no-prior-syntheses suppresses Pass B while Pass A runs.
+assert_grep '\-\-no-prior-syntheses' "$FIN" "knowledge-finalize: --no-prior-syntheses opt-out flag documented in Parameters table (#444)"
+# The single dispatch threads the new input (anchor the literal param so a
+# maintainer can't drop the threading while keeping the prose).
+assert_grep 'PRIOR_SYNTHESIS_SLUGS=' "$FIN" "knowledge-finalize: Step 10.6 threads PRIOR_SYNTHESIS_SLUGS into the Task(wiki-contradictor ...) dispatch (#444)"
+# Prior-synthesis enumeration: glob wiki/syntheses, exclude self, cap at 20.
+assert_grep 'PRIOR_SYNTHESIS_MAX=20' "$FIN" "knowledge-finalize: Step 10.6 caps the prior-synthesis enumeration at PRIOR_SYNTHESIS_MAX=20 (#444)"
+assert_grep 'wiki.*syntheses.*glob\|syn_dir.*glob\|glob("\*.md")' "$FIN" "knowledge-finalize: Step 10.6 globs wiki/syntheses for prior pages (#444)"
+assert_grep 'p.stem == self_slug\|exclude.*just-deposited\|excludes the just-deposited' "$FIN" "knowledge-finalize: Step 10.6 excludes the just-deposited synthesis from the prior-synthesis enumeration (#444)"
+assert_grep 'PRIOR_SYNTHESIS_SLUGS_CSV' "$FIN" "knowledge-finalize: Step 10.6 builds PRIOR_SYNTHESIS_SLUGS_CSV (#444)"
+# Widened skip-condition 3: skip only when BOTH lists are empty (the agent runs
+# Pass B alone when cited is empty but prior is not).
+assert_grep 'BOTH.*cited.*AND\|cited_source_slugs) == 0.*AND\|AND.*prior_synthesis_slugs' "$FIN" "knowledge-finalize: Step 10.6 skips only when BOTH cited and prior lists are empty (#444)"
+# Step 11 header splits into the two families.
+assert_grep 'vs prior syntheses' "$FIN" "knowledge-finalize: Step 11 contradiction line splits cited vs prior syntheses (#444)"
+assert_grep 'prior-synthesis comparison truncated at 20' "$FIN" "knowledge-finalize: Step 11 surfaces the prior-synthesis truncation line (#444)"
+# The cited-vs-prior partition is read off conflicting_page membership in
+# compared_against.prior_syntheses[] (the robust discriminator — a Pass A
+# unknown can carry a null conflicting_claim_id, so null-ness alone would
+# misroute it; the cited/prior slug sets are disjoint by page kind).
+assert_grep 'conflicting_page ∈ compared_against.prior_syntheses\|conflicting_page.*membership\|in `compared_against.prior_syntheses' "$FIN" "knowledge-finalize: Step 10.6 partitions findings by conflicting_page membership in prior_syntheses[] for the Step 11 split (#444)"
 
 # --- #309 P1.1 structural reviewer (Step 10.7, v0.1.28) ------------------
 # Advisory structural-quality tripwire — fail-soft, never blocks finalize.
