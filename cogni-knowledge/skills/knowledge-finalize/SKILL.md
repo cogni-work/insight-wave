@@ -551,9 +551,11 @@ page_text = (
 # citation manifest, so cycle-guard (which walks only those two) cannot see them.
 question_slugs_csv = os.environ.get("QUESTION_SLUGS_CSV", "")
 question_links = []
+seen_questions = set()  # dedupe (same idiom as cited_slugs above) — defensive
 for qslug in (s.strip() for s in question_slugs_csv.split(",")):
-    if not qslug:
+    if not qslug or qslug in seen_questions:
         continue
+    seen_questions.add(qslug)
     if (wiki_root / "wiki" / "questions" / (qslug + ".md")).is_file():
         question_links.append(qslug)
 if question_links:
