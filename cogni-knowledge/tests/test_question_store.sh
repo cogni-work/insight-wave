@@ -333,6 +333,42 @@ assert_grep 'created: 2025-12-01' "$WIKI/wiki/questions/$LSLUG.md" "lineage merg
 assert_grep 'Prior-run human note that must survive' "$WIKI/wiki/questions/$LSLUG.md" "lineage merge preserves human ## Notes tail"
 assert_grep '\[\[controller-obligations\]\]' "$WIKI/wiki/questions/$LSLUG.md" "lineage merge unions the new finding"
 
+# ===== Fail-soft binding read error (#426): degrade to slug-only success ======
+# A corrupt / unreadable --binding must NOT abort emit — lineage is an
+# enhancement layer, so a binding read failure degrades to slug-only
+# accumulation (empty map) and surfaces the reason as data.binding_skipped.
+# Reuses the variant plan/candidates/manifest from the lineage block above
+# (still produces >=1 question page routing into $LSLUG by slug).
+
+# -- Corrupt-JSON arm (JSONDecodeError) --
+printf 'not json{' > "$WORK/corrupt-binding.json"
+OUTCB="$(python3 "$SCRIPT" emit \
+  --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+  --plan "$PROJ/.metadata/plan.json" \
+  --candidates "$PROJ/.metadata/candidates.json" \
+  --ingest-manifest "$PROJ/.metadata/ingest-manifest.json" \
+  --binding "$WORK/corrupt-binding.json")"
+echo "$OUTCB" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] and d["data"].get("binding_skipped") else 1)' \
+  && green "PASS: corrupt --binding degrades to success + data.binding_skipped (no abort)" \
+  || { red "FAIL: corrupt --binding did not fail-soft"; echo "$OUTCB"; errors=$((errors+1)); }
+# No lineage map -> the variant theme_label falls back to slugify(theme_label)
+# and writes its OWN node (it does NOT route into $LSLUG), proving the degrade
+# to slug-only accumulation actually changed behavior vs the lineage case.
+[ -f "$WIKI/wiki/questions/scope-of-processing-records.md" ] \
+  && green "PASS: corrupt --binding ran slug-only (variant got its own slug node, no lineage routing)" \
+  || { red "FAIL: corrupt --binding did not degrade to slug-only"; errors=$((errors+1)); }
+
+# -- Unreadable-path arm (OSError) --
+OUTMB="$(python3 "$SCRIPT" emit \
+  --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \
+  --plan "$PROJ/.metadata/plan.json" \
+  --candidates "$PROJ/.metadata/candidates.json" \
+  --ingest-manifest "$PROJ/.metadata/ingest-manifest.json" \
+  --binding "$WORK/does-not-exist.json")"
+echo "$OUTMB" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] and d["data"].get("binding_skipped") else 1)' \
+  && green "PASS: missing --binding path degrades to success + data.binding_skipped (OSError arm)" \
+  || { red "FAIL: missing --binding path did not fail-soft"; echo "$OUTMB"; errors=$((errors+1)); }
+
 # ===== Backward compat: emit WITHOUT --binding still works (slug-only) ========
 OUTNB="$(python3 "$SCRIPT" emit \
   --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" \

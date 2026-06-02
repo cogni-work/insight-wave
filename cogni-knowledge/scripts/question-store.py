@@ -82,19 +82,26 @@ def cmd_emit(args: argparse.Namespace) -> int:
     # binding's topic_lineage.covered_themes[]. Read-only here — this script
     # NEVER writes binding.json; the orchestrator persists new/updated themes
     # via `knowledge-binding.py upsert-themes` (the single writer). The map is
-    # empty when --binding is absent (byte-identical to the pre-#409 path) or
-    # the binding is older / has no covered_themes (fail-soft .get chain).
+    # empty when --binding is absent (byte-identical to the pre-#409 path), the
+    # binding is older / has no covered_themes (fail-soft .get chain), or the
+    # binding is corrupt / transiently unreadable (#426 fail-soft read degrade
+    # below — reason surfaced as data.binding_skipped, never aborts emit).
     lineage: dict[str, str] = {}
+    binding_skipped = ""
     if args.binding:
         try:
             binding = _load_json(Path(args.binding))
         except (OSError, json.JSONDecodeError) as exc:
-            return _emit(False, error=f"could not read --binding: {exc}")
-        for e in binding.get("topic_lineage", {}).get("covered_themes", []) or []:
-            tk = e.get("theme_key")
-            qs = e.get("question_slug")
-            if tk and qs:
-                lineage[tk] = qs
+            # Lineage is an enhancement layer — a corrupt / transiently
+            # unreadable binding degrades to slug-only accumulation, never
+            # blocks question-node creation. Reason surfaced for observability.
+            binding_skipped = f"could not read --binding: {exc}"
+        else:
+            for e in binding.get("topic_lineage", {}).get("covered_themes", []) or []:
+                tk = e.get("theme_key")
+                qs = e.get("question_slug")
+                if tk and qs:
+                    lineage[tk] = qs
 
     today = datetime.date.today().isoformat()
     questions_dir = wiki_root / "wiki" / "questions"
@@ -251,13 +258,16 @@ def cmd_emit(args: argparse.Namespace) -> int:
                 "action": "lineage_reused" if lineage_hit else "new_theme",
             })
 
-    return _emit(True, data={
+    data = {
         "questions": questions_out,
         "theme_bindings": theme_bindings,
         "skipped_no_findings": skipped_no_findings,
         "sources_unmapped": sources_unmapped,
         "questions_written": len(questions_out),
-    })
+    }
+    if binding_skipped:
+        data["binding_skipped"] = binding_skipped
+    return _emit(True, data=data)
 
 
 def main(argv=None) -> int:
