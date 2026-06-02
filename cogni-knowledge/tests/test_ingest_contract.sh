@@ -94,7 +94,7 @@ assert_grep 'question-manifest.json' "$INGEST" "knowledge-ingest: Step 4.5.1 per
 # (a) the legacy-no-theme_label fallback category and (b) the Step 4.5.2 source-page-body
 # heading, so do NOT assert the string is wholly absent — assert it is the fallback.
 assert_not_grep 'category "Research questions"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Research questions\" as the sole question category (#411; theme_label-derived now)"
-assert_grep '#411' "$INGEST" "knowledge-ingest: Step 4.5.3 question-anchored theme_label index grouping (#411)"
+assert_grep 'own .theme_label. heading' "$INGEST" "knowledge-ingest: Step 4.5.3 files each question under its own theme_label heading — question-anchored grouping (#411)"
 assert_grep 'Research questions fallback' "$INGEST" "knowledge-ingest: \"Research questions\" kept as the legacy-no-theme_label fallback category (#411)"
 # #324: Step 4.2 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "≤180 chars" authoring contract that caused the mid-word
