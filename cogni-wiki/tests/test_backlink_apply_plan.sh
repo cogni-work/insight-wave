@@ -41,6 +41,15 @@ count_line() {
   grep -cxF "$needle" "$file" 2>/dev/null || true
 }
 
+# Assert link ($2) appears AFTER heading ($1) in file ($3) — i.e. under the section.
+assert_link_under_heading() {
+  HEADING="$1" LINK="$2" python3 - "$3" <<'PY'
+import os, sys
+text = open(sys.argv[1]).read()
+sys.exit(0 if text.index(os.environ["LINK"]) > text.index(os.environ["HEADING"]) else 1)
+PY
+}
+
 # Run backlink_audit apply-mode with a plan on stdin; echo the data.* field
 # named by $4 ("applied" | "skipped_existing_backlink" | "failed") as a
 # newline-joined slug list.
@@ -127,13 +136,7 @@ SRC1="$WIKI/wiki/sources/src-one.md"
 [ "$(count_line "$HEADING" "$SRC1")" = "1" ] || fail "case1: expected exactly one '$HEADING' in src-one"
 grep -qF "[[q-data]]" "$SRC1" || fail "case1: [[q-data]] link missing from src-one"
 # The link must sit AFTER the heading (under the section), not before it.
-python3 - "$SRC1" <<'PY' || fail "case1: [[q-data]] not located under the heading"
-import sys
-text = open(sys.argv[1]).read()
-h = text.index("## Research questions")
-l = text.index("[[q-data]]")
-sys.exit(0 if l > h else 1)
-PY
+assert_link_under_heading "$HEADING" "[[q-data]]" "$SRC1" || fail "case1: [[q-data]] not located under the heading"
 green "case1: --create-missing-heading materialised '## Research questions' with link under it"
 
 # ============================================================
@@ -167,13 +170,7 @@ applied=$(apply_field q-data "$PLAN4" "--create-missing-heading" applied)
 [ "$applied" = "src-three" ] || fail "case4: expected src-three applied, got '$applied'"
 SRC3="$WIKI/wiki/sources/src-three.md"
 [ "$(count_line "$HEADING" "$SRC3")" = "1" ] || fail "case4: expected the one pre-existing '$HEADING' (no duplicate)"
-python3 - "$SRC3" <<'PY' || fail "case4: [[q-data]] not located under the pre-existing heading"
-import sys
-text = open(sys.argv[1]).read()
-h = text.index("## Research questions")
-l = text.index("[[q-data]]")
-sys.exit(0 if l > h else 1)
-PY
+assert_link_under_heading "$HEADING" "[[q-data]]" "$SRC3" || fail "case4: [[q-data]] not located under the pre-existing heading"
 green "case4: pre-existing heading → insert after it, no duplicate"
 
 # ============================================================

@@ -342,6 +342,7 @@ def _insert_sentence(body: str, sentence: str, heading: str,
     Otherwise append at the end of the body, preceded by a blank line.
     """
     stripped_sentence = sentence.strip()
+    block = stripped_sentence  # what gets appended at end-of-body if no heading match
     if heading:
         heading_line = heading.rstrip("\n")
         # Split lines but keep track so we can rebuild faithfully.
@@ -357,13 +358,13 @@ def _insert_sentence(body: str, sentence: str, heading: str,
                 return "\n".join(new_lines)
         if create_missing:
             # Heading absent and the caller opted in: materialise it as a new
-            # end-of-body section.
-            if not body.endswith("\n"):
-                body = body + "\n"
-            return body + "\n" + heading_line + "\n\n" + stripped_sentence + "\n"
+            # end-of-body section, written byte-identical to the found-branch
+            # search target so a later insert with the same heading groups under
+            # it.
+            block = heading_line + "\n\n" + stripped_sentence
     if not body.endswith("\n"):
         body = body + "\n"
-    return body + "\n" + stripped_sentence + "\n"
+    return body + "\n" + block + "\n"
 
 
 def apply_plan(plan: dict, slug_index: dict, new_slug: str,
