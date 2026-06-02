@@ -149,6 +149,11 @@ assert_grep 'contradiction-ingest-store.py' "$INGEST" "knowledge-ingest: merges 
 assert_grep 'contradiction-ingest.json' "$INGEST" "knowledge-ingest: writes the canonical contradiction-ingest.json artifact"
 assert_grep '\-\-no-contradictor' "$INGEST" "knowledge-ingest: --no-contradictor opts out of Step 4.6"
 assert_grep 'never rolls back\|never gates ingest\|never gate ingest' "$INGEST" "knowledge-ingest: Step 4.6 is fail-soft — never rolls back / never gates ingest"
+# The qualify gate must NOT count the always-present question node toward the
+# threshold (else it collapses to len(NEW) >= 1 and wastes a no-op dispatch per
+# single-new-source group on a first run). Pin the corrected predicate + carve-out.
+assert_grep 'len(NEW) ≥ 2' "$INGEST" "knowledge-ingest: Step 4.6 qualify gate requires ≥2 NEW or a prior-run peer (not the always-present node)"
+assert_grep 'does \*\*NOT\*\* count toward this threshold\|not count toward' "$INGEST" "knowledge-ingest: Step 4.6 excludes the question node from the qualify count"
 # Defence-in-depth: confirm the obsolete Skill("cogni-knowledge:source-ingester)
 # dispatch is not lingering. Agents go through Task.
 assert_not_grep 'Skill("cogni-knowledge:source-ingester' "$INGEST" "knowledge-ingest: no Skill('cogni-knowledge:source-ingester) — agents go through Task"

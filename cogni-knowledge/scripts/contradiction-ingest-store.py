@@ -24,9 +24,11 @@ asserts the count invariants — exactly the `verify-store.py merge` posture.
 
 This is a pure-observability artifact: it never gates ingest, never rolls back a
 page, drives no downstream behaviour. A malformed / unreadable / schema-mismatched
-fragment is skipped (recorded in `data.skipped_shards[]`) rather than aborting the
-merge — the ingested pages already landed at Step 3, so a tripwire hiccup must
-never fail the run.
+fragment is skipped (recorded in `data.skipped_shards[]`), and a single out-of-vocab
+finding (unknown `kind`/`severity`) is dropped + recorded (`data.skipped_findings[]`)
+rather than failing the count invariants — both so a tripwire hiccup in one fragment
+can never lose every other group's valid findings from observability. The ingested
+pages already landed at Step 3, so a tripwire hiccup must never fail the run.
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -58,6 +60,21 @@ def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
 
 def _zero_counts() -> dict:
     return {"contradiction": 0, "unknown": 0, "total": 0, "high": 0, "medium": 0, "low": 0}
+
+
+def _finding_valid(f: dict) -> bool:
+    """A finding is in-vocab when its `kind` is known and a `contradiction`
+    carries a known `severity` (an `unknown` carries none). The agent emits a
+    closed vocabulary, but a single out-of-vocab finding must not be able to
+    fail the count invariants and abort the whole merge — for a pure-observability
+    fan-in, an invalid finding is dropped + recorded, never a reason to lose every
+    other group's valid findings."""
+    kind = f.get("kind")
+    if kind not in KINDS:
+        return False
+    if kind == "contradiction" and f.get("severity") not in SEVERITIES:
+        return False
+    return True
 
 
 def _recompute_counts(findings: list[dict]) -> dict:
@@ -130,6 +147,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
     findings: list[dict] = []
     groups: list[dict] = []
     skipped: list[dict] = []
+    skipped_findings: list[dict] = []
 
     # Deterministic order: by question_slug, so the global ctr-NNN re-id is stable
     # across re-runs that compare the same groups. A fragment that fails to parse
@@ -157,15 +175,26 @@ def cmd_merge(args: argparse.Namespace) -> int:
 
     for qslug, frag in parsed:
         compared = frag.get("compared") or {}
-        frag_findings = [f for f in frag["findings"] if isinstance(f, dict)]
+        frag_valid: list[dict] = []
+        for f in frag["findings"]:
+            if not isinstance(f, dict):
+                skipped_findings.append({"question_slug": qslug, "reason": "non-object finding"})
+                continue
+            if not _finding_valid(f):
+                skipped_findings.append({
+                    "question_slug": qslug,
+                    "reason": f"out-of-vocab kind/severity: kind={f.get('kind')!r} severity={f.get('severity')!r}",
+                })
+                continue
+            frag_valid.append(f)
         groups.append({
             "question_slug": qslug,
             "new_count": compared.get("new_count", 0),
             "peer_count": compared.get("peer_count", 0),
-            "finding_count": len(frag_findings),
+            "finding_count": len(frag_valid),
             "missing_pages": compared.get("missing_pages", []),
         })
-        findings.extend(frag_findings)
+        findings.extend(frag_valid)
 
     # Global re-id ctr-001.. (the per-fragment ids are local to each agent run and
     # collide across groups; the canonical file owns the one stable join key).
@@ -184,6 +213,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "groups_compared": len(groups),
         "shards_merged": len(parsed),
         "skipped_shards": skipped,
+        "skipped_findings": skipped_findings,
         "counts": counts,
     })
 

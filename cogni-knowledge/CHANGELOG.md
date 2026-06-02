@@ -29,8 +29,10 @@ ingest, never rolls back a page, drives no downstream behaviour change.
   malformed / wrong-schema fragment is skipped fail-soft (`skipped_shards[]`), never aborting the merge.
 - **`skills/knowledge-ingest/SKILL.md`** — new **Step 4.6** (after Step 4.5, before Step 5): reads the
   just-written `question-manifest.json`, splits each group's `sources_answering[]` (cross-run union) into
-  NEW vs PEER, dispatches one `source-contradictor` per qualifying group (≥1 NEW + ≥2 claim-bearing
-  pages total; PEER capped at 20) in one fan-out wave, merges via `contradiction-ingest-store.py`. New
+  NEW vs PEER, dispatches one `source-contradictor` per qualifying group (≥2 NEW, or ≥1 NEW + ≥1
+  prior-run source peer — the question node rides in `PEER_SLUGS` but never counts toward the
+  threshold, so a first-run single-new-source group never wastes a no-op dispatch; prior-peers capped
+  at 20) in one fan-out wave, merges via `contradiction-ingest-store.py`. New
   `--no-contradictor` opt-out (`--dry-run` already skips it). Step 6 adds a conditional
   `⚠ Ingest contradictions` line (only when `counts.total > 0`). Fail-soft throughout — a failure never
   rolls back any ingested page.

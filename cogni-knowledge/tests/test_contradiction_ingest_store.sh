@@ -166,6 +166,69 @@ else
   errors=$((errors + 1))
 fi
 
+# --- 6. out-of-vocab finding dropped+recorded, the rest still merge ----------
+VWORK="$WORK/vocab"
+mkdir -p "$VWORK"
+VOUT="$VWORK/contradiction-ingest.json"
+cat > "$VWORK/.contradiction-ingest.bad-finding.json" <<'JSON'
+{
+  "schema_version": "0.1.0",
+  "output_language": "en",
+  "question_slug": "bad-finding",
+  "compared": {"new_count": 1, "peer_count": 1, "missing_pages": []},
+  "findings": [
+    {"id": "ctr-001", "kind": "contradiction", "severity": "high", "new_page": "n", "new_claim_id": "clm-001", "new_excerpt": "x", "conflicting_page": "p", "conflicting_claim_id": "clm-002", "conflicting_excerpt": "y", "note": "ok"},
+    {"id": "ctr-002", "kind": "bogus-kind", "severity": "high", "new_page": "n", "new_claim_id": "clm-003", "new_excerpt": "x", "conflicting_page": "p", "conflicting_claim_id": "clm-004", "conflicting_excerpt": "y", "note": "out of vocab"},
+    {"id": "ctr-003", "kind": "contradiction", "severity": "catastrophic", "new_page": "n", "new_claim_id": "clm-005", "new_excerpt": "x", "conflicting_page": "p", "conflicting_claim_id": "clm-006", "conflicting_excerpt": "y", "note": "bad severity"}
+  ],
+  "counts": {"contradiction": 3, "unknown": 0, "total": 3, "high": 3, "medium": 0, "low": 0}
+}
+JSON
+python3 "$SCRIPT" merge --shards "$VWORK/.contradiction-ingest.*.json" --out "$VOUT" --output-language en > "$VWORK/env.json"
+if python3 - "$VWORK/env.json" "$VOUT" <<'PY'
+import json, sys
+env = json.load(open(sys.argv[1]))
+d = json.load(open(sys.argv[2]))
+# Merge still succeeds and writes the canonical file (never aborts on a bad finding).
+assert env["success"] is True, env
+# The one valid finding survives; the two out-of-vocab ones are dropped+recorded.
+assert d["counts"]["total"] == 1, d["counts"]
+assert d["counts"]["contradiction"] == 1 and d["counts"]["high"] == 1, d["counts"]
+assert len(env["data"]["skipped_findings"]) == 2, env["data"]["skipped_findings"]
+assert d["groups_compared"][0]["finding_count"] == 1, d["groups_compared"]
+# Invariants hold over the surviving valid set.
+c = d["counts"]
+assert c["total"] == c["contradiction"] + c["unknown"]
+assert c["contradiction"] == c["high"] + c["medium"] + c["low"]
+PY
+then
+  green "PASS: out-of-vocab finding dropped+recorded (skipped_findings[]), merge still writes the file"
+else
+  red "FAIL: out-of-vocab finding not handled fail-soft"
+  errors=$((errors + 1))
+fi
+
+# --- 7. zero matching shards → empty canonical file, success ----------------
+ZWORK="$WORK/zero"
+mkdir -p "$ZWORK"
+ZOUT="$ZWORK/contradiction-ingest.json"
+python3 "$SCRIPT" merge --shards "$ZWORK/.contradiction-ingest.*.json" --out "$ZOUT" --output-language en > "$ZWORK/env.json"
+if python3 - "$ZWORK/env.json" "$ZOUT" <<'PY'
+import json, sys
+env = json.load(open(sys.argv[1]))
+d = json.load(open(sys.argv[2]))
+assert env["success"] is True, env
+assert env["data"]["shards_merged"] == 0, env["data"]
+assert d["findings"] == [] and d["groups_compared"] == [], d
+assert d["counts"]["total"] == 0, d["counts"]
+PY
+then
+  green "PASS: zero matching shards merges to an empty canonical file (success)"
+else
+  red "FAIL: zero-shard merge not handled"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"
