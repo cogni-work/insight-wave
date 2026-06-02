@@ -59,6 +59,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--no-reviewer` | No | Skip the Step 10.7 structural-quality review. Default: OFF (reviewer runs). Pass to suppress the advisory structural score on a run where you only want the deposit + conformance gate; the synthesis is still deposited and every other step still runs. Mirrors `--no-contradictor`. |
 | `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh. Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
 | `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md`. Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
+| `--no-question-links` | No | Skip the Step 4.7 `synthesis→question` forward links (and therefore the Step 10.5 reverse backfill into each question page's `## See also`). Default: OFF (links emitted). Pass to deposit a synthesis with no `## Research questions` section — e.g. against a base whose question nodes are mid-refactor. The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
 
 ## Workflow
 
@@ -241,6 +242,39 @@ Interpret return:
 - **Exit 1, `status: cycle_detected`** — abort. Print `direct_self_cycles[]` + remediation: "The synthesis would cite a wiki page derived from this same project — that's a self-citing loop. Rename the synthesis (`--synthesis-slug <other>`), narrow the topic, or hand-edit the draft to drop the self-referential citations."
 - **Exit 1, `status: manifest_unreadable`** — the citation manifest at `.metadata/citation-manifest.json` cannot be parsed (corrupt JSON, I/O error). Abort with the script's `error` field verbatim; remediate by re-running `knowledge-compose` to regenerate the manifest. **Do not proceed** — depositing a synthesis whose lineage cannot be checked is the exact failure mode the guard exists to prevent.
 
+### 4.7 Resolve answered research-question nodes
+
+`knowledge-ingest` Step 4.5 promotes each sub-question into a `type: question` node at `wiki/questions/<slug>.md` and persists the exact sub-question→node mapping to `<project_path>/.metadata/question-manifest.json` (`[{slug, sub_question_id, query, sources_answering[], action}]`). This step reads that manifest so Step 5/6 can forward-link the deposited synthesis to the question nodes it answers — closing the `question → findings → synthesis` loop (a reader on a question page can reach the verified synthesis, not just the sources).
+
+Build `QUESTION_SLUGS_CSV` from the manifest's `questions[].slug`:
+
+```
+QUESTION_SLUGS_CSV=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+MANIFEST_PATH="<project_path>/.metadata/question-manifest.json" \
+python3 -c '
+import json, os
+from pathlib import Path
+p = Path(os.environ["MANIFEST_PATH"])
+try:
+    qs = json.loads(p.read_text(encoding="utf-8"))
+except Exception:
+    qs = []
+slugs = [q["slug"] for q in (qs or [])
+         if isinstance(q, dict) and isinstance(q.get("slug"), str) and q["slug"]]
+print(",".join(slugs))
+' 2>/dev/null || true)
+```
+
+The slugs are kebab-case-only by `_knowledge_lib.slugify` (transliterated, NFKD-folded, `[a-z0-9-]+` only — the same `slugify` that derived them at ingest time), so the CSV is safe against embedded commas, backslashes, or quotes (the same structural guarantee Step 10.6's `CITED_SOURCE_SLUGS_CSV` relies on).
+
+**Fail-soft / empty CSV** when any of these hold — the variable is left empty and Step 5/6 appends no section (byte-identical to the pre-this-change deposit):
+
+- The manifest file is missing — a **legacy project** finalized before its base grew question nodes (pre-`knowledge-ingest` Step 4.5), or a project whose every sub-question had zero findings.
+- The manifest is empty or unparseable (the `python3 -c` above degrades to an empty list).
+- **`--no-question-links`** was passed — force `QUESTION_SLUGS_CSV=` regardless of the manifest.
+
+The per-slug *page-existence* gate is NOT applied here — it lives in the Step 5/6 subprocess (which already has `wiki_root` in hand and already runs the identical `is_file()` check for the reference-row backlinks), so a question page deleted between ingest and finalize is skipped at write time rather than emitted as a `broken_wikilink`.
+
 ### 5. Compose + 6. Atomic write
 
 One Python subprocess composes the synthesis page in memory and writes it atomically via `_knowledge_lib.atomic_write_text` (same helper `source-ingester` uses for `wiki/sources/<slug>.md`):
@@ -257,6 +291,7 @@ VERIFY_VERBATIM=<verbatim count from Step 2> \
 VERIFY_PARAPHRASE=<paraphrase count from Step 2> \
 VERIFY_SYNTHESIS=<synthesis count from Step 2> \
 VERIFY_UNSUPPORTED=<unsupported count from Step 2> \
+QUESTION_SLUGS_CSV="$QUESTION_SLUGS_CSV" \
 python3 -c '
 import datetime as _dt
 import json, os, re, sys
@@ -504,6 +539,32 @@ page_text = (
     + "\n"
 )
 
+# Append the synthesis->question forward links AFTER the reference block. Each
+# is a BARE `[[<slug>]]` (the only form cogni-wiki WIKILINK_RE matches — same as
+# the reference-row backlinks above), so the edge registers in the link graph
+# and the Step 10.5 `lint --fix=reverse_link_missing` gate backfills the reverse
+# `[[<synthesis-slug>]]` into each question page's `## See also`. Emit a link
+# ONLY for a question page that exists on disk (the same is_file() existence
+# gate the reference-row backlinks use) so a page deleted between ingest and
+# finalize never becomes a `broken_wikilink` that fails the Step 10.5 health
+# gate. These links live in the BODY, never in `sources:` and never in the
+# citation manifest, so cycle-guard (which walks only those two) cannot see them.
+question_slugs_csv = os.environ.get("QUESTION_SLUGS_CSV", "")
+question_links = []
+seen_questions = set()  # dedupe (same idiom as cited_slugs above) — defensive
+for qslug in (s.strip() for s in question_slugs_csv.split(",")):
+    if not qslug or qslug in seen_questions:
+        continue
+    seen_questions.add(qslug)
+    if (wiki_root / "wiki" / "questions" / (qslug + ".md")).is_file():
+        question_links.append(qslug)
+if question_links:
+    page_text += (
+        "\n## Research questions\n\n"
+        + "\n".join("- [[" + s + "]]" for s in question_links)
+        + "\n"
+    )
+
 out_path = wiki_root / "wiki" / "syntheses" / (synthesis_slug + ".md")
 out_path.parent.mkdir(parents=True, exist_ok=True)
 atomic_write_text(out_path, page_text)
@@ -528,6 +589,7 @@ print(json.dumps({
     "n_sources": len(cited_slugs),
     "n_synthesis_citations": sum(1 for k in page_kind_by_slug.values() if k == "synthesis"),
     "n_missing_pages": n_missing,
+    "n_question_links": len(question_links),
     "topic": topic,
     "output_language": output_language,
     "cited_source_slugs": cited_source_slugs,
@@ -682,7 +744,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
        --wiki-root "$WIKI_ROOT" \
        --fix=all
    ```
-   `--fix=all` applies the five safe classes (`lint_wiki.py` `FIX_CLASSES`). The load-bearing one is **`reverse_link_missing`**: the bare `[[<slug>]]` references this finalize just wrote are forward edges synthesis→source, so lint backfills the reverse source→synthesis `[[<synthesis-slug>]]` (a `## See also` append on each cited source) — de-orphaning the synthesis. The others are housekeeping: `frontmatter_defaults`, `entries_count_drift` (reconciles `entries_count` to the on-disk truth — supersedes Step 8's conditional bump on any drift), `alphabetisation`, and `synthesis_no_wiki_source` (a no-op — Step 5 already wrote `wiki://<slug>` sources). Capture the envelope; surface `data.fixed[]` / `data.failed[]` counts in the Step 11 summary. **Non-fatal per item** — a per-page fix failure lands in `data.failed[]` and does not block finalize. (`orphan_page` is NOT a `--fix` class — it is suggest-only; 0 orphans comes from the inbound links the bare refs + this reverse-link backfill create, never from `--fix`.)
+   `--fix=all` applies the five safe classes (`lint_wiki.py` `FIX_CLASSES`). The load-bearing one is **`reverse_link_missing`**: the bare `[[<slug>]]` references this finalize just wrote are forward edges synthesis→source (and, since Step 4.7, synthesis→question), so lint backfills the reverse `[[<synthesis-slug>]]` (a `## See also` append on each cited source **and on each linked `wiki/questions/<slug>.md` node**) — de-orphaning the synthesis and giving each question page a forward link to the verified synthesis that answered it. (The question-page `## See also` append lands after the human `## Notes` tail; `question-store.py` preserves everything from the `## Notes` marker onward, so the reverse link survives subsequent ingest re-merges, and lint is idempotent on the existing `## See also`.) The others are housekeeping: `frontmatter_defaults`, `entries_count_drift` (reconciles `entries_count` to the on-disk truth — supersedes Step 8's conditional bump on any drift), `alphabetisation`, and `synthesis_no_wiki_source` (a no-op — Step 5 already wrote `wiki://<slug>` sources). Capture the envelope; surface `data.fixed[]` / `data.failed[]` counts in the Step 11 summary. **Non-fatal per item** — a per-page fix failure lands in `data.failed[]` and does not block finalize. (`orphan_page` is NOT a `--fix` class — it is suggest-only; 0 orphans comes from the inbound links the bare refs + this reverse-link backfill create, never from `--fix`.)
 
 2. **Health + orphan assertions (the actual gate).**
    ```
@@ -922,6 +984,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Synthesis page: `wiki/syntheses/<slug>.md` (sources cited: `<N_SOURCES>`)
+- Research questions (Step 4.7): on `n_question_links > 0`, `✓ Research questions linked: <n>` (the synthesis body gained a `## Research questions` section; each linked question page gains a `[[<synthesis-slug>]]` reverse link via the Step 10.5 gate). On an empty manifest / legacy project / `--no-question-links`, `Research questions: none (legacy project / no manifest / opted out)`.
 - Cycle-guard: `input_shape=citation-manifest`, `direct_self_cycles=0`, `cross_lineage_overlap=<N>`
 - Verify lineage: `verify-v<N>.json` — verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (round `<R>` of 2)
 - Verification: citation-consistent (zero-network, no live-source re-check). The synthesis-page frontmatter carries `verification: citation_consistent_zero_network` + `verification_ratio:`. For live-source ground-truth, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in).
@@ -996,6 +1059,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] finalize | …` line.
 - `<knowledge-root>/.cogni-knowledge/binding.json` — one new entry in `research_projects[]` with `report_source: "wiki"`.
 - `<WIKI_ROOT>/wiki/<type>/<cited-slug>.md` — each cited page gains a reverse `[[<synthesis-slug>]]` backlink (Step 10.5 `lint --fix=reverse_link_missing`), de-orphaning the synthesis.
+- `<WIKI_ROOT>/wiki/syntheses/<slug>.md` carries a trailing `## Research questions` section of bare `[[<question-slug>]]` forward links (Step 4.7 + Step 6), and each linked `<WIKI_ROOT>/wiki/questions/<question-slug>.md` gains a reverse `[[<synthesis-slug>]]` in its `## See also` (Step 10.5). Absent on `--no-question-links` / an empty-or-missing `question-manifest.json` (legacy project).
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Written when the contradictor agent returns `ok: true` and at least one source-page peer was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, empty citation manifest) and on `ok: false` failure paths.

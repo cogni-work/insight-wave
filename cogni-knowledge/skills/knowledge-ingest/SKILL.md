@@ -290,6 +290,15 @@ It emits `{success, data: {questions: [{slug, sub_question_id, query, sources_an
 
 Each `wiki/questions/<slug>.md` write is **unique-by-construction per slug** (atomic `_knowledge_lib.atomic_write_text`, single writer) — no `_wiki_lock` needed, same posture as the Step 3 source pages. The script imports cogni-wiki's `PAGE_TYPE_DIRS` / `split_frontmatter` from the resolved `--wiki-scripts-dir` (the same DRY posture `concept-store.py` uses for `_wiki_lock`).
 
+**Persist the question manifest (phase handoff to `knowledge-finalize`).** Immediately after capturing the `emit` envelope above — and **unconditionally**, NOT inside sub-step 4.5.5's `theme_bindings[]`-empty skip — serialize the returned `data.questions` array to `<project_path>/.metadata/question-manifest.json` whenever it is non-empty. This is the exact "which question node did each sub-question become" mapping, known only here at emit time; `knowledge-finalize` reads it to forward-link the deposited synthesis to the research-question nodes it answers. Mirror the records-file `printf` pattern sub-step 4.5.5 uses for `theme-bindings.json`:
+
+```
+# $QUESTIONS_JSON is data.questions[] from the emit envelope above.
+printf '%s' "$QUESTIONS_JSON" > "<project_path>/.metadata/question-manifest.json"
+```
+
+Skip the write only when `data.questions` is empty (every sub-question had zero findings this run) — finalize then falls through to its legacy no-manifest path. The write is a plain `.metadata/` handoff (no wiki state), so a failure here is non-fatal: the question pages are already on disk, and finalize degrades to emitting no synthesis→question links.
+
 **4.5.2. Reverse links (R1) — `source→question`.** For each `questions[]` entry above (each has a non-empty `sources_answering[]` — zero-finding sub-questions were skipped), run `backlink_audit.py --apply-plan` exactly as Step 4.1 does, but with `--new-page <question-slug>`. The `targets[]` are the answering source pages (one per `sources_answering[]` slug); each `sentence` inserts a bare `[[<question-slug>]]` under a `## Research questions` heading so it lands in its own section rather than mid-body:
 
 ```
@@ -403,6 +412,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `<project_path>/.metadata/.ingest.dispatch.<NNN>.json` per batch — the authoritative `[{slug, url}]` dispatch record the Step 3.5 sweep verifies against (intermediate; kept for debugging).
 - `<project_path>/.metadata/quarantine/<slug>.md` per Step 3.5 integrity violation — the contaminated page, moved off the wiki and preserved for inspection; the slug is freed and the URL stays re-dispatchable.
 - `<project_path>/.metadata/theme-bindings.json` — the Step 4.5.1 `theme_bindings[]` serialized for the Step 4.5.5 `upsert-themes` call (intermediate; kept for debugging).
+- `<project_path>/.metadata/question-manifest.json` — the Step 4.5.1 `data.questions[]` array serialized as the phase handoff `knowledge-finalize` reads to forward-link the deposited synthesis to the research-question nodes it answers (written whenever any sub-question had findings this run).
 
 ## References
 
