@@ -1,6 +1,6 @@
 ---
 name: knowledge-compose
-description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network floor-expansion re-dispatch when the draft lands under its word floor with headroom), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
+description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network floor-expansion re-dispatch when the draft lands under its word floor with headroom), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -10,12 +10,12 @@ Phase 5 of the inverted pipeline. Reads the per-project `plan.json` + `ingest-ma
 
 The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md`. Since the distillation interphase (`knowledge-distill`), it also reads the distilled `wiki/{concepts,entities,summaries,learnings}/*.md` pages (topic-matched, lazily) — these serve **both** as narrative framing **and** as citable cross-source evidence: when ≥2 sources converge on a fact the distilled page already captures, the composer cites the distilled page itself via its `dcl-NNN` claim id, so the convergence carries epistemic weight rather than a row of source markers. Distilled pages carry `distilled_claims:` (not `pre_extracted_claims:`), and a distilled-page citation is scored by the verifier against that claim's `text`. Distillation stays optional and fail-soft: when it hasn't run, the composer simply has no distilled pages to draw on and composes from sources + syntheses alone.
 
-The composer also reads the `type: question` nodes at `wiki/questions/*.md` (topic-matched, lazily) — first-class wiki pages each recording one research question the base has already explored, with `## Findings` `[[links]]` to the sources that answered it. These are **framing-only**: a question node carries **no claim block**, so the composer reads them for orientation (which questions exist, which sources cluster under each) but **never cites one inline and never adds one to the reference list** — an inline citation to a question node would be scored `unsupported` by the verifier. This is the inverse of the distilled-page citation rule.
+The composer also reads the `type: question` nodes at `wiki/questions/*.md` (topic-matched, lazily) — first-class wiki pages each recording one research question the base has already explored, with `## Findings` `[[links]]` to the sources that answered it. These serve **both** as narrative framing **and** as a citable cross-source answer surface: a question node may carry an `answer_claims:` block (`acl-NNN` ids, synthesized by `knowledge-distill`), and when its `backlinks[]` list ≥2 distinct sources the composer cites the node directly via its `acl-NNN` claim — one citation carrying "N sources agree on the answer" — exactly mirroring the distilled-page rule just above. A single-source answer, or a question node with no `answer_claims:` block yet, stays framing-only: the composer reads it for orientation but cites the backing **source** page, never the node (an inline citation to a claim-less node would score `unsupported`). A question-node citation is scored by the verifier against that answer claim's `text`.
 
 The composer then writes:
 
 - `<project>/output/draft-v{N}.md` — the draft, with clickable numbered `[N]` inline citations (wikilinks confined to the reference list).
-- `<project>/.metadata/citation-records-v{N}.txt` — one raw-text record per citation (the composer writes this; it never hand-builds JSON). This skill then runs `citation-store.py build` to serialize and validate `<project>/.metadata/citation-manifest.json` (schema `0.1.0`, one `{id, draft_position, draft_sentence, wiki_slug, claim_id}` entry per citation). Escaping is owned by `json.dumps`, never the LLM — a straight `"` in a `draft_sentence` would otherwise break a hand-built manifest's `json.loads` and kill the verify phase.
+- `<project>/.metadata/citation-records-v{N}.txt` — one raw-text record per citation (the composer writes this; it never hand-builds JSON). This skill then runs `citation-store.py build` to serialize and validate `<project>/.metadata/citation-manifest.json` (schema `0.1.1`, one `{id, draft_position, draft_sentence, wiki_slug, claim_id, url}` entry per citation). Escaping is owned by `json.dumps`, never the LLM — a straight `"` in a `draft_sentence` would otherwise break a hand-built manifest's `json.loads` and kill the verify phase.
 
 A `writer-outline-v{N}.json` is persisted by the composer's Phase 1 before any draft `Write` attempt — this is the **outline-recovery contract**. If the composer crashes between outlining and drafting, re-running this skill detects the leftover outline and re-dispatches the composer with `RESUME_FROM_OUTLINE=true` so only Phase 2 runs.
 
@@ -194,7 +194,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
 
 `citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, **asserts every inline citation URL is a known ingested-source URL** (the `--ingest-manifest` gate; the composer must copy each cited page's real `sources:` URL, never reconstruct it from the slug), and round-trips the file it wrote (`json.loads` + count). Parse the envelope:
 
-- `success: true` → capture `data.citations_count` (the authoritative count) **and `data.claim_kinds`** (the per-kind breakdown — `{distilled, source, null, other}`, keyed by `claim_id` prefix; `distilled` is the `dcl-NNN` cross-source-convergence count surfaced in Step 6 + Step 7) and continue to Step 5.
+- `success: true` → capture `data.citations_count` (the authoritative count) **and `data.claim_kinds`** (the per-kind breakdown — `{distilled, source, answer, null, other}`, keyed by `claim_id` prefix; `distilled` is the `dcl-NNN` cross-source-convergence count and `answer` is the `acl-NNN` question-node answer-citation count — both surfaced in Step 6 + Step 7) and continue to Step 5.
 - `success: false, error: "write_failed"` → surface `error` + `data` (e.g. `failed_check: "sentence_not_in_draft"` with the offending `ids`; or `failed_check: "url_not_in_sources"` with the offending `urls` — an inline citation URL the composer slug-derived instead of copying the cited page's `sources:` value) verbatim and **stop** — do not auto-retry. A sentence the composer claims to have written verbatim is not in the draft it just wrote, the manifest did not round-trip, or a cited URL is not a real ingested source (re-compose).
 - `success: false, error: "records_not_found"` / `"draft_not_found"` → surface and stop; the composer's write did not land (re-run the composer).
 
@@ -333,10 +333,11 @@ TOPIC=<topic from plan.json>
 N_WORDS=<words from composer return>
 N_CITES=<the script-derived count from Step 5's print(len(cites)) — NOT the composer return's "citations" field>
 N_DCL=<data.claim_kinds.distilled from Step 4.5, default 0>
-echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES} dcl=${N_DCL}" >> "${WIKI_ROOT}/wiki/log.md"
+N_ACL=<data.claim_kinds.answer from Step 4.5, default 0>
+echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES} dcl=${N_DCL} acl=${N_ACL}" >> "${WIKI_ROOT}/wiki/log.md"
 ```
 
-The `dcl=<n>` suffix is the cross-run record of the distilled-citation rate — the cross-source-convergence loop firing (or not) shows up directly in `wiki/log.md`.
+The `dcl=<n>` suffix is the cross-run record of the distilled-citation rate, and `acl=<n>` the question-node answer-citation rate — the cross-source-convergence loops firing (or not) show up directly in `wiki/log.md`.
 
 Note on the `compose` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `compose`, but readers count unknown prefixes in their catch-all bucket without crashing — `compose` is additive and safe.
 
@@ -349,10 +350,11 @@ Print ≤ 10 lines:
 - Draft: `output/draft-v<N>.md` (`<N_WORDS>` words across `<N_SECTIONS>` sections)
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
+- Answer citations: `<N_ACL>` of `<N_CITES>` (`acl-NNN` question-node answers cited directly, from Step 4.5's `data.claim_kinds.answer`) — `0` on a base whose question nodes carry no `answer_claims:` is expected; `0` on a base with `answer_claims:` whose claims show ≥2 backlinks is the inert symptom the operator should notice (same posture as the distilled-citation rate above).
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Expansion (standard density only): one of `floor-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion did not grow the draft — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
-- Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, or `distilled_claims[]` on a cited distilled page.
+- Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, `distilled_claims[]` on a cited distilled page, or `answer_claims[]` on a cited question node.
 
 Surface a density-aware word-count warning from the composer's returned `words` — but do not auto-retry:
 - Under `PROSE_DENSITY=standard`: if `words` is well below `TARGET_WORDS` (the floor), `⚠ Below target (N/TARGET)`.
@@ -365,7 +367,7 @@ Under `standard` density this warning reflects the **post-expansion** draft (Ste
 - **Outline recovery in action.** The outline file exists from a prior crashed run. The composer skips Phase 1 (saves model time and avoids re-deriving the section plan), runs Phase 2 fresh, and writes the draft + citation manifest. The outline's `drafted_words` placeholders get filled by the resume pass. Surface "RESUME_FROM_OUTLINE=true (outline recovery)" in the summary so the operator sees what happened.
 - **Re-run with same N.** The user explicitly passes `--draft-version <N>` against an existing draft. The composer overwrites `draft-v<N>.md` and `citation-manifest.json` (and re-writes the outline — Phase 1 runs unless `writer-outline-v<N>.json` is present and `RESUME_FROM_OUTLINE=true` was inferred). No automatic backup — the user asked for it.
 - **Empty `ingested[]` after a re-ingest cleanup.** Step 0 aborts with the "no ingested sources" message; do not dispatch the composer against an empty manifest.
-- **Citation manifest empty.** If the composer returns `ok: true` but `citations[] == 0` (every cited page had zero claims — no source `pre_extracted_claims:` and no distilled `distilled_claims:` — unusual but possible if the claim-extractor failed across the board), surface as `⚠ Zero citations — every cited statement will fail verification`. Do not block — that's an upstream-data issue, not a composer bug.
+- **Citation manifest empty.** If the composer returns `ok: true` but `citations[] == 0` (every cited page had zero claims — no source `pre_extracted_claims:`, no distilled `distilled_claims:`, and no question-node `answer_claims:` — unusual but possible if the claim-extractor failed across the board), surface as `⚠ Zero citations — every cited statement will fail verification`. Do not block — that's an upstream-data issue, not a composer bug.
 - **Plan changed between ingest and compose.** Step 1.2 of the composer aligns `covers_sub_questions` from `ingest-manifest.json` (resolved sources carry `sub_question_refs[]`), so a sub-question added to `plan.json` after `knowledge-ingest` ran will have no sources mapped to it. The introduction and conclusion still list it (synthesis sections list all `plan.json` sub-question ids), but a topical section for that sub-question won't have evidence. Surface in the summary as `⚠ Sub-question <id> has no ingested sources`.
 
 ## Out of scope
@@ -380,7 +382,7 @@ Under `standard` density this warning reflects the **post-expansion** draft (Ste
 
 - `<project_path>/output/draft-v<N>.md`
 - `<project_path>/.metadata/citation-records-v<N>.txt` (composer's raw-text records; input to `citation-store.py build`)
-- `<project_path>/.metadata/citation-manifest.json` (schema 0.1.0; built by `citation-store.py build`)
+- `<project_path>/.metadata/citation-manifest.json` (schema 0.1.1; built by `citation-store.py build`)
 - `<project_path>/.metadata/writer-outline-v<N>.json` (outline-recovery anchor)
 - One new `## [YYYY-MM-DD] compose | …` line in `<WIKI_ROOT>/wiki/log.md`.
 

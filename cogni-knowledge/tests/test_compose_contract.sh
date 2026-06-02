@@ -249,15 +249,31 @@ assert_grep 'not-yet-cited\|not yet cited' "$COMPOSER" "wiki-composer: expansion
 # Single-pass-per-dispatch invariant must survive: the agent never self-loops.
 assert_grep 'single pass per dispatch\|Single pass per dispatch\|single-pass per dispatch\|single pass: read baseline\|once in .EXPANSION_MODE.\|re-dispatch you exactly ONCE\|re-dispatch you ONCE\|re-dispatch you once' "$COMPOSER" "wiki-composer: stays single-pass per dispatch under EXPANSION_MODE (orchestrator drives the one re-dispatch, #384)"
 
-# --- #410 question-node framing-read (framing-only, never cited) ---------
-# Both the compose SKILL and the wiki-composer agent must document reading
-# wiki/questions/*.md as framing-only with an explicit never-cite guard (a
-# question node has no claim block, so an inline citation would be unsupported).
-assert_grep 'wiki/questions' "$COMPOSE" "knowledge-compose: documents reading wiki/questions/*.md (#410)"
-assert_grep 'framing-only\|framing AND\|framing only' "$COMPOSE" "knowledge-compose: question nodes are framing-only (#410)"
-assert_grep 'wiki/questions' "$COMPOSER" "wiki-composer: Phase 0 reads wiki/questions/*.md (#410)"
-assert_grep 'NEVER cite\|never cite\|never cited' "$COMPOSER" "wiki-composer: explicit never-cite guard on question nodes (#410)"
-assert_grep 'no claim block' "$COMPOSER" "wiki-composer: names the no-claim-block reason question nodes are uncitable (#410)"
+# --- #432 Slice 2: question-node answer-claim citations (the #410 inverse) -
+# Slice 2 lifts the #410 framing-only guard: a question node carrying an
+# answer_claims: block (acl-NNN, synthesized by knowledge-distill Step 6.9) is
+# now citable on >=2-source convergence, exactly mirroring the distilled dcl-NNN
+# rule. Both the compose SKILL and the wiki-composer agent must document it.
+assert_grep 'wiki/questions' "$COMPOSE" "knowledge-compose: documents reading wiki/questions/*.md (#410/#432)"
+assert_grep 'answer_claims' "$COMPOSE" "knowledge-compose: question nodes carry a citable answer_claims surface (#432)"
+assert_grep 'acl-NNN\|acl-' "$COMPOSE" "knowledge-compose: names the acl-NNN answer-claim id (#432)"
+assert_grep 'wiki/questions' "$COMPOSER" "wiki-composer: Phase 0 reads wiki/questions/*.md (#410/#432)"
+assert_grep 'answer_claims' "$COMPOSER" "wiki-composer: reads the question node's answer_claims block (#432)"
+assert_grep 'acl-NNN' "$COMPOSER" "wiki-composer: cites a question node via its acl-NNN claim (#432)"
+# The recorded wiki_slug MUST be bare (the verifier/verify-store resolve it against
+# the fixed wiki/questions/ dir; a directory-prefixed wiki_slug would mis-resolve to
+# wiki/questions/questions/<slug>.md and score unsupported). The [[questions/<slug>]]
+# reference-list wikilink stays prefixed — only the wiki_slug RECORD field is bare.
+assert_not_grep 'wiki_slug: questions/\|wiki_slug=questions/' "$COMPOSER" "wiki-composer: question-node wiki_slug record is BARE, not directory-prefixed (#434)"
+# The >=2-backlink convergence preference must be explicit (PREFER the node).
+assert_grep 'Converged answer\|≥2 backlinks\|converged answer\|PREFER the question node' "$COMPOSER" "wiki-composer: PREFER the question node on >=2-source convergence (#432)"
+# The single-source / no-block anti-laundering guard must survive: a lone source
+# routed through the node would fake convergence — cite the SOURCE page instead.
+assert_grep 'launder' "$COMPOSER" "wiki-composer: anti-laundering guard on single-source answers (#432)"
+assert_grep 'framing-only\|framing AND\|framing only' "$COMPOSER" "wiki-composer: a claim-less question node stays framing-only (#432)"
+# data.claim_kinds must document the new 'answer' kind + the acl= log/summary surface.
+assert_grep 'answer' "$COMPOSE" "knowledge-compose: claim_kinds documents the 'answer' kind (#432)"
+assert_grep 'acl=' "$COMPOSE" "knowledge-compose: wiki/log.md carries the acl= answer-citation rate (#432)"
 
 # --- Phase 5 contract token match ----------------------------------------
 # The inverted-pipeline.md Phase 5 contract names three reads and two
