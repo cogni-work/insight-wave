@@ -418,9 +418,11 @@ Task(answer-distiller,
 
 `answer-distiller` lives at `${CLAUDE_PLUGIN_ROOT}/agents/answer-distiller.md` —
 dispatched via `Task`, not `Skill`. Single pass: it selects each question's answering
-claims and writes the raw-text records file. Parse the return: `ok: true` → continue to
-6.9c; `ok: true, questions_proposed: 0` or `ok: false` → **warn (surface the error) and
-jump to Step 7** (answer synthesis never blocks the pipeline).
+claims and writes the raw-text records file. Parse the return (split like Step 5, so a
+legitimate no-op is not surfaced as an error): `ok: true` → continue to 6.9c; `ok: true,
+questions_proposed: 0` → benign **n/a skip** (no question had an answerable claim), jump
+to Step 7; `ok: false` → **warn (surface the error)** and jump to Step 7. Answer
+synthesis never blocks the pipeline.
 
 **c. Merge into each question node's `answer_claims:` block (locked, claim-dedup).**
 
@@ -526,7 +528,7 @@ Print ≤ 12 lines:
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
 - Cross-lingual merges: `<n_merged>` (`<n_skipped>` skipped) — or `skipped (--no-crosslingual)` / `n/a (no cross-lingual candidates)` when Step 6.6 did not fire (the single-language norm — no DE↔EN twins to merge)
 - Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.7 did not run
-- Question nodes answered: `<n with answer_claims created/updated>` (claims attached `<claims_attached_total>`, deduped `<claims_deduped_total>`) — or `n/a (no answerable question nodes)` when Step 6.9 did not fire; if `claims_rejected_total > 0`, add `⚠ <n> answer-claim lines rejected as malformed — check the answer-distiller's records format`
+- Question nodes answered: `<n with answer_claims created/updated>` (claims attached `<answer_claims_attached_total>`, deduped `<answer_claims_deduped_total>` — these are the **answer-merge** envelope's `claims_attached_total`/`claims_deduped_total`/`claims_rejected_total`, distinct from the Step-6 concept-store counts above) — or `n/a (no answerable question nodes)` when Step 6.9 did not fire; if the answer-merge `claims_rejected_total > 0`, add `⚠ <n> answer-claim lines rejected as malformed — check the answer-distiller's records format`
 - **title→slug tripwire** — if `near_existing_total > 0`, surface a warning block:
   - Header: `⚠ <near_existing_total> concepts created near an existing slug — check title stability`
   - One line per entry from `near_existing_slugs[]` (deterministic order, score-sorted desc): `  <slug> ~ <near_slug> (<near_type>, score=<score>)`
@@ -570,9 +572,9 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
-- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`.
+- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`; plus (when Step 6.9 fires) `answer-bundle.txt` / `answer-records.txt`.
 - Updated distilled pages (any of the four types) get their `## Summary` body re-narrated from the merged claims (Step 6.7); all other machine blocks + the `## Notes` tail stay byte-identical.
-- `<WIKI_ROOT>/wiki/questions/<slug>.md` — each `type: question` node gains/enriches an `answer_claims:` frontmatter block (Step 6.9, `acl-NNN` ids, claim-deduped, with `backlinks[]`/`source_claim_refs[]` provenance); the `## Findings` block and the human `## Notes` tail stay byte-identical. Intermediate `answer-bundle.txt` / `answer-records.txt`.
+- `<WIKI_ROOT>/wiki/questions/<slug>.md` — each `type: question` node gains/enriches an `answer_claims:` frontmatter block (Step 6.9, `acl-NNN` ids, claim-deduped, with `backlinks[]`/`source_claim_refs[]` provenance); the `## Findings` block and the human `## Notes` tail stay byte-identical.
 
 ## References
 
