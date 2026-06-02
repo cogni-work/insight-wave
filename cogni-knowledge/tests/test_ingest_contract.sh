@@ -85,6 +85,7 @@ assert_grep 'covered_themes' "$INGEST" "knowledge-ingest: Step 4.5 persists into
 # question-manifest.json as the phase handoff knowledge-finalize Step 4.7 reads to
 # forward-link the deposited synthesis to the research-question nodes it answers.
 assert_grep 'question-manifest.json' "$INGEST" "knowledge-ingest: Step 4.5.1 persists question-manifest.json handoff (#410)"
+assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Sources\" as the only category (#307; Sources is a fallback now)"
 # #411: Step 4.5.3 files each question node under its sub-question's own theme_label
 # heading (the same section its answering sources occupy), replacing the additive flat
 # "## Research questions" index category from #408 — so the index is anchored on the
