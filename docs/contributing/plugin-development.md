@@ -277,6 +277,8 @@ Your plugin must satisfy the quality standards in [MARKETPLACE_TERMS.md](https:/
 
 Run `cogni-workspace/scripts/check-skill-names.sh` to validate your skill names against the naming convention.
 
+Run `scripts/check-breadcrumbs.py` to confirm your `SKILL.md` and agent files carry no maintainer breadcrumbs — issue/PR refs (`#NNN`), plugin-version tags, or milestone/slice/finding codes. The **Maintainer-breadcrumb guard** CI check (`.github/workflows/lint.yml`) enforces this on every PR. It ratchets against `scripts/baselines/breadcrumb-baseline.json`, so it fails only on *newly introduced* breadcrumbs; the fix is to remove the breadcrumb and state the rationale semantically, keeping provenance in git history, CHANGELOG, or `references/` rather than in the prompt the model executes. Use a per-line `breadcrumb-guard:allow` marker only for a genuine false positive (e.g. an Apple M-series chip name).
+
 ### Marketplace Entry
 
 To list your plugin, submit a PR to the insight-wave repository that adds your plugin to `marketplace.json`. The entry format is:
