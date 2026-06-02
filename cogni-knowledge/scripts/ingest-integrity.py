@@ -96,15 +96,12 @@ def _cache_content_hash(knowledge_root: str, url: str) -> str:
              "--knowledge-root", knowledge_root, "--url", url],
             capture_output=True, text=True,
         )
-    except OSError:
+        if proc.returncode != 0:
+            return ""
+        entry = json.loads(proc.stdout).get("data", {}).get("entry", {})
+    except (OSError, json.JSONDecodeError):
         return ""
-    if proc.returncode != 0:
-        return ""
-    try:
-        payload = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        return ""
-    return str(payload.get("data", {}).get("entry", {}).get("content_hash", "") or "")
+    return str(entry.get("content_hash", "") or "")
 
 
 def _read_dispatch(path_arg: str) -> list[dict]:

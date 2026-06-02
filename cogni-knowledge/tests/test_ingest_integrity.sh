@@ -151,8 +151,7 @@ assert d["data"]["checked"]==5, d["data"]["checked"]
 # the page's frontmatter content_hash diverges from the cached body's hash.
 KR="$WORK/kr"
 KR_WIKI="$KR"                       # wiki-root == knowledge-root here (allowed)
-mkdir -p "$KR_WIKI/wiki/sources"
-mkdir -p "$KR/.cogni-knowledge/fetch-cache"
+mkdir -p "$KR_WIKI/wiki/sources"   # fetch-cache.py store creates its own dir
 
 # page with a content_hash: frontmatter line
 write_page_ch() {  # $1=slug $2=id $3=url $4=content_hash
@@ -173,37 +172,25 @@ Body long enough to clear any later stub threshold.
 EOF
 }
 
-# write a stub fetch-cache entry keyed exactly like fetch-cache.py::_url_key
-write_cache_entry() {  # $1=url $2=content_hash
-  CH_URL="$1" CH_HASH="$2" CH_DIR="$KR/.cogni-knowledge/fetch-cache" \
-  SCRIPTS_DIR="$PLUGIN_ROOT/scripts" python3 - <<'PY'
-import hashlib, json, os, sys
-sys.path.insert(0, os.environ["SCRIPTS_DIR"])
-from _knowledge_lib import normalize_url
-url = os.environ["CH_URL"]
-key = hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
-entry = {
-    "url": url,
-    "status": "ok",
-    "content_hash": os.environ["CH_HASH"],
-    "fetched_at": "2026-05-30T00:00:00Z",
-    "body": "Body long enough to clear any later stub threshold.",
-}
-path = os.path.join(os.environ["CH_DIR"], key + ".json")
-with open(path, "w", encoding="utf-8") as fh:
-    json.dump(entry, fh)
-PY
+# Populate a fetch-cache entry through fetch-cache.py itself (black-box — the
+# script owns the cache key + entry schema, so the test never re-derives them).
+# The stored content_hash is derived from --body; echo it back for the caller.
+FETCH_CACHE="$PLUGIN_ROOT/scripts/fetch-cache.py"
+store_cache_entry() {  # $1=url $2=body  -> prints the stored content_hash
+  python3 "$FETCH_CACHE" store --knowledge-root "$KR" --url "$1" \
+    --fetch-method webfetch --status ok --body "$2" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["content_hash"])'
 }
 
-CACHED_HASH="sha256:1111111111111111111111111111111111111111111111111111111111111111"
+BODY="Body long enough to clear any later stub threshold."
 FOREIGN_HASH="sha256:2222222222222222222222222222222222222222222222222222222222222222"
 
-# ch-good: page hash == cache hash (positive)
+# ch-good: page hash == the cache entry's derived hash (positive)
+CACHED_HASH="$(store_cache_entry "https://europa.eu/ch-good" "$BODY")"
 write_page_ch ch-good ch-good "https://europa.eu/ch-good" "$CACHED_HASH"
-write_cache_entry "https://europa.eu/ch-good" "$CACHED_HASH"
 # ch-bad: id + url match dispatch, but page content_hash is a sibling's
+store_cache_entry "https://europa.eu/ch-bad" "$BODY" >/dev/null
 write_page_ch ch-bad ch-bad "https://europa.eu/ch-bad" "$FOREIGN_HASH"
-write_cache_entry "https://europa.eu/ch-bad" "$CACHED_HASH"
 # ch-nocache: page has a hash but there is NO cache entry for its URL (miss)
 write_page_ch ch-nocache ch-nocache "https://europa.eu/ch-nocache" "$FOREIGN_HASH"
 
@@ -230,8 +217,9 @@ e=v["ch-bad"]
 assert e["id_ok"] is True and e["url_ok"] is True, e
 assert e["content_hash_ok"] is False, e
 assert e["reason"]=="content_hash_mismatch", e
-assert e["observed_content_hash"].endswith("2222"), e
-assert e["expected_content_hash"].endswith("1111"), e
+assert e["observed_content_hash"].endswith("2222"), e   # the foreign page hash
+assert e["expected_content_hash"].startswith("sha256:"), e   # the cache-derived hash
+assert e["expected_content_hash"] != e["observed_content_hash"], e
 # cache miss: leg skips -> ok despite the foreign page hash
 assert "ch-nocache" in d["ok"], d
 assert "ch-nocache" not in v, v
