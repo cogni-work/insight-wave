@@ -86,6 +86,17 @@ assert_grep 'covered_themes' "$INGEST" "knowledge-ingest: Step 4.5 persists into
 # forward-link the deposited synthesis to the research-question nodes it answers.
 assert_grep 'question-manifest.json' "$INGEST" "knowledge-ingest: Step 4.5.1 persists question-manifest.json handoff (#410)"
 assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Sources\" as the only category (#307; Sources is a fallback now)"
+# #411: Step 4.5.3 files each question node under its sub-question's own theme_label
+# heading (the same section its answering sources occupy), replacing the additive flat
+# "## Research questions" index category from #408 — so the index is anchored on the
+# question nodes instead of carrying two parallel groupings of the same themes. The
+# category is now derived from theme_label (keyed by sub_question_id) and NO LONGER a
+# hard-coded sole --category "Research questions". "Research questions" survives only as
+# (a) the legacy-no-theme_label fallback category and (b) the Step 4.5.2 source-page-body
+# heading, so do NOT assert the string is wholly absent — assert it is the fallback.
+assert_not_grep 'category "Research questions"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Research questions\" as the sole question category (#411; theme_label-derived now)"
+assert_grep 'own .theme_label. heading' "$INGEST" "knowledge-ingest: Step 4.5.3 files each question under its own theme_label heading — question-anchored grouping (#411)"
+assert_grep 'Research questions fallback' "$INGEST" "knowledge-ingest: \"Research questions\" kept as the legacy-no-theme_label fallback category (#411)"
 # #324: Step 4.2 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "≤180 chars" authoring contract that caused the mid-word
 # artifact is gone (the summary is authored as one crisp, complete sentence).
