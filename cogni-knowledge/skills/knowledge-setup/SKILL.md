@@ -17,6 +17,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 - User asks to bootstrap, set up, initialize, or start a knowledge base
 - User wants to begin a long-running research area (multiple projects, accumulating findings)
 - User explicitly invokes `/cogni-knowledge:knowledge-setup`
+- User wants to **re-steer an existing base** — the domain sharpened, the audience shifted, a new seed theme appeared — via `--reframe` (re-runs the charter interview against the existing binding; no hand-editing `binding.json`)
 
 ## Never run when
 
@@ -44,6 +45,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | `--open-themes` | No | Pipe-separated seed-theme backlog (e.g. `"high-risk systems\|conformity assessment\|GPAI"`). Persisted to `binding.json::topic_lineage.open_themes[]`; surfaces as the candidate menu for the first research question. Resolved interactively in Step 2.5 when omitted. |
 | `--no-charter` | No | Skip the Step 2.5 charter interview AND the Step 5 first-question on-ramp. Use for automation / a flag-only init. The charter fields fall through to `""` and `open_themes[]` to `[]` (a complete, schema-valid 0.1.4 binding either way). |
 | `--no-prelim-search` | No | Keep the Step 2.5 charter interview but skip its optional preliminary scoping scan (stays offline). Same semantics as `knowledge-plan --no-prelim-search`. |
+| `--reframe` | No | **Re-steer an existing base** instead of bootstrapping a new one. Re-runs the Step 2.5 charter interview against the **existing** binding and writes the updated charter in place via `knowledge-binding.py set-charter` (a **partial** update — only the fields you change). Inverts Step 1's pre-flight: requires an existing binding and aborts when none is found. Skips wiki setup (Steps 2/3), the `init` call (Step 4), and the Step 5 first-question on-ramp. The charter's data shape (schema 0.1.4) is unchanged. |
 
 If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with AskUserQuestion (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed). Do not invent slugs or titles silently.
 
@@ -80,7 +82,9 @@ The same probe runs in every other `knowledge-*` skill. Setup is still the canon
 
 1. If `--knowledge-root` was passed, use it as-is.
 2. Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` relative to the current working directory — the standard cogni-plugin convention (`cogni-{plugin}/{project-slug}/`), matching `cogni-wiki/{slug}/`.
-3. If `<knowledge_root>/.cogni-knowledge/binding.json` already exists: read it, report the existing knowledge_slug/title/wiki_path, and stop. Do not overwrite.
+3. **Binding pre-flight — direction depends on the mode:**
+   - **Normal (bootstrap) mode** (no `--reframe`): if `<knowledge_root>/.cogni-knowledge/binding.json` already exists, read it, report the existing knowledge_slug/title/wiki_path, and stop. Do not overwrite.
+   - **`--reframe` mode** (re-steer): the inverse. The binding **must** exist. If `<knowledge_root>/.cogni-knowledge/binding.json` is **missing**, abort cleanly: *"nothing to re-frame — run `knowledge-setup` (without `--reframe`) to bootstrap this base first."* When it exists, read it, validate its `knowledge_slug` matches `--knowledge-slug` (mismatch → abort), then **jump straight to Step 2.5** — skip the wiki pre-flight / dispatch (Steps 2/3) and the `init` call (Step 4); the wiki and binding already exist, so re-frame only rewrites the charter via `set-charter`.
 
 ### 2. Pre-flight: wiki vs no wiki
 
@@ -101,6 +105,18 @@ Why a charter: in cogni-knowledge one base accumulates *many* topics over time, 
 
 - **Skip** the charter interview when `--no-charter` is passed, **or** the run is non-interactive (all of `--charter-domain`/`--charter-audience`/`--charter-scope` supplied via flags). In the skip case, charter fields fall through to their flags (else `""`) and `open_themes[]` to `--open-themes` (else `[]`) — still a complete schema-0.1.4 binding.
 - **Engage** otherwise (the default on an interactive run). Say so in one sentence before asking: *"Let me frame this knowledge base before we set it up — a few quick questions so every future research run is anchored to it."*
+
+**`--reframe` mode — re-steer an existing charter.** When invoked with `--reframe`, this same interview runs against the **existing** binding instead of a fresh one:
+
+- First **read the current charter** so the user sees what is set today and only changes what shifted:
+  ```
+  python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py read --knowledge-root <knowledge_root>
+  ```
+  Pull `binding.charter.{domain,audience,scope}` and `binding.topic_lineage.open_themes[]`.
+- **Pre-populate the AskUserQuestion defaults** from those current values (the sharpen turn shows "currently: `<domain>`" so an unchanged field is one keystroke to keep).
+- Frame the seed-themes question as *"Any **additional** seed themes to add?"* — `set-charter` **union-merges** `--open-themes` into the existing backlog (it appends; it never clobbers or removes). Dropping a seed theme stays a hand-edit for now.
+- Say so in one sentence first: *"Let me re-frame this knowledge base — I'll show you what's set today, change only what shifted."*
+- The market / language resolution below is **not** re-run in `--reframe` mode (those live in `research_defaults`, not the charter; re-framing steers domain/audience/scope/themes only). Skip straight to writing the charter in Step 4's `--reframe` branch.
 
 When engaged, run the four framing moves (port the **shape** from `references/charter-framing.md`):
 
@@ -142,6 +158,19 @@ On `wiki-setup` failure, surface the error verbatim and stop. The binding is not
 
 ### 4. Write the binding manifest
 
+**`--reframe` mode → `set-charter` (in-place, partial).** Skip the `init` call entirely. Write only the charter fields the user actually changed in Step 2.5, passing **only** those flags (an unchanged field is simply omitted — `set-charter` leaves it untouched; `framed_at` is re-stamped only when domain/audience/scope changes; `--open-themes` union-merges into the existing backlog):
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py set-charter \
+    --knowledge-root <knowledge_root> --knowledge-slug <knowledge_slug> \
+    [--charter-domain "<new domain>"] [--charter-audience "<new audience>"] \
+    [--charter-scope "<new scope>"] [--open-themes "<theme1|theme2|...>"]
+```
+
+`set-charter` writes the **same** schema-0.1.4 charter shape `init` does (it is a new action, not a new field — `schema_version` is not bumped) and is fail-soft on a pre-0.1.4 binding (it recreates a complete charter block). On `success: false` (e.g. nothing-to-update, or a `--knowledge-slug` mismatch), surface the error and stop. **Then go to Step 5's `--reframe` branch** (print the updated-charter summary; skip the first-question on-ramp).
+
+**Normal (bootstrap) mode → `init`:**
+
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py init \
     --knowledge-root <knowledge_root> \
@@ -158,6 +187,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py init \
 `--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.2). The four charter args carry the Step 2.5 charter interview into `binding.json::charter` + `topic_lineage.open_themes[]` (schema 0.1.4) — pass each only when resolved (a skipped/blank charter field simply omits the flag and falls through **script-side** to `""`; `framed_at` is stamped only when any charter field is non-empty). The four writer-quality flags are likewise passed only when the user supplied them; **omitted flags fall back script-side** to the `DEFAULT_RESEARCH_DEFAULTS` block (`dach`/`en`/`standard`/`objective`/`ieee`/`4000`), so a plain `init` still writes a complete schema-0.1.4 binding (`research_defaults` complete, `charter` all-`""`, `open_themes` `[]`). The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
 
 ### 5. Final summary + first-question on-ramp
+
+**`--reframe` mode → updated-charter summary, no on-ramp.** Print a short confirmation of the re-framed charter (domain / audience / scope, and any seed themes added) and **stop**. Do **not** run the first-question on-ramp — a base being re-framed already has projects, so the right next step is `knowledge-resume --knowledge-slug <slug>` (to see where it stands) or `knowledge-plan --knowledge-slug <slug> --topic '...'` (to frame the next research question against the freshened charter), not a first-question chain. Point at those and end the run.
+
+**Normal (bootstrap) mode** — the rest of this step.
 
 First print a short summary, ≤ 8 lines:
 
@@ -200,6 +233,7 @@ Static next-action guidance (printed on skip / "pick later"):
 - Records only the knowledge-base **defaults** (`market`/`output_language` + the four writer-quality knobs `prose_density`/`tone`/`citation_format`/`target_words`) in `binding.json::research_defaults` (Step 2.5, schema 0.1.2). The per-run choice still lives in `knowledge-plan` — a single plan can override any base default with its own matching flag (e.g. an English report about a German market, or an `executive`-density draft on a `standard`-default base).
 - The **charter** (Step 2.5, schema 0.1.4) is **domain / audience / scope / seed-themes only** — the coarse base steering. It deliberately does NOT carry the writer-quality knobs (those stay per-run on `knowledge-plan`) and is NOT a per-question prompt: the finer per-research-question framing remains `knowledge-plan` Step 0.4's job, which inherits this charter as grounding.
 - Does NOT run any pipeline phase past `plan`. The Step 5 on-ramp chains at most into `knowledge-plan --frame` (cheap, no-web decomposition); `knowledge-curate` onward stay the user's cost-bearing per-run decision.
+- **`--reframe` re-steers the charter only** (domain / audience / scope / *additional* seed themes), in place via `set-charter`. It does NOT re-run wiki setup, does NOT re-run `init`, does NOT re-resolve `market`/`output_language` (those live in `research_defaults`, untouched), and does NOT run the first-question on-ramp. It only ADDS seed themes (union-merge) — removing or replacing a seed theme stays a hand-edit. The charter's data shape (schema 0.1.4) is unchanged.
 
 ## Output
 
