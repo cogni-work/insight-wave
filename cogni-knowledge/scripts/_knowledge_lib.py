@@ -413,6 +413,13 @@ def body_word_count(draft: str, lang: str | None) -> int:
     (`ref_heading(lang)` → `strip_reference_section`) and split on whitespace.
     Lives here (not inline in the skill markdown) so the gate's measured surface
     is unit-testable and the two gates can never drift on what "words" means.
+
+    Section-heading tokens and inline `<sup>[N](url)</sup>` citation markers that
+    survive the strip ARE counted by design — `.split()` is whitespace-only. That
+    is a handful of words against the ~1.1k-word reference list this excludes, so
+    the load-bearing surface (body vs. body+bibliography) is what stays aligned
+    with the reviewer; do not assume byte-parity with the reviewer's per-section
+    count.
     """
     return len(strip_reference_section(draft, ref_heading(lang)).split())
 

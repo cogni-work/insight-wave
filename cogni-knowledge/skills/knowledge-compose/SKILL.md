@@ -262,6 +262,8 @@ print(body_word_count(draft, os.environ.get("OUTPUT_LANGUAGE") or "en"))
 ')
 ```
 
+If the snippet errors or returns empty (e.g. an unreadable draft), treat it as no deficit and skip expansion with `expansion skipped: body-word count unavailable` — the whole step is fail-soft, so a missing measurement never blocks the deposit.
+
 **Gate (fire only when BOTH hold):** `BODY_WORDS < TARGET_WORDS × 0.85` **AND** the composer's returned `ceiling_hit == false`. If `BODY_WORDS ≥ TARGET_WORDS × 0.85`, skip silently (the floor is effectively met). If `ceiling_hit == true`, skip with `expansion skipped: at single-call ceiling — raise coverage via more ingestion (knowledge-curate/-fetch)` — re-rolling the composer cannot fit more words in one call; the fix is more wiki coverage.
 
 This `0.85` is the **real-deficit actuator trigger** and is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate's tiered completeness caps (finalize Step 10.7, which scores the *post*-expansion draft): the two thresholds serve different roles — actuator vs advisory backstop — and a future tweak to one need not track the other. **Both now measure the same surface — body words, reference section excluded** (this actuator via the deterministic `BODY_WORDS` above; the reviewer via the same `strip_reference_section` exclusion) — so they agree on what "words" means even though their threshold *curves* stay independent.
@@ -371,9 +373,9 @@ Print ≤ 10 lines:
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, `distilled_claims[]` on a cited distilled page, or `answer_claims[]` on a cited question node.
 
-Surface a density-aware word-count warning — but do not auto-retry:
-- Under `PROSE_DENSITY=standard`: if `BODY_WORDS` (the gate- and reviewer-aligned body word count from Step 5.5, reference list excluded; it already reflects the canonical `vN` after any expansion) is well below `TARGET_WORDS` (the floor), `⚠ Below target (BODY_WORDS/TARGET_WORDS)`.
-- Under `PROSE_DENSITY=executive`: if the composer's returned `words` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (words/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
+Surface a density-aware word-count warning — but do not auto-retry. Both branches measure **body words** (the `wiki-reviewer`-aligned surface, reference list excluded): under `standard` reuse the `BODY_WORDS` already computed in Step 5.5 (it reflects the canonical `vN` after any expansion); under `executive` Step 5.5 was skipped, so compute `BODY_WORDS` now for `<project_path>/output/draft-v<N>.md` with the same `body_word_count` helper. Using body words here (not the composer's total `words`) also stops the ~1.1k-word bibliography from triggering a false over-ceiling warning:
+- Under `PROSE_DENSITY=standard`: if `BODY_WORDS` is well below `TARGET_WORDS` (the floor), `⚠ Below target (BODY_WORDS/TARGET_WORDS)`.
+- Under `PROSE_DENSITY=executive`: if `BODY_WORDS` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (BODY_WORDS/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
 
 Under `standard` density this warning reflects the **post-expansion** draft (Step 5.5 already attempted to close a real deficit), so a residual `⚠ Below target` here means the wiki lacked the uncited evidence to deepen further — a coverage signal, not a composer miss. The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores this with its Word Count Gate as the advisory backstop; the compose-time line is a fast heads-up, not a gate.
 
