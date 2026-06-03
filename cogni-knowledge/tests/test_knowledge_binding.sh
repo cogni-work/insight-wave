@@ -280,6 +280,55 @@ echo "$OUT11" | grep -q 'knowledge_slug mismatch' \
   && green "PASS: set-charter refuses on --knowledge-slug mismatch" \
   || { red "FAIL: set-charter slug-mismatch guard wrong"; echo "$OUT11"; errors=$((errors+1)); }
 
+# 12. Clearing the last steering field must NOT re-stamp framed_at — mirrors
+#     init's invariant (framed_at stamped only when a steering field is
+#     non-empty), so a cleared charter stays distinguishable from a fresh one.
+#     A dedicated base whose ONLY steering field is domain.
+KBCLR="$WORK/kbclr"; mkdir -p "$KBCLR/.cogni-wiki"
+echo '{"name":"C","slug":"c","schema_version":"0.0.5"}' > "$KBCLR/.cogni-wiki/config.json"
+BINDING_CLR="$KBCLR/.cogni-knowledge/binding.json"
+python3 "$SCRIPT" init \
+  --knowledge-root "$KBCLR" --knowledge-slug clear-kb \
+  --knowledge-title "Clear KB" --wiki-path "$KBCLR" \
+  --charter-domain 'EU AI Act' >/dev/null
+# Freeze framed_at to a known-past date so a (wrong) re-stamp would be visible.
+python3 -c "
+import json
+b = json.load(open('$BINDING_CLR'))
+b['charter']['framed_at'] = '2025-03-03'
+json.dump(b, open('$BINDING_CLR','w'))
+"
+# Clear the only steering field — supplying an explicit empty string.
+python3 "$SCRIPT" set-charter --knowledge-root "$KBCLR" --charter-domain '' >/dev/null
+if python3 -c "
+import json
+b = json.load(open('$BINDING_CLR'))
+c = b['charter']
+assert c['domain'] == '', ('domain must clear', c)
+assert c['framed_at'] == '2025-03-03', ('clearing the last field must NOT re-stamp', c)
+print('OK')
+" | grep -q OK; then
+  green "PASS: set-charter clearing the last steering field does not re-stamp framed_at"
+else
+  red "FAIL: set-charter clearing case re-stamped framed_at"; errors=$((errors+1))
+fi
+
+# 12b. A subsequent non-empty re-steer DOES re-stamp (the common path stays).
+python3 "$SCRIPT" set-charter --knowledge-root "$KBCLR" \
+  --charter-domain 'EU AI Act high-risk' >/dev/null
+if python3 -c "
+import json
+b = json.load(open('$BINDING_CLR'))
+c = b['charter']
+assert c['domain'] == 'EU AI Act high-risk', c
+assert c['framed_at'] != '2025-03-03', ('a non-empty re-steer must re-stamp', c)
+print('OK')
+" | grep -q OK; then
+  green "PASS: set-charter non-empty re-steer still re-stamps framed_at"
+else
+  red "FAIL: set-charter non-empty re-steer failed to re-stamp"; errors=$((errors+1))
+fi
+
 # --- themes subcommand (#450): open MINUS covered at read time -------------
 # A fresh KB with a seed backlog, one of whose themes has been "researched"
 # (its theme_norm_key recorded in covered_themes[]). Display must hide the
