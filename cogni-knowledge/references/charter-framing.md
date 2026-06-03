@@ -31,7 +31,7 @@ When engaging, say so in one sentence first: *"Let me frame this knowledge base 
 
 1. **Ground** — identical to `topic-framing.md` Step 0.2: ask for any grounding material (path / pasted text / URL / "no context"), read conservatively, **cap ~50 KB**, no network, no writes outside the base.
 2. **Scan** — identical posture to `topic-framing.md` Step 0.2b: optional, fail-soft, `--no-prelim-search` opts out; 2–3 broad `WebSearch` queries on the **domain** (not a single research question) to ground the seed-theme suggestions. Any error → skip silently.
-3. **Sharpen** — one `AskUserQuestion` turn, ≤ 4 skippable questions, base-scoped bank below. Fold the market + output-language questions (from `knowledge-setup` Step 2.5) into the same turn.
+3. **Sharpen** — one `AskUserQuestion` turn, ≤ 4 skippable questions, base-scoped bank below. The four charter questions (domain, audience, scope, seed themes) fill the `AskUserQuestion` 4-question cap, so the market + output-language questions (from `knowledge-setup` Step 2.5) spill into an immediate follow-up turn; only fold them into the same turn when one or more charter questions are pre-supplied by flag and the budget allows.
 4. **Right-size** — seed themes are a *backlog*, not a single run's scope, so there is no 3–7 cap here (that cap is per-run, in `topic-framing.md`). Just keep the seed list tight (3–6) — it is the candidate menu for the first research question, not an exhaustive roadmap.
 5. **Emit** — the charter is written by `knowledge-binding.py init` (Step 4), not a `framing.md` file. There is no separate emit artifact at the base level; the binding **is** the persisted charter.
 

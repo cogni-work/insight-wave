@@ -3,7 +3,7 @@
 # upsert-themes (#409): the SOLE writer of topic_lineage.covered_themes[].
 #
 # Asserts:
-#   1. init writes schema_version 0.1.3 with an empty covered_themes[].
+#   1. init writes schema_version 0.1.4 with an empty covered_themes[].
 #   2. upsert-themes APPENDS a fresh entry for an unseen theme_key
 #      (first_seen == last_seen, labels seeded from theme_label).
 #   3. A second upsert-themes for the SAME theme_key with a NEW label UNIONS
@@ -40,7 +40,7 @@ echo '{"name":"Test","slug":"test","schema_version":"0.0.5"}' > "$WIKI/.cogni-wi
 
 BINDING="$KB/.cogni-knowledge/binding.json"
 
-# 1. init — schema 0.1.3, empty covered_themes[].
+# 1. init — schema 0.1.4, empty covered_themes[].
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" --knowledge-slug test-kb \
   --knowledge-title "Test KB" --wiki-path "$WIKI" >/dev/null
