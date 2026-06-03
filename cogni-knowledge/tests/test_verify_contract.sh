@@ -36,6 +36,16 @@ assert_grep 'verify-store.py merge' "$VERIFY" "knowledge-verify: merges fragment
 # #383: the revisor-round manifest rebuild cross-checks inline URLs against the ingest manifest.
 assert_grep 'citation-store.py build' "$VERIFY" "knowledge-verify: rebuilds the manifest via citation-store.py build"
 assert_grep 'ingest-manifest' "$VERIFY" "knowledge-verify: revisor-round build passes --ingest-manifest (#383 URL gate)"
+# #455: the Step 3.3 post-revisor rebuild must pass the build paths as quoted
+# LITERAL CLI args, never a command-prefix env-var form
+# (`RECORDS_PATH=… python3 … --records "$RECORDS_PATH"`) — that form expands
+# "$RECORDS_PATH" against the still-unset current environment before the prefix
+# assignment takes effect, so --records receives "" and the build aborts on the cwd.
+# Positive guard pins the fixed literal shape; negative guard catches the antipattern
+# returning. `RECORDS_PATH="` matches only the assignment form (the corrected prose
+# names `RECORDS_PATH=…` / `"$RECORDS_PATH"`, neither of which contains `="`).
+assert_grep '\-\-records "<project_path>/.metadata/citation-records-v' "$VERIFY" "knowledge-verify: Step 3.3 rebuild passes --records as a quoted literal path (#455)"
+assert_not_grep 'RECORDS_PATH="' "$VERIFY" "knowledge-verify: Step 3.3 rebuild has no command-prefix RECORDS_PATH= env-var (the #455 empty-arg antipattern)"
 assert_grep 'CITATIONS_PATH' "$VERIFY" "knowledge-verify: passes CITATIONS_PATH shard subset to each verifier"
 assert_grep 'VERIFY_OUT_PATH' "$VERIFY" "knowledge-verify: passes VERIFY_OUT_PATH fragment path to each verifier"
 # Completeness guard: merge must catch a crashed/under-populated shard rather

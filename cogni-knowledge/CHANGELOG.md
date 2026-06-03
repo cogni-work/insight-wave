@@ -24,6 +24,11 @@ directory: '<cwd>'`. Run verbatim, the documented compose/verify pipeline step f
   populates, and keep an apostrophe-bearing path out of the interpolated Python source literal).
 - **No script change** — `citation-store.py` is correct; `tests/test_citation_store.sh` already calls
   `build` with quoted literal `--records` args.
+- **Regression guard** — `tests/test_compose_contract.sh` + `tests/test_verify_contract.sh` now assert
+  the Step 4.5 / Step 3.3 build block passes `--records` as a quoted literal path AND carries no
+  command-prefix `RECORDS_PATH="` assignment, so the env-var antipattern cannot silently return on a
+  future edit (the corrected rationale prose names `RECORDS_PATH=…` / `"$RECORDS_PATH"` — neither
+  matches the `="` assignment anchor, so the prose is not a false positive).
 
 ## 0.1.65 — 2026-06-03 — feat: charter re-frame / update path — #451
 
