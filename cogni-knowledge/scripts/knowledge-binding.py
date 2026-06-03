@@ -93,6 +93,16 @@ DEFAULT_RESEARCH_DEFAULTS = {
     "citation_format": "ieee",
     "target_words": 4000,
 }
+# The charter key-set + empty defaults (schema 0.1.4), in one place so both
+# writers — `init` (first frame) and `set-charter` (in-place re-frame) — derive
+# the shape from a single source. framed_at defaults to "" (stamped only when the
+# base is actually steered); init overrides the three steering fields + framed_at.
+DEFAULT_CHARTER = {
+    "domain": "",
+    "audience": "",
+    "scope": "",
+    "framed_at": "",
+}
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -192,6 +202,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         "research_projects": [],
         "topic_lineage": {"covered_themes": [], "open_themes": open_themes},
         "charter": {
+            **DEFAULT_CHARTER,
             "domain": charter_domain,
             "audience": charter_audience,
             "scope": charter_scope,
@@ -434,9 +445,7 @@ def cmd_set_charter(args: argparse.Namespace) -> int:
         )
 
     # Fail-soft: a base created before the charter existed gains a complete block.
-    charter = binding.setdefault(
-        "charter", {"domain": "", "audience": "", "scope": "", "framed_at": ""}
-    )
+    charter = binding.setdefault("charter", dict(DEFAULT_CHARTER))
 
     # Partial update — only overwrite a field whose flag was supplied (None = leave).
     changed_charter = False
