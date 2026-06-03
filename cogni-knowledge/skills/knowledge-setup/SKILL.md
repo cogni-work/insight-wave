@@ -38,12 +38,12 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | `--tone` | No | Default writing tone persisted to `binding.json::research_defaults.tone` (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`). **Flag-or-default** — not prompted (safe default `objective`). |
 | `--citation-format` | No | Default citation format persisted to `binding.json::research_defaults.citation_format` (`ieee`/`chicago` wired; `apa`/`mla`/`harvard` staged). **Flag-or-default** — not prompted (safe default `ieee`). |
 | `--target-words` | No | Default soft target word count persisted to `binding.json::research_defaults.target_words`. **Flag-or-default** — not prompted (safe default `4000`). |
-| `--charter-domain` | No | One sentence: what this knowledge base is about. Persisted to `binding.json::charter.domain` (schema 0.1.4). Resolved interactively in Step 1.5 when omitted (engages the charter interview). |
-| `--charter-audience` | No | Primary reader of the syntheses this base produces. Persisted to `binding.json::charter.audience`. Resolved interactively in Step 1.5 when omitted. |
-| `--charter-scope` | No | In/out boundaries — geography / segment / horizon, one line. Persisted to `binding.json::charter.scope`. Resolved interactively in Step 1.5 when omitted. |
-| `--open-themes` | No | Pipe-separated seed-theme backlog (e.g. `"high-risk systems\|conformity assessment\|GPAI"`). Persisted to `binding.json::topic_lineage.open_themes[]`; surfaces as the candidate menu for the first research question. Resolved interactively in Step 1.5 when omitted. |
-| `--no-charter` | No | Skip the Step 1.5 charter interview AND the Step 5 first-question on-ramp. Use for automation / a flag-only init. The charter fields fall through to `""` and `open_themes[]` to `[]` (a complete, schema-valid 0.1.4 binding either way). |
-| `--no-prelim-search` | No | Keep the Step 1.5 charter interview but skip its optional preliminary scoping scan (stays offline). Same semantics as `knowledge-plan --no-prelim-search`. |
+| `--charter-domain` | No | One sentence: what this knowledge base is about. Persisted to `binding.json::charter.domain` (schema 0.1.4). Resolved interactively in Step 2.5 when omitted (engages the charter interview). |
+| `--charter-audience` | No | Primary reader of the syntheses this base produces. Persisted to `binding.json::charter.audience`. Resolved interactively in Step 2.5 when omitted. |
+| `--charter-scope` | No | In/out boundaries — geography / segment / horizon, one line. Persisted to `binding.json::charter.scope`. Resolved interactively in Step 2.5 when omitted. |
+| `--open-themes` | No | Pipe-separated seed-theme backlog (e.g. `"high-risk systems\|conformity assessment\|GPAI"`). Persisted to `binding.json::topic_lineage.open_themes[]`; surfaces as the candidate menu for the first research question. Resolved interactively in Step 2.5 when omitted. |
+| `--no-charter` | No | Skip the Step 2.5 charter interview AND the Step 5 first-question on-ramp. Use for automation / a flag-only init. The charter fields fall through to `""` and `open_themes[]` to `[]` (a complete, schema-valid 0.1.4 binding either way). |
+| `--no-prelim-search` | No | Keep the Step 2.5 charter interview but skip its optional preliminary scoping scan (stays offline). Same semantics as `knowledge-plan --no-prelim-search`. |
 
 If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with AskUserQuestion (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed). Do not invent slugs or titles silently.
 

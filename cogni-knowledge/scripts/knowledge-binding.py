@@ -45,7 +45,7 @@ from pathlib import Path
 # [] (init's default), so consumers reading
 # .get("topic_lineage", {}).get("covered_themes", []) fall straight through.
 # 0.1.4 is the next additive bump — it adds a `charter` block (the base-level
-# steering captured at knowledge-setup Step 1.5: {domain, audience, scope,
+# steering captured at knowledge-setup Step 2.5: {domain, audience, scope,
 # framed_at}). All four fields default to "" so a flag-only / non-interactive
 # init still writes a complete, schema-valid block; `framed_at` is set to today
 # only when any of domain/audience/scope is non-empty. The seed-theme backlog
@@ -164,18 +164,16 @@ def cmd_init(args: argparse.Namespace) -> int:
     # is fully derivable from knowledge_root so it is not echoed into the
     # binding — consumers compute it the same way fetch-cache.py does.
     (knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME).mkdir(parents=True, exist_ok=True)
-    # The charter is the base-level steering captured at knowledge-setup Step 1.5
+    # The charter is the base-level steering captured at knowledge-setup Step 2.5
     # (domain / audience / scope). All fields fall through to "" so a flag-only
-    # or non-interactive init still writes a complete schema-0.1.4 block;
-    # framed_at is stamped only when the base was actually steered (any field
-    # non-empty) so a default-skeleton charter is distinguishable from a real one.
+    # or non-interactive init still writes a complete schema-0.1.4 block.
     charter_domain = args.charter_domain or ""
     charter_audience = args.charter_audience or ""
     charter_scope = args.charter_scope or ""
-    charter_framed = bool(charter_domain or charter_audience or charter_scope)
     # --open-themes is a pipe-separated seed-theme backlog → the EXISTING
     # topic_lineage.open_themes[] plain string list (default []).
     open_themes = [t.strip() for t in (args.open_themes or "").split("|") if t.strip()]
+    today = _today()
     payload = {
         "knowledge_slug": args.knowledge_slug,
         "knowledge_title": args.knowledge_title,
@@ -186,7 +184,9 @@ def cmd_init(args: argparse.Namespace) -> int:
             "domain": charter_domain,
             "audience": charter_audience,
             "scope": charter_scope,
-            "framed_at": _today() if charter_framed else "",
+            # stamped only when the base was actually steered (any field set),
+            # so a default-skeleton charter stays distinguishable from a real one
+            "framed_at": today if (charter_domain or charter_audience or charter_scope) else "",
         },
         "curator_defaults": dict(DEFAULT_CURATOR_DEFAULTS),
         "research_defaults": {
@@ -203,7 +203,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             # and 0/omitted falls through to the 4000 default.
             "target_words": args.target_words or DEFAULT_RESEARCH_DEFAULTS["target_words"],
         },
-        "created": _today(),
+        "created": today,
         "schema_version": SCHEMA_VERSION,
     }
     written = _write_binding(knowledge_root, payload)
@@ -452,7 +452,7 @@ def main(argv: list[str]) -> int:
              "omitted or 0.",
     )
     # Charter fields (schema 0.1.4) — the base-level steering captured at
-    # knowledge-setup Step 1.5. Each falls through to "" so a plain init still
+    # knowledge-setup Step 2.5. Each falls through to "" so a plain init still
     # writes a complete charter block.
     p_init.add_argument(
         "--charter-domain",
