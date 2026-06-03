@@ -4,6 +4,8 @@
 
 LLM-facing reference for the **optional Step 0 — Topic Framing** in `knowledge-plan`. Step 0 turns a fuzzy intent into a sharp, scope-tested research prompt before decomposition (Step 2) runs. Framework-agnostic. Context-open. Skippable when the topic is already sharp, or when `--no-framing` / `--dry-run` is passed.
 
+> See also: `charter-framing.md` for **base-level** framing at `knowledge-setup` (the coarse charter — domain/audience/scope/seed-themes — that this per-question framing inherits as grounding).
+
 The job is five moves, in order: **ground → scan → sharpen → right-size → emit**. (The **scan** move is optional and fail-soft — see Step 0.2b.)
 
 ## When framing engages (and when it gets out of the way)

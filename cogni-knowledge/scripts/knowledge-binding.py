@@ -44,7 +44,15 @@ from pathlib import Path
 # persistent question node across runs. Pre-0.1.3 bindings carry covered_themes:
 # [] (init's default), so consumers reading
 # .get("topic_lineage", {}).get("covered_themes", []) fall straight through.
-SCHEMA_VERSION = "0.1.3"
+# 0.1.4 is the next additive bump — it adds a `charter` block (the base-level
+# steering captured at knowledge-setup Step 1.5: {domain, audience, scope,
+# framed_at}). All four fields default to "" so a flag-only / non-interactive
+# init still writes a complete, schema-valid block; `framed_at` is set to today
+# only when any of domain/audience/scope is non-empty. The seed-theme backlog
+# lands in the EXISTING topic_lineage.open_themes[] (a plain string list, was
+# out of scope for #409). Pre-0.1.4 bindings have no `charter` key, so consumers
+# MUST read it with .get("charter", {}).get(key, "") to fall straight through.
+SCHEMA_VERSION = "0.1.4"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -156,12 +164,30 @@ def cmd_init(args: argparse.Namespace) -> int:
     # is fully derivable from knowledge_root so it is not echoed into the
     # binding — consumers compute it the same way fetch-cache.py does.
     (knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME).mkdir(parents=True, exist_ok=True)
+    # The charter is the base-level steering captured at knowledge-setup Step 1.5
+    # (domain / audience / scope). All fields fall through to "" so a flag-only
+    # or non-interactive init still writes a complete schema-0.1.4 block;
+    # framed_at is stamped only when the base was actually steered (any field
+    # non-empty) so a default-skeleton charter is distinguishable from a real one.
+    charter_domain = args.charter_domain or ""
+    charter_audience = args.charter_audience or ""
+    charter_scope = args.charter_scope or ""
+    charter_framed = bool(charter_domain or charter_audience or charter_scope)
+    # --open-themes is a pipe-separated seed-theme backlog → the EXISTING
+    # topic_lineage.open_themes[] plain string list (default []).
+    open_themes = [t.strip() for t in (args.open_themes or "").split("|") if t.strip()]
     payload = {
         "knowledge_slug": args.knowledge_slug,
         "knowledge_title": args.knowledge_title,
         "wiki_path": str(wiki_path),
         "research_projects": [],
-        "topic_lineage": {"covered_themes": [], "open_themes": []},
+        "topic_lineage": {"covered_themes": [], "open_themes": open_themes},
+        "charter": {
+            "domain": charter_domain,
+            "audience": charter_audience,
+            "scope": charter_scope,
+            "framed_at": _today() if charter_framed else "",
+        },
         "curator_defaults": dict(DEFAULT_CURATOR_DEFAULTS),
         "research_defaults": {
             "market": args.market or DEFAULT_RESEARCH_DEFAULTS["market"],
@@ -424,6 +450,38 @@ def main(argv: list[str]) -> int:
         help="Default soft target word count (floor under standard density, "
              "ceiling under executive). Positive int; falls back to 4000 when "
              "omitted or 0.",
+    )
+    # Charter fields (schema 0.1.4) — the base-level steering captured at
+    # knowledge-setup Step 1.5. Each falls through to "" so a plain init still
+    # writes a complete charter block.
+    p_init.add_argument(
+        "--charter-domain",
+        required=False,
+        default="",
+        help="One sentence: what this knowledge base is about "
+             "(charter.domain). Empty when omitted.",
+    )
+    p_init.add_argument(
+        "--charter-audience",
+        required=False,
+        default="",
+        help="Primary reader of syntheses from this base (charter.audience). "
+             "Empty when omitted.",
+    )
+    p_init.add_argument(
+        "--charter-scope",
+        required=False,
+        default="",
+        help="In/out boundaries — geography / segment / horizon, one line "
+             "(charter.scope). Empty when omitted.",
+    )
+    p_init.add_argument(
+        "--open-themes",
+        required=False,
+        default="",
+        help="Pipe-separated seed-theme backlog → topic_lineage.open_themes[] "
+             "(e.g. 'high-risk systems|conformity assessment|GPAI'). Empty list "
+             "when omitted.",
     )
     p_init.set_defaults(func=cmd_init)
 
