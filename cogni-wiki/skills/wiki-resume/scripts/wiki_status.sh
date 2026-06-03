@@ -96,7 +96,7 @@ RAW_DIR="$WIKI_ROOT/raw"
 CONFIG_FILE="$WIKI_ROOT/.cogni-wiki/config.json"
 
 # Per-type page directories (v0.0.28+). Order matches _wikilib.PAGE_TYPE_DIRS.
-TYPE_DIRS="concepts entities summaries decisions interviews meetings learnings syntheses notes"
+TYPE_DIRS="concepts entities summaries decisions interviews meetings learnings syntheses notes sources questions"
 
 # Resolve script dir so we can find ../../wiki-health/scripts/health.py.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -208,7 +208,11 @@ fi
 open_questions_count=0
 OPEN_QUESTIONS_FILE="$WIKI_DIR/open_questions.md"
 if [ -f "$OPEN_QUESTIONS_FILE" ]; then
-  open_questions_count=$(grep -cE '^- \[ \] ' "$OPEN_QUESTIONS_FILE" 2>/dev/null || echo 0)
+  # grep -c already prints 0 on no match (it just exits non-zero), so a
+  # `|| echo 0` fallback would append a second line and crash the downstream
+  # int(); guard the non-zero exit with `|| true` instead.
+  open_questions_count=$(grep -cE '^- \[ \] ' "$OPEN_QUESTIONS_FILE" 2>/dev/null || true)
+  open_questions_count=${open_questions_count:-0}
 fi
 
 # ---------- orphan raw files (quick heuristic) ----------
