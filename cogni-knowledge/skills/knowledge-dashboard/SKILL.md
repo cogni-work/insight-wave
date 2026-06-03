@@ -71,7 +71,14 @@ Then continue with the binding-resolution checks:
    ```
    On `success: false`, abort and offer `knowledge-setup`. Do not auto-create.
 
-3. Extract `wiki_path`, `knowledge_slug`, `knowledge_title`, `research_projects[]`, `created` from the binding, plus the charter (`binding.get("charter", {}).get("domain"/"audience"/"scope", "")`) and the seed-theme backlog (`binding.get("topic_lineage", {}).get("open_themes", [])`). Validate `binding.knowledge_slug == --knowledge-slug`. The charter `.get` chain falls through to `""`/`[]` on a pre-0.1.4 binding (read-only, fail-soft).
+3. Extract `wiki_path`, `knowledge_slug`, `knowledge_title`, `research_projects[]`, `created` from the binding, plus the charter (`binding.get("charter", {}).get("domain"/"audience"/"scope", "")`). Validate `binding.knowledge_slug == --knowledge-slug`. The charter `.get` chain falls through to `""` on a pre-0.1.4 binding (read-only, fail-soft).
+
+   Then read the **still-open** seed-theme backlog (the seed themes *minus* the ones already researched) via the `themes` subcommand — don't read `open_themes[]` from the raw binding, because a theme that has since been researched still lives there (it is write-once-at-init); `themes` partitions it against `covered_themes[]` at read time:
+   ```
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py themes \
+       --knowledge-root <knowledge_root>
+   ```
+   Capture `open_active` (still-open seeds; researched seeds already dropped off). This is read-only and fail-soft (a structurally-invalid / pre-0.1.4 binding returns `open_active: []`, `success: true`).
 
 4. Confirm the wiki is still there: `<wiki_path>/.cogni-wiki/config.json` must exist. If not, abort.
 
@@ -142,8 +149,8 @@ Created <created>. Wiki: <wiki_path>.
 (When `charter.domain` is non-empty — schema 0.1.4:)
 **Charter.** <charter.domain> · for <charter.audience> · scope <charter.scope>.
 
-(When `open_themes[]` is non-empty:)
-**Seed themes.** <open_themes joined by ' · '>.
+(When `open_active` (from the `themes` subcommand) is non-empty — the still-open seeds, researched ones already removed; omit the line entirely when `open_active` is empty even if the raw `open_themes[]` is non-empty, because every seed has since been researched:)
+**Seed themes.** <open_active joined by ' · '>.
 
 ## Deposited research projects
 
