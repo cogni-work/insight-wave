@@ -318,16 +318,15 @@ Task(revisor,
 
 Parse the return envelope:
 
-- `ok: true` → **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads`). Serialize + self-check it exactly as Phase 5 does (paths via env vars):
+- `ok: true` → **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads`). Serialize + self-check it exactly as Phase 5 does — pass each path as a **quoted literal CLI arg**, never a command-prefix env-var form (a `RECORDS_PATH=… python3 … --records "$RECORDS_PATH"` prefix expands `"$RECORDS_PATH"` before the assignment takes effect, so `--records` gets an empty string and the build aborts):
 
   ```
-  RECORDS_PATH="<project_path>/.metadata/citation-records-v<NEW_DRAFT_VERSION>.txt" \
-  DRAFT_PATH="<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md" \
-  OUT_PATH="<project_path>/.metadata/citation-manifest.json" \
-  INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
-      --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <NEW_DRAFT_VERSION> \
-      --ingest-manifest "$INGEST_PATH"
+      --records "<project_path>/.metadata/citation-records-v<NEW_DRAFT_VERSION>.txt" \
+      --draft "<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md" \
+      --out "<project_path>/.metadata/citation-manifest.json" \
+      --draft-version <NEW_DRAFT_VERSION> \
+      --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
   ```
 
   `build` `json.dumps` the records into `citation-manifest.json`, asserts every `draft_sentence` is a verbatim substring of `draft-v<NEW_DRAFT_VERSION>.md` (which doubly catches a revisor whose `Edit` didn't land the rephrased sentence verbatim), and — via the `--ingest-manifest` gate — asserts every inline citation URL is a known ingested-source URL (so a revisor that re-introduced a slug-derived URL on a rephrase round can't ship it). On `success: false` — e.g. `error: "write_failed"` with `failed_check: "sentence_not_in_draft"` (a revised sentence is not in the draft), `duplicate_id`, or `url_not_in_sources` (an inline URL is not a real ingested source) — surface `error` + `data` verbatim and **stop**; the prior `verify-v<CURRENT_DRAFT_VERSION>.json` remains the latest valid audit trail. On `success: true`, continue.

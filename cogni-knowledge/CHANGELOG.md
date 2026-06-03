@@ -1,5 +1,30 @@
 # cogni-knowledge changelog
 
+## 0.1.66 — 2026-06-03 — fix: documented `citation-store.py build` passed empty `--records` (env-var-prefix antipattern) — #455
+
+The `citation-store.py build` invocation documented in `knowledge-compose` Step 4.5 (and the identical
+post-revisor rebuild in `knowledge-verify` Step 3.3) used a **command-prefix env-var antipattern** —
+it set `RECORDS_PATH=…/DRAFT_PATH=…/…` as a temporary command prefix and then referenced them as
+`--records "$RECORDS_PATH"` CLI args on the **same** command line. Per POSIX, the shell expands
+`"$RECORDS_PATH"` against the *current* environment (where the var is still unset) **before** applying
+the prefix assignments and exec'ing the child, so `--records` received an empty string. The script
+declares `--records` as a required argparse flag with no `os.environ` fallback, so the empty path
+resolved to the cwd and the build aborted with `records file is not readable: [Errno 21] Is a
+directory: '<cwd>'`. Run verbatim, the documented compose/verify pipeline step failed.
+
+- **`skills/knowledge-compose/SKILL.md`** (Step 4.5) and **`skills/knowledge-verify/SKILL.md`**
+  (Step 3.3) — the build block now passes `--records` / `--draft` / `--out` / `--ingest-manifest` as
+  **quoted literal paths** (`--records "<project_path>/.metadata/citation-records-v<N>.txt"`, …),
+  dropping the four `RECORDS_PATH=…/DRAFT_PATH=…/OUT_PATH=…/INGEST_PATH=…` prefix lines. A quoted
+  literal is already one space-/apostrophe-safe argv element, so the indirection was both unnecessary
+  and broken on a CLI flag. The misleading "paths via env vars so the literal can't break" rationale is
+  corrected to state why the prefix form expands to empty.
+- The sibling `python3 -c '… os.environ["RECORDS_PATH"] …'` blocks in the same SKILLs are **unchanged**
+  — env vars are correct and necessary there (they read from the child process environment the prefix
+  populates, and keep an apostrophe-bearing path out of the interpolated Python source literal).
+- **No script change** — `citation-store.py` is correct; `tests/test_citation_store.sh` already calls
+  `build` with quoted literal `--records` args.
+
 ## 0.1.65 — 2026-06-03 — feat: charter re-frame / update path — #451
 
 v0.1.63 (#449) added the base **charter** (`{domain, audience, scope, framed_at}` in
