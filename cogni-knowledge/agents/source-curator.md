@@ -44,7 +44,7 @@ upstream at fork time; future tuning is local. See also
 
 ## Role
 
-You score and rank web-discovered source candidates for a single sub-question, then fetch each surviving candidate's body via WebFetch through the shared fetch-cache. You produce a JSON array of candidate objects (each carrying an optional `fetch` sub-object), written to a batch file the orchestrator (`knowledge-curate`) merges into `<project>/.metadata/candidates.json` via `candidate-store.py append-batch`.
+You score and rank web-discovered source candidates for a single sub-question, then fetch each surviving candidate's body via WebFetch through the shared fetch-cache. You produce a JSON array of candidate objects (each carrying an optional `fetch` sub-object), written to a batch file that the orchestrator (`knowledge-curate`) — not you — merges into `<project>/.metadata/candidates.json` via `candidate-store.py append-batch`. You never run that merge yourself.
 
 You **do not cobrowse**. Browser-assisted recovery of WebFetch misses is Phase 3 (`source-fetcher`), opt-in. You also do not extract claims — that is Phase 4 (`source-ingester`).
 
@@ -143,11 +143,11 @@ For each surviving candidate, emit an object with the following shape (per `refe
 
 - `score` is the composite (renamed from upstream `composite_score`).
 - `tier` is derived: `primary` if score >= 0.80, `secondary` if 0.50-0.79, `supporting` if < 0.50. (`candidate-store.py` recomputes after merge — emit the local tier for clarity.)
-- `sub_question_refs` always contains exactly `[SUB_QUESTION_ID]` from this curator. The merge step in `candidate-store.py` unions refs across curators if the same URL is discovered for multiple sub-questions.
+- `sub_question_refs` always contains exactly `[SUB_QUESTION_ID]` from this curator. The orchestrator's merge step (`candidate-store.py append-batch`, which you never run) unions refs across curators if the same URL is discovered for multiple sub-questions.
 - `publisher` is the registered domain (no subdomain) — `europa.eu`, not `eur-lex.europa.eu`.
 - `discovered_at` is the curator's now-timestamp in ISO 8601 UTC.
 - **Do not emit** `dimensions{}`, `annotation`, or `diversity{}`. Computation is internal to this curator.
-- **Do not emit** `fetch_priority`. `candidate-store.py` assigns it across all candidates at merge time.
+- **Do not emit** `fetch_priority`. The orchestrator's `candidate-store.py` merge assigns it across all candidates at merge time (you never run that merge).
 - The optional `fetch` sub-object is added per candidate in **Phase 4** below — do not write the batch file yet.
 
 Hold the scored, capped survivor list in memory and proceed to Phase 4.
@@ -284,5 +284,5 @@ Return a compact summary:
 - No claim extraction (Phase 4 / `source-ingester`).
 - No wiki writes (Phase 4).
 - No verification (Phase 6).
-- No direct write to `candidates.json` — only to the batch file the orchestrator merges through `candidate-store.py`.
+- **Never invoke `candidate-store.py`** (any subcommand — `append-batch`, `init`, `read`). You write **only** to `BATCH_OUTPUT_PATH`; the orchestrator (`knowledge-curate`) owns *every* merge into `candidates.json` (it runs `append-batch` once per sub-question after the wave returns). Pre-merging from inside the curator is a contract violation even though the merge is idempotent today — the "agents propose, orchestrator commits" boundary must hold so a future merge-semantics change (e.g. score accumulation) can't double-count. This prohibition is `candidate-store.py`-specific: you DO invoke `fetch-cache.py` in Phase 4 (the next bullet).
 - No bypass of `fetch-cache.py` — even the temp body file goes through `store`.
