@@ -46,6 +46,13 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 
 See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M11 shipped; M12 alpha re-run + v0.1.0 bump pending). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
 
+## What it means for you
+
+- **Stop producing throwaway reports — start building knowledge that compounds.** Each run deposits its verified findings into a persistent, interlinked wiki you refine and re-query, and the next project reads what you already filed before going to the web. The deliverable isn't a document that ages out in a folder — it's a knowledge base that gets denser, more trusted, and more useful with every project.
+- **Ship a report whose every citation is backed, not hopeful.** Each claim is checked against the cited source's pre-extracted claims with zero network calls, and the loop auto-revises unsupported statements (capped at 2 passes) — so every numbered `[N]` marker traces to evidence already on the page, not to a model's recollection.
+- **Defend any fact in one lookup.** A `derived_from_research:` lineage stamp on every page points a stale or disputed claim straight back to the run that filed it — no archaeology through old chat logs when a number gets challenged weeks later.
+- **Own your knowledge base as plain markdown.** No vector store, no embeddings, no lock-in — the whole base is Obsidian-browsable markdown you can read, grep, edit, and version in git. Inspect it with `knowledge-dashboard`, ask it in natural language with `knowledge-query`, and keep it current with `knowledge-refresh`.
+
 ## Install
 
 Install insight-wave via Claude Code desktop:
