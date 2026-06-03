@@ -115,7 +115,7 @@ What happens:
 }
 ```
 
-From there: `/value-modeler` → `/trend-report` → `/trends-catalog`.
+From there: `/value-modeler` → `/trend-research` → `/trend-synthesis` → `/trends-catalog`.
 
 ---
 
@@ -137,11 +137,35 @@ Transform agreed candidates into investment themes and ranked solution templates
 
 ---
 
-### trend-report
+### trend-research
 
-Generate a CxO-level narrative report organized around investment themes. Dispatches one `trend-report-investment-theme-writer` agent per theme in parallel — each writes a narrative section using the Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) backed by T→I→P→S evidence. Enriches every quantitative claim with web-sourced evidence and inline citations. Assembles the final report with executive summary, portfolio analysis, and a verifiable claims registry compatible with cogni-claims.
+Run the research groundwork stage of the TIPS pipeline. Reads the agreed trend-scout candidates, optionally performs recursive deep research on 3–5 high-value ACT-horizon trends, then dispatches four parallel `trend-report-writer` agents to enrich every candidate with web-sourced quantitative evidence and extract verifiable claims. Produces per-dimension enriched-trends and claims artefacts plus a single research manifest (`.metadata/trend-research-output.json`) that the synthesis and booklet skills consume.
 
-**Example prompt:** "Generate the trend report from the modeled investment themes"
+**Example prompt:** "Run the research stage for the modeled investment themes"
+
+---
+
+### trend-synthesis
+
+Compose the canonical TIPS report from the research artefacts. The report is always organized around the four Smarter Service dimensions (Forces → Impact → Horizons → Foundations) as H2 sections, with investment themes nested as anchored H3 cases in a slim 3-beat structure (Stake / Move / Cost-of-Inaction) and a closing "Capability Imperative" synthesis. The four dimensions form a single CxO story arc.
+
+**Example prompt:** "Synthesize the trend report from the research output"
+
+---
+
+### trend-booklet
+
+Build a comprehensive, browsable TIPS booklet that catalogs every trend-scout candidate (~60) organized by Smarter Service dimension → subcategory → horizon, with per-entry summary, key citations, theme back-references, and keywords. It is the companion catalog to the canonical themes report — surfacing *all* candidates, including the ones that didn't make it into a theme-case (orphans go in an appendix), so readers see the full landscape behind the report's curated argument.
+
+**Example prompt:** "Generate the full trend booklet for this project"
+
+---
+
+### verify-trend-report
+
+Run the extended quality pipeline on a generated report — verify every claim against its cited source via cogni-claims, run cross-theme structural review, apply corrections through the revisor, then surface downstream polish and visualization options. Use it after synthesis to fact-check and tighten the report before it ships.
+
+**Example prompt:** "Verify the claims in the trend report and fix any deviations"
 
 ---
 
@@ -184,7 +208,7 @@ Re-enter a project mid-stream. Reads project state, shows phase progress and ent
 |--------|-------|-----------------|
 | cogni-portfolio | trends-bridge | Solution templates exported as portfolio features |
 | cogni-narrative | (manual) | Trend report and insight summary as narrative input |
-| cogni-claims | trend-report | Claims registry submitted for source URL verification |
+| cogni-claims | verify-trend-report | Claims registry submitted for source URL verification |
 | cogni-copywriting | (manual) | Report prose for executive polish |
 | cogni-visual | story-to-slides | Trend report narratives as slide deck input |
 
@@ -194,13 +218,15 @@ Re-enter a project mid-stream. Reads project state, shows phase progress and ent
 
 ### Workflow 1: Full TIPS Pipeline
 
-The standard four-stage sequence for a new industry engagement.
+The standard sequence for a new industry engagement.
 
 1. `/trend-scout` — industry selection, bilingual web research, 60 candidates
 2. Review and agree on candidates (interactive checkpoint)
 3. `/value-modeler` — investment themes, T→I→P→S networks, solution blueprints, BR scoring
-4. `/trend-report` — CxO narrative with parallel theme writers, evidence enrichment, claims registry
-5. `/trends-catalog` — promote curated solutions to the industry catalog
+4. `/trend-research` — evidence enrichment and claim extraction across the four dimensions
+5. `/trend-synthesis` — CxO narrative report organized around the Smarter Service dimensions
+6. `/verify-trend-report` — verify claims against sources and apply corrections
+7. `/trends-catalog` — promote curated solutions to the industry catalog
 
 For the extended flow that connects trend output to portfolio messaging and solution blueprints, see [../workflows/trends-to-solutions.md](../workflows/trends-to-solutions.md).
 
@@ -214,7 +240,7 @@ Use this when existing portfolio messaging needs to be refreshed against current
 2. `/value-modeler` — model investment themes, anchor to portfolio products via cogni-portfolio
 3. `/trends-bridge` (in cogni-portfolio) — import TIPS solution templates as new portfolio features
 4. `/propositions` (in cogni-portfolio) — generate messaging for the new Feature x Market pairs
-5. `/trend-report` — generate a briefing document for internal stakeholders
+5. `/trend-synthesis` — generate a briefing document for internal stakeholders
 
 ---
 
@@ -222,10 +248,10 @@ Use this when existing portfolio messaging needs to be refreshed against current
 
 Use this when you have a completed trend report and need to transform it into visual and narrative deliverables.
 
-1. `/trend-report` — complete the trend report with evidence and claims
+1. `/trend-synthesis` — compose the trend report from research evidence and claims
 2. cogni-narrative `/narrative` — transform the report into an arc-driven narrative
 3. cogni-visual `/story-to-slides` — create a slide deck from the narrative
-5. cogni-claims `/claims` — verify the claims registry
+4. cogni-claims `/claims` — verify the claims registry
 
 ---
 
@@ -233,7 +259,7 @@ Use this when you have a completed trend report and need to transform it into vi
 
 | Symptom | Likely cause | Fix |
 |---------|-------------|-----|
-| "No TIPS project found" | Running value-modeler or trend-report without completing trend-scout | Run `/trend-scout` first or use `/trends-resume` to find an existing project |
+| "No TIPS project found" | Running value-modeler or trend-research without completing trend-scout | Run `/trend-scout` first or use `/trends-resume` to find an existing project |
 | Web research returns few results | Industry subsector too narrow | Try a broader subsector during the trend-scout selection step |
 | Candidate scores all low | Research signals are weak or mixed for this horizon | Accept candidates at Act horizon first; Observe-horizon candidates are inherently speculative |
 | Investment themes overlap | Too many candidates per dimension | Reduce to the 10–15 highest-scoring candidates before running value-modeler |
