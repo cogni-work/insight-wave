@@ -1,7 +1,7 @@
 ---
 name: knowledge-setup
 description: "Bootstrap a cogni-knowledge knowledge base — a cogni-wiki + a binding manifest that records every research project deposited into it. Creates the wiki via cogni-wiki:wiki-setup if it does not exist, then writes .cogni-knowledge/binding.json. Use this skill whenever the user says 'set up a knowledge base', 'start a knowledge base on X', 'bootstrap a wiki-first research base', 'new knowledge base for X', 'create a knowledge base', or 'wiki-first research setup'. After setup, run the inverted pipeline (knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify → knowledge-finalize) to deposit research syntheses into the base."
-allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
+allowed-tools: Read, Bash, Glob, WebSearch, AskUserQuestion, Skill
 ---
 
 # Knowledge Setup
@@ -38,6 +38,12 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | `--tone` | No | Default writing tone persisted to `binding.json::research_defaults.tone` (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`). **Flag-or-default** — not prompted (safe default `objective`). |
 | `--citation-format` | No | Default citation format persisted to `binding.json::research_defaults.citation_format` (`ieee`/`chicago` wired; `apa`/`mla`/`harvard` staged). **Flag-or-default** — not prompted (safe default `ieee`). |
 | `--target-words` | No | Default soft target word count persisted to `binding.json::research_defaults.target_words`. **Flag-or-default** — not prompted (safe default `4000`). |
+| `--charter-domain` | No | One sentence: what this knowledge base is about. Persisted to `binding.json::charter.domain` (schema 0.1.4). Resolved interactively in Step 2.5 when omitted (engages the charter interview). |
+| `--charter-audience` | No | Primary reader of the syntheses this base produces. Persisted to `binding.json::charter.audience`. Resolved interactively in Step 2.5 when omitted. |
+| `--charter-scope` | No | In/out boundaries — geography / segment / horizon, one line. Persisted to `binding.json::charter.scope`. Resolved interactively in Step 2.5 when omitted. |
+| `--open-themes` | No | Pipe-separated seed-theme backlog (e.g. `"high-risk systems\|conformity assessment\|GPAI"`). Persisted to `binding.json::topic_lineage.open_themes[]`; surfaces as the candidate menu for the first research question. Resolved interactively in Step 2.5 when omitted. |
+| `--no-charter` | No | Skip the Step 2.5 charter interview AND the Step 5 first-question on-ramp. Use for automation / a flag-only init. The charter fields fall through to `""` and `open_themes[]` to `[]` (a complete, schema-valid 0.1.4 binding either way). |
+| `--no-prelim-search` | No | Keep the Step 2.5 charter interview but skip its optional preliminary scoping scan (stays offline). Same semantics as `knowledge-plan --no-prelim-search`. |
 
 If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with AskUserQuestion (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed). Do not invent slugs or titles silently.
 
@@ -85,26 +91,43 @@ Check `<knowledge_root>/.cogni-wiki/config.json`:
 
 If `<knowledge_root>` exists but contains foreign files (no `.cogni-wiki/`, but non-empty subdirs that are not the standard cogni-wiki layout — `raw/`, `wiki/`, `assets/`), abort: "path exists but is not a wiki — choose a different `--knowledge-root` or move the existing files."
 
-### 2.5. Resolve language defaults (market + output language)
+### 2.5. Charter framing + language defaults (the single setup interview)
 
-The knowledge base records a default `market` + `output_language` so every downstream `knowledge-plan` run inherits them — a knowledge base is almost always single-market/single-language, so asking once here (and letting `knowledge-plan` override per-run) beats re-deriving on every plan or silently emitting English on a German base. This mirrors `cogni-research`'s `research-setup` Phase 0.1 (language defaults from the market, fallback `en`).
+This step steers the base: it captures a coarse **charter** (what the base is about, who reads it, where its boundaries are, which themes to cover first) **and** the default `market` + `output_language`, in **one coherent interview** rather than two disjoint prompts. The charter is the base-level analog of `knowledge-plan`'s per-question topic-framing (`references/topic-framing.md`); the full base-scoped playbook + question bank lives in `${CLAUDE_PLUGIN_ROOT}/references/charter-framing.md`. Read it once here.
 
-Resolve `market` and `output_language`:
+Why a charter: in cogni-knowledge one base accumulates *many* topics over time, so the base needs a coarser charter while each `knowledge-plan` run keeps the finer per-question framing that already exists. The charter is persisted to `binding.json::charter` (schema 0.1.4) and seed themes to `topic_lineage.open_themes[]`; `knowledge-plan` Step 0.4 then inherits the charter as grounding so every future run is anchored to the base's domain.
 
-1. If **both** `--market` and `--output-language` were passed, use them as-is — skip the prompt.
-2. Otherwise, derive the suggested language default from the market via the canonical workspace helper (the same path `knowledge-plan` uses for `candidate_domains`):
+**Engage / skip** (mirror topic-framing's contract — *this base must be steered*, so default-on with an explicit opt-out):
+
+- **Skip** the charter interview when `--no-charter` is passed, **or** the run is non-interactive (all of `--charter-domain`/`--charter-audience`/`--charter-scope` supplied via flags). In the skip case, charter fields fall through to their flags (else `""`) and `open_themes[]` to `--open-themes` (else `[]`) — still a complete schema-0.1.4 binding.
+- **Engage** otherwise (the default on an interactive run). Say so in one sentence before asking: *"Let me frame this knowledge base before we set it up — a few quick questions so every future research run is anchored to it."*
+
+When engaged, run the four framing moves (port the **shape** from `references/charter-framing.md`):
+
+1. **Ground** (optional, ≤50 KB, no writes outside the base). Ask for any grounding material: *"Any grounding material for this knowledge base? (a path / pasted text / a URL / 'no context')"*. When the user supplies a path, read conservatively (`Glob` the top-level shape, `Read` the manifest/README, sample 2–3 files; cap ~50 KB). No network here; no writes.
+2. **Scan** (optional, fail-soft). Unless `--no-prelim-search` was passed, issue **2–3 broad `WebSearch` queries** on the domain to ground the seed-theme suggestions; review the top snippets for the dominant themes/organizations/terminology. **Any error → skip silently** and fall through to pure reasoning. The scan never blocks framing.
+3. **Sharpen** — one `AskUserQuestion` turn (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed), ≤4 skippable, **base-scoped** questions. Fold the market/language questions into this same turn (or a single immediate follow-up turn if the four-question budget is full):
+   - **Domain** — *"In one sentence, what is this knowledge base about?"* (free text → `charter.domain`)
+   - **Audience** — *"Who reads the syntheses this base produces?"* (offer the audience option list from `charter-framing.md` → `charter.audience`)
+   - **Scope** — *"What's in and out of scope? (geography / segment / horizon)"* (free text → `charter.scope`)
+   - **Seed themes** — *"Which 3–6 themes should this base cover first?"* (multiSelect over scan-derived suggestions + Other → `open_themes[]`)
+   - **Market** (only if `--market` not passed): the supported codes; default `dach` *(Recommended)*.
+   - **Output language** (only if `--output-language` not passed): option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en`, plus 1–2 common others; "Other" takes a two-letter code.
+   Every question is skippable — "I'll decide later" drops to the safe default (charter field → `""`, market → `dach`, language → the market's `default_output_language`, no seed themes).
+
+Resolve the **market / language** default exactly as before (the precedence and helper are unchanged):
+
+1. If **both** `--market` and `--output-language` were passed, use them as-is.
+2. Otherwise derive the suggested language default from the market via the canonical workspace helper (the same path `knowledge-plan` uses for `candidate_domains`):
    ```
    python3 "${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ | head -1)}/scripts/get-market-config.py" --plugin research --market <market-or-default-dach>
    ```
    Read `data.default_output_language` from the envelope (e.g. `dach`→`de`, `fr`→`fr`, `eu`→`en`).
-3. Ask the user once with `AskUserQuestion` (call `ToolSearch(query="select:AskUserQuestion")` to load the schema if needed) — one turn with up to two questions:
-   - **Market** (only if `--market` was not passed): the supported codes; default `dach` *(Recommended)*.
-   - **Output language** (only if `--output-language` was not passed): option 1 is the market's `default_output_language` *(Recommended)*, option 2 `en` (English), plus 1–2 common others (`de`/`fr`); the auto-added "Other" covers the long tail (two-letter code).
-   Both questions are skippable — "I'll decide later" falls back to the resolved default (market `dach`, language = market's `default_output_language`). If both flags were passed, do not ask.
+3. Surface market + language inside the sharpen turn above (skippable → market `dach`, language = market's `default_output_language`).
 
-Carry the resolved `market` + `output_language` into Step 4.
+Carry the resolved `charter.{domain,audience,scope}`, `open_themes[]`, `market`, and `output_language` into Step 4.
 
-**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`) are flag-or-default — NOT prompted here.** Unlike `market`/`output_language` (where a wrong language mis-languages the whole base, so asking once is worth it), each writer-quality knob has a safe default and is primarily a per-run choice on `knowledge-plan`. So Step 2.5's `AskUserQuestion` stays scoped to market + language; the four knobs are persisted from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`4000`). The base default is overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
+**Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`) are flag-or-default — NOT prompted here.** Each has a safe default and is primarily a per-run choice on `knowledge-plan`, so the interview stays scoped to charter + market/language; the four knobs persist from their flags when passed, else the script-side defaults (`standard`/`objective`/`ieee`/`4000`). Overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
 
 ### 3. Dispatch `cogni-wiki:wiki-setup` (only if no wiki exists)
 
@@ -127,23 +150,41 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py init \
     --wiki-path <knowledge_root> \
     --market <resolved market> \
     --output-language <resolved output_language> \
-    [--prose-density <flag>] [--tone <flag>] [--citation-format <flag>] [--target-words <flag>]
+    [--prose-density <flag>] [--tone <flag>] [--citation-format <flag>] [--target-words <flag>] \
+    [--charter-domain "<resolved domain>"] [--charter-audience "<resolved audience>"] \
+    [--charter-scope "<resolved scope>"] [--open-themes "<theme1|theme2|...>"]
 ```
 
-`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.2). The four writer-quality flags are passed through only when the user supplied them; **omitted flags fall back script-side** to the `DEFAULT_RESEARCH_DEFAULTS` block (`dach`/`en`/`standard`/`objective`/`ieee`/`4000`), so a plain `init` still writes a complete schema-0.1.2 `research_defaults` block. The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
+`--market` / `--output-language` carry the Step 2.5 resolution into `binding.json::research_defaults` (schema 0.1.2). The four charter args carry the Step 2.5 charter interview into `binding.json::charter` + `topic_lineage.open_themes[]` (schema 0.1.4) — pass each only when resolved (a skipped/blank charter field simply omits the flag and falls through **script-side** to `""`; `framed_at` is stamped only when any charter field is non-empty). The four writer-quality flags are likewise passed only when the user supplied them; **omitted flags fall back script-side** to the `DEFAULT_RESEARCH_DEFAULTS` block (`dach`/`en`/`standard`/`objective`/`ieee`/`4000`), so a plain `init` still writes a complete schema-0.1.4 binding (`research_defaults` complete, `charter` all-`""`, `open_themes` `[]`). The script returns the standard `{success, data, error}` envelope. On failure (e.g. binding already exists), surface the error. The script refuses to overwrite an existing binding — Step 1's pre-flight should have caught that, but the script is the second line of defence.
 
-### 5. Final summary
+### 5. Final summary + first-question on-ramp
 
-Print a short summary, ≤ 8 lines:
+First print a short summary, ≤ 8 lines:
 
 - Knowledge base path (absolute)
 - Knowledge slug and title
 - Wiki path (`<knowledge_root>` — they are the same in the default layout)
 - Binding file path (`<knowledge_root>/.cogni-knowledge/binding.json`)
+- Charter (when set): domain `<charter.domain>`, audience `<charter.audience>`, scope `<charter.scope>`
 - Defaults: market `<resolved market>`, output language `<resolved output_language>`, density `<prose_density>`, tone `<tone>`, citations `<citation_format>`, target `<target_words>`w (all inherited by `knowledge-plan`; overridable per run)
-- Suggested next action: `cogni-knowledge:knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`
 
 Do not print the full binding JSON in the summary — point at the file path and let the user inspect it if they want.
+
+**Then the first-question on-ramp.** A fresh base is empty — the value of setup is leaving the user with a *framed first research question*, not just a binding. Replace the old static "suggested next action" line with one interactive prompt:
+
+- **Skip the prompt entirely** on a non-interactive / `--no-charter` (flag-only) run — print the static guidance instead (the bullet below) and stop. Automation-safe: setup never blocks waiting for input it can't get.
+- **Otherwise** ask once with `AskUserQuestion`: *"Frame your first research question now?"*. When `open_themes[]` is non-empty, surface the seed themes as the selectable options so the user picks **which one** to frame first (single select; default = the first seed theme); always include a "No — pick later" option.
+  - **A theme is chosen (Yes)** → chain straight into the existing per-question framing:
+    ```
+    Skill("cogni-knowledge:knowledge-plan",
+          args="--knowledge-slug <slug> --topic '<chosen seed theme>' --frame")
+    ```
+    `--frame` forces `knowledge-plan`'s Step 0.4 per-question topic-framing (which now inherits this base's charter as grounding), so the user leaves with a sharpened first question + `plan.json` + `.metadata/framing.md`. **The chain stops at `plan`** — `knowledge-curate` → `knowledge-fetch` → … each cost web/tokens, so they stay the user's explicit per-run decision. Do **not** auto-run any phase past `plan`.
+  - **No — pick later** → print the static next-action guidance below, listing `open_themes[]` as the candidate menu.
+
+Static next-action guidance (printed on skip / "pick later"):
+
+> Next: `cogni-knowledge:knowledge-plan --knowledge-slug <slug> --topic '<one of your seed themes>'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Seed themes for this base: `<open_themes joined by ', '>` (or "none — pick any topic" when empty).
 
 ## Edge cases
 
@@ -157,6 +198,8 @@ Do not print the full binding JSON in the summary — point at the file path and
 - Does NOT pre-fill the wiki with cogni-wiki foundations — `--skip-prefill-prompt` is set deliberately.
 - Does NOT configure source mode — that happens during `knowledge-plan`, where the topic is known.
 - Records only the knowledge-base **defaults** (`market`/`output_language` + the four writer-quality knobs `prose_density`/`tone`/`citation_format`/`target_words`) in `binding.json::research_defaults` (Step 2.5, schema 0.1.2). The per-run choice still lives in `knowledge-plan` — a single plan can override any base default with its own matching flag (e.g. an English report about a German market, or an `executive`-density draft on a `standard`-default base).
+- The **charter** (Step 2.5, schema 0.1.4) is **domain / audience / scope / seed-themes only** — the coarse base steering. It deliberately does NOT carry the writer-quality knobs (those stay per-run on `knowledge-plan`) and is NOT a per-question prompt: the finer per-research-question framing remains `knowledge-plan` Step 0.4's job, which inherits this charter as grounding.
+- Does NOT run any pipeline phase past `plan`. The Step 5 on-ramp chains at most into `knowledge-plan --frame` (cheap, no-web decomposition); `knowledge-curate` onward stay the user's cost-bearing per-run decision.
 
 ## Output
 

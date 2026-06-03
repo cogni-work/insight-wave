@@ -71,7 +71,7 @@ Then continue with the binding-resolution checks:
    ```
    On `success: false`, abort and offer `knowledge-setup`. Do not auto-create.
 
-3. Extract `wiki_path`, `knowledge_slug`, `knowledge_title`, `research_projects[]`, `created` from the binding. Validate `binding.knowledge_slug == --knowledge-slug`.
+3. Extract `wiki_path`, `knowledge_slug`, `knowledge_title`, `research_projects[]`, `created` from the binding, plus the charter (`binding.get("charter", {}).get("domain"/"audience"/"scope", "")`) and the seed-theme backlog (`binding.get("topic_lineage", {}).get("open_themes", [])`). Validate `binding.knowledge_slug == --knowledge-slug`. The charter `.get` chain falls through to `""`/`[]` on a pre-0.1.4 binding (read-only, fail-soft).
 
 4. Confirm the wiki is still there: `<wiki_path>/.cogni-wiki/config.json` must exist. If not, abort.
 
@@ -138,6 +138,12 @@ Contents:
 # Knowledge overlay — <knowledge_title> (<knowledge_slug>)
 
 Created <created>. Wiki: <wiki_path>.
+
+(When `charter.domain` is non-empty — schema 0.1.4:)
+**Charter.** <charter.domain> · for <charter.audience> · scope <charter.scope>.
+
+(When `open_themes[]` is non-empty:)
+**Seed themes.** <open_themes joined by ' · '>.
 
 ## Deposited research projects
 

@@ -67,7 +67,7 @@ Resume is read-only with respect to disk, but it still dispatches `cogni-wiki:wi
    ```
    On `success: false`, abort and offer `knowledge-setup`. Do not auto-create.
 
-3. Extract from the binding: `knowledge_slug`, `knowledge_title`, `wiki_path`, `research_projects[]`, `created`, `topic_lineage`. (The bound wiki's own slug, if needed for display, comes live from `<wiki_path>/.cogni-wiki/config.json` — never cached in the binding.)
+3. Extract from the binding: `knowledge_slug`, `knowledge_title`, `wiki_path`, `research_projects[]`, `created`, `topic_lineage`, and the charter (`binding.get("charter", {}).get("domain"/"audience"/"scope", "")` — schema 0.1.4; the `.get` chain falls through to `""` on a pre-0.1.4 binding, read-only fail-soft). (The bound wiki's own slug, if needed for display, comes live from `<wiki_path>/.cogni-wiki/config.json` — never cached in the binding.)
 
 4. Validate the binding's `knowledge_slug` matches `--knowledge-slug`. Mismatch → abort.
 
@@ -105,6 +105,7 @@ Capture `verdict` (and `entries`).
 Print a ≤ 12-line summary that layers the binding onto the wiki status:
 
 - **Knowledge base.** `<knowledge_title>` (`<knowledge_slug>`), created `<created>`
+- **Charter.** When `charter.domain` is non-empty (schema 0.1.4): `<charter.domain> · for <charter.audience> · scope <charter.scope>`. Omit the line entirely on a pre-0.1.4 / unframed base.
 - **Wiki path.** `<wiki_path>` — wiki health verdict from Step 2 (one line: "OK" / "N issues — see wiki-resume output above")
 - **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + ` · <concepts_total> concepts (<claims_deduped>/<claims_attached> claims deduped)` when `concepts_total > 0` (the Phase-4.5 distill compounding signal) + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
 - **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — re-run knowledge-curate to re-fetch aged sources (or knowledge-refresh to re-run the pipeline on stale topics)`; `empty` → `fetch-cache empty — run knowledge-plan first`.

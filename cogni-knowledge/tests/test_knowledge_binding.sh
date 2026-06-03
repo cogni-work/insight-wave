@@ -3,7 +3,7 @@
 # upsert-themes (#409): the SOLE writer of topic_lineage.covered_themes[].
 #
 # Asserts:
-#   1. init writes schema_version 0.1.3 with an empty covered_themes[].
+#   1. init writes schema_version 0.1.4 with an empty covered_themes[].
 #   2. upsert-themes APPENDS a fresh entry for an unseen theme_key
 #      (first_seen == last_seen, labels seeded from theme_label).
 #   3. A second upsert-themes for the SAME theme_key with a NEW label UNIONS
@@ -40,20 +40,50 @@ echo '{"name":"Test","slug":"test","schema_version":"0.0.5"}' > "$WIKI/.cogni-wi
 
 BINDING="$KB/.cogni-knowledge/binding.json"
 
-# 1. init — schema 0.1.3, empty covered_themes[].
+# 1. init — schema 0.1.4, empty covered_themes[].
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" --knowledge-slug test-kb \
   --knowledge-title "Test KB" --wiki-path "$WIKI" >/dev/null
 if python3 -c "
 import json
 b = json.load(open('$BINDING'))
-assert b['schema_version'] == '0.1.3', b['schema_version']
+assert b['schema_version'] == '0.1.4', b['schema_version']
 assert b['topic_lineage']['covered_themes'] == [], b['topic_lineage']
+# 0.1.4 charter — a plain init writes a complete all-empty block, framed_at ''.
+assert b['charter'] == {'domain': '', 'audience': '', 'scope': '', 'framed_at': ''}, b['charter']
+assert b['topic_lineage']['open_themes'] == [], b['topic_lineage']
 print('OK')
 " | grep -q OK; then
-  green "PASS: init writes schema 0.1.3 + empty covered_themes[]"
+  green "PASS: init writes schema 0.1.4 + empty covered_themes[] + empty charter"
 else
-  red "FAIL: init schema/covered_themes wrong"; errors=$((errors+1))
+  red "FAIL: init schema/covered_themes/charter wrong"; errors=$((errors+1))
+fi
+
+# 1b. init with charter + open-themes flags — charter populated, framed_at set,
+#     open_themes parsed from the pipe-separated list.
+KBC="$WORK/kbc"; mkdir -p "$KBC/.cogni-wiki"
+echo '{"name":"T","slug":"t","schema_version":"0.0.5"}' > "$KBC/.cogni-wiki/config.json"
+python3 "$SCRIPT" init \
+  --knowledge-root "$KBC" --knowledge-slug test-kbc \
+  --knowledge-title "Test KBC" --wiki-path "$KBC" \
+  --charter-domain 'EU AI Act compliance' \
+  --charter-audience 'compliance officers' \
+  --charter-scope 'EU, 2024-2027' \
+  --open-themes 'high-risk systems|conformity assessment|GPAI' >/dev/null
+if python3 -c "
+import json
+b = json.load(open('$KBC/.cogni-knowledge/binding.json'))
+c = b['charter']
+assert c['domain'] == 'EU AI Act compliance', c
+assert c['audience'] == 'compliance officers', c
+assert c['scope'] == 'EU, 2024-2027', c
+assert c['framed_at'], c  # stamped when any field is non-empty
+assert b['topic_lineage']['open_themes'] == ['high-risk systems', 'conformity assessment', 'GPAI'], b['topic_lineage']
+print('OK')
+" | grep -q OK; then
+  green "PASS: init --charter-* / --open-themes populate charter + open_themes[]"
+else
+  red "FAIL: charter/open-themes flags not honoured"; errors=$((errors+1))
 fi
 
 # 2. upsert-themes — append a fresh theme (bare array form, via stdin).
