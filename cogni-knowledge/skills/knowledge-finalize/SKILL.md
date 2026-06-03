@@ -232,7 +232,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/cycle-guard.py \
     --report-source wiki
 ```
 
-`<project-slug>` is the slug field from `<project_path>/.metadata/project-config.json::slug` (the cogni-research project slug recorded at compose time). `--report-source wiki` is hard-coded — the inverted pipeline only ever produces wiki-mode deposits, so the legacy `_read_report_source` fallback isn't relevant here.
+`<project-slug>` is the **project directory basename** (`$(basename <project_path>)`) — already `slugify(<topic>)-<YYYY-MM-DD>` and globally unique within the base, an artifact the inverted pipeline actually produces. (The inverted pipeline does **not** write the legacy cogni-research `.metadata/project-config.json`, so do not look for a `slug` field there.) `--report-source wiki` is hard-coded — the inverted pipeline only ever produces wiki-mode deposits, so the legacy `_read_report_source` fallback isn't relevant here.
 
 The script's manifest-shape fallback walks `<project>/.metadata/citation-manifest.json` when the legacy `02-sources/data/src-*.md` glob is empty. Confirm `data.input_shape == "citation-manifest"` in the JSON envelope as a positive signal the adapter ran (informational; not a gate).
 
