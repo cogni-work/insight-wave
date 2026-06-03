@@ -170,6 +170,8 @@ cogni-wiki/
 │   ├── claude-research-karparthy.md RAG vs wiki benchmark research
 │   └── scheduled-drainer/           T3.2 scheduled-runner deployment shapes (v0.0.39+)
 ├── foundations/                    Curated terminal concept pages (foundation: true)
+├── docs/                            Design + planning notes (docs/plans/)
+├── tests/                           Contract + integration tests (tests/fixtures/)
 └── skills/                          12 wiki skills
     ├── wiki-setup/                  Bootstrap a new wiki
     ├── wiki-ingest/                 Ingest sources into wiki pages

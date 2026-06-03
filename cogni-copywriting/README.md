@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin that turns AI-generated drafts into executive-ready documents. Seven messaging frameworks, five parallel stakeholder personas for blind-spot review, multilingual readability validation (Flesch-family scoring for DE/EN/FR/IT/PL/NL/ES, plus German Wolf Schneider), and Power Positions sales enhancement — while preserving upstream story arc structure from cogni-narrative. A `copy-json` adapter polishes text fields inside JSON files, and `audit-copywriter` verifies arc contracts stay in sync with cogni-narrative upstream.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin that turns AI-generated drafts into executive-ready documents. Seven messaging frameworks, five parallel stakeholder personas for blind-spot review, multilingual readability validation (Flesch-family scoring for DE/EN/FR/IT/PL/NL/ES, plus German Wolf Schneider), translate-then-polish across those same seven languages via an EN/DE pivot, and Power Positions sales enhancement — while preserving upstream story arc structure from cogni-narrative. A `copy-json` adapter polishes text fields inside JSON files, and `audit-copywriter` verifies arc contracts stay in sync with cogni-narrative upstream.
 
 ## Why this exists
 
@@ -154,7 +154,8 @@ cogni-copywriting/
 └── copywriter-workspace/         Evaluation and iteration workspace
     ├── evals/
     ├── iteration-1/
-    └── test-docs/
+    ├── test-docs/
+    └── test-fixtures/
 ```
 
 ## Dependencies
