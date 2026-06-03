@@ -2,13 +2,16 @@
 """
 knowledge-binding.py — read/write .cogni-knowledge/binding.json
 
-Four actions:
+Five actions:
   init           create a new binding manifest
   append-project record a deposited cogni-research project
   read           emit the current binding manifest as JSON
   upsert-themes  merge question-node theme-lineage records into
                  topic_lineage.covered_themes[] (#409; the single writer of
                  that block — question-store.py only reads it)
+  set-charter    in-place charter re-frame on an existing base (#451; the
+                 second writer of the charter block — init is the first) —
+                 partial field update + union-merge into open_themes[]
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -52,6 +55,14 @@ from pathlib import Path
 # lands in the EXISTING topic_lineage.open_themes[] (a plain string list, was
 # out of scope for #409). Pre-0.1.4 bindings have no `charter` key, so consumers
 # MUST read it with .get("charter", {}).get(key, "") to fall straight through.
+# The charter block has TWO writers, both at schema 0.1.4: `init` (first frame, at
+# knowledge-setup) and `set-charter` (#451; in-place re-frame on an existing base).
+# `set-charter` writes the SAME 0.1.4 shape `init` already does — it is a new
+# action, not a new field, so it does NOT bump SCHEMA_VERSION (the precedent
+# append-project / upsert-themes set: neither touches schema_version). On a
+# pre-0.1.4 binding it setdefault()s a complete all-"" charter block before
+# applying updates and leaves schema_version untouched (consumers already read
+# the charter via the .get(...) chain above).
 SCHEMA_VERSION = "0.1.4"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
@@ -378,6 +389,94 @@ def cmd_upsert_themes(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_set_charter(args: argparse.Namespace) -> int:
+    """In-place charter re-frame on an existing base (#451). The second writer of
+    the charter block (init is the first); writes the SAME schema-0.1.4 shape, so
+    it does NOT bump schema_version. Partial update: a flag left unset (None)
+    leaves the existing value untouched; a supplied flag (including "") overwrites
+    that field — so the domain can sharpen without clearing audience/scope.
+    --open-themes UNION-merges into topic_lineage.open_themes[] (append the new,
+    preserve order, never clobber the backlog). framed_at is re-stamped only when a
+    charter field (domain/audience/scope) actually changes. Fail-soft on a
+    pre-0.1.4 binding: setdefault() a complete all-"" charter + an open_themes[]
+    before applying updates."""
+    knowledge_root = Path(args.knowledge_root).resolve()
+
+    try:
+        binding = _read_binding(knowledge_root)
+    except FileNotFoundError as exc:
+        return _emit(False, error=str(exc))
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"binding.json is not valid JSON: {exc}")
+
+    if args.knowledge_slug and binding.get("knowledge_slug") != args.knowledge_slug:
+        return _emit(
+            False,
+            data={"binding_slug": binding.get("knowledge_slug")},
+            error=(
+                f"knowledge_slug mismatch: binding has '{binding.get('knowledge_slug')}', "
+                f"caller passed '{args.knowledge_slug}'"
+            ),
+        )
+
+    # Require at least one substantive flag — never a silent no-op write.
+    charter_fields_passed = any(
+        v is not None
+        for v in (args.charter_domain, args.charter_audience, args.charter_scope)
+    )
+    if not charter_fields_passed and args.open_themes is None:
+        return _emit(
+            False,
+            error=(
+                "nothing to update — pass at least one of --charter-domain / "
+                "--charter-audience / --charter-scope / --open-themes"
+            ),
+        )
+
+    # Fail-soft: a base created before the charter existed gains a complete block.
+    charter = binding.setdefault(
+        "charter", {"domain": "", "audience": "", "scope": "", "framed_at": ""}
+    )
+
+    # Partial update — only overwrite a field whose flag was supplied (None = leave).
+    changed_charter = False
+    for field, value in (
+        ("domain", args.charter_domain),
+        ("audience", args.charter_audience),
+        ("scope", args.charter_scope),
+    ):
+        if value is not None:
+            charter[field] = value
+            changed_charter = True
+
+    # Union-merge the seed-theme backlog: append not-already-present, preserve order.
+    themes_added = 0
+    if args.open_themes is not None:
+        lineage = binding.setdefault("topic_lineage", {})
+        open_themes = lineage.setdefault("open_themes", [])
+        incoming = [t.strip() for t in args.open_themes.split("|") if t.strip()]
+        for theme in incoming:
+            if theme not in open_themes:
+                open_themes.append(theme)
+                themes_added += 1
+
+    # Re-stamp framed_at only when the base was actually re-steered (a
+    # domain/audience/scope change); an open-themes-only update is not a re-frame.
+    if changed_charter:
+        charter["framed_at"] = _today()
+
+    written = _write_binding(knowledge_root, binding)
+    return _emit(
+        True,
+        data={
+            "path": str(written),
+            "charter": charter,
+            "open_themes_added": themes_added,
+            "open_themes_count": len(binding.get("topic_lineage", {}).get("open_themes", [])),
+        },
+    )
+
+
 def cmd_read(args: argparse.Namespace) -> int:
     knowledge_root = Path(args.knowledge_root).resolve()
     try:
@@ -528,6 +627,52 @@ def main(argv: list[str]) -> int:
              "{success, data: {theme_bindings: []}} envelope.",
     )
     p_upsert.set_defaults(func=cmd_upsert_themes)
+
+    p_setchar = sub.add_parser(
+        "set-charter",
+        help="In-place charter re-frame on an existing base (#451; partial field "
+             "update + union-merge into open_themes[])",
+    )
+    p_setchar.add_argument("--knowledge-root", required=True)
+    p_setchar.add_argument(
+        "--knowledge-slug",
+        required=False,
+        default="",
+        help="Optional guard — refuse if the binding's knowledge_slug differs. "
+             "Empty (default) = no guard.",
+    )
+    # default=None (NOT init's "") so an unset flag is distinguishable from a
+    # supplied empty string: None leaves the field untouched, "" overwrites it.
+    p_setchar.add_argument(
+        "--charter-domain",
+        required=False,
+        default=None,
+        help="New charter.domain (one sentence: what this base is about). "
+             "Omitted = leave the existing value untouched.",
+    )
+    p_setchar.add_argument(
+        "--charter-audience",
+        required=False,
+        default=None,
+        help="New charter.audience (primary reader of syntheses). "
+             "Omitted = leave the existing value untouched.",
+    )
+    p_setchar.add_argument(
+        "--charter-scope",
+        required=False,
+        default=None,
+        help="New charter.scope (geography / segment / horizon, one line). "
+             "Omitted = leave the existing value untouched.",
+    )
+    p_setchar.add_argument(
+        "--open-themes",
+        required=False,
+        default=None,
+        help="Pipe-separated seed themes to ADD to topic_lineage.open_themes[] "
+             "(union-merge — appends the new, never clobbers the backlog). "
+             "Omitted = leave the backlog untouched.",
+    )
+    p_setchar.set_defaults(func=cmd_set_charter)
 
     p_read = sub.add_parser("read", help="Emit the binding manifest")
     p_read.add_argument("--knowledge-root", required=True)

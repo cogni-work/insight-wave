@@ -1,5 +1,49 @@
 # cogni-knowledge changelog
 
+## 0.1.64 — 2026-06-03 — feat: charter re-frame / update path — #451
+
+v0.1.63 (#449) added the base **charter** (`{domain, audience, scope, framed_at}` in
+`binding.json`, schema 0.1.4), but it was captured **only** at `knowledge-setup` Step 2.5 via
+`knowledge-binding.py init` — and `init` refuses to overwrite an existing binding by design. So
+re-steering an already-bootstrapped base (the domain sharpens, the audience shifts, a new seed theme
+appears) required hand-editing `binding.json`. The charter was effectively write-once. This release
+adds the lifecycle path #451 asked for — re-steer a base through the normal UX, no hand-editing JSON —
+while the charter's data shape (schema 0.1.4) is unchanged.
+
+- **`scripts/knowledge-binding.py`** — new `set-charter` subcommand (the second writer of the charter
+  block; `init` is the first). It writes the **same** schema-0.1.4 shape, so it does NOT bump
+  `SCHEMA_VERSION` (the precedent `append-project` / `upsert-themes` set — neither touches
+  `schema_version`). Semantics: a **partial** update (`--charter-domain` / `--charter-audience` /
+  `--charter-scope` use `default=None`, so an unset flag leaves the field untouched and a supplied
+  flag — including `""` — overwrites it; change one field without clearing the others);
+  `--open-themes` **union-merges** into `topic_lineage.open_themes[]` (appends the new, preserves
+  order, never clobbers the backlog); an optional `--knowledge-slug` guard (mirrors `append-project`);
+  it requires at least one substantive flag (no silent no-op); it re-stamps `framed_at` only when a
+  charter field actually changes (an open-themes-only update is not a re-frame); and it is **fail-soft
+  on a pre-0.1.4 binding** (`setdefault`s a complete all-`""` charter + an `open_themes[]` before
+  applying updates). Module docstring + `# Schema bumps` comment updated.
+- **`skills/knowledge-setup/SKILL.md`** — new `--reframe` mode. Re-runs the **existing** Step 2.5
+  charter interview against an existing binding and writes via `set-charter` instead of `init`,
+  reusing all the `references/charter-framing.md` machinery (no duplicated interview prose). It
+  inverts Step 1's pre-flight (requires an existing binding; aborts cleanly when none is found),
+  reads the current charter to pre-populate the question defaults, frames the seed-themes question as
+  *"any **additional** seed themes to add?"* (matching union-merge), and skips wiki setup (Steps 2/3),
+  the `init` call (Step 4), and the Step 5 first-question on-ramp (a re-framed base already has
+  projects — it points at `knowledge-resume` / `knowledge-plan` instead).
+- **`skills/knowledge-resume/SKILL.md`** — a one-line **read-only** re-steer offer beneath the Charter
+  line (*"Re-steering the base? Run `knowledge-setup --reframe --knowledge-slug <slug>`."*). The write
+  stays in setup; resume only suggests, never writes (the read-only invariant is preserved and
+  contract-guarded).
+- **Tests** — `tests/test_knowledge_binding.sh` gains six `set-charter` unit cases (partial update +
+  `framed_at` re-stamp; open-themes union with no re-stamp; pre-0.1.4 fail-soft; no-flags →
+  `success:false`; missing binding → clean envelope; slug-mismatch refusal). `tests/test_charter_
+  contract.sh` gains the `--reframe` + resume-offer contract assertions (including two `assert_not_
+  grep`s proving resume never calls `set-charter`/`init`).
+
+**Deferred:** dropping/replacing (not just adding) a seed theme via `set-charter` (union-only for
+now); a `knowledge-dashboard` re-frame offer; a standalone `knowledge-reframe` skill (`--reframe` on
+setup reuses the interview without one).
+
 ## 0.1.62 — 2026-06-02 — feat: synthesis-vs-prior-syntheses contradiction comparison — approach (c) of #431
 
 #431 decomposed the two extensions #335 deferred. v0.1.61 shipped **approach (b)** (the

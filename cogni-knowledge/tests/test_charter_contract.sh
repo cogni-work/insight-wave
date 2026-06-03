@@ -101,6 +101,10 @@ assert_grep 'Frame your first research question now' "$SETUP" "knowledge-setup: 
 assert_grep 'knowledge-plan' "$SETUP" "knowledge-setup: on-ramp chains into knowledge-plan"
 assert_grep '\-\-frame' "$SETUP" "knowledge-setup: on-ramp forces per-question framing via --frame"
 
+# Re-frame lifecycle path (#451): --reframe re-steers an existing base via set-charter.
+assert_grep '\-\-reframe' "$SETUP" "knowledge-setup: documents the --reframe re-steer mode"
+assert_grep 'set-charter' "$SETUP" "knowledge-setup: --reframe writes via knowledge-binding.py set-charter (not init)"
+
 # The four writer-quality knobs stay OUT of the charter (per-run, not charter).
 assert_grep 'domain / audience / scope' "$SETUP" "knowledge-setup: charter is domain / audience / scope (+themes) only"
 
@@ -130,6 +134,11 @@ RESUME="$PLUGIN_ROOT/skills/knowledge-resume/SKILL.md"
 DASH="$PLUGIN_ROOT/skills/knowledge-dashboard/SKILL.md"
 assert_grep 'Charter' "$RESUME" "knowledge-resume: surfaces a Charter line"
 assert_grep 'get("charter"' "$RESUME" "knowledge-resume: reads charter via .get (fail-soft)"
+# Re-frame offer (#451): resume points at --reframe but stays read-only — the
+# write (set-charter / init) must NOT live in resume.
+assert_grep '\-\-reframe' "$RESUME" "knowledge-resume: surfaces the --reframe re-steer offer"
+assert_not_grep 'knowledge-binding.py set-charter' "$RESUME" "knowledge-resume: stays read-only — never calls set-charter"
+assert_not_grep 'knowledge-binding.py init' "$RESUME" "knowledge-resume: stays read-only — never calls init"
 assert_grep 'Charter' "$DASH" "knowledge-dashboard: surfaces a Charter line in the overlay"
 assert_grep 'get("charter"' "$DASH" "knowledge-dashboard: reads charter via .get (fail-soft)"
 
