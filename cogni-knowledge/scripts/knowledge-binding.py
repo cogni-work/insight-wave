@@ -477,9 +477,15 @@ def cmd_set_charter(args: argparse.Namespace) -> int:
                 open_themes.append(theme)
                 themes_added += 1
 
-    # Re-stamp framed_at only when the base was actually re-steered (a
-    # domain/audience/scope change); an open-themes-only update is not a re-frame.
-    if changed_charter:
+    # Re-stamp framed_at only when the base was actually re-steered AND the
+    # resulting charter still carries >=1 non-empty steering field — mirroring
+    # init's invariant (framed_at distinguishes a real charter from a skeleton).
+    # An open-themes-only update is not a re-frame, and clearing the last
+    # steering field (e.g. --charter-domain "") must not stamp a fresh date onto
+    # what is now an effectively-unframed charter.
+    if changed_charter and (
+        charter.get("domain") or charter.get("audience") or charter.get("scope")
+    ):
         charter["framed_at"] = _today()
 
     written = _write_binding(knowledge_root, binding)
@@ -711,7 +717,7 @@ def main(argv: list[str]) -> int:
 
     p_upsert = sub.add_parser(
         "upsert-themes",
-        help="Merge question-node theme-lineage records into topic_lineage.covered_themes[] (#409)",
+        help="Merge question-node theme-lineage records into topic_lineage.covered_themes[]",
     )
     p_upsert.add_argument("--knowledge-root", required=True)
     p_upsert.add_argument(
@@ -725,7 +731,7 @@ def main(argv: list[str]) -> int:
 
     p_setchar = sub.add_parser(
         "set-charter",
-        help="In-place charter re-frame on an existing base (#451; partial field "
+        help="In-place charter re-frame on an existing base (partial field "
              "update + union-merge into open_themes[])",
     )
     p_setchar.add_argument("--knowledge-root", required=True)
