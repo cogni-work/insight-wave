@@ -246,7 +246,7 @@ A `standard`-density draft that lands well under its word floor is thin in *trea
 - `PROSE_DENSITY != standard` (a ceiling has no floor deficit) → log `expansion skipped: density=<PROSE_DENSITY>`.
 - This dispatch is already an expansion round (defence-in-depth against a manual re-entry) → log `expansion skipped: already an expansion round`.
 
-**Compute the body-word count first.** The gate measures the draft's **body** words — the reference list excluded — *deterministically*, so the actuator measures the exact same surface the `wiki-reviewer` advisory Word-Count Gate counts (body words, reference section stripped) rather than trusting the composer's self-reported total `words` (which includes the numbered bibliography). Read `<project_path>/output/draft-v<N>.md` and strip the reference section with the same `_knowledge_lib` pair `knowledge-finalize` Step 5 uses (`OUTPUT_LANGUAGE` is already resolved at Step 3):
+**Compute the body-word count first.** The gate measures the draft's **body** words — the reference list excluded — *deterministically* via `_knowledge_lib.body_word_count` (the single canonical body-word surface, unit-tested in `tests/test_knowledge_lib.sh`), so the actuator measures the exact same surface the `wiki-reviewer` advisory Word-Count Gate counts rather than trusting the composer's self-reported total `words` (which includes the numbered bibliography). Read `<project_path>/output/draft-v<N>.md` (`OUTPUT_LANGUAGE` is already resolved at Step 3):
 
 ```
 BODY_WORDS=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
@@ -256,10 +256,9 @@ python3 -c '
 import os, sys
 from pathlib import Path
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from _knowledge_lib import ref_heading, strip_reference_section
+from _knowledge_lib import body_word_count
 draft = Path(os.environ["DRAFT_PATH"]).read_text(encoding="utf-8")
-body = strip_reference_section(draft, ref_heading(os.environ.get("OUTPUT_LANGUAGE") or "en"))
-print(len(body.split()))
+print(body_word_count(draft, os.environ.get("OUTPUT_LANGUAGE") or "en"))
 ')
 ```
 
@@ -324,7 +323,7 @@ cp "<project_path>/.metadata/citation-manifest.json" \
    "<project_path>/.metadata/.citation-manifest.pre-expand.json"
 ```
 
-On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. Compute `BODY_WORDS<N+1>` for the expanded draft with the **same** snippet used above (against `<project_path>/output/draft-v<N+1>.md`). Keep `v<N+1>` only when **both pass AND it grew the draft** in body words (`BODY_WORDS<N+1> > BODY_WORDS<N>` — a re-roll that added only reference entries, or no words at all, is treated as a failure below). On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it, then drop the now-stale snapshot:
+On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. Compute `BODY_WORDS<N+1>` for the expanded draft with the **same** snippet used above (against `<project_path>/output/draft-v<N+1>.md`). Keep `v<N+1>` only when **both pass AND it grew the draft** in body words (`BODY_WORDS<N+1> > BODY_WORDS<N>` — a re-roll that added only reference entries, or no words at all, is treated as a failure below). On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` **and carry `BODY_WORDS := BODY_WORDS<N+1>`** (the canonical draft's body-word count, already computed — Step 7 reuses it, no recompute) so Steps 6/7 report on it, then drop the now-stale snapshot:
 
 ```
 rm -f "<project_path>/.metadata/.citation-manifest.pre-expand.json"
@@ -373,8 +372,8 @@ Print ≤ 10 lines:
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, `distilled_claims[]` on a cited distilled page, or `answer_claims[]` on a cited question node.
 
 Surface a density-aware word-count warning — but do not auto-retry:
-- Under `PROSE_DENSITY=standard`: if `BODY_WORDS` (the gate- and reviewer-aligned body word count — reference list excluded — recompute it for the now-canonical `vN` with the Step 5.5 snippet if expansion changed `N`) is well below `TARGET_WORDS` (the floor), `⚠ Below target (N/TARGET)`, where `N` is `BODY_WORDS`.
-- Under `PROSE_DENSITY=executive`: if the composer's returned `words` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (N/TARGET)`. Under-ceiling is the correct executive outcome — no warning.
+- Under `PROSE_DENSITY=standard`: if `BODY_WORDS` (the gate- and reviewer-aligned body word count from Step 5.5, reference list excluded; it already reflects the canonical `vN` after any expansion) is well below `TARGET_WORDS` (the floor), `⚠ Below target (BODY_WORDS/TARGET_WORDS)`.
+- Under `PROSE_DENSITY=executive`: if the composer's returned `words` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (words/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
 
 Under `standard` density this warning reflects the **post-expansion** draft (Step 5.5 already attempted to close a real deficit), so a residual `⚠ Below target` here means the wiki lacked the uncited evidence to deepen further — a coverage signal, not a composer miss. The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores this with its Word Count Gate as the advisory backstop; the compose-time line is a fast heads-up, not a gate.
 
