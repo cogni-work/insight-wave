@@ -2,13 +2,18 @@
 """
 knowledge-binding.py — read/write .cogni-knowledge/binding.json
 
-Five actions:
+Six actions:
   init           create a new binding manifest
   append-project record a deposited cogni-research project
   read           emit the current binding manifest as JSON
   upsert-themes  merge question-node theme-lineage records into
                  topic_lineage.covered_themes[] (#409; the single writer of
                  that block — question-store.py only reads it)
+  themes         read-side partition of the seed-theme backlog: split
+                 topic_lineage.open_themes[] into still-open vs
+                 already-researched (open MINUS covered, matched by
+                 theme_norm_key) for the resume/dashboard display, plus a
+                 render-ready covered[] list — never mutates the binding
   set-charter    in-place charter re-frame on an existing base (#451; the
                  second writer of the charter block — init is the first) —
                  partial field update + union-merge into open_themes[]
@@ -28,6 +33,9 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _knowledge_lib import theme_norm_key  # noqa: E402
 
 # Schema bumps mirror the data shape, not the plugin tag. v0.0.3 was the
 # additive bump that added curator_defaults on top of v0.0.2's project_path.
@@ -497,6 +505,84 @@ def cmd_read(args: argparse.Namespace) -> int:
     return _emit(True, data={"binding": binding, "path": str(_binding_path(knowledge_root))})
 
 
+def cmd_themes(args: argparse.Namespace) -> int:
+    """Read-side partition of the seed-theme backlog for the resume/dashboard
+    display (#450). open_themes[] is seeded once at knowledge-setup and never
+    pruned, while covered_themes[] is written independently by upsert-themes as
+    themes get researched — so a researched seed keeps rendering as "open".
+
+    This computes open MINUS covered at READ time (never mutates the binding):
+    a seed theme is hidden only when its theme_norm_key matches a covered
+    theme_key (the same normalized token-set key covered_themes was built from,
+    so a variant phrasing still matches). Keep-on-doubt — an empty key or no
+    match leaves the theme visible (the safe direction). Also emits a
+    render-ready covered[] list (labels[0] with a question_slug fallback),
+    centralizing the rule the resume skill previously spelled out inline.
+
+    Fail-soft on a structurally-wrong binding (mirrors question-store.py's
+    posture): a non-dict topic_lineage / non-list theme arrays degrade to empty
+    partitions with success: true rather than erroring."""
+    knowledge_root = Path(args.knowledge_root).resolve()
+    try:
+        binding = _read_binding(knowledge_root)
+    except FileNotFoundError as exc:
+        return _emit(False, error=str(exc))
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"binding.json is not valid JSON: {exc}")
+
+    tl = binding.get("topic_lineage", {})
+    if not isinstance(tl, dict):
+        tl = {}
+
+    raw_covered = tl.get("covered_themes", [])
+    if not isinstance(raw_covered, list):
+        raw_covered = []
+    # Only non-empty keys gate a hide — an empty theme_key never matches.
+    covered_keys = {
+        e["theme_key"]
+        for e in raw_covered
+        if isinstance(e, dict) and e.get("theme_key")
+    }
+
+    raw_open = tl.get("open_themes", [])
+    if not isinstance(raw_open, list):
+        raw_open = []
+    open_active: list[str] = []
+    open_covered: list[str] = []
+    for t in raw_open:
+        if not isinstance(t, str):
+            continue  # open_themes is a plain string list — skip non-strings
+        k = theme_norm_key(t)
+        # An empty key never hides (it would otherwise match every empty label).
+        if k and k in covered_keys:
+            open_covered.append(t)
+        else:
+            open_active.append(t)
+
+    # Render-ready covered list: one {label, question_slug} per entry, label
+    # falling back to question_slug when labels[] is empty (defensive —
+    # upsert-themes always unions a non-empty label).
+    covered: list[dict] = []
+    for e in raw_covered:
+        if not isinstance(e, dict):
+            continue
+        labels = e.get("labels") or []
+        qslug = e.get("question_slug", "")
+        label = labels[0] if labels else qslug
+        covered.append({"label": label, "question_slug": qslug})
+
+    return _emit(
+        True,
+        data={
+            "open_active": open_active,
+            "open_covered": open_covered,
+            "covered": covered,
+            "open_total": len(raw_open),
+            "covered_total": len(raw_covered),
+        },
+    )
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Read/write .cogni-knowledge/binding.json",
@@ -686,6 +772,14 @@ def main(argv: list[str]) -> int:
     p_read = sub.add_parser("read", help="Emit the binding manifest")
     p_read.add_argument("--knowledge-root", required=True)
     p_read.set_defaults(func=cmd_read)
+
+    p_themes = sub.add_parser(
+        "themes",
+        help="Partition the seed-theme backlog into still-open vs already-researched "
+             "(open MINUS covered) for the resume/dashboard display; read-only",
+    )
+    p_themes.add_argument("--knowledge-root", required=True)
+    p_themes.set_defaults(func=cmd_themes)
 
     args = parser.parse_args(argv)
     return args.func(args)

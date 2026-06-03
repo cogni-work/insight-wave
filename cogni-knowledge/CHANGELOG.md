@@ -1,6 +1,6 @@
 # cogni-knowledge changelog
 
-## 0.1.64 — 2026-06-03 — feat: charter re-frame / update path — #451
+## 0.1.65 — 2026-06-03 — feat: charter re-frame / update path — #451
 
 v0.1.63 (#449) added the base **charter** (`{domain, audience, scope, framed_at}` in
 `binding.json`, schema 0.1.4), but it was captured **only** at `knowledge-setup` Step 2.5 via

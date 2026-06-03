@@ -59,6 +59,12 @@ assert_grep 'citation-consistent' "$DASH" "knowledge-dashboard: names citation-c
 assert_grep 'pipeline-summary.py' "$DASH" "knowledge-dashboard: still reads pipeline-summary.py per project"
 assert_grep 'knowledge-overlay.md' "$DASH" "knowledge-dashboard: still writes the knowledge-overlay.md sidecar"
 
+# --- 8) Seed-theme backlog is read open-MINUS-covered, not raw (#450) -------
+# The dashboard must call the themes subcommand and drive Seed themes from
+# open_active, so a researched seed drops off instead of rendering stale.
+assert_grep 'knowledge-binding.py themes' "$DASH" "knowledge-dashboard: reads the still-open backlog via knowledge-binding.py themes (#450)"
+assert_grep 'open_active' "$DASH" "knowledge-dashboard: drives Seed themes from open_active (open minus researched, #450)"
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

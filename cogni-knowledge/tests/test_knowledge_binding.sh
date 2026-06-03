@@ -13,6 +13,14 @@
 #      {theme_bindings: []}} envelope is accepted (not just the bare array).
 #   5. A malformed record (missing theme_key/question_slug) is skipped, never
 #      corrupting the block.
+#   6. themes (#450) partitions the seed backlog open MINUS covered at read time
+#      (matched by theme_norm_key), renders a covered[] display list, never
+#      mutates the stored open_themes[], and degrades fail-soft on a
+#      structurally-wrong binding.
+#   7. set-charter (#451) in-place re-frames an existing base: partial field
+#      update + framed_at re-stamp; --open-themes union-merge (no re-stamp);
+#      pre-0.1.4 fail-soft; no-flags / missing-binding → clean success:false;
+#      --knowledge-slug mismatch refusal.
 #
 # bash 3.2 + stdlib python3 only. Exits non-zero on any failure.
 
@@ -271,6 +279,120 @@ OUT11="$(python3 "$SCRIPT" set-charter --knowledge-root "$KBS" \
 echo "$OUT11" | grep -q 'knowledge_slug mismatch' \
   && green "PASS: set-charter refuses on --knowledge-slug mismatch" \
   || { red "FAIL: set-charter slug-mismatch guard wrong"; echo "$OUT11"; errors=$((errors+1)); }
+
+# --- themes subcommand (#450): open MINUS covered at read time -------------
+# A fresh KB with a seed backlog, one of whose themes has been "researched"
+# (its theme_norm_key recorded in covered_themes[]). Display must hide the
+# researched seed without mutating the stored open_themes[].
+KBT="$WORK/kbt"; mkdir -p "$KBT/.cogni-wiki"
+echo '{"name":"T","slug":"t","schema_version":"0.0.5"}' > "$KBT/.cogni-wiki/config.json"
+python3 "$SCRIPT" init \
+  --knowledge-root "$KBT" --knowledge-slug test-kbt \
+  --knowledge-title "Test KBT" --wiki-path "$KBT" \
+  --open-themes 'high-risk systems|conformity assessment|GPAI' >/dev/null
+BINDT="$KBT/.cogni-knowledge/binding.json"
+# Record a covered theme keyed by theme_norm_key("High-Risk AI Systems"); a
+# variant phrasing of the "high-risk systems" seed (both fold to the same key).
+python3 -c "
+import json, sys
+sys.path.insert(0, '$PLUGIN_ROOT/scripts')
+from _knowledge_lib import theme_norm_key
+b = json.load(open('$BINDT'))
+b['topic_lineage']['covered_themes'] = [{
+    'theme_key': theme_norm_key('High-Risk AI Systems'),
+    'question_slug': 'high-risk-ai-systems',
+    'labels': ['High-Risk AI Systems'],
+    'first_seen': '2025-01-01', 'last_seen': '2025-02-01',
+}]
+json.dump(b, open('$BINDT','w'))
+"
+OUTT="$(python3 "$SCRIPT" themes --knowledge-root "$KBT")"
+if echo "$OUTT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)['data']
+# (a) the researched seed is hidden from open_active and (b) the un-researched
+# seeds stay; matched by theme_norm_key despite the phrasing difference.
+assert d['open_active'] == ['conformity assessment', 'GPAI'], d['open_active']
+assert d['open_covered'] == ['high-risk systems'], d['open_covered']
+# (d) covered[] renders labels[0] with the question_slug bound for reference.
+assert d['covered'] == [{'label': 'High-Risk AI Systems', 'question_slug': 'high-risk-ai-systems'}], d['covered']
+assert d['open_total'] == 3 and d['covered_total'] == 1, (d['open_total'], d['covered_total'])
+print('OK')
+" | grep -q OK; then
+  green "PASS: themes hides a researched seed (open MINUS covered via theme_norm_key), keeps the rest"
+else
+  red "FAIL: themes open/covered partition wrong"; echo "$OUTT"; errors=$((errors+1))
+fi
+
+# themes does NOT mutate the stored backlog (display-only, approach (a)).
+if python3 -c "
+import json
+b = json.load(open('$BINDT'))
+assert b['topic_lineage']['open_themes'] == ['high-risk systems', 'conformity assessment', 'GPAI'], b['topic_lineage']['open_themes']
+print('OK')
+" | grep -q OK; then
+  green "PASS: themes leaves the stored open_themes[] untouched (non-destructive)"
+else
+  red "FAIL: themes mutated open_themes[]"; errors=$((errors+1))
+fi
+
+# (d-fallback) covered[] with an empty labels[] falls back to question_slug.
+python3 -c "
+import json
+b = json.load(open('$BINDT'))
+b['topic_lineage']['covered_themes'].append({
+    'theme_key': 'unlabelled key', 'question_slug': 'some-slug',
+    'labels': [], 'first_seen': '2025-03-01', 'last_seen': '2025-03-01',
+})
+json.dump(b, open('$BINDT','w'))
+"
+if python3 "$SCRIPT" themes --knowledge-root "$KBT" | python3 -c "
+import json, sys
+cov = json.load(sys.stdin)['data']['covered']
+assert {'label': 'some-slug', 'question_slug': 'some-slug'} in cov, cov
+print('OK')
+" | grep -q OK; then
+  green "PASS: themes covered[] falls back to question_slug when labels[] is empty"
+else
+  red "FAIL: covered[] labels[0]/question_slug fallback wrong"; errors=$((errors+1))
+fi
+
+# (c) an empty / whitespace open entry never hides (an empty key matches nothing).
+KBW="$WORK/kbw"; mkdir -p "$KBW/.cogni-knowledge"
+cat > "$KBW/.cogni-knowledge/binding.json" <<'EOF'
+{"topic_lineage": {"open_themes": ["  ", ""], "covered_themes": []}, "schema_version": "0.1.4"}
+EOF
+if python3 "$SCRIPT" themes --knowledge-root "$KBW" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)['data']
+assert d['open_active'] == ['  ', ''], d['open_active']
+assert d['open_covered'] == [], d['open_covered']
+print('OK')
+" | grep -q OK; then
+  green "PASS: themes keeps empty/whitespace open entries visible (empty key never hides)"
+else
+  red "FAIL: empty-key open entry wrongly hidden"; errors=$((errors+1))
+fi
+
+# (e) a structurally-wrong topic_lineage degrades fail-soft to empty partitions.
+KBF="$WORK/kbf"; mkdir -p "$KBF/.cogni-knowledge"
+for SHAPE in '{"topic_lineage": [], "schema_version": "0.1.4"}' \
+             '{"topic_lineage": null, "schema_version": "0.1.4"}' \
+             '{"schema_version": "0.1.0"}'; do
+  printf '%s' "$SHAPE" > "$KBF/.cogni-knowledge/binding.json"
+  if python3 "$SCRIPT" themes --knowledge-root "$KBF" | python3 -c "
+import json, sys
+o = json.load(sys.stdin)
+assert o['success'] is True, o
+d = o['data']
+assert d['open_active'] == [] and d['open_covered'] == [] and d['covered'] == [], d
+print('OK')
+" | grep -q OK; then
+    green "PASS: themes fail-soft on structurally-wrong binding ($SHAPE)"
+  else
+    red "FAIL: themes did not degrade fail-soft for $SHAPE"; errors=$((errors+1))
+  fi
+done
 
 if [ "$errors" -eq 0 ]; then
   green "ALL TESTS PASS"
