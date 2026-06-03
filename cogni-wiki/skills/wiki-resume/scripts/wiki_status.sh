@@ -95,12 +95,31 @@ LOG_FILE="$WIKI_DIR/log.md"
 RAW_DIR="$WIKI_ROOT/raw"
 CONFIG_FILE="$WIKI_ROOT/.cogni-wiki/config.json"
 
-# Per-type page directories (v0.0.28+). Order matches _wikilib.PAGE_TYPE_DIRS.
-TYPE_DIRS="concepts entities summaries decisions interviews meetings learnings syntheses notes"
+# Per-type page directories (v0.0.28+). This literal is the crash-safe
+# fallback; it is overwritten below by a runtime derivation from
+# _wikilib.PAGE_TYPE_DIRS so the list can never silently drift behind a newly
+# added page type (the page-type-undercount class of bug this script fixes).
+TYPE_DIRS="concepts entities summaries decisions interviews meetings learnings syntheses notes sources questions"
 
 # Resolve script dir so we can find ../../wiki-health/scripts/health.py.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HEALTH_SCRIPT="$SCRIPT_DIR/../../wiki-health/scripts/health.py"
+
+# Prefer the single source of truth: derive TYPE_DIRS from
+# _wikilib.PAGE_TYPE_DIRS at runtime so a future page-type addition is picked
+# up automatically. Degrade silently to the literal above if _wikilib is
+# missing or unimportable — an import error must never empty the list and
+# zero entries_count (the very failure mode this script is being hardened
+# against). stderr is discarded so a probe failure can't corrupt JSON output.
+_derived_type_dirs=$(python3 -c "
+import sys
+sys.path.insert(0, '$SCRIPT_DIR/../../wiki-ingest/scripts')
+from _wikilib import PAGE_TYPE_DIRS
+print(' '.join(PAGE_TYPE_DIRS.values()))
+" 2>/dev/null || true)
+if [ -n "$_derived_type_dirs" ]; then
+  TYPE_DIRS="$_derived_type_dirs"
+fi
 
 # ---------- pre-migration probe ----------
 # Surface the migration nudge as a status field. Hard-failing in a SKILL that
@@ -208,7 +227,11 @@ fi
 open_questions_count=0
 OPEN_QUESTIONS_FILE="$WIKI_DIR/open_questions.md"
 if [ -f "$OPEN_QUESTIONS_FILE" ]; then
-  open_questions_count=$(grep -cE '^- \[ \] ' "$OPEN_QUESTIONS_FILE" 2>/dev/null || echo 0)
+  # grep -c already prints 0 on no match (it just exits non-zero), so a
+  # `|| echo 0` fallback would append a second line and crash the downstream
+  # int(); guard the non-zero exit with `|| true` instead.
+  open_questions_count=$(grep -cE '^- \[ \] ' "$OPEN_QUESTIONS_FILE" 2>/dev/null || true)
+  open_questions_count=${open_questions_count:-0}
 fi
 
 # ---------- orphan raw files (quick heuristic) ----------
