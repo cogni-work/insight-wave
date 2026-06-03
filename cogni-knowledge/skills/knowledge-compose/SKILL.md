@@ -180,16 +180,15 @@ Parse the return envelope:
 
 ### 4.5 Build citation-manifest.json from the composer's records
 
-The composer wrote a raw-text **citation-records** file (`<project_path>/.metadata/citation-records-v<N>.txt`), never JSON — so a `draft_sentence` containing a straight `"` (routine in German/FR/IT/ES/PL prose) can't break the manifest. Serialize and self-check the manifest with `citation-store.py build`. Paths go via env vars so spaces / apostrophes in project paths can't break the literal:
+The composer wrote a raw-text **citation-records** file (`<project_path>/.metadata/citation-records-v<N>.txt`), never JSON — so a `draft_sentence` containing a straight `"` (routine in German/FR/IT/ES/PL prose) can't break the manifest. Serialize and self-check the manifest with `citation-store.py build`. Pass each path as a **quoted literal CLI arg** — a quoted string is one space-/apostrophe-safe argv element, so quoting alone is sufficient. Do **not** wrap this in a command-prefix env-var form (`RECORDS_PATH=… python3 … --records "$RECORDS_PATH"`): the shell expands `"$RECORDS_PATH"` against the *current* environment — where the var is still unset — **before** applying the prefix assignment and exec'ing, so `--records` would receive an empty string and the build aborts resolving the cwd as the records path.
 
 ```
-RECORDS_PATH="<project_path>/.metadata/citation-records-v<N>.txt" \
-DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
-OUT_PATH="<project_path>/.metadata/citation-manifest.json" \
-INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
-    --records "$RECORDS_PATH" --draft "$DRAFT_PATH" --out "$OUT_PATH" --draft-version <N> \
-    --ingest-manifest "$INGEST_PATH"
+    --records "<project_path>/.metadata/citation-records-v<N>.txt" \
+    --draft "<project_path>/output/draft-v<N>.md" \
+    --out "<project_path>/.metadata/citation-manifest.json" \
+    --draft-version <N> \
+    --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
 ```
 
 `citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, **asserts every inline citation URL is a known ingested-source URL** (the `--ingest-manifest` gate; the composer must copy each cited page's real `sources:` URL, never reconstruct it from the slug), and round-trips the file it wrote (`json.loads` + count). Parse the envelope:

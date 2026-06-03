@@ -59,6 +59,16 @@ assert_grep 'dcl=' "$COMPOSE" "knowledge-compose: Step 6 log line records dcl=<n
 # gate, issue #4). The '#325' marker tags the substring guard line.
 assert_grep 'citation-store.py' "$COMPOSE" "knowledge-compose: builds the manifest via citation-store.py (#325)"
 assert_grep 'verbatim substring of the draft' "$COMPOSE" "knowledge-compose: Step-5 asserts every draft_sentence is a verbatim substring of the draft"
+# #455: Step 4.5 must pass the build paths as quoted LITERAL CLI args, never a
+# command-prefix env-var form (`RECORDS_PATH=… python3 … --records "$RECORDS_PATH"`).
+# That form expands "$RECORDS_PATH" against the still-unset current environment
+# BEFORE the prefix assignment takes effect, so --records receives "" and the build
+# aborts resolving the cwd as the records path. The positive guard pins the fixed
+# literal shape; the negative guard catches the antipattern silently returning. The
+# `RECORDS_PATH="` anchor matches only the assignment form — the corrected rationale
+# prose names `RECORDS_PATH=…` / `"$RECORDS_PATH"`, neither of which contains `="`.
+assert_grep '\-\-records "<project_path>/.metadata/citation-records-v' "$COMPOSE" "knowledge-compose: Step 4.5 passes --records as a quoted literal path (#455)"
+assert_not_grep 'RECORDS_PATH="' "$COMPOSE" "knowledge-compose: Step 4.5 build has no command-prefix RECORDS_PATH= env-var (the #455 empty-arg antipattern)"
 # Match the actual log-line shape Step 6 emits (`## [DATE] compose | project=...`)
 # rather than the bare word `compose`, which would also match the filename,
 # skill name, and every doc paragraph.
