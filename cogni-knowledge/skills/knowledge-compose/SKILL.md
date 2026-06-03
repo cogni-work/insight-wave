@@ -246,9 +246,27 @@ A `standard`-density draft that lands well under its word floor is thin in *trea
 - `PROSE_DENSITY != standard` (a ceiling has no floor deficit) → log `expansion skipped: density=<PROSE_DENSITY>`.
 - This dispatch is already an expansion round (defence-in-depth against a manual re-entry) → log `expansion skipped: already an expansion round`.
 
-**Gate (fire only when BOTH hold):** the composer's returned `words < TARGET_WORDS × 0.85` **AND** the composer's returned `ceiling_hit == false`. If `words ≥ TARGET_WORDS × 0.85`, skip silently (the floor is effectively met). If `ceiling_hit == true`, skip with `expansion skipped: at single-call ceiling — raise coverage via more ingestion (knowledge-curate/-fetch)` — re-rolling the composer cannot fit more words in one call; the fix is more wiki coverage.
+**Compute the body-word count first.** The gate measures the draft's **body** words — the reference list excluded — *deterministically* via `_knowledge_lib.body_word_count` (the single canonical body-word surface, unit-tested in `tests/test_knowledge_lib.sh`), so the actuator measures the exact same surface the `wiki-reviewer` advisory Word-Count Gate counts rather than trusting the composer's self-reported total `words` (which includes the numbered bibliography). Read `<project_path>/output/draft-v<N>.md` (`OUTPUT_LANGUAGE` is already resolved at Step 3):
 
-This `0.85` is the **real-deficit actuator trigger** and is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate's tiered completeness caps (finalize Step 10.7, which scores the *post*-expansion draft): the two thresholds serve different roles — actuator vs advisory backstop — and a future tweak to one need not track the other.
+```
+BODY_WORDS=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
+OUTPUT_LANGUAGE="<resolved>" \
+python3 -c '
+import os, sys
+from pathlib import Path
+sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
+from _knowledge_lib import body_word_count
+draft = Path(os.environ["DRAFT_PATH"]).read_text(encoding="utf-8")
+print(body_word_count(draft, os.environ.get("OUTPUT_LANGUAGE") or "en"))
+')
+```
+
+If the snippet errors or returns empty (e.g. an unreadable draft), treat it as no deficit and skip expansion with `expansion skipped: body-word count unavailable` — the whole step is fail-soft, so a missing measurement never blocks the deposit.
+
+**Gate (fire only when BOTH hold):** `BODY_WORDS < TARGET_WORDS × 0.85` **AND** the composer's returned `ceiling_hit == false`. If `BODY_WORDS ≥ TARGET_WORDS × 0.85`, skip silently (the floor is effectively met). If `ceiling_hit == true`, skip with `expansion skipped: at single-call ceiling — raise coverage via more ingestion (knowledge-curate/-fetch)` — re-rolling the composer cannot fit more words in one call; the fix is more wiki coverage.
+
+This `0.85` is the **real-deficit actuator trigger** and is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate's tiered completeness caps (finalize Step 10.7, which scores the *post*-expansion draft): the two thresholds serve different roles — actuator vs advisory backstop — and a future tweak to one need not track the other. **Both now measure the same surface — body words, reference section excluded** (this actuator via the deterministic `BODY_WORDS` above; the reviewer via the same `strip_reference_section` exclusion) — so they agree on what "words" means even though their threshold *curves* stay independent.
 
 **Derive the thin sections** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections whose `drafted_words < budget × 0.9`, excluding the References section (`covers_sub_questions: []`). Paths via env vars:
 
@@ -280,7 +298,7 @@ print(",".join(str(s["index"]) for s in chosen))
 '
 ```
 
-Capture this as `EXPAND_SECTIONS` and compute `WORD_DEFICIT = TARGET_WORDS - words`. The fallback to the largest topical sections by budget means a real total deficit normally yields a non-empty `EXPAND_SECTIONS` even when no section is individually under-budget (the actuator's effectiveness no longer depends on the composer reliably populating every `sections[].drafted_words`). If `EXPAND_SECTIONS` is still empty — the degenerate case where the outline carries no topical section with a valid integer `budget` — skip with `expansion skipped: no topical section in the outline to deepen` — there is nothing to target.
+Capture this as `EXPAND_SECTIONS` and compute `WORD_DEFICIT = TARGET_WORDS - BODY_WORDS`. The fallback to the largest topical sections by budget means a real total deficit normally yields a non-empty `EXPAND_SECTIONS` even when no section is individually under-budget (the actuator's effectiveness no longer depends on the composer reliably populating every `sections[].drafted_words`). If `EXPAND_SECTIONS` is still empty — the degenerate case where the outline carries no topical section with a valid integer `budget` — skip with `expansion skipped: no topical section in the outline to deepen` — there is nothing to target.
 
 **Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4):
 
@@ -292,7 +310,7 @@ Task(wiki-composer,
      EXPANSION_MODE=true,
      BASELINE_DRAFT_VERSION=<N>,
      EXPAND_SECTIONS=<comma-list>,
-     WORD_DEFICIT=<TARGET_WORDS - words>,
+     WORD_DEFICIT=<TARGET_WORDS - BODY_WORDS>,
      TARGET_WORDS=<resolved>,
      PROSE_DENSITY=<resolved>,
      TONE=<resolved>,
@@ -307,13 +325,13 @@ cp "<project_path>/.metadata/citation-manifest.json" \
    "<project_path>/.metadata/.citation-manifest.pre-expand.json"
 ```
 
-On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. Keep `v<N+1>` only when **both pass AND it grew the draft** (`words<N+1> > words<N>` — a re-roll that did not add words is treated as a failure below). On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it, then drop the now-stale snapshot:
+On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. Compute `BODY_WORDS<N+1>` for the expanded draft with the **same** snippet used above (against `<project_path>/output/draft-v<N+1>.md`). Keep `v<N+1>` only when **both pass AND it grew the draft** in body words (`BODY_WORDS<N+1> > BODY_WORDS<N>` — a re-roll that added only reference entries, or no words at all, is treated as a failure below). On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` **and carry `BODY_WORDS := BODY_WORDS<N+1>`** (the canonical draft's body-word count, already computed — Step 7 reuses it, no recompute) so Steps 6/7 report on it, then drop the now-stale snapshot:
 
 ```
 rm -f "<project_path>/.metadata/.citation-manifest.pre-expand.json"
 ```
 
-**Cap = 1; fail-soft (the orchestrator must leave `vN` AND its matching manifest as the canonical state on any failure):** if the expansion dispatch returns `ok: false`, OR its Step-4.5 manifest build is rejected, OR its Step-5 on-disk verify fails, OR it did not grow the draft (`words<N+1> ≤ words<N>`) — **remove the partial `v<N+1>` artifacts** (`output/draft-v<N+1>.md`, `.metadata/citation-records-v<N+1>.txt`, `.metadata/writer-outline-v<N+1>.json`) so the latest-draft resolver lands back on `vN`, **and restore the snapshot** so the canonical `citation-manifest.json` describes `vN` again:
+**Cap = 1; fail-soft (the orchestrator must leave `vN` AND its matching manifest as the canonical state on any failure):** if the expansion dispatch returns `ok: false`, OR its Step-4.5 manifest build is rejected, OR its Step-5 on-disk verify fails, OR it did not grow the draft in body words (`BODY_WORDS<N+1> ≤ BODY_WORDS<N>`) — **remove the partial `v<N+1>` artifacts** (`output/draft-v<N+1>.md`, `.metadata/citation-records-v<N+1>.txt`, `.metadata/writer-outline-v<N+1>.json`) so the latest-draft resolver lands back on `vN`, **and restore the snapshot** so the canonical `citation-manifest.json` describes `vN` again:
 
 ```
 mv "<project_path>/.metadata/.citation-manifest.pre-expand.json" \
@@ -355,9 +373,9 @@ Print ≤ 10 lines:
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, `distilled_claims[]` on a cited distilled page, or `answer_claims[]` on a cited question node.
 
-Surface a density-aware word-count warning from the composer's returned `words` — but do not auto-retry:
-- Under `PROSE_DENSITY=standard`: if `words` is well below `TARGET_WORDS` (the floor), `⚠ Below target (N/TARGET)`.
-- Under `PROSE_DENSITY=executive`: if `words` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (N/TARGET)`. Under-ceiling is the correct executive outcome — no warning.
+Surface a density-aware word-count warning — but do not auto-retry. Both branches measure **body words** (the `wiki-reviewer`-aligned surface, reference list excluded): under `standard` reuse the `BODY_WORDS` already computed in Step 5.5 (it reflects the canonical `vN` after any expansion); under `executive` Step 5.5 was skipped, so compute `BODY_WORDS` now for `<project_path>/output/draft-v<N>.md` with the same `body_word_count` helper. Using body words here (not the composer's total `words`) also stops the ~1.1k-word bibliography from triggering a false over-ceiling warning:
+- Under `PROSE_DENSITY=standard`: if `BODY_WORDS` is well below `TARGET_WORDS` (the floor), `⚠ Below target (BODY_WORDS/TARGET_WORDS)`.
+- Under `PROSE_DENSITY=executive`: if `BODY_WORDS` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (BODY_WORDS/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
 
 Under `standard` density this warning reflects the **post-expansion** draft (Step 5.5 already attempted to close a real deficit), so a residual `⚠ Below target` here means the wiki lacked the uncited evidence to deepen further — a coverage signal, not a composer miss. The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores this with its Word Count Gate as the advisory backstop; the compose-time line is a fast heads-up, not a gate.
 

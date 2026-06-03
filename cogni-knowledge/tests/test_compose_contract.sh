@@ -242,6 +242,13 @@ assert_grep 'citation-manifest.pre-expand' "$COMPOSE" "knowledge-compose: Step 5
 assert_grep 'manifest restored\|restore the snapshot\|restore the manifest' "$COMPOSE" "knowledge-compose: Step 5.5 restores the vN manifest on expansion failure (#384)"
 # Regression guard: keep v(N+1) only if it actually grew the draft.
 assert_grep 'did not grow\|words<N+1> > words<N>\|words<N+1> ≤ words<N>\|grew the draft' "$COMPOSE" "knowledge-compose: Step 5.5 keeps vN when the expansion did not grow the draft (#384)"
+# #456: Step 5.5 must gate on a DETERMINISTIC body-word count (reference list
+# stripped) — the same surface wiki-reviewer's advisory Word-Count Gate counts —
+# rather than the composer's inflated self-reported total `words`. The gate calls
+# the canonical _knowledge_lib.body_word_count helper and keys on BODY_WORDS, so
+# the actuator and the advisory backstop agree on what "words" means.
+assert_grep 'body_word_count' "$COMPOSE" "knowledge-compose: Step 5.5 uses the canonical _knowledge_lib.body_word_count helper (#456)"
+assert_grep 'BODY_WORDS' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on the deterministic body-word count BODY_WORDS (#456)"
 # The cap is exactly ONE expansion — the skill must say so (defends against a
 # future edit re-introducing an unbounded loop).
 assert_grep 'capped at ONE\|capped at one\|cap = 1\|ONE bounded\|one bounded\|ONE expansion\|once in' "$COMPOSE" "knowledge-compose: Step 5.5 is capped at ONE expansion (#384)"

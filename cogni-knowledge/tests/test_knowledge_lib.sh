@@ -205,6 +205,22 @@ def assert_strip_reference_section():
     assert kl.strip_reference_section("Just prose.\n", "References") == "Just prose.\n"
 
 
+def assert_body_word_count():
+    # Body words EXCLUDE the reference list — the surface both the compose Step 5.5
+    # actuator and the wiki-reviewer Word-Count Gate measure (#456).
+    body = "one two three four five"  # 5 body words
+    refs = "\n\n## References\n\n**[1]** A — [[sources/a]]\n**[2]** B — [[sources/b]]\n"
+    draft = body + refs
+    # Total split() would count the reference entries; body_word_count must not.
+    assert len(draft.split()) > 5, "fixture must have ref words to exclude"
+    assert kl.body_word_count(draft, "en") == 5, kl.body_word_count(draft, "en")
+    # Language-aware: a German `## Referenzen` list is stripped just the same.
+    draft_de = body + "\n\n## Referenzen\n\n**[1]** A — [[sources/a]]\n"
+    assert kl.body_word_count(draft_de, "de") == 5, kl.body_word_count(draft_de, "de")
+    # No reference section → counts the whole draft. None lang → English default.
+    assert kl.body_word_count("alpha beta gamma\n", None) == 3
+
+
 def assert_renumber_inline_citations():
     import re as _re
     # Full-source-drop gap: body [1][3] → [1][2] matching the re-derived list.
@@ -771,6 +787,7 @@ check("ref_heading", assert_ref_heading)
 check("first_url", assert_first_url)
 check("md_link_dest", assert_md_link_dest)
 check("strip_reference_section", assert_strip_reference_section)
+check("body_word_count", assert_body_word_count)
 check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 check("parse_distilled_claims", assert_parse_distilled_claims)
@@ -804,6 +821,7 @@ grade ref_heading             "ref_heading — localized reference heading (de�
 grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip"
 grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
+grade body_word_count         "body_word_count — body words excl. reference list (EN + DE), no-ref-section counts whole draft, None lang→English (#456 one canonical surface for compose Step 5.5 + wiki-reviewer)"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
 grade parse_distilled_claims  "parse_distilled_claims — text-only extraction, writer metadata ignored, inline []/no-bullets/malformed→[], block-scalar no-leak (#343)"
