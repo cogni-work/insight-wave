@@ -133,12 +133,21 @@ def _join_sections(sections: list) -> str:
     return "\n".join(out_lines) + "\n"
 
 
+def _heading_to_key(heading_line: str) -> str:
+    """Normalised comparison key for a heading line — the HEADING_RE-captured
+    text (or the raw line if it isn't a heading), folded with `.strip().lower()`.
+
+    The single source of truth for "are these the same heading", shared by
+    `_heading_matches_category` and `collapse_duplicate_headings` so the two
+    paths can't drift on what counts as a match.
+    """
+    m = HEADING_RE.match(heading_line)
+    return (m.group(2) if m else heading_line).strip().lower()
+
+
 def _heading_matches_category(heading_line: str, category: str) -> bool:
     """Match `## Foo` or `### Foo` against category="Foo" (case-insensitive)."""
-    m = HEADING_RE.match(heading_line)
-    if not m:
-        return False
-    return m.group(2).strip().lower() == category.strip().lower()
+    return _heading_to_key(heading_line) == category.strip().lower()
 
 
 def _slug_line_regex(slug: str) -> re.Pattern:
@@ -239,9 +248,9 @@ def _create_category(sections: list, category: str, new_line: str) -> list:
 def collapse_duplicate_headings(sections: list) -> list:
     """Merge duplicate `## <heading>` sections into the first occurrence.
 
-    Two sections are "the same heading" when their HEADING_RE-captured text,
-    normalised with `.strip().lower()`, is equal — the same key
-    `_heading_matches_category` compares against. The FIRST occurrence survives
+    Two sections are "the same heading" when their `_heading_to_key` value is
+    equal — the same normalised key `_heading_matches_category` compares
+    against, so collapse and dispatch agree. The FIRST occurrence survives
     and keeps its body verbatim, including any **curated lead-in** (the
     protected prose between a heading and its first `- [[slug]]` bullet, per the
     #461 Phase-1 contract). Each later duplicate's `- [[slug]]` bullets are
@@ -266,8 +275,7 @@ def collapse_duplicate_headings(sections: list) -> list:
         if heading is None:
             result.append((heading, list(body)))
             continue
-        m = HEADING_RE.match(heading)
-        key = (m.group(2) if m else heading).strip().lower()
+        key = _heading_to_key(heading)
         if key not in first_idx:
             first_idx[key] = len(result)
             result.append((heading, list(body)))
@@ -276,9 +284,7 @@ def collapse_duplicate_headings(sections: list) -> list:
         changed = True
         tgt_heading, tgt_body = result[first_idx[key]]
         existing_slugs = {
-            _extract_slug_from_line(ln)
-            for ln in tgt_body
-            if _extract_slug_from_line(ln)
+            slug for ln in tgt_body if (slug := _extract_slug_from_line(ln))
         }
         for line in body:
             slug = _extract_slug_from_line(line)
