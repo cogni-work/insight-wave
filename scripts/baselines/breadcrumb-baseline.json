@@ -67,16 +67,6 @@
       "line_sha": "906c07cd236a829996b9c994c8c046a0f4764aaf"
     },
     {
-      "file": "cogni-knowledge/agents/wiki-reviewer.md",
-      "match": "#309",
-      "line_sha": "dd5b8bee5282d659492d15fff511d38f40a414de"
-    },
-    {
-      "file": "cogni-knowledge/agents/wiki-reviewer.md",
-      "match": "#309",
-      "line_sha": "f071076251abd86587d6b5d4bccc14e85a61d302"
-    },
-    {
       "file": "cogni-knowledge/skills/knowledge-finalize/SKILL.md",
       "match": "#309",
       "line_sha": "0462efb5f090530e03ebd7396f97fe342d69bf32"
@@ -95,21 +85,6 @@
       "file": "cogni-knowledge/skills/knowledge-finalize/SKILL.md",
       "match": "#309",
       "line_sha": "e1a88e90082a6d561a22ce668be53f0d76857b63"
-    },
-    {
-      "file": "cogni-knowledge/skills/knowledge-plan/SKILL.md",
-      "match": "#309",
-      "line_sha": "108e9b2f9195d4400c1e6688f70ec950ffcbef80"
-    },
-    {
-      "file": "cogni-knowledge/skills/knowledge-plan/SKILL.md",
-      "match": "#309",
-      "line_sha": "4e4c5ce52c72b213ccd458ae821597fd593af43c"
-    },
-    {
-      "file": "cogni-knowledge/skills/knowledge-setup/SKILL.md",
-      "match": "#309",
-      "line_sha": "b6e3b7e61c6fc5d626b1807f7a11253add35462a"
     },
     {
       "file": "cogni-portfolio/skills/portfolio-consolidate/SKILL.md",
@@ -647,111 +622,6 @@
       "line_sha": "f50b9b782efeb59ac4783c42e6ea503441e529ce"
     },
     {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#222",
-      "line_sha": "11b4515ad28886af62923d86172c39c4761e2d64"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#222",
-      "line_sha": "54354e78fa96418f56a5c4c022b185d06c26104c"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#222",
-      "line_sha": "d581bdb4fbeb208695d566fd27804ef14a673de0"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#222",
-      "line_sha": "e9e1e50f59d49bffa008affc214acb7945bbcaf7"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#222",
-      "line_sha": "f691687bd27b53ea7188b2e38203d1da02531d1a"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#223",
-      "line_sha": "d09260b1c80f5060bb436b487e36a3891b7400bb"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "#354",
-      "line_sha": "abe75dbe9549f0340211068fe24673c2222d3745"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.30",
-      "line_sha": "1bc648ba3254e27e19c20da2e55d052152a53099"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.30",
-      "line_sha": "37855d1ada2eef5a50f48bb515787236a02aaf42"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.30",
-      "line_sha": "41e3965b40977d1a18f2478a4190de155af1e48d"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.30",
-      "line_sha": "abf6c61d2faa87cca045a5f54de5304ba44abbcc"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.30",
-      "line_sha": "ce23fa406482f226d21bf4fb132b4dddca9a5d92"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.30",
-      "line_sha": "d2404e1bbdf534135d96164338a0e1c264a8fefa"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.31",
-      "line_sha": "d09260b1c80f5060bb436b487e36a3891b7400bb"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "11b4515ad28886af62923d86172c39c4761e2d64"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "54354e78fa96418f56a5c4c022b185d06c26104c"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "7eee87f791bdf1af091894d2a703ee774cf289c5"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "d581bdb4fbeb208695d566fd27804ef14a673de0"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "e9e1e50f59d49bffa008affc214acb7945bbcaf7"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "f5c60181acd51c2247dbb306ef02ca635c1b0afc"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-lint/SKILL.md",
-      "match": "v0.0.32",
-      "line_sha": "f691687bd27b53ea7188b2e38203d1da02531d1a"
-    },
-    {
       "file": "cogni-wiki/skills/wiki-query/SKILL.md",
       "match": "v0.0.23",
       "line_sha": "29f8c4e258a28f5880f6a5c904c77cdbeb2609be"
@@ -903,11 +773,6 @@
     },
     {
       "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
-      "match": "v0.0.28",
-      "line_sha": "927d84925a3e2552ce880b56bec2bf92a3722240"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
       "match": "v0.0.33",
       "line_sha": "f883bd7fafc9e786f57e13dfc31379b346de7b6b"
     },
@@ -915,11 +780,6 @@
       "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
       "match": "v0.0.4",
       "line_sha": "c31de6bb9e7175395bb9669e7c69d7bef20edd45"
-    },
-    {
-      "file": "cogni-wiki/skills/wiki-setup/SKILL.md",
-      "match": "v0.0.44",
-      "line_sha": "927d84925a3e2552ce880b56bec2bf92a3722240"
     },
     {
       "file": "cogni-workspace/skills/manage-themes/SKILL.md",
