@@ -57,10 +57,12 @@ from _knowledge_lib import (  # noqa: E402
     _unquote_scalar,
 )
 
-# Numeric-only version segment, e.g. 0.1.74 — mirrors the shell probe's
+# A dotted-numeric version dir name, e.g. `0.1.74` — mirrors the shell probe's
 # `case "$ver" in ''|*[!0-9.]*) continue` numeric guard so a branch/`main`
-# checkout dir never outranks a real semver.
-_NUMERIC_VERSION_RE = re.compile(r"^[0-9][0-9.]*$")
+# checkout dir never outranks a real semver. Slightly stricter than the shell
+# case (rejects empty/leading/trailing/doubled `.` segments too), which only
+# matters for malformed dirs and lets the sort key skip an empty-segment guard.
+_NUMERIC_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
 _THEME_LABEL_RE = re.compile(r"^theme_label[ \t]*:[ \t]*(.+?)[ \t]*$")
 
 
@@ -68,11 +70,6 @@ def _emit(success: bool, data: "dict | None" = None, error: str = "") -> int:
     payload = {"success": bool(success), "data": data or {}, "error": error or ""}
     print(json.dumps(payload, indent=2, ensure_ascii=False))
     return 0 if success else 1
-
-
-def _version_key(ver: str) -> "tuple[int, ...]":
-    """Sort key for a numeric-only version dir name (`0.0.9 < 0.0.16`)."""
-    return tuple(int(p) for p in ver.split(".") if p != "")
 
 
 def resolve_wiki_ingest_scripts() -> Path:
@@ -97,7 +94,9 @@ def resolve_wiki_ingest_scripts() -> Path:
             continue
         ver = d.parents[2].name  # the <semver> segment
         if _NUMERIC_VERSION_RE.match(ver):
-            candidates.append((_version_key(ver), d))
+            # Sort key: `0.0.9 < 0.0.16`. The regex guarantees every segment is a
+            # non-empty digit run, so no empty-segment filter is needed.
+            candidates.append((tuple(int(p) for p in ver.split(".")), d))
     if candidates:
         return max(candidates)[1]
 
@@ -107,14 +106,14 @@ def resolve_wiki_ingest_scripts() -> Path:
     )
 
 
-def read_theme_label(page_path: Path) -> str:
+def theme_label_from_frontmatter(page_text: str) -> str:
     """Return the decoded `theme_label` frontmatter value, or "" when absent /
-    empty / the page has no frontmatter block."""
-    try:
-        text = page_path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    m = _FRONTMATTER_RE.match(text)
+    empty / the page has no frontmatter block.
+
+    Pure-on-text, mirroring `_knowledge_lib.extract_page_id_and_url`: the caller
+    owns the read so a genuinely unreadable page is surfaced as its own skip
+    reason rather than masked as an empty `theme_label`."""
+    m = _FRONTMATTER_RE.match(page_text)
     if not m:
         return ""
     for line in m.group(1).splitlines():
@@ -154,9 +153,17 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     noop: "list[dict]" = []
     skipped: "list[dict]" = []
 
-    for page in sorted(questions_dir.glob("*.md")):
+    pages = sorted(questions_dir.glob("*.md"))
+    for page in pages:
         slug = page.stem
-        theme = read_theme_label(page)
+        try:
+            page_text = page.read_text(encoding="utf-8")
+        except OSError as exc:
+            skipped.append(
+                {"slug": slug, "reason": "unreadable_page", "error": str(exc)}
+            )
+            continue
+        theme = theme_label_from_frontmatter(page_text)
         if not theme:
             skipped.append({"slug": slug, "reason": "empty_theme_label"})
             continue
@@ -181,7 +188,7 @@ def cmd_migrate(args: argparse.Namespace) -> int:
         )
         try:
             result = json.loads(proc.stdout)
-        except (ValueError, json.JSONDecodeError):
+        except ValueError:  # json.JSONDecodeError is a ValueError subclass
             skipped.append(
                 {
                     "slug": slug,
@@ -211,11 +218,10 @@ def cmd_migrate(args: argparse.Namespace) -> int:
         data={
             "wiki_root": str(wiki_root),
             "dry_run": bool(args.dry_run),
-            # Every wiki/questions/*.md page reaches exactly one bucket — a
-            # successful move (moved), an already-placed node (noop), or a node
-            # we did not relocate (skipped: empty theme_label, never-indexed
-            # slug, or unparseable output). The total is the page count scanned.
-            "questions_processed": len(moved) + len(noop) + len(skipped),
+            # The page count scanned — ground truth. Every page lands in exactly
+            # one of moved / noop / skipped, so this also equals their sum, but
+            # the scan count cannot silently drift if a future edit adds a path.
+            "questions_processed": len(pages),
             "moved": moved,
             "noop": noop,
             "skipped": skipped,
