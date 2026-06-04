@@ -115,6 +115,31 @@ The `compose`, `verify`, and `finalize` prefixes (v0.0.45+) mark the write-side 
 
 Grouped under `##` category headings. The `wiki-ingest` skill maintains this file.
 
+### Curated entry point (Knowledge Portal)
+
+`index.md` doubles as the **single human entry point** — the one file a reader
+(or a fresh session) opens first. Beyond the auto-maintained bullet lists, it
+may carry **curated editorial prose**: an orienting intro before the first
+`##` heading, and a short **per-theme lead-in paragraph** directly under each
+`## <theme>` heading that frames why the theme matters and what to read first.
+A useful portal shape reads top-down as scope → syntheses → questions →
+thematic clusters → notes, so the knowledge (not the bookkeeping scaffold) is
+foregrounded.
+
+**Protected lead-in guarantee.** The deterministic inserter
+(`wiki_index_update.py`) treats any non-bullet prose between a `## <theme>`
+heading and that section's first `- [[slug]]` bullet as a **protected curated
+lead-in**: new auto-bullets are inserted *below* it (alphabetised within the
+bullet block), and the lead-in is preserved verbatim — never overwritten or
+reordered. This mirrors the "preserve the human tail" discipline
+`question-store.py` applies to a page's `## Notes` section, inverted to
+preserve the *lead*. So a curated portal and the deterministic catalog
+coexist in one file. (Regression-locked by `tests/test_index_leadin_preserve.sh`.)
+
+The auto-generated machine-facing surfaces (`context_brief.md`,
+`open_questions.md`, `log.md`) remain separate files; the portal links out to
+them rather than inlining them.
+
 ## Golden rules
 
 1. **Claude writes the wiki; the user curates the raw sources.**
