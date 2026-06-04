@@ -50,7 +50,7 @@ An error means the wiki's contract is broken and a reader (human or LLM) might m
 | **Filename–id mismatch** | Frontmatter `id: x` but filename is `y.md` | Rename the file or fix the frontmatter |
 | **Missing required frontmatter** | `id`, `title`, `type`, `created`, or `updated` missing | `wiki-update` to add the field |
 | **Invalid type** | `type:` value is not one of the allowed values | `wiki-update` to pick a valid type |
-| **Missing source file** | `sources: [../raw/foo.pdf]` where `raw/foo.pdf` doesn't exist | Either restore the source or remove the reference |
+| **Missing source file** | `sources: [../../raw/foo.pdf]` where `raw/foo.pdf` doesn't exist | Either restore the source or remove the reference |
 | **Broken wiki source** | `sources: [wiki://other-slug]` where `wiki/<type>/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
 | **Duplicate slug** | Two pages with the same `id` frontmatter (shouldn't be possible if filenames are unique, but check) | Rename one |
 

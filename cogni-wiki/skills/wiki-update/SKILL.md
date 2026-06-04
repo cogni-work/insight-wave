@@ -70,7 +70,7 @@ Use the Edit tool (not Write) to preserve unchanged content byte-for-byte. For e
 - If the update adds a source, append it to the `sources:` list — never replace existing sources unless the old source is being explicitly retracted
 - If the update changes the page `type`, say so in the diff and justify the retype
 
-**Citation rule**: every new factual claim the update adds must link to a source. Either an inline `[../raw/file.pdf]` reference or a `[[wikilink]]` to another page (which in turn must cite a source). If the user cannot produce a source, the update stops. Unsourced claims erode the provenance chain that distinguishes this wiki from unverifiable notes — every page traces to raw/, and that contract holds only when updates also cite their evidence.
+**Citation rule**: every new factual claim the update adds must link to a source. Either an inline `[../../raw/file.pdf]` reference or a `[[wikilink]]` to another page (which in turn must cite a source). If the user cannot produce a source, the update stops. Unsourced claims erode the provenance chain that distinguishes this wiki from unverifiable notes — every page traces to raw/, and that contract holds only when updates also cite their evidence.
 
 ### 5. Sweep related pages (when `--related-sweep yes`)
 

@@ -56,6 +56,7 @@ For pure LLM skills (no scripts to execute), regression coverage is limited to *
 | `test_source_page_type.sh` | `wiki-health` and `wiki-lint` accept the additive `type: source` page type added in v0.0.44 (#270) — a planted `wiki/sources/<slug>.md` page raises neither `invalid_type` nor `type_directory_mismatch`. Unblocks cogni-knowledge PR #269 milestone 6 `knowledge-ingest`. |
 | `test_index_summary_clamp.sh` | `wiki_index_update.py --max-summary N` clamps an over-long `--summary` on a WORD boundary with `…` via `_wikilib.clamp_summary` (v0.0.47, #324) — output words are an exact prefix of the input (no mid-word "…Sonderka"), German ä/ö/ü survive, codepoint-counted. No flag → verbatim passthrough (backward-compat for every other caller). |
 | `test_question_page_type.sh` | `wiki-health` and `wiki-lint` accept the additive `type: question` page type added in v0.0.50 (#407) — a planted `wiki/questions/<slug>.md` page raises neither `invalid_type` nor `type_directory_mismatch`. Unblocks cogni-knowledge #407 `knowledge-ingest` Step 4.5 (research-question nodes). |
+| `test_health_raw_citation_depth.sh` | `wiki-health` resolves relative raw-source citations from the page's actual on-disk location, not by decoding the literal `../raw/` prefix. A depth-wrong `../raw/<existing>` from a per-type dir is flagged `missing_source` (pages live two levels deep, so it points at the non-existent `wiki/raw/`); the depth-correct `../../raw/<existing>` is clean; a depth-correct citation to an absent file is flagged. Guards the per-type-dir raw-path fix. |
 
 ```sh
 bash tests/test_wiki_from_research_flags.sh
@@ -66,6 +67,7 @@ bash tests/test_batch_builder_metadata_config.sh
 bash tests/test_source_page_type.sh
 bash tests/test_index_summary_clamp.sh
 bash tests/test_question_page_type.sh
+bash tests/test_health_raw_citation_depth.sh
 ```
 
 The SKILL.md tests do not assert anything about LLM-driven behaviour — only that the contract surface that orchestrators (`cogni-knowledge:knowledge-report` / `cogni-knowledge:knowledge-query`) depend on remains intact. The script-level tests execute the actual code path and assert observable behaviour.
