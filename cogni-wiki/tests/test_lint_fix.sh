@@ -5,7 +5,7 @@
 # Plants one defect per fixable class, then asserts:
 #   1. `--fix=<class> --dry-run` emits a plan and writes nothing.
 #   2. `--fix=<class>` (wet) modifies disk and clears the warning class.
-#   3. `--fix=all` composes cleanly across all five classes.
+#   3. `--fix=all` composes cleanly across all fixable classes.
 #   4. `--suggest` populates `data.suggestions[]` for prose-shaped findings
 #      (orphan_page, stale_page, claim_drift).
 #
@@ -610,5 +610,148 @@ assert not again, f'quoted-id: fixer not idempotent: {again}'
 after_mm=$(python3 "$HEALTH" --wiki-root "$QID" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='id_mismatch']))")
 [ "$after_mm" = "0" ] || fail "quoted-id: expected 0 id_mismatch after fix, got $after_mm"
 green "  frontmatter_defaults normalises a quoted-correct id: -> unquoted (health id_mismatch cleared)"
+
+# ---------- 9) raw_citation_depth repairs depth-wrong ../raw/ citations ----------
+# Pre-schema-0.0.5 wikis cited raw files as ../raw/<file> from pages that now
+# live two levels deep, so health.py flags missing_source (a hard error). The
+# fixer rewrites ../raw/<file> -> ../../raw/<file> in frontmatter sources: AND
+# body ## Sources links, but ONLY when <wiki-root>/raw/<file> exists; it must
+# preserve subdir tails, skip nonexistent tails, leave prose links outside the
+# ## Sources section untouched, and be idempotent.
+RDW="$WORKDIR/raw-depth-wiki"
+mkdir -p "$RDW/wiki/concepts" "$RDW/.cogni-wiki" "$RDW/raw/sub"
+printf 'pdf-bytes' > "$RDW/raw/paper.pdf"
+printf 'pdf-bytes' > "$RDW/raw/sub/deep.pdf"   # subdir tail must be preserved
+# raw/ghost.pdf deliberately NOT created — its citation must be left untouched.
+cat > "$RDW/.cogni-wiki/config.json" <<EOF
+{"name":"r","slug":"r","created":"$TODAY","entries_count":2,"last_lint":null,"schema_version":"0.0.6"}
+EOF
+cat > "$RDW/wiki/index.md" <<EOF
+# Index
+
+## Concepts
+
+- [[depthy]] — page with depth-wrong raw citations
+- [[skipme]] — page whose raw citation cannot be repaired
+EOF
+# Page A: every depth-wrong citation points at an EXISTING raw file, so the
+# fixer should rewrite all of them and health should reach 0 missing_source.
+# A prose link to ../raw/paper.pdf sits OUTSIDE ## Sources and must NOT change.
+cat > "$RDW/wiki/concepts/depthy.md" <<EOF
+---
+id: depthy
+title: Depthy
+type: concept
+tags: [test]
+created: $TODAY
+updated: $TODAY
+sources:
+  - ../raw/paper.pdf
+  - ../raw/sub/deep.pdf
+  - https://example.org/external
+---
+
+# Depthy
+
+A prose paragraph that incidentally links [ProseRef](../raw/paper.pdf) and must
+stay byte-identical because it is not inside the sources section.
+
+## Sources
+
+- [Paper](../raw/paper.pdf)
+EOF
+# Page B: a depth-wrong citation whose corrected target does NOT exist. The
+# fixer must skip it (skip-don't-guess), leaving the string verbatim.
+cat > "$RDW/wiki/concepts/skipme.md" <<EOF
+---
+id: skipme
+title: Skip Me
+type: concept
+tags: [test]
+created: $TODAY
+updated: $TODAY
+sources:
+  - ../raw/ghost.pdf
+---
+
+# Skip Me
+
+This page cites a raw file that does not exist anywhere under raw/, so there is
+no deterministic depth repair the fixer can safely apply.
+EOF
+
+# Sanity: health flags depthy's depth-wrong citations as missing_source.
+before_ms=$(python3 "$HEALTH" --wiki-root "$RDW" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='missing_source' and e['page']=='depthy']))")
+[ "$before_ms" -ge 1 ] || fail "raw-depth: expected >=1 missing_source on depthy before fix, got $before_ms"
+
+# Dry-run: plan emitted for depthy, nothing written to disk.
+out=$(python3 "$LINT" --wiki-root "$RDW" --fix=raw_citation_depth --dry-run)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+planned = [f for f in d['fixed'] if f['class']=='raw_citation_depth' and f['page']=='depthy']
+assert planned, 'raw-depth: no plan emitted for depthy'
+assert all(f['applied'] is False for f in planned), 'raw-depth: dry-run applied=true'
+" || fail "raw-depth: dry-run plan check"
+grep -qF '  - ../raw/paper.pdf' "$RDW/wiki/concepts/depthy.md" \
+  || fail "raw-depth: dry-run mutated frontmatter on disk"
+
+# Wet: rewrites depthy (both surfaces, subdir preserved), skips skipme.
+wet=$(python3 "$LINT" --wiki-root "$RDW" --fix=raw_citation_depth)
+echo "$wet" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+dep = [f for f in d['fixed'] if f['class']=='raw_citation_depth' and f['page']=='depthy' and f['applied']]
+assert dep, 'raw-depth: no wet fix applied to depthy'
+assert any('../../raw/paper.pdf' in f.get('change','') for f in dep), f'raw-depth: change text missing rewrite: {dep}'
+skip = [f for f in d['fixed'] if f['class']=='raw_citation_depth' and f['page']=='skipme']
+assert not skip, f'raw-depth: skipme must be skipped (nonexistent tail): {skip}'
+" || fail "raw-depth: wet apply"
+grep -qF '  - ../../raw/paper.pdf' "$RDW/wiki/concepts/depthy.md" \
+  || fail "raw-depth: frontmatter citation not rewritten"
+grep -qF '  - ../../raw/sub/deep.pdf' "$RDW/wiki/concepts/depthy.md" \
+  || fail "raw-depth: subdir tail not preserved on rewrite"
+grep -qF '[Paper](../../raw/paper.pdf)' "$RDW/wiki/concepts/depthy.md" \
+  || fail "raw-depth: body ## Sources link not rewritten"
+grep -qF '[ProseRef](../raw/paper.pdf)' "$RDW/wiki/concepts/depthy.md" \
+  || fail "raw-depth: prose link outside ## Sources was wrongly rewritten"
+grep -qF '  - ../raw/ghost.pdf' "$RDW/wiki/concepts/skipme.md" \
+  || fail "raw-depth: skipme citation should be untouched (skip-don't-guess)"
+
+# Idempotent: a second wet run plans no further raw_citation_depth change.
+out=$(python3 "$LINT" --wiki-root "$RDW" --fix=raw_citation_depth)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+again = [f for f in d['fixed'] if f['class']=='raw_citation_depth' and f['page']=='depthy']
+assert not again, f'raw-depth: fixer not idempotent: {again}'
+" || fail "raw-depth: fixer not idempotent on re-run"
+
+# End-to-end unblock: health now reports 0 missing_source on depthy.
+after_ms=$(python3 "$HEALTH" --wiki-root "$RDW" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print(len([e for e in d['errors'] if e['class']=='missing_source' and e['page']=='depthy']))")
+[ "$after_ms" = "0" ] || fail "raw-depth: expected 0 missing_source on depthy after fix, got $after_ms"
+green "  raw_citation_depth rewrites ../raw/ -> ../../raw/ (subdir preserved, prose & nonexistent skipped, health cleared)"
+
+# --fix=all must include raw_citation_depth and compose with the other fixers.
+cat > "$RDW/wiki/concepts/depthy.md" <<EOF
+---
+id: depthy
+title: Depthy
+type: concept
+tags: [test]
+created: $TODAY
+updated: $TODAY
+sources:
+  - ../raw/paper.pdf
+---
+
+# Depthy
+
+Re-planted depth-wrong citation for the --fix=all composition check.
+EOF
+python3 "$LINT" --wiki-root "$RDW" --fix=all >/dev/null
+grep -qF '  - ../../raw/paper.pdf' "$RDW/wiki/concepts/depthy.md" \
+  || fail "raw-depth: --fix=all did not include raw_citation_depth"
+green "  raw_citation_depth participates in --fix=all"
 
 green "ALL TESTS PASS"

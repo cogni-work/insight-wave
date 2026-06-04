@@ -1,5 +1,38 @@
 # cogni-wiki changelog
 
+## 0.0.58 — 2026-06-04 — raw_citation_depth lint auto-fix (closes #478 for this plugin)
+
+**Heads-up for existing wikis.** v0.0.55 hardened `health.py`'s `missing_source`
+check to resolve `sources:` citations from each page's actual on-disk location.
+Because pages live two levels deep (`wiki/<type>/<slug>.md`) since schema 0.0.5,
+any page still carrying a pre-0.0.5 depth-wrong `../raw/<file>` citation now
+resolves to the non-existent `wiki/raw/` and flips to a health **error** — and
+`wiki-lint` refuses to run while `health.errors > 0`. On an upgraded wiki this
+surfaces as latent breakage that previously went unnoticed.
+
+**The repair.** New deterministic `--fix=raw_citation_depth` class in
+`lint_wiki.py`'s existing auto-fix framework. For each `sources:` frontmatter
+entry and each body `## Sources` link whose `../raw/<tail>` resolves outside
+`raw/`, it rewrites to `../../raw/<tail>` — but only when `<wiki-root>/raw/<tail>`
+actually exists (skip-don't-guess otherwise). Subdirectory tails are preserved
+(computed from the original string, never `Path.name`), prose links outside the
+`## Sources` section are never touched, and an already-`../../raw/` citation is
+left untouched (idempotent). Run it once after upgrading:
+
+```
+wiki-lint --fix=raw_citation_depth        # or --fix=all
+```
+
+It is a fourth in-process page-body fixer, running inside the shared
+`_wiki_lock(wiki_root)` block and reading each page fresh from disk so it
+composes with the other fixers in a single `--fix=all` run. The class
+auto-registers into `FIX_CLASSES`, argparse `choices`, and `--fix=all`. SKILL.md
+documents the new class; `tests/test_lint_fix.sh` gains a section asserting
+dry-run/wet/idempotency, subdir preservation, the prose-and-nonexistent skips,
+and `health.py` reporting 0 `missing_source` afterwards. The secondary
+trigger-widening question and the cosmetic `raw/{name}` health message are left
+to follow-up issues.
+
 ## 0.0.49 — 2026-05-29 — Research-time gaps in open_questions.md (closes #354 for this plugin)
 
 `rebuild_open_questions.py` accepts two new tracked classes, `research_uncovered`
