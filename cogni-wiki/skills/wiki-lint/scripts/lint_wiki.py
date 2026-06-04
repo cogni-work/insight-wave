@@ -114,6 +114,7 @@ FIX_CLASSES = (
     "entries_count_drift",
     "frontmatter_defaults",
     "alphabetisation",
+    "raw_citation_depth",
 )
 FIX_CHOICES = (*FIX_CLASSES, "all")
 
@@ -137,6 +138,11 @@ TAG_TYPO_MSG_RE = re.compile(
 ID_LINE_RE = re.compile(r"^id\s*:\s*(.*?)\s*$")
 UPDATED_LINE_RE = re.compile(r"^updated\s*:\s*(.*?)\s*$")
 SOURCES_LINE_RE = re.compile(r"^sources\s*:(.*)$")
+# Matches a depth-wrong `../raw/<tail>` citation (one `..` segment) so the
+# raw_citation_depth fixer can rewrite it to the depth-correct `../../raw/<tail>`.
+# The negative lookbehind keeps an already-correct `../../raw/<tail>` from
+# matching its own `../raw/<tail>` substring, so the fixer is idempotent.
+RAW_DEPTH_RE = re.compile(r"""(?<!\.\./)\.\./raw/([^\s,\]\)"']+)""")
 
 
 STALE_DRAFT_DAYS = 180
@@ -498,6 +504,7 @@ def main() -> None:
             "reverse_link_missing",
             "synthesis_no_wiki_source",
             "frontmatter_defaults",
+            "raw_citation_depth",
         } & fix_classes
         if in_proc:
             with _wiki_lock(wiki_root):
@@ -515,6 +522,12 @@ def main() -> None:
                     failed += fl
                 if "frontmatter_defaults" in fix_classes:
                     f, fl = fix_frontmatter_defaults(
+                        all_pages, slug_index, args.dry_run
+                    )
+                    fixed += f
+                    failed += fl
+                if "raw_citation_depth" in fix_classes:
+                    f, fl = fix_raw_citation_depth(
                         all_pages, slug_index, args.dry_run
                     )
                     fixed += f
@@ -915,6 +928,139 @@ def fix_frontmatter_defaults(
         except Exception as e:  # noqa: BLE001 — fail-soft per item
             failed.append({
                 "class": "frontmatter_defaults",
+                "page": slug,
+                "error": f"{type(e).__name__}: {e}",
+            })
+    return fixed, failed
+
+
+def _rewrite_raw_depth(text: str, raw_dir: Path) -> tuple:
+    """Rewrite each depth-wrong `../raw/<tail>` token in `text` to
+    `../../raw/<tail>`, but only when `<raw_dir>/<tail>` actually exists on
+    disk. Subdirectory tails are preserved verbatim (the captured group is
+    reused, never `Path.name`). Returns (new_text, changes) where changes is
+    a list of human-readable `before → after` strings (empty when nothing
+    matched or no corrected path resolved).
+    """
+    changes: list = []
+
+    def _repl(m: "re.Match") -> str:
+        tail = m.group(1)
+        if (raw_dir / tail).exists():
+            changes.append(f"../raw/{tail} → ../../raw/{tail}")
+            return "../../raw/" + tail
+        return m.group(0)  # skip-don't-guess: corrected path absent
+
+    return RAW_DEPTH_RE.sub(_repl, text), changes
+
+
+def _sources_span(fm_lines: list) -> tuple:
+    """Return the (start, end) list-index range of the `sources:` field in
+    fm_lines, or None when the field is absent. Covers all three YAML shapes:
+    an inline list (`sources: [a, b]`) and a single scalar (`sources: foo`)
+    occupy one line; a block list spans the `sources:` line plus the
+    following indented continuation lines.
+    """
+    src_idx = next(
+        (i for i, L in enumerate(fm_lines) if SOURCES_LINE_RE.match(L)), None
+    )
+    if src_idx is None:
+        return None
+    rest = SOURCES_LINE_RE.match(fm_lines[src_idx]).group(1).strip()
+    if rest:
+        return (src_idx, src_idx + 1)
+    end = src_idx + 1
+    while end < len(fm_lines) and (
+        fm_lines[end].startswith("  ") or fm_lines[end].startswith("\t")
+    ):
+        end += 1
+    return (src_idx, end)
+
+
+def _rewrite_body_sources(body: str, raw_dir: Path) -> tuple:
+    """Rewrite depth-wrong `../raw/` links inside the body `## Sources`
+    section only (from the heading to the next `##` heading or EOF), so
+    raw-file links that happen to appear in prose elsewhere are never
+    touched. Returns (new_body, changes).
+    """
+    m = re.search(r"^##\s+Sources\s*$", body, re.MULTILINE | re.IGNORECASE)
+    if not m:
+        return body, []
+    sec_start = m.end()
+    nxt = re.search(r"^##\s", body[sec_start:], re.MULTILINE)
+    sec_end = sec_start + nxt.start() if nxt else len(body)
+    new_section, changes = _rewrite_raw_depth(body[sec_start:sec_end], raw_dir)
+    if not changes:
+        return body, []
+    return body[:sec_start] + new_section + body[sec_end:], changes
+
+
+def fix_raw_citation_depth(
+    all_pages: dict, slug_index: dict, dry_run: bool
+) -> tuple:
+    """Repair depth-wrong `../raw/<file>` source citations left over from the
+    pre-schema-0.0.5 flat layout. Pages live two levels deep at
+    `wiki/<type>/<slug>.md`, so a `../raw/<file>` citation resolves to the
+    non-existent `wiki/raw/` instead of `<wiki-root>/raw/`; `health.py`'s
+    `missing_source` check flags these as errors, which blocks `wiki-lint`.
+    This fixer inverts that detection: for each `sources:` frontmatter entry
+    and each body `## Sources` link whose `../raw/<tail>` would resolve
+    outside `raw/`, rewrite to `../../raw/<tail>` — but only when
+    `<wiki-root>/raw/<tail>` exists (skip-don't-guess otherwise). Reads each
+    page fresh from disk inside the shared lock so it composes with the other
+    in-process fixers in a single `--fix=all` run.
+    """
+    fixed: list = []
+    failed: list = []
+    for slug in sorted(all_pages):
+        page_data = all_pages[slug]
+        if page_data.get("type_dir") == "audit":
+            continue
+        try:
+            entry = slug_index.get(slug)
+            if not entry:
+                failed.append({
+                    "class": "raw_citation_depth",
+                    "page": slug,
+                    "error": "slug not in index",
+                })
+                continue
+            path, _ = entry
+            # path == <wiki-root>/wiki/<type_dir>/<slug>.md → parents[2] is root.
+            raw_dir = path.parents[2] / "raw"
+            text = path.read_text(encoding="utf-8")
+            fm_lines, body = _split_frontmatter(text)
+            changes: list = []
+            if fm_lines is not None:
+                new_fm = list(fm_lines)
+                span = _sources_span(new_fm)
+                if span is not None:
+                    for i in range(span[0], span[1]):
+                        new_line, ch = _rewrite_raw_depth(new_fm[i], raw_dir)
+                        if ch:
+                            new_fm[i] = new_line
+                            changes.extend(ch)
+                new_body, body_ch = _rewrite_body_sources(body, raw_dir)
+                changes.extend(body_ch)
+                if not changes:
+                    continue
+                new_text = _join_frontmatter(new_fm, new_body)
+            else:
+                # No frontmatter — a body `## Sources` section may still exist.
+                new_text, changes = _rewrite_body_sources(text, raw_dir)
+                if not changes:
+                    continue
+            if not dry_run:
+                atomic_write(path, new_text)
+            fixed.append({
+                "class": "raw_citation_depth",
+                "page": slug,
+                "applied": not dry_run,
+                "change": "; ".join(changes),
+            })
+        except Exception as e:  # noqa: BLE001 — fail-soft per item
+            failed.append({
+                "class": "raw_citation_depth",
                 "page": slug,
                 "error": f"{type(e).__name__}: {e}",
             })
