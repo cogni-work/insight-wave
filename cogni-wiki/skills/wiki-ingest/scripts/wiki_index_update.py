@@ -133,12 +133,21 @@ def _join_sections(sections: list) -> str:
     return "\n".join(out_lines) + "\n"
 
 
+def _heading_to_key(heading_line: str) -> str:
+    """Normalised comparison key for a heading line — the HEADING_RE-captured
+    text (or the raw line if it isn't a heading), folded with `.strip().lower()`.
+
+    The single source of truth for "are these the same heading", shared by
+    `_heading_matches_category` and `collapse_duplicate_headings` so the two
+    paths can't drift on what counts as a match.
+    """
+    m = HEADING_RE.match(heading_line)
+    return (m.group(2) if m else heading_line).strip().lower()
+
+
 def _heading_matches_category(heading_line: str, category: str) -> bool:
     """Match `## Foo` or `### Foo` against category="Foo" (case-insensitive)."""
-    m = HEADING_RE.match(heading_line)
-    if not m:
-        return False
-    return m.group(2).strip().lower() == category.strip().lower()
+    return _heading_to_key(heading_line) == category.strip().lower()
 
 
 def _slug_line_regex(slug: str) -> re.Pattern:
@@ -236,6 +245,59 @@ def _create_category(sections: list, category: str, new_line: str) -> list:
     return sections
 
 
+def collapse_duplicate_headings(sections: list) -> list:
+    """Merge duplicate `## <heading>` sections into the first occurrence.
+
+    Two sections are "the same heading" when their `_heading_to_key` value is
+    equal — the same normalised key `_heading_matches_category` compares
+    against, so collapse and dispatch agree. The FIRST occurrence survives
+    and keeps its body verbatim, including any **curated lead-in** (the
+    protected prose between a heading and its first `- [[slug]]` bullet, per the
+    #461 Phase-1 contract). Each later duplicate's `- [[slug]]` bullets are
+    folded into the survivor via `_insert_alphabetised` (skipping a slug the
+    survivor already carries, so the fold is idempotent and never creates a
+    duplicate bullet line), and the duplicate's heading shell is dropped. A
+    later duplicate's own non-bullet prose is discarded — first lead-in wins;
+    a machine-created duplicate from `_create_category` carries only
+    `["", bullet, ""]`, so it has no lead-in to lose.
+
+    Pure function. Returns the input list unchanged when every heading is unique
+    (no-op on a clean index). The preamble section (heading is None) is never
+    merged. This keeps a multi-project portal `index.md` single-instance: a
+    second `## <theme>` block created when a prior insert fell through to Case C
+    against a heading that didn't case/whitespace-match is collapsed on the next
+    write rather than persisting on disk.
+    """
+    first_idx: dict = {}
+    result: list = []
+    changed = False
+    for heading, body in sections:
+        if heading is None:
+            result.append((heading, list(body)))
+            continue
+        key = _heading_to_key(heading)
+        if key not in first_idx:
+            first_idx[key] = len(result)
+            result.append((heading, list(body)))
+            continue
+        # Duplicate heading: fold its bullets into the first occurrence's body.
+        changed = True
+        tgt_heading, tgt_body = result[first_idx[key]]
+        existing_slugs = {
+            slug for ln in tgt_body if (slug := _extract_slug_from_line(ln))
+        }
+        for line in body:
+            slug = _extract_slug_from_line(line)
+            if slug and slug not in existing_slugs:
+                tgt_body = _insert_alphabetised(tgt_body, line, slug)
+                existing_slugs.add(slug)
+        result[first_idx[key]] = (tgt_heading, tgt_body)
+        # Drop the duplicate heading shell — do not append it to `result`.
+    if not changed:
+        return sections
+    return result
+
+
 def strip_seed_placeholder(text: str) -> str:
     """Remove the wiki-setup seed placeholder from index.md text (#306).
 
@@ -324,6 +386,10 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
 
     new_line = f"- [[{slug}]] — {summary}"
     sections = _split_sections(text)
+    # #485 Phase 1: keep portal `## <theme>` sections single-instance — fold any
+    # pre-existing duplicate heading into its first occurrence before dispatch,
+    # so Case B always finds the merged section and Case C never adds a third.
+    sections = collapse_duplicate_headings(sections)
 
     # Case A: slug already has a line somewhere — update it in place.
     sec_idx, line_idx = _find_slug_line_globally(sections, slug)
@@ -399,6 +465,10 @@ def move_slug(index_path: Path, slug: str, to_category: str) -> dict:
     text = _read_index_text(index_path)
 
     sections = _split_sections(text)
+    # #485 Phase 1: collapse any duplicate `## <theme>` heading before locating
+    # the slug, so a relocation against a portal that already drifted into two
+    # same-theme sections operates on the merged (single-instance) section.
+    sections = collapse_duplicate_headings(sections)
     sec_idx, line_idx = _find_slug_line_globally(sections, slug)
     if sec_idx == -1:
         fail(f"slug not found in index: {slug}")
