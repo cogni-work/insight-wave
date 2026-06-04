@@ -81,6 +81,29 @@ SLUG_LINE_RE_TEMPLATE = r"^(\s*-\s*\[\[){slug}(\]\])"
 SEED_PLACEHOLDER_LINE = "_No pages yet. Run `wiki-ingest` to add your first source._"
 SEED_CATEGORY_HEADING = "Categories"
 
+# Slug grammar shared by slug-mode (--slug) and move-mode (--move-slug), kept as
+# one constant so the kebab-case contract can't drift between the two paths.
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]*$")
+
+
+def _validate_slug(slug: str, raw: str) -> None:
+    """Fail unless `slug` is kebab-case. `raw` is the user-supplied form, shown
+    verbatim in the error so the message points at exactly what they typed."""
+    if not SLUG_RE.match(slug):
+        fail(f"invalid slug: {raw!r} (expected kebab-case: [a-z0-9][a-z0-9-]*)")
+
+
+def _read_index_text(index_path: Path) -> str:
+    """Read index.md, failing cleanly if it's absent or unreadable. Shared by
+    update_index and move_slug so the existence/IO-error contract is identical."""
+    if not index_path.is_file():
+        fail(f"index.md not found at {index_path}")
+    try:
+        return index_path.read_text(encoding="utf-8")
+    except OSError as e:
+        fail(f"could not read index.md: {e}")
+        return ""  # unreachable — fail() exits; keeps the type checker happy
+
 
 def _split_sections(text: str) -> list:
     """Split index.md into a list of (heading_line_or_None, lines_under_it).
@@ -292,14 +315,7 @@ def reflow_categories(text: str) -> tuple:
 
 def update_index(index_path: Path, slug: str, summary: str, category: str) -> dict:
     """Do the actual edit. Pure function of (file contents, args)."""
-    if not index_path.is_file():
-        fail(f"index.md not found at {index_path}")
-
-    try:
-        text = index_path.read_text(encoding="utf-8")
-    except OSError as e:
-        fail(f"could not read index.md: {e}")
-        return {}
+    text = _read_index_text(index_path)
 
     # #306: shed the wiki-setup seed placeholder on the first real insert/update
     # so script-level callers stop inheriting the dead `## Categories` /
@@ -353,6 +369,88 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
     }
 
 
+def move_slug(index_path: Path, slug: str, to_category: str) -> dict:
+    """Relocate an existing `[[slug]]` entry from its current heading to
+    `to_category`, keeping it alphabetised. Non-destructive and idempotent.
+
+    Contract (issue #438 Part A):
+    - Find the slug line via `_find_slug_line_globally`. Missing slug → fail.
+    - If the line already sits directly under a heading matching `to_category`,
+      return ``action: "noop"`` (idempotent — a second call is a no-op).
+    - Otherwise remove the line from its source section, re-insert it
+      alphabetised under `to_category` (reusing `_insert_alphabetised` /
+      `_create_category`), and drop the source heading **only** when nothing
+      but blank lines remains under it — the same empty-heading discipline
+      `strip_seed_placeholder` uses, so a curated per-theme prose lead-in
+      under the source heading is preserved.
+    - Never adds or drops a wikilink — only the line's *summary text* moves
+      with it, verbatim.
+    - Duplicate slugs: `_find_slug_line_globally` returns the **first** match,
+      so if a slug somehow appears under two headings only the first occurrence
+      relocates. That is intentional — duplicate slugs are a separate defect
+      `wiki-health` / `wiki-lint` already surface, and this mode does not try to
+      reconcile them.
+
+    A distinct mode from `update_index`: Case A there updates a slug line *in
+    place and ignores the category*, which is exactly why a relocation needs
+    its own entry point rather than overloading the insert/update path every
+    current caller depends on.
+    """
+    text = _read_index_text(index_path)
+
+    sections = _split_sections(text)
+    sec_idx, line_idx = _find_slug_line_globally(sections, slug)
+    if sec_idx == -1:
+        fail(f"slug not found in index: {slug}")
+        return {}
+
+    heading, body = sections[sec_idx]
+
+    # Idempotent no-op: already directly under the target heading.
+    if heading is not None and _heading_matches_category(heading, to_category):
+        return {
+            "action": "noop",
+            "category": HEADING_RE.match(heading).group(2).strip(),
+            "slug": slug,
+            "index_path": str(index_path),
+        }
+
+    moved_line = body[line_idx]
+    new_body = body[:line_idx] + body[line_idx + 1:]
+    sections[sec_idx] = (heading, new_body)
+
+    # Drop the source heading only when no non-blank content remains under it
+    # (mirrors strip_seed_placeholder; preserves a curated lead-in if present).
+    source_heading_dropped = False
+    if heading is not None and not any(ln.strip() for ln in new_body):
+        del sections[sec_idx]
+        source_heading_dropped = True
+
+    # Re-insert alphabetised under the target category (Case B / Case C).
+    category_created = False
+    placed = False
+    for i, (h, b) in enumerate(sections):
+        if h is not None and _heading_matches_category(h, to_category):
+            sections[i] = (h, _insert_alphabetised(b, moved_line, slug))
+            placed = True
+            break
+    if not placed:
+        sections = _create_category(sections, to_category, moved_line)
+        category_created = True
+
+    new_text = _join_sections(sections)
+    atomic_write(index_path, new_text)
+    return {
+        "action": "moved",
+        "category": to_category.strip(),
+        "category_created": category_created,
+        "source_heading_dropped": source_heading_dropped,
+        "line": moved_line,
+        "slug": slug,
+        "index_path": str(index_path),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Insert/update a page's entry in wiki/index.md, preserving alphabetical order."
@@ -361,6 +459,8 @@ def main() -> None:
     parser.add_argument("--slug", help="Slug of the page whose line we're adding/updating (slug mode)")
     parser.add_argument("--summary", help="One-sentence summary shown after the slug wikilink (slug mode)")
     parser.add_argument("--category", help="Category heading text without the leading ##/### (slug mode)")
+    parser.add_argument("--move-slug", help="Slug of an existing entry to relocate to --to-category (move mode)")
+    parser.add_argument("--to-category", help="Target category heading for --move-slug (move mode)")
     parser.add_argument(
         "--max-summary",
         type=int,
@@ -388,6 +488,26 @@ def main() -> None:
     if not (wiki_root / "wiki").is_dir():
         fail(f"wiki/ not found under {wiki_root}")
 
+    # Move mode (#438): relocate an existing entry between headings. Mutually
+    # exclusive with slug-mode (--slug/--summary/--category) and --reflow-only
+    # so the three write paths never overlap.
+    if args.move_slug:
+        if args.reflow_only:
+            fail("--move-slug cannot be combined with --reflow-only")
+        if args.slug or args.summary or args.category:
+            fail("--move-slug is mutually exclusive with --slug/--summary/--category")
+        if not (args.to_category and args.to_category.strip()):
+            fail("--move-slug requires a non-empty --to-category")
+        if not index_path.is_file():
+            fail(f"index.md not found at {index_path}")
+        mv_slug = args.move_slug.strip().lower()
+        _validate_slug(mv_slug, args.move_slug)
+        to_category = args.to_category.strip()
+        with _wiki_lock(wiki_root):
+            result = move_slug(index_path, mv_slug, to_category)
+        ok(result)
+        return
+
     if args.reflow_only:
         if not index_path.is_file():
             fail(f"index.md not found at {index_path}")
@@ -414,8 +534,7 @@ def main() -> None:
         fail("--slug, --summary, --category are required (or pass --reflow-only)")
 
     slug = args.slug.strip().lower()
-    if not re.match(r"^[a-z0-9][a-z0-9\-]*$", slug):
-        fail(f"invalid slug: {args.slug!r} (expected kebab-case: [a-z0-9][a-z0-9-]*)")
+    _validate_slug(slug, args.slug)
 
     summary = args.summary.strip()
     if not summary:
