@@ -13,7 +13,7 @@ tags: [<tag1>, <tag2>, ...]           # Optional. Short, lowercase, kebab-case
 created: YYYY-MM-DD                   # REQUIRED. Set at page creation, never changed
 updated: YYYY-MM-DD                   # REQUIRED. Set at every edit
 sources:                              # Optional but strongly encouraged
-  - ../raw/<filename>                 # Relative path from wiki/<type>/ to raw/ file (the same `../raw/` form works from every per-type dir)
+  - ../../raw/<filename>                 # Relative path from wiki/<type>/ to raw/ file (the same `../../raw/` form works from every per-type dir)
   - https://<url>                     # Or a stable external URL
   - wiki://<other-page-slug>          # Or a wiki-internal reference (synthesis pages)
 publisher_url: https://<url>          # Optional. Canonical URL at the publisher
@@ -87,7 +87,7 @@ See `./templates/README.md` for authoring conventions and per-template required 
 
 ### `sources` (optional but strongly encouraged)
 
-- Relative paths to files under `<wiki-root>/raw/` — always `../raw/filename` from the page's location in the per-type page dirs
+- Relative paths to files under `<wiki-root>/raw/` — always `../../raw/filename` from the page's location in the per-type page dirs
 - Or stable URLs
 - Or `wiki://<slug>` for wiki-internal references — used by `type: synthesis` pages to cite the wiki pages they were derived from. `wiki-lint` validates that each `wiki://<slug>` target page exists (a missing target is a `broken_wiki_source` error).
 - A page with no sources is flagged `warn` by `wiki-lint` unless its `type` is `decision` or `note`. A `type: synthesis` page with no `wiki://` source is flagged `synthesis_no_wiki_source` (warn) — synthesis pages must cite their wiki provenance.
@@ -95,9 +95,9 @@ See `./templates/README.md` for authoring conventions and per-template required 
 ### `publisher_url` (optional)
 
 - A single canonical `https://` URL pointing to where the publication lives on the publisher's website.
-- Used by **cogni-research wiki-researcher** to build clickable bibliography entries for wiki-sourced citations. Without it, citations to pages that were ingested from local PDFs (e.g. `sources: [../raw/foo.pdf]`) can only be linked via the wiki instance's `publisher_base_url` fallback — a publisher landing page rather than a per-document permalink.
+- Used by **cogni-research wiki-researcher** to build clickable bibliography entries for wiki-sourced citations. Without it, citations to pages that were ingested from local PDFs (e.g. `sources: [../../raw/foo.pdf]`) can only be linked via the wiki instance's `publisher_base_url` fallback — a publisher landing page rather than a per-document permalink.
 - When `sources:` already contains an `https://` URL, that URL is assumed to be the publisher URL and `publisher_url` is redundant (but harmless — explicit wins on read).
-- When `sources:` contains only local paths (`../raw/...`), add `publisher_url` if you know the canonical URL of the original publication. If you don't, leave it off — the wiki instance's `publisher_base_url` (see `.cogni-wiki/config.json`) still gives downstream citations a honest landing-page link.
+- When `sources:` contains only local paths (`../../raw/...`), add `publisher_url` if you know the canonical URL of the original publication. If you don't, leave it off — the wiki instance's `publisher_base_url` (see `.cogni-wiki/config.json`) still gives downstream citations a honest landing-page link.
 - Never fabricate. An empty field is fine; a guessed URL is not.
 
 ### `related` (optional)
@@ -121,7 +121,7 @@ tags: [llms, knowledge-management, karpathy, compounding]
 created: 2026-04-12
 updated: 2026-04-12
 sources:
-  - ../raw/karpathy-llm-wiki-gist.md
+  - ../../raw/karpathy-llm-wiki-gist.md
   - https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 publisher_url: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 related:
@@ -133,7 +133,7 @@ status: stable
 
 ## Synthesis page example
 
-A `type: synthesis` page filed back by `wiki-query` looks like this — note `wiki://`-prefixed sources rather than `../raw/` paths:
+A `type: synthesis` page filed back by `wiki-query` looks like this — note `wiki://`-prefixed sources rather than `../../raw/` paths:
 
 ```yaml
 ---

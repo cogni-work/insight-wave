@@ -17,7 +17,7 @@ Detects:
         - Missing required frontmatter fields
         - Filename / id mismatches
         - Invalid type values
-        - Missing ../raw/ source files
+        - Missing ../../raw/ source files
         - Broken wiki:// sources (target page does not exist)
         - Read errors
     Warnings (structural debt only — semantic warnings live in wiki-lint):
@@ -192,14 +192,42 @@ def main() -> None:
         sources = fm.get("sources", [])
         if isinstance(sources, list):
             for src in sources:
-                if isinstance(src, str) and src.startswith("../raw/"):
-                    rel = src[len("../raw/") :]
-                    if not (raw_dir / rel).exists():
+                if isinstance(src, str) and (
+                    src.startswith("../") or src.startswith("./")
+                ):
+                    # Relative-path raw-source citation. Resolve from the page's
+                    # ACTUAL on-disk location rather than decoding the literal
+                    # `../raw/` prefix by convention — pages live two levels deep
+                    # (wiki/<type>/<slug>.md) since schema 0.0.5, so a `../raw/`
+                    # citation resolves to the non-existent wiki/raw/ instead of
+                    # <wiki-root>/raw/. The correct form is `../../raw/`. The old
+                    # string-strip check passed regardless of depth as long as
+                    # raw/<tail> existed, so a depth-wrong (unreachable) citation
+                    # shipped "health clean". Resolving from page_path.parent
+                    # catches the depth bug regardless of the literal string.
+                    resolved = (page_path.parent / src).resolve()
+                    in_raw = resolved == raw_dir or raw_dir in resolved.parents
+                    if not in_raw:
                         errors.append(
                             {
                                 "class": "missing_source",
                                 "page": slug,
-                                "message": f"source file not found: raw/{rel}",
+                                "message": (
+                                    f"raw source citation does not resolve under "
+                                    f"raw/: '{src}' from wiki/{ptype}/ points at "
+                                    f"{resolved} (use ../../raw/<file>)"
+                                ),
+                            }
+                        )
+                    elif not resolved.exists():
+                        errors.append(
+                            {
+                                "class": "missing_source",
+                                "page": slug,
+                                "message": (
+                                    f"source file not found: "
+                                    f"raw/{resolved.name} (cited as '{src}')"
+                                ),
                             }
                         )
                 elif isinstance(src, str) and src.startswith("wiki://"):

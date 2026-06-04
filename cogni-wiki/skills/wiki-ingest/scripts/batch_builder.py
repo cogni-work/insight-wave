@@ -202,7 +202,7 @@ def discover_orphans(wiki_root: Path) -> list:
             for s in sources:
                 if not isinstance(s, str):
                     continue
-                # Paths in sources are typically ../raw/foo.pdf — we only
+                # Paths in sources are typically ../../raw/foo.pdf — we only
                 # care about the filename tail for orphan detection.
                 cited.add(s.rstrip("/").split("/")[-1])
     orphans = []
@@ -571,7 +571,7 @@ def build_entries_from_stubs(
     entries = []
     for stub in stubs:
         source = stub["source"]
-        # Stub sources: if the frontmatter pointed at "../raw/foo.pdf" we keep
+        # Stub sources: if the frontmatter pointed at "../../raw/foo.pdf" we keep
         # it as-is (that is already a wiki-root-relative path). If we fell
         # back to the page path itself, normalise the same way as above.
         if not (source.startswith("http://") or source.startswith("https://") or source.startswith("../") or source.startswith("./")):

@@ -6,7 +6,7 @@ tags: [schema, migration]
 created: 2026-04-01
 updated: 2026-04-01
 sources:
-  - ../raw/decision-log.md
+  - ../../raw/decision-log.md
 ---
 
 # Adopt schema_version 0.0.5
