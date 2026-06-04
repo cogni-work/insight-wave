@@ -1,5 +1,34 @@
 # cogni-knowledge changelog
 
+## 0.1.74 — 2026-06-04 — feat: `migrate-question-index.py` question-node index migration driver — #484 (#438 Part B)
+
+#411 (v0.1.58) started filing each `type: question` node under its sub-question's own `theme_label`
+index heading rather than the flat `## Research questions` heading, but deferred **migrating
+pre-existing finalized bases** (whose bullets `wiki_index_update.py` Case A updates in place, ignoring
+`--category`) to a follow-up needing a new locked `--move-slug` capability. That capability shipped as
+#438 Part A (cogni-wiki `wiki_index_update.py --move-slug`, PR #477). This release adds Part B — the
+cogni-knowledge one-shot driver that consumes it.
+
+- **`scripts/migrate-question-index.py`** (new) — globs `wiki/questions/*.md`, reads each page's
+  authoritative `theme_label:` frontmatter (decoded via the shared `_knowledge_lib._FRONTMATTER_RE` /
+  `_unquote_scalar`), and calls `wiki_index_update.py --move-slug <slug> --to-category "<theme_label>"`
+  once per node (slug = `Path(f).stem`, the `id == stem` invariant). **Idempotent** (an already-placed
+  node returns `action: noop`) and **non-destructive** (relocates an existing bullet only — never adds
+  or drops a wikilink). Skips an empty `theme_label` (the locked script rejects an empty
+  `--to-category`); records a never-indexed slug under `skipped` rather than aborting the base.
+  `--dry-run` short-circuits before any subprocess (the locked script's `--dry-run` covers only
+  `--reflow-only`, not move mode). Self-resolves the cogni-wiki scripts dir by a Python port of the
+  `knowledge-ingest` `resolve_wiki_scripts` probe, with `--wiki-scripts-dir` to override (hermetic
+  testing). JSON envelope, stdlib-only.
+- **`tests/test_migrate_question_index.sh`** (new) — drives the real code path against a synthetic
+  wiki: `--dry-run` reports the moves but leaves `index.md` byte-identical; a wet run relocates both
+  slugs under their `theme_label` headings (dropping the emptied source heading, leaving an unrelated
+  `Sources` bullet untouched); a re-run is idempotent (all `noop`); the empty-`theme_label` node is
+  skipped.
+- **Deferred (post-merge operator step, NOT in this diff):** the live migration run against an
+  already-finalized base outside the repo. The driver is idempotent, so a repeat run is a safe no-op.
+- Bump `cogni-knowledge` `0.1.73 → 0.1.74` in `plugin.json`, mirrored in root `marketplace.json`.
+
 ## 0.1.66 — 2026-06-03 — fix: documented `citation-store.py build` passed empty `--records` (env-var-prefix antipattern) — #455
 
 The `citation-store.py build` invocation documented in `knowledge-compose` Step 4.5 (and the identical
