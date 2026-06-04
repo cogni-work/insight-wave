@@ -768,6 +768,44 @@ def assert_extract_page_frontmatter():
     assert kl.extract_page_content_hash("# just a body\n") == ""
 
 
+def assert_resolve_wiki_scripts():
+    # The single Python definition of the wiki-scripts resolve probe (#488),
+    # shared by the standalone migrate-question-index.py driver so it is no
+    # longer a second independent copy of the bash ranking rule.
+    # Negative case (hermetic, always on): an unknown skill matches neither the
+    # sibling checkout nor any versioned-cache dir → FileNotFoundError, and the
+    # message carries the skill name + the --wiki-scripts-dir escape hatch.
+    try:
+        kl.resolve_wiki_scripts("__nonexistent_skill__")
+        assert False, "expected FileNotFoundError for an unknown skill"
+    except FileNotFoundError as exc:
+        assert "__nonexistent_skill__" in str(exc), str(exc)
+        assert "--wiki-scripts-dir" in str(exc), str(exc)
+    # Real-layout case (guarded by the same sibling-exists precondition the
+    # migrate test uses): in the dev monorepo the sibling checkout exists, so
+    # resolve_wiki_scripts("wiki-ingest") returns exactly that dir.
+    repo_root = scripts.parent.parent  # scripts/ -> cogni-knowledge/ -> repo-root
+    sib = repo_root / "cogni-wiki" / "skills" / "wiki-ingest" / "scripts"
+    if sib.is_dir():
+        got = kl.resolve_wiki_scripts("wiki-ingest")
+        assert got.resolve() == sib.resolve(), f"got={got!r} expected sibling={sib!r}"
+    # Versioned-cache ranking branch (hermetic, via the base_dir test seam):
+    # no sibling checkout under <base> forces fall-through to branch 2, where
+    # the NEWEST numeric version dir must win and a non-numeric `main` checkout
+    # must be excluded by _NUMERIC_VERSION_RE — the branch the real-layout case
+    # above can never reach (the live sibling short-circuits branch 1).
+    base = work / "wiki-version-fixture" / "insight-wave"  # synthetic <repo-root>
+    cache = base.parent / "cogni-wiki"  # <repo-root>.parent/cogni-wiki/*/skills/...
+    for ver in ("0.0.9", "0.0.16", "0.1.2", "main"):
+        (cache / ver / "skills" / "wiki-ingest" / "scripts").mkdir(parents=True, exist_ok=True)
+    # No <base>/cogni-wiki/skills/wiki-ingest/scripts → branch 1 misses.
+    assert not (base / "cogni-wiki" / "skills" / "wiki-ingest" / "scripts").exists()
+    got = kl.resolve_wiki_scripts("wiki-ingest", base_dir=base)
+    expected = cache / "0.1.2" / "skills" / "wiki-ingest" / "scripts"
+    assert got.resolve() == expected.resolve(), f"version ranking: got={got!r} expected={expected!r}"
+    assert got.parents[2].name == "0.1.2", f"non-numeric 'main' must not win: {got!r}"
+
+
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("theme_norm_key", assert_theme_norm_key)
@@ -796,6 +834,7 @@ check("parse_answer_claims_with_id", assert_parse_answer_claims_with_id)
 check("parse_answer_records", assert_parse_answer_records)
 check("writer_quality_normalizers", assert_writer_quality_normalizers)
 check("extract_page_frontmatter", assert_extract_page_frontmatter)
+check("resolve_wiki_scripts", assert_resolve_wiki_scripts)
 PY
 )
 
@@ -841,6 +880,7 @@ grade digit_anchor_tokens     "digit_anchor_tokens — Artikel/Article 99 → {9
 grade parse_crossmerge_records "parse_crossmerge_records — merge: slug|survivor|absorbed, whitespace strip, wrong-arity/empty-field dropped, comments, CRLF, ''→[] (#345)"
 grade writer_quality_normalizers "writer-quality normalizers (#309 P2) — normalize_tone/prose_density/citation_format/target_words + CITATION_FAMILY, valid passthrough, unknown→safe default, wikilink→ieee"
 grade extract_page_frontmatter "ingest-integrity frontmatter parsers (#413/#421) — extract_page_id_and_url id+sources, extract_page_content_hash quoted/unquoted-comment/absent/no-frontmatter→'' (shared by sweep + Phase-3 guard)"
+grade resolve_wiki_scripts    "resolve_wiki_scripts (#488) — single Python SSOT for the wiki-scripts probe (sibling checkout, else newest numeric version dir); unknown skill→FileNotFoundError naming the skill + --wiki-scripts-dir; real sibling layout resolves to the in-repo dir"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

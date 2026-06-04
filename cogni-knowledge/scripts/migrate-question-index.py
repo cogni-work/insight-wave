@@ -55,14 +55,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     _FRONTMATTER_RE,
     _unquote_scalar,
+    resolve_wiki_scripts,
 )
 
-# A dotted-numeric version dir name, e.g. `0.1.74` — mirrors the shell probe's
-# `case "$ver" in ''|*[!0-9.]*) continue` numeric guard so a branch/`main`
-# checkout dir never outranks a real semver. Slightly stricter than the shell
-# case (rejects empty/leading/trailing/doubled `.` segments too), which only
-# matters for malformed dirs and lets the sort key skip an empty-segment guard.
-_NUMERIC_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
 _THEME_LABEL_RE = re.compile(r"^theme_label[ \t]*:[ \t]*(.+?)[ \t]*$")
 
 
@@ -70,40 +65,6 @@ def _emit(success: bool, data: "dict | None" = None, error: str = "") -> int:
     payload = {"success": bool(success), "data": data or {}, "error": error or ""}
     print(json.dumps(payload, indent=2, ensure_ascii=False))
     return 0 if success else 1
-
-
-def resolve_wiki_ingest_scripts() -> Path:
-    """Locate `cogni-wiki/skills/wiki-ingest/scripts/`, mirroring the shell
-    `resolve_wiki_scripts wiki-ingest` probe in knowledge-ingest/SKILL.md.
-
-    Probe order:
-      1. Sibling checkout — `<repo-root>/cogni-wiki/skills/wiki-ingest/scripts`,
-         where <repo-root> is three levels up from this file
-         (scripts/ -> cogni-knowledge/ -> <repo-root>).
-      2. Versioned-cache install — newest NUMERIC version dir matching
-         `<repo-root>/../cogni-wiki/*/skills/wiki-ingest/scripts`.
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    sib = repo_root / "cogni-wiki" / "skills" / "wiki-ingest" / "scripts"
-    if sib.is_dir():
-        return sib
-
-    candidates: "list[tuple[tuple[int, ...], Path]]" = []
-    for d in (repo_root.parent / "cogni-wiki").glob("*/skills/wiki-ingest/scripts"):
-        if not d.is_dir():
-            continue
-        ver = d.parents[2].name  # the <semver> segment
-        if _NUMERIC_VERSION_RE.match(ver):
-            # Sort key: `0.0.9 < 0.0.16`. The regex guarantees every segment is a
-            # non-empty digit run, so no empty-segment filter is needed.
-            candidates.append((tuple(int(p) for p in ver.split(".")), d))
-    if candidates:
-        return max(candidates)[1]
-
-    raise FileNotFoundError(
-        "cogni-wiki wiki-ingest scripts not found — install cogni-wiki, run "
-        "from inside the monorepo, or pass --wiki-scripts-dir"
-    )
 
 
 def theme_label_from_frontmatter(page_text: str) -> str:
@@ -139,7 +100,7 @@ def cmd_migrate(args: argparse.Namespace) -> int:
             scripts_dir = Path(args.wiki_scripts_dir).expanduser().resolve()
         else:
             try:
-                scripts_dir = resolve_wiki_ingest_scripts()
+                scripts_dir = resolve_wiki_scripts("wiki-ingest")
             except FileNotFoundError as exc:
                 return _emit(False, error=str(exc))
         update_script = scripts_dir / "wiki_index_update.py"

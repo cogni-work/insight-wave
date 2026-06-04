@@ -201,6 +201,53 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Test 4: self-resolve path — NO --wiki-scripts-dir. Exercises the driver's
+# resolve_wiki_scripts("wiki-ingest") probe (now _knowledge_lib.resolve_wiki_scripts)
+# against the in-repo sibling checkout, which the lines 33-36 WSD guard above
+# already proved exists. Tests 2/3 always pass --wiki-scripts-dir, so this is
+# the only case that fires the probe end-to-end.
+#
+# A fresh wiki fixture (a legacy flat `## Research questions` heading) gives the
+# self-resolve run a relocatable bullet, so success means the probe resolved AND
+# the move ran to completion against the resolved wiki_index_update.py.
+# ---------------------------------------------------------------------------
+WIKI2="$WORK/wiki-root-2"
+mkdir -p "$WIKI2/wiki/questions" "$WIKI2/.cogni-wiki"
+cat > "$WIKI2/wiki/index.md" <<'EOF'
+# Index
+
+## Research questions
+
+- [[records-of-processing-scope]] — What is in scope for the records of processing.
+EOF
+cat > "$WIKI2/wiki/questions/records-of-processing-scope.md" <<'EOF'
+---
+id: records-of-processing-scope
+title: "Records of processing scope"
+type: question
+tags: [question]
+theme_label: "Compliance Scope"
+---
+
+## Findings
+EOF
+
+OUT=$(python3 "$SCRIPT" --wiki-root "$WIKI2")
+echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['dry_run'] is False, d
+actions = {m['slug']: m['action'] for m in d['data']['moved']}
+assert actions.get('records-of-processing-scope') == 'moved', d
+print('OK')
+" | grep -q OK && green "PASS: self-resolve (no --wiki-scripts-dir) probes the sibling checkout and relocates the node" \
+  || { red "FAIL: self-resolve output assertion (probe or move failed)"; errors=$((errors + 1)); }
+
+assert_grep '## Compliance Scope' "$WIKI2/wiki/index.md" "self-resolve run created the theme_label heading"
+assert_not_grep '## Research questions' "$WIKI2/wiki/index.md" "self-resolve run dropped the empty flat heading"
+
+# ---------------------------------------------------------------------------
 if [ "$errors" -eq 0 ]; then
   green "ALL PASS"
   exit 0
