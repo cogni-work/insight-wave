@@ -63,7 +63,7 @@ tags: [llms, safety, jailbreaking, long-context]
 created: 2026-04-12
 updated: 2026-04-12
 sources:
-  - ../raw/bai-et-al-2024-many-shot-jailbreaking.pdf
+  - ../../raw/bai-et-al-2024-many-shot-jailbreaking.pdf
 ---
 
 Many-shot jailbreaking exploits long context windows by stuffing hundreds of fake dialogue turns that prime the model toward a harmful completion.
@@ -88,7 +88,7 @@ Many-shot jailbreaking exploits long context windows by stuffing hundreds of fak
 
 ## Sources
 
-- [Bai et al. 2024 — Many-Shot Jailbreaking](../raw/bai-et-al-2024-many-shot-jailbreaking.pdf)
+- [Bai et al. 2024 — Many-Shot Jailbreaking](../../raw/bai-et-al-2024-many-shot-jailbreaking.pdf)
 ```
 
 ### Step 5: Update `wiki/index.md`
@@ -324,7 +324,7 @@ tags: [onboarding, customer-success, acme]
 created: 2026-04-22
 updated: 2026-04-22
 sources:
-  - ../raw/interview-pm-onboarding-2026-04-22.md
+  - ../../raw/interview-pm-onboarding-2026-04-22.md
 ---
 
 40-minute interview with `[[priya-rao]]` on `[[customer-onboarding]]` friction in Acme's CS org; surfaced three repeatable failure modes.
@@ -372,7 +372,7 @@ Follow-up to the Q1 churn analysis. We picked Priya because her team owns the da
 
 ## Sources
 
-- [Interview transcript — Acme PM onboarding](../raw/interview-pm-onboarding-2026-04-22.md)
+- [Interview transcript — Acme PM onboarding](../../raw/interview-pm-onboarding-2026-04-22.md)
 ```
 
 The interviewee link to `[[priya-rao]]` is required per the template; if the page doesn't exist, Step 4a's stub-first rule files `wiki/<type>/priya-rao.md` (frontmatter only, one-line summary) before writing this page.
@@ -513,7 +513,7 @@ tags: [customer-call, acme, q2]
 created: 2026-04-22
 updated: 2026-04-22
 sources:
-  - ../raw/discovery-acme-q2-2026-04-22.docx
+  - ../../raw/discovery-acme-q2-2026-04-22.docx
 ---
 
 …body filled per customer-call.md scaffold…

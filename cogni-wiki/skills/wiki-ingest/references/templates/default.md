@@ -24,4 +24,4 @@ _(Distil the source under `##` subheadings the source itself suggests — e.g. m
 
 ## Sources
 
-- [{{source title}}](../raw/{{source-filename}})
+- [{{source title}}](../../raw/{{source-filename}})

@@ -50,4 +50,4 @@ _(Group the interview by the questions or themes the source surfaces. One `###` 
 
 ## Sources
 
-- [{{transcript or notes}}](../raw/{{source-filename}})
+- [{{transcript or notes}}](../../raw/{{source-filename}})

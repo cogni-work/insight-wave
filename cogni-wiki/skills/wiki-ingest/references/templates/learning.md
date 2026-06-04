@@ -47,4 +47,4 @@ _(Counter-examples, edge cases, or contexts where the lesson would mislead. With
 
 ## Sources
 
-- [{{primary source if any}}](../raw/{{source-filename}})
+- [{{primary source if any}}](../../raw/{{source-filename}})

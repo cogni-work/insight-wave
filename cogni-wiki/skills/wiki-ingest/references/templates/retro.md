@@ -58,4 +58,4 @@ _(If a learning here repeats a pattern from prior retros, cite the prior `[[retr
 
 ## Sources
 
-- [{{retro notes / board snapshot}}](../raw/{{source-filename}})
+- [{{retro notes / board snapshot}}](../../raw/{{source-filename}})

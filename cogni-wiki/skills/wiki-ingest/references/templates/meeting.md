@@ -55,4 +55,4 @@ _(One `###` heading per topic. Capture the substance, not the chronology. Quote 
 
 ## Sources
 
-- [{{meeting notes / recording / chat log}}](../raw/{{source-filename}})
+- [{{meeting notes / recording / chat log}}](../../raw/{{source-filename}})
