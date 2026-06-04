@@ -173,6 +173,7 @@ The advisory lock at `<wiki-root>/.cogni-wiki/.lock` is **retained as defence-in
 | File | Write operation | Locked call site |
 |------|-----------------|------------------|
 | `wiki/index.md` | Insert/update entry line | `wiki_index_update.py::update_index` (line 335) |
+| `wiki/index.md` | Relocate an entry line between headings (`--move-slug`) | `wiki_index_update.py::move_slug` |
 | `wiki/<type>/<target>.md` | Backlink append into an *existing* page (slug → path resolved via `_wikilib.build_slug_index`) | `backlink_audit.py::apply_plan` |
 | `.cogni-wiki/config.json` | `entries_count` bump (and any future counters) | `config_bump.py::main` (line 105) |
 | `.cogni-wiki/last-resweep.json` | Sweep summary write at end of `wiki-claims-resweep` aggregate phase | `resweep_planner.py::phase_aggregate` |

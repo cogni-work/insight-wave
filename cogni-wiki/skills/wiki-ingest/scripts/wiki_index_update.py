@@ -385,6 +385,11 @@ def move_slug(index_path: Path, slug: str, to_category: str) -> dict:
       under the source heading is preserved.
     - Never adds or drops a wikilink — only the line's *summary text* moves
       with it, verbatim.
+    - Duplicate slugs: `_find_slug_line_globally` returns the **first** match,
+      so if a slug somehow appears under two headings only the first occurrence
+      relocates. That is intentional — duplicate slugs are a separate defect
+      `wiki-health` / `wiki-lint` already surface, and this mode does not try to
+      reconcile them.
 
     A distinct mode from `update_index`: Case A there updates a slug line *in
     place and ignores the category*, which is exactly why a relocation needs
