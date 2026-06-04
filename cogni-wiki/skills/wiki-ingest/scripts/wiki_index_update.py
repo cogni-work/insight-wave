@@ -353,6 +353,90 @@ def update_index(index_path: Path, slug: str, summary: str, category: str) -> di
     }
 
 
+def move_slug(index_path: Path, slug: str, to_category: str) -> dict:
+    """Relocate an existing `[[slug]]` entry from its current heading to
+    `to_category`, keeping it alphabetised. Non-destructive and idempotent.
+
+    Contract (issue #438 Part A):
+    - Find the slug line via `_find_slug_line_globally`. Missing slug → fail.
+    - If the line already sits directly under a heading matching `to_category`,
+      return ``action: "noop"`` (idempotent — a second call is a no-op).
+    - Otherwise remove the line from its source section, re-insert it
+      alphabetised under `to_category` (reusing `_insert_alphabetised` /
+      `_create_category`), and drop the source heading **only** when nothing
+      but blank lines remains under it — the same empty-heading discipline
+      `strip_seed_placeholder` uses, so a curated per-theme prose lead-in
+      under the source heading is preserved.
+    - Never adds or drops a wikilink — only the line's *summary text* moves
+      with it, verbatim.
+
+    A distinct mode from `update_index`: Case A there updates a slug line *in
+    place and ignores the category*, which is exactly why a relocation needs
+    its own entry point rather than overloading the insert/update path every
+    current caller depends on.
+    """
+    if not index_path.is_file():
+        fail(f"index.md not found at {index_path}")
+
+    try:
+        text = index_path.read_text(encoding="utf-8")
+    except OSError as e:
+        fail(f"could not read index.md: {e}")
+        return {}
+
+    sections = _split_sections(text)
+    sec_idx, line_idx = _find_slug_line_globally(sections, slug)
+    if sec_idx == -1:
+        fail(f"slug not found in index: {slug}")
+        return {}
+
+    heading, body = sections[sec_idx]
+
+    # Idempotent no-op: already directly under the target heading.
+    if heading is not None and _heading_matches_category(heading, to_category):
+        return {
+            "action": "noop",
+            "category": HEADING_RE.match(heading).group(2).strip(),
+            "slug": slug,
+            "index_path": str(index_path),
+        }
+
+    moved_line = body[line_idx]
+    new_body = body[:line_idx] + body[line_idx + 1:]
+    sections[sec_idx] = (heading, new_body)
+
+    # Drop the source heading only when no non-blank content remains under it
+    # (mirrors strip_seed_placeholder; preserves a curated lead-in if present).
+    source_heading_dropped = False
+    if heading is not None and not any(ln.strip() for ln in new_body):
+        del sections[sec_idx]
+        source_heading_dropped = True
+
+    # Re-insert alphabetised under the target category (Case B / Case C).
+    category_created = False
+    placed = False
+    for i, (h, b) in enumerate(sections):
+        if h is not None and _heading_matches_category(h, to_category):
+            sections[i] = (h, _insert_alphabetised(b, moved_line, slug))
+            placed = True
+            break
+    if not placed:
+        sections = _create_category(sections, to_category, moved_line)
+        category_created = True
+
+    new_text = _join_sections(sections)
+    atomic_write(index_path, new_text)
+    return {
+        "action": "moved",
+        "category": to_category.strip(),
+        "category_created": category_created,
+        "source_heading_dropped": source_heading_dropped,
+        "line": moved_line,
+        "slug": slug,
+        "index_path": str(index_path),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Insert/update a page's entry in wiki/index.md, preserving alphabetical order."
@@ -361,6 +445,8 @@ def main() -> None:
     parser.add_argument("--slug", help="Slug of the page whose line we're adding/updating (slug mode)")
     parser.add_argument("--summary", help="One-sentence summary shown after the slug wikilink (slug mode)")
     parser.add_argument("--category", help="Category heading text without the leading ##/### (slug mode)")
+    parser.add_argument("--move-slug", help="Slug of an existing entry to relocate to --to-category (move mode)")
+    parser.add_argument("--to-category", help="Target category heading for --move-slug (move mode)")
     parser.add_argument(
         "--max-summary",
         type=int,
@@ -387,6 +473,27 @@ def main() -> None:
 
     if not (wiki_root / "wiki").is_dir():
         fail(f"wiki/ not found under {wiki_root}")
+
+    # Move mode (#438): relocate an existing entry between headings. Mutually
+    # exclusive with slug-mode (--slug/--summary/--category) and --reflow-only
+    # so the three write paths never overlap.
+    if args.move_slug:
+        if args.reflow_only:
+            fail("--move-slug cannot be combined with --reflow-only")
+        if args.slug or args.summary or args.category:
+            fail("--move-slug is mutually exclusive with --slug/--summary/--category")
+        if not (args.to_category and args.to_category.strip()):
+            fail("--move-slug requires a non-empty --to-category")
+        if not index_path.is_file():
+            fail(f"index.md not found at {index_path}")
+        mv_slug = args.move_slug.strip().lower()
+        if not re.match(r"^[a-z0-9][a-z0-9\-]*$", mv_slug):
+            fail(f"invalid slug: {args.move_slug!r} (expected kebab-case: [a-z0-9][a-z0-9-]*)")
+        to_category = args.to_category.strip()
+        with _wiki_lock(wiki_root):
+            result = move_slug(index_path, mv_slug, to_category)
+        ok(result)
+        return
 
     if args.reflow_only:
         if not index_path.is_file():

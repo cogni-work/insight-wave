@@ -56,6 +56,7 @@ For pure LLM skills (no scripts to execute), regression coverage is limited to *
 | `test_source_page_type.sh` | `wiki-health` and `wiki-lint` accept the additive `type: source` page type added in v0.0.44 (#270) — a planted `wiki/sources/<slug>.md` page raises neither `invalid_type` nor `type_directory_mismatch`. Unblocks cogni-knowledge PR #269 milestone 6 `knowledge-ingest`. |
 | `test_index_summary_clamp.sh` | `wiki_index_update.py --max-summary N` clamps an over-long `--summary` on a WORD boundary with `…` via `_wikilib.clamp_summary` (v0.0.47, #324) — output words are an exact prefix of the input (no mid-word "…Sonderka"), German ä/ö/ü survive, codepoint-counted. No flag → verbatim passthrough (backward-compat for every other caller). |
 | `test_question_page_type.sh` | `wiki-health` and `wiki-lint` accept the additive `type: question` page type added in v0.0.50 (#407) — a planted `wiki/questions/<slug>.md` page raises neither `invalid_type` nor `type_directory_mismatch`. Unblocks cogni-knowledge #407 `knowledge-ingest` Step 4.5 (research-question nodes). |
+| `test_index_move_slug.sh` | `wiki_index_update.py --move-slug <slug> --to-category <cat>` non-destructively relocates an existing index entry between headings: alphabetised under the target, summary preserved verbatim, source heading dropped only when drained empty (a curated prose lead-in keeps it), idempotent (2nd call → `noop`), `[[wikilink]]` set-membership unchanged, and mutually exclusive with slug-mode / `--reflow-only`. Part A of the question-anchored index migration. |
 
 ```sh
 bash tests/test_wiki_from_research_flags.sh
@@ -66,6 +67,7 @@ bash tests/test_batch_builder_metadata_config.sh
 bash tests/test_source_page_type.sh
 bash tests/test_index_summary_clamp.sh
 bash tests/test_question_page_type.sh
+bash tests/test_index_move_slug.sh
 ```
 
 The SKILL.md tests do not assert anything about LLM-driven behaviour — only that the contract surface that orchestrators (`cogni-knowledge:knowledge-report` / `cogni-knowledge:knowledge-query`) depend on remains intact. The script-level tests execute the actual code path and assert observable behaviour.
