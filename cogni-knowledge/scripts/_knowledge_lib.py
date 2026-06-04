@@ -1541,3 +1541,54 @@ def load_wiki_coverage_findings(project_path) -> list:
         msg = messages.get(sid) or f"sub-question {sid} ({verdict})"
         out.append({"class": _COVERAGE_GAP_CLASS[verdict], "id": f"sq:{sid}", "message": msg})
     return out
+
+
+# A dotted-numeric version dir name, e.g. `0.1.74` — mirrors the shell probe's
+# `case "$ver" in ''|*[!0-9.]*) continue` numeric guard so a branch/`main`
+# checkout dir never outranks a real semver. Slightly stricter than the shell
+# case (rejects empty/leading/trailing/doubled `.` segments too), which only
+# matters for malformed dirs and lets the sort key skip an empty-segment guard.
+_NUMERIC_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
+
+
+def resolve_wiki_scripts(skill: str) -> Path:
+    """Locate `cogni-wiki/skills/<skill>/scripts/`, the single Python definition
+    of the shell `resolve_wiki_scripts <skill>` probe in the knowledge-* SKILLs.
+
+    Generalises the per-skill wiki-scripts lookup so a standalone, operator-run
+    Python driver (e.g. migrate-question-index.py) self-resolves the dir without
+    carrying its own copy of the ranking rule. The locked-writer scripts
+    (question-store.py, concept-store.py) deliberately keep requiring
+    `--wiki-scripts-dir` from the orchestrator and never call this.
+
+    Probe order (highest-priority first):
+      1. Sibling checkout — `<repo-root>/cogni-wiki/skills/<skill>/scripts`,
+         where <repo-root> is two levels up from this file
+         (scripts/ -> cogni-knowledge/ -> <repo-root>).
+      2. Versioned-cache install — newest NUMERIC version dir matching
+         `<repo-root>/../cogni-wiki/*/skills/<skill>/scripts` (a non-numeric
+         dir name — a branch/`main` checkout — never outranks a real semver).
+
+    Raises FileNotFoundError when neither branch resolves.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    sib = repo_root / "cogni-wiki" / "skills" / skill / "scripts"
+    if sib.is_dir():
+        return sib
+
+    candidates: "list[tuple[tuple[int, ...], Path]]" = []
+    for d in (repo_root.parent / "cogni-wiki").glob(f"*/skills/{skill}/scripts"):
+        if not d.is_dir():
+            continue
+        ver = d.parents[2].name  # the <semver> segment
+        if _NUMERIC_VERSION_RE.match(ver):
+            # Sort key: `0.0.9 < 0.0.16`. The regex guarantees every segment is a
+            # non-empty digit run, so no empty-segment filter is needed.
+            candidates.append((tuple(int(p) for p in ver.split(".")), d))
+    if candidates:
+        return max(candidates)[1]
+
+    raise FileNotFoundError(
+        f"cogni-wiki {skill} scripts not found — install cogni-wiki, run "
+        f"from inside the monorepo, or pass --wiki-scripts-dir"
+    )
