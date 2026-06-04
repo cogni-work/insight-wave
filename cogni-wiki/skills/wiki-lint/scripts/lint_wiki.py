@@ -663,6 +663,24 @@ def _add_to_sources(fm_lines: list, new_entries: list) -> list:
     return fm_lines[:src_idx] + converted + fm_lines[src_idx + 1:]
 
 
+def _find_section(text: str, heading_name: str) -> tuple:
+    """Return the (start, end) character range of a `## <heading_name>`
+    section's body — from just after the heading line to the next `##`
+    heading or EOF — or None when the heading is absent. Matching is
+    case-insensitive and anchored per-line.
+    """
+    pat = re.compile(
+        rf"^##\s+{re.escape(heading_name)}\s*$", re.MULTILINE | re.IGNORECASE
+    )
+    m = pat.search(text)
+    if not m:
+        return None
+    start = m.end()
+    nxt = re.search(r"^##\s", text[start:], re.MULTILINE)
+    end = start + nxt.start() if nxt else len(text)
+    return (start, end)
+
+
 def _append_see_also(text: str, slugs: list) -> str:
     """Append `[[slug]]` entries under `## See also`. Reuses an existing
     section when present; otherwise appends a fresh one at end-of-file.
@@ -670,14 +688,9 @@ def _append_see_also(text: str, slugs: list) -> str:
     so duplication checks live in the caller.
     """
     new_items = "\n".join(f"- [[{s}]]" for s in slugs)
-    pat = re.compile(r"^##\s+See also\s*$", re.MULTILINE | re.IGNORECASE)
-    m = pat.search(text)
-    if m:
-        section_start = m.end()
-        next_heading = re.search(r"^##\s", text[section_start:], re.MULTILINE)
-        section_end = (
-            section_start + next_heading.start() if next_heading else len(text)
-        )
+    span = _find_section(text, "See also")
+    if span:
+        section_start, section_end = span
         body = text[section_start:section_end].rstrip("\n") + "\n"
         new_section = body + new_items + "\n"
         if section_end < len(text):
@@ -983,12 +996,10 @@ def _rewrite_body_sources(body: str, raw_dir: Path) -> tuple:
     raw-file links that happen to appear in prose elsewhere are never
     touched. Returns (new_body, changes).
     """
-    m = re.search(r"^##\s+Sources\s*$", body, re.MULTILINE | re.IGNORECASE)
-    if not m:
+    span = _find_section(body, "Sources")
+    if span is None:
         return body, []
-    sec_start = m.end()
-    nxt = re.search(r"^##\s", body[sec_start:], re.MULTILINE)
-    sec_end = sec_start + nxt.start() if nxt else len(body)
+    sec_start, sec_end = span
     new_section, changes = _rewrite_raw_depth(body[sec_start:sec_end], raw_dir)
     if not changes:
         return body, []
@@ -1029,6 +1040,8 @@ def fix_raw_citation_depth(
             # path == <wiki-root>/wiki/<type_dir>/<slug>.md → parents[2] is root.
             raw_dir = path.parents[2] / "raw"
             text = path.read_text(encoding="utf-8")
+            if "../raw/" not in text:
+                continue  # no depth-wrong citation possible — skip the parse
             fm_lines, body = _split_frontmatter(text)
             changes: list = []
             if fm_lines is not None:

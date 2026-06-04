@@ -212,7 +212,11 @@ This line is an **undocumented tool-output convention** — parse defensively. T
 
 If **no saved-file path is found** in the WebFetch output (the EUR-Lex case empirically observed — an ELI/landing URL served a summary, not the PDF binary, so the Read tool was never reached) → proceed to Step 4 with `reason: pdf_extraction_failed`. This token is now narrow: it means specifically "WebFetch surfaced no PDF file to read", **not** "the Read tool failed to render a file we did get" — that distinct case is `pdf_render_unavailable` (handled in step 1 above). Cobrowse downloads PDFs rather than rendering their text, so it is not a usable fallback for either reason.
 
-**Non-PDF branch.** On success:
+**Non-PDF branch.** On success, first inspect the body:
+
+- **Empty-body guard.** If the WebFetch body is empty or whitespace-only, the 200 is not usable content — a JS-rendered or soft-paywalled page commonly returns a 200 with no extractable body. Do **not** store it as `ok`: proceed to Step 4 with `reason: webfetch_empty_body`. An HTTP 200 alone is not confirmation that extractable content was returned, and recording the miss here (Phase 2) rather than letting it surface late at ingest (Phase 4) both reports the curate/fetch counts accurately and makes the URL cobrowse-eligible.
+
+Otherwise, on a non-empty body:
 
 1. Write the fetched body to a temp file (use `mktemp`; remove on exit).
 2. Store it (same `fetch-cache.py store` invocation as the PDF branch above, `--fetch-method webfetch --status ok`).
@@ -233,7 +237,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py store \
     --reason "<webfetch_error_class>"
 ```
 
-`<webfetch_error_class>` is a closed vocabulary: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `pdf_extraction_failed`, `pdf_render_unavailable`. Per-token semantics live in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Write the negative-cache entry **now** (do not defer it) so a re-curate within the freshness window short-circuits at Step 1; Phase 3 cobrowse, if it later rescues the URL, simply overwrites the entry with `--status ok`.
+`<webfetch_error_class>` is a closed vocabulary: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `webfetch_empty_body`, `pdf_extraction_failed`, `pdf_render_unavailable`. Per-token semantics live in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Write the negative-cache entry **now** (do not defer it) so a re-curate within the freshness window short-circuits at Step 1; Phase 3 cobrowse, if it later rescues the URL, simply overwrites the entry with `--status ok`.
 
 Attach the `fetch` sub-object:
 
@@ -248,7 +252,7 @@ Attach the `fetch` sub-object:
 }
 ```
 
-`cobrowse_eligible` is **`true`** for the WebFetch error classes (`webfetch_timeout/4xx/5xx/blocked/refused`) — Phase 3 can retry these via cobrowse — and **`false`** for both PDF reasons (`pdf_extraction_failed`, `pdf_render_unavailable`): cobrowse downloads PDFs rather than rendering their text, so it is never a usable fallback for the PDF branch. Note the two are still distinct elsewhere: `pdf_extraction_failed` is terminal-for-the-URL (no file was ever surfaced), whereas `pdf_render_unavailable` is environmental / operator-actionable (the file exists; re-run where the Read tool can render PDFs) — `cobrowse_eligible: false` only says cobrowse specifically can't help, not that the URL is dead.
+`cobrowse_eligible` is **`true`** for the WebFetch error classes (`webfetch_timeout/4xx/5xx/blocked/refused/empty_body`) — Phase 3 can retry these via cobrowse, and an empty-body 200 is exactly the JS-rendered/paywalled case a browser fetch recovers — and **`false`** for both PDF reasons (`pdf_extraction_failed`, `pdf_render_unavailable`): cobrowse downloads PDFs rather than rendering their text, so it is never a usable fallback for the PDF branch. Note the two are still distinct elsewhere: `pdf_extraction_failed` is terminal-for-the-URL (no file was ever surfaced), whereas `pdf_render_unavailable` is environmental / operator-actionable (the file exists; re-run where the Read tool can render PDFs) — `cobrowse_eligible: false` only says cobrowse specifically can't help, not that the URL is dead.
 
 **Emit the batch.** Each surviving candidate now carries the scored fields (Phase 3) plus a `fetch` sub-object (Phase 4). A successful candidate's `fetch` shape:
 

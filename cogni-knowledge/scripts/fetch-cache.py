@@ -64,6 +64,12 @@ VALID_REASONS = {
     "webfetch_5xx",
     "webfetch_blocked",
     "webfetch_refused",
+    # WebFetch returned HTTP 200 but the body was empty or whitespace-only
+    # — effectively unavailable (a JS-rendered or soft-paywalled page that
+    # acknowledged the request but served no extractable content). Recorded
+    # at fetch time so the failure surfaces in Phase 2, not late at ingest;
+    # cobrowse_eligible: true, since a browser fetch may render the page.
+    "webfetch_empty_body",
     "pdf_extraction_failed",
     # A saved PDF file WAS surfaced, but the Read tool could not render it
     # in this runtime (its page->image rasterization has no PDF-rendering
