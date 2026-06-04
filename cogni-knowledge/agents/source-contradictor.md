@@ -87,15 +87,16 @@ For each (new-claim, conflicting-page) where you detect tension, emit a finding 
 
 For each `contradiction` finding, set `severity`:
 
-- **`high`** — outright numeric or named-entity flip on a shared subject, with no scope qualifier separating the two assertions. Examples:
+- **`high`** — outright numeric or named-entity flip on a shared subject, with no scope qualifier separating the two assertions. The flip must be on an incompatible **categorical** fact — a single authoritative value such as a date, deadline, jurisdiction, or directional assertion — not two publishers' point-estimates of the same inherently-estimated quantity (see the estimate-divergence carve-out under `low`). Examples:
   - new source: "the deadline is 12 months", peer: "the deadline is 24 months" → high.
   - new source: "applies EU-wide", peer: "applies only in Germany" → high.
 - **`medium`** — scope shift or quantifier change on the same fact (`EU-wide` vs `Tier-1 member states`, `all member states` vs `most member states`, `mandatory` vs `recommended`). The factual core overlaps but the scope/strength differs.
 - **`low`** — soft tension, plausibly explained by date, context, or a missing qualifier. Surfaced for transparency; the operator may legitimately accept it.
+  - **Estimate divergence is always `low`.** When both sides are numeric point-estimates of the *same* metric (market size, CAGR, workforce gap, adoption rate, …) for the *same* scope and period, attributed to *different* independent publishers — e.g. one research house reports €12 bn and another €15 bn — this is expected analyst spread, not a contradiction. Score it `low` (never `medium` or `high`) and name it in the `note`, e.g. `"competing analyst point-estimates of the same metric — normal spread"`. Reserve a numeric `high` for an incompatible categorical claim, not for two publishers sizing the same quantity differently. (A *single* publisher revising its own earlier figure is different — that is a real revision, scored on its merits.)
 
 **Discipline:**
 
-- Default to `low` on doubt. Promote to `medium` only when scope overlap is clearly established. Promote to `high` only when the same entity/quantity flips.
+- Default to `low` on doubt. Promote to `medium` only when scope overlap is clearly established. Promote to `high` only when the same entity/quantity flips on an incompatible categorical claim — never when two independent publishers report different point-estimates of the same metric (that is expected spread, scored `low`).
 - **Emit ONE finding per (new-claim, conflicting-page) pair, not per claim** — when a new claim contradicts multiple claims on the same conflicting page, pick the most severe one (highest-severity match wins; ties broken by `claim_id` lexical order) and record only that pair; summarise the others in the `note`. This keeps the de-dup key `(new_claim_id, conflicting_page, conflicting_claim_id)` unambiguous.
 - A single new claim will rarely contradict more than 2 pages cleanly; if you find yourself emitting more, your bar is too loose — re-read with conservative discipline.
 
