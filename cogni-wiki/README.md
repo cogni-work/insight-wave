@@ -59,7 +59,7 @@ type: concept
 tags: [llms, safety, karpathy]
 created: 2026-04-12
 updated: 2026-04-12
-sources: [../raw/bai-et-al-2022.pdf]
+sources: [../../raw/bai-et-al-2022.pdf]
 ---
 ```
 

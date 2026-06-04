@@ -57,4 +57,4 @@ _(What stands in the way of a yes / a renewal / an expansion? Be specific — "p
 
 ## Sources
 
-- [{{call notes / transcript / recording}}](../raw/{{source-filename}})
+- [{{call notes / transcript / recording}}](../../raw/{{source-filename}})
