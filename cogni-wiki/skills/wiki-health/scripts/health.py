@@ -17,7 +17,7 @@ Detects:
         - Missing required frontmatter fields
         - Filename / id mismatches
         - Invalid type values
-        - Missing ../raw/ source files
+        - Missing ../../raw/ source files
         - Broken wiki:// sources (target page does not exist)
         - Read errors
     Warnings (structural debt only — semantic warnings live in wiki-lint):
