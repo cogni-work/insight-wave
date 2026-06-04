@@ -754,4 +754,45 @@ grep -qF '  - ../../raw/paper.pdf' "$RDW/wiki/concepts/depthy.md" \
   || fail "raw-depth: --fix=all did not include raw_citation_depth"
 green "  raw_citation_depth participates in --fix=all"
 
+# Inline-list and single-scalar sources: shapes rewrite too (the cases above
+# only exercised the block-list shape). _sources_span treats both as a
+# one-line field; the rewrite must fix the ../raw/ entry while preserving any
+# sibling entries (e.g. an http URL in the inline list).
+cat > "$RDW/wiki/concepts/inline-src.md" <<EOF
+---
+id: inline-src
+title: Inline Src
+type: concept
+tags: [test]
+created: $TODAY
+updated: $TODAY
+sources: [../raw/paper.pdf, https://example.org/external]
+---
+
+# Inline Src
+
+Inline-list sources: shape carrying one depth-wrong raw citation.
+EOF
+cat > "$RDW/wiki/concepts/scalar-src.md" <<EOF
+---
+id: scalar-src
+title: Scalar Src
+type: concept
+tags: [test]
+created: $TODAY
+updated: $TODAY
+sources: ../raw/paper.pdf
+---
+
+# Scalar Src
+
+Single-scalar sources: shape carrying a depth-wrong raw citation.
+EOF
+python3 "$LINT" --wiki-root "$RDW" --fix=raw_citation_depth >/dev/null
+grep -qF 'sources: [../../raw/paper.pdf, https://example.org/external]' "$RDW/wiki/concepts/inline-src.md" \
+  || fail "raw-depth: inline-list sources: not rewritten / sibling entry not preserved"
+grep -qF 'sources: ../../raw/paper.pdf' "$RDW/wiki/concepts/scalar-src.md" \
+  || fail "raw-depth: single-scalar sources: not rewritten"
+green "  raw_citation_depth rewrites inline-list and single-scalar sources: shapes"
+
 green "ALL TESTS PASS"
