@@ -1551,7 +1551,7 @@ def load_wiki_coverage_findings(project_path) -> list:
 _NUMERIC_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
 
 
-def resolve_wiki_scripts(skill: str) -> Path:
+def resolve_wiki_scripts(skill: str, base_dir: "Path | None" = None) -> Path:
     """Locate `cogni-wiki/skills/<skill>/scripts/`, the single Python definition
     of the shell `resolve_wiki_scripts <skill>` probe in the knowledge-* SKILLs.
 
@@ -1569,9 +1569,15 @@ def resolve_wiki_scripts(skill: str) -> Path:
          `<repo-root>/../cogni-wiki/*/skills/<skill>/scripts` (a non-numeric
          dir name — a branch/`main` checkout — never outranks a real semver).
 
+    `base_dir` is a TEST-ONLY injection seam: when None (the production default)
+    <repo-root> is derived from this file's location, so every real caller is
+    byte-identical to the no-arg form; a test passes an explicit synthetic root
+    to exercise the versioned-cache ranking branch hermetically (the real
+    sibling checkout would otherwise short-circuit branch 1 in the monorepo).
+
     Raises FileNotFoundError when neither branch resolves.
     """
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parents[2]
     sib = repo_root / "cogni-wiki" / "skills" / skill / "scripts"
     if sib.is_dir():
         return sib

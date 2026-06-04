@@ -789,6 +789,21 @@ def assert_resolve_wiki_scripts():
     if sib.is_dir():
         got = kl.resolve_wiki_scripts("wiki-ingest")
         assert got.resolve() == sib.resolve(), f"got={got!r} expected sibling={sib!r}"
+    # Versioned-cache ranking branch (hermetic, via the base_dir test seam):
+    # no sibling checkout under <base> forces fall-through to branch 2, where
+    # the NEWEST numeric version dir must win and a non-numeric `main` checkout
+    # must be excluded by _NUMERIC_VERSION_RE — the branch the real-layout case
+    # above can never reach (the live sibling short-circuits branch 1).
+    base = work / "wiki-version-fixture" / "insight-wave"  # synthetic <repo-root>
+    cache = base.parent / "cogni-wiki"  # <repo-root>.parent/cogni-wiki/*/skills/...
+    for ver in ("0.0.9", "0.0.16", "0.1.2", "main"):
+        (cache / ver / "skills" / "wiki-ingest" / "scripts").mkdir(parents=True, exist_ok=True)
+    # No <base>/cogni-wiki/skills/wiki-ingest/scripts → branch 1 misses.
+    assert not (base / "cogni-wiki" / "skills" / "wiki-ingest" / "scripts").exists()
+    got = kl.resolve_wiki_scripts("wiki-ingest", base_dir=base)
+    expected = cache / "0.1.2" / "skills" / "wiki-ingest" / "scripts"
+    assert got.resolve() == expected.resolve(), f"version ranking: got={got!r} expected={expected!r}"
+    assert got.parents[2].name == "0.1.2", f"non-numeric 'main' must not win: {got!r}"
 
 
 check("tokenization_primitives", assert_tokenization_primitives)
