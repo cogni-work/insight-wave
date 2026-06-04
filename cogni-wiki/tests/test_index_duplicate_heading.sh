@@ -137,4 +137,76 @@ if ! diff -q "$BEFORE" "$INDEX" >/dev/null 2>&1; then
 fi
 green "Case 2: idempotent re-run — single heading, index unchanged"
 
+# =====================================================================
+# CASE 3 — the SAME slug present in BOTH duplicate sections collapses to
+# exactly one bullet (the dedup "skip a slug the survivor already carries"
+# branch, asserted directly rather than transitively).
+# =====================================================================
+cat > "$INDEX" <<EOF
+# Test Base — Knowledge Portal
+
+> One entry point.
+
+## Syntheses
+
+$LEADIN_SYN
+
+- [[dup-synthesis]] — first copy
+
+## Syntheses
+
+- [[dup-synthesis]] — second copy
+- [[tail-synthesis]] — only in the second section
+EOF
+
+# An insert of an unrelated slug triggers the collapse.
+python3 "$UPDATE" --wiki-root "$WIKI" --slug "head-synthesis" \
+  --summary "sorts first" --category "Syntheses" >/dev/null
+
+[ "$(count_heading Syntheses)" = "1" ] \
+  || fail "Case 3: ## Syntheses not collapsed (count=$(count_heading Syntheses))"
+[ "$(count_bullet "[[dup-synthesis]]")" = "1" ] \
+  || fail "Case 3: slug in both sections not deduped (count=$(count_bullet "[[dup-synthesis]]"))"
+has_line "[[tail-synthesis]]" \
+  || fail "Case 3: distinct bullet from the second section was dropped"
+has_line "$LEADIN_SYN" \
+  || fail "Case 3: the survivor's curated lead-in was lost"
+green "Case 3: a slug duplicated across both sections survives exactly once"
+
+# =====================================================================
+# CASE 4 — move_slug() collapses a drifted portal before relocating, so the
+# move operates on the merged (single-instance) target section.
+# =====================================================================
+cat > "$INDEX" <<EOF
+# Test Base — Knowledge Portal
+
+> One entry point.
+
+## Syntheses
+
+$LEADIN_SYN
+
+- [[alpha-synthesis]] — first synthesis
+
+## Drafts
+
+- [[beta-synthesis]] — to be relocated into Syntheses
+
+## Syntheses
+
+- [[omega-synthesis]] — last synthesis
+EOF
+
+python3 "$UPDATE" --wiki-root "$WIKI" --move-slug "beta-synthesis" \
+  --to-category "Syntheses" >/dev/null
+
+[ "$(count_heading Syntheses)" = "1" ] \
+  || fail "Case 4: move_slug did not collapse the duplicate (count=$(count_heading Syntheses))"
+ORDER=$(grep -oE '\[\[(alpha|beta|omega)-synthesis\]\]' "$INDEX" | tr '\n' ' ')
+[ "$ORDER" = "[[alpha-synthesis]] [[beta-synthesis]] [[omega-synthesis]] " ] \
+  || fail "Case 4: relocated bullet not alphabetised into the merged section (got: $ORDER)"
+has_line "$LEADIN_SYN" \
+  || fail "Case 4: the survivor's curated lead-in was lost during move+collapse"
+green "Case 4: move_slug collapses first, then relocates into the merged section"
+
 green "ALL TESTS PASS"
