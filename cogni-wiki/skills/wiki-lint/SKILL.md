@@ -34,10 +34,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start of
 | `--skip-semantic` | No | Skip the LLM-driven contradiction/type-drift/missing-concept pass. Equivalent to running `wiki-health` plus the deterministic warnings (orphans, stale, tag typos, reverse links). Use when you want a tokenless full deterministic pass. |
 | `--ignore-health` | No | Run the semantic pass even when `wiki-health` reports errors. Discouraged — fix structural errors first. |
 | `--semantic-page-cap` | No | Maximum number of pages sampled for the semantic pass. Default: 20. |
-| `--skip-rebuild-open-questions` | No | Skip Step 8.5 (`rebuild_open_questions.py`). Use when investigating a rebuild bug or running a literal no-side-effect lint pass. v0.0.30+. |
+| `--skip-rebuild-open-questions` | No | Skip Step 8.5 (`rebuild_open_questions.py`). Use when investigating a rebuild bug or running a literal no-side-effect lint pass. |
 | `--fix=<class>` | No | Apply the deterministic auto-fix for one or more lint classes (repeatable; `--fix=all` enables every safe class). Supported: `reverse_link_missing`, `synthesis_no_wiki_source`, `entries_count_drift`, `frontmatter_defaults`, `alphabetisation`, `raw_citation_depth`. See §"Auto-fix mode" below. |
-| `--suggest` | No | Emit `data.suggestions[]` — structured proposals for prose-shaped findings (`orphan_page`, `stale_*`, `claim_drift`, `tag_typo`). Schema documented in §"Suggestion schema". v0.0.32+ (#222). |
-| `--dry-run` | No | Pair with `--fix` and/or `--suggest` to compute the plan without writing. Every `data.fixed[]` entry has `applied: false`; on-disk SHA is unchanged. v0.0.32+ (#222). |
+| `--suggest` | No | Emit `data.suggestions[]` — structured proposals for prose-shaped findings (`orphan_page`, `stale_*`, `claim_drift`, `tag_typo`). Schema documented in §"Suggestion schema". |
+| `--dry-run` | No | Pair with `--fix` and/or `--suggest` to compute the plan without writing. Every `data.fixed[]` entry has `applied: false`; on-disk SHA is unchanged. |
 
 ## Workflow
 
@@ -57,7 +57,7 @@ Log a `lint | refused (health failed)` line to `wiki/log.md` and stop. Otherwise
 
 ### 3. Run the deterministic warning pass (lint_wiki.py)
 
-Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root <path>`. The script emits JSON with the warnings/info that need narrative — `orphan_page`, `stale_draft`, `stale_page`, `tag_typo`, `reverse_link_missing`, `no_sources`, `synthesis_no_wiki_source`, `claim_drift`, plus the `info` block (page totals, by-type counts, last-resweep summary). As of v0.0.31 (#223) `data.errors` is always an empty list — every structural integrity check has been moved to `health.py`, which Step 2 already ran. No deduplication step is needed when composing the report; lint and health are now strict partitions.
+Invoke `${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/lint_wiki.py --wiki-root <path>`. The script emits JSON with the warnings/info that need narrative — `orphan_page`, `stale_draft`, `stale_page`, `tag_typo`, `reverse_link_missing`, `no_sources`, `synthesis_no_wiki_source`, `claim_drift`, plus the `info` block (page totals, by-type counts, last-resweep summary). `data.errors` is always an empty list — every structural integrity check has been moved to `health.py`, which Step 2 already ran. No deduplication step is needed when composing the report; lint and health are now strict partitions.
 
 ### 4. Run the LLM-powered semantic pass
 
@@ -189,7 +189,7 @@ Even when the wiki is clean (zero findings), log the lint run. The log is the au
 
 Set `last_lint` to today's ISO date. Leave `entries_count` untouched (the lint report itself is a page, so increment accordingly — it counts as one page).
 
-### 8.5. Rebuild `wiki/open_questions.md` (v0.0.30+)
+### 8.5. Rebuild `wiki/open_questions.md`
 
 Run **once per dispatch** after Step 8. The file is the persistent backlog that compounds across sessions: lint findings that point at "data gaps" (`no_sources`, `synthesis_no_wiki_source`, `claim_drift`, `orphan_page`, `stale_page`, `stale_draft`, `reverse_link_missing`) become `- [ ]` checklist items; items that disappear from a subsequent lint flip to `- [x]` with today's date and a best-effort "closed by" attribution from `wiki/log.md`. Closed items are trimmed after 90 days. The `## [YYYY-MM-DD] lint | …` line written in Step 7 is what makes the close-attribution work — Step 8.5 must run after Step 7.
 
@@ -201,9 +201,9 @@ ${CLAUDE_PLUGIN_ROOT}/skills/wiki-lint/scripts/rebuild_open_questions.py --wiki-
 
 The script invokes `lint_wiki.py` itself as a subprocess (read-only, mirrors the deterministic Step 3 output) and reconciles against the existing `wiki/open_questions.md`. The read-modify-write is wrapped in `_wikilib._wiki_lock` because two concurrent `wiki-lint` dispatches from separate sessions would otherwise trample each other's reconciliation.
 
-**LLM-emitted findings (Step 4d's `missing_concept_page` items) are not yet wired in** — v0.0.30 ships deterministic-only. The script accepts `--findings -` (JSON on stdin) for the follow-up that will pipe a merged finding set in from this step. Until then the "Missing concept pages" section is omitted.
+**LLM-emitted findings (Step 4d's `missing_concept_page` items) are not yet wired in** — this step is deterministic-only. The script accepts `--findings -` (JSON on stdin) for the follow-up that will pipe a merged finding set in from this step. Until then the "Missing concept pages" section is omitted.
 
-**Research-time gaps (`research_uncovered` / `research_partial`, #354).** Two additional sections render at the **tail** of `open_questions.md` — `## Research-time gaps — uncovered` and `## Research-time gaps — partial`. These are **deposit-only**: `lint_wiki.py` never produces them. They are streamed in by `cogni-knowledge:knowledge-finalize` (Step 10.5 sub-step 5) via the `--findings -` contract, sourced from each research project's `<project>/.metadata/wiki-coverage.json`, and keyed by a synthetic `sq:<sq_id>` identifier (e.g. `` `sq:sq-04` ``) rather than an on-disk page slug. `finalize` is now a `CLOSING_OPS` op, so a later finalize whose `wiki/log.md` line carries a `sqs=sq-04,…` suffix credit-closes the item (`- [x] ~~\`sq:sq-04\` — …~~ — closed YYYY-MM-DD by finalize`). A plain `wiki-lint` dispatch (no cogni-knowledge involvement) never introduces these rows.
+**Research-time gaps (`research_uncovered` / `research_partial`).** Two additional sections render at the **tail** of `open_questions.md` — `## Research-time gaps — uncovered` and `## Research-time gaps — partial`. These are **deposit-only**: `lint_wiki.py` never produces them. They are streamed in by `cogni-knowledge:knowledge-finalize` (Step 10.5 sub-step 5) via the `--findings -` contract, sourced from each research project's `<project>/.metadata/wiki-coverage.json`, and keyed by a synthetic `sq:<sq_id>` identifier (e.g. `` `sq:sq-04` ``) rather than an on-disk page slug. `finalize` is now a `CLOSING_OPS` op, so a later finalize whose `wiki/log.md` line carries a `sqs=sq-04,…` suffix credit-closes the item (`- [x] ~~\`sq:sq-04\` — …~~ — closed YYYY-MM-DD by finalize`). A plain `wiki-lint` dispatch (no cogni-knowledge involvement) never introduces these rows.
 
 **Failure isolation.** A non-zero exit or malformed JSON from `rebuild_open_questions.py` MUST NOT roll back the lint run. The audit report (Step 5), index update (Step 6), log line (Step 7), and `last_lint` bump (Step 8) are already on disk. Surface the error in the Step 9 report and continue — the next lint run will reconcile.
 
@@ -214,7 +214,7 @@ Print a ≤6-line summary:
 - Lint counts (deterministic + semantic)
 - Top 3 findings across all tiers
 - Token cost
-- Open-questions delta from Step 8.5 (`opened`, `closed`, `trimmed`) or the failure mode if the rebuild errored — v0.0.30+
+- Open-questions delta from Step 8.5 (`opened`, `closed`, `trimmed`) or the failure mode if the rebuild errored
 - Path to the full report
 
 ## Output
@@ -223,9 +223,9 @@ Print a ≤6-line summary:
 - `wiki/index.md` updated with the report entry
 - `wiki/log.md` appended with the lint line
 - `.cogni-wiki/config.json` `last_lint` updated
-- `wiki/open_questions.md` rebuilt (v0.0.30+; persistent backlog of data-gap items, ≤90-day closed retention; never blocks the lint on failure)
+- `wiki/open_questions.md` rebuilt (persistent backlog of data-gap items, ≤90-day closed retention; never blocks the lint on failure)
 
-## Auto-fix mode (v0.0.32+, #222)
+## Auto-fix mode
 
 `lint_wiki.py --fix=<class>` applies the deterministic auto-fix for the named class. Composes across flags; `--fix=all` enables every supported class. Pair with `--dry-run` to preview the plan without writing — `data.fixed[]` is populated with `applied: false`, on-disk state is unchanged.
 
@@ -246,9 +246,9 @@ The six supported classes:
 
 **LLM-driven fixes are explicitly out of scope.** `--fix` only applies to the deterministic classes listed above; semantic fixes (contradictions, type drift, undercited claims, missing concept pages) remain `wiki-update`'s responsibility — they require human or LLM judgement.
 
-## Suggestion schema (v0.0.32+, #222)
+## Suggestion schema
 
-`--suggest` emits `data.suggestions[]` — one structured entry per qualifying warning. The schema is fixed in this PR so `wiki-update` (or any other consumer) can adopt it on its own schedule. No consumer wires it yet.
+`--suggest` emits `data.suggestions[]` — one structured entry per qualifying warning. The schema is stable so `wiki-update` (or any other consumer) can adopt it on its own schedule. No consumer wires it yet.
 
 ```jsonc
 {
@@ -278,7 +278,7 @@ Suggestions never write to disk. `--suggest` is purely additive on top of the ex
 
 ## Rules
 
-1. **Auto-fix is opt-in.** Lint reports findings by default. The deterministic fixers (`--fix=*`, v0.0.32+) only run when explicitly requested; LLM-driven and semantic fixes still happen via `wiki-update` because they require diff-before-write review and judgement.
+1. **Auto-fix is opt-in.** Lint reports findings by default. The deterministic fixers (`--fix=*`) only run when explicitly requested; LLM-driven and semantic fixes still happen via `wiki-update` because they require diff-before-write review and judgement.
 2. **Log even on clean runs.** The absence of findings is itself useful signal.
 3. **Contradictions are surfaced, not resolved.** Only `wiki-update` reconciles them.
 4. **Health gates lint.** A wiki with structural errors does not get a tokenful semantic pass unless the user explicitly overrides — otherwise the LLM reasons over a broken graph and produces noisy findings.
@@ -290,6 +290,6 @@ Suggestions never write to disk. `--suggest` is purely additive on top of the ex
 - `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` — the pattern
 - `./references/severity-tiers.md` — tier definitions and the full health-vs-lint coverage matrix
 - `./scripts/lint_wiki.py` — deterministic warning pass (orphans, stale, tag typos, reverse links, claim_drift narrative)
-- `./scripts/rebuild_open_questions.py` — Step 8.5: writes `wiki/open_questions.md` (persistent data-gap backlog as of v0.0.30; reconciles against prior state; locked RMW; 90-day closed retention)
+- `./scripts/rebuild_open_questions.py` — Step 8.5: writes `wiki/open_questions.md` (persistent data-gap backlog; reconciles against prior state; locked RMW; 90-day closed retention)
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-health/SKILL.md` — the structural counterpart, run as preflight
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-health/scripts/health.py` — the structural integrity engine
