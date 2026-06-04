@@ -14,9 +14,9 @@ The user asks: "Reconcile these two pages."
 
 ### Step 1: Read both pages
 
-`[[rlhf-overview]]` frontmatter: `type: concept`, `sources: [../raw/ouyang-et-al-2022-instructgpt.pdf]`. Body defines RLHF as "Reinforcement Learning from Human Feedback — using human-generated preference labels to train a reward model."
+`[[rlhf-overview]]` frontmatter: `type: concept`, `sources: [../../raw/ouyang-et-al-2022-instructgpt.pdf]`. Body defines RLHF as "Reinforcement Learning from Human Feedback — using human-generated preference labels to train a reward model."
 
-`[[constitutional-ai]]` frontmatter: `type: concept`, `sources: [../raw/bai-et-al-2022-constitutional-ai.pdf]`. Body says "Constitutional AI replaces RLHF's human labels with AI-generated critiques, making the 'feedback' in RLHF come from a separate critic model rather than humans."
+`[[constitutional-ai]]` frontmatter: `type: concept`, `sources: [../../raw/bai-et-al-2022-constitutional-ai.pdf]`. Body says "Constitutional AI replaces RLHF's human labels with AI-generated critiques, making the 'feedback' in RLHF come from a separate critic model rather than humans."
 
 ### Step 2: Diagnose the contradiction
 
@@ -85,9 +85,9 @@ Current `[[rlhf-overview]]` claims "Reward-model quality saturates around 1B par
 >   "Reward-model quality saturates around 1B parameters, beyond which additional scale yields no measurable gains."
 >
 > **Proposed**:
->   "Earlier work suggested reward-model quality saturates around 1B parameters, but Chen et al. 2024 [../raw/chen-et-al-2024-rlhf-scaling.pdf] show the saturation claim was measurement noise — quality continues to improve (with diminishing returns) to at least 70B."
+>   "Earlier work suggested reward-model quality saturates around 1B parameters, but Chen et al. 2024 [../../raw/chen-et-al-2024-rlhf-scaling.pdf] show the saturation claim was measurement noise — quality continues to improve (with diminishing returns) to at least 70B."
 >
-> **Sources to add**: `../raw/chen-et-al-2024-rlhf-scaling.pdf`
+> **Sources to add**: `../../raw/chen-et-al-2024-rlhf-scaling.pdf`
 >
 > **Why**: preserves the historical claim (with attribution to the earlier era), adds the refinement with citation. The original source remains cited so readers can trace both positions.
 

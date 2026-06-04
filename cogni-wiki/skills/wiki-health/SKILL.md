@@ -139,7 +139,7 @@ This skill is **report-only**. It writes the log line and nothing else. Auto-fix
 | Missing required frontmatter | `wiki-health` | Schema check — deterministic |
 | Invalid `type:` value | `wiki-health` | Schema check — deterministic |
 | Filename / `id:` mismatch | `wiki-health` | Schema check — deterministic |
-| Missing `../raw/` source file | `wiki-health` | Filesystem check — deterministic |
+| Missing `../../raw/` source file | `wiki-health` | Filesystem check — deterministic |
 | Broken `wiki://` source | `wiki-health` | Structural — target page either exists or doesn't |
 | Stub page (body < 50 chars) | `wiki-health` | Length check — deterministic |
 | `entries_count` drift | `wiki-health` | Counter vs filesystem — deterministic |

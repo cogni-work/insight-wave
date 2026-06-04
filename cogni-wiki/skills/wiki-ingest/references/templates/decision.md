@@ -54,4 +54,4 @@ _(What signal would trigger reopening this decision? E.g. "if customer churn on 
 
 ## Sources
 
-- [{{deciding meeting or doc}}](../raw/{{source-filename}})
+- [{{deciding meeting or doc}}](../../raw/{{source-filename}})

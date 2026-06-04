@@ -10,7 +10,7 @@ This file is the canonical list of what `health.py` checks. Every check here is 
 | `missing_frontmatter` | One of `id`, `title`, `type`, `created`, `updated` is missing or empty | `wiki-update` to add the field |
 | `id_mismatch` | Frontmatter `id: x` but filename is `y.md` | Rename the file or fix the frontmatter |
 | `invalid_type` | Frontmatter `type:` value not in `{concept, entity, summary, decision, interview, meeting, learning, synthesis, note, source}` | `wiki-update` to pick a valid type |
-| `missing_source` | `sources: [../raw/foo.pdf]` where `raw/foo.pdf` does not exist | Restore the source or remove the reference |
+| `missing_source` | `sources: [../../raw/foo.pdf]` where `raw/foo.pdf` does not exist | Restore the source or remove the reference |
 | `broken_wiki_source` | `sources: [wiki://other-slug]` where `wiki/<type>/other-slug.md` does not exist | `wiki-update` to fix the slug, or re-run `wiki-query --file-back` to regenerate the synthesis after the missing page is created |
 | `read_error` | Page file unreadable (permission, encoding, IO) | OS-level — investigate filesystem |
 

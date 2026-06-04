@@ -296,7 +296,7 @@ def main() -> None:
                 )
             # Synthesis pages must cite at least one wiki:// source. Empty
             # sources is already covered by the no_sources warning above; this
-            # catches the case where sources are present but only ../raw/ or URL
+            # catches the case where sources are present but only ../../raw/ or URL
             # entries — a synthesis without wiki provenance is suspicious.
             # Per-source target validation (missing raw file, broken wiki://
             # target) is owned by health.py as of v0.0.31.

@@ -49,7 +49,7 @@ tags: [tag1, tag2]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 sources:                         # Optional — relative paths or URLs
-  - ../raw/paper-xyz.pdf
+  - ../../raw/paper-xyz.pdf
   - https://example.com/article
 ---
 ```
@@ -73,7 +73,7 @@ The `type:` value MUST match the directory the page lives in (e.g. `type: concep
 ## Linking
 
 - Use `[[page-slug]]` for links to other wiki pages — slug-only, no path. The script layer resolves the slug to its per-type directory.
-- Use standard markdown links for external URLs and raw sources: `[label](../raw/file.pdf)`
+- Use standard markdown links for external URLs and raw sources: `[label](../../raw/file.pdf)`
 - Every `[[link]]` should be backed by an actual file under one of the per-type directories or `wiki/audits/`; the `wiki-lint` skill reports broken links
 
 ## Forward → reverse link contract

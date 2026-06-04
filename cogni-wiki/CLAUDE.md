@@ -136,11 +136,11 @@ type: concept | entity | summary | decision | interview | meeting | learning | s
 tags: [tag1, tag2]
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-sources: [../raw/paper-xyz.pdf, https://..., wiki://other-slug]
+sources: [../../raw/paper-xyz.pdf, https://..., wiki://other-slug]
 ---
 ```
 
-The `synthesis` type (introduced in v0.0.23) is reserved for LLM-derived answers that `wiki-query --file-back yes` files back into the wiki. Synthesis pages cite their wiki provenance via `wiki://<slug>` entries in `sources:` rather than `../raw/` paths; `wiki-lint` enforces this contract.
+The `synthesis` type (introduced in v0.0.23) is reserved for LLM-derived answers that `wiki-query --file-back yes` files back into the wiki. Synthesis pages cite their wiki provenance via `wiki://<slug>` entries in `sources:` rather than `../../raw/` paths; `wiki-lint` enforces this contract.
 
 The `interview` and `meeting` types (introduced in v0.0.24) carry the consulting-domain shapes that drive `wiki-ingest`'s body-template dispatch. `customer-call` and `retro` are deliberately **not** distinct types — they are scaffold variants distinguished by the `tags:` field (`tag:customer-call` swaps `interview.md` → `customer-call.md`; `tag:retro` swaps `learning.md` → `retro.md`), so the enum stays small while `wiki-query` can still slice by use case. See `skills/wiki-ingest/references/page-frontmatter.md` for the full schema and `skills/wiki-ingest/references/templates/README.md` for the type→template map.
 
