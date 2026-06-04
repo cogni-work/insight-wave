@@ -211,7 +211,11 @@ def cmd_migrate(args: argparse.Namespace) -> int:
         data={
             "wiki_root": str(wiki_root),
             "dry_run": bool(args.dry_run),
-            "questions_scanned": len(moved) + len(noop) + len(skipped),
+            # Every wiki/questions/*.md page reaches exactly one bucket — a
+            # successful move (moved), an already-placed node (noop), or a node
+            # we did not relocate (skipped: empty theme_label, never-indexed
+            # slug, or unparseable output). The total is the page count scanned.
+            "questions_processed": len(moved) + len(noop) + len(skipped),
             "moved": moved,
             "noop": noop,
             "skipped": skipped,
