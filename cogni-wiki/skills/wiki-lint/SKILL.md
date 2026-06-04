@@ -248,7 +248,7 @@ The six supported classes:
 
 ## Suggestion schema
 
-`--suggest` emits `data.suggestions[]` — one structured entry per qualifying warning. The schema is fixed in this PR so `wiki-update` (or any other consumer) can adopt it on its own schedule. No consumer wires it yet.
+`--suggest` emits `data.suggestions[]` — one structured entry per qualifying warning. The schema is stable so `wiki-update` (or any other consumer) can adopt it on its own schedule. No consumer wires it yet.
 
 ```jsonc
 {
