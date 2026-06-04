@@ -102,7 +102,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py store \
     --reason "<cobrowse_error_class>"
 ```
 
-`<cobrowse_error_class>` is one of `cobrowse_unavailable` (extension not enabled; `fallback_attempted: false`) or `cobrowse_failed` (cobrowse attempted but the page did not render; `fallback_attempted: true`). These overwrite the curator's `webfetch_*` negative entry with the final cobrowse disposition. The full closed vocabulary (`webfetch_*`, `pdf_extraction_failed`, `cobrowse_unavailable`, `cobrowse_failed`, `cache_write_failed`) lives in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Downstream summarisation depends on the closed set; do not invent new tokens here.
+`<cobrowse_error_class>` is one of `cobrowse_unavailable` (extension not enabled; `fallback_attempted: false`) or `cobrowse_failed` (cobrowse attempted but the page did not render; `fallback_attempted: true`). These overwrite the curator's `webfetch_*` negative entry with the final cobrowse disposition. The full closed vocabulary (`webfetch_*`, `pdf_extraction_failed`, `pdf_render_unavailable`, `cobrowse_unavailable`, `cobrowse_failed`, `cache_write_failed`) lives in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Downstream summarisation depends on the closed set; do not invent new tokens here.
 
 Emit an `unavailable[]` entry:
 

@@ -167,7 +167,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py fetch \
 
 - `success: true` → cache hit. Inspect `data.entry.status`:
   - `ok` → attach `fetch.status: "ok"` referencing `data.cache_key` + `data.entry.content_hash` + `data.entry.fetch_method` + `data.entry.fetched_at`, **and set `from_cache: true`** (this row came from the cache, not a fresh fetch — the orchestrator's `cache_hits` count and the cache-reuse check depend on the distinction). Skip to the next candidate. This is the cache short-circuit: re-runs, prior projects, and cross-wave repeats reuse the cached body instead of re-fetching.
-  - `unavailable` → negative-cache hit. Attach `fetch.status: "unavailable"` with `reason: <data.entry.reason>`, `cobrowse_eligible` per the cached reason (`true` only for the `webfetch_*` classes; `false` for `pdf_extraction_failed` and for any cached `cobrowse_failed`/`cobrowse_unavailable` — a prior cobrowse already dispositioned those), `attempted_at: <data.entry.fetched_at>`, `fallback_attempted: false`, `from_cache: true`. Skip to the next candidate.
+  - `unavailable` → negative-cache hit. Attach `fetch.status: "unavailable"` with `reason: <data.entry.reason>`, `cobrowse_eligible` per the cached reason (`true` only for the `webfetch_*` classes; `false` for `pdf_extraction_failed`, `pdf_render_unavailable`, and for any cached `cobrowse_failed`/`cobrowse_unavailable` — a prior cobrowse already dispositioned those), `attempted_at: <data.entry.fetched_at>`, `fallback_attempted: false`, `from_cache: true`. Skip to the next candidate.
 - `success: false` with `data.reason == "miss"` or `"stale"` → proceed to Step 2.
 
 **Step 2 — WebFetch.**
@@ -192,6 +192,8 @@ This line is an **undocumented tool-output convention** — parse defensively. T
    - the cumulative page count reaches a **200-page hard cap** (cost guard — Read transcribes PDFs via vision-rendered images, so cost scales linearly with pages).
 
    Track the final `<N>` pages successfully read across all windows.
+
+   **Read-render failure (distinct from end-of-PDF).** If the **first** window returns no usable text because the Read tool reports it **cannot render the PDF in this runtime** (its page→image rasterization is unavailable here) — as opposed to legitimately reaching the end of a short PDF after transcribing real pages — abandon the Read loop and proceed to Step 4 with `reason: pdf_render_unavailable` (NOT `pdf_extraction_failed` — you *did* get a saved file; the Read tool simply can't render it in this environment). Record the honest outcome only: **do not** attribute the failure to any specific external binary in your summary, and **do not** attempt any local PDF text extraction yourself (no parser, no library — PDFs are read via the Read tool only). This case is environmental and operator-actionable: re-running where the Read tool can render PDFs resolves the URL.
 2. Concatenate the per-window text into a single body string in window order.
 3. Write the transcribed text to a temp file (`mktemp`).
 4. Store via:
@@ -208,7 +210,7 @@ This line is an **undocumented tool-output convention** — parse defensively. T
    The body is text; `fetch_method` stays `webfetch` (it describes the transport, not the MIME).
 5. Attach `fetch.status: "ok"` with the returned `cache_key` + `content_hash`, plus `pdf_pages_read: <N>`. Set `pdf_truncated: true` **only** when the 200-page hard cap fired before the PDF ended; otherwise omit it. These PDF fields live in the candidate's `fetch` sub-object — `fetch-cache.py`'s cache-entry schema is unchanged.
 
-If no saved-file path is found in the WebFetch output (the EUR-Lex case empirically observed) → proceed to Step 4 with `reason: pdf_extraction_failed`. Cobrowse downloads PDFs rather than rendering their text, so it is not a usable fallback for the PDF branch.
+If **no saved-file path is found** in the WebFetch output (the EUR-Lex case empirically observed — an ELI/landing URL served a summary, not the PDF binary, so the Read tool was never reached) → proceed to Step 4 with `reason: pdf_extraction_failed`. This token is now narrow: it means specifically "WebFetch surfaced no PDF file to read", **not** "the Read tool failed to render a file we did get" — that distinct case is `pdf_render_unavailable` (handled in step 1 above). Cobrowse downloads PDFs rather than rendering their text, so it is not a usable fallback for either reason.
 
 **Non-PDF branch.** On success:
 
@@ -231,7 +233,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py store \
     --reason "<webfetch_error_class>"
 ```
 
-`<webfetch_error_class>` is a closed vocabulary: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `pdf_extraction_failed`. Per-token semantics live in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Write the negative-cache entry **now** (do not defer it) so a re-curate within the freshness window short-circuits at Step 1; Phase 3 cobrowse, if it later rescues the URL, simply overwrites the entry with `--status ok`.
+`<webfetch_error_class>` is a closed vocabulary: `webfetch_timeout`, `webfetch_4xx`, `webfetch_5xx`, `webfetch_blocked`, `webfetch_refused`, `pdf_extraction_failed`, `pdf_render_unavailable`. Per-token semantics live in `references/fetch-cache-design.md` §"Reason semantics" — single source of truth. Write the negative-cache entry **now** (do not defer it) so a re-curate within the freshness window short-circuits at Step 1; Phase 3 cobrowse, if it later rescues the URL, simply overwrites the entry with `--status ok`.
 
 Attach the `fetch` sub-object:
 
@@ -246,7 +248,7 @@ Attach the `fetch` sub-object:
 }
 ```
 
-`cobrowse_eligible` is **`true`** for the WebFetch error classes (`webfetch_timeout/4xx/5xx/blocked/refused`) — Phase 3 can retry these via cobrowse — and **`false`** for `pdf_extraction_failed` (cobrowse can't render PDF text, so it is terminal here).
+`cobrowse_eligible` is **`true`** for the WebFetch error classes (`webfetch_timeout/4xx/5xx/blocked/refused`) — Phase 3 can retry these via cobrowse — and **`false`** for both PDF reasons (`pdf_extraction_failed`, `pdf_render_unavailable`): cobrowse downloads PDFs rather than rendering their text, so it is never a usable fallback for the PDF branch. Note the two are still distinct elsewhere: `pdf_extraction_failed` is terminal-for-the-URL (no file was ever surfaced), whereas `pdf_render_unavailable` is environmental / operator-actionable (the file exists; re-run where the Read tool can render PDFs) — `cobrowse_eligible: false` only says cobrowse specifically can't help, not that the URL is dead.
 
 **Emit the batch.** Each surviving candidate now carries the scored fields (Phase 3) plus a `fetch` sub-object (Phase 4). A successful candidate's `fetch` shape:
 

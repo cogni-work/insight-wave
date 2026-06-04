@@ -65,6 +65,12 @@ VALID_REASONS = {
     "webfetch_blocked",
     "webfetch_refused",
     "pdf_extraction_failed",
+    # A saved PDF file WAS surfaced, but the Read tool could not render it
+    # in this runtime (its page->image rasterization has no PDF-rendering
+    # support here). Environmental / operator-actionable — NOT URL-fatal:
+    # re-run where the Read tool can render PDFs and the URL resolves.
+    # Distinct from pdf_extraction_failed (no saved-file path at all).
+    "pdf_render_unavailable",
     "cobrowse_unavailable",
     "cobrowse_failed",
     # Local-error reasons emitted by source-fetcher itself when the cache
