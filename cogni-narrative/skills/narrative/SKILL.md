@@ -175,12 +175,12 @@ The arc registry contains the detection algorithm, keyword sets, and content-typ
 
 **Selection priority:**
 1. If `--arc-id` provided, use it directly. `detection_reason = "explicit --arc-id parameter"`.
-2. If `inherited_arc_id` was resolved in Phase 1 step 8, use it. `detection_reason = "inherited from source research project: <PROJECT_ROOT>"`.
+2. If `inherited_arc_id` was resolved in Phase 1 step 8, use it. `detection_reason = "inherited from source research/knowledge project: <PROJECT_ROOT>"`.
 3. If `narrative-config.json` contains `content_type`, apply detection algorithm from arc-registry. `detection_reason = "content_type mapping from narrative-config.json"`.
 4. If none of the above, analyze loaded content for keyword density using detection algorithm. `detection_reason = "keyword density analysis"`.
 5. Fallback: `corporate-visions`. `detection_reason = "default fallback"`.
 
-Present selected arc to user for confirmation using AskUserQuestion. Show the detected arc with detection reason and offer alternatives. For priority-2 picks, label the prompt "Inherited from source research project — preserves the long-form report's arc". Accept user confirmation or override.
+Present selected arc to user for confirmation using AskUserQuestion. Show the detected arc with detection reason and offer alternatives. For priority-2 picks, label the prompt "Inherited from source research/knowledge project — preserves the long-form report's arc". Accept user confirmation or override.
 
 Store: `arc_id`, `arc_display_name`, `detection_reason`
 
