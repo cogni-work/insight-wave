@@ -117,7 +117,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
 
 Capture `entries`, `negative_ratio`, `oldest_age_days`, `max_age_days`, `verdict`.
 
-Then read the curated-portal lead-in staleness signal once. `knowledge-finalize`'s portal auto-refresh stamps each engine-owned per-theme lead-in with a `bullets:<N>` count; this read-only check reports themes whose live bullet count has since drifted past the stamp (the lead-in prose no longer reflects what accumulated under it). Pure observability — it never triggers a refresh:
+Then read the curated-portal lead-in staleness signal once. `knowledge-finalize`'s portal auto-refresh stamps each engine-owned per-theme lead-in with a `bullets:<N>` count; this read-only check reports themes whose live bullet count has since drifted more than a small threshold (the `threshold` field, default 2) past the stamp (the lead-in prose no longer reflects what accumulated under it). Pure observability — it never triggers a refresh:
 
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py portal-staleness \
@@ -182,7 +182,7 @@ Fetch-cache (**knowledge-base-global** — one shared cache across all projects,
 No fetched sources yet — run `knowledge-fetch` to populate the cache.
 
 (Only when `stale_count > 0` — render nothing on zero drift so a healthy base stays silent:)
-Stale portal lead-ins: <stale_count> theme(s) — <stale_themes[].theme joined by ', '> drifted past their stamped bullet count. Re-run `knowledge-finalize --apply-portal` (or `knowledge-refresh --mode push`) to refresh the lead-ins.
+Stale portal lead-ins: <stale_count> theme(s) — <stale_themes[].theme, first 5 joined by ', ', then '…and <N> more' when there are over 5> drifted more than `<threshold>` bullets past their stamped count. Re-run `knowledge-finalize --apply-portal` (or `knowledge-refresh --mode push`) to refresh the lead-ins.
 
 ## Claim verification scope
 
