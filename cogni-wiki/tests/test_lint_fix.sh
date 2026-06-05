@@ -795,4 +795,90 @@ grep -qF 'sources: ../../raw/paper.pdf' "$RDW/wiki/concepts/scalar-src.md" \
   || fail "raw-depth: single-scalar sources: not rewritten"
 green "  raw_citation_depth rewrites inline-list and single-scalar sources: shapes"
 
+# ---------- 10) portal_heading_dedup repairs an already-duplicated portal heading ----------
+# A base written before the on-write prevention landed can carry a `## <theme>`
+# heading split across two competing sections on disk. The repair fixer
+# delegates to wiki_index_update.py --collapse-only: it folds the later
+# duplicate's bullets into the first occurrence (lead-in preserved, bullets
+# merged + alphabetised) and drops the duplicate heading shell. Idempotent;
+# participates in --fix=all.
+PHD="$WORKDIR/portal-dedup-wiki"
+mkdir -p "$PHD/wiki" "$PHD/.cogni-wiki"
+cat > "$PHD/.cogni-wiki/config.json" <<EOF
+{"name":"p","slug":"p","created":"$TODAY","entries_count":0,"last_lint":null,"schema_version":"0.0.7"}
+EOF
+LEADIN="The verified answers this base produces. Start here, then follow the evidence."
+plant_dup_portal() {
+  cat > "$PHD/wiki/index.md" <<EOF
+# Portal Base
+
+> One entry point.
+
+## Syntheses
+
+$LEADIN
+
+- [[alpha-synthesis]] — first synthesis
+
+## Sources
+
+- [[some-source]] — unrelated, must stay put
+
+## Syntheses
+
+- [[omega-synthesis]] — last synthesis
+EOF
+}
+
+count_syn() { grep -c '^## Syntheses$' "$PHD/wiki/index.md" || true; }
+
+# 10a — dry-run: plan emitted, nothing written (still two ## Syntheses on disk).
+plant_dup_portal
+out=$(python3 "$LINT" --wiki-root "$PHD" --fix=portal_heading_dedup --dry-run)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+planned = [f for f in d['fixed'] if f['class']=='portal_heading_dedup']
+assert planned, 'portal_heading_dedup dry-run: no plan emitted'
+assert all(f['applied'] is False for f in planned), 'portal_heading_dedup dry-run: applied=true'
+" || fail "portal_heading_dedup: dry-run plan check"
+[ "$(count_syn)" = "2" ] || fail "portal_heading_dedup: dry-run mutated index.md on disk"
+green "  portal_heading_dedup: dry-run plan emitted, no on-disk change"
+
+# 10b — wet: collapses to one heading, lead-in verbatim, bullets merged + sorted.
+out=$(python3 "$LINT" --wiki-root "$PHD" --fix=portal_heading_dedup)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+applied = [f for f in d['fixed'] if f['class']=='portal_heading_dedup' and f['applied']]
+assert applied, 'portal_heading_dedup: no wet fix applied'
+" || fail "portal_heading_dedup: wet apply"
+[ "$(count_syn)" = "1" ] || fail "portal_heading_dedup: heading not collapsed to one (count=$(count_syn))"
+grep -qF "$LEADIN" "$PHD/wiki/index.md" || fail "portal_heading_dedup: curated lead-in lost"
+[ "$(grep -cF '[[alpha-synthesis]]' "$PHD/wiki/index.md")" = "1" ] \
+  || fail "portal_heading_dedup: alpha-synthesis not present exactly once"
+[ "$(grep -cF '[[omega-synthesis]]' "$PHD/wiki/index.md")" = "1" ] \
+  || fail "portal_heading_dedup: omega-synthesis not merged in exactly once"
+order=$(grep -oE '\[\[(alpha|omega)-synthesis\]\]' "$PHD/wiki/index.md" | tr '\n' ' ')
+[ "$order" = "[[alpha-synthesis]] [[omega-synthesis]] " ] \
+  || fail "portal_heading_dedup: merged bullets not alphabetised (got: $order)"
+grep -qF '[[some-source]]' "$PHD/wiki/index.md" || fail "portal_heading_dedup: unrelated ## Sources bullet dropped"
+green "  portal_heading_dedup: wet apply collapses, preserves lead-in, merges+sorts bullets"
+
+# 10c — idempotent: a second wet run plans no further portal_heading_dedup change.
+out=$(python3 "$LINT" --wiki-root "$PHD" --fix=portal_heading_dedup)
+echo "$out" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())['data']
+again = [f for f in d['fixed'] if f['class']=='portal_heading_dedup']
+assert not again, f'portal_heading_dedup: fixer not idempotent: {again}'
+" || fail "portal_heading_dedup: fixer not idempotent on re-run"
+green "  portal_heading_dedup: idempotent — second run plans no further change"
+
+# 10d — --fix=all includes portal_heading_dedup and collapses a re-planted dup.
+plant_dup_portal
+python3 "$LINT" --wiki-root "$PHD" --fix=all >/dev/null
+[ "$(count_syn)" = "1" ] || fail "portal_heading_dedup: --fix=all did not collapse the duplicate heading"
+green "  portal_heading_dedup participates in --fix=all"
+
 green "ALL TESTS PASS"

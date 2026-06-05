@@ -58,9 +58,10 @@ folded in behind opt-in flags:
 
 Page-body fixers (reverse_link_missing, synthesis_no_wiki_source,
 frontmatter_defaults) run inside one `_wiki_lock(wiki_root)` block so they
-serialise against concurrent `wiki-ingest` runs. The two scripted fixers
+serialise against concurrent `wiki-ingest` runs. The scripted fixers
 (`entries_count_drift` → `config_bump.py --set-int`, `alphabetisation` →
-`wiki_index_update.py --reflow-only`) run after the lock is released and
+`wiki_index_update.py --reflow-only`, `portal_heading_dedup` →
+`wiki_index_update.py --collapse-only`) run after the lock is released and
 acquire their own.
 
 Layout: as of v0.0.28 pages live under per-type subdirectories
@@ -115,6 +116,7 @@ FIX_CLASSES = (
     "frontmatter_defaults",
     "alphabetisation",
     "raw_citation_depth",
+    "portal_heading_dedup",
 )
 FIX_CHOICES = (*FIX_CLASSES, "all")
 
@@ -538,6 +540,10 @@ def main() -> None:
             failed += fl
         if "alphabetisation" in fix_classes:
             f, fl = fix_alphabetisation(wiki_root, args.dry_run)
+            fixed += f
+            failed += fl
+        if "portal_heading_dedup" in fix_classes:
+            f, fl = fix_portal_heading_dedup(wiki_root, args.dry_run)
             fixed += f
             failed += fl
 
@@ -1196,6 +1202,69 @@ def fix_alphabetisation(wiki_root: Path, dry_run: bool) -> tuple:
     except Exception as e:  # noqa: BLE001 — fail-soft on the whole fixer
         failed.append({
             "class": "alphabetisation",
+            "page": "(wiki/index.md)",
+            "error": f"{type(e).__name__}: {e}",
+        })
+    return fixed, failed
+
+
+def fix_portal_heading_dedup(wiki_root: Path, dry_run: bool) -> tuple:
+    """Collapse any duplicate `## <theme>` portal section in `wiki/index.md`
+    into its first occurrence by delegating to `wiki_index_update.py
+    --collapse-only`. The collapse is a pure function in that module (the same
+    one update_index/move_slug run on every write); the subprocess hop preserves
+    the "every shared write goes through its locked script" contract. This is
+    the repair complement to the on-write prevention — it heals a base that was
+    already duplicated on disk before the prevention landed.
+    """
+    fixed: list = []
+    failed: list = []
+    try:
+        cmd = [
+            sys.executable,
+            str(WIKI_INDEX_UPDATE_SCRIPT),
+            "--wiki-root",
+            str(wiki_root),
+            "--collapse-only",
+        ]
+        if dry_run:
+            cmd.append("--dry-run")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            failed.append({
+                "class": "portal_heading_dedup",
+                "page": "(wiki/index.md)",
+                "error": (result.stderr or result.stdout or "").strip()
+                          or f"wiki_index_update exit {result.returncode}",
+            })
+            return fixed, failed
+        try:
+            payload = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            failed.append({
+                "class": "portal_heading_dedup",
+                "page": "(wiki/index.md)",
+                "error": "non-JSON output from wiki_index_update.py",
+            })
+            return fixed, failed
+        if not payload.get("success"):
+            failed.append({
+                "class": "portal_heading_dedup",
+                "page": "(wiki/index.md)",
+                "error": payload.get("error") or "unknown error",
+            })
+            return fixed, failed
+        data = payload.get("data") or {}
+        if data.get("changed"):
+            fixed.append({
+                "class": "portal_heading_dedup",
+                "page": "(wiki/index.md)",
+                "applied": bool(data.get("applied")),
+                "change": "collapsed duplicate portal heading(s)",
+            })
+    except Exception as e:  # noqa: BLE001 — fail-soft on the whole fixer
+        failed.append({
+            "class": "portal_heading_dedup",
             "page": "(wiki/index.md)",
             "error": f"{type(e).__name__}: {e}",
         })
