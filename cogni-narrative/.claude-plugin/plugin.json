@@ -1,6 +1,6 @@
 {
   "name": "cogni-narrative",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Story arc engine for insight-wave. Transforms structured research and portfolio output into executive narratives via 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, Smarter Service + 6) and 8 narrative techniques. Includes review scoring (0–100, A–F) and derivative formats (executive brief, talking points, one-pager). Bilingual EN/DE.",
   "author": {
     "name": "Stephan de Haas",
