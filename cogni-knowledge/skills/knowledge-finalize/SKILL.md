@@ -61,6 +61,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh. Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
 | `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md`. Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
 | `--no-question-links` | No | Skip the Step 4.7 `synthesis→question` forward links (and therefore the Step 10.5 reverse backfill into each question page's `## See also`). Default: OFF (links emitted). Pass to deposit a synthesis with no `## Research questions` section — e.g. against a base whose question nodes are mid-refactor. The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
+| `--apply-portal` | No | **Apply** the Step 10.5 sub-step 3.5 curated-portal refresh (auto-refresh, option 4b) instead of staging it: write the engine-owned per-theme lead-ins to `wiki/index.md` (via `wiki_index_update.py --set-leadin`) and splice the overview narrative into `wiki/overview.md`. Alias: `--refresh-portal`. Default: OFF — finalize **stages** a proposed diff to `<wiki>/.cogni-wiki/portal-proposed.md` and leaves the live portal untouched. Human (non-sentineled) lead-ins are never touched in either mode. See `references/portal-shape-decision.md`. |
+| `--no-portal` | No | Skip the Step 10.5 sub-step 3.5 curated-portal refresh **entirely** — no portal-narrator dispatch, no staging, no apply. Default: OFF (the refresh runs, staging by default). The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
 
 ## Workflow
 
@@ -793,11 +795,92 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ```
    Non-fatal — `overview.md` is a derived narrative artefact; a failure here never blocks finalize.
 
+3.5. **Refresh the curated portal (auto-refresh, option 4b).** Make the curated portal — the engine-owned per-`## <theme>` lead-in paragraphs in `wiki/index.md` and the "state of the wiki" narrative in `wiki/overview.md` — compound narratively as the base grows, the Phase-7 analog of the Phase-4.5 `concept-summary-narrator` → `concept-store.py renarrate` rails. The **ownership boundary** is the `MACHINE-OWNED:PORTAL-LEADIN` sentinel: a human (non-sentineled) lead-in is never touched; the engine authors a machine span only where none exists and refreshes only a span it previously authored (`wiki_index_update.py --set-leadin` enforces this on the write side). The full rationale is in `references/portal-shape-decision.md`.
+
+   **Choice-point:** DEFAULT (no flag) **stages** a proposed diff and leaves the live portal untouched; `--apply-portal` (alias `--refresh-portal`) **applies** it. `--no-portal` skips the whole sub-step.
+
+   **Skip conditions (evaluated in order):**
+
+   1. `--dry-run` was passed — silent skip (defence-in-depth; finalize already exits at Step 3 on `--dry-run`).
+   2. `--no-portal` was passed — log `Portal refresh skipped: --no-portal` and continue to sub-step 4.
+
+   **(a) Build the refresh set** — the themes that grew this run. Read `plan.json::sub_questions[].theme_label`, dedupe, add `"Syntheses"` (the category the synthesis just deposited into), and keep only those that exist as a `## <theme>` section in `wiki/index.md`. Empty → log `Portal refresh skipped: nothing grew` and continue to sub-step 4.
+
+   ```
+   REFRESH_THEMES_JSON=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+   PLAN_PATH="$PROJECT_PATH/.metadata/plan.json" \
+   INDEX_PATH="$WIKI_ROOT/wiki/index.md" \
+   python3 -c '
+   import json, os, re
+   from pathlib import Path
+   try:
+       plan = json.loads(Path(os.environ["PLAN_PATH"]).read_text(encoding="utf-8"))
+   except Exception:
+       plan = {}
+   themes = []
+   seen = set()
+   for sq in (plan.get("sub_questions") or []):
+       t = (sq or {}).get("theme_label") or ""
+       t = " ".join(t.split())
+       if t and t.lower() not in seen:
+           seen.add(t.lower()); themes.append(t)
+   if "syntheses" not in seen:
+       themes.append("Syntheses")
+   # keep only themes that actually exist as a ## heading on the index
+   try:
+       idx = Path(os.environ["INDEX_PATH"]).read_text(encoding="utf-8")
+   except Exception:
+       idx = ""
+   heads = {m.group(1).strip().lower() for m in re.finditer(r"^#{2,3}\s+(.*?)\s*$", idx, re.M)}
+   kept = [t for t in themes if t.lower() in heads]
+   print(json.dumps(kept))
+   ')
+   ```
+
+   **(b) Build the bundle** at `<project_path>/.metadata/portal-bundle.txt`. Per theme: a `## theme: <heading>` line, a `### current-leadin` section from `wiki_index_update.py --get-leadin --category "<theme>"` (`data.leadin`, the engine's existing machine lead-in or empty), and a `### bullets` section (that theme's `- [[slug]] — …` lines, read from `wiki/index.md`, for context). Then one `## overview` block: `### current-narrative` (the existing `MACHINE-OWNED:OVERVIEW-NARRATIVE` span of `wiki/overview.md` via `_knowledge_lib.extract_machine_block`, or empty) + `### recent-syntheses` (the `## Recent syntheses` bullets sub-step 3 just refreshed). The `--get-leadin` call is read-only:
+
+   ```
+   python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
+       --wiki-root "$WIKI_ROOT" --get-leadin --category "<theme>"
+   ```
+
+   **(c) Dispatch the portal-narrator** (fail-soft — on any agent error or no envelope, log `⚠ portal refresh: portal-narrator did not return; skipping (synthesis on disk)` and continue to sub-step 4):
+
+   ```
+   Task(portal-narrator,
+        BUNDLE_PATH=$PROJECT_PATH/.metadata/portal-bundle.txt,
+        RECORDS_OUTPUT_PATH=$PROJECT_PATH/.metadata/portal-records.txt,
+        OUTPUT_LANGUAGE=$OUTPUT_LANGUAGE)
+   ```
+
+   `OUTPUT_LANGUAGE` is the same value Step 5/6 threaded from `plan.json::output_language` (re-read it from `plan.json` if not still in hand). The agent writes raw-text records parsed by `_knowledge_lib.parse_portal_records` → `{theme_leadins: {theme: prose}, overview: prose|None}`.
+
+   **(d) STAGE (default) or APPLY (`--apply-portal`).**
+
+   - **STAGE** — write a human-readable `<WIKI_ROOT>/.cogni-wiki/portal-proposed.md`: for each proposed theme, the heading + a `current:` block (from the bundle's `--get-leadin`) and a `proposed:` block (from the records), then the proposed overview narrative. Do **not** write the live portal. (Inline `python3` reading `portal-records.txt` via `parse_portal_records` + the per-theme `--get-leadin` already captured in the bundle.)
+
+   - **APPLY** — per proposed theme, write the lead-in prose to a temp file and call cogni-wiki's locked helper (empty prose ⇒ the helper removes the span):
+
+     ```
+     printf '%s' "<proposed lead-in prose>" > "$TMP_LEADIN"
+     python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
+         --wiki-root "$WIKI_ROOT" \
+         --set-leadin --category "<theme>" \
+         --leadin-file "$TMP_LEADIN" \
+         --refreshed-date "$(date -u +%F)"
+     ```
+
+     Then splice the overview narrative (when the records carried an `overview`) into `wiki/overview.md` via `_knowledge_lib.upsert_machine_block(text, "OVERVIEW-NARRATIVE", prose)` — first finalize inserts the block after the H1, later finalizes replace only its inner; the `## Recent syntheses` machine bullets sub-step 3 wrote and all other prose are preserved byte-for-byte. The portal-narrator emits an unchanged lead-in/overview verbatim, so a re-apply with no new bullets no-ops the splice (no stamp/date churn — `--set-leadin` returns `action: noop`, `upsert_machine_block` returns identical text), matching `renarrate` semantics.
+
+   **Fail-soft posture (explicit).** Sub-step 3.5 is a portal refresh. A narrator failure, a parse error, or a `--set-leadin` per-theme failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3 are all already on disk. Surface failures loudly in Step 11 and continue. The `--set-leadin` write is locked + atomic (`_wiki_lock` + `atomic_write`), so a forced failure leaves no partial index write.
+
+   **Step 11** surfaces, on STAGE: `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY: `✓ Portal: <N> lead-ins refreshed + overview spliced`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk`.
+
 4. **Rebuild `context_brief.md` (last).**
    ```
    python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" --wiki-root "$WIKI_ROOT"
    ```
-   Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
+   Same call shape as cogni-wiki's `wiki-ingest` Step 8.5. Runs **after** sub-steps 1–3.5 so the brief's top-entities-by-inbound-backlinks + health snapshot reflect the gate's writes (the reverse links de-orphan the cited sources; an *applied* portal refresh is on disk, a *staged* one leaves the brief unchanged). Non-fatal — `context_brief.md` is a derived artefact, regenerated next dispatch.
 
 5. **Refresh `wiki/open_questions.md`.** The persistent, cross-session data-gap backlog. cogni-wiki maintains this file as part of `wiki-lint` Step 8.5 — every lint dispatch reconciles the checklist (items that disappear from the current lint output flip to `- [x]` with today's date; closed items > 90 days old are trimmed; new findings append as `- [ ]`). The inverted pipeline writes the wiki via forked agents + direct script calls, so cogni-wiki's `wiki-lint` never runs as a gate here — sub-step 5 backfills the rebuild on the finalize path so the backlog tracks finalize-time state instead of going stale until the next interactive `wiki-lint`. It is the tail of the conformance gate: it reads the *post-fix*, *post-overview-refresh* on-disk state (the same state sub-step 2's read-only re-lint asserted), so it belongs after sub-step 4.
 
@@ -1043,6 +1126,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
+- Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Open questions (Step 10.5 sub-step 5): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0`. On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
@@ -1109,7 +1193,9 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<knowledge-root>/.cogni-knowledge/binding.json` — one new entry in `research_projects[]` with `report_source: "wiki"`.
 - `<WIKI_ROOT>/wiki/<type>/<cited-slug>.md` — each cited page gains a reverse `[[<synthesis-slug>]]` backlink (Step 10.5 `lint --fix=reverse_link_missing`), de-orphaning the synthesis.
 - `<WIKI_ROOT>/wiki/syntheses/<slug>.md` carries a trailing `## Research questions` section of bare `[[<question-slug>]]` forward links (Step 4.7 + Step 6), and each linked `<WIKI_ROOT>/wiki/questions/<question-slug>.md` gains a reverse `[[<synthesis-slug>]]` in its `## See also` (Step 10.5). Absent on `--no-question-links` / an empty-or-missing `question-manifest.json` (legacy project).
-- `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5).
+- `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5). On `--apply-portal`, additionally carries a spliced `MACHINE-OWNED:OVERVIEW-NARRATIVE` block (Step 10.5 sub-step 3.5).
+- `<WIKI_ROOT>/.cogni-wiki/portal-proposed.md` — the **staged** curated-portal diff (per-theme current-vs-proposed lead-in + proposed overview narrative). Written by default (no `--apply-portal`); the live portal is untouched. Absent under `--apply-portal` (the proposals are applied instead) and `--no-portal` / nothing-grew / `--dry-run`.
+- `<WIKI_ROOT>/wiki/index.md` — on `--apply-portal`, each grown `## <theme>` section gains/refreshes an engine-owned `MACHINE-OWNED:PORTAL-LEADIN` lead-in span above its bullets (Step 10.5 sub-step 3.5). Human (non-sentineled) lead-ins are never touched.
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Carries Pass A (synthesis-vs-cited) findings (`conflicting_claim_id` `clm`/`dcl`/`acl`-NNN) and Pass B (synthesis-vs-prior-syntheses) findings (`conflicting_claim_id: null`, `conflicting_page` a synthesis slug) merged in one `findings[]`; `compared_against` additionally carries `prior_syntheses[]` + `prior_synthesis_count`. Written when the contradictor agent returns `ok: true` and at least one cited peer OR one prior synthesis was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, the both-empty skip) and on `ok: false` failure paths. `--no-prior-syntheses` still writes the file (Pass A only).
 - `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.1`): per-dimension `structural_scores`, `citation_density`, `word_count` (the advisory Word Count Gate, #309 P2), `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
@@ -1130,3 +1216,6 @@ No files are written outside the workspace root or the bound knowledge base.
 - `cogni-wiki/skills/wiki-health/scripts/health.py --help` — Step 10.5 structural assertion
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-contradictor.md` — Step 10.6 contradiction tripwire
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-reviewer.md` — Step 10.7 structural-quality review
+- `${CLAUDE_PLUGIN_ROOT}/agents/portal-narrator.md` — Step 10.5 sub-step 3.5 curated-portal refresh
+- `${CLAUDE_PLUGIN_ROOT}/references/portal-shape-decision.md` — the 4b auto-refresh decision + ownership/sentinel/staging/staleness contract
+- `cogni-wiki/skills/wiki-ingest/scripts/wiki_index_update.py --help` — `--get-leadin`/`--set-leadin` (the machine portal lead-in primitive)

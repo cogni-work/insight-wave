@@ -136,6 +136,35 @@ reordered. This mirrors the "preserve the human tail" discipline
 preserve the *lead*. So a curated portal and the deterministic catalog
 coexist in one file. (Regression-locked by `tests/test_index_leadin_preserve.sh`.)
 
+**Machine-managed lead-in.** A theme's lead-in may instead be *engine-authored*
+and refreshable. An auto-refresh consumer (e.g.
+`cogni-knowledge:knowledge-finalize`) wraps a lead-in it owns in a sentinel span:
+
+```
+## <theme>
+<!-- MACHINE-OWNED:PORTAL-LEADIN:START refreshed:<date> bullets:<N> -->
+Engine-authored lead-in prose. Refreshable.
+<!-- MACHINE-OWNED:PORTAL-LEADIN:END -->
+
+- [[slug-a]] — …
+```
+
+The ownership boundary is the sentinel: a lead-in with **no** sentinel is
+human-curated and protected by the guarantee above; only a sentineled span is
+ever rewritten. The engine **authors a machine span only where there is no
+lead-in at all** (a section that already carries a human lead-in is left
+untouched — `--set-leadin` returns `skipped_human_leadin`), **refreshes only a
+span it previously authored**, and **never converts human prose to
+machine-managed**. The span always sits *above* the bullet block and
+*below* any human lead-in, so both the bullet preservation and the human-lead
+protection still hold. The `refreshed:/bullets:` stamp in the START comment is a
+staleness signal (drift = the section's current bullet count exceeds the stamped
+count). The deterministic helpers are `wiki_index_update.py --get-leadin`
+(read the machine span's inner text) and
+`--set-leadin --category "<theme>" --leadin-file <f|->` (insert/replace, or
+remove on empty input), both locked + atomic. (Regression-locked by
+`tests/test_index_machine_leadin.sh`.)
+
 **Single-instance heading guarantee.** Each `## <theme>` heading is
 single-instance. When multiple projects or ingests write into one portal,
 `wiki_index_update.py` collapses any duplicate `## <theme>` section into the

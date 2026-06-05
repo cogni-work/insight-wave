@@ -367,6 +367,39 @@ assert_grep '## Research questions' "$FIN" "knowledge-finalize: Step 5/6 appends
 assert_grep '\-\-no-question-links' "$FIN" "knowledge-finalize: --no-question-links opt-out documented (#410)"
 assert_grep 'n_question_links' "$FIN" "knowledge-finalize: subprocess emits n_question_links for the Step 11 summary (#410)"
 
+# --- #491 curated-portal auto-refresh (Step 10.5 sub-step 3.5) -----------
+# Option 4b: finalize (re)authors the engine-owned per-theme lead-ins +
+# overview narrative, stage-by-default, apply on --apply-portal. Pure
+# observability of the SKILL surface (the apply path is exercised end-to-end
+# by test_portal_store.sh against the real cogni-wiki helper).
+assert_grep 'sub-step 3.5' "$FIN" "knowledge-finalize: Step 10.5 sub-step 3.5 present (#491)"
+assert_grep 'Task(portal-narrator' "$FIN" "knowledge-finalize: sub-step 3.5 dispatches the portal-narrator agent (#491)"
+assert_grep 'portal-records.txt' "$FIN" "knowledge-finalize: sub-step 3.5 writes portal-records.txt (#491)"
+assert_grep '\-\-apply-portal' "$FIN" "knowledge-finalize: --apply-portal flag documented (#491)"
+assert_grep '\-\-refresh-portal' "$FIN" "knowledge-finalize: --refresh-portal alias documented (#491)"
+assert_grep '\-\-no-portal' "$FIN" "knowledge-finalize: --no-portal skip flag documented (#491)"
+# Stage-by-default is the load-bearing safety contract — must be explicit so a
+# future edit can't silently flip finalize to apply-by-default.
+assert_grep 'stages' "$FIN" "knowledge-finalize: sub-step 3.5 stages the portal diff by default (#491)"
+assert_grep 'portal-proposed.md' "$FIN" "knowledge-finalize: STAGE writes .cogni-wiki/portal-proposed.md (#491)"
+# The apply path goes through the cogni-wiki locked helper, never a hand-edit.
+assert_grep '\-\-set-leadin' "$FIN" "knowledge-finalize: APPLY calls wiki_index_update.py --set-leadin (#491)"
+assert_grep '\-\-get-leadin' "$FIN" "knowledge-finalize: sub-step 3.5 reads the bundle via --get-leadin (#491)"
+# The ownership boundary + the two sentinel names must be named.
+assert_grep 'MACHINE-OWNED:PORTAL-LEADIN' "$FIN" "knowledge-finalize: names the PORTAL-LEADIN sentinel (#491)"
+assert_grep 'MACHINE-OWNED:OVERVIEW-NARRATIVE' "$FIN" "knowledge-finalize: names the OVERVIEW-NARRATIVE sentinel (#491)"
+assert_grep 'upsert_machine_block' "$FIN" "knowledge-finalize: overview splice via _knowledge_lib.upsert_machine_block (#491)"
+# Engine never writes a human (non-sentineled) lead-in — the safety promise.
+assert_grep 'human (non-sentineled) lead-in is never touched\|never touched\|never converts' "$FIN" "knowledge-finalize: sub-step 3.5 documents the human-lead-in protection (#491)"
+# Fail-soft framing — must be explicit so a future maintainer doesn't make the
+# portal refresh a blocking gate.
+assert_grep 'never rolls back the synthesis' "$FIN" "knowledge-finalize: sub-step 3.5 documented as fail-soft (#491)"
+# References block + agents table must point at the new agent + design note.
+assert_grep 'agents/portal-narrator.md' "$FIN" "knowledge-finalize: References block points at agents/portal-narrator.md (#491)"
+assert_grep 'portal-shape-decision.md' "$FIN" "knowledge-finalize: References block points at the design note (#491)"
+# Step 11 surfaces the portal line (operator-visible shape).
+assert_grep 'Portal: ' "$FIN" "knowledge-finalize: Step 11 surfaces the Portal line (#491)"
+
 # --- Inverted-pipeline.md Phase 7 anchor ---------------------------------
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"
 assert_grep 'Phase 7 — `knowledge-finalize`' "$PIPELINE" "inverted-pipeline.md: Phase 7 section header anchored"

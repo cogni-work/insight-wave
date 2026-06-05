@@ -61,6 +61,7 @@ stdlib-only. Python 3.8+.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 import sys
@@ -84,6 +85,31 @@ SEED_CATEGORY_HEADING = "Categories"
 # Slug grammar shared by slug-mode (--slug) and move-mode (--move-slug), kept as
 # one constant so the kebab-case contract can't drift between the two paths.
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]*$")
+
+# --- Machine-managed portal lead-in (#491) -----------------------------------
+# cogni-knowledge:knowledge-finalize (4b auto-refresh) authors a per-`## <theme>`
+# lead-in paragraph it OWNS, wrapped in these sentinels. The ownership boundary:
+# a section whose lead-in carries NO sentinel is human-curated and protected by
+# the existing "Protected lead-in guarantee" (it never enters this span); only a
+# sentineled span — one the engine previously authored — is refreshed here. The
+# span always sits ABOVE the bullet block and BELOW any human (non-sentineled)
+# lead-in, so `_insert_alphabetised`'s bullet preservation and the human-lead
+# protection both still hold.
+#
+# This is a self-contained parallel of cogni-knowledge's `MACHINE-OWNED:NAME`
+# convention: cogni-wiki MUST NOT import `_knowledge_lib.extract_machine_block`
+# (the dependency direction is cogni-knowledge -> cogni-wiki only). The sentinel
+# FORMAT is the documented shared contract (wiki-setup SCHEMA.md.template).
+#
+# The START comment carries a `refreshed:<date> bullets:<N>` staleness stamp so a
+# future drift signal (current bullet count vs the stamped count) can fire; the
+# regex tolerates that metadata tail via `[^>]*`.
+_LEADIN_START_RE = re.compile(
+    r"^\s*<!--\s*MACHINE-OWNED:PORTAL-LEADIN:START\b[^>]*-->\s*$"
+)
+_LEADIN_END_RE = re.compile(r"^\s*<!--\s*MACHINE-OWNED:PORTAL-LEADIN:END\s*-->\s*$")
+_LEADIN_START_FMT = "<!-- MACHINE-OWNED:PORTAL-LEADIN:START refreshed:{date} bullets:{n} -->"
+_LEADIN_END = "<!-- MACHINE-OWNED:PORTAL-LEADIN:END -->"
 
 
 def _validate_slug(slug: str, raw: str) -> None:
@@ -521,6 +547,153 @@ def move_slug(index_path: Path, slug: str, to_category: str) -> dict:
     }
 
 
+# --- Machine-managed portal lead-in: section-body surgery (#491) --------------
+
+
+def _find_leadin_span(body: list) -> tuple:
+    """Return (start_idx, end_idx_inclusive) of the PORTAL-LEADIN sentinel span
+    within a section's `body` line-list, or (-1, -1) if absent."""
+    start = -1
+    for i, line in enumerate(body):
+        if start < 0:
+            if _LEADIN_START_RE.match(line):
+                start = i
+        elif _LEADIN_END_RE.match(line):
+            return start, i
+    return -1, -1
+
+
+def _extract_leadin(body: list) -> str | None:
+    """Inner text (lines between the START/END sentinels) of a section's machine
+    lead-in, or None when the section has no sentineled span. A non-sentineled
+    human lead-in returns None — it is invisible to the machine path."""
+    s, e = _find_leadin_span(body)
+    if s < 0 or e <= s:
+        return None
+    return "\n".join(body[s + 1:e])
+
+
+def _leadin_span_lines(inner: str, refreshed_date: str, bullet_count: int) -> list:
+    """Build the sentinel-wrapped span line-list for `inner`."""
+    start = _LEADIN_START_FMT.format(date=refreshed_date, n=bullet_count)
+    inner_lines = inner.strip("\n").split("\n")
+    return [start] + inner_lines + [_LEADIN_END]
+
+
+def _has_human_leadin(body: list) -> bool:
+    """True when the section carries a human (non-sentineled) lead-in — any
+    non-blank, non-bullet prose line (a `## <theme>` body never contains a
+    heading, since `_split_sections` cuts on headings). Used to refuse INSERTING
+    a machine span where a human already owns the framing — the engine authors a
+    machine lead-in only where there is no lead-in at all, and never clutters a
+    human-curated section."""
+    for ln in body:
+        if not ln.strip():
+            continue
+        if _extract_slug_from_line(ln):
+            continue
+        return True
+    return False
+
+
+def _set_leadin(body: list, new_inner, refreshed_date: str, bullet_count: int) -> tuple:
+    """Insert / replace / remove the PORTAL-LEADIN span in a section's `body`,
+    returning (new_body, action). Human prose and bullets are preserved
+    byte-for-byte — the span is the only region touched.
+
+    - Empty / None `new_inner` removes an existing span (no-op when none exists).
+    - An existing span is replaced in place (action `replaced`, or `noop` when the
+      new span is byte-identical to the old).
+    - With no existing span and NO human lead-in, the span is inserted ABOVE the
+      first bullet (action `inserted`).
+    - With no existing span but a human (non-sentineled) lead-in present, the
+      section is left untouched (action `skipped_human_leadin`) — the engine never
+      converts or clutters a human-owned lead-in.
+    """
+    body = list(body)
+    s, e = _find_leadin_span(body)
+    remove = new_inner is None or new_inner.strip() == ""
+
+    if s >= 0:
+        if remove:
+            new_body = body[:s] + body[e + 1:]
+            # Collapse a double blank left at the seam (human blank above + bullet
+            # blank below now adjacent).
+            if 0 < s < len(new_body) and body[s - 1].strip() == "" and new_body[s].strip() == "":
+                del new_body[s]
+            return new_body, "removed"
+        new_span = _leadin_span_lines(new_inner, refreshed_date, bullet_count)
+        new_body = body[:s] + new_span + body[e + 1:]
+        return new_body, ("noop" if new_body == body else "replaced")
+
+    if remove:
+        return body, "noop"
+
+    # No machine span yet — refuse to insert over a human-owned lead-in.
+    if _has_human_leadin(body):
+        return body, "skipped_human_leadin"
+
+    new_span = _leadin_span_lines(new_inner, refreshed_date, bullet_count)
+    first_bullet = next((i for i, ln in enumerate(body) if _extract_slug_from_line(ln)), -1)
+    if first_bullet < 0:
+        # No bullets yet — append after the human prose, stripping trailing blanks
+        # (reuse the same helper _insert_alphabetised / reflow_categories use).
+        trimmed, _ = _strip_trailing_blanks(list(body))
+        block = ([""] + new_span) if (trimmed and trimmed[-1].strip()) else new_span
+        return trimmed + block, "inserted"
+    if first_bullet > 0 and body[first_bullet - 1].strip() == "":
+        # Reuse the blank above the bullet block as the span's lower separator.
+        new_body = body[:first_bullet - 1] + [""] + new_span + body[first_bullet - 1:]
+        return new_body, "inserted"
+    new_body = body[:first_bullet] + [""] + new_span + [""] + body[first_bullet:]
+    return new_body, "inserted"
+
+
+def get_leadin(index_path: Path, category: str) -> dict:
+    """Return the machine (sentineled) lead-in inner text for `category`, `""`
+    when the section has no machine span. Read-only."""
+    text = _read_index_text(index_path)
+    sections = collapse_duplicate_headings(_split_sections(text))
+    for heading, body in sections:
+        if heading is not None and _heading_matches_category(heading, category):
+            inner = _extract_leadin(body)
+            return {
+                "category": HEADING_RE.match(heading).group(2).strip(),
+                "leadin": inner if inner is not None else "",
+                "has_machine_leadin": inner is not None,
+                "section_found": True,
+                "index_path": str(index_path),
+            }
+    return {
+        "category": category,
+        "leadin": "",
+        "has_machine_leadin": False,
+        "section_found": False,
+        "index_path": str(index_path),
+    }
+
+
+def set_leadin(index_path: Path, category: str, new_inner, refreshed_date: str) -> dict:
+    """Insert/replace/remove the machine lead-in span under `category`. Fails
+    cleanly when the category heading does not exist (the engine only proposes
+    lead-ins for themes that already exist on the index)."""
+    text = _read_index_text(index_path)
+    sections = collapse_duplicate_headings(_split_sections(text))
+    for i, (heading, body) in enumerate(sections):
+        if heading is not None and _heading_matches_category(heading, category):
+            bullet_count = sum(1 for ln in body if _extract_slug_from_line(ln))
+            new_body, action = _set_leadin(body, new_inner, refreshed_date, bullet_count)
+            sections[i] = (heading, new_body)
+            atomic_write(index_path, _join_sections(sections))
+            return {
+                "category": HEADING_RE.match(heading).group(2).strip(),
+                "action": action,
+                "index_path": str(index_path),
+            }
+    fail(f"category not found in index: {category}")
+    return {}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Insert/update a page's entry in wiki/index.md, preserving alphabetical order."
@@ -557,6 +730,33 @@ def main() -> None:
         "--dry-run",
         action="store_true",
         help="With --reflow-only/--collapse-only: report whether a change would happen, without writing.",
+    )
+    parser.add_argument(
+        "--get-leadin",
+        action="store_true",
+        help=(
+            "Return the machine (MACHINE-OWNED:PORTAL-LEADIN) lead-in inner text "
+            "for --category (empty when none). Read-only. Used by "
+            "cogni-knowledge:knowledge-finalize to build the portal-narrator bundle (#491)."
+        ),
+    )
+    parser.add_argument(
+        "--set-leadin",
+        action="store_true",
+        help=(
+            "Insert/replace/remove the machine lead-in span under --category from "
+            "--leadin-file (<path>|- for stdin; empty content removes the span). "
+            "Above the bullet block, below any human lead-in. Locked, atomic (#491)."
+        ),
+    )
+    parser.add_argument(
+        "--leadin-file",
+        help="Path to the new machine lead-in prose (or - for stdin) for --set-leadin. Empty removes the span.",
+    )
+    parser.add_argument(
+        "--refreshed-date",
+        default=None,
+        help="ISO date stamped into the --set-leadin span's START comment (default: today UTC).",
     )
     args = parser.parse_args()
 
@@ -644,6 +844,44 @@ def main() -> None:
             "dry_run": bool(args.dry_run),
             "index_path": str(index_path),
         })
+        return
+
+    # Machine portal lead-in modes (#491): --get-leadin / --set-leadin. Mutually
+    # exclusive with every write mode above and with each other so the paths never
+    # overlap. cogni-knowledge:knowledge-finalize calls these at script level.
+    if args.get_leadin or args.set_leadin:
+        if args.get_leadin and args.set_leadin:
+            fail("--get-leadin and --set-leadin are mutually exclusive")
+        if args.move_slug or args.reflow_only or args.collapse_only or args.slug or args.summary:
+            fail("--get-leadin/--set-leadin cannot be combined with slug/move/reflow/collapse modes")
+        if not (args.category and args.category.strip()):
+            fail("--get-leadin/--set-leadin require a non-empty --category")
+        if not index_path.is_file():
+            fail(f"index.md not found at {index_path}")
+        category = args.category.strip()
+        if args.get_leadin:
+            # Read-only — no lock needed (no read-modify-write).
+            ok(get_leadin(index_path, category))
+            return
+        # --set-leadin
+        if not args.leadin_file:
+            fail("--set-leadin requires --leadin-file <path|->")
+        if args.leadin_file == "-":
+            new_inner = sys.stdin.read()
+        else:
+            try:
+                new_inner = Path(args.leadin_file).read_text(encoding="utf-8")
+            except OSError as e:
+                fail(f"could not read --leadin-file: {e}")
+                return
+        refreshed = (
+            args.refreshed_date.strip()
+            if args.refreshed_date and args.refreshed_date.strip()
+            else datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+        )
+        with _wiki_lock(wiki_root):
+            result = set_leadin(index_path, category, new_inner, refreshed)
+        ok(result)
         return
 
     # Slug mode requires --slug, --summary, --category.
