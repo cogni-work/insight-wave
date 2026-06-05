@@ -81,6 +81,25 @@ fi
 assert_grep 'cogni-knowledge:knowledge-report' \
   "orchestrator rationale (cogni-knowledge:knowledge-report mention)"
 
+# 6. Migration exit state: zero `cogni-research:` dispatches.
+#    The skill is deprecated in favour of cogni-knowledge's inverted pipeline;
+#    it must no longer carry any `cogni-research:` namespace reference (the
+#    dispatch slug form) so the repo-wide zero-`cogni-research:`-dispatch
+#    guard and the migration exit audit stay green.
+if grep -qE 'cogni-research:' "$SKILL"; then
+  red "FAIL: REGRESSION: a 'cogni-research:' dispatch/namespace reference is back"
+  red "      (the deprecation requires zero 'cogni-research:' occurrences)"
+  errors=$((errors + 1))
+else
+  green "PASS: zero 'cogni-research:' dispatch/namespace references (migration exit state)"
+fi
+
+# 7. Deprecation notice present and points users at cogni-knowledge.
+assert_grep '[Dd]eprecated' \
+  "deprecation notice present"
+assert_grep 'cogni-knowledge:knowledge-setup' \
+  "redirect to cogni-knowledge inverted pipeline (knowledge-setup entry point)"
+
 if [ $errors -gt 0 ]; then
   red "$errors invariant(s) missing — see lines above."
   exit 1
