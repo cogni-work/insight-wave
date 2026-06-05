@@ -306,6 +306,101 @@ def cmd_cache_health(args: argparse.Namespace) -> int:
     )
 
 
+# --- portal-staleness ---------------------------------------------------------
+# Reads the curated-portal staleness stamp the #491 auto-refresh writes but
+# nothing read yet. `wiki_index_update.py --set-leadin` stamps each engine-owned
+# lead-in span with `MACHINE-OWNED:PORTAL-LEADIN:START refreshed:<date> bullets:<N>`,
+# where <N> is the slug-bullet count under that theme at stamp time. Drift = the
+# theme's CURRENT slug-bullet count exceeds the stamped <N> by more than the
+# threshold (the lead-in prose no longer reflects what's accumulated under it).
+#
+# The section/heading/sentinel regexes mirror cogni-wiki's wiki_index_update.py
+# (HEADING_RE, _LEADIN_START_RE) so this reader stays in lockstep with the
+# producer. They are reimplemented locally on purpose: the dependency direction
+# is cogni-knowledge -> cogni-wiki only, and this is a read-only script.
+DEFAULT_PORTAL_STALENESS_THRESHOLD = 2
+_HEADING_RE = re.compile(r"^(#{2,3})\s+(.*?)\s*$")
+_LEADIN_START_RE = re.compile(
+    r"^\s*<!--\s*MACHINE-OWNED:PORTAL-LEADIN:START\b[^>]*-->\s*$"
+)
+_LEADIN_END_RE = re.compile(r"^\s*<!--\s*MACHINE-OWNED:PORTAL-LEADIN:END\s*-->\s*$")
+_LEADIN_BULLETS_RE = re.compile(r"\bbullets:(\d+)\b")
+# A slug-bullet is an index row: a `- ` list item carrying a `[[<slug>]]`
+# wikilink. Sufficient to count rows the way `_extract_slug_from_line` does
+# producer-side, without importing it.
+_SLUG_BULLET_RE = re.compile(r"^\s*-\s.*\[\[[^\]]+\]\]")
+
+
+def _portal_stale_themes(index_text: str, threshold: int) -> list[dict]:
+    """Return per-theme drift records for themes whose machine lead-in is stale
+    by more than `threshold`. A theme with no machine lead-in span carries no
+    stamp and is skipped; a theme whose START stamp lacks a parseable
+    `bullets:<N>` is also skipped (nothing to compare against)."""
+    lines = index_text.splitlines()
+    # Section bounds: each `## `/`### ` heading opens a section that runs to the
+    # next heading (or EOF).
+    sections: list[tuple[str, int, int]] = []  # (theme, body_start, body_end_excl)
+    cur_theme: str | None = None
+    cur_start = 0
+    for i, line in enumerate(lines):
+        m = _HEADING_RE.match(line)
+        if m:
+            if cur_theme is not None:
+                sections.append((cur_theme, cur_start, i))
+            cur_theme = m.group(2).strip()
+            cur_start = i + 1
+    if cur_theme is not None:
+        sections.append((cur_theme, cur_start, len(lines)))
+
+    stale: list[dict] = []
+    for theme, start, end in sections:
+        stamped: int | None = None
+        live = 0
+        in_leadin = False
+        for line in lines[start:end]:
+            if _LEADIN_START_RE.match(line):
+                in_leadin = True
+                mb = _LEADIN_BULLETS_RE.search(line)
+                if mb:
+                    stamped = int(mb.group(1))
+                continue
+            if _LEADIN_END_RE.match(line):
+                in_leadin = False
+                continue
+            if in_leadin:
+                continue  # lead-in prose never carries slug-bullets
+            if _SLUG_BULLET_RE.match(line):
+                live += 1
+        if stamped is None:
+            continue  # no engine-owned stamp -> not a drift candidate
+        delta = live - stamped
+        if delta > threshold:
+            stale.append({
+                "theme": theme,
+                "stamped_bullets": stamped,
+                "live_bullets": live,
+                "delta": delta,
+            })
+    return stale
+
+
+def cmd_portal_staleness(args: argparse.Namespace) -> int:
+    threshold = args.threshold
+    index_path = Path(args.wiki_root) / "wiki" / "index.md"
+    # Fail-soft: a base with no portal (or an unreadable index) is not an error;
+    # it simply has nothing stale to report. Mirrors cmd_cache_health's degrade.
+    try:
+        index_text = index_path.read_text(encoding="utf-8")
+    except OSError:
+        return _emit(True, {"stale_count": 0, "threshold": threshold, "stale_themes": []})
+    stale = _portal_stale_themes(index_text, threshold)
+    return _emit(True, {
+        "stale_count": len(stale),
+        "threshold": threshold,
+        "stale_themes": stale,
+    })
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Read-side summaries of the v0.1.0 inverted pipeline.",
@@ -320,6 +415,18 @@ def main(argv: list[str]) -> int:
     p_cache = sub.add_parser("cache-health", help="Knowledge-base-global fetch-cache health.")
     p_cache.add_argument("--knowledge-root", required=True)
     p_cache.set_defaults(func=cmd_cache_health)
+
+    p_portal = sub.add_parser(
+        "portal-staleness",
+        help="Per-theme curated-portal lead-in drift (live slug-bullets vs the "
+             "stamped bullets:<N>); silent on zero drift.",
+    )
+    p_portal.add_argument("--wiki-root", required=True)
+    p_portal.add_argument(
+        "--threshold", type=int, default=DEFAULT_PORTAL_STALENESS_THRESHOLD,
+        help="A theme is stale when live - stamped exceeds this (default %(default)s).",
+    )
+    p_portal.set_defaults(func=cmd_portal_staleness)
 
     args = parser.parse_args(argv)
     return args.func(args)
