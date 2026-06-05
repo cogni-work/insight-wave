@@ -134,7 +134,7 @@ For the `pitch` use case, the output's `arc_id` controls which story structure c
 > - **Competitive Intelligence** (`competitive-intelligence`) — Landscape → Shifts → Positioning → Implications. Best for competitive positioning presentations.
 > - **Industry Transformation** (`industry-transformation`) — Forces → Friction → Evolution → Leadership. Best for industry conferences and thought leadership.
 
-If the user explicitly passed `--arc-id` on invocation, skip the picker and use that value. Still validate it against the four supported arcs above — reject unsupported arcs (`technology-futures`, `strategic-foresight`, `trend-panorama`, `theme-thesis`) with the explanation from `templates-pitch.md` that those arcs need cogni-trends or cogni-research input and portfolio data alone is usually insufficient.
+If the user explicitly passed `--arc-id` on invocation, skip the picker and use that value. Still validate it against the four supported arcs above — reject unsupported arcs (`technology-futures`, `strategic-foresight`, `trend-panorama`, `theme-thesis`) with the explanation from `templates-pitch.md` that those arcs need cogni-trends or cogni-knowledge input and portfolio data alone is usually insufficient.
 
 Pass the chosen `arc_id` into Step 2 so `cogni-narrative/skills/narrative/references/story-arc/{arc-id}/arc-definition.md` is read for the right arc, and into Step 3 so the frontmatter and evidence mapping use the right arc elements.
 
