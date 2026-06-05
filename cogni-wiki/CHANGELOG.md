@@ -1,5 +1,44 @@
 # cogni-wiki changelog
 
+## 0.0.64 — 2026-06-05 — deprecate wiki-from-research; zero cogni-research dispatches
+
+**Decision: deprecate, not rotate.** `wiki-from-research` is superseded by
+cogni-knowledge's inverted pipeline, which already deposits research syntheses
+into a bound wiki (`knowledge-setup` + `knowledge-plan → knowledge-curate →
+knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify →
+knowledge-finalize`). The skill has **zero remaining programmatic callers** —
+the only two historical callers (`knowledge-research` Mode A, `knowledge-report`
+Mode B) are already archived under `cogni-knowledge/_archive/`, and the live
+v0.1.0 inverted pipeline does not use this skill. Rotating it onto a surviving
+cogni-knowledge path was rejected: cogni-wiki is itself slated for archive, so a
+rotated skill would be a dead code path in an archived plugin.
+
+**Changes.**
+- Added a deprecation notice to `wiki-from-research/SKILL.md` (and the
+  `description` frontmatter) directing users to cogni-knowledge's inverted
+  pipeline as the replacement for the topic→wiki cold-start use case.
+- Neutralized the two executable `cogni-research:` dispatches so the skill
+  reaches the required migration exit state (zero `cogni-research:` dispatches):
+  Mode A (`--topic`) no longer auto-runs a research pipeline — it aborts and
+  redirects to cogni-knowledge; the Step 0(4) `run-verify-first` option (which
+  dispatched `cogni-research:verify-report`) was removed, leaving
+  `proceed`/`abort`.
+- Stripped the remaining prose `cogni-research:` slug references so the SKILL
+  reaches a clean zero-occurrence state. Filesystem `cogni-research-<slug>/`
+  directory paths (read by Mode B) are unchanged — they are not dispatches.
+- Preserved the contract machinery the existing test asserts: the
+  `--allow-wiki-source`/`--cycle-guard-cleared` parameter rows, the
+  `report_source ∈ {wiki, hybrid}` Step 0(3) guard, the Step 1d re-run
+  structure, the `.metadata/project-config.json` read path, and the
+  `cogni-knowledge:knowledge-report` orchestrator rationale.
+- `tests/test_wiki_from_research_flags.sh` gains a zero-`cogni-research:` guard
+  and deprecation-notice assertions.
+
+Mode B (`--research-slug`) remains a legacy convenience for depositing an
+already-completed on-disk research project, and is removed when cogni-wiki is
+archived. The repo-wide zero-occurrence grep-guard and the migration exit audit
+are tracked separately.
+
 ## 0.0.58 — 2026-06-04 — raw_citation_depth lint auto-fix (closes #478 for this plugin)
 
 **Heads-up for existing wikis.** v0.0.55 hardened `health.py`'s `missing_source`
