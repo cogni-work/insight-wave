@@ -1,6 +1,6 @@
 ---
 name: knowledge-compose
-description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network floor-expansion re-dispatch when the draft lands under its word floor with headroom), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
+description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network floor-expansion re-dispatch when the draft lands under its word floor with headroom), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -8,7 +8,9 @@ allowed-tools: Read, Write, Bash, Task
 
 Phase 5 of the inverted pipeline. Reads the per-project `plan.json` + `ingest-manifest.json` + the populated wiki at `<binding.wiki_path>/wiki/`, dispatches `wiki-composer` once, and verifies the output files land on disk.
 
-The default `--source web` path composes from this run's web-ingested sources (the `ingest-manifest.json` Phase 4 produced). `--source wiki` is the **wiki-only rung** — a full structured, verified report grounded **only** in the already-populated wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl**: it preserves the retired `research-report --source wiki` capability so that capability does not vanish when cogni-research is archived. The `wiki-composer → knowledge-verify → knowledge-finalize` tail is source-agnostic and runs identically in either mode — only the pre-flight evidence-base requirement differs (see `--source` in Parameters and the Step 0 pre-flight).
+The default `--source web` path composes from this run's web-ingested sources (the `ingest-manifest.json` Phase 4 produced). `--source wiki` is the **wiki-only rung** — a full structured, verified report grounded **only** in the already-populated wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl**: it preserves the retired `research-report --source wiki` capability so that capability does not vanish when cogni-research is archived.
+
+The wiki-only mode does **not** change the composer or the verify/finalize tail at all. Instead, Step 0 **synthesizes** an `ingest-manifest.json` from the bound wiki's `wiki/sources/*.md` pages — mapping each source to the *current* plan's sub-questions via the shared `wiki-grounding` discovery primitive (`scripts/wiki-source-manifest.py`) — so the dispatched `wiki-composer` reads a normal manifest and runs byte-for-byte identically whether that manifest came from a web crawl or from the wiki. The composer does not branch on source mode and needs no new input. (See `--source` in Parameters and the Step 0 pre-flight.)
 
 The composer reads `wiki/index.md` + selected `wiki/sources/*.md` (lazily) + prior `wiki/syntheses/*.md`. Since the distillation interphase (`knowledge-distill`), it also reads the distilled `wiki/{concepts,entities,summaries,learnings}/*.md` pages (topic-matched, lazily) — these serve **both** as narrative framing **and** as citable cross-source evidence: when ≥2 sources converge on a fact the distilled page already captures, the composer cites the distilled page itself via its `dcl-NNN` claim id, so the convergence carries epistemic weight rather than a row of source markers. Distilled pages carry `distilled_claims:` (not `pre_extracted_claims:`), and a distilled-page citation is scored by the verifier against that claim's `text`. Distillation stays optional and fail-soft: when it hasn't run, the composer simply has no distilled pages to draw on and composes from sources + syntheses alone.
 
@@ -96,12 +98,21 @@ On `success: false` → abort, offer `knowledge-setup`.
 
 Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/config.json` exists; abort otherwise. Confirm `<WIKI_ROOT>/wiki/` exists.
 
-**Source mode.** Resolve `SOURCE_MODE` from `--source` (default `web` when the flag is absent — byte-identical to the prior behavior). `local`/`hybrid` are staged: treat them as `wiki` for this slice and surface a one-line `staged: --source=<mode> treated as wiki (not yet implemented)` note in the summary. `SOURCE_MODE` selects which evidence base the pre-flight requires below.
+**Source mode.** Resolve `SOURCE_MODE` from `--source` (default `web` when the flag is absent — byte-identical to the prior behavior). `local`/`hybrid` are staged: when either is passed, print `staged: --source=<mode> treated as wiki (not yet implemented)` **here at pre-flight** (before any dispatch), then proceed as `wiki`. `SOURCE_MODE` decides how `<project_path>/.metadata/ingest-manifest.json` is obtained below — it does **not** change anything downstream of Step 0, because both modes hand the composer a normal manifest.
 
-**Project manifests.** `<project_path>/.metadata/plan.json` is always required — abort with "run knowledge-plan first" otherwise. The ingested-sources gate is **source-mode-dependent**:
+**Project manifests.** `<project_path>/.metadata/plan.json` is always required — abort with "run knowledge-plan first" otherwise. How the ingest manifest is obtained is **source-mode-dependent**, but the *result* is the same: a populated `<project_path>/.metadata/ingest-manifest.json` the composer reads in Step 4.
 
-- **`SOURCE_MODE=web` (default):** confirm `<project_path>/.metadata/ingest-manifest.json` exists; read it and, if `ingested[]` is empty, abort with "no ingested sources to compose from — re-run knowledge-ingest". This is the unchanged web path.
-- **`SOURCE_MODE=wiki`:** **skip the `ingest-manifest.json` requirement entirely.** Instead, glob `<WIKI_ROOT>/wiki/sources/*.md`; if the glob is empty, abort with "no wiki sources to compose from — run knowledge-ingest first (or point at a populated base)". The wiki/sources/ pages (plus `wiki/syntheses/*.md` and the distilled pages the composer already reads) are the evidence base; no web crawl runs. `INGESTED_SOURCES` for the dry-run/summary is the count of `wiki/sources/*.md` pages in this mode.
+- **`SOURCE_MODE=web` (default):** confirm `<project_path>/.metadata/ingest-manifest.json` exists; read it and, if `ingested[]` is empty, abort with "no ingested sources to compose from — re-run knowledge-ingest". This is the unchanged web path — the manifest was produced by `knowledge-ingest` from a web crawl.
+- **`SOURCE_MODE=wiki`:** **synthesize** the ingest manifest from the bound wiki (no web crawl) by mapping each `wiki/sources/*.md` page to the current plan's sub-questions via the shared `wiki-grounding` primitive:
+
+  ```
+  python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-source-manifest.py build \
+      --wiki-root "<WIKI_ROOT>" \
+      --plan "<project_path>/.metadata/plan.json" \
+      --out "<project_path>/.metadata/ingest-manifest.json"
+  ```
+
+  Parse the envelope: on `success: true` read `data.ingested_count`. If it is `0`, abort with "no wiki sources cover this plan's sub-questions — ingest more sources (knowledge-ingest), broaden the plan, or check the bound wiki". On `success: false`, surface `error` and abort. The synthesized manifest carries `source_mode: "wiki"` and the same `ingested[]` shape (`{url, slug, title, publisher, summary, claims_extracted, sub_question_refs[]}`) the web path produces, so **Steps 1–7 run identically** — the composer reads it in Step 4 with no awareness it was wiki-sourced. `INGESTED_SOURCES` for the dry-run/summary is `data.ingested_count`.
 
 ### 1. Resolve draft version N
 
@@ -197,7 +208,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
     --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
 ```
 
-**Under `SOURCE_MODE=wiki`, omit the `--ingest-manifest` line.** There is no curate-produced ingest manifest in wiki-only mode, and `citation-store.py build` is documented fail-soft on a missing `--ingest-manifest` (the slug-derived-URL gate is simply skipped). The verbatim-substring gate (every `draft_sentence` is a substring of the draft) still runs — it is the authoritative integrity check. (Restoring the URL gate under `--source wiki` by synthesizing a manifest from each `wiki/sources/*.md` page's frontmatter `sources:` URL is a deferred enhancement — see Out of scope.)
+This is unchanged in `--source wiki` mode: the synthesized manifest from Step 0 carries each source's real `sources:` URL in `ingested[].url`, so the `--ingest-manifest` URL gate (every inline citation URL must be a known source URL) runs exactly as it does on the web path — pass the same `--ingest-manifest "<project_path>/.metadata/ingest-manifest.json"`. The wiki-only rung gets the *same* integrity checks as the web path, not fewer.
 
 `citation-store.py build` parses the records, `json.dumps` the manifest (`ensure_ascii=False` — escaping owned by the serializer, never the LLM), asserts every `draft_sentence` is a verbatim substring of the draft, **asserts every inline citation URL is a known ingested-source URL** (the `--ingest-manifest` gate; the composer must copy each cited page's real `sources:` URL, never reconstruct it from the slug), and round-trips the file it wrote (`json.loads` + count). Parse the envelope:
 
@@ -372,7 +383,7 @@ Print ≤ 10 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
-- Source: `<SOURCE_MODE>` (`wiki` = composed only from the bound wiki + fetch-cache, no web crawl, `<INGESTED_SOURCES>` wiki/sources pages; `web` = `<INGESTED_SOURCES>` web-ingested sources). When `--source local|hybrid` was requested, also print `staged: --source=<mode> treated as wiki (not yet implemented)`.
+- Source: `<SOURCE_MODE>` (`wiki` = composed only from the bound wiki + fetch-cache via a synthesized manifest, no web crawl, `<INGESTED_SOURCES>` wiki sources mapped to the plan; `web` = `<INGESTED_SOURCES>` web-ingested sources). The staged `--source local|hybrid` notice, if any, was already printed at pre-flight.
 - Draft: `output/draft-v<N>.md` (`<N_WORDS>` words across `<N_SECTIONS>` sections)
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
@@ -400,10 +411,9 @@ Under `standard` density this warning reflects the **post-expansion** draft (Ste
 
 - Does NOT verify citations — Phase 6 (`knowledge-verify`).
 - Does NOT deposit the draft into the wiki as `wiki/syntheses/<slug>.md` — Phase 7 (`knowledge-finalize`).
-- Does NOT modify `binding.json` — Phase 7 appends the project entry (with `report_source: wiki` for a `--source wiki` run).
-- Does NOT re-run any earlier phase. In particular `--source wiki` does **not** trigger `knowledge-curate`/`-fetch`/`-ingest` — it composes from the already-populated wiki, which is the whole point of the wiki-only rung (a report with no new web crawl).
-- Does NOT implement the `local` or `hybrid` source modes yet — they are accepted-but-staged (treated as `wiki`); a real `local` (fetch-cache-only) / `hybrid` (wiki + bounded top-up curate on uncovered sub-questions) path is a deferred follow-up.
-- Does NOT synthesize an ingest-manifest from `wiki/sources/` frontmatter under `--source wiki` — the inline-citation URL gate (`citation-store.py build --ingest-manifest`) is omitted (fail-soft) in wiki mode; restoring it from the wiki pages' `sources:` URLs is a deferred enhancement.
+- Does NOT modify `binding.json` — Phase 7 appends the project entry. `knowledge-finalize` records `report_source: wiki` for every inverted-pipeline deposit regardless of compose `--source` (the deposit always lands in the wiki), so the new mode changes nothing here.
+- Does NOT re-run any earlier phase. In particular `--source wiki` does **not** trigger `knowledge-curate`/`-fetch`/`-ingest` — it synthesizes its manifest from the already-populated wiki (Step 0), which is the whole point of the wiki-only rung (a report with no new web crawl).
+- Does NOT implement the `local` or `hybrid` source modes yet — they are accepted-but-staged (treated as `wiki`, with a pre-flight notice); a real `local` (fetch-cache-only) / `hybrid` (wiki + bounded top-up curate on uncovered sub-questions) path is a deferred follow-up.
 - Does NOT run an unbounded expansion loop or story arcs — the composer is single-pass per dispatch. Under `standard` density this skill runs ONE bounded, fail-soft, zero-network floor-expansion (Step 5.5) on a real deficit with headroom; `prose_density: executive` shapes that single pass (BLUF + Pyramid ceiling) and adds **no** re-dispatch (a ceiling has no shortfall to close). The expansion re-elaborates existing wiki claims only — it never fetches new evidence (that is `knowledge-curate`/`-fetch`'s job).
 
 ## Output

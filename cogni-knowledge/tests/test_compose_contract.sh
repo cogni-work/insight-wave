@@ -93,13 +93,31 @@ fi
 # --- source-mode parity: --source wiki|local|hybrid (Phase 6 deliverable 5) -
 # Option (a) preserved the retired `research-report --source wiki` rung as a
 # `knowledge-compose --source wiki` path that composes from the bound wiki +
-# fetch-cache with NO web crawl, running the verify/finalize tail unchanged.
-# These guards catch the contract surface silently disappearing.
+# fetch-cache with NO web crawl. The mechanism keeps the composer + tail
+# unchanged by SYNTHESIZING an ingest-manifest from the wiki via
+# wiki-source-manifest.py (mapping each source to the current plan's
+# sub-questions). These guards catch the contract surface silently disappearing.
 assert_grep '\-\-source' "$COMPOSE" "knowledge-compose: documents the --source parameter (source-mode parity)"
 assert_grep 'SOURCE_MODE' "$COMPOSE" "knowledge-compose: Step 0 resolves SOURCE_MODE (web default / wiki)"
-assert_grep 'wiki/sources/\*.md' "$COMPOSE" "knowledge-compose: --source wiki globs wiki/sources/*.md as the evidence base"
+assert_grep 'wiki-source-manifest.py' "$COMPOSE" "knowledge-compose: --source wiki synthesizes the manifest via wiki-source-manifest.py"
 assert_grep 'no web crawl' "$COMPOSE" "knowledge-compose: --source wiki composes with no web crawl"
 assert_grep 'staged' "$COMPOSE" "knowledge-compose: local/hybrid are accepted-but-staged"
+# The synthesized manifest carries source URLs, so the --ingest-manifest URL
+# gate must NOT be documented as omitted/skipped under wiki mode.
+assert_not_grep 'omit the .--ingest-manifest. line' "$COMPOSE" "knowledge-compose: --ingest-manifest gate is NOT omitted under wiki mode (synthetic manifest carries URLs)"
+
+# --- wiki-source-manifest.py contract -------------------------------------
+WSM="$PLUGIN_ROOT/scripts/wiki-source-manifest.py"
+if [ ! -f "$WSM" ]; then
+  red "FAIL: scripts/wiki-source-manifest.py not found"
+  errors=$((errors + 1))
+else
+  assert_grep 'def build' "$WSM" "wiki-source-manifest: has a build()"
+  assert_grep 'wiki-grounding.py' "$WSM" "wiki-source-manifest: loads the shared wiki-grounding primitive by path"
+  assert_grep 'rank_pages' "$WSM" "wiki-source-manifest: ranks source pages per sub-question via rank_pages"
+  assert_grep 'sub_question_refs' "$WSM" "wiki-source-manifest: emits per-source sub_question_refs[]"
+  assert_grep 'schema_version' "$WSM" "wiki-source-manifest: writes a schema_versioned manifest"
+fi
 
 # --- wiki-composer agent -------------------------------------------------
 COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
