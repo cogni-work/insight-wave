@@ -33,8 +33,9 @@ nothing partial — the caller logs it loudly and never rolls back the synthesis
 
 Stdlib only. No pip dependencies. POSIX only (`_wiki_lock` uses `fcntl.flock`).
 
-Output is a single-line `{"success": bool, "data": {...}, "error": "..."}`
-JSON envelope, per the cross-plugin script convention.
+Output is a `{"success": bool, "data": {...}, "error": "..."}` JSON envelope
+(pretty-printed with `indent=2`, like `concept-store.py`), per the cross-plugin
+script convention.
 """
 
 from __future__ import annotations
