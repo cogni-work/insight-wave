@@ -95,6 +95,11 @@ dir keeps those imports intact:
 ```
 resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki-health
   local skill="$1"
+  # Vendored-first: cogni-knowledge ships a byte-identical copy of the engine
+  # in-tree, so prefer it and stay self-contained. The external sibling/cache
+  # probes below are the fallback (keeps both plugins installable until archive).
+  local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
+  test -d "$vend" && { echo "$vend"; return 0; }
   local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
   test -d "$sib" && { echo "$sib"; return 0; }
   # pick the NEWEST cached version, not the lexically-first. Consider ONLY

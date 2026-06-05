@@ -1693,6 +1693,12 @@ def resolve_wiki_scripts(skill: str, base_dir: "Path | None" = None) -> Path:
     `--wiki-scripts-dir` from the orchestrator and never call this.
 
     Probe order (highest-priority first):
+      0. Vendored copy — `<this-file's dir>/vendor/cogni-wiki/skills/<skill>/scripts`,
+         the byte-identical engine cogni-knowledge ships in-tree (Phase 7). Probed
+         first so the plugin is self-contained; the external probes below are the
+         fallback that keeps both plugins installable until cogni-wiki is archived.
+         Gated to the production path (base_dir is None) so the base_dir test seam
+         still exercises the versioned-cache ranking branch hermetically.
       1. Sibling checkout — `<repo-root>/cogni-wiki/skills/<skill>/scripts`,
          where <repo-root> is two levels up from this file
          (scripts/ -> cogni-knowledge/ -> <repo-root>).
@@ -1705,9 +1711,16 @@ def resolve_wiki_scripts(skill: str, base_dir: "Path | None" = None) -> Path:
     byte-identical to the no-arg form; a test passes an explicit synthetic root
     to exercise the versioned-cache ranking branch hermetically (the real
     sibling checkout would otherwise short-circuit branch 1 in the monorepo).
+    The base_dir seam also bypasses branch 0 (the vendored copy lives next to the
+    real file, not under a synthetic root).
 
     Raises FileNotFoundError when neither branch resolves.
     """
+    if base_dir is None:
+        vendored = Path(__file__).resolve().parent / "vendor" / "cogni-wiki" / "skills" / skill / "scripts"
+        if vendored.is_dir():
+            return vendored
+
     repo_root = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parents[2]
     sib = repo_root / "cogni-wiki" / "skills" / skill / "scripts"
     if sib.is_dir():

@@ -849,12 +849,18 @@ def assert_resolve_wiki_scripts():
     except FileNotFoundError as exc:
         assert "__nonexistent_skill__" in str(exc), str(exc)
         assert "--wiki-scripts-dir" in str(exc), str(exc)
-    # Real-layout case (guarded by the same sibling-exists precondition the
-    # migrate test uses): in the dev monorepo the sibling checkout exists, so
-    # resolve_wiki_scripts("wiki-ingest") returns exactly that dir.
+    # Real-layout case: vendored-first (Phase 7). In-tree, cogni-knowledge ships
+    # a byte-identical copy of the engine under scripts/vendor/, which the
+    # production (base_dir=None) probe returns BEFORE the external cogni-wiki
+    # sibling. Assert the vendored dir when present; fall back to the sibling
+    # only on a partial checkout that lacks the vendored copy.
     repo_root = scripts.parent.parent  # scripts/ -> cogni-knowledge/ -> repo-root
+    vendored = scripts / "vendor" / "cogni-wiki" / "skills" / "wiki-ingest" / "scripts"
     sib = repo_root / "cogni-wiki" / "skills" / "wiki-ingest" / "scripts"
-    if sib.is_dir():
+    if vendored.is_dir():
+        got = kl.resolve_wiki_scripts("wiki-ingest")
+        assert got.resolve() == vendored.resolve(), f"got={got!r} expected vendored={vendored!r}"
+    elif sib.is_dir():
         got = kl.resolve_wiki_scripts("wiki-ingest")
         assert got.resolve() == sib.resolve(), f"got={got!r} expected sibling={sib!r}"
     # Versioned-cache ranking branch (hermetic, via the base_dir test seam):
