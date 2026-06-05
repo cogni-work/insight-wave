@@ -32,12 +32,12 @@ If a behavior already exists in `cogni-wiki` or `cogni-research`, cogni-knowledg
 | Read from a wiki during research (Phase 2+) | `cogni-research`'s `wiki-researcher` agent, via `report_source=wiki` in `cogni-research:research-setup` |
 | Compute wiki health (broken links, missing frontmatter, entries_count drift) | `cogni-wiki:wiki-health` |
 | Show wiki status | `cogni-wiki:wiki-resume` (which itself runs `wiki-health`) |
-| Query the wiki (Phase 3) | `cogni-wiki:wiki-query` |
+| Query the wiki (Phase 3) | native — vendored `wiki-grounding.py` (knowledge-query re-homed; no longer dispatches `cogni-wiki:wiki-query`) |
 | Lint the wiki for staleness (Phase 3) | `cogni-wiki:wiki-lint` |
-| Render the wiki dashboard (Phase 3) | `cogni-wiki:wiki-dashboard` |
+| Render the wiki dashboard (Phase 3) | native — vendored `render_dashboard.py` + `build_graph.py` (knowledge-dashboard re-homed; no longer dispatches `cogni-wiki:wiki-dashboard`) |
 | Refresh stale pages from a research project (Phase 3 pull-mode) | `cogni-wiki:wiki-refresh` |
 
-> **Note (M11+).** The rows describing `cogni-research:*` dispatch and `cogni-wiki:wiki-from-research` Mode A/B were the legacy `knowledge-research` / `knowledge-report` delegation targets, now archived under `_archive/`. The live v0.1.0 inverted pipeline does **not** use `wiki-from-research`; it writes `wiki/sources/*.md` and `wiki/syntheses/*.md` directly (see `references/inverted-pipeline.md`). Its live delegation surface is `cogni-wiki:wiki-setup` / `wiki-resume` / `wiki-query` / `wiki-dashboard` / `wiki-lint` / `wiki-refresh`, plus cogni-wiki helper scripts called at script level (`backlink_audit.py`, `wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`).
+> **Note (M11+).** The rows describing `cogni-research:*` dispatch and `cogni-wiki:wiki-from-research` Mode A/B were the legacy `knowledge-research` / `knowledge-report` delegation targets, now archived under `_archive/`. The live v0.1.0 inverted pipeline does **not** use `wiki-from-research`; it writes `wiki/sources/*.md` and `wiki/syntheses/*.md` directly (see `references/inverted-pipeline.md`). Its live `Skill`-dispatch delegation surface is `cogni-wiki:wiki-setup` / `wiki-resume` / `wiki-lint` / `wiki-refresh`, plus cogni-wiki helper scripts called at script level (`backlink_audit.py`, `wiki_index_update.py`, `config_bump.py`, `rebuild_context_brief.py`). The read/render skills `knowledge-query` and `knowledge-dashboard` no longer dispatch `cogni-wiki:wiki-query` / `wiki-dashboard` — they resolve the wiki engine **vendored-first** under `scripts/vendor/cogni-wiki/` (`wiki-grounding.py`; `render_dashboard.py` + `build_graph.py`) and run with no `cogni-wiki` plugin installed (the install is a graceful-degradation fallback only).
 
 ## What about `agents/`?
 
@@ -69,7 +69,7 @@ Every fenced code block of the shape
     Skill("<plugin>:<skill>", args="…")
     ```
 
-in a cogni-knowledge **orchestrator** SKILL.md (`knowledge-setup`, `knowledge-resume`, `knowledge-dashboard`, `knowledge-refresh`, `knowledge-query`) is a **dispatch contract**: the orchestrating LLM MUST execute the call via the Skill tool, not output the literal text. The fenced shape (rather than inline backticks) is the canonical surface so the call survives copy-paste, line-wrap, and downstream rendering, and so contract tests can pin it with `grep`. The dispatch verb in the preceding prose — `Dispatch:`, `Delegate to`, or equivalent — reinforces the contract but the fenced block is the source of truth.
+in a cogni-knowledge **orchestrator** SKILL.md (`knowledge-setup`, `knowledge-resume`, `knowledge-refresh`) is a **dispatch contract**: the orchestrating LLM MUST execute the call via the Skill tool, not output the literal text. The fenced shape (rather than inline backticks) is the canonical surface so the call survives copy-paste, line-wrap, and downstream rendering, and so contract tests can pin it with `grep`. The dispatch verb in the preceding prose — `Dispatch:`, `Delegate to`, or equivalent — reinforces the contract but the fenced block is the source of truth.
 
 Phase skills (`knowledge-plan` … `knowledge-finalize`) **do not dispatch other skills**; they run Bash + agent dispatch only. If a future phase skill needs to dispatch a downstream skill, this convention applies to it too.
 
