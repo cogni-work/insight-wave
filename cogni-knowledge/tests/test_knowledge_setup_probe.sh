@@ -41,10 +41,19 @@ errors=0
 # Part 1: contract-level — every gating skill probes cogni-wiki ONLY.
 # -----------------------------------------------------------------------------
 
-# Skills carrying a Step 0 plugin pre-flight. All probe cogni-wiki only.
+# Skills carrying a Step 0 plugin pre-flight. All probe cogni-wiki only and
+# carry the "requires cogni-wiki to be installed" abort wording.
+#
+# knowledge-query is intentionally NOT in this list: as of the FMO Phase 8
+# re-home it resolves the wiki engine VENDORED-FIRST (it ships in-tree under
+# scripts/vendor/cogni-wiki/), so it runs WITHOUT cogni-wiki installed and its
+# abort wording is the vendored-engine variant, not "requires cogni-wiki to be
+# installed". It keeps the cogni-wiki probe only as the fallback layout. Its
+# clean-break (no cogni-research) + native-read invariants are guarded in
+# test_skill_contracts.sh (probe-trio + the wiki-grounding.py / no-wiki-query
+# assertions).
 WIKI_ONLY_PROBE_SKILLS=(
   knowledge-setup
-  knowledge-query
   knowledge-dashboard
   knowledge-resume
   knowledge-refresh

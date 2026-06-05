@@ -328,6 +328,13 @@ for f in "$QUERY" "$DASHBOARD" "$RESUME"; do
   assert_grep 'pipeline-summary.py' "$f" "$name: wired to pipeline-summary.py reader"
 done
 
+# knowledge-query is the shallow rung: it reads + synthesizes natively on the
+# vendored wiki-grounding primitive and no longer dispatches cogni-wiki:wiki-query.
+# (It keeps the cogni-wiki probe above as the graceful-degradation fallback layout
+# and the pipeline-summary.py footer.)
+assert_not_grep 'Skill("cogni-wiki:wiki-query' "$QUERY" "knowledge-query: no longer dispatches cogni-wiki:wiki-query (native shallow rung on the vendored engine)"
+assert_grep 'wiki-grounding.py' "$QUERY" "knowledge-query: consumes the shared wiki-grounding primitive directly"
+
 # knowledge-refresh shares the probe-drop invariant (M10b, v0.0.26) but does
 # not read pipeline-summary.py — it dispatches the seven phase skills. Its
 # phase-chain + clean-break contract lives in test_refresh_push_chain.sh; here
@@ -393,7 +400,10 @@ assert_grep 'theme_label' "$INGEST" "knowledge-ingest: files sources under the s
 DELEGATION_CONTRACT="$PLUGIN_ROOT/references/delegation-contract.md"
 assert_grep 'How `Skill(...)` blocks are written' "$DELEGATION_CONTRACT" \
   "delegation-contract.md names the Skill(...) dispatch convention (#350)"
-for orch in knowledge-setup knowledge-resume knowledge-dashboard knowledge-refresh knowledge-query; do
+# knowledge-query is intentionally absent: it no longer dispatches a Skill()
+# (it reads + synthesizes natively on the vendored wiki-grounding primitive —
+# the shallow rung), so it carries no Skill(...)-convention cross-reference.
+for orch in knowledge-setup knowledge-resume knowledge-dashboard knowledge-refresh; do
   ORCH_SKILL="$PLUGIN_ROOT/skills/${orch}/SKILL.md"
   assert_grep 'How `Skill(...)` blocks are written' "$ORCH_SKILL" \
     "${orch}: cross-references the Skill-dispatch convention (#350)"
