@@ -767,33 +767,16 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    **Caveat — foundation pages.** `reverse_link_missing` has no `foundation: true` exemption, so if this synthesis cites a prefilled foundation concept, the fixer appends a `## See also` backlink onto that curated page (bypassing `wiki-update`'s `--force` guard). In the inverted pipeline the composer cites `wiki/sources/*` + prior `wiki/syntheses/*`, not `wiki/concepts/`, so this is not expected; noted so a future foundation-citing path is aware.
 
-3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale. Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and refresh a single bullet for this synthesis (idempotent on the slug). The dedup removes only this slug's prior **bullet** (a `- … [[slug]] …` list item), never prose that merely mentions `[[slug]]`; the heading is matched by exact line, never substring. `overview.md` is not graph-scanned, so this is purely freshness:
+3. **Refresh `wiki/overview.md`.** Keep the "state of the wiki" page from going stale. Deterministic, no extra LLM pass — ensure a `## Recent syntheses` heading exists and refresh a single bullet for this synthesis (idempotent on the slug). The dedup removes only this slug's prior **bullet** (a `- … [[slug]] …` list item), never prose that merely mentions `[[slug]]`; the heading is matched by exact line, never substring. The write is **lock-wrapped + atomic**: `overview_update.py recent-bullet` acquires cogni-wiki's `_wiki_lock` (the shared `<WIKI_ROOT>/.cogni-wiki/.lock`) and writes via `_knowledge_lib.atomic_write_text`, so a concurrent finalize from another session serialises and a crash mid-write leaves `overview.md` intact (temp-file + `os.replace`). `overview.md` is not graph-scanned, so this is purely freshness:
    ```
-   WIKI_ROOT="<wiki_root>" SYNTHESIS_SLUG="<slug>" TOPIC_RAW="<topic>" DATE_STAMP="$(date -u +%F)" \
-   python3 -c '
-   import os
-   from pathlib import Path
-   p = Path(os.environ["WIKI_ROOT"]) / "wiki" / "overview.md"
-   slug = os.environ["SYNTHESIS_SLUG"]
-   marker = "[[" + slug + "]]"
-   topic = " ".join(os.environ["TOPIC_RAW"].split())
-   bullet = "- [" + os.environ["DATE_STAMP"] + "] " + marker + " — " + topic
-   heading = "## Recent syntheses"
-   text = p.read_text(encoding="utf-8") if p.is_file() else "# Overview\n"
-   # Drop ONLY a prior Recent-syntheses bullet for this slug (a list item),
-   # never a prose line that happens to reference [[slug]].
-   lines = [ln for ln in text.splitlines()
-            if not (ln.lstrip().startswith("- ") and marker in ln)]
-   if heading in lines:                      # exact line match, not substring
-       lines.insert(lines.index(heading) + 1, bullet)
-   else:
-       if lines and lines[-1].strip():
-           lines.append("")
-       lines += [heading, "", bullet]
-   p.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-   '
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/overview_update.py" recent-bullet \
+       --wiki-root "$WIKI_ROOT" \
+       --slug "<slug>" \
+       --topic "<topic>" \
+       --date "$(date -u +%F)" \
+       --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
    ```
-   Non-fatal — `overview.md` is a derived narrative artefact; a failure here never blocks finalize.
+   Non-fatal — `overview.md` is a derived narrative artefact; a non-success envelope (lock-acquire / `_wikilib` import / write failure) is logged loudly in Step 11 but never blocks finalize or rolls back the synthesis (nothing partial is written on a failure).
 
 3.5. **Refresh the curated portal (auto-refresh, option 4b).** Make the curated portal — the engine-owned per-`## <theme>` lead-in paragraphs in `wiki/index.md` and the "state of the wiki" narrative in `wiki/overview.md` — compound narratively as the base grows, the Phase-7 analog of the Phase-4.5 `concept-summary-narrator` → `concept-store.py renarrate` rails. The **ownership boundary** is the `MACHINE-OWNED:PORTAL-LEADIN` sentinel: a human (non-sentineled) lead-in is never touched; the engine authors a machine span only where none exists and refreshes only a span it previously authored (`wiki_index_update.py --set-leadin` enforces this on the write side). The full rationale is in `references/portal-shape-decision.md`.
 
@@ -870,9 +853,19 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
          --refreshed-date "$(date -u +%F)"
      ```
 
-     Then splice the overview narrative (when the records carried an `overview`) into `wiki/overview.md` via `_knowledge_lib.upsert_machine_block(text, "OVERVIEW-NARRATIVE", prose)` — first finalize inserts the block after the H1, later finalizes replace only its inner; the `## Recent syntheses` machine bullets sub-step 3 wrote and all other prose are preserved byte-for-byte. The portal-narrator emits an unchanged lead-in/overview verbatim, so a re-apply with no new bullets no-ops the splice (no stamp/date churn — `--set-leadin` returns `action: noop`, `upsert_machine_block` returns identical text), matching `renarrate` semantics.
+     Then splice the overview narrative (when the records carried an `overview`) into `wiki/overview.md` by writing the prose to a temp file and calling `overview_update.py narrative-splice` — which wraps `_knowledge_lib.upsert_machine_block(text, "OVERVIEW-NARRATIVE", prose)` in the **same** `_wiki_lock` + `_knowledge_lib.atomic_write_text` body sub-step 3 uses (so the overview splice serialises on the shared `<WIKI_ROOT>/.cogni-wiki/.lock` and a crash mid-write leaves `overview.md` intact). First finalize inserts the block after the H1, later finalizes replace only its inner; the `## Recent syntheses` machine bullets sub-step 3 wrote and all other prose are preserved byte-for-byte:
 
-   **Fail-soft posture (explicit).** Sub-step 3.5 is a portal refresh. A narrator failure, a parse error, or a `--set-leadin` per-theme failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3 are all already on disk. Surface failures loudly in Step 11 and continue. The `--set-leadin` write is locked + atomic (`_wiki_lock` + `atomic_write`), so a forced failure leaves no partial index write.
+     ```
+     printf '%s' "<overview narrative prose>" > "$TMP_OVERVIEW"
+     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/overview_update.py" narrative-splice \
+         --wiki-root "$WIKI_ROOT" \
+         --prose-file "$TMP_OVERVIEW" \
+         --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+     ```
+
+     The portal-narrator emits an unchanged lead-in/overview verbatim, so a re-apply with no new bullets no-ops the splice (no stamp/date churn — `--set-leadin` returns `action: noop`, `narrative-splice` reports `changed: false` and writes nothing because `upsert_machine_block` returns identical text), matching `renarrate` semantics.
+
+   **Fail-soft posture (explicit).** Sub-step 3.5 is a portal refresh. A narrator failure, a parse error, or a `--set-leadin` per-theme failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3 are all already on disk. Surface failures loudly in Step 11 and continue. The `--set-leadin` index write and the `overview.md` narrative splice are **both** locked + atomic (`_wiki_lock` + `atomic_write` / `atomic_write_text` via `overview_update.py narrative-splice`), so a forced failure leaves no partial write on either page.
 
    **Step 11** surfaces, on STAGE: `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY: `✓ Portal: <N> lead-ins refreshed + overview spliced`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk`.
 
