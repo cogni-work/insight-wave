@@ -92,6 +92,7 @@ from _knowledge_lib import (  # noqa: E402
     parse_concept_records,
     parse_crossmerge_records,
     parse_renarrate_records,
+    replace_machine_block,
     slugify,
     token_weight,
     tokenize,
@@ -272,15 +273,11 @@ def _extract_machine_block(body: str, name: str) -> str | None:
 def _replace_machine_block(body: str, name: str, new_inner: str) -> str:
     """Return `body` with the named MACHINE-OWNED block's inner replaced by
     `new_inner`, leaving every other byte untouched. Used by `renarrate` to swap
-    ONLY the SUMMARY block without re-rendering the page. The match mirrors
-    `extract_machine_block` so it is symmetric with the reader; the START/END
-    sentinels and surrounding bytes are preserved verbatim."""
-    pat = re.compile(
-        r"(<!--\s*MACHINE-OWNED:" + re.escape(name) + r":START\s*-->\r?\n)(.*?)"
-        r"(\r?\n?<!--\s*MACHINE-OWNED:" + re.escape(name) + r":END\s*-->)",
-        re.DOTALL,
-    )
-    return pat.sub(lambda m: m.group(1) + new_inner + m.group(3), body, count=1)
+    ONLY the SUMMARY block without re-rendering the page. Delegates to
+    `_knowledge_lib.replace_machine_block` — the single source of truth, also used
+    by `knowledge-finalize`'s OVERVIEW-NARRATIVE splice (#491), symmetric with the
+    `_extract_machine_block` delegate above."""
+    return replace_machine_block(body, name, new_inner)
 
 
 def _human_tail(body: str) -> str:

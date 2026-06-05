@@ -749,6 +749,54 @@ def extract_machine_block(page_text: str, name: str) -> str | None:
     return m.group(1) if m else None
 
 
+def replace_machine_block(page_text: str, name: str, new_inner: str) -> str:
+    """Return `page_text` with the named MACHINE-OWNED block's inner replaced by
+    `new_inner`, leaving every other byte untouched. The START/END sentinels and
+    surrounding bytes are preserved verbatim; the match mirrors
+    `extract_machine_block` so reader and writer stay symmetric. No-op (returns
+    the input unchanged) when the named block is absent — use
+    `upsert_machine_block` to insert one. Single source of truth: `concept-store.py`
+    (`renarrate` SUMMARY splice) and `knowledge-finalize` (OVERVIEW-NARRATIVE
+    splice) both go through here so a future tweak applies everywhere."""
+    pat = re.compile(
+        r"(<!--\s*MACHINE-OWNED:" + re.escape(name) + r":START\s*-->\r?\n)(.*?)"
+        r"(\r?\n?<!--\s*MACHINE-OWNED:" + re.escape(name) + r":END\s*-->)",
+        re.DOTALL,
+    )
+    return pat.sub(lambda m: m.group(1) + new_inner + m.group(3), page_text or "", count=1)
+
+
+def upsert_machine_block(page_text: str, name: str, new_inner: str) -> str:
+    """Replace the named MACHINE-OWNED block's inner if present, else INSERT a
+    fresh `<!-- :START -->\\n<inner>\\n<!-- :END -->` block right after the body's
+    leading H1 (`# …`) — or at the very top when there is no H1. Used by
+    `knowledge-finalize` to upsert the `OVERVIEW-NARRATIVE` block on `wiki/overview.md`
+    (first finalize inserts it; later finalizes replace only its inner). Every
+    other byte is preserved."""
+    if extract_machine_block(page_text, name) is not None:
+        return replace_machine_block(page_text, name, new_inner)
+    block = (
+        "<!-- MACHINE-OWNED:" + name + ":START -->\n"
+        + new_inner
+        + "\n<!-- MACHINE-OWNED:" + name + ":END -->\n"
+    )
+    text = page_text or ""
+    lines = text.splitlines(keepends=True)
+    # Insert after the first H1 (and a single following blank line, if any).
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("# "):
+            insert_at = i + 1
+            if insert_at < len(lines) and lines[insert_at].strip() == "":
+                insert_at += 1
+            head = "".join(lines[:insert_at])
+            tail = "".join(lines[insert_at:])
+            if head and not head.endswith("\n"):
+                head += "\n"
+            return head + block + ("\n" + tail if tail else "")
+    # No H1 — prepend the block.
+    return block + ("\n" + text if text else "")
+
+
 # --- Tokenization + token weighting (shared by wiki-coverage.py and -----------
 # concept-store.py) ------------------------------------------------------------
 # Lifted verbatim from wiki-coverage.py (#326/#331) so the read-before-web
@@ -1349,6 +1397,89 @@ def _dedent_join(lines: list[str]) -> str:
     margins = [len(ln) - len(ln.lstrip()) for ln in body if ln.strip()]
     cut = min(margins) if margins else 0
     return "\n".join(ln[cut:] if len(ln) >= cut else ln for ln in body)
+
+
+# --- portal-narrator records (#491) ------------------------------------------
+# The portal-narrator (knowledge-finalize Step 10.5 sub-step 3.5) proposes
+# per-theme lead-ins + one overview narrative as a raw-text records file, the
+# same fenced-block idiom as the concept-summary-narrator (parse_renarrate_records
+# above). Two block kinds:
+#
+#     - theme: Syntheses
+#       <<<LEADIN
+#       Why this theme matters, what to read first.
+#       LEADIN
+#     - overview:
+#       <<<NARRATIVE
+#       The state-of-the-wiki prose.
+#       NARRATIVE
+_PORTAL_THEME_RE = re.compile(r"^-\s*theme\s*:\s*(.+?)\s*$")
+_PORTAL_OVERVIEW_RE = re.compile(r"^-\s*overview\s*:\s*$")
+_PORTAL_LEADIN_OPEN = "<<<LEADIN"
+_PORTAL_LEADIN_CLOSE = "LEADIN"
+_PORTAL_NARRATIVE_OPEN = "<<<NARRATIVE"
+_PORTAL_NARRATIVE_CLOSE = "NARRATIVE"
+
+
+def parse_portal_records(text: str) -> dict:
+    """Parse a portal-narrator records file into
+    `{"theme_leadins": {theme: prose}, "overview": prose_or_None}`.
+
+    A `- theme: <heading>` bullet opens a lead-in block fenced by `<<<LEADIN` …
+    `LEADIN`; a `- overview:` bullet opens the narrative block fenced by
+    `<<<NARRATIVE` … `NARRATIVE`. Prose is dedented + blank-trimmed via
+    `_dedent_join`. An empty block is dropped (the engine then leaves that
+    target untouched). A later block for the same theme wins; a later overview
+    wins. CRLF-tolerant. An unterminated trailing block runs to EOF."""
+    theme_leadins: dict[str, str] = {}
+    overview: str | None = None
+    key: str | None = None          # the current theme heading, or "__overview__"
+    fence_close: str | None = None  # which CLOSE token ends the current capture
+    capturing = False
+    buf: list[str] = []
+
+    def _flush() -> None:
+        nonlocal key, buf, overview
+        if key is not None:
+            prose = _dedent_join(buf)
+            if prose:
+                if key == "__overview__":
+                    overview = prose
+                else:
+                    theme_leadins[key] = prose
+        buf = []
+
+    for raw in (text or "").split("\n"):
+        if raw.endswith("\r"):
+            raw = raw[:-1]
+        stripped = raw.strip()
+        if capturing:
+            if stripped == fence_close:
+                capturing = False
+                _flush()
+                key = None
+                continue
+            buf.append(raw)
+            continue
+        mt = _PORTAL_THEME_RE.match(raw.lstrip())
+        if mt:
+            _flush()
+            key = mt.group(1).strip()
+            continue
+        if _PORTAL_OVERVIEW_RE.match(raw.lstrip()):
+            _flush()
+            key = "__overview__"
+            continue
+        if key is not None and stripped in (_PORTAL_LEADIN_OPEN, _PORTAL_NARRATIVE_OPEN):
+            capturing = True
+            fence_close = (
+                _PORTAL_LEADIN_CLOSE if stripped == _PORTAL_LEADIN_OPEN
+                else _PORTAL_NARRATIVE_CLOSE
+            )
+            buf = []
+    if capturing:
+        _flush()
+    return {"theme_leadins": theme_leadins, "overview": overview}
 
 
 # --- crossmerge-records parser (used by concept-store.py crossmerge, #345) -----

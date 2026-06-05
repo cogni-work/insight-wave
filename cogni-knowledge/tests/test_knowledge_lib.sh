@@ -636,6 +636,74 @@ def assert_extract_machine_block():
     assert cstore._extract_machine_block(page, "SUMMARY") == kl.extract_machine_block(page, "SUMMARY")
 
 
+def assert_replace_machine_block():
+    page = ("# T\n<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->\nold\n"
+            "<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:END -->\n\n## Recent syntheses\n- a\n")
+    r = kl.replace_machine_block(page, "OVERVIEW-NARRATIVE", "new prose")
+    assert kl.extract_machine_block(r, "OVERVIEW-NARRATIVE") == "new prose", repr(r)
+    assert "old" not in r and "## Recent syntheses" in r and "- a" in r, repr(r)
+    # Absent block → input returned unchanged (no insert — that's upsert's job).
+    assert kl.replace_machine_block("# T\nbody\n", "OVERVIEW-NARRATIVE", "x") == "# T\nbody\n"
+    # Parity with concept-store.py's private delegate (single source of truth, #491).
+    cstore = load("concept_store", "concept-store.py")
+    assert cstore._replace_machine_block(page, "OVERVIEW-NARRATIVE", "z") == \
+        kl.replace_machine_block(page, "OVERVIEW-NARRATIVE", "z")
+
+
+def assert_upsert_machine_block():
+    # Insert-when-absent: lands after the H1, above existing content.
+    page = "# Overview\n\n## Recent syntheses\n- a\n"
+    u = kl.upsert_machine_block(page, "OVERVIEW-NARRATIVE", "fresh")
+    assert kl.extract_machine_block(u, "OVERVIEW-NARRATIVE") == "fresh", repr(u)
+    assert u.index("OVERVIEW-NARRATIVE") < u.index("Recent syntheses"), repr(u)
+    assert u.startswith("# Overview\n"), repr(u[:40])
+    assert "## Recent syntheses" in u and "- a" in u
+    # Replace-when-present: only the inner changes; Recent syntheses preserved.
+    u2 = kl.upsert_machine_block(u, "OVERVIEW-NARRATIVE", "fresher")
+    assert kl.extract_machine_block(u2, "OVERVIEW-NARRATIVE") == "fresher"
+    assert "fresh\n" not in u2.replace("fresher", "") and "## Recent syntheses" in u2
+    # Idempotent: identical inner → byte-identical text.
+    assert kl.upsert_machine_block(u2, "OVERVIEW-NARRATIVE", "fresher") == u2
+    # No H1 → block prepended.
+    np = kl.upsert_machine_block("body only\n", "OVERVIEW-NARRATIVE", "x")
+    assert np.startswith("<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->"), repr(np[:60])
+    assert kl.extract_machine_block(np, "OVERVIEW-NARRATIVE") == "x"
+
+
+def assert_parse_portal_records():
+    text = (
+        "- theme: Syntheses\n"
+        "  <<<LEADIN\n"
+        "  Why syntheses matter.\n"
+        "  Read the latest first.\n"
+        "  LEADIN\n"
+        "- theme: Questions\n"
+        "  <<<LEADIN\n"
+        "  The open questions.\n"
+        "  LEADIN\n"
+        "- overview:\n"
+        "  <<<NARRATIVE\n"
+        "  State of the wiki across runs.\n"
+        "  NARRATIVE\n"
+    )
+    p = kl.parse_portal_records(text)
+    assert p["theme_leadins"]["Syntheses"] == "Why syntheses matter.\nRead the latest first.", p
+    assert p["theme_leadins"]["Questions"] == "The open questions.", p
+    assert p["overview"] == "State of the wiki across runs.", p
+    # Empty block dropped; empty overview → None.
+    p2 = kl.parse_portal_records("- theme: Empty\n  <<<LEADIN\n  LEADIN\n")
+    assert p2["theme_leadins"] == {} and p2["overview"] is None, p2
+    # Last block for a theme wins; '' → empty.
+    p3 = kl.parse_portal_records(
+        "- theme: T\n  <<<LEADIN\n  first\n  LEADIN\n- theme: T\n  <<<LEADIN\n  second\n  LEADIN\n"
+    )
+    assert p3["theme_leadins"]["T"] == "second", p3
+    assert kl.parse_portal_records("") == {"theme_leadins": {}, "overview": None}
+    # CRLF tolerance.
+    crlf = "- theme: X\r\n  <<<LEADIN\r\n  prose\r\n  LEADIN\r\n"
+    assert kl.parse_portal_records(crlf)["theme_leadins"]["X"] == "prose"
+
+
 def assert_parse_renarrate_records():
     text = (
         "- slug: high-risk-classification\n"
@@ -813,6 +881,9 @@ check("claim_similarity", assert_claim_similarity)
 check("parse_concept_records", assert_parse_concept_records)
 check("parse_citation_records", assert_parse_citation_records)
 check("extract_machine_block", assert_extract_machine_block)
+check("replace_machine_block", assert_replace_machine_block)
+check("upsert_machine_block", assert_upsert_machine_block)
+check("parse_portal_records", assert_parse_portal_records)
 check("parse_renarrate_records", assert_parse_renarrate_records)
 check("digit_anchor_tokens", assert_digit_anchor_tokens)
 check("parse_crossmerge_records", assert_parse_crossmerge_records)
@@ -875,6 +946,9 @@ grade claim_similarity        "claim_similarity — symmetric weighted-Jaccard, 
 grade parse_concept_records   "parse_concept_records — concept/entity records, repeatable claim: lines, colon-in-summary, first-pipe split (#336)"
 grade parse_citation_records  "parse_citation_records — url: line parsed (#395, :// survives first-colon partition), absent url:→'', claim null→None"
 grade extract_machine_block   "extract_machine_block — verbatim inner incl. heading, absent→None, CRLF, concept-store delegate parity (#341)"
+grade replace_machine_block   "replace_machine_block — inner swap preserves sentinels + surrounding bytes, absent→unchanged, concept-store delegate parity (#491)"
+grade upsert_machine_block    "upsert_machine_block — insert-after-H1 when absent, replace-when-present, idempotent, no-H1→prepend, Recent-syntheses preserved (#491)"
+grade parse_portal_records    "parse_portal_records — theme LEADIN + overview NARRATIVE blocks, empty-dropped, last-wins, CRLF, ''→empty (#491)"
 grade parse_renarrate_records "parse_renarrate_records — multi-line dedented prose, empty-prose omitted, last-slug-wins, unterminated-to-EOF, CRLF (#341)"
 grade digit_anchor_tokens     "digit_anchor_tokens — Artikel/Article 99 → {99}, multi-anchor, GENERIC_DENYLIST years excluded, no-digit→∅ (#345)"
 grade parse_crossmerge_records "parse_crossmerge_records — merge: slug|survivor|absorbed, whitespace strip, wrong-arity/empty-field dropped, comments, CRLF, ''→[] (#345)"
