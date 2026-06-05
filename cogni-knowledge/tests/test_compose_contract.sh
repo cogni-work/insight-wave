@@ -90,6 +90,17 @@ else
   errors=$((errors + 1))
 fi
 
+# --- source-mode parity: --source wiki|local|hybrid (Phase 6 deliverable 5) -
+# Option (a) preserved the retired `research-report --source wiki` rung as a
+# `knowledge-compose --source wiki` path that composes from the bound wiki +
+# fetch-cache with NO web crawl, running the verify/finalize tail unchanged.
+# These guards catch the contract surface silently disappearing.
+assert_grep '\-\-source' "$COMPOSE" "knowledge-compose: documents the --source parameter (source-mode parity)"
+assert_grep 'SOURCE_MODE' "$COMPOSE" "knowledge-compose: Step 0 resolves SOURCE_MODE (web default / wiki)"
+assert_grep 'wiki/sources/\*.md' "$COMPOSE" "knowledge-compose: --source wiki globs wiki/sources/*.md as the evidence base"
+assert_grep 'no web crawl' "$COMPOSE" "knowledge-compose: --source wiki composes with no web crawl"
+assert_grep 'staged' "$COMPOSE" "knowledge-compose: local/hybrid are accepted-but-staged"
+
 # --- wiki-composer agent -------------------------------------------------
 COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
 if [ ! -f "$COMPOSER" ]; then
