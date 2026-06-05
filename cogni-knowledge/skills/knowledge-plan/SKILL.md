@@ -223,7 +223,7 @@ Print ≤ 6 lines:
 - Does NOT call WebSearch **by default** (Phase 1 is decomposition). The only web call is the opt-in, fail-soft preliminary scoping scan inside Step 0.4 framing — skipped on sharp topics, `--no-framing`, `--dry-run`, or `--no-prelim-search`. **Never** calls WebFetch.
 - Does NOT touch the wiki — wiki ingest is Phase 4 (`knowledge-ingest`).
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends.
-- Does NOT support `--source-mode local|hybrid|wiki` — the inverted pipeline is web-only.
+- Does NOT select the evidence source — sub-question decomposition is identical regardless of where evidence comes from, so the source mode (default `web` vs `knowledge-compose --source wiki`) is chosen downstream at compose time, not here.
 
 ## Output
 
