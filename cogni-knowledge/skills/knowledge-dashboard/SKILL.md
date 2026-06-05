@@ -117,6 +117,15 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py cache-health \
 
 Capture `entries`, `negative_ratio`, `oldest_age_days`, `max_age_days`, `verdict`.
 
+Then read the curated-portal lead-in staleness signal once. `knowledge-finalize`'s portal auto-refresh stamps each engine-owned per-theme lead-in with a `bullets:<N>` count; this read-only check reports themes whose live bullet count has since drifted past the stamp (the lead-in prose no longer reflects what accumulated under it). Pure observability — it never triggers a refresh:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py portal-staleness \
+    --wiki-root <wiki_path>
+```
+
+Capture `stale_count` and `stale_themes[]`. This is **knowledge-base-global** (one portal per bound wiki), so it surfaces once in the `## Pipeline health` block — never as a per-project column.
+
 Then read the wiki-global live-source resweep cadence once. `cogni-wiki:wiki-claims-resweep` writes `<wiki_path>/.cogni-wiki/last-resweep.json` (lock-wrapped, single-writer-per-wiki); the dashboard only reads it. Absent file → render `never`, no error:
 
 ```
@@ -172,6 +181,9 @@ Fetch-cache (**knowledge-base-global** — one shared cache across all projects,
 (If `cache-health` reports `verdict: empty`:)
 No fetched sources yet — run `knowledge-fetch` to populate the cache.
 
+(Only when `stale_count > 0` — render nothing on zero drift so a healthy base stays silent:)
+Stale portal lead-ins: <stale_count> theme(s) — <stale_themes[].theme joined by ', '> drifted past their stamped bullet count. Re-run `knowledge-finalize --apply-portal` (or `knowledge-refresh --mode push`) to refresh the lead-ins.
+
 ## Claim verification scope
 
 **Verification semantics** — every citation in every synthesis below was scored as `verbatim` / `paraphrase` / `synthesis` / `unsupported` against the cited page's `pre_extracted_claims:` block, extracted from the source body **at ingest time**. This is the inverted pipeline's structural cost win versus cogni-claims (<5 min per finalize vs ~25 min): the check is **zero-network** — **no live-source re-fetch ever happens at verify time** (`references/inverted-pipeline.md` Phase 6; `agents/wiki-verifier.md` §"What this agent does NOT do"). So "verified" here means **citation-consistent, not ground-truthed**. Two corollaries:
@@ -209,6 +221,7 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - **Empty `research_projects[]`.** Section 2's table is replaced with the empty-state line; the rest of the overlay renders normally.
 - **Legacy deposit (no `.metadata/` manifests).** `pipeline-summary.py project` returns zeros + `phase_reached: "none"`; render the per-project pipeline columns as `—` rather than `0` so the row reads as "no inverted-pipeline data" rather than "ran with zero results".
 - **`pipeline-summary.py cache-health` fails.** Render the `## Pipeline health` block with a one-line "fetch-cache health unavailable" note and keep going — the rest of the overlay is still useful.
+- **`pipeline-summary.py portal-staleness` fails.** Omit the stale-lead-ins line entirely and keep going — the signal is purely advisory, and its absence reads the same as a zero-drift base (both render nothing). The script is already fail-soft on a missing/unreadable `index.md` (returns `stale_count: 0`), so a non-zero exit here means a genuine script error, not an empty portal.
 - **No `wiki/audits/` directory.** Treat as "no lint audits yet" — section 2 still renders.
 - **Audit file present but no `claim_drift` markers.** Report `0 claim_drift findings`.
 - **Missing `<wiki_path>/.cogni-wiki/last-resweep.json` (no resweep ever run on this base).** Treat as `never`; the `## Claim verification scope` block + short summary still render normally with the `--resweep` suggestion.
@@ -233,5 +246,5 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
 - `cogni-wiki:wiki-dashboard` SKILL.md — the upstream contract
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
-- `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache health (`cache-health`)
+- `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache health (`cache-health`) + portal-lead-in drift (`portal-staleness`)
 - `cogni-wiki:wiki-claims-resweep` SKILL.md — writes `<wiki_path>/.cogni-wiki/last-resweep.json` (the resweep cadence pointer this overlay reads)
