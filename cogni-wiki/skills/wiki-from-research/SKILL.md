@@ -26,9 +26,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` once at the start to
 
 ## When to run
 
-- User asks to bootstrap a wiki from a research topic ("build a wiki on AI safety", "deep-research X into a wiki")
-- User has a finished cogni-research project and wants it deposited into a fresh wiki ("wiki-ify my <slug> project", "turn the quantum research into a wiki")
-- User wants the cold-start convenience of one command instead of running `research-setup`, `research-report`, `wiki-setup`, and `wiki-ingest` manually
+- User has a **finished on-disk research project** and wants it deposited into a fresh wiki ("wiki-ify my <slug> project", "turn the quantum research into a wiki") — this is Mode B, the only live path.
+- For a topic→wiki cold-start from scratch ("build a wiki on AI safety", "deep-research X into a wiki"), **do not run this skill** — Mode A is deprecated and aborts. Redirect to cogni-knowledge's inverted pipeline (`knowledge-setup` + `knowledge-plan` → … → `knowledge-finalize`), which deposits syntheses straight into a bound wiki.
 
 ## Never run when
 
@@ -48,7 +47,7 @@ Exactly one of `--topic` or `--research-slug` must be present.
 | `--wiki-root` | No | Pass-through to `wiki-setup`. Default `cogni-wiki/{wiki-slug}/`. |
 | `--description` | No | Pass-through to `wiki-setup`. |
 | `--publisher-base-url` | No | Pass-through to `wiki-setup`. |
-| `--research-overrides` | No | Mode A only. Comma-separated `key=value` hints forwarded to `research-setup` (e.g. `report_type=detailed,market=dach,target_words=5000`). Default: `report_type=detailed`. The user can still override every value in `research-setup`'s interactive menu — overrides are pre-fills, not pins. |
+| `--research-overrides` | No | **Mode A only — deprecated/inert.** Historically forwarded `key=value` research hints; Mode A no longer runs a research pipeline, so this flag is accepted but has no effect. |
 | `--skip-verify` | No | Mode B only. Skip the warning when zero report-claims have `verification_status: verified`. |
 | `--allow-wiki-source` | No | Mode A & Mode B. Opt-in to depositing a wiki/hybrid-mode research project — lifts the default refusal at Step 0(3) (Mode B) and Step 1d (Mode A post-research-setup re-check). MUST be combined with `--cycle-guard-cleared`. Direct users should not pass this — it exists for orchestrators (e.g. `cogni-knowledge:knowledge-report`) that have verified no circular-evidence chain. |
 | `--cycle-guard-cleared` | No | Mode A & Mode B. Caller asserts that an external cycle-guard pass (e.g. `cogni-knowledge/scripts/cycle-guard.py`) returned exit 0 on this project. This skill trusts the assertion — it does NOT re-run the guard itself, because cycle semantics are caller-specific (cogni-knowledge owns `derived_from_research:` lineage; a future caller may walk a different lineage signal). MUST be combined with `--allow-wiki-source`. |
@@ -144,7 +143,6 @@ Print plain prose, ≤8 lines:
 - `research_slug` and project path
 - Pages ingested (from `wiki-ingest` Step 9 aggregated report — count of successful sources)
 - Verified vs pending claim count (from the research deposit's `data.research` block)
-- Cost (Mode A only — sum from `research-report` Phase 6 summary)
 - Suggested next actions: `wiki-query "..."`, `wiki-dashboard`. If verified claim count is low, run your research project's verification step out-of-band, then re-run this skill in Mode B (Step 0 (2) `resume` + Step 3 will refresh pages with newly-verified claims).
 
 ## Slug coordination
@@ -153,7 +151,7 @@ Print plain prose, ≤8 lines:
 
 If the user passes `--wiki-slug`, the layout becomes asymmetric (e.g., wiki at `cogni-wiki/my-wiki/`, research at `cogni-research-quantum/`). `wiki-ingest --discover research:quantum` still works because the auto-locate examines both `<workspace>/cogni-research-quantum/` and `<wiki-root>/cogni-research-quantum/`. The asymmetry is surfaced in Step 4.
 
-In Mode A we let `cogni-research` derive the slug from the topic. If the topic collides (`research-setup`'s "resume / new / different" prompt resolves to e.g. `quantum-2`), we accept the resolved slug and pass it through. **Do not fight the upstream slug logic** — research-setup's collision handling is canonical.
+(Historical, Mode A — no longer executed.) Mode A used to let the research pipeline derive the slug from the topic and pass the resolved slug through. Mode A now aborts; in Mode B the slug is the existing project's `--research-slug` (or its derivation), so there is no upstream slug negotiation.
 
 ## Edge cases
 
@@ -174,7 +172,6 @@ In Mode A we let `cogni-research` derive the slug from the topic. If the topic c
 ## Output
 
 The skill produces:
-- (Mode A) A `cogni-research-<slug>/` project with output/report.md and entity directories
 - A populated wiki at `<wiki_root>/` with one page per sub-question, plus the standard wiki-setup top-level files
 - Materialised raw files under `<wiki_root>/raw/research-<slug>/sq-NN-<short>.md`
 - An append-only `wiki/log.md` with one `setup` line and N `ingest` lines
@@ -186,4 +183,4 @@ No file is created outside `<wiki_root>/` or `<workspace>/cogni-research-<slug>/
 - `${CLAUDE_PLUGIN_ROOT}/references/karpathy-pattern.md` — the three-layer model
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-setup/SKILL.md` — Step 2 contract
 - `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/SKILL.md` and `${CLAUDE_PLUGIN_ROOT}/skills/wiki-ingest/references/batch-mode.md` — Step 3 contract (`--discover research:<slug>` lives there)
-- cogni-research's `research-setup` and `research-report` skills — Step 1 contract (research-setup auto-chains to research-report)
+- (historical) The Mode A flow once chained an external research pipeline at Step 1; that path is now owned by cogni-knowledge's inverted pipeline (`knowledge-plan` → … → `knowledge-finalize`) and Mode A no longer dispatches it.
