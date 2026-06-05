@@ -619,8 +619,6 @@ def main() -> None:
     # wiki-lint --fix=portal_heading_dedup. Mutually exclusive with --move-slug,
     # --reflow-only, and slug mode so the write paths never overlap.
     if args.collapse_only:
-        if args.reflow_only:
-            fail("--collapse-only cannot be combined with --reflow-only")
         if args.slug or args.summary or args.category:
             fail("--collapse-only is mutually exclusive with --slug/--summary/--category")
         if not index_path.is_file():
