@@ -104,7 +104,6 @@ SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]*$")
 # The START comment carries a `refreshed:<date> bullets:<N>` staleness stamp so a
 # future drift signal (current bullet count vs the stamped count) can fire; the
 # regex tolerates that metadata tail via `[^>]*`.
-PORTAL_LEADIN_NAME = "PORTAL-LEADIN"
 _LEADIN_START_RE = re.compile(
     r"^\s*<!--\s*MACHINE-OWNED:PORTAL-LEADIN:START\b[^>]*-->\s*$"
 )
@@ -637,10 +636,9 @@ def _set_leadin(body: list, new_inner, refreshed_date: str, bullet_count: int) -
     new_span = _leadin_span_lines(new_inner, refreshed_date, bullet_count)
     first_bullet = next((i for i, ln in enumerate(body) if _extract_slug_from_line(ln)), -1)
     if first_bullet < 0:
-        # No bullets yet — append after the human prose, stripping trailing blanks.
-        trimmed = list(body)
-        while trimmed and trimmed[-1].strip() == "":
-            trimmed.pop()
+        # No bullets yet — append after the human prose, stripping trailing blanks
+        # (reuse the same helper _insert_alphabetised / reflow_categories use).
+        trimmed, _ = _strip_trailing_blanks(list(body))
         block = ([""] + new_span) if (trimmed and trimmed[-1].strip()) else new_span
         return trimmed + block, "inserted"
     if first_bullet > 0 and body[first_bullet - 1].strip() == "":
