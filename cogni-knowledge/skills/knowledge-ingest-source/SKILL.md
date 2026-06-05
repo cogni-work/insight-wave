@@ -1,6 +1,6 @@
 ---
 name: knowledge-ingest-source
-description: "Standalone single-source ingest for cogni-knowledge — deposit ONE source directly into the bound wiki without a research run. Reads a URL (a web page, or a PDF URL via the Read-tool page loop), claim-extracts it, and writes one wiki/sources/<slug>.md page with pre_extracted_claims: and the same diff-before-write + citation discipline as the research path. Use whenever the user says 'ingest this URL into my wiki', 'add this source to the knowledge base', 'drop this page into my wiki', 'single-source ingest', 'ingest one source', or wants to deposit a single source directly without running knowledge-plan → curate → fetch. For a batch of research-fetched sources use knowledge-ingest instead."
+description: "Standalone single-source ingest for cogni-knowledge — deposit ONE source (a web page or a PDF URL) directly into the bound wiki with no research run, landing one wiki/sources/<slug>.md page with pre_extracted_claims: and the same diff-before-write + citation discipline as the research path. Use whenever the user says 'ingest this URL into my wiki', 'add this source to the knowledge base', or 'single-source ingest'. For batch research-fetched sources use knowledge-ingest instead."
 allowed-tools: Read, Write, Bash, Task, WebFetch
 ---
 
@@ -9,8 +9,8 @@ allowed-tools: Read, Write, Bash, Task, WebFetch
 The **standalone** single-source surface: deposit ONE source directly into the
 bound wiki, with **no research run** (no `knowledge-plan` → `knowledge-curate`
 → `knowledge-fetch` scaffold, no `fetch-manifest.json`). This is the
-standalone-Karpathy-wiki capability — a user drops one URL into their bound
-base and it lands as a `type: source` page carrying `pre_extracted_claims:`,
+standalone single-URL deposit capability — a user drops one URL into their
+bound base and it lands as a `type: source` page carrying `pre_extracted_claims:`,
 indexed and backlinked exactly like a research-ingested source.
 
 The mechanism **reuses the research write path byte-for-byte**: it populates
@@ -89,8 +89,9 @@ follow-ups:
 
 **Required plugin + script dir.** Probe `cogni-wiki` and resolve the
 `wiki-ingest` script dir exactly as `knowledge-ingest` Step 0 does (vendored
-copy first, sibling/cache fallback), so Step 5's post-write lockstep can call
-`backlink_audit.py` / `wiki_index_update.py` / `config_bump.py`:
+copy first, sibling/cache fallback), so this skill's Step 5 post-write lockstep
+(mirroring `knowledge-ingest`'s Step 4) can call `backlink_audit.py` /
+`wiki_index_update.py` / `config_bump.py`:
 
 ```
 resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest
@@ -129,7 +130,8 @@ exists and `<WIKI_ROOT>/wiki/` is writeable; abort otherwise.
 The `source-ingester` reads its body via `fetch-cache.py fetch`, so the URL's
 body must be in the cache first. **Do not re-fetch if a fresh entry already
 exists** — `fetch-cache.py fetch --knowledge-root <knowledge_root> --url <URL>`
-returning `status: ok` means the body is cached; skip to Step 2.
+returning `success: true` (with the cached entry's `data.entry.status == "ok"`)
+means the body is already cached; skip to Step 2.
 
 Otherwise fetch and store:
 
