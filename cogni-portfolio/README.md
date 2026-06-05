@@ -202,7 +202,7 @@ cogni-portfolio/
 | cogni-marketing | No | Customer narratives from portfolio-communicate are auto-discovered by marketing-setup for voice/messaging enrichment |
 | cogni-claims | No | Claim verification for research-backed assertions via portfolio-verify |
 | cogni-trends | No | Bidirectional TIPS integration via trends-bridge |
-| cogni-research | No | Pitch arcs (technology-futures, strategic-foresight, trend-panorama, theme-thesis) in portfolio-communicate draw on cogni-research output for evidence |
+| cogni-knowledge | No | Pitch arcs (technology-futures, strategic-foresight, trend-panorama, theme-thesis) in portfolio-communicate draw on cogni-knowledge research syntheses for evidence |
 | cogni-workspace | No | Theme selection for portfolio-dashboard via pick-theme |
 | cogni-consulting | No | Lean Canvas extraction via portfolio-canvas (canvases from business-model-hypothesis vision class) |
 | cogni-sales | No | Downstream consumer — why-change pitch builds on portfolio features and propositions |

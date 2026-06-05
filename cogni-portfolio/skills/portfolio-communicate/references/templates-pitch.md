@@ -45,7 +45,7 @@ Pitches are spoken aloud to an audience, usually in a room where someone can imm
 | `competitive-intelligence` | Competitive positioning presentation | Competitors → Landscape/Shifts, Propositions → Positioning, Markets → Implications |
 | `industry-transformation` | Industry conference, thought leadership | Markets → Forces, Competitors → Friction, Features → Evolution, Products → Leadership |
 
-Other arcs (`technology-futures`, `strategic-foresight`, `trend-panorama`, `theme-thesis`) are better served by cogni-trends or cogni-research input — portfolio data alone is usually insufficient for these arcs.
+Other arcs (`technology-futures`, `strategic-foresight`, `trend-panorama`, `theme-thesis`) are better served by cogni-trends or cogni-knowledge input — portfolio data alone is usually insufficient for these arcs.
 
 ---
 
