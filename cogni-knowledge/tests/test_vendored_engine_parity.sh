@@ -56,7 +56,7 @@ while IFS= read -r vfile; do
     red "FAIL: vendored copy drifted from origin: $rel"
     errors=$((errors + 1))
   fi
-done < <(find "$VENDOR_ROOT" -type f ! -name 'README.md' | sort)
+done < <(find "$VENDOR_ROOT" -type f ! -name 'README.md' -not -path '*/__pycache__/*' | sort)
 
 # Provenance README is cogni-knowledge-authored (not a mirror) — assert presence,
 # not byte-identity.
