@@ -1,7 +1,7 @@
 ---
 name: knowledge-finalize
 description: "Phase 7 of the inverted pipeline — deposits the verified draft as a wiki synthesis page, closing the compounding loop. Reads the latest verified draft + its verify manifest + citation manifest, runs cycle-guard.py to refuse self-citing loops, atomically writes the draft to <wiki>/syntheses/<slug>.md with type: synthesis frontmatter (incl. derived_from_research), updates wiki/index.md, bumps entries_count, rebuilds context_brief.md, appends a research_projects[] entry to binding.json and a finalize line to wiki/log.md, and runs a conformance gate (wiki-lint --fix=all + wiki-health) with bare [[slug]] backlinks that de-orphan the cited sources. Then dispatches the wiki-contradictor agent for a zero-network contradiction tripwire and the wiki-reviewer agent for an advisory structural-quality score — both fail-soft, non-blocking observability. The deposited synthesis becomes visible to future knowledge-compose runs as cross-source framing. Use this skill whenever the user says 'finalize the draft', 'deposit the synthesis', 'phase 7 of the knowledge pipeline', 'knowledge finalize', or 'land the verified draft'."
-allowed-tools: Read, Write, Bash, Task
+allowed-tools: Read, Write, Bash, Task, AskUserQuestion
 ---
 
 # Knowledge Finalize
@@ -63,6 +63,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--no-question-links` | No | Skip the Step 4.7 `synthesis→question` forward links (and therefore the Step 10.5 reverse backfill into each question page's `## See also`). Default: OFF (links emitted). Pass to deposit a synthesis with no `## Research questions` section — e.g. against a base whose question nodes are mid-refactor. The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
 | `--apply-portal` | No | **Apply** the Step 10.5 sub-step 3.5 curated-portal refresh (auto-refresh, option 4b) instead of staging it: write the engine-owned per-theme lead-ins to `wiki/index.md` (via `wiki_index_update.py --set-leadin`) and splice the overview narrative into `wiki/overview.md`. Alias: `--refresh-portal`. Default: OFF — finalize **stages** a proposed diff to `<wiki>/.cogni-wiki/portal-proposed.md` and leaves the live portal untouched. Human (non-sentineled) lead-ins are never touched in either mode. See `references/portal-shape-decision.md`. |
 | `--no-portal` | No | Skip the Step 10.5 sub-step 3.5 curated-portal refresh **entirely** — no portal-narrator dispatch, no staging, no apply. Default: OFF (the refresh runs, staging by default). The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
+| `--no-portal-prompt` | No | Suppress the Step 10.5 sub-step 3.5 **interactive apply-portal confirm** so finalize stages the proposed diff silently instead of asking. Default: OFF — a human-direct run with a non-empty refresh set is asked whether to apply now. The autonomous `knowledge-refresh --mode push` loop passes this flag (the `--no-cobrowse` parallel) so it never blocks on the prompt. No effect under `--apply-portal` (applies regardless) or `--no-portal`/`--dry-run` (no refresh runs). |
 
 ## Workflow
 
@@ -838,7 +839,20 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    `OUTPUT_LANGUAGE` is the same value Step 5/6 threaded from `plan.json::output_language` (re-read it from `plan.json` if not still in hand). The agent writes raw-text records parsed by `_knowledge_lib.parse_portal_records` → `{theme_leadins: {theme: prose}, overview: prose|None}`.
 
-   **(d) STAGE (default) or APPLY (`--apply-portal`).**
+   **(d) STAGE (default) or APPLY (`--apply-portal`), with an interactive confirm on human-direct runs.**
+
+   Decide the path before writing anything:
+
+   1. `--apply-portal` was passed → **APPLY** (explicit intent wins; never prompt).
+   2. Otherwise the default is STAGE. Decide whether to *ask first*:
+      - If `--no-portal-prompt` was passed (the autonomous `knowledge-refresh --mode push` loop sets it) — **STAGE silently**, today's behavior. (An empty refresh set never reaches here; (a) already skipped it.)
+      - Otherwise this is a **human-direct** run with themes that grew, so surface the proposed diff and `AskUserQuestion` (single-select):
+
+        > **Apply the proposed portal refresh to the live portal?** `<N>` engine-owned theme lead-in(s) in `wiki/index.md` plus the `wiki/overview.md` narrative will be (re)written from the portal-narrator's records. Human (non-sentineled) lead-ins are never touched.
+
+        Options: **Apply** → run the APPLY path below; **Stage only** → run the STAGE path below (write `portal-proposed.md`, live portal untouched). This is the only `AskUserQuestion` in finalize; it fires solely on the human-direct, non-empty-refresh-set path, so the autonomous loop and every flagged run stay non-interactive.
+
+   The two paths themselves are unchanged:
 
    - **STAGE** — write a human-readable `<WIKI_ROOT>/.cogni-wiki/portal-proposed.md`: for each proposed theme, the heading + a `current:` block (from the bundle's `--get-leadin`) and a `proposed:` block (from the records), then the proposed overview narrative. Do **not** write the live portal. (Inline `python3` reading `portal-records.txt` via `parse_portal_records` + the per-theme `--get-leadin` already captured in the bundle.)
 

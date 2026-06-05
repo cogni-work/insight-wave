@@ -64,6 +64,19 @@ else
   errors=$((errors + 1))
 fi
 
+# --- 2.5) Autonomous finalize suppresses the interactive portal confirm -----
+# Push-mode is autonomous, so its knowledge-finalize dispatch must pass
+# --no-portal-prompt (the --no-cobrowse parallel) — otherwise finalize would
+# block on the human-direct apply-portal AskUserQuestion (#516).
+FINALIZE_DISPATCH=$(grep 'Skill("cogni-knowledge:knowledge-finalize"' "$REFRESH" || true)
+if echo "$FINALIZE_DISPATCH" | grep -q '\-\-no-portal-prompt'; then
+  green "PASS: push-mode finalize dispatch passes --no-portal-prompt (#516)"
+else
+  red "FAIL: push-mode finalize dispatch must pass --no-portal-prompt (autonomous, never block on the portal confirm)"
+  red "  got: $FINALIZE_DISPATCH"
+  errors=$((errors + 1))
+fi
+
 # --- 3) Clean-break invariant ----------------------------------------------
 # The legacy push-mode dispatched cogni-knowledge:knowledge-research (which
 # transitively reached cogni-research). That dispatch — and the cogni-research

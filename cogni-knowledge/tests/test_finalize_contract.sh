@@ -116,7 +116,10 @@ assert_grep 'CITATION_COUNT=<count>' "$FIN" "knowledge-finalize: dry-run printou
 # wiki-contradictor agent (#335). The pre-v0.1.15 "no Task" assertion
 # was tied to M9's no-agents posture, which is no longer the contract.
 FIN_TOOLS_LINE=$(grep '^allowed-tools:' "$FIN" || true)
-for required in 'Read' 'Write' 'Bash' 'Task'; do
+# AskUserQuestion is required since v0.1.79 (#516): the human-direct interactive
+# apply-portal confirm in Step 10.5 sub-step 3.5. It is NOT a network/mutation
+# tool, so it does not trip the closed-set guard below.
+for required in 'Read' 'Write' 'Bash' 'Task' 'AskUserQuestion'; do
   if echo "$FIN_TOOLS_LINE" | grep -q "$required"; then
     green "PASS: knowledge-finalize: allowed-tools includes $required"
   else
@@ -388,6 +391,12 @@ assert_grep '\-\-get-leadin' "$FIN" "knowledge-finalize: sub-step 3.5 reads the 
 # The ownership boundary + the two sentinel names must be named.
 assert_grep 'MACHINE-OWNED:PORTAL-LEADIN' "$FIN" "knowledge-finalize: names the PORTAL-LEADIN sentinel (#491)"
 assert_grep 'MACHINE-OWNED:OVERVIEW-NARRATIVE' "$FIN" "knowledge-finalize: names the OVERVIEW-NARRATIVE sentinel (#491)"
+
+# --- #516 interactive apply-portal confirm (Step 10.5 sub-step 3.5 (d)) ---
+# Human-direct finalize asks before applying the portal diff; the autonomous
+# knowledge-refresh push loop passes --no-portal-prompt so it stages silently.
+assert_grep '\-\-no-portal-prompt' "$FIN" "knowledge-finalize: --no-portal-prompt suppressor flag documented (#516)"
+assert_grep 'AskUserQuestion' "$FIN" "knowledge-finalize: sub-step 3.5 (d) offers an interactive apply-portal confirm (#516)"
 assert_grep 'upsert_machine_block' "$FIN" "knowledge-finalize: overview splice via _knowledge_lib.upsert_machine_block (#491)"
 # Engine never writes a human (non-sentineled) lead-in — the safety promise.
 assert_grep 'human (non-sentineled) lead-in is never touched\|never touched\|never converts' "$FIN" "knowledge-finalize: sub-step 3.5 documents the human-lead-in protection (#491)"
