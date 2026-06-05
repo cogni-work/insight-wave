@@ -1,19 +1,19 @@
 ---
 name: knowledge-dashboard
-description: "Render an HTML dashboard for a bound cogni-knowledge base — dispatches cogni-wiki:wiki-dashboard against the bound wiki and writes a knowledge-overlay.md sidecar that lists deposited research projects and the latest lint-audit claim_drift count. Use this skill whenever the user says 'show the dashboard for my <slug> base', 'knowledge dashboard', 'visualize my eu-ai-act knowledge base', 'render the knowledge base as HTML', 'knowledge-dashboard <slug>'. The sidecar makes the binding's contribution visible alongside the wiki's own dashboard."
-allowed-tools: Read, Write, Bash, Glob, Skill
+description: "Render an HTML dashboard for a bound cogni-knowledge base — runs the vendored wiki-dashboard scripts (render_dashboard.py + build_graph.py) natively against the bound wiki and writes a knowledge-overlay.md sidecar that lists deposited research projects and the latest lint-audit claim_drift count. Use this skill whenever the user says 'show the dashboard for my <slug> base', 'knowledge dashboard', 'visualize my eu-ai-act knowledge base', 'render the knowledge base as HTML', 'knowledge-dashboard <slug>'. The sidecar makes the binding's contribution visible alongside the wiki's own dashboard."
+allowed-tools: Read, Write, Bash, Glob
 ---
 
 # Knowledge Dashboard
 
-Render a self-contained HTML dashboard for a bound cogni-knowledge base. This skill is a thin composition over `cogni-wiki:wiki-dashboard` — it dispatches the upstream dashboard against the bound wiki, then writes one extra markdown file (`knowledge-overlay.md`) that surfaces what `binding.json` knows but `wiki-dashboard` does not: which research projects have contributed, and what the latest lint audit said about claim drift.
+Render a self-contained HTML dashboard for a bound cogni-knowledge base. This skill runs the **vendored** `render_dashboard.py` (and, for `--graph`, `build_graph.py`) from `scripts/vendor/cogni-wiki/skills/wiki-dashboard/scripts/` natively against the bound wiki — resolved vendored-first via `resolve_wiki_scripts()`, the same posture `knowledge-ingest` uses for its engine helpers — then writes one extra markdown file (`knowledge-overlay.md`) that surfaces what `binding.json` knows but the bare wiki dashboard does not: which research projects have contributed, and what the latest lint audit said about claim drift. A standalone Karpathy base renders its dashboard with no `cogni-wiki` plugin installed.
 
-The cogni-knowledge value-add over a raw `cogni-wiki:wiki-dashboard` dispatch is:
+The cogni-knowledge value-add over a raw wiki-dashboard render is:
 
 1. **Binding-aware wiki path resolution** — no `--wiki-root` from the user.
 2. **Knowledge overlay sidecar** — a markdown file co-located with `wiki-dashboard.html` that captures the binding view: a deposited-projects table with per-project inverted-pipeline depth (sub-questions, fetched/unavailable, distilled concepts + claim-dedup ratio, verifier verdicts), a knowledge-base-global fetch-cache health block, and the latest lint-audit summary.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the delegation boundary — this skill writes only one file (`knowledge-overlay.md`); everything else is the upstream dashboard's responsibility.
+Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session to remember the boundary — this skill writes only one file (`knowledge-overlay.md`); the HTML render (`wiki-dashboard.html` / `wiki-graph.html`) is the vendored dashboard scripts' responsibility.
 
 ## When to run
 
@@ -23,8 +23,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 
 ## Never run when
 
-- No `binding.json` exists at the resolved knowledge root — route to `/cogni-knowledge:knowledge-setup`. Direct wiki users without a binding should run `cogni-wiki:wiki-dashboard` directly.
-- The wiki is empty — `cogni-wiki:wiki-dashboard` already refuses; the overlay still renders honestly with zero deposits.
+- No `binding.json` exists at the resolved knowledge root — route to `/cogni-knowledge:knowledge-setup`. (A raw wiki with no binding is rendered by `render_dashboard.py` directly; this skill adds the binding overlay.)
+- The wiki is empty — `render_dashboard.py` still renders an honest empty dashboard, and the overlay renders honestly with zero deposits.
 
 ## Parameters
 
@@ -32,31 +32,37 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). |
-| `--graph` | No | Pass-through to `cogni-wiki:wiki-dashboard --graph`. Values: `no` (default) / `pass1` / `yes`. |
-| `--open` | No | Pass-through to `cogni-wiki:wiki-dashboard --open`. Values: `yes` / `no` (default). |
+| `--graph` | No | Controls whether the vendored `build_graph.py` runs alongside `render_dashboard.py`. Values: `no` (default, no graph) / `pass1` (structural graph, no LLM) / `yes` (two-pass graph with the LLM relatedness loop). |
+| `--open` | No | Print the `file://` URL(s) of the rendered HTML so the user can open them. Values: `yes` / `no` (default). |
 
 ## Workflow
 
 ### 0. Pre-flight
 
-**Required plugins.** This skill dispatches `cogni-wiki:wiki-dashboard` and reads the bound wiki + the inverted-pipeline manifests — it never reaches cogni-research, so it probes only `cogni-wiki` (cogni-research is 0% of the runtime path). Abort cleanly here rather than letting the downstream `Skill` dispatch fail with an opaque error. The probe handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
+**Required engine.** This skill resolves the wiki-dashboard scripts **vendored-first** — cogni-knowledge ships a byte-identical copy of the engine in-tree under `scripts/vendor/cogni-wiki/`, so a bound base renders its dashboard without cogni-wiki installed and this skill no longer dispatches `cogni-wiki:wiki-dashboard`. The `cogni-wiki` install is only a fallback layout. Probe both so the skill aborts cleanly here rather than failing mid-render:
 
 ```
-probe_plugin() {
-  local plugin="$1" skill="$2"
-  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
-  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
-    [ -f "$d" ] && return 0
-  done
-  return 1
-}
-probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+# vendored-first: the in-tree dashboard scripts are self-contained
+test -d "${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/wiki-dashboard/scripts" && WIKI_OK=yes || WIKI_OK=no
+
+# fallback: an installed cogni-wiki sibling / marketplace cache (legacy layout)
+if [ "$WIKI_OK" = "no" ]; then
+  probe_plugin() {
+    local plugin="$1" skill="$2"
+    test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
+    for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
+      [ -f "$d" ] && return 0
+    done
+    return 1
+  }
+  probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+fi
 ```
 
 If `WIKI_OK` is `no`, abort:
 
-> cogni-knowledge requires `cogni-wiki` to be installed.
-> Install it via the marketplace, then retry.
+> cogni-knowledge's vendored wiki-dashboard scripts are missing and no `cogni-wiki`
+> install was found. Reinstall cogni-knowledge, then retry.
 
 Then continue with the binding-resolution checks:
 
@@ -82,16 +88,68 @@ Then continue with the binding-resolution checks:
 
 4. Confirm the wiki is still there: `<wiki_path>/.cogni-wiki/config.json` must exist. If not, abort.
 
-### 1. Dispatch `cogni-wiki:wiki-dashboard`
+### 1. Render the dashboard natively on the vendored scripts
 
+Resolve the vendored `wiki-dashboard` scripts dir vendored-first (the same `resolve_wiki_scripts` posture `knowledge-ingest` uses), then invoke `render_dashboard.py` directly — no `Skill` dispatch:
+
+```bash
+resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-dashboard
+  local skill="$1"
+  # Vendored-first: cogni-knowledge ships a byte-identical copy of the engine
+  # in-tree, so prefer it and stay self-contained. The external sibling/cache
+  # probes are the graceful-degradation fallback (keep both plugins installable
+  # until cogni-wiki is archived).
+  local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
+  test -d "$vend" && { echo "$vend"; return 0; }
+  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
+  test -d "$sib" && { echo "$sib"; return 0; }
+  local newest ver
+  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
+    [ -d "$d" ] || continue
+    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
+    case "$ver" in ''|*[!0-9.]*) continue ;; esac
+    printf '%s\n' "$d"
+  done | sort -V | tail -1)
+  [ -n "$newest" ] && { echo "$newest"; return 0; }
+  return 1
+}
+WIKI_DASHBOARD_SCRIPTS=$(resolve_wiki_scripts wiki-dashboard) \
+  || abort "cogni-wiki wiki-dashboard scripts not found (vendored copy missing)"
 ```
-Skill("cogni-wiki:wiki-dashboard",
-      args="--wiki-root <wiki_path> [--open <val>] [--graph <val>]")
+
+**1a. Render the dashboard HTML.** `render_dashboard.py` takes `--wiki-root` (required; defaults `--output` to `<wiki_path>/wiki-dashboard.html`) and resolves `_wikilib` itself (no `--wiki-scripts-dir` needed):
+
+```bash
+python3 "${WIKI_DASHBOARD_SCRIPTS}/render_dashboard.py" --wiki-root "<wiki_path>"
 ```
 
-`wiki-dashboard` accepts `--wiki-root` (see `cogni-wiki/skills/wiki-dashboard/SKILL.md:28`). Forward `--graph` and `--open` only if the caller passed them — let the upstream defaults apply otherwise.
+Parse the JSON envelope. On `success: false` (or a non-zero exit — e.g. `<wiki_path>/.cogni-wiki/config.json` absent), surface the `error` verbatim and **stop**. Do NOT write the overlay sidecar — a half-rendered dashboard view is worse than none.
 
-If the upstream dispatch fails, surface its error verbatim and stop. Do NOT write the overlay sidecar — a half-rendered dashboard view is worse than none.
+**1b. Build the graph (only when `--graph` ∈ {`pass1`, `yes`}).** The graph layer is the separate vendored `build_graph.py` (`--wiki-root` required; writes `<wiki_path>/wiki-graph.html`). `render_dashboard.py` does NOT invoke it — this skill orchestrates it:
+
+- `--graph pass1` — structural graph only, no LLM:
+  ```bash
+  python3 "${WIKI_DASHBOARD_SCRIPTS}/build_graph.py" --mode build --wiki-root "<wiki_path>"
+  ```
+- `--graph yes` — two-pass graph with the relatedness loop (reproduces the upstream pass-2 orchestration inline):
+  1. Enumerate candidate page pairs:
+     ```bash
+     python3 "${WIKI_DASHBOARD_SCRIPTS}/build_graph.py" --mode enumerate-candidates --wiki-root "<wiki_path>" --limit 50
+     ```
+  2. For each emitted candidate `{pair_id, slug_a, slug_b}`, judge relatedness yourself (read the two pages) and record the verdict:
+     ```bash
+     python3 "${WIKI_DASHBOARD_SCRIPTS}/build_graph.py" --mode record-judgement --wiki-root "<wiki_path>" \
+         --pair-id "<pair_id>" --slug-a "<slug_a>" --slug-b "<slug_b>" \
+         --judgement related|unrelated --confidence <0.0-1.0> --relationship "<short phrase>"
+     ```
+  3. Re-render the graph with the recorded judgements:
+     ```bash
+     python3 "${WIKI_DASHBOARD_SCRIPTS}/build_graph.py" --mode build --wiki-root "<wiki_path>"
+     ```
+
+  Judgements are cached at `<wiki_path>/.cogni-wiki/graph-cache/`, so a re-run only judges new pairs. If `build_graph.py` fails, surface the error and skip the graph — the dashboard HTML from 1a still stands; do not abort the overlay.
+
+**1c. `--open`.** When `--open yes`, after the renders print the `file://` URL(s) so the user can open them (`file://<wiki_path>/wiki-dashboard.html`, and `…/wiki-graph.html` when a graph was built). This is a local print — the scripts do not open a browser themselves.
 
 ### 2. Compose the knowledge overlay sidecar
 
@@ -225,26 +283,27 @@ Counting `claim_drift` findings: pick the freshest audit (`ls -1 <wiki_path>/wik
 - **No `wiki/audits/` directory.** Treat as "no lint audits yet" — section 2 still renders.
 - **Audit file present but no `claim_drift` markers.** Report `0 claim_drift findings`.
 - **Missing `<wiki_path>/.cogni-wiki/last-resweep.json` (no resweep ever run on this base).** Treat as `never`; the `## Claim verification scope` block + short summary still render normally with the `--resweep` suggestion.
-- **Upstream `wiki-dashboard` fails after partial render.** Step 1 already aborted; the overlay is not written.
+- **`render_dashboard.py` fails (e.g. missing `.cogni-wiki/config.json`).** Step 1a already aborted; the overlay is not written. (A `build_graph.py` failure under `--graph` is non-fatal — the dashboard HTML stands and the overlay still writes.)
 
 ## Out of scope
 
 - **Running `wiki-lint` from this skill.** The verification-scope block reads whatever audits already exist on disk. Running lint is a separate user-driven action (it costs tokens; the dashboard is meant to be cheap and frequent).
 - **Dispatching `wiki-claims-resweep` itself.** Resweep is expensive (WebFetch per cited URL). The dashboard is meant to be cheap and frequent; it only reads `last-resweep.json` and surfaces the cadence. The resweep is opt-in via `/cogni-knowledge:knowledge-refresh --resweep`.
-- **Injecting the binding overlay into `wiki-dashboard.html` itself.** The upstream dashboard is wiki-general; layering knowledge-base-specific content into its HTML would couple the two. The sidecar approach keeps the contracts clean.
+- **Injecting the binding overlay into `wiki-dashboard.html` itself.** The vendored dashboard render is wiki-general; layering knowledge-base-specific content into its HTML would couple the two. The sidecar approach keeps the contracts clean.
 - **Modifying the binding.** Read-only by design.
 - **Writing anywhere outside `<wiki_path>/`.** The overlay is the only file this skill writes, and it lives inside the bound wiki's directory.
 
 ## Output
 
-- A single HTML file at `<wiki_path>/wiki-dashboard.html` (rendered by `cogni-wiki:wiki-dashboard`).
-- When `--graph` ∈ {`pass1`, `yes`}: a second HTML at `<wiki_path>/wiki-graph.html` (rendered by `cogni-wiki:wiki-dashboard`).
+- A single HTML file at `<wiki_path>/wiki-dashboard.html` (rendered by the vendored `render_dashboard.py`).
+- When `--graph` ∈ {`pass1`, `yes`}: a second HTML at `<wiki_path>/wiki-graph.html` (rendered by the vendored `build_graph.py`).
 - A markdown sidecar at `<wiki_path>/knowledge-overlay.md` (written by this skill).
 
 ## References
 
-- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
-- `cogni-wiki:wiki-dashboard` SKILL.md — the upstream contract
+- `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary
+- `${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/wiki-dashboard/scripts/render_dashboard.py` — the vendored dashboard renderer (`--wiki-root`, `--output`)
+- `${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/wiki-dashboard/scripts/build_graph.py` — the vendored graph layer (`--mode build|enumerate-candidates|record-judgement`)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
 - `${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py --help` — per-project depth (`project`) + fetch-cache health (`cache-health`) + portal-lead-in drift (`portal-staleness`)
 - `cogni-wiki:wiki-claims-resweep` SKILL.md — writes `<wiki_path>/.cogni-wiki/last-resweep.json` (the resweep cadence pointer this overlay reads)
