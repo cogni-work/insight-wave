@@ -59,10 +59,10 @@ If neither `--topic` nor `--research-slug` is present, abort with a clear messag
 
 ### 0. Pre-flight (always; fail-fast)
 
-The order matters: in Mode A, the **wiki-target check runs before any research dispatch** so an unusable wiki target never burns money on cogni-research.
+Pre-flight runs for Mode B (the only live path). (Historically, in Mode A the wiki-target check ran before any research dispatch so an unusable wiki target never burned research budget; Mode A now aborts in Step 1 and dispatches nothing.)
 
 1. **Resolve mode & slugs.**
-   - If `--topic` set: mode = A. The cogni-research slug is unknown until Step 1 returns; pin a *tentative* slug from `kebab-case(--topic)` for path planning, but use the actual slug from Step 1's return.
+   - If `--topic` set: mode = A → **abort and redirect** (Step 1); no slug resolution happens. (Historically a tentative slug from `kebab-case(--topic)` was pinned for path planning until Step 1 returned the real slug.)
    - If `--research-slug` set: mode = B. `research_slug = --research-slug`.
    - `wiki_slug = --wiki-slug` if set, else `research_slug`.
    - `wiki_root = --wiki-root` if set, else `cogni-wiki/{wiki_slug}/` resolved against the current workspace.
