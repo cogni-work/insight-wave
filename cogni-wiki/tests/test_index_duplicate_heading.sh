@@ -209,4 +209,90 @@ has_line "$LEADIN_SYN" \
   || fail "Case 4: the survivor's curated lead-in was lost during move+collapse"
 green "Case 4: move_slug collapses first, then relocates into the merged section"
 
+# =====================================================================
+# CASE 5 — the --collapse-only repair mode (wiki-lint --fix=portal_heading_dedup)
+# reconciles a base that is ALREADY duplicated on disk, with no insert/relocate.
+# A dry-run reports the plan without writing; a wet run collapses to one heading
+# (lead-in preserved, bullets merged + alphabetised); a re-run is a noop.
+# =====================================================================
+cat > "$INDEX" <<EOF
+# Test Base — Knowledge Portal
+
+> One entry point.
+
+## Syntheses
+
+$LEADIN_SYN
+
+- [[alpha-synthesis]] — first synthesis
+
+## Sources
+
+- [[some-source]] — an unrelated source bullet that must stay put
+
+## Syntheses
+
+- [[omega-synthesis]] — last synthesis
+EOF
+
+# 5a — dry-run: action collapsed, applied false, and NO on-disk change.
+BEFORE="$WORKDIR/collapse-before.md"
+cp "$INDEX" "$BEFORE"
+OUT=$(python3 "$UPDATE" --wiki-root "$WIKI" --collapse-only --dry-run)
+echo "$OUT" | python3 -c "
+import json, sys
+d = json.loads(sys.stdin.read())
+assert d['success'], d.get('error')
+data = d['data']
+assert data['action'] == 'collapsed', f'5a: action != collapsed: {data}'
+assert data['changed'] is True, f'5a: changed != True: {data}'
+assert data['applied'] is False, f'5a: applied != False on dry-run: {data}'
+assert data['dry_run'] is True, f'5a: dry_run != True: {data}'
+" || fail "Case 5a: --collapse-only --dry-run envelope check"
+if ! diff -q "$BEFORE" "$INDEX" >/dev/null 2>&1; then
+  fail "Case 5a: --collapse-only --dry-run mutated index.md (must be plan-only)"
+fi
+[ "$(count_heading Syntheses)" = "2" ] \
+  || fail "Case 5a: --dry-run collapsed the duplicate on disk (must not write)"
+green "Case 5a: --collapse-only --dry-run reports collapsed, writes nothing"
+
+# 5b — wet: collapses to one heading, lead-in preserved, bullets merged + sorted.
+OUT=$(python3 "$UPDATE" --wiki-root "$WIKI" --collapse-only)
+echo "$OUT" | python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())['data']
+assert data['action'] == 'collapsed', f'5b: action != collapsed: {data}'
+assert data['applied'] is True, f'5b: applied != True on wet run: {data}'
+" || fail "Case 5b: --collapse-only wet envelope check"
+[ "$(count_heading Syntheses)" = "1" ] \
+  || fail "Case 5b: ## Syntheses not collapsed to single instance (count=$(count_heading Syntheses))"
+has_line "$LEADIN_SYN" \
+  || fail "Case 5b: the survivor's curated lead-in was lost during collapse"
+for s in alpha-synthesis omega-synthesis; do
+  [ "$(count_bullet "[[$s]]")" = "1" ] \
+    || fail "Case 5b: bullet [[$s]] not present exactly once (count=$(count_bullet "[[$s]]"))"
+done
+ORDER=$(grep -oE '\[\[(alpha|omega)-synthesis\]\]' "$INDEX" | tr '\n' ' ')
+[ "$ORDER" = "[[alpha-synthesis]] [[omega-synthesis]] " ] \
+  || fail "Case 5b: merged bullets not alphabetised (got: $ORDER)"
+[ "$(count_heading Sources)" = "1" ] \
+  || fail "Case 5b: unrelated ## Sources heading disturbed"
+green "Case 5b: --collapse-only wet run collapses, preserves lead-in, merges+sorts bullets"
+
+# 5c — idempotent: a second wet run is a noop and leaves the file byte-identical.
+BEFORE="$WORKDIR/collapse-after.md"
+cp "$INDEX" "$BEFORE"
+OUT=$(python3 "$UPDATE" --wiki-root "$WIKI" --collapse-only)
+echo "$OUT" | python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())['data']
+assert data['action'] == 'noop', f'5c: action != noop on clean index: {data}'
+assert data['changed'] is False, f'5c: changed != False: {data}'
+assert data['applied'] is False, f'5c: applied != False on noop: {data}'
+" || fail "Case 5c: --collapse-only idempotency envelope check"
+if ! diff -q "$BEFORE" "$INDEX" >/dev/null 2>&1; then
+  fail "Case 5c: idempotent --collapse-only re-run mutated index.md"
+fi
+green "Case 5c: --collapse-only is idempotent — second run is a noop, file unchanged"
+
 green "ALL TESTS PASS"

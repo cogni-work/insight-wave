@@ -546,9 +546,17 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--collapse-only",
+        action="store_true",
+        help=(
+            "Collapse any duplicate `## <theme>` portal section into its first "
+            "occurrence. No insert/update. Used by wiki-lint --fix=portal_heading_dedup."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="With --reflow-only: report whether reordering would happen, without writing.",
+        help="With --reflow-only/--collapse-only: report whether a change would happen, without writing.",
     )
     args = parser.parse_args()
 
@@ -564,6 +572,8 @@ def main() -> None:
     if args.move_slug:
         if args.reflow_only:
             fail("--move-slug cannot be combined with --reflow-only")
+        if args.collapse_only:
+            fail("--move-slug cannot be combined with --collapse-only")
         if args.slug or args.summary or args.category:
             fail("--move-slug is mutually exclusive with --slug/--summary/--category")
         if not (args.to_category and args.to_category.strip()):
@@ -579,6 +589,8 @@ def main() -> None:
         return
 
     if args.reflow_only:
+        if args.collapse_only:
+            fail("--reflow-only cannot be combined with --collapse-only")
         if not index_path.is_file():
             fail(f"index.md not found at {index_path}")
         with _wiki_lock(wiki_root):
@@ -599,9 +611,46 @@ def main() -> None:
         })
         return
 
+    # Collapse-only mode (#485): fold any duplicate `## <theme>` portal section
+    # into its first occurrence, repairing a base that already drifted on disk
+    # (written before the on-write prevention landed, or by an external path).
+    # Reuses the same `collapse_duplicate_headings` pure function that
+    # update_index/move_slug run on every write — no new dedup logic. Used by
+    # wiki-lint --fix=portal_heading_dedup. Mutually exclusive with --move-slug,
+    # --reflow-only, and slug mode so the write paths never overlap.
+    if args.collapse_only:
+        if args.reflow_only:
+            fail("--collapse-only cannot be combined with --reflow-only")
+        if args.slug or args.summary or args.category:
+            fail("--collapse-only is mutually exclusive with --slug/--summary/--category")
+        if not index_path.is_file():
+            fail(f"index.md not found at {index_path}")
+        with _wiki_lock(wiki_root):
+            try:
+                text = index_path.read_text(encoding="utf-8")
+            except OSError as e:
+                fail(f"could not read index.md: {e}")
+                return
+            sections = _split_sections(text)
+            new_sections = collapse_duplicate_headings(sections)
+            # collapse_duplicate_headings returns the SAME list object when every
+            # heading is unique, so identity is the no-op signal — avoids a
+            # _join_sections round-trip false-positive (same contract reflow uses).
+            changed = new_sections is not sections
+            if changed and not args.dry_run:
+                atomic_write(index_path, _join_sections(new_sections))
+        ok({
+            "action": "collapsed" if changed else "noop",
+            "changed": changed,
+            "applied": bool(changed and not args.dry_run),
+            "dry_run": bool(args.dry_run),
+            "index_path": str(index_path),
+        })
+        return
+
     # Slug mode requires --slug, --summary, --category.
     if not (args.slug and args.summary and args.category):
-        fail("--slug, --summary, --category are required (or pass --reflow-only)")
+        fail("--slug, --summary, --category are required (or pass --reflow-only/--collapse-only)")
 
     slug = args.slug.strip().lower()
     _validate_slug(slug, args.slug)

@@ -142,7 +142,10 @@ single-instance. When multiple projects or ingests write into one portal,
 first occurrence at write time — the later section's bullets are merged
 alphabetically into the first (its curated lead-in preserved verbatim) and the
 duplicate heading shell is dropped — so a reader never sees the same theme split
-across two competing sections. (Regression-locked by
+across two competing sections. A base that is *already* duplicated on disk
+(authored before this prevention, or by an external path) is reconciled on
+demand by `wiki-lint --fix=portal_heading_dedup`, the repair complement that runs
+the same collapse. (Regression-locked by
 `tests/test_index_duplicate_heading.sh`.)
 
 The auto-generated machine-facing surfaces (`context_brief.md`,
