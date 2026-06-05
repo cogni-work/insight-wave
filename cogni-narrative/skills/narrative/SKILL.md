@@ -28,7 +28,7 @@ Transform input markdown files into a structured executive narrative using one o
 | `--arc-id` | No | Explicit arc selection; overrides auto-detection |
 | `--language` | No | Output language: `en` (default) or `de`. Fallback chain: explicit parameter > project metadata > workspace preference (`.workspace-config.json`) > content detection > `en` |
 | `--output-path` | No | Output file path; defaults to `insight-summary.md` in source directory |
-| `--project-path` | No | Research project root; enables arc inheritance from `.metadata/project-config.json` (Phase 1 step 8) and loading entity data beyond source path. When omitted, Phase 1 step 8 probes `<source-path>/..` and `<source-path>/../..` to auto-detect a cogni-research project root |
+| `--project-path` | No | Research/knowledge project root; enables arc inheritance from the project's `.metadata/` (`plan.json` for a cogni-knowledge project, or `project-config.json` for a legacy cogni-research project — Phase 1 step 8) and loading entity data beyond source path. When omitted, Phase 1 step 8 probes `<source-path>/..` and `<source-path>/../..` to auto-detect the project root |
 | `--research-question` | No | Original research question for narrative hook framing |
 | `--target-length` | No | Target total word count as a single number (e.g., `2500`). System applies +/-15% band to derive the acceptable range. Default: `1675` (yields ~1,424-1,926 words). Recommended: 800-4,000 — outside this range, arc rhetorical structure may not scale well |
 | `--content-map` | No | YAML map of content category keys to file/directory paths for additional context |
@@ -114,7 +114,7 @@ The quality of each phase depends on the previous one. In particular, Phases 3 a
 
 ### Phase 0.5: Citation Bridge (conditional)
 
-Source content from upstream research tools (e.g., cogni-research) may use `[Source: Publisher](URL)` inline citations. These need to be converted into per-source markdown files before Phase 1 can load them as citable references.
+Source content from upstream research/knowledge tools (e.g., cogni-knowledge, or legacy cogni-research) may use `[Source: Publisher](URL)` inline citations. These need to be converted into per-source markdown files before Phase 1 can load them as citable references.
 
 **Detection:** Scan the first 500 lines of the source content for the pattern `[Source: ...](...)`. If present, run the bridge. If not, skip to Phase 1.
 
@@ -149,17 +149,19 @@ After running the bridge, redirect `--source-path` to the `narrative-input/` dir
 5. If `--research-question` provided, store it for hook construction.
 6. Parse `--target-length` if provided (single integer). Compute the acceptable range: `total_lower = target * 0.85`, `total_upper = target * 1.15`. If omitted, default to `target = 1675` (range 1424-1926). Store `target_length`, `total_lower`, `total_upper`.
 7. Build a mental CONTENT_REGISTRY: list of loaded files with titles, word counts, key sections, category tags.
-8. **Resolve arc inheritance from a source cogni-research project.** Probe up to three candidate roots in order — `--project-path` (when provided), then `<source-path>/..` (handles `--source-path <project>/output/`), then `<source-path>/../..` (handles `--source-path <project>/output/report.md`). First candidate with a readable `.metadata/project-config.json` wins; the jq call returns empty on missing file, so no separate existence check:
+8. **Resolve arc inheritance from a source research/knowledge project.** The upstream producer is a cogni-knowledge inverted-pipeline project (or a legacy cogni-research project). Probe up to three candidate roots in order — `--project-path` (when provided), then `<source-path>/..` (handles `--source-path <project>/output/`), then `<source-path>/../..` (handles `--source-path <project>/output/report.md`). For each candidate, read the story-arc id from either project-metadata file — `.metadata/plan.json` (cogni-knowledge inverted pipeline) or `.metadata/project-config.json` (legacy cogni-research). The first candidate+file yielding a non-empty `story_arc_id` wins; jq returns empty on a missing file, so no separate existence check is needed and a project that carries no arc (e.g. a cogni-knowledge wiki deposit) simply falls through:
 
    ```bash
    for CANDIDATE in "${PROJECT_PATH:+$PROJECT_PATH}" "${SOURCE_PATH}/.." "${SOURCE_PATH}/../.."; do
      [[ -z "$CANDIDATE" ]] && continue
-     ARC=$(jq -r '.story_arc_id // empty' "$CANDIDATE/.metadata/project-config.json" 2>/dev/null)
-     [[ -n "$ARC" ]] && { PROJECT_ROOT="$CANDIDATE"; INHERITED_ARC="$ARC"; break; }
+     for CFG in plan.json project-config.json; do
+       ARC=$(jq -r '.story_arc_id // empty' "$CANDIDATE/.metadata/$CFG" 2>/dev/null)
+       [[ -n "$ARC" ]] && { PROJECT_ROOT="$CANDIDATE"; INHERITED_ARC="$ARC"; break 2; }
+     done
    done
    ```
 
-   If `INHERITED_ARC` is set AND not `standard-research`, store as `inherited_arc_id` for Phase 2 and log: `Inheriting story_arc_id="<INHERITED_ARC>" from <PROJECT_ROOT>`. Otherwise skip silently. Mirrors `cogni-visual:enrich-report` Phase 0's parent-of-source-path detection with a narrower scope (only `.metadata/project-config.json` is checked).
+   If `INHERITED_ARC` is set AND not `standard-research`, store as `inherited_arc_id` for Phase 2 and log: `Inheriting story_arc_id="<INHERITED_ARC>" from <PROJECT_ROOT>`. Otherwise skip silently. The probe is layout-agnostic — it reads whichever `.metadata/` project-metadata file is present, so it works against a cogni-knowledge project, a legacy cogni-research project, or a bare source path with no project root. Mirrors `cogni-visual:enrich-report` Phase 0's parent-of-source-path detection with a narrower scope (only the `.metadata/` project-metadata files are checked).
 
 **Before moving on,** make sure you can answer: How many files loaded? What are the 2-3 dominant themes? What is the approximate total word count? If you can't answer these, you haven't internalized the source material yet.
 

@@ -84,11 +84,11 @@ Arc auto-detection: the narrative skill analyzes input content structure and pro
 ## Pipeline Position
 
 ```
-cogni-research → cogni-narrative → cogni-copywriting → cogni-visual
-  (research)       (compose)         (polish)           (visualize)
+cogni-knowledge → cogni-narrative → cogni-copywriting → cogni-visual
+  (research)        (compose)         (polish)           (visualize)
 ```
 
-- **Upstream**: Research output from cogni-research; TIPS dimension data from cogni-trends
+- **Upstream**: Research syntheses from cogni-knowledge (inverted-pipeline output; legacy cogni-research projects still work via the same `.metadata/` arc probe); TIPS dimension data from cogni-trends
 - **Citation bridge**: `bridge-citations.py` converts `[Source: Publisher](URL)` inline citations into per-source markdown files before Phase 1 loads them
 - **Downstream**: cogni-copywriting detects `arc_id` frontmatter and applies arc-aware polishing; cogni-visual transforms narratives into slides, journey maps, web pages, storyboards
 
