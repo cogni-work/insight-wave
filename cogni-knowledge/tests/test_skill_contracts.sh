@@ -335,6 +335,19 @@ done
 assert_not_grep 'Skill("cogni-wiki:wiki-query' "$QUERY" "knowledge-query: no longer dispatches cogni-wiki:wiki-query (native shallow rung on the vendored engine)"
 assert_grep 'wiki-grounding.py' "$QUERY" "knowledge-query: consumes the shared wiki-grounding primitive directly"
 
+# knowledge-query opt-in --file-back deposit (shallow-rung synthesis parity):
+# read-only is the DEFAULT (flag absent), but when the skill documents the
+# --file-back deposit path it MUST reuse the vendored write lockstep
+# (wiki_index_update.py + config_bump.py), label the deposit honestly as
+# un-verified, and carry Write in allowed-tools. Conditional so a future
+# read-only-only variant of the skill is not falsely failed.
+if grep -q -- '--file-back' "$QUERY"; then
+  assert_grep 'wiki_index_update.py' "$QUERY" "knowledge-query: --file-back deposit reuses the vendored wiki_index_update.py (no new write path)"
+  assert_grep 'config_bump.py' "$QUERY" "knowledge-query: --file-back deposit reuses the vendored config_bump.py entries_count bump"
+  assert_grep 'unverified_shallow_rung' "$QUERY" "knowledge-query: --file-back deposit honestly labels the page verification: unverified_shallow_rung"
+  assert_grep 'allowed-tools:.*Write' "$QUERY" "knowledge-query: allowed-tools includes Write for the --file-back deposit path"
+fi
+
 # knowledge-dashboard renders natively on the vendored render_dashboard.py /
 # build_graph.py and no longer dispatches cogni-wiki:wiki-dashboard (FMO Phase 8
 # d2 re-home). It keeps the cogni-wiki probe above as the vendored-first /
