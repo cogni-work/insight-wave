@@ -152,7 +152,7 @@ After the script creates directories, write `consulting-project.json` in the eng
   },
   "personas": [],
   "plugin_refs": {
-    "research_project": null,
+    "knowledge_base": null,
     "tips_project": null,
     "portfolio_project": null
   },
