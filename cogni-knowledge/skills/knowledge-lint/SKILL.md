@@ -1,6 +1,6 @@
 ---
 name: knowledge-lint
-description: "Run the semantic lint pass on a cogni-knowledge base — surface stale pages/drafts, claim drift, missing reverse links, entries-count drift, and formatting findings for the bound wiki, optionally repairing the mechanical classes with --fix. Use this skill whenever the user says 'lint the knowledge base', 'knowledge lint', 'fix knowledge drift', 'clean up the wiki', 'repair reverse links', 'reconcile entries count', 'what's stale in my knowledge base', or wants to audit-or-repair the structural hygiene of a bound base without running the research pipeline."
+description: "Run semantic lint on a cogni-knowledge base — surface stale pages/drafts, claim drift, and broken reverse links, optionally repairing the mechanical classes with --fix. Use this skill whenever the user says 'lint the knowledge base', 'knowledge lint', 'fix knowledge drift', 'clean up the wiki', 'repair reverse links', 'reconcile entries count', 'what's stale in my knowledge base', or wants to audit-or-repair the structural hygiene of a bound base without running the research pipeline."
 allowed-tools: Read, Write, Bash, Glob
 ---
 
@@ -17,7 +17,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 - User asks to lint, audit hygiene, or find/fix stale content in a knowledge base
 - After noticing entries-count or claim drift in `knowledge-health` and wanting to reconcile it
 - Periodically as a maintenance pass on a compounding base
-- Before a `knowledge-finalize` run, to clean reverse links and drift the synthesis would otherwise inherit (note: `knowledge-finalize` already runs `lint --fix=all` in its Step 10.5 conformance gate — this skill is the *manual* surface for the same engine)
+- Before a `knowledge-finalize` run, to clean reverse links and drift the synthesis would otherwise inherit (note: `knowledge-finalize` already runs `lint --fix=all` as its deposit-time conformance gate — this skill is the *manual* surface for the same engine)
 
 ## Never run when
 
@@ -26,7 +26,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 ## How it relates to neighbours
 
 - `knowledge-health` is the cheap structural integrity gate (vendored `health.py`); `knowledge-lint` is the semantic hygiene pass (vendored `lint_wiki.py`). They share the bound base but answer different questions — run health for "is it broken?", lint for "is it stale / can it be tidied?".
-- `knowledge-finalize` Step 10.5 already runs `lint --fix=all` as a deposit-time conformance gate. This skill exposes the **full** lint CLI for deliberate, operator-driven runs (audit, `--suggest`, selective `--fix=<class>`).
+- `knowledge-finalize` already runs `lint --fix=all` as its deposit-time conformance gate. This skill exposes the **full** lint CLI for deliberate, operator-driven runs (audit, `--suggest`, selective `--fix=<class>`).
 
 ## Parameters
 

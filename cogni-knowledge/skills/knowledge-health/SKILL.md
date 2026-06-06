@@ -1,6 +1,6 @@
 ---
 name: knowledge-health
-description: "Run a read-only structural health check on a cogni-knowledge base — page/link/schema integrity, entries-count drift, and claim drift for the bound wiki. Use this skill whenever the user says 'check knowledge health', 'knowledge health', 'is my knowledge base healthy', 'audit the knowledge base structure', 'knowledge integrity check', 'health-check the wiki', or wants a structural verdict on a bound base without running the research pipeline."
+description: "Run a read-only structural health check on a cogni-knowledge base — page/link/schema integrity plus entries-count and claim drift for the bound wiki. Use this skill whenever the user says 'check knowledge health', 'knowledge health', 'is my knowledge base healthy', 'audit the knowledge base structure', 'knowledge integrity check', 'health-check the wiki', or wants a structural verdict on a bound base without running the research pipeline."
 allowed-tools: Read, Bash, Glob
 ---
 
