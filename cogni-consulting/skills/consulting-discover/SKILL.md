@@ -4,11 +4,10 @@ description: |
   Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding
   of the problem landscape. Dispatches to cogni-knowledge, cogni-trends, and cogni-portfolio.
   Use whenever the user wants to research, explore, or investigate a topic within a diamond engagement.
-  Trigger on: "start discovery", "research the landscape", "let's explore", "what do we know about",
+  Trigger on: "start discovery", "research the landscape", "what do we know about",
   "gather evidence", "run the research", "investigate the market", "scan for trends",
   "competitive analysis", "who are the competitors", "what's happening in [industry]",
-  "build the evidence base", "I need data on", "diverge", "discover phase", "D1 diverge",
-  "let's understand the problem first", "explore the problem", "build understanding",
+  "build the evidence base", "discover phase", "D1 diverge", "explore the problem",
   or any request for broad research within an active engagement. Also trigger when the user asks
   about a specific research method (desk research, stakeholder mapping, data audit, customer journey)
   in the context of an ongoing engagement.
@@ -27,7 +26,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first."
 
-**Iteration check**: If `phase_state.discover.status` is `complete`, this is a re-entry. Read existing `discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, run the cogni-knowledge pipeline against the engagement's bound base (see the Research Routing Rule below) with a tightly framed research topic — do not use raw WebSearch. Since the base already holds the prior Discover research, prefer the re-run path (`knowledge-plan → knowledge-compose --source wiki → verify → finalize`); frame a focused single-topic run (`--target-words 3000`) for a deep dive or a broader one (`--target-words 4000+`) if the topic is wide.
+**Iteration check**: If `phase_state.discover.status` is `complete`, this is a re-entry. Read existing `discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, run the cogni-knowledge pipeline against the engagement's bound base (see the Research Routing Rule below) with a tightly framed research topic — do not use raw WebSearch. Since the base already holds the prior Discover research, prefer the rule's `--source wiki` re-run path (or `knowledge-query` to just recall what the base already covers), framed focused for a deep dive or broader if the topic is wide.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 
@@ -49,7 +48,7 @@ Lightweight HMW (collapsed Discover+Define):
 
 When research is needed — whether as a planned discovery method, a consultant request to "look into X", or to deepen a specific topic during iteration — **always dispatch the cogni-knowledge inverted pipeline**. Never use raw WebSearch for research within an engagement. cogni-knowledge deposits structured, citable syntheses into a bound knowledge base that **compounds across the whole engagement** — Define's assumption verification and Deliver's claims check read that synthesis, and each phase's research builds on the last instead of dying as a throwaway per-sprint report. (This rule is the canonical reference; the Define, Develop, and Deliver skills reroute the same way.)
 
-**Bind the engagement to one knowledge base.** Once per engagement, dispatch `cogni-knowledge:knowledge-setup` (slug derived from the engagement name; market and output language from `consulting-project.json`) and record the slug in `plugin_refs.knowledge_base`. Every later research run, in any phase, reuses that base via `--knowledge-slug`, so Discover/Define/Develop/Deliver share one compounding wiki.
+**Bind the engagement to one knowledge base.** Once per engagement, dispatch `cogni-knowledge:knowledge-setup --knowledge-slug <slug-derived-from-engagement>` (market and output language from `consulting-project.json`) and record that slug in `plugin_refs.knowledge_base`. Every later research run, in any phase, binds to that base by passing the same `--knowledge-slug <plugin_refs.knowledge_base>`, so Discover/Define/Develop/Deliver share one compounding wiki.
 
 **Run the pipeline** for a research topic:
 - **New topic** (the base has no coverage yet): `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`.
@@ -100,7 +99,7 @@ Present the proposed discovery plan, typically 3-5 activities:
 
 | Method | Plugin | What It Produces |
 |---|---|---|
-| Desk research | cogni-knowledge | Compounding wiki synthesis with cited sources |
+| Desk research | cogni-knowledge | Compounding wiki synthesis with cited sources (depth set via `--target-words`, per the Research Routing Rule) |
 | Industry trend scan | cogni-trends | 60 trend candidates across 4 dimensions × 3 horizons |
 | Competitive baseline | cogni-portfolio | Competitor landscape and market segmentation |
 

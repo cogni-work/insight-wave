@@ -55,7 +55,13 @@ This phase balances two tensions: thoroughness (every claim verified, every risk
 
 ## Research Routing Rule
 
-When evidence gaps surface during Deliver — a high claim deviation rate, missing competitive data for the business case, or the consultant asking to research something — **always dispatch the cogni-knowledge inverted pipeline** (the canonical rule lives in `consulting-discover`) rather than using raw WebSearch. Reuse the engagement's bound base via `plugin_refs.knowledge_base` and take the cheapest adequate rung: for a lookup the base likely already holds (e.g. a competitive figure cited in Discover), first try `cogni-knowledge:knowledge-query`; if thin, prefer the `knowledge-compose --source wiki` re-run path; run the full pipeline only for a genuinely new angle. Frame it as a targeted sprint (`--target-words 3000`, `--prose-density standard`) scoped to the specific gap, then copy the synthesis `wiki/syntheses/<slug>.md` to `deliver/research/summary.md` so the outputs feed directly into the business case or roadmap. The only exception is a single-query fact-check during conversation.
+When evidence gaps surface during Deliver — a high claim deviation rate, missing competitive data for the business case, or the consultant asking to research something — **always dispatch the cogni-knowledge inverted pipeline** (the canonical rule lives in `consulting-discover`) rather than using raw WebSearch. Reuse the engagement's bound base via `plugin_refs.knowledge_base` and take the cheapest adequate rung:
+
+- **A lookup the base likely already holds** (e.g. a competitive figure cited in Discover) → `cogni-knowledge:knowledge-query`.
+- **Thin on query, but the base covers the area** → the `knowledge-compose --source wiki` re-run path.
+- **A genuinely new angle** → the full pipeline.
+
+Frame the run as a targeted sprint (`--target-words 3000`, `--prose-density standard`) scoped to the gap, then copy the synthesis `wiki/syntheses/<slug>.md` to `deliver/research/summary.md` so the outputs feed directly into the business case or roadmap. The only exception is a single-query fact-check during conversation.
 
 ## Workflow
 
@@ -344,7 +350,7 @@ For vision-class-specific method recommendations, read `$CLAUDE_PLUGIN_ROOT/refe
 
 ## When Things Go Thin
 
-- **High claim deviation rate** (>40% of claims): This signals a systemic evidence problem rather than individual errors. Recommend running the cogni-knowledge pipeline (Research Routing Rule above; `--target-words 3000` tightly scoped to the affected area) rather than patching claims one by one — a structured research sprint is more efficient and produces citable, compounding results.
+- **High claim deviation rate** (>40% of claims): This signals a systemic evidence problem rather than individual errors. Recommend running the cogni-knowledge pipeline (Research Routing Rule above, tightly scoped to the affected area) rather than patching claims one by one — a structured research sprint is more efficient and produces citable, compounding results.
 - **Scoring produces a tie or no clear winner**: This usually means the criteria don't capture the real differentiators. Revisit the criteria with the consultant — often one unstated factor (political feasibility, personal conviction) is doing the real work. Surface it and make it explicit.
 - **Business case numbers don't work**: This is a finding, not a failure. Present it honestly. The consultant may pivot to a different option, adjust scope, or reframe the investment thesis. Forcing optimistic numbers destroys credibility.
 
