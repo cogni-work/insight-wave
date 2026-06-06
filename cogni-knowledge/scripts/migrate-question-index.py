@@ -100,7 +100,10 @@ def cmd_migrate(args: argparse.Namespace) -> int:
             scripts_dir = Path(args.wiki_scripts_dir).expanduser().resolve()
         else:
             try:
-                scripts_dir = resolve_wiki_scripts("wiki-ingest")
+                # Pass the entry-point this driver actually needs so a partial
+                # vendor (dir present, script absent) falls through to a complete
+                # copy instead of resolving here and failing the check below.
+                scripts_dir = resolve_wiki_scripts("wiki-ingest", expected_script="wiki_index_update.py")
             except FileNotFoundError as exc:
                 return _emit(False, error=str(exc))
         update_script = scripts_dir / "wiki_index_update.py"

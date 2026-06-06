@@ -142,6 +142,63 @@ else
   green "PASS: resolver returns non-zero when cogni-wiki is absent"
 fi
 
+# -----------------------------------------------------------------------------
+# Part 3: entry-point existence (#536). With the optional 2nd arg, a probe
+#         branch wins ONLY when the expected entry-point script is present in
+#         the resolved dir, so a partial vendor (dir present, script absent)
+#         falls through to the working fallback. Drives the SAME extracted
+#         ingest body, now with the two-arg form.
+# -----------------------------------------------------------------------------
+
+RESOLVE_BODY_EP="$INGEST_BODY
+if resolve_wiki_scripts wiki-ingest backlink_audit.py; then exit 0; else exit 1; fi"
+
+run_resolve_ep() { CLAUDE_PLUGIN_ROOT="$1" bash -c "$RESOLVE_BODY_EP"; }
+
+# Case 4: partial vendor (vendored dir present but backlink_audit.py ABSENT)
+# next to a COMPLETE sibling (dir + script) -> the sibling wins.
+PART="$WORK/partial"
+mkdir -p "$PART/cogni-knowledge/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts"  # vendor: no script
+mkdir -p "$PART/cogni-wiki/skills/wiki-ingest/scripts"                                  # sibling...
+: > "$PART/cogni-wiki/skills/wiki-ingest/scripts/backlink_audit.py"                     # ...with the script
+if OUT=$(run_resolve_ep "$PART/cogni-knowledge"); then
+  case "$OUT" in
+    */../cogni-wiki/skills/wiki-ingest/scripts)
+      green "PASS: partial vendor (dir, no entry-point) falls through to the complete sibling" ;;
+    *)
+      red "FAIL: entry-point check resolved an unexpected path"
+      red "  got: $OUT"; errors=$((errors + 1)) ;;
+  esac
+else
+  red "FAIL: entry-point resolver returned non-zero despite a complete sibling"; errors=$((errors + 1))
+fi
+
+# Case 5: complete vendor (dir + entry-point present) -> vendor wins.
+COMPLETE="$WORK/complete"
+mkdir -p "$COMPLETE/cogni-knowledge/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts"
+: > "$COMPLETE/cogni-knowledge/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts/backlink_audit.py"
+if OUT=$(run_resolve_ep "$COMPLETE/cogni-knowledge"); then
+  case "$OUT" in
+    */scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts)
+      green "PASS: complete vendor (dir + entry-point) wins the probe" ;;
+    *)
+      red "FAIL: complete vendor did not win (got: $OUT)"; errors=$((errors + 1)) ;;
+  esac
+else
+  red "FAIL: complete-vendor resolver returned non-zero"; errors=$((errors + 1))
+fi
+
+# Case 6: vendor dir + sibling dir present but NEITHER carries the script ->
+# non-zero (the partial-everything case the dir-only probe would have masked).
+NONE="$WORK/partialnone"
+mkdir -p "$NONE/cogni-knowledge/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts"
+mkdir -p "$NONE/cogni-wiki/skills/wiki-ingest/scripts"
+if run_resolve_ep "$NONE/cogni-knowledge" >/dev/null 2>&1; then
+  red "FAIL: entry-point resolver returned success when no dir carries the script"; errors=$((errors + 1))
+else
+  green "PASS: no dir carrying the entry-point -> resolver returns non-zero"
+fi
+
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
   exit 1

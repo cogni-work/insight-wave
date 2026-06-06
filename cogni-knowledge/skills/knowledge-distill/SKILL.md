@@ -59,7 +59,7 @@ If `WIKI_OK=no`, warn and exit cleanly (distill is optional — do not block the
 **Resolve the cogni-wiki script dir.** Use the SAME `resolve_wiki_scripts` helper `knowledge-ingest` / `knowledge-finalize` use (shared byte-for-byte) — it picks the newest numeric version dir. `concept-store.py merge` needs this dir for `_wiki_lock` / `is_foundation_page` / `parse_frontmatter`, and Step 6 needs `backlink_audit.py` / `wiki_index_update.py` / `config_bump.py`:
 
 ```
-WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest) || { echo "⚠ cogni-wiki wiki-ingest scripts not found — skipping distill (optional)"; exit 0; }
+WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest backlink_audit.py) || { echo "⚠ cogni-wiki wiki-ingest scripts not found — skipping distill (optional)"; exit 0; }
 ```
 
 **Binding + wiki root.** Resolve `knowledge_root` (same logic as `knowledge-ingest`). Read the binding via `knowledge-binding.py read --knowledge-root <knowledge_root>`. On `success: false` → warn + exit cleanly. Parse `data.binding.wiki_path` as `WIKI_ROOT`; confirm `<WIKI_ROOT>/.cogni-wiki/config.json` and `<WIKI_ROOT>/wiki/` exist and are writeable.
