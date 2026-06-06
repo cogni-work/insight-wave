@@ -1,6 +1,6 @@
 ---
 name: knowledge-query
-description: "Ask a question against a bound cogni-knowledge base — resolve its wiki path from binding.json, rank and read the covering pages, and synthesize a cited answer natively. The shallow rung of the query↔research ladder: one question, index-first read of ≤12 pages, no web, no verify; read-only by default, with an opt-in `--file-back` deposit as an un-verified synthesis page. Use when the user says 'query my <slug> knowledge base', 'ask the <slug> base about X', or 'knowledge-query <slug> [--file-back]'."
+description: "Ask a question against a bound cogni-knowledge base — resolve its wiki path from binding.json, rank and read the covering pages, and synthesize a cited answer natively. The shallow rung of the query↔research ladder: one question, index-first read of ≤12 pages, no web, no verify; read-only by default, opt-in `--file-back` deposits an un-verified synthesis page. Use when the user says 'query my <slug> knowledge base', 'ask the <slug> base about X', or 'knowledge-query <slug> [--file-back]'."
 allowed-tools: Read, Write, Bash, Glob, AskUserQuestion, ToolSearch
 ---
 
@@ -255,7 +255,7 @@ id: <SYNTHESIS_SLUG>
 title: <question verbatim>
 type: synthesis
 tags: [synthesis, knowledge-query]
-created: <YYYY-MM-DD UTC — but see created:-preservation on overwrite below>
+created: <YYYY-MM-DD UTC>
 updated: <YYYY-MM-DD UTC>
 sources:
   - wiki://<cited-page-slug-1>
