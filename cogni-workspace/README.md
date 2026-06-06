@@ -34,7 +34,7 @@ In the Claude Code / Claude Cowork plugin model, workspace-level state (paths, e
 5. **Diagnose** workspace health — five-tier report (foundation, env vars, plugin registry, themes, dependencies)
 6. **Install MCP servers** — clone and build git-based MCP servers, detect native app MCPs, and patch Claude Desktop config so rendering plugins find their tools without manual JSON editing
 7. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
-8. **Ask the bundled wiki** — `ask` wraps `cogni-wiki:wiki-query` against a vendor-curated insight-wave reference wiki bundled at `wiki/` so users can ask grounded questions about plugins, skills, agents, architecture, and conventions without grepping source files
+8. **Ask the bundled wiki** — `ask` reads a vendor-curated insight-wave reference wiki bundled at `wiki/` (self-contained index-first grounded read) so users can ask grounded questions about plugins, skills, agents, architecture, and conventions without grepping source files
 
 ## What it means for you
 
@@ -169,7 +169,6 @@ cogni-workspace has no required plugin dependencies — it is the foundation lay
 | cogni-help | No | Referenced inline in workspace skills for issue filing and guided help |
 | cogni-portfolio | No | install-mcp references cogni-portfolio as a consumer of excalidraw MCP in the installation plan |
 | cogni-claims | No | workspace-status references cogni-claims as a provider plugin for the claude-in-chrome MCP server check |
-| cogni-wiki | No | `ask` wraps `cogni-wiki:wiki-query` to read the bundled insight-wave reference wiki |
 
 ## Contributing
 
