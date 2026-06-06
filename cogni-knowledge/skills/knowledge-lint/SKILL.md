@@ -134,7 +134,7 @@ Parse the JSON envelope `{success, data, error}`. On `success: false`, surface `
 Print a compact report:
 
 - **Header.** `<knowledge_title>` (`<knowledge_slug>`) — `<wiki_path>` — mode: `audit` / `fix=<value>` / `dry-run` / `suggest`.
-- **Findings.** Group by severity: `errors` (cap 20), `warnings` (cap 15), `info` (cap 10) — each as its finding class + the affected page. The high-signal classes are `stale_page`, `stale_draft`, and `claim_drift`; surface those first.
+- **Findings.** The engine reports findings in `warnings` and `info` — `errors` is reserved and stays empty in the current engine, so lead with `warnings` (cap 15), then `info` (cap 10), each as its finding class + the affected page; surface a non-empty `errors` list (cap 20) above them only on the off chance the engine ever populates it. The high-signal classes are `stale_page`, `stale_draft`, and `claim_drift`; surface those first within `warnings`.
 - **Fixes (fix mode only).** `<len(fixed)> repaired` — list each `fixed[]` entry (class + page); then `<len(failed)> failed` with each `failed[]` entry and its reason. On `--dry-run`, label the list "would repair".
 - **Suggestions (`--suggest` only).** List each `suggestions[]` entry (read-only — nothing was written).
 - **Next action.** One line by state:
