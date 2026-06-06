@@ -17,7 +17,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 - User asks to lint, audit hygiene, or find/fix stale content in a knowledge base
 - After noticing entries-count or claim drift in `knowledge-health` and wanting to reconcile it
 - Periodically as a maintenance pass on a compounding base
-- Before a `knowledge-finalize` run, to clean reverse links and drift the synthesis would otherwise inherit (note: `knowledge-finalize` already runs `lint --fix=all` as its deposit-time conformance gate — this skill is the *manual* surface for the same engine)
+- Before a `knowledge-finalize` run, to clean reverse links and drift the synthesis would otherwise inherit
 
 ## Never run when
 
