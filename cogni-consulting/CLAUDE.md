@@ -8,7 +8,7 @@ cogni-consulting is a Double Diamond consulting orchestrator for the insight-wav
 
 ```
 consulting-setup skill       → Vision framing, engagement scaffolding
-consulting-discover skill    → D1 diverge: cogni-research, cogni-trends, cogni-portfolio
+consulting-discover skill    → D1 diverge: cogni-knowledge, cogni-trends, cogni-portfolio
 consulting-define skill      → D1 converge: cogni-claims, guided synthesis
 consulting-develop skill     → D2 diverge: cogni-trends value-modeler, cogni-portfolio propositions
 consulting-deliver skill     → D2 converge: cogni-claims, business case, roadmap
@@ -45,7 +45,7 @@ The plugin uses two kinds of personas:
 
 | Phase | Plugin | Skill Invoked |
 |-------|--------|---------------|
-| Discover | cogni-research | research-report |
+| Discover | cogni-knowledge | knowledge-plan → … → knowledge-finalize (inverted pipeline) |
 | Discover | cogni-trends | trend-scout |
 | Discover | cogni-portfolio | portfolio-scan, compete |
 | Define | cogni-claims | claims (verify mode) |
@@ -64,8 +64,8 @@ The `business-model-hypothesis` class uses Lean Canvas methods (authoring, refin
 
 The `how-might-we` class supports a complexity spectrum from lightweight to heavy. Setup assesses three dimensions (domain knowledge needed, stakeholder complexity, reversibility) to recommend an engagement shape:
 - **Lightweight** (workshop, exercise, meeting redesign): Phases collapse — Discover+Define and Develop+Deliver run as two conversations or a single session. No plugin dispatch. Guided ideation. Solution Brief + Action Plan.
-- **Medium** (process redesign, training program): Standard 4 phases, lightweight. cogni-research recommended.
-- **Heavy** (new product, market strategy, org change): Full 4 phases with cogni-research, cogni-trends, cogni-portfolio. Comparable to other vision classes but with HMW framing.
+- **Medium** (process redesign, training program): Standard 4 phases, lightweight. cogni-knowledge recommended.
+- **Heavy** (new product, market strategy, org change): Full 4 phases with cogni-knowledge, cogni-trends, cogni-portfolio. Comparable to other vision classes but with HMW framing.
 Each phase skill has a section describing the HMW-specific workflow scaled to complexity.
 
 ## Scripts
@@ -87,6 +87,6 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 - Phase state tracks: pending → in-progress → complete (→ in-progress for iteration re-entry)
 - Each phase has `iteration_count` (default 0, incremented on re-entry)
 - `engagement_weight` field (`lightweight`/`medium`/`heavy`/null) set during setup for HMW engagements
-- Plugin refs store relative paths to projects created by other plugins
+- Plugin refs store slugs/relative paths to projects created by other plugins. `plugin_refs.knowledge_base` binds one cogni-knowledge base per engagement (research compounds across phases); the legacy `plugin_refs.research_project` is deprecated
 - Methods are stored as markdown files in `references/methods/` with YAML frontmatter
 - Language field in consulting-project.json controls communication language (technical terms stay English)
