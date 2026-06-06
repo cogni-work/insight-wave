@@ -22,7 +22,7 @@ allowed-tools: Read, Glob, Grep, Bash
 
 Answer questions about the insight-wave plugin ecosystem by reading the bundled wiki. Never answer from model memory — every claim in the answer must trace to a specific wiki page.
 
-This skill is a thin wrapper around the cogni-wiki query pattern, hardcoded to the wiki bundled at `${CLAUDE_PLUGIN_ROOT}/wiki/`. The wiki is **vendor-curated and read-only by intent** — it ships with this plugin and is refreshed in lockstep with cogni-workspace updates. Users who want a personal knowledge base should run `cogni-wiki:wiki-setup` to create their own separate wiki.
+This skill is self-contained: it does a Karpathy-style, index-first grounded read (read the index → read the relevant pages → synthesize with citations) directly over the wiki bundled at `${CLAUDE_PLUGIN_ROOT}/wiki/`, using only `Read`/`Glob`/`Grep` — no external plugin dispatch. The wiki is **vendor-curated and read-only by intent** — it ships with this plugin and is refreshed in lockstep with cogni-workspace updates. Users who want a personal knowledge base should run `cogni-knowledge:knowledge-setup` to create their own separate, compounding knowledge base.
 
 ## When to run
 
@@ -33,7 +33,7 @@ This skill is a thin wrapper around the cogni-wiki query pattern, hardcoded to t
 ## Never run when
 
 - The bundled wiki is missing — report that the cogni-workspace install may be corrupted and offer to re-install
-- The user explicitly wants to query a different wiki (a personal one they set up themselves) — defer to `cogni-wiki:wiki-query` instead
+- The user explicitly wants to query a different knowledge base (a personal one they set up themselves) — defer to `cogni-knowledge:knowledge-query` for a bound personal knowledge base instead
 
 ## Parameters
 
@@ -79,7 +79,7 @@ Rules:
 
 ### 6. Do NOT file the answer back
 
-Unlike a personal `cogni-wiki:wiki-query`, this skill does **not** offer to file the answer back as a new page. The bundled wiki is vendor-curated and read-only. If the user wants to capture insights, they should run `cogni-wiki:wiki-setup` to create their own wiki and ingest sources there.
+Unlike a personal `cogni-knowledge:knowledge-query`, this skill does **not** offer to file the answer back as a new page. The bundled wiki is vendor-curated and read-only. If the user wants to capture insights, they should run `cogni-knowledge:knowledge-setup` to create their own knowledge base and ingest sources there.
 
 ## Output
 
@@ -95,4 +95,3 @@ A grounded answer with inline `[[page-slug]]` citations and a short trail of pag
 
 - The bundled wiki SCHEMA: `${CLAUDE_PLUGIN_ROOT}/wiki/SCHEMA.md`
 - The wiki's index: `${CLAUDE_PLUGIN_ROOT}/wiki/wiki/index.md`
-- For deeper Karpathy-pattern context: `cogni-wiki/references/karpathy-pattern.md`
