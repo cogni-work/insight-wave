@@ -594,8 +594,8 @@ do not HALT. A misconfigured vendor project should still produce a report.
 
 | Mode | Dispatch budget per ST |
 |------|-----------------------|
-| vendor | max 2 `cogni-research:local-researcher` calls + max 2 `cogni-wiki:wiki-query` calls + plain JSON reads (unbounded) |
-| open | max 1 `cogni-research:section-researcher` call with ≤ 4 sub-queries |
+| vendor | max 2 `cogni-research:local-researcher` calls + max 2 `wiki-grounding.py rank` calls (+ `Read` of the ranked pages) + plain JSON reads (unbounded) |
+| open | max 1 native cogni-knowledge research pass (inline `WebSearch` + `WebFetch`, or `cogni-knowledge:knowledge-ingest-source` per URL) with ≤ 4 sub-queries |
 
 ### 2.6.A: Vendor Mode — Source References from the Portfolio Corpus
 
@@ -640,10 +640,13 @@ For each ST where the `solution_blueprint.building_blocks[]` contains any block 
    Limit to max 4 sub-questions per dispatch. Each matching file becomes a `vendor_references[]`
    entry with `source: "uploads"` and `source_ref: "uploads/{filename}"`.
 
-5. **Vendor wiki (optional)** — when `vendor_source.case_study_wiki` is set, dispatch
-   `cogni-wiki:wiki-query` once per ST against that wiki path with the same sub-question style.
-   Each hit becomes a `vendor_references[]` entry with `source: "wiki"` and
-   `source_ref: "{wiki_path}#{page_slug}"`.
+5. **Vendor wiki (optional)** — when `vendor_source.case_study_wiki` is set, rank that wiki
+   natively with cogni-knowledge's re-homed discovery primitive (no plugin dispatch, no binding,
+   no file-back):
+   `python3 ${CLAUDE_PLUGIN_ROOT}/../cogni-knowledge/scripts/wiki-grounding.py rank --wiki-root {vendor_source.case_study_wiki} --question "<sub-question>" --theme-label "{ST.name}"`
+   once per ST with the same sub-question style. `Read` each returned `data.pages[].page_path`
+   (joined to the wiki root) and synthesize the outcome claim inline. Each covering page becomes a
+   `vendor_references[]` entry with `source: "wiki"` and `source_ref: "{wiki_path}#{page_slug}"`.
 
 6. **Dedupe.** If the same underlying customer appears across sources (e.g., a customer entry
    plus an uploaded case study describing the same engagement), keep the richest entry —
@@ -660,9 +663,11 @@ Applies when `study_mode == "open"` (explicitly set at Phase 0 or absent). This 
 dedicated case-study research pass that complements today's trend-signal research — the report's
 "Why You" gains a `Referenzbeispiele` block of concrete industry implementations.
 
-For each ST, dispatch **one** `cogni-research:section-researcher` call with ≤ 4 sub-queries
-drawn from the templates below. The agent already handles market localization and parallel
-search — do not reinvent that here.
+For each ST, run **one** native cogni-knowledge research pass with ≤ 4 sub-queries drawn from
+the templates below — inline `WebSearch` over each query plus `WebFetch` of the strongest hits,
+synthesizing the results directly (or, when a knowledge base is bound, deposit each discovered
+published-case URL via `cogni-knowledge:knowledge-ingest-source` and read it back). Handle market
+localization (the DACH template below) and run the queries in parallel where possible.
 
 **Query templates** (substitute `{st.name}`, `{lead_block.capability}`, `{industry.primary_en}`,
 `{industry.subsector_en}`, localized variants from `tips-project.json → industry.*_de`, and
@@ -685,7 +690,7 @@ search — do not reinvent that here.
 two hits from `cisco.com` collapse to the single strongest one. This prevents a single vendor's
 reference library from dominating the ST's evidence.
 
-**Target output.** 2–3 `published_cases[]` entries per ST when feasible. When the agent returns
+**Target output.** 2–3 `published_cases[]` entries per ST when feasible. When the pass yields
 fewer than 2 usable hits, keep what was found and emit an empty array if nothing usable was
 returned — the writer downstream falls back to plain capability prose for that ST.
 

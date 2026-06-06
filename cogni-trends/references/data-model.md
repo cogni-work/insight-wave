@@ -771,14 +771,14 @@ New fields (all optional, backward compatible — existing STs without these fie
   - `roi_claim` (string, optional): Quantified ROI when available from portfolio evidence (e.g., `"€4.2M avoided OPEX"`).
   - `source` (string, required): Where the reference came from inside the portfolio — `"customers"` (a `named_customers[]` entry),
     `"propositions"` (an `evidence[]` entry tagged vendor-authored), `"uploads"` (document corpus via `cogni-research:local-researcher`),
-    or `"wiki"` (a `cogni-wiki:wiki-query` result).
+    or `"wiki"` (a `wiki-grounding.py rank` hit over the vendor's case-study wiki).
   - `source_ref` (string, required): Portfolio-relative path or entity ref with optional JSON Pointer. Must resolve inside `cogni-portfolio/{portfolio_ref}/`.
   - `portfolio_grounding_entry_ref` (string, required): `{feature_slug}--{market_slug}` key linking this reference back to one of the ST's `portfolio_grounding[]` entries.
   - `source_origin` (string, required): Always `"vendor"` for this array.
   - `publication_date` (string, optional): ISO-8601 date (YYYY-MM) for recency sorting.
 - **`published_cases`** (array, optional — populated only when `tips-project.json → study_mode == "open"` or absent):
-  Published industry case studies sourced via a dedicated `cogni-research:section-researcher` dispatch in
-  value-modeler Step 2.6. Complements the trend-signal research with concrete implementation proof.
+  Published industry case studies sourced via a native cogni-knowledge research pass (inline `WebSearch` + `WebFetch`,
+  or `cogni-knowledge:knowledge-ingest-source` per URL) in value-modeler Step 2.6. Complements the trend-signal research with concrete implementation proof.
   - `vendor_or_customer` (string, required): Who implemented the case (vendor or customer name).
   - `outcome` (string, required): One-line outcome summary.
   - `source_url` (string, required): Public URL to the case study.
