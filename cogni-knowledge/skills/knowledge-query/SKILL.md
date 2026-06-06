@@ -1,7 +1,7 @@
 ---
 name: knowledge-query
-description: "Ask a question against a bound cogni-knowledge base — resolves the wiki path from binding.json, ranks the covering pages via the shared wiki-grounding primitive, reads them, and synthesizes a cited answer natively (no cogni-wiki dispatch). The shallow rung of the query↔research depth ladder: one question, index-first read of ≤12 pages, no web, no verify. Use this skill whenever the user says 'query my <slug> knowledge base', 'ask the eu-ai-act base about X', or 'knowledge-query <slug>'."
-allowed-tools: Read, Write, Bash, Glob, AskUserQuestion
+description: "Ask a question against a bound cogni-knowledge base — resolve its wiki path from binding.json, rank and read the covering pages, and synthesize a cited answer natively. The shallow rung of the query↔research ladder: one question, index-first read of ≤12 pages, no web, no verify; read-only by default, with an opt-in `--file-back` deposit as an un-verified synthesis page. Use when the user says 'query my <slug> knowledge base', 'ask the <slug> base about X', or 'knowledge-query <slug> [--file-back]'."
+allowed-tools: Read, Write, Bash, Glob, AskUserQuestion, ToolSearch
 ---
 
 # Knowledge Query
@@ -175,8 +175,20 @@ When `--file-back yes` is passed, deposit the synthesized answer as a wiki page 
 the **shallow-rung analog** of the deep rung's `knowledge-finalize` synthesis
 deposit, reusing the same vendored write lockstep (no new write path). The
 shallow rung runs **no verify pass**, so the deposit is **honestly labeled
-un-verified**. Do not deposit on a `uncovered` verdict (there is no grounded
-answer to file) or when the answer admits it could not be grounded.
+un-verified**.
+
+**Deposit-eligibility gate (operationalized — tie to the observable coverage
+verdict + cited pages, not to an LLM self-judgement):**
+
+- **`uncovered` verdict** → **never deposit** (Step 1 already short-circuited to
+  the footer; there is no grounded answer to file).
+- **`covered` verdict** → deposit.
+- **`partial` verdict** → deposit **only when ≥1 covering page was actually read
+  in Step 2 AND cited via a `[[<slug>]]` wikilink in the synthesized answer**.
+  A partial answer that cited no page (the base confirmed nothing concrete) is
+  not depositable — skip the write and say so. The cited-page set is the
+  observable signal; it is also the `sources:` list the deposit records (4.4)
+  and the backlink target set (4.5.3), so the three stay consistent.
 
 **4.1 Resolve the vendored write lockstep.** Resolve the `wiki-ingest` script
 dir vendored-first, exactly as `knowledge-finalize` / `knowledge-ingest-source`
@@ -243,11 +255,11 @@ id: <SYNTHESIS_SLUG>
 title: <question verbatim>
 type: synthesis
 tags: [synthesis, knowledge-query]
-created: <YYYY-MM-DD UTC>
+created: <YYYY-MM-DD UTC — but see created:-preservation on overwrite below>
 updated: <YYYY-MM-DD UTC>
 sources:
-  - wiki://<covering-page-slug-1>
-  - wiki://<covering-page-slug-2>
+  - wiki://<cited-page-slug-1>
+  - wiki://<cited-page-slug-2>
 verification: unverified_shallow_rung
 ---
 
@@ -258,12 +270,23 @@ verification: unverified_shallow_rung
 <the synthesized answer from Step 2, with its bare [[slug]] citations preserved>
 ```
 
-`sources:` lists one `wiki://<slug>` entry per covering page read in Step 2 (the
-`data.pages[].slug` values), so the deposit is grounded and de-orphaned. The
+`sources:` lists one `wiki://<slug>` entry per covering page **actually cited**
+in the answer (the `[[<slug>]]` wikilinks in the synthesized body — the same set
+the deposit-eligibility gate keys on), not every page read in Step 2 — so the
+deposit is grounded and de-orphaned without claiming evidence it did not use. The
 `type: synthesis` + `knowledge-query` tag distinguishes a query-filed-back page
 from a `knowledge-finalize` deposit in the same `wiki/syntheses/` directory.
 Quote the `title:` via `json.dumps(..., ensure_ascii=False)` so a
 colon-containing question deposits valid YAML (the `knowledge-finalize` posture).
+
+**`created:`-preservation on `--overwrite`.** On a fresh deposit, stamp both
+`created:` and `updated:` to today (UTC). On an `--overwrite` re-deposit, **read
+the existing page's `created:` frontmatter and carry it forward** (the page's
+birth date is durable), and set only `updated:` to today — matching the
+`knowledge-finalize` / `concept-store.py` posture that never clobbers `created:`
+across re-writes. Read the prior `created:` via the same `_knowledge_lib`
+frontmatter helpers (`_FRONTMATTER_RE` / `_unquote_scalar`) before composing the
+new page.
 
 **4.5 Post-write lockstep (lighter than `knowledge-finalize`).** Run the
 vendored index/config/backlink helpers — the same ones `knowledge-ingest`
@@ -283,11 +306,14 @@ unique-by-construction and needs no lock):
    (the page is already discoverable; reconcilable via
    `wiki-lint --fix=entries_count_drift`).
 3. **Backlink audit (best-effort)** — curate a `targets[]` plan inserting one
-   bare `[[<SYNTHESIS_SLUG>]]` sentence under each covering page's `## See also`,
-   then `python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" --wiki-root "$WIKI_ROOT"
-   --new-page "$SYNTHESIS_SLUG" --apply-plan -`. **Fail-soft** — a backlink
-   failure never blocks the deposit; never invent a backlink to an unrelated
-   page.
+   bare `[[<SYNTHESIS_SLUG>]]` sentence under the `## See also` of **each cited
+   page only** — the same `sources:` set written in 4.4 (the pages cited via
+   `[[<slug>]]` in the answer), **not** every page read in Step 2. Backlinking an
+   uncited-but-read page would over-link the synthesis to evidence it did not
+   use. Then `python3 "$WIKI_INGEST_SCRIPTS/backlink_audit.py" --wiki-root
+   "$WIKI_ROOT" --new-page "$SYNTHESIS_SLUG" --apply-plan -`. **Fail-soft** — a
+   backlink failure never blocks the deposit; never invent a backlink to an
+   unrelated page.
 
 **4.6 Log line.** Append one line to `<WIKI_ROOT>/wiki/log.md`:
 `## [<YYYY-MM-DD>] synthesis | <SYNTHESIS_SLUG> — <short question>` (the same
