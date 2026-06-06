@@ -342,6 +342,13 @@ assert_grep 'wiki-grounding.py' "$QUERY" "knowledge-query: consumes the shared w
 assert_not_grep 'Skill("cogni-wiki:wiki-dashboard' "$DASHBOARD" "knowledge-dashboard: no longer dispatches cogni-wiki:wiki-dashboard (native render on the vendored engine)"
 assert_grep 'render_dashboard.py' "$DASHBOARD" "knowledge-dashboard: invokes the vendored render_dashboard.py directly"
 
+# knowledge-resume computes the wiki health verdict natively on the vendored
+# health.py and no longer dispatches cogni-wiki:wiki-resume (FMO Phase 8 d2
+# re-home). It keeps the cogni-wiki probe above as the vendored-first /
+# graceful-degradation fallback layout and the pipeline-summary.py reads.
+assert_not_grep 'Skill("cogni-wiki:wiki-resume' "$RESUME" "knowledge-resume: no longer dispatches cogni-wiki:wiki-resume (native health verdict on the vendored engine)"
+assert_grep 'health.py' "$RESUME" "knowledge-resume: invokes the vendored health.py directly"
+
 # knowledge-refresh shares the probe-drop invariant (M10b, v0.0.26) but does
 # not read pipeline-summary.py — it dispatches the seven phase skills. Its
 # phase-chain + clean-break contract lives in test_refresh_push_chain.sh; here
@@ -407,12 +414,13 @@ assert_grep 'theme_label' "$INGEST" "knowledge-ingest: files sources under the s
 DELEGATION_CONTRACT="$PLUGIN_ROOT/references/delegation-contract.md"
 assert_grep 'How `Skill(...)` blocks are written' "$DELEGATION_CONTRACT" \
   "delegation-contract.md names the Skill(...) dispatch convention (#350)"
-# knowledge-query and knowledge-dashboard are intentionally absent: they no
-# longer dispatch a Skill() (query reads + synthesizes natively on the vendored
-# wiki-grounding primitive — the shallow rung; dashboard renders natively on the
-# vendored render_dashboard.py / build_graph.py — FMO Phase 8 d2), so they carry
-# no Skill(...)-convention cross-reference.
-for orch in knowledge-setup knowledge-resume knowledge-refresh; do
+# knowledge-query, knowledge-dashboard, and knowledge-resume are intentionally
+# absent: they no longer dispatch a Skill() (query reads + synthesizes natively
+# on the vendored wiki-grounding primitive — the shallow rung; dashboard renders
+# natively on the vendored render_dashboard.py / build_graph.py; resume computes
+# the health verdict natively on the vendored health.py — FMO Phase 8 d2), so
+# they carry no Skill(...)-convention cross-reference.
+for orch in knowledge-setup knowledge-refresh; do
   ORCH_SKILL="$PLUGIN_ROOT/skills/${orch}/SKILL.md"
   assert_grep 'How `Skill(...)` blocks are written' "$ORCH_SKILL" \
     "${orch}: cross-references the Skill-dispatch convention (#350)"

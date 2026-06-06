@@ -44,18 +44,17 @@ errors=0
 # Skills carrying a Step 0 plugin pre-flight. All probe cogni-wiki only and
 # carry the "requires cogni-wiki to be installed" abort wording.
 #
-# knowledge-query and knowledge-dashboard are intentionally NOT in this list:
-# as of the FMO Phase 8 re-home each resolves its wiki engine VENDORED-FIRST (it
-# ships in-tree under scripts/vendor/cogni-wiki/), so it runs WITHOUT cogni-wiki
-# installed and its abort wording is the vendored-engine variant, not "requires
-# cogni-wiki to be installed". Each keeps the cogni-wiki probe only as the
-# fallback layout. Their clean-break (no cogni-research) + native-read/render
-# invariants are guarded in test_skill_contracts.sh (probe-trio + the
-# wiki-grounding.py / no-wiki-query and render_dashboard.py / no-wiki-dashboard
-# assertions).
+# knowledge-query, knowledge-dashboard, and knowledge-resume are intentionally
+# NOT in this list: as of the FMO Phase 8 re-home each resolves its wiki engine
+# VENDORED-FIRST (it ships in-tree under scripts/vendor/cogni-wiki/), so it runs
+# WITHOUT cogni-wiki installed and its abort wording is the vendored-engine
+# variant, not "requires cogni-wiki to be installed". Each keeps the cogni-wiki
+# probe only as the fallback layout. Their clean-break (no cogni-research) +
+# native-read/render invariants are guarded in test_skill_contracts.sh
+# (probe-trio + the wiki-grounding.py / no-wiki-query, render_dashboard.py /
+# no-wiki-dashboard, and health.py / no-wiki-resume assertions).
 WIKI_ONLY_PROBE_SKILLS=(
   knowledge-setup
-  knowledge-resume
   knowledge-refresh
 )
 
