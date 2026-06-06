@@ -1,6 +1,6 @@
 ---
 name: knowledge-health
-description: "Run a read-only structural health check on a cogni-knowledge base — page/link/schema integrity, entries-count drift, and claim drift for the bound wiki. Use this skill whenever the user says 'check knowledge health', 'knowledge health', 'is my knowledge base healthy', 'audit the knowledge base structure', 'knowledge integrity check', 'health-check the wiki', or wants a structural verdict on a bound base without running the research pipeline. Proactively after a bulk ingest or a finalize run to confirm the base is still structurally sound."
+description: "Run a read-only structural health check on a cogni-knowledge base — page/link/schema integrity, entries-count drift, and claim drift for the bound wiki. Use this skill whenever the user says 'check knowledge health', 'knowledge health', 'is my knowledge base healthy', 'audit the knowledge base structure', 'knowledge integrity check', 'health-check the wiki', or wants a structural verdict on a bound base without running the research pipeline."
 allowed-tools: Read, Bash, Glob
 ---
 
@@ -79,7 +79,7 @@ This probe is the early-abort gate only — Step 2's `resolve_wiki_scripts` is t
    ```
    On `success: false`, abort and offer `knowledge-setup`. Do not auto-create.
 
-3. Extract from the binding: `knowledge_slug`, `knowledge_title`, `wiki_path`.
+3. Extract from the binding: `knowledge_slug`, `knowledge_title`, `wiki_path`. Note that `wiki_path` is read straight from the binding here and **not pre-validated** at this step — `health.py` in Step 2 is the authoritative validator of `wiki_path` / `config.json` (it is what surfaces a missing or broken wiki path, per the Edge-cases section below).
 
 4. Validate the binding's `knowledge_slug` matches `--knowledge-slug`. Mismatch → abort.
 
