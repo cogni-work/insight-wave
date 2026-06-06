@@ -53,9 +53,9 @@ Lightweight HMW (collapsed Develop+Deliver):
 
 ## Research Routing Rule
 
-When research needs emerge during Develop — whether the consultant asks to investigate a solution approach, validate a technical assumption, or explore a domain before designing — **always dispatch cogni-research:research-report** rather than using raw WebSearch. Frame the research topic tightly from the Develop context (e.g., "best practices for [solution approach]", "[technology] implementation patterns for [industry]"). Use mode `basic` for focused lookups, `detailed` for broader exploration.
+When research needs emerge during Develop — whether the consultant asks to investigate a solution approach, validate a technical assumption, or explore a domain before designing — **always dispatch the cogni-knowledge inverted pipeline** (the canonical rule lives in `consulting-discover`) rather than using raw WebSearch. Reuse the engagement's bound base via `plugin_refs.knowledge_base` so Develop's research compounds with Discover's and Define's; for a quick assumption check the base may already answer, `cogni-knowledge:knowledge-query` is the cheapest rung before composing a fresh synthesis. Frame the research topic tightly from the Develop context (e.g., "best practices for [solution approach]", "[technology] implementation patterns for [industry]"). Use `--target-words 3000` for focused lookups, `--target-words 4000` for broader exploration; prefer the `knowledge-compose --source wiki` re-run path when the base already covers the area.
 
-Store the research project in `develop/research/` and note it in `plugin_refs`. This ensures the research is citable in the option synthesis and traceable in Deliver's claims verification. The only exception is a single-query fact-check during conversation.
+After `knowledge-finalize`, copy the synthesis `wiki/syntheses/<slug>.md` to `develop/research/summary.md`. This ensures the research is citable in the option synthesis and traceable in Deliver's claims verification. The only exception is a single-query fact-check during conversation.
 
 ## Core Concept
 
@@ -344,7 +344,7 @@ For `how-might-we` engagements, replace the plugin-powered pipeline with a guide
 
 **Workflow (scales with complexity):**
 
-1. **Load context** — Read the refined HMW question(s) from `define/hmw-questions.md` and the discovery synthesis. If desk research was run, read the research summary for domain grounding. If the consultant asks for research to inform ideation (e.g., "research approaches to X", "what frameworks exist for Y"), dispatch `cogni-research:research-report` (mode `basic`) before or during ideation — the research routing rule applies here too.
+1. **Load context** — Read the refined HMW question(s) from `define/hmw-questions.md` and the discovery synthesis. If desk research was run, read the research summary for domain grounding. If the consultant asks for research to inform ideation (e.g., "research approaches to X", "what frameworks exist for Y"), run the cogni-knowledge pipeline (Research Routing Rule above; focused `--target-words 3000`) before or during ideation — the research routing rule applies here too.
 2. **Run guided ideation** — Read `$CLAUDE_PLUGIN_ROOT/references/methods/guided-ideation.md` and facilitate:
    - Diverge: generate 10-20 ideas, using domain-specific creative constraints (not just generic "what if budget were zero?" but "what if participants had to teach each other instead of learning from a facilitator?")
    - **Persona lens rounds** (when personas exist): After initial divergence, run a focused round per persona. "If we were designing this specifically for [persona name], knowing what we know about their tensions and needs, what would we create?" This surfaces ideas that generic brainstorming misses because it forces empathy with a specific person. A round for the Schichtleiter might yield "a 30-second morning dashboard" that no one thought of when brainstorming "digital transformation" in the abstract.

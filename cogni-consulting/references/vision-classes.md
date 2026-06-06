@@ -14,7 +14,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Desk research (detailed), trend scan, competitive baseline, stakeholder mapping | cogni-research, cogni-trends, cogni-portfolio |
+| Discover | Desk research (detailed), trend scan, competitive baseline, stakeholder mapping | cogni-knowledge, cogni-trends, cogni-portfolio |
 | Define | Assumption verification, affinity clustering, HMW synthesis | cogni-claims |
 | Develop | Value modeling, proposition modeling, scenario planning | cogni-trends, cogni-portfolio |
 | Deliver | Opportunity scoring, claims verification, executive summary | cogni-claims, cogni-portfolio |
@@ -26,7 +26,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Desk research (detailed), data audit, competitive baseline | cogni-research, cogni-portfolio |
+| Discover | Desk research (detailed), data audit, competitive baseline | cogni-knowledge, cogni-portfolio |
 | Define | Assumption verification, assumption mapping | cogni-claims |
 | Develop | Proposition modeling, scenario planning | cogni-portfolio |
 | Deliver | Business case canvas, claims verification, opportunity scoring | cogni-claims, cogni-portfolio |
@@ -38,7 +38,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Desk research (market-specific), competitive baseline, customer journey analysis | cogni-research, cogni-portfolio |
+| Discover | Desk research (market-specific), competitive baseline, customer journey analysis | cogni-knowledge, cogni-portfolio |
 | Define | Assumption verification, affinity clustering, HMW synthesis | cogni-claims |
 | Develop | Proposition modeling, opportunity scoring | cogni-portfolio |
 | Deliver | Opportunity scoring, claims verification, roadmap construction | cogni-claims, cogni-portfolio |
@@ -50,7 +50,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Data audit, stakeholder mapping, desk research (focused) | cogni-research |
+| Discover | Data audit, stakeholder mapping, desk research (focused) | cogni-knowledge |
 | Define | Assumption mapping, affinity clustering | cogni-claims |
 | Develop | Opportunity scoring, scenario planning | — |
 | Deliver | Business case canvas, claims verification | cogni-claims |
@@ -62,7 +62,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Desk research (deep), trend scan, data audit, stakeholder mapping, customer journey analysis | cogni-research, cogni-trends |
+| Discover | Desk research (deep), trend scan, data audit, stakeholder mapping, customer journey analysis | cogni-knowledge, cogni-trends |
 | Define | Assumption verification, affinity clustering, HMW synthesis | cogni-claims |
 | Develop | Value modeling, proposition modeling, scenario planning | cogni-trends, cogni-portfolio |
 | Deliver | Opportunity scoring, business case canvas, claims verification | cogni-claims, cogni-portfolio |
@@ -74,7 +74,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Trend scan (deep), desk research, stakeholder mapping | cogni-research, cogni-trends |
+| Discover | Trend scan (deep), desk research, stakeholder mapping | cogni-knowledge, cogni-trends |
 | Define | Assumption verification, HMW synthesis | cogni-claims |
 | Develop | Value modeling (emphasis), scenario planning | cogni-trends |
 | Deliver | Opportunity scoring, claims verification | cogni-claims |
@@ -86,7 +86,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Desk research (market-focused), competitive baseline, customer journey analysis | cogni-research, cogni-portfolio |
+| Discover | Desk research (market-focused), competitive baseline, customer journey analysis | cogni-knowledge, cogni-portfolio |
 | Define | Assumption verification, assumption mapping | cogni-claims |
 | Develop | Proposition modeling, scenario planning | cogni-portfolio |
 | Deliver | Opportunity scoring, business case canvas, claims verification | cogni-claims, cogni-portfolio |
@@ -98,7 +98,7 @@ Each vision class represents a type of consulting engagement outcome. The class 
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Desk research (market-focused), stakeholder mapping, competitive baseline | cogni-research, cogni-portfolio |
+| Discover | Desk research (market-focused), stakeholder mapping, competitive baseline | cogni-knowledge, cogni-portfolio |
 | Define | Assumption mapping, affinity clustering, HMW synthesis | cogni-claims |
 | Develop | Lean canvas authoring, lean canvas refinement | — |
 | Deliver | Lean canvas stress-test, claims verification | cogni-claims |
@@ -115,11 +115,11 @@ This class covers any engagement where the consultant arrives with a "How might 
 **Complexity spectrum**: The setup skill assesses domain knowledge needed, stakeholder complexity, and reversibility to recommend one of three engagement shapes:
 - **Lightweight** (workshop, exercise, meeting redesign): Collapse Discover+Define and Develop+Deliver into two conversations. Single session possible.
 - **Medium** (process redesign, training program): Standard 4 phases, lightweight. Desk research recommended.
-- **Heavy** (new product, market strategy, org change): Full 4 phases with cogni-research and optionally cogni-portfolio. Comparable to other vision classes but with HMW framing.
+- **Heavy** (new product, market strategy, org change): Full 4 phases with cogni-knowledge and optionally cogni-portfolio. Comparable to other vision classes but with HMW framing.
 
 | Phase | Recommended Methods | Plugin Dispatch |
 |---|---|---|
-| Discover | Context mapping, stakeholder identification, desk research (complexity-dependent) | cogni-research (recommended for medium/heavy, optional for lightweight) |
+| Discover | Context mapping, stakeholder identification, desk research (complexity-dependent) | cogni-knowledge (recommended for medium/heavy, optional for lightweight) |
 | Define | Affinity clustering, HMW refinement | — |
 | Develop | Guided ideation, scenario planning (optional) | — |
 | Deliver | Opportunity scoring (lightweight), action planning | — |

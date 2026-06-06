@@ -20,12 +20,12 @@ Consulting engagements often stall in either analysis paralysis (endless researc
 
 ## What it is
 
-A process orchestrator for the insight-wave ecosystem. cogni-consulting doesn't produce content itself — it manages engagement state and dispatches to existing plugins (cogni-research, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual) at the right phase. Think of it as the senior partner who runs the engagement while specialists do the analysis.
+A process orchestrator for the insight-wave ecosystem. cogni-consulting doesn't produce content itself — it manages engagement state and dispatches to existing plugins (cogni-knowledge, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual) at the right phase. Think of it as the senior partner who runs the engagement while specialists do the analysis.
 
 ## What it does
 
 1. **Frame the vision** — select from 9 vision classes (strategic options, business case, GTM roadmap, cost optimization, digital transformation, innovation portfolio, market entry, business model hypothesis, how-might-we) and define engagement scope → `consulting-project.json` → consulting-discover
-2. **Discover** (D1 diverge) — launch desk research, trend scouting, and competitive baseline via cogni-research, cogni-trends, and cogni-portfolio → `discover/synthesis.md` → consulting-define
+2. **Discover** (D1 diverge) — launch desk research, trend scouting, and competitive baseline via cogni-knowledge, cogni-trends, and cogni-portfolio → `discover/synthesis.md` → consulting-define
 3. **Define** (D1 converge) — verify assumptions via cogni-claims, cluster findings, synthesize the core problem statement → `define/problem-statement.md` + `define/hmw-questions.md` → consulting-develop
 4. **Develop** (D2 diverge) — generate solution options via cogni-trends value-modeler and cogni-portfolio proposition modeling → `develop/options/option-synthesis.md` → consulting-deliver
 5. **Deliver** (D2 converge) — score opportunities, verify final claims, construct business case and roadmap → `deliver/business-case.md` + `deliver/roadmap.md` → consulting-export

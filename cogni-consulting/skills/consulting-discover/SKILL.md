@@ -2,7 +2,7 @@
 name: consulting-discover
 description: |
   Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding
-  of the problem landscape. Dispatches to cogni-research, cogni-trends, and cogni-portfolio.
+  of the problem landscape. Dispatches to cogni-knowledge, cogni-trends, and cogni-portfolio.
   Use whenever the user wants to research, explore, or investigate a topic within a diamond engagement.
   Trigger on: "start discovery", "research the landscape", "let's explore", "what do we know about",
   "gather evidence", "run the research", "investigate the market", "scan for trends",
@@ -27,7 +27,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first."
 
-**Iteration check**: If `phase_state.discover.status` is `complete`, this is a re-entry. Read existing `discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, dispatch `cogni-research:research-report` with a tightly framed research question — do not use raw WebSearch. Frame the report type as `basic` for a focused deep dive or `detailed` if the topic is broad.
+**Iteration check**: If `phase_state.discover.status` is `complete`, this is a re-entry. Read existing `discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, run the cogni-knowledge pipeline against the engagement's bound base (see the Research Routing Rule below) with a tightly framed research topic — do not use raw WebSearch. Since the base already holds the prior Discover research, prefer the re-run path (`knowledge-plan → knowledge-compose --source wiki → verify → finalize`); frame a focused single-topic run (`--target-words 3000`) for a deep dive or a broader one (`--target-words 4000+`) if the topic is wide.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 
@@ -47,14 +47,26 @@ Lightweight HMW (collapsed Discover+Define):
 
 ## Research Routing Rule
 
-When research is needed — whether as a planned discovery method, a consultant request to "look into X", or to deepen a specific topic during iteration — **always dispatch cogni-research:research-report**. Never use raw WebSearch for research within an engagement. cogni-research produces structured, citable reports with source traceability that downstream phases (Define's assumption verification, Deliver's claims check) depend on. Ad-hoc web searches produce throwaway results that can't be verified or cited.
+When research is needed — whether as a planned discovery method, a consultant request to "look into X", or to deepen a specific topic during iteration — **always dispatch the cogni-knowledge inverted pipeline**. Never use raw WebSearch for research within an engagement. cogni-knowledge deposits structured, citable syntheses into a bound knowledge base that **compounds across the whole engagement** — Define's assumption verification and Deliver's claims check read that synthesis, and each phase's research builds on the last instead of dying as a throwaway per-sprint report. (This rule is the canonical reference; the Define, Develop, and Deliver skills reroute the same way.)
 
-Store the research project in the engagement's phase directory:
-- Standard desk research → `discover/research/` + `plugin_refs.research_project`
+**Bind the engagement to one knowledge base.** Once per engagement, dispatch `cogni-knowledge:knowledge-setup` (slug derived from the engagement name; market and output language from `consulting-project.json`) and record the slug in `plugin_refs.knowledge_base`. Every later research run, in any phase, reuses that base via `--knowledge-slug`, so Discover/Define/Develop/Deliver share one compounding wiki.
+
+**Run the pipeline** for a research topic:
+- **New topic** (the base has no coverage yet): `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`.
+- **Re-run on a populated base** (the topic is already covered): `knowledge-plan` → `knowledge-compose --source wiki` → `knowledge-verify` → `knowledge-finalize` — skips the web crawl and composes from what the base already holds.
+- **Quick gap-check** (just need what the base already knows): `cogni-knowledge:knowledge-query --knowledge-slug <slug> --question "..."` — the shallow read rung, no web crawl, no new project.
+
+**Frame the depth** (this replaces the former research `mode` parameter):
+- focused single-topic dive (was `basic`) → `knowledge-plan … --target-words 3000` with 3–4 sub-questions, `--prose-density standard`
+- broad multi-angle (was `detailed`) → `--target-words 4000` with 5–7 sub-questions
+- exhaustive (was `deep`, e.g. digital-transformation / innovation) → `--target-words 6000+` (or split into two plans), `--prose-density executive`
+
+**Preserve the storage contract.** After `knowledge-finalize`, copy (or symlink) the finalized synthesis `wiki/syntheses/<slug>.md` into the engagement's phase directory so downstream phases find it at a stable path:
+- Standard desk research → `discover/research/summary.md`
 - Topic-specific deep dives (e.g., "research the Drama Triangle framework") → `discover/research/` with a descriptive slug
-- Research requested during iteration re-entry → same `discover/research/` path, new research project alongside existing ones
+- Research requested during iteration re-entry → same `discover/research/` path, a new knowledge run alongside the existing ones
 
-The only exception is a quick fact-check during conversation (e.g., confirming a date or name) — that's fine as a single WebSearch. Anything requiring multiple queries or producing content that feeds into engagement artifacts must go through cogni-research.
+The only exception is a quick fact-check during conversation (e.g., confirming a date or name) — that's fine as a single WebSearch. Anything requiring multiple queries or producing content that feeds into engagement artifacts must go through cogni-knowledge.
 
 ## Core Concept
 
@@ -88,7 +100,7 @@ Present the proposed discovery plan, typically 3-5 activities:
 
 | Method | Plugin | What It Produces |
 |---|---|---|
-| Desk research | cogni-research | Research report with cited sources |
+| Desk research | cogni-knowledge | Compounding wiki synthesis with cited sources |
 | Industry trend scan | cogni-trends | 60 trend candidates across 4 dimensions × 3 horizons |
 | Competitive baseline | cogni-portfolio | Competitor landscape and market segmentation |
 
@@ -109,12 +121,12 @@ Ask: "Which methods do you want to use for Discovery? I recommend all plugin-pow
 
 For each confirmed plugin method, dispatch to the appropriate plugin:
 
-**Desk Research (cogni-research)**:
+**Desk Research (cogni-knowledge)** — per the Research Routing Rule above:
 - Frame the research topic from the engagement's desired outcome and scope
-- Suggest report type: `detailed` for most vision classes, `deep` for digital-transformation or innovation-portfolio
-- Recommend market setting matching the engagement scope
-- After research completes, store the project path in `plugin_refs.research_project`
-- Copy or symlink the research output summary to `discover/research/`
+- Suggest depth: `--target-words 4000` (5–7 sub-questions) for most vision classes, `--target-words 6000+` / `--prose-density executive` for digital-transformation or innovation-portfolio
+- Bind the base first if `plugin_refs.knowledge_base` is unset; the market and output language come from that base's `knowledge-setup` defaults (matching the engagement scope)
+- Run the pipeline against the bound base by passing `--knowledge-slug <plugin_refs.knowledge_base>` to `knowledge-plan` (`knowledge-plan → … → knowledge-finalize`, or the `--source wiki` re-run path if the base already covers the topic)
+- After `knowledge-finalize`, copy or symlink the synthesis `wiki/syntheses/<slug>.md` to `discover/research/summary.md`
 
 **Industry Trend Scan (cogni-trends)**:
 - Frame the industry from the engagement context
@@ -217,7 +229,7 @@ For simple, bounded challenges (workshop design, team exercise, meeting redesign
 1. **Context mapping with domain engagement** — Ask the consultant about the situation, but reference the actual subject matter. For a Drama Triangle workshop: "What patterns are the consultants seeing — rescuer dynamics with clients, persecutor escalations in steering committees? How familiar are they with Transactional Analysis?" This shows domain understanding and surfaces better design inputs than generic questions.
 2. **Stakeholder + constraints** — Quick: who's involved, what are the boundaries? Keep it to a few questions, not a formal mapping exercise.
 3. **HMW sharpening** (Define, inline) — Based on the context, propose 2-3 refined versions of the HMW question. Let the consultant pick. Write a brief problem statement.
-4. **Skip desk research** unless the consultant asks for it. When the consultant does ask for research (e.g., "research the framework", "look into best practices for X", "I need evidence on Y"), dispatch `cogni-research:research-report` with mode `basic` and a tightly scoped topic derived from their request. Store the research project in `discover/research/` and reference it in `plugin_refs.research_project`. Do not use raw WebSearch — the research routing rule applies to all engagement weights.
+4. **Skip desk research** unless the consultant asks for it. When the consultant does ask for research (e.g., "research the framework", "look into best practices for X", "I need evidence on Y"), run the cogni-knowledge pipeline (Research Routing Rule above) as a focused single-topic run (`--target-words 3000`, `--prose-density standard`) on the engagement's bound base, then copy the synthesis to `discover/research/summary.md`. Do not use raw WebSearch — the research routing rule applies to all engagement weights.
 
 Save a combined `discover/synthesis.md` and `define/problem-statement.md` and `define/hmw-questions.md`. Then mark **both** Discover and Define as complete — this is critical for tracking:
 
@@ -230,15 +242,15 @@ Apply the Diamond Coach closing protocol: summarize what was accomplished in the
 
 ### Medium HMW
 
-Standard 4 phases, but each is shorter. **Recommend cogni-research** — dispatch a focused desk research sprint to ground the design in evidence (e.g., "best practices for X", "what approaches exist for Y"). Frame the research topic tightly from the HMW question.
+Standard 4 phases, but each is shorter. **Recommend cogni-knowledge** — run a focused desk research sprint to ground the design in evidence (e.g., "best practices for X", "what approaches exist for Y"). Frame the research topic tightly from the HMW question.
 
 Use the guided exploration from the lightweight path for context mapping, then add:
-- Dispatch `cogni-research:research-report` with mode `basic` or `detailed` depending on scope
-- Store in `plugin_refs.research_project` and symlink summary to `discover/research/`
+- Run the cogni-knowledge pipeline (Research Routing Rule above) at `--target-words 3000` (focused) or `4000` (broader) depending on scope
+- Bind/reuse the engagement base via `plugin_refs.knowledge_base` and copy the synthesis to `discover/research/summary.md`
 
 ### Heavy HMW
 
-Use the standard Discover workflow (steps 1-6 above). Recommend cogni-research (detailed mode) and consider cogni-portfolio if competitive context matters. This path is close to other vision classes but framed around the HMW question.
+Use the standard Discover workflow (steps 1-6 above). Recommend cogni-knowledge (broad run, `--target-words 4000+`) and consider cogni-portfolio if competitive context matters. This path is close to other vision classes but framed around the HMW question.
 
 ### Synthesis for all HMW variants
 

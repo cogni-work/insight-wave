@@ -5,12 +5,12 @@ type: divergent
 inputs: [engagement-vision, scope]
 outputs: [research-topic, research-config]
 duration_estimate: "10-15 min with consultant"
-requires_plugins: [cogni-research]
+requires_plugins: [cogni-knowledge]
 ---
 
 # Desk Research Framing
 
-Translate the engagement vision into a well-scoped research topic for cogni-research.
+Translate the engagement vision into a well-scoped research topic for the cogni-knowledge inverted pipeline, deposited into the engagement's bound knowledge base so the evidence compounds across phases.
 
 ## When to Use
 
@@ -41,14 +41,14 @@ This is especially critical for: market-entry (regulatory barriers differ by cou
 The goal is to ensure the discovery evidence is equally specific across all jurisdictions in scope — a synthesis that is detailed for the US but vague for DACH (or vice versa) will be caught by domain experts and undermines credibility.
 
 ### Step 3: Research Configuration
-Recommend settings for cogni-research:
-- **Report type**: `detailed` (default), `deep` for digital-transformation/innovation
-- **Market**: Match engagement scope (dach, de, us, uk, fr, global)
-- **Tone**: `analytical` for business engagements
-- **Source mode**: `web` (default), `hybrid` if client has internal documents
+Recommend settings for the cogni-knowledge run:
+- **Depth** (replaces the old report type): `--target-words 4000` with 5–7 sub-questions (default); `--target-words 6000+` / `--prose-density executive` for digital-transformation/innovation; `--target-words 3000` with 3–4 sub-questions for a focused single-topic dive
+- **Market** and **output language**: inherited from the engagement's bound base (`knowledge-setup` defaults, matching the engagement scope — dach, de, us, uk, fr, global). Bind the base first if `plugin_refs.knowledge_base` is unset
+- **Tone**: `analytical` for business engagements (a `knowledge-setup` / `knowledge-plan` default)
+- **Source**: `--source web` for a new topic (full crawl); `--source wiki` to compose from coverage the base already holds without re-crawling
 
 ### Step 4: Dispatch
-Invoke cogni-research:research-report with the configured topic and settings.
+Run the cogni-knowledge inverted pipeline against the bound base: `knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify → knowledge-finalize` for a new topic, or the shorter `knowledge-plan → knowledge-compose --source wiki → knowledge-verify → knowledge-finalize` when the base already covers it. After `knowledge-finalize`, copy the synthesis `wiki/syntheses/<slug>.md` to the phase's `research/summary.md`.
 
 ## Output
-The research report and its sources become inputs for the Define phase.
+The finalized synthesis and its cited sources become inputs for the Define phase — and remain in the bound base for later phases to build on.

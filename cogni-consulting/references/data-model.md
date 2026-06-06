@@ -12,7 +12,7 @@ cogni-consulting/{engagement-slug}/
 ├── personas/                              # People we design for (see persona-schema.md)
 │   └── {persona-slug}.json               # One file per persona, evolves across phases
 ├── discover/                              # D1 diverge outputs
-│   ├── research/                          # → cogni-research project
+│   ├── research/                          # summary.md ← cogni-knowledge synthesis (copied from the bound base)
 │   ├── trends/                            # → cogni-trends project
 │   └── competitive/                       # → cogni-portfolio scan
 ├── define/                                # D1 converge outputs
@@ -53,7 +53,7 @@ Central state file for the engagement. Tracks vision, phase progression, and cro
     "deliver": "pending"
   },
   "plugin_refs": {
-    "research": "cogni-research/dach-cloud-expansion",
+    "knowledge_base": "dach-cloud-expansion",
     "trends": "cogni-trends/dach-cloud-expansion",
     "portfolio": "cogni-portfolio/acme-cloud-services",
     "claims": "cogni-claims/"
@@ -72,7 +72,7 @@ Central state file for the engagement. Tracks vision, phase progression, and cro
 | `engagement_weight` | No | For `how-might-we` class: `"lightweight"`, `"medium"`, or `"heavy"`. Controls coaching intensity and phase collapsing. `null` for non-HMW classes. |
 | `language` | No | ISO 639-1 code (default: `en`). Controls communication language; technical terms stay English |
 | `phase_state` | Yes | Per-phase status: `pending` → `in-progress` → `complete` |
-| `plugin_refs` | No | Relative paths to projects created by other plugins |
+| `plugin_refs` | No | Slugs/relative paths to projects created by other plugins. `plugin_refs.knowledge_base` holds the cogni-knowledge base slug bound to the engagement (research compounds there across phases). The legacy `plugin_refs.research_project` (a cogni-research slug) is **deprecated** — engagements now bind a cogni-knowledge base instead. |
 | `created` | Yes | ISO date of engagement creation |
 | `updated` | Yes | ISO date of last modification |
 
@@ -129,7 +129,7 @@ Audit trail of decisions made during the engagement with rationale and traceabil
       "phase": "define",
       "decision": "Focus on mid-market cloud migration rather than greenfield",
       "rationale": "Research shows 73% of DACH mid-market has legacy on-prem; greenfield TAM is 4x smaller",
-      "evidence_refs": ["cogni-research/dach-cloud-expansion/report.md"],
+      "evidence_refs": ["discover/research/summary.md"],
       "timestamp": "2026-03-14T11:00:00Z"
     }
   ]
@@ -202,7 +202,7 @@ Phase gates are enforced at the skill level: each phase skill checks that requir
 
 | Plugin | Direction | Phase | Contract |
 |--------|-----------|-------|----------|
-| cogni-research | Orchestrates | Discover | Creates research project, invokes research-report skill |
+| cogni-knowledge | Orchestrates | Discover, Define, Develop, Deliver | Binds one knowledge base per engagement (`knowledge-setup`, slug in `plugin_refs.knowledge_base`) and runs the inverted pipeline (`knowledge-plan → … → knowledge-finalize`); research compounds across phases. Synthesis copied to `<phase>/research/summary.md` |
 | cogni-trends | Orchestrates | Discover, Develop | Invokes trend-scout (Discover) and value-modeler (Develop) |
 | cogni-portfolio | Orchestrates | Discover, Develop, Deliver | Invokes portfolio-scan, compete, propositions, solutions, portfolio-verify |
 | cogni-claims | Orchestrates | Define, Deliver | Invokes claims verification for assumption and deliverable quality gates |

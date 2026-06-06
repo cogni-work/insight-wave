@@ -183,7 +183,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the selected vision 
 > **Your Diamond engagement plan:**
 >
 > **Discover** (diverge) — Build understanding of the problem landscape
-> - Desk research via cogni-research
+> - Desk research via cogni-knowledge
 > - Industry trend scan via cogni-trends
 > - Competitive baseline via cogni-portfolio
 >
@@ -217,8 +217,8 @@ Store the assessed weight in `consulting-project.json` as `engagement.engagement
 Based on this assessment, offer an appropriate engagement shape:
 
 - **Lightweight HMW** (all dimensions low — e.g., workshop design, team exercise, meeting redesign): Offer to collapse phases. Run Discover+Define as a single context conversation, then Develop+Deliver as a solution design session. The full engagement can happen in one sitting. Engage with the domain immediately — reference the actual subject matter (e.g., "Drama Triangle → Empowerment Dynamic shift") in the phase plan rather than staying abstract.
-- **Medium HMW** (mixed — e.g., process redesign, training program, offsite planning): Use the standard 4 phases but keep them lightweight. Recommend cogni-research for a focused desk research sprint in Discover to ground the design in evidence.
-- **Heavy HMW** (multiple dimensions high — e.g., new product, market strategy, organizational change): Use the full 4-phase diamond with cogni-research recommended in Discover and potentially cogni-portfolio for competitive context. This is close to a standard vision class engagement but with the HMW framing.
+- **Medium HMW** (mixed — e.g., process redesign, training program, offsite planning): Use the standard 4 phases but keep them lightweight. Recommend cogni-knowledge for a focused desk research sprint in Discover to ground the design in evidence.
+- **Heavy HMW** (multiple dimensions high — e.g., new product, market strategy, organizational change): Use the full 4-phase diamond with cogni-knowledge recommended in Discover and potentially cogni-portfolio for competitive context. This is close to a standard vision class engagement but with the HMW framing.
 
 Present the assessment and recommended shape to the consultant. They may override — a consultant who knows the domain deeply might want lightweight even for a complex HMW, while a less experienced consultant might want full phases for a simple one.
 
