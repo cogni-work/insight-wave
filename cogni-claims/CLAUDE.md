@@ -108,7 +108,7 @@ Sources that WebFetch cannot reach can be recovered interactively via `/claims c
 
 The source-inspector agent (used in inspect mode) opens sources in the user's browser via claude-in-chrome for visual evidence review.
 
-Source cache files record which method succeeded via `fetch_method`: `"webfetch"` or `"cobrowse_interactive"`.
+Source cache files record which method succeeded via `fetch_method`: `"webfetch"` or `"cobrowse_interactive"`. A third value, `"direct"`, exists in the shared vocabulary for a non-web (local) source whose bytes are already in hand — a local file, pasted text, a local PDF, or an interview note. cogni-claims itself never emits `direct` (it is a web-source verifier with no local-ingest path); the value is recognized here so the contract stays aligned with cogni-knowledge's fetch-cache, which writes `direct` for its standalone local-source ingest. A `direct` entry is always `status: ok` and carries no negative-cache reason.
 
 ### Interactive cobrowse recovery
 

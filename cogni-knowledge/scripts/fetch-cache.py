@@ -46,11 +46,15 @@ from _knowledge_lib import (  # noqa: E402
 SCHEMA_VERSION = "0.1.0"
 FETCH_CACHE_DIRNAME = "fetch-cache"
 BINDING_DIRNAME = ".cogni-knowledge"
-# Matches cogni-claims' fetch_method enum (cogni-claims/CLAUDE.md:109,
-# skills/claims/SKILL.md:317) so a future shared verifier can read either
-# cache's entries without translation. Do not add new values without
-# coordinating an additive change there.
-VALID_FETCH_METHODS = {"webfetch", "cobrowse_interactive"}
+# Matches cogni-claims' fetch_method enum (cogni-claims/CLAUDE.md:111,
+# skills/claims/SKILL.md) so a future shared verifier can read either cache's
+# entries without translation. `webfetch` / `cobrowse_interactive` are the two
+# web-fetch outcomes; `direct` records a non-web source (a local file / pasted
+# text / local PDF / interview note) whose bytes are already in hand — it is
+# always paired with status `ok` and never carries a negative-cache `reason`.
+# Adding a value here is a cross-plugin contract change: keep it additive and
+# mirror it in the cogni-claims prose above.
+VALID_FETCH_METHODS = {"webfetch", "cobrowse_interactive", "direct"}
 VALID_STATUSES = {"ok", "unavailable"}
 # Closed vocabulary for unavailable-entry `reason`. Single source of truth
 # for the `webfetch_error_class` enum that `source-fetcher.md` Step 4

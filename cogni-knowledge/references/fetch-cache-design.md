@@ -29,9 +29,11 @@ One canonical cache per knowledge base, shared across all projects under that ba
 }
 ```
 
-`fetch_method ∈ {webfetch, cobrowse_interactive}`. These are the exact two values cogni-claims uses (`cogni-claims/CLAUDE.md:109`, `skills/claims/SKILL.md:317`) — kept aligned so a future shared verifier can read either cache's entries without translation. Adding a new value here requires an additive coordinated change in cogni-claims.
+`fetch_method ∈ {webfetch, cobrowse_interactive, direct}`. The first two are kept aligned with cogni-claims (`cogni-claims/CLAUDE.md:111`, `skills/claims/SKILL.md`) so a future shared verifier can read either cache's entries without translation. Adding a value here is an additive cross-plugin contract change, mirrored in the cogni-claims prose.
 
-`status ∈ {ok, unavailable}`. An unavailable entry is recorded for negative caching — repeated fetches against a known-dead URL within the freshness window short-circuit to the cached `unavailable` verdict.
+**`direct` — non-web sources.** `webfetch` and `cobrowse_interactive` are the two web-fetch outcomes (an automated `WebFetch`, or an interactive Claude-in-Chrome recovery). `direct` records a source whose bytes are already in hand and were never fetched over the network — a local file (`.docx`/`.html`/`.txt`), pasted text, a local PDF, or a local interview note. It is the honest provenance value for `knowledge-ingest-source`'s local-input path. A `direct` entry is always `status: ok` (the body exists by definition), so it never carries a `webfetch_*`/negative-cache `reason` — the negative-cache machinery is web-only.
+
+`status ∈ {ok, unavailable}`. An unavailable entry is recorded for negative caching — repeated fetches against a known-dead URL within the freshness window short-circuit to the cached `unavailable` verdict. `direct` entries are never `unavailable`.
 
 ## Cache-key choice: URL, not content
 
@@ -105,9 +107,9 @@ cogni-claims has its own URL→body cache at `cogni-claims/sources/{url-hash}.js
 |---|---|---|
 | Cache key | First 16 chars of sha256(url) | Full 64 chars of sha256(url) |
 | Lifecycle | Per-workspace | Per knowledge base |
-| Schema for `fetch_method` | `webfetch` / `cobrowse_interactive` | identical |
+| Schema for `fetch_method` | `webfetch` / `cobrowse_interactive` | superset: adds `direct` |
 
-The 64-char key was chosen because at scale (10k+ URLs across a long-lived knowledge base) the 16-char truncation has nontrivial collision risk. The two caches do not share storage — they have different lifecycles — but the `fetch_method` vocabulary is kept identical so a future absorbed verifier can interpret either format consistently. When cogni-claims is absorbed at v1.0, the truncated keys are the loose end to reconcile (widen cogni-claims to 64 chars, or accept that legacy 16-char entries lose addressability).
+The 64-char key was chosen because at scale (10k+ URLs across a long-lived knowledge base) the 16-char truncation has nontrivial collision risk. The two caches do not share storage — they have different lifecycles — but the **shared** `fetch_method` web values (`webfetch` / `cobrowse_interactive`) are kept identical so a future absorbed verifier can interpret either format consistently. cogni-knowledge additionally writes `direct` for non-web (local) sources, which cogni-claims — a web-source verifier with no local-ingest path — never emits; the value is documented on the cogni-claims side so an absorbed verifier recognizes it rather than treating it as unknown. When cogni-claims is absorbed at v1.0, the truncated keys are the loose end to reconcile (widen cogni-claims to 64 chars, or accept that legacy 16-char entries lose addressability).
 
 ## Why not put this upstream in cogni-wiki?
 

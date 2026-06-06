@@ -389,6 +389,51 @@ else
   errors=$((errors + 1))
 fi
 
+# 11. store + fetch a `direct` (non-web / local) source — round-trips with no reason.
+KB3="$WORK/kb3"
+mkdir -p "$KB3/.cogni-knowledge"
+URL_LOCAL="file:///notes/interview-2026-06-06.txt"
+python3 "$SCRIPT" store \
+  --knowledge-root "$KB3" \
+  --url "$URL_LOCAL" \
+  --fetch-method direct \
+  --status ok \
+  --body "verbatim local interview note body" \
+  --publisher "local" >/dev/null
+FETCH_DIRECT=$(python3 "$SCRIPT" fetch --knowledge-root "$KB3" --url "$URL_LOCAL")
+if echo "$FETCH_DIRECT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+e = d['data']['entry']
+assert e['fetch_method'] == 'direct', e
+assert e['status'] == 'ok', e
+assert e['body'] == 'verbatim local interview note body', e
+assert e.get('reason') in (None, ''), e
+print('OK')
+" | grep -q OK; then
+  green "PASS: store + fetch round-trip for a direct (non-web) source"
+else
+  red "FAIL: direct-source round-trip mismatch"
+  red "  got: $FETCH_DIRECT"
+  errors=$((errors + 1))
+fi
+
+# 12. an unknown fetch-method is still rejected by argparse choices.
+BAD_METHOD=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB3" \
+  --url "https://example.org/x" \
+  --fetch-method scrape \
+  --status ok \
+  --body "x" 2>&1 || true)
+if echo "$BAD_METHOD" | grep -q "invalid choice: 'scrape'"; then
+  green "PASS: unknown --fetch-method is rejected (closed vocabulary held)"
+else
+  red "FAIL: unknown --fetch-method was not rejected"
+  red "  got: $BAD_METHOD"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
   exit 1
