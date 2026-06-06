@@ -78,6 +78,8 @@ For failed fetches (WebFetch failed):
 }
 ```
 
+**`fetch_method` vocabulary.** `webfetch` (automated `WebFetch`) and `cobrowse_interactive` (user-assisted claude-in-chrome recovery) are the two values cogni-claims writes. The shared vocabulary also includes `direct` — a non-web source whose bytes are already in hand (a local file, pasted text, a local PDF, or an interview note), always paired with a success status (`status: success` in cogni-claims' own cache vocabulary, matching the `success`/`failed` examples above; cogni-knowledge writes the same entry as `status: ok`) and no `error`. cogni-claims never emits `direct` (it verifies web sources only); it is documented here so the cache schema stays aligned with cogni-knowledge's fetch-cache, which writes `direct` for its standalone local-source ingest.
+
 Hash generation: Use the URL string to produce a short filesystem-safe hash. The claims-store.sh script provides this via `echo -n "$url" | shasum -a 256 | cut -c1-16`.
 
 Cache rules:
