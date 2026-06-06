@@ -1,6 +1,6 @@
 ---
 name: knowledge-resume
-description: "Show status of a cogni-knowledge base — knowledge slug, bound wiki path, deposited research projects, wiki health verdict, and the recommended next action. Computes the wiki health verdict natively on the vendored wiki-health engine (no cogni-wiki dispatch). Use this skill whenever the user says 'resume the knowledge base', 'knowledge resume', 'knowledge status', 'where was I with the eu-ai-act base', 'what's in my knowledge base', 'show me the knowledge base overview'. Proactively after a long gap between sessions, or right after knowledge-setup or a knowledge-finalize run."
+description: "Show status of a cogni-knowledge base — knowledge slug, bound wiki path, deposited research projects, wiki health verdict, and the recommended next action. Use this skill whenever the user says 'resume the knowledge base', 'knowledge resume', 'knowledge status', 'where was I with the eu-ai-act base', 'what's in my knowledge base', 'show me the knowledge base overview'. Proactively after a long gap between sessions, or right after knowledge-setup or a knowledge-finalize run."
 allowed-tools: Read, Bash, Glob
 ---
 
@@ -58,7 +58,7 @@ If `WIKI_OK` is `no`, abort:
 > cogni-knowledge's vendored wiki-health scripts are missing and no `cogni-wiki`
 > install was found. Reinstall cogni-knowledge, then retry.
 
-Resume is read-only with respect to disk; the vendored-first probe gives the user the same clean signal every other `knowledge-*` read/render skill emits.
+Resume is read-only with respect to disk; the vendored-first probe gives the user the same clean signal every other `knowledge-*` read/render skill emits. This probe is the early-abort gate only — Step 2's `resolve_wiki_scripts` is the authoritative resolver for the actual `health.py` path; keep the two vendored-first precedences in sync.
 
 ### 1. Resolve the knowledge root and read the binding
 
@@ -152,7 +152,7 @@ Print a ≤ 12-line summary that layers the binding onto the wiki status:
 - **Wiki path.** `<wiki_path>` — wiki health verdict from Step 2a (one line: "OK" / "N issues — <first error class(es)>"; append a `· entries drift <±N>` / `· claim drift <N>` note when those stats are non-zero)
 - **Deposited research projects.** `<count>` — one line per project (newest first, cap 5, "and N more" for the rest), each as: `<slug> — <sub_questions> sub-questions · <fetched> fetched · phase <phase_reached>` + ` · <concepts_total> concepts (<claims_deduped>/<claims_attached> claims deduped)` when `concepts_total > 0` (the Phase-4.5 distill compounding signal) + `· synthesis ✓` when the binding entry's `report_source == "wiki"` + ` (<deposited_at>)`. Legacy deposits show `<slug> — (legacy deposit) (<deposited_at>)`.
 - **Pipeline status.** Knowledge-base-global fetch-cache (one shared cache across all projects): one line by `verdict` — `healthy` → `fetch-cache healthy (<entries> sources)`; `stale` → `fetch-cache stale — re-run knowledge-curate to re-fetch aged sources (or knowledge-refresh to re-run the pipeline on stale topics)`; `empty` → `fetch-cache empty — run knowledge-plan first`.
-- **Topic lineage.** Use the `themes` subcommand output from Step 3. If `covered` or `open_active` is non-empty, print them as two short lists: render the **covered** list from `covered[]` (each entry's `label` — already the `labels[0]`-with-`question_slug`-fallback render; never the raw object or the `theme_key`), and the **open** list from `open_active` (plain strings — the still-open seeds, with researched seeds already dropped off so the backlog tracks reality). Else omit.
+- **Topic lineage.** Use the `themes` subcommand output from Step 1. If `covered` or `open_active` is non-empty, print them as two short lists: render the **covered** list from `covered[]` (each entry's `label` — already the `labels[0]`-with-`question_slug`-fallback render; never the raw object or the `theme_key`), and the **open** list from `open_active` (plain strings — the still-open seeds, with researched seeds already dropped off so the backlog tracks reality). Else omit.
 - **Next action.** One line, selected by the decision tree below.
 
 The Step 2 health detail (the verdict line plus any `errors`/`warnings` worth surfacing, the context-brief summary, and the recent-log lines) appears above the summary so the user has the structural detail at hand; cogni-knowledge's contribution is the binding overlay.
@@ -177,7 +177,7 @@ Otherwise branch on the newest in-flight project's `phase_reached` (the deepest 
 | `compose` | `knowledge-verify` — draft + citation manifest exist; run the zero-network claim check. |
 | `verify` | `knowledge-finalize` — verified; deposit the synthesis into `wiki/syntheses/` and close the loop. |
 
-- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, refresh stale topics with `knowledge-refresh`, or start a new project with `knowledge-plan` to keep accumulating."
+- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
 
 ## Edge cases
 
