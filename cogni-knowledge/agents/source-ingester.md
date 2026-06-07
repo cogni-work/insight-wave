@@ -1,6 +1,6 @@
 ---
 name: source-ingester
-description: Phase-4 source ingester for the inverted pipeline. Reads one fetched-source entry from fetch-manifest.json, reads the cached body via fetch-cache.py fetch, dispatches claim-extractor to identify pre-extracted claims, and writes one wiki/sources/<slug>.md page with type:source frontmatter populated by the claim array. Emits a per-source JSON envelope the knowledge-ingest orchestrator merges into ingest-manifest.json. Never re-fetches.
+description: Phase-4 source ingester for the inverted pipeline. Reads one fetched-source entry from fetch-manifest.json, reads the cached body via fetch-cache.py fetch, dispatches claim-extractor to identify pre-extracted claims, and writes one wiki/sources/<slug>.md page with type:source frontmatter populated by the claim array. An additive PAGE_TYPE parameter (default source, so the research path stays byte-identical) routes other page types — e.g. an interview note — to their own wiki/<dir>/ (interview → wiki/interviews/). Emits a per-source JSON envelope the knowledge-ingest orchestrator merges into ingest-manifest.json. Never re-fetches.
 model: sonnet
 color: cyan
 tools: ["Read", "Write", "Bash", "Task"]
@@ -25,7 +25,7 @@ by `source-fetcher`; this agent never reaches the network. The
 
 ## Role
 
-You take one fetched-source entry from `<project>/.metadata/fetch-manifest.json`, read its cached body, run a `claim-extractor` over it, and write the resulting wiki page at `<wiki-root>/wiki/sources/<slug>.md`. You emit a per-source JSON envelope so the calling `knowledge-ingest` orchestrator can merge into the project's `ingest-manifest.json` without re-reading the page.
+You take one fetched-source entry from `<project>/.metadata/fetch-manifest.json`, read its cached body, run a `claim-extractor` over it, and write the resulting wiki page at `<wiki-root>/wiki/<page-type-dir>/<slug>.md` — defaulting to `wiki/sources/<slug>.md` (`type: source`). An additive `PAGE_TYPE` parameter (default `source`) selects the page type and landing directory: with `PAGE_TYPE=source` (the byte-identical research-path default) the page lands in `wiki/sources/`; with `PAGE_TYPE=interview` (a local interview note from `knowledge-ingest-source`) it lands in `wiki/interviews/`. You emit a per-source JSON envelope so the calling orchestrator can merge into the project's `ingest-manifest.json` without re-reading the page.
 
 You **never re-fetch the URL**. The body is in the cache. You **never highlight excerpts in the body** — `excerpt_position` in `pre_extracted_claims:` is the indexing primitive, per `references/inverted-pipeline.md` Phase 4 and `references/claim-at-ingest.md:57`.
 
@@ -40,6 +40,7 @@ You **never re-fetch the URL**. The body is in the cache. You **never highlight 
 | `SUB_QUESTION_REFS` | Yes | Comma-separated `sq-NN` ids from `candidates.json` for this URL. Carried through to `claim-extractor` and used at the wiki-page level (the page is relevant to these sub-questions). |
 | `PUBLISHER` | No | Registered-domain publisher (no subdomain) — `europa.eu`, not `eur-lex.europa.eu`. Carried into the page frontmatter when present. |
 | `TITLE_HINT` | No | Source title from the candidate metadata. Used as the page's `title:` and as the first-line `# <title>` body header. Falls back to a derived title from the body if absent. |
+| `PAGE_TYPE` | No | The wiki page type to write. Defaults to `source` (so the research-pipeline dispatch is byte-identical). Must be a key of cogni-wiki's `_wikilib.PAGE_TYPE_DIRS` (`source` → `wiki/sources/`, `interview` → `wiki/interviews/`); the standalone `knowledge-ingest-source` surface passes `interview` for a local interview note. An unrecognized value is treated as `invalid_page_type` (skip, do not guess). |
 | `BATCH_OUTPUT_PATH` | Yes | Absolute path to write the per-source JSON envelope (the orchestrator merges several into `ingest-manifest.json`). |
 
 ## Core Workflow
@@ -53,6 +54,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 1. Locate `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py`. All cache reads go through this script — never read `.cogni-knowledge/fetch-cache/<sha256>.json` directly.
 2. **Slug sanity guard.** `SLUG` arrives resolved by the orchestrator (orchestrator owns both the title-derivation pass and the `src-<first-12-of-sha256(normalize_url(URL))>` hash fallback — single source of truth, see `skills/knowledge-ingest/SKILL.md` Step 1.2). Validate that the received string matches `[a-z0-9][a-z0-9-]{0,79}` (lowercase, alphanumerics + dashes, ≤80 chars, starts alnum). On mismatch, emit a `skipped` batch result with `reason: invalid_slug` and return — do not attempt to "fix" the slug, the orchestrator's pre-fan-out dedupe relies on slug stability across the round-trip.
 3. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
+4. **Resolve the page-type directory.** `PAGE_TYPE` defaults to `source` when unset. Look it up in cogni-wiki's `_wikilib.PAGE_TYPE_DIRS` (the orchestrator passes `--wiki-scripts-dir`, or import via the resolved vendored copy) to get the landing directory — `source` → `sources`, `interview` → `interviews`. On an unrecognized `PAGE_TYPE` (not a `PAGE_TYPE_DIRS` key), emit a `skipped` batch result with `reason: invalid_page_type` and return — do not guess a directory. The resolved `<page-type-dir>` is used for the Phase-3 write path; with the default `PAGE_TYPE=source` this is `wiki/sources/`, byte-identical to the research path.
 
 ### Phase 1: Read cached body
 
@@ -91,8 +93,8 @@ Compose the markdown page text:
 ---
 id: <slug>
 title: "<title>"
-type: source
-tags: [source]
+type: source                      # = <PAGE_TYPE>; default source. For an interview note: type: interview
+tags: [source]                    # = [<PAGE_TYPE>]; default [source]. For an interview note: tags: [interview]
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 sources: ["<URL>"]
@@ -117,6 +119,7 @@ pre_extracted_claims:
 YAML frontmatter rules:
 
 - Emit YAML as literal text in the page body — match the shape `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py::parse_frontmatter` parses. Inline strings get double quotes; multiline strings stay scalar (no `|` blocks needed for our short claim texts). The Python that calls `atomic_write_text` must stay stdlib-only — do not import `yaml` (or any pip dependency) in the wrapper code.
+- **`type:` and `tags:` follow `PAGE_TYPE`.** Emit `type: <PAGE_TYPE>` and `tags: [<PAGE_TYPE>]` (both unquoted fixed-vocabulary scalars). The default `PAGE_TYPE=source` reproduces the research path's `type: source` / `tags: [source]` byte-for-byte; `PAGE_TYPE=interview` emits `type: interview` / `tags: [interview]`. `PAGE_TYPE` is validated against `PAGE_TYPE_DIRS` in Phase 0, so it is always a safe bare key.
 - **Emit `id:` UNQUOTED** (`id: <slug>`, never `id: "<slug>"`). `SLUG` is always safe kebab-case (`[a-z0-9][a-z0-9-]*`, validated in Phase 0), so it needs no quoting — and `_wikilib.parse_frontmatter` keeps surrounding quotes on scalars, so a quoted `id: "<slug>"` parses as the literal string `"<slug>"` (quotes included) and trips cogni-wiki `wiki-health`'s `id_mismatch` error (frontmatter `id` ≠ filename stem). `id:` is the one exception to the quote-string-fields rule below.
 - **Quote the other string fields with `json.dumps(s, ensure_ascii=False)`** (`title`, `publisher`, claim `text` / `excerpt_quote`, etc.). JSON's double-quoted-string syntax is a strict subset of YAML's flow-string syntax, so `json.dumps` output is YAML-valid and correctly escapes `\`, `"`, embedded newlines, tabs, and control characters. A regulatory PDF excerpt containing a backslash or quoted phrase would break a hand-rolled `\"`-only escaper. `json.dumps` is stdlib. (`id:` is exempt — see above; `type:`, `created:`, `updated:` are fixed-vocabulary scalars and stay unquoted too.)
 - `pre_extracted_claims:` is a block list of mappings. Indent two spaces; quote `text` and `excerpt_quote` (escape internal `"` as `\"`). Numeric `excerpt_position` stays unquoted.
@@ -130,13 +133,13 @@ Body rules:
 
 `content_hash` is the **provenance hash of the fetched source body** (from `entry.content_hash`), not a hash of this markdown file. The on-disk page is the fetched body plus the injected `# <title>` H1, and downstream bidirectional-link maintenance (`knowledge-ingest`'s `backlink_audit.py --apply-plan`, `knowledge-finalize`'s `lint --fix=reverse_link_missing`) may append a `## See also` backlink trailer. So a future integrity check must compare `content_hash` against the **fetched body in the cache**, never against `hash(<on-disk page body>)` — the latter diverges by design once backlinks are written, and `excerpt_position` offsets (anchored to the verbatim body that precedes any appended trailer) stay valid.
 
-Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/sources/<slug>.md`. Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal.
+Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/<page-type-dir>/<slug>.md` — with the default `PAGE_TYPE=source` this is `<WIKI_ROOT>/wiki/sources/<slug>.md`; for `PAGE_TYPE=interview` it is `<WIKI_ROOT>/wiki/interviews/<slug>.md` (the `<page-type-dir>` resolved in Phase 0). Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal.
 
 **Pre-write integrity assertion (fail-fast).** Your dispatch parameters `SLUG` and `URL` are the authoritative identity of the page you are writing, and `entry.content_hash` (read from `fetch-cache.py fetch` in Phase 1) is the authoritative provenance hash of the body you fetched for that URL. Because many ingesters fan out in one wave, it is possible to compose a page from a sibling source's body/frontmatter by mistake; this guard refuses to let such a cross-written page reach disk. Add `SLUG`, `URL`, and `CONTENT_HASH` (the Phase-1 `entry.content_hash`) as env vars and, before calling `atomic_write_text`, parse the composed page's frontmatter and assert the page's `id:` equals `SLUG`, its first `sources:` URL normalizes to `URL`, the target path stem equals `SLUG`, and — when the page emitted a `content_hash:` line — that it equals `CONTENT_HASH`. The content_hash leg catches the narrower variant where you kept your own `id:`/`sources:` but the page's body (and its `content_hash:` line) bled from a sibling: the page frontmatter is freeform output that can diverge under cross-talk, while `CONTENT_HASH` is the deterministic Phase-1 cache value for the dispatched URL, so the comparison is not tautological. On any mismatch, write **nothing** and `sys.exit(3)`:
 
 ```bash
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-PAGE_PATH="<WIKI_ROOT>/wiki/sources/<slug>.md" \
+PAGE_PATH="<WIKI_ROOT>/wiki/<page-type-dir>/<slug>.md" \
 TMP_PAGE_PATH="<tmp_page_path>" \
 SLUG="<slug>" \
 URL="<URL>" \
@@ -182,7 +185,7 @@ Write a JSON envelope to `BATCH_OUTPUT_PATH`:
 }
 ```
 
-For the skip cases (cache miss / unavailable / empty body / slug collision / integrity mismatch):
+For the skip cases (cache miss / unavailable / empty body / invalid slug / invalid page type / slug collision / integrity mismatch):
 
 ```json
 {
