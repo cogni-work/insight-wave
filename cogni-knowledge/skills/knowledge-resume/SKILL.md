@@ -89,27 +89,8 @@ Resume is read-only with respect to disk; the vendored-first probe gives the use
 Resolve the vendored `wiki-health` scripts dir vendored-first (the same `resolve_wiki_scripts` posture `knowledge-dashboard` / `knowledge-ingest` use), then invoke `health.py` directly — no `Skill` dispatch:
 
 ```bash
-resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-health
-  local skill="$1"
-  # Vendored-first: cogni-knowledge ships a byte-identical copy of the engine
-  # in-tree, so prefer it and stay self-contained. The external sibling/cache
-  # probes are the graceful-degradation fallback (keep both plugins installable
-  # until cogni-wiki is archived).
-  local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
-  test -d "$vend" && { echo "$vend"; return 0; }
-  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
-  test -d "$sib" && { echo "$sib"; return 0; }
-  local newest ver
-  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
-    [ -d "$d" ] || continue
-    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
-    case "$ver" in ''|*[!0-9.]*) continue ;; esac
-    printf '%s\n' "$d"
-  done | sort -V | tail -1)
-  [ -n "$newest" ] && { echo "$newest"; return 0; }
-  return 1
-}
-WIKI_HEALTH_SCRIPTS=$(resolve_wiki_scripts wiki-health) \
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
+WIKI_HEALTH_SCRIPTS=$(resolve_wiki_scripts wiki-health health.py) \
   || abort "cogni-wiki wiki-health scripts not found (vendored copy missing)"
 ```
 
@@ -162,7 +143,7 @@ The Step 2 health detail (the verdict line plus any `errors`/`warnings` worth su
 Pick the **one** Next-action line to print by branching on workflow state, not by reading out a fixed sequence. The state field is each project's `phase_reached` from `pipeline-summary.py project` (`none` → `plan` → `curate` → `fetch` → `ingest` → `distill` → `compose` → `verify`); a finalized project has `report_source == "wiki"` in its binding entry (the `· synthesis ✓` marker). Evaluate top to bottom and stop at the first match:
 
 - **No projects** (`research_projects` empty): "Run the inverted pipeline — `knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — to deposit your first project."
-- **Wiki has structural issues** (Step 2a verdict ≠ OK): "Fix the structural issues first — see the health detail above. Then resume the pipeline, or `knowledge-query --knowledge-slug <slug> --question '...'` to ask what the base already knows."
+- **Wiki has structural issues** (Step 2a verdict ≠ OK): "Fix the structural issues first — see the health detail above; run `knowledge-lint --fix=all` to repair the mechanical drift classes (a separate operator-invoked write step — resume never auto-fixes), or `knowledge-health` for a deeper read-only structural verdict. Then resume the pipeline, or `knowledge-query --knowledge-slug <slug> --question '...'` to ask what the base already knows."
 
 Otherwise branch on the newest in-flight project's `phase_reached` (the deepest phase that ran but did not finalize) — one recommendation per state:
 
@@ -177,7 +158,7 @@ Otherwise branch on the newest in-flight project's `phase_reached` (the deepest 
 | `compose` | `knowledge-verify` — draft + citation manifest exist; run the zero-network claim check. |
 | `verify` | `knowledge-finalize` — verified; deposit the synthesis into `wiki/syntheses/` and close the loop. |
 
-- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
+- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, run the semantic hygiene pass with `knowledge-lint`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
 
 ## Edge cases
 

@@ -91,27 +91,8 @@ This probe is the early-abort gate only — Step 2's `resolve_wiki_scripts` is t
 Resolve the vendored `wiki-lint` scripts dir vendored-first (the same `resolve_wiki_scripts` posture `knowledge-resume` / `knowledge-dashboard` use), then invoke `lint_wiki.py` directly — no `Skill` dispatch:
 
 ```bash
-resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-lint
-  local skill="$1"
-  # Vendored-first: cogni-knowledge ships a byte-identical copy of the engine
-  # in-tree, so prefer it and stay self-contained. The external sibling/cache
-  # probes are the graceful-degradation fallback (keep both plugins installable
-  # until cogni-wiki is archived).
-  local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
-  test -d "$vend" && { echo "$vend"; return 0; }
-  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
-  test -d "$sib" && { echo "$sib"; return 0; }
-  local newest ver
-  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
-    [ -d "$d" ] || continue
-    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
-    case "$ver" in ''|*[!0-9.]*) continue ;; esac
-    printf '%s\n' "$d"
-  done | sort -V | tail -1)
-  [ -n "$newest" ] && { echo "$newest"; return 0; }
-  return 1
-}
-WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint) \
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
+WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint lint_wiki.py) \
   || abort "cogni-wiki wiki-lint scripts not found (vendored copy missing)"
 ```
 

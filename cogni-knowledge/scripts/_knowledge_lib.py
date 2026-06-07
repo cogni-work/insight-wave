@@ -1682,7 +1682,7 @@ def load_wiki_coverage_findings(project_path) -> list:
 _NUMERIC_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
 
 
-def resolve_wiki_scripts(skill: str, base_dir: "Path | None" = None) -> Path:
+def resolve_wiki_scripts(skill: str, base_dir: "Path | None" = None, expected_script: "str | None" = None) -> Path:
     """Locate `cogni-wiki/skills/<skill>/scripts/`, the single Python definition
     of the shell `resolve_wiki_scripts <skill>` probe in the knowledge-* SKILLs.
 
@@ -1714,21 +1714,33 @@ def resolve_wiki_scripts(skill: str, base_dir: "Path | None" = None) -> Path:
     The base_dir seam also bypasses branch 0 (the vendored copy lives next to the
     real file, not under a synthetic root).
 
+    `expected_script`, when given, hardens every probe branch: a directory wins
+    only when it BOTH exists AND contains that entry-point file. This stops a
+    partial/botched vendor (the dir is present but the needed script was never
+    copied) from short-circuiting the working sibling/cache fallback and
+    surfacing later as a FileNotFoundError on the missing script. None (the
+    default) preserves the historic dir-only behaviour byte-for-byte.
+
     Raises FileNotFoundError when neither branch resolves.
     """
+    def _has_entrypoint(d: "Path") -> bool:
+        return expected_script is None or (d / expected_script).is_file()
+
     if base_dir is None:
         vendored = Path(__file__).resolve().parent / "vendor" / "cogni-wiki" / "skills" / skill / "scripts"
-        if vendored.is_dir():
+        if vendored.is_dir() and _has_entrypoint(vendored):
             return vendored
 
     repo_root = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parents[2]
     sib = repo_root / "cogni-wiki" / "skills" / skill / "scripts"
-    if sib.is_dir():
+    if sib.is_dir() and _has_entrypoint(sib):
         return sib
 
     candidates: "list[tuple[tuple[int, ...], Path]]" = []
     for d in (repo_root.parent / "cogni-wiki").glob(f"*/skills/{skill}/scripts"):
         if not d.is_dir():
+            continue
+        if not _has_entrypoint(d):
             continue
         ver = d.parents[2].name  # the <semver> segment
         if _NUMERIC_VERSION_RE.match(ver):
