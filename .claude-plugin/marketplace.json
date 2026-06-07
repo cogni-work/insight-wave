@@ -326,7 +326,7 @@
     {
       "name": "cogni-knowledge",
       "source": "./cogni-knowledge",
-      "version": "0.1.97",
+      "version": "0.1.98",
       "maturity": "preview",
       "description": "Wiki-first research that compounds. Binds each run to a cogni-wiki knowledge base; future runs read what prior runs filed before hitting the web. v0.1.0 inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification — opt-in live-source resweep via `knowledge-refresh --resweep`. The shallow `knowledge-query` rung is read-only by default and can optionally file its answer back as an un-verified synthesis page via `--file-back`.",
       "keywords": [

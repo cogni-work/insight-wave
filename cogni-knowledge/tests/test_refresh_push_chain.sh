@@ -16,6 +16,11 @@
 #   - Pull-mode is removed: no `--from-research` flag and no
 #     `cogni-wiki:wiki-refresh` dispatch remain (pull-mode bridged from a
 #     completed cogni-research project, which is being sunset).
+#   - Push-mode staleness is re-homed off the `cogni-wiki:wiki-lint` SKILL
+#     dispatch onto the vendored `lint_wiki.py` (run in-tree, resolved via
+#     resolve_wiki_scripts) — no `Skill("cogni-wiki:wiki-lint"` dispatch
+#     remains, so push-mode needs no cogni-wiki install and the archival
+#     parity grep-guard greens on this skill.
 #
 # bash 3.2 + grep only.
 
@@ -95,7 +100,14 @@ fi
 # --- 4) Pull-mode is removed; push-mode survives ---------------------------
 assert_not_grep '\-\-from-research' "$REFRESH" "pull-mode --from-research flag removed"
 assert_not_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "pull-mode wiki-refresh dispatch removed"
-assert_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "push-mode still lints via wiki-lint"
+
+# --- 5) Push-mode lint is re-homed onto the vendored lint_wiki.py -----------
+# Push-mode no longer dispatches the cogni-wiki:wiki-lint SKILL; it runs the
+# vendored lint_wiki.py in-tree (resolved via resolve_wiki_scripts), so a
+# Karpathy base needs no cogni-wiki install for push-mode and the archival
+# parity grep-guard greens on this skill.
+assert_not_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "push-mode no longer dispatches cogni-wiki:wiki-lint (re-homed to vendored lint_wiki.py)"
+assert_grep 'lint_wiki.py' "$REFRESH" "push-mode lints via the vendored lint_wiki.py"
 
 if [ $errors -eq 0 ]; then
   green ""

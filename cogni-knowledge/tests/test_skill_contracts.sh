@@ -365,11 +365,15 @@ assert_grep 'health.py' "$RESUME" "knowledge-resume: invokes the vendored health
 # knowledge-refresh shares the probe-drop invariant (M10b, v0.0.26) but does
 # not read pipeline-summary.py — it dispatches the seven phase skills. Its
 # phase-chain + clean-break contract lives in test_refresh_push_chain.sh; here
-# we just pin the probe split alongside the read-side trio.
+# we pin the read-side: push-mode no longer probes the cogni-wiki PLUGIN —
+# its staleness lint was re-homed onto the vendored lint_wiki.py (resolved
+# vendored-first via resolve_wiki_scripts), so a Karpathy base needs no
+# cogni-wiki install for push-mode and the archival parity grep-guard greens.
 REFRESH="$PLUGIN_ROOT/skills/knowledge-refresh/SKILL.md"
 if [ -f "$REFRESH" ]; then
   assert_not_grep 'probe_plugin cogni-research' "$REFRESH" "knowledge-refresh: does NOT probe cogni-research (clean break)"
-  assert_grep 'probe_plugin cogni-wiki' "$REFRESH" "knowledge-refresh: still probes cogni-wiki"
+  assert_not_grep 'probe_plugin cogni-wiki' "$REFRESH" "knowledge-refresh: no longer probes the cogni-wiki plugin (push-mode re-homed onto the vendored lint_wiki.py)"
+  assert_grep 'resolve_wiki_scripts wiki-lint lint_wiki.py' "$REFRESH" "knowledge-refresh: push-mode resolves the vendored wiki-lint scripts"
 else
   red "FAIL: knowledge-refresh/SKILL.md not found"
   errors=$((errors + 1))
