@@ -169,7 +169,7 @@ cogni-consulting/
 
 | Plugin | Required | Purpose |
 |--------|----------|---------|
-| cogni-research | No | Desk research during Discover phase |
+| cogni-knowledge | No | Desk research during Discover phase (inverted pipeline) |
 | cogni-trends | No | Trend scouting (Discover) and value modeling (Develop) |
 | cogni-portfolio | No | Competitive baseline (Discover), proposition modeling (Develop), verification (Deliver) |
 | cogni-claims | No | Assumption verification (Define) and final quality gate (Deliver) |
