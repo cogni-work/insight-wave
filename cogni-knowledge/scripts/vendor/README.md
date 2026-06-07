@@ -32,6 +32,14 @@ These files are not a fork. cogni-wiki remains the source of truth. To update th
 vendored engine, re-copy from `cogni-wiki/` and let `tests/test_vendored_engine_parity.sh`
 enforce byte-identity in CI — it fails if any vendored file drifts from its origin.
 
+Vendored-from: e356c998e2e14b9c4ead4979c187509b061a228f (2026-06-05)
+
+That is the cogni-wiki revision this tree mirrors — the last commit to touch the
+vendored origins (`cogni-wiki/skills/{wiki-ingest,wiki-lint,wiki-health}/scripts`
+and `cogni-wiki/foundations`). Re-stamp this line whenever the tree is re-copied.
+It is the durable provenance marker once cogni-wiki is archived and the parity
+test's origin comparisons skip silently.
+
 Only the runtime subset the knowledge-* skills actually invoke is vendored here;
 the remaining cogni-wiki scripts are re-homed with the standalone surface in a
 later phase.
