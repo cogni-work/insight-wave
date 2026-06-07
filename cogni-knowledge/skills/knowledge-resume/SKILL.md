@@ -180,7 +180,7 @@ Otherwise branch on the newest in-flight project's `phase_reached` (the deepest 
 | `compose` | `knowledge-verify` — draft + citation manifest exist; run the zero-network claim check. |
 | `verify` | `knowledge-finalize` — verified; deposit the synthesis into `wiki/syntheses/` and close the loop. |
 
-- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, check structural health with `knowledge-lint`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
+- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, run the semantic hygiene pass with `knowledge-lint`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
 
 ## Edge cases
 
