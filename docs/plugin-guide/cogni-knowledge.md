@@ -140,7 +140,7 @@ Renders the wiki's HTML dashboard via `cogni-wiki:wiki-dashboard`, then writes a
 
 ### knowledge-refresh
 
-Self-healing skill with two modes. Pull-mode (`--mode pull --from-research <slug>`) delegates to `cogni-wiki:wiki-refresh` to deposit an externally produced research project. Push-mode (`--mode push`) lints the wiki to find stale pages, prompts you to select which topics to refresh, and runs the full seven-phase pipeline per selected topic — sequentially, fail-soft, idempotent.
+Self-healing skill. Push-mode (`--mode push`) lints the wiki to find stale pages, prompts you to select which topics to refresh, and runs the full seven-phase pipeline per selected topic — sequentially, fail-soft, idempotent. An opt-in `--resweep` flag re-verifies the bound wiki's cited claims against live source URLs.
 
 ---
 
@@ -188,8 +188,8 @@ After two or more projects have been deposited, the base has cross-project frami
 
 Use this when the wiki has pages flagged `stale` by `wiki-lint` or when a topic area needs an update from a new source.
 
-- **Pull mode** — you have a recent research project: `/knowledge-refresh --knowledge-slug <slug> --mode pull --from-research <project-slug>`. Delegates to `wiki-refresh` to deposit the new findings.
 - **Push mode** — re-research from scratch: `/knowledge-refresh --knowledge-slug <slug> --mode push`. The skill lints the wiki, presents a multi-select of stale topics, and runs the full inverted pipeline per confirmed topic.
+- **Resweep** (opt-in) — `/knowledge-refresh --knowledge-slug <slug> --resweep` re-verifies the bound wiki's cited claims against live source URLs. Composable with `--mode push`, or standalone; never auto-runs.
 
 ---
 
