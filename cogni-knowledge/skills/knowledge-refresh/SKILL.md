@@ -6,7 +6,7 @@ allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 
 # Knowledge Refresh
 
-Close the self-healing loop for a bound cogni-knowledge base. Wiki pages age — `wiki-lint` flags `stale_page` (>365d) and `stale_draft` (>180d) findings, but lint alone doesn't bring fresh evidence. **Push-mode** lints the wiki, asks the user which stale topics they want fresh evidence on, then runs the **inverted pipeline** per selected topic: the seven-phase chain `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (optional, fail-soft) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Each topic ends with a freshly-composed, claim-verified `type: synthesis` page deposited into the bound wiki, and the distill step enriches the concept/entity web. An orthogonal opt-in `--resweep` flag re-verifies the bound wiki's cited claims against live source URLs.
+Close the self-healing loop for a bound cogni-knowledge base. Wiki pages age — the vendored `lint_wiki.py` flags `stale_page` (>365d) and `stale_draft` (>180d) findings, but lint alone doesn't bring fresh evidence. **Push-mode** lints the wiki, asks the user which stale topics they want fresh evidence on, then runs the **inverted pipeline** per selected topic: the seven-phase chain `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (optional, fail-soft) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. Each topic ends with a freshly-composed, claim-verified `type: synthesis` page deposited into the bound wiki, and the distill step enriches the concept/entity web. An orthogonal opt-in `--resweep` flag re-verifies the bound wiki's cited claims against live source URLs.
 
 This skill is a pure orchestrator — push-mode composes existing `cogni-knowledge` phase skills via `Skill(...)`, never re-implementing them. **Push-mode dispatches zero cogni-research skills** — cogni-research is 0% of the runtime path.
 
@@ -22,6 +22,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 
 - No `binding.json` exists at the resolved knowledge root — route to `/cogni-knowledge:knowledge-setup`
 - The bound wiki has zero stale pages AND `--mode push` — there's nothing to push-refresh
+- `--mode push` (or the default) was selected but the vendored `wiki-lint` script (`lint_wiki.py`) is missing from this install — abort with the standard missing-vendored-scripts message (Step 0 pre-flight)
 - `--resweep` was passed but the vendored wiki-claims-resweep scripts are missing from this install — abort with the standard missing-vendored-scripts message (Step 0 pre-flight)
 
 ## Parameters
@@ -45,9 +46,9 @@ If `--mode` is missing and `--resweep` was not passed, default to push-mode — 
 
 ### 0. Pre-flight
 
-**Probe only what the chosen operation set actually dispatches.** The two operations have **disjoint** runtime dependencies, so the probes are gated per operation — never probe `cogni-wiki` for a `--resweep`-only run (the whole point of the native re-home is that resweep no longer needs it). First decide which operations will run from the parsed flags:
+**Resolve/probe only what the chosen operation set actually dispatches.** The two operations have **disjoint** runtime dependencies, gated per operation — **neither reaches the `cogni-wiki` plugin** (both run vendored scripts in-tree; that is the whole point of the native re-home), and a push-only run never probes `cogni-claims`. First decide which operations will run from the parsed flags:
 
-- **Push-mode will run** when `--resweep` was **not** passed (push is the default), or when `--mode push` was given explicitly (the `--mode push --resweep` compose case). It dispatches `cogni-wiki:wiki-lint` + this plugin's own phase skills → probe `cogni-wiki`.
+- **Push-mode will run** when `--resweep` was **not** passed (push is the default), or when `--mode push` was given explicitly (the `--mode push --resweep` compose case). It runs the **vendored** `wiki-lint` script in-tree (no `cogni-wiki` dispatch) + this plugin's own phase skills → resolve the vendored `wiki-lint` scripts.
 - **Resweep will run** whenever `--resweep` was passed. It runs the **vendored** `wiki-claims-resweep` scripts in-tree (no `cogni-wiki` dispatch) and dispatches `cogni-claims:claims` → probe the vendored scripts + `cogni-claims`.
 
 So a `--resweep`-only invocation (no `--mode`) probes **only** the vendored scripts + `cogni-claims`, never `cogni-wiki`. Nothing here reaches cogni-research — it is 0% of the runtime path. Abort cleanly rather than letting a downstream `Skill` dispatch fail with an opaque error. The `probe_plugin` helper handles both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`):
@@ -63,16 +64,20 @@ probe_plugin() {
 }
 ```
 
-**When push-mode will run** (per the decision above), probe `cogni-wiki`:
+**When push-mode will run** (per the decision above), resolve the vendored `wiki-lint` script — push-mode runs `lint_wiki.py` in-tree and dispatches **no** `cogni-wiki:` skill. Resolve it **vendored-first via the same `resolve_wiki_scripts` mechanism** §1 + §2 use, so the pre-flight guard and the §1 invocation share one resolution order + entry-point check:
 
 ```
-probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
+source "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
+WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint lint_wiki.py) \
+  && WIKI_LINT_SCRIPTS_OK=yes || WIKI_LINT_SCRIPTS_OK=no
 ```
 
-If `WIKI_OK` is `no`, abort:
+Capture `WIKI_LINT_SCRIPTS` for reuse in §1 step 1 (it resolves the same directory there, so resolving once here keeps the pre-flight guard and the §1 invocation in lockstep — exactly as the resweep block below shares `RESWEEP_SCRIPTS` with §2). Note `lint_wiki.py` imports the vendored `_wikilib.py` from its sibling `wiki-ingest/scripts/` dir, so the entry-point check assumes the full vendored tree (both `wiki-lint/` and `wiki-ingest/scripts/_wikilib.py`) is present — the same sibling-import posture `knowledge-finalize` Step 10.5 already relies on.
 
-> Push-mode requires `cogni-wiki` to be installed (it dispatches `cogni-wiki:wiki-lint`).
-> Install it via the marketplace, then retry. (A `--resweep`-only run does not need it.)
+If `WIKI_LINT_SCRIPTS_OK` is `no`, abort with the missing-vendored-scripts message:
+
+> Push-mode requires the vendored `wiki-lint` script (`lint_wiki.py`), which is missing from this install.
+> Reinstall/upgrade cogni-knowledge via the marketplace, then retry.
 
 **When `--resweep` was passed**, the live-source re-check runs the **vendored** `wiki-claims-resweep` scripts in-tree (no `cogni-wiki` dispatch) and dispatches `cogni-claims:claims`. Resolve the vendored scripts **vendored-first via the same `resolve_wiki_scripts` mechanism §2 uses** — one resolution order + one entry-point existence check shared between the pre-flight guard and the §2 invocation (do not duplicate it as a bare `test -d`, which would not check the entry-point or honour the fallback layout) — and probe `cogni-claims:claims`:
 
@@ -116,13 +121,13 @@ Then continue with the binding-resolution checks:
 
 ### 1. Push-mode
 
-1. **Lint the bound wiki.** Dispatch:
+1. **Lint the bound wiki.** Run the **vendored** `lint_wiki.py` in-tree (resolved in Step 0 as `WIKI_LINT_SCRIPTS`; mirrors `knowledge-finalize` Step 10.5's read-only lint pass):
    ```
-   Skill("cogni-wiki:wiki-lint", args="--wiki-root <wiki_path> --skip-semantic")
+   python3 "$WIKI_LINT_SCRIPTS/lint_wiki.py" --wiki-root <wiki_path>
    ```
-   This writes one `lint` log line to `<wiki_path>/wiki/log.md` — acceptable noise for the value of going through the upstream skill rather than reaching into a sibling plugin's scripts.
+   Capture stdout as `LINT_JSON`. This is a read-only pass — it writes **no** `wiki/audits/lint-*.md` file and **no** `wiki/log.md` line; the stale findings come back in-process on stdout. (Re-homed off the `cogni-wiki:wiki-lint` skill dispatch so push-mode needs no `cogni-wiki` install — the staleness check is a sibling-plugin script, not a skill dispatch.)
 
-2. **Parse stale findings.** Read the freshest audit file at `<wiki_path>/wiki/audits/lint-*.md` (sorted by filename, last one). Extract `stale_page` and `stale_draft` warnings — for each, capture the page slug and page title. If the stale set is empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
+2. **Parse stale findings.** From `LINT_JSON`, keep the `data.warnings[]` entries whose `class` is `stale_page` or `stale_draft`; each carries a `page` field (the slug) + a `message`. Collect the slug for each. For the step-3 selection label, read each stale page's title from its resolved wiki page's `title:` frontmatter (the warning dict carries the slug, not the title). If the stale set is empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
 
 3. **Ask which stale topics to refresh.** `AskUserQuestion` with `multiSelect: true`. One option per stale page; the label is the page title (truncated to ~50 chars for readability), with the slug in parentheses. Default surfaced: none preselected (the user opts in explicitly). If the user picks zero, exit 0 cleanly.
 
@@ -151,7 +156,7 @@ Then continue with the binding-resolution checks:
    ```
    `knowledge-fetch` is passed `--no-cobrowse` explicitly — push-mode is autonomous, so it must never block on the cobrowse opt-in prompt (the bodies are already fetched during `knowledge-curate`; WebFetch misses stay unavailable rather than waiting for a browser). `knowledge-finalize` is passed `--no-portal-prompt` for the same reason — push-mode must never block on finalize's interactive apply-portal confirm; the autonomous loop continues to **stage** the portal diff (reviewable later via `<wiki>/.cogni-wiki/portal-proposed.md`, appliable with `--apply-portal` or a human-direct `knowledge-finalize`). **`knowledge-distill` (Phase 4.5) is optional + fail-soft**: it enriches the bound wiki's concept/entity web, but a distill failure must NOT fail the topic — do not capture it in `failures[]` and do not skip `compose`; just note it and continue (distill itself exits 0 even on internal failure, so this is belt-and-suspenders). `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` with `report_source: wiki` — that is the per-topic deliverable. Do not pass `--overwrite`; finalize refusing to clobber an existing synthesis is the correct resume behaviour.
 
-   **What push-mode does and does not do to the stale page.** Push-mode brings fresh, claim-verified evidence into the base as a **new** `synthesis` page per topic. It does **not** rewrite or delete the originally-flagged stale page — the inverted pipeline has no in-place page-rewrite primitive, and the wiki separates `sources/` + `syntheses/` rather than editing arbitrary pages. The fresh synthesis supersedes the stale framing; the originally-flagged page stays on disk and a later `wiki-lint` may still flag it. Retiring or merging the old page is a manual decision — surface this in the final summary so the user is not surprised.
+   **What push-mode does and does not do to the stale page.** Push-mode brings fresh, claim-verified evidence into the base as a **new** `synthesis` page per topic. It does **not** rewrite or delete the originally-flagged stale page — the inverted pipeline has no in-place page-rewrite primitive, and the wiki separates `sources/` + `syntheses/` rather than editing arbitrary pages. The fresh synthesis supersedes the stale framing; the originally-flagged page stays on disk and a later lint run may still flag it. Retiring or merging the old page is a manual decision — surface this in the final summary so the user is not surprised.
 
    Sequential overall (topic-A's full chain, then topic-B's) — `knowledge-binding.py append-project` writes without an external lock, so concurrent finalizes could race. See `references/delegation-contract.md` §"Phase-3 push-refresh behaviour" for the contract.
 
@@ -159,7 +164,7 @@ Then continue with the binding-resolution checks:
    - `<N>` topics finalized (synthesis slug list)
    - `<K>` topics with a per-phase failure — list each as `<topic> — failed at <failed_phase>: <error>` so the user knows exactly where to resume
    - To resume a failed topic, re-run `knowledge-refresh --mode push` and re-select it (the chain short-circuits on already-complete phases) — or run the remaining phases by hand from `<project_path>`
-   - Note that the originally-flagged stale pages were **superseded by new syntheses, not rewritten** — they remain on disk and `wiki-lint` may still flag them; retire them manually if desired.
+   - Note that the originally-flagged stale pages were **superseded by new syntheses, not rewritten** — they remain on disk and a later lint run may still flag them; retire them manually if desired.
    - Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the new deposits, or `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
 
 ### Push-mode resume contract
@@ -240,7 +245,7 @@ This is an **inline orchestration over the vendored `wiki-claims-resweep` script
 ## Edge cases
 
 - **All selected topics fail mid-chain in push-mode.** Step 5 captures every failure with its `failed_phase`; step 6 reports honestly with `<N> = 0` and lists where each topic stopped.
-- **Stale pages exist but `wiki-lint` returns no `stale_page`/`stale_draft` warnings.** Step 2 treats the audit as empty and exits cleanly.
+- **Stale pages exist but `lint_wiki.py` returns no `stale_page`/`stale_draft` warnings.** Step 2 sees an empty stale set in `LINT_JSON.data.warnings[]` and exits cleanly.
 - **User selects zero stale topics in step 3.** Exit 0 cleanly — the multi-select prompt is genuinely opt-in.
 - **A phase dies after writing partial manifests.** Re-running the skill resumes from the last complete phase per the resume contract above — no manual cleanup needed for the common case.
 
@@ -258,7 +263,7 @@ For the push-mode UX contract (single batch confirmation, sequential, compositio
 ## Output
 
 - **Push-mode:**
-  - One `<wiki_path>/wiki/audits/lint-<date>.md` from the upstream lint run (and one `lint` log line)
+  - No lint artifact — the vendored `lint_wiki.py` staleness pass is read-only (findings returned on stdout; no `wiki/audits/lint-<date>.md` file, no `lint` log line).
   - Per selected topic: a new `<topic-slug>-<date>/` project directory with its six `.metadata/` manifests, one or more `wiki/sources/<slug>.md` pages, one `wiki/syntheses/<slug>.md` synthesis, one `research_projects[]` entry (`report_source: wiki`), and `compose` / `verify` / `finalize` lines in `wiki/log.md` — all written by the dispatched phase skills.
 - **`--resweep`:**
   - A `<wiki_path>/raw/claims-resweep-<date>/` workspace (per-page `<slug>-claims.md` manifests + `index.json` + `report.md`), written by the vendored `resweep_planner.py`.
@@ -271,7 +276,7 @@ This skill never uses the `Write` tool directly — push-mode artefacts come fro
 
 - `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — the delegation boundary and §"How `Skill(...)` blocks are written"
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — the seven-phase chain push-mode drives
-- `cogni-wiki:wiki-lint` SKILL.md — push-mode staleness source
+- `${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py` — push-mode staleness source (vendored, run in-tree; no `cogni-wiki:` dispatch)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/wiki-claims-resweep/scripts/extract_page_claims.py` — `--resweep` step 1 (deterministic claim extraction)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/wiki-claims-resweep/scripts/resweep_planner.py` — `--resweep` steps 2 + 4 (`--phase plan` materialize / `--phase aggregate` report + `last-resweep.json`)
 - `cogni-claims:claims` SKILL.md — `--resweep` step 3 (live-source claim re-verification via `submit` / `verify`)
