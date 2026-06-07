@@ -878,6 +878,24 @@ def assert_resolve_wiki_scripts():
     expected = cache / "0.1.2" / "skills" / "wiki-ingest" / "scripts"
     assert got.resolve() == expected.resolve(), f"version ranking: got={got!r} expected={expected!r}"
     assert got.parents[2].name == "0.1.2", f"non-numeric 'main' must not win: {got!r}"
+    # #536 entry-point existence: with expected_script set, a cache dir that
+    # lacks the script is skipped — so a partial cache falls through to the
+    # newest version that DOES carry it. The newest (0.1.2) has no script here;
+    # only 0.0.16 gets one, so it must win despite being older.
+    (cache / "0.0.16" / "skills" / "wiki-ingest" / "scripts" / "wiki_index_update.py").write_text("# stub\n")
+    got_ep = kl.resolve_wiki_scripts("wiki-ingest", base_dir=base, expected_script="wiki_index_update.py")
+    expected_ep = cache / "0.0.16" / "skills" / "wiki-ingest" / "scripts"
+    assert got_ep.resolve() == expected_ep.resolve(), f"entry-point skip: got={got_ep!r} expected={expected_ep!r}"
+    # expected_script=None preserves the historic dir-only behaviour: 0.1.2 wins.
+    got_none = kl.resolve_wiki_scripts("wiki-ingest", base_dir=base, expected_script=None)
+    assert got_none.parents[2].name == "0.1.2", f"dir-only (None) must still pick 0.1.2: {got_none!r}"
+    # No cache dir carries the named entry-point -> FileNotFoundError (the
+    # partial vendor no longer masks the missing script).
+    try:
+        kl.resolve_wiki_scripts("wiki-ingest", base_dir=base, expected_script="__no_such_script__.py")
+        assert False, "expected FileNotFoundError when no cache dir carries the entry-point"
+    except FileNotFoundError as exc:
+        assert "wiki-ingest" in str(exc), str(exc)
 
 
 check("tokenization_primitives", assert_tokenization_primitives)

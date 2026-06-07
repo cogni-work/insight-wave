@@ -62,10 +62,12 @@ resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki
   # Vendored-first: cogni-knowledge ships a byte-identical copy of the engine
   # in-tree, so prefer it and stay self-contained. The external sibling/cache
   # probes below are the fallback (keeps both plugins installable until archive).
+  local ep="${2:-}"   # $2 = optional entry-point script; when set, a probe branch
+                      # wins only if "<dir>/$ep" is a file (a partial vendor falls through)
   local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
-  test -d "$vend" && { echo "$vend"; return 0; }
+  test -d "$vend" && { [ -z "$ep" ] || [ -f "$vend/$ep" ]; } && { echo "$vend"; return 0; }
   local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
-  test -d "$sib" && { echo "$sib"; return 0; }
+  test -d "$sib" && { [ -z "$ep" ] || [ -f "$sib/$ep" ]; } && { echo "$sib"; return 0; }
   # pick the NEWEST cached version, not the lexically-first. Consider ONLY
   # numeric version dirs — sort -V ranks a non-numeric name (main/latest/a
   # branch checkout) ABOVE every real version, so a stray dir would otherwise
@@ -73,6 +75,7 @@ resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki
   local newest ver
   newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
     [ -d "$d" ] || continue
+    { [ -z "$ep" ] || [ -f "$d/$ep" ]; } || continue
     ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
     case "$ver" in ''|*[!0-9.]*) continue ;; esac
     printf '%s\n' "$d"
@@ -80,7 +83,7 @@ resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki
   [ -n "$newest" ] && { echo "$newest"; return 0; }
   return 1
 }
-WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest) || abort "cogni-wiki wiki-ingest scripts not found"
+WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest backlink_audit.py) || abort "cogni-wiki wiki-ingest scripts not found"
 ```
 
 **Binding + wiki root.** Resolve `knowledge_root` (same logic as `knowledge-fetch`). Read the binding:
