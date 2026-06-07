@@ -72,7 +72,7 @@ WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint lint_wiki.py) \
   && WIKI_LINT_SCRIPTS_OK=yes || WIKI_LINT_SCRIPTS_OK=no
 ```
 
-Capture `WIKI_LINT_SCRIPTS` for reuse in §1 step 1 (it resolves the same directory there, so resolving once here keeps the pre-flight guard and the §1 invocation in lockstep — exactly as the resweep block below shares `RESWEEP_SCRIPTS` with §2).
+Capture `WIKI_LINT_SCRIPTS` for reuse in §1 step 1 (it resolves the same directory there, so resolving once here keeps the pre-flight guard and the §1 invocation in lockstep — exactly as the resweep block below shares `RESWEEP_SCRIPTS` with §2). Note `lint_wiki.py` imports the vendored `_wikilib.py` from its sibling `wiki-ingest/scripts/` dir, so the entry-point check assumes the full vendored tree (both `wiki-lint/` and `wiki-ingest/scripts/_wikilib.py`) is present — the same sibling-import posture `knowledge-finalize` Step 10.5 already relies on.
 
 If `WIKI_LINT_SCRIPTS_OK` is `no`, abort with the missing-vendored-scripts message:
 
@@ -127,7 +127,7 @@ Then continue with the binding-resolution checks:
    ```
    Capture stdout as `LINT_JSON`. This is a read-only pass — it writes **no** `wiki/audits/lint-*.md` file and **no** `wiki/log.md` line; the stale findings come back in-process on stdout. (Re-homed off the `cogni-wiki:wiki-lint` skill dispatch so push-mode needs no `cogni-wiki` install — the staleness check is a sibling-plugin script, not a skill dispatch.)
 
-2. **Parse stale findings.** From `LINT_JSON`, keep the `data.warnings[]` entries whose `class` is `stale_page` or `stale_draft`; each carries the page `page` (the slug) + a `message`. Collect the slug for each. For the step-3 selection label, read each stale page's title from its resolved wiki page's `title:` frontmatter (the warning dict carries the slug, not the title). If the stale set is empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
+2. **Parse stale findings.** From `LINT_JSON`, keep the `data.warnings[]` entries whose `class` is `stale_page` or `stale_draft`; each carries a `page` field (the slug) + a `message`. Collect the slug for each. For the step-3 selection label, read each stale page's title from its resolved wiki page's `title:` frontmatter (the warning dict carries the slug, not the title). If the stale set is empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
 
 3. **Ask which stale topics to refresh.** `AskUserQuestion` with `multiSelect: true`. One option per stale page; the label is the page title (truncated to ~50 chars for readability), with the slug in parentheses. Default surfaced: none preselected (the user opts in explicitly). If the user picks zero, exit 0 cleanly.
 
