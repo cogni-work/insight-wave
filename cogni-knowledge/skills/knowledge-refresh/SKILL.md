@@ -29,7 +29,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
-| `--mode` | No | Only `push` is supported (the default). `--mode push` is accepted for back-compat; pull-mode was removed. When `--resweep` is the only operation requested, no mode is required. |
+| `--mode` | No | `push` is the only mode and the default; `--mode push` is accepted as a no-op for back-compat. When `--resweep` is the only operation requested, no mode is required. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--resweep` | No | **Orthogonal opt-in.** Re-verify the bound wiki's cited claims against live source URLs by dispatching `cogni-wiki:wiki-claims-resweep` against `binding.wiki_path`. Composable: `--mode push --resweep` runs push then resweep; `--resweep` alone (no `--mode`) runs the resweep only. **Never auto-runs** — the per-run zero-network invariant is preserved. |
 | `--resweep-page <slug>` | Resweep pass-through | Forwarded to `wiki-claims-resweep --page`. Sweep a single page only (mutually exclusive with `--resweep-stale-only`). |
