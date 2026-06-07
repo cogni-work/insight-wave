@@ -37,7 +37,7 @@ assert_grep '`--resweep-days' "$REFRESH" "knowledge-refresh: --resweep-days pass
 assert_grep '`--resweep-dry-run`' "$REFRESH" "knowledge-refresh: --resweep-dry-run pass-through documented (#337)"
 
 # --- 2) Workflow has a dedicated resweep-dispatch section ------------------
-assert_grep '### 3. Resweep dispatch' "$REFRESH" "knowledge-refresh: Workflow has a '### 3. Resweep dispatch' section (#337)"
+assert_grep '### 2. Resweep dispatch' "$REFRESH" "knowledge-refresh: Workflow has a '### 2. Resweep dispatch' section"
 
 # --- 3) The dispatch goes through the upstream primitive -------------------
 assert_grep 'Skill("cogni-wiki:wiki-claims-resweep"' "$REFRESH" "knowledge-refresh: --resweep dispatches cogni-wiki:wiki-claims-resweep (#337)"
@@ -69,9 +69,10 @@ assert_grep 'cogni-wiki:wiki-claims-resweep` SKILL.md' "$REFRESH" "knowledge-ref
 # --- 7) Pre-flight probes the resweep target -------------------------------
 assert_grep 'probe_plugin cogni-wiki wiki-claims-resweep' "$REFRESH" "knowledge-refresh: pre-flight probes wiki-claims-resweep when --resweep is passed (#337)"
 
-# --- 8) Push/pull modes survive (regression guard) -------------------------
-assert_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "knowledge-refresh: pull-mode still dispatches wiki-refresh"
+# --- 8) Push-mode survives; pull-mode is removed (regression guard) --------
 assert_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "knowledge-refresh: push-mode still lints via wiki-lint"
+assert_not_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "knowledge-refresh: pull-mode wiki-refresh dispatch removed"
+assert_not_grep 'from-research' "$REFRESH" "knowledge-refresh: --from-research flag removed with pull-mode"
 
 if [ $errors -eq 0 ]; then
   green ""

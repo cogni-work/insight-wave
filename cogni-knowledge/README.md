@@ -18,7 +18,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 | Second research run on a related topic | Starts from zero | Reads the wiki first |
 | Cross-project synthesis | Manual; copy-paste between sessions | Automatic — wiki accumulates and interlinks |
 | Provenance of a stale fact | Forgotten by next session | `derived_from_research: <slug>` traces every page back to the run that filed it |
-| Refresh stale claims | Manual re-research | `knowledge-refresh` (push: re-research stale topics; pull: re-deposit from a new project) |
+| Refresh stale claims | Manual re-research | `knowledge-refresh` (push-mode re-researches stale topics via the inverted pipeline) |
 
 ## What it is
 
@@ -42,7 +42,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 10. **Resume** project status — deposited projects, wiki health, suggested next action
 11. **Query** the bound base — natural-language question routed through `cogni-wiki:wiki-query`
 12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
-13. **Refresh** stale pages — pull-mode pipes a research project in; push-mode re-runs the inverted pipeline on stale topics
+13. **Refresh** stale pages — push-mode re-runs the inverted pipeline on stale topics; opt-in `--resweep` re-verifies cited claims against live sources
 
 See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M11 shipped; M12 alpha re-run + v0.1.0 bump pending). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
 
@@ -88,7 +88,7 @@ Or just describe what you want in natural language:
 - "Show me the dashboard for the EU AI Act knowledge base"
 - "Refresh the stale pages in my wiki"
 
-The second project reads the wiki the first one deposited — that is the compounding loop. The `dashboard` and `query` skills let you inspect and ask the accumulated base. Use `knowledge-refresh --mode push|pull` later to keep stale pages fresh.
+The second project reads the wiki the first one deposited — that is the compounding loop. The `dashboard` and `query` skills let you inspect and ask the accumulated base. Use `knowledge-refresh --mode push` later to keep stale pages fresh.
 
 ## Data model
 
@@ -126,9 +126,6 @@ knowledge-dashboard --knowledge-slug X
   → cogni-wiki:wiki-dashboard --wiki-root <bound>  (writes wiki-dashboard.html)
   → writes knowledge-overlay.md sidecar  (binding view: deposits + lint claim_drift)
 
-knowledge-refresh --knowledge-slug X --mode pull --from-research S
-  → cogni-wiki:wiki-refresh --from-research S --wiki-root <bound>
-
 knowledge-refresh --knowledge-slug X --mode push
   → cogni-wiki:wiki-lint --wiki-root <bound>  (find stale_page / stale_draft)
   → multi-select + batch confirm  (which topics, then yes/no to launch)
@@ -155,7 +152,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage + bare `[[<slug>]]` reference backlinks; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append, then a `wiki-lint --fix=all` + `wiki-health` conformance gate (closes the inverted-pipeline loop) |
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
-| knowledge-refresh | Skill | Self-healing — pull-mode pipes a research project in; push-mode auto-researches stale topics |
+| knowledge-refresh | Skill | Self-healing — push-mode auto-researches stale topics via the inverted pipeline; opt-in `--resweep` re-verifies cited claims against live sources |
 | source-curator | Agent | Phase 2 fork — reads its sub-question's wiki-coverage verdict and narrows search on already-covered topics (read-before-web #309); per-sub-question WebSearch + scoring + Phase-4 WebFetch body-pull (incl. the PDF Read-loop) through `fetch-cache.py`; emits a batch JSON array (each candidate carries a `fetch` sub-object) |
 | source-fetcher | Agent | Phase 3 NEW — cobrowse-only recovery of WebFetch misses via the `claude-in-chrome` extension; reads/writes through `fetch-cache.py` |
 | claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |

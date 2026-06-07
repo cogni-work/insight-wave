@@ -13,10 +13,9 @@
 #     (plan → curate → fetch → ingest → compose → verify → finalize) IN ORDER.
 #   - Clean break: no `knowledge-research` dispatch anywhere, no
 #     `Skill("cogni-research:` dispatch, no `probe_plugin cogni-research`.
-#     (Descriptive pull-mode references to a "cogni-research project" via
-#     --from-research are allowed — pull-mode reads project files on disk and
-#     dispatches cogni-wiki:wiki-refresh, NOT a cogni-research skill.)
-#   - Pull-mode survives the rewrite (--from-research + wiki-refresh dispatch).
+#   - Pull-mode is removed: no `--from-research` flag and no
+#     `cogni-wiki:wiki-refresh` dispatch remain (pull-mode bridged from a
+#     completed cogni-research project, which is being sunset).
 #
 # bash 3.2 + grep only.
 
@@ -93,9 +92,9 @@ else
   green "PASS: no Skill(\"cogni-research:\") dispatch"
 fi
 
-# --- 4) Pull-mode survives -------------------------------------------------
-assert_grep '\-\-from-research' "$REFRESH" "pull-mode still takes --from-research"
-assert_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "pull-mode still dispatches wiki-refresh"
+# --- 4) Pull-mode is removed; push-mode survives ---------------------------
+assert_not_grep '\-\-from-research' "$REFRESH" "pull-mode --from-research flag removed"
+assert_not_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "pull-mode wiki-refresh dispatch removed"
 assert_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "push-mode still lints via wiki-lint"
 
 if [ $errors -eq 0 ]; then
