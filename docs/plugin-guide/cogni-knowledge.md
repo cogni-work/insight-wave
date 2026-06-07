@@ -140,7 +140,7 @@ Renders the wiki's HTML dashboard via `cogni-wiki:wiki-dashboard`, then writes a
 
 ### knowledge-refresh
 
-Self-healing skill with two modes. Pull-mode (`--mode pull --from-research <slug>`) delegates to `cogni-wiki:wiki-refresh` to deposit an externally produced research project. Push-mode (`--mode push`) lints the wiki to find stale pages, prompts you to select which topics to refresh, and runs the full seven-phase pipeline per selected topic — sequentially, fail-soft, idempotent.
+Self-healing skill. Push-mode (`--mode push`) lints the wiki to find stale pages, prompts you to select which topics to refresh, and runs the full seven-phase pipeline per selected topic — sequentially, fail-soft, idempotent. An opt-in `--resweep` flag re-verifies the bound wiki's cited claims against live source URLs.
 
 ---
 
