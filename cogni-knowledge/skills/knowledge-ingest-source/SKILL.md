@@ -212,8 +212,10 @@ python3 "$WIKI_INGEST_SCRIPTS/wiki_queue.py" --wiki-root <WIKI_ROOT> \
     --enqueue --source "<SOURCE_URL>" --type "<--type, default source>" \
     --title "<--title, if set>"
 ```
-Report the returned `job_id` and stop (Steps 2–6 run when the queue is later
-drained). Omit `--queue` for the default ingest-now path.
+Report the enqueued job id — `data.job.id` from the response envelope
+(`{success, data: {action: "enqueued", job: {id, ...}, path}}`) — and stop
+(Steps 2–6 run when the queue is later drained). Omit `--queue` for the default
+ingest-now path.
 
 ### 2. Resolve the slug
 
@@ -255,17 +257,29 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-grounding.py rank \
 
 Read `data.pages[]` (ranked covering pages) and `data.coverage_verdict`:
 
-- **A covering page resolves to an existing `wiki/sources/<that-slug>.md`** (or,
-  for an interview note, `wiki/interviews/<that-slug>.md`) — a genuine collision,
-  the same source already on the wiki → **do not blind-write.** Surface the
-  collision and hand to the **diff-before-write update path**: tell the user the
-  existing page covers this source and offer to update it via
+- **A covering page resolves to an existing `wiki/sources/<that-slug>.md`** — a
+  genuine collision, the same source already on the wiki → **do not blind-write.**
+  Surface the collision and hand to the **diff-before-write update path**: tell
+  the user the existing page covers this source and offer to update it via
   `cogni-wiki:wiki-update` (or the re-homed equivalent) rather than creating a
   duplicate. Stop here unless the user confirms a forced re-ingest under a new
   slug.
 - **No covering page (or only weak/partial thematic overlap)** → continue to
   Step 4. (Thematic neighbours are expected and are fine — they become
   backlink candidates in Step 5, not collisions.)
+
+**Dedup coverage by page type.** `wiki-grounding.py rank` walks the indexed page
+types `source` / `synthesis` / `concept` / `entity` (its `_TYPE_DIRS`), so the
+semantic collision check above covers a `--url`/`--file`/`--paste` deposit
+(which lands as `type: source` in `wiki/sources/`). It does **not** yet walk
+`wiki/interviews/`, so for an **interview note** the only collision guard this
+iteration is **slug-level** — the `source-ingester` Phase-3 `slug_collision`
+check refuses to overwrite an existing `wiki/interviews/<slug>.md` with the same
+slug. Two interview notes that are the same source but resolve to different
+slugs will both land (no semantic dedup). Extending the discovery primitive to
+walk `wiki/interviews/` so interview notes get the same diff-before-write
+treatment is a tracked follow-up; for now an interview-note re-ingest is
+slug-deduped, not content-deduped.
 
 ### 4. Dispatch source-ingester (single entry)
 
