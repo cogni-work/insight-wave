@@ -594,7 +594,7 @@ do not HALT. A misconfigured vendor project should still produce a report.
 
 | Mode | Dispatch budget per ST |
 |------|-----------------------|
-| vendor | max 2 `cogni-research:local-researcher` calls + max 2 `wiki-grounding.py rank` calls (+ `Read` of the ranked pages) + plain JSON reads (unbounded) |
+| vendor | max 4 `Read` calls of uploaded-corpus files (+ optional `cogni-knowledge:knowledge-ingest-source --file` deposit, one per file, when a base is bound) + max 2 `wiki-grounding.py rank` calls (+ `Read` of the ranked pages) + plain JSON reads (unbounded) |
 | open | max 1 native cogni-knowledge research pass (inline `WebSearch` + `WebFetch`, or `cogni-knowledge:knowledge-ingest-source` per URL) with ≤ 4 sub-queries |
 
 ### 2.6.A: Vendor Mode — Source References from the Portfolio Corpus
@@ -633,12 +633,20 @@ For each ST where the `solution_blueprint.building_blocks[]` contains any block 
    points). When the tag is absent on older projects, include only entries whose `source_url`
    is empty (portfolio-internal only) — never web-sourced evidence.
 
-4. **Uploaded collateral** — dispatch `cogni-research:local-researcher` once per ST against
-   `cogni-portfolio/{portfolio_ref}/{vendor_source.case_study_uploads || "uploads/"}`. Build
-   sub-questions from the ST name + lead building-block capability + investment theme name, e.g.:
+4. **Uploaded collateral** — read the uploaded document corpus natively (no plugin dispatch, no
+   binding required — mirrors the vendor-wiki and open-mode patterns below). Enumerate the files
+   under `cogni-portfolio/{portfolio_ref}/{vendor_source.case_study_uploads || "uploads/"}`
+   (`.pdf`, `.docx`, `.html`, `.txt`, `.md`) and `Read` each directly, synthesizing the outcome
+   claim inline against a sub-question built from the ST name + lead building-block capability +
+   investment theme name, e.g.:
    *"Which uploaded case studies describe an implementation of {ST.name} in {industry.subsector_en} and what outcome was reported?"*.
-   Limit to max 4 sub-questions per dispatch. Each matching file becomes a `vendor_references[]`
-   entry with `source: "uploads"` and `source_ref: "uploads/{filename}"`.
+   Limit to max 4 files read per ST. Optionally, when a knowledge base is bound, deposit each
+   matching file via `cogni-knowledge:knowledge-ingest-source --file <abspath>` — one invocation
+   per file (there is no bulk `--directory` mode; the local document stores with honest
+   `fetch_method: direct`, and the skill's own diff-before-write dedup makes a re-run idempotent)
+   — and read the resulting `wiki/sources/<slug>.md` page back instead of the raw file. Each
+   matching file becomes a `vendor_references[]` entry with `source: "uploads"` and
+   `source_ref: "uploads/{filename}"`.
 
 5. **Vendor wiki (optional)** — when `vendor_source.case_study_wiki` is set, rank that wiki
    natively with cogni-knowledge's re-homed discovery primitive (no plugin dispatch, no binding,
