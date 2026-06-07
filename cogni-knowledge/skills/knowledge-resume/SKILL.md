@@ -89,29 +89,7 @@ Resume is read-only with respect to disk; the vendored-first probe gives the use
 Resolve the vendored `wiki-health` scripts dir vendored-first (the same `resolve_wiki_scripts` posture `knowledge-dashboard` / `knowledge-ingest` use), then invoke `health.py` directly — no `Skill` dispatch:
 
 ```bash
-resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-health
-  local skill="$1"
-  # Vendored-first: cogni-knowledge ships a byte-identical copy of the engine
-  # in-tree, so prefer it and stay self-contained. The external sibling/cache
-  # probes are the graceful-degradation fallback (keep both plugins installable
-  # until cogni-wiki is archived).
-  local ep="${2:-}"   # $2 = optional entry-point script; when set, a probe branch
-                      # wins only if "<dir>/$ep" is a file (a partial vendor falls through)
-  local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
-  test -d "$vend" && { [ -z "$ep" ] || [ -f "$vend/$ep" ]; } && { echo "$vend"; return 0; }
-  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
-  test -d "$sib" && { [ -z "$ep" ] || [ -f "$sib/$ep" ]; } && { echo "$sib"; return 0; }
-  local newest ver
-  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
-    [ -d "$d" ] || continue
-    { [ -z "$ep" ] || [ -f "$d/$ep" ]; } || continue
-    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
-    case "$ver" in ''|*[!0-9.]*) continue ;; esac
-    printf '%s\n' "$d"
-  done | sort -V | tail -1)
-  [ -n "$newest" ] && { echo "$newest"; return 0; }
-  return 1
-}
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
 WIKI_HEALTH_SCRIPTS=$(resolve_wiki_scripts wiki-health health.py) \
   || abort "cogni-wiki wiki-health scripts not found (vendored copy missing)"
 ```

@@ -195,25 +195,7 @@ dir vendored-first, exactly as `knowledge-finalize` / `knowledge-ingest-source`
 do (the deposit reuses the already-vendored helpers — never a new script):
 
 ```
-resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest
-  local skill="$1"
-  local ep="${2:-}"   # $2 = optional entry-point script; when set, a probe branch
-                      # wins only if "<dir>/$ep" is a file (a partial vendor falls through)
-  local vend="${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/skills/${skill}/scripts"
-  test -d "$vend" && { [ -z "$ep" ] || [ -f "$vend/$ep" ]; } && { echo "$vend"; return 0; }
-  local sib="${CLAUDE_PLUGIN_ROOT}/../cogni-wiki/skills/${skill}/scripts"
-  test -d "$sib" && { [ -z "$ep" ] || [ -f "$sib/$ep" ]; } && { echo "$sib"; return 0; }
-  local newest ver
-  newest=$(for d in "${CLAUDE_PLUGIN_ROOT}/../../cogni-wiki/"*/skills/"${skill}"/scripts; do
-    [ -d "$d" ] || continue
-    { [ -z "$ep" ] || [ -f "$d/$ep" ]; } || continue
-    ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
-    case "$ver" in ''|*[!0-9.]*) continue ;; esac
-    printf '%s\n' "$d"
-  done | sort -V | tail -1)
-  [ -n "$newest" ] && { echo "$newest"; return 0; }
-  return 1
-}
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
 WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest backlink_audit.py) \
   || { echo "cogni-wiki wiki-ingest scripts not found — cannot --file-back"; exit 1; }
 ```

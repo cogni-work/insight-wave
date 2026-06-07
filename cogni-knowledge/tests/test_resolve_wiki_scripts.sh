@@ -12,11 +12,13 @@
 # stray non-numeric dir like `main` would otherwise sort ABOVE every real
 # version).
 #
-# To avoid testing a stale copy of the resolver, this test EXTRACTS the live
-# function body straight from each SKILL.md and runs THAT — and asserts the
-# ingest and finalize copies are byte-identical so they cannot drift.
+# The resolver now lives in ONE shared snippet (scripts/resolve-wiki-scripts.sh)
+# that every knowledge-* flow sources — there is no inline copy to drift. This
+# test asserts the shared snippet defines the version-aware resolver, that every
+# expected flow sources it (and carries no inline definition), and drives the
+# snippet body directly through the behaviour cases below.
 #
-# Cases (against the extracted ingest body):
+# Cases (against the shared snippet body):
 #   1. multi-version cache (+ a stray `main`/`latest` dir) -> returns 0.0.45,
 #      never the non-numeric dir
 #   2. dev-repo sibling -> returns the sibling (short-circuits the glob)
@@ -28,58 +30,64 @@ set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SKILLS_DIR="$PLUGIN_ROOT/skills"
-INGEST_SKILL="$SKILLS_DIR/knowledge-ingest/SKILL.md"
-FINALIZE_SKILL="$SKILLS_DIR/knowledge-finalize/SKILL.md"
+RESOLVER_SNIPPET="$PLUGIN_ROOT/scripts/resolve-wiki-scripts.sh"
+
+# Every knowledge-* flow that needs the probe now SOURCES the shared snippet
+# instead of carrying an inline copy. These are the flows expected to source it.
+SOURCING_SKILLS="knowledge-ingest knowledge-finalize knowledge-dashboard knowledge-health knowledge-lint knowledge-resume knowledge-ingest-source knowledge-query"
 
 red()   { printf '\033[31m%s\033[0m\n' "$1"; }
 green() { printf '\033[32m%s\033[0m\n' "$1"; }
 
 errors=0
 
-# Pull the live resolve_wiki_scripts() body straight from a SKILL.md so the
-# behavioural cases exercise the SHIPPED code, not a hand-maintained copy. The
-# function sits at column 0 inside a fenced block; print from its header
-# through the first column-0 closing brace.
+# The behavioural cases exercise the SHIPPED code by sourcing the one shared
+# snippet directly — no extraction from a SKILL.md, no hand-maintained copy.
 extract_resolver() {
-  awk '/^resolve_wiki_scripts\(\) \{/{f=1} f{print} f&&/^\}/{exit}' "$1"
+  cat "$RESOLVER_SNIPPET"
 }
 
 # -----------------------------------------------------------------------------
-# Part 1: contract — both SKILLs define the version-aware resolver (sort -V) and
-#         their copies have not drifted from each other.
+# Part 1: contract — the shared snippet defines the version-aware resolver
+#         (sort -V), and every knowledge-* flow sources it rather than carrying
+#         an inline copy (the de-duplication invariant: one source of truth).
 # -----------------------------------------------------------------------------
 
-for skill_file in "$INGEST_SKILL" "$FINALIZE_SKILL"; do
-  name=$(basename "$(dirname "$skill_file")")
+if [ ! -f "$RESOLVER_SNIPPET" ]; then
+  red "FAIL: shared resolver snippet not found: $RESOLVER_SNIPPET"; errors=$((errors + 1))
+elif ! grep -qE 'resolve_wiki_scripts\(\) \{' "$RESOLVER_SNIPPET"; then
+  red "FAIL: shared snippet missing resolve_wiki_scripts() definition"; errors=$((errors + 1))
+elif ! grep -qE 'sort -V' "$RESOLVER_SNIPPET"; then
+  red "FAIL: shared snippet resolver does not version-sort (sort -V) — F26 would regress"; errors=$((errors + 1))
+else
+  green "PASS: shared snippet carries the version-aware resolver (sort -V)"
+fi
+
+for name in $SOURCING_SKILLS; do
+  skill_file="$SKILLS_DIR/$name/SKILL.md"
   if [ ! -f "$skill_file" ]; then
     red "FAIL: skill file not found: $skill_file"; errors=$((errors + 1)); continue
   fi
-  if ! grep -qE 'resolve_wiki_scripts\(\) \{' "$skill_file"; then
-    red "FAIL: $name missing resolve_wiki_scripts() definition"; errors=$((errors + 1))
-  elif ! grep -qE 'sort -V' "$skill_file"; then
-    red "FAIL: $name resolver does not version-sort (sort -V) — F26 would regress"; errors=$((errors + 1))
+  if grep -qE 'resolve_wiki_scripts\(\) \{' "$skill_file"; then
+    red "FAIL: $name still carries an inline resolve_wiki_scripts() definition (should source the snippet)"; errors=$((errors + 1))
+  elif ! grep -qF 'scripts/resolve-wiki-scripts.sh' "$skill_file"; then
+    red "FAIL: $name does not source the shared resolve-wiki-scripts.sh snippet"; errors=$((errors + 1))
   else
-    green "PASS: $name carries the version-aware resolver (sort -V)"
+    green "PASS: $name sources the shared snippet (no inline copy)"
   fi
 done
 
-INGEST_BODY=$(extract_resolver "$INGEST_SKILL")
-FINALIZE_BODY=$(extract_resolver "$FINALIZE_SKILL")
+# -----------------------------------------------------------------------------
+# Part 2: behaviour — run the shared snippet body against synthetic layouts.
+# -----------------------------------------------------------------------------
 
+# The shared snippet is the single source of truth all 8 flows source, so the
+# behaviour cases below drive its body directly.
+INGEST_BODY=$(extract_resolver)
 if [ -z "$INGEST_BODY" ]; then
-  red "FAIL: could not extract resolve_wiki_scripts() body from knowledge-ingest SKILL.md"
+  red "FAIL: could not read resolve_wiki_scripts() body from the shared snippet"
   errors=$((errors + 1))
 fi
-if [ "$INGEST_BODY" != "$FINALIZE_BODY" ]; then
-  red "FAIL: ingest and finalize resolver bodies have drifted apart"
-  errors=$((errors + 1))
-else
-  green "PASS: ingest and finalize resolver bodies are byte-identical"
-fi
-
-# -----------------------------------------------------------------------------
-# Part 2: behaviour — run the EXTRACTED ingest body against synthetic layouts.
-# -----------------------------------------------------------------------------
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
