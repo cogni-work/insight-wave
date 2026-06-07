@@ -165,7 +165,7 @@ The Step 2 health detail (the verdict line plus any `errors`/`warnings` worth su
 Pick the **one** Next-action line to print by branching on workflow state, not by reading out a fixed sequence. The state field is each project's `phase_reached` from `pipeline-summary.py project` (`none` → `plan` → `curate` → `fetch` → `ingest` → `distill` → `compose` → `verify`); a finalized project has `report_source == "wiki"` in its binding entry (the `· synthesis ✓` marker). Evaluate top to bottom and stop at the first match:
 
 - **No projects** (`research_projects` empty): "Run the inverted pipeline — `knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — to deposit your first project."
-- **Wiki has structural issues** (Step 2a verdict ≠ OK): "Fix the structural issues first — see the health detail above. Then resume the pipeline, or `knowledge-query --knowledge-slug <slug> --question '...'` to ask what the base already knows."
+- **Wiki has structural issues** (Step 2a verdict ≠ OK): "Fix the structural issues first — see the health detail above; run `knowledge-lint --fix` to repair the mechanical drift classes, or `knowledge-health` for a deeper read-only structural verdict. Then resume the pipeline, or `knowledge-query --knowledge-slug <slug> --question '...'` to ask what the base already knows."
 
 Otherwise branch on the newest in-flight project's `phase_reached` (the deepest phase that ran but did not finalize) — one recommendation per state:
 
@@ -180,7 +180,7 @@ Otherwise branch on the newest in-flight project's `phase_reached` (the deepest 
 | `compose` | `knowledge-verify` — draft + citation manifest exist; run the zero-network claim check. |
 | `verify` | `knowledge-finalize` — verified; deposit the synthesis into `wiki/syntheses/` and close the loop. |
 
-- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
+- **All projects finalized** (every entry `report_source == "wiki"`, none in flight): the base is compounding — "Ask it with `knowledge-query --knowledge-slug <slug> --question '...'`, render an overview with `knowledge-dashboard`, check structural health with `knowledge-lint`, refresh stale topics with `knowledge-refresh`, deposit a single source straight into the base with `knowledge-ingest-source`, or start a new project with `knowledge-plan` to keep accumulating."
 
 ## Edge cases
 
