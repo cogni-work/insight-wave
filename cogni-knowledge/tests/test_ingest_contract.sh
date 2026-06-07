@@ -177,8 +177,14 @@ fi
 assert_grep 'name: source-ingester' "$INGESTER" "source-ingester: frontmatter name"
 assert_grep 'fetch-cache.py fetch' "$INGESTER" "source-ingester: reads via fetch-cache.py fetch"
 assert_grep 'Task(claim-extractor' "$INGESTER" "source-ingester: dispatches claim-extractor via Task"
-assert_grep 'wiki/sources/' "$INGESTER" "source-ingester: writes wiki/sources/<slug>.md"
-assert_grep 'type: source' "$INGESTER" "source-ingester: emits type: source frontmatter"
+assert_grep 'wiki/sources/' "$INGESTER" "source-ingester: writes wiki/sources/<slug>.md (PAGE_TYPE=source default)"
+assert_grep 'type: source' "$INGESTER" "source-ingester: emits type: source frontmatter (PAGE_TYPE=source default)"
+# #533: the additive PAGE_TYPE param routes other page types (interview →
+# wiki/interviews/) while keeping PAGE_TYPE=source byte-identical to the research
+# path — contract-lock it so the parametrization can't silently regress (the
+# type: source / wiki/sources/ literals above are the preserved source default).
+assert_grep 'PAGE_TYPE' "$INGESTER" "source-ingester: gained the additive PAGE_TYPE param (default source)"
+assert_grep 'wiki/interviews/' "$INGESTER" "source-ingester: PAGE_TYPE=interview routes to wiki/interviews/"
 assert_grep 'pre_extracted_claims' "$INGESTER" "source-ingester: populates pre_extracted_claims frontmatter"
 assert_grep 'atomic_write_text' "$INGESTER" "source-ingester: writes via _knowledge_lib.atomic_write_text"
 # #421: the Phase-3 pre-write guard threads CONTENT_HASH so the in-agent leg

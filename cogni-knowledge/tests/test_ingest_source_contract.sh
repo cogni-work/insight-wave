@@ -15,9 +15,12 @@
 #     unchanged source-ingester via Task, and runs the same backlink_audit.py +
 #     wiki_index_update.py + config_bump.py post-write lockstep as
 #     knowledge-ingest Step 4. Writes wiki/sources/<slug>.md (type: source).
-#   - Scope guards: the increment is URL-only — it must NOT reach for the
-#     not-yet-vendored convert_to_md.py / wiki_queue.py, and must NOT invent a
-#     new fetch-cache fetch-method (the enum is cross-plugin-contracted).
+#   - Input modes: the surface accepts a URL, a local file (.docx/.html/.txt),
+#     pasted text, a local PDF, and a local interview note. Local inputs deposit
+#     via fetch-method direct (the additive non-web method, now live); .docx/
+#     .html/.txt normalize via the vendored convert_to_md.py; queue mode via the
+#     vendored wiki_queue.py; an interview note lands as type: interview in
+#     wiki/interviews/ via the source-ingester PAGE_TYPE param.
 #
 # bash 3.2 + grep only.
 
@@ -53,9 +56,9 @@ assert_grep 'resolve_wiki_scripts' "$SRC" "knowledge-ingest-source: resolves the
 assert_grep 'fetch-cache.py store' "$SRC" "knowledge-ingest-source: populates the cache via fetch-cache.py store"
 assert_grep 'knowledge-root' "$SRC" "knowledge-ingest-source: store passes --knowledge-root"
 assert_grep 'fetch-method webfetch' "$SRC" "knowledge-ingest-source: store uses the honest --fetch-method webfetch for a URL"
-# The fetch-method enum is cross-plugin-contracted — the increment must NOT
-# invent a new local method (that is the deferred local-source work).
-assert_not_grep 'fetch-method direct' "$SRC" "knowledge-ingest-source: does NOT invent a 'direct' fetch-method (enum is cross-plugin-contracted)"
+# Local inputs deposit honestly via the additive non-web --fetch-method direct
+# (ratified in fetch-cache.py VALID_FETCH_METHODS) — never as a webfetch lie.
+assert_grep 'fetch-method direct' "$SRC" "knowledge-ingest-source: local inputs store via the honest --fetch-method direct"
 
 # Dedup via the shared wiki-grounding primitive, with diff-before-write.
 assert_grep 'wiki-grounding.py rank' "$SRC" "knowledge-ingest-source: dedups via the shared wiki-grounding.py rank primitive"
@@ -83,11 +86,25 @@ assert_grep 'No homegrown / external PDF parser' "$SRC" "knowledge-ingest-source
 # The skill must not call out to an external/homegrown PDF library.
 assert_not_grep 'pdfplumber\|PyPDF\|pdfminer\|poppler' "$SRC" "knowledge-ingest-source: no external PDF-parser dependency"
 
-# Deferred scope guards: this increment is URL-only and must not reach for the
-# not-yet-vendored engine scripts.
-assert_grep 'convert_to_md.py' "$SRC" "knowledge-ingest-source: names convert_to_md.py as deferred"
-assert_grep 'wiki_queue.py' "$SRC" "knowledge-ingest-source: names wiki_queue.py (queue mode) as deferred"
-assert_grep 'interview' "$SRC" "knowledge-ingest-source: records the interview page type as deferred"
+# Input modes: the surface accepts a URL OR a local input — exactly one of
+# --url / --file / --paste / --interview.
+assert_grep '\-\-file' "$SRC" "knowledge-ingest-source: accepts a local file via --file"
+assert_grep '\-\-paste' "$SRC" "knowledge-ingest-source: accepts pasted text via --paste"
+assert_grep '\-\-interview' "$SRC" "knowledge-ingest-source: accepts a local interview note via --interview"
+
+# Local-file normalization via the vendored convert_to_md.py, queue mode via the
+# vendored wiki_queue.py — both resolved through the existing wiki-ingest probe.
+assert_grep 'convert_to_md.py' "$SRC" "knowledge-ingest-source: normalizes local files via the vendored convert_to_md.py"
+assert_grep 'wiki_queue.py' "$SRC" "knowledge-ingest-source: queue mode via the vendored wiki_queue.py"
+
+# Interview page type → wiki/interviews/ via the source-ingester PAGE_TYPE param.
+assert_grep 'type: interview' "$SRC" "knowledge-ingest-source: an interview note lands as type: interview"
+assert_grep 'wiki/interviews/' "$SRC" "knowledge-ingest-source: an interview note lands in wiki/interviews/"
+assert_grep 'PAGE_TYPE' "$SRC" "knowledge-ingest-source: threads PAGE_TYPE to the source-ingester dispatch"
+
+# .docx normalization is the OPTIONAL external markitdown tool — its absence must
+# degrade to an honest error, never a fabricated body / crash.
+assert_grep 'markitdown' "$SRC" "knowledge-ingest-source: names markitdown as the optional external .docx normalizer"
 
 # allowed-tools must include WebFetch (URL fetch), Task (source-ingester), and
 # Bash (the script calls). Must NOT include Skill (agents go through Task).
@@ -96,11 +113,14 @@ assert_grep 'allowed-tools:.*Task' "$SRC" "knowledge-ingest-source: allowed-tool
 assert_grep 'allowed-tools:.*Bash' "$SRC" "knowledge-ingest-source: allowed-tools includes Bash"
 assert_not_grep 'allowed-tools:.*Skill' "$SRC" "knowledge-ingest-source: allowed-tools excludes Skill (agents go through Task)"
 
-# --- source-ingester unchanged by this increment -------------------------
-# The standalone surface REUSES the research write path byte-for-byte; the
-# agent must still emit type: source so the reuse is exact.
+# --- source-ingester: additive PAGE_TYPE param ---------------------------
+# The standalone surface reuses the research write path with PAGE_TYPE=source as
+# the byte-identical default; the agent gained an additive PAGE_TYPE param that
+# routes interview → wiki/interviews/. The source default literals must survive.
 INGESTER="$PLUGIN_ROOT/agents/source-ingester.md"
-assert_grep 'type: source' "$INGESTER" "source-ingester: still emits type: source (reused unchanged by the standalone surface)"
+assert_grep 'type: source' "$INGESTER" "source-ingester: still emits type: source (PAGE_TYPE=source is the byte-identical default)"
+assert_grep 'PAGE_TYPE' "$INGESTER" "source-ingester: gained the additive PAGE_TYPE param"
+assert_grep 'wiki/interviews/' "$INGESTER" "source-ingester: PAGE_TYPE=interview routes to wiki/interviews/"
 
 if [ $errors -eq 0 ]; then
   green ""
