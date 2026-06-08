@@ -502,7 +502,27 @@ After the loop, bump `entries_count` once by the count of newly-indexed pages (o
 python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" --wiki-root "$WIKI_ROOT" --key entries_count --delta <n_new>
 ```
 
-Non-fatal on failure (reconcile via `wiki-lint --fix=entries_count_drift`). **Do NOT** run `lint_wiki.py --fix=all` / `health.py` here — `knowledge-finalize` Step 10.5 runs the whole-run conformance gate once, at the end, over the page set that now includes these distilled pages.
+Non-fatal on failure (reconcile via `wiki-lint --fix=entries_count_drift`). **Do NOT** run the *full* `lint_wiki.py --fix=all` / `health.py` conformance gate here — that stays in `knowledge-finalize` Step 10.5, which runs it once, at the end, over the page set that now includes these distilled pages. The **bounded** `--fix=reverse_link_missing` de-orphan gate in Step 7.2 below is the deliberate exception.
+
+### 7.2. Bounded de-orphan gate (reverse_link_missing)
+
+The distilled pages just written carry forward `[[<source-slug>]]` edges (concept→source) in their `## Sources` block, but the source pages do not yet hold the reverse `[[<concept-slug>]]` link — so a **standalone** distill (run later on an already-finalized base, with no `knowledge-compose` → `knowledge-finalize` to follow) would leave every page this phase wrote as an `orphan_page` with a `reverse_link_missing` gap until some future finalize that may never come. `knowledge-ingest` does not have this problem because it de-orphans its own pages inline (Steps 4.1 / 4.5.2); distill mirrors that posture here with a **bounded, idempotent** gate — not the whole-run conformance gate, only the one load-bearing reverse-link backfill.
+
+Resolve the cogni-wiki `wiki-lint` scripts dir with the SAME `resolve_wiki_scripts` helper used at the top of this skill — **fail-soft**: on a miss, warn and continue (the base self-heals on the next `knowledge-finalize` / `knowledge-lint`), exactly as the `wiki-ingest` resolution does:
+
+```
+WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint lint_wiki.py) || { echo "⚠ cogni-wiki wiki-lint scripts not found — skipping the bounded de-orphan gate (run knowledge-finalize or knowledge-lint to reconcile)"; WIKI_LINT_SCRIPTS=""; }
+```
+
+When resolved, run the single bounded fix class. It mirrors every distilled page's `## Sources` `[[<source-slug>]]` edge back onto the source (and onto any cited `wiki/questions/<slug>.md` node), giving each page this phase wrote an inbound link. It is idempotent — a no-op on an already-clean base — and writes nothing else (`--fix=all`'s other four classes stay in finalize):
+
+```
+[ -n "$WIKI_LINT_SCRIPTS" ] && python3 "$WIKI_LINT_SCRIPTS/lint_wiki.py" \
+    --wiki-root "$WIKI_ROOT" \
+    --fix=reverse_link_missing
+```
+
+Capture the envelope; surface `data.fixed[]` / `data.failed[]` counts in the Step 9 summary. **Non-fatal per item** — a per-page fix failure lands in `data.failed[]` and never blocks the phase. (`orphan_page` is a lint warning, not a `--fix` class; 0 orphans comes from the inbound links this reverse-link backfill writes, never from `--fix` directly.)
 
 ### 8. Append wiki/log.md
 
@@ -535,6 +555,7 @@ Print ≤ 12 lines:
   - Subline: `If these are the same concept, the run forked a near-duplicate page; rename the proposal in the next run, or merge manually via the wiki.`
   - When `near_existing_total == 0` print nothing (no false-alarm noise on clean runs).
 - Wiki entries_count: `+<n_new>` (or `⚠ bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0`)
+- Reverse-link backfill (Step 7.2): `<n_fixed>` link(s) added (`<n_failed>` failed) — or `0 (already clean)` / `skipped (wiki-lint scripts not found)` when the bounded de-orphan gate found nothing to do or could not resolve its scripts dir
 - Cost: `$X.XXX` (from the distiller return)
 - Next: `knowledge-compose` reads the distilled pages (concept/entity/summary/learning) as framing context (not citable evidence).
 
@@ -561,7 +582,7 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - Re-narrates the `## Summary` body of **updated** distilled pages (any of the four types) from the merged claims (Step 6.7, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass.
 - Merges **cross-lingual (DE↔EN) twin claims** on a mixed-language base (Step 6.6, default-on, fail-soft, auto-skip; `--no-crosslingual` opts out). An LLM only **confirms** pairs the script flagged (shared article-number anchor + low overlap); `concept-store.py crossmerge` re-validates the gate and UNIONs provenance onto the survivor — **never dropping a fact**. It does NOT touch single-language dedup (Step 6's job), and it explicitly does NOT use embedding/vector similarity (approach (c), rejected by the differentiation thesis).
 - Emits four page types — `concept` / `entity` plus, conservatively, the cross-source `summary` and run-level `learning`; the distiller defaults to `concept`/`entity` and reaches for the new types only when a cluster fits neither. It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
-- Does NOT run the `lint_wiki.py --fix=all` / `health.py` conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once.
+- Does NOT run the **full** `lint_wiki.py --fix=all` / `health.py` whole-run conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once. It DOES run a **bounded** `--fix=reverse_link_missing` de-orphan gate inline (Step 7.2) so a standalone distill leaves the base structurally clean (0 orphans, 0 reverse-link gaps), mirroring `knowledge-ingest`'s inline posture.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
 - Does NOT block the pipeline — every failure path warns and exits cleanly.
 

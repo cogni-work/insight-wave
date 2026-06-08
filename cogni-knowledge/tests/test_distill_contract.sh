@@ -53,8 +53,10 @@ assert_grep 'near_existing_total' "$SKILL" "knowledge-distill: reads near_existi
 assert_grep 'near_existing_slugs' "$SKILL" "knowledge-distill: reads near_existing_slugs[] from merge output (#340)"
 assert_grep 'concepts created near an existing slug' "$SKILL" "knowledge-distill: Step 9 surfaces the title→slug tripwire warning"
 assert_grep 'observability' "$SKILL" "knowledge-distill: documents the tripwire as pure observability (no auto-merge)"
-# Must NOT run the conformance gate (finalize Step 10.5 owns it once).
-assert_not_grep 'health.py asserts' "$SKILL" "knowledge-distill: does NOT run the conformance gate itself"
+# Must NOT run the FULL conformance gate (finalize Step 10.5 owns --fix=all + health.py once).
+assert_not_grep 'health.py asserts' "$SKILL" "knowledge-distill: does NOT run the full conformance gate itself"
+# DOES run the bounded reverse_link_missing de-orphan gate inline so a standalone distill leaves a clean base.
+assert_grep 'fix=reverse_link_missing' "$SKILL" "knowledge-distill: runs the bounded reverse_link_missing de-orphan gate inline (Step 7.2)"
 assert_grep 'Task' "$SKILL" "knowledge-distill: Task in allowed-tools"
 # #341 Step 6.7 — re-narrate the ## Summary of updated pages from merged claims.
 assert_grep 'Task(concept-summary-narrator' "$SKILL" "knowledge-distill: dispatches concept-summary-narrator via Task (#341)"
