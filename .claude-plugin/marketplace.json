@@ -93,7 +93,7 @@
     {
       "name": "cogni-trends",
       "source": "./cogni-trends",
-      "version": "0.6.5",
+      "version": "0.6.6",
       "maturity": "preview",
       "description": "Strategic trend scouting and TIPS reporting pipeline. Combines the Smarter Service Trendradar (4 dimensions) with TIPS (Trends, Implications, Possibilities, Solutions): trend-scout → value-modeler → trend-research → trend-synthesis and/or trend-booklet → verify-trend-report. Evidence-backed CxO reports and reusable industry catalogs across DE/FR/IT/PL/NL/ES + US/UK.",
       "keywords": [

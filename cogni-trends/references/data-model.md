@@ -108,7 +108,7 @@ project in the workspace. When `study_mode` is `"open"`, this field is omitted.
 - `vendor_slug` (string, required): kebab-case vendor identifier for display resolution. When `trend-scout` Step 0.8c auto-populates `vendor_source`, this defaults to the same value as `portfolio_ref` (both reflect the connected portfolio's slug). Power users can manually override `vendor_slug` in `tips-project.json` when the published vendor brand differs from the portfolio slug (e.g., `portfolio_ref: "t-systems-corp"` with `vendor_slug: "t-systems"`).
 - `vendor_display_name` (string, required): Human-readable provider name for prose weaving (e.g., `"T-Systems"`).
 - `case_study_wiki` (string, optional): Path relative to workspace root pointing at a cogni-wiki instance to query for reference evidence.
-- `case_study_uploads` (string, optional): Path (relative to the portfolio project) to a directory of uploaded case study documents (PDF, DOCX, MD) for `local-researcher` dispatch. Defaults to the portfolio project's `uploads/` directory when omitted.
+- `case_study_uploads` (string, optional): Path (relative to the portfolio project) to a directory of uploaded case study documents (PDF, DOCX, MD) the vendor-mode pass `Read`s natively (optionally depositing each file via `cogni-knowledge:knowledge-ingest-source --file`, `fetch_method: direct`, when a base is bound). Defaults to the portfolio project's `uploads/` directory when omitted.
 
 ### trend-scout-output.json (Scout Output)
 
@@ -770,7 +770,7 @@ New fields (all optional, backward compatible — existing STs without these fie
   - `outcome_claim` (string, required): Short outcome statement suitable for CxO prose (1–2 sentences).
   - `roi_claim` (string, optional): Quantified ROI when available from portfolio evidence (e.g., `"€4.2M avoided OPEX"`).
   - `source` (string, required): Where the reference came from inside the portfolio — `"customers"` (a `named_customers[]` entry),
-    `"propositions"` (an `evidence[]` entry tagged vendor-authored), `"uploads"` (document corpus via `cogni-research:local-researcher`),
+    `"propositions"` (an `evidence[]` entry tagged vendor-authored), `"uploads"` (uploaded document corpus read natively, optionally deposited via `cogni-knowledge:knowledge-ingest-source`),
     or `"wiki"` (a `wiki-grounding.py rank` hit over the vendor's case-study wiki).
   - `source_ref` (string, required): Portfolio-relative path or entity ref with optional JSON Pointer. Must resolve inside `cogni-portfolio/{portfolio_ref}/`.
   - `portfolio_grounding_entry_ref` (string, required): `{feature_slug}--{market_slug}` key linking this reference back to one of the ST's `portfolio_grounding[]` entries.
