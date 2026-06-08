@@ -118,9 +118,11 @@ def _slug_page_type(wiki_dir: Path, slug: str) -> str:
 
 
 def _parse_iso(value: str):
+    # Callers always pass a str (frontmatter_scalar returns "" on a miss), so a
+    # bad/empty value raises only ValueError.
     try:
         return _dt.date.fromisoformat(value.strip())
-    except (ValueError, AttributeError):
+    except ValueError:
         return None
 
 

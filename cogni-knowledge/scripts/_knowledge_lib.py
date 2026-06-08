@@ -720,6 +720,20 @@ def parse_synthesis_sources(page_text: str) -> list[str]:
     return slugs
 
 
+_FM_SCALAR_KEY_RE_CACHE: dict = {}
+
+
+def _fm_scalar_key_re(key: str):
+    """Compiled `^<key>:<value>$` matcher for `frontmatter_scalar`, cached per key
+    so a hot-loop caller (e.g. synthesis-impact's per-synthesis `updated`/`title`
+    reads) does not recompile the same handful of patterns on every call."""
+    cached = _FM_SCALAR_KEY_RE_CACHE.get(key)
+    if cached is None:
+        cached = re.compile(r"^" + re.escape(key) + r"[ \t]*:[ \t]*(.*?)[ \t]*$")
+        _FM_SCALAR_KEY_RE_CACHE[key] = cached
+    return cached
+
+
 def frontmatter_scalar(page_text: str, key: str) -> str:
     """Read a single flat frontmatter scalar by `key` (e.g. `created` / `updated`),
     or "" when absent / unparseable. Generalizes the id-reading half of
@@ -732,7 +746,7 @@ def frontmatter_scalar(page_text: str, key: str) -> str:
     m = _FRONTMATTER_RE.match(page_text)
     if not m:
         return ""
-    key_re = re.compile(r"^" + re.escape(key) + r"[ \t]*:[ \t]*(.*?)[ \t]*$")
+    key_re = _fm_scalar_key_re(key)
     for line in m.group(1).splitlines():
         km = key_re.match(line)
         if km:

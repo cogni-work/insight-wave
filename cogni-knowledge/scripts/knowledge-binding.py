@@ -336,39 +336,22 @@ def cmd_append_project(args: argparse.Namespace) -> int:
     )
 
 
-def _load_theme_bindings(raw: str) -> list[dict]:
-    """Parse the question-store.py theme_bindings payload. Liberal in what it
-    accepts (the orchestrator may pipe the bare array, the `{theme_bindings: []}`
-    object, or question-store's full `{success, data: {theme_bindings: []}}`
-    envelope) so a small serialization choice upstream never silently drops the
-    records. Returns the list of `{theme_key, question_slug, theme_label}` dicts."""
+def _load_envelope_field(raw: str, field: str) -> list[dict]:
+    """Liberally parse a piped records payload for one list field. Accepts the
+    bare array, the `{<field>: []}` object, or a producer's full
+    `{success, data: {<field>: []}}` envelope — so a small serialization choice
+    upstream never silently drops the records. The single reader shared by the
+    `upsert-themes` (theme_bindings) and `add-refresh-candidates`
+    (refresh_candidates) loaders."""
     doc = json.loads(raw)
     if isinstance(doc, list):
         return doc
     if isinstance(doc, dict):
-        tbs = doc.get("theme_bindings")
-        if not isinstance(tbs, list):
-            tbs = (doc.get("data") or {}).get("theme_bindings")
-        if isinstance(tbs, list):
-            return tbs
-    return []
-
-
-def _load_refresh_candidates(raw: str) -> list[dict]:
-    """Parse the synthesis-impact.py scan payload. Liberal in what it accepts
-    (the orchestrator may pipe the bare array, the `{refresh_candidates: []}`
-    object, or synthesis-impact's full `{success, data: {refresh_candidates: []}}`
-    envelope) so a small serialization choice upstream never silently drops the
-    records — mirrors `_load_theme_bindings`. Returns the list of candidate dicts."""
-    doc = json.loads(raw)
-    if isinstance(doc, list):
-        return doc
-    if isinstance(doc, dict):
-        rcs = doc.get("refresh_candidates")
-        if not isinstance(rcs, list):
-            rcs = (doc.get("data") or {}).get("refresh_candidates")
-        if isinstance(rcs, list):
-            return rcs
+        items = doc.get(field)
+        if not isinstance(items, list):
+            items = (doc.get("data") or {}).get(field)
+        if isinstance(items, list):
+            return items
     return []
 
 
@@ -394,7 +377,7 @@ def cmd_upsert_themes(args: argparse.Namespace) -> int:
     except OSError as exc:
         return _emit(False, error=f"could not read --records: {exc}")
     try:
-        records = _load_theme_bindings(raw)
+        records = _load_envelope_field(raw, "theme_bindings")
     except json.JSONDecodeError as exc:
         return _emit(False, error=f"--records is not valid JSON: {exc}")
 
@@ -559,7 +542,7 @@ def cmd_add_refresh_candidates(args: argparse.Namespace) -> int:
     except OSError as exc:
         return _emit(False, error=f"could not read --records: {exc}")
     try:
-        records = _load_refresh_candidates(raw)
+        records = _load_envelope_field(raw, "refresh_candidates")
     except json.JSONDecodeError as exc:
         return _emit(False, error=f"--records is not valid JSON: {exc}")
 
@@ -583,13 +566,13 @@ def cmd_add_refresh_candidates(args: argparse.Namespace) -> int:
         # page slug the scan ran against (passed through the record when present).
         trigger = args.triggered_by or rec.get("triggered_by_source", "")
         via = rec.get("via_pages", []) if isinstance(rec.get("via_pages"), list) else []
+        title = rec.get("title", "") or rec.get("synthesis_title", "")
         entry = by_slug.get(sslug)
         if entry is None:
-            triggers = [trigger] if trigger else []
             entry = {
                 "synthesis_slug": sslug,
-                "synthesis_title": rec.get("title", "") or rec.get("synthesis_title", ""),
-                "triggered_by_source": triggers,
+                "synthesis_title": title,
+                "triggered_by_source": [trigger] if trigger else [],
                 "detected_at": today,
                 "via_pages": sorted(set(via)),
                 "status": "open",
@@ -609,9 +592,8 @@ def cmd_add_refresh_candidates(args: argparse.Namespace) -> int:
             entry["via_pages"] = sorted(set(existing_via) | set(via))
             entry["detected_at"] = today
             entry.setdefault("status", "open")
-            # Backfill a title if the prior record lacked one.
             if not entry.get("synthesis_title"):
-                entry["synthesis_title"] = rec.get("title", "") or rec.get("synthesis_title", "")
+                entry["synthesis_title"] = title  # backfill if the prior record lacked one
             updated += 1
 
     written = _write_binding(knowledge_root, binding)
