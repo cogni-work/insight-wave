@@ -59,6 +59,7 @@ If `WIKI_OK=no`, warn and exit cleanly (distill is optional — do not block the
 **Resolve the cogni-wiki script dir.** Use the SAME `resolve_wiki_scripts` helper `knowledge-ingest` / `knowledge-finalize` use (shared byte-for-byte) — it picks the newest numeric version dir. `concept-store.py merge` needs this dir for `_wiki_lock` / `is_foundation_page` / `parse_frontmatter`, and Step 6 needs `backlink_audit.py` / `wiki_index_update.py` / `config_bump.py`:
 
 ```
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
 WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest backlink_audit.py) || { echo "⚠ cogni-wiki wiki-ingest scripts not found — skipping distill (optional)"; exit 0; }
 ```
 
@@ -511,6 +512,7 @@ The distilled pages just written carry forward `[[<source-slug>]]` edges (concep
 Resolve the cogni-wiki `wiki-lint` scripts dir with the SAME `resolve_wiki_scripts` helper used at the top of this skill — **fail-soft**: on a miss, warn and continue (the base self-heals on the next `knowledge-finalize` / `knowledge-lint`), exactly as the `wiki-ingest` resolution does:
 
 ```
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
 WIKI_LINT_SCRIPTS=$(resolve_wiki_scripts wiki-lint lint_wiki.py) || { echo "⚠ cogni-wiki wiki-lint scripts not found — skipping the bounded de-orphan gate (run knowledge-finalize or knowledge-lint to reconcile)"; WIKI_LINT_SCRIPTS=""; }
 ```
 
