@@ -20,6 +20,13 @@ to this plan — the caller surfaces that as "narrow the plan or ingest more".
 Stdlib only; JSON envelope output per the insight-wave convention.
 """
 
+# Defer annotation evaluation so PEP 604 `X | None` annotations (e.g. `_emit`'s
+# `data: dict | None`) are stored as strings rather than evaluated at def-time —
+# keeps the module importable on the Python 3.9 toolchain floor the rest of
+# cogni-knowledge targets (3.9 lacks runtime `type | None`). `_knowledge_lib.py`
+# already carries this import for the same reason.
+from __future__ import annotations
+
 import argparse
 import importlib.util
 import json

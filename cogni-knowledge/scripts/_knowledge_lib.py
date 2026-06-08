@@ -297,25 +297,33 @@ def strip_inline_citation_markers(text: str) -> str:
     return _SUP_MARKER_RE.sub("", text)
 
 
-# The http(s) link target inside a numbered inline marker `<sup>[N](url)</sup>`.
-# Two shapes are emitted by the composer: a plain `(url)` and the angle-bracketed
-# `(<url>)` that `md_link_dest` produces when the URL itself contains `(`/`)`/
-# space. The alternation captures the bracketed form FIRST (so a URL legitimately
-# containing `)` — the exact reason `md_link_dest` brackets it — is not truncated
-# at that inner `)`); the unbracketed branch stops at the first `)`. A bare
+# The http(s)/file:// link target inside a numbered inline marker
+# `<sup>[N](url)</sup>`. Two shapes are emitted by the composer: a plain `(url)`
+# and the angle-bracketed `(<url>)` that `md_link_dest` produces when the URL
+# itself contains `(`/`)`/space. The alternation captures the bracketed form
+# FIRST (so a URL legitimately containing `)` — the exact reason `md_link_dest`
+# brackets it — is not truncated at that inner `)`); the unbracketed branch stops
+# at the first `)`. `file:` is a first-class scheme alongside `http(s)` so a local
+# source ingested via `knowledge-ingest-source --file` (provenance
+# `file://<abspath>`) is extracted, not silently dropped; both branches match on
+# `[^>]`/`[^)]`, so a `file://` path containing a literal space (e.g. a filename
+# with a space) is captured whole instead of truncating at the space. A bare
 # `<sup>[N]</sup>` marker (synthesis / distilled page, no external URL) has no
 # `(...)` and matches neither branch → it contributes no URL.
 _INLINE_CITATION_URL_RE = re.compile(
-    r"<sup>\[\d+\]\((?:<(https?://[^>]+)>|(https?://[^)]+?))\)</sup>"
+    r"<sup>\[\d+\]\((?:<((?:https?|file)://[^>]+)>|((?:https?|file)://[^)]+?))\)</sup>"
 )
 
 
 def extract_inline_citation_urls(text: str) -> list[str]:
-    """Every http(s) URL inside a `<sup>[N](url)</sup>` inline citation marker in
-    `text`, in appearance order (raw — the caller normalizes for comparison).
+    """Every http(s) or file:// URL inside a `<sup>[N](url)</sup>` inline citation
+    marker in `text`, in appearance order (raw — the caller normalizes for
+    comparison).
 
-    Handles both the plain `(url)` and the angle-bracketed `(<url>)` forms; a bare
-    `<sup>[N]</sup>` marker (no external URL) contributes nothing. Used by
+    Handles both the plain `(url)` and the angle-bracketed `(<url>)` forms, and
+    treats `file:` as first-class (a local-file source carries `file://<abspath>`
+    provenance, tolerated whole even when the path contains a literal space); a
+    bare `<sup>[N]</sup>` marker (no external URL) contributes nothing. Used by
     `citation-store.py build`'s `--ingest-manifest` gate (#383) to assert every
     inline URL is a known ingested-source URL, catching a slug-derived URL the
     composer reconstructed instead of copying the cited page's `sources:` value."""
@@ -325,12 +333,20 @@ def extract_inline_citation_urls(text: str) -> list[str]:
 
 
 def first_url(fm_value: str) -> str:
-    """First http(s) URL in a frontmatter `sources:` value, else "".
+    """First http(s) or file:// URL in a frontmatter `sources:` value, else "".
 
     A source page carries the inline-list shape `["<URL>"]`; a synthesis page
     carries a block-style `sources:` (its `wiki://…` entries live on indented
     lines that the top-level frontmatter parse never surfaces), so this returns
     "" for synthesis pages — correctly, they have no external URL.
+
+    `file:` is first-class: a local source ingested via
+    `knowledge-ingest-source --file` is stored honestly as `file://<abspath>`,
+    and the citation tooling that reads this (the source-ingester Phase-3
+    integrity check via `extract_page_id_and_url`, the `ingest-integrity.py`
+    sweep) must see the real URL, not "". A `file://` path may contain a literal
+    space, so the non-JSON fallback below does not stop at whitespace for the
+    `file:` scheme (it does for http(s), where a space never appears in a URL).
     """
     if not fm_value:
         return ""
@@ -338,17 +354,22 @@ def first_url(fm_value: str) -> str:
         parsed = json.loads(fm_value)
         if isinstance(parsed, list) and parsed and isinstance(parsed[0], str):
             parsed = parsed[0]
-        if isinstance(parsed, str) and parsed.startswith(("http://", "https://")):
-            return parsed
+        if isinstance(parsed, str) and parsed.startswith(
+            ("http://", "https://", "file://")
+        ):
+            return parsed.strip()
     except (ValueError, TypeError):
         pass
-    # Fallback only (non-JSON value). Strip trailing quotes and at most one
-    # leaked list-closer `]` — NOT a whole `]"'` charset, which would also eat a
-    # URL legitimately ending in `]`.
-    m = re.search(r"https?://\S+", fm_value)
+    # Fallback only (non-JSON value). http(s) URLs never contain a space, so
+    # `\S+` is right for them; a `file://` path can, so match the rest of the
+    # value (sans a leaked closing quote / list-closer) and rstrip trailing
+    # whitespace. Strip trailing quotes and at most one leaked list-closer `]` —
+    # NOT a whole `]"'` charset, which would also eat a URL legitimately ending
+    # in `]`.
+    m = re.search(r"https?://\S+|file://[^\"'\]]+", fm_value)
     if not m:
         return ""
-    url = m.group(0).rstrip("\"'")
+    url = m.group(0).rstrip().rstrip("\"'").rstrip()
     return url[:-1] if url.endswith("]") else url
 
 
