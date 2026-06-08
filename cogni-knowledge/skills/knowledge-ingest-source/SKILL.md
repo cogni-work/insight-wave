@@ -252,34 +252,46 @@ and `wiki-source-manifest.py` resolve to):
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-grounding.py rank \
     --wiki-root <WIKI_ROOT> \
     --question "<--title + first ~100 words of the body>" \
-    --theme-label "<--theme, if set>"
+    --theme-label "<--theme, if set>" \
+    [--include-interviews]   # add ONLY when depositing an interview note (--type interview)
 ```
+
+Pass `--include-interviews` **only on the interview path** (`--type interview` /
+`--interview`) so the walk also covers `wiki/interviews/`; omit it for a
+`--url`/`--file`/`--paste` source deposit so source dedup keeps scoring against
+the default `source`/`synthesis`/`concept`/`entity` set — no false cross-type
+collisions, and byte-parity with the `wiki-coverage.py` / `wiki-source-manifest.py`
+importers (which never pass the flag).
 
 Read `data.pages[]` (ranked covering pages) and `data.coverage_verdict`:
 
-- **A covering page resolves to an existing `wiki/sources/<that-slug>.md`** — a
-  genuine collision, the same source already on the wiki → **do not blind-write.**
-  Surface the collision and hand to the **diff-before-write update path**: tell
-  the user the existing page covers this source and offer to update it via
-  `cogni-wiki:wiki-update` (or the re-homed equivalent) rather than creating a
-  duplicate. Stop here unless the user confirms a forced re-ingest under a new
-  slug.
+- **A covering page resolves to an existing wiki page of the same type as this
+  deposit** (`wiki/sources/<that-slug>.md` for a source deposit, or
+  `wiki/interviews/<that-slug>.md` for an interview-note deposit under
+  `--include-interviews`) — a genuine collision, the same artifact already on
+  the wiki → **do not blind-write.** Surface the collision and hand to the
+  **diff-before-write update path**: tell the user the existing page covers this
+  source and offer to update it via `cogni-wiki:wiki-update` (or the re-homed
+  equivalent) rather than creating a duplicate. Stop here unless the user
+  confirms a forced re-ingest under a new slug. (A covering page of a *different*
+  type — e.g. a `concept`/`synthesis` page surfacing for a source deposit — is a
+  thematic neighbour, not a collision; treat it per the next bullet.)
 - **No covering page (or only weak/partial thematic overlap)** → continue to
   Step 4. (Thematic neighbours are expected and are fine — they become
   backlink candidates in Step 5, not collisions.)
 
 **Dedup coverage by page type.** `wiki-grounding.py rank` walks the indexed page
-types `source` / `synthesis` / `concept` / `entity` (its `_TYPE_DIRS`), so the
-semantic collision check above covers a `--url`/`--file`/`--paste` deposit
-(which lands as `type: source` in `wiki/sources/`). It does **not** yet walk
-`wiki/interviews/`, so for an **interview note** the only collision guard this
-iteration is **slug-level** — the `source-ingester` Phase-3 `slug_collision`
-check refuses to overwrite an existing `wiki/interviews/<slug>.md` with the same
-slug. Two interview notes that are the same source but resolve to different
-slugs will both land (no semantic dedup). Extending the discovery primitive to
-walk `wiki/interviews/` so interview notes get the same diff-before-write
-treatment is a tracked follow-up; for now an interview-note re-ingest is
-slug-deduped, not content-deduped.
+types `source` / `synthesis` / `concept` / `entity` by default (its `_TYPE_DIRS`),
+covering a `--url`/`--file`/`--paste` deposit (which lands as `type: source` in
+`wiki/sources/`). The opt-in `--include-interviews` flag additionally walks
+`wiki/interviews/`, so an **interview-note** deposit gets the **same semantic
+diff-before-write collision check** as a `type: source` deposit — an existing
+`wiki/interviews/<slug>.md` covering the same content is surfaced as a collision
+even when it would resolve to a *different* slug, closing the prior slug-only gap
+(the `source-ingester` Phase-3 `slug_collision` exact-slug guard still backstops
+it). The flag is deliberately opt-in and off for source deposits so the shared
+primitive's default walk set is unchanged for `wiki-coverage.py` coverage scoring
+and `wiki-source-manifest.py` wiki-only compose.
 
 ### 4. Dispatch source-ingester (single entry)
 

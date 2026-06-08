@@ -187,17 +187,33 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def collect_pages(wiki_root: Path) -> list[dict]:
+def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[dict]:
     """Gather source/synthesis/concept/entity pages with their title/tags/
     index-summary + per-type claim text (`pre_extracted_claims[].text` for
     source/synthesis, `distilled_claims[].text` for concept/entity).
 
     Returns a list of {slug, type, page_path (wiki-root-relative), title,
-    tags, tokens}. A missing wiki/ dir (fresh base) yields []."""
+    tags, tokens}. A missing wiki/ dir (fresh base) yields [].
+
+    `include_interviews` is OPT-IN (default False) and keyword-only: the two
+    importers (`wiki-coverage.py` research coverage, `wiki-source-manifest.py`
+    wiki-only compose) call this positionally and MUST keep scoring against the
+    default `_TYPE_DIRS` set, so widening the walk here would silently change
+    their results — the regression the issue warns about. Only
+    `knowledge-ingest-source`'s diff-before-write dedup passes it True (an
+    interview-note deposit, `type: interview` in `wiki/interviews/`, carrying
+    `pre_extracted_claims:` like a source), so that deposit gets the same
+    semantic collision check a `type: source` deposit already gets."""
     wiki_dir = wiki_root / "wiki"
     index_map = _index_summaries(_read_text(wiki_dir / "index.md"))
+    # Opt-in extension of the default walk set; interview pages carry
+    # `pre_extracted_claims:` so they fall through to the source/synthesis claim
+    # branch below (NOT the concept/entity distilled branch).
+    type_dirs = dict(_TYPE_DIRS)
+    if include_interviews:
+        type_dirs["interview"] = "interviews"
     pages: list[dict] = []
-    for ptype, subdir in _TYPE_DIRS.items():
+    for ptype, subdir in type_dirs.items():
         d = wiki_dir / subdir
         if not d.is_dir():
             continue
@@ -372,7 +388,10 @@ def cmd_rank(args: argparse.Namespace) -> int:
     sq_tokens = sq_token_set({"query": args.question, "theme_label": args.theme_label or ""})
 
     wiki_root = Path(args.wiki_root)
-    pages = collect_pages(wiki_root)  # [] on a fresh / unreadable base
+    # include_interviews defaults False (the CLI flag below is store_true), so a
+    # caller that omits --include-interviews scores against the default
+    # _TYPE_DIRS set exactly as before — parity with the two importers.
+    pages = collect_pages(wiki_root, include_interviews=args.include_interviews)  # [] on a fresh / unreadable base
     ranked = rank_pages(pages, sq_tokens, threshold, args.top_k)
 
     data = {
@@ -408,6 +427,10 @@ def main(argv: list[str]) -> int:
                              f"floor) to count as covering (default {DEFAULT_THRESHOLD}).")
     p_rank.add_argument("--top-k", type=int, default=TOP_K,
                         help=f"Max covering pages to emit (default {TOP_K}).")
+    p_rank.add_argument("--include-interviews", action="store_true",
+                        help="Also walk wiki/interviews/ (type: interview pages) when ranking. "
+                             "OPT-IN, default off — keeps coverage/compose parity; "
+                             "knowledge-ingest-source's interview-note dedup passes it.")
     p_rank.set_defaults(func=cmd_rank)
 
     args = parser.parse_args(argv)
