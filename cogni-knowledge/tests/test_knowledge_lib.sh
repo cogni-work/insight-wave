@@ -262,6 +262,48 @@ def assert_body_word_count():
     assert kl.body_word_count("alpha beta gamma\n", None) == 3
 
 
+def assert_coverage_report():
+    # The coverage signal behind knowledge-compose Step 5.5's coverage-gated
+    # expansion: per sub-question, which ingested SOURCE slugs are available /
+    # cited / uncited, plus the deficit set (sqs with ≥1 uncited available source).
+    plan = {"sub_questions": [{"id": "sq-01"}, {"id": "sq-02"}, {"id": "sq-03"}]}
+    ingest = {"ingested": [
+        {"slug": "src-a", "sub_question_refs": ["sq-01"]},
+        {"slug": "src-b", "sub_question_refs": ["sq-01", "sq-02"]},
+        {"slug": "src-c", "sub_question_refs": ["sq-03"]},
+    ]}
+    # sq-01: src-a cited, src-b uncited → deficit; sq-02: src-b uncited & zero-cited;
+    # sq-03: src-c uncited & zero-cited. A distilled-slug citation does not count as a
+    # source cite (conservative under-count — never a false "cited").
+    cite = {"citations": [{"wiki_slug": "src-a"}, {"wiki_slug": "a-concept"}]}
+    rep = kl.coverage_report(plan, ingest, cite)
+    per = rep["per_sq"]
+    assert per["sq-01"] == {"available": ["src-a", "src-b"], "cited": ["src-a"],
+                            "uncited": ["src-b"]}, per["sq-01"]
+    assert per["sq-02"]["cited"] == [] and per["sq-02"]["uncited"] == ["src-b"], per["sq-02"]
+    assert per["sq-03"]["cited"] == [] and per["sq-03"]["uncited"] == ["src-c"], per["sq-03"]
+    assert rep["uncited_evidence_sq_ids"] == ["sq-01", "sq-02", "sq-03"], rep["uncited_evidence_sq_ids"]
+    # Fully-cited sq → NOT in the deficit set (no expansion).
+    full = kl.coverage_report({"sub_questions": [{"id": "sq-01"}]},
+                              {"ingested": [{"slug": "src-a", "sub_question_refs": ["sq-01"]}]},
+                              {"citations": [{"wiki_slug": "src-a"}]})
+    assert full["per_sq"]["sq-01"]["uncited"] == [], full
+    assert full["uncited_evidence_sq_ids"] == [], full
+    # A sub-question with NO ingested evidence is not a deficit (nothing to cite).
+    none_ev = kl.coverage_report({"sub_questions": [{"id": "sq-09"}]},
+                                 {"ingested": []}, {"citations": []})
+    assert none_ev["per_sq"]["sq-09"] == {"available": [], "cited": [], "uncited": []}, none_ev
+    assert none_ev["uncited_evidence_sq_ids"] == [], none_ev
+    # Fail-soft: empty / None inputs → no deficit, never raises.
+    assert kl.coverage_report({}, {}, {}) == {"per_sq": {}, "uncited_evidence_sq_ids": []}
+    assert kl.coverage_report(None, None, None) == {"per_sq": {}, "uncited_evidence_sq_ids": []}
+    # A null citation wiki_slug is discarded (never matches an available source).
+    nullslug = kl.coverage_report({"sub_questions": [{"id": "sq-01"}]},
+                                  {"ingested": [{"slug": "src-a", "sub_question_refs": ["sq-01"]}]},
+                                  {"citations": [{"wiki_slug": None}]})
+    assert nullslug["uncited_evidence_sq_ids"] == ["sq-01"], nullslug
+
+
 def assert_renumber_inline_citations():
     import re as _re
     # Full-source-drop gap: body [1][3] → [1][2] matching the re-derived list.
@@ -1019,6 +1061,7 @@ check("extract_inline_citation_urls", assert_extract_inline_citation_urls)
 check("md_link_dest", assert_md_link_dest)
 check("strip_reference_section", assert_strip_reference_section)
 check("body_word_count", assert_body_word_count)
+check("coverage_report", assert_coverage_report)
 check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 check("parse_distilled_claims", assert_parse_distilled_claims)
@@ -1054,7 +1097,8 @@ grade first_url               "first_url — JSON-list + non-JSON fallback URL e
 grade extract_inline_citation_urls "extract_inline_citation_urls — http(s) + file:// markers (bracketed/unbracketed), space-in-file:// captured whole, mixed file+http in one sentence yields both, bare/empty→[] (#572)"
 grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
-grade body_word_count         "body_word_count — body words excl. reference list (EN + DE), no-ref-section counts whole draft, None lang→English (#456 one canonical surface for compose Step 5.5 + wiki-reviewer)"
+grade body_word_count         "body_word_count — body words excl. reference list (EN + DE), no-ref-section counts whole draft, None lang→English (canonical surface for compose Step 7 over-ceiling + wiki-reviewer)"
+grade coverage_report         "coverage_report — per-sq available/cited/uncited source slugs + uncited_evidence_sq_ids deficit set; fully-cited & no-evidence sqs excluded; null wiki_slug discarded; empty/None fail-soft (coverage-gated Step 5.5)"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
 grade parse_synthesis_sources "parse_synthesis_sources — bare wiki://slug block list, legacy wiki://wiki/slug composite→last segment, comment-line skip, inline sources:[]/source-page inline→[], no-frontmatter→[]"
 grade frontmatter_scalar      "frontmatter_scalar — created/updated read, quoted unquote (colon kept), inline-comment strip on unquoted, missing/empty/no-fm→'', column-0 anchor ignores nested keys"

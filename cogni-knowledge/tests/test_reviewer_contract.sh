@@ -102,17 +102,19 @@ assert_grep 'claims-verification multiplier\|claims multiplier' "$REV" "wiki-rev
 assert_grep 'Arc-Structural Gate\|Arc gate\|arc-agnostic\|story-arc agnostic' "$REV" "wiki-reviewer: names the dropped Arc-Structural Gate"
 assert_grep 'Diagram Quality Gate\|no Mermaid' "$REV" "wiki-reviewer: names the dropped Diagram Quality Gate"
 
-# #309 P2: the Word-Count / prose-density gate is RE-ADDED as ADVISORY only —
-# it caps Completeness on a standard-density deficit / executive-density excess,
-# emits Word deficit / Word excess issues, records a word_count envelope block,
-# but drives NO expansion loop (the composer is single-pass). These guard the
-# re-add against (a) silent removal and (b) accidental promotion to a blocking gate.
-assert_grep 'Word Count Gate (advisory)\|advisory Word Count Gate\|Word-Count gate is RE-ADDED\|re-added as ADVISORY\|re-added (#309 P2)\|Word-Count.*advisory' "$REV" "wiki-reviewer: Word-Count gate re-added as ADVISORY (#309 P2)"
-assert_grep 'word_count' "$REV" "wiki-reviewer: emits a word_count envelope block (#309 P2)"
-assert_grep 'Word deficit' "$REV" "wiki-reviewer: standard-density deficit emits a Word deficit issue (#309 P2)"
-assert_grep 'Word excess' "$REV" "wiki-reviewer: executive-density excess emits a Word excess issue (#309 P2)"
-assert_grep 'TARGET_WORDS' "$REV" "wiki-reviewer: takes TARGET_WORDS for the Word Count Gate (#309 P2)"
-assert_grep 'PROSE_DENSITY' "$REV" "wiki-reviewer: takes PROSE_DENSITY to pick the gate direction (#309 P2)"
+# The Word-Count / prose-density gate is ADVISORY only and BREVITY-NEUTRAL under
+# standard density: a word DEFICIT is never penalized (target is a soft upper
+# budget), the only standard cap is for a likely-TRUNCATED draft (< 0.50 of budget);
+# executive still caps a word EXCESS. It records a word_count envelope block but
+# drives NO expansion loop (the composer is single-pass). These guard against (a)
+# silent removal, (b) a re-introduced brevity penalty, (c) promotion to a blocking gate.
+assert_grep 'Word Count Gate (advisory)\|advisory Word Count Gate\|Word-Count.*advisory' "$REV" "wiki-reviewer: Word-Count gate is ADVISORY"
+assert_grep 'word_count' "$REV" "wiki-reviewer: emits a word_count envelope block"
+assert_grep 'Possible truncated draft' "$REV" "wiki-reviewer: standard caps only a likely-truncated draft (< 0.50), not brevity"
+assert_not_grep 'Word deficit' "$REV" "wiki-reviewer: no Word deficit penalty (brevity is the intended outcome)"
+assert_grep 'Word excess' "$REV" "wiki-reviewer: executive-density excess emits a Word excess issue"
+assert_grep 'TARGET_WORDS' "$REV" "wiki-reviewer: takes TARGET_WORDS for the Word Count Gate"
+assert_grep 'PROSE_DENSITY' "$REV" "wiki-reviewer: takes PROSE_DENSITY to pick the gate behaviour"
 # The re-add must NOT reintroduce a loop — the advisory framing has to stay explicit.
 assert_grep 'no expansion loop\|never gates finalize\|advisory only\|never blocks' "$REV" "wiki-reviewer: Word-Count gate explicitly drives no expansion loop / never blocks (#309 P2)"
 

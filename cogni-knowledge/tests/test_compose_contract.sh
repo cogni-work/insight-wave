@@ -245,23 +245,26 @@ else
   green "PASS: wiki-composer: frontmatter tools: no WebFetch, no Task (single-pass, read-the-wiki only)"
 fi
 
-# --- #384 bounded floor-expansion (Step 5.5) contract --------------------
-# knowledge-compose gained a Step 5.5 that re-dispatches wiki-composer ONCE in
-# EXPANSION_MODE on a standard-density floor deficit (zero-network, capped,
-# fail-soft). Guard the contract surface so a path/flag/branch can't silently
-# disappear.
-assert_grep 'no-expand' "$COMPOSE" "knowledge-compose: --no-expand opt-out flag present (#384)"
-assert_grep '5.5' "$COMPOSE" "knowledge-compose: Step 5.5 bounded floor-expansion present (#384)"
-assert_grep 'EXPANSION_MODE=true' "$COMPOSE" "knowledge-compose: Step 5.5 re-dispatches with EXPANSION_MODE=true (#384)"
-assert_grep 'EXPAND_SECTIONS=' "$COMPOSE" "knowledge-compose: Step 5.5 threads EXPAND_SECTIONS into the re-dispatch (#384)"
-# #401 note 1: EXPAND_SECTIONS must fall back to the largest topical sections by
-# budget when a real total deficit holds but no section is individually flagged
-# (the RESUME_FROM_OUTLINE / null drafted_words path) — else a genuine deficit
-# silently skips. Guard the fallback so it can't regress to thin-only.
-assert_grep 'largest topical sections by budget' "$COMPOSE" "knowledge-compose: Step 5.5 falls back to the largest topical sections by budget when none is individually thin (#401)"
-assert_grep 'BASELINE_DRAFT_VERSION=' "$COMPOSE" "knowledge-compose: Step 5.5 threads BASELINE_DRAFT_VERSION (#384)"
-assert_grep 'ceiling_hit' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on the composer's ceiling_hit (#384)"
-assert_grep 'kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft keeps draft-vN as latest (#384)"
+# --- bounded coverage-gated expansion (Step 5.5) contract ----------------
+# knowledge-compose Step 5.5 re-dispatches wiki-composer ONCE in EXPANSION_MODE
+# ONLY on a standard-density COVERAGE deficit (a sub-question with uncited ingested
+# evidence), never on a word count (the brevity-first retune). Guard the contract
+# surface so a path/flag/branch can't silently disappear.
+assert_grep 'no-expand' "$COMPOSE" "knowledge-compose: --no-expand opt-out flag present"
+assert_grep '5.5' "$COMPOSE" "knowledge-compose: Step 5.5 bounded coverage-gated expansion present"
+assert_grep 'EXPANSION_MODE=true' "$COMPOSE" "knowledge-compose: Step 5.5 re-dispatches with EXPANSION_MODE=true"
+assert_grep 'EXPAND_SECTIONS=' "$COMPOSE" "knowledge-compose: Step 5.5 threads EXPAND_SECTIONS into the re-dispatch"
+# Coverage gate: the trigger is _knowledge_lib.coverage_report's uncited-evidence
+# set, NOT a word-floor ratio. Guard that word-floor framing did not survive and
+# the coverage surface is wired in.
+assert_grep 'coverage_report' "$COMPOSE" "knowledge-compose: Step 5.5 computes the deficit via _knowledge_lib.coverage_report"
+assert_grep 'uncited_evidence_sq_ids' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on uncited_evidence_sq_ids (coverage deficit)"
+assert_grep 'zero-cited' "$COMPOSE" "knowledge-compose: Step 5.5 selects sections covering a deficit/zero-cited sub-question"
+assert_not_grep 'TARGET_WORDS × 0.85\|TARGET_WORDS x 0.85' "$COMPOSE" "knowledge-compose: the word-floor 0.85 trigger is gone (coverage-gated now)"
+assert_not_grep 'WORD_DEFICIT' "$COMPOSE" "knowledge-compose: no WORD_DEFICIT word-framing param in the re-dispatch"
+assert_grep 'BASELINE_DRAFT_VERSION=' "$COMPOSE" "knowledge-compose: Step 5.5 threads BASELINE_DRAFT_VERSION"
+assert_grep 'ceiling_hit' "$COMPOSE" "knowledge-compose: Step 5.5 still skips when the composer reports ceiling_hit"
+assert_grep 'kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft keeps draft-vN as latest"
 # Fail-soft must keep the canonical manifest consistent with vN: a successful N+1
 # build overwrites citation-manifest.json BEFORE Step 5 verify runs, so a
 # build-OK-but-verify-fail (or no-growth) outcome must snapshot vN's manifest
@@ -269,18 +272,19 @@ assert_grep 'kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft ke
 # deleted draft-v(N+1).
 assert_grep 'citation-manifest.pre-expand' "$COMPOSE" "knowledge-compose: Step 5.5 snapshots the manifest before the expansion build (#384)"
 assert_grep 'manifest restored\|restore the snapshot\|restore the manifest' "$COMPOSE" "knowledge-compose: Step 5.5 restores the vN manifest on expansion failure (#384)"
-# Regression guard: keep v(N+1) only if it actually grew the draft.
-assert_grep 'did not grow\|words<N+1> > words<N>\|words<N+1> ≤ words<N>\|grew the draft' "$COMPOSE" "knowledge-compose: Step 5.5 keeps vN when the expansion did not grow the draft (#384)"
-# #456: Step 5.5 must gate on a DETERMINISTIC body-word count (reference list
-# stripped) — the same surface wiki-reviewer's advisory Word-Count Gate counts —
-# rather than the composer's inflated self-reported total `words`. The gate calls
-# the canonical _knowledge_lib.body_word_count helper and keys on BODY_WORDS, so
-# the actuator and the advisory backstop agree on what "words" means.
-assert_grep 'body_word_count' "$COMPOSE" "knowledge-compose: Step 5.5 uses the canonical _knowledge_lib.body_word_count helper (#456)"
-assert_grep 'BODY_WORDS' "$COMPOSE" "knowledge-compose: Step 5.5 gate keys on the deterministic body-word count BODY_WORDS (#456)"
+# Accept check (load-bearing): keep v(N+1) only if the expansion ADDED A GROUNDED
+# CITATION — the F24 authoritative count must grow. Words alone never survive, so
+# the gate can never ship padding even if it over-fires.
+assert_grep 'citations_count<N+1> > citations_count<N>\|citations_count<N+1> ≤ citations_count<N>\|added at least one grounded citation\|added no new grounded citation' "$COMPOSE" "knowledge-compose: Step 5.5 keeps vN unless the expansion added a grounded citation (citation-count accept check)"
+assert_grep 'added no new citation — kept draft-vN' "$COMPOSE" "knowledge-compose: Step 5.5 fail-soft no-citation branch restores vN"
+# Step 7 still measures DETERMINISTIC body words (reference list stripped) for the
+# executive over-ceiling warning, via the canonical _knowledge_lib.body_word_count
+# helper — the same surface wiki-reviewer's advisory Word-Count Gate counts.
+assert_grep 'body_word_count' "$COMPOSE" "knowledge-compose: Step 7 uses the canonical _knowledge_lib.body_word_count helper for the executive over-ceiling warning"
+assert_grep 'BODY_WORDS' "$COMPOSE" "knowledge-compose: Step 7 over-ceiling warning keys on the deterministic body-word count BODY_WORDS"
 # The cap is exactly ONE expansion — the skill must say so (defends against a
 # future edit re-introducing an unbounded loop).
-assert_grep 'capped at ONE\|capped at one\|cap = 1\|ONE bounded\|one bounded\|ONE expansion\|once in' "$COMPOSE" "knowledge-compose: Step 5.5 is capped at ONE expansion (#384)"
+assert_grep 'capped at ONE\|capped at one\|cap = 1\|ONE bounded\|one bounded\|ONE expansion\|once in' "$COMPOSE" "knowledge-compose: Step 5.5 is capped at ONE expansion"
 
 # wiki-composer must declare the EXPANSION_MODE input parameters + the ceiling_hit
 # return field. (The EXPANSION_MODE param-row presence is asserted in the live-token
