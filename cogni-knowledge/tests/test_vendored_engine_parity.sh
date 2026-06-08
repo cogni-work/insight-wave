@@ -62,6 +62,16 @@ done < <(find "$VENDOR_ROOT" -type f ! -name 'README.md' -not -path '*/__pycache
 # not byte-identity.
 if [ -f "$PLUGIN_ROOT/scripts/vendor/README.md" ]; then
   green "PASS: vendor provenance README present"
+  # The README carries a durable `Vendored-from: <sha> (date)` line recording the
+  # cogni-wiki origin commit the vendored copy was taken from — the post-archive
+  # provenance anchor. Guard it from silent removal: require a Vendored-from line
+  # with an exactly-40-hex-char SHA, anchored at line start.
+  if grep -Eq '^Vendored-from: [0-9a-f]{40}\b' "$PLUGIN_ROOT/scripts/vendor/README.md"; then
+    green "PASS: vendor provenance Vendored-from SHA marker present"
+  else
+    red "FAIL: scripts/vendor/README.md missing a 'Vendored-from: <40-hex-sha>' provenance marker"
+    errors=$((errors + 1))
+  fi
 else
   red "FAIL: scripts/vendor/README.md provenance note missing"
   errors=$((errors + 1))
