@@ -319,22 +319,41 @@ JSON error to the user and stop — never retry blindly. Common errors:
 
 ### 8. Log locally
 
+`gen-id` returns a JSON envelope — `{"id":"issue-<uuid>"}` — like every script in
+the ecosystem. **Extract the bare id** before building the record; inlining the raw
+envelope where the `id` *string* belongs produces invalid JSON and `add` aborts with
+a `JSONDecodeError`.
+
 ```bash
-ID_JSON=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" gen-id)
+ID=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" gen-id \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
 ```
 
-Then pipe the issue record as JSON via stdin:
+Then build the record as a single well-formed JSON object (substituting the captured
+`$ID` and the values from earlier steps) and pipe it via stdin:
 
 ```bash
-echo '<json_record>' | bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" \
+cat <<JSON | bash "${CLAUDE_PLUGIN_ROOT}/skills/cogni-issues/scripts/issue-store.sh" \
   add "${working_dir}"
+{
+  "id": "${ID}",
+  "plugin": "${plugin}",
+  "marketplace": "${marketplace}",
+  "repository": "${repository}",
+  "github_number": ${github_number},
+  "github_url": "${github_url}",
+  "type": "${type}",
+  "title": "${title}",
+  "status": "open",
+  "created_at": "${now}",
+  "updated_at": "${now}"
+}
+JSON
 ```
-
-The record includes: `id`, `plugin`, `marketplace`, `repository`, `github_number`,
-`github_url`, `type`, `title`, `status` ("open"), `created_at`, `updated_at`.
 
 `github_number` and `github_url` come straight from the helper's create response — no
-URL parsing required.
+URL parsing required. `github_number` is the bare integer (unquoted); every other
+field is a JSON string.
 
 ### 9. Confirm
 
