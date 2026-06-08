@@ -93,6 +93,52 @@ def cmd_build(args: argparse.Namespace) -> int:
     except OSError as exc:
         return _emit(False, error=f"draft file is not readable: {exc}")
 
+    # Parse the ingest manifest once, up-front, into the two indices the URL gates
+    # need: `known` (every ingested URL, for the #383 set-membership gate) and
+    # `slug_url` (slug -> its ingested `sources:` URL, the third leg of the #395
+    # binding gate). Both stay empty on degenerate input (missing / unreadable /
+    # malformed manifest, or one yielding no usable entries), and the except resets
+    # them so a TypeError part-way through the loop can't leave a half-built index —
+    # every gate below then fail-soft / skips. Parsed here (not lazily inside the
+    # later `if args.ingest_manifest` block) so the draft-body URL gate immediately
+    # below can pre-empt the `sentence_not_in_draft` check.
+    known: set[str] = set()
+    slug_url: dict[str, str] = {}
+    if args.ingest_manifest:
+        try:
+            manifest = json.loads(Path(args.ingest_manifest).read_text(encoding="utf-8"))
+            if isinstance(manifest, dict):
+                for e in manifest.get("ingested", []):
+                    if isinstance(e, dict) and e.get("url"):
+                        nu = normalize_url(e["url"])
+                        known.add(nu)
+                        if e.get("slug"):
+                            slug_url[e["slug"]] = nu
+        except (OSError, json.JSONDecodeError, TypeError):
+            known = set()
+            slug_url = {}
+
+    # Draft-BODY inline-URL gate (#586): the record-side #383 gate further down
+    # scans each record's `draft_sentence`, but in the stacked-citation case the
+    # composer can slug-derive ONE marker's URL in the DRAFT BODY while the matching
+    # record keeps the correct `sources:` URL. Body and record then disagree, so the
+    # substring check immediately below trips `sentence_not_in_draft` first — masking
+    # the real defect (a fabricated URL in the body) behind a generic "sentence
+    # drifted" signal. Scanning the draft body's inline `<sup>[N](url)</sup>` URLs
+    # here, BEFORE the substring check, surfaces the divergence as
+    # `url_not_in_sources` with the offending marker URL. Bare `<sup>[N]</sup>`
+    # synthesis/distilled markers carry no URL and contribute nothing, so they never
+    # false-positive. Fail-soft: skipped when `known` is empty (no/degenerate manifest).
+    if known:
+        body_urls = dict.fromkeys(extract_inline_citation_urls(draft_text))
+        body_bad = [u for u in body_urls if normalize_url(u) not in known]
+        if body_bad:
+            return _emit(
+                False,
+                data={"failed_check": "url_not_in_sources", "urls": body_bad, "source": "draft_body"},
+                error="write_failed",
+            )
+
     # Substring self-check BEFORE writing: every draft_sentence must appear
     # verbatim in the current draft (NFC-normalized for comparison only — the
     # stored sentence stays byte-exact). A miss is the composer/draft drift the
@@ -150,27 +196,11 @@ def cmd_build(args: argparse.Namespace) -> int:
     # hard-fail mode on edge manifests). normalize_url is applied symmetrically to
     # both sides, so trailing-slash / host-case differences never false-positive.
     if args.ingest_manifest:
-        # Parse the ingest manifest once into the two indices the URL gates need:
-        # `known` (every ingested URL, for the #383 set-membership gate) and
-        # `slug_url` (slug → its ingested `sources:` URL, the third leg of the #395
-        # binding gate). One pass builds both. Both stay empty on degenerate input
-        # (missing / unreadable / malformed manifest, or one yielding no usable
-        # entries), and the except resets them so a TypeError part-way through the
-        # loop can't leave a half-built index — the gates below then fail-soft / skip.
-        known: set[str] = set()
-        slug_url: dict[str, str] = {}
-        try:
-            manifest = json.loads(Path(args.ingest_manifest).read_text(encoding="utf-8"))
-            if isinstance(manifest, dict):
-                for e in manifest.get("ingested", []):
-                    if isinstance(e, dict) and e.get("url"):
-                        nu = normalize_url(e["url"])
-                        known.add(nu)
-                        if e.get("slug"):
-                            slug_url[e["slug"]] = nu
-        except (OSError, json.JSONDecodeError, TypeError):
-            known = set()
-            slug_url = {}
+        # `known` / `slug_url` were already parsed up-front (above the
+        # `sentence_not_in_draft` check, so the #586 draft-body gate could pre-empt
+        # it). Reuse them here for the record-side #383 set-membership gate and the
+        # #395 per-citation slug->URL binding gate; both stay empty on degenerate
+        # input, so the gates below fail-soft / skip exactly as before.
 
         # Extract each record's inline citation URLs once — both gates below consume
         # them, so the regex parse of `draft_sentence` runs a single time per record.
