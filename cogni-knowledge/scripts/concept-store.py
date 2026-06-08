@@ -606,9 +606,17 @@ def _build_title_index(wiki_root: Path) -> list[tuple]:
     return out
 
 
-def _find_near_existing(title: str, title_index: list[tuple]) -> dict:
+def _find_near_existing(title: str, title_index: list[tuple], ptype: str = "") -> dict:
     """Highest claim_similarity match >= NEAR_TITLE_SIMILARITY_THRESHOLD as
-    `{slug, title, type, score}`, or `{}` when none crosses the bar."""
+    `{slug, title, type, score, type_mismatch}`, or `{}` when none crosses the bar.
+
+    `type_mismatch` (#600 cross-type tripwire) is True when the matched existing
+    page's type differs from the NEW record's proposed `ptype` — i.e. the proposal
+    re-files a near-identically-titled page under a different type. The mis-typed
+    concept case the issue reports — a new `type: concept` whose title matches an
+    existing `type: entity` (a named instance the distiller should have left an
+    entity) — surfaces here. Pure observability: it never changes which page is
+    written. An empty `ptype` (legacy caller) yields `type_mismatch: False`."""
     if not title or not title_index:
         return {}
     best_score = 0.0
@@ -621,7 +629,8 @@ def _find_near_existing(title: str, title_index: list[tuple]) -> dict:
     if best is None or best_score < NEAR_TITLE_SIMILARITY_THRESHOLD:
         return {}
     return {"slug": best[0], "title": best[1], "type": best[2],
-            "score": round(best_score, 3)}
+            "score": round(best_score, 3),
+            "type_mismatch": bool(ptype) and best[2] != ptype}
 
 
 # --- merge command -----------------------------------------------------------
@@ -694,7 +703,7 @@ def _merge_one(
         action = "created"
         # #340 observable tripwire — only the `created` path can silently fork a
         # near-duplicate page; `updated` lands on an exact-slug match by definition.
-        near_existing = _find_near_existing(title, title_index)
+        near_existing = _find_near_existing(title, title_index, ptype)
 
     merged_claims, stats = _merge_claims(existing_claims, incoming_claims, today)
     # `sources:` = exactly the sources whose claims are actually on the page (the
@@ -860,12 +869,17 @@ def cmd_merge(args: argparse.Namespace) -> int:
              "near_slug": r["near_existing_slug"].get("slug", ""),
              "near_title": r["near_existing_slug"].get("title", ""),
              "near_type": r["near_existing_slug"].get("type", ""),
+             "type_mismatch": r["near_existing_slug"].get("type_mismatch", False),
              "score": r["near_existing_slug"].get("score", 0.0)}
             for r in results if r.get("near_existing_slug")
         ),
         key=lambda x: x["score"], reverse=True,
     )
     near_existing_total = len(near_existing_slugs)
+    # #600 cross-type subset — a near-match where the proposal's type differs from
+    # the existing page's (e.g. a new `type: concept` shadowing an existing
+    # `type: entity`: the mis-typed-instance signal). Observability only.
+    mistyped_total = sum(1 for s in near_existing_slugs if s["type_mismatch"])
 
     manifest = {
         "schema_version": SCHEMA_VERSION,
@@ -877,6 +891,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "claims_rejected_total": rejected_total,
         "near_existing_total": near_existing_total,
         "near_existing_slugs": near_existing_slugs,
+        "mistyped_total": mistyped_total,
     }
     # The script is the single writer of the manifest, so it also owns the
     # bundle_hash the orchestrator's resume check reads back (no fragile
@@ -900,6 +915,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "claims_rejected_total": rejected_total,
         "near_existing_total": near_existing_total,
         "near_existing_slugs": near_existing_slugs,
+        "mistyped_total": mistyped_total,
     })
 
 
