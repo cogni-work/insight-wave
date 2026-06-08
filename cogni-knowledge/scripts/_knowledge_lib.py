@@ -447,11 +447,17 @@ def coverage_report(plan: dict, ingest_manifest: dict, citation_manifest: dict) 
     plus `uncited_evidence_sq_ids` — the sq ids with ≥1 uncited available source (the
     expansion-eligible set: a real coverage deficit WITH evidence on hand to close it).
 
-    Conservatism (deliberate, matches the brevity-first intent): a distilled/question-node
-    citation that aggregates ≥2 sources is keyed by a `dcl-`/`acl-` slug, NOT a source slug,
-    so this direct-slug intersection can *under*-count "cited" — biasing toward NOT flagging
-    a deficit (no false expansion). The citation-count accept check in Step 5.5 is the
-    backstop if the gate ever over-fires.
+    Bias note (deliberate, fenced by the accept check): "cited" is a DIRECT source-slug
+    intersection. A source whose claim was cited only *through* a distilled page or question
+    node (keyed by a `dcl-`/`acl-` slug, never a source slug) is therefore counted as
+    uncited — so on a compounding base the intersection can *under*-count real coverage and
+    *over*-flag a sub-question as a deficit, firing one extra expansion for a sq already
+    covered via aggregation. This is bounded and never ships padding: Step 5.5's citation-count
+    accept check keeps `v{N+1}` only when the expansion adds a *new* grounded citation, so an
+    over-flagged expansion that finds nothing fresh to cite is discarded and `vN` is restored.
+    On a base with no distilled/question-node citations the intersection is exact. Resolving
+    cited `dcl-`/`acl-` slugs back to their backing source slugs would tighten this, at the
+    cost of reading each distilled/question page's backlinks here — a deferred refinement.
 
     Fail-soft: a missing/empty `sub_questions` or `ingested`, or a non-dict input, yields
     an empty `uncited_evidence_sq_ids` (no deficit) — never raises.
