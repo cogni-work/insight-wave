@@ -504,7 +504,7 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" --wiki-root "$WIKI_ROOT" --key ent
 
 Non-fatal on failure (reconcile via `wiki-lint --fix=entries_count_drift`). **Do NOT** run the *full* `lint_wiki.py --fix=all` / `health.py` conformance gate here — that stays in `knowledge-finalize` Step 10.5, which runs it once, at the end, over the page set that now includes these distilled pages. The **bounded** `--fix=reverse_link_missing` de-orphan gate in Step 7.2 below is the deliberate exception.
 
-### 7.2 Bounded de-orphan gate (reverse_link_missing)
+### 7.2. Bounded de-orphan gate (reverse_link_missing)
 
 The distilled pages just written carry forward `[[<source-slug>]]` edges (concept→source) in their `## Sources` block, but the source pages do not yet hold the reverse `[[<concept-slug>]]` link — so a **standalone** distill (run later on an already-finalized base, with no `knowledge-compose` → `knowledge-finalize` to follow) would leave every page this phase wrote as an `orphan_page` with a `reverse_link_missing` gap until some future finalize that may never come. `knowledge-ingest` does not have this problem because it de-orphans its own pages inline (Steps 4.1 / 4.5.2); distill mirrors that posture here with a **bounded, idempotent** gate — not the whole-run conformance gate, only the one load-bearing reverse-link backfill.
 
