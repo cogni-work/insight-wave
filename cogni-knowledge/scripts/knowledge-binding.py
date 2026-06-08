@@ -17,6 +17,12 @@ Six actions:
   set-charter    in-place charter re-frame on an existing base (#451; the
                  second writer of the charter block — init is the first) —
                  partial field update + union-merge into open_themes[]
+  add-refresh-candidates    union/dedup evidence-aware refresh signals
+                 (from synthesis-impact.py scan) into refresh_candidates[] (the
+                 producer on the source-ingest path; schema 0.1.5)
+  resolve-refresh-candidate remove a refresh_candidates[] entry by
+                 synthesis_slug once its refreshed synthesis lands (called by
+                 knowledge-finalize; no-op on a missing key)
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -71,7 +77,19 @@ from _knowledge_lib import theme_norm_key  # noqa: E402
 # pre-0.1.4 binding it setdefault()s a complete all-"" charter block before
 # applying updates and leaves schema_version untouched (consumers already read
 # the charter via the .get(...) chain above).
-SCHEMA_VERSION = "0.1.4"
+# 0.1.5 is the next additive bump — it adds a top-level `refresh_candidates[]`
+# list: evidence-aware refresh signals flagged by `synthesis-impact.py scan` when
+# a newly-ingested source relates to an existing synthesis's cited evidence and
+# postdates it. Each entry is {synthesis_slug, synthesis_title, triggered_by_source,
+# detected_at, via_pages[], status}. UNLIKE set-charter/upsert-themes (new actions,
+# no field) this DEFINES a new field, so it bumps SCHEMA_VERSION. Two writers:
+# `add-refresh-candidates` (union/dedup by synthesis_slug, the producer on the
+# source-ingest path) and `resolve-refresh-candidate` (remove-on-resolve, called by
+# knowledge-finalize once the refreshed synthesis lands). `cmd_init` seeds
+# `refresh_candidates: []`; pre-0.1.5 bindings have no key, so every reader MUST use
+# .get("refresh_candidates", []) and the two writers setdefault()/no-op so an older
+# binding falls straight through.
+SCHEMA_VERSION = "0.1.5"
 BINDING_DIRNAME = ".cogni-knowledge"
 BINDING_FILENAME = "binding.json"
 FETCH_CACHE_DIRNAME = "fetch-cache"
@@ -208,6 +226,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         "knowledge_title": args.knowledge_title,
         "wiki_path": str(wiki_path),
         "research_projects": [],
+        "refresh_candidates": [],
         "topic_lineage": {"covered_themes": [], "open_themes": open_themes},
         "charter": {
             **DEFAULT_CHARTER,
@@ -317,21 +336,22 @@ def cmd_append_project(args: argparse.Namespace) -> int:
     )
 
 
-def _load_theme_bindings(raw: str) -> list[dict]:
-    """Parse the question-store.py theme_bindings payload. Liberal in what it
-    accepts (the orchestrator may pipe the bare array, the `{theme_bindings: []}`
-    object, or question-store's full `{success, data: {theme_bindings: []}}`
-    envelope) so a small serialization choice upstream never silently drops the
-    records. Returns the list of `{theme_key, question_slug, theme_label}` dicts."""
+def _load_envelope_field(raw: str, field: str) -> list[dict]:
+    """Liberally parse a piped records payload for one list field. Accepts the
+    bare array, the `{<field>: []}` object, or a producer's full
+    `{success, data: {<field>: []}}` envelope — so a small serialization choice
+    upstream never silently drops the records. The single reader shared by the
+    `upsert-themes` (theme_bindings) and `add-refresh-candidates`
+    (refresh_candidates) loaders."""
     doc = json.loads(raw)
     if isinstance(doc, list):
         return doc
     if isinstance(doc, dict):
-        tbs = doc.get("theme_bindings")
-        if not isinstance(tbs, list):
-            tbs = (doc.get("data") or {}).get("theme_bindings")
-        if isinstance(tbs, list):
-            return tbs
+        items = doc.get(field)
+        if not isinstance(items, list):
+            items = (doc.get("data") or {}).get(field)
+        if isinstance(items, list):
+            return items
     return []
 
 
@@ -357,7 +377,7 @@ def cmd_upsert_themes(args: argparse.Namespace) -> int:
     except OSError as exc:
         return _emit(False, error=f"could not read --records: {exc}")
     try:
-        records = _load_theme_bindings(raw)
+        records = _load_envelope_field(raw, "theme_bindings")
     except json.JSONDecodeError as exc:
         return _emit(False, error=f"--records is not valid JSON: {exc}")
 
@@ -496,6 +516,142 @@ def cmd_set_charter(args: argparse.Namespace) -> int:
             "charter": charter,
             "open_themes_added": themes_added,
             "open_themes_count": len(binding.get("topic_lineage", {}).get("open_themes", [])),
+        },
+    )
+
+
+def cmd_add_refresh_candidates(args: argparse.Namespace) -> int:
+    """Union/dedup evidence-aware refresh signals (from synthesis-impact.py scan)
+    into the binding's `refresh_candidates[]` (schema 0.1.5). The producer on the
+    source-ingest path. Per record (keyed by synthesis_slug): if present, union the
+    triggering source into triggered_by_source[] + refresh detected_at + via_pages;
+    else append a fresh
+    {synthesis_slug, synthesis_title, triggered_by_source, detected_at, via_pages, status}.
+    Fail-soft on a pre-0.1.5 binding (setdefault()s the list)."""
+    knowledge_root = Path(args.knowledge_root).resolve()
+
+    try:
+        binding = _read_binding(knowledge_root)
+    except FileNotFoundError as exc:
+        return _emit(False, error=str(exc))
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"binding.json is not valid JSON: {exc}")
+
+    try:
+        raw = sys.stdin.read() if args.records == "-" else Path(args.records).read_text(encoding="utf-8")
+    except OSError as exc:
+        return _emit(False, error=f"could not read --records: {exc}")
+    try:
+        records = _load_envelope_field(raw, "refresh_candidates")
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"--records is not valid JSON: {exc}")
+
+    today = _today()
+    candidates = binding.setdefault("refresh_candidates", [])
+    by_slug = {
+        e.get("synthesis_slug"): e
+        for e in candidates
+        if isinstance(e, dict) and e.get("synthesis_slug")
+    }
+
+    added = 0
+    updated = 0
+    for rec in records:
+        if not isinstance(rec, dict):
+            continue
+        sslug = rec.get("synthesis_slug")
+        if not sslug:
+            continue  # malformed record — skip rather than corrupt the block
+        # The triggering source: prefer an explicit --triggered-by, else the new
+        # page slug the scan ran against (passed through the record when present).
+        trigger = args.triggered_by or rec.get("triggered_by_source", "")
+        via = rec.get("via_pages", []) if isinstance(rec.get("via_pages"), list) else []
+        title = rec.get("title", "") or rec.get("synthesis_title", "")
+        entry = by_slug.get(sslug)
+        if entry is None:
+            entry = {
+                "synthesis_slug": sslug,
+                "synthesis_title": title,
+                "triggered_by_source": [trigger] if trigger else [],
+                "detected_at": today,
+                "via_pages": sorted(set(via)),
+                "status": "open",
+            }
+            candidates.append(entry)
+            by_slug[sslug] = entry
+            added += 1
+        else:
+            triggers = entry.setdefault("triggered_by_source", [])
+            if not isinstance(triggers, list):
+                triggers = entry["triggered_by_source"] = [triggers] if triggers else []
+            if trigger and trigger not in triggers:
+                triggers.append(trigger)
+            existing_via = entry.get("via_pages", [])
+            if not isinstance(existing_via, list):
+                existing_via = []
+            entry["via_pages"] = sorted(set(existing_via) | set(via))
+            entry["detected_at"] = today
+            entry.setdefault("status", "open")
+            if not entry.get("synthesis_title"):
+                entry["synthesis_title"] = title  # backfill if the prior record lacked one
+            updated += 1
+
+    written = _write_binding(knowledge_root, binding)
+    return _emit(
+        True,
+        data={
+            "path": str(written),
+            "candidates_added": added,
+            "candidates_updated": updated,
+            "refresh_candidates_count": len(candidates),
+        },
+    )
+
+
+def cmd_resolve_refresh_candidate(args: argparse.Namespace) -> int:
+    """Remove the refresh_candidates[] entry matching --synthesis-slug (schema
+    0.1.5). Remove-on-resolve keeps the manifest small (narrative manifest, not a
+    database). Called by knowledge-finalize once the refreshed synthesis lands;
+    a no-op success when the slug was never flagged (the common case) or on a
+    pre-0.1.5 binding (no refresh_candidates key)."""
+    knowledge_root = Path(args.knowledge_root).resolve()
+
+    try:
+        binding = _read_binding(knowledge_root)
+    except FileNotFoundError as exc:
+        return _emit(False, error=str(exc))
+    except json.JSONDecodeError as exc:
+        return _emit(False, error=f"binding.json is not valid JSON: {exc}")
+
+    slug = args.synthesis_slug
+    candidates = binding.get("refresh_candidates", [])
+    if not isinstance(candidates, list):
+        candidates = []
+    kept = [
+        e for e in candidates
+        if not (isinstance(e, dict) and e.get("synthesis_slug") == slug)
+    ]
+    removed = len(candidates) - len(kept)
+
+    if removed == 0:
+        # Nothing matched — do not rewrite the file (no-op success).
+        return _emit(
+            True,
+            data={
+                "path": str(_binding_path(knowledge_root)),
+                "removed": 0,
+                "refresh_candidates_count": len(candidates),
+            },
+        )
+
+    binding["refresh_candidates"] = kept
+    written = _write_binding(knowledge_root, binding)
+    return _emit(
+        True,
+        data={
+            "path": str(written),
+            "removed": removed,
+            "refresh_candidates_count": len(kept),
         },
     )
 
@@ -774,6 +930,41 @@ def main(argv: list[str]) -> int:
              "Omitted = leave the backlog untouched.",
     )
     p_setchar.set_defaults(func=cmd_set_charter)
+
+    p_addrc = sub.add_parser(
+        "add-refresh-candidates",
+        help="Union/dedup evidence-aware refresh signals into refresh_candidates[]",
+    )
+    p_addrc.add_argument("--knowledge-root", required=True)
+    p_addrc.add_argument(
+        "--records",
+        required=True,
+        help="JSON file of synthesis-impact.py refresh_candidates[] ('-' for stdin). "
+             "Accepts the bare array, {refresh_candidates: []}, or the full "
+             "{success, data: {refresh_candidates: []}} envelope.",
+    )
+    p_addrc.add_argument(
+        "--triggered-by",
+        required=False,
+        default="",
+        help="Slug of the newly-ingested source that triggered the scan, unioned "
+             "into each candidate's triggered_by_source[]. Optional — falls back to "
+             "a record's own triggered_by_source field when omitted.",
+    )
+    p_addrc.set_defaults(func=cmd_add_refresh_candidates)
+
+    p_resrc = sub.add_parser(
+        "resolve-refresh-candidate",
+        help="Remove a refresh_candidates[] entry by synthesis_slug (no-op on a miss)",
+    )
+    p_resrc.add_argument("--knowledge-root", required=True)
+    p_resrc.add_argument(
+        "--synthesis-slug",
+        required=True,
+        help="The synthesis slug whose refresh candidate to clear (called by "
+             "knowledge-finalize once the refreshed synthesis lands).",
+    )
+    p_resrc.set_defaults(func=cmd_resolve_refresh_candidate)
 
     p_read = sub.add_parser("read", help="Emit the binding manifest")
     p_read.add_argument("--knowledge-root", required=True)

@@ -898,6 +898,62 @@ def assert_resolve_wiki_scripts():
         assert "wiki-ingest" in str(exc), str(exc)
 
 
+def assert_parse_synthesis_sources():
+    # Bare wiki://<slug> block list (the shape knowledge-finalize writes).
+    page = (
+        "---\n"
+        "id: syn-a\n"
+        "type: synthesis\n"
+        "sources:\n"
+        "  - wiki://src-a\n"
+        "  - wiki://src-b\n"
+        "derived_from_research: proj-1\n"
+        "---\n"
+        "body\n"
+    )
+    assert kl.parse_synthesis_sources(page) == ["src-a", "src-b"], kl.parse_synthesis_sources(page)
+    # Legacy composite wiki://<wiki>/<slug> → last path segment.
+    legacy = "---\nsources:\n  - wiki://eu-ai-act/src-c\n  - wiki://src-d\n---\n"
+    assert kl.parse_synthesis_sources(legacy) == ["src-c", "src-d"], kl.parse_synthesis_sources(legacy)
+    # Comment line inside the block is skipped; block ends at the next top-level key.
+    commented = "---\nsources:\n  # a comment\n  - wiki://src-e\ntags: [synthesis]\n---\n"
+    assert kl.parse_synthesis_sources(commented) == ["src-e"], kl.parse_synthesis_sources(commented)
+    # An INLINE source-page `sources: ["<URL>"]` is NOT a block list → [].
+    inline = '---\nid: src-x\ntype: source\nsources: ["https://example.com/a"]\n---\n'
+    assert kl.parse_synthesis_sources(inline) == [], kl.parse_synthesis_sources(inline)
+    # Inline empty form + no-frontmatter + no sources key all fail safe to [].
+    assert kl.parse_synthesis_sources("---\nsources: []\n---\n") == []
+    assert kl.parse_synthesis_sources("no frontmatter here") == []
+    assert kl.parse_synthesis_sources("---\nid: p\n---\n") == []
+    assert kl.parse_synthesis_sources("") == []
+
+
+def assert_frontmatter_scalar():
+    page = (
+        "---\n"
+        "id: my-page\n"
+        'title: "A Title: With Colon"\n'
+        "created: 2026-06-08\n"
+        "updated: 2026-01-01 # last touched\n"
+        "---\n"
+        "body\n"
+    )
+    assert kl.frontmatter_scalar(page, "created") == "2026-06-08", kl.frontmatter_scalar(page, "created")
+    # Quoted scalar is unquoted (colon preserved inside quotes).
+    assert kl.frontmatter_scalar(page, "title") == "A Title: With Colon", kl.frontmatter_scalar(page, "title")
+    # Inline comment stripped from an UNQUOTED scalar.
+    assert kl.frontmatter_scalar(page, "updated") == "2026-01-01", kl.frontmatter_scalar(page, "updated")
+    # Missing key / no frontmatter / empty value → "".
+    assert kl.frontmatter_scalar(page, "nope") == ""
+    assert kl.frontmatter_scalar("no fm", "created") == ""
+    assert kl.frontmatter_scalar("---\ncreated:\n---\n", "created") == ""
+    # An indented (nested) key never matches the column-0 anchor.
+    nested = "---\npre_extracted_claims:\n  - created: deep\nid: top\n---\n"
+    assert kl.frontmatter_scalar(nested, "created") == "", kl.frontmatter_scalar(nested, "created")
+
+
+check("parse_synthesis_sources", assert_parse_synthesis_sources)
+check("frontmatter_scalar", assert_frontmatter_scalar)
 check("tokenization_primitives", assert_tokenization_primitives)
 check("norm_key", assert_norm_key)
 check("theme_norm_key", assert_theme_norm_key)
@@ -957,6 +1013,8 @@ grade md_link_dest            "md_link_dest — angle-brackets a destination con
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
 grade body_word_count         "body_word_count — body words excl. reference list (EN + DE), no-ref-section counts whole draft, None lang→English (#456 one canonical surface for compose Step 5.5 + wiki-reviewer)"
 grade renumber_inline_citations "renumber_inline_citations — full-source-drop gap [1][3]→[1][2], no-op when contiguous, synthesis markers remapped"
+grade parse_synthesis_sources "parse_synthesis_sources — bare wiki://slug block list, legacy wiki://wiki/slug composite→last segment, comment-line skip, inline sources:[]/source-page inline→[], no-frontmatter→[]"
+grade frontmatter_scalar      "frontmatter_scalar — created/updated read, quoted unquote (colon kept), inline-comment strip on unquoted, missing/empty/no-fm→'', column-0 anchor ignores nested keys"
 grade parse_pre_extracted_claims "parse_pre_extracted_claims — block-list dicts incl. colon-in-value; malformed/empty frontmatter fails safe to [] (#305)"
 grade parse_distilled_claims  "parse_distilled_claims — text-only extraction, writer metadata ignored, inline []/no-bullets/malformed→[], block-scalar no-leak (#343)"
 grade parse_distilled_claims_with_id "parse_distilled_claims_with_id — claim_id+text extraction for the prefilter key, rest of metadata ignored, same fail-safe→[] contract (#362)"

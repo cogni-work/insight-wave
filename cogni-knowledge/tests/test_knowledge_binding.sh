@@ -3,7 +3,7 @@
 # upsert-themes (#409): the SOLE writer of topic_lineage.covered_themes[].
 #
 # Asserts:
-#   1. init writes schema_version 0.1.4 with an empty covered_themes[].
+#   1. init writes schema_version 0.1.5 with empty covered_themes[]/refresh_candidates[].
 #   2. upsert-themes APPENDS a fresh entry for an unseen theme_key
 #      (first_seen == last_seen, labels seeded from theme_label).
 #   3. A second upsert-themes for the SAME theme_key with a NEW label UNIONS
@@ -48,21 +48,23 @@ echo '{"name":"Test","slug":"test","schema_version":"0.0.5"}' > "$WIKI/.cogni-wi
 
 BINDING="$KB/.cogni-knowledge/binding.json"
 
-# 1. init — schema 0.1.4, empty covered_themes[].
+# 1. init — schema 0.1.5, empty covered_themes[] + refresh_candidates[].
 python3 "$SCRIPT" init \
   --knowledge-root "$KB" --knowledge-slug test-kb \
   --knowledge-title "Test KB" --wiki-path "$WIKI" >/dev/null
 if python3 -c "
 import json
 b = json.load(open('$BINDING'))
-assert b['schema_version'] == '0.1.4', b['schema_version']
+assert b['schema_version'] == '0.1.5', b['schema_version']
 assert b['topic_lineage']['covered_themes'] == [], b['topic_lineage']
 # 0.1.4 charter — a plain init writes a complete all-empty block, framed_at ''.
 assert b['charter'] == {'domain': '', 'audience': '', 'scope': '', 'framed_at': ''}, b['charter']
 assert b['topic_lineage']['open_themes'] == [], b['topic_lineage']
+# 0.1.5 — init seeds an empty refresh_candidates[].
+assert b['refresh_candidates'] == [], b['refresh_candidates']
 print('OK')
 " | grep -q OK; then
-  green "PASS: init writes schema 0.1.4 + empty covered_themes[] + empty charter"
+  green "PASS: init writes schema 0.1.5 + empty covered_themes[]/refresh_candidates[] + empty charter"
 else
   red "FAIL: init schema/covered_themes/charter wrong"; errors=$((errors+1))
 fi
@@ -197,7 +199,7 @@ assert c['domain'] == 'EU AI Act high-risk obligations', c
 assert c['audience'] == 'compliance officers', ('audience must stay intact', c)
 assert c['scope'] == 'EU, 2024-2027', ('scope must stay intact', c)
 assert c['framed_at'] != '2025-01-01', ('framed_at must re-stamp on a field change', c)
-assert b['schema_version'] == '0.1.4', ('schema must not bump', b['schema_version'])
+assert b['schema_version'] == '0.1.5', ('schema must not bump', b['schema_version'])
 assert b['research_projects'] == [], b['research_projects']
 assert b['topic_lineage']['covered_themes'] == [], b['topic_lineage']
 print('OK')
@@ -442,6 +444,109 @@ print('OK')
     red "FAIL: themes did not degrade fail-soft for $SHAPE"; errors=$((errors+1))
   fi
 done
+
+# -----------------------------------------------------------------------------
+# add-refresh-candidates / resolve-refresh-candidate (schema 0.1.5) — the
+# evidence-aware refresh signal block.
+# -----------------------------------------------------------------------------
+KBR="$WORK/kbr"; mkdir -p "$KBR/.cogni-wiki"
+echo '{"name":"R","slug":"r","schema_version":"0.0.5"}' > "$KBR/.cogni-wiki/config.json"
+BINDING_R="$KBR/.cogni-knowledge/binding.json"
+python3 "$SCRIPT" init \
+  --knowledge-root "$KBR" --knowledge-slug refresh-kb \
+  --knowledge-title "Refresh KB" --wiki-path "$KBR" >/dev/null
+
+# 9. add — a fresh candidate is appended; --triggered-by seeds triggered_by_source[].
+printf '%s' '[{"synthesis_slug":"syn-a","title":"Synth A","via_pages":["src-x"],"confidence":"high"}]' \
+  | python3 "$SCRIPT" add-refresh-candidates --knowledge-root "$KBR" --records - --triggered-by src-new >/dev/null
+if python3 -c "
+import json
+b = json.load(open('$BINDING_R'))
+rc = b['refresh_candidates']
+assert len(rc) == 1, rc
+e = rc[0]
+assert e['synthesis_slug'] == 'syn-a', e
+assert e['synthesis_title'] == 'Synth A', e
+assert e['triggered_by_source'] == ['src-new'], e
+assert e['via_pages'] == ['src-x'], e
+assert e['status'] == 'open', e
+print('OK')
+" | grep -q OK; then
+  green "PASS: add-refresh-candidates appends a fresh candidate"
+else
+  red "FAIL: add-refresh-candidates append wrong"; errors=$((errors+1))
+fi
+
+# 10. add again (same slug, new trigger + new via page) — dedup by synthesis_slug,
+#     union triggered_by_source[] + via_pages[], no second entry.
+printf '%s' '{"data":{"refresh_candidates":[{"synthesis_slug":"syn-a","title":"Synth A","via_pages":["concept-y"]}]}}' \
+  | python3 "$SCRIPT" add-refresh-candidates --knowledge-root "$KBR" --records - --triggered-by src-two >/dev/null
+if python3 -c "
+import json
+b = json.load(open('$BINDING_R'))
+rc = b['refresh_candidates']
+assert len(rc) == 1, ('must dedup by synthesis_slug', rc)
+e = rc[0]
+assert e['triggered_by_source'] == ['src-new', 'src-two'], ('union triggers', e)
+assert e['via_pages'] == ['concept-y', 'src-x'], ('union via_pages sorted', e)
+print('OK')
+" | grep -q OK; then
+  green "PASS: add-refresh-candidates dedups + unions on a repeat trigger (full envelope accepted)"
+else
+  red "FAIL: add-refresh-candidates dedup/union wrong"; errors=$((errors+1))
+fi
+
+# 11. resolve (hit) — removes the matching entry.
+if python3 "$SCRIPT" resolve-refresh-candidate --knowledge-root "$KBR" --synthesis-slug syn-a | python3 -c "
+import json, sys
+o = json.load(sys.stdin)
+assert o['success'] is True, o
+assert o['data']['removed'] == 1, o['data']
+assert o['data']['refresh_candidates_count'] == 0, o['data']
+import json as j
+b = j.load(open('$BINDING_R'))
+assert b['refresh_candidates'] == [], b['refresh_candidates']
+print('OK')
+" | grep -q OK; then
+  green "PASS: resolve-refresh-candidate removes the matching entry"
+else
+  red "FAIL: resolve-refresh-candidate remove wrong"; errors=$((errors+1))
+fi
+
+# 12. resolve (miss) — no-op success, count unchanged.
+if python3 "$SCRIPT" resolve-refresh-candidate --knowledge-root "$KBR" --synthesis-slug nope | python3 -c "
+import json, sys
+o = json.load(sys.stdin)
+assert o['success'] is True, o
+assert o['data']['removed'] == 0, o['data']
+print('OK')
+" | grep -q OK; then
+  green "PASS: resolve-refresh-candidate no-ops on a missing slug"
+else
+  red "FAIL: resolve-refresh-candidate no-op wrong"; errors=$((errors+1))
+fi
+
+# 13. Legacy pre-0.1.5 fall-through — a binding with NO refresh_candidates key:
+#     add setdefault()s it, resolve no-ops, readers never KeyError.
+KBL="$WORK/kbl"; mkdir -p "$KBL/.cogni-knowledge"
+printf '%s' '{"knowledge_slug":"legacy","schema_version":"0.1.4"}' > "$KBL/.cogni-knowledge/binding.json"
+if python3 "$SCRIPT" resolve-refresh-candidate --knowledge-root "$KBL" --synthesis-slug whatever | python3 -c "
+import json, sys
+assert json.load(sys.stdin)['success'] is True
+print('OK')
+" | grep -q OK \
+  && printf '%s' '[{"synthesis_slug":"syn-z","title":"Z"}]' \
+     | python3 "$SCRIPT" add-refresh-candidates --knowledge-root "$KBL" --records - >/dev/null \
+  && python3 -c "
+import json
+b = json.load(open('$KBL/.cogni-knowledge/binding.json'))
+assert b['refresh_candidates'][0]['synthesis_slug'] == 'syn-z', b
+print('OK')
+" | grep -q OK; then
+  green "PASS: refresh-candidate writers fall through on a pre-0.1.5 binding"
+else
+  red "FAIL: pre-0.1.5 fall-through wrong"; errors=$((errors+1))
+fi
 
 if [ "$errors" -eq 0 ]; then
   green "ALL TESTS PASS"

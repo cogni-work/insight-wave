@@ -333,6 +333,33 @@ For the one new slug, run the identical sequence `knowledge-ingest` Step 4 runs
    `config_bump.py --wiki-root "$WIKI_ROOT" --key entries_count --delta 1`.
    Non-fatal on failure (the page is already discoverable; surface in the
    summary, reconcilable via `wiki-lint --fix=entries_count_drift`).
+4. **Flag dependent syntheses (evidence-aware refresh signal)** — a new source
+   related to an existing synthesis's cited evidence may have outdated it. Scan
+   for that, reusing the **Step-3 dedup neighborhood** (the `wiki-grounding.py
+   rank` `data.pages[]` already in hand — its `slug` values, comma-joined) as
+   `--related` so no second ranking pass runs:
+
+   ```
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/synthesis-impact.py scan \
+       --wiki-root "$WIKI_ROOT" \
+       --new-page <slug> \
+       --related "<comma-joined Step-3 data.pages[].slug>" \
+     | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py add-refresh-candidates \
+       --knowledge-root <knowledge_root> --records - --triggered-by <slug>
+   ```
+
+   `synthesis-impact.py scan` finds every `wiki/syntheses/<s>.md` whose cited
+   slugs intersect the neighborhood AND whose `updated:` predates the new source's
+   wiki-arrival `created:`, and `add-refresh-candidates` unions them into
+   `binding.json::refresh_candidates[]` (dedup by `synthesis_slug`) for the next
+   `knowledge-refresh` run to surface. Capture
+   `data.refresh_candidates` length as `N_FLAGGED` for the Step-6 line.
+   **Fail-soft** — a failure here is non-fatal and never rolls back the deposited
+   page (the page landed in Step 4; this is pure observability). Only runs on the
+   genuinely-new-page branch — a Step-3 collision already routed to update and
+   stopped before this step. Interview-note deposits scan too (the `--new-page`
+   resolver falls back to `wiki/interviews/`), but a synthesis rarely cites one,
+   so the common result is empty.
 
 ### 6. Summary
 
@@ -341,3 +368,9 @@ verdict (new / collision-routed-to-update), backlinks applied, and whether
 `entries_count` bumped. One line, no follow-up question — the source is on the
 wiki and future `knowledge-compose` / `knowledge-query` runs read it like any
 research-ingested source.
+
+When Step 5.4 flagged any dependent synthesis (`N_FLAGGED > 0`), add a second
+conditional line:
+
+> ⚠ `<N_FLAGGED>` existing synthesis(es) may be outdated by this source — run
+> `knowledge-refresh` to fold it in.

@@ -50,7 +50,7 @@ python3 "$SCRIPT" init \
 if python3 -c "
 import json
 b = json.load(open('$KB1/.cogni-knowledge/binding.json'))
-assert b['schema_version'] == '0.1.4', b['schema_version']
+assert b['schema_version'] == '0.1.5', b['schema_version']
 rd = b.get('research_defaults', {})
 assert rd.get('market') == 'fr', rd
 assert rd.get('output_language') == 'fr', rd
@@ -64,7 +64,7 @@ assert 'output_language' not in b.get('curator_defaults', {}), 'must be a siblin
 assert 'prose_density' not in b.get('curator_defaults', {}), 'must be a sibling block'
 print('OK')
 " | grep -q OK; then
-  green "PASS: init with all flags writes research_defaults (market/language + 4 P2 knobs) + schema 0.1.4"
+  green "PASS: init with all flags writes research_defaults (market/language + 4 P2 knobs) + schema 0.1.5"
 else
   red "FAIL: research_defaults not persisted from flags (or wrong schema/placement/knobs)"
   errors=$((errors + 1))
@@ -83,7 +83,7 @@ python3 "$SCRIPT" init \
 if python3 -c "
 import json
 b = json.load(open('$KB2/.cogni-knowledge/binding.json'))
-assert b['schema_version'] == '0.1.4', b['schema_version']
+assert b['schema_version'] == '0.1.5', b['schema_version']
 rd = b.get('research_defaults', {})
 assert rd.get('market') == 'dach', rd
 assert rd.get('output_language') == 'en', rd

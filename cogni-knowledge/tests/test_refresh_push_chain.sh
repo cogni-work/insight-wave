@@ -109,6 +109,13 @@ assert_not_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "pull-mode wiki-ref
 assert_not_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "push-mode no longer dispatches cogni-wiki:wiki-lint (re-homed to vendored lint_wiki.py)"
 assert_grep 'lint_wiki.py' "$REFRESH" "push-mode lints via the vendored lint_wiki.py"
 
+# --- 6) Evidence-aware refresh candidates feed the topic menu --------------
+# Push-mode §1 reads binding.refresh_candidates[] (the evidence-aware signals
+# flagged at knowledge-ingest-source time) and merges them into the AskUserQuestion
+# topic menu alongside the time-based stale findings, labelled distinctly.
+assert_grep 'refresh_candidates' "$REFRESH" "push-mode reads binding.refresh_candidates[] into the topic menu"
+assert_grep 'newer evidence' "$REFRESH" "push-mode labels evidence-based candidates distinctly from time-based stale findings"
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

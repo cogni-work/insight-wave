@@ -677,6 +677,22 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py append-project \
 
 Do not abort the SKILL — Steps 6–8 already landed the page, and refusing now would leave wiki state on disk that's not reflected in the binding (the same desync the warning is alerting the operator to). The operator decides whether to reconcile via `--overwrite` re-run or accept the asymmetric state.
 
+**Clear any evidence-aware refresh candidate for this synthesis.** When a prior
+`knowledge-ingest-source` run flagged this synthesis as outdated by a newer
+source, it recorded a `refresh_candidates[]` entry in the binding (schema 0.1.5).
+This finalize deposits the refreshed synthesis, so clear that flag:
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py resolve-refresh-candidate \
+    --knowledge-root <knowledge_root> \
+    --synthesis-slug <SYNTHESIS_SLUG>
+```
+
+**Fail-soft** — a no-op success when the slug was never flagged (the common case)
+or on a pre-0.1.5 binding; never block finalize on it. This closes the
+evidence-aware refresh loop so a flagged candidate doesn't rot after the refresh
+that resolves it lands.
+
 ### 9.5 Sweep verify-shards intermediates
 
 Best-effort cleanup of the Phase 6 fan-out scratch — `<project_path>/.metadata/verify-shards/` holds per-round `shard-NN-vN.json` inputs + `verify-shard-NN-vN.json` fragments that `knowledge-verify` produced, but the canonical `verify-vN.json` is already merged and the synthesis is now deposited (Step 6). Finalize never reads `verify-shards/`, and a later `knowledge-verify` re-shards from scratch (idempotent re-shard, `verify-store.py` `cmd_shard`), so the directory is safe to remove:

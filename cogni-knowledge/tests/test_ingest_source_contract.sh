@@ -122,6 +122,15 @@ assert_grep 'type: source' "$INGESTER" "source-ingester: still emits type: sourc
 assert_grep 'PAGE_TYPE' "$INGESTER" "source-ingester: gained the additive PAGE_TYPE param"
 assert_grep 'wiki/interviews/' "$INGESTER" "source-ingester: PAGE_TYPE=interview routes to wiki/interviews/"
 
+# --- Step 5.4 evidence-aware refresh signal (synthesis-impact) -----------
+# A new source may outdate an existing synthesis built on related evidence; the
+# post-write lockstep scans for that and persists refresh candidates, surfaced in
+# the Step-6 summary. Pure observability, fail-soft — must not roll back the page.
+assert_grep 'synthesis-impact.py scan' "$SRC" "knowledge-ingest-source: Step 5.4 scans dependent syntheses via synthesis-impact.py"
+assert_grep 'add-refresh-candidates' "$SRC" "knowledge-ingest-source: persists refresh candidates via knowledge-binding.py add-refresh-candidates"
+assert_grep '\-\-related' "$SRC" "knowledge-ingest-source: reuses the Step-3 dedup neighborhood as --related"
+assert_grep 'may be outdated by this source' "$SRC" "knowledge-ingest-source: Step 6 surfaces the dependent-synthesis warning line"
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

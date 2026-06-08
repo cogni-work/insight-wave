@@ -1,5 +1,39 @@
 # cogni-knowledge changelog
 
+## 0.1.101 — 2026-06-08 — feat: evidence-aware synthesis refresh candidates
+
+Adding a single new source to a bound wiki via `knowledge-ingest-source` compounded the
+source/concept graph but never noticed when an existing research synthesis built on related
+sources was now potentially outdated — staleness was purely time-based (`lint_wiki.py`) and
+user-triggered. This release makes `knowledge-refresh` **evidence-aware**: a newly-ingested
+source that relates to a synthesis's cited evidence and postdates it is recorded as a *refresh
+candidate*, surfaced at ingest, and offered in the next `knowledge-refresh` topic menu. Pure
+observability / fail-soft / user-triggered (the `source-contradictor` / `wiki-reviewer` posture):
+it only flags and suggests, never auto-rewrites a synthesis.
+
+- **`scripts/synthesis-impact.py`** (new) — `scan` flags every `wiki/syntheses/<s>.md` whose
+  cited slugs intersect a new source's neighborhood AND whose `updated:` predates the source's
+  wiki-arrival `created:`. Reuses the `knowledge-ingest-source` Step-3 dedup `wiki-grounding.py
+  rank` result as `--related` (self-computes via the shared `wiki-grounding` primitive otherwise).
+  Source-mediated overlaps rank above concept/entity-mediated (`--min-confidence`). Fail-soft;
+  never writes the wiki or the binding.
+- **`scripts/_knowledge_lib.py`** — `parse_synthesis_sources` (block-list reader for a synthesis's
+  bare `wiki://<slug>` `sources:`, tolerating a legacy `wiki://<wiki>/<slug>` composite) +
+  `frontmatter_scalar` (generic `created:`/`updated:` scalar read). Both pure, unit-tested.
+- **`scripts/knowledge-binding.py`** — `add-refresh-candidates` (union/dedup by `synthesis_slug`)
+  + `resolve-refresh-candidate` (remove-on-resolve) against a new top-level `refresh_candidates[]`;
+  `cmd_init` seeds it. A genuine field add, so `SCHEMA_VERSION 0.1.4 → 0.1.5`. Pre-0.1.5 bindings
+  fall through (`.get(..., [])`).
+- **Skills** — `knowledge-ingest-source` Step 5.4 scans + persists (fail-soft, never rolls back the
+  deposited page) and Step 6 surfaces a "⚠ N synthesis(es) may be outdated" line; `knowledge-refresh`
+  push-mode §1 merges `refresh_candidates[]` into the topic menu ("newer evidence" vs "stale");
+  `knowledge-finalize` Step 9 clears the candidate once the refreshed synthesis lands.
+- **Tests** — new `test_synthesis_impact.sh`; extended `test_knowledge_lib.sh` (both new parsers),
+  `test_knowledge_binding.sh` (add/resolve/dedup/no-op/legacy fall-through, schema 0.1.5), and the
+  `ingest-source` / `refresh-push` / `finalize` contract guards. Schema-version assertions across
+  the binding/charter/language-config tests moved `0.1.4 → 0.1.5`.
+- Bump `cogni-knowledge` `0.1.100 → 0.1.101` in `plugin.json`, mirrored in root `marketplace.json`.
+
 ## 0.1.74 — 2026-06-04 — feat: `migrate-question-index.py` question-node index migration driver — #484 (#438 Part B)
 
 #411 (v0.1.58) started filing each `type: question` node under its sub-question's own `theme_label`

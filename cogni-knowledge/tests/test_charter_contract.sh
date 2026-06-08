@@ -45,12 +45,12 @@ python3 "$SCRIPT" init \
 if python3 -c "
 import json
 b = json.load(open('$KB/.cogni-knowledge/binding.json'))
-assert b['schema_version'] == '0.1.4', b['schema_version']
+assert b['schema_version'] == '0.1.5', b['schema_version']
 assert b['charter'] == {'domain':'','audience':'','scope':'','framed_at':''}, b['charter']
 assert b['topic_lineage']['open_themes'] == [], b['topic_lineage']
 print('OK')
 " | grep -q OK; then
-  green "PASS: plain init writes schema 0.1.4 + complete all-empty charter + empty open_themes"
+  green "PASS: plain init writes schema 0.1.5 + complete all-empty charter + empty open_themes"
 else
   red "FAIL: plain init charter/open_themes wrong"; errors=$((errors+1))
 fi

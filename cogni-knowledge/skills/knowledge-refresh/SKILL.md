@@ -127,9 +127,21 @@ Then continue with the binding-resolution checks:
    ```
    Capture stdout as `LINT_JSON`. This is a read-only pass — it writes **no** `wiki/audits/lint-*.md` file and **no** `wiki/log.md` line; the stale findings come back in-process on stdout. (Re-homed off the `cogni-wiki:wiki-lint` skill dispatch so push-mode needs no `cogni-wiki` install — the staleness check is a sibling-plugin script, not a skill dispatch.)
 
-2. **Parse stale findings.** From `LINT_JSON`, keep the `data.warnings[]` entries whose `class` is `stale_page` or `stale_draft`; each carries a `page` field (the slug) + a `message`. Collect the slug for each. For the step-3 selection label, read each stale page's title from its resolved wiki page's `title:` frontmatter (the warning dict carries the slug, not the title). If the stale set is empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
+2. **Parse stale findings + evidence-aware refresh candidates.** Two inputs feed the refresh menu:
+   - **Time-based (stale).** From `LINT_JSON`, keep the `data.warnings[]` entries whose `class` is `stale_page` or `stale_draft`; each carries a `page` field (the slug) + a `message`. Collect the slug for each. For the step-3 selection label, read each stale page's title from its resolved wiki page's `title:` frontmatter (the warning dict carries the slug, not the title).
+   - **Evidence-based (newer evidence).** Read the binding's `refresh_candidates[]` (schema 0.1.5) — these are syntheses a newer related source may have outdated, flagged at `knowledge-ingest-source` time:
+     ```
+     python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py read --knowledge-root <knowledge_root>
+     ```
+     Keep `data.binding.refresh_candidates[]` (use `.get("refresh_candidates", [])` — a pre-0.1.5 binding has no key). Each entry carries `synthesis_slug` + `synthesis_title` (the refresh topic) + `triggered_by_source[]`.
 
-3. **Ask which stale topics to refresh.** `AskUserQuestion` with `multiSelect: true`. One option per stale page; the label is the page title (truncated to ~50 chars for readability), with the slug in parentheses. Default surfaced: none preselected (the user opts in explicitly). If the user picks zero, exit 0 cleanly.
+   If **both** the stale set AND the refresh-candidate set are empty, print "wiki is up to date — nothing to push-refresh" and exit 0.
+
+3. **Ask which topics to refresh.** `AskUserQuestion` with `multiSelect: true`. Merge both sources into one option list, labelled distinctly so the user sees *why* each is offered:
+   - one option per **stale** page — label = page title (truncated ~50 chars) + slug in parentheses + `(stale 365d)` (or `(stale 180d)` for a `stale_draft`);
+   - one option per **refresh candidate** — label = `synthesis_title` (truncated ~50 chars) + slug in parentheses + `(newer evidence)`.
+
+   Dedup by slug if a synthesis is BOTH stale and evidence-flagged (prefer the `(newer evidence)` label). Default surfaced: none preselected (the user opts in explicitly). If the user picks zero, exit 0 cleanly. The **topic** for a selected option is its title (the stale page title, or the candidate's `synthesis_title`) — fed verbatim into the Phase-1 plan dispatch below.
 
 4. **Batch confirmation.** `AskUserQuestion` (single-select) with the question: "Run the inverted pipeline for `<K>` stale topics against the `<knowledge_slug>` knowledge base? Each topic runs the seven-phase chain (plan → curate → fetch → ingest → distill → compose → verify → finalize) and costs roughly $1–$5 in WebSearch/WebFetch budget." Options: `proceed`, `abort`. On `abort`, exit 0. This is the **single batch-level gate** — there is no per-topic confirmation from this skill.
 
