@@ -64,6 +64,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--apply-portal` | No | **Apply** the Step 10.5 sub-step 3.5 curated-portal refresh (auto-refresh, option 4b) instead of staging it: write the engine-owned per-theme lead-ins to `wiki/index.md` (via `wiki_index_update.py --set-leadin`) and splice the overview narrative into `wiki/overview.md`. Alias: `--refresh-portal`. Default: OFF — finalize **stages** a proposed diff to `<wiki>/.cogni-wiki/portal-proposed.md` and leaves the live portal untouched. Human (non-sentineled) lead-ins are never touched in either mode. See `references/portal-shape-decision.md`. |
 | `--no-portal` | No | Skip the Step 10.5 sub-step 3.5 curated-portal refresh **entirely** — no portal-narrator dispatch, no staging, no apply. Default: OFF (the refresh runs, staging by default). The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
 | `--no-portal-prompt` | No | Suppress the Step 10.5 sub-step 3.5 **interactive apply-portal confirm** so finalize stages the proposed diff silently instead of asking. Default: OFF — a human-direct run with a non-empty refresh set is asked whether to apply now. The autonomous `knowledge-refresh --mode push` loop passes this flag (the `--no-cobrowse` parallel) so it never blocks on the prompt. No effect under `--apply-portal` (applies regardless) or `--no-portal`/`--dry-run` (no refresh runs). |
+| `--apply-concepts` | No | **Apply** the Step 10.5 sub-step 3.6 concepts-outline refresh instead of staging it: splice the engine-owned per-theme lead-ins into `wiki/concepts/index.md` (via `concepts_index.py render` + a locked `CONCEPTS-LEADIN:<theme>` span splice). Alias: `--refresh-concepts`. Default: OFF — finalize **stages** a proposed diff to `<wiki>/.cogni-wiki/concepts-index-proposed.md` and leaves the live concepts outline untouched. Human (non-sentineled) `wiki/concepts/index.md` pages are never touched in either mode. |
+| `--no-concepts` | No | Skip the Step 10.5 sub-step 3.6 concepts-outline refresh **entirely** — no concepts-outliner dispatch, no staging, no apply. Default: OFF (the refresh runs, staging by default). The synthesis still deposits and every other step still runs. Mirrors `--no-portal`. |
+| `--no-concepts-prompt` | No | Suppress the Step 10.5 sub-step 3.6 **interactive apply-concepts confirm** so finalize stages the proposed diff silently instead of asking. Default: OFF — a human-direct run with a non-empty refresh set is asked whether to apply now. The autonomous `knowledge-refresh --mode push` loop passes this flag (the `--no-portal-prompt` parallel) so it never blocks on the prompt. No effect under `--apply-concepts` (applies regardless) or `--no-concepts`/`--dry-run` (no refresh runs). |
 
 ## Workflow
 
@@ -911,6 +914,61 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    **Step 11** surfaces, on STAGE: `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY: `✓ Portal: <N> lead-ins refreshed + overview spliced`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk`.
 
+3.6. **Refresh the concepts outline (auto-refresh).** Make the curated **concepts outline** — the engine-owned per-`## <theme>` lead-in paragraphs in `wiki/concepts/index.md` — compound narratively as the concept base grows, the concepts-page sibling of sub-step 3.5's curated-portal refresh. The **ownership boundary** is the `MACHINE-OWNED:CONCEPTS-INDEX` page marker plus the per-theme `MACHINE-OWNED:CONCEPTS-LEADIN:<theme-slug>` lead-in sentinel: a hand-authored `wiki/concepts/index.md` carrying no `CONCEPTS-INDEX` marker is never touched, and within a machine-owned page the engine authors a lead-in span only where the renderer seeded one and refreshes only a span it previously authored (`concepts_index.py render` carries an existing lead-in forward verbatim on every re-render). The deterministic renderer + per-theme lead-in model live in the `concepts_index.py` docstring.
+
+   **Choice-point:** DEFAULT (no flag) **stages** a proposed diff and leaves the live concepts outline untouched; `--apply-concepts` (alias `--refresh-concepts`) **applies** it. `--no-concepts` skips the whole sub-step.
+
+   **Skip conditions (evaluated in order):**
+
+   1. `--dry-run` was passed — silent skip (defence-in-depth; finalize already exits at Step 3 on `--dry-run`).
+   2. `--no-concepts` was passed — log `Concepts refresh skipped: --no-concepts` and continue to sub-step 4.
+
+   **(a) Build the refresh set** — the themes whose concept membership changed this run. Read `plan.json::sub_questions[].theme_label`, dedupe, and keep only those that exist as a `## <theme>` section in `wiki/concepts/index.md` (the deterministic outline `concepts_index.py` renders; a theme with no distilled concepts has no section). Empty → log `Concepts refresh skipped: nothing changed` and continue to sub-step 4. (This is the concepts-page parallel of sub-step 3.5(a); the concepts outline has no `Syntheses` catch-all category, so it is not added here.)
+
+   **(b) Build the bundle** at `<project_path>/.metadata/concepts-bundle.txt`. Per theme in the refresh set, in `wiki/concepts/index.md` section order: a `## theme: <heading>` line, a `### current-leadin` section (the engine's existing machine lead-in for that theme — `_knowledge_lib.extract_machine_block(index_text, "CONCEPTS-LEADIN:<slugify(theme)>")`, or empty when only the placeholder is present), and a `### concepts` section (that theme's `- <summary> [[slug]]` bullets, read from the same `wiki/concepts/index.md` section, for context). The concepts outline carries no overview block (unlike the portal), so the bundle is theme-only. Build it with an inline `python3` snippet reading `wiki/concepts/index.md` (the live, deterministic page — run `concepts_index.py render` is NOT required to read it; the page already exists from prior runs, and an empty/absent page yields an empty refresh set at (a)).
+
+   **(c) Dispatch the concepts-outliner** (fail-soft — on any agent error or no envelope, log `⚠ concepts refresh: concepts-outliner did not return; skipping (synthesis on disk)` and continue to sub-step 4):
+
+   ```
+   Task(concepts-outliner,
+        BUNDLE_PATH=$PROJECT_PATH/.metadata/concepts-bundle.txt,
+        RECORDS_OUTPUT_PATH=$PROJECT_PATH/.metadata/concepts-records.txt,
+        OUTPUT_LANGUAGE=$OUTPUT_LANGUAGE)
+   ```
+
+   `OUTPUT_LANGUAGE` is the same value sub-step 3.5 threaded from `plan.json::output_language` (re-read it from `plan.json` if not still in hand). The agent writes raw-text records — one `- theme: <heading>` block per theme with the lead-in prose fenced between `<<<LEADIN` and a line that is exactly `LEADIN`. Parse them with an **inline** loop (NOT `_knowledge_lib.parse_portal_records` — the concepts records are theme-only, with no `- overview:` block) into `{theme: prose}`.
+
+   **(d) STAGE (default) or APPLY (`--apply-concepts`), with an interactive confirm on human-direct runs.**
+
+   Decide the path before writing anything:
+
+   1. `--apply-concepts` was passed → **APPLY** (explicit intent wins; never prompt).
+   2. Otherwise the default is STAGE. Decide whether to *ask first*:
+      - If `--no-concepts-prompt` was passed (the autonomous `knowledge-refresh --mode push` loop sets it) — **STAGE silently**. (An empty refresh set never reaches here; (a) already skipped it.)
+      - Otherwise this is a **human-direct** run with themes that changed, so surface the proposed diff and `AskUserQuestion` (single-select):
+
+        > **Apply the proposed concepts-outline refresh to the live outline?** `<N>` engine-owned theme lead-in(s) in `wiki/concepts/index.md` will be (re)written from the concepts-outliner's records. Human (non-sentineled) concepts pages are never touched.
+
+        Options: **Apply** → run the APPLY path below; **Stage only** → run the STAGE path below (write `concepts-index-proposed.md`, live outline untouched). This fires only on the human-direct, non-empty-refresh-set path, so the autonomous loop and every flagged run stay non-interactive. (Sub-step 3.5's portal confirm is the only other `AskUserQuestion` in finalize.)
+
+   The two paths:
+
+   - **STAGE** — write a human-readable `<WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md`: for each proposed theme, the heading + a `current:` block (the bundle's `### current-leadin`) and a `proposed:` block (the records prose). Do **not** write the live outline. (Inline `python3` reading `concepts-records.txt` via the (c) parse + the per-theme `current-leadin` already captured in the bundle — the concepts-page parallel of sub-step 3.5's `portal-proposed.md` write.)
+
+   - **APPLY** — first materialise the page structure + lead-in spans under the lock, then splice each narrated lead-in into its span:
+
+     ```
+     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/concepts_index.py" render \
+         --wiki-root "$WIKI_ROOT" \
+         --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+     ```
+
+     `render` (re)assembles `wiki/concepts/index.md` under cogni-wiki's `_wiki_lock` + `_knowledge_lib.atomic_write_text`, carrying every existing lead-in forward and seeding a `MACHINE-OWNED:CONCEPTS-LEADIN:<theme-slug>` placeholder span for any theme that lacks one — so after this call every refresh-set theme has a span to splice into. Then, in an inline `python3` that imports `_wiki_lock` from `_wikilib` (resolved via `$WIKI_INGEST_SCRIPTS`, the `concept-store.py` posture) and acquires it, read the rendered page and for each narrated theme replace its span inner via `_knowledge_lib.upsert_machine_block(text, "CONCEPTS-LEADIN:<slugify(theme)>", prose)`, then `_knowledge_lib.atomic_write_text` the result. A theme whose prose is unchanged upserts identical text → no write churn (the renarrate no-op contract). The next finalize's `render` carries the spliced prose forward verbatim.
+
+   **Fail-soft posture (explicit).** Sub-step 3.6 is a concepts-outline refresh. A renderer failure, a narrator no-show, a parse error, or a per-theme splice failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3.5 are all already on disk. Surface failures loudly in Step 11 and continue. The `render` re-assembly and the span splice are **both** locked + atomic (`_wiki_lock` + `atomic_write_text`), so a forced failure leaves no partial write on the concepts page.
+
+   **Step 11** surfaces, on STAGE: `Concepts: <N> lead-ins proposed — review <WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md, apply with --apply-concepts`; on APPLY: `✓ Concepts: <N> lead-ins refreshed`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ concepts refresh FAILED — <reason>; synthesis on disk`.
+
 4. **Rebuild `context_brief.md` (last).**
    ```
    python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" --wiki-root "$WIKI_ROOT"
@@ -1155,6 +1213,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
 - Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
+- Concepts (Step 10.5 sub-step 3.6): on STAGE (default), `Concepts: <N> lead-ins proposed — review <WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md, apply with --apply-concepts`; on APPLY (`--apply-concepts`), `✓ Concepts: <N> lead-ins refreshed`; on `--no-concepts` / nothing-changed / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ concepts refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Open questions (Step 10.5 sub-step 5): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0`. On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
@@ -1224,6 +1283,8 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/overview.md` — refreshed with a `## Recent syntheses` bullet for this synthesis (Step 10.5). On `--apply-portal`, additionally carries a spliced `MACHINE-OWNED:OVERVIEW-NARRATIVE` block (Step 10.5 sub-step 3.5).
 - `<WIKI_ROOT>/.cogni-wiki/portal-proposed.md` — the **staged** curated-portal diff (per-theme current-vs-proposed lead-in + proposed overview narrative). Written by default (no `--apply-portal`); the live portal is untouched. Absent under `--apply-portal` (the proposals are applied instead) and `--no-portal` / nothing-grew / `--dry-run`.
 - `<WIKI_ROOT>/wiki/index.md` — on `--apply-portal`, each grown `## <theme>` section gains/refreshes an engine-owned `MACHINE-OWNED:PORTAL-LEADIN` lead-in span above its bullets (Step 10.5 sub-step 3.5). Human (non-sentineled) lead-ins are never touched.
+- `<WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md` — the **staged** concepts-outline diff (per-theme current-vs-proposed lead-in). Written by default (no `--apply-concepts`); the live `wiki/concepts/index.md` is untouched. Absent under `--apply-concepts` (the proposals are applied instead) and `--no-concepts` / nothing-changed / `--dry-run`.
+- `<WIKI_ROOT>/wiki/concepts/index.md` — on `--apply-concepts`, each changed `## <theme>` section gains/refreshes an engine-owned `MACHINE-OWNED:CONCEPTS-LEADIN:<theme>` lead-in span above its bullets (Step 10.5 sub-step 3.6). Human (non-sentineled) concepts pages are never touched.
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Carries Pass A (synthesis-vs-cited) findings (`conflicting_claim_id` `clm`/`dcl`/`acl`-NNN) and Pass B (synthesis-vs-prior-syntheses) findings (`conflicting_claim_id: null`, `conflicting_page` a synthesis slug) merged in one `findings[]`; `compared_against` additionally carries `prior_syntheses[]` + `prior_synthesis_count`. Written when the contradictor agent returns `ok: true` and at least one cited peer OR one prior synthesis was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, the both-empty skip) and on `ok: false` failure paths. `--no-prior-syntheses` still writes the file (Pass A only).
 - `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.1`): per-dimension `structural_scores`, `citation_density`, `word_count` (the advisory Word Count Gate, #309 P2), `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
@@ -1246,4 +1307,6 @@ No files are written outside the workspace root or the bound knowledge base.
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-reviewer.md` — Step 10.7 structural-quality review
 - `${CLAUDE_PLUGIN_ROOT}/agents/portal-narrator.md` — Step 10.5 sub-step 3.5 curated-portal refresh
 - `${CLAUDE_PLUGIN_ROOT}/references/portal-shape-decision.md` — the 4b auto-refresh decision + ownership/sentinel/staging/staleness contract
+- `${CLAUDE_PLUGIN_ROOT}/agents/concepts-outliner.md` — Step 10.5 sub-step 3.6 concepts-outline lead-in refresh
+- `${CLAUDE_PLUGIN_ROOT}/scripts/concepts_index.py --help` — deterministic `wiki/concepts/index.md` renderer; `render` applies + carries lead-in spans forward under `_wiki_lock`
 - `cogni-wiki/skills/wiki-ingest/scripts/wiki_index_update.py --help` — `--get-leadin`/`--set-leadin` (the machine portal lead-in primitive)
