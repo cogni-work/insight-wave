@@ -187,7 +187,7 @@ cogni-knowledge/
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
 ├── agents/                       16 forked + new pipeline agents
 ├── references/                   15 framework + design docs
-├── scripts/                      20 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, concepts_index, backfill_concepts_index, migrate-question-index, ingest-integrity, contradiction-ingest-store, pipeline-summary, overview_update, build-open-questions) + _knowledge_lib helper
+├── scripts/                      20 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, concepts_index, backfill_concepts_index, migrate-question-index, ingest-integrity, contradiction-ingest-store, pipeline-summary, overview_update, build_open_questions_payload) + _knowledge_lib helper
 ├── skills/                       18 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```
