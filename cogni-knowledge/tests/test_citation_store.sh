@@ -640,6 +640,73 @@ else
   errors=$((errors + 1))
 fi
 
+# 13. Stacked-citation DRAFT-BODY URL gate (#586). In a stacked citation (two
+#     adjacent <sup>[N](url)</sup> markers on one sentence) the composer can
+#     slug-derive ONE marker's URL in the draft BODY while the matching record
+#     keeps the correct `sources:` URL. Body and record then disagree, so the
+#     `sentence_not_in_draft` substring check would fire FIRST and mask the real
+#     defect. The body-URL gate must run BEFORE that check and report the slug-URL
+#     as `url_not_in_sources` (source: draft_body) with the offending marker.
+python3 - "$WORK" <<'PY'
+import sys, pathlib, json
+work = pathlib.Path(sys.argv[1])
+url_a = "https://a.eu/page-a"          # source-a real ingested URL (first marker — correct)
+url_b = "https://b.eu/page-b"          # source-b real ingested URL (what marker 2 SHOULD be)
+url_b_slug = "https://b.eu/page-b-falsch-abgeleitet"   # slug-derived, NOT ingested (the bug)
+# Records carry the CORRECT url_b in the shared stacked draft_sentence (the composer's
+# record got it right); the DRAFT BODY's second marker carries the slug-derived URL.
+(work / "stack-records.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: page-a\n  claim: clm-001\n  url: " + url_a + "\n"
+    "  sentence: Die Norm gilt<sup>[1](" + url_a + ")</sup><sup>[2](" + url_b + ")</sup>.\n"
+    "- id: cit-002\n  pos: 1:2\n  slug: page-b\n  claim: clm-002\n  url: " + url_b + "\n"
+    "  sentence: Die Norm gilt<sup>[1](" + url_a + ")</sup><sup>[2](" + url_b + ")</sup>.\n",
+    encoding="utf-8")
+(work / "stack-draft.md").write_text(
+    "# R\n\nDie Norm gilt<sup>[1](" + url_a + ")</sup><sup>[2](" + url_b_slug + ")</sup>.\n\n"
+    "## References\n[[sources/page-a]]\n[[sources/page-b]]\n",
+    encoding="utf-8")
+# A clean body where BOTH stacked markers carry their real ingested URLs (positive path).
+(work / "stack-draft-ok.md").write_text(
+    "# R\n\nDie Norm gilt<sup>[1](" + url_a + ")</sup><sup>[2](" + url_b + ")</sup>.\n\n"
+    "## References\n[[sources/page-a]]\n[[sources/page-b]]\n",
+    encoding="utf-8")
+(work / "ingest-stack.json").write_text(
+    json.dumps({"schema_version": "0.1.0", "ingested": [
+        {"url": url_a, "slug": "page-a"}, {"url": url_b, "slug": "page-b"}], "skipped": []}),
+    encoding="utf-8")
+PY
+
+# 13a. Negative: the slug-derived second marker in the BODY → url_not_in_sources
+#      (source: draft_body), reported BEFORE sentence_not_in_draft, no manifest.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/stack-records.txt" --draft "$WORK/stack-draft.md" \
+  --out "$WORK/stack-manifest.json" --draft-version 1 --ingest-manifest "$WORK/ingest-stack.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_not_in_sources', d
+assert d['data'].get('source') == 'draft_body', d
+assert d['data']['urls'] == ['https://b.eu/page-b-falsch-abgeleitet'], d
+" 2>/dev/null && [ ! -f "$WORK/stack-manifest.json" ]; then
+  green "PASS: stacked-citation slug-URL in body → url_not_in_sources (draft_body), pre-empts sentence_not_in_draft"
+else
+  red "FAIL: #586 body-URL gate did not pre-empt sentence_not_in_draft on the stacked slug-URL"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 13b. Positive: both stacked markers carry their real ingested URLs (body and
+#      records agree) → success, manifest written with both citations.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/stack-records.txt" --draft "$WORK/stack-draft-ok.md" \
+  --out "$WORK/stack-manifest-ok.json" --draft-version 1 --ingest-manifest "$WORK/ingest-stack.json")
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==2, d" 2>/dev/null; then
+  green "PASS: clean stacked citation (both real ingested URLs) → success, no false url_not_in_sources"
+else
+  red "FAIL: clean stacked-citation positive path rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0
