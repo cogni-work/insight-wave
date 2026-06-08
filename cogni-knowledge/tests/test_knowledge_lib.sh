@@ -170,6 +170,47 @@ def assert_first_url():
     # Block-style / empty / non-URL → "".
     assert kl.first_url("") == ""
     assert kl.first_url("wiki://src-a") == ""
+    # file:// is first-class (a local source ingested via --file is stored as
+    # file://<abspath>); first_url must return it, not "".
+    assert kl.first_url('["file:///abs/path/report.pdf"]') == \
+        "file:///abs/path/report.pdf", kl.first_url('["file:///abs/path/report.pdf"]')
+    # A file:// path with a literal space is captured WHOLE — not truncated at
+    # the space the way a `\\S+` match would (defect 2 of the local-file path).
+    got = kl.first_url('["file:///abs/V8_MI_Data_ Sovereign_.pdf"]')
+    assert got == "file:///abs/V8_MI_Data_ Sovereign_.pdf", got
+    # Non-JSON fallback for a file:// value with a space: rest-of-value match,
+    # trailing whitespace/quote stripped, space inside the path preserved.
+    got_fb = kl.first_url('file:///abs/V8 Data.pdf')
+    assert got_fb == "file:///abs/V8 Data.pdf", got_fb
+
+
+def assert_extract_inline_citation_urls():
+    # http(s) markers extract in appearance order (the established behavior).
+    text = 'A<sup>[1](https://a.org/x)</sup>. B<sup>[2](https://b.org/y)</sup>.'
+    assert kl.extract_inline_citation_urls(text) == \
+        ["https://a.org/x", "https://b.org/y"]
+    # file:// is first-class: a local-source citation is extracted, not dropped.
+    f = 'C<sup>[3](file:///abs/p.pdf)</sup>.'
+    assert kl.extract_inline_citation_urls(f) == ["file:///abs/p.pdf"], \
+        kl.extract_inline_citation_urls(f)
+    # A file:// URL with a literal space is captured whole (unbracketed branch
+    # matches on [^)], so the space does not truncate it).
+    fs = 'D<sup>[4](file:///abs/V8 Data.pdf)</sup>.'
+    assert kl.extract_inline_citation_urls(fs) == ["file:///abs/V8 Data.pdf"], \
+        kl.extract_inline_citation_urls(fs)
+    # Angle-bracketed file:// form (md_link_dest brackets a dest with a space).
+    fb = 'E<sup>[5](<file:///abs/V8 Data.pdf>)</sup>.'
+    assert kl.extract_inline_citation_urls(fb) == ["file:///abs/V8 Data.pdf"], \
+        kl.extract_inline_citation_urls(fb)
+    # A sentence mixing a file:// and an http citation yields BOTH, in order
+    # (the regression that broke citation-store build with url_slug_mismatch).
+    mixed = 'F<sup>[6](file:///abs/p.pdf)</sup> and<sup>[7](https://w.org/z)</sup>.'
+    assert kl.extract_inline_citation_urls(mixed) == \
+        ["file:///abs/p.pdf", "https://w.org/z"], \
+        kl.extract_inline_citation_urls(mixed)
+    # A bare marker (no URL) and empty text contribute nothing.
+    assert kl.extract_inline_citation_urls('G<sup>[8]</sup>.') == []
+    assert kl.extract_inline_citation_urls("") == []
 
 
 def assert_md_link_dest():
@@ -974,6 +1015,7 @@ check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
 check("slugify", assert_slugify)
 check("ref_heading", assert_ref_heading)
 check("first_url", assert_first_url)
+check("extract_inline_citation_urls", assert_extract_inline_citation_urls)
 check("md_link_dest", assert_md_link_dest)
 check("strip_reference_section", assert_strip_reference_section)
 check("body_word_count", assert_body_word_count)
@@ -1008,7 +1050,8 @@ grade canonicalization        "canonicalization — scheme/host lowercased, trai
 grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .tmp debris"
 grade slugify                 "slugify — German umlaut transliteration (für→fuer), NFKD de-accent, empty/non-alnum→'' contract, max-len truncation"
 grade ref_heading             "ref_heading — localized reference heading (de→Referenzen), default/unknown→References"
-grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip"
+grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip, file:// first-class incl. space-in-path (#572)"
+grade extract_inline_citation_urls "extract_inline_citation_urls — http(s) + file:// markers (bracketed/unbracketed), space-in-file:// captured whole, mixed file+http in one sentence yields both, bare/empty→[] (#572)"
 grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"
 grade strip_reference_section "strip_reference_section — language-independent strip, #301 first-line match, synonym safety-net, preserves a non-reference bullet section"
 grade body_word_count         "body_word_count — body words excl. reference list (EN + DE), no-ref-section counts whole draft, None lang→English (#456 one canonical surface for compose Step 5.5 + wiki-reviewer)"
