@@ -408,8 +408,9 @@ def body_word_count(draft: str, lang: str | None) -> int:
     """Word count of a draft's BODY — the reference section excluded.
 
     The single canonical definition of the "body word" surface that both the
-    `knowledge-compose` Step 5.5 floor-expansion actuator and the `wiki-reviewer`
-    advisory Word-Count Gate measure: strip the localized reference section
+    `knowledge-compose` Step 7 executive over-ceiling warning and the `wiki-reviewer`
+    advisory Word-Count Gate (executive excess + standard truncation check) measure:
+    strip the localized reference section
     (`ref_heading(lang)` → `strip_reference_section`) and split on whitespace.
     Lives here (not inline in the skill markdown) so the gate's measured surface
     is unit-testable and the two gates can never drift on what "words" means.
@@ -422,6 +423,67 @@ def body_word_count(draft: str, lang: str | None) -> int:
     count.
     """
     return len(strip_reference_section(draft, ref_heading(lang)).split())
+
+
+def coverage_report(plan: dict, ingest_manifest: dict, citation_manifest: dict) -> dict:
+    """Per-sub-question coverage of the wiki's ingested evidence by the draft's citations.
+
+    The deterministic signal behind `knowledge-compose` Step 5.5's coverage-gated
+    expansion (replacing the retired word-floor `target × 0.85` trigger): a draft is
+    "incomplete" not when it is short, but when a sub-question's ingested evidence holds
+    sources the draft never cited. Pure stdlib, no I/O — the orchestrator reads the three
+    `.metadata/` JSON files and passes the parsed dicts in, exactly as the Step 5.5
+    `body_word_count` snippet does — so it is unit-testable in `tests/test_knowledge_lib.sh`.
+
+    Inputs (all already on disk by Step 5):
+      - `plan["sub_questions"]`            — each `{id, query, theme_label, …}` (the reference set).
+      - `ingest_manifest["ingested"]`      — each `{slug, sub_question_refs[], …}` (evidence→sq map).
+      - `citation_manifest["citations"]`   — each `{wiki_slug, …}` (what the draft actually cited).
+
+    Returns, per sub-question id:
+      `available` — ingested SOURCE slugs whose `sub_question_refs` include the sq;
+      `cited`     — those that appear as a citation `wiki_slug` (available ∩ cited-slugs);
+      `uncited`   — available − cited.
+    plus `uncited_evidence_sq_ids` — the sq ids with ≥1 uncited available source (the
+    expansion-eligible set: a real coverage deficit WITH evidence on hand to close it).
+
+    Conservatism (deliberate, matches the brevity-first intent): a distilled/question-node
+    citation that aggregates ≥2 sources is keyed by a `dcl-`/`acl-` slug, NOT a source slug,
+    so this direct-slug intersection can *under*-count "cited" — biasing toward NOT flagging
+    a deficit (no false expansion). The citation-count accept check in Step 5.5 is the
+    backstop if the gate ever over-fires.
+
+    Fail-soft: a missing/empty `sub_questions` or `ingested`, or a non-dict input, yields
+    an empty `uncited_evidence_sq_ids` (no deficit) — never raises.
+    """
+    sub_questions = (plan or {}).get("sub_questions") or []
+    ingested = (ingest_manifest or {}).get("ingested") or []
+    citations = (citation_manifest or {}).get("citations") or []
+    cited_slugs = {c.get("wiki_slug") for c in citations if isinstance(c, dict)}
+    cited_slugs.discard(None)
+
+    per_sq: dict = {}
+    uncited_evidence_sq_ids: list = []
+    for sq in sub_questions:
+        if not isinstance(sq, dict):
+            continue
+        sq_id = sq.get("id")
+        if not sq_id:
+            continue
+        available = [
+            src.get("slug")
+            for src in ingested
+            if isinstance(src, dict)
+            and src.get("slug")
+            and sq_id in (src.get("sub_question_refs") or [])
+        ]
+        cited = [s for s in available if s in cited_slugs]
+        uncited = [s for s in available if s not in cited_slugs]
+        per_sq[sq_id] = {"available": available, "cited": cited, "uncited": uncited}
+        if uncited:
+            uncited_evidence_sq_ids.append(sq_id)
+
+    return {"per_sq": per_sq, "uncited_evidence_sq_ids": uncited_evidence_sq_ids}
 
 
 def renumber_inline_citations(body: str) -> str:

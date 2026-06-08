@@ -1,6 +1,6 @@
 ---
 name: knowledge-compose
-description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network floor-expansion re-dispatch when the draft lands under its word floor with headroom), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
+description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network coverage-gated re-dispatch when a sub-question has ingested evidence the draft left uncited — target_words is a soft upper budget, never a floor), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -59,9 +59,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--source` | No | Evidence source mode. `web` (default when omitted) is the standard inverted-pipeline path — compose from the web-ingested `ingest-manifest.json` sources. `wiki` is the **wiki-only rung**: compose a full structured report grounded **only** in the bound wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl** — the preserved `research-report --source wiki` capability. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented), mirroring the staged `apa`/`mla`/`harvard` citation formats. Omitting the flag is byte-identical to the prior behavior. |
-| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `4000`. Floor under `standard` density, ceiling under `executive`. Under `standard`, a floor deficit may trigger ONE bounded expansion re-dispatch (Step 5.5); under `executive` it is advisory with no re-dispatch. |
-| `--no-expand` | No | Skip the Step 5.5 bounded floor-expansion. Default: OFF (expansion may run under `standard` density on a real deficit). Pass to keep the single composer pass even when the draft lands under the floor (e.g. you want the advisory shortfall surfaced without a re-roll). Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
-| `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (floor, cite aggressively) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
+| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `4000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a ceiling under `executive`. It drives no expansion under either density — Step 5.5 expands on a **coverage** deficit, not a word count. |
+| `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
+| `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (soft upper budget, cite/ground every claim) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
 | `--tone` | No | Override `plan.json::tone` for this draft (see `references/writing-tones.md`). Default reads `plan.json`, else `objective`. |
 | `--citation-format` | No | Override `plan.json::citation_format`: `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged). Default reads `plan.json`, else `ieee`. |
 | `--draft-version` | No | Force a specific draft version N. Default: `max(existing output/draft-v*.md) + 1`, or `1`. |
@@ -167,7 +167,7 @@ Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, el
 | `TONE` | `--tone` | `tone` | `objective` |
 | `CITATION_FORMAT` | `--citation-format` | `citation_format` | `ieee` |
 
-`TARGET_WORDS` is a **soft target** — a floor under `standard`, a ceiling under `executive`. The composer itself is single-pass per dispatch; under `standard` density a floor deficit may trigger ONE bounded expansion re-dispatch in Step 5.5 (below), but never under `executive` (a ceiling has no shortfall to close). `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
+`TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; under `standard` density a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch in Step 5.5 (below), but never under `executive` (no coverage actuator there). Word count drives no re-dispatch under either density. `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
 
 ### 4. Dispatch wiki-composer (single Task call)
 
@@ -256,70 +256,76 @@ print(len(cites))
 
 The trailing `print(len(cites))` is captured for the final summary's `citations` count; the stderr `WARN` line is captured separately so the summary can surface the `⚠ Zero citations` line documented in the edge-case section below.
 
-### 5.5 Bounded floor-expansion (standard density only — capped at ONE, fail-soft)
+### 5.5 Bounded coverage-gated expansion (standard density only — capped at ONE, fail-soft)
 
-A `standard`-density draft that lands well under its word floor is thin in *treatment*, not coverage (every sub-question is present and cited — the deficit is breadth). This step closes that gap **during compose** with ONE bounded, zero-network expansion pass, so the downstream `knowledge-verify` re-verifies the expanded draft naturally and finalize's `wiki-reviewer` becomes an advisory backstop rather than a dead-end detector. It cannot pull new evidence (cogni-knowledge is zero-network) — it only re-elaborates claims already on the wiki, so it fixes "treatment too thin", not "wiki too sparse" (the latter routes to more ingestion via `knowledge-curate`/`-fetch`).
+A `standard`-density draft is **complete** when every sub-question is grounded in the evidence the wiki actually holds — not when it reaches a word count. `target_words` is a soft upper budget, never a floor, so a tight draft that grounds every sub-question is the *better* outcome and must NOT trigger a second LLM call. This step fires ONE bounded, zero-network expansion pass **only** when a sub-question has ingested evidence the draft never cited — a real **coverage** deficit with evidence on hand to close it. It cannot pull new evidence (cogni-knowledge is zero-network); it only deepens the named sections from claims already on the wiki, so it fixes "a thin section left grounded evidence uncited", not "wiki too sparse" (the latter routes to more ingestion via `knowledge-curate`/`-fetch`). The load-bearing safety net is the accept check below: an expansion that adds no new grounded citation is discarded, so the system can never ship padding.
 
 **Skip this step entirely (proceed to Step 6 with `draft-vN`) when ANY of:**
 - `--no-expand` was passed → log `expansion skipped: --no-expand`.
-- `PROSE_DENSITY != standard` (a ceiling has no floor deficit) → log `expansion skipped: density=<PROSE_DENSITY>`.
+- `PROSE_DENSITY != standard` (a soft upper budget has no coverage actuator) → log `expansion skipped: density=<PROSE_DENSITY>`.
 - This dispatch is already an expansion round (defence-in-depth against a manual re-entry) → log `expansion skipped: already an expansion round`.
 
-**Compute the body-word count first.** The gate measures the draft's **body** words — the reference list excluded — *deterministically* via `_knowledge_lib.body_word_count` (the single canonical body-word surface, unit-tested in `tests/test_knowledge_lib.sh`), so the actuator measures the exact same surface the `wiki-reviewer` advisory Word-Count Gate counts rather than trusting the composer's self-reported total `words` (which includes the numbered bibliography). Read `<project_path>/output/draft-v<N>.md` (`OUTPUT_LANGUAGE` is already resolved at Step 3):
+**Compute the coverage deficit (deterministic).** Word count plays **no** role in deciding to expand. Read `plan.json` + `ingest-manifest.json` + `citation-manifest.json` and call `_knowledge_lib.coverage_report` (the single canonical coverage surface, unit-tested in `tests/test_knowledge_lib.sh`) to get, per sub-question, the ingested source slugs `available` / `cited` / `uncited`, plus `uncited_evidence_sq_ids` (the sub-questions with ≥1 uncited ingested source — a coverage deficit WITH evidence to close it). Paths via env vars:
 
 ```
-BODY_WORDS=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-DRAFT_PATH="<project_path>/output/draft-v<N>.md" \
-OUTPUT_LANGUAGE="<resolved>" \
+COVERAGE=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
+PLAN_PATH="<project_path>/.metadata/plan.json" \
+INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
+MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
 python3 -c '
-import os, sys
+import json, os, sys
 from pathlib import Path
 sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from _knowledge_lib import body_word_count
-draft = Path(os.environ["DRAFT_PATH"]).read_text(encoding="utf-8")
-print(body_word_count(draft, os.environ.get("OUTPUT_LANGUAGE") or "en"))
+from _knowledge_lib import coverage_report
+def _load(p):
+    return json.loads(Path(p).read_text(encoding="utf-8"))
+rep = coverage_report(_load(os.environ["PLAN_PATH"]),
+                      _load(os.environ["INGEST_PATH"]),
+                      _load(os.environ["MANIFEST_PATH"]))
+# The deficit sq-id set + the per-sq zero-cited set drive section selection below.
+zero_cited = [sq for sq, v in rep["per_sq"].items() if not v["cited"]]
+print(json.dumps({"uncited_evidence_sq_ids": rep["uncited_evidence_sq_ids"],
+                  "zero_cited_sq_ids": zero_cited}))
 ')
 ```
 
-If the snippet errors or returns empty (e.g. an unreadable draft), treat it as no deficit and skip expansion with `expansion skipped: body-word count unavailable` — the whole step is fail-soft, so a missing measurement never blocks the deposit.
+If the snippet errors or returns empty (e.g. an unreadable manifest), treat it as no deficit and skip expansion with `expansion skipped: coverage report unavailable` — the whole step is fail-soft, so a missing measurement never blocks the deposit. If `uncited_evidence_sq_ids` is empty, skip with `expansion skipped: coverage met (every sub-question's ingested evidence is cited)` — a short-but-fully-grounded draft is the intended outcome, not a deficit.
 
-**Gate (fire only when BOTH hold):** `BODY_WORDS < TARGET_WORDS × 0.85` **AND** the composer's returned `ceiling_hit == false`. If `BODY_WORDS ≥ TARGET_WORDS × 0.85`, skip silently (the floor is effectively met). If `ceiling_hit == true`, skip with `expansion skipped: at single-call ceiling — raise coverage via more ingestion (knowledge-curate/-fetch)` — re-rolling the composer cannot fit more words in one call; the fix is more wiki coverage.
+**Gate on `ceiling_hit`.** If the composer's returned `ceiling_hit == true`, skip with `expansion skipped: at single-call ceiling — raise coverage via more ingestion (knowledge-curate/-fetch)` — re-rolling the composer cannot fit more in one call; the fix is more wiki coverage, not a re-roll.
 
-This `0.85` is the **real-deficit actuator trigger** and is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate's tiered completeness caps (finalize Step 10.7, which scores the *post*-expansion draft): the two thresholds serve different roles — actuator vs advisory backstop — and a future tweak to one need not track the other. **Both now measure the same surface — body words, reference section excluded** (this actuator via the deterministic `BODY_WORDS` above; the reviewer via the same `strip_reference_section` exclusion) — so they agree on what "words" means even though their threshold *curves* stay independent.
+The coverage gate is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate (finalize Step 10.7): that gate is now a brevity-neutral backstop (it flags only a likely-*truncated* draft at `< 0.50` of budget, never a short-but-complete one), while this actuator fires on a coverage deficit regardless of word count. The two serve different roles and neither tracks the other.
 
-**Derive the thin sections** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections whose `drafted_words < budget × 0.9`, excluding the References section (`covers_sub_questions: []`). Paths via env vars:
+**Select `EXPAND_SECTIONS`** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections (excluding the References section, `covers_sub_questions: []`) that **cover ≥1 sq in `uncited_evidence_sq_ids`** AND are **thin** (`drafted_words < budget × 0.9`) **or cover a zero-cited sq** (a sq in `zero_cited_sq_ids`). This is conservative by design — the brevity-first intent prefers under-firing (no padding) over over-firing. Paths via env vars (`COVERAGE` is the JSON the snippet above printed):
 
 ```
 OUTLINE_PATH="<project_path>/.metadata/writer-outline-v<N>.json" \
+COVERAGE_JSON="$COVERAGE" \
 python3 -c '
 import json, os
 from pathlib import Path
 o = json.loads(Path(os.environ["OUTLINE_PATH"]).read_text(encoding="utf-8"))
-# Evidence-bearing sections = any section covering ≥1 sub-question (this excludes
-# only the structural References section, covers_sub_questions: []). Synthesis
-# sections (Introduction / cross-cutting / Conclusion) also cover sub-questions,
-# so they remain eligible — but their budgets (400–800w) run smaller than topical
-# body sections (600–1200w), so the budget-ordered fallback below naturally
-# prefers the body sections without a fragile heading/cluster-count heuristic.
-topical = [s for s in o.get("sections", [])
-           if s.get("covers_sub_questions")
-           and isinstance(s.get("budget"), int)]
-thin = [s for s in topical
-        if isinstance(s.get("drafted_words"), int)
-        and s["drafted_words"] < s["budget"] * 0.9]
-# Fallback: the Step-5.5 gate already established a real TOTAL deficit, but no
-# section is individually flagged thin — deepen the largest-budget sections so a
-# real deficit still gets an expansion attempt. This covers the RESUME_FROM_OUTLINE
-# path (and any composer that under-reports per-section drafted_words), where
-# drafted_words may be null/unfilled and thin comes back empty on a genuine shortfall.
-chosen = thin if thin else sorted(topical, key=lambda s: s["budget"], reverse=True)[:3]
-print(",".join(str(s["index"]) for s in chosen))
+cov = json.loads(os.environ["COVERAGE_JSON"])
+deficit = set(cov["uncited_evidence_sq_ids"])
+zero = set(cov["zero_cited_sq_ids"])
+chosen = []
+for s in o.get("sections", []):
+    covers = s.get("covers_sub_questions") or []
+    budget = s.get("budget")
+    if not covers or not isinstance(budget, int):
+        continue  # References / structural section (covers_sub_questions: [])
+    if not (deficit & set(covers)):
+        continue  # no uncited evidence maps to this section — leave it alone
+    drafted = s.get("drafted_words")
+    thin = isinstance(drafted, int) and drafted < budget * 0.9
+    if thin or (zero & set(covers)):
+        chosen.append(str(s["index"]))
+print(",".join(chosen))
 '
 ```
 
-Capture this as `EXPAND_SECTIONS` and compute `WORD_DEFICIT = TARGET_WORDS - BODY_WORDS`. The fallback to the largest topical sections by budget means a real total deficit normally yields a non-empty `EXPAND_SECTIONS` even when no section is individually under-budget (the actuator's effectiveness no longer depends on the composer reliably populating every `sections[].drafted_words`). If `EXPAND_SECTIONS` is still empty — the degenerate case where the outline carries no topical section with a valid integer `budget` — skip with `expansion skipped: no topical section in the outline to deepen` — there is nothing to target.
+Capture this as `EXPAND_SECTIONS`. **The gate fires iff `EXPAND_SECTIONS` is non-empty.** If it is empty — the deficit sub-questions map only to sections already at budget and not zero-cited — skip with `expansion skipped: no thin/zero-cited section maps to the uncited evidence` — deepening a section already at budget would only pad.
 
-**Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4):
+**Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4). Its purpose is to deepen the named sections **from the specific not-yet-cited wiki evidence** for their sub-questions, not to close a word count:
 
 ```
 Task(wiki-composer,
@@ -329,7 +335,6 @@ Task(wiki-composer,
      EXPANSION_MODE=true,
      BASELINE_DRAFT_VERSION=<N>,
      EXPAND_SECTIONS=<comma-list>,
-     WORD_DEFICIT=<TARGET_WORDS - BODY_WORDS>,
      TARGET_WORDS=<resolved>,
      PROSE_DENSITY=<resolved>,
      TONE=<resolved>,
@@ -344,20 +349,20 @@ cp "<project_path>/.metadata/citation-manifest.json" \
    "<project_path>/.metadata/.citation-manifest.pre-expand.json"
 ```
 
-On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. Compute `BODY_WORDS<N+1>` for the expanded draft with the **same** snippet used above (against `<project_path>/output/draft-v<N+1>.md`). Keep `v<N+1>` only when **both pass AND it grew the draft** in body words (`BODY_WORDS<N+1> > BODY_WORDS<N>` — a re-roll that added only reference entries, or no words at all, is treated as a failure below). On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` **and carry `BODY_WORDS := BODY_WORDS<N+1>`** (the canonical draft's body-word count, already computed — Step 7 reuses it, no recompute) so Steps 6/7 report on it, then drop the now-stale snapshot:
+On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. **Accept check (load-bearing) — keep `v<N+1>` only when both pass AND the expansion added at least one grounded citation:** `data.citations_count` from the `v<N+1>` build must exceed the `data.citations_count` Step 4.5 captured for `vN` (the one authoritative citation count — `len(citation-manifest::citations)`, never an LLM tally). An expansion that grew the prose but added no new citation is **padding** → treated as a failure below; words alone never survive. On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it, then drop the now-stale snapshot:
 
 ```
 rm -f "<project_path>/.metadata/.citation-manifest.pre-expand.json"
 ```
 
-**Cap = 1; fail-soft (the orchestrator must leave `vN` AND its matching manifest as the canonical state on any failure):** if the expansion dispatch returns `ok: false`, OR its Step-4.5 manifest build is rejected, OR its Step-5 on-disk verify fails, OR it did not grow the draft in body words (`BODY_WORDS<N+1> ≤ BODY_WORDS<N>`) — **remove the partial `v<N+1>` artifacts** (`output/draft-v<N+1>.md`, `.metadata/citation-records-v<N+1>.txt`, `.metadata/writer-outline-v<N+1>.json`) so the latest-draft resolver lands back on `vN`, **and restore the snapshot** so the canonical `citation-manifest.json` describes `vN` again:
+**Cap = 1; fail-soft (the orchestrator must leave `vN` AND its matching manifest as the canonical state on any failure):** if the expansion dispatch returns `ok: false`, OR its Step-4.5 manifest build is rejected, OR its Step-5 on-disk verify fails, OR it added no new grounded citation (`citations_count<N+1> ≤ citations_count<N>`) — **remove the partial `v<N+1>` artifacts** (`output/draft-v<N+1>.md`, `.metadata/citation-records-v<N+1>.txt`, `.metadata/writer-outline-v<N+1>.json`) so the latest-draft resolver lands back on `vN`, **and restore the snapshot** so the canonical `citation-manifest.json` describes `vN` again:
 
 ```
 mv "<project_path>/.metadata/.citation-manifest.pre-expand.json" \
    "<project_path>/.metadata/citation-manifest.json"
 ```
 
-then log `⚠ expansion failed — kept draft-vN (manifest restored)` (or `⚠ expansion did not grow the draft — kept draft-vN (manifest restored)` on the no-growth branch) and proceed to Step 6 with `vN`. The restore is load-bearing precisely in the build-OK-but-verify-fail (and no-growth) window: a successful `N+1` build has *already* overwritten `citation-manifest.json` to describe the about-to-be-removed `draft-v<N+1>`, so removing the artifacts alone would leave a stale manifest pointing at a deleted draft (its `draft_sentence`s no longer verbatim substrings of `vN`), breaking the downstream `knowledge-verify`/`knowledge-finalize` read. (After a *rejected* `N+1` build the manifest is still the `vN` one — `citation-store.py build` writes only on success — but the unconditional restore is correct there too: it simply moves the snapshot back over an identical file.)
+then log `⚠ expansion failed — kept draft-vN (manifest restored)` (or `⚠ expansion added no new citation — kept draft-vN (manifest restored)` on the no-citation branch) and proceed to Step 6 with `vN`. The restore is load-bearing precisely in the build-OK-but-verify-fail (and no-citation) window: a successful `N+1` build has *already* overwritten `citation-manifest.json` to describe the about-to-be-removed `draft-v<N+1>`, so removing the artifacts alone would leave a stale manifest pointing at a deleted draft (its `draft_sentence`s no longer verbatim substrings of `vN`), breaking the downstream `knowledge-verify`/`knowledge-finalize` read. (After a *rejected* `N+1` build the manifest is still the `vN` one — `citation-store.py build` writes only on success — but the unconditional restore is correct there too: it simply moves the snapshot back over an identical file.)
 
 ### 6. Append wiki/log.md
 
@@ -389,15 +394,15 @@ Print ≤ 10 lines:
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Answer citations: `<N_ACL>` of `<N_CITES>` (`acl-NNN` question-node answers cited directly, from Step 4.5's `data.claim_kinds.answer`) — `0` on a base whose question nodes carry no `answer_claims:` is expected; `0` on a base with `answer_claims:` whose claims show ≥2 backlinks is the inert symptom the operator should notice (same posture as the distilled-citation rate above).
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
-- Expansion (standard density only): one of `floor-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion did not grow the draft — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
+- Expansion (standard density only): one of `coverage-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion added no new citation — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, `distilled_claims[]` on a cited distilled page, or `answer_claims[]` on a cited question node.
 
-Surface a density-aware word-count warning — but do not auto-retry. Both branches measure **body words** (the `wiki-reviewer`-aligned surface, reference list excluded): under `standard` reuse the `BODY_WORDS` already computed in Step 5.5 (it reflects the canonical `vN` after any expansion); under `executive` Step 5.5 was skipped, so compute `BODY_WORDS` now for `<project_path>/output/draft-v<N>.md` with the same `body_word_count` helper. Using body words here (not the composer's total `words`) also stops the ~1.1k-word bibliography from triggering a false over-ceiling warning:
-- Under `PROSE_DENSITY=standard`: if `BODY_WORDS` is well below `TARGET_WORDS` (the floor), `⚠ Below target (BODY_WORDS/TARGET_WORDS)`.
-- Under `PROSE_DENSITY=executive`: if `BODY_WORDS` is over `TARGET_WORDS` (the ceiling), `⚠ Over ceiling (BODY_WORDS/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
+Surface a density-aware summary line — but do not auto-retry. The two densities now read oppositely:
+- Under `PROSE_DENSITY=standard`: `target_words` is a **soft upper budget**, so a draft under it is the intended brevity-first outcome — **emit no under-budget word warning at all.** Instead surface a coverage line `coverage: <#grounded>/<#sub-questions> sub-questions grounded` (grounded = sub-questions NOT in `coverage_report`'s `uncited_evidence_sq_ids`; reuse the `COVERAGE` JSON from Step 5.5, or recompute it cheaply when Step 5.5 was skipped via `--no-expand`). A `coverage:` line below full is the honest coverage signal — and, when uncited evidence remained, Step 5.5 already attempted to deepen it.
+- Under `PROSE_DENSITY=executive`: `target_words` is a **ceiling**, so compute `BODY_WORDS` for `<project_path>/output/draft-v<N>.md` with the `_knowledge_lib.body_word_count` helper (the `wiki-reviewer`-aligned surface, reference list excluded — body words, not the composer's total `words`, so the ~1.1k-word bibliography never triggers a false warning) and, if `BODY_WORDS` is over `TARGET_WORDS`, print `⚠ Over ceiling (BODY_WORDS/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
 
-Under `standard` density this warning reflects the **post-expansion** draft (Step 5.5 already attempted to close a real deficit), so a residual `⚠ Below target` here means the wiki lacked the uncited evidence to deepen further — a coverage signal, not a composer miss. The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores this with its Word Count Gate as the advisory backstop; the compose-time line is a fast heads-up, not a gate.
+The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores the draft — under `standard` it only flags a likely-*truncated* draft (`< 0.50` of budget), never a short-but-complete one; under `executive` it caps on excess. The compose-time line is a fast heads-up, not a gate.
 
 ## Edge cases
 
@@ -414,7 +419,7 @@ Under `standard` density this warning reflects the **post-expansion** draft (Ste
 - Does NOT modify `binding.json` — Phase 7 appends the project entry. `knowledge-finalize` records `report_source: wiki` for every inverted-pipeline deposit regardless of compose `--source` (the deposit always lands in the wiki), so the new mode changes nothing here.
 - Does NOT re-run any earlier phase. In particular `--source wiki` does **not** trigger `knowledge-curate`/`-fetch`/`-ingest` — it synthesizes its manifest from the already-populated wiki (Step 0), which is the whole point of the wiki-only rung (a report with no new web crawl).
 - Does NOT implement the `local` or `hybrid` source modes yet — they are accepted-but-staged (treated as `wiki`, with a pre-flight notice); a real `local` (fetch-cache-only) / `hybrid` (wiki + bounded top-up curate on uncovered sub-questions) path is a deferred follow-up.
-- Does NOT run an unbounded expansion loop or story arcs — the composer is single-pass per dispatch. Under `standard` density this skill runs ONE bounded, fail-soft, zero-network floor-expansion (Step 5.5) on a real deficit with headroom; `prose_density: executive` shapes that single pass (BLUF + Pyramid ceiling) and adds **no** re-dispatch (a ceiling has no shortfall to close). The expansion re-elaborates existing wiki claims only — it never fetches new evidence (that is `knowledge-curate`/`-fetch`'s job).
+- Does NOT run an unbounded expansion loop or story arcs — the composer is single-pass per dispatch. Under `standard` density this skill runs ONE bounded, fail-soft, zero-network **coverage-gated** expansion (Step 5.5) only when a sub-question has uncited ingested evidence AND the expansion adds a grounded citation; `prose_density: executive` shapes that single pass (BLUF + Pyramid ceiling) and adds **no** re-dispatch. The expansion re-elaborates existing wiki claims only — it never fetches new evidence (that is `knowledge-curate`/`-fetch`'s job), and never pads toward a word count.
 
 ## Output
 

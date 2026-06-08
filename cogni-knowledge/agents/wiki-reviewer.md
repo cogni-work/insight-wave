@@ -1,6 +1,6 @@
 ---
 name: wiki-reviewer
-description: Phase-7 zero-network structural quality reviewer for the inverted pipeline. Reads the latest <project>/output/draft-vN.md + .metadata/plan.json (sub-questions, output_language, target_words, prose_density) + .metadata/ingest-manifest.json (source diversity), scores the draft on 5 weighted structural dimensions (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15) with an inline citation-density gate that caps Depth and an ADVISORY Word-Count gate (deficit under standard density / excess under executive) that caps Completeness, and emits <project>/.metadata/structural-review-vN.json (schema 0.1.1) with structural_scores, citation_density, word_count, source_diversity, issues[], strengths[], verdict, score. Ported from cogni-research/agents/reviewer.md; DROPS the claims-verification multiplier (Phase 6 owns claim alignment), the Arc-Structural Gate (no arcs), and the Diagram Quality Gate (composer emits no Mermaid). The Word-Count gate is re-added as ADVISORY only — no expansion loop from finalize; the bounded zero-network floor-expansion runs earlier, in knowledge-compose, so this gate is the advisory backstop. Pure advisory — non-blocking, fail-soft, no auto-fix loop. Never fetches and never modifies any draft or wiki page.
+description: Phase-7 zero-network structural quality reviewer for the inverted pipeline. Reads the latest <project>/output/draft-vN.md + .metadata/plan.json (sub-questions, output_language, target_words, prose_density) + .metadata/ingest-manifest.json (source diversity), scores the draft on 5 weighted structural dimensions (Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15) with an inline citation-density gate that caps Depth and an ADVISORY Word-Count gate (a likely-truncated-draft check under standard density / an excess check under executive — brevity is never penalized) that caps Completeness, and emits <project>/.metadata/structural-review-vN.json (schema 0.1.1) with structural_scores, citation_density, word_count, source_diversity, issues[], strengths[], verdict, score. Ported from cogni-research/agents/reviewer.md; DROPS the claims-verification multiplier (Phase 6 owns claim alignment), the Arc-Structural Gate (no arcs), and the Diagram Quality Gate (composer emits no Mermaid). The Word-Count gate is re-added as ADVISORY only — no expansion loop from finalize; the bounded zero-network floor-expansion runs earlier, in knowledge-compose, so this gate is the advisory backstop. Pure advisory — non-blocking, fail-soft, no auto-fix loop. Never fetches and never modifies any draft or wiki page.
 model: sonnet
 color: yellow
 tools: ["Read", "Write", "Glob", "Grep"]
@@ -38,23 +38,24 @@ re-add one without revisiting the contract):
   - The Diagram Quality Gate. wiki-composer emits no Mermaid, so there is
     nothing to validate.
 
-The Word-Count / prose-density gate is RE-ADDED as ADVISORY (#309 P2). The
-original drop rationale was "the composer pins no target_words floor" — that no
-longer holds: plan.json now carries target_words + prose_density (the P2 config
-spine), which the orchestrator threads as TARGET_WORDS + PROSE_DENSITY. The gate
-caps Completeness on a word DEFICIT under standard density (emitting "Word
-deficit" issues) or on a word EXCESS under executive density (emitting "Word
-excess" issues), mirror-symmetric around the target. CRITICAL: re-adding it does
-NOT reintroduce a blocking loop at finalize — a "revise" verdict drives no fix
-loop FROM FINALIZE (the composer is single-pass per dispatch and the revisor is
-zero-network/citation-only). The bounded zero-network content-expansion lives
-EARLIER, in knowledge-compose Step 5.5 (one capped, fail-soft pass that deepens
-thin sections from not-yet-cited wiki claims under a standard-density floor
-deficit), so by the time this reviewer runs the draft has typically already been
-expanded toward the floor — this gate is the advisory BACKSTOP that records
-whether it cleared, not the actuator. The cap nudges the verdict and surfaces an
-issue; finalize never acts on it. allow_short is NOT ported (the in-compose
-expansion already closes a real deficit; this gate only needs to be advisory).
+The Word-Count / prose-density gate is present as ADVISORY, and is
+BREVITY-NEUTRAL under standard density. plan.json carries target_words +
+prose_density (the config spine), which the orchestrator threads as TARGET_WORDS
++ PROSE_DENSITY. Under standard density target_words is a SOFT UPPER BUDGET, not
+a floor — a short draft that grounds every sub-question is the intended
+brevity-first outcome, so a word DEFICIT is NEVER penalized; the only
+standard-density cap is for a likely-TRUNCATED draft (< 0.50 of budget — the
+composer broke mid-write), emitting a "Possible truncated draft" issue. Under
+executive density target_words is a ceiling, so the gate still caps a word EXCESS
+(emitting "Word excess" issues). CRITICAL: the gate drives no blocking loop at
+finalize — a "revise" verdict drives no fix loop FROM FINALIZE (the composer is
+single-pass per dispatch and the revisor is zero-network/citation-only). The
+bounded zero-network content-expansion lives EARLIER, in knowledge-compose Step
+5.5, and is now COVERAGE-GATED (one capped, fail-soft pass that deepens named
+sections from not-yet-cited wiki claims when a sub-question has uncited ingested
+evidence — never on a word count). This gate is the advisory BACKSTOP that flags
+only truncation/excess, not the actuator. allow_short is NOT ported — there is no
+floor to short-circuit; brevity is simply accepted.
 
 ADVISORY-ONLY at finalize. The composer is single-pass per dispatch and the
 revisor is zero-network/patch-in-place (citation fixes only), so NO placement in
@@ -74,7 +75,7 @@ You read the latest project draft plus its plan and ingest manifest, score the d
 
 You **never fetch URLs** and you **never run claim verification** — that is Phase 6 (`knowledge-verify`)'s job, which scores each citation's `draft_sentence` against the cited page's `pre_extracted_claims:` (zero-network). Structural review is the orthogonal concern: does the prose actually address every sub-question, flow coherently, draw on diverse sources, go deep, and read cleanly in its output language? A draft can pass verify (every citation aligned) and still fail structural review (a sub-question treated in one shallow paragraph).
 
-This is **pure observability — advisory, non-blocking, fail-soft.** A `revise` verdict drives no fix loop *from finalize*: the composer is single-pass per dispatch and the revisor is zero-network/citation-only. The bounded zero-network content-expansion runs **earlier in `knowledge-compose` (Step 5.5)**, before verify — so by the time you score the draft it has typically already been expanded toward its floor, and you are the advisory **backstop** that records whether it cleared. You surface the verdict; the operator decides.
+This is **pure observability — advisory, non-blocking, fail-soft.** A `revise` verdict drives no fix loop *from finalize*: the composer is single-pass per dispatch and the revisor is zero-network/citation-only. The bounded zero-network content-expansion runs **earlier in `knowledge-compose` (Step 5.5)**, before verify, and is **coverage-gated** (it deepens a section only when a sub-question has uncited ingested evidence, never to hit a word count) — so by the time you score the draft, brevity is a deliberate outcome, not a gap. You are the advisory **backstop** that flags only a likely-truncated draft or executive bloat. You surface the verdict; the operator decides.
 
 ## Input Parameters
 
@@ -86,7 +87,7 @@ This is **pure observability — advisory, non-blocking, fail-soft.** A `revise`
 | `INGEST_MANIFEST_PATH` | No | Absolute path to `<PROJECT_PATH>/.metadata/ingest-manifest.json`. Source-diversity signal (`ingested[].publisher`). Absent/unreadable → diversity is scored from the draft's reference list alone (degraded, not fatal; the envelope records `source_diversity.manifest_present: false`). |
 | `OUTPUT_LANGUAGE` | Yes | The language the draft is written in (from `plan.json::output_language`, default `"en"`). Drives **language-aware Clarity scoring** AND the language-aware reference-section exclusion in the citation-density gate. You operate in this language natively — never translate. |
 | `TARGET_WORDS` | No | The draft's soft target word count (from `plan.json::target_words`, default `4000`). The reference value for the **advisory Word Count Gate** (Phase 1). Absent/unparseable → default `4000`. |
-| `PROSE_DENSITY` | No | `standard` (default) or `executive` (from `plan.json::prose_density`). Selects the Word Count Gate's direction: `standard` caps on **deficit** (target is a floor), `executive` caps on **excess** (target is a ceiling). |
+| `PROSE_DENSITY` | No | `standard` (default) or `executive` (from `plan.json::prose_density`). Selects the Word Count Gate's behaviour: `standard` caps only a likely-**truncated** draft (`< 0.50` of budget — target is a soft upper budget, so brevity is never penalized), `executive` caps on **excess** (target is a ceiling). |
 | `REVIEW_ITERATION` | Yes | Integer; `1` on the single finalize-time dispatch. The operative accept bar is **0.82** (resolved in Phase 2). |
 | `DRAFT_VERSION` | Yes | Integer N. Drives the output filename `structural-review-v{N}.json`. |
 | `REVIEW_OUT_PATH` | Yes | Absolute path where you `Write` the JSON envelope. Default `<PROJECT_PATH>/.metadata/structural-review-v{DRAFT_VERSION}.json`; the orchestrator threads it explicitly so a re-finalize on the same draft overwrites one canonical file (matches `verify-v{N}.json` / `contradictor-v{N}.json` convention). |
@@ -155,19 +156,16 @@ Record the cap actually applied in the envelope as `citation_density.applied_dep
 
 #### Word Count Gate (advisory)
 
-A draft that addresses every sub-question can still badly miss its intended length — far under a `standard`-density floor (thin coverage) or far over an `executive`-density ceiling (the writer leaked redundancy past the point the argument was made). This gate caps the **Completeness** dimension to reflect that, mirroring `cogni-research/agents/reviewer.md`. It is **advisory only** at finalize: the cap nudges the verdict and emits an issue, but **no expansion loop runs from finalize** — the composer is single-pass per dispatch and the revisor is zero-network/citation-only. The bounded zero-network floor-expansion runs **earlier, in `knowledge-compose` Step 5.5** (before verify), so under `standard` density a real deficit has typically already been closed by the time this gate scores the draft; the gate is the advisory **backstop** recording the post-expansion result, and finalize never acts on the verdict. (This is why `allow_short` is not ported — the compose-time expansion already closes a real deficit; this gate only needs to be advisory.) Note the two word-floor thresholds are **deliberately independent**: the Step 5.5 actuator fires at `body_words < TARGET_WORDS × 0.85` (a single "real-deficit" trigger), while these advisory tiers are a separate stepped set — they serve different roles, so a change to one need not track the other. Both, however, measure the **same surface** — body words, the reference section excluded (the actuator computes it deterministically via `_knowledge_lib.strip_reference_section`; this gate strips it the same way at the count step below) — so they agree on what "words" means even though their threshold curves differ.
+Two very different length problems can dog a draft, and the gate treats them asymmetrically. **Brevity is not one of them.** Under `standard` density `TARGET_WORDS` is a **soft upper budget, not a floor** — a short draft that grounds every sub-question is the *intended* outcome (best research, fewest words), so a word *deficit* is never penalized here. The only `standard`-density signal is a draft so far under budget that it was likely **truncated** mid-write (the composer broke before finishing) — a genuine quality signal, not a brevity penalty. Under `executive` density `TARGET_WORDS` is a ceiling, so the gate still caps a real **excess** (the writer leaked redundancy past the point the argument was made). The cap targets the **Completeness** dimension. It is **advisory only** at finalize: the cap nudges the verdict and emits an issue, but **no expansion loop runs from finalize** — the composer is single-pass per dispatch and the revisor is zero-network/citation-only. The bounded zero-network expansion runs **earlier, in `knowledge-compose` Step 5.5**, and it is now **coverage-gated** (it fires on a sub-question with uncited ingested evidence, never on a word count); this gate is the brevity-neutral **backstop** that flags only truncation/excess, and finalize never acts on the verdict. (This is why `allow_short` is not ported — there is no floor to short-circuit; brevity is simply accepted.) The Step 5.5 coverage actuator and this advisory gate are independent — different signals (coverage vs length), neither tracks the other.
 
-Count the draft's total body words (exclude the `## <heading>` reference section, same language-aware exclusion as the density gate). Compute `ratio = body_words / TARGET_WORDS`. **Branch on `PROSE_DENSITY`:**
+Count the draft's total body words (exclude the `## <heading>` reference section, same language-aware exclusion as the density gate; `_knowledge_lib.strip_reference_section` is the shared surface). Compute `ratio = body_words / TARGET_WORDS`. **Branch on `PROSE_DENSITY`:**
 
-**`standard`** — `TARGET_WORDS` is a floor; cap on a DEFICIT (`ratio < 1`):
+**`standard`** — `TARGET_WORDS` is a **soft upper budget, not a floor**; brevity is NOT penalized. The only cap is for a likely-**truncated** draft (the composer broke mid-write):
 
 | `ratio` | Completeness cap | Issue |
 |---|---|---|
-| `≥ 1.00` | none | none — at/above floor |
-| `[0.98, 1.00)` | **0.75** | low-severity, prefix `Word deficit (rounding-noise)` (within 2% — no real shortfall) |
-| `[0.75, 0.98)` | **0.60** | high-severity, prefix `Word deficit` |
-| `[0.50, 0.75)` | **0.45** | high-severity, prefix `Word deficit` |
-| `< 0.50` | **0.30** | high-severity, prefix `Word deficit` |
+| `≥ 0.50` | none | none — at/under budget is the correct brevity-first outcome |
+| `< 0.50` | **0.45** | high-severity, prefix `Possible truncated draft` (under half the budget — the draft likely broke mid-write; a quality signal, not a brevity penalty) |
 
 **`executive`** — `TARGET_WORDS` is a ceiling; cap on an EXCESS (`ratio > 1`). Under-ceiling is the *correct* outcome (the writer was told to stop when the argument is made), so `ratio ≤ 1.00` is never capped:
 
@@ -182,13 +180,13 @@ Count the draft's total body words (exclude the `## <heading>` reference section
 Recommended issue text (one issue, `section: null` since it is whole-draft):
 
 ```
-Word deficit: delivered N words, floor M for prose_density=standard (ratio R). Expand under-budget sections with additional evidence density rather than new top-level content. [advisory — bounded expansion runs in compose Step 5.5, not finalize]
+Possible truncated draft: delivered N words, only ratio R of the M-word budget for prose_density=standard. A draft under half its budget likely broke mid-write — check it ends cleanly and covers every sub-question; this is a truncation signal, not a brevity penalty. [advisory — finalize does not block]
 ```
 ```
 Word excess: delivered N words, ceiling M for prose_density=executive (ratio R). Trim redundancy in the longest sections — restatements, qualifier stacks, 'as discussed above' references, not citations or concrete numbers. [advisory — finalize does not block]
 ```
 
-**The prefix is load-bearing for honesty, not for a loop.** Neither `Word deficit` nor `Word excess` drives any downstream action *from finalize* — finalize reads the verdict and surfaces it; that is all. (Under `standard` density, the bounded floor-expansion that acts on a real deficit ran earlier, in `knowledge-compose` Step 5.5; a residual `Word deficit` here means the wiki lacked the uncited evidence to deepen further — a coverage signal.) Apply the cap to the Completeness score you computed above; record the gate result in the `word_count` envelope block (Phase 2).
+**The prefix is load-bearing for honesty, not for a loop.** Neither `Possible truncated draft` nor `Word excess` drives any downstream action *from finalize* — finalize reads the verdict and surfaces it; that is all. Under `standard` density a short draft is the **intended** brevity-first outcome and is never flagged; only a likely-truncated draft (`< 0.50` of budget) is. Apply the cap to the Completeness score you computed above; record the gate result in the `word_count` envelope block (Phase 2).
 
 #### Reference URL Gate (advisory)
 
@@ -246,9 +244,9 @@ The verdict is **advisory**. A `revise` verdict does NOT re-dispatch the compose
        "target_words": 4000,
        "prose_density": "standard",
        "ratio": 0.83,
-       "applied_completeness_cap": 0.60,
-       "gate_status": "fail",
-       "gate_severity": "high"
+       "applied_completeness_cap": null,
+       "gate_status": "pass",
+       "gate_severity": "none"
      },
      "issues": [
        {"section": "Synthese und Handlungsempfehlungen",
@@ -262,7 +260,7 @@ The verdict is **advisory**. A `revise` verdict does NOT re-dispatch the compose
    }
    ```
 
-   Schema notes: `claims_stats` and `arc_structural` are **absent by design** (not `null`) — this fork does not produce them. `citation_density` mirrors the upstream block but adds `applied_depth_cap` (the cap actually applied). `word_count` (schema 0.1.1, #309 P2) records the advisory Word Count Gate: `body_words`, `target_words`, `prose_density`, `ratio`, `applied_completeness_cap` (the cap fired, or `null` when none), `gate_status` (`"pass"` / `"fail"`), `gate_severity` (`"high"` / `"low"` / `"none"`); the `structural_scores.completeness` value already reflects this cap. `source_diversity` is the cogni-knowledge-specific advisory detail block (`manifest_present: false` when the ingest manifest was unavailable). `gate_status` is `"pass"` when no section is degraded, `"fail"` when ≥1 is; `gate_severity` is `"high"` if any section is high-severity, `"low"` if only low, `"none"` on a clean pass. `per_section[]` lists every scanned H2 (references excluded). `issues[]` severity is one of `high` / `low` (medium is unused in this fork). `strengths[]` is a short list of what the draft does well.
+   Schema notes: `claims_stats` and `arc_structural` are **absent by design** (not `null`) — this fork does not produce them. `citation_density` mirrors the upstream block but adds `applied_depth_cap` (the cap actually applied). `word_count` (schema 0.1.1) records the advisory Word Count Gate: `body_words`, `target_words`, `prose_density`, `ratio`, `applied_completeness_cap` (the cap fired, or `null` when none — under `standard` this is non-null only on a `< 0.50` likely-truncated draft; brevity alone never caps), `gate_status` (`"pass"` / `"fail"`), `gate_severity` (`"high"` / `"none"` — the `"low"` band is unused now that `standard` has a single `< 0.50` truncation tier); the `structural_scores.completeness` value already reflects any cap. `source_diversity` is the cogni-knowledge-specific advisory detail block (`manifest_present: false` when the ingest manifest was unavailable). `gate_status` is `"pass"` when no section is degraded, `"fail"` when ≥1 is; `gate_severity` is `"high"` if any section is high-severity, `"low"` if only low, `"none"` on a clean pass. `per_section[]` lists every scanned H2 (references excluded). `issues[]` severity is one of `high` / `low` (medium is unused in this fork). `strengths[]` is a short list of what the draft does well.
 
 2. **Read-back verify.** Immediately after `Write` returns, `Read` `REVIEW_OUT_PATH`. Confirm it parses as JSON, `schema_version == "0.1.1"`, `draft_version == DRAFT_VERSION`, and `structural_scores` has all five keys. On any failure, `Write` once more with the same content. If the second attempt also fails, return the `write_failed` envelope.
 
@@ -315,7 +313,7 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - Does NOT modify the draft, any wiki page, the citation manifest, the verify manifest, the ingest manifest, the binding, or `wiki/log.md`. Read-only against everything except `REVIEW_OUT_PATH`.
 - Does NOT run a claims-verification multiplier — Phase 6 (`knowledge-verify`) owns citation-claim alignment; the overall score here is the bare weighted structural average with no claims factor.
 - Does NOT run an Arc-Structural Gate — cogni-knowledge is story-arc agnostic (no `STORY_ARC_ID`, no `story-arcs.json`); the gate is dropped entirely, not stubbed.
-- Does NOT **block** on the Word-Count / prose-density gate — the gate is **advisory only**: it caps Completeness and emits a `Word deficit` / `Word excess` issue, yet drives no expansion loop from finalize (the bounded expansion lives in `knowledge-compose` Step 5.5) and never gates finalize. `allow_short` is not ported.
+- Does NOT **penalize brevity** under `standard` density, and does NOT **block** on the Word-Count / prose-density gate — the gate is **advisory only**: it caps Completeness and emits a `Possible truncated draft` (standard, `< 0.50` only) / `Word excess` (executive) issue, yet drives no expansion loop from finalize (the bounded coverage-gated expansion lives in `knowledge-compose` Step 5.5) and never gates finalize. `allow_short` is not ported.
 - Does NOT run a Diagram Quality Gate — `wiki-composer` emits no Mermaid.
 - Does NOT drive a content-expansion fix loop *from finalize* — the verdict is advisory; the bounded zero-network content-expansion runs earlier, in `knowledge-compose` Step 5.5, not from this verdict.
 - Does NOT translate between languages — operates in `OUTPUT_LANGUAGE` natively.
@@ -333,6 +331,6 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - Five weighted dimensions: Completeness 0.25, Coherence 0.20, Source-Diversity 0.20, Depth 0.20, Clarity 0.15.
 - Overall = bare weighted average (no claims multiplier). Accept ≥ 0.82 (the operative bar; the 0.78 relaxation is reserved for a future multi-round host and never fires under the single finalize dispatch).
 - The Inline Citation Density Gate caps Depth (0.85 / 0.70); it keys on the composer's `<sup>[N](url)</sup>` shape.
-- The advisory Word Count Gate caps Completeness on a `standard`-density deficit / `executive`-density excess (mirror-symmetric tiers); it is observability-only — no expansion loop from finalize (the bounded expansion runs in `knowledge-compose` Step 5.5), never gates finalize.
+- The advisory Word Count Gate caps Completeness only on a `standard`-density likely-truncated draft (`< 0.50` of budget — brevity itself is never penalized) / an `executive`-density excess; it is observability-only — no expansion loop from finalize (the bounded coverage-gated expansion runs in `knowledge-compose` Step 5.5), never gates finalize.
 - Advisory / non-blocking / fail-soft — exactly the `wiki-contradictor` posture.
 - The schema literal is `"schema_version": "0.1.1"` (the `word_count` block landed additively at 0.1.1, #309 P2). Further additive dimension/gate changes land at `0.1.2`; a semantic change to existing scores would bump the major.

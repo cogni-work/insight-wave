@@ -28,29 +28,36 @@ for f in "$COMPOSER" "$COMPOSE" "$REVIEWER"; do
   fi
 done
 
-# --- composer: standard floor vs executive ceiling, single pass ----------
-assert_grep 'floor' "$COMPOSER" "wiki-composer: names the standard-density floor"
+# --- composer: standard soft-budget vs executive ceiling, single pass ----
+# Brevity-first retune: standard treats TARGET_WORDS as a soft UPPER BUDGET (not a
+# floor), so the outline budgets to ≤ TARGET_WORDS with no 5% headroom and never pads.
+assert_grep 'soft upper budget' "$COMPOSER" "wiki-composer: standard treats TARGET_WORDS as a soft upper budget (not a floor)"
 assert_grep 'ceiling' "$COMPOSER" "wiki-composer: names the executive-density ceiling"
 assert_grep 'no headroom' "$COMPOSER" "wiki-composer: executive outline budgets to a ceiling (no headroom)"
-assert_grep '× 1.05' "$COMPOSER" "wiki-composer: standard outline keeps the 5% floor headroom"
+assert_grep 'sum(budgets) ≤ TARGET_WORDS' "$COMPOSER" "wiki-composer: standard outline budgets to ≤ TARGET_WORDS (no quota padding)"
+assert_not_grep '× 1.05' "$COMPOSER" "wiki-composer: no 5% floor headroom remains (brevity-first retune)"
 # The self-check must branch but explicitly NEVER loop.
 assert_grep 'NEVER loop\|never loops\|no re-dispatch loop\|there is no re-dispatch loop' "$COMPOSER" "wiki-composer: the word-count self-check shapes ONE pass, never loops (#309 P2.4)"
 assert_grep 'Over ceiling\|over .TARGET_WORDS. (the ceiling)\|over the ceiling\|trim .*redundancy' "$COMPOSER" "wiki-composer: executive trims redundancy when over the ceiling"
 # The single-pass invariant in the NOT-list must survive the density knob.
 assert_grep 'Does NOT iterate on word-count shortfall\|does NOT re-dispatch' "$COMPOSER" "wiki-composer: NOT-list keeps the single-pass / no-re-dispatch invariant"
 
-# --- compose: threads PROSE_DENSITY + TARGET_WORDS, density-aware warning -
+# --- compose: threads PROSE_DENSITY + TARGET_WORDS, density-aware summary -
+# Brevity-first: standard NO LONGER warns "Below target" (under-budget is the
+# intended outcome); it surfaces a coverage line instead. executive keeps over-ceiling.
 assert_grep 'PROSE_DENSITY=' "$COMPOSE" "knowledge-compose: threads PROSE_DENSITY into the composer dispatch"
-assert_grep 'Below target' "$COMPOSE" "knowledge-compose: standard under-floor warning"
+assert_not_grep 'Below target' "$COMPOSE" "knowledge-compose: no standard under-budget warning (brevity is the intended outcome)"
+assert_grep 'coverage:' "$COMPOSE" "knowledge-compose: standard surfaces a coverage line, not a word warning"
 assert_grep 'Over ceiling' "$COMPOSE" "knowledge-compose: executive over-ceiling warning"
 
-# --- reviewer: advisory Word Count Gate, deficit/excess, no loop ---------
+# --- reviewer: advisory Word Count Gate — brevity-neutral, no loop --------
 assert_grep 'Word Count Gate (advisory)\|advisory Word Count Gate' "$REVIEWER" "wiki-reviewer: has an advisory Word Count Gate"
-assert_grep 'Word deficit' "$REVIEWER" "wiki-reviewer: standard deficit emits Word deficit"
+assert_grep 'Possible truncated draft' "$REVIEWER" "wiki-reviewer: standard caps only a likely-truncated draft (not brevity)"
+assert_not_grep 'Word deficit' "$REVIEWER" "wiki-reviewer: no Word deficit penalty (brevity-first retune)"
 assert_grep 'Word excess' "$REVIEWER" "wiki-reviewer: executive excess emits Word excess"
-# Mirror-symmetric cap tiers (a representative threshold from each direction).
+# Representative thresholds: the executive >1.25 excess tier and the standard <0.50 truncation tier.
 assert_grep '1.25' "$REVIEWER" "wiki-reviewer: gate has the >1.25 excess tier"
-assert_grep '0.50' "$REVIEWER" "wiki-reviewer: gate has the <0.50 deficit tier"
+assert_grep '0.50' "$REVIEWER" "wiki-reviewer: gate has the <0.50 truncation tier"
 # The cap targets Completeness, NOT Depth (Depth is the density gate's job).
 assert_grep 'cap.*Completeness\|caps Completeness\|Completeness.*cap\|applied_completeness_cap' "$REVIEWER" "wiki-reviewer: Word Count Gate caps Completeness"
 # Hard invariant: advisory only — no expansion loop, never blocks finalize.
