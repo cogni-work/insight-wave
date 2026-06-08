@@ -1,5 +1,26 @@
 # cogni-knowledge changelog
 
+## 0.1.110 — 2026-06-08 — docs: close out the /concepts domain-outline roadmap
+
+Hygiene close-out for the `/concepts` domain concept-map outline. The deterministic renderer
+(`concepts_index.py`), the `concepts-outliner` agent, and the `knowledge-finalize` concepts
+auto-refresh sub-step all shipped in prior releases; this release records the shape decision and
+brings the README auto-sections current.
+
+- **`references/concepts-shape-decision.md`** (new) — the concepts-outline shape decision
+  (standalone page at `wiki/concepts/index.md`, grouped-by-theme, narrated lead-ins under
+  MACHINE-OWNED sentinels, stage-by-default auto-refresh), the concepts analog of
+  `references/portal-shape-decision.md`. Cross-referenced from the `knowledge-finalize` concepts
+  sub-step and the `concepts-outliner` agent rationale for the semantic provenance the breadcrumb
+  guard requires.
+- **`README.md`** — regenerated the Components table and Architecture tree to current reality:
+  added the `concepts-outliner` / `portal-narrator` / `answer-distiller` agents and the
+  standalone Phase-8 skills (`knowledge-ingest-source` / `knowledge-update` / `knowledge-prefill`
+  / `knowledge-lint` / `knowledge-health`) that had drifted out of the auto-sections; corrected
+  the agent / reference / script / skill counts.
+- Patch version bump (`plugin.json` + `marketplace.json`), staying within the Preview `0.1.x`
+  range.
+
 ## 0.1.101 — 2026-06-08 — feat: evidence-aware synthesis refresh candidates
 
 Adding a single new source to a bound wiki via `knowledge-ingest-source` compounded the
